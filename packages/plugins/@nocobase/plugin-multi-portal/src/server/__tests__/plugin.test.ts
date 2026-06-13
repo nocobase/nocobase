@@ -637,6 +637,162 @@ describe('plugin-multi-portal server', () => {
     ]);
   });
 
+  it('should reject invalid portal scopes without falling back to the default layout', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const disabledPortal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'disabled-scope-portal',
+        title: 'Disabled scope portal',
+        routeName: 'disabledScopePortal',
+        routePath: '/disabled-scope-portal',
+        authCheck: true,
+        enabled: false,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const adminRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-INVALID-PORTAL-FALLBACK-ADMIN-ROUTE',
+        schemaUid: 'invalid-portal-fallback-admin-route',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const [missingListResponse, missingGetResponse, missingTargetsResponse, missingCreateResponse] = await Promise.all([
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        portal: 'missing-portal',
+      }),
+      rootAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: adminRoute.get('id'),
+        portal: 'missing-portal',
+      }),
+      rootAgent.get('/desktopRoutes:listRolePermissionTargets').query({
+        portal: 'missing-portal',
+      }),
+      rootAgent.resource('desktopRoutes').create({
+        portal: 'missing-portal',
+        values: {
+          type: 'flowPage',
+          title: 'invalid portal created page',
+          schemaUid: 'invalid-portal-created-page',
+        },
+      }),
+    ]);
+    const [disabledListResponse, disabledGetResponse, disabledTargetsResponse, disabledCreateResponse] =
+      await Promise.all([
+        rootAgent.get('/desktopRoutes:listAccessible').query({
+          portal: disabledPortal.get('uid'),
+        }),
+        rootAgent.get('/desktopRoutes:getAccessible').query({
+          filterByTk: adminRoute.get('id'),
+          portal: disabledPortal.get('uid'),
+        }),
+        rootAgent.get('/desktopRoutes:listRolePermissionTargets').query({
+          portal: disabledPortal.get('uid'),
+        }),
+        rootAgent.resource('desktopRoutes').create({
+          portal: disabledPortal.get('uid'),
+          values: {
+            type: 'flowPage',
+            title: 'disabled portal created page',
+            schemaUid: 'disabled-portal-created-page',
+          },
+        }),
+      ]);
+    const createdRouteCount = await app.db.getRepository('desktopRoutes').count({
+      filter: {
+        schemaUid: ['invalid-portal-created-page', 'disabled-portal-created-page'],
+      },
+    });
+
+    expect(missingListResponse.status).toBe(200);
+    expect(missingListResponse.body.data).toEqual([]);
+    expect(missingGetResponse.status).toBe(204);
+    expect(missingGetResponse.body.data ?? null).toBeNull();
+    expect(missingTargetsResponse.status).toBe(200);
+    expect(missingTargetsResponse.body.data).toEqual([]);
+    expect(missingCreateResponse.status).toBe(400);
+    expect(disabledListResponse.status).toBe(200);
+    expect(disabledListResponse.body.data).toEqual([]);
+    expect(disabledGetResponse.status).toBe(204);
+    expect(disabledGetResponse.body.data ?? null).toBeNull();
+    expect(disabledTargetsResponse.status).toBe(200);
+    expect(disabledTargetsResponse.body.data).toEqual([]);
+    expect(disabledCreateResponse.status).toBe(400);
+    expect(createdRouteCount).toBe(0);
+  });
+
+  it('should not let portal uids shadow ui layout route scopes', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        title: 'Shadow admin layout portal',
+        routeName: 'shadowAdminLayoutPortal',
+        routePath: '/shadow-admin-layout-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const adminRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-SHADOWED-ADMIN-LAYOUT-ROUTE',
+        schemaUid: 'shadowed-admin-layout-route',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const portalRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-SHADOWED-PORTAL-ROUTE',
+        schemaUid: 'shadowed-portal-route',
+        hidden: false,
+        sort: 20,
+      },
+    });
+    await app.db.getRepository('desktopRoutes.multiPortals', portalRoute.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const [layoutResponse, portalResponse] = await Promise.all([
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        portal: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+    ]);
+
+    expect(layoutResponse.status).toBe(200);
+    expect(portalResponse.status).toBe(200);
+    expect(collectRouteTitles(layoutResponse.body.data as RouteResponseItem[])).toContain(
+      'DATA-SHADOWED-ADMIN-LAYOUT-ROUTE',
+    );
+    expect(collectRouteTitles(layoutResponse.body.data as RouteResponseItem[])).not.toContain(
+      'DATA-SHADOWED-PORTAL-ROUTE',
+    );
+    expect(collectRouteTitles(portalResponse.body.data as RouteResponseItem[])).toEqual(['DATA-SHADOWED-PORTAL-ROUTE']);
+  });
+
   it('should create desktop routes with exactly one portal or layout owner', async () => {
     app = await createMultiPortalAclMockServer();
 
@@ -707,12 +863,31 @@ describe('plugin-multi-portal server', () => {
         uiLayouts: [portal.get('uid')],
       },
     });
+    const crossScopeLayoutResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: mobileLayout?.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'cross scope page',
+        schemaUid: 'cross-scope-page',
+      },
+    });
+    const crossScopePortalResponse = await rootAgent.resource('desktopRoutes').updateOrCreate({
+      portal: portal.get('uid'),
+      filterKeys: ['schemaUid'],
+      values: {
+        type: 'flowPage',
+        title: 'cross scope portal page',
+        schemaUid: 'cross-scope-page',
+      },
+    });
 
     expect(portalCreateResponse.status).toBe(200);
     expect(layoutCreateResponse.status).toBe(200);
     expect(portalUpsertResponse.status).toBe(200);
+    expect(crossScopeLayoutResponse.status).toBe(200);
+    expect(crossScopePortalResponse.status).toBe(200);
 
-    const [portalRoute, layoutRoute, upsertRoute] = await Promise.all([
+    const [portalRoute, layoutRoute, upsertRoute, crossScopeRoute] = await Promise.all([
       app.db.getRepository('desktopRoutes').findOne({
         filterByTk: portalCreateResponse.body.data.id,
         appends: ['multiPortals', 'uiLayouts', 'children.multiPortals', 'children.uiLayouts'],
@@ -727,6 +902,12 @@ describe('plugin-multi-portal server', () => {
         },
         appends: ['multiPortals', 'uiLayouts'],
       }),
+      app.db.getRepository('desktopRoutes').findOne({
+        filter: {
+          schemaUid: 'cross-scope-page',
+        },
+        appends: ['multiPortals', 'uiLayouts'],
+      }),
     ]);
     const portalChildRoute = portalRoute?.get('children')?.[0];
     const layoutChildRoute = layoutRoute?.get('children')?.[0];
@@ -737,6 +918,8 @@ describe('plugin-multi-portal server', () => {
     expect(portalChildRoute?.get('uiLayouts')).toEqual([]);
     expect(upsertRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
     expect(upsertRoute?.get('uiLayouts')).toEqual([]);
+    expect(crossScopeRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(crossScopeRoute?.get('uiLayouts')).toEqual([]);
     expect(layoutRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
     expect(layoutRoute?.get('multiPortals')).toEqual([]);
     expect(layoutChildRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);

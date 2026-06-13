@@ -43,6 +43,10 @@ interface MultiPortalAccessContext {
   portalUid: string;
   uiLayoutUid: string;
 }
+interface MultiPortalRequestResult {
+  portal?: Model;
+  requested: boolean;
+}
 type DatabaseHookOptions = {
   transaction?: Transaction;
 };
@@ -136,19 +140,46 @@ function getCurrentRoles(ctx: ResourcerContext) {
   return currentRoles.filter((role): role is string => typeof role === 'string');
 }
 
-async function findRequestedMultiPortal(ctx: ResourcerContext) {
+async function findRequestedMultiPortal(ctx: ResourcerContext): Promise<MultiPortalRequestResult> {
   const portalUid = getRequestedMultiPortalUid(ctx);
-  if (!portalUid) {
-    return;
+  if (portalUid === undefined) {
+    return {
+      requested: false,
+    };
   }
 
-  return ctx.db.getRepository('multiPortals').findOne({
+  const isExplicitPortalRequest = getExplicitRequestedLayoutUid(ctx.action?.params.portal) !== undefined;
+  if (!isExplicitPortalRequest) {
+    const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: portalUid,
+      },
+      fields: ['uid'],
+    });
+    if (uiLayout) {
+      return {
+        requested: false,
+      };
+    }
+  }
+
+  const portal = await ctx.db.getRepository('multiPortals').findOne({
     filter: {
       uid: portalUid,
-      enabled: true,
     },
-    fields: ['uid', 'uiLayoutUid'],
+    fields: ['uid', 'uiLayoutUid', 'enabled'],
   });
+
+  if (portal?.get('enabled') === true) {
+    return {
+      portal,
+      requested: true,
+    };
+  }
+
+  return {
+    requested: !!isExplicitPortalRequest || !!portal,
+  };
 }
 
 function getDesktopRoutePortalFilter(multiPortalUid: string) {
@@ -312,6 +343,98 @@ function pickDesktopRouteRolePermissionTargetFields(
   return result;
 }
 
+function setDesktopRouteChildren(route: unknown, children: unknown[] | undefined) {
+  if (!route || typeof route !== 'object') {
+    return;
+  }
+
+  const maybeModel = route as {
+    setDataValue?: (field: string, value: unknown) => void;
+  };
+  if (typeof maybeModel.setDataValue === 'function') {
+    maybeModel.setDataValue('children', children);
+    return;
+  }
+
+  (route as Record<string, unknown>).children = children;
+}
+
+function removeDesktopRoutesByIds(routes: unknown[], routeIds: Set<string>) {
+  return routes
+    .map((route) => {
+      const routeId = getRecordField(route, 'id');
+      const normalizedRouteId = routeId === null || routeId === undefined ? undefined : String(routeId);
+      if (normalizedRouteId && routeIds.has(normalizedRouteId)) {
+        return null;
+      }
+
+      const children = getRecordField(route, 'children');
+      if (Array.isArray(children)) {
+        setDesktopRouteChildren(route, removeDesktopRoutesByIds(children, routeIds));
+      }
+
+      return route;
+    })
+    .filter((route): route is unknown => route !== null);
+}
+
+async function getMultiPortalOwnedDesktopRouteIds(ctx: ResourcerContext, routeIds: DesktopRouteId[]) {
+  if (!routeIds.length) {
+    return new Set<string>();
+  }
+
+  const routes = await ctx.db.getRepository('desktopRoutes').find({
+    fields: ['id'],
+    appends: ['multiPortals'],
+    filter: {
+      id: uniqueDesktopRouteIds(routeIds),
+    },
+  });
+  const multiPortalRouteIds = new Set<string>();
+
+  for (const route of routes) {
+    const multiPortals = route.get('multiPortals');
+    if (!Array.isArray(multiPortals) || multiPortals.length === 0) {
+      continue;
+    }
+
+    const routeId = route.get('id');
+    if (routeId !== null && routeId !== undefined) {
+      multiPortalRouteIds.add(String(routeId));
+    }
+  }
+
+  return multiPortalRouteIds;
+}
+
+async function removeMultiPortalOwnedRoutesFromListResponse(ctx: ResourcerContext) {
+  if (!Array.isArray(ctx.body)) {
+    return;
+  }
+
+  const multiPortalRouteIds = await getMultiPortalOwnedDesktopRouteIds(ctx, collectDesktopRouteIds(ctx.body));
+  if (multiPortalRouteIds.size === 0) {
+    return;
+  }
+
+  ctx.body = removeDesktopRoutesByIds(ctx.body, multiPortalRouteIds);
+}
+
+async function removeMultiPortalOwnedRouteFromGetResponse(ctx: ResourcerContext) {
+  if (!ctx.body) {
+    return;
+  }
+
+  const routeIds = collectDesktopRouteIds(ctx.body);
+  const multiPortalRouteIds = await getMultiPortalOwnedDesktopRouteIds(ctx, routeIds);
+  if (multiPortalRouteIds.size === 0) {
+    return;
+  }
+
+  ctx.status = 204;
+  ctx.body = undefined;
+}
+
 async function replaceListAccessibleRoutesWithPortalScopedRoutes(
   ctx: ResourcerContext,
   portalContext: MultiPortalAccessContext,
@@ -364,9 +487,14 @@ async function replaceGetAccessibleRouteWithPortalScopedRoute(
 }
 
 async function prepareAccessibleDesktopRoutesForMultiPortal(ctx: ResourcerContext) {
-  const portal = await findRequestedMultiPortal(ctx);
-  if (!portal) {
+  const portalRequest = await findRequestedMultiPortal(ctx);
+  if (!portalRequest.requested) {
     return;
+  }
+
+  const portal = portalRequest.portal;
+  if (!portal) {
+    return null;
   }
 
   const portalUid = portal.get('uid');
@@ -398,7 +526,10 @@ async function addMultiPortalListAccessibleGuard(ctx: ResourcerContext, next: ()
   await next();
   if (portalContext) {
     await replaceListAccessibleRoutesWithPortalScopedRoutes(ctx, portalContext);
+    return;
   }
+
+  await removeMultiPortalOwnedRoutesFromListResponse(ctx);
 }
 
 async function addMultiPortalGetAccessibleGuard(ctx: ResourcerContext, next: () => Promise<void>) {
@@ -412,14 +543,24 @@ async function addMultiPortalGetAccessibleGuard(ctx: ResourcerContext, next: () 
   await next();
   if (portalContext) {
     await replaceGetAccessibleRouteWithPortalScopedRoute(ctx, portalContext);
+    return;
   }
+
+  await removeMultiPortalOwnedRouteFromGetResponse(ctx);
 }
 
 async function mapMultiPortalLayoutToUiLayoutForRolePermissionTargets(
   ctx: ResourcerContext,
   next: () => Promise<void>,
 ) {
-  const portal = await findRequestedMultiPortal(ctx);
+  const portalRequest = await findRequestedMultiPortal(ctx);
+  if (portalRequest.requested && !portalRequest.portal) {
+    ctx.status = 200;
+    ctx.body = [];
+    return;
+  }
+
+  const portal = portalRequest.portal;
   const portalUid = portal?.get('uid');
   if (typeof portalUid === 'string' && portalUid) {
     const routes = (await ctx.db.getRepository('desktopRoutes').find({
@@ -435,10 +576,17 @@ async function mapMultiPortalLayoutToUiLayoutForRolePermissionTargets(
   }
 
   await next();
+  await removeMultiPortalOwnedRoutesFromListResponse(ctx);
 }
 
 async function addDesktopRouteCreateMultiPortal(ctx: ResourcerContext, next: () => Promise<void>) {
-  const portal = await findRequestedMultiPortal(ctx);
+  const portalRequest = await findRequestedMultiPortal(ctx);
+  if (portalRequest.requested && !portalRequest.portal) {
+    ctx.throw(400, 'Invalid portal scope');
+    return;
+  }
+
+  const portal = portalRequest.portal;
   const portalUid = portal?.get('uid');
 
   if (typeof portalUid === 'string' && portalUid) {
@@ -451,6 +599,7 @@ async function addDesktopRouteCreateMultiPortal(ctx: ResourcerContext, next: () 
 
   if (typeof portalUid === 'string' && portalUid) {
     const desktopRouteIds = collectDesktopRouteIds(ctx.body);
+    await removeUiLayoutOwnershipFromMultiPortalRoutes(ctx, desktopRouteIds);
     await removeUiLayoutRoutePermissionsFromMultiPortalRoutes(ctx, desktopRouteIds);
     await grantDefaultRouteAccessToNewMultiPortalRoutes(ctx, portalUid, desktopRouteIds);
   }
@@ -530,6 +679,18 @@ async function removeUiLayoutRoutePermissionsFromMultiPortalRoutes(
     },
     context: ctx,
   });
+}
+
+async function removeUiLayoutOwnershipFromMultiPortalRoutes(ctx: ResourcerContext, desktopRouteIds: DesktopRouteId[]) {
+  if (!desktopRouteIds.length) {
+    return;
+  }
+
+  for (const desktopRouteId of uniqueDesktopRouteIds(desktopRouteIds)) {
+    await ctx.db.getRepository('desktopRoutes.uiLayouts', desktopRouteId).set({
+      tk: [],
+    });
+  }
 }
 
 async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Model, options?: DatabaseHookOptions) {
