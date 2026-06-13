@@ -5,8 +5,6 @@ description: Cài đặt NocoBase CLI và nhanh chóng tạo một ứng dụng 
 
 # Cài đặt ứng dụng NocoBase
 
-Nếu bạn chưa có ứng dụng NocoBase, cách nhanh nhất là cài `@nocobase/cli` trước, sau đó chạy `nb init --ui` một lần. Trong đa số trường hợp, cứ đi theo cấu hình mặc định của wizard là đủ.
-
 ## Điều kiện tiên quyết
 
 - Node.js >= 22
@@ -32,13 +30,16 @@ Theo mặc định, cách được khuyến nghị là mở thẳng wizard trự
 nb init --ui
 ```
 
-Trong wizard, hãy hoàn thành lần lượt các bước sau:
+![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-1. Đặt tên ứng dụng - tên này cũng sẽ là tên env trong CLI
-2. Chọn "Cài đặt mới hoàn toàn"
-3. Chọn phương thức cài đặt - Docker, npm hoặc Git
-4. Thiết lập cổng, cơ sở dữ liệu và tài khoản quản trị
-5. Chờ quá trình tải xuống, cài đặt và khởi động hoàn tất
+Tùy theo đường đi setup bạn chọn, các bước hiện ra sẽ hơi khác nhau. Nhưng nếu đi theo nhánh mặc định `Install a new app`, thông thường bạn sẽ thấy 6 bước sau:
+
+1. `Getting started` - đặt identifier `--env` và chọn `Install a new app`
+2. `App environment` - thiết lập thông tin cơ bản của ứng dụng, vị trí lưu trữ và cổng runtime
+3. `App source and version` - chọn cách lấy ứng dụng cùng source và version sẽ dùng
+4. `Configure the database` - chọn cơ sở dữ liệu tích hợp sẵn hoặc cơ sở dữ liệu tùy chỉnh
+5. `Create an admin account` - thiết lập tài khoản quản trị đầu tiên
+6. `Connection & authentication` - nhập URL truy cập ứng dụng và chọn phương thức xác thực
 
 Nếu bạn quen thao tác trong terminal hơn, bạn cũng có thể chạy trực tiếp:
 
@@ -75,7 +76,7 @@ Các lệnh thường dùng là:
 
 ```bash
 nb env list
-nb env status
+nb env info
 nb app logs
 ```
 
@@ -85,8 +86,19 @@ Cấu hình CLI mặc định được lưu trong `~/.nocobase/`, vì vậy AI A
 
 Nếu sau này ứng dụng này cần phục vụ người dùng thực tế, bạn không nên dùng trực tiếp `IP + port` trong thời gian dài. Bước tiếp theo thường là thêm reverse proxy và bật HTTPS.
 
-## Tiếp theo
+## Bước tiếp theo
 
-- Nếu bạn đã có một instance NocoBase đang chạy, hãy xem ngay [Hướng dẫn tích hợp AI Agent](./quick-start.mdx)
-- Nếu muốn tiếp tục triển khai production, hãy xem [Cài đặt bằng CLI](../nocobase-cli/installation/cli.md) và [Tổng quan triển khai production](../nocobase-cli/production/index.md)
-- Nếu muốn để AI bắt đầu xây dựng ứng dụng ngay sau đó, hãy xem [AI Builder](../ai-builder/index.md)
+- Nếu bạn đã có một ứng dụng NocoBase đang chạy, xem [Hướng dẫn tích hợp AI Agent](./quick-start.mdx)
+- Nếu bạn muốn quản lý việc khởi động, dừng, xem log và nâng cấp ứng dụng, xem [Quản lý ứng dụng](../nocobase-cli/operations/manage-app.md)
+- Nếu bạn muốn tiếp tục triển khai production, xem [Cài đặt ứng dụng bằng CLI](../nocobase-cli/installation/cli.md) và [Tổng quan triển khai production](../nocobase-cli/production/index.md)
+- Nếu bạn muốn để AI bắt đầu xây dựng ứng dụng, xem [AI Builder](../ai-builder/index.md)
+
+## Liên kết liên quan
+
+- [So sánh phương thức cài đặt và phiên bản](../get-started/quickstart.md) — So sánh trước các phương thức cài đặt và kênh phiên bản, rồi mới quyết định cài theo cách nào
+- [Hướng dẫn tích hợp AI Agent](./quick-start.mdx) — Kết nối ứng dụng NocoBase đang có và để AI Agent bắt đầu làm việc
+- [Tài liệu lệnh `nb init`](../api/cli/init.md) — Khởi tạo ứng dụng mới, tiếp quản ứng dụng cục bộ sẵn có hoặc kết nối ứng dụng từ xa
+- [Tài liệu lệnh `nb env info`](../api/cli/env/info.md) — Xem thông tin kết nối và cấu hình runtime của env hiện tại
+- [NocoBase CLI](../api/cli/index.md) — Tài liệu đầy đủ cho toàn bộ lệnh `nb`
+- [Quản lý ứng dụng](../nocobase-cli/operations/manage-app.md) — Khởi động, dừng, khởi động lại, xem log và nâng cấp ứng dụng
+- [Quản lý đa môi trường](../nocobase-cli/operations/multi-environment.md) — Các thao tác thường dùng khi bạn duy trì nhiều env cùng lúc

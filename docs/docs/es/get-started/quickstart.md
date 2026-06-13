@@ -20,6 +20,8 @@ Puede instalar NocoBase de diferentes maneras.
 | **Requisitos técnicos** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Método de actualización** | Extraer la última imagen y reiniciar el contenedor. | Actualizar dependencias con yarn. | Sincronizar actualizaciones mediante el flujo de Git. |
 
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
 ## Qué hacer a continuación
 
-Si ya eligió un método de instalación, el siguiente paso es [Inicio rápido](../ai/quick-start.md). Allí instalará NocoBase CLI, se conectará a una aplicación existente o inicializará una nueva, y luego dejará que su AI Agent empiece a trabajar.
+Si ya eligió un método de instalación, el siguiente paso es [Instalar la aplicación NocoBase](/ai/install-nocobase-app). Allí instalará NocoBase CLI y completará la instalación e inicialización de la aplicación.

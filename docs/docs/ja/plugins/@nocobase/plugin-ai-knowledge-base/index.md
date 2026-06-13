@@ -1,14 +1,16 @@
 ---
-displayName: "AI: 知識ベース"
+title: "AI: Knowledge base"
+keywords: "AI"
+displayName: "AI: Knowledge base"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
-  ベクトルデータベースとの連携をサポートし、ドキュメントをベクトル化することで、AIスタッフにインテリジェントな検索と知識ベースのサポートを提供します。
+  Supports integration with vector databases to vectorize documents, providing AI employees with intelligent search and knowledge support.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# AI: 知識ベース
+# AI: Knowledge base

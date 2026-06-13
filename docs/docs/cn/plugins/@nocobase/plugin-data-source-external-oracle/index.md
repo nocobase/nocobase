@@ -1,8 +1,8 @@
 ---
-displayName: "数据源：外部 Oracle"
-packageName: '@nocobase/plugin-data-source-external-oracle'
 title: "数据源：外部 Oracle"
 keywords: "数据源：外部 Oracle,插件,NocoBase"
+displayName: "数据源：外部 Oracle"
+packageName: '@nocobase/plugin-data-source-external-oracle'
 supportedVersions:
   - 1.x
   - 2.x

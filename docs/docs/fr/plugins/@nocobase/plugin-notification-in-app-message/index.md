@@ -1,12 +1,14 @@
 ---
-displayName: "Notification : Message interne"
+title: "Notification: In-app message"
+keywords: "Notification"
+displayName: "Notification: In-app message"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |
-  Permet aux utilisateurs de recevoir des notifications de messages en temps réel au sein de l'application NocoBase.
+  It supports users in receiving real-time message notifications within the NocoBase application.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Notification : Message interne
+# Notification: In-app message

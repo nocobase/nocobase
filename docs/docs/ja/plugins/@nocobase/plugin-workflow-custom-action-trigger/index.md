@@ -1,15 +1,17 @@
 ---
-displayName: "ワークフロー：カスタムアクションイベント"
+title: "Workflow: Custom action event"
+keywords: "Workflow"
+displayName: "Workflow: Custom action event"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  カスタムイベントがバインドされたボタンをクリックしたときにトリガーされます。データ行に対するカスタム操作のオーケストレーションに適しています。
+  Triggers after click a custom action button.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# ワークフロー：カスタムアクションイベント
+# Workflow: Custom action event

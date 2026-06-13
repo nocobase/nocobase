@@ -291,7 +291,19 @@ test('findApiCommandCompatViolation ignores trailing prerelease segments when ev
     packageJson: packageJsonWithAppByChannelRule,
     commandId: 'flow-surfaces apply',
     cliVersion: '2.1.0-beta.41',
-    appVersion: '2.1.0-beta.36.9',
+    appVersion: '2.1.0-beta.36.snapshot.20260611064603847',
+    skillsVersion: '1.0.21',
+  });
+
+  expect(violation).toBeUndefined();
+});
+
+test('findApiCommandCompatViolation ignores custom trailing prerelease segments when evaluating beta floors', () => {
+  const violation = findApiCommandCompatViolation({
+    packageJson: packageJsonWithAppByChannelRule,
+    commandId: 'flow-surfaces apply',
+    cliVersion: '2.1.0-beta.41',
+    appVersion: '2.1.0-beta.36.foo.20260611064603847',
     skillsVersion: '1.0.21',
   });
 
@@ -303,7 +315,7 @@ test('findApiCommandCompatViolation ignores trailing prerelease segments when ev
     packageJson: packageJsonWithAppByChannelRule,
     commandId: 'flow-surfaces apply',
     cliVersion: '2.1.0-beta.41',
-    appVersion: '2.1.0-alpha.40.3',
+    appVersion: '2.1.0-alpha.40.foo.20260611064603847',
     skillsVersion: '1.0.21',
   });
 
@@ -335,7 +347,7 @@ test('findApiCommandCompatViolation matches combined appByChannel and skills rul
   expect(violation?.appChannel).toBe('stable');
 });
 
-test('findApiCommandCompatViolation matches combined appByChannel and skills rules for rc releases', () => {
+test('findApiCommandCompatViolation does not block rc releases that match the stable app boundary prefix', () => {
   const violation = findApiCommandCompatViolation({
     packageJson: packageJsonWithAppByChannelRule,
     commandId: 'flow-surfaces apply',
@@ -344,8 +356,19 @@ test('findApiCommandCompatViolation matches combined appByChannel and skills rul
     skillsVersion: '1.0.21',
   });
 
-  expect(violation?.rule.code).toBe('FLOW_SURFACES_OLD_APP_NEW_SKILLS_UNSUPPORTED');
-  expect(violation?.appChannel).toBe('rc');
+  expect(violation).toBeUndefined();
+});
+
+test('findApiCommandCompatViolation treats timestamped rc builds as matching the stable app boundary prefix', () => {
+  const violation = findApiCommandCompatViolation({
+    packageJson: packageJsonWithAppByChannelRule,
+    commandId: 'flow-surfaces apply',
+    cliVersion: '2.1.0-beta.41',
+    appVersion: '2.1.0-rc.20260611064603847',
+    skillsVersion: '1.0.21',
+  });
+
+  expect(violation).toBeUndefined();
 });
 
 test('findApiCommandCompatViolation ignores trailing prerelease segments when evaluating rc floors', () => {
@@ -360,12 +383,36 @@ test('findApiCommandCompatViolation ignores trailing prerelease segments when ev
   expect(violation).toBeUndefined();
 });
 
-test('findApiCommandCompatViolation blocks unsupported prerelease channels when appByChannel requests it', () => {
+test('findApiCommandCompatViolation treats webuild app versions as stable channel builds', () => {
   const violation = findApiCommandCompatViolation({
     packageJson: packageJsonWithAppByChannelRule,
     commandId: 'flow-surfaces apply',
     cliVersion: '2.1.0-beta.41',
-    appVersion: '2.1.0-preview.1',
+    appVersion: '2.1.1-webuild.20260611064603847',
+    skillsVersion: '1.0.21',
+  });
+
+  expect(violation).toBeUndefined();
+});
+
+test('findApiCommandCompatViolation treats custom prerelease app versions as stable channel builds', () => {
+  const violation = findApiCommandCompatViolation({
+    packageJson: packageJsonWithAppByChannelRule,
+    commandId: 'flow-surfaces apply',
+    cliVersion: '2.1.0-beta.41',
+    appVersion: '2.1.1-foo.20260611064603847',
+    skillsVersion: '1.0.21',
+  });
+
+  expect(violation).toBeUndefined();
+});
+
+test('findApiCommandCompatViolation blocks unparseable app versions when appByChannel requests it', () => {
+  const violation = findApiCommandCompatViolation({
+    packageJson: packageJsonWithAppByChannelRule,
+    commandId: 'flow-surfaces apply',
+    cliVersion: '2.1.0-beta.41',
+    appVersion: 'not-a-version',
     skillsVersion: '1.0.21',
   });
 

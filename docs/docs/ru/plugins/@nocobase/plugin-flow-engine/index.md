@@ -1,5 +1,7 @@
 ---
-displayName: "Фронтенд FlowEngine"
+title: "Flow engine"
+keywords: "Flow engine,Plugin,NocoBase"
+displayName: "Flow engine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Фронтенд FlowEngine
+# Flow engine

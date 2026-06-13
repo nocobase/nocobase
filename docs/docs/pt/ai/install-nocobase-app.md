@@ -5,8 +5,6 @@ description: Instale o NocoBase CLI e crie rapidamente um novo aplicativo NocoBa
 
 # Instalar o aplicativo NocoBase
 
-Se você ainda não tem um aplicativo NocoBase, a forma mais rápida é instalar primeiro o `@nocobase/cli` e depois executar `nb init --ui` uma vez. Na maioria dos casos, as opções padrão do assistente já resolvem.
-
 ## Pré-requisitos
 
 - Node.js >= 22
@@ -32,13 +30,16 @@ Por padrão, recomendamos abrir o assistente visual diretamente:
 nb init --ui
 ```
 
-No assistente, conclua estas etapas em ordem:
+![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-1. Defina o nome do aplicativo - ele também será o nome do env no CLI
-2. Escolha "Nova instalação"
-3. Escolha o método de instalação - Docker, npm ou Git
-4. Defina a porta, o banco de dados e a conta de administrador
-5. Aguarde o download, a instalação e a inicialização terminarem
+Dependendo do caminho de setup escolhido, as etapas exibidas podem mudar um pouco. Se você seguir o caminho padrão `Install a new app`, normalmente verá estas seis etapas:
+
+1. `Getting started` - definir o identificador `--env` e escolher `Install a new app`
+2. `App environment` - definir as informações básicas do aplicativo, o local de armazenamento e a porta de execução
+3. `App source and version` - escolher como obter o aplicativo e qual source e version usar
+4. `Configure the database` - escolher o banco de dados embutido ou um banco de dados personalizado
+5. `Create an admin account` - configurar a primeira conta de administrador
+6. `Connection & authentication` - informar a URL de acesso do aplicativo e escolher um método de autenticação
 
 Se preferir trabalhar pela linha de comando, você também pode executar:
 
@@ -75,7 +76,7 @@ Os comandos mais usados são:
 
 ```bash
 nb env list
-nb env status
+nb env info
 nb app logs
 ```
 
@@ -85,8 +86,19 @@ As configurações do CLI ficam salvas em `~/.nocobase/` por padrão, então os 
 
 Se esse aplicativo for exposto a usuários reais no futuro, não recomendamos manter o uso direto de `IP + port` no longo prazo. O próximo passo costuma ser colocar a aplicação atrás de um proxy reverso e habilitar HTTPS.
 
-## O que vem a seguir
+## Próximos passos
 
-- Se você já tem uma instância NocoBase em execução, vá direto para o [Guia de integração para AI Agent](./quick-start.mdx)
-- Se quiser continuar com a implantação em produção, vá para [Instalar com CLI](../nocobase-cli/installation/cli.md) e [Visão geral da implantação em produção](../nocobase-cli/production/index.md)
-- Se quiser que a IA comece a construir o aplicativo em seguida, vá para [AI Builder](../ai-builder/index.md)
+- Se você já tem um aplicativo NocoBase em execução, veja o [Guia de integração para AI Agent](./quick-start.mdx)
+- Se você quer gerenciar inicialização, parada, logs e upgrades do aplicativo, veja [Gerenciar aplicativos](../nocobase-cli/operations/manage-app.md)
+- Se você quer continuar com o deploy em produção, veja [Instalar aplicativos com CLI](../nocobase-cli/installation/cli.md) e [Visão geral do deploy em produção](../nocobase-cli/production/index.md)
+- Se você quer deixar a IA começar a construir aplicativos, veja [AI Builder](../ai-builder/index.md)
+
+## Links relacionados
+
+- [Comparação de Métodos de Instalação e Versões](../get-started/quickstart.md) — Compare primeiro os métodos de instalação e os canais de versão, depois decida como instalar
+- [Guia de integração para AI Agent](./quick-start.mdx) — Conecte um aplicativo NocoBase existente e deixe seu AI Agent começar a trabalhar
+- [Referência do comando `nb init`](../api/cli/init.md) — Inicializar um aplicativo novo, assumir um aplicativo local existente ou conectar um aplicativo remoto
+- [Referência do comando `nb env info`](../api/cli/env/info.md) — Ver os detalhes de conexão e a configuração de runtime do env atual
+- [NocoBase CLI](../api/cli/index.md) — Referência completa de todos os comandos `nb`
+- [Gerenciar aplicativos](../nocobase-cli/operations/manage-app.md) — Iniciar, parar, reiniciar, ver logs e fazer upgrade de aplicativos
+- [Gerenciamento de múltiplos ambientes](../nocobase-cli/operations/multi-environment.md) — Operações comuns quando você mantém vários envs ao mesmo tempo

@@ -5,8 +5,6 @@ description: Installieren Sie die NocoBase CLI und erstellen Sie mit `nb init --
 
 # NocoBase-App installieren
 
-Wenn Sie noch keine NocoBase-Anwendung haben, ist der schnellste Weg: zuerst `@nocobase/cli` installieren und dann einmal `nb init --ui` ausführen. In den meisten Fällen reichen die Standardoptionen im Assistenten aus.
-
 ## Voraussetzungen
 
 - Node.js >= 22
@@ -32,13 +30,16 @@ Als Standard empfehlen wir, den visuellen Assistenten direkt zu öffnen:
 nb init --ui
 ```
 
-Führen Sie im Assistenten diese Schritte der Reihe nach aus:
+![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-1. Den Anwendungsnamen festlegen - er wird gleichzeitig der env-Name in der CLI
-2. „Neuinstallation" auswählen
-3. Die Installationsmethode wählen - Docker, npm oder Git
-4. Port, Datenbank und Administratorkonto festlegen
-5. Warten, bis Download, Installation und Start abgeschlossen sind
+Je nach Setup-Pfad sehen Sie leicht unterschiedliche Schritte. Wenn Sie dem Standardpfad `Install a new app` folgen, sehen Sie in der Regel diese sechs Schritte:
+
+1. `Getting started` - die `--env` Kennung festlegen und `Install a new app` auswählen
+2. `App environment` - Basisdaten der App, Speicherort und Laufzeit-Port festlegen
+3. `App source and version` - auswählen, wie Sie die App beziehen und welche Quelle und Version Sie verwenden möchten
+4. `Configure the database` - die integrierte Datenbank oder eine benutzerdefinierte Datenbank wählen
+5. `Create an admin account` - das erste Administratorkonto einrichten
+6. `Connection & authentication` - die Zugriffs-URL der App eingeben und eine Authentifizierungsmethode wählen
 
 Wenn Sie lieber rein im Terminal arbeiten, können Sie auch direkt Folgendes ausführen:
 
@@ -75,7 +76,7 @@ Häufig verwendete Befehle:
 
 ```bash
 nb env list
-nb env status
+nb env info
 nb app logs
 ```
 
@@ -87,6 +88,17 @@ Wenn diese Anwendung später produktiv für echte Benutzer bereitgestellt werden
 
 ## Nächste Schritte
 
-- Wenn Sie bereits eine laufende NocoBase-Instanz haben, lesen Sie direkt die [Anbindungsanleitung für AI Agents](./quick-start.mdx)
-- Wenn Sie mit einem Produktions-Deployment weitermachen möchten, lesen Sie [Per CLI installieren](../nocobase-cli/installation/cli.md) und [Überblick zur Produktivbereitstellung](../nocobase-cli/production/index.md)
-- Wenn Sie als Nächstes mit AI mit dem Aufbau der Anwendung beginnen möchten, lesen Sie [AI Builder](../ai-builder/index.md)
+- Wenn Sie bereits eine laufende NocoBase-App haben, lesen Sie die [Anbindungsanleitung für AI Agents](./quick-start.mdx)
+- Wenn Sie Start, Stopp, Logs und Upgrades der App verwalten möchten, lesen Sie [Apps verwalten](../nocobase-cli/operations/manage-app.md)
+- Wenn Sie mit der Produktionsbereitstellung fortfahren möchten, lesen Sie [Apps mit CLI installieren](../nocobase-cli/installation/cli.md) und [Überblick zur Produktionsbereitstellung](../nocobase-cli/production/index.md)
+- Wenn die AI mit dem Erstellen von Apps beginnen soll, lesen Sie [AI Builder](../ai-builder/index.md)
+
+## Verwandte Links
+
+- [Installationsmethoden und Versionsvergleich](../get-started/quickstart.md) — Vergleichen Sie zuerst Installationsmethoden und Versionskanäle, und entscheiden Sie dann, wie Sie installieren möchten
+- [Anbindungsanleitung für AI Agents](./quick-start.mdx) — Verbinden Sie eine bestehende NocoBase-App und lassen Sie Ihren AI Agent loslegen
+- [`nb init` Befehlsreferenz](../api/cli/init.md) — Eine neue App initialisieren, eine bestehende lokale App übernehmen oder eine Remote-App verbinden
+- [`nb env info` Befehlsreferenz](../api/cli/env/info.md) — Verbindungsdetails und Laufzeitkonfiguration der aktuellen env anzeigen
+- [NocoBase CLI](../api/cli/index.md) — Vollständige Referenz für alle `nb` Befehle
+- [Apps verwalten](../nocobase-cli/operations/manage-app.md) — Apps starten, stoppen, neu starten, Logs anzeigen und upgraden
+- [Mehrere Umgebungsverwaltung](../nocobase-cli/operations/multi-environment.md) — Häufige Abläufe, wenn Sie mehrere envs gleichzeitig pflegen
