@@ -88,9 +88,6 @@ type KanbanPopupActionOptions = {
   persist?: boolean;
 };
 
-const isLegacyKanbanPopupActionUid = (actionUid: string | undefined, markers: string[]) =>
-  Boolean(actionUid && markers.some((marker) => actionUid.includes(marker)));
-
 const DRAG_SORT_FIELD_TIP =
   'Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.';
 const DRAG_SORT_FIELD_TIP_EXPR = tExpr(DRAG_SORT_FIELD_TIP, { ns: 'kanban' });
@@ -225,7 +222,11 @@ const resolveKanbanPopupTargetUid = ({
     : nextPopupTargetUid;
 };
 
-const applyKanbanBlockPopupSettings = async (model: KanbanBlockModel, params: Record<string, any>) => {
+const applyKanbanBlockPopupSettings = async (
+  model: KanbanBlockModel,
+  params: Record<string, any>,
+  options: KanbanPopupActionOptions = {},
+) => {
   const nextPopupTemplateUid = normalizeKanbanPopupTemplateUid(params.popupTemplateUid);
   const nextPopupTargetUid = normalizeKanbanPopupTargetUid(params.uid);
   const currentPopupTemplateUid =
@@ -260,7 +261,9 @@ const applyKanbanBlockPopupSettings = async (model: KanbanBlockModel, params: Re
     popupTargetUid: normalizedParams.uid,
   });
 
-  await model.ensureQuickCreateAction({ persist: true });
+  if (options.persist) {
+    await model.ensureQuickCreateAction({ persist: true });
+  }
 };
 
 const getKanbanBaseOpenViewAction = (ctx: any): ActionDefinition | undefined => {
@@ -948,34 +951,11 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       action = this.subModels?.cardViewAction as any;
     }
 
-    const legacyAction =
-      action?.__legacyPopupAction ||
-      (isLegacyKanbanPopupActionUid(action?.uid, ['cardViewAction', 'card-view-action']) ? action : null);
-    if (legacyAction === action && typeof action?.clone === 'function') {
-      const clonedAction = action.clone();
-      Object.defineProperty(clonedAction, '__legacyPopupAction', {
-        value: action,
-        configurable: true,
-      });
-      action = clonedAction;
-      this.setSubModel('cardViewAction', action);
-    }
-
     if (options.persist && this.context.flowSettingsEnabled && action?.save) {
       await action.save();
     }
 
     await this.syncCardViewAction(action, options);
-
-    if (
-      options.persist &&
-      legacyAction &&
-      legacyAction.uid !== action?.uid &&
-      typeof legacyAction.destroy === 'function'
-    ) {
-      await legacyAction.destroy();
-      delete action.__legacyPopupAction;
-    }
 
     return action;
   }
@@ -996,34 +976,11 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       action = this.subModels?.quickCreateAction as any;
     }
 
-    const legacyAction =
-      action?.__legacyPopupAction ||
-      (isLegacyKanbanPopupActionUid(action?.uid, ['quickCreateAction', 'quick-create-action']) ? action : null);
-    if (legacyAction === action && typeof action?.clone === 'function') {
-      const clonedAction = action.clone();
-      Object.defineProperty(clonedAction, '__legacyPopupAction', {
-        value: action,
-        configurable: true,
-      });
-      action = clonedAction;
-      this.setSubModel('quickCreateAction', action);
-    }
-
     if (options.persist && this.context.flowSettingsEnabled && action?.save) {
       await action.save();
     }
 
     await this.syncQuickCreateAction(action, options);
-
-    if (
-      options.persist &&
-      legacyAction &&
-      legacyAction.uid !== action?.uid &&
-      typeof legacyAction.destroy === 'function'
-    ) {
-      await legacyAction.destroy();
-      delete action.__legacyPopupAction;
-    }
 
     return action;
   }
@@ -1585,11 +1542,11 @@ KanbanBlockModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params);
+        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params, { persist: false });
       },
       async beforeParamsSave(ctx, params, previousParams) {
         await ctx.model?.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
-        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params);
+        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params, { persist: true });
       },
     },
     pageSize: {
