@@ -1559,6 +1559,17 @@ describe('plugin-multi-portal server', () => {
     app = await createMultiPortalAclMockServer();
     await app.db.sync();
 
+    await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'disabled-backing-layout',
+        title: 'Disabled backing layout',
+        layoutType: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
+        routeName: 'disabledBackingLayout',
+        routePath: '/disabled-backing-layout',
+        authCheck: true,
+        enabled: false,
+      },
+    });
     const repository = app.db.getRepository('multiPortals');
     await repository.create({
       values: {
@@ -1591,6 +1602,17 @@ describe('plugin-multi-portal server', () => {
         authCheck: true,
         enabled: false,
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'disabled-layout-runtime-portal',
+        title: 'Disabled layout runtime portal',
+        routeName: 'disabledLayoutRuntimePortal',
+        routePath: '/disabled-layout-runtime-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: 'disabled-backing-layout',
       },
     });
 

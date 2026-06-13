@@ -460,6 +460,7 @@ async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promis
   const records = await ctx.db.getRepository('multiPortals').find({
     filter: {
       enabled: true,
+      'uiLayout.enabled': true,
     },
     fields: [...MULTI_PORTAL_RUNTIME_QUERY_FIELDS],
     appends: ['uiLayout'],
