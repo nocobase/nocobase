@@ -58,15 +58,21 @@ describe('plugin-multi-portal preset integration', () => {
     });
   });
 
-  it('should declare Multi-Portal after UI Layout in the NocoBase preset dependencies', () => {
+  it('should declare Multi-Portal after UI Layout in the NocoBase preset dependencies and built-ins', () => {
     const packageJson = readJson('packages/presets/nocobase/package.json');
     const dependencyNames = Object.keys(packageJson.dependencies);
     const uiLayoutIndex = dependencyNames.indexOf(UI_LAYOUT_PACKAGE);
     const multiPortalIndex = dependencyNames.indexOf(MULTI_PORTAL_PACKAGE);
+    const builtInNames = packageJson.builtIn;
+    const uiLayoutBuiltInIndex = builtInNames.indexOf(UI_LAYOUT_PACKAGE);
+    const multiPortalBuiltInIndex = builtInNames.indexOf(MULTI_PORTAL_PACKAGE);
 
     expect(uiLayoutIndex).toBeGreaterThanOrEqual(0);
     expect(multiPortalIndex).toBeGreaterThanOrEqual(0);
     expect(multiPortalIndex).toBeGreaterThan(uiLayoutIndex);
     expect(packageJson.dependencies[MULTI_PORTAL_PACKAGE]).toBe(packageJson.version);
+    expect(uiLayoutBuiltInIndex).toBeGreaterThanOrEqual(0);
+    expect(multiPortalBuiltInIndex).toBeGreaterThanOrEqual(0);
+    expect(multiPortalBuiltInIndex).toBeGreaterThan(uiLayoutBuiltInIndex);
   });
 });
