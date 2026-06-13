@@ -1,4 +1,5 @@
 ---
+pkg: "@nocobase/preset-cluster"
 title: "集群模式"
 description: "NocoBase 集群模式：多实例部署、负载均衡、共享存储、Redis 缓存与消息队列、分布式锁、Kubernetes 部署，提升高并发处理能力。"
 keywords: "集群模式,多实例部署,负载均衡,共享存储,Redis,Kubernetes,分布式锁,消息队列,NocoBase"

@@ -1,8 +1,8 @@
 ---
-displayName: "历史记录"
-packageName: '@nocobase/plugin-record-history'
 title: "历史记录"
 keywords: "历史记录,插件,NocoBase"
+displayName: "历史记录"
+packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |

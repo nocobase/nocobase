@@ -8,4 +8,6 @@
  */
 
 export * from './conversation';
+export * from './skill-tools';
 export * from './tools';
+export * from './workflow-history';

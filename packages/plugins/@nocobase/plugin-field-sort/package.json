@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-sort",
-  "version": "2.0.61",
+  "version": "2.1.3",
   "license": "Apache-2.0",
   "displayName": "Collection field: Sort",
   "displayName.ru-RU": "Поле коллекции: Сортировка",
@@ -12,8 +12,10 @@
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/lock-manager": "2.x",
+    "@nocobase/plugin-data-source-manager": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "lodash": "4.x",

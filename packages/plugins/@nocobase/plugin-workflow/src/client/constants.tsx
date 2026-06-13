@@ -20,6 +20,7 @@ import {
 } from '@ant-design/icons';
 import { i18n } from '@nocobase/client';
 import { NAMESPACE, lang } from './locale';
+import { EXECUTION_REASON } from '../common/constants';
 
 export const EXECUTION_STATUS = {
   QUEUEING: null,
@@ -110,6 +111,28 @@ export const ExecutionStatusOptions = [
 
 export const ExecutionStatusOptionsMap = ExecutionStatusOptions.reduce(
   (map, option) => Object.assign(map, { [option.value as number]: option }),
+  {},
+);
+
+export { EXECUTION_REASON };
+
+export const ExecutionReasonOptions = [
+  {
+    value: EXECUTION_REASON.TIMEOUT,
+    label: `{{t("Timed out", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_REASON.MANUAL_CANCEL,
+    label: `{{t("Canceled manually", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: EXECUTION_REASON.PARENT_ABORTED,
+    label: `{{t("Aborted with parent execution", { ns: "${NAMESPACE}" })}}`,
+  },
+];
+
+export const ExecutionReasonOptionsMap = ExecutionReasonOptions.reduce(
+  (map, option) => Object.assign(map, { [option.value]: option }),
   {},
 );
 

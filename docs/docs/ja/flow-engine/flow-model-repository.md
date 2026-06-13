@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # FlowModel の永続化
 FlowEngine は、完全な永続化システムを提供しています。
 
@@ -57,7 +53,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### ローカルメソッド
 
 ```ts
-flowEngine.createModel(options); // ローカルモデルインスタンスを作成
+await flowEngine.createModelAsync(options); // ローカルモデルインスタンスを作成
 flowEngine.getModel(uid);        // ローカルモデルインスタンスを取得
 flowEngine.removeModel(uid);     // ローカルモデルインスタンスを削除
 ```
@@ -73,7 +69,7 @@ await flowEngine.destroyModel(uid);  // リモートからモデルを削除
 ## モデルインスタンスメソッド
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // リモートに保存

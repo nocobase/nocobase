@@ -51,6 +51,11 @@
       },
       {
         "type": "custom-link",
+        "label": "メールエイリアス",
+        "link": "/email-manager/usage/alias"
+      },
+      {
+        "type": "custom-link",
         "label": "メールテンプレート",
         "link": "/email-manager/usage/template"
       }

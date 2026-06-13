@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # フィルター演算子
 
 Repository の `find`、`findOne`、`findAndCount`、`count` といったAPIの `filter` パラメーターで使用します。

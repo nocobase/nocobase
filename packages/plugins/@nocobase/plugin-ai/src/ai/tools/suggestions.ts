@@ -10,12 +10,14 @@
 import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
   introduction: {
-    title: '{{t("Suggestions")}}',
-    about: '{{t("Provide a list of suggested prompts for the user to choose from.")}}',
+    title: `{{t("Suggestions", { ns: "${pkg.name}" })}}`,
+    about: `{{t("Provide a list of suggested prompts for the user to choose from.", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'suggestions',
@@ -30,7 +32,7 @@ export default defineTools({
         ),
     }),
   },
-  invoke: async (ctx: Context, args, id) => {
+  invoke: async (ctx: Context, args, runtime) => {
     const { messageId } = ctx.action?.params?.values || {};
     if (messageId) {
       const messageRepo = ctx.app.db.getRepository('aiMessages');
@@ -38,7 +40,7 @@ export default defineTools({
         filterByTk: messageId,
       });
       const toolCalls = message?.toolCalls || [];
-      const index = toolCalls.findIndex((toolCall: { id: string }) => toolCall.id === id);
+      const index = toolCalls.findIndex((toolCall: { id: string }) => toolCall.id === runtime.toolCallId);
       if (index !== -1) {
         toolCalls[index] = {
           ...toolCalls[index],

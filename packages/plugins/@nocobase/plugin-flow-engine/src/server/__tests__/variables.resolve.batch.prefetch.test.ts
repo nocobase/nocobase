@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, MockServer } from '@nocobase/test';
-import { resetVariablesRegistryForTest } from './test-utils';
+import { MockServer } from '@nocobase/test';
+import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 describe('variables:resolve batch prefetch merges selects (integration)', () => {
   let app: MockServer;
@@ -47,7 +47,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
   };
 
   beforeAll(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       plugins: ['error-handler', 'auth', 'users', 'acl', 'data-source-manager', 'field-sort', 'flow-engine'],
     });
   });

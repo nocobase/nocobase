@@ -1,18 +1,18 @@
 # ctx.collection
 
-The collection (data table) instance associated with the current RunJS execution context; used to access collection metadata, field definitions, primary key, etc. Usually from `ctx.blockModel.collection` or `ctx.collectionField?.collection`.
+The Collection instance associated with the current RunJS execution context, used to access collection metadata, field definitions, primary keys, and other configurations. It usually originates from `ctx.blockModel.collection` or `ctx.collectionField?.collection`.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock** | Block-bound collection; access `name`, `getFields`, `filterTargetKey`, etc. |
-| **JSField / JSItem / JSColumn** | Collection of current field or parent block; get field list, primary key, etc. |
-| **Table column / detail block** | Render by collection structure, pass `filterByTk` when opening popup, etc. |
+|------|------|
+| **JSBlock** | The collection bound to the block; can access `name`, `getFields`, `filterTargetKey`, etc. |
+| **JSField / JSItem / JSColumn** | The collection the current field belongs to (or the parent block's collection), used to retrieve field lists, primary keys, etc. |
+| **Table Column / Detail Block** | Used for rendering based on collection structure or passing `filterByTk` when opening popups. |
 
-> Note: `ctx.collection` is available when the context is bound to a data block, form block, or table block; a standalone JSBlock with no bound collection may have `null`—check before use.
+> Note: `ctx.collection` is available in scenarios where a data block, form block, or table block is bound to a collection. In an independent JSBlock that is not bound to a collection, it may be `null`. It is recommended to perform a null check before use.
 
-## Type
+## Type Definition
 
 ```ts
 collection: Collection | null | undefined;
@@ -21,39 +21,39 @@ collection: Collection | null | undefined;
 ## Common Properties
 
 | Property | Type | Description |
-|----------|------|-------------|
-| `name` | `string` | Collection name (e.g. `users`, `orders`) |
-| `title` | `string` | Collection title (i18n) |
-| `filterTargetKey` | `string \| string[]` | Primary key field name(s); used for `filterByTk`, `getFilterByTK` |
-| `dataSourceKey` | `string` | Data source key (e.g. `main`) |
-| `dataSource` | `DataSource` | Data source instance |
-| `template` | `string` | Collection template (e.g. `general`, `file`, `tree`) |
-| `titleableFields` | `CollectionField[]` | Fields that can be used as title |
-| `titleCollectionField` | `CollectionField` | Title field instance |
+|------|------|------|
+| `name` | `string` | Collection name (e.g., `users`, `orders`) |
+| `title` | `string` | Collection title (includes internationalization) |
+| `filterTargetKey` | `string \| string[]` | Primary key field name, used for `filterByTk` and `getFilterByTK` |
+| `dataSourceKey` | `string` | Data source key (e.g., `main`) |
+| `dataSource` | `DataSource` | The data source instance it belongs to |
+| `template` | `string` | Collection template (e.g., `general`, `file`, `tree`) |
+| `titleableFields` | `CollectionField[]` | List of fields that can be displayed as titles |
+| `titleCollectionField` | `CollectionField` | The title field instance |
 
 ## Common Methods
 
 | Method | Description |
-|--------|-------------|
-| `getFields(): CollectionField[]` | All fields (including inherited) |
-| `getField(name: string): CollectionField \| undefined` | Single field by name |
-| `getFieldByPath(path: string): CollectionField \| undefined` | Field by path (supports association, e.g. `user.name`) |
-| `getAssociationFields(types?): CollectionField[]` | Association fields; `types` e.g. `['one']`, `['many']` |
-| `getFilterByTK(record): any` | Primary key value from record for API `filterByTk` |
+|------|------|
+| `getFields(): CollectionField[]` | Get all fields (including inherited ones) |
+| `getField(name: string): CollectionField \| undefined` | Get a single field by field name |
+| `getFieldByPath(path: string): CollectionField \| undefined` | Get a field by path (supports associations, e.g., `user.name`) |
+| `getAssociationFields(types?): CollectionField[]` | Get association fields; `types` can be `['one']`, `['many']`, etc. |
+| `getFilterByTK(record): any` | Extract the primary key value from a record, used for the API's `filterByTk` |
 
-## Relation to ctx.collectionField, ctx.blockModel
+## Relationship with ctx.collectionField and ctx.blockModel
 
-| Need | Recommended |
-|------|-------------|
-| **Collection for current context** | `ctx.collection` (same as `ctx.blockModel?.collection` or `ctx.collectionField?.collection`) |
-| **Collection of current field** | `ctx.collectionField?.collection` |
-| **Target collection of association** | `ctx.collectionField?.targetCollection` |
+| Requirement | Recommended Usage |
+|------|----------|
+| **Collection associated with current context** | `ctx.collection` (equivalent to `ctx.blockModel?.collection` or `ctx.collectionField?.collection`) |
+| **Collection definition of the current field** | `ctx.collectionField?.collection` (the collection the field belongs to) |
+| **Association target collection** | `ctx.collectionField?.targetCollection` (the target collection of an association field) |
 
-In sub-tables etc., `ctx.collection` may be the association target; in normal form/table it is usually the block’s collection.
+In scenarios like sub-tables, `ctx.collection` might be the association target collection; in standard forms/tables, it is usually the collection bound to the block.
 
 ## Examples
 
-### Get primary key and open popup
+### Get Primary Key and Open Popup
 
 ```ts
 const primaryKey = ctx.collection?.filterTargetKey ?? 'id';
@@ -66,7 +66,7 @@ await ctx.openView(popupUid, {
 });
 ```
 
-### Iterate fields for validation or linkage
+### Iterate Through Fields for Validation or Linkage
 
 ```ts
 const fields = ctx.collection?.getFields() ?? [];
@@ -80,21 +80,21 @@ for (const f of requiredFields) {
 }
 ```
 
-### Get association fields
+### Get Association Fields
 
 ```ts
 const oneToMany = ctx.collection?.getAssociationFields(['many']) ?? [];
-// For sub-tables, association resources, etc.
+// Used for building sub-tables, associated resources, etc.
 ```
 
 ## Notes
 
-- `filterTargetKey` is the collection’s primary key field name; some collections use `string[]` composite keys; fallback is often `'id'`.
-- In **sub-tables, association fields**, `ctx.collection` may point to the association target, different from `ctx.blockModel.collection`.
-- `getFields()` merges inherited collection fields; local fields override inherited ones with the same name.
+- `filterTargetKey` is the primary key field name of the collection. Some collections may use a `string[]` for composite primary keys. If not configured, `'id'` is commonly used as a fallback.
+- In scenarios like **sub-tables or association fields**, `ctx.collection` may point to the association target collection, which differs from `ctx.blockModel.collection`.
+- `getFields()` merges fields from inherited collections; local fields override inherited fields with the same name.
 
 ## Related
 
-- [ctx.collectionField](./collection-field.md): current field’s collection field definition
-- [ctx.blockModel](./block-model.md): parent block that hosts current JS; has `collection`
-- [ctx.model](./model.md): current model; may have `collection`
+- [ctx.collectionField](./collection-field.md): The collection field definition of the current field
+- [ctx.blockModel](./block-model.md): The parent block hosting the current JS, containing `collection`
+- [ctx.model](./model.md): The current model, which may contain `collection`

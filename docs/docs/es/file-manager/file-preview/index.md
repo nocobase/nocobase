@@ -15,7 +15,7 @@ Para los tipos de archivo que no admiten vista previa nativa, puede habilitar la
 
 Actualmente, NocoBase proporciona los siguientes plugins de vista previa de archivos:
 
-* Plugin de vista previa de archivos de Office
+* [Plugin de vista previa de archivos de Office](../file-preview/ms-office.md)
 
 ## Vista previa de PDF con almacenamiento externo
 

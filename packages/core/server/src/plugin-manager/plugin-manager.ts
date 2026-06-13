@@ -9,7 +9,7 @@
 
 import Topo from '@hapi/topo';
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { importModule, isURL } from '@nocobase/utils';
+import { importModule, isURL, storagePathJoin } from '@nocobase/utils';
 import execa from 'execa';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
@@ -24,6 +24,7 @@ import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
+import { getPluginPackagePrefixes, parsePluginName } from '../../../utils/plugin-package';
 import {
   checkAndGetCompatible,
   assertSafePluginPackageName,
@@ -63,7 +64,31 @@ export interface InstallOptions {
 export class AddPresetError extends Error {}
 
 export class PluginManager {
-  static checkAndGetCompatible = checkAndGetCompatible;
+  private static compatibleCache = new Map<string, Awaited<ReturnType<typeof checkAndGetCompatible>>>();
+  private static compatiblePending = new Map<string, Promise<Awaited<ReturnType<typeof checkAndGetCompatible>>>>();
+
+  static async checkAndGetCompatible(packageName: string) {
+    if (this.compatibleCache.has(packageName)) {
+      return this.compatibleCache.get(packageName);
+    }
+
+    const pending = this.compatiblePending.get(packageName);
+    if (pending) {
+      return pending;
+    }
+
+    const task = checkAndGetCompatible(packageName)
+      .then((compatible) => {
+        this.compatibleCache.set(packageName, compatible);
+        return compatible;
+      })
+      .finally(() => {
+        this.compatiblePending.delete(packageName);
+      });
+
+    this.compatiblePending.set(packageName, task);
+    return task;
+  }
 
   /**
    * @internal
@@ -105,6 +130,7 @@ export class PluginManager {
     this._repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
     this.app.acl.allow('pm', 'listEnabled', 'public');
+    this.app.acl.allow('pm', 'listEnabledV2', 'public');
     this.app.acl.registerSnippet({
       name: 'pm',
       actions: ['pm:*'],
@@ -138,7 +164,11 @@ export class PluginManager {
    */
   static async getPackageJson(nameOrPkg: string) {
     const { packageName } = await this.parseName(nameOrPkg);
-    const packageFile = resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json');
+    const nodeModulesPath = String(process.env.NODE_MODULES_PATH ?? '').trim();
+    if (!nodeModulesPath) {
+      throw new Error('NODE_MODULES_PATH is not configured');
+    }
+    const packageFile = resolve(nodeModulesPath, packageName, 'package.json');
     if (!(await fs.exists(packageFile))) {
       throw new Error(`Cannot find plugin '${nameOrPkg}'`);
     }
@@ -161,9 +191,7 @@ export class PluginManager {
    * @internal
    */
   static getPluginPkgPrefix() {
-    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
-      ',',
-    );
+    return getPluginPackagePrefixes();
   }
 
   /**
@@ -225,32 +253,10 @@ export class PluginManager {
     if (this.parsedNames[nameOrPkg]) {
       return this.parsedNames[nameOrPkg];
     }
-    if (nameOrPkg.startsWith('@nocobase/plugin-')) {
-      this.parsedNames[nameOrPkg] = {
-        packageName: nameOrPkg,
-        name: nameOrPkg.replace('@nocobase/plugin-', ''),
-      };
-      return this.parsedNames[nameOrPkg];
-    }
-    if (nameOrPkg.startsWith('@nocobase/preset-')) {
-      this.parsedNames[nameOrPkg] = {
-        packageName: nameOrPkg,
-        name: nameOrPkg.replace('@nocobase/preset-', ''),
-      };
-      return this.parsedNames[nameOrPkg];
-    }
-    const exists = async (name: string, isPreset = false) => {
-      return fs.exists(
-        resolve(process.env.NODE_MODULES_PATH, `@nocobase/${isPreset ? 'preset' : 'plugin'}-${name}`, 'package.json'),
-      );
-    };
-    if (await exists(nameOrPkg)) {
-      this.parsedNames[nameOrPkg] = { name: nameOrPkg, packageName: `@nocobase/plugin-${nameOrPkg}` };
-    } else if (await exists(nameOrPkg, true)) {
-      this.parsedNames[nameOrPkg] = { name: nameOrPkg, packageName: `@nocobase/preset-${nameOrPkg}` };
-    } else {
-      this.parsedNames[nameOrPkg] = { name: nameOrPkg, packageName: nameOrPkg };
-    }
+    this.parsedNames[nameOrPkg] = await parsePluginName(nameOrPkg, {
+      nodeModulesPath: process.env.NODE_MODULES_PATH,
+      pluginPackagePrefixes: this.getPluginPkgPrefix(),
+    });
     return this.parsedNames[nameOrPkg];
   }
 
@@ -301,7 +307,7 @@ export class PluginManager {
       if (options?.forceRecreate) {
         await fs.rm(pluginDir, { recursive: true, force: true });
       }
-      const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
+      const { PluginGenerator } = require('@nocobase/cli-v1/src/plugin-generator');
       const generator = new PluginGenerator({
         cwd: process.cwd(),
         args: {},
@@ -313,14 +319,14 @@ export class PluginManager {
     };
     await createPlugin(pluginName);
     this.app.log.info('attempt to add the plugin to the app');
-    const { name, packageName } = await PluginManager.parseName(pluginName);
-    const json = await PluginManager.getPackageJson(packageName);
-    this.app.log.info(`add plugin [${packageName}]`, {
-      name,
-      packageName,
-      version: json.version,
-    });
-    await tsxRerunning();
+    // const { name, packageName } = await PluginManager.parseName(pluginName);
+    // const json = await PluginManager.getPackageJson(packageName);
+    // this.app.log.info(`add plugin [${packageName}]`, {
+    //   name,
+    //   packageName,
+    //   version: json.version,
+    // });
+    // await tsxRerunning();
   }
 
   async addOrThrow(plugin?: string | typeof Plugin, options: any = {}, insert = false, isUpgrade = false) {
@@ -809,7 +815,7 @@ export class PluginManager {
       if (process.env.VITEST) {
         return;
       }
-      const file = resolve(process.cwd(), 'storage/.upgrading');
+      const file = storagePathJoin('.upgrading');
       this.app.log.debug('pending upgrade');
       await fs.writeFile(file, 'upgrading');
     };
@@ -917,7 +923,7 @@ export class PluginManager {
         });
         return;
       }
-      const file = resolve(process.cwd(), 'storage/app-upgrading');
+      const file = storagePathJoin('app-upgrading');
       await fs.writeFile(file, '', 'utf-8');
       // await this.app.upgrade();
       await tsxRerunning();

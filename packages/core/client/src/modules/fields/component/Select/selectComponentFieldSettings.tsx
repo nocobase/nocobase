@@ -18,16 +18,19 @@ import { useCollectionManager_deprecated, useCollection_deprecated } from '../..
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollectionField, useDataBlockProps } from '../../../../data-source';
 import { useRecord } from '../../../../record-provider';
-import { removeNullCondition, useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { DynamicComponentProps } from '../../../../schema-component/antd/filter/DynamicComponent';
+import { removeNullCondition } from '../../../../schema-component/antd/filter/useFilterActionProps';
 import {
+  useIsAddNewForm,
   useIsAssociationField,
   useIsFieldReadPretty,
   useIsSelectFieldMode,
   useTitleFieldOptions,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
+import { useFieldModeOptions } from '../../../../schema-component/hooks/useFieldModeOptions';
 import { VariableInput, getShouldChange } from '../../../../schema-settings';
 import { SchemaSettingsDataScope } from '../../../../schema-settings/SchemaSettingsDataScope';
 import { SchemaSettingsSortingRule } from '../../../../schema-settings/SchemaSettingsSortingRule';

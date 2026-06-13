@@ -37,9 +37,17 @@ const getInterfaceOptions = (data, type) => {
 const isValueInOptions = (value, options) => {
   return options?.some((option) => option.children?.some?.((child) => child.name === value));
 };
+
+const getInterfaceTitle = (value, record, getInterface) => {
+  if (value === 'tableoid' || record?.name === '__collection') {
+    return '{{t("Table OID")}}';
+  }
+  return getInterface(value)?.title || value;
+};
+
 export const CollectionFieldInterfaceSelect = observer(
   (props: any) => {
-    const { value, handleFieldChange } = props;
+    const { value, handleFieldChange, disabled } = props;
     const { data: record } = useCollectionRecord() as any;
     const { getInterface } = useCollectionManager_deprecated();
     const compile = useCompile();
@@ -49,6 +57,9 @@ export const CollectionFieldInterfaceSelect = observer(
     const [options, setOptions] = useState(data);
     const targetType = record.type;
     useEffect(() => {
+      if (disabled) {
+        return;
+      }
       //只有一个选项的时候选中该选项
       if (options.length === 1 && options[0]?.children?.length === 1) {
         const targetValue = options[0]?.children?.[0]?.name;
@@ -67,6 +78,9 @@ export const CollectionFieldInterfaceSelect = observer(
         //选中的值不在选项中切换为第一个
       } else if (selectValue && !isValueInOptions(selectValue, options)) {
         const targetValue = options[0]?.children?.[0]?.name;
+        if (!targetValue) {
+          return;
+        }
         const interfaceConfig = getInterface(targetValue);
         handleFieldChange(
           {
@@ -78,19 +92,22 @@ export const CollectionFieldInterfaceSelect = observer(
         );
         setSelectValue(targetValue);
       }
-    }, [options]);
+    }, [disabled, getInterface, handleFieldChange, options, record.name, record?.uiSchema?.title, selectValue]);
 
     useEffect(() => {
       if (record?.possibleTypes) {
         const newOptions = getInterfaceOptions(initOptions, targetType);
         setOptions(newOptions);
       }
-    }, [targetType]);
-    return ['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(record.interface) ? (
-      <Tag key={value}>
-        {compile(initOptions.find((h) => h.key === 'relation')['children'].find((v) => v.name === value)?.['label'])}
-      </Tag>
-    ) : (
+    }, [initOptions, record?.possibleTypes, targetType]);
+    if (['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(record.interface) || disabled || !options.length) {
+      const relationInterface = initOptions.find((h) => h.key === 'relation')?.children?.find((v) => v.name === value)
+        ?.label;
+
+      return <Tag key={value}>{compile(relationInterface || getInterfaceTitle(value, record, getInterface))}</Tag>;
+    }
+
+    return (
       <Select
         aria-label={`field-interface-${record?.type}`}
         //@ts-ignore

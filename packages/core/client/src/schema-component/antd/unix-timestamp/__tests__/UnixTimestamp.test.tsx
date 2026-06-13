@@ -19,46 +19,48 @@ describe('UnixTimestamp', () => {
     });
     expect(container).toMatchInlineSnapshot(`
       <div>
-        <div
-          class="css-dev-only-do-not-override-nlgwwc ant-app"
-          style="height: 100%;"
-        >
+        <div>
           <div
-            class="ant-picker ant-picker-outlined css-dev-only-do-not-override-nlgwwc"
+            class="css-dev-only-do-not-override-nlgwwc ant-app"
+            style="height: 100%;"
           >
             <div
-              class="ant-picker-input"
+              class="ant-picker ant-picker-outlined css-dev-only-do-not-override-nlgwwc"
             >
-              <input
-                aria-invalid="false"
-                autocomplete="off"
-                placeholder="Select date"
-                size="12"
-                value=""
-              />
-              <span
-                class="ant-picker-suffix"
+              <div
+                class="ant-picker-input"
               >
+                <input
+                  aria-invalid="false"
+                  autocomplete="off"
+                  placeholder="Select date"
+                  size="12"
+                  value=""
+                />
                 <span
-                  aria-label="calendar"
-                  class="anticon anticon-calendar"
-                  role="img"
+                  class="ant-picker-suffix"
                 >
-                  <svg
-                    aria-hidden="true"
-                    data-icon="calendar"
-                    fill="currentColor"
-                    focusable="false"
-                    height="1em"
-                    viewBox="64 64 896 896"
-                    width="1em"
+                  <span
+                    aria-label="calendar"
+                    class="anticon anticon-calendar"
+                    role="img"
                   >
-                    <path
-                      d="M880 184H712v-64c0-4.4-3.6-8-8-8h-56c-4.4 0-8 3.6-8 8v64H384v-64c0-4.4-3.6-8-8-8h-56c-4.4 0-8 3.6-8 8v64H144c-17.7 0-32 14.3-32 32v664c0 17.7 14.3 32 32 32h736c17.7 0 32-14.3 32-32V216c0-17.7-14.3-32-32-32zm-40 656H184V460h656v380zM184 392V256h128v48c0 4.4 3.6 8 8 8h56c4.4 0 8-3.6 8-8v-48h256v48c0 4.4 3.6 8 8 8h56c4.4 0 8-3.6 8-8v-48h128v136H184z"
-                    />
-                  </svg>
+                    <svg
+                      aria-hidden="true"
+                      data-icon="calendar"
+                      fill="currentColor"
+                      focusable="false"
+                      height="1em"
+                      viewBox="64 64 896 896"
+                      width="1em"
+                    >
+                      <path
+                        d="M880 184H712v-64c0-4.4-3.6-8-8-8h-56c-4.4 0-8 3.6-8 8v64H384v-64c0-4.4-3.6-8-8-8h-56c-4.4 0-8 3.6-8 8v64H144c-17.7 0-32 14.3-32 32v664c0 17.7 14.3 32 32 32h736c17.7 0 32-14.3 32-32V216c0-17.7-14.3-32-32-32zm-40 656H184V460h656v380zM184 392V256h128v48c0 4.4 3.6 8 8 8h56c4.4 0 8-3.6 8-8v-48h256v48c0 4.4 3.6 8 8 8h56c4.4 0 8-3.6 8-8v-48h128v136H184z"
+                      />
+                    </svg>
+                  </span>
                 </span>
-              </span>
+              </div>
             </div>
           </div>
         </div>
@@ -75,14 +77,16 @@ describe('UnixTimestamp', () => {
     expect(screen.getByText('2024-04-11')).toBeInTheDocument();
     expect(container).toMatchInlineSnapshot(`
       <div>
-        <div
-          class="css-dev-only-do-not-override-nlgwwc ant-app"
-          style="height: 100%;"
-        >
+        <div>
           <div
-            class="ant-description-date-picker"
+            class="css-dev-only-do-not-override-nlgwwc ant-app"
+            style="height: 100%;"
           >
-            2024-04-11
+            <div
+              class="ant-description-date-picker"
+            >
+              2024-04-11
+            </div>
           </div>
         </div>
       </div>

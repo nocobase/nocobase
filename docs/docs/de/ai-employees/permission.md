@@ -26,10 +26,6 @@ Klicken Sie das Kontrollkästchen in der Spalte `Available` der KI-Mitarbeiterli
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 ## Datenzugriffsberechtigungen
 
@@ -73,7 +69,7 @@ Diese Tools werden typischerweise verwendet für:
 
 #### Beispiel 1: Overall Analytics (Allgemeine Geschäftsanalyse)
 
-![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/20251022013802.png)
+![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-18-55.png)
 
 Im CRM-Demo ist `Overall Analytics` eine vorlagenbasierte Geschäftsanalyse-Engine:
 
@@ -103,7 +99,7 @@ flowchart TD
 
 #### Beispiel 2: SQL Execution (Erweitertes Analysetool)
 
-![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/20251022013802.png)
+![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-17-13.png)
 
 Im CRM-Demo ist `SQL Execution` ein flexibleres, aber streng kontrolliertes Tool:
 

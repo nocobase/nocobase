@@ -1,0 +1,13 @@
+[
+  {
+    "type": "dir",
+    "name": "v2",
+    "label": "V2 チュートリアル（IT チケットシステム）"
+  },
+  {
+    "type": "dir",
+    "name": "v1",
+    "label": "V1 チュートリアル（旧バージョン）",
+    "collapsed": true
+  }
+]

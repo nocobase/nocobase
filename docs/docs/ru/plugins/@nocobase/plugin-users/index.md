@@ -1,4 +1,6 @@
 ---
+title: "Users"
+keywords: "Users & permissions"
 displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |

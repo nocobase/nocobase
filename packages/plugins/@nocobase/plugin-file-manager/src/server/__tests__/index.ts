@@ -11,6 +11,8 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import send from 'koa-send';
 import path from 'path';
 import supertest from 'supertest';
+import { STORAGE_TYPE_LOCAL } from '../../constants';
+import { getDocumentRoot } from '../storages/local';
 
 export async function getApp(options = {}): Promise<MockServer> {
   const app = await createMockServer({
@@ -23,7 +25,27 @@ export async function getApp(options = {}): Promise<MockServer> {
 
   app.use(async (ctx, next) => {
     if (ctx.path.startsWith('/storage/uploads')) {
-      await send(ctx, ctx.path, { root: process.cwd() });
+      const storages = await app.db.getRepository('storages').find({
+        filter: {
+          type: STORAGE_TYPE_LOCAL,
+        },
+      });
+      const matchedStorage = storages
+        .map((storage) => (typeof storage.get === 'function' ? storage.get() : storage))
+        .filter((storage) => {
+          const baseUrl = storage.baseUrl || '/storage/uploads';
+          return ctx.path === baseUrl || ctx.path.startsWith(`${baseUrl}/`);
+        })
+        .sort((a, b) => (b.baseUrl || '').length - (a.baseUrl || '').length)[0];
+
+      if (matchedStorage) {
+        const baseUrl = matchedStorage.baseUrl || '/storage/uploads';
+        const relativePath = ctx.path.slice(baseUrl.length).replace(/^\/+/, '');
+        await send(ctx, relativePath, { root: getDocumentRoot(matchedStorage) });
+        return;
+      }
+
+      await send(ctx, ctx.path.replace(/^\/storage\/?/, ''), { root: path.resolve(process.cwd(), 'storage') });
       return;
     }
     await next();

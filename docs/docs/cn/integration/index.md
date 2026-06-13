@@ -18,8 +18,8 @@ NocoBase 提供强大的 API 能力,用于与外部应用程序和服务集成:
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
-- **[API 密钥](/integration/api-keys/)**: 使用 API 密钥进行安全认证,以编程方式访问 NocoBase 资源
-- **[API 文档](/integration/api-doc/)**: 内置 API 文档,用于探索和测试端点
+- **[API 密钥](/integration/api-keys/index.md)**: 使用 API 密钥进行安全认证,以编程方式访问 NocoBase 资源
+- **[API 文档](/integration/api-doc/index.md)**: 内置 API 文档,用于探索和测试端点
 
 ### 单点登录 (SSO)
 
@@ -27,7 +27,7 @@ NocoBase 提供强大的 API 能力,用于与外部应用程序和服务集成:
 
 ![auth_sso-2025-11-24-08-26-46](https://static-docs.nocobase.com/auth_sso-2025-11-24-08-26-46.png)
 
-- **[SSO 集成](/integration/sso/)**: 支持 SAML、OIDC、CAS、LDAP 和第三方平台认证
+- **[SSO 集成](/integration/sso/index.md)**: 支持 SAML、OIDC、CAS、LDAP 和第三方平台认证
 - 集中化用户管理和访问控制
 - 跨系统的无缝认证体验
 
@@ -37,8 +37,8 @@ NocoBase 提供强大的 API 能力,用于与外部应用程序和服务集成:
 
 ![auth_sso-2025-11-24-12-02-01](https://static-docs.nocobase.com/auth_sso-2025-11-24-12-02-01.png)
 
-- **[工作流 Webhook](/integration/workflow-webhook/)**: 接收来自外部系统的事件以触发工作流
-- **[工作流 HTTP 请求](/integration/workflow-http-request/)**: 从工作流向外部 API 发送 HTTP 请求
+- **[工作流 Webhook](/integration/workflow-webhook/index.md)**: 接收来自外部系统的事件以触发工作流
+- **[工作流 HTTP 请求](/integration/workflow-http-request/index.md)**: 从工作流向外部 API 发送 HTTP 请求
 - 跨平台自动化业务流程
 
 ### 外部数据源
@@ -47,7 +47,7 @@ NocoBase 提供强大的 API 能力,用于与外部应用程序和服务集成:
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-- **[外部数据库](/data-sources/)**: 直接连接 MySQL、PostgreSQL、MariaDB、MSSQL、Oracle 和 KingbaseES 数据库
+- **[外部数据库](/data-sources/index.md)**: 直接连接 MySQL、PostgreSQL、MariaDB、MSSQL、Oracle 和 KingbaseES 数据库
 - 识别外部数据库表结构,在 NocoBase 中直接对外部数据进行增删改查操作
 - 统一的数据管理界面
 
@@ -57,7 +57,7 @@ NocoBase 提供强大的 API 能力,用于与外部应用程序和服务集成:
 
 ![20240408220322](https://static-docs.nocobase.com/20240408220322.png)
 
-- **[Iframe 区块](/integration/block-iframe/)**: 嵌入外部网页和应用程序
+- **[Iframe 区块](/integration/block-iframe/index.md)**: 嵌入外部网页和应用程序
 - **JS 区块**: 执行自定义 JavaScript 代码以实现高级集成
 
 ## 常见集成场景

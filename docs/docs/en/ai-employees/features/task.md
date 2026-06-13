@@ -22,7 +22,7 @@ On the task settings page, you can add multiple tasks for the current AI Employe
 
 Each tab represents an independent task. Click the "+" next to it to add a new task.
 
-![clipboard-image-1771913187](https://static-docs.nocobase.com/clipboard-image-1771913187.png)
+![20260426230344](https://static-docs.nocobase.com/20260426230344.png)
 
 Task settings form:
 
@@ -30,7 +30,8 @@ Task settings form:
 - Enter main task content in `Background`. This content is used as the system prompt when chatting with the AI Employee.
 - Enter default user message in `Default user message`. It is auto-filled in the input box after selecting the task.
 - In `Work context`, choose default app context information to send to the AI Employee. This works the same as in the chat panel.
-- The `Skills` selector shows skills available to the current AI Employee. You can disable a skill so it is not used for this task.
+- In `Skills`, set `Preset` to use the current AI Employee's preset skills. Set `Customer` to use only some of the AI Employee's skills. Leave it empty to use no skills.
+- In `Tools`, set `Preset` to use the current AI Employee's preset tools. Set `Customer` to use only some of the AI Employee's tools. Leave it empty to use no tools.
 - `Send default user message automatically` controls whether the default user message is sent automatically after clicking to run the task.
 
 ## Task List

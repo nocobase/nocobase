@@ -1,0 +1,127 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "タスク管理システム概要"
+  },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "第 1 章：NocoBase をはじめよう"
+  },
+  {
+    "type": "file",
+    "name": "02-designing-system",
+    "label": "第 2 章：タスク管理システムの設計"
+  },
+  {
+    "type": "file",
+    "name": "03-task-data",
+    "label": "第 3 章：タスクデータの管理"
+  },
+  {
+    "type": "file",
+    "name": "04-plugins",
+    "label": "第 4 章：タスクとコメントプラグイン"
+  },
+  {
+    "type": "file",
+    "name": "05-tabs-dynamic-blocks",
+    "label": "第 5 章：タブと動的ブロック"
+  },
+  {
+    "type": "file",
+    "name": "06-user-permissions",
+    "label": "第 6 章：ユーザーと権限"
+  },
+  {
+    "type": "file",
+    "name": "07-workflow",
+    "label": "第 7 章：ワークフロー"
+  },
+  {
+    "type": "file",
+    "name": "08-project-overview",
+    "label": "プロジェクト管理プラットフォーム概要"
+  },
+  {
+    "type": "file",
+    "name": "09-knowledge-base",
+    "label": "第 8 章：ナレッジベース - ツリーテーブル"
+  },
+  {
+    "type": "file",
+    "name": "10-dashboard-charts",
+    "label": "第 9 章：タスクボードとチャート"
+  },
+  {
+    "type": "file",
+    "name": "11-dashboard-filters",
+    "label": "第 10 章：ボードのフィルタリングと条件"
+  },
+  {
+    "type": "file",
+    "name": "12-subtasks-workhours",
+    "label": "第 11 章：サブタスクと工数計算"
+  },
+  {
+    "type": "file",
+    "name": "13-meeting-rooms",
+    "label": "第 12 章：会議室予約とワークフロー"
+  },
+  {
+    "type": "file",
+    "name": "14-user-review",
+    "label": "ユーザー登録審査の実装"
+  },
+  {
+    "type": "file",
+    "name": "15-crm-lead-conversion",
+    "label": "CRM リード転換の実装"
+  },
+  {
+    "type": "file",
+    "name": "16-markdown-tips",
+    "label": "Markdown ブロックのテクニック"
+  },
+  {
+    "type": "file",
+    "name": "17-crm-overview",
+    "label": "CRM セールスクラウド機能概要"
+  },
+  {
+    "type": "file",
+    "name": "18-lead-followup",
+    "label": "リードフォローアップとステータス管理"
+  },
+  {
+    "type": "file",
+    "name": "19-crm-sales-cloud",
+    "label": "CRM セールスクラウドシステム"
+  },
+  {
+    "type": "file",
+    "name": "20-api-keys",
+    "label": "API Keys を使ったデータ取得"
+  },
+  {
+    "type": "file",
+    "name": "21-markdown-variables",
+    "label": "Markdown テンプレート変数の使い方"
+  },
+  {
+    "type": "file",
+    "name": "22-deploy-faster",
+    "label": "NocoBase をより速くデプロイする方法"
+  },
+  {
+    "type": "file",
+    "name": "23-crm-pipeline",
+    "label": "CRM セールスパイプラインの可視化"
+  },
+  {
+    "type": "file",
+    "name": "24-crm-demo-deploy",
+    "label": "CRM Demo デプロイガイド"
+  }
+]

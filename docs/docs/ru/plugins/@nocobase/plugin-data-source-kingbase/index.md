@@ -1,4 +1,6 @@
 ---
+title: "Data source: KingbaseES"
+keywords: "Data sources"
 displayName: "Data source: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
 supportedVersions:

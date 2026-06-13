@@ -27,6 +27,26 @@ import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
 import type { FlowSettingsContext } from '../../../../flowContext';
+
+const findExtraMenuItemByKey = (
+  items: FlowModelExtraMenuItem[],
+  targetKey: string,
+): FlowModelExtraMenuItem | undefined => {
+  for (const item of items) {
+    const itemKey = String(item?.key ?? '');
+    if (itemKey === targetKey) {
+      return item;
+    }
+    if (item.children?.length) {
+      const matched = findExtraMenuItemByKey(item.children, targetKey);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+  return undefined;
+};
+
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;
@@ -215,6 +235,15 @@ const getToolbarPopupContainer = (triggerNode?: HTMLElement | null) => {
     (triggerNode.closest(TOOLBAR_ICONS_SELECTOR) as HTMLElement | null) ||
     (triggerNode.closest(TOOLBAR_CONTAINER_SELECTOR) as HTMLElement | null)
   );
+};
+
+const removeExtraMenuItemClickHandlers = (item: FlowModelExtraMenuItem): FlowModelExtraMenuItem => {
+  const { onClick: _onClick, children, ...rest } = item;
+
+  return {
+    ...rest,
+    children: children?.length ? children.map(removeExtraMenuItemClickHandlers) : undefined,
+  };
 };
 
 export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
@@ -493,7 +522,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         return;
       }
 
-      const extra = extraMenuItems.find((it) => it?.key === originalKey || it?.key === cleanKey);
+      const extra =
+        findExtraMenuItemByKey(extraMenuItems, originalKey) || findExtraMenuItemByKey(extraMenuItems, cleanKey);
+      if (extra?.disabled) {
+        return;
+      }
       if (extra?.onClick) {
         closeDropdown();
         extra.onClick();
@@ -891,7 +924,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       // });
 
       if (commonExtras.length > 0) {
-        items.push(...(commonExtras as MenuProps['items']));
+        // Antd Menu 会同时触发 item.onClick 和 menu.onClick，这里统一交给 handleMenuClick 执行。
+        items.push(...(commonExtras.map(removeExtraMenuItemClickHandlers) as MenuProps['items']));
       }
 
       // 添加复制uid按钮

@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { Model } from '@nocobase/database';
+import { Model, type Transaction } from '@nocobase/database';
 import WorkflowPlugin, { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 
 import * as jobActions from './actions';
@@ -16,7 +16,67 @@ import * as jobActions from './actions';
 import ManualInstruction from './ManualInstruction';
 import { TASK_TYPE_MANUAL, TASK_STATUS } from '../common/constants';
 
+type TaskStats = {
+  pending: number;
+  all: number;
+};
+
+type UserGroupedCountRow = {
+  userId: number;
+  count: number;
+};
+
 export default class extends Plugin {
+  private async updateManualTaskStats(userIds: number[], transaction?: Transaction) {
+    if (!userIds.length) {
+      return;
+    }
+
+    const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    const WorkflowManualTaskModel = this.db.getModel('workflowManualTasks');
+    const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)));
+    const userStatsMap = new Map<number, TaskStats>(uniqueUserIds.map((userId) => [userId, { pending: 0, all: 0 }]));
+
+    const pendingCounts = (await WorkflowManualTaskModel.count({
+      where: {
+        status: TASK_STATUS.PENDING,
+        userId: uniqueUserIds,
+      },
+      include: [
+        {
+          association: 'execution',
+          attributes: [],
+          where: {
+            status: EXECUTION_STATUS.STARTED,
+          },
+          required: true,
+        },
+      ],
+      col: 'id',
+      group: ['userId'],
+      transaction,
+    })) as UserGroupedCountRow[];
+    const allCounts = (await WorkflowManualTaskModel.count({
+      where: {
+        userId: uniqueUserIds,
+      },
+      col: 'id',
+      group: ['userId'],
+      transaction,
+    })) as UserGroupedCountRow[];
+
+    for (const row of pendingCounts) {
+      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), pending: Number(row.count) || 0 });
+    }
+    for (const row of allCounts) {
+      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: Number(row.count) || 0 });
+    }
+
+    for (const [userId, stats] of userStatsMap.entries()) {
+      await workflowPlugin.updateTasksStats(userId, TASK_TYPE_MANUAL, stats, { transaction });
+    }
+  }
+
   onTaskSave = async (task: Model, { transaction }) => {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     const ModelClass = task.constructor as unknown as Model;
@@ -79,70 +139,37 @@ export default class extends Plugin {
       },
       transaction,
     });
-    const userStatsMap = new Map();
-    // 涉及人员集合
-    const userId = [];
-    for (const item of manualTasks) {
-      userId.push(item.userId);
-      userStatsMap.set(item.userId, { pending: 0, all: 0 });
+
+    const userIds = manualTasks.map((item) => item.userId).filter(Boolean);
+    if (execution.status === EXECUTION_STATUS.ABORTED) {
+      await WorkflowManualTaskModel.update(
+        {
+          status: TASK_STATUS.ABORTED,
+        },
+        {
+          where: {
+            id: manualTasks.map((item) => item.id),
+            status: TASK_STATUS.PENDING,
+          },
+          transaction,
+        },
+      );
     }
 
-    // 调整所有任务中的负责人的统计数字
-    const pendingCounts = await WorkflowManualTaskModel.count({
-      where: {
-        status: TASK_STATUS.PENDING,
-        userId,
-      },
-      include: [
-        {
-          association: 'execution',
-          attributes: [],
-          where: {
-            status: EXECUTION_STATUS.STARTED,
-          },
-          required: true,
-        },
-      ],
-      col: 'id',
-      group: ['userId'],
-      transaction,
-    });
-    const allCounts = await WorkflowManualTaskModel.count({
-      where: {
-        userId,
-      },
-      col: 'id',
-      group: ['userId'],
-      transaction,
-    });
-    for (const row of pendingCounts) {
-      if (!userStatsMap.get(row.userId)) {
-        userStatsMap.set(row.userId, { pending: 0, all: 0 });
-      }
-      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), pending: row.count });
-    }
-    for (const row of allCounts) {
-      if (!userStatsMap.get(row.userId)) {
-        userStatsMap.set(row.userId, { pending: 0, all: 0 });
-      }
-      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: row.count });
-    }
-    for (const [userId, stats] of userStatsMap.entries()) {
-      await workflowPlugin.updateTasksStats(userId, TASK_TYPE_MANUAL, stats, { transaction });
-    }
+    await this.updateManualTaskStats(userIds, transaction);
   };
 
   onWorkflowStatusChange = async (workflow, { transaction }) => {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     const WorkflowManualTaskModel = this.db.getModel('workflowManualTasks');
     const enalbedSet = new Set(workflowPlugin.enabledCache.keys());
-    let pendingCounts = [];
-    let allCounts = [];
-    const userStatsMap = new Map();
+    let pendingCounts: UserGroupedCountRow[] = [];
+    let allCounts: UserGroupedCountRow[] = [];
+    const userStatsMap = new Map<number, TaskStats>();
     if (workflow.enabled) {
       enalbedSet.add(workflow.id);
       const workflowId = [...enalbedSet];
-      pendingCounts = await WorkflowManualTaskModel.count({
+      pendingCounts = (await WorkflowManualTaskModel.count({
         where: {
           status: TASK_STATUS.PENDING,
           workflowId,
@@ -160,20 +187,20 @@ export default class extends Plugin {
         col: 'id',
         group: ['userId'],
         transaction,
-      });
-      allCounts = await WorkflowManualTaskModel.count({
+      })) as UserGroupedCountRow[];
+      allCounts = (await WorkflowManualTaskModel.count({
         where: {
           workflowId,
         },
         col: 'id',
         group: ['userId'],
         transaction,
-      });
+      })) as UserGroupedCountRow[];
     } else {
       enalbedSet.delete(workflow.id);
       const workflowId = [...enalbedSet];
       // 查找所有该工作流的人工任务
-      const tasksByUser = await WorkflowManualTaskModel.count({
+      const tasksByUser = (await WorkflowManualTaskModel.count({
         col: 'userId',
         where: {
           status: TASK_STATUS.PENDING,
@@ -182,16 +209,16 @@ export default class extends Plugin {
         distinct: true,
         group: ['userId'],
         transaction,
-      });
+      })) as UserGroupedCountRow[];
       // 涉及人员集合
-      const userId = [];
+      const userId: number[] = [];
       for (const item of tasksByUser) {
         userId.push(item.userId);
         userStatsMap.set(item.userId, { pending: 0, all: 0 });
       }
 
       // 调整所有任务中的负责人的统计数字
-      pendingCounts = await WorkflowManualTaskModel.count({
+      pendingCounts = (await WorkflowManualTaskModel.count({
         where: {
           status: TASK_STATUS.PENDING,
           userId,
@@ -210,8 +237,8 @@ export default class extends Plugin {
         col: 'id',
         group: ['userId'],
         transaction,
-      });
-      allCounts = await WorkflowManualTaskModel.count({
+      })) as UserGroupedCountRow[];
+      allCounts = (await WorkflowManualTaskModel.count({
         where: {
           userId,
           workflowId,
@@ -219,19 +246,19 @@ export default class extends Plugin {
         col: 'id',
         group: ['userId'],
         transaction,
-      });
+      })) as UserGroupedCountRow[];
     }
     for (const row of pendingCounts) {
       if (!userStatsMap.get(row.userId)) {
         userStatsMap.set(row.userId, { pending: 0, all: 0 });
       }
-      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), pending: row.count });
+      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), pending: Number(row.count) || 0 });
     }
     for (const row of allCounts) {
       if (!userStatsMap.get(row.userId)) {
         userStatsMap.set(row.userId, { pending: 0, all: 0 });
       }
-      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: row.count });
+      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: Number(row.count) || 0 });
     }
     for (const [userId, stats] of userStatsMap.entries()) {
       await workflowPlugin.updateTasksStats(userId, TASK_TYPE_MANUAL, stats, { transaction });

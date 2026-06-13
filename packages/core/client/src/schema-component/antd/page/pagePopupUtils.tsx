@@ -10,19 +10,21 @@
 import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
-import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
-import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
+import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
+import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockContextBasicValue';
+import { useAssociationName } from '../../../data-source/collection/AssociationProvider';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
+import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
+import { CollectionRecord } from '../../../data-source/collection-record/CollectionRecord';
 import {
-  CollectionRecord,
-  useAssociationName,
-  useCollection,
-  useCollectionManager,
   useCollectionParentRecord,
   useCollectionRecord,
+} from '../../../data-source/collection-record/CollectionRecordProvider';
+import {
   useDataBlockRequestData,
   useDataBlockRequestGetter,
-  useDataSourceKey,
-} from '../../../data-source';
+} from '../../../data-source/data-block/DataBlockRequestProvider';
+import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 import { ActionContext } from '../action/context';
 import { PopupVisibleProviderContext, useCurrentPopupContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';

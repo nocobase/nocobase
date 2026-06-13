@@ -1,6 +1,9 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Preparativos para el despliegue en clúster"
+description: "Preparación del despliegue en clúster: licencias de plugins comerciales (adaptadores PubSub, Queue, Lock, Worker ID), base de datos, middleware Redis o RabbitMQ, almacenamiento compartido y balanceo de carga."
+keywords: "preparación clúster,licencia comercial,Redis,RabbitMQ,almacenamiento compartido,balanceo de carga,Nginx,NocoBase"
+---
 
 # Prerrequisitos
 
@@ -115,7 +118,7 @@ Para despliegues de alta disponibilidad, se recomienda:
 
 ## Configuración de variables de entorno
 
-Todos los nodos del clúster deben utilizar la misma configuración de variables de entorno. Además de las [variables de entorno](/api/cli/env) básicas de NocoBase, también es necesario configurar las siguientes variables de entorno relacionadas con el middleware.
+Todos los nodos del clúster deben utilizar la misma configuración de variables de entorno. Además de las [variables de entorno](../api/app/env) básicas de NocoBase, también es necesario configurar las siguientes variables de entorno relacionadas con el middleware.
 
 ### Secretos clave
 

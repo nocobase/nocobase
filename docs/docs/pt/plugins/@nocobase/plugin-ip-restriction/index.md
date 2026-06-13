@@ -1,4 +1,6 @@
 ---
+title: "IP restriction"
+keywords: "Security"
 displayName: "IP restriction"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:

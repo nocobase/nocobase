@@ -1,0 +1,329 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import {
+  FlowSettingsButton,
+  Droppable,
+  AddSubModelButton,
+  DragHandler,
+  FlowModelRenderer,
+  DndProvider,
+} from '@nocobase/flow-engine';
+import { css } from '@emotion/css';
+import { Space, Avatar, Button, Tooltip, ConfigProvider } from 'antd';
+import { Grid, List } from 'antd-mobile';
+import React from 'react';
+import { BlockModel, Icon, ActionModel } from '@nocobase/client-v2';
+import { SettingOutlined } from '@ant-design/icons';
+import { tExpr } from '../locale';
+
+function isMobile() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
+export const WorkbenchLayout = {
+  Grid: 'grid',
+  List: 'list',
+};
+
+const ResponsiveSpace = (props) => {
+  const isMobileMedia = isMobile();
+  const underMobileCtx = false;
+
+  if (underMobileCtx || isMobileMedia) {
+    return (
+      <Grid columns={4} gap={8}>
+        {props.children}
+      </Grid>
+    );
+  }
+
+  return (
+    <Space wrap size={8} align="start">
+      {props.children}
+    </Space>
+  );
+};
+
+export class ActionPanelBlockModel extends BlockModel {
+  renderConfigureActions() {
+    return (
+      <AddSubModelButton
+        key={'action-panel-add-actions'}
+        model={this}
+        subModelBaseClass={this.getModelClassName('ActionPanelGroupActionModel')}
+        subModelKey="actions"
+      >
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+      </AddSubModelButton>
+    );
+  }
+
+  renderComponent() {
+    const { layout, ellipsis } = this.props;
+
+    const token = this.context.themeToken;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
+    const gridIconSize = token.controlHeightLG;
+    const buttonResetClass = css`
+      &.ant-btn {
+        height: auto;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+        background: none;
+        color: ${token.colorText};
+      }
+      &.ant-btn > span {
+        display: block;
+        width: 100%;
+      }
+      .ant-btn-icon {
+        display: none;
+      }
+    `;
+    const gridContentClass = css`
+      width: ${token.controlHeightLG * 2}px;
+      text-align: center;
+    `;
+    const gridTitleClass = css`
+      margin-top: ${token.marginSM}px;
+      min-height: ${token.fontSize * token.lineHeight}px;
+    `;
+    const textEllipsisClass = css`
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    `;
+    const textWrapClass = css`
+      white-space: normal;
+      word-break: break-word;
+    `;
+    const hiddenClass = css`
+      opacity: ${token.opacityLoading};
+    `;
+    const listActionClass = css`
+      .ant-btn {
+        display: block;
+        width: 100%;
+        text-align: justify;
+      }
+      .adm-list-item-content-main {
+        overflow: hidden;
+      }
+    `;
+    const configActionsClass = css`
+      margin-top: ${token.marginXS}px;
+    `;
+
+    return (
+      <div id={`model-${this.uid}`} className="action-panel-block">
+        <ConfigProvider wave={{ disabled: true }}>
+          <DndProvider>
+            <div className="nb-action-panel-warp">
+              {layout === WorkbenchLayout.Grid ? (
+                <ResponsiveSpace>
+                  {this.mapSubModels('actions', (action: ActionModel) => {
+                    if (action.hidden && !isConfigMode) {
+                      return;
+                    }
+                    const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;
+                    const avatarClass = css`
+                      background-color: ${color};
+                    `;
+                    const renderActionContent = (compact = false) => (
+                      <div className={`${gridContentClass} ${compact ? hiddenClass : ''}`}>
+                        <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
+                        <div className={`${gridTitleClass} ${ellipsis ? textEllipsisClass : textWrapClass}`}>
+                          {title}
+                        </div>
+                      </div>
+                    );
+
+                    action.enableEditDanger = false;
+                    action.enableEditType = false;
+                    action.enableEditColor = true;
+                    action.renderButton = () => {
+                      return (
+                        <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                          {renderActionContent()}
+                        </Button>
+                      );
+                    };
+                    action.renderHiddenInConfig = () => {
+                      return (
+                        <Tooltip
+                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
+                        >
+                          <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                            {renderActionContent(true)}
+                          </Button>
+                        </Tooltip>
+                      );
+                    };
+
+                    return (
+                      <Droppable model={action} key={action.uid}>
+                        <div>
+                          <FlowModelRenderer
+                            model={action}
+                            showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                            extraToolbarItems={[
+                              {
+                                key: 'drag-handler',
+                                component: DragHandler,
+                                sort: 1,
+                              },
+                            ]}
+                          />
+                        </div>
+                      </Droppable>
+                    );
+                  })}
+                </ResponsiveSpace>
+              ) : (
+                <List
+                  style={
+                    {
+                      '--adm-color-background': token.colorBgContainer,
+                      '--active-background-color': token.colorBorderSecondary,
+                      '--border-inner': `solid 1px ${token.colorBorderSecondary}`,
+                      '--border-bottom': `none`,
+                      '--border-top': `none`,
+                    } as any
+                  }
+                >
+                  {this.mapSubModels('actions', (action: ActionModel) => {
+                    if (action.hidden && !isConfigMode) {
+                      return;
+                    }
+                    const { icon = 'SettingOutlined', color = token.colorPrimary, title } = action.props;
+                    const avatarClass = css`
+                      background-color: ${color};
+                    `;
+                    const renderActionContent = (compact = false) => (
+                      <List.Item
+                        prefix={(<Avatar className={avatarClass} icon={<Icon type={icon as any} />} />) as any}
+                      >
+                        <div
+                          className={`${compact ? hiddenClass : ''} ${ellipsis ? textEllipsisClass : textWrapClass}`}
+                        >
+                          {title}
+                        </div>
+                      </List.Item>
+                    );
+
+                    action.enableEditDanger = false;
+                    action.enableEditType = false;
+                    action.enableEditColor = true;
+                    action.renderButton = () => {
+                      return (
+                        <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                          {renderActionContent()}
+                        </Button>
+                      );
+                    };
+                    action.renderHiddenInConfig = () => {
+                      return (
+                        <Tooltip
+                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
+                        >
+                          <Button className={buttonResetClass} onClick={action.onClick.bind(action)}>
+                            {renderActionContent(true)}
+                          </Button>
+                        </Tooltip>
+                      );
+                    };
+                    return (
+                      <Droppable model={action} key={action.uid}>
+                        <div
+                          className={css`
+                            ${listActionClass}
+                            .ant-btn-icon {
+                              display: ${action.hidden ? 'block' : ' none'};
+                            }
+                          `}
+                        >
+                          <FlowModelRenderer
+                            model={action}
+                            showFlowSettings={{ showBackground: false, showBorder: false }}
+                            extraToolbarItems={[
+                              {
+                                key: 'drag-handler',
+                                component: DragHandler,
+                                sort: 1,
+                              },
+                            ]}
+                          />
+                        </div>
+                      </Droppable>
+                    );
+                  })}
+                </List>
+              )}
+            </div>
+          </DndProvider>
+        </ConfigProvider>
+        {this.context.flowSettingsEnabled && <div className={configActionsClass}>{this.renderConfigureActions()}</div>}
+      </div>
+    );
+  }
+}
+
+ActionPanelBlockModel.define({
+  label: tExpr('Action panel'),
+  children: false,
+  sort: 350,
+  createModelOptions: {
+    use: 'ActionPanelBlockModel',
+  },
+});
+
+ActionPanelBlockModel.registerFlow({
+  key: 'actionPanelBlockSetting',
+  title: tExpr('Action panel settings'),
+  steps: {
+    layout: {
+      title: tExpr('Layout'),
+      uiMode(ctx) {
+        const t = ctx.t;
+        return {
+          type: 'select',
+          key: 'layout',
+          props: {
+            options: [
+              { label: t('Grid', { ns: 'block-workbench' }), value: WorkbenchLayout.Grid },
+              { label: t('List', { ns: 'block-workbench' }), value: WorkbenchLayout.List },
+            ],
+          },
+        };
+      },
+      defaultParams: {
+        layout: WorkbenchLayout.Grid,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          layout: params.layout,
+        });
+      },
+    },
+    ellipsis: {
+      title: tExpr('Ellipsis action title'),
+      uiMode: { type: 'switch', key: 'ellipsis' },
+      defaultParams: {
+        ellipsis: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          ellipsis: params.ellipsis,
+        });
+      },
+    },
+  },
+});
