@@ -47,8 +47,8 @@ describe('plugin-multi-portal preset integration', () => {
     const packageJson = readJson('packages/plugins/@nocobase/plugin-multi-portal/package.json');
     expect(packageJson).toMatchObject({
       name: MULTI_PORTAL_PACKAGE,
-      displayName: 'Multi-Portal',
-      'displayName.zh-CN': '多门户',
+      displayName: 'Multi-portal',
+      'displayName.zh-CN': '多工作区',
     });
     expect(packageJson.peerDependencies).toMatchObject({
       '@nocobase/client-v2': '2.x',
