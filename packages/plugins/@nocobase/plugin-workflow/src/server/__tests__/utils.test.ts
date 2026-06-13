@@ -22,12 +22,6 @@ describe('workflow > utils', () => {
         afterCommitCallbacks.push(callback);
       }),
     };
-    const lockedExecution = {
-      id: 1,
-      workflowId: 1,
-      status: EXECUTION_STATUS.STARTED,
-      update: vi.fn(),
-    };
     const execution = {
       id: 1,
       workflowId: 1,
@@ -36,7 +30,9 @@ describe('workflow > utils', () => {
       }),
     };
     const executionRepo = {
-      findOne: vi.fn().mockResolvedValue(lockedExecution),
+      model: {
+        update: vi.fn().mockResolvedValue([1]),
+      },
       find: vi.fn().mockResolvedValue([]),
     };
     const jobRepo = {
@@ -90,6 +86,12 @@ describe('workflow > utils', () => {
       update: vi.fn(),
       set: vi.fn(),
     };
+    const transaction = {
+      LOCK: {
+        UPDATE: 'UPDATE',
+      },
+      afterCommit: vi.fn((callback) => callback()),
+    };
     const executionRepo = {
       model: {
         update: vi.fn().mockResolvedValue([1]),
@@ -119,6 +121,9 @@ describe('workflow > utils', () => {
         info: vi.fn(),
       }),
       db: {
+        sequelize: {
+          transaction: vi.fn((callback) => callback(transaction)),
+        },
         getRepository: vi.fn((name: string) => {
           if (name === 'executions') {
             return executionRepo;
@@ -136,6 +141,7 @@ describe('workflow > utils', () => {
       true,
     );
 
+    expect(plugin.db.sequelize.transaction).toHaveBeenCalledTimes(1);
     expect(executionRepo.model.update).toHaveBeenCalledWith(
       {
         status: EXECUTION_STATUS.ABORTED,
@@ -147,6 +153,7 @@ describe('workflow > utils', () => {
           status: EXECUTION_STATUS.STARTED,
         },
         individualHooks: true,
+        transaction,
       },
     );
     expect(executionRepo.model.update).toHaveBeenCalledWith(
@@ -160,6 +167,7 @@ describe('workflow > utils', () => {
           status: EXECUTION_STATUS.STARTED,
         },
         individualHooks: true,
+        transaction,
       },
     );
     expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(parent.id);
@@ -173,6 +181,12 @@ describe('workflow > utils', () => {
       status: EXECUTION_STATUS.STARTED,
       update: vi.fn(),
       set: vi.fn(),
+    };
+    const transaction = {
+      LOCK: {
+        UPDATE: 'UPDATE',
+      },
+      afterCommit: vi.fn((callback) => callback()),
     };
     const executionRepo = {
       model: {
@@ -189,6 +203,9 @@ describe('workflow > utils', () => {
         info: vi.fn(),
       }),
       db: {
+        sequelize: {
+          transaction: vi.fn((callback) => callback(transaction)),
+        },
         getRepository: vi.fn((name: string) => {
           if (name === 'executions') {
             return executionRepo;
@@ -206,6 +223,7 @@ describe('workflow > utils', () => {
       true,
     );
 
+    expect(plugin.db.sequelize.transaction).toHaveBeenCalledTimes(1);
     expect(executionRepo.model.update).toHaveBeenCalledWith(
       {
         status: EXECUTION_STATUS.ABORTED,
@@ -217,6 +235,7 @@ describe('workflow > utils', () => {
           status: EXECUTION_STATUS.STARTED,
         },
         individualHooks: true,
+        transaction,
       },
     );
     expect(jobRepo.update).toHaveBeenCalledWith({
@@ -228,7 +247,7 @@ describe('workflow > utils', () => {
         status: JOB_STATUS.PENDING,
       },
       individualHooks: false,
-      transaction: undefined,
+      transaction,
     });
   });
 
@@ -239,6 +258,12 @@ describe('workflow > utils', () => {
       status: EXECUTION_STATUS.STARTED,
       update: vi.fn(),
       set: vi.fn(),
+    };
+    const transaction = {
+      LOCK: {
+        UPDATE: 'UPDATE',
+      },
+      afterCommit: vi.fn((callback) => callback()),
     };
     const executionRepo = {
       model: {
@@ -255,6 +280,9 @@ describe('workflow > utils', () => {
         info: vi.fn(),
       }),
       db: {
+        sequelize: {
+          transaction: vi.fn((callback) => callback(transaction)),
+        },
         getRepository: vi.fn((name: string) => {
           if (name === 'executions') {
             return executionRepo;
@@ -272,6 +300,7 @@ describe('workflow > utils', () => {
       abortExecution(plugin as any, execution as any, { reason: EXECUTION_REASON.MANUAL_CANCEL }),
     ).resolves.toBe(true);
 
+    expect(plugin.db.sequelize.transaction).toHaveBeenCalledTimes(1);
     expect(executionRepo.model.update).toHaveBeenCalledWith(
       {
         status: EXECUTION_STATUS.ABORTED,
@@ -283,6 +312,7 @@ describe('workflow > utils', () => {
           status: EXECUTION_STATUS.STARTED,
         },
         individualHooks: true,
+        transaction,
       },
     );
     expect(jobRepo.update).toHaveBeenCalledWith({
@@ -294,7 +324,7 @@ describe('workflow > utils', () => {
         status: JOB_STATUS.PENDING,
       },
       individualHooks: false,
-      transaction: undefined,
+      transaction,
     });
   });
 });
