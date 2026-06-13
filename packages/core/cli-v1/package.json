@@ -5,6 +5,7 @@
   "license": "Apache-2.0",
   "main": "./src/index.js",
   "bin": {
+    "nocobase": "./bin/index.js",
     "nocobase-v1": "./bin/index.js"
   },
   "dependencies": {
