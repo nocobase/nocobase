@@ -220,6 +220,13 @@ describe('plugin-ui-layout RoutesPage', () => {
     );
     expect(within(desktopRow).getByRole('button', { name: 'Delete Desktop dashboard' })).toBeEnabled();
 
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Expand row' }));
+    const tabRow = await screen.findByRole('row', { name: /Desktop tab/ });
+    expect(within(tabRow).getByRole('link', { name: 'View Desktop tab' })).toHaveAttribute(
+      'href',
+      '/admin/desktop-dashboard/tab/desktop-tab',
+    );
+
     const linkRow = screen.getByRole('row', { name: /Desktop link/ });
     expect(within(linkRow).getByRole('button', { name: 'Add child Desktop link' })).toBeDisabled();
     expect(within(linkRow).getByRole('button', { name: 'View Desktop link' })).toBeDisabled();

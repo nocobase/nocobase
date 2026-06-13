@@ -196,7 +196,7 @@ function getRouteAccessPath(route: NocoBaseDesktopRoute, layout: RouteLayoutConf
     if (!parent?.schemaUid) {
       return '';
     }
-    return `${layout.routePath}/${parent.schemaUid}/tabs/${route.schemaUid}`;
+    return `${layout.routePath}/${parent.schemaUid}/tab/${route.schemaUid}`;
   }
   return `${layout.routePath}/${route.schemaUid}`;
 }
