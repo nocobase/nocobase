@@ -52,9 +52,18 @@ describe('plugin-multi-portal preset integration', () => {
     });
     expect(packageJson.peerDependencies).toMatchObject({
       '@nocobase/client-v2': '2.x',
+      '@nocobase/database': '2.x',
+      '@nocobase/flow-engine': '2.x',
       [UI_LAYOUT_PACKAGE]: '2.x',
+      '@nocobase/resourcer': '2.x',
       '@nocobase/server': '2.x',
       '@nocobase/test': '2.x',
+    });
+    expect(packageJson.devDependencies).toMatchObject({
+      '@ant-design/icons': '5.x',
+      ahooks: '3.x',
+      antd: '5.x',
+      react: '^18.2.0',
     });
   });
 
