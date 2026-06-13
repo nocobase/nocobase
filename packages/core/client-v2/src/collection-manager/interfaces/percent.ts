@@ -8,9 +8,8 @@
  */
 
 import { registerValidateRules } from '@formily/core';
-import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
-import { defaultProps, operators, unique } from './properties';
+import { defaultProps, unique } from './properties';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
 
 registerValidateRules({
@@ -77,13 +76,6 @@ export class PercentFieldInterface extends CollectionFieldInterface {
       },
     },
   };
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    const props = (schema['x-component-props'] = schema['x-component-props'] || {});
-    schema['x-component-props'].style = {
-      ...(props.style || {}),
-      width: '100%',
-    };
-  }
   availableTypes = ['float', 'double', 'decimal'];
   hasDefaultValue = true;
   validationType = 'number';
@@ -108,71 +100,7 @@ export class PercentFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.number,
+    operators: 'number',
   };
   titleUsable = true;
-  validateSchema = (fieldSchema) => {
-    return {
-      maxValue: {
-        type: 'number',
-        title: '{{ t("Maximum") }}',
-        'x-decorator': 'FormItem',
-        'x-component': 'Percent',
-        'x-component-props': {
-          addonAfter: '%',
-        },
-        'x-reactions': `{{(field) => {
-          const targetValue = field.query('.minimum').value();
-          field.selfErrors =
-            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t(
-              'Maximum must greater than minimum',
-            )}' : ''
-        }}}`,
-      },
-      minValue: {
-        type: 'number',
-        title: '{{ t("Minimum") }}',
-        'x-decorator': 'FormItem',
-        'x-component': 'Percent',
-        'x-component-props': {
-          addonAfter: '%',
-        },
-        'x-reactions': {
-          dependencies: ['.maximum'],
-          fulfill: {
-            state: {
-              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t(
-                'Minimum must less than maximum',
-              )}' : ''}}`,
-            },
-          },
-        },
-      },
-      percentFormat: {
-        type: 'string',
-        title: '{{ t("Format") }}',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-component-props': {
-          allowClear: true,
-        },
-        enum: [
-          {
-            label: '{{ t("Integer") }}',
-            value: 'Integer',
-          },
-        ],
-      },
-      pattern: {
-        type: 'string',
-        title: '{{ t("Regular expression") }}',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-        'x-component-props': {
-          prefix: '/',
-          suffix: '/',
-        },
-      },
-    };
-  };
 }

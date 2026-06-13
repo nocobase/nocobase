@@ -64,7 +64,9 @@ Dies ist der empfohlene Standardmodus, geeignet für reine Berechnungs- und Date
 Wenn `WORKFLOW_SCRIPT_MODULES` **konfiguriert ist**, wechseln Skripte zur integrierten Node.js-`vm`-Engine, um die `require`-Funktionalität zu ermöglichen.
 
 :::warning{title="Sicherheitswarnung"}
-Im unsicheren Modus werden Skripte zwar in einer `vm`-Sandbox mit eingeschränkter Modul-Whitelist ausgeführt, jedoch ist das Node.js-`vm`-Modul kein sicherer Sandbox-Mechanismus. Die Aktivierung dieses Modus bedeutet, dass allen Benutzern vertraut wird, die die Berechtigung zum Bearbeiten von Workflow-Skripten haben. Administratoren sollten die Sicherheitsrisiken eigenständig bewerten und die Modul-Whitelist sowie die Berechtigungen zur Workflow-Bearbeitung streng kontrollieren.
+Der unsichere Modus verwendet Node.js `vm` nur, um CommonJS-`require` zu unterstützen. Das Node.js-`vm`-Modul ist kein sicherer Sandbox-Mechanismus. Die Aktivierung dieses Modus bedeutet, dass allen Benutzern vertraut wird, die Workflow-Skripte bearbeiten, testen oder ausführen können, als könnten sie Code mit den Berechtigungen des NocoBase-Servers ausführen.
+
+`WORKFLOW_SCRIPT_MODULES` ist keine Sicherheitsgrenze und kein Berechtigungsmodell. Es steuert nur, welche Modulnamen von `require()` akzeptiert werden, bevor der Skriptcode ausgeführt wird.
 :::
 
 Module können im Skript konsistent mit CommonJS verwendet werden. Module werden im Code mit der `require()`-Anweisung importiert.
@@ -76,7 +78,7 @@ WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
 :::info{title="Hinweis"}
-Module, die nicht in der Umgebungsvariable `WORKFLOW_SCRIPT_MODULES` deklariert sind, können im Skript **nicht** verwendet werden, selbst wenn sie nativ in Node.js vorhanden oder bereits in `node_modules` installiert sind. Diese Richtlinie kann auf Betriebsebene genutzt werden, um die Liste der für Benutzer verfügbaren Module zu steuern und in bestimmten Szenarien zu verhindern, dass Skripte übermäßige Berechtigungen erhalten.
+Module, die nicht in der Umgebungsvariable `WORKFLOW_SCRIPT_MODULES` deklariert sind, können nicht direkt mit `require()` importiert werden, selbst wenn sie nativ in Node.js vorhanden oder bereits in `node_modules` installiert sind. Diese Liste dient nur zur Konfiguration unterstützter Imports. Verlassen Sie sich nicht darauf, um Skriptberechtigungen zu reduzieren oder die Bearbeitung von Skripten sicher an weniger vertrauenswürdige Benutzer zu delegieren.
 :::
 
 In einer Umgebung, die nicht aus dem Quellcode bereitgestellt wird, können Sie ein benötigtes Modul, das nicht in `node_modules` installiert ist, manuell in das `storage`-Verzeichnis installieren. Wenn Sie beispielsweise das `exceljs`-Paket verwenden möchten, können Sie die folgenden Schritte ausführen:

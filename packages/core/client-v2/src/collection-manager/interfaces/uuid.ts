@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { operators, autoFill, primaryKey, unique } from './properties';
+import { autoFill, primaryKey, unique } from './properties';
 
 export class UUIDFieldInterface extends CollectionFieldInterface {
   name = 'uuid';
@@ -66,7 +66,7 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.string,
+    operators: 'string',
   };
   titleUsable = true;
 }

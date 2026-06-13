@@ -10,6 +10,7 @@
 export type FlowSurfaceErrorType = 'bad_request' | 'forbidden' | 'conflict' | 'internal_error';
 
 export interface FlowSurfaceErrorItem {
+  index?: number;
   message: string;
   type: FlowSurfaceErrorType;
   code: string;
@@ -78,15 +79,28 @@ export class FlowSurfaceInternalError extends FlowSurfaceError {
 export class FlowSurfaceAggregateError extends FlowSurfaceError {
   public readonly errors: FlowSurfaceErrorItem[];
 
-  constructor(errors: FlowSurfaceErrorItemInput[], message = 'flowSurfaces authoring validation failed') {
-    const normalizedErrors = errors.map((error) => normalizeFlowSurfaceErrorItemInput(error));
-    super(message, 400, 'bad_request', 'FLOW_SURFACE_AUTHORING_VALIDATION_FAILED');
+  constructor(errors: FlowSurfaceErrorItemInput[], message?: string) {
+    const normalizedErrors = errors.map((error, index) =>
+      normalizeFlowSurfaceErrorItemInput({
+        ...error,
+        index: index + 1,
+      }),
+    );
+    super(
+      message || buildAggregateBadRequestMessage(normalizedErrors.length),
+      400,
+      'bad_request',
+      'FLOW_SURFACE_AUTHORING_VALIDATION_FAILED',
+    );
     this.name = 'FlowSurfaceAggregateError';
     this.errors = normalizedErrors;
   }
 
   toResponseBody() {
     return {
+      message: this.message,
+      errorCount: this.errors.length,
+      details: buildAggregateBadRequestDetails(this.errors),
       errors: this.errors,
     };
   }
@@ -172,6 +186,9 @@ function buildDefinedErrorItem(input: FlowSurfaceErrorItem): FlowSurfaceErrorIte
     code: input.code,
     status: input.status,
   };
+  if (typeof input.index !== 'undefined') {
+    output.index = input.index;
+  }
   if (typeof input.path !== 'undefined') {
     output.path = input.path;
   }
@@ -187,6 +204,7 @@ function buildDefinedErrorItem(input: FlowSurfaceErrorItem): FlowSurfaceErrorIte
 function normalizeFlowSurfaceErrorItemInput(input: FlowSurfaceErrorItemInput): FlowSurfaceErrorItem {
   return buildDefinedErrorItem({
     message: input.message,
+    index: input.index,
     type: input.type || 'bad_request',
     code: input.code || 'FLOW_SURFACE_AUTHORING_VALIDATION_ERROR',
     status: input.status || 400,
@@ -194,4 +212,39 @@ function normalizeFlowSurfaceErrorItemInput(input: FlowSurfaceErrorItemInput): F
     ruleId: input.ruleId,
     details: input.details,
   });
+}
+
+function buildAggregateBadRequestMessage(errorCount: number) {
+  return `flowSurfaces authoring validation failed with ${errorCount} error(s); fix all errors before retrying the same write`;
+}
+
+function buildAggregateBadRequestDetails(errors: FlowSurfaceErrorItem[]) {
+  const requiredBlockTypes = Array.from(
+    new Set(
+      errors
+        .map((error) => error.details?.requiredBlockType)
+        .filter(
+          (requiredBlockType): requiredBlockType is string =>
+            typeof requiredBlockType === 'string' && !!requiredBlockType,
+        ),
+    ),
+  );
+
+  return {
+    errorCount: errors.length,
+    mustFixAllErrorsBeforeRetry: true,
+    retryPolicy: 'fix_all_errors_before_retry_same_write',
+    sameWriteRetryRequired: true,
+    agentInstruction:
+      'Read the complete errors[] array. Fix every listed error in one payload revision before retrying the same write. Do not fix only the first error and immediately retry. Do not drop, defer, or replace required chart, jsBlock, or JS/RunJS work to bypass validation.',
+    ...(requiredBlockTypes.length
+      ? {
+          requiredBlockPolicy: {
+            requiredBlockTypes,
+            fixStrategy: 'repair_same_block_type',
+            doNotReplaceOrDrop: true,
+          },
+        }
+      : {}),
+  };
 }

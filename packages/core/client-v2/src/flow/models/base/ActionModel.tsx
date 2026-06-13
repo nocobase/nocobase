@@ -80,7 +80,14 @@ ActionModel.registerFlow({
         };
       },
       defaultParams(ctx) {
-        return ctx.model.defaultProps;
+        const defaultProps = ctx.model.defaultProps || {};
+        if (!ctx.model.enableEditColor) {
+          return defaultProps;
+        }
+        return {
+          ...defaultProps,
+          color: ctx.model.props?.color ?? defaultProps.color ?? ctx.themeToken?.colorPrimary,
+        };
       },
       handler(ctx, params) {
         const { title, tooltip, ...rest } = params;

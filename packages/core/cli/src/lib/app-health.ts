@@ -8,11 +8,14 @@
  */
 
 import type { ManagedAppRuntime } from './app-runtime.js';
-import { printInfo, startTask, stopTask, updateTask } from './ui.js';
+import { buildLocalApiBaseUrl, buildLocalAppUrl } from './app-public-path.js';
+import { startDockerLogFollower } from './docker-log-stream.js';
+import { printInfo } from './ui.js';
 
 const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
 const APP_HEALTH_CHECK_REQUEST_TIMEOUT_MS = 5_000;
+const APP_HEALTH_CHECK_PROGRESS_LOG_INTERVAL_MS = 10_000;
 
 function trimValue(value: unknown): string {
   return String(value ?? '').trim();
@@ -66,9 +69,8 @@ async function requestAppHealthCheck(params: {
 
 export class AppHealthCheckError extends Error {}
 
-export function formatAppUrl(port?: string): string | undefined {
-  const value = trimValue(port);
-  return value ? `http://127.0.0.1:${value}` : undefined;
+export function formatAppUrl(port?: string, appPublicPath?: string): string | undefined {
+  return buildLocalAppUrl(port, appPublicPath);
 }
 
 export function resolveManagedAppApiBaseUrl(
@@ -77,7 +79,7 @@ export function resolveManagedAppApiBaseUrl(
 ): string | undefined {
   const override = trimValue(options?.portOverride);
   if (override) {
-    return `http://127.0.0.1:${override}/api`;
+    return buildLocalApiBaseUrl(override, runtime.env.config?.appPublicPath);
   }
 
   const baseUrl = trimValue(runtime.env.baseUrl);
@@ -89,7 +91,7 @@ export function resolveManagedAppApiBaseUrl(
     runtime.env.appPort === undefined || runtime.env.appPort === null
       ? ''
       : trimValue(runtime.env.appPort);
-  return appPort ? `http://127.0.0.1:${appPort}/api` : undefined;
+  return buildLocalApiBaseUrl(appPort, runtime.env.config?.appPublicPath);
 }
 
 export async function isAppReady(
@@ -117,7 +119,12 @@ export async function waitForAppReady(params: {
   apiBaseUrl?: string;
   containerName?: string;
   logHint?: string;
+  verbose?: boolean;
   fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+  intervalMs?: number;
+  requestTimeoutMs?: number;
+  progressLogIntervalMs?: number;
 }): Promise<void> {
   const apiBaseUrl = trimValue(params.apiBaseUrl);
   if (!apiBaseUrl) {
@@ -127,43 +134,56 @@ export async function waitForAppReady(params: {
 
   const healthCheckUrl = buildHealthCheckUrl(apiBaseUrl);
   const startedAt = Date.now();
+  const timeoutMs = params.timeoutMs ?? APP_HEALTH_CHECK_TIMEOUT_MS;
+  const intervalMs = params.intervalMs ?? APP_HEALTH_CHECK_INTERVAL_MS;
+  const progressLogIntervalMs = Math.max(
+    1,
+    params.progressLogIntervalMs ?? APP_HEALTH_CHECK_PROGRESS_LOG_INTERVAL_MS,
+  );
   let lastMessage = 'No response yet';
-  let spinnerActive = true;
+  let nextProgressLogAt = startedAt + progressLogIntervalMs;
 
-  startTask(`Waiting for NocoBase to become ready for "${params.envName}"...`);
+  printInfo(`Waiting for NocoBase to become ready for "${params.envName}"...`);
+  const dockerLogFollower =
+    params.verbose && params.containerName ? startDockerLogFollower(params.containerName) : undefined;
 
   try {
-    while (Date.now() - startedAt < APP_HEALTH_CHECK_TIMEOUT_MS) {
+    while (Date.now() - startedAt < timeoutMs) {
       const result = await requestAppHealthCheck({
         healthCheckUrl,
         fetchImpl: params.fetchImpl,
+        requestTimeoutMs: params.requestTimeoutMs,
       });
 
       if (result.ok) {
-        stopTask();
-        spinnerActive = false;
         return;
       }
 
       lastMessage = result.message;
-      const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
-      updateTask(
-        `Waiting for NocoBase to become ready for "${params.envName}"... (${elapsedSeconds}s elapsed, last status: ${lastMessage})`,
-      );
-      await sleep(APP_HEALTH_CHECK_INTERVAL_MS);
+      const now = Date.now();
+      if (now >= nextProgressLogAt) {
+        const elapsedSeconds = Math.max(1, Math.floor((now - startedAt) / 1000));
+        printInfo(`Still waiting for "${params.envName}"... (${elapsedSeconds}s elapsed)`);
+        while (nextProgressLogAt <= now) {
+          nextProgressLogAt += progressLogIntervalMs;
+        }
+      }
+      const remainingMs = timeoutMs - (Date.now() - startedAt);
+      if (remainingMs <= 0) {
+        break;
+      }
+      await sleep(Math.min(intervalMs, remainingMs));
     }
-  } finally {
-    if (spinnerActive) {
-      stopTask();
-    }
-  }
 
-  const hints = [
-    params.logHint,
-    params.containerName ? `docker logs ${params.containerName}` : undefined,
-  ].filter(Boolean);
-  const hintText = hints.length > 0 ? ` ${hints.join(' ')}` : '';
-  throw new AppHealthCheckError(
-    `NocoBase did not become ready in time for "${params.envName}". Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${lastMessage}.${hintText}`,
-  );
+    const hints = [
+      params.logHint,
+      params.containerName ? `docker logs ${params.containerName}` : undefined,
+    ].filter(Boolean);
+    const hintText = hints.length > 0 ? ` ${hints.join(' ')}` : '';
+    throw new AppHealthCheckError(
+      `NocoBase did not become ready in time for "${params.envName}". Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${lastMessage}.${hintText}`,
+    );
+  } finally {
+    await dockerLogFollower?.stop();
+  }
 }

@@ -31,7 +31,14 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { getStorageUploadSecurityHeaders } from './static-file-security';
-import { injectRuntimeScript, resolvePublicPath, resolveV2PublicPath, rewriteV2AssetPublicPath } from './utils';
+import {
+  injectRuntimeScript,
+  MODERN_CLIENT_DIST_DIR,
+  normalizeModernClientPrefix,
+  resolvePublicPath,
+  resolveV2PublicPath,
+  rewriteV2AssetPublicPath,
+} from './utils';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
 import process from 'node:process';
@@ -339,6 +346,7 @@ export class Gateway extends EventEmitter {
   private getV2RuntimeConfig() {
     return {
       __nocobase_public_path__: this.getV2PublicPath(),
+      __nocobase_modern_client_prefix__: normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX),
       __webpack_public_path__: process.env.CDN_BASE_URL ? `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/` : '',
       __nocobase_api_base_url__: process.env.API_BASE_URL || process.env.API_BASE_PATH,
       __nocobase_api_client_storage_prefix__: process.env.API_CLIENT_STORAGE_PREFIX,
@@ -363,14 +371,15 @@ export class Gateway extends EventEmitter {
 
   private getV2AssetPublicPath() {
     if (process.env.CDN_BASE_URL) {
-      return `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/v2/`;
+      // CDN hosts the assets under the fixed build-output directory name.
+      return `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/${MODERN_CLIENT_DIST_DIR}/`;
     }
 
     return this.getV2PublicPath();
   }
 
   private getV2IndexTemplate() {
-    const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/v2/index.html`;
+    const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/${MODERN_CLIENT_DIST_DIR}/index.html`;
     if (!fs.existsSync(file)) {
       return null;
     }
@@ -441,6 +450,21 @@ export class Gateway extends EventEmitter {
       });
     }
 
+    if (pathname.startsWith(APP_PUBLIC_PATH + 'dist/')) {
+      if (handleApp !== 'main') {
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
+      req.url = req.url.substring(APP_PUBLIC_PATH.length + 'dist'.length);
+      await compress(req, res);
+      return handler(req, res, {
+        public: storagePathJoin('dist-client'),
+        directoryListing: false,
+      });
+    }
+
     // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
     // protect server files
     if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
@@ -486,6 +510,14 @@ export class Gateway extends EventEmitter {
         }
 
         req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
+        // Map the runtime modern-client prefix segment back to the fixed
+        // on-disk build directory (e.g. /admin/assets/x.js -> /v/assets/x.js)
+        // so assets resolve when serving standalone (no nginx) and the runtime
+        // prefix differs from the dist dir. No-op when they match (the default).
+        const modernPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
+        if (modernPrefix !== MODERN_CLIENT_DIST_DIR && req.url.startsWith(`/${modernPrefix}/`)) {
+          req.url = `/${MODERN_CLIENT_DIST_DIR}/${req.url.slice(modernPrefix.length + 2)}`;
+        }
         await compress(req, res);
         return handler(req, res, {
           public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,

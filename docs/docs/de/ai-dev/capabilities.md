@@ -18,7 +18,7 @@ Im Folgenden sind alle Aufgaben aufgelistet, bei denen die KI Ihnen derzeit helf
 
 :::warning Hinweis
 
-- NocoBase befindet sich derzeit in der Migration von `client` (v1) zu `client-v2`. `client-v2` befindet sich noch in der Entwicklung. Der von der KI-Entwicklung generierte Client-Code basiert auf `client-v2` und kann nur unter dem Pfad `/v2/` verwendet werden. Er ist als Vorschau gedacht und nicht für den direkten Einsatz in der Produktion empfohlen.
+- NocoBase befindet sich derzeit in der Migration von `client` (v1) zu `client-v2`. `client-v2` befindet sich noch in der Entwicklung. Der von der KI-Entwicklung generierte Client-Code basiert auf `client-v2` und kann nur unter dem Pfad `/v/` verwendet werden. Er ist als Vorschau gedacht und nicht für den direkten Einsatz in der Produktion empfohlen.
 - Der von der KI generierte Code ist nicht zwangsläufig zu 100 % korrekt. Es wird empfohlen, ihn vor der Aktivierung zu überprüfen. Wenn zur Laufzeit Probleme auftreten, können Sie die Fehlermeldung an die KI senden, damit diese die Fehlersuche und -behebung fortsetzt – meist sind nur wenige Konversationsrunden erforderlich.
 - Für die Entwicklung werden große Sprachmodelle der GPT- oder Claude-Reihe empfohlen, da sie die besten Ergebnisse liefern. Andere Modelle funktionieren ebenfalls, die Generierungsqualität kann jedoch variieren.
 

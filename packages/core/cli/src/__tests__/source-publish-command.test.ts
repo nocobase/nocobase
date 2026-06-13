@@ -11,7 +11,10 @@ import { beforeEach, expect, test, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   publishSourceSnapshot: vi.fn(),
-  buildSuggestedInitCommand: vi.fn(() => 'nb init --env snapshotabc12345 --yes --source npm --version 2.1.0-beta.34-snapshot.20260519.abc12345 --npm-registry=http://127.0.0.1:4873'),
+  buildSuggestedInitCommand: vi.fn(
+    () =>
+      'nb init --ui --env snapshotabc12345 --yes --source npm --version 2.1.0-beta.34-snapshot.20260519.abc12345 --npm-registry=http://127.0.0.1:4873',
+  ),
   startTask: vi.fn(),
   succeedTask: vi.fn(),
   failTask: vi.fn(),
@@ -82,7 +85,9 @@ test('source publish maps build flags to publish options', async () => {
 
 test('source publish prints direct cwd errors in json mode', async () => {
   const { default: SourcePublish } = await import('../commands/source/publish.js');
-  mocks.publishSourceSnapshot.mockRejectedValueOnce(new Error('The specified --cwd does not exist: /tmp/missing-source'));
+  mocks.publishSourceSnapshot.mockRejectedValueOnce(
+    new Error('The specified --cwd does not exist: /tmp/missing-source'),
+  );
   const exitSignal = new Error('EXIT');
 
   const command = Object.assign(Object.create(SourcePublish.prototype), {
@@ -109,8 +114,14 @@ test('source publish prints direct cwd errors in json mode', async () => {
 
   await expect(SourcePublish.prototype.run.call(command)).rejects.toBe(exitSignal);
 
-  expect(command.logToStderr).toHaveBeenCalledWith(JSON.stringify({
-    error: 'The specified --cwd does not exist: /tmp/missing-source',
-  }, null, 2));
+  expect(command.logToStderr).toHaveBeenCalledWith(
+    JSON.stringify(
+      {
+        error: 'The specified --cwd does not exist: /tmp/missing-source',
+      },
+      null,
+      2,
+    ),
+  );
   expect(command.exit).toHaveBeenCalledWith(1);
 });

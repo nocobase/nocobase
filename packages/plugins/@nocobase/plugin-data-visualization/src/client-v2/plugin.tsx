@@ -8,9 +8,9 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-import { Schema } from '@formily/react';
 
 import { ChartGroup } from './chart';
+import { translateExpr } from './locale';
 
 type FieldInterfaceConfig = {
   valueFormatter: (field: any, value: any, context?: any) => any;
@@ -23,7 +23,7 @@ const valueFormatter: FieldInterfaceConfig['valueFormatter'] = (field, value, co
       return value.map((v) => parseEnumValues(options, v));
     }
     const option = options.find((option) => option.value === (value?.toString?.() || value));
-    return Schema.compile(option?.label || value, { t: context?.t || ((key: string) => key) });
+    return translateExpr(option?.label || value, context?.t || ((key: string) => key));
   };
   if (!options || !Array.isArray(options)) {
     return value;

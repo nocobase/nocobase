@@ -42,6 +42,7 @@ import {
   FLOW_SETTINGS_PREFERENCE_STORAGE_KEY,
   readFlowSettingsPreference,
 } from './flowSettingsPreference';
+import { useAppListRender } from './AppListRender';
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -279,9 +280,9 @@ const MobileActions: FC = () => {
  * @param props
  * @returns
  */
-function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
+function SetIsMobileLayout(props: { isMobile: boolean; children: any; model?: AdminLayoutModel }) {
   const flowEngine = useFlowEngine();
-  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
+  const adminLayoutModel = props.model || flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
 
   useEffect(() => {
     adminLayoutModel?.setIsMobileLayout(props.isMobile);
@@ -367,7 +368,7 @@ const renderMenuNodeWithModel = (
 
 export const AdminLayoutComponent = observer((props: any) => {
   const flowEngine = useFlowEngine();
-  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
+  const adminLayoutModel = props.model || flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
   const [allAccessRoutes, setAllAccessRoutes] = useState<NocoBaseDesktopRoute[]>(
     () => flowEngine.context.routeRepository?.listAccessible?.() || [],
   );
@@ -391,7 +392,8 @@ export const AdminLayoutComponent = observer((props: any) => {
   );
   const designable = !isMobileSider && preferredFlowSettingsEnabled;
   const { styles } = useHeaderStyle();
-  const { Component: AppsComponent } = useApplications();
+  const { appList } = useApplications();
+  const appListRender = useAppListRender();
   const flowSettingsSyncRef = useRef(0);
   const desiredFlowSettingsEnabledRef = useRef(false);
   const handleLayoutContentElementChange = useCallback(
@@ -601,6 +603,31 @@ export const AdminLayoutComponent = observer((props: any) => {
       overflowedIndicatorPopupClassName: styles.headerPopup,
     };
   }, [styles.headerPopup]);
+  const appSwitcherStyle = useMemo(
+    () => css`
+      .ant-layout-header.ant-pro-layout-header,
+      .ant-pro-top-nav-header {
+        z-index: 101 !important;
+      }
+
+      .ant-pro-layout-apps-popover {
+        z-index: 2000 !important;
+      }
+
+      .ant-pro-layout-apps-icon {
+        color: ${customToken.colorTextHeaderMenu || 'rgba(255, 255, 255, 0.85)'};
+      }
+
+      .ant-pro-layout-apps-icon:hover,
+      .ant-pro-layout-apps-icon-active {
+        color: ${customToken.colorTextHeaderMenuHover ||
+        customToken.colorTextHeaderMenu ||
+        'rgba(255, 255, 255, 0.85)'};
+        background: ${customToken.colorBgHeaderMenuHover || 'rgba(255, 255, 255, 0.12)'};
+      }
+    `,
+    [customToken.colorBgHeaderMenuHover, customToken.colorTextHeaderMenu, customToken.colorTextHeaderMenuHover],
+  );
 
   const closeMobileMenu = useCallback(() => {
     if (!isMobileSider) {
@@ -634,16 +661,17 @@ export const AdminLayoutComponent = observer((props: any) => {
               {...props}
               contentStyle={contentStyle}
               siderWidth={customToken.siderWidth || 200}
-              className={resetStyle}
+              className={`${resetStyle} ${appSwitcherStyle}`}
               location={location}
               route={route}
               actionsRender={props.actionsRender || actionsRender}
               logo={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {AppsComponent && <AppsComponent />}
                   <NocoBaseLogo />
                 </div>
               }
+              appList={appList}
+              appListRender={appListRender}
               title={''}
               layout="mix"
               splitMenus
@@ -666,7 +694,7 @@ export const AdminLayoutComponent = observer((props: any) => {
                   const { isMobile } = value;
 
                   return (
-                    <SetIsMobileLayout isMobile={isMobile}>
+                    <SetIsMobileLayout isMobile={isMobile} model={adminLayoutModel}>
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
                         <AdminLayoutContent onContentElementChange={handleLayoutContentElementChange} />

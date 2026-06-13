@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-multi-keyword-filter",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
   "displayName": "Multi-keyword filter",
   "displayName.zh-CN": "多关键词筛选",
@@ -13,18 +13,20 @@
   ],
   "nocobase": {
     "supportedVersions": [
-      "1.x"
+      "1.x",
+      "2.x"
     ],
     "editionLevel": 0
   },
   "devDependencies": {
     "antd": "5.x",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
     "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*"
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "license": "Apache-2.0"
 }

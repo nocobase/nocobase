@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "NocoBase CLI（nb 命令）参考：初始化、配置、环境管理、应用运行、源码、数据库、插件、商业授权、API、CLI 自更新和 Skills 管理。"
-keywords: "NocoBase CLI,nb,命令行,命令参考,环境管理,插件管理,商业授权,API"
+description: "NocoBase CLI（nb 命令）参考：初始化、备份恢复、配置、环境管理、应用运行、源码、数据库、插件、商业授权、API、CLI 自更新和 Skills 管理。"
+keywords: "NocoBase CLI,nb,命令行,命令参考,备份,恢复,环境管理,插件管理,商业授权,API"
 ---
 
 # NocoBase CLI
@@ -33,6 +33,7 @@ nb [command]
 | --- | --- |
 | [`nb api`](./api/index.md) | 通过 CLI 调用 NocoBase API。 |
 | [`nb app`](./app/index.md) | 管理应用运行态：启动、停止、重启、日志和升级。 |
+| [`nb backup`](./backup/index.md) | 创建备份并下载到本地，或把本地备份文件恢复到目标 env。 |
 | [`nb config`](./config/index.md) | 管理 CLI 默认配置。 |
 | [`nb db`](./db/index.md) | 管理选中 env 的内置数据库。 |
 | [`nb env`](./env/index.md) | 管理 NocoBase 项目环境、当前 env、状态、详情和运行时命令。 |
@@ -65,6 +66,7 @@ nb --help
 ```bash
 nb init --help
 nb app --help
+nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
@@ -98,7 +100,7 @@ nb env current
 nb env status
 ```
 
-启动应用并刷新运行时命令：
+启动应用后重新同步 env 状态：
 
 ```bash
 nb app start -e app1
@@ -123,6 +125,18 @@ nb config get docker.network
 ```bash
 nb license status -e app1
 nb license plugins list -e app1
+```
+
+创建并下载备份：
+
+```bash
+nb backup create -e app1 --output ./backups
+```
+
+恢复本地备份：
+
+```bash
+nb backup restore -e app1 --file ./backups/backup_20260520_190408_8397.nbdata --yes --force
 ```
 
 ## 环境变量
@@ -177,7 +191,6 @@ CLI 也兼容读取当前工作目录下的旧 project 配置。
 ## 相关链接
 
 - [快速开始](../../ai/quick-start.mdx)
-- [安装、升级与迁移](../../ai/install-upgrade-migration.mdx)
 - [全局环境变量](../app/env.md)
 - [AI 搭建](../../ai-builder/index.md)
 - [插件开发](../../plugin-development/index.md)

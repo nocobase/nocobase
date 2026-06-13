@@ -1,12 +1,12 @@
 ---
 title: "nb config delete"
-description: "Справочник по команде nb config delete: удаление явно заданной настройки CLI."
-keywords: "nb config delete,NocoBase CLI,configuration"
+description: "Справка по команде nb config delete: удалить явно заданный параметр конфигурации CLI."
+keywords: "nb config delete,NocoBase CLI,удалить конфигурацию"
 ---
 
 # nb config delete
 
-Удаляет явно заданную настройку CLI. После этого CLI возвращается к значению по умолчанию для этого ключа.
+Удаляет явно заданный параметр конфигурации CLI. После удаления этот параметр возвращается к значению по умолчанию.
 
 ## Использование
 
@@ -18,14 +18,19 @@ nb config delete <key>
 
 | Параметр | Тип | Описание |
 | --- | --- | --- |
-| `<key>` | string | Ключ конфигурации: `license.pkg-url`, `docker.network` или `docker.container-prefix` |
+| `<key>` | string | Имя параметра конфигурации. Поддерживаемые значения см. в [`nb config`](./index.md) |
 
 ## Примеры
 
 ```bash
-nb config delete license.pkg-url
+nb config delete locale
+nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete proxy.nb-cli-root
+nb config delete proxy.upstream-host
+nb config delete bin.nginx
+nb config delete bin.git
 ```
 
 ## Связанные команды

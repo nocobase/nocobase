@@ -7,72 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel, ActionSceneEnum, AssignFormModel } from '@nocobase/client-v2';
 import {
-  FlowModelRenderer,
-  resolveRunJSObjectValues,
-  tExpr,
-  useFlowEngine,
-  useFlowSettingsContext,
-} from '@nocobase/flow-engine';
+  ActionModel,
+  ActionSceneEnum,
+  AssignFormModel,
+  createAssignFieldValuesStep,
+  createAssignFormSubModelOptions,
+  getAssignFieldValuesDefaultParams,
+  resolveAssignFieldValues,
+} from '@nocobase/client-v2';
+import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import React, { useEffect, useRef } from 'react';
 import { NAMESPACE } from './locale';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
-
-// 配置态编辑器：渲染 assignForm 子模型
-function AssignFieldsEditor() {
-  const { model: action, blockModel } = useFlowSettingsContext();
-  const engine = useFlowEngine();
-  const initializedRef = useRef(false);
-  const [formModel, setFormModel] = React.useState<AssignFormModel | null>(null);
-
-  // 加载 assignForm 子模型（同一实例）
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const loaded = (await engine.loadOrCreateModel({
-        parentId: action.uid,
-        subKey: 'assignForm',
-        use: 'AssignFormModel',
-      })) as AssignFormModel;
-      if (cancelled) return;
-      setFormModel(loaded);
-      action['assignFormUid'] = loaded?.uid || action['assignFormUid'];
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [action, engine]);
-
-  // 初始化回填（在子模型加载完成后）
-  useEffect(() => {
-    if (initializedRef.current) return;
-    if (!formModel) return;
-    const prev = action.getStepParams?.(SETTINGS_FLOW_KEY, 'assignFieldValues') || {};
-    // 注入资源上下文：与所在表格区块一致
-    const coll = blockModel?.collection || action?.context?.collection;
-    const dsKey = coll?.dataSourceKey;
-    const collName = coll?.name;
-    if (dsKey && collName) {
-      formModel.setStepParams('resourceSettings', 'init', {
-        dataSourceKey: dsKey,
-        collectionName: collName,
-      });
-    }
-    formModel.setInitialAssignedValues(prev?.assignedValues || {});
-    // 批量配置态：移除 ctx.record（Action 为区块级，不具备单条记录上下文）
-    // formModel.context.defineProperty('formValues', { get: () => undefined });
-    formModel.context.defineProperty('record', {
-      get: () => undefined,
-      cache: false,
-    });
-    initializedRef.current = true;
-  }, [action, blockModel?.collection, formModel]);
-
-  return formModel ? <FlowModelRenderer model={formModel} showFlowSettings={false} /> : null;
-}
 
 export class BulkUpdateActionModel extends ActionModel<{
   subModels: {
@@ -95,16 +43,9 @@ BulkUpdateActionModel.define({
   label: tExpr('Bulk update'),
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
-    const dsKey = ctx.collection.dataSourceKey;
-    const collName = ctx.collection?.name;
-    const init = dsKey && collName ? { dataSourceKey: dsKey, collectionName: collName } : undefined;
     return {
       subModels: {
-        assignForm: {
-          use: 'AssignFormModel',
-          async: true,
-          stepParams: { resourceSettings: { init } },
-        },
+        assignForm: createAssignFormSubModelOptions(ctx),
       },
     };
   },
@@ -141,26 +82,11 @@ BulkUpdateActionModel.registerFlow({
         },
       },
     },
-    assignFieldValues: {
+    assignFieldValues: createAssignFieldValuesStep({
+      settingsFlowKey: SETTINGS_FLOW_KEY,
       title: tExpr('Assign field values'),
-      uiSchema() {
-        return {
-          editor: {
-            'x-decorator': 'FormItem',
-            'x-component': () => <AssignFieldsEditor />,
-          },
-        };
-      },
-      async beforeParamsSave(ctx) {
-        const m = ctx.model as BulkUpdateActionModel;
-        // 跨视图栈按 uid 定位到设置面板中的真实 AssignForm 实例
-        const form: AssignFormModel = (m?.assignFormUid &&
-          (ctx.engine.getModel?.(m.assignFormUid, true) as any)) as any;
-        if (!form) return;
-        const assignedValues = form?.getAssignedValues?.() || {};
-        ctx.model.setStepParams(SETTINGS_FLOW_KEY, 'assignFieldValues', { assignedValues });
-      },
-    },
+      clearRecordContext: true,
+    }),
   },
 });
 
@@ -170,8 +96,7 @@ BulkUpdateActionModel.registerFlow({
   steps: {
     apply: {
       async defaultParams(ctx) {
-        const step = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'assignFieldValues') || {};
-        return { assignedValues: step?.assignedValues || {} };
+        return getAssignFieldValuesDefaultParams(ctx, SETTINGS_FLOW_KEY);
       },
       async handler(ctx, params) {
         // 统一接入二次确认：如果启用则弹窗；未配置时默认不启用
@@ -179,12 +104,8 @@ BulkUpdateActionModel.registerFlow({
         const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
         await ctx.runAction('confirm', confirmParams);
 
-        let assignedValues: Record<string, any> = {};
-        try {
-          assignedValues = await resolveRunJSObjectValues(ctx, params?.assignedValues);
-        } catch (error) {
-          console.error('[BulkUpdateAction] RunJS execution failed', error);
-          ctx.message.error(ctx.t('RunJS execution failed'));
+        const assignedValues = await resolveAssignFieldValues(ctx, params?.assignedValues, 'BulkUpdateAction');
+        if (!assignedValues) {
           return;
         }
 

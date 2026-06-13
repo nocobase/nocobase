@@ -6,7 +6,7 @@ keywords: "nb license,NocoBase CLI,commercial licensing"
 
 # nb license
 
-NocoBase の商用ライセンスを管理します。ライセンスの有効化、instance ID、ライセンス状態、ライセンス済みプラグインが含まれます。
+NocoBase の商用ライセンスを管理します。既存の license key を使った有効化、Instance ID、ライセンス状態、ライセンス済みプラグインが含まれます。
 
 ## 使い方
 
@@ -18,7 +18,7 @@ nb license <command>
 
 | コマンド | 説明 |
 | --- | --- |
-| [`nb license activate`](./activate.md) | 現在の env の商用ライセンスを有効化します |
+| [`nb license activate`](./activate.md) | 既存の license key を使って現在の env の商用ライセンスを有効化します |
 | [`nb license id`](./id.md) | 現在の env の instance ID を表示または生成します |
 | [`nb license status`](./status.md) | 現在の env の商用ライセンス状態を表示します |
 | [`nb license plugins`](./plugins/index.md) | 現在のライセンスで許可された商用プラグインを管理します |

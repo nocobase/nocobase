@@ -18,7 +18,7 @@ A seguir estão listadas todas as coisas que a IA pode fazer por você atualment
 
 :::warning Atenção
 
-- O NocoBase está em processo de migração de `client` (v1) para `client-v2`. No momento, o `client-v2` ainda está em desenvolvimento. O código cliente gerado pelo desenvolvimento com IA é baseado no `client-v2` e só pode ser usado no caminho `/v2/`. É uma prévia experimental e não é recomendado para uso direto em produção.
+- O NocoBase está em processo de migração de `client` (v1) para `client-v2`. No momento, o `client-v2` ainda está em desenvolvimento. O código cliente gerado pelo desenvolvimento com IA é baseado no `client-v2` e só pode ser usado no caminho `/v/`. É uma prévia experimental e não é recomendado para uso direto em produção.
 - O código gerado pela IA pode não estar 100% correto. Recomenda-se revisá-lo antes de habilitar. Se encontrar problemas em tempo de execução, envie a mensagem de erro para a IA continuar investigando e corrigindo. Geralmente, algumas trocas de mensagens resolvem o problema.
 - Recomenda-se usar modelos da família GPT ou Claude para o desenvolvimento, pois oferecem os melhores resultados. Outros modelos também funcionam, mas a qualidade da geração pode variar.
 

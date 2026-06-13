@@ -392,10 +392,15 @@ export default function BasicAuthAdminSettings() {
         showIcon
         message={t('The authentication allows users to sign in via username or email.')}
       />
+      {/*
+        `forceRender: true` 让所有 tab 的内容首屏就 mount —— 否则非 active tab 里的
+        `Form.Item` 从未注册到父抽屉表单的 value store，提交时会把那些字段当成"用户清空"，
+        覆盖掉服务端已有的值。v1 用 Formily `FormTab` 默认就是全 mount，所以没这个坑。
+      */}
       <Tabs
         items={[
-          { key: 'signup', label: t('Sign up settings'), children: <SignUpTab /> },
-          { key: 'forgot', label: t('Forgot password'), children: <ForgotPasswordTab /> },
+          { key: 'signup', label: t('Sign up settings'), forceRender: true, children: <SignUpTab /> },
+          { key: 'forgot', label: t('Forgot password'), forceRender: true, children: <ForgotPasswordTab /> },
         ]}
       />
     </div>

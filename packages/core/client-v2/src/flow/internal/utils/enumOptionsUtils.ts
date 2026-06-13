@@ -33,13 +33,21 @@ function normalizeUiSchemaEnumToOptions(uiEnum: UiSchemaEnumItem[] = []): Option
   });
 }
 
-// Map option labels through t() (supports {{t('key')}} template and plain strings)
-export function translateOptions(options: Option[] = [], t: (s: string) => string): Option[] {
-  if (!Array.isArray(options)) return [] as Option[];
-  return options.map((opt) => (typeof opt?.label === 'string' ? { ...opt, label: t(opt.label) } : opt));
+export function isTranslationTemplate(value: unknown): value is string {
+  return typeof value === 'string' && /\{\{\s*t\s*\(/.test(value);
 }
 
-// Build options from uiSchema.enum with translated labels
+export function translateOptionLabel(label: any, t: (s: string) => string): any {
+  return isTranslationTemplate(label) ? t(label) : label;
+}
+
+// Map option labels through t() only when labels explicitly use {{t(...)}} templates.
+export function translateOptions(options: Option[] = [], t: (s: string) => string): Option[] {
+  if (!Array.isArray(options)) return [] as Option[];
+  return options.map((opt) => ({ ...opt, label: translateOptionLabel(opt?.label, t) }));
+}
+
+// Build options from uiSchema.enum with explicitly translated labels
 export function enumToOptions(uiEnum: UiSchemaEnumItem[] | undefined, t: (s: string) => string): Option[] | undefined {
   if (!uiEnum || !Array.isArray(uiEnum) || uiEnum.length === 0) return undefined;
   const normalized = normalizeUiSchemaEnumToOptions(uiEnum);

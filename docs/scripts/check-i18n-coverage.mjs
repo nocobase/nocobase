@@ -29,7 +29,7 @@ import path from 'node:path';
 // 暂不参与对齐校对的语言；显式 --lang=<code> 不适用于这个脚本（输入是 PR 改动而非全语言扫描）
 const SKIP_LANGS = new Set(['ar']);
 // cn 之外要求同步的语言（需要跟 SKIP_LANGS 互斥）
-const TARGET_LANGS = ['en', 'ja', 'es', 'pt', 'de', 'fr', 'ru', 'id', 'vi'];
+const TARGET_LANGS = ['en', 'ja', 'es', 'pt', 'de', 'fr', 'id', 'vi', 'ru'];
 const DOC_EXTS = new Set(['.md', '.mdx']);
 
 function parseArgs(argv) {

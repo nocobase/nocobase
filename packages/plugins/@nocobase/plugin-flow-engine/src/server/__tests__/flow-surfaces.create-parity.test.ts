@@ -60,6 +60,13 @@ const PET_DEFAULT_FIELD_GROUPS = [
   },
 ];
 
+const DIRECT_FIELD_WRAPPER_USES = new Set([
+  'TableColumnModel',
+  'FormItemModel',
+  'DetailsItemModel',
+  'FilterFormItemModel',
+]);
+
 const REPRESENTATIVE_CREATE_PARITY_ENTRIES = FORMAL_FLOW_SURFACE_CREATE_PARITY_FIXTURE_MANIFEST.filter((entry) =>
   FORMAL_FLOW_SURFACE_REPRESENTATIVE_CREATE_PARITY_BLOCK_KEYS.includes(entry.key),
 );
@@ -166,6 +173,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
+    fields: PET_TABLE_FIELD_PATHS.slice(0, 3),
     defaults: petsDefaultFieldGroups(),
   });
   const hostPopup = await ensureBlockAction(rootAgent, hostTable.uid, 'addNew', {
@@ -189,6 +197,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
         resource: {
           binding: 'currentCollection',
         },
+        fields: PET_TABLE_FIELD_PATHS.slice(0, 3),
         defaults: petsDefaultFieldGroups(),
       });
       await configureTableBlock(rootAgent, nestedTable.uid);
@@ -284,6 +293,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
           binding: 'otherRecords',
           collectionName: 'departments',
         },
+        fields: ['title', 'code', 'status'],
       });
       return getSurface(rootAgent, {
         uid: nestedList.uid,
@@ -299,6 +309,7 @@ async function buildNestedPopupCreateParityReadback(rootAgent: any, key: 'table'
           binding: 'otherRecords',
           collectionName: 'departments',
         },
+        fields: ['title'],
       });
       return getSurface(rootAgent, {
         uid: nestedGridCard.uid,
@@ -321,6 +332,7 @@ async function createTableParityReadback(rootAgent: any) {
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
+    fields: PET_TABLE_FIELD_PATHS.slice(0, 3),
     defaults: petsDefaultFieldGroups(),
   });
 
@@ -446,6 +458,7 @@ async function createCreateFormParityReadback(rootAgent: any) {
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
+    fields: [PET_FORM_FIELD_PATHS[0]],
   });
   await configurePetsCreateFormBlock(rootAgent, form.uid, 'Submit');
   return getSurface(rootAgent, {
@@ -467,6 +480,7 @@ async function createEditFormParityReadback(rootAgent: any) {
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
+    fields: [PET_FORM_FIELD_PATHS[0]],
   });
   await configurePetsEditFormBlock(rootAgent, form.uid, 'Submit');
   return getSurface(rootAgent, {
@@ -488,6 +502,7 @@ async function createDetailsParityReadback(rootAgent: any) {
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
+    fields: PET_DETAILS_FIELD_PATHS.slice(0, 3),
   });
   await configurePetsDetailsBlock(rootAgent, details.uid);
   return getSurface(rootAgent, {
@@ -509,6 +524,7 @@ async function createFilterFormParityReadback(rootAgent: any) {
       dataSourceKey: 'main',
       collectionName: 'pets',
     },
+    fields: PET_TABLE_FIELD_PATHS.slice(0, 3),
     defaults: petsDefaultFieldGroups(),
   });
   await addField(rootAgent, table.uid, 'name');
@@ -522,6 +538,13 @@ async function createFilterFormParityReadback(rootAgent: any) {
       dataSourceKey: 'main',
       collectionName: '',
     },
+    fields: [
+      {
+        fieldPath: PET_FILTER_FIELD_PATHS[0],
+        collectionName: 'pets',
+        defaultTargetUid: table.uid,
+      },
+    ],
   });
 
   await configureFilterFormBlock(rootAgent, filterForm.uid);
@@ -532,7 +555,7 @@ async function createFilterFormParityReadback(rootAgent: any) {
   const reset = await addAction(rootAgent, filterForm.uid, 'reset');
   await configureSimpleAction(rootAgent, reset.uid, 'Reset');
 
-  for (const fieldPath of PET_FILTER_FIELD_PATHS) {
+  for (const fieldPath of PET_FILTER_FIELD_PATHS.slice(1)) {
     await addField(rootAgent, filterForm.uid, fieldPath, {
       collectionName: 'pets',
       defaultTargetUid: table.uid,
@@ -589,6 +612,7 @@ async function createCollectionBlockParityReadback(
       dataSourceKey: 'main',
       collectionName,
     },
+    fields: type === 'kanban' ? ['title'] : ['title', 'code', 'status'],
   });
   return getSurface(rootAgent, {
     uid: block.uid,
@@ -935,7 +959,10 @@ function readErrorMessage(response: any) {
 async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
-      values,
+      values: {
+        icon: 'FileOutlined',
+        ...values,
+      },
     }),
   );
 }
@@ -957,6 +984,12 @@ async function createBlockData(rootAgent: any, values: Record<string, any>) {
 }
 
 async function addField(rootAgent: any, targetUid: string, fieldPath: string, extraValues: Record<string, any> = {}) {
+  if (!Object.keys(extraValues).length) {
+    const existingField = await findExistingField(rootAgent, targetUid, fieldPath);
+    if (existingField) {
+      return existingField;
+    }
+  }
   return getData(
     await rootAgent.resource('flowSurfaces').addField({
       values: {
@@ -967,6 +1000,38 @@ async function addField(rootAgent: any, targetUid: string, fieldPath: string, ex
         ...extraValues,
       },
     }),
+  );
+}
+
+async function findExistingField(rootAgent: any, targetUid: string, fieldPath: string) {
+  const surface = await getSurface(rootAgent, {
+    uid: targetUid,
+  });
+  const normalizedFieldPath = String(fieldPath || '').trim();
+  const fieldItems = collectDirectFieldItems(surface.tree);
+  return (
+    fieldItems.find(
+      (item: any) => String(item?.stepParams?.fieldSettings?.init?.fieldPath || '').trim() === normalizedFieldPath,
+    ) || null
+  );
+}
+
+function collectDirectFieldItems(tree: any): any[] {
+  if (!tree || typeof tree !== 'object') {
+    return [];
+  }
+  if (tree.use === 'TableBlockModel') {
+    return _.castArray(tree?.subModels?.columns || []).filter(isDirectFieldWrapperItem);
+  }
+  const grid = _.castArray(tree?.subModels?.grid || [])[0];
+  return _.castArray(grid?.subModels?.items || []).filter(isDirectFieldWrapperItem);
+}
+
+function isDirectFieldWrapperItem(item: any) {
+  return (
+    item?.uid &&
+    DIRECT_FIELD_WRAPPER_USES.has(item?.use) &&
+    !!String(item?.stepParams?.fieldSettings?.init?.fieldPath || '').trim()
   );
 }
 

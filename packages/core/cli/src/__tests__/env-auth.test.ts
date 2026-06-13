@@ -13,12 +13,15 @@ import path from 'node:path';
 import { test, expect } from 'vitest';
 import { saveAuthConfig } from '../lib/auth-store.js';
 import {
+  authenticateEnvWithBasic,
   buildOauthCompletionHtml,
   buildOauthErrorHtml,
   buildOauthRedirectHtml,
+  getOauthLoopbackRedirectUri,
   getOauthMetadataUrl,
   getOauthResource,
   isOauthAccessTokenExpired,
+  resolveServerRequestTarget,
   resolveAccessToken,
 } from '../lib/env-auth.js';
 
@@ -55,9 +58,12 @@ async function withOauthRetryDelay(delayMs: string, run: () => Promise<void>) {
 }
 
 test('OAuth helpers derive metadata and resource URLs from base URL', () => {
-  expect(getOauthMetadataUrl('http://localhost:13000/api/')).toBe('http://localhost:13000/api/.well-known/oauth-authorization-server');
+  expect(getOauthMetadataUrl('http://localhost:13000/api/')).toBe(
+    'http://localhost:13000/api/.well-known/oauth-authorization-server',
+  );
   expect(getOauthResource('http://localhost:13000/api/')).toBe('http://localhost:13000/api/');
   expect(getOauthResource('https://demo.example.com/custom/api')).toBe('https://demo.example.com/custom/api/');
+  expect(getOauthLoopbackRedirectUri(62461)).toBe('http://127.0.0.1:62461/callback');
 });
 
 test('buildOauthRedirectHtml escapes OAuth URLs for HTML and script contexts', () => {
@@ -69,7 +75,9 @@ test('buildOauthRedirectHtml escapes OAuth URLs for HTML and script contexts', (
   expect(html).toMatch(/Continue to sign-in/);
   expect(html).toMatch(/Open manually/);
   expect(html).toMatch(/scope=openid api&amp;state=&quot;abc&quot;&amp;next=&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
-  expect(html).toMatch(/window\.location\.replace\("https:\/\/example\.com\/oauth\?scope=openid api&state=\\"abc\\"&next=\\u003cscript>alert\(1\)\\u003c\/script>"/);
+  expect(html).toMatch(
+    /window\.location\.replace\("https:\/\/example\.com\/oauth\?scope=openid api&state=\\"abc\\"&next=\\u003cscript>alert\(1\)\\u003c\/script>"/,
+  );
   expect(html).not.toMatch(/href="[^"]*&state="/);
 });
 
@@ -97,22 +105,202 @@ test('buildOauthErrorHtml renders a styled error page and escapes detail content
 
 test('isOauthAccessTokenExpired uses a refresh window', () => {
   const now = Date.parse('2026-04-15T00:00:00.000Z');
-  expect(isOauthAccessTokenExpired(
+  expect(
+    isOauthAccessTokenExpired(
       {
         type: 'oauth',
         accessToken: 'token',
         expiresAt: '2026-04-15T00:00:30.000Z',
       },
       now,
-    )).toBe(true);
-  expect(isOauthAccessTokenExpired(
+    ),
+  ).toBe(true);
+  expect(
+    isOauthAccessTokenExpired(
       {
         type: 'oauth',
         accessToken: 'token',
         expiresAt: '2026-04-15T00:05:00.000Z',
       },
       now,
-    )).toBe(false);
+    ),
+  ).toBe(false);
+});
+
+test('authenticateEnvWithBasic exchanges basic credentials for a token', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            apiBaseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      expect(url).toBe('http://localhost:13000/api/auth:signIn');
+      expect(init?.method).toBe('POST');
+      expect(init?.headers).toMatchObject({
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'x-authenticator': 'basic',
+      });
+      expect(JSON.parse(String(init?.body ?? '{}'))).toEqual({
+        account: 'admin',
+        password: 'admin123',
+      });
+
+      return new Response(
+        JSON.stringify({
+          data: {
+            token: 'basic-token-123',
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    }) as typeof fetch;
+
+    try {
+      await expect(
+        authenticateEnvWithBasic({
+          envName: 'test',
+          username: 'admin',
+          password: 'admin123',
+          scope: 'global',
+        }),
+      ).resolves.toBe('basic-token-123');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+test('authenticateEnvWithBasic formats API error payloads from basic sign-in failures', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            apiBaseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          errors: [
+            {
+              code: 'AUTH_INVALID',
+              message: 'Invalid username or password.',
+            },
+          ],
+        }),
+        { status: 401, headers: { 'content-type': 'application/json' } },
+      )) as typeof fetch;
+
+    try {
+      await expect(
+        authenticateEnvWithBasic({
+          envName: 'test',
+          username: 'admin',
+          password: 'wrong-password',
+          scope: 'global',
+        }),
+      ).rejects.toThrow(/Basic sign-in failed: \[AUTH_INVALID\] Invalid username or password\./);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+test('authenticateEnvWithBasic rejects responses without a token', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            apiBaseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          data: {},
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      )) as typeof fetch;
+
+    try {
+      await expect(
+        authenticateEnvWithBasic({
+          envName: 'test',
+          username: 'admin',
+          password: 'admin123',
+          scope: 'global',
+        }),
+      ).rejects.toThrow(/Basic sign-in succeeded but no token was returned\./);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+test('resolveAccessToken explains how to update a saved env without a base URL', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            auth: {
+              type: 'oauth',
+              accessToken: 'expired-token',
+              refreshToken: 'refresh-token',
+              expiresAt: '2026-04-14T00:00:00.000Z',
+              issuer: 'http://localhost:13000/api',
+              clientId: 'client-1',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await expect(
+      resolveAccessToken({
+        envName: 'test',
+        scope: 'global',
+      }),
+    ).rejects.toThrow(/Update it with `nb env update test --api-base-url <url>` first\./);
+  });
+});
+
+test('resolveServerRequestTarget explains how to initialize a missing env', async () => {
+  await withTempCliHome(async () => {
+    await expect(
+      resolveServerRequestTarget({
+        envName: 'missing',
+        scope: 'global',
+      }),
+    ).rejects.toThrow(/Use --api-base-url or run `nb init --ui --env missing` first\./);
+  });
 });
 
 test('resolveAccessToken refreshes expired OAuth sessions', async () => {

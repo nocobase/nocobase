@@ -13,6 +13,7 @@ import { EditorState, StateEffect } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { autocompletion, CompletionSource } from '@codemirror/autocomplete';
 import { useGlobalTheme } from '@nocobase/client-v2';
+import { theme } from 'antd';
 
 const LANGUAGE_EXTENSIONS: Record<string, () => Promise<any>> = {
   javascript: () => import('@codemirror/lang-javascript').then((m) => m.javascript()),
@@ -37,6 +38,7 @@ export type CodeEditorHandle = {
 export const CodeEditor = React.forwardRef<CodeEditorHandle, CodeEditorProps>(
   ({ language = 'javascript', value = '', onChange, completions, rightExtra }, ref) => {
     const { isDarkTheme } = useGlobalTheme();
+    const { token } = theme.useToken();
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView>();
     const [langExt, setLangExt] = useState<any>(null);
@@ -183,7 +185,11 @@ export const CodeEditor = React.forwardRef<CodeEditorHandle, CodeEditorProps>(
 
     return (
       <div style={{ position: 'relative' }}>
-        {rightExtra ? <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}>{rightExtra}</div> : null}
+        {rightExtra ? (
+          <div style={{ position: 'absolute', insetBlockStart: 0, insetInlineEnd: 0, zIndex: token.zIndexPopupBase }}>
+            {rightExtra}
+          </div>
+        ) : null}
         <div ref={editorRef} />
       </div>
     );

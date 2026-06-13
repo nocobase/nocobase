@@ -21,6 +21,7 @@ import { resolveLocalizedText } from '../lib/cli-locale.js';
 import { runPromptCatalog } from '../lib/prompt-catalog.js';
 import {
   findAvailableTcpPort,
+  validateAppPublicPath,
   validateApiBaseUrl,
   validateAvailableTcpPort,
   validateTcpPort,
@@ -71,9 +72,9 @@ beforeEach(() => {
 afterEach(() => {
   if (originalNbLocale === undefined) {
     delete process.env.NB_LOCALE;
-    return;
+  } else {
+    process.env.NB_LOCALE = originalNbLocale;
   }
-  process.env.NB_LOCALE = originalNbLocale;
   clearExternalDbValidationCache();
   mockPgConnect.mockReset();
   mockPgQuery.mockReset();
@@ -97,11 +98,50 @@ test('validateApiBaseUrl accepts URLs whose health check returns HTTP 200', asyn
 
 test('validateApiBaseUrl rejects malformed URLs and unsupported schemes', async () => {
   await expect(validateApiBaseUrl('not a url')).resolves.toMatch(/Enter a valid URL/);
-  await expect(validateApiBaseUrl('ftp://example.com/api')).resolves.toMatch(/URL must start with http:\/\/ or https:\/\//);
+  await expect(validateApiBaseUrl('ftp://example.com/api')).resolves.toMatch(
+    /URL must start with http:\/\/ or https:\/\//,
+  );
+});
+
+test('validateApiBaseUrl rejects URLs that do not include the api prefix', async () => {
+  await expect(validateApiBaseUrl('http://localhost:13000')).resolves.toMatch(/must include the \/api prefix/i);
+  await expect(validateApiBaseUrl('https://demo.example.com/nocobase')).resolves.toMatch(
+    /must include the \/api prefix/i,
+  );
+});
+
+test('validateApiBaseUrl accepts supported api base url shapes with optional public path prefixes', async () => {
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    status: 200,
+    json: vi.fn(),
+  } as any);
+
+  await expect(validateApiBaseUrl('https://demo.example.com/nocobase/api')).resolves.toBe(undefined);
+  await expect(validateApiBaseUrl('https://demo.example.com/nocobase/api/__app/mobile')).resolves.toBe(undefined);
+
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://demo.example.com/nocobase/api/__health_check',
+    expect.objectContaining({ method: 'GET' }),
+  );
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://demo.example.com/nocobase/api/__app/mobile/__health_check',
+    expect.objectContaining({ method: 'GET' }),
+  );
+});
+
+test('validateApiBaseUrl rejects unsupported paths that only contain api as a middle segment', async () => {
+  await expect(validateApiBaseUrl('https://demo.example.com/foo/api/bar')).resolves.toMatch(
+    /must include the \/api prefix/i,
+  );
+  await expect(validateApiBaseUrl('https://demo.example.com/api/foo')).resolves.toMatch(
+    /must include the \/api prefix/i,
+  );
 });
 
 test('validateApiBaseUrl rejects URLs that already include the health check path', async () => {
-  await expect(validateApiBaseUrl('http://localhost:13000/api/__health_check')).resolves.toMatch(/Do not include \/__health_check/i);
+  await expect(validateApiBaseUrl('http://localhost:13000/api/__health_check')).resolves.toMatch(
+    /Do not include \/__health_check/i,
+  );
 });
 
 test('validateApiBaseUrl rejects maintaining health check responses', async () => {
@@ -118,7 +158,9 @@ test('validateApiBaseUrl rejects maintaining health check responses', async () =
     })),
   } as any);
 
-  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toMatch(/still starting or in maintenance mode/i);
+  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toMatch(
+    /still starting or in maintenance mode/i,
+  );
 });
 
 test('validateApiBaseUrl rejects unexpected health check statuses', async () => {
@@ -127,13 +169,17 @@ test('validateApiBaseUrl rejects unexpected health check statuses', async () => 
     json: vi.fn(async () => ({ error: { message: 'not found' } })),
   } as any);
 
-  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toMatch(/did not pass the health check \(HTTP 404\)/i);
+  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toMatch(
+    /did not pass the health check \(HTTP 404\)/i,
+  );
 });
 
 test('validateApiBaseUrl reports connectivity failures', async () => {
   vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:13000'));
 
-  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toMatch(/Unable to connect to the API base URL/i);
+  await expect(validateApiBaseUrl('http://localhost:13000/api')).resolves.toMatch(
+    /Unable to connect to the API base URL/i,
+  );
 });
 
 test('validateEnvKey allows only letters and numbers', () => {
@@ -141,28 +187,75 @@ test('validateEnvKey allows only letters and numbers', () => {
   expect(validateEnvKey('local-dev') ?? '').toMatch(/letters and numbers only/i);
 });
 
-test('validateAvailableTcpPort rejects invalid and occupied ports', async () => {
-  expect(await validateAvailableTcpPort('abc') ?? '').toMatch(/valid TCP port/i);
+test('validateAppPublicPath accepts root and slash-separated slug paths', () => {
+  expect(validateAppPublicPath('/')).toBe(undefined);
+  expect(validateAppPublicPath('/nocobase/')).toBe(undefined);
+  expect(validateAppPublicPath('/admin_console/')).toBe(undefined);
+  expect(validateAppPublicPath('/foo-bar/baz_2/')).toBe(undefined);
+  expect(validateAppPublicPath('/foo-bar/baz_2')).toBe(undefined);
+});
 
-  const server = net.createServer();
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => resolve());
-  });
+test('validateAppPublicPath rejects invalid path formats', () => {
+  expect(validateAppPublicPath('nocobase') ?? '').toMatch(/slash-separated path/i);
+  expect(validateAppPublicPath('/中文/') ?? '').toMatch(/slash-separated path/i);
+  expect(validateAppPublicPath('/foo bar/') ?? '').toMatch(/slash-separated path/i);
+  expect(validateAppPublicPath('/foo.bar/') ?? '').toMatch(/slash-separated path/i);
+  expect(validateAppPublicPath('/foo//bar/') ?? '').toMatch(/slash-separated path/i);
+});
 
-  const address = server.address();
-  expect(address && typeof address === 'object').toBeTruthy();
-  expect(await validateAvailableTcpPort(String(address.port)) ?? '').toMatch(/already in use/i);
+test('validateAvailableTcpPort rejects invalid and occupied ports across local bind hosts', async () => {
+  expect((await validateAvailableTcpPort('abc')) ?? '').toMatch(/valid TCP port/i);
 
-  await new Promise<void>((resolve, reject) => {
-    server.close((error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve();
+  for (const host of ['127.0.0.1', '0.0.0.0'] as const) {
+    const server = net.createServer();
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(0, host, () => resolve());
     });
-  });
+
+    const address = server.address();
+    expect(address && typeof address === 'object').toBeTruthy();
+    expect((await validateAvailableTcpPort(String(address.port))) ?? '').toMatch(/already in use/i);
+
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
+
+  const ipv6Server = net.createServer();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      ipv6Server.once('error', reject);
+      ipv6Server.listen(0, '::1', () => resolve());
+    });
+
+    const address = ipv6Server.address();
+    expect(address && typeof address === 'object').toBeTruthy();
+    expect((await validateAvailableTcpPort(String(address.port))) ?? '').toMatch(/already in use/i);
+  } catch (error: unknown) {
+    const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined;
+    if (code !== 'EAFNOSUPPORT' && code !== 'EADDRNOTAVAIL') {
+      throw error;
+    }
+  } finally {
+    if (ipv6Server.listening) {
+      await new Promise<void>((resolve, reject) => {
+        ipv6Server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
+  }
 });
 
 test('findAvailableTcpPort returns a free TCP port', async () => {
@@ -196,9 +289,10 @@ test('findAvailableTcpPort returns a free TCP port', async () => {
     expect(reservedPort).toBeTruthy();
     expect(reservedServer?.listening).toBe(true);
   } finally {
-    if (reservedServer) {
+    const server = reservedServer;
+    if (server) {
       await new Promise<void>((resolve, reject) => {
-        reservedServer!.close((error) => {
+        server.close((error) => {
           if (error) {
             reject(error);
             return;
@@ -225,13 +319,13 @@ test('init and env add prompts validate apiBaseUrl', async () => {
   expect(appNamePrompt.initialValue).toBe(undefined);
   expect(appNamePrompt.yesInitialValue).toBe(undefined);
   expect(typeof appNamePrompt.validate).toBe('function');
-  expect(await appNamePrompt.validate?.('local-dev', {}) ?? '').toMatch(/letters and numbers only/i);
+  expect((await appNamePrompt.validate?.('local-dev', {})) ?? '').toMatch(/letters and numbers only/i);
   expect(initPrompt.type).toBe('text');
   expect(envAddPrompt.type).toBe('text');
   expect(typeof initPrompt.validate).toBe('function');
   expect(typeof envAddPrompt.validate).toBe('function');
-  expect(await initPrompt.validate?.('not-a-url', {}) ?? '').toMatch(/Enter a valid URL/);
-  expect(await envAddPrompt.validate?.('ftp://example.com/api', {}) ?? '').toMatch(/http:\/\/ or https:\/\//);
+  expect((await initPrompt.validate?.('not-a-url', {})) ?? '').toMatch(/Enter a valid URL/);
+  expect((await envAddPrompt.validate?.('ftp://example.com/api', {})) ?? '').toMatch(/http:\/\/ or https:\/\//);
 });
 
 test('init appName validates global env name uniqueness', async () => {
@@ -250,7 +344,7 @@ test('init appName validates global env name uniqueness', async () => {
 
     const appNamePrompt = Init.prompts.appName;
     expect(appNamePrompt.type).toBe('text');
-    expect(await appNamePrompt.validate?.('local', {}) ?? '').toMatch(/already exists/i);
+    expect((await appNamePrompt.validate?.('local', {})) ?? '').toMatch(/already exists/i);
     expect(await appNamePrompt.validate?.('newapp', {})).toBe(undefined);
   });
 });
@@ -295,7 +389,8 @@ test('init --yes --env validates global env name uniqueness through preset value
       { scope: 'global' },
     );
 
-    await expect((() =>
+    await expect(
+      (() =>
         runPromptCatalog(
           {
             appName: Init.prompts.appName,
@@ -311,12 +406,15 @@ test('init --yes --env validates global env name uniqueness through preset value
               },
             },
           },
-        ))()).rejects.toThrow(/already exists/i);
+        ))(),
+    ).rejects.toThrow(/already exists/i);
   });
 });
 
 test('install prompts expose the expected defaults and validators', () => {
   const envPrompt = Install.envPrompts.env;
+  const langPrompt = Install.appPrompts.lang;
+  const appPathPrompt = Install.appPrompts.appPath;
   const appPortPrompt = Install.appPrompts.appPort;
   const builtinDbPrompt = Install.dbPrompts.builtinDb;
   const dbDialectPrompt = Install.dbPrompts.dbDialect;
@@ -326,6 +424,9 @@ test('install prompts expose the expected defaults and validators', () => {
   const dbDatabasePrompt = Install.dbPrompts.dbDatabase;
   const dbUserPrompt = Install.dbPrompts.dbUser;
   const dbPasswordPrompt = Install.dbPrompts.dbPassword;
+  const dbSchemaPrompt = Install.dbPrompts.dbSchema;
+  const dbTablePrefixPrompt = Install.dbPrompts.dbTablePrefix;
+  const dbUnderscoredPrompt = Install.dbPrompts.dbUnderscored;
   const rootUsernamePrompt = Install.rootUserPrompts.rootUsername;
   const rootEmailPrompt = Install.rootUserPrompts.rootEmail;
   const rootPasswordPrompt = Install.rootUserPrompts.rootPassword;
@@ -336,6 +437,16 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(envPrompt.yesInitialValue).toBe(undefined);
   expect(typeof envPrompt.validate).toBe('function');
   expect(envPrompt.validate?.('local-dev', {}) ?? '').toMatch(/letters and numbers only/i);
+
+  expect(langPrompt.type).toBe('select');
+  expect(resolveLocalizedText(langPrompt.message, { locale: 'en-US' })).toBe(
+    'Which language would you like to use for the app?',
+  );
+
+  expect(appPathPrompt.type).toBe('text');
+  expect(resolveLocalizedText(appPathPrompt.message, { locale: 'en-US' })).toContain(
+    process.env.NB_CLI_ROOT ?? os.homedir(),
+  );
 
   expect(appPortPrompt.type).toBe('text');
   expect(appPortPrompt.initialValue).toBe(undefined);
@@ -399,6 +510,24 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(dbPasswordPrompt.initialValue).toBe('nocobase');
   expect(dbPasswordPrompt.yesInitialValue).toBe('nocobase');
 
+  expect(dbSchemaPrompt.type).toBe('text');
+  expect(resolveLocalizedText(dbSchemaPrompt.message, { locale: 'en-US' })).toBe(
+    'What is the database schema? (PostgreSQL only, optional)',
+  );
+  expect(dbSchemaPrompt.initialValue).toBe(undefined);
+  expect(dbSchemaPrompt.yesInitialValue).toBe(undefined);
+  expect(typeof dbSchemaPrompt.hidden).toBe('function');
+  expect(dbSchemaPrompt.hidden?.({ dbDialect: 'postgres' })).toBe(false);
+  expect(dbSchemaPrompt.hidden?.({ dbDialect: 'mysql' })).toBe(true);
+
+  expect(dbTablePrefixPrompt.type).toBe('text');
+  expect(dbTablePrefixPrompt.initialValue).toBe(undefined);
+  expect(dbTablePrefixPrompt.yesInitialValue).toBe(undefined);
+
+  expect(dbUnderscoredPrompt.type).toBe('boolean');
+  expect(dbUnderscoredPrompt.initialValue).toBe(false);
+  expect(dbUnderscoredPrompt.yesInitialValue).toBe(false);
+
   expect(rootUsernamePrompt.type).toBe('text');
   expect(rootUsernamePrompt.initialValue).toBe(undefined);
   expect(rootUsernamePrompt.yesInitialValue).toBe('nocobase');
@@ -410,7 +539,9 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(rootEmailPrompt.required).toBe(true);
 
   expect(rootPasswordPrompt.type).toBe('password');
-  expect(resolveLocalizedText(rootPasswordPrompt.message, { locale: 'en-US' })).toBe('Choose the initial admin password');
+  expect(resolveLocalizedText(rootPasswordPrompt.message, { locale: 'en-US' })).toBe(
+    'Choose the initial admin password',
+  );
   expect(rootPasswordPrompt.initialValue).toBe(undefined);
   expect(rootPasswordPrompt.yesInitialValue).toBe('admin123');
   expect(rootPasswordPrompt.required).toBe(true);
@@ -424,15 +555,17 @@ test('install prompts expose the expected defaults and validators', () => {
 test('install external db validators skip connection checks until config is complete', async () => {
   const dbHostPrompt = Install.dbPrompts.dbHost;
 
-  expect(await dbHostPrompt.validate?.('db.example.com', {
-    builtinDb: false,
-    dbDialect: 'postgres',
-    dbHost: 'db.example.com',
-    dbPort: '5432',
-    dbDatabase: 'nocobase',
-    dbUser: 'nocobase',
-    dbPassword: '',
-  })).toBe(undefined);
+  expect(
+    await dbHostPrompt.validate?.('db.example.com', {
+      builtinDb: false,
+      dbDialect: 'postgres',
+      dbHost: 'db.example.com',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: '',
+    }),
+  ).toBe(undefined);
 
   expect(mockPgConnect).not.toHaveBeenCalled();
 });
@@ -440,15 +573,17 @@ test('install external db validators skip connection checks until config is comp
 test('install external db validators do not run for built-in database config', async () => {
   const dbPasswordPrompt = Install.dbPrompts.dbPassword;
 
-  expect(await dbPasswordPrompt.validate?.('secret', {
-    builtinDb: true,
-    dbDialect: 'postgres',
-    dbHost: 'postgres',
-    dbPort: '5432',
-    dbDatabase: 'nocobase',
-    dbUser: 'nocobase',
-    dbPassword: 'secret',
-  })).toBe(undefined);
+  expect(
+    await dbPasswordPrompt.validate?.('secret', {
+      builtinDb: true,
+      dbDialect: 'postgres',
+      dbHost: 'postgres',
+      dbPort: '5432',
+      dbDatabase: 'nocobase',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+    }),
+  ).toBe(undefined);
 
   expect(mockPgConnect).not.toHaveBeenCalled();
 });
@@ -493,6 +628,68 @@ test('install external db validators surface readable auth errors', async () => 
   expect(result ?? '').toMatch(/username and password/i);
 });
 
+test('install mysql dbUnderscored validator requires underscored when lower_case_table_names=1', async () => {
+  const dbUnderscoredPrompt = Install.dbPrompts.dbUnderscored;
+  const mysqlQuery = vi
+    .fn()
+    .mockResolvedValueOnce([[{ '?column?': 1 }], []])
+    .mockResolvedValueOnce([[{ Variable_name: 'lower_case_table_names', Value: '1' }], []]);
+  const mysqlEnd = vi.fn().mockResolvedValue(undefined);
+  mockMysqlCreateConnection.mockResolvedValue({
+    query: mysqlQuery,
+    end: mysqlEnd,
+  });
+
+  const result = await dbUnderscoredPrompt.validate?.(false, {
+    builtinDb: false,
+    dbDialect: 'mysql',
+    dbHost: 'db.example.com',
+    dbPort: '3306',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+    dbUnderscored: false,
+  });
+
+  expect(result ?? '').toMatch(/DB_UNDERSCORED=true/i);
+  expect(mysqlQuery.mock.calls.map((call) => call[0])).toEqual([
+    'SELECT 1',
+    `SHOW VARIABLES LIKE 'lower_case_table_names'`,
+  ]);
+  expect(mysqlEnd).toHaveBeenCalledTimes(2);
+});
+
+test('install mysql dbUnderscored validator accepts lower_case_table_names=1 when underscored is enabled', async () => {
+  const dbUnderscoredPrompt = Install.dbPrompts.dbUnderscored;
+  const mysqlQuery = vi
+    .fn()
+    .mockResolvedValueOnce([[{ '?column?': 1 }], []])
+    .mockResolvedValueOnce([[{ Variable_name: 'lower_case_table_names', Value: '1' }], []]);
+  const mysqlEnd = vi.fn().mockResolvedValue(undefined);
+  mockMysqlCreateConnection.mockResolvedValue({
+    query: mysqlQuery,
+    end: mysqlEnd,
+  });
+
+  const result = await dbUnderscoredPrompt.validate?.(true, {
+    builtinDb: false,
+    dbDialect: 'mysql',
+    dbHost: 'db.example.com',
+    dbPort: '3306',
+    dbDatabase: 'nocobase',
+    dbUser: 'nocobase',
+    dbPassword: 'secret',
+    dbUnderscored: true,
+  });
+
+  expect(result).toBe(undefined);
+  expect(mysqlQuery.mock.calls.map((call) => call[0])).toEqual([
+    'SELECT 1',
+    `SHOW VARIABLES LIKE 'lower_case_table_names'`,
+  ]);
+  expect(mysqlEnd).toHaveBeenCalledTimes(2);
+});
+
 test('docker registry defaults follow CLI locale', () => {
   const dockerRegistryPrompt = Download.prompts.dockerRegistry;
   const dockerPlatformPrompt = Download.prompts.dockerPlatform;
@@ -502,8 +699,12 @@ test('docker registry defaults follow CLI locale', () => {
 
   expect(dockerRegistryPrompt.type).toBe('text');
   process.env.NB_LOCALE = 'zh-CN';
-  expect(dockerRegistryPrompt.initialValue?.({ lang: 'en-US' })).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
-  expect(dockerRegistryPrompt.initialValue?.({ lang: 'zh-CN' })).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
+  expect(dockerRegistryPrompt.initialValue?.({ lang: 'en-US' })).toBe(
+    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
+  );
+  expect(dockerRegistryPrompt.initialValue?.({ lang: 'zh-CN' })).toBe(
+    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
+  );
   expect(dockerRegistryPrompt.initialValue?.({})).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
   process.env.NB_LOCALE = 'en-US';
   expect(dockerRegistryPrompt.initialValue?.({ lang: 'zh-CN' })).toBe('nocobase/nocobase');
@@ -518,9 +719,7 @@ test('docker registry defaults follow CLI locale', () => {
 test('docker registry placeholder follows locale copy', () => {
   const dockerRegistryPrompt = Download.prompts.dockerRegistry;
 
-  expect(resolveLocalizedText(dockerRegistryPrompt.placeholder, { locale: 'en-US' })).toBe(
-    'nocobase/nocobase',
-  );
+  expect(resolveLocalizedText(dockerRegistryPrompt.placeholder, { locale: 'en-US' })).toBe('nocobase/nocobase');
   expect(resolveLocalizedText(dockerRegistryPrompt.placeholder, { locale: 'zh-CN' })).toBe(
     'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
   );
@@ -532,16 +731,37 @@ test('version prompt uses presets and reveals otherVersion when needed', () => {
 
   expect(versionPrompt.type).toBe('select');
   expect(versionPrompt.variant).toBe('radio');
-  expect(versionPrompt.initialValue).toBe('beta');
-  expect(versionPrompt.yesInitialValue).toBe('beta');
+  expect(versionPrompt.initialValue).toBe('latest');
+  expect(versionPrompt.yesInitialValue).toBe('latest');
   expect(
     versionPrompt.options[0] && typeof versionPrompt.options[0] !== 'string'
       ? versionPrompt.options[0].disabled
       : undefined,
-  ).toBe(true);
-  expect(resolveLocalizedText(versionPrompt.options?.[0] && typeof versionPrompt.options[0] !== 'string' ? versionPrompt.options[0].hint : undefined, { locale: 'zh-CN' })).toContain('稳定版');
-  expect(resolveLocalizedText(versionPrompt.options?.[1] && typeof versionPrompt.options[1] !== 'string' ? versionPrompt.options[1].hint : undefined, { locale: 'zh-CN' })).toContain('测试版');
-  expect(resolveLocalizedText(versionPrompt.options?.[2] && typeof versionPrompt.options[2] !== 'string' ? versionPrompt.options[2].hint : undefined, { locale: 'zh-CN' })).toContain('开发版');
+  ).toBeUndefined();
+  expect(
+    resolveLocalizedText(
+      versionPrompt.options?.[0] && typeof versionPrompt.options[0] !== 'string'
+        ? versionPrompt.options[0].hint
+        : undefined,
+      { locale: 'zh-CN' },
+    ),
+  ).toContain('稳定版');
+  expect(
+    resolveLocalizedText(
+      versionPrompt.options?.[1] && typeof versionPrompt.options[1] !== 'string'
+        ? versionPrompt.options[1].hint
+        : undefined,
+      { locale: 'zh-CN' },
+    ),
+  ).toContain('测试版');
+  expect(
+    resolveLocalizedText(
+      versionPrompt.options?.[2] && typeof versionPrompt.options[2] !== 'string'
+        ? versionPrompt.options[2].hint
+        : undefined,
+      { locale: 'zh-CN' },
+    ),
+  ).toContain('开发版');
   expect(otherVersionPrompt.type).toBe('text');
   expect(otherVersionPrompt.hidden?.({ version: 'alpha' })).toBe(true);
   expect(otherVersionPrompt.hidden?.({ version: 'other' })).toBe(false);
@@ -564,24 +784,22 @@ test('builtin database image defaults follow NB_LOCALE', async () => {
 });
 
 test('install download prompt options follow CLI locale for docker registry defaults', () => {
-  const installStatics = (
-    Install as unknown as {
-      buildDownloadPromptOptionsForInstall: (
-        appResults: Record<string, unknown>,
-        envName: string,
-      ) => {
-        initialValues: Record<string, unknown>;
-        values: Record<string, unknown>;
-      };
-      buildDownloadPresetValuesForInstall: (
-        flags: Record<string, unknown>,
-        appResults: Record<string, unknown>,
-        envName: string,
-        yes: boolean,
-      ) => Record<string, unknown>;
-      buildPresetValuesFromFlags: (flags: Record<string, unknown>) => Record<string, unknown>;
-    }
-  );
+  const installStatics = Install as unknown as {
+    buildDownloadPromptOptionsForInstall: (
+      appResults: Record<string, unknown>,
+      envName: string,
+    ) => {
+      initialValues: Record<string, unknown>;
+      values: Record<string, unknown>;
+    };
+    buildDownloadPresetValuesForInstall: (
+      flags: Record<string, unknown>,
+      appResults: Record<string, unknown>,
+      envName: string,
+      yes: boolean,
+    ) => Record<string, unknown>;
+    buildPresetValuesFromFlags: (flags: Record<string, unknown>) => Record<string, unknown>;
+  };
 
   process.env.NB_LOCALE = 'zh-CN';
   const zhOptions = installStatics.buildDownloadPromptOptionsForInstall(

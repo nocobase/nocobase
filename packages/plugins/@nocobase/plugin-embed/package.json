@@ -4,7 +4,7 @@
   "displayName.zh-CN": "嵌入 NocoBase",
   "description": "Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.",
   "description.zh-CN": "将 NocoBase 嵌入外部系统或页面中，使其成为该系统或页面的一部分。",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/embed",
@@ -12,7 +12,8 @@
   "keywords": [],
   "nocobase": {
     "supportedVersions": [
-      "1.x"
+      "1.x",
+      "2.x"
     ],
     "editionLevel": 0
   },
@@ -26,7 +27,9 @@
     "react-router-dom": "6.x"
   },
   "peerDependencies": {
-    "@nocobase/client": "workspace:*"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*"
   },
   "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
   "license": "Apache-2.0"

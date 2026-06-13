@@ -8,7 +8,6 @@ Esta página registra o conteúdo das atualizações de cada versão da soluçã
 
 **Arquivos de backup**:
 - [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
-- [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip)
 
 **Conteúdo da atualização**:
 - Correção do erro de SLA Config não encontrado ao clicar em "Concluído" no Ticket
@@ -21,7 +20,6 @@ Esta página registra o conteúdo das atualizações de cada versão da soluçã
 
 **Arquivos de backup**:
 - nocobase_tts_v2_backup_260302.nbdata
-- nocobase_tts_v2_sql_260302.zip
 
 **Conteúdo da atualização**:
 - Primeira versão do sistema de Tickets v2

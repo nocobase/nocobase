@@ -34,6 +34,8 @@
       "back": "上一步",
       "next": "下一步",
       "submit": "提交并回到终端继续",
+      "showPassword": "显示密码",
+      "hidePassword": "隐藏密码",
       "checking": "检查中...",
       "sending": "提交中...",
       "successTitle": "成功",
@@ -52,6 +54,7 @@
     "apiBaseUrl": {
       "invalid": "请输入有效的 URL，例如 {{example}}。",
       "invalidProtocol": "URL 必须以 http:// 或 https:// 开头，例如 {{example}}。",
+      "missingApiPrefix": "API 基础地址必须包含 /api 前缀，例如 {{example}}。",
       "healthCheckPathNotAllowed": "API 基础地址中不要包含 /__health_check。请输入应用的 API 基础地址，例如 http://localhost:13000/api。",
       "maintaining": "该 API 地址可以访问，但应用仍在启动或维护过程中，请稍后再试。",
       "healthCheckFailed": "该 API 地址未通过健康检查（HTTP {{status}}），请确认它指向的是一个正在运行的 NocoBase API 地址。",
@@ -60,6 +63,9 @@
     },
     "envKey": {
       "invalid": "仅支持字母和数字。"
+    },
+    "appPublicPath": {
+      "invalid": "请输入 /，或类似 /nocobase/、/foo-bar/baz_2/ 这样的路径。每个路径段仅支持字母、数字、中划线和下划线。"
     },
     "tcpPort": {
       "invalid": "请输入 1 到 65535 之间的有效 TCP 端口，例如 {{example}}。",
@@ -73,7 +79,8 @@
       "timeout": "连接数据库 {{host}}:{{port}} 超时，约 {{seconds}} 秒内未成功建立连接。",
       "authenticationFailed": "无法使用用户 \"{{user}}\" 登录数据库 \"{{database}}\"。请检查用户名和密码。",
       "databaseNotFound": "数据库 \"{{database}}\" 不存在，或当前连接配置无权访问该数据库。",
-      "connectionFailed": "数据库连接检查失败。详情：{{details}}"
+      "connectionFailed": "数据库连接检查失败。详情：{{details}}",
+      "lowerCaseTableNamesRequiresUnderscored": "当 MySQL 的 lower_case_table_names=1 时，必须设置 DB_UNDERSCORED=true。"
     }
   },
   "commands": {
@@ -93,14 +100,109 @@
           "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
-          "message": "你想使用哪种登录方式？",
-          "oauthLabel": "OAuth（浏览器登录）",
+          "message": "你想使用哪种认证方式？",
+          "basicLabel": "Basic 认证（用户名 + 密码）",
+          "basicHint": "保存后会用用户名和密码换取 Token",
+          "oauthLabel": "OAuth（浏览器认证）",
           "oauthHint": "保存后会自动执行 nb env auth",
           "tokenLabel": "API Token / API Key"
+        },
+        "username": {
+          "message": "请输入 Basic 登录用户名",
+          "placeholder": "admin"
+        },
+        "password": {
+          "message": "请输入 Basic 登录密码"
         },
         "accessToken": {
           "message": "请输入 API Token 或 API Key",
           "placeholder": "请输入你的 API Token / API Key"
+        }
+      }
+    },
+    "envProxy": {
+      "messages": {
+        "generating": "正在为 env \"{{envName}}\" 生成代理配置...",
+        "printed": "已输出 env \"{{envName}}\" 的代理配置。",
+        "saved": "已将 env \"{{envName}}\" 的生成代理配置保存到 {{outputPath}}。",
+        "savedWithAppEntryCreated": "已将 env \"{{envName}}\" 的生成代理配置保存到 {{outputPath}}，并创建可编辑的入口配置 {{appConfigPath}}。",
+        "savedWithAppEntryMigrated": "已将 env \"{{envName}}\" 的生成代理配置保存到 {{outputPath}}，并将入口配置迁移为 {{appConfigPath}}。",
+        "savedNginxBundleCreated": "已将 env \"{{envName}}\" 的 nginx 代理文件保存到 {{entryDir}}，并创建可编辑的入口配置 {{appConfigPath}}。",
+        "savedNginxBundleUpdated": "已将 env \"{{envName}}\" 的 nginx 代理文件保存到 {{entryDir}}，并刷新可编辑的入口配置 {{appConfigPath}}。",
+        "savedCaddyBundleCreated": "已将 env \"{{envName}}\" 的 caddy 代理文件保存到 {{entryDir}}，并创建可编辑的入口配置 {{appConfigPath}}。",
+        "savedCaddyBundleMigrated": "已将 env \"{{envName}}\" 的 caddy 代理文件保存到 {{entryDir}}，并将入口配置迁移为 {{appConfigPath}}。",
+        "savedCaddyBundleUpdated": "已将 env \"{{envName}}\" 的 caddy 代理文件保存到 {{entryDir}}，并刷新可编辑的入口配置 {{appConfigPath}}。",
+        "failed": "为 env \"{{envName}}\" 生成代理配置失败。",
+        "installingProvider": "正在将共享代理配置安装到 {{provider}}...",
+        "providerInstalled": "已将共享代理配置安装到 {{provider}} 主配置 {{configPath}}。",
+        "providerAlreadyInstalled": "共享代理配置已存在于 {{provider}} 主配置 {{configPath}} 中。",
+        "installProviderFailed": "将共享代理配置安装到 {{provider}} 失败。",
+        "reloadingProvider": "正在校验并重载 {{provider}}...",
+        "providerReloaded": "已校验并重载 {{provider}}。",
+        "reloadProviderFailed": "校验并重载 {{provider}} 失败。"
+      },
+      "errors": {
+        "httpEnvUnsupported": "无法在当前机器上为 \"{{envName}}\" 生成代理配置，因为这个 env 只有 API 连接。",
+        "sshEnvUnsupported": "暂时无法为 \"{{envName}}\" 生成代理配置，因为 SSH env 还没有实现。",
+        "invalidProxyPort": "代理入口端口 \"{{port}}\" 无效。请使用 1 到 65535 之间的整数。",
+        "missingAppPort": "env \"{{envName}}\" 缺少 appPort。请先保存或更新应用端口后再生成代理配置。",
+        "missingVersion": "无法确定 env \"{{envName}}\" 的应用版本。请先运行 `nb env update {{envName}}`，然后再试一次。",
+        "appEntryMissingInclude": "可编辑入口配置 {{appConfigPath}} 没有引用 {{generatedConfigPath}}。请把托管的 generated 配置引用补回入口配置中，然后重新执行该命令。",
+        "nginxOutputUnsupported": "nginx provider 不支持 `--output`。它会把 `app.conf`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.conf` 写入 `~/.nocobase/proxy/nginx/<env>/`。",
+        "caddyOutputUnsupported": "caddy provider 不支持 `--output`。它会把 `app.caddy`、`generated.caddy`、`public/index-v1.html`、`public/index-v2.html` 和 `nocobase.caddy` 写入 `~/.nocobase/proxy/caddy/<env>/`。",
+        "nginxAppEntryMissingManagedBlock": "可编辑的 nginx 入口配置 {{appConfigPath}} 不包含 NocoBase 的托管区块。请恢复这个托管区块，或删除该文件后重新执行 `nb proxy nginx generate`。"
+      }
+    },
+    "shared": {
+      "missingCommand": "无法执行 `{{action}}`，因为找不到 {{displayName}} 可执行文件。请先安装 {{displayName}}，或更新 `nb config set {{configKey}} <path>` 后重试。",
+      "dockerDaemonUnavailable": "无法执行 `{{action}}`，因为 Docker 已安装，但 Docker daemon 尚未运行。请先启动 Docker Desktop 或 Docker daemon 服务，然后重试。详情：{{details}}",
+      "targetEnv": "正在使用 env \"{{envName}}\"。",
+      "crossEnv": {
+        "prompt": "当前 env 是 \"{{currentEnv}}\"，但该命令通过 --env 指向了 \"{{requestedEnv}}\"。要在不切换当前 env 的情况下继续吗？",
+        "refusal": "拒绝对 env \"{{requestedEnv}}\" 执行该命令，因为当前 env 是 \"{{currentEnv}}\"，且当前 agent 会话无法进行交互确认。\n\n出于安全考虑，agent 不会自动切换 env，也不会替你自动补上 --yes。\n\n如果要继续：\n- 请先自行执行 `nb env use {{requestedEnv}}`，然后重新运行该命令，或\n- 使用相同命令并追加 `--env {{requestedEnv}} --yes`，以确认这是一次性的跨 env 操作。"
+      }
+    },
+    "license": {
+      "activate": {
+        "interactive": {
+          "notice": {
+            "hostnameLabel": "❯ 主机名",
+            "instanceIdLabel": "❯ 实例 ID",
+            "copyHintWithHostname": "校验或激活 license key 时，请复制这个主机名和实例 ID。",
+            "copyHintWithoutHostname": "校验或激活 license key 时，请复制这个实例 ID。"
+          },
+          "prompts": {
+            "provideMethod": {
+              "message": "你想通过哪种方式提供 license key？",
+              "keyOption": "直接粘贴 license key",
+              "fileOption": "从文件读取 key"
+            },
+            "key": {
+              "message": "License Key",
+              "transformer": "已输入 {{count}} 个字符",
+              "required": "必须提供 license key。"
+            },
+            "keyFile": {
+              "message": "license key 文件路径",
+              "required": "必须提供 license key 文件路径。"
+            }
+          }
+        },
+        "errors": {
+          "provideKeyOrKeyFile": "请通过 --key 或 --key-file 继续。",
+          "emptyInput": "license key 输入为空。",
+          "activationFailed": "为 env \"{{envName}}\" 激活 license 失败：{{reason}}。",
+          "reasons": {
+            "keyStatus": "license key 状态为 {{status}}",
+            "envMismatch": "license key 与当前实例环境不匹配",
+            "domainMismatch": "license key 与当前应用域名不匹配",
+            "licenseStatus": "license 状态为 {{status}}",
+            "validationFailed": "license 校验失败"
+          }
+        },
+        "messages": {
+          "activated": "已为 env \"{{envName}}\" 激活 license。",
+          "savedLicenseKey": "已为当前 env 安全保存 license key"
         }
       }
     },
@@ -206,6 +308,10 @@
       }
     },
     "install": {
+      "messages": {
+        "skipDownloadDockerImageMissing": "无法继续执行 `--skip-download`，因为本地不存在 Docker 镜像 \"{{imageRef}}\"。请先手动加载或拉取这个镜像，或者去掉 `--skip-download` 后重试。",
+        "skipDownloadLocalAppMissing": "无法继续执行 `--skip-download`，因为 \"{{projectRoot}}\" 不存在，或者其中缺少 package.json。请把 `--app-root-path` 指向一个现有的 NocoBase 应用目录，或者去掉 `--skip-download` 后重试。"
+      },
       "validation": {
         "builtinDbUnsupported": "内置数据库暂不支持 \"{{dialect}}\"。请选择 PostgreSQL、MySQL 或 MariaDB，或者关闭内置数据库。"
       },
@@ -215,22 +321,23 @@
           "placeholder": "local"
         },
         "lang": {
-          "message": "你想使用哪种语言？"
+          "message": "你希望应用使用哪种语言？"
         },
-        "appRootPath": {
-          "message": "应用代码要放到哪里？",
-          "placeholder": "./<env>/source/"
+        "appPath": {
+          "message": "应用要放到哪里？（相对路径基于 {{root}}）",
+          "placeholder": "./<env>/"
         },
         "appPort": {
           "message": "应用要使用哪个端口？",
           "placeholder": "13000"
         },
+        "appPublicPath": {
+          "message": "应用的子路径是什么？（例如 /nocobase/）",
+          "placeholder": "/ 或 /nocobase/"
+        },
         "storagePath": {
           "message": "上传文件和本地存储目录要放到哪里？",
           "placeholder": "./<env>/storage/"
-        },
-        "fetchSource": {
-          "message": "如果应用目录为空，是否自动下载 NocoBase？"
         },
         "dbDialect": {
           "message": "你想使用哪种数据库？"
@@ -259,6 +366,17 @@
         "dbPassword": {
           "message": "数据库密码是什么？"
         },
+        "dbSchema": {
+          "message": "数据库 schema 是什么？（仅 PostgreSQL，可选）",
+          "placeholder": "留空则使用默认 schema"
+        },
+        "dbTablePrefix": {
+          "message": "要使用什么数据表前缀？（可选）",
+          "placeholder": "例如：nb_"
+        },
+        "dbUnderscored": {
+          "message": "数据库表名和字段名是否使用下划线风格？"
+        },
         "rootUsername": {
           "message": "设置初始管理员用户名",
           "placeholder": "nocobase"
@@ -281,7 +399,7 @@
         "envExists": "Env \"{{envName}}\" 已存在，请换一个 env name。"
       },
       "messages": {
-        "title": "配置供 Coding Agents 使用的 NocoBase",
+        "title": "配置 NocoBase",
         "appNameRequiredWhenSkipped": "跳过 prompts 时必须提供 Env name。",
         "appNameEnvHelp": "请使用 `nb init --yes --env <envName>` 继续。",
         "resumeEnvRequired": "恢复安装时必须提供 Env name。",
@@ -290,17 +408,22 @@
         "uiOpening": "本地 setup 表单即将在浏览器中打开。这个表单需要等待人工填写。如果你正在使用 AI agent，请不要停止当前进程，CLI 会继续等待表单提交结果。",
         "uiReady": "本地 setup 表单已就绪。",
         "uiReadyHelp": "如果没有自动打开浏览器，请复制下面的地址到浏览器中继续。CLI 会继续等待表单提交，请保持当前终端会话继续运行。",
-        "uiOpenBrowserFallback": "无法自动打开浏览器。请复制上面的地址到浏览器中继续 setup，并保持当前终端会话继续运行。如果你正在使用 AI agent，请不要停止当前进程。"
+        "uiOpenBrowserFallback": "无法自动打开浏览器。请复制上面的地址到浏览器中继续 setup，并保持当前终端会话继续运行。如果你正在使用 AI agent，请不要停止当前进程。",
+        "skillsSyncRegistryUnavailable": "无法访问 npm registry 来同步 NocoBase AI coding skills。将跳过 skills 安装并继续执行 init。等 registry 可访问后，再运行 `nb skills install` 即可。"
       },
       "prompts": {
         "appName": {
           "message": "这个环境要使用什么 `--env` 标识？",
           "placeholder": "local"
         },
-        "hasNocobase": {
-          "message": "你是否已经有一个 NocoBase 应用？",
-          "noLabel": "还没有 NocoBase 应用",
-          "yesLabel": "已经有 NocoBase 应用"
+        "setupMode": {
+          "message": "你想用哪种方式配置这个环境？",
+          "installNewLabel": "新安装",
+          "installNewHint": "从零安装一个新的应用，适合首次部署、试用或新建本地开发环境。",
+          "manageLocalLabel": "本机接管",
+          "manageLocalHint": "将本机已有应用纳入 nb 管理，后续可统一执行安装、升级和启动等操作。接管过程中会重新下载应用代码或镜像并升级应用，storage 会在需要时自动创建。",
+          "connectRemoteLabel": "远程连接",
+          "connectRemoteHint": "只保存远程应用的连接信息，不在本机安装或接管应用。"
         },
         "installSkills": {
           "message": "是否安装 NocoBase AI coding skills（nocobase/skills）？"
@@ -308,27 +431,30 @@
         "apiBaseUrl": {
           "message": "API 基础地址",
           "placeholder": "https://demo.example.com/api 或 https://demo.example.com/api/__app/<subapp>"
+        },
+        "skipDownload": {
+          "message": "跳过下载 NocoBase，直接复用已有的本地应用文件或 Docker 镜像"
         }
       },
       "webUi": {
-        "pageTitle": "配置供 Coding Agents 使用的 NocoBase",
-        "documentHeading": "配置供 Coding Agents 使用的 NocoBase",
-        "documentHint": "连接已有的 NocoBase 应用，或安装一个新的应用，让 Coding Agents 可以在当前工作区中访问和操作 NocoBase。",
+        "pageTitle": "配置 NocoBase",
+        "documentHeading": "配置 NocoBase",
+        "documentHint": "安装一个新的应用、管理已有应用，或连接远程应用。你可以直接使用它，也可以稍后让 coding agent 访问它。",
         "gettingStarted": {
           "title": "开始设置",
-          "description": "选择连接已有应用，或安装一个新应用。"
+          "description": "选择新安装、本机接管，或远程连接。"
         },
         "connectExistingApp": {
-          "title": "连接已有应用",
-          "description": "保存现有应用连接。"
+          "title": "连接与认证",
+          "description": "填写应用访问地址并选择认证方式。"
         },
         "createNewApp": {
-          "title": "安装新应用",
-          "description": "设置应用基础信息和安装选项。"
+          "title": "应用环境信息",
+          "description": "设置应用的基础信息、存储位置和运行端口。"
         },
         "downloadAppFiles": {
-          "title": "下载应用文件",
-          "description": "选择获取应用文件的方式。"
+          "title": "应用来源和版本",
+          "description": "选择应用的获取方式，以及要使用的来源和版本。"
         },
         "configureDatabase": {
           "title": "配置数据库",
@@ -339,6 +465,62 @@
           "description": "设置第一个管理员账号。"
         }
       }
+    },
+    "env": {
+      "messages": {
+        "noEnvsConfigured": "尚未配置任何 env。",
+        "noEnvsConfiguredHelp": "请先运行 `nb init --ui` 创建一个。"
+      }
     }
+  },
+  "apiCommandCompat": {
+    "refusalTitle": "拒绝执行 `nb api {{commandId}}`，因为当前 CLI 版本为 {{cliVersion}}，目标应用版本为 {{appVersion}}。",
+    "refusalTitleMissingVersion": "拒绝执行 `nb api {{commandId}}`，因为 {{versionLabel}} 不可用。",
+    "refusalTitleGeneric": "拒绝执行 `nb api {{commandId}}`，因为当前版本组合不兼容。",
+    "currentVersionsLine": "当前版本：{{versions}}。",
+    "refusalBodyWithRequirements": "当 {{requirements}} 时，这个 API 命令会被拦截。",
+    "refusalBody": "这个 API 命令在当前 CLI 与应用版本组合下可能不兼容。",
+    "channel": {
+      "stable": "正式版",
+      "beta": "beta",
+      "alpha": "alpha",
+      "rc": "rc",
+      "unknownPrerelease": "不受支持的预发布"
+    },
+    "requirement": {
+      "cli": "CLI 版本 {{condition}}",
+      "app": "应用版本 {{condition}}",
+      "skills": "NocoBase AI skills 版本 {{condition}}",
+      "appChannel": "{{channelLabel}}应用版本 {{condition}}",
+      "appUnknownPrereleaseBlocked": "{{channelLabel}}应用版本会被拦截"
+    },
+    "currentVersion": {
+      "cli": "CLI {{version}}",
+      "app": "应用 {{version}}",
+      "appUnavailable": "应用版本不可用",
+      "skills": "NocoBase AI skills {{version}}",
+      "skillsUnavailable": "NocoBase AI skills 不可用"
+    },
+    "versionLabel": {
+      "cli": "CLI 版本",
+      "app": "目标应用版本",
+      "skills": "已安装的 NocoBase AI skills 版本"
+    },
+    "join": {
+      "two": "{{left}} 和 {{right}}",
+      "many": "{{head}}，以及 {{tail}}"
+    },
+    "continueTitle": "如需继续：",
+    "continueUpgradeApp": "- 请将应用升级到兼容版本",
+    "continueUpgradeAppToVersion": "- 请将应用升级到 {{suggestedUpgradeTarget}}",
+    "continueUseSupportedAppVersion": "- 请使用受支持的应用版本：{{supportedTargets}}",
+    "continueRefreshAppVersion": "- 请先刷新目标 env runtime，让当前应用版本可被识别后再重试",
+    "continueUseCompatibleCli": "- 或使用兼容的 CLI 版本",
+    "continueUseCompatibleCliVersion": "- 或使用 {{suggestedCliTarget}} 的 CLI 版本",
+    "continueUpdateSkillsToVersion": "- 请安装或更新 NocoBase AI coding skills 到 {{suggestedSkillsUpgradeTarget}}。可运行 `nb skills update --yes` 刷新受管理的 skills。",
+    "continueUseCompatibleSkillsVersion": "- 或使用 {{suggestedSkillsTarget}} 的 NocoBase AI skills 版本",
+    "continueInstallOrUpdateSkillsToVersion": "- 请运行 `nb skills install --yes` 或 `nb skills update --yes`，并确保受管理的 skills 版本为 {{suggestedSkillsUpgradeTarget}} 后再重试",
+    "continueInstallOrUpdateSkills": "- 请运行 `nb skills install --yes` 或 `nb skills update --yes`，待受管理的 skills 版本可用后再重试",
+    "supportedAppTarget": "{{channelLabel}} {{target}}"
   }
 }

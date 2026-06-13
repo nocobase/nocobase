@@ -25,27 +25,74 @@ import { TextAreaWithContextSelector } from '../../flow/components/TextAreaWithC
  * stored values round-trip to a labelled pill instead of falling back to a
  * raw `{{…}}` literal.
  */
-const VARIABLE_EXPR_RE = /^\{\{\s*(.+?)\s*\}\}$/;
 
-export function parseVariablePath(value?: string): string[] | undefined {
-  if (typeof value !== 'string') return undefined;
-  const match = value.trim().match(VARIABLE_EXPR_RE);
-  if (!match) return undefined;
-  let pathString = match[1];
-  // Backwards-compat: accept the legacy `ctx.` prefix so values produced by
-  // pre-fix versions of the picker still resolve to a labelled pill.
-  if (pathString === 'ctx') return [];
-  if (pathString.startsWith('ctx.')) pathString = pathString.slice(4);
-  return pathString.split('.');
+/**
+ * Variable delimiters: opening + closing tokens. Default `['{{', '}}']`
+ * matches NocoBase server template convention (Handlebars HTML-escaped
+ * output). Pass `['{{{', '}}}']` to switch to Handlebars' raw/unescaped
+ * form — required for fields whose content is rendered as HTML (e.g.
+ * in-app message body) so the variable expansion bypasses HTML escaping.
+ *
+ * Restrict to literal-token pairs, since the regex builder escapes them
+ * verbatim.
+ */
+export type VariableDelimiters = readonly [string, string];
+
+const DEFAULT_DELIMITERS: VariableDelimiters = ['{{', '}}'];
+
+function escapeForRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function formatVariablePath(meta?: MetaTreeNode): string | undefined {
-  const paths = meta?.paths || [];
-  if (paths.length === 0) return undefined;
-  // No inner spaces — matches the v1 storage shape exactly so round-trips
-  // through the API stay byte-stable.
-  return `{{${paths.join('.')}}}`;
+/**
+ * Factory: returns a `parseValueToPath` bound to the given delimiters.
+ * Anchored (`^…$`) — only treats the whole input as a single variable
+ * reference, matching the v1 single-line picker behaviour.
+ */
+export function makeParseVariablePath(delimiters: VariableDelimiters = DEFAULT_DELIMITERS) {
+  const [open, close] = delimiters;
+  const re = new RegExp(`^${escapeForRegExp(open)}\\s*(.+?)\\s*${escapeForRegExp(close)}$`);
+  return (value?: string): string[] | undefined => {
+    if (typeof value !== 'string') return undefined;
+    const match = value.trim().match(re);
+    if (!match) return undefined;
+    let pathString = match[1];
+    // Backwards-compat: accept the legacy `ctx.` prefix so values produced by
+    // pre-fix versions of the picker still resolve to a labelled pill.
+    if (pathString === 'ctx') return [];
+    if (pathString.startsWith('ctx.')) pathString = pathString.slice(4);
+    return pathString.split('.');
+  };
 }
+
+/**
+ * Factory: returns a `formatPathToValue` bound to the given delimiters.
+ * No inner spaces — matches the v1 storage shape exactly so round-trips
+ * through the API stay byte-stable.
+ */
+export function makeFormatVariablePath(delimiters: VariableDelimiters = DEFAULT_DELIMITERS) {
+  const [open, close] = delimiters;
+  return (meta?: MetaTreeNode): string | undefined => {
+    const paths = meta?.paths || [];
+    if (paths.length === 0) return undefined;
+    return `${open}${paths.join('.')}${close}`;
+  };
+}
+
+/**
+ * Factory: returns a global regex matching every occurrence of the
+ * variable token within a longer string. Used by `VariableHybridInput`
+ * to render embedded variables as pills.
+ */
+export function makeVariableRegExp(delimiters: VariableDelimiters = DEFAULT_DELIMITERS): RegExp {
+  const [open, close] = delimiters;
+  return new RegExp(`${escapeForRegExp(open)}\\s*([^{}]+?)\\s*${escapeForRegExp(close)}`, 'g');
+}
+
+// Default exports — `{{ ... }}` for the most common case. Kept named so
+// existing callers don't need to switch to the factory.
+export const parseVariablePath = makeParseVariablePath();
+export const formatVariablePath = makeFormatVariablePath();
 
 const META_TREE_CACHE_PREFIX = '@nocobase/client-v2:VariableInput:metaTree';
 
@@ -123,8 +170,22 @@ export interface VariableInputProps {
    * Override the converters used by the underlying `VariableHybridInput`.
    * Mostly useful when the caller wants to constrain `formatPathToValue` to a
    * specific namespace (see `EnvVariableInput` for that pattern).
+   *
+   * Takes precedence over `delimiters` when both are set on the same field
+   * (an explicit converter wins over the delimiter-derived one).
    */
   converters?: VariableHybridInputConverters;
+  /**
+   * Token pair wrapping variable references in the stored string. Defaults
+   * to `['{{', '}}']` — the standard NocoBase server-template form,
+   * HTML-escaped by Handlebars. Pass `['{{{', '}}}']` for fields rendered
+   * as HTML where escaping would corrupt the variable value (e.g. the
+   * in-app message body).
+   *
+   * Ignored when `converters` is also supplied — caller-provided converters
+   * win.
+   */
+  delimiters?: VariableDelimiters;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -136,16 +197,24 @@ export interface VariableInputProps {
  * line of mixed literal+variable content is appropriate.
  */
 export function VariableInput(props: VariableInputProps) {
-  const { namespaces, extraNodes, converters, ...rest } = props;
+  const { namespaces, extraNodes, converters, delimiters, ...rest } = props;
   const metaTree = useFilteredMetaTree({ namespaces, extraNodes });
-  const mergedConverters = useMemo<VariableHybridInputConverters>(
-    () => ({
-      formatPathToValue: formatVariablePath,
-      parseValueToPath: parseVariablePath,
+  const mergedConverters = useMemo<VariableHybridInputConverters>(() => {
+    // Default delimiters → reuse the pre-built singletons.
+    if (!delimiters) {
+      return {
+        formatPathToValue: formatVariablePath,
+        parseValueToPath: parseVariablePath,
+        ...converters,
+      };
+    }
+    return {
+      formatPathToValue: makeFormatVariablePath(delimiters),
+      parseValueToPath: makeParseVariablePath(delimiters),
+      variableRegExp: makeVariableRegExp(delimiters),
       ...converters,
-    }),
-    [converters],
-  );
+    };
+  }, [converters, delimiters]);
   return <VariableHybridInput {...rest} converters={mergedConverters} metaTree={metaTree} />;
 }
 
@@ -161,9 +230,13 @@ export interface VariableTextAreaProps extends Omit<VariableInputProps, 'convert
  * is desirable (the server expands them at render time).
  */
 export function VariableTextArea(props: VariableTextAreaProps) {
-  const { namespaces, extraNodes, rows, maxRows, style, ...rest } = props;
+  const { namespaces, extraNodes, rows, maxRows, style, delimiters, ...rest } = props;
   const metaTree = useFilteredMetaTree({ namespaces, extraNodes });
   const metaTreeGetter = useMemo(() => () => metaTree, [metaTree]);
+  const formatPathToValue = useMemo(
+    () => (delimiters ? makeFormatVariablePath(delimiters) : formatVariablePath),
+    [delimiters],
+  );
   return (
     <TextAreaWithContextSelector
       {...rest}
@@ -171,7 +244,7 @@ export function VariableTextArea(props: VariableTextAreaProps) {
       maxRows={maxRows}
       style={style}
       metaTree={metaTreeGetter}
-      formatPathToValue={(meta) => formatVariablePath(meta) ?? ''}
+      formatPathToValue={(meta) => formatPathToValue(meta) ?? ''}
     />
   );
 }

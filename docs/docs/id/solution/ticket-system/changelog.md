@@ -8,7 +8,6 @@ Halaman ini mencatat konten pembaruan setiap versi dari solusi Ticket. Setiap ka
 
 **File backup**:
 - [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
-- [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip)
 
 **Konten Pembaruan**:
 - Memperbaiki kesalahan SLA Config tidak ditemukan saat klik "Selesai" pada Ticket
@@ -21,7 +20,6 @@ Halaman ini mencatat konten pembaruan setiap versi dari solusi Ticket. Setiap ka
 
 **File backup**:
 - nocobase_tts_v2_backup_260302.nbdata
-- nocobase_tts_v2_sql_260302.zip
 
 **Konten Pembaruan**:
 - Rilis pertama Sistem Ticket v2

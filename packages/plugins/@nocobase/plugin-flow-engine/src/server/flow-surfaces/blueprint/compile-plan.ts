@@ -88,7 +88,7 @@ function compileCreatePlan(
     values: buildDefinedPayload({
       title: document.navigation?.item?.title || chrome.pageTitle,
       type: 'item',
-      icon: document.navigation?.item?.icon,
+      icon: document.navigation?.item?.icon || document.page?.icon || 'FileOutlined',
       tooltip: document.navigation?.item?.tooltip,
       hideInMenu: document.navigation?.item?.hideInMenu,
       parentMenuRouteId: _.isUndefined(document.navigation?.group?.routeId)

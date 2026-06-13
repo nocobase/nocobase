@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { stripModernClientPrefix } from '@nocobase/client-v2';
 import { Display } from './components/Display';
 import { MarkdownVditor } from './components';
 
@@ -25,7 +26,7 @@ export class MarkdownVditorRuntime {
 
   getCDN() {
     if (process.env.NODE_ENV === 'production') {
-      const base = window['__webpack_public_path__'] || this.getPublicPath().replace(/\/v2\/?$/, '/');
+      const base = window['__webpack_public_path__'] || stripModernClientPrefix(this.getPublicPath());
       return `${base}static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client-v2/vditor`;
     }
     return 'https://cdn.jsdelivr.net/npm/vditor@3.11.2';

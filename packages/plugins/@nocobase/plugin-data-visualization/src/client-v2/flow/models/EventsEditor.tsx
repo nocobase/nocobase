@@ -7,18 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps } from '@formily/react';
+import React from 'react';
 import { CodeEditor } from '../components/CodeEditor';
 
-const EventsEditor = connect(
-  CodeEditor,
-  mapProps((props) => {
-    return {
-      language: 'javascript',
-      value: props.value,
-      onChange: props.onChange,
-    };
-  }),
-);
+const EventsEditor: React.FC<{
+  value?: string;
+  onChange?: (value: string) => void;
+}> = (props) => {
+  return <CodeEditor language="javascript" value={props.value} onChange={props.onChange} />;
+};
 
 export default EventsEditor;

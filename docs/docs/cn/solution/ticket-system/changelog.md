@@ -8,7 +8,6 @@
 
 **备份文件**：
 - [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
-- [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip)
 
 **更新内容**：
 - 修复工单点击「已完成」时报错找不到 SLA Config 的问题
@@ -21,7 +20,6 @@
 
 **备份文件**：
 - nocobase_tts_v2_backup_260302.nbdata
-- nocobase_tts_v2_sql_260302.zip
 
 **更新内容**：
 - 工单系统 v2 首次发布

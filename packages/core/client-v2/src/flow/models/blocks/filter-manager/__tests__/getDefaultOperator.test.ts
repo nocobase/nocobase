@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { getDefaultOperator } from '../utils';
+import { getDefaultOperator, getFilterFormOperatorList } from '../utils';
 
 describe('getDefaultOperator', () => {
   it('returns model.operator when it exists', () => {
@@ -65,5 +65,39 @@ describe('getDefaultOperator', () => {
 
     expect(result).toBe('$includes');
     expect(getStepParams).toHaveBeenCalledWith('filterFormItemSettings', 'defaultOperator');
+  });
+
+  it('falls back to field interface operators when field operators are empty', () => {
+    const getStepParams = vi.fn().mockReturnValue(undefined);
+    const model = {
+      getStepParams,
+      subModels: {},
+      collectionField: {
+        interface: 'id',
+        type: 'bigInt',
+        filterable: { operators: [] },
+      },
+      context: {
+        dataSourceManager: {
+          collectionFieldInterfaceManager: {
+            getFieldInterface: vi.fn(() => ({
+              filterable: {
+                operators: [
+                  { label: 'is', value: '$eq', selected: true },
+                  {
+                    label: 'is any of',
+                    value: '$in',
+                    schema: { 'x-component': 'MultipleKeywordsInput' },
+                  },
+                ],
+              },
+            })),
+          },
+        },
+      },
+    } as any;
+
+    expect(getDefaultOperator(model)).toBe('$eq');
+    expect(getFilterFormOperatorList(model).map((item) => item.value)).toEqual(['$eq', '$in']);
   });
 });

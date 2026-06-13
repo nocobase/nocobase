@@ -21,6 +21,7 @@ nb self update [flags]
 | `--channel` | string | Release channel to update to, default `auto`; options: `auto`, `latest`, `beta`, `alpha` |
 | `--yes`, `-y` | boolean | Skip update confirmation |
 | `--json` | boolean | Output JSON |
+| `--skills` | boolean | Also refresh the globally installed NocoBase AI coding skills |
 | `--verbose` | boolean | Show detailed update output |
 
 ## Examples
@@ -28,6 +29,7 @@ nb self update [flags]
 ```bash
 nb self update
 nb self update --yes
+nb self update --skills
 nb self update --channel alpha --json
 ```
 

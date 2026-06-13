@@ -34,12 +34,40 @@ const defaultToolbar = [
   'code',
   'inline-code',
   'upload',
-  'fullscreen',
 ];
 
 const NAMESPACE = 'block-markdown';
 
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
+
+type MarkdownToolbarItem =
+  | string
+  | {
+      name: string;
+      tipPosition?: string;
+      toolbar?: MarkdownToolbarItem[];
+      [key: string]: unknown;
+    };
+
+function placeToolbarTooltipsBelow(toolbar: MarkdownToolbarItem[]) {
+  return toolbar.map((item) => {
+    if (typeof item === 'string') {
+      if (item === '|' || item === 'br') {
+        return item;
+      }
+      return {
+        name: item,
+        tipPosition: 's',
+      };
+    }
+
+    return {
+      ...item,
+      tipPosition: 's',
+      toolbar: item.toolbar ? placeToolbarTooltipsBelow(item.toolbar) : item.toolbar,
+    };
+  });
+}
 
 const Edit = (props) => {
   const { disabled, onChange, value, fileCollection, toolbar, vditorRef } = props;
@@ -73,7 +101,7 @@ const Edit = (props) => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const toolbarConfig = toolbar ?? defaultToolbar;
+    const toolbarConfig = placeToolbarTooltipsBelow(toolbar ?? defaultToolbar);
     const vditor = new Vditor(containerRef.current, {
       value: value ?? '',
       lang,
@@ -321,7 +349,7 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
     if (quoteFlag !== false) {
       setInnerValue(value);
     }
-  }, [value]);
+  }, [quoteFlag, value]);
   const handleTextChange = useCallback(
     (e) => {
       const val = e ?? '';
@@ -375,7 +403,7 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
         editor.focus();
       });
     },
-    [innerValue, onChange],
+    [onChange],
   );
 
   const handleVariableSelected = useCallback(

@@ -10,7 +10,7 @@
 import { tExpr, FlowModel, ModelRenderMode } from '@nocobase/flow-engine';
 import { Divider } from 'antd';
 import React from 'react';
-import { CustomWidth } from './TableColumnModel';
+import { CustomWidth, normalizeTableColumnWidth } from './TableColumnModel';
 export class TableCustomColumnModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 }
@@ -100,7 +100,7 @@ TableCustomColumnModel.registerFlow({
         width: 150,
       },
       handler(ctx, params) {
-        ctx.model.setProps('width', params.width);
+        ctx.model.setProps('width', normalizeTableColumnWidth(params.width));
       },
     },
     fixed: {

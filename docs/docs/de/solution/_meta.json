@@ -1,6 +1,11 @@
 [
   {
     "type": "dir",
+    "name": "all-in-one",
+    "label": "All-in-One-Business-System"
+  },
+  {
+    "type": "dir",
     "name": "ticket-system",
     "label": "Ticketsystem"
   },

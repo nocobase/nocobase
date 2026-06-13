@@ -142,7 +142,14 @@ export function matchSettingsRoute(data: Record<string, PluginSettingsPageType>,
     }
   }
 
-  return null;
+  const matchedPrefix = paths
+    .filter((pattern) => {
+      const regexPattern = pattern.replace(/:[^/]+/g, '[^/]+');
+      return url.match(new RegExp(`^${regexPattern}/`));
+    })
+    .sort((a, b) => b.length - a.length)[0];
+
+  return matchedPrefix ? data[matchedPrefix] : null;
 }
 
 /**

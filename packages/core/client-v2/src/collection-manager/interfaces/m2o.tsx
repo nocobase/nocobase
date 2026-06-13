@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { getUniqueKeyFromCollection } from './utils';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 
 export class M2OFieldInterface extends CollectionFieldInterface {
@@ -55,25 +53,6 @@ export class M2OFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['belongsTo'];
-  schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
-    // schema['type'] = 'object';
-    schema['x-component-props'] = schema['x-component-props'] || {};
-    schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
-      value: getUniqueKeyFromCollection(targetCollection),
-    };
-    schema['x-component-props'].fieldNames.label =
-      schema['x-component-props'].fieldNames?.label ||
-      targetCollection?.titleField ||
-      getUniqueKeyFromCollection(targetCollection);
-
-    if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
-      // 预览文件时需要的参数
-      schema['x-component-props']['size'] = 'small';
-    }
-  }
-
   properties = {
     'uiSchema.title': {
       type: 'string',
@@ -122,7 +101,6 @@ export class M2OFieldInterface extends CollectionFieldInterface {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',

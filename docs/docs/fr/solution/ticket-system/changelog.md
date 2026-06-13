@@ -8,7 +8,6 @@ Cette page recense le contenu des mises à jour pour chaque version de la soluti
 
 **Fichiers de sauvegarde** :
 - [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
-- [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip)
 
 **Contenu de la mise à jour** :
 - Correction de l'erreur « SLA Config introuvable » lors d'un clic sur « Terminé » sur un ticket
@@ -21,7 +20,6 @@ Cette page recense le contenu des mises à jour pour chaque version de la soluti
 
 **Fichiers de sauvegarde** :
 - nocobase_tts_v2_backup_260302.nbdata
-- nocobase_tts_v2_sql_260302.zip
 
 **Contenu de la mise à jour** :
 - Première publication du système de tickets v2

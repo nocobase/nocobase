@@ -16,7 +16,7 @@ import {
 } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
 import _ from 'lodash';
-import { Button } from 'antd';
+import { Button, Space } from 'antd';
 import dayjs from 'dayjs';
 import { tExpr, useT } from '../../locale';
 import { convertDatasetFormats, debugLog, normalizeEChartsOption, sleep } from '../utils';
@@ -26,6 +26,8 @@ import { ChartResource } from '../resources/ChartResource';
 import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
 import PluginDataVisualizationClient from '../../plugin';
+import { DaraButton } from '../components/DaraButton';
+import { useChatBoxStore, useChatMessagesStore } from '@nocobase/plugin-ai/client-v2';
 
 const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
 
@@ -195,6 +197,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
         {...this.props.chart}
         dataSource={this.resource.getData()}
         loading={this.resource.loading}
+        heightMode={this.decoratorProps?.heightMode}
         ref={this.context.chartRef}
       />
     );
@@ -332,12 +335,19 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   getRegisteredChart(type?: string) {
     if (!type) return;
-    return this.getDataVisualizationPlugin()?.charts?.getChart?.(type);
+    return this.getV2DataVisualizationPlugin()?.charts?.getChart?.(type);
+  }
+
+  getV2DataVisualizationPlugin() {
+    const pm = this.context.app?.pm;
+    return pm?.get(PluginDataVisualizationClient) as PluginDataVisualizationClient;
   }
 
   getDataVisualizationPlugin() {
     const pm = this.context.app?.pm;
-    return pm?.get(PluginDataVisualizationClient) as PluginDataVisualizationClient;
+    return (pm?.get(PluginDataVisualizationClient) ||
+      pm?.get('@nocobase/plugin-data-visualization') ||
+      pm?.get('data-visualization')) as PluginDataVisualizationClient;
   }
 
   getRegisteredChartGeneral(builder: any = {}) {
@@ -492,14 +502,13 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 }
 
-const PreviewButton = ({ style }) => {
+const PreviewButton = () => {
   const t = useT();
   const ctx = useFlowContext();
   return (
     <Button
       color="primary"
       variant="outlined"
-      style={style}
       onClick={async () => {
         // 这里通过普通的 form.values 拿不到数据
         const formValues = ctx.getStepFormValues('chartSettings', 'configure');
@@ -512,23 +521,31 @@ const PreviewButton = ({ style }) => {
   );
 };
 
-const CancelButton = ({ style }) => {
+const CancelButton = () => {
   const t = useT();
   const ctx = useFlowContext();
   return (
     <Button
       type="default"
-      style={style}
       onClick={() => {
         // 回滚 未保存的 stepParams 并刷新图表
         ctx.model.cancelPreview();
 
+        closeAssociatedAIChatBox(ctx);
         ctx.view.close();
       }}
     >
       {t('Cancel')}
     </Button>
   );
+};
+
+const closeAssociatedAIChatBox = (ctx: any) => {
+  const aiOpen = useChatBoxStore.getState().open;
+  const associatedUid = useChatMessagesStore.getState().currentEditorRefUid;
+  if (aiOpen && associatedUid === ctx.model.uid) {
+    useChatBoxStore.getState().setOpen(false);
+  }
 };
 
 ChartBlockModel.define({
@@ -544,13 +561,16 @@ ChartBlockModel.registerFlow({
       uiMode: (ctx) => ({
         type: 'embed',
         props: {
-          minWidth: '400px',
+          onClose: () => {
+            closeAssociatedAIChatBox(ctx);
+          },
+          header: { extra: <DaraButton ctx={ctx} /> },
           footer: (originNode, { OkBtn }) => (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-              <CancelButton style={{ marginRight: 6 }} />
-              <PreviewButton style={{ marginRight: 6 }} />
+            <Space>
+              <CancelButton />
+              <PreviewButton />
               <OkBtn />
-            </div>
+            </Space>
           ),
         },
       }),

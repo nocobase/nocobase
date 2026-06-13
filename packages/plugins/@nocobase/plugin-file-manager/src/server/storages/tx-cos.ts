@@ -150,6 +150,38 @@ export default class extends StorageType {
     });
   }
 
+  async exists(record: AttachmentModel): Promise<boolean> {
+    const { cos } = this.make() as any;
+    try {
+      await promisify(cos.headObject).call(cos, {
+        Region: this.storage.options.Region,
+        Bucket: this.storage.options.Bucket,
+        Key: getFileKey(record),
+      });
+      return true;
+    } catch (error) {
+      if (['NoSuchKey', 'NotFound'].includes((error as Error).name)) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  async copy(source: AttachmentModel, target: AttachmentModel): Promise<void> {
+    const { cos } = this.make() as any;
+    const sourceKey = getFileKey(source);
+    const copySource = `${this.storage.options.Bucket}.cos.${this.storage.options.Region}.myqcloud.com/${sourceKey
+      .split('/')
+      .map((segment) => encodeURIComponent(segment))
+      .join('/')}`;
+    await promisify(cos.putObjectCopy).call(cos, {
+      Region: this.storage.options.Region,
+      Bucket: this.storage.options.Bucket,
+      Key: getFileKey(target),
+      CopySource: copySource,
+    });
+  }
+
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { cos } = this.make() as any;
     const { Deleted } = await promisify(cos.deleteMultipleObject).call(cos, {

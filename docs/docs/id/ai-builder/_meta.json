@@ -48,5 +48,10 @@
     "type": "file",
     "name": "publish",
     "label": "Manajemen Publikasi"
+  },
+  {
+    "type": "file",
+    "name": "version-control",
+    "label": "Kontrol Versi"
   }
 ]

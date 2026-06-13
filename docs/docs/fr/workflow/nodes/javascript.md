@@ -64,7 +64,9 @@ C'est le mode par défaut recommandé, adapté aux logiques de calcul pur et de 
 Lorsque `WORKFLOW_SCRIPT_MODULES` **est configurée**, les scripts basculent vers le moteur `vm` natif de Node.js pour activer la fonctionnalité `require`.
 
 :::warning{title="Avertissement de sécurité"}
-En mode non sécurisé, bien que les scripts s'exécutent dans un bac à sable `vm` avec une liste blanche de modules restreinte, le module `vm` de Node.js n'est pas un mécanisme de bac à sable sécurisé. L'activation de ce mode implique de faire confiance à tous les utilisateurs ayant la permission de modifier les scripts de flux de travail. Les administrateurs doivent évaluer les risques de sécurité de manière indépendante et contrôler strictement la liste blanche des modules et les permissions de modification des flux de travail.
+Le mode non sécurisé utilise le module `vm` de Node.js uniquement pour fournir la prise en charge de CommonJS `require`. Le module `vm` de Node.js n'est pas un mécanisme de bac à sable sécurisé. L'activation de ce mode implique de faire confiance à tous les utilisateurs pouvant modifier, tester ou exécuter des scripts de flux de travail comme à des utilisateurs capables d'exécuter du code avec les privilèges du serveur NocoBase.
+
+`WORKFLOW_SCRIPT_MODULES` n'est ni une frontière de sécurité ni un modèle de permissions. Il contrôle seulement les noms de modules acceptés par `require()` avant l'exécution du script.
 :::
 
 Les modules peuvent être utilisés dans le script conformément à CommonJS, en utilisant la directive `require()` pour les importer.
@@ -75,8 +77,8 @@ Prend en charge les modules natifs de Node.js et les modules installés dans `no
 WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
-:::info{title="Conseil"}
-Les modules non déclarés dans la variable d'environnement `WORKFLOW_SCRIPT_MODULES`, même s'ils sont natifs de Node.js ou installés dans `node_modules`, **ne peuvent pas** être utilisés dans le script. Cette stratégie peut être utilisée au niveau de l'exploitation et de la maintenance pour contrôler la liste des modules utilisables par les utilisateurs, évitant ainsi des permissions de script trop élevées dans certains scénarios.
+:::info{title="Note"}
+Les modules non déclarés dans la variable d'environnement `WORKFLOW_SCRIPT_MODULES`, même s'ils sont natifs de Node.js ou déjà installés dans `node_modules`, **ne peuvent pas** être importés directement avec `require()`. Cette liste sert uniquement à configurer les imports pris en charge. Ne l'utilisez pas pour réduire les permissions des scripts ni pour déléguer en sécurité la modification des scripts à des utilisateurs moins fiables.
 :::
 
 Dans un environnement qui n'est pas déployé à partir des sources, si un module n'est pas installé dans `node_modules`, vous pouvez installer manuellement le paquet nécessaire dans le répertoire `storage`. Par exemple, si vous avez besoin d'utiliser le paquet `exceljs`, vous pouvez effectuer les opérations suivantes :

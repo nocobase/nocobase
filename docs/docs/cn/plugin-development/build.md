@@ -44,6 +44,10 @@ yarn build @my-project/plugin-hello --tar
 
 把 `.tar.gz` 文件上传并解压到目标应用的 `./storage/plugins` 目录即可。详细步骤见 [安装与升级插件](../get-started/install-upgrade-plugins.mdx)。
 
+### 默认启用插件
+
+上传后插件默认不会自动激活——它会出现在「插件管理器」里，需要手动开启。如果你在维护自己的 NocoBase 应用，希望插件随应用一起默认启用，可以用 `APPEND_PRESET_BUILT_IN_PLUGINS`（追加默认内置插件）环境变量控制，用法见[让插件默认预置或默认启用](./write-your-first-plugin.md#让插件默认预置或默认启用可选)。
+
 ## 自定义构建配置
 
 通常来说默认的构建配置就够用了。如果你需要自定义——比如修改打包入口、添加别名、调整压缩选项等——可以在插件根目录下创建 `build.config.ts` 文件：
@@ -84,3 +88,4 @@ export default defineConfig({
 - [依赖管理](./dependency-management.md) — 插件的依赖声明与全局依赖
 - [插件开发概述](./index.md) — 插件开发整体介绍
 - [安装与升级插件](../get-started/install-upgrade-plugins.mdx) — 把打包文件上传到目标环境
+- [环境变量](../get-started/installation/env.md) — 预置、内置插件等环境变量配置

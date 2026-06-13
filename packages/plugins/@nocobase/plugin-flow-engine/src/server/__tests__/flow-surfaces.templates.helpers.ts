@@ -13,6 +13,20 @@ import { resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames } from '../fl
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 
 const FLOW_SURFACES_TEST_PUBLIC_DATA_BLOCK_TYPES = new Set(['table', 'list', 'gridCard', 'calendar', 'kanban']);
+const FLOW_SURFACES_TEST_VISIBLE_FIELD_REQUIRED_BLOCK_TYPES = new Set([
+  'table',
+  'list',
+  'gridCard',
+  'details',
+  'createForm',
+  'editForm',
+  'filterForm',
+  'kanban',
+]);
+const FLOW_SURFACES_TEST_DEFAULT_VISIBLE_FIELD_PREFERENCES: Record<string, string[]> = {
+  departments: ['code', 'scope', 'title', 'status'],
+  employees: ['email', 'phone', 'nickname', 'status'],
+};
 
 function normalizeText(value: any) {
   return typeof value === 'string' && value.trim() ? value.trim() : '';
@@ -61,7 +75,13 @@ function buildDefaultFilter(collectionName: string, collectionMeta: any[]) {
 
 export function getData(response: any) {
   expect(response.status, readErrorMessage(response)).toBe(200);
-  return response.body?.data?.data ?? response.body?.data;
+  if (response.body?.data && Object.prototype.hasOwnProperty.call(response.body.data, 'data')) {
+    return response.body.data.data;
+  }
+  if (response.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  return response.body;
 }
 
 export function getListData(response: any) {
@@ -104,7 +124,10 @@ export function readErrorMessage(response: any) {
 export async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
-      values,
+      values: {
+        icon: 'FileOutlined',
+        ...values,
+      },
     }),
   );
 }
@@ -112,7 +135,7 @@ export async function createPage(rootAgent: any, values: Record<string, any>) {
 export async function addBlockData(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').addBlock({
-      values: await withDefaultFilterForPublicDataBlock(rootAgent, values),
+      values: await withDefaultVisibleDataBlockRequirements(rootAgent, values),
     }),
   );
 }
@@ -178,6 +201,54 @@ async function withDefaultFilterForPublicDataBlock(rootAgent: any, values: Recor
     ...values,
     defaultFilter: buildDefaultFilter(collectionName, collectionMeta),
   };
+}
+
+async function withDefaultVisibleDataBlockRequirements(rootAgent: any, values: Record<string, any>) {
+  const valuesWithDefaultFields = await withDefaultFieldsForVisibleDataBlock(rootAgent, values);
+  return withDefaultFilterForPublicDataBlock(rootAgent, valuesWithDefaultFields);
+}
+
+async function withDefaultFieldsForVisibleDataBlock(rootAgent: any, values: Record<string, any>) {
+  if (
+    !values ||
+    !FLOW_SURFACES_TEST_VISIBLE_FIELD_REQUIRED_BLOCK_TYPES.has(normalizeText(values.type)) ||
+    Object.prototype.hasOwnProperty.call(values, 'fields') ||
+    Object.prototype.hasOwnProperty.call(values, 'fieldGroups') ||
+    Object.prototype.hasOwnProperty.call(values, 'template')
+  ) {
+    return values;
+  }
+  const collectionName =
+    normalizeText(values?.resourceInit?.collectionName) ||
+    normalizeText(values?.resource?.collectionName) ||
+    normalizeText(values?.collection);
+  if (!collectionName) {
+    return values;
+  }
+  const collectionMeta = await loadCollectionMeta(rootAgent);
+  const fieldNames = pickDefaultVisibleFieldNames(collectionName, collectionMeta);
+  return fieldNames.length
+    ? {
+        ...values,
+        fields: fieldNames,
+      }
+    : values;
+}
+
+function pickDefaultVisibleFieldNames(collectionName: string, collectionMeta: any[]) {
+  const collection = Array.isArray(collectionMeta)
+    ? collectionMeta.find((item) => normalizeText(item?.name) === collectionName)
+    : undefined;
+  const fields = Array.isArray(collection?.fields)
+    ? collection.fields
+    : collection?.fields && typeof collection.fields.values === 'function'
+      ? Array.from(collection.fields.values())
+      : [];
+  const fieldNames = fields.map((field: any) => normalizeText(field?.name || field?.options?.name)).filter(Boolean);
+  const preferredFields = FLOW_SURFACES_TEST_DEFAULT_VISIBLE_FIELD_PREFERENCES[collectionName] || [];
+  const preferred = preferredFields.filter((fieldName) => fieldNames.includes(fieldName));
+  const remaining = fieldNames.filter((fieldName) => fieldName !== 'id' && !preferred.includes(fieldName));
+  return [...preferred, ...remaining].slice(0, 3);
 }
 
 export async function setupFixtureCollections(rootAgent: any, db: Database) {

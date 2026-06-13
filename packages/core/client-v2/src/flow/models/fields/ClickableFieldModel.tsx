@@ -191,7 +191,15 @@ export class ClickableFieldModel extends FieldModel {
   }
 
   renderInDisplayStyle(value, record?, isToMany?, wrap?) {
-    const { clickToOpen = false, displayStyle, titleField, overflowMode, disabled, ...restProps } = this.props;
+    const {
+      clickToOpen = false,
+      displayStyle,
+      titleField,
+      overflowMode,
+      disabled,
+      timeFormat,
+      ...restProps
+    } = this.props;
     const titleCollectionField = titleField
       ? this.context.collectionField?.targetCollection?.getField?.(titleField) || this.context.collectionField
       : this.context.collectionField;

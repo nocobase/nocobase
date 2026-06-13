@@ -15,7 +15,7 @@ Việc đăng ký route thường được thực hiện trong phương thức `
 
 :::warning Lưu ý
 
-Plugin của NocoBase v2, route sau khi đăng ký sẽ tự động thêm tiền tố `/v2`, khi truy cập cần kèm theo tiền tố này.
+Plugin của NocoBase v2, route sau khi đăng ký sẽ tự động thêm tiền tố `/v`, khi truy cập cần kèm theo tiền tố này.
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase đã đăng ký các route mặc định sau:
 
 | Tên           | Đường dẫn                  | Component                | Mô tả           |
 | -------------- | --------------------- | ------------------- | -------------- |
-| admin          | /v2/admin/\*          | AdminLayout         | Trang quản trị   |
-| admin.page     | /v2/admin/:name       | AdminDynamicPage    | Trang được tạo động |
-| admin.settings | /v2/admin/settings/\* | AdminSettingsLayout | Trang cấu hình plugin   |
+| admin          | /v/admin/\*          | AdminLayout         | Trang quản trị   |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | Trang được tạo động |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Trang cấu hình plugin   |
 
 ## Route trang
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // Tải theo nhu cầu, chỉ tải module này khi truy cập /v2/hello
+      // Tải theo nhu cầu, chỉ tải module này khi truy cập /v/hello
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // Route con, dùng componentLoader để tải theo nhu cầu
     this.router.add('root.home', {
-      path: '/', // -> /v2/
+      path: '/', // -> /v/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /v2/about
+      path: '/about', // -> /v/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ class MyPlugin extends Plugin {
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /v2/user/:id
+  path: '/user/:id', // -> /v/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-Sau khi đăng ký, đường dẫn truy cập là `/admin/settings/hello`. Khi dưới menu chỉ có một trang, thanh tab phía trên sẽ tự động ẩn.
+Sau khi đăng ký, đường dẫn truy cập là `/v/admin/settings/hello`. Khi dưới menu chỉ có một trang, thanh tab phía trên sẽ tự động ẩn.
 
 ### Trang cài đặt nhiều Tab
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1: Cài đặt cơ bản (key là 'index', map đến /admin/settings/hello)
+    // Tab 1: Cài đặt cơ bản (key là 'index', map đến /v/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2: Cài đặt nâng cao (map đến /admin/settings/hello/advanced)
+    // Tab 2: Cài đặt nâng cao (map đến /v/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

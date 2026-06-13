@@ -9,6 +9,7 @@
 
 import { MockServer } from '@nocobase/test';
 import _ from 'lodash';
+import { vi } from 'vitest';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import {
@@ -26,6 +27,7 @@ import {
   setupFixtureCollections,
 } from './flow-surfaces.templates.helpers';
 import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
+import { FlowSurfacesService } from '../flow-surfaces/service';
 
 const FLOW_SURFACES_TEMPLATE_TEST_PLUGINS = [...FLOW_SURFACES_TEST_PLUGINS, 'ui-templates'] as const;
 const FLOW_SURFACES_TEMPLATE_TEST_PLUGIN_INSTALLS = [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, 'ui-templates'] as const;
@@ -2913,7 +2915,7 @@ describe('flowSurfaces templates', () => {
                         resource: {
                           binding: 'currentRecord',
                         },
-                        fields: ['field1'],
+                        fields: ['field1', 'field2', 'field3'],
                       },
                     ],
                     saveAsTemplate: {
@@ -2923,6 +2925,8 @@ describe('flowSurfaces templates', () => {
                     },
                   },
                 },
+                'field2',
+                'field3',
               ],
             },
             {
@@ -2933,7 +2937,7 @@ describe('flowSurfaces templates', () => {
                 collectionName,
               },
               defaultFilter: defaultFilterFor(['field1', 'field2', 'field3', 'field4']),
-              fields: ['field1'],
+              fields: ['field1', 'field2', 'field3'],
               recordActions: [
                 {
                   key: 'consumerView',
@@ -3711,7 +3715,7 @@ describe('flowSurfaces templates', () => {
       description: 'Popup template requiring a current record for popup.tryTemplate context coverage.',
       saveMode: 'duplicate',
     });
-    expect(recordTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    expect(recordTemplate.filterByTk).toBe('{{ctx.record.id}}');
     const recordTemplateSurface = await getSurface(rootAgent, {
       uid: recordTemplate.targetUid,
     });
@@ -3721,8 +3725,41 @@ describe('flowSurfaces templates', () => {
     expect(recordTemplateDetails?.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'popup_try_template_record_context_targets',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      filterByTk: '{{ctx.record.id}}',
     });
+    const convertRecordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          popup: {
+            blocks: [
+              {
+                key: 'record-context-convert-template-details',
+                type: 'details',
+                resource: {
+                  binding: 'currentRecord',
+                },
+                fields: ['name'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    const convertedRecordTemplate = await saveTemplate(rootAgent, {
+      target: { uid: convertRecordAction.uid },
+      name: 'Record-context popup convert template',
+      description: 'Popup template converted from a current-record opener.',
+      saveMode: 'convert',
+    });
+    expect(convertedRecordTemplate.filterByTk).toBe('{{ctx.record.id}}');
+    const convertedRecordActionSurface = await getSurface(rootAgent, { uid: convertRecordAction.uid });
+    expect(convertedRecordActionSurface.tree.popup?.template).toMatchObject({
+      uid: convertedRecordTemplate.uid,
+      mode: 'reference',
+    });
+    expect(getPopupOpenView(convertedRecordActionSurface.tree)).not.toHaveProperty('filterByTk');
 
     const blockAction = getData(
       await rootAgent.resource('flowSurfaces').addAction({
@@ -3763,12 +3800,264 @@ describe('flowSurfaces templates', () => {
       }),
     );
     expect(targetRecordActionPopupTemplate.collectionName).toBe('popup_try_template_record_context_targets');
-    expect(targetRecordActionPopupTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    expect(targetRecordActionPopupTemplate.filterByTk).toBe('{{ctx.record.id}}');
     expect(getPopupOpenView(targetRecordActionSurface.tree)).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'popup_try_template_record_context_targets',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
+    expect(getPopupOpenView(targetRecordActionSurface.tree)).not.toHaveProperty('filterByTk');
+
+    const legacyRecordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          popup: {
+            template: {
+              uid: recordTemplate.uid,
+              mode: 'reference',
+            },
+            openView: {
+              filterByTk: '{{ ctx.record.id }}',
+            },
+          },
+        },
+      }),
+    );
+    const legacyRecordActionSurface = await getSurface(rootAgent, { uid: legacyRecordAction.uid });
+    expect(getPopupOpenView(legacyRecordActionSurface.tree)).not.toHaveProperty('filterByTk');
+
+    const customRecordAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          popup: {
+            template: {
+              uid: recordTemplate.uid,
+              mode: 'reference',
+            },
+            openView: {
+              filterByTk: '{{ ctx.record.code }}',
+            },
+          },
+        },
+      }),
+    );
+    const customRecordActionSurface = await getSurface(rootAgent, { uid: customRecordAction.uid });
+    expect(getPopupOpenView(customRecordActionSurface.tree)?.filterByTk).toBe('{{ ctx.record.code }}');
+
+    const customFilterTemplate = getData(
+      await rootAgent.resource('flowModelTemplates').create({
+        values: {
+          name: 'Record-context popup custom filter template',
+          description: 'Popup template with a custom current-record filterByTk expression.',
+          targetUid: recordTemplate.targetUid,
+          type: 'popup',
+          dataSourceKey: 'main',
+          collectionName: 'popup_try_template_record_context_targets',
+          filterByTk: '{{ ctx.record.code }}',
+        },
+      }),
+    );
+    const customFilterTemplateAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: { uid: table.uid },
+          type: 'view',
+          popup: {
+            template: {
+              uid: customFilterTemplate.uid,
+              mode: 'reference',
+            },
+            openView: {
+              filterByTk: '{{ ctx.record.id }}',
+            },
+          },
+        },
+      }),
+    );
+    const customFilterTemplateActionSurface = await getSurface(rootAgent, { uid: customFilterTemplateAction.uid });
+    expect(getPopupOpenView(customFilterTemplateActionSurface.tree)?.filterByTk).toBe('{{ ctx.record.code }}');
+  });
+
+  it('should preserve custom record filter during referenced popup title sync', async () => {
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any) as any;
+    const actionNode = {
+      uid: 'record-action-title-sync',
+      use: 'ViewActionModel',
+      stepParams: {
+        popupSettings: {
+          openView: {
+            uid: 'target-code-popup',
+            popupTemplateUid: 'target-code-template',
+            popupTemplateMode: 'reference',
+            collectionName: 'target_code_records',
+            filterByTk: '{{ ctx.record.code }}',
+          },
+        },
+      },
+    };
+    const findSpy = vi.spyOn(service.repository, 'findModelById').mockResolvedValue(actionNode);
+    const profileSpy = vi.spyOn(service, 'resolvePopupBlockProfile').mockResolvedValue({
+      currentCollection: {
+        filterTargetKey: 'code',
+      },
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      popupKind: 'recordPopup',
+    });
+    const hostKeySpy = vi.spyOn(service, 'resolvePopupHostCurrentRecordFilterTargetKey').mockResolvedValue('id');
+    const patchSpy = vi.spyOn(service, 'patchFlowSurfaceModelOptions').mockResolvedValue(undefined);
+
+    try {
+      await service.syncDefaultActionPopupOpenViewTitle(actionNode.uid, actionNode, {
+        openViewTitle: 'Synced title',
+      });
+
+      expect(patchSpy).toHaveBeenCalledTimes(1);
+      const patchedOpenView = patchSpy.mock.calls[0][0].stepParams.popupSettings.openView;
+      expect(patchedOpenView.title).toBe('Synced title');
+      expect(patchedOpenView.filterByTk).toBe('{{ ctx.record.code }}');
+    } finally {
+      findSpy.mockRestore();
+      profileSpy.mockRestore();
+      hostKeySpy.mockRestore();
+      patchSpy.mockRestore();
+    }
+  });
+
+  it('should replace legacy popup inputArgs filter during local record action title sync', async () => {
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any) as any;
+    const actionNode = {
+      uid: 'local-record-action-title-sync',
+      use: 'ViewActionModel',
+      stepParams: {
+        popupSettings: {
+          openView: {
+            collectionName: 'target_code_records',
+            filterByTk: '{{ ctx.view.inputArgs.filterByTk }}',
+          },
+        },
+      },
+    };
+    const findSpy = vi.spyOn(service.repository, 'findModelById').mockResolvedValue(actionNode);
+    const profileSpy = vi.spyOn(service, 'resolvePopupBlockProfile').mockResolvedValue({
+      dataSourceKey: 'main',
+      collectionName: 'target_code_records',
+      currentCollection: {
+        filterTargetKey: 'id',
+      },
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      popupKind: 'recordPopup',
+      hasCurrentRecord: true,
+      hasAssociationContext: false,
+      scene: 'one',
+    });
+    const patchSpy = vi.spyOn(service, 'patchFlowSurfaceModelOptions').mockResolvedValue(undefined);
+
+    try {
+      await service.syncDefaultActionPopupOpenViewTitle(actionNode.uid, actionNode, {
+        openViewTitle: 'Synced title',
+      });
+
+      expect(patchSpy).toHaveBeenCalledTimes(1);
+      const patchedOpenView = patchSpy.mock.calls[0][0].stepParams.popupSettings.openView;
+      expect(patchedOpenView.title).toBe('Synced title');
+      expect(patchedOpenView.filterByTk).toBe('{{ctx.record.id}}');
+    } finally {
+      findSpy.mockRestore();
+      profileSpy.mockRestore();
+      patchSpy.mockRestore();
+    }
+  });
+
+  it('should not add record filter during new-record action title sync', async () => {
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any) as any;
+    const actionNode = {
+      uid: 'new-record-action-title-sync',
+      use: 'AddNewActionModel',
+      stepParams: {
+        popupSettings: {
+          openView: {
+            collectionName: 'target_code_records',
+          },
+        },
+      },
+    };
+    const findSpy = vi.spyOn(service.repository, 'findModelById').mockResolvedValue(actionNode);
+    const profileSpy = vi.spyOn(service, 'resolvePopupBlockProfile').mockResolvedValue({
+      dataSourceKey: 'main',
+      collectionName: 'target_code_records',
+      currentCollection: {
+        filterTargetKey: 'id',
+      },
+      popupKind: 'plainPopup',
+      hasCurrentRecord: false,
+      hasAssociationContext: false,
+      scene: 'new',
+    });
+    const patchSpy = vi.spyOn(service, 'patchFlowSurfaceModelOptions').mockResolvedValue(undefined);
+
+    try {
+      await service.syncDefaultActionPopupOpenViewTitle(actionNode.uid, actionNode, {
+        openViewTitle: 'Create record',
+      });
+
+      expect(patchSpy).toHaveBeenCalledTimes(1);
+      const patchedOpenView = patchSpy.mock.calls[0][0].stepParams.popupSettings.openView;
+      expect(patchedOpenView.title).toBe('Create record');
+      expect(patchedOpenView).not.toHaveProperty('filterByTk');
+    } finally {
+      findSpy.mockRestore();
+      profileSpy.mockRestore();
+      patchSpy.mockRestore();
+    }
+  });
+
+  it('should preserve custom record filter when popup target key differs from opener key', async () => {
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any) as any;
+    const template = {
+      uid: 'target-code-template',
+      targetUid: 'target-code-popup',
+      type: 'popup',
+      dataSourceKey: 'main',
+      collectionName: 'target_code_records',
+      filterByTk: '{{ ctx.record.code }}',
+    };
+    const spies = [
+      vi.spyOn(service, 'getFlowTemplateOrThrow').mockResolvedValue(template),
+      vi.spyOn(service, 'assertPopupTemplateCompatibility').mockResolvedValue(undefined),
+      vi.spyOn(service, 'assertOpenViewUidTarget').mockResolvedValue(undefined),
+      vi.spyOn(service, 'resolvePopupHostCurrentRecordFilterTargetKey').mockResolvedValue('id'),
+      vi.spyOn(service, 'resolveOpenViewFilterTargetKey').mockReturnValue('code'),
+    ];
+
+    try {
+      const normalized = await service.normalizeOpenView(
+        'test',
+        {
+          template: {
+            uid: template.uid,
+            mode: 'reference',
+          },
+          filterByTk: '{{ ctx.record.code }}',
+        },
+        {
+          popupTemplateHostUid: 'opener-record-action',
+          popupActionContext: {
+            hasCurrentRecord: true,
+          },
+        },
+      );
+
+      expect(normalized).toMatchObject({
+        uid: 'target-code-popup',
+        popupTemplateUid: 'target-code-template',
+        filterByTk: '{{ ctx.record.code }}',
+      });
+    } finally {
+      spies.forEach((spy) => spy.mockRestore());
+    }
   });
 
   it.skip('should keep popup.tryTemplate miss semantics silent for scalar fields and non-default actions while auto-saving default popup completion as templates', async () => {
@@ -4541,12 +4830,12 @@ describe('flowSurfaces templates', () => {
       }),
     );
     expect(recordActionPopupTemplate.collectionName).toBe('popup_try_template_apply_record_context_targets');
-    expect(recordActionPopupTemplate.filterByTk).toBe('{{ctx.view.inputArgs.filterByTk}}');
+    expect(recordActionPopupTemplate.filterByTk).toBe('{{ctx.record.id}}');
     expect(getPopupOpenView(recordActionSurface.tree)).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'popup_try_template_apply_record_context_targets',
-      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
+    expect(getPopupOpenView(recordActionSurface.tree)).not.toHaveProperty('filterByTk');
   });
 
   it('should clear template usages through removePopupTab removeTab and destroyPage', async () => {
@@ -4794,6 +5083,7 @@ describe('flowSurfaces templates', () => {
         binding: 'associatedRecords',
         associationField: 'department',
       },
+      fields: ['title'],
       defaultFilter: departmentDefaultFilter(),
     });
     const associationBlockTemplate = await saveTemplate(rootAgent, {

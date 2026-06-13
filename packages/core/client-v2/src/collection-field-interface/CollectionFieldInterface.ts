@@ -10,7 +10,14 @@
 import type { ISchema } from '@formily/react';
 import { tval } from '@nocobase/utils/client';
 import { capitalize, cloneDeep, set } from 'lodash';
+import type { ComponentType, ReactNode } from 'react';
 
+import {
+  normalizeFilterableOperators,
+  type FieldFilterable,
+  type FieldFilterOperator,
+} from '../collection-manager/filter-operators';
+import type { FieldConfigureItem } from '../collection-manager/field-configure';
 import { defaultProps } from '../collection-manager/interfaces/properties';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 export type CollectionFieldInterfaceFactory = new (
@@ -22,6 +29,55 @@ export interface CollectionFieldInterfaceComponentOption {
   value: string;
   useVisible?: () => boolean;
   useProps?: () => any;
+}
+
+export type FieldConfigureFormMode = 'create' | 'edit';
+
+export interface FieldConfigureContext {
+  mode: FieldConfigureFormMode;
+  fieldInterface: CollectionFieldInterface | FieldInterfaceConfigure;
+  collection?: Record<string, any>;
+  field?: Record<string, any>;
+  disabledJSONB?: boolean;
+  createOnly?: boolean;
+  editMainOnly?: boolean;
+}
+
+export type FieldConfigureFormProps = FieldConfigureContext;
+
+export interface FieldConfigurePropertyComponentProps extends FieldConfigureContext {
+  name: string;
+  namePath: Array<string | number>;
+  schema: Record<string, any>;
+  form?: any;
+  disabled?: boolean;
+  collections?: Array<Record<string, any>>;
+  context: Record<string, boolean>;
+  title?: ReactNode;
+  tooltip?: ReactNode;
+  componentProps?: Record<string, any>;
+}
+
+export interface FieldInterfaceConfigure {
+  name?: string;
+  title?: ReactNode;
+  group?: string;
+  order?: number;
+  default?: Record<string, any>;
+  titleUsable?: boolean;
+  isAssociation?: boolean;
+  supportDataSourceType?: string[];
+  notSupportDataSourceType?: string[];
+  properties?: Record<string, any>;
+  items?: FieldConfigureItem[];
+  getConfigureFormProperties?: (collectionInfo?: Record<string, any>) => Record<string, any>;
+  components?: Record<string, ComponentType<FieldConfigurePropertyComponentProps>>;
+  initialize?: (values: Record<string, any>, context?: FieldConfigureContext) => void;
+  ConfigureForm?: ComponentType<FieldConfigureFormProps>;
+  Component?: ComponentType<FieldConfigureFormProps>;
+  normalizeValues?: (values: Record<string, any>, context: FieldConfigureContext) => Record<string, any>;
+  normalize?: (values: Record<string, any>, context: FieldConfigureContext) => Record<string, any>;
+  validate?: (values: Record<string, any>, context: FieldConfigureContext) => Promise<void> | void;
 }
 
 export abstract class CollectionFieldInterface {
@@ -45,30 +101,19 @@ export abstract class CollectionFieldInterface {
   hasDefaultValue?: boolean;
   componentOptions?: CollectionFieldInterfaceComponentOption[];
   isAssociation?: boolean;
-  operators?: any[];
+  operators?: FieldFilterOperator[];
   properties?: any;
   validationType?: string;
   availableValidationOptions: string[] = [];
+  configure?: FieldInterfaceConfigure;
   excludeValidationOptions?: string[];
   /**
    * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
    * - 如果该值为空，则不会在变量列表中看到该字段
    */
-  filterable?: {
-    /**
-     * 字段所支持的操作符，会在 Filter 组件中显示，比如设置 `数据范围` 的时候可以看见
-     */
-    operators?: any[];
-    /**
-     * 为当前字段添加子选项，这个子选项会在 Filter 组件中显示，比如设置 `数据范围` 的时候可以看见
-     */
-    children?: any[];
-    [key: string]: any;
-  };
+  filterable?: FieldFilterable;
   titleUsable?: boolean;
-  validateSchema?(fieldSchema: ISchema): Record<string, ISchema>;
   usePathOptions?(field: any): any;
-  schemaInitialize?(schema: ISchema, data: any): void;
   hidden?: boolean;
 
   addComponentOption(componentOption: CollectionFieldInterfaceComponentOption) {
@@ -93,10 +138,12 @@ export abstract class CollectionFieldInterface {
     this.componentOptions.push(componentOption);
   }
   getConfigureFormProperties(collectionInfo?: any): Record<string, ISchema> {
+    const configuredProperties =
+      this.configure?.getConfigureFormProperties?.(collectionInfo) || this.configure?.properties || {};
     const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
-    this.availableValidationOptions.push('required');
     const isViewCollection = collectionInfo?.view;
     const isSqlCollection = collectionInfo?.template === 'sql' || collectionInfo?.sql;
+    const availableValidationOptions = [...new Set([...this.availableValidationOptions, 'required'])];
     const validationProps =
       !isViewCollection && !isSqlCollection && this.validationType
         ? {
@@ -107,7 +154,7 @@ export abstract class CollectionFieldInterface {
               'x-component': 'FieldValidation',
               'x-component-props': {
                 type: this.validationType,
-                availableValidationOptions: [...new Set(this.availableValidationOptions)],
+                availableValidationOptions,
                 excludeValidationOptions: [...new Set(this.excludeValidationOptions)],
                 isAssociation: this.isAssociation,
               },
@@ -115,7 +162,7 @@ export abstract class CollectionFieldInterface {
           }
         : {};
     return {
-      ...cloneDeep({ ...defaultProps, ...this?.properties }),
+      ...cloneDeep({ ...defaultProps, ...this?.properties, ...configuredProperties }),
       ...defaultValueProps,
       ...validationProps,
     };
@@ -128,73 +175,27 @@ export abstract class CollectionFieldInterface {
         required: false,
         title: '{{ t("Default value") }}',
         'x-decorator': 'FormItem',
-        'x-reactions': [
-          {
-            dependencies: [
-              'uiSchema.x-component-props.gmt',
-              'uiSchema.x-component-props.showTime',
-              'uiSchema.x-component-props.dateFormat',
-              'uiSchema.x-component-props.timeFormat',
-              'uiSchema.x-component-props.picker',
-              'uiSchema.x-component-props.format',
-            ],
-            fulfill: {
-              state: {
-                componentProps: {
-                  gmt: '{{$deps[0]}}',
-                  showTime: '{{$deps[1]}}',
-                  dateFormat: '{{$deps[2]}}',
-                  timeFormat: '{{$deps[3]}}',
-                  picker: '{{$deps[4]}}',
-                  format: '{{$deps[5]}}',
-                },
-              },
-            },
-          },
-          {
-            // 当 picker 改变时，清空 defaultValue
-            dependencies: ['uiSchema.x-component-props.picker'],
-            fulfill: {
-              state: {
-                value: null,
-              },
-            },
-          },
-          {
-            dependencies: ['primaryKey', 'unique', 'autoIncrement', 'defaultToCurrentTime'],
-            when: '{{$deps[0]||$deps[1]||$deps[2]||$deps[3]}}',
-            fulfill: {
-              state: {
-                hidden: true,
-                value: null,
-              },
-            },
-            otherwise: {
-              state: {
-                hidden: false,
-              },
-            },
-          },
-          {
-            dependencies: ['uiSchema.enum'],
-            fulfill: {
-              state: {
-                dataSource: '{{$deps[0]}}',
-              },
-            },
-          },
-        ],
       },
     };
   }
 
-  addOperator(operatorOption: any) {
-    set(this, 'filterable.operators', [...(this.filterable.operators || [])]);
-
-    if (this.filterable.operators.find((item) => item.value === operatorOption.value)) {
-      return;
+  addOperator(operatorOption: FieldFilterOperator) {
+    if (!this.filterable) {
+      set(this, 'filterable', {});
     }
 
-    this.filterable.operators.push(operatorOption);
+    const operatorOverrides = Array.isArray(this.filterable.operatorOverrides)
+      ? [...this.filterable.operatorOverrides]
+      : [];
+
+    const existingIndex = operatorOverrides.findIndex((item) => item.value === operatorOption.value);
+    if (existingIndex !== -1) {
+      operatorOverrides[existingIndex] = operatorOption;
+    } else {
+      operatorOverrides.push(operatorOption);
+    }
+
+    set(this, 'filterable.operatorOverrides', operatorOverrides);
+    normalizeFilterableOperators(this.filterable);
   }
 }

@@ -7,8 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DataSource, FlowEngine } from '@nocobase/flow-engine';
+import { DataSource, FlowEngine, MultiRecordResource } from '@nocobase/flow-engine';
 import { createDefaultCollectionBlockTitle } from '../../../utils/blockUtils';
+import { CollectionBlockModel } from '../CollectionBlockModel';
+
+class MissingCollectionTitleBlockModel extends CollectionBlockModel {
+  static meta = { label: 'Table' };
+
+  createResource(ctx: any, _params: any) {
+    return ctx.createResource(MultiRecordResource);
+  }
+}
 
 function normalizeTitle(s: string) {
   return (s || '').replace(/\s+/g, ' ').trim();
@@ -91,5 +100,28 @@ describe('CollectionBlockModel default title rule', () => {
     const t = normalizeTitle(title);
     expect(t).toContain('Table:');
     expect(t).toContain('Main > Users > Tags (Tags)');
+  });
+
+  it('uses resource settings as title fallback when the configured data source is unavailable', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ MissingCollectionTitleBlockModel });
+    const model = engine.createModel<MissingCollectionTitleBlockModel>({
+      uid: 'missing-data-source-title-block',
+      use: 'MissingCollectionTitleBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'mysql',
+            collectionName: 'orders',
+          },
+        },
+      },
+    });
+
+    const title = normalizeTitle(model.title);
+
+    expect(title).toContain('Table:');
+    expect(title).toContain('orders');
+    expect(title).not.toContain('undefined');
   });
 });

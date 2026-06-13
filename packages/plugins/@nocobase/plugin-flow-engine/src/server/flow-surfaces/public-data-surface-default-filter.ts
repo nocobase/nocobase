@@ -270,6 +270,7 @@ export function normalizeFlowSurfacePublicBlockDefaultFilter(
   const normalized = normalizeFlowSurfaceFilterGroupValue(
     defaultFilter,
     `flowSurfaces ${actionName} ${fieldPath} expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+    { strictDateValues: true },
   );
   return normalized;
 }

@@ -65,6 +65,8 @@ RUN if [ "$INCLUDE_DOCS_ARCHIVE" = "1" ]; then \
   fi && \
   rm -f /tmp/dist.tar.gz
 
+FROM mysql:8.0.39 AS mysql-client-assets
+
 FROM node:22-bookworm-slim AS runtime
 ARG COMMIT_HASH
 ARG INCLUDE_DOCS_ARCHIVE=1
@@ -74,6 +76,9 @@ ARG NGINX_VERSION=1.30.1-1~bookworm
 ARG USE_ALIYUN_MIRROR=0
 ENV NB_SKIP_STARTUP_UPDATE=1 \
     NOCOBASE_RUNNING_IN_DOCKER=true
+
+COPY --from=mysql-client-assets /usr/bin/mysql /usr/bin/mysql
+COPY --from=mysql-client-assets /usr/bin/mysqldump /usr/bin/mysqldump
 
 RUN set -eux; \
   rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
@@ -109,6 +114,7 @@ RUN set -eux; \
     libfreetype6 \
     fontconfig \
     libgssapi-krb5-2 \
+    libncurses6 \
     fonts-liberation; \
   if [ "$INSTALL_POSTGRES_16_CLIENT" = "1" ]; then \
     apt-get install -y --no-install-recommends postgresql-client-16; \
@@ -117,6 +123,8 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends fonts-noto-cjk; \
   fi; \
   nginx -v; \
+  mysql --version; \
+  mysqldump --version; \
   apt-get purge -y --auto-remove wget gnupg dirmngr; \
   rm -rf \
     /etc/apt/sources.list.d/nginx.list \

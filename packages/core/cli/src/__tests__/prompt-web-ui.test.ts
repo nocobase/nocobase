@@ -163,6 +163,9 @@ test('runPromptCatalogWebUI resolves after submit even when the browser keeps a 
     expect(page.statusCode).toBe(200);
     expect(page.body).toMatch(/Submit &amp; continue in terminal/);
     expect(page.body).toMatch(/Saved\. This tab will close automatically in 5 seconds\./);
+    expect(page.body).toMatch(
+      /<span class="pwc-form-item-required" aria-hidden="true">\*<\/span><span class="pwc-l">Project name<\/span>/,
+    );
 
     const submitUrl = new URL('/__pwc_ui_submit', uiUrl).toString();
     const submit = await requestWithAgent(submitUrl, {
@@ -175,15 +178,205 @@ test('runPromptCatalogWebUI resolves after submit even when the browser keeps a 
 
     const resolved = await Promise.race([
       webUiPromise,
-      new Promise<never>((_, reject) =>
+      new Promise<never>((_resolve, reject) =>
         setTimeout(
-          () => reject(new Error('Web UI promise did not resolve after submit while a keep-alive socket was still open.')),
+          () =>
+            reject(new Error('Web UI promise did not resolve after submit while a keep-alive socket was still open.')),
           750,
         ),
       ),
     ]);
 
     expect(resolved).toEqual({ projectName: 'demo-app' });
+  } finally {
+    agent.destroy();
+  }
+});
+
+test('buildWebFormValuesFromCatalog resolves function defaults for password fields', async () => {
+  const { buildWebFormValuesFromCatalog } = await import('../lib/prompt-web-ui.js');
+
+  const values = buildWebFormValuesFromCatalog({
+    rootPassword: {
+      type: 'password',
+      message: 'Root password',
+      required: true,
+    },
+    authType: {
+      type: 'select',
+      message: 'Authentication type',
+      options: ['basic', 'oauth'],
+      initialValue: 'basic',
+      required: true,
+    },
+    installPassword: {
+      type: 'password',
+      message: 'Install password',
+      required: true,
+      hidden: (currentValues) => currentValues.authType !== 'basic',
+      initialValue: (currentValues) => String(currentValues.rootPassword ?? ''),
+    },
+  }, {
+    rootPassword: 'admin123',
+  });
+
+  expect(values.installPassword).toBe('admin123');
+});
+
+test('buildWebFormValuesFromCatalog resolves text defaults for app public path fields', async () => {
+  const { buildWebFormValuesFromCatalog } = await import('../lib/prompt-web-ui.js');
+
+  const values = buildWebFormValuesFromCatalog({
+    appPublicPath: {
+      type: 'text',
+      message: 'App public path',
+      initialValue: '/',
+    },
+  });
+
+  expect(values.appPublicPath).toBe('/');
+});
+
+test('web UI renders a password visibility toggle next to the validation suffix for password fields', async () => {
+  const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
+
+  const catalog = {
+    adminPassword: {
+      type: 'password' as const,
+      message: 'Admin password',
+      required: true,
+    },
+  };
+
+  let uiUrl = '';
+  const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+
+  try {
+    const webUiPromise = runPromptCatalogWebUI({
+      catalog,
+      host: '127.0.0.1',
+      timeoutMs: 5_000,
+      onServerStart: ({ url }) => {
+        uiUrl = url;
+      },
+      onOpenBrowserError: () => {
+        // noop in tests
+      },
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const startedAt = Date.now();
+      const timer = setInterval(() => {
+        if (uiUrl) {
+          clearInterval(timer);
+          resolve();
+          return;
+        }
+        if (Date.now() - startedAt > 1_000) {
+          clearInterval(timer);
+          reject(new Error('Timed out waiting for the local web UI server to start.'));
+        }
+      }, 10);
+    });
+
+    const page = await requestWithAgent(uiUrl, { agent });
+    expect(page.statusCode).toBe(200);
+    expect(page.body).toContain('data-pwc-password-wrap="1"');
+    expect(page.body).toContain('data-pwc-password-input="1"');
+    expect(page.body).toMatch(/name="adminPassword" type="password"/);
+    expect(page.body).toMatch(
+      /<span class="pwc-form-item-suffix" data-pwc-suffix="1" aria-hidden="true"><\/span>\s*<button class="pwc-password-toggle" type="button" data-pwc-password-toggle="1" aria-label="Show password" title="Show password" aria-pressed="false">/,
+    );
+
+    const submitUrl = new URL('/__pwc_ui_submit', uiUrl).toString();
+    const submit = await requestWithAgent(submitUrl, {
+      method: 'POST',
+      agent,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminPassword: 'secret123' }),
+    });
+    expect(submit.statusCode).toBe(200);
+
+    const resolved = await Promise.race([
+      webUiPromise,
+      new Promise<never>((_resolve, reject) =>
+        setTimeout(() => reject(new Error('Web UI promise did not resolve after password toggle test submit.')), 750),
+      ),
+    ]);
+
+    expect(resolved).toEqual({ adminPassword: 'secret123' });
+  } finally {
+    agent.destroy();
+  }
+});
+
+test('web UI normalizes select controls to the same custom control height as text inputs', async () => {
+  const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
+
+  const catalog = {
+    language: {
+      type: 'select' as const,
+      message: 'Language',
+      required: true,
+      options: ['en-US', 'zh-CN'],
+    },
+  };
+
+  let uiUrl = '';
+  const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+
+  try {
+    const webUiPromise = runPromptCatalogWebUI({
+      catalog,
+      host: '127.0.0.1',
+      timeoutMs: 5_000,
+      onServerStart: ({ url }) => {
+        uiUrl = url;
+      },
+      onOpenBrowserError: () => {
+        // noop in tests
+      },
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const startedAt = Date.now();
+      const timer = setInterval(() => {
+        if (uiUrl) {
+          clearInterval(timer);
+          resolve();
+          return;
+        }
+        if (Date.now() - startedAt > 1_000) {
+          clearInterval(timer);
+          reject(new Error('Timed out waiting for the local web UI server to start.'));
+        }
+      }, 10);
+    });
+
+    const page = await requestWithAgent(uiUrl, { agent });
+    expect(page.statusCode).toBe(200);
+    expect(page.body).toContain('.pwc-input-affix-wrapper--select::after');
+    expect(page.body).toContain('appearance: none;');
+    expect(page.body).toContain('height: 40px;');
+    expect(page.body).toContain('.pwc-input-affix-wrapper--select .pwc-form-item-suffix { right: 36px; }');
+
+    const submitUrl = new URL('/__pwc_ui_submit', uiUrl).toString();
+    const submit = await requestWithAgent(submitUrl, {
+      method: 'POST',
+      agent,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ language: 'en-US' }),
+    });
+    expect(submit.statusCode).toBe(200);
+
+    const resolved = await Promise.race([
+      webUiPromise,
+      new Promise<never>((_resolve, reject) =>
+        setTimeout(() => reject(new Error('Web UI promise did not resolve after select height test submit.')), 750),
+      ),
+    ]);
+
+    expect(resolved).toEqual({ language: 'en-US' });
   } finally {
     agent.destroy();
   }
@@ -259,7 +452,7 @@ test('hidden required fields are rendered disabled so browser validation does no
 
     const resolved = await Promise.race([
       webUiPromise,
-      new Promise<never>((_, reject) =>
+      new Promise<never>((_resolve, reject) =>
         setTimeout(
           () => reject(new Error('Web UI promise did not resolve for the oauth flow with hidden accessToken.')),
           750,
@@ -346,7 +539,7 @@ test('reflow returns default values for fields that become visible later', async
 
     await Promise.race([
       webUiPromise,
-      new Promise<never>((_, reject) =>
+      new Promise<never>((_resolve, reject) =>
         setTimeout(() => reject(new Error('Web UI promise did not resolve after reflow test submit.')), 750),
       ),
     ]);
@@ -355,7 +548,7 @@ test('reflow returns default values for fields that become visible later', async
   }
 });
 
-test('web UI renders disabled radio options for unavailable version presets', async () => {
+test('web UI renders enabled radio options for version presets', async () => {
   const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
   const { default: Download } = await import('../commands/source/download.js');
 
@@ -392,8 +585,9 @@ test('web UI renders disabled radio options for unavailable version presets', as
 
     const page = await requestWithAgent(uiUrl, { agent });
     expect(page.statusCode).toBe(200);
-    expect(page.body).toMatch(/name="version" type="radio" value="latest"[^>]*disabled/);
-    expect(page.body).toMatch(/name="version" type="radio" value="latest"[^>]*data-pwc-static-disabled="1"/);
+    expect(page.body).toMatch(/name="version" type="radio" value="latest"/);
+    expect(page.body).not.toMatch(/name="version" type="radio" value="latest"[^>]*disabled/);
+    expect(page.body).not.toMatch(/name="version" type="radio" value="latest"[^>]*data-pwc-static-disabled="1"/);
 
     const reflowUrl = new URL('/__pwc_ui_reflow', uiUrl).toString();
     const reflow = await requestWithAgent(reflowUrl, {
@@ -420,7 +614,7 @@ test('web UI renders disabled radio options for unavailable version presets', as
 
     await Promise.race([
       webUiPromise,
-      new Promise<never>((_, reject) =>
+      new Promise<never>((_resolve, reject) =>
         setTimeout(() => reject(new Error('Web UI promise did not resolve after disabled-option test submit.')), 750),
       ),
     ]);
@@ -437,8 +631,8 @@ test('reflow reveals otherVersion and recomputes outputDir from the final versio
     source: 'git',
   });
   expect(presetState.show.otherVersion).toBe(false);
-  expect(presetState.values.version).toBe('beta');
-  expect(presetState.values.outputDir).toBe('./nocobase-beta');
+  expect(presetState.values.version).toBe('latest');
+  expect(presetState.values.outputDir).toBe('./nocobase-latest');
 
   const otherState = reflowWebFormState(Download.prompts, {
     source: 'git',
@@ -456,12 +650,35 @@ test('init reflow reveals otherVersion when version is set to other', async () =
 
   const state = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     source: 'docker',
     version: 'other',
   });
 
   expect(state.show.otherVersion).toBe(true);
+});
+
+test('init reflow keeps source prompts visible and hides download execution prompts when skipDownload is enabled', async () => {
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const state = reflowWebFormState(Init.prompts, {
+    hasNocobase: 'no',
+    skipDownload: true,
+    source: 'git',
+    version: 'beta',
+  });
+
+  expect(state.show.skipDownload).toBe(true);
+  expect(state.values.skipDownload).toBe(true);
+  expect(state.show.source).toBe(true);
+  expect(state.show.version).toBe(true);
+  expect(state.show.gitUrl).toBe(true);
+  expect(state.show.npmRegistry).toBe(true);
+  expect(state.show.outputDir).toBe(false);
+  expect(state.show.replace).toBe(false);
+  expect(state.show.devDependencies).toBe(false);
+  expect(state.show.build).toBe(false);
+  expect(state.show.buildDts).toBe(false);
 });
 
 test('reflow recomputes init app paths from the current app name', async () => {
@@ -472,10 +689,8 @@ test('reflow recomputes init app paths from the current app name', async () => {
     appName: 'demoapp',
   });
 
-  expect(state.show.appRootPath).toBe(true);
-  expect(state.show.storagePath).toBe(true);
-  expect(state.values.appRootPath).toBe('./demoapp/source/');
-  expect(state.values.storagePath).toBe('./demoapp/storage/');
+  expect(state.show.appPath).toBe(true);
+  expect(state.values.appPath).toBe('./demoapp/');
 });
 
 test('reflow recomputes the built-in database image from the current database dialect until the field is edited', async () => {
@@ -484,7 +699,6 @@ test('reflow recomputes the built-in database image from the current database di
 
   const initial = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'mysql',
     builtinDb: true,
   });
@@ -494,7 +708,6 @@ test('reflow recomputes the built-in database image from the current database di
 
   const updated = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'mariadb',
     builtinDb: true,
   });
@@ -503,7 +716,6 @@ test('reflow recomputes the built-in database image from the current database di
 
   const customized = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'mariadb',
     builtinDb: true,
     builtinDbImage: 'registry.example.com/custom-mariadb:11',
@@ -513,7 +725,6 @@ test('reflow recomputes the built-in database image from the current database di
 
   const kingbase = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'kingbase',
     builtinDb: true,
   });
@@ -530,14 +741,11 @@ test('reflow uses locale-aware built-in database images when NB_LOCALE is zh-CN'
 
   const state = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
-    fetchSource: true,
     dbDialect: 'postgres',
     builtinDb: true,
   });
 
-  expect(state.values.builtinDbImage).toBe(
-    'registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16',
-  );
+  expect(state.values.builtinDbImage).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16');
 });
 
 test('reflow uses CLI locale-aware docker registry defaults even when app language is en-US', async () => {
@@ -548,14 +756,11 @@ test('reflow uses CLI locale-aware docker registry defaults even when app langua
   const state = reflowWebFormState(Init.prompts, {
     hasNocobase: 'no',
     lang: 'en-US',
-    fetchSource: true,
     source: 'docker',
     version: 'alpha',
   });
 
-  expect(state.values.dockerRegistry).toBe(
-    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase',
-  );
+  expect(state.values.dockerRegistry).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
 });
 
 test('validate_field returns a field error for an occupied app port in web UI mode', async () => {
@@ -616,7 +821,7 @@ test('validate_field returns a field error for an occupied app port in web UI mo
     });
 
     expect(validateField.statusCode).toBe(400);
-    expect(validateField.body).toMatch(/fieldKey\":\"appPort\"/);
+    expect(validateField.body).toMatch(/fieldKey":"appPort"/);
     expect(validateField.body).toMatch(/already in use/i);
 
     const freePort = await allocateLocalTcpPort();
@@ -632,8 +837,11 @@ test('validate_field returns a field error for an occupied app port in web UI mo
 
     await Promise.race([
       webUiPromise,
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Web UI promise did not resolve after occupied-port validation test submit.')), 750),
+      new Promise<never>((_resolve, reject) =>
+        setTimeout(
+          () => reject(new Error('Web UI promise did not resolve after occupied-port validation test submit.')),
+          750,
+        ),
       ),
     ]);
   } finally {

@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { dateTimeProps, defaultProps, operators } from './properties';
+import { dateTimeProps, defaultProps } from './properties';
 
 export class CreatedAtFieldInterface extends CollectionFieldInterface {
   name = 'createdAt';
@@ -35,7 +35,7 @@ export class CreatedAtFieldInterface extends CollectionFieldInterface {
     ...dateTimeProps,
   };
   filterable = {
-    operators: operators.datetime,
+    operators: 'datetime',
   };
   titleUsable = true;
 }

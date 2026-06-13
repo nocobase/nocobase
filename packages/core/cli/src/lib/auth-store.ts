@@ -10,11 +10,15 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { CliHomeScope } from './cli-home.js';
+import { resolveAppPublicPath } from './app-public-path.js';
+import { resolveCliHomeDir, resolveConfiguredEnvPath, resolveEnvRelativePath } from './cli-home.js';
+import { normalizeCliLocale } from './cli-locale.js';
 import {
-  resolveCliHomeDir,
-  resolveConfiguredEnvPath,
-  resolveEnvRelativePath,
-} from './cli-home.js';
+  inferConfiguredAppPathFromLegacyConfig,
+  resolveConfiguredAppPath,
+  resolveConfiguredSourcePath,
+  resolveConfiguredStoragePath,
+} from './env-paths.js';
 import {
   cleanupCurrentSessionAfterEnvRemoval,
   resolveEffectiveCurrentEnv,
@@ -40,9 +44,14 @@ export interface OauthAuthConfig {
 export type EnvKind = 'local' | 'http' | 'docker' | 'ssh';
 
 export interface EnvConfigEntry {
+  autostart?: {
+    enabled?: boolean;
+  };
   kind?: EnvKind;
   apiBaseUrl?: string;
-  authType?: 'token' | 'oauth';
+  authType?: 'basic' | 'token' | 'oauth';
+  /** Username to reuse when this env signs in through the CLI basic authenticator. */
+  authUsername?: string;
   /** @deprecated Legacy config key; read-only compatibility for older config.json files. */
   baseUrl?: string;
   /** @deprecated Legacy typo kept for read compatibility with older config.json files. */
@@ -66,9 +75,14 @@ export interface EnvConfigEntry {
   build?: boolean;
   /** Whether download emitted declaration files during build. */
   buildDts?: boolean;
+  appPath?: string;
   appRootPath?: string;
   storagePath?: string;
-  /** Optional Docker --env-file path. Defaults to <envName>/.env for Docker envs when present on disk. */
+  /** Application public path (APP_PUBLIC_PATH). */
+  appPublicPath?: string;
+  /** Client asset CDN base URL (CDN_BASE_URL). */
+  cdnBaseUrl?: string;
+  /** Optional internal env file path. Defaults to <app-path>/.env, or <envName>/.env for legacy Docker-only layouts. */
   envFile?: string;
   /** Application HTTP port (APP_PORT). */
   appPort?: number | string;
@@ -77,6 +91,9 @@ export interface EnvConfigEntry {
   /** Application timezone (TZ). */
   timezone?: string;
   /** Initial root/admin user settings saved for install resume flows. */
+  setupState?: 'prepared' | 'installed';
+  /** Initial install language saved for prepare/install flows. */
+  lang?: string;
   rootUsername?: string;
   rootEmail?: string;
   rootPassword?: string;
@@ -107,12 +124,37 @@ export interface AuthConfig {
   /** Workspace-level name shared by all envs in this config. */
   name?: string;
   settings?: {
+    locale?: string;
+    update?: {
+      policy?: 'prompt' | 'auto' | 'off';
+    };
     license?: {
       pkgUrl?: string;
     };
     docker?: {
       network?: string;
       containerPrefix?: string;
+    };
+    bin?: {
+      docker?: string;
+      caddy?: string;
+      git?: string;
+      nginx?: string;
+      yarn?: string;
+    };
+    proxy?: {
+      nbCliRoot?: string;
+      caddyDriver?: string;
+      nginxDriver?: string;
+      upstreamHost?: string;
+    };
+    log?: {
+      enabled?: boolean;
+      retentionDays?: number;
+    };
+    init?: {
+      defaultUiHost?: string;
+      defaultApiHost?: string;
     };
   };
   lastEnv?: string;
@@ -144,15 +186,33 @@ function normalizeOptionalString(value: unknown): string | undefined {
   return normalized || undefined;
 }
 
+function normalizeOptionalCliLocale(value: unknown): string | undefined {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  return normalizeCliLocale(normalized);
+}
+
+function normalizeOptionalCliUpdatePolicy(value: unknown): 'prompt' | 'auto' | 'off' | undefined {
+  const normalized = normalizeOptionalString(value);
+  if (normalized === 'prompt' || normalized === 'auto' || normalized === 'off') {
+    return normalized;
+  }
+
+  return undefined;
+}
+
 export function readEnvApiBaseUrl(config?: Partial<EnvConfigEntry>): string | undefined {
   if (!config) {
     return undefined;
   }
 
   return (
-    normalizeOptionalString((config as { apiBaseUrl?: unknown }).apiBaseUrl)
-    ?? normalizeOptionalString((config as { baseUrl?: unknown }).baseUrl)
-    ?? normalizeOptionalString((config as { apibaseUrl?: unknown }).apibaseUrl)
+    normalizeOptionalString((config as { apiBaseUrl?: unknown }).apiBaseUrl) ??
+    normalizeOptionalString((config as { baseUrl?: unknown }).baseUrl) ??
+    normalizeOptionalString((config as { apibaseUrl?: unknown }).apibaseUrl)
   );
 }
 
@@ -175,7 +235,7 @@ export function resolveEnvKind(config?: Partial<EnvConfigEntry>): EnvKind | unde
     return 'local';
   }
 
-  if (String(config.appRootPath ?? '').trim()) {
+  if (String(config.appPath ?? '').trim() || String(config.appRootPath ?? '').trim()) {
     return 'local';
   }
 
@@ -204,29 +264,93 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
     ...rest,
     ...(normalizedKind ? { kind: normalizedKind } : {}),
     ...(apiBaseUrl !== undefined ? { apiBaseUrl } : {}),
+    ...(normalizeOptionalString(entry.appPublicPath) ? { appPublicPath: resolveAppPublicPath(entry.appPublicPath) } : {}),
   };
 }
 
 function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: string }): AuthConfig {
   const settings = config.settings ?? {};
+  const locale = normalizeOptionalCliLocale(settings.locale);
+  const defaultUiHost = normalizeOptionalString(settings.init?.defaultUiHost);
+  const defaultApiHost = normalizeOptionalString(settings.init?.defaultApiHost);
+  const updatePolicy = normalizeOptionalCliUpdatePolicy(settings.update?.policy);
+  const logRetentionDays =
+    typeof settings.log?.retentionDays === 'number' && Number.isInteger(settings.log.retentionDays)
+      ? settings.log.retentionDays
+      : undefined;
+  const logEnabled = typeof settings.log?.enabled === 'boolean' ? settings.log.enabled : undefined;
   return {
     name: config.name || config.dockerResourcePrefix,
     settings: {
+      ...(locale ? { locale } : {}),
+      ...(defaultUiHost || defaultApiHost
+        ? {
+            init: {
+              ...(defaultUiHost ? { defaultUiHost } : {}),
+              ...(defaultApiHost ? { defaultApiHost } : {}),
+            },
+          }
+        : {}),
+      ...(updatePolicy ? { update: { policy: updatePolicy } } : {}),
       ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
-      ...(
-        settings.docker?.network || settings.docker?.containerPrefix
-          ? {
-              docker: {
-                ...(settings.docker?.network ? { network: normalizeOptionalString(settings.docker.network) } : {}),
-                ...(settings.docker?.containerPrefix
-                  ? { containerPrefix: normalizeOptionalString(settings.docker.containerPrefix) }
-                  : {}),
-              },
-            }
-          : {}
-      ),
+      ...(settings.docker?.network || settings.docker?.containerPrefix
+        ? {
+            docker: {
+              ...(settings.docker?.network ? { network: normalizeOptionalString(settings.docker.network) } : {}),
+              ...(settings.docker?.containerPrefix
+                ? { containerPrefix: normalizeOptionalString(settings.docker.containerPrefix) }
+                : {}),
+            },
+          }
+        : {}),
+      ...(settings.bin?.docker || settings.bin?.caddy || settings.bin?.git || settings.bin?.nginx || settings.bin?.yarn
+        ? {
+            bin: {
+              ...(settings.bin?.docker ? { docker: normalizeOptionalString(settings.bin.docker) } : {}),
+              ...(settings.bin?.caddy ? { caddy: normalizeOptionalString(settings.bin.caddy) } : {}),
+              ...(settings.bin?.git ? { git: normalizeOptionalString(settings.bin.git) } : {}),
+              ...(settings.bin?.nginx ? { nginx: normalizeOptionalString(settings.bin.nginx) } : {}),
+              ...(settings.bin?.yarn ? { yarn: normalizeOptionalString(settings.bin.yarn) } : {}),
+            },
+          }
+        : {}),
+      ...(settings.proxy?.nbCliRoot ||
+      settings.proxy?.caddyDriver ||
+      settings.proxy?.nginxDriver ||
+      settings.proxy?.upstreamHost ||
+      (settings.proxy as { host?: unknown } | undefined)?.host
+        ? {
+            proxy: {
+              ...(settings.proxy?.nbCliRoot ? { nbCliRoot: normalizeOptionalString(settings.proxy.nbCliRoot) } : {}),
+              ...(settings.proxy?.caddyDriver
+                ? { caddyDriver: normalizeOptionalString(settings.proxy.caddyDriver) }
+                : {}),
+              ...(settings.proxy?.nginxDriver
+                ? { nginxDriver: normalizeOptionalString(settings.proxy.nginxDriver) }
+                : {}),
+              ...(settings.proxy?.upstreamHost || (settings.proxy as { host?: unknown } | undefined)?.host
+                ? {
+                    upstreamHost: normalizeOptionalString(
+                      settings.proxy?.upstreamHost ?? (settings.proxy as { host?: unknown }).host,
+                    ),
+                  }
+                : {}),
+            },
+          }
+        : {}),
+      ...(logEnabled !== undefined || logRetentionDays !== undefined
+        ? {
+            log: {
+              ...(logEnabled !== undefined ? { enabled: logEnabled } : {}),
+              ...(logRetentionDays !== undefined ? { retentionDays: logRetentionDays } : {}),
+            },
+          }
+        : {}),
     },
-    lastEnv: (config as AuthConfig & { currentEnv?: string }).lastEnv || (config as { currentEnv?: string }).currentEnv || 'default',
+    lastEnv:
+      (config as AuthConfig & { currentEnv?: string }).lastEnv ||
+      (config as { currentEnv?: string }).currentEnv ||
+      'default',
     envs: Object.fromEntries(
       Object.entries(config.envs || {}).map(([envName, entry]) => [envName, normalizeEnvConfigEntry(entry) ?? {}]),
     ),
@@ -334,7 +458,31 @@ export class Env {
         return configuredPath;
       }
     }
-    return resolveConfiguredEnvPath(this.config.appRootPath) ?? resolveEnvRelativePath('.');
+    const legacyPath = resolveConfiguredEnvPath(this.config.appRootPath);
+    if (legacyPath) {
+      return legacyPath;
+    }
+    return this.kind === 'local' ? this.sourcePath : resolveEnvRelativePath('.');
+  }
+
+  get appPath() {
+    if (this.kind === 'ssh') {
+      const configuredPath = String(this.config.appPath ?? inferConfiguredAppPathFromLegacyConfig(this.config) ?? '').trim();
+      if (configuredPath) {
+        return configuredPath;
+      }
+    }
+    return resolveConfiguredAppPath(this.config) ?? resolveEnvRelativePath('.');
+  }
+
+  get sourcePath() {
+    if (this.kind === 'ssh') {
+      const configuredPath = String(this.config.appRootPath ?? '').trim();
+      if (configuredPath) {
+        return configuredPath;
+      }
+    }
+    return resolveConfiguredSourcePath(this.config) ?? path.join(this.appPath, 'source');
   }
 
   get storagePath() {
@@ -344,7 +492,13 @@ export class Env {
         return configuredPath;
       }
     }
-    return resolveConfiguredEnvPath(this.config.storagePath) ?? resolveEnvRelativePath('.');
+    const resolvedStoragePath = resolveConfiguredStoragePath(this.config);
+    if (resolvedStoragePath) {
+      return resolvedStoragePath;
+    }
+    return this.kind === 'local' || this.kind === 'docker'
+      ? path.join(this.appPath, 'storage')
+      : resolveEnvRelativePath('.');
   }
 
   get appPort() {
@@ -362,6 +516,8 @@ export class Env {
       out[key] = String(value);
     };
     put('APP_PORT', this.appPort);
+    put('APP_PUBLIC_PATH', this.config.appPublicPath ? resolveAppPublicPath(this.config.appPublicPath) : undefined);
+    put('CDN_BASE_URL', this.config.cdnBaseUrl);
     put('APP_KEY', this.config.appKey);
     put('TZ', this.config.timezone);
     put('DB_DIALECT', this.config.dbDialect);
@@ -384,10 +540,12 @@ export class Env {
 export async function getEnv(envName?: string, options: GetEnvOptions = {}): Promise<Env | undefined> {
   const { config: snapshot, ...loadOptions } = options;
   const config = snapshot ?? (await loadAuthConfig(loadOptions));
-  const resolved = envName?.trim() || (await resolveEffectiveCurrentEnv(Object.keys(config.envs).sort(), {
-    scope: loadOptions.scope,
-    lastEnv: config.lastEnv,
-  }));
+  const resolved =
+    envName?.trim() ||
+    (await resolveEffectiveCurrentEnv(Object.keys(config.envs).sort(), {
+      scope: loadOptions.scope,
+      lastEnv: config.lastEnv,
+    }));
   const envConfig = config.envs[resolved];
   if (!envConfig) {
     return undefined;
@@ -435,18 +593,16 @@ async function writeEnv(
 }
 
 function normalizeConfiguredAuthType(value: unknown): EnvConfigEntry['authType'] {
-  return value === 'token' || value === 'oauth' ? value : undefined;
+  return value === 'basic' || value === 'token' || value === 'oauth' ? value : undefined;
 }
 
-export function resolveConfiguredAuthType(config?: Pick<EnvConfigEntry, 'authType' | 'auth'>): EnvConfigEntry['authType'] {
+export function resolveConfiguredAuthType(
+  config?: Pick<EnvConfigEntry, 'authType' | 'auth'>,
+): EnvConfigEntry['authType'] {
   return normalizeConfiguredAuthType(config?.authType) ?? normalizeConfiguredAuthType(config?.auth?.type);
 }
 
-export async function upsertEnv(
-  envName: string,
-  config: Record<string, any>,
-  options: AuthStoreOptions = {},
-) {
+export async function upsertEnv(envName: string, config: Record<string, any>, options: AuthStoreOptions = {}) {
   await writeEnv(
     envName,
     (previous) => {
@@ -456,6 +612,7 @@ export async function upsertEnv(
         apibaseUrl: _legacyApiBaseUrl,
         accessToken,
         authType,
+        authUsername,
         ...rest
       } = config;
       const nextApiBaseUrl = readEnvApiBaseUrl(config);
@@ -464,24 +621,29 @@ export async function upsertEnv(
       const previousAuthType = resolveConfiguredAuthType(previous);
       const requestedAuthType = normalizeConfiguredAuthType(authType);
       const nextAuthType = requestedAuthType ?? (accessToken ? 'token' : previousAuthType);
+      const nextAuthUsername =
+        nextAuthType === 'basic' ? normalizeOptionalString(authUsername) ?? previous?.authUsername : undefined;
       const nextAuth = accessToken
         ? ({
             type: 'token',
             accessToken,
           } satisfies TokenAuthConfig)
-        : nextAuthType === 'token' || baseUrlChanged || previous?.auth?.type === 'token'
-          ? undefined
-          : previous?.auth;
+        : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
+          ? previous.auth
+          : undefined;
       const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
       const authTypeChanged = previousAuthType !== nextAuthType;
+      const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
 
       return {
         ...previous,
         apiBaseUrl: nextApiBaseUrl,
         authType: nextAuthType,
+        authUsername: nextAuthUsername,
         auth: nextAuth,
         ...rest,
-        runtime: baseUrlChanged || authChanged || authTypeChanged ? undefined : previous?.runtime,
+        runtime:
+          baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
       };
     },
     options,
@@ -490,7 +652,13 @@ export async function upsertEnv(
 
 export async function updateEnvConnection(
   envName: string,
-  updates: { apiBaseUrl?: string; baseUrl?: string; authType?: EnvConfigEntry['authType']; accessToken?: string },
+  updates: {
+    apiBaseUrl?: string;
+    baseUrl?: string;
+    authType?: EnvConfigEntry['authType'];
+    authUsername?: string;
+    accessToken?: string;
+  },
   options: AuthStoreOptions = {},
 ) {
   await writeEnv(
@@ -502,23 +670,81 @@ export async function updateEnvConnection(
       const previousAuthType = resolveConfiguredAuthType(previous);
       const requestedAuthType = normalizeConfiguredAuthType(updates.authType);
       const nextAuthType = requestedAuthType ?? (updates.accessToken ? 'token' : previousAuthType);
+      const nextAuthUsername =
+        nextAuthType === 'basic' ? normalizeOptionalString(updates.authUsername) ?? previous?.authUsername : undefined;
       const nextAuth = updates.accessToken
         ? ({
             type: 'token',
             accessToken: updates.accessToken,
           } satisfies TokenAuthConfig)
-        : nextAuthType === 'token' || baseUrlChanged || previous?.auth?.type === 'token'
-          ? undefined
-          : previous?.auth;
+        : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
+          ? previous.auth
+          : undefined;
       const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
       const authTypeChanged = previousAuthType !== nextAuthType;
+      const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
 
       return {
         ...previous,
         ...(nextApiBaseUrl !== undefined ? { apiBaseUrl: nextApiBaseUrl } : {}),
         authType: nextAuthType,
+        authUsername: nextAuthUsername,
         auth: nextAuth,
-        runtime: baseUrlChanged || authChanged || authTypeChanged ? undefined : previous?.runtime,
+        runtime:
+          baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
+      };
+    },
+    options,
+  );
+}
+
+export async function replaceEnvConfig(
+  envName: string,
+  config: Record<string, any>,
+  options: AuthStoreOptions = {},
+) {
+  await writeEnv(
+    envName,
+    (previous) => {
+      if (!previous) {
+        throw new Error(`Env "${envName}" is not configured`);
+      }
+
+      const {
+        apiBaseUrl: _apiBaseUrl,
+        baseUrl: _baseUrl,
+        apibaseUrl: _legacyApiBaseUrl,
+        accessToken,
+        authType,
+        authUsername,
+        ...rest
+      } = config;
+      const nextApiBaseUrl = readEnvApiBaseUrl(config);
+      const previousApiBaseUrl = readEnvApiBaseUrl(previous);
+      const baseUrlChanged = previousApiBaseUrl !== nextApiBaseUrl;
+      const previousAuthType = resolveConfiguredAuthType(previous);
+      const nextAuthType = normalizeConfiguredAuthType(authType) ?? (accessToken ? 'token' : undefined);
+      const nextAuthUsername = nextAuthType === 'basic' ? normalizeOptionalString(authUsername) : undefined;
+      const nextAuth = accessToken
+        ? ({
+            type: 'token',
+            accessToken,
+          } satisfies TokenAuthConfig)
+        : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
+          ? previous.auth
+          : undefined;
+      const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
+      const authTypeChanged = previousAuthType !== nextAuthType;
+      const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
+
+      return {
+        ...rest,
+        ...(nextApiBaseUrl !== undefined ? { apiBaseUrl: nextApiBaseUrl } : {}),
+        ...(nextAuthType ? { authType: nextAuthType } : {}),
+        ...(nextAuthUsername ? { authUsername: nextAuthUsername } : {}),
+        ...(nextAuth ? { auth: nextAuth } : {}),
+        runtime:
+          baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
       };
     },
     options,
@@ -554,6 +780,29 @@ export async function setEnvRuntime(
     runtime,
   };
   await saveAuthConfig(config, options);
+}
+
+export async function clearEnvRootSetup(
+  envName: string,
+  options: AuthStoreOptions = {},
+): Promise<boolean> {
+  const config = await loadExactAuthConfig(options);
+  const current = config.envs[envName];
+  if (!current) {
+    return false;
+  }
+
+  const {
+    rootUsername: _rootUsername,
+    rootEmail: _rootEmail,
+    rootPassword: _rootPassword,
+    rootNickname: _rootNickname,
+    ...rest
+  } = current;
+
+  config.envs[envName] = rest;
+  await saveAuthConfig(config, options);
+  return true;
 }
 
 export async function removeEnv(envName: string, options: AuthStoreOptions = {}) {

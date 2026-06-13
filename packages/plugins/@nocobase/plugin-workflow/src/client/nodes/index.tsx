@@ -52,6 +52,7 @@ export type NodeAvailableContext = {
   workflow: object;
   upstream: object;
   branchIndex: number;
+  syncOnly?: boolean;
 };
 
 type Config = Record<string, any>;
@@ -64,6 +65,7 @@ export abstract class Instruction {
   group: string;
   description?: string;
   icon?: JSX.Element;
+  async?: boolean;
   /**
    * @deprecated migrate to `presetFieldset` instead
    */

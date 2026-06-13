@@ -15,6 +15,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import {
   getManagedSkillsStateFile,
   installNocoBaseSkills,
+  isNpmRegistryUnavailable,
   inspectSkillsStatus,
   NOCOBASE_SKILLS_PACKAGE_NAME,
   removeNocoBaseSkills,
@@ -123,21 +124,44 @@ test('resolveGlobalSkillsRoot defaults to the global CLI home', async () => {
   }
 });
 
+test('isNpmRegistryUnavailable returns true for npm registry network failures', () => {
+  expect(
+    isNpmRegistryUnavailable(
+      new Error(
+        'npm pack exited with code 1: request to https://registry.npmjs.org failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org',
+      ),
+    ),
+  ).toBe(true);
+  expect(
+    isNpmRegistryUnavailable(
+      new Error('skills add exited with code 1: fetch failed while downloading package metadata'),
+    ),
+  ).toBe(true);
+  expect(isNpmRegistryUnavailable(new Error('skills list timed out after 15000ms'))).toBe(true);
+});
+
+test('isNpmRegistryUnavailable returns false for local package validation failures', () => {
+  expect(
+    isNpmRegistryUnavailable(
+      new Error(
+        'failed to extract @nocobase/skills tarball: packed tarball resolved to @nocobase/not-skills instead of @nocobase/skills.',
+      ),
+    ),
+  ).toBe(false);
+});
+
 test('inspectSkillsStatus reports installed nocobase skills from managed state', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-skills-status-'));
 
   try {
-    await writeManagedState(
-      dir,
-      {
-        packageName: '@nocobase/skills',
-        sourcePackage: 'nocobase/skills',
-        installedAt: '2026-04-26T00:00:00.000Z',
-        updatedAt: '2026-04-26T00:00:00.000Z',
-        installedVersion: '1.0.4',
-        skillNames: ['nocobase-env-manage', 'nocobase-ui-builder'],
-      },
-    );
+    await writeManagedState(dir, {
+      packageName: '@nocobase/skills',
+      sourcePackage: 'nocobase/skills',
+      installedAt: '2026-04-26T00:00:00.000Z',
+      updatedAt: '2026-04-26T00:00:00.000Z',
+      installedVersion: '1.0.4',
+      skillNames: ['nocobase-env-manage', 'nocobase-ui-builder'],
+    });
 
     const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
       if (name === 'npx' && args.join(' ') === '-y skills list -g --json') {
@@ -164,6 +188,18 @@ test('inspectSkillsStatus reports installed nocobase skills from managed state',
     expect(status.installedVersion).toBe('1.0.4');
     expect(status.latestVersion).toBe('1.0.5');
     expect(status.updateAvailable).toBe(true);
+    expect(commandOutputFn.mock.calls[0]?.[2]).toEqual(
+      expect.objectContaining({
+        errorName: 'skills list',
+        timeoutMs: 15000,
+      }),
+    );
+    expect(commandOutputFn.mock.calls[1]?.[2]).toEqual(
+      expect.objectContaining({
+        errorName: 'npm view',
+        timeoutMs: 3000,
+      }),
+    );
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }
@@ -203,15 +239,12 @@ test('installNocoBaseSkills installs when nocobase skills are not present', asyn
 
     expect(result.action).toBe('installed');
     expect(runFn.mock.calls[0]?.[0]).toBe('npm');
-    expect(runFn.mock.calls[0]?.[1]).toEqual([
-      'pack',
-      '--silent',
-      '@nocobase/skills',
-    ]);
+    expect(runFn.mock.calls[0]?.[1]).toEqual(['pack', '--silent', '@nocobase/skills']);
     expect(runFn.mock.calls[0]?.[2]).toEqual(
       expect.objectContaining({
         errorName: 'npm pack',
         stdio: 'ignore',
+        timeoutMs: 30000,
       }),
     );
     expect(runFn.mock.calls[1]?.[0]).toBe('npx');
@@ -219,7 +252,7 @@ test('installNocoBaseSkills installs when nocobase skills are not present', asyn
       '-y',
       'skills',
       'add',
-      expect.stringMatching(/node_modules[\/\\]@nocobase[\/\\]skills$/),
+      expect.stringMatching(/node_modules[/\\]@nocobase[/\\]skills$/),
       '-g',
       '-y',
     ]);
@@ -227,11 +260,15 @@ test('installNocoBaseSkills installs when nocobase skills are not present', asyn
       expect.objectContaining({
         errorName: 'skills add',
         stdio: 'ignore',
+        timeoutMs: 20000,
       }),
     );
 
     const extractedPackage = JSON.parse(
-      await fsp.readFile(path.join(dir, 'cache', 'skills', 'node_modules', '@nocobase', 'skills', 'package.json'), 'utf8'),
+      await fsp.readFile(
+        path.join(dir, 'cache', 'skills', 'node_modules', '@nocobase', 'skills', 'package.json'),
+        'utf8',
+      ),
     );
     expect(extractedPackage.version).toBe('1.0.5');
 
@@ -248,9 +285,7 @@ test('installNocoBaseSkills is a no-op when nocobase skills are already installe
   const runFn = vi.fn(async () => undefined);
   const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
     if (name === 'npx' && args.join(' ') === '-y skills list -g --json') {
-      return JSON.stringify([
-        { name: 'nocobase-env-manage', scope: 'global', path: '/tmp/a' },
-      ]);
+      return JSON.stringify([{ name: 'nocobase-env-manage', scope: 'global', path: '/tmp/a' }]);
     }
     if (name === 'npm' && args.join(' ') === `view ${NOCOBASE_SKILLS_PACKAGE_NAME} version --json`) {
       return JSON.stringify('1.0.5');
@@ -259,17 +294,14 @@ test('installNocoBaseSkills is a no-op when nocobase skills are already installe
   });
 
   try {
-    await writeManagedState(
-      dir,
-      {
-        packageName: '@nocobase/skills',
-        sourcePackage: 'nocobase/skills',
-        installedAt: '2026-04-26T00:00:00.000Z',
-        updatedAt: '2026-04-26T00:00:00.000Z',
-        installedVersion: '1.0.5',
-        skillNames: ['nocobase-env-manage'],
-      },
-    );
+    await writeManagedState(dir, {
+      packageName: '@nocobase/skills',
+      sourcePackage: 'nocobase/skills',
+      installedAt: '2026-04-26T00:00:00.000Z',
+      updatedAt: '2026-04-26T00:00:00.000Z',
+      installedVersion: '1.0.5',
+      skillNames: ['nocobase-env-manage'],
+    });
 
     const result = await installNocoBaseSkills({
       workspaceRoot: dir,
@@ -305,17 +337,14 @@ test('updateNocoBaseSkills updates managed skills when they already exist', asyn
   });
 
   try {
-    await writeManagedState(
-      dir,
-      {
-        packageName: '@nocobase/skills',
-        sourcePackage: 'nocobase/skills',
-        installedAt: '2026-04-26T00:00:00.000Z',
-        updatedAt: '2026-04-26T00:00:00.000Z',
-        installedVersion: '1.0.4',
-        skillNames: ['nocobase-env-manage', 'nocobase-ui-builder'],
-      },
-    );
+    await writeManagedState(dir, {
+      packageName: '@nocobase/skills',
+      sourcePackage: 'nocobase/skills',
+      installedAt: '2026-04-26T00:00:00.000Z',
+      updatedAt: '2026-04-26T00:00:00.000Z',
+      installedVersion: '1.0.4',
+      skillNames: ['nocobase-env-manage', 'nocobase-ui-builder'],
+    });
 
     const result = await updateNocoBaseSkills({
       workspaceRoot: dir,
@@ -325,11 +354,7 @@ test('updateNocoBaseSkills updates managed skills when they already exist', asyn
 
     expect(result.action).toBe('updated');
     expect(runFn.mock.calls[0]?.[0]).toBe('npm');
-    expect(runFn.mock.calls[0]?.[1]).toEqual([
-      'pack',
-      '--silent',
-      '@nocobase/skills@1.0.5',
-    ]);
+    expect(runFn.mock.calls[0]?.[1]).toEqual(['pack', '--silent', '@nocobase/skills@1.0.5']);
     expect(runFn.mock.calls[0]?.[2]).toEqual(
       expect.objectContaining({
         errorName: 'npm pack',
@@ -341,7 +366,7 @@ test('updateNocoBaseSkills updates managed skills when they already exist', asyn
       '-y',
       'skills',
       'add',
-      expect.stringMatching(/node_modules[\/\\]@nocobase[\/\\]skills$/),
+      expect.stringMatching(/node_modules[/\\]@nocobase[/\\]skills$/),
       '-g',
       '-y',
     ]);
@@ -481,9 +506,7 @@ test('removeNocoBaseSkills removes all managed nocobase skills and clears manage
           { name: 'custom-skill', scope: 'global', path: '/tmp/c' },
         ]);
       }
-      return JSON.stringify([
-        { name: 'custom-skill', scope: 'global', path: '/tmp/c' },
-      ]);
+      return JSON.stringify([{ name: 'custom-skill', scope: 'global', path: '/tmp/c' }]);
     }
     if (name === 'npm' && args.join(' ') === `view ${NOCOBASE_SKILLS_PACKAGE_NAME} version --json`) {
       return JSON.stringify('1.0.5');
@@ -492,17 +515,14 @@ test('removeNocoBaseSkills removes all managed nocobase skills and clears manage
   });
 
   try {
-    await writeManagedState(
-      dir,
-      {
-        packageName: '@nocobase/skills',
-        sourcePackage: 'nocobase/skills',
-        installedAt: '2026-04-26T00:00:00.000Z',
-        updatedAt: '2026-04-26T00:00:00.000Z',
-        installedVersion: '1.0.5',
-        skillNames: ['nocobase-env-manage', 'nocobase-ui-builder'],
-      },
-    );
+    await writeManagedState(dir, {
+      packageName: '@nocobase/skills',
+      sourcePackage: 'nocobase/skills',
+      installedAt: '2026-04-26T00:00:00.000Z',
+      updatedAt: '2026-04-26T00:00:00.000Z',
+      installedVersion: '1.0.5',
+      skillNames: ['nocobase-env-manage', 'nocobase-ui-builder'],
+    });
 
     const result = await removeNocoBaseSkills({
       workspaceRoot: dir,

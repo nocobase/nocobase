@@ -1,12 +1,12 @@
 ---
-title: "nb app"
-description: "Справочник по команде nb app: управление состоянием приложения NocoBase, включая запуск, остановку, перезапуск, логи, очистку и обновление."
-keywords: "nb app,NocoBase CLI,запуск,остановка,перезапуск,логи,обновление"
+title: 'nb app'
+description: 'Справочник по команде nb app: управление средой выполнения приложения NocoBase, включая запуск, остановку, перезапуск, журналы и обновление.'
+keywords: 'nb app,NocoBase CLI,запуск,остановка,перезапуск,журналы,обновление'
 ---
 
 # nb app
 
-Управление состоянием приложения NocoBase. Для env npm/Git команды приложения выполняются в локальном каталоге исходников, а для env Docker — управляются сохранённые контейнеры приложения.
+Управляет средой выполнения приложения NocoBase. В npm/Git env команды приложения выполняются в локальном каталоге исходного кода; в Docker env контейнеры приложения управляются на основе сохраненной конфигурации.
 
 ## Использование
 
@@ -16,27 +16,30 @@ nb app <command>
 
 ## Подкоманды
 
-| Команда | Описание |
-| --- | --- |
-| [`nb app start`](./start.md) | Запуск приложения или Docker-контейнера |
-| [`nb app stop`](./stop.md) | Остановка приложения или Docker-контейнера |
-| [`nb app restart`](./restart.md) | Остановка и затем запуск приложения |
-| [`nb app logs`](./logs.md) | Просмотр логов приложения |
-| [`nb app down`](./down.md) | Остановка и очистка локальных runtime-ресурсов |
-| [`nb app upgrade`](./upgrade.md) | Обновление исходников или образа и перезапуск приложения |
+| Команда                          | Описание                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------ |
+| [`nb app start`](./start.md)     | Запускает приложение или пересоздает Docker-контейнер                                |
+| [`nb app stop`](./stop.md)       | Останавливает приложение или очищает Docker-контейнер                                |
+| [`nb app restart`](./restart.md) | Сначала останавливает, затем запускает приложение                                    |
+| [`nb app autostart`](./autostart/index.md) | Управляет пометками автозапуска и запускает все включенные env |
+| [`nb app logs`](./logs.md)       | Просматривает журналы приложения                                                     |
+| [`nb app upgrade`](./upgrade.md) | Останавливает приложение, заменяет исходный код или образ, затем снова запускает его |
 
 ## Примеры
 
 ```bash
 nb app start --env app1
 nb app restart --env app1
+nb app autostart enable --env app1 --yes
+nb app autostart run
 nb app logs --env app1
-nb app upgrade --env app1 -s
-nb app down --env app1 --all --force
+nb app upgrade --env app1 --skip-download
+nb app stop --env app1 --with-db
 ```
 
 ## Связанные команды
 
 - [`nb env info`](../env/info.md)
+- [`nb env remove`](../env/remove.md)
 - [`nb db ps`](../db/ps.md)
 - [`nb source download`](../source/download.md)

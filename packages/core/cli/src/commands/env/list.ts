@@ -8,17 +8,16 @@
  */
 
 import { Command } from '@oclif/core';
-import { getCurrentEnvName, listEnvs } from '../../lib/auth-store.js';
+import { getCurrentEnvName, listEnvs, resolveConfiguredAuthType } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import { translateCli } from '../../lib/cli-locale.js';
 import { renderTable } from '../../lib/ui.js';
 import { resolveApiBaseUrl } from './shared.js';
 
 export default class EnvList extends Command {
   static summary = 'List configured environments';
 
-  static override examples = [
-    '<%= config.bin %> <%= command.id %>',
-  ];
+  static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   async run(): Promise<void> {
     await this.parse(EnvList);
@@ -28,8 +27,8 @@ export default class EnvList extends Command {
     const names = Object.keys(envs).sort();
 
     if (!names.length) {
-      this.log('No envs configured.');
-      this.log('Run `nb env add <name> --api-base-url <url>` to add one.');
+      this.log(translateCli('commands.env.messages.noEnvsConfigured'));
+      this.log(translateCli('commands.env.messages.noEnvsConfiguredHelp'));
       return;
     }
 
@@ -42,7 +41,7 @@ export default class EnvList extends Command {
         name,
         env.kind ?? '-',
         resolveApiBaseUrl(env),
-        env.auth?.type ?? '',
+        resolveConfiguredAuthType(env) ?? env.auth?.type ?? '',
         env.runtime?.version ?? '',
       ]);
     }

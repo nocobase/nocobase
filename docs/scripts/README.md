@@ -57,7 +57,7 @@ node docs/scripts/check-i18n-coverage.mjs --files=changed-files.txt
 
 ```
 [ja] DIFF:
-  - hero.actions[0].link: cn=/get-started/how-nocobase-works lang=/quickstart
+  - hero.actions[0].link: cn=/quickstart/how-nocobase-works lang=/quickstart
   - features[2].items 数量不一致 (cn=3, lang=2)
 ```
 
@@ -98,4 +98,4 @@ gh pr edit <pr-number> --add-label skip-i18n-check
 
 ## 暂不维护的语言
 
-`ar`（阿拉伯语）目前不在对齐范围内，所有脚本默认都会跳过它。如果以后要把 ar 重新纳入维护，从各脚本顶部的 `SKIP_LANGS` 集合里移除即可，或在调用时显式传 `--lang=ar` 强制检查（用于查现状）。
+`ar`（阿拉伯语）目前不在对齐范围内，所有脚本默认都会跳过它。如果以后要把某门语言重新纳入维护，从各脚本顶部的 `SKIP_LANGS` 集合里移除即可，或在调用时显式传 `--lang=ar` 强制检查（用于查现状）。

@@ -19,6 +19,31 @@ import { commandOutput, commandOutputViaFile, run } from './run-npm.js';
 export const NOCOBASE_SKILLS_SOURCE = 'nocobase/skills';
 export const NOCOBASE_SKILLS_PACKAGE_NAME = '@nocobase/skills';
 const NOCOBASE_SKILLS_NAME_PREFIX = 'nocobase-';
+// `npx skills list` may take several seconds on cold starts while `npx`
+// resolves and boots the package, even when the local skills installation is healthy.
+const SKILLS_LIST_TIMEOUT_MS = 15000;
+const SKILLS_NPM_VIEW_TIMEOUT_MS = 3000;
+const SKILLS_PACK_TIMEOUT_MS = 30000;
+const SKILLS_ADD_TIMEOUT_MS = 20000;
+const NPM_REGISTRY_UNAVAILABLE_PATTERNS = [
+  'enotfound',
+  'eai_again',
+  'etimedout',
+  'esockettimedout',
+  'econnreset',
+  'econnrefused',
+  'ehostunreach',
+  'enetunreach',
+  'socket hang up',
+  'getaddrinfo',
+  'fetch failed',
+  'network request to',
+  'self_signed_cert',
+  'depth_zero_self_signed_cert',
+  'unable_to_verify_leaf_signature',
+  'cert_has_expired',
+  'timed out after',
+] as const;
 
 export type InstalledSkill = {
   name: string;
@@ -69,6 +94,57 @@ type SkillsSyncOptions = SkillsManagerOptions & {
   runFn?: typeof run;
   verbose?: boolean;
 };
+
+function collectErrorMessages(error: unknown): string[] {
+  const messages: string[] = [];
+  const queue: unknown[] = [error];
+  const seen = new Set<unknown>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (current === undefined || current === null || seen.has(current)) {
+      continue;
+    }
+    seen.add(current);
+
+    if (current instanceof Error) {
+      if (current.message) {
+        messages.push(current.message);
+      }
+      const cause = (current as Error & { cause?: unknown }).cause;
+      if (cause !== undefined) {
+        queue.push(cause);
+      }
+      continue;
+    }
+
+    if (typeof current === 'string') {
+      messages.push(current);
+      continue;
+    }
+
+    if (typeof current === 'object') {
+      if ('message' in current && typeof current.message === 'string') {
+        messages.push(current.message);
+      }
+      if ('cause' in current) {
+        queue.push(current.cause);
+      }
+      continue;
+    }
+
+    messages.push(String(current));
+  }
+
+  return messages;
+}
+
+export function isNpmRegistryUnavailable(error: unknown): boolean {
+  return collectErrorMessages(error).some((message) => {
+    const normalized = message.toLowerCase();
+    return NPM_REGISTRY_UNAVAILABLE_PATTERNS.some((pattern) => normalized.includes(pattern));
+  });
+}
 
 function normalizePath(value: string): string {
   return path.resolve(value);
@@ -124,6 +200,13 @@ async function readManagedSkillsState(workspaceRoot: string): Promise<ManagedSki
   }
 }
 
+export async function readInstalledManagedSkillsVersion(options: SkillsManagerOptions = {}): Promise<string | undefined> {
+  const globalRoot = resolveSkillsRoot(options);
+  const state = await readManagedSkillsState(globalRoot);
+  const installedVersion = String(state?.installedVersion ?? state?.installedRef ?? '').trim();
+  return installedVersion || undefined;
+}
+
 async function writeManagedSkillsState(workspaceRoot: string, state: ManagedSkillsState): Promise<void> {
   const filePath = getManagedSkillsStateFile(workspaceRoot);
   await fsp.mkdir(path.dirname(filePath), { recursive: true });
@@ -133,10 +216,15 @@ async function writeManagedSkillsState(workspaceRoot: string, state: ManagedSkil
 export async function listGlobalSkills(options: SkillsManagerOptions = {}): Promise<InstalledSkill[]> {
   const globalRoot = resolveSkillsRoot(options);
   await ensureSkillsWorkspaceRoot(globalRoot);
-  const output = await (options.commandOutputFn ?? commandOutputViaFile)('npx', ['-y', 'skills', 'list', '-g', '--json'], {
-    cwd: globalRoot,
-    errorName: 'skills list',
-  });
+  const output = await (options.commandOutputFn ?? commandOutputViaFile)(
+    'npx',
+    ['-y', 'skills', 'list', '-g', '--json'],
+    {
+      cwd: globalRoot,
+      errorName: 'skills list',
+      timeoutMs: SKILLS_LIST_TIMEOUT_MS,
+    },
+  );
   const parsed = JSON.parse(output) as InstalledSkill[];
   return Array.isArray(parsed) ? parsed : [];
 }
@@ -169,6 +257,7 @@ async function readPublishedSkillsVersion(
       {
         cwd: globalRoot,
         errorName: 'npm view',
+        timeoutMs: SKILLS_NPM_VIEW_TIMEOUT_MS,
       },
     );
     const parsed = JSON.parse(output) as string;
@@ -239,12 +328,16 @@ async function extractPackedSkillsTarball(
 
     if (packageName !== NOCOBASE_SKILLS_PACKAGE_NAME) {
       throw new Error(
-        `packed tarball resolved to ${packageName || '(missing package name)'} instead of ${NOCOBASE_SKILLS_PACKAGE_NAME}.`,
+        `packed tarball resolved to ${
+          packageName || '(missing package name)'
+        } instead of ${NOCOBASE_SKILLS_PACKAGE_NAME}.`,
       );
     }
 
     if (targetVersion && packageVersion !== targetVersion) {
-      throw new Error(`packed tarball resolved to version ${packageVersion || '(missing version)'} instead of ${targetVersion}.`);
+      throw new Error(
+        `packed tarball resolved to version ${packageVersion || '(missing version)'} instead of ${targetVersion}.`,
+      );
     }
 
     await fsp.rm(packageDir, { recursive: true, force: true });
@@ -286,6 +379,7 @@ async function prepareLocalSkillsPackage(
       cwd: packRoot,
       stdio: options.verbose ? 'inherit' : 'ignore',
       errorName: 'npm pack',
+      timeoutMs: SKILLS_PACK_TIMEOUT_MS,
     });
     const tarballPath = await resolvePackedSkillsTarball(packRoot);
     await extractPackedSkillsTarball(tarballPath, cacheRoot, targetVersion);
@@ -392,6 +486,7 @@ async function reinstallManagedSkills(
       cwd: globalRoot,
       stdio: options.verbose ? 'inherit' : 'ignore',
       errorName: 'skills add',
+      timeoutMs: SKILLS_ADD_TIMEOUT_MS,
     });
   } finally {
     await prepared.cleanup();
@@ -450,10 +545,10 @@ export async function updateNocoBaseSkills(options: SkillsSyncOptions = {}): Pro
   }
 
   if (
-    status.managedByNb
-    && status.latestVersion
-    && status.installedVersion
-    && compareVersions(status.latestVersion, status.installedVersion) <= 0
+    status.managedByNb &&
+    status.latestVersion &&
+    status.installedVersion &&
+    compareVersions(status.latestVersion, status.installedVersion) <= 0
   ) {
     return {
       action: 'noop',

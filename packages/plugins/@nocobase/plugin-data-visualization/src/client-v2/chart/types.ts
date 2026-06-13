@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema } from '@formily/react';
 import React, { memo } from 'react';
 
 import { parseField } from '../flow/utils';
-import configs, { AnySchemaProperties, Config, ConfigType } from './configs';
+import configs, { AnySchema, AnySchemaProperties, Config, ConfigType } from './configs';
 
 export type FieldOption = {
   value: string;
@@ -21,7 +20,7 @@ export type FieldOption = {
   name?: string;
   type?: string;
   interface?: string;
-  uiSchema?: ISchema;
+  uiSchema?: AnySchema;
   target?: string;
   targetFields?: FieldOption[];
 };
@@ -60,7 +59,7 @@ export interface ChartType {
   title: string;
   enableAdvancedConfig?: boolean;
   Component: React.FC<any>;
-  schema: ISchema;
+  schema: AnySchema;
   init?: (
     fields: FieldOption[],
     query: {

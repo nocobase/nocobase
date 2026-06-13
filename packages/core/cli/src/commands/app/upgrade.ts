@@ -8,58 +8,26 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { upsertEnv, type Env } from '../../lib/auth-store.js';
-import { ensureLocalPostinstall } from '../../lib/app-managed-resources.js';
+import { getCurrentEnvName, upsertEnv, type Env } from '../../lib/auth-store.js';
 import {
   formatMissingManagedAppEnvMessage,
   resolveManagedAppRuntime,
-  runLocalNocoBaseCommand,
-  startDockerContainer,
-  stopDockerContainer,
   type ManagedAppRuntime,
 } from '../../lib/app-runtime.js';
-import { resolveConfiguredEnvPath } from '../../lib/cli-home.js';
-import { deriveBuiltinDbConnection } from '../../lib/builtin-db.js';
-import { resolveDockerEnvFileArg } from '../../lib/docker-env-file.ts';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
-import {
-  DEFAULT_DOCKER_REGISTRY,
-  DEFAULT_DOCKER_VERSION,
-  resolveDockerImageRef,
-} from '../../lib/docker-image.ts';
-import { commandSucceeds, run } from '../../lib/run-npm.js';
-import { announceTargetEnv, failTask, printInfo, startTask, stopTask, succeedTask, updateTask } from '../../lib/ui.js';
-const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
-const APP_HEALTH_CHECK_INTERVAL_MS = 2_000;
-const APP_HEALTH_CHECK_TIMEOUT_MS = 600_000;
-const APP_HEALTH_CHECK_REQUEST_TIMEOUT_MS = 5_000;
+import { DEFAULT_DOCKER_REGISTRY } from '../../lib/docker-image.ts';
+import { confirm } from '../../lib/inquirer.ts';
+import { announceTargetEnv, isInteractiveTerminal, printInfo, printWarning, succeedTask } from '../../lib/ui.js';
+import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 
 type UpgradeParsedFlags = {
   env?: string;
   yes: boolean;
+  force: boolean;
   verbose: boolean;
-  'skip-code-update': boolean;
+  'skip-download': boolean;
+  'skip-code-update'?: boolean;
   version?: string;
-};
-
-type DockerUpgradePlan = {
-  containerName: string;
-  networkName: string;
-  dockerRegistry: string;
-  downloadVersion: string;
-  imageRef: string;
-  appPort?: string;
-  storagePath: string;
-  envFile?: string;
-  appKey: string;
-  timeZone: string;
-  dbDialect: string;
-  dbHost: string;
-  dbPort: string;
-  dbDatabase: string;
-  dbUser: string;
-  dbPassword: string;
-  args: string[];
 };
 
 type ResolvedUpgradeVersion = {
@@ -67,22 +35,17 @@ type ResolvedUpgradeVersion = {
   persistDownloadVersion?: string;
 };
 
+type UpgradeManagedRuntime = Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>;
+type LocalManagedRuntime = Extract<ManagedAppRuntime, { kind: 'local' }>;
+type DownloadableLocalManagedRuntime = LocalManagedRuntime & { source: 'npm' | 'git' };
+
 function trimValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
-function pushOptionalEnvArg(args: string[], key: string, value: string | boolean | undefined) {
-  if (typeof value === 'string') {
-    if (!value) {
-      return;
-    }
-    args.push('-e', `${key}=${value}`);
-    return;
-  }
-
-  if (typeof value === 'boolean') {
-    args.push('-e', `${key}=${String(value)}`);
-  }
+function normalizeEnvName(value: unknown): string | undefined {
+  const text = trimValue(value);
+  return text || undefined;
 }
 
 function formatAppUrl(port?: string): string | undefined {
@@ -91,44 +54,37 @@ function formatAppUrl(port?: string): string | undefined {
 }
 
 function formatDisplayUrl(apiBaseUrl?: string, appPort?: string): string | undefined {
+  const resolvedFromApiBaseUrl = resolveAppUrlFromApiBaseUrl(apiBaseUrl);
+  if (resolvedFromApiBaseUrl) {
+    return resolvedFromApiBaseUrl;
+  }
+
   const appUrl = formatAppUrl(appPort);
   if (appUrl) {
     return appUrl;
   }
 
   const value = trimValue(apiBaseUrl);
-  if (!value) {
+  return value ? value.replace(/\/api\/?$/, '') : undefined;
+}
+
+function readEnvValue(env: Env, key: keyof Env['config']): string {
+  return trimValue(env.config[key]);
+}
+
+function normalizeDockerPlatform(value: unknown): string | undefined {
+  const text = trimValue(value);
+  if (!text || text === 'auto') {
     return undefined;
   }
-
-  return value.replace(/\/api\/?$/, '');
+  if (text === 'linux/amd64' || text === 'linux/arm64') {
+    return text;
+  }
+  return undefined;
 }
 
-function resolveApiBaseUrl(runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>): string | undefined {
-  const baseUrl = trimValue(runtime.env.baseUrl);
-  if (baseUrl) {
-    return baseUrl.replace(/\/+$/, '');
-  }
-
-  const appPort =
-    runtime.env.appPort === undefined || runtime.env.appPort === null
-      ? ''
-      : trimValue(runtime.env.appPort);
-  return appPort ? `http://127.0.0.1:${appPort}/api` : undefined;
-}
-
-function buildHealthCheckUrl(apiBaseUrl: string): string {
-  return `${apiBaseUrl.replace(/\/+$/, '')}/__health_check`;
-}
-
-function dockerRefLabel(source: 'npm' | 'git' | 'local'): string {
-  if (source === 'git') {
-    return 'Git checkout';
-  }
-  if (source === 'npm') {
-    return 'npm app';
-  }
-  return 'local app';
+function isDownloadableLocalRuntime(runtime: UpgradeManagedRuntime): runtime is DownloadableLocalManagedRuntime {
+  return runtime.kind === 'local' && (runtime.source === 'npm' || runtime.source === 'git');
 }
 
 function formatLocalDownloadFailure(envName: string, source: 'npm' | 'git', message: string): string {
@@ -141,17 +97,6 @@ function formatLocalDownloadFailure(envName: string, source: 'npm' | 'git', mess
   ].join('\n');
 }
 
-function formatLocalStartFailure(envName: string, source: 'npm' | 'git' | 'local', port?: string, message?: string): string {
-  const sourceLabel = dockerRefLabel(source);
-  const portHint = trimValue(port) ? ` Expected app port: ${trimValue(port)}.` : '';
-  const details = trimValue(message) ? ` Details: ${trimValue(message)}` : '';
-  return [
-    `Couldn't finish the upgrade for "${envName}".`,
-    `The CLI updated ${sourceLabel}, but it could not start the upgraded app successfully.`,
-    `Check the local dependencies, database connection, and saved env settings, then try again.${portHint}${details}`,
-  ].join('\n');
-}
-
 function formatDockerDownloadFailure(envName: string, message: string): string {
   return [
     `Couldn't refresh the Docker image for "${envName}".`,
@@ -161,152 +106,240 @@ function formatDockerDownloadFailure(envName: string, message: string): string {
   ].join('\n');
 }
 
-function formatDockerStartFailure(envName: string, message: string): string {
+function buildManagedActionArgv(
+  envName: string,
+  flags: UpgradeParsedFlags,
+  options?: { quickstart?: boolean },
+): string[] {
+  const argv = ['--env', envName, '--yes'];
+  if (flags.verbose) {
+    argv.push('--verbose');
+  }
+  if (options?.quickstart) {
+    argv.push('--quickstart');
+  }
+  return argv;
+}
+
+function shouldSkipDownload(flags: UpgradeParsedFlags): boolean {
+  return Boolean(flags['skip-download'] || flags['skip-code-update']);
+}
+
+function buildUpgradeCliArgv(
+  envName: string,
+  flags: UpgradeParsedFlags,
+  options?: {
+    yes?: boolean;
+    force?: boolean;
+  },
+): string[] {
+  const argv = ['--env', envName];
+  if (shouldSkipDownload(flags)) {
+    argv.push('--skip-download');
+  }
+
+  const version = normalizeEnvName(flags.version);
+  if (version) {
+    argv.push('--version', version);
+  }
+
+  if (flags.verbose) {
+    argv.push('--verbose');
+  }
+
+  if (options?.yes ?? flags.yes) {
+    argv.push('--yes');
+  }
+  if (options?.force ?? flags.force) {
+    argv.push('--force');
+  }
+
+  return argv;
+}
+
+function buildUpgradeCliCommand(
+  envName: string,
+  flags: UpgradeParsedFlags,
+  options?: {
+    yes?: boolean;
+    force?: boolean;
+  },
+): string {
+  return ['nb', 'app', 'upgrade', ...buildUpgradeCliArgv(envName, flags, options)].join(' ');
+}
+
+function formatUpgradeOperationSummary(runtime: UpgradeManagedRuntime, flags: UpgradeParsedFlags): string {
+  const mayRunUpgradeMigrations = 'It may also run upgrade migrations.';
+
+  if (shouldSkipDownload(flags)) {
+    const sourceLabel =
+      runtime.kind === 'docker'
+        ? 'saved Docker image'
+        : runtime.source === 'local'
+          ? 'saved local app path'
+          : runtime.source === 'git'
+            ? 'saved Git checkout'
+            : 'saved npm app';
+
+    return [
+      'This operation will stop the app, skip source download and commercial plugin sync,',
+      `and start it again with the ${sourceLabel}.`,
+      mayRunUpgradeMigrations,
+    ].join(' ');
+  }
+
+  if (runtime.kind === 'docker') {
+    return [
+      'This operation will stop the app, replace the saved Docker image,',
+      'sync commercial plugins when applicable, and start the app again.',
+      mayRunUpgradeMigrations,
+    ].join(' ');
+  }
+
+  if (runtime.source === 'local') {
+    return [
+      'This operation will stop the app, reuse the saved local app path,',
+      'sync commercial plugins when applicable, and start the app again.',
+      mayRunUpgradeMigrations,
+    ].join(' ');
+  }
+
   return [
-    `Couldn't finish the upgrade for "${envName}".`,
-    'The CLI was not able to start the upgraded Docker app successfully.',
-    'Check that the saved Docker image, container settings, and database connection are still valid, then try again.',
-    `Details: ${message}`,
+    'This operation will stop the app, replace the saved source,',
+    'sync commercial plugins when applicable, and start the app again.',
+    mayRunUpgradeMigrations,
+  ].join(' ');
+}
+
+function formatUpgradePromptSummary(flags: UpgradeParsedFlags): string {
+  if (shouldSkipDownload(flags)) {
+    return 'This will stop and restart the app, and may run upgrade migrations.';
+  }
+
+  return 'This will stop and restart the app, update the saved source or image, and may run upgrade migrations.';
+}
+
+function formatUpgradeForceRequiredMessage(runtime: UpgradeManagedRuntime, flags: UpgradeParsedFlags): string {
+  return [
+    `\`nb app upgrade\` needs confirmation in non-interactive mode before upgrading "${runtime.envName}".`,
+    '',
+    formatUpgradeOperationSummary(runtime, flags),
+    '',
+    'Interactive confirmation is unavailable in the current AI agent session, and the agent will not add `--force` on your behalf.',
+    '',
+    'To continue:',
+    `- re-run \`${buildUpgradeCliCommand(runtime.envName, flags, { force: true })}\``,
+    `- or switch to an interactive terminal and re-run \`${buildUpgradeCliCommand(runtime.envName, flags, {
+      force: false,
+    })}\``,
   ].join('\n');
 }
 
-function normalizeDockerPlatform(value: unknown): string | undefined {
-  const text = String(value ?? '').trim();
-  if (!text || text === 'auto') {
-    return undefined;
-  }
-  if (text === 'linux/amd64' || text === 'linux/arm64') {
-    return text;
-  }
-  return undefined;
-}
+function formatMissingUpgradeFlagList(options: { missingYes: boolean; missingForce: boolean }): string {
+  const missingFlags = [
+    options.missingYes ? '`--yes`' : undefined,
+    options.missingForce ? '`--force`' : undefined,
+  ].filter(Boolean) as string[];
 
-function readEnvValue(env: Env, key: keyof Env['config']): string {
-  if (key === 'appRootPath' || key === 'storagePath') {
-    return trimValue(resolveConfiguredEnvPath(env.config[key]));
+  if (missingFlags.length <= 1) {
+    return missingFlags[0] ?? '';
   }
 
-  return trimValue(env.config[key]);
+  return `${missingFlags[0]} or ${missingFlags[1]}`;
 }
 
-async function sleep(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
+function formatUpgradeCrossEnvConfirmationRequiredMessage(
+  currentEnv: string,
+  runtime: UpgradeManagedRuntime,
+  flags: UpgradeParsedFlags,
+  options: {
+    missingYes: boolean;
+    missingForce: boolean;
+  },
+): string {
+  return [
+    `Refusing to upgrade env "${runtime.envName}" because the current env is "${currentEnv}" and interactive confirmation is unavailable in the current AI agent session.`,
+    '',
+    formatUpgradeOperationSummary(runtime, flags),
+    '',
+    `For safety, the agent will not switch envs automatically and will not add ${formatMissingUpgradeFlagList(
+      options,
+    )} on your behalf.`,
+    '',
+    'To continue:',
+    `- run \`nb env use ${runtime.envName}\` yourself, then re-run \`${buildUpgradeCliCommand(runtime.envName, flags, {
+      yes: false,
+      force: true,
+    })}\``,
+    `- or re-run \`${buildUpgradeCliCommand(runtime.envName, flags, { yes: true, force: true })}\``,
+  ].join('\n');
 }
 
-async function requestAppHealthCheck(params: {
-  healthCheckUrl: string;
-  fetchImpl?: typeof fetch;
-  requestTimeoutMs?: number;
-}): Promise<{ ok: boolean; message: string }> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, params.requestTimeoutMs ?? APP_HEALTH_CHECK_REQUEST_TIMEOUT_MS);
+function buildLicenseSyncArgv(envName: string, flags: UpgradeParsedFlags, options?: { version?: string }): string[] {
+  const argv = ['--env', envName, '--yes', '--skip-if-no-license'];
+  if (flags.verbose) {
+    argv.push('--verbose');
+  }
+  if (options?.version) {
+    argv.push('--version', options.version);
+  }
+  return argv;
+}
 
+function buildEnvUpdateArgv(envName: string, flags: UpgradeParsedFlags): string[] {
+  const argv = [envName];
+  if (flags.verbose) {
+    argv.push('--verbose');
+  }
+  return argv;
+}
+
+function formatEnvUpdateWarning(envName: string, message: string): string {
+  return [
+    `NocoBase was upgraded for "${envName}", but the CLI could not refresh the saved env runtime.`,
+    `Run \`nb env update ${envName}\` to refresh it manually.`,
+    `Details: ${message}`,
+  ].join(' ');
+}
+
+async function runWithSuppressedTargetEnvLog<T>(task: () => Promise<T>): Promise<T> {
+  const previousTargetEnv = process.env.NB_SKIP_TARGET_ENV_LOG;
+  process.env.NB_SKIP_TARGET_ENV_LOG = '1';
   try {
-    const response = await (params.fetchImpl ?? fetch)(params.healthCheckUrl, {
-      method: 'GET',
-      signal: controller.signal,
-    });
-    const text = await response.text().catch(() => '');
-    const body = text.replace(/\s+/g, ' ').trim() || 'No response yet';
-    return {
-      ok: response.ok && text.trim().toLowerCase() === 'ok',
-      message: `HTTP ${response.status}: ${body}`,
-    };
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      return {
-        ok: false,
-        message: `No response within ${Math.ceil((params.requestTimeoutMs ?? APP_HEALTH_CHECK_REQUEST_TIMEOUT_MS) / 1000)}s`,
-      };
-    }
-
-    return {
-      ok: false,
-      message: error instanceof Error ? error.message : String(error),
-    };
+    return await task();
   } finally {
-    clearTimeout(timeout);
+    if (previousTargetEnv === undefined) {
+      delete process.env.NB_SKIP_TARGET_ENV_LOG;
+    } else {
+      process.env.NB_SKIP_TARGET_ENV_LOG = previousTargetEnv;
+    }
   }
 }
 
-async function waitForAppHealthCheck(params: {
-  envName: string;
-  apiBaseUrl?: string;
-  containerName?: string;
-  fetchImpl?: typeof fetch;
-}): Promise<void> {
-  if (!params.apiBaseUrl) {
-    printInfo(`Skipping health check for "${params.envName}" because no local API URL is saved for this env.`);
-    return;
-  }
-
-  const healthCheckUrl = buildHealthCheckUrl(params.apiBaseUrl);
-  const startedAt = Date.now();
-  let lastMessage = 'No response yet';
-  let spinnerActive = true;
-
-  startTask(`Waiting for NocoBase to become ready for "${params.envName}"...`);
-
+async function runWithSuppressedStartSuccessLog<T>(task: () => Promise<T>): Promise<T> {
+  const previousStartSuccess = process.env.NB_SKIP_APP_START_SUCCESS_LOG;
+  process.env.NB_SKIP_APP_START_SUCCESS_LOG = '1';
   try {
-    while (Date.now() - startedAt < APP_HEALTH_CHECK_TIMEOUT_MS) {
-      const result = await requestAppHealthCheck({
-        healthCheckUrl,
-        fetchImpl: params.fetchImpl,
-      });
-
-      if (result.ok) {
-        stopTask();
-        spinnerActive = false;
-        return;
-      }
-
-      lastMessage = result.message;
-      const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
-      updateTask(
-        `Waiting for NocoBase to become ready for "${params.envName}"... (${elapsedSeconds}s elapsed, last status: ${lastMessage})`,
-      );
-      await sleep(APP_HEALTH_CHECK_INTERVAL_MS);
-    }
+    return await task();
   } finally {
-    if (spinnerActive) {
-      stopTask();
+    if (previousStartSuccess === undefined) {
+      delete process.env.NB_SKIP_APP_START_SUCCESS_LOG;
+    } else {
+      process.env.NB_SKIP_APP_START_SUCCESS_LOG = previousStartSuccess;
     }
   }
-
-  const logHint = params.containerName
-    ? ` You can inspect startup logs with: docker logs ${params.containerName}`
-    : '';
-  throw new Error(
-    `The upgraded app for "${params.envName}" did not become ready in time. Expected \`${healthCheckUrl}\` to respond with \`ok\`, but the last status was: ${lastMessage}.${logHint}`,
-  );
-}
-
-async function dockerContainerExists(containerName: string): Promise<boolean> {
-  return await commandSucceeds('docker', ['container', 'inspect', containerName]);
-}
-
-async function ensureDockerNetwork(name: string): Promise<void> {
-  const exists = await commandSucceeds('docker', ['network', 'inspect', name]);
-  if (exists) {
-    return;
-  }
-
-  await run('docker', ['network', 'create', name], {
-    errorName: 'docker network create',
-    stdio: 'ignore',
-  });
 }
 
 export default class AppUpgrade extends Command {
   static override hidden = false;
   static override description =
-    'Upgrade the selected NocoBase app. Local npm/git installs refresh the saved source and restart with quickstart; Docker installs refresh the saved image and recreate the app container. Use --version to upgrade to a specific saved source version or image tag.';
+    'Upgrade the selected NocoBase app. The CLI stops the current app, optionally replaces the saved source or image, then starts the app again. Use --version to upgrade to a specific saved source version or image tag.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
+    '<%= config.bin %> <%= command.id %> --force',
     '<%= config.bin %> <%= command.id %> --env local',
+    '<%= config.bin %> <%= command.id %> --env local --force',
     '<%= config.bin %> <%= command.id %> --env local -s',
     '<%= config.bin %> <%= command.id %> --env local --version beta',
     '<%= config.bin %> <%= command.id %> --env local --verbose',
@@ -323,9 +356,20 @@ export default class AppUpgrade extends Command {
       description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
     }),
-    'skip-code-update': Flags.boolean({
+    force: Flags.boolean({
+      char: 'f',
+      description: 'Skip the upgrade confirmation prompt',
+      default: false,
+    }),
+    'skip-download': Flags.boolean({
       char: 's',
-      description: 'Restart with the saved local code or Docker image without downloading updates first',
+      description: 'Restart with the saved local source or Docker image without downloading updates first',
+      required: false,
+    }),
+    'skip-code-update': Flags.boolean({
+      hidden: true,
+      deprecated: true,
+      description: 'Deprecated alias for --skip-download',
       required: false,
     }),
     version: Flags.string({
@@ -335,21 +379,15 @@ export default class AppUpgrade extends Command {
     }),
     verbose: Flags.boolean({
       description: 'Show raw output from the underlying local or Docker commands',
-      default: false,
+      default: true,
     }),
   };
 
   private static resolveUpgradeVersion(
-    runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
+    runtime: UpgradeManagedRuntime,
     flags: UpgradeParsedFlags,
   ): ResolvedUpgradeVersion {
     const requestedVersion = trimValue(flags.version);
-    if (requestedVersion && flags['skip-code-update']) {
-      throw new Error(
-        '`--version` and `--skip-code-update` cannot be used together. Use `--version` to download a specific upgrade target, or `--skip-code-update` to restart the saved code/image as-is.',
-      );
-    }
-
     if (runtime.kind === 'local' && runtime.source === 'local') {
       if (requestedVersion) {
         throw new Error(
@@ -363,6 +401,12 @@ export default class AppUpgrade extends Command {
       return {};
     }
 
+    if (shouldSkipDownload(flags)) {
+      return {
+        persistDownloadVersion: requestedVersion || undefined,
+      };
+    }
+
     const savedVersion = readEnvValue(runtime.env, 'downloadVersion');
     const downloadVersion = requestedVersion || savedVersion;
     if (!downloadVersion) {
@@ -370,7 +414,7 @@ export default class AppUpgrade extends Command {
         [
           `Env "${runtime.envName}" does not have a saved \`downloadVersion\`.`,
           'This env cannot be upgraded until a source version is explicit.',
-          'Re-run `nb init` or `nb env add` for this env, or pass `--version` to `nb app upgrade`.',
+          `Re-run \`nb init --ui --env ${runtime.envName}\` for this env, or pass \`--version\` to \`nb app upgrade\`.`,
         ].join('\n'),
       );
     }
@@ -382,25 +426,28 @@ export default class AppUpgrade extends Command {
   }
 
   private static buildLocalDownloadArgv(
-    runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
+    runtime: DownloadableLocalManagedRuntime,
     downloadVersion: string,
     options?: { verbose?: boolean },
   ): string[] {
     const argv = ['-y', '--no-intro', '--source', runtime.source, '--replace'];
-    const gitUrl = readEnvValue(runtime.env, 'gitUrl');
-    const npmRegistry = readEnvValue(runtime.env, 'npmRegistry');
 
     if (options?.verbose) {
       argv.push('--verbose');
     }
 
     argv.push('--version', downloadVersion, '--output-dir', runtime.projectRoot);
+
+    const gitUrl = readEnvValue(runtime.env, 'gitUrl');
     if (gitUrl) {
       argv.push('--git-url', gitUrl);
     }
+
+    const npmRegistry = readEnvValue(runtime.env, 'npmRegistry');
     if (npmRegistry) {
       argv.push('--npm-registry', npmRegistry);
     }
+
     if (runtime.env.config.devDependencies === true) {
       argv.push('--dev-dependencies');
     }
@@ -416,366 +463,33 @@ export default class AppUpgrade extends Command {
 
   private static buildDockerDownloadArgv(
     runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
-    plan: DockerUpgradePlan,
+    downloadVersion: string,
     options?: { verbose?: boolean },
   ): string[] {
     const argv = ['-y', '--no-intro'];
     if (options?.verbose) {
       argv.push('--verbose');
     }
+
     argv.push(
       '--source',
       'docker',
       '--replace',
       '--docker-registry',
-      plan.dockerRegistry,
+      readEnvValue(runtime.env, 'dockerRegistry') || DEFAULT_DOCKER_REGISTRY,
       '--version',
-      plan.downloadVersion,
+      downloadVersion,
     );
+
     const dockerPlatform = normalizeDockerPlatform(runtime.env.config.dockerPlatform);
     if (dockerPlatform) {
       argv.push('--docker-platform', dockerPlatform);
     }
+
     return argv;
   }
 
-  private static buildLocalStartArgv(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): string[] {
-    const argv = ['start', '--quickstart'];
-    const appPort =
-      runtime.env.appPort === undefined || runtime.env.appPort === null
-        ? ''
-        : trimValue(runtime.env.appPort);
-    if (appPort) {
-      argv.push('--port', appPort);
-    }
-    argv.push('--daemon');
-    return argv;
-  }
-
-  private static async buildDockerUpgradePlan(
-    runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
-    downloadVersion: string,
-  ): Promise<DockerUpgradePlan> {
-    const dockerRegistry = readEnvValue(runtime.env, 'dockerRegistry') || DEFAULT_DOCKER_REGISTRY;
-
-    const appPort =
-      runtime.env.appPort === undefined || runtime.env.appPort === null
-        ? ''
-        : trimValue(runtime.env.appPort);
-    const storagePath = readEnvValue(runtime.env, 'storagePath');
-    const envFile = await resolveDockerEnvFileArg(runtime.envName, runtime.env.config);
-    const appKey = readEnvValue(runtime.env, 'appKey');
-    const timeZone = readEnvValue(runtime.env, 'timezone');
-    const builtinDbConnection = runtime.env.config.builtinDb ? deriveBuiltinDbConnection(runtime) : undefined;
-    const dbDialect = builtinDbConnection?.dbDialect || readEnvValue(runtime.env, 'dbDialect');
-    const dbHost = builtinDbConnection?.dbHost || readEnvValue(runtime.env, 'dbHost');
-    const dbPort = builtinDbConnection?.dbPort || readEnvValue(runtime.env, 'dbPort');
-    const dbDatabase = readEnvValue(runtime.env, 'dbDatabase');
-    const dbUser = readEnvValue(runtime.env, 'dbUser');
-    const dbPassword = readEnvValue(runtime.env, 'dbPassword');
-    const dbSchema = readEnvValue(runtime.env, 'dbSchema');
-    const dbTablePrefix = readEnvValue(runtime.env, 'dbTablePrefix');
-    const dbUnderscored =
-      typeof runtime.env.config.dbUnderscored === 'boolean'
-        ? runtime.env.config.dbUnderscored
-        : undefined;
-    const networkName = trimValue(runtime.dockerNetworkName || runtime.workspaceName);
-
-    const missing: string[] = [];
-    if (!networkName) {
-      missing.push('docker.network');
-    }
-    if (!storagePath) {
-      missing.push('storagePath');
-    }
-    if (!appKey) {
-      missing.push('appKey');
-    }
-    if (!timeZone) {
-      missing.push('timezone');
-    }
-    if (!dbDialect) {
-      missing.push('dbDialect');
-    }
-    if (!dbHost) {
-      missing.push('dbHost');
-    }
-    if (!dbPort) {
-      missing.push('dbPort');
-    }
-    if (!dbDatabase) {
-      missing.push('dbDatabase');
-    }
-    if (!dbUser) {
-      missing.push('dbUser');
-    }
-    if (!dbPassword) {
-      missing.push('dbPassword');
-    }
-
-    if (missing.length > 0) {
-      throw new Error(
-        `The saved Docker settings for "${runtime.envName}" are incomplete. Missing: ${missing.join(', ')}. Re-run \`nb init\` or \`nb env add\` to refresh this env config.`,
-      );
-    }
-
-    const imageRef = resolveDockerImageRef(dockerRegistry, downloadVersion, {
-      defaultRegistry: DEFAULT_DOCKER_REGISTRY,
-      defaultVersion: DEFAULT_DOCKER_VERSION,
-    });
-    const args = [
-      'run',
-      '-d',
-      '--name',
-      runtime.containerName,
-      '--restart',
-      'always',
-      '--network',
-      networkName,
-    ];
-
-    if (appPort) {
-      args.push('-p', `${appPort}:80`);
-    }
-
-    if (envFile) {
-      args.push('--env-file', envFile);
-    }
-
-    args.push(
-      '-e',
-      `APP_KEY=${appKey}`,
-      '-e',
-      `DB_DIALECT=${dbDialect}`,
-      '-e',
-      `DB_HOST=${dbHost}`,
-      '-e',
-      `DB_PORT=${dbPort}`,
-      '-e',
-      `DB_DATABASE=${dbDatabase}`,
-      '-e',
-      `DB_USER=${dbUser}`,
-      '-e',
-      `DB_PASSWORD=${dbPassword}`,
-      '-e',
-      `TZ=${timeZone}`,
-      '-v',
-      `${storagePath}:${DOCKER_APP_STORAGE_DESTINATION}`,
-    );
-    pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema || undefined);
-    pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix || undefined);
-    pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
-    args.push(imageRef);
-
-    return {
-      containerName: runtime.containerName,
-      networkName,
-      dockerRegistry,
-      downloadVersion,
-      imageRef,
-      appPort: appPort || undefined,
-      storagePath,
-      envFile,
-      appKey,
-      timeZone,
-      dbDialect,
-      dbHost,
-      dbPort,
-      dbDatabase,
-      dbUser,
-      dbPassword,
-      args,
-    };
-  }
-
-  private static async upgradeLocal(
-    runCommand: (id: string, argv?: string[]) => Promise<unknown>,
-    runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
-    downloadVersion: string | undefined,
-    flags: UpgradeParsedFlags,
-    commandStdio: 'inherit' | 'ignore',
-  ): Promise<string | undefined> {
-    const displayUrl = formatDisplayUrl(resolveApiBaseUrl(runtime), trimValue(runtime.env.appPort));
-
-    startTask(`Stopping NocoBase for "${runtime.envName}" before upgrade...`);
-    try {
-      await runLocalNocoBaseCommand(runtime, ['pm2', 'kill'], {
-        stdio: commandStdio,
-      });
-      succeedTask(`Stopped the current NocoBase process for "${runtime.envName}".`);
-    } catch (error: unknown) {
-      stopTask();
-      const message = error instanceof Error ? error.message : String(error);
-      printInfo(
-        `No running background process was stopped for "${runtime.envName}". Continuing with the upgrade. (${message})`,
-      );
-    }
-
-    if (!flags['skip-code-update'] && (runtime.source === 'npm' || runtime.source === 'git')) {
-      startTask(`Refreshing NocoBase files for "${runtime.envName}" from the saved ${runtime.source} source...`);
-      try {
-        await runCommand(
-          'source:download',
-          AppUpgrade.buildLocalDownloadArgv(runtime, downloadVersion!, {
-            verbose: flags.verbose,
-          }),
-        );
-        succeedTask(`NocoBase files are up to date for "${runtime.envName}".`);
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        failTask(`Failed to refresh NocoBase files for "${runtime.envName}".`);
-        throw new Error(formatLocalDownloadFailure(runtime.envName, runtime.source, message));
-      }
-    } else if (flags['skip-code-update']) {
-      printInfo(`Skipping code download for "${runtime.envName}" (--skip-code-update).`);
-    } else {
-      printInfo(
-        `Skipping code download for "${runtime.envName}" because this env is managed from an existing local app path.`,
-      );
-    }
-
-    await ensureLocalPostinstall(runtime, {
-      verbose: flags.verbose,
-      onStartTask: startTask,
-      onSucceedTask: succeedTask,
-      onFailTask: failTask,
-    });
-
-    startTask(`Starting upgraded NocoBase for "${runtime.envName}"...`);
-    try {
-      await runLocalNocoBaseCommand(runtime, AppUpgrade.buildLocalStartArgv(runtime), {
-        stdio: commandStdio,
-      });
-      succeedTask(`Upgraded NocoBase is starting for "${runtime.envName}".`);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      failTask(`Failed to start upgraded NocoBase for "${runtime.envName}".`);
-      throw new Error(
-        formatLocalStartFailure(
-          runtime.envName,
-          runtime.source,
-          trimValue(runtime.env.appPort),
-          message,
-        ),
-      );
-    }
-
-    await waitForAppHealthCheck({
-      envName: runtime.envName,
-      apiBaseUrl: resolveApiBaseUrl(runtime),
-    });
-    return displayUrl;
-  }
-
-  private static async upgradeDocker(
-    runCommand: (id: string, argv?: string[]) => Promise<unknown>,
-    runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
-    downloadVersion: string,
-    flags: UpgradeParsedFlags,
-    commandStdio: 'inherit' | 'ignore',
-  ): Promise<string | undefined> {
-    const apiBaseUrl = resolveApiBaseUrl(runtime);
-    const containerExists = await dockerContainerExists(runtime.containerName);
-
-    if (!flags['skip-code-update']) {
-      const plan = await AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
-      startTask(`Refreshing the Docker image for "${runtime.envName}"...`);
-      try {
-        await runCommand(
-          'source:download',
-          AppUpgrade.buildDockerDownloadArgv(runtime, plan, {
-            verbose: flags.verbose,
-          }),
-        );
-        succeedTask(`Docker image is ready for "${runtime.envName}".`);
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        failTask(`Failed to refresh the Docker image for "${runtime.envName}".`);
-        throw new Error(formatDockerDownloadFailure(runtime.envName, message));
-      }
-    } else {
-      printInfo(`Skipping image download for "${runtime.envName}" (--skip-code-update).`);
-    }
-
-    if (containerExists) {
-      startTask(`Stopping the current Docker app for "${runtime.envName}"...`);
-      try {
-        const state = await stopDockerContainer(runtime.containerName, {
-          stdio: commandStdio,
-        });
-        succeedTask(
-          state === 'already-stopped'
-            ? `The current Docker app was already stopped for "${runtime.envName}".`
-            : `Stopped the current Docker app for "${runtime.envName}".`,
-        );
-      } catch (error: unknown) {
-        stopTask();
-        const message = error instanceof Error ? error.message : String(error);
-        printInfo(
-          `Could not stop the existing Docker container for "${runtime.envName}" cleanly. Continuing with container recreation. (${message})`,
-        );
-      }
-    }
-
-    if (flags['skip-code-update'] && containerExists) {
-      startTask(`Starting NocoBase for "${runtime.envName}" with the saved Docker image...`);
-      try {
-        const state = await startDockerContainer(runtime.containerName, {
-          stdio: commandStdio,
-        });
-        succeedTask(
-          state === 'already-running'
-            ? `NocoBase is already running for "${runtime.envName}".`
-            : `NocoBase is starting for "${runtime.envName}".`,
-        );
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        failTask(`Failed to start the Docker app for "${runtime.envName}".`);
-        throw new Error(formatDockerStartFailure(runtime.envName, message));
-      }
-    } else {
-      const plan = await AppUpgrade.buildDockerUpgradePlan(runtime, downloadVersion);
-      const displayUrl = formatDisplayUrl(apiBaseUrl, plan.appPort);
-      startTask(`Recreating the Docker app container for "${runtime.envName}"...`);
-      try {
-        if (containerExists) {
-          await run('docker', ['rm', '-f', runtime.containerName], {
-            errorName: 'docker rm',
-            stdio: commandStdio,
-          });
-        }
-        await ensureDockerNetwork(plan.networkName);
-        await run('docker', plan.args, {
-          errorName: 'docker run',
-          stdio: commandStdio,
-        });
-        succeedTask(`Docker app container is ready for "${runtime.envName}".`);
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        failTask(`Failed to recreate the Docker app for "${runtime.envName}".`);
-        throw new Error(formatDockerStartFailure(runtime.envName, message));
-      }
-
-      await waitForAppHealthCheck({
-        envName: runtime.envName,
-        apiBaseUrl,
-        containerName: runtime.containerName,
-      });
-      return displayUrl;
-    }
-
-    await waitForAppHealthCheck({
-      envName: runtime.envName,
-      apiBaseUrl,
-      containerName: runtime.containerName,
-    });
-    return formatDisplayUrl(apiBaseUrl, trimValue(runtime.env.appPort));
-  }
-
-  private static async persistDownloadVersion(
-    runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>,
-    downloadVersion: string,
-  ): Promise<void> {
+  private static async persistDownloadVersion(runtime: UpgradeManagedRuntime, downloadVersion: string): Promise<void> {
     const { name: _name, ...envConfig } = runtime.env.config;
     try {
       await upsertEnv(runtime.envName, {
@@ -793,19 +507,9 @@ export default class AppUpgrade extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(AppUpgrade);
     const parsed = flags as UpgradeParsedFlags;
-    const requestedEnv = parsed.env?.trim() || undefined;
-    if (requestedEnv && hasExplicitEnvSelection(this.argv)) {
-      const confirmed = await ensureCrossEnvConfirmed({
-        command: this,
-        requestedEnv,
-        yes: parsed.yes,
-      });
-      if (!confirmed) {
-        return;
-      }
-    }
+    const requestedEnv = normalizeEnvName(parsed.env);
+    const explicitEnvSelection = Boolean(requestedEnv && hasExplicitEnvSelection(this.argv));
 
-    const commandStdio = parsed.verbose ? 'inherit' : 'ignore';
     const runtime = await resolveManagedAppRuntime(requestedEnv);
 
     if (!runtime) {
@@ -817,7 +521,7 @@ export default class AppUpgrade extends Command {
         [
           `Can't upgrade "${runtime.envName}" from this machine.`,
           'This env only has an API connection, so there is no saved local app or Docker runtime to upgrade here.',
-          'If you want a local NocoBase AI environment that the CLI can upgrade, run `nb init` first.',
+          'If you want a local NocoBase AI environment that the CLI can upgrade, run `nb init --ui` first.',
         ].join('\n'),
       );
     }
@@ -832,29 +536,146 @@ export default class AppUpgrade extends Command {
       );
     }
 
+    const interactiveTerminal = isInteractiveTerminal();
+    if (explicitEnvSelection) {
+      if (!interactiveTerminal) {
+        const currentEnv = normalizeEnvName(await getCurrentEnvName());
+        if (currentEnv && currentEnv !== requestedEnv) {
+          const missingYes = !parsed.yes;
+          const missingForce = !parsed.force;
+
+          if (missingYes || missingForce) {
+            this.error(
+              formatUpgradeCrossEnvConfirmationRequiredMessage(currentEnv, runtime, parsed, {
+                missingYes,
+                missingForce,
+              }),
+            );
+          }
+        }
+      } else {
+        const confirmed = await ensureCrossEnvConfirmed({
+          command: this,
+          requestedEnv,
+          yes: parsed.yes,
+        });
+        if (!confirmed) {
+          return;
+        }
+      }
+    }
+
+    if (!interactiveTerminal) {
+      if (!parsed.force) {
+        this.error(formatUpgradeForceRequiredMessage(runtime, parsed));
+      }
+    } else if (!parsed.force) {
+      let confirmed = false;
+      try {
+        confirmed = await confirm({
+          message: `Upgrade "${runtime.envName}"? ${formatUpgradePromptSummary(parsed)}`,
+          default: false,
+        });
+      } catch {
+        return;
+      }
+      if (!confirmed) {
+        return;
+      }
+    }
+
     announceTargetEnv(runtime.envName);
 
     try {
       const resolvedVersion = AppUpgrade.resolveUpgradeVersion(runtime, parsed);
+      const skipDownload = shouldSkipDownload(parsed);
       const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
-      const displayUrl =
-        runtime.kind === 'docker'
-          ? await AppUpgrade.upgradeDocker(
-              runCommand,
-              runtime,
-              resolvedVersion.downloadVersion!,
-              parsed,
-              commandStdio,
-            )
-          : await AppUpgrade.upgradeLocal(runCommand, runtime, resolvedVersion.downloadVersion, parsed, commandStdio);
+
+      await runWithSuppressedTargetEnvLog(async () => {
+        await runCommand('app:stop', buildManagedActionArgv(runtime.envName, parsed));
+      });
+
+      if (skipDownload) {
+        printInfo(`Skipping source download for "${runtime.envName}" (--skip-download).`);
+        printInfo(`Skipping commercial plugin sync for "${runtime.envName}" (--skip-download).`);
+      } else if (runtime.kind === 'local' && runtime.source === 'local') {
+        printInfo(
+          `Skipping source download for "${runtime.envName}" because this env is managed from an existing local app path.`,
+        );
+      } else {
+        const downloadVersion = resolvedVersion.downloadVersion;
+        if (!downloadVersion) {
+          throw new Error(`Missing downloadVersion for "${runtime.envName}".`);
+        }
+        try {
+          if (runtime.kind === 'docker') {
+            await runCommand(
+              'source:download',
+              AppUpgrade.buildDockerDownloadArgv(runtime, downloadVersion, {
+                verbose: parsed.verbose,
+              }),
+            );
+          } else if (isDownloadableLocalRuntime(runtime)) {
+            await runCommand(
+              'source:download',
+              AppUpgrade.buildLocalDownloadArgv(runtime, downloadVersion, {
+                verbose: parsed.verbose,
+              }),
+            );
+          } else {
+            throw new Error(
+              `Skipping source download for "${runtime.envName}" because this env is managed from an existing local app path.`,
+            );
+          }
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (runtime.kind === 'docker') {
+            throw new Error(formatDockerDownloadFailure(runtime.envName, message));
+          }
+          if (isDownloadableLocalRuntime(runtime)) {
+            throw new Error(formatLocalDownloadFailure(runtime.envName, runtime.source, message));
+          }
+          throw new Error(message);
+        }
+      }
+
+      if (!skipDownload) {
+        await runWithSuppressedTargetEnvLog(async () => {
+          await runCommand(
+            'license:plugins:sync',
+            buildLicenseSyncArgv(runtime.envName, parsed, {
+              version: resolvedVersion.persistDownloadVersion,
+            }),
+          );
+        });
+      }
+
+      await runWithSuppressedTargetEnvLog(async () => {
+        const startArgv = buildManagedActionArgv(runtime.envName, parsed, { quickstart: true });
+        startArgv.push('--no-sync-licensed-plugins');
+        await runWithSuppressedStartSuccessLog(async () => {
+          await runCommand('app:start', startArgv);
+        });
+      });
 
       if (resolvedVersion.persistDownloadVersion) {
         await AppUpgrade.persistDownloadVersion(runtime, resolvedVersion.persistDownloadVersion);
       }
 
-      succeedTask(
-        `NocoBase has been upgraded for "${runtime.envName}"${displayUrl ? ` at ${displayUrl}` : ''}.`,
+      try {
+        await runWithSuppressedTargetEnvLog(async () => {
+          await runCommand('env:update', buildEnvUpdateArgv(runtime.envName, parsed));
+        });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        printWarning(formatEnvUpdateWarning(runtime.envName, message));
+      }
+
+      const displayUrl = formatDisplayUrl(
+        runtime.env.baseUrl,
+        runtime.env.appPort === undefined || runtime.env.appPort === null ? undefined : String(runtime.env.appPort),
       );
+      succeedTask(`NocoBase has been upgraded for "${runtime.envName}"${displayUrl ? ` at ${displayUrl}` : ''}.`);
     } catch (error: unknown) {
       this.error(error instanceof Error ? error.message : String(error));
     }

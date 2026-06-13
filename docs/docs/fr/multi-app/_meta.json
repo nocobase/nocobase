@@ -17,6 +17,21 @@
         "type": "custom-link",
         "label": "Mode multi-environnement",
         "link": "/multi-app/multi-app/remote"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bloc Applications et sélecteur",
+        "link": "/multi-app/multi-app/app-block-and-switcher"
+      },
+      {
+        "type": "custom-link",
+        "label": "SSO des applications",
+        "link": "/multi-app/multi-app/app-sso"
+      },
+      {
+        "type": "custom-link",
+        "label": "Appeler les API des sous-applications",
+        "link": "/multi-app/multi-app/sub-app-api"
       }
     ]
   },

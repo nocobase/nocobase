@@ -1,17 +1,17 @@
 ---
 title: "nb env"
-description: "nb env command reference: manage NocoBase CLI envs, including add, inspect current env, check status, switch, authenticate, and remove."
+description: "nb env command reference: manage NocoBase CLI envs, including adding, viewing the current env, checking status, switching, updating, authenticating, and removing."
 keywords: "nb env,NocoBase CLI,environment management,env,current env,authentication,OpenAPI"
 ---
 
 # nb env
 
-Manage saved NocoBase CLI envs. An env stores API URL, authentication info, local app paths, database config, and runtime command cache.
+Manage saved NocoBase CLI envs. An env stores connection details and local runtime information, such as the API address, authentication info, local app path, and database configuration.
 
-In the current model, the CLI separates two concepts:
+Starting from this version, the CLI separates two concepts:
 
-- `current env`: the env currently used by the active shell or agent runtime, isolated by `NB_SESSION_ID` when available
-- `last env`: the globally last-used env, used as a fallback when session mode is not enabled
+- `current env`: the env currently used by the active shell or agent runtime, isolated by `NB_SESSION_ID` when possible
+- `last env`: the last env used globally, used as a fallback when session mode is not enabled
 
 ## Usage
 
@@ -23,15 +23,15 @@ nb env <command>
 
 | Command | Description |
 | --- | --- |
-| [`nb env add`](./add.md) | Save a NocoBase API endpoint and switch to that env |
-| [`nb env current`](./current.md) | Show the currently effective env |
-| [`nb env update`](./update.md) | Refresh OpenAPI Schema and runtime command cache from the app |
+| [`nb env add`](./add.md) | Save a NocoBase API endpoint and switch to this env |
+| [`nb env current`](./current.md) | View the env that is currently in effect |
+| [`nb env update`](./update.md) | Update a saved env configuration and automatically handle follow-up sync as needed |
 | [`nb env list`](./list.md) | List configured envs |
-| [`nb env status`](./status.md) | Show status for the current env, one env, or all envs |
-| [`nb env info`](./info.md) | Show details for a single env |
-| [`nb env remove`](./remove.md) | Remove env configuration |
-| [`nb env auth`](./auth.md) | Run OAuth login for a saved env |
-| [`nb env use`](./use.md) | Switch current env |
+| [`nb env status`](./status.md) | View the status of the current env, a specified env, or all envs |
+| [`nb env info`](./info.md) | View detailed information for a single env |
+| [`nb env remove`](./remove.md) | Remove the env configuration after stopping the managed runtime |
+| [`nb env auth`](./auth.md) | Perform OAuth login for a saved env |
+| [`nb env use`](./use.md) | Switch the current env |
 
 ## Examples
 
@@ -46,17 +46,18 @@ nb env use app1
 nb env auth app1
 ```
 
-## Session mode
+## session mode
 
-Session mode is the default recommendation. It keeps `current env` isolated across different terminals, shells, and agent runtimes, so parallel work does not affect each other.
+Session mode is recommended by default. It lets the `current env` in different terminals, shells, or agent runtimes stay isolated from one another instead of interfering in parallel.
 
-When session mode is not enabled, `nb env use` updates the global `last env`, and other sessions without isolation may also be affected.
+If session mode is not enabled, `nb env use` updates the global `last env`, and other sessions without session isolation are affected as well.
 
-See [`nb session setup`](../session/setup.md) to enable it.
+See [`nb session setup`](../session/setup.md) for how to enable it.
 
-## Related Commands
+## Related commands
 
 - [`nb init`](../init.md)
 - [`nb api`](../api/index.md)
 - [`nb app`](../app/index.md)
+- [`nb proxy`](../proxy/index.md)
 - [`nb session`](../session/index.md)

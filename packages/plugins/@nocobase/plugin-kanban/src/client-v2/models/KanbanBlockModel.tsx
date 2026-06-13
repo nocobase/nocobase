@@ -842,7 +842,15 @@ export class KanbanBlockModel extends CollectionBlockModel<{
 
   async syncPopupAction(
     action: any,
-    options: { mode: string; size: string; popupTemplateUid?: string; uid?: string; pageModelClass?: string },
+    options: {
+      mode: string;
+      size: string;
+      popupTemplateUid?: string;
+      uid?: string;
+      pageModelClass?: string;
+      dataSourceKey?: string;
+      collectionName?: string;
+    },
   ) {
     if (!action) {
       return;
@@ -864,13 +872,17 @@ export class KanbanBlockModel extends CollectionBlockModel<{
 
     const resolvedUid = sanitizedUid || (nextPopupTemplateUid ? currentUid || selfUid : selfUid);
     const nextPageModelClass = options.pageModelClass || undefined;
+    const nextDataSourceKey = options.dataSourceKey || undefined;
+    const nextCollectionName = options.collectionName || undefined;
 
     if (
       currentParams.mode === nextMode &&
       currentParams.size === nextSize &&
       currentParams.popupTemplateUid === nextPopupTemplateUid &&
       normalizeKanbanPopupTargetUid(currentParams.uid) === resolvedUid &&
-      currentParams.pageModelClass === nextPageModelClass
+      currentParams.pageModelClass === nextPageModelClass &&
+      currentParams.dataSourceKey === nextDataSourceKey &&
+      currentParams.collectionName === nextCollectionName
     ) {
       return;
     }
@@ -882,6 +894,8 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       popupTemplateUid: nextPopupTemplateUid,
       uid: resolvedUid,
       pageModelClass: nextPageModelClass,
+      ...(nextDataSourceKey ? { dataSourceKey: nextDataSourceKey } : {}),
+      ...(nextCollectionName ? { collectionName: nextCollectionName } : {}),
     };
 
     action.setStepParams('popupSettings', 'openView', nextParams);
@@ -898,6 +912,8 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       popupTemplateUid: this.getCardPopupTemplateUid(),
       uid: this.getCardPopupTargetUid(),
       pageModelClass: this.getCardPopupPageModelClass(),
+      dataSourceKey: this.collection?.dataSourceKey,
+      collectionName: this.collection?.name,
     });
   }
 
@@ -944,6 +960,8 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       popupTemplateUid: this.getPopupTemplateUid(),
       uid: this.getPopupTargetUid(),
       pageModelClass: this.getPopupPageModelClass(),
+      dataSourceKey: this.collection?.dataSourceKey,
+      collectionName: this.collection?.name,
     });
   }
 
@@ -1008,6 +1026,8 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       if (typeof this.context?.openView === 'function') {
         await this.context.openView(action.uid, {
           formData: this.buildQuickCreateFormData(column),
+          ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
+          ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
           navigation: false,
           target: this.context.layoutContentElement,
         });
@@ -1018,6 +1038,8 @@ export class KanbanBlockModel extends CollectionBlockModel<{
         'click',
         {
           formData: this.buildQuickCreateFormData(column),
+          ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
+          ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
           navigation: false,
           target: this.context?.layoutContentElement,
         },
@@ -1056,6 +1078,8 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       if (typeof this.context?.openView === 'function' && action.uid) {
         await this.context.openView(action.uid, {
           mode: this.getCardOpenMode(),
+          ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
+          ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
           filterByTk,
           navigation: false,
           target: this.context.layoutContentElement,
@@ -1067,6 +1091,8 @@ export class KanbanBlockModel extends CollectionBlockModel<{
         'click',
         {
           mode: this.getCardOpenMode(),
+          ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
+          ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
           filterByTk,
           navigation: false,
           target: this.context?.layoutContentElement,

@@ -22,7 +22,7 @@ function formatUnsupportedRuntimeMessage(kind: 'docker' | 'http' | 'ssh', envNam
     return [
       `Can't run dev mode for "${envName}".`,
       'This env is managed by Docker, but `nb source dev` requires a local npm or Git source directory.',
-      `Use \`nb app logs --env ${envName}\` to inspect the Docker app, or create a source-based env with \`nb init --env ${envName} --source git\`.`,
+      `Use \`nb app logs --env ${envName}\` to inspect the Docker app, or create a source-based env with \`nb init --ui --env ${envName} --source git\`.`,
     ].join('\n');
   }
 
@@ -30,14 +30,14 @@ function formatUnsupportedRuntimeMessage(kind: 'docker' | 'http' | 'ssh', envNam
     return [
       `Can't run dev mode for "${envName}" yet.`,
       'SSH env support is reserved but not implemented yet.',
-      `Create a source-based env with \`nb init --env ${envName} --source git\` if you want local development mode right now.`,
+      `Create a source-based env with \`nb init --ui --env ${envName} --source git\` if you want local development mode right now.`,
     ].join('\n');
   }
 
   return [
     `Can't run dev mode for "${envName}".`,
     'This env only has an API connection, but `nb source dev` requires a local npm or Git source directory.',
-    `Create a source-based env with \`nb init --env ${envName} --source git\` if you want local development mode.`,
+    `Create a source-based env with \`nb init --ui --env ${envName} --source git\` if you want local development mode.`,
   ].join('\n');
 }
 
@@ -72,8 +72,7 @@ async function isAppAlreadyRunning(appUrl?: string): Promise<boolean> {
 
 export default class SourceDev extends Command {
   static override hidden = false;
-  static override description =
-    'Run NocoBase in local development mode for an npm or Git source env.';
+  static override description = 'Run NocoBase in local development mode for an npm or Git source env.';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -149,8 +148,9 @@ export default class SourceDev extends Command {
 
     announceTargetEnv(runtime.envName);
 
-    const devPort = flags.port
-      || (runtime.env.appPort !== undefined && runtime.env.appPort !== null
+    const devPort =
+      flags.port ||
+      (runtime.env.appPort !== undefined && runtime.env.appPort !== null
         ? String(runtime.env.appPort).trim()
         : undefined);
     const appUrl = appUrlForPort(devPort);
@@ -182,9 +182,7 @@ export default class SourceDev extends Command {
       npmArgs.push('--inspect', flags.inspect);
     }
 
-    printInfo(
-      `Starting NocoBase dev mode for "${runtime.envName}" from ${runtime.projectRoot}. Press Ctrl+C to stop.`,
-    );
+    printInfo(`Starting NocoBase dev mode for "${runtime.envName}" from ${runtime.projectRoot}. Press Ctrl+C to stop.`);
 
     try {
       await ensureLocalPostinstall(runtime, {

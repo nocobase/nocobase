@@ -1,22 +1,20 @@
 ---
 title: "CRM 2.0 Cách cài đặt"
-description: "Triển khai cài đặt CRM 2.0: khôi phục bằng Backup Manager (bản Pro/Enterprise) hoặc import file SQL (bản Community), cần PostgreSQL 16, DB_UNDERSCORED không được là true."
-keywords: "Cài đặt CRM,Khôi phục backup,Backup Manager,Import SQL,PostgreSQL,NocoBase"
+description: "Triển khai cài đặt CRM 2.0: khôi phục một cú nhấn bằng plugin Backup Manager nay đã mã nguồn mở, cần PostgreSQL 16, DB_UNDERSCORED không được là true."
+keywords: "Cài đặt CRM,Khôi phục backup,Backup Manager,PostgreSQL,NocoBase"
 ---
 
 # Cách cài đặt
 
 > Phiên bản hiện tại được triển khai dưới hình thức **khôi phục từ backup**. Trong các phiên bản sau, có thể chuyển sang hình thức **migration tăng dần** để dễ dàng tích hợp giải pháp vào hệ thống hiện có của bạn.
 
-Để bạn có thể nhanh chóng và mượt mà triển khai giải pháp CRM 2.0 vào môi trường NocoBase của riêng mình, chúng tôi cung cấp hai cách khôi phục. Vui lòng chọn cách phù hợp nhất dựa trên phiên bản người dùng và nền tảng kỹ thuật của bạn.
+> **Plugin Backup Manager nay đã mã nguồn mở**: plugin "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" cần thiết để khôi phục giải pháp nay đã mã nguồn mở và khả dụng cho mọi phiên bản (bao gồm cả Community). Chúng tôi khuyến nghị khôi phục trực tiếp qua plugin này.
 
 Trước khi bắt đầu, hãy đảm bảo rằng:
 
 - Bạn đã có một môi trường NocoBase hoạt động cơ bản. Về việc cài đặt hệ thống chính, vui lòng tham khảo [tài liệu cài đặt chính thức](https://docs-cn.nocobase.com/welcome/getting-started/installation) chi tiết hơn.
 - Phiên bản NocoBase **v2.1.0-beta.2 trở lên**
-- Bạn đã tải xuống các file tương ứng của hệ thống CRM:
-  - **File backup**: [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata) - dùng cho cách 1
-  - **File SQL**: [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip) - dùng cho cách 2
+- Bạn đã tải xuống file backup của hệ thống CRM: [nocobase_crm_v2_backup_260523.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260523.nbdata)
 
 **Lưu ý quan trọng**:
 - Giải pháp này được tạo dựa trên cơ sở dữ liệu **PostgreSQL 16**, hãy đảm bảo môi trường của bạn dùng PostgreSQL 16.
@@ -24,9 +22,9 @@ Trước khi bắt đầu, hãy đảm bảo rằng:
 
 ---
 
-## Cách 1: Dùng Backup Manager để khôi phục (khuyến nghị cho người dùng Pro/Enterprise)
+## Khôi phục bằng Backup Manager
 
-Cách này dùng Plugin "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" tích hợp sẵn của NocoBase (bản Pro/Enterprise) để khôi phục một cú nhấn, thao tác đơn giản nhất. Tuy nhiên có yêu cầu nhất định về môi trường và phiên bản người dùng.
+Cách này dùng Plugin "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" tích hợp sẵn của NocoBase để khôi phục một cú nhấn, thao tác đơn giản nhất. Plugin này nay đã mã nguồn mở và khả dụng cho mọi phiên bản (bao gồm cả Community).
 
 ### Đặc điểm chính
 
@@ -34,9 +32,8 @@ Cách này dùng Plugin "[Backup Manager](https://docs-cn.nocobase.com/handbook/
   1. **Thao tác tiện lợi**: Hoàn thành ngay trên giao diện UI, có thể khôi phục đầy đủ tất cả cấu hình bao gồm cả Plugin.
   2. **Khôi phục đầy đủ**: **Có thể khôi phục tất cả file hệ thống**, bao gồm file template in, file đã upload trong trường file của bảng, đảm bảo tính năng đầy đủ.
 * **Hạn chế**:
-  1. **Giới hạn bản Pro/Enterprise**: "Backup Manager" là Plugin cấp doanh nghiệp, chỉ người dùng Pro/Enterprise mới dùng được.
-  2. **Yêu cầu môi trường khắt khe**: Yêu cầu môi trường cơ sở dữ liệu của bạn (phiên bản, cài đặt phân biệt chữ hoa/thường, v.v.) phải tương thích cao với môi trường khi tạo backup.
-  3. **Phụ thuộc Plugin**: Nếu giải pháp chứa Plugin thương mại không có trong môi trường local của bạn, khôi phục sẽ thất bại.
+  1. **Yêu cầu môi trường khắt khe**: Yêu cầu môi trường cơ sở dữ liệu của bạn (phiên bản, cài đặt phân biệt chữ hoa/thường, v.v.) phải tương thích cao với môi trường khi tạo backup.
+  2. **Phụ thuộc Plugin**: Nếu giải pháp chứa Plugin thương mại không có trong môi trường local của bạn, khôi phục sẽ thất bại.
 
 ### Các bước thao tác
 
@@ -75,69 +72,6 @@ Sau đó dùng image này để khởi động dịch vụ NocoBase.
 
 ---
 
-## Cách 2: Import trực tiếp file SQL (chung, phù hợp hơn với bản Community)
-
-Cách này khôi phục dữ liệu bằng cách thao tác trực tiếp với cơ sở dữ liệu, bỏ qua Plugin "Backup Manager", do đó không bị giới hạn của Plugin Pro/Enterprise.
-
-### Đặc điểm chính
-
-* **Ưu điểm**:
-  1. **Không giới hạn phiên bản**: Áp dụng cho mọi người dùng NocoBase, bao gồm cả bản Community.
-  2. **Tương thích cao**: Không phụ thuộc vào công cụ `dump` trong app, chỉ cần kết nối được cơ sở dữ liệu là dùng được.
-  3. **Khả năng chịu lỗi cao**: Nếu giải pháp chứa Plugin thương mại bạn không có, các tính năng liên quan sẽ không được kích hoạt, nhưng không ảnh hưởng đến hoạt động bình thường của các tính năng khác, ứng dụng có thể khởi động thành công.
-* **Hạn chế**:
-  1. **Cần khả năng thao tác cơ sở dữ liệu**: Cần người dùng có khả năng thao tác cơ sở dữ liệu cơ bản, ví dụ như cách thực thi một file `.sql`.
-  2. **Mất file hệ thống**: **Cách này sẽ mất tất cả file hệ thống**, bao gồm file template in, file đã upload trong trường file của bảng.
-
-### Các bước thao tác
-
-**Bước 1: Chuẩn bị một cơ sở dữ liệu sạch**
-
-Chuẩn bị một cơ sở dữ liệu mới hoàn toàn, trống cho dữ liệu bạn sắp import.
-
-**Bước 2: Import file `.sql` vào cơ sở dữ liệu**
-
-Lấy file cơ sở dữ liệu đã tải xuống (thường ở định dạng `.sql`), import nội dung của nó vào cơ sở dữ liệu đã chuẩn bị ở bước trước. Có nhiều cách thực hiện, tùy thuộc vào môi trường:
-
-* **Phương án A: Qua command line server (ví dụ với Docker)**
-  Nếu bạn cài NocoBase và cơ sở dữ liệu bằng Docker, có thể upload file `.sql` lên server, sau đó dùng lệnh `docker exec` để thực thi import. Giả sử container PostgreSQL của bạn tên là `my-nocobase-db`, file tên là `nocobase_crm_v2_sql_260327.sql`:
-
-  ```bash
-  # Copy file sql vào container
-  docker cp nocobase_crm_v2_sql_260327.sql my-nocobase-db:/tmp/
-  # Vào container thực thi lệnh import
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260327.sql
-  ```
-* **Phương án B: Qua client cơ sở dữ liệu từ xa (Navicat, v.v.)**
-  Nếu cơ sở dữ liệu của bạn mở port, có thể dùng bất kỳ client cơ sở dữ liệu đồ họa nào (như Navicat, DBeaver, pgAdmin, v.v.) kết nối đến cơ sở dữ liệu, sau đó:
-  1. Chuột phải vào cơ sở dữ liệu đích
-  2. Chọn "Run SQL File" hoặc "Execute SQL Script"
-  3. Chọn file `.sql` đã tải xuống và thực thi
-
-**Bước 3: Kết nối cơ sở dữ liệu và khởi động ứng dụng**
-
-Cấu hình tham số khởi động NocoBase (như biến môi trường `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, v.v.) trỏ đến cơ sở dữ liệu vừa import dữ liệu. Sau đó khởi động dịch vụ NocoBase bình thường.
-
-### Lưu ý
-
-* **Quyền cơ sở dữ liệu**: Cách này yêu cầu bạn có tài khoản và mật khẩu có thể thao tác trực tiếp với cơ sở dữ liệu.
-* **Trạng thái Plugin**: Sau khi import thành công, dữ liệu Plugin thương mại trong hệ thống tuy có tồn tại, nhưng nếu môi trường local của bạn chưa cài và bật Plugin tương ứng, các tính năng liên quan sẽ không hiển thị và không dùng được, nhưng việc này sẽ không làm crash ứng dụng.
-
----
-
-## Tổng kết và so sánh
-
-| Đặc điểm        | Cách 1: Backup Manager                                         | Cách 2: Import trực tiếp SQL                                                                       |
-| :-------------- | :------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
-| **Người dùng phù hợp** | Người dùng **Pro/Enterprise**                          | **Tất cả người dùng** (bao gồm cả bản Community)                                                  |
-| **Độ dễ thao tác** | ⭐⭐⭐⭐⭐ (Rất đơn giản, thao tác UI)                      | ⭐⭐⭐ (Cần kiến thức cơ sở dữ liệu cơ bản)                                                       |
-| **Yêu cầu môi trường** | **Khắt khe**, cơ sở dữ liệu, phiên bản hệ thống cần tương thích cao | **Bình thường**, chỉ cần cơ sở dữ liệu tương thích                                                |
-| **Phụ thuộc Plugin** | **Phụ thuộc mạnh**, khôi phục sẽ kiểm tra Plugin, thiếu bất kỳ Plugin nào sẽ dẫn đến **khôi phục thất bại**. | **Tính năng phụ thuộc mạnh vào Plugin**. Dữ liệu có thể import độc lập, hệ thống có tính năng cơ bản. Nhưng nếu thiếu Plugin tương ứng, các tính năng liên quan sẽ **hoàn toàn không dùng được**. |
-| **File hệ thống** | **Giữ đầy đủ** (template in, file upload, v.v.)               | **Sẽ mất** (template in, file upload, v.v.)                                                      |
-| **Tình huống khuyến nghị** | Người dùng doanh nghiệp, có môi trường được kiểm soát, đồng nhất, cần tính năng đầy đủ | Thiếu một số Plugin, theo đuổi tính tương thích cao, linh hoạt, không phải bản Pro/Enterprise, có thể chấp nhận mất tính năng file |
-
----
-
 ## Câu hỏi thường gặp
 
 ### Bản Pro có dùng được không? Có báo lỗi không?
@@ -151,10 +85,6 @@ Khuyến nghị dùng image phiên bản `beta-full` mới nhất (như `nocobas
 ### Logo không hiển thị sau khi khôi phục?
 
 Logo trên Demo của trang chính thức được cấu hình giới hạn domain, domain local không thể load. Vào **Cài đặt hệ thống** upload lại Logo của bạn là được.
-
-### Lỗi khi upload file (lỗi OSS Key)?
-
-Sau khi cài đặt bằng cách SQL, upload file có thể báo lỗi liên quan đến OSS. Cách giải quyết: vào **Quản lý Plugin → File Manager**, đặt **Local Storage (lưu trữ cục bộ)** làm storage mặc định, lưu lại là có thể upload bình thường.
 
 ### Nâng cấp tăng dần thì sao?
 

@@ -85,7 +85,7 @@ async load() {
 ```tsx
 // コンポーネント内：ページナビゲーション
 const ctx = useFlowContext();
-ctx.router.navigate('/hello'); // -> /v2/hello
+ctx.router.navigate('/hello'); // -> /v/hello
 ```
 
 ## コンテキストが提供する共通機能

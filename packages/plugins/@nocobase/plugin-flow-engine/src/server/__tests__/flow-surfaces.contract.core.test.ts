@@ -562,6 +562,7 @@ describe('flowSurfaces API contract core', () => {
             opId: 'page',
             type: 'createPage',
             values: {
+              icon: 'FileOutlined',
               pageSchemaUid: rollbackPageSchemaUid,
               tabSchemaUid: rollbackTabSchemaUid,
               title: 'Default atomic page',
@@ -583,6 +584,7 @@ describe('flowSurfaces API contract core', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
+              fields: ['nickname', 'status', 'email'],
             },
           },
           {
@@ -618,6 +620,7 @@ describe('flowSurfaces API contract core', () => {
             opId: 'page',
             type: 'createPage',
             values: {
+              icon: 'FileOutlined',
               pageSchemaUid: successPageSchemaUid,
               tabSchemaUid: successTabSchemaUid,
               title: 'Mutate shape page',
@@ -640,6 +643,7 @@ describe('flowSurfaces API contract core', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
+              fields: ['nickname', 'status', 'email'],
             },
           },
         ],
@@ -703,6 +707,7 @@ describe('flowSurfaces API contract core', () => {
             opId: 'page',
             type: 'createPage',
             values: {
+              icon: 'FileOutlined',
               pageSchemaUid: 'legacy_ref_contract_page_schema_uid',
               tabSchemaUid: 'legacy_ref_contract_tab_schema_uid',
               title: 'Legacy $ref contract page',
@@ -722,6 +727,7 @@ describe('flowSurfaces API contract core', () => {
                 dataSourceKey: 'main',
                 collectionName: 'employees',
               },
+              fields: ['nickname', 'status', 'email'],
             },
           },
         ],
@@ -966,6 +972,8 @@ describe('flowSurfaces API contract core', () => {
     expect(group.type).toBe('group');
     expect(item.type).toBe('flowPage');
     expect(item.parentMenuRouteId).toBe(group.routeId);
+    expect(item.menuSchemaUid).toEqual(expect.any(String));
+    expect(item.menuSchemaUid).not.toBe(item.pageSchemaUid);
 
     const initialized = await createPage(rootAgent, {
       menuRouteId: item.routeId,
@@ -975,6 +983,7 @@ describe('flowSurfaces API contract core', () => {
 
     expect(initialized.routeId).toBe(item.routeId);
     expect(initialized.pageSchemaUid).toBe(item.pageSchemaUid);
+    expect(initialized.menuSchemaUid).toBe(item.menuSchemaUid);
     expect(initialized.pageUid).toBe(item.pageUid);
 
     const pageRoute = await routesRepo.findOne({
@@ -982,6 +991,7 @@ describe('flowSurfaces API contract core', () => {
       appends: ['children'],
     });
     expect(pageRoute?.get('parentId')).toBe(group.routeId);
+    expect(pageRoute?.get('menuSchemaUid')).toBe(item.menuSchemaUid);
     expect(pageRoute?.get('enableTabs')).toBe(true);
 
     const tabRoute = _.castArray(pageRoute?.get('children') || [])[0];
@@ -994,6 +1004,241 @@ describe('flowSurfaces API contract core', () => {
     ).toMatchObject({
       use: 'BlockGridModel',
     });
+  });
+
+  it('should persist menuSchemaUid when createPage creates the menu route directly', async () => {
+    const requestedMenuSchemaUid = `external-menu-schema-${uid()}`;
+    const page = await createPage(rootAgent, {
+      title: `Direct menuSchemaUid page ${uid()}`,
+      tabTitle: 'Overview',
+      menuSchemaUid: requestedMenuSchemaUid,
+    });
+
+    expect(page.menuSchemaUid).toEqual(expect.any(String));
+    expect(page.menuSchemaUid).not.toBe(page.pageSchemaUid);
+    expect(page.menuSchemaUid).not.toBe(requestedMenuSchemaUid);
+
+    const pageRoute = await routesRepo.findOne({
+      filterByTk: String(page.routeId),
+    });
+    expect(pageRoute?.get('menuSchemaUid')).toBe(page.menuSchemaUid);
+  });
+
+  it('should not backfill menuSchemaUid while initializing an existing route that lacks it', async () => {
+    const item = await createMenu(rootAgent, {
+      title: `Legacy bindable route ${uid()}`,
+      type: 'item',
+    });
+    await routesRepo.update({
+      filterByTk: String(item.routeId),
+      values: {
+        menuSchemaUid: null,
+      },
+    });
+
+    const initialized = await createPage(rootAgent, {
+      menuRouteId: item.routeId,
+      tabTitle: 'Overview',
+      menuSchemaUid: `ignored-menu-schema-${uid()}`,
+    });
+
+    expect(initialized).not.toHaveProperty('menuSchemaUid');
+
+    const pageRoute = await routesRepo.findOne({
+      filterByTk: String(item.routeId),
+    });
+    expect(pageRoute?.get('menuSchemaUid')).toBeNull();
+  });
+
+  it('should reuse a unique same-parent menu group on repeated createMenu calls', async () => {
+    const parent = await createMenu(rootAgent, {
+      title: `Workspace ${uid()}`,
+      type: 'group',
+    });
+    const title = `Reusable group ${uid()}`;
+    const first = await createMenu(rootAgent, {
+      title,
+      type: 'group',
+      parentMenuRouteId: parent.routeId,
+    });
+    const second = await createMenu(rootAgent, {
+      title,
+      type: 'group',
+      parentMenuRouteId: parent.routeId,
+    });
+    const rawReuseResponse = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title,
+        type: 'group',
+        parentMenuRouteId: parent.routeId,
+      },
+    });
+
+    expect(second.routeId).toBe(first.routeId);
+    expect(second.parentMenuRouteId).toBe(parent.routeId);
+    expect(rawReuseResponse.status, readErrorMessage(rawReuseResponse)).toBe(200);
+    expect(getData(rawReuseResponse).routeId).toBe(first.routeId);
+
+    const routes = _.castArray(
+      await routesRepo.find({
+        filter: {
+          type: 'group',
+          title,
+        },
+      }),
+    ).filter((route: any) => String(route.get('parentId')) === String(parent.routeId));
+    expect(routes).toHaveLength(1);
+  });
+
+  it('should require valid icons for newly created visible menu routes', async () => {
+    const visibleGroupRes = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title: `Missing icon group ${uid()}`,
+        type: 'group',
+      },
+    });
+    expect(visibleGroupRes.status).toBe(400);
+    expectStructuredError(readErrorItem(visibleGroupRes), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorItem(visibleGroupRes).ruleId).toBe('navigation-icon-required');
+
+    const visibleItemRes = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title: `Missing icon item ${uid()}`,
+        type: 'item',
+      },
+    });
+    expect(visibleItemRes.status).toBe(400);
+    expect(readErrorItem(visibleItemRes).ruleId).toBe('navigation-icon-required');
+
+    const pageRes = await rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        title: `Missing icon page ${uid()}`,
+        tabTitle: 'Overview',
+      },
+    });
+    expect(pageRes.status).toBe(400);
+    expect(readErrorItem(pageRes).ruleId).toBe('navigation-icon-required');
+
+    const invalidIconRes = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title: `Invalid icon group ${uid()}`,
+        type: 'group',
+        icon: 'NotARealAntDesignIcon',
+      },
+    });
+    expect(invalidIconRes.status).toBe(400);
+    expect(readErrorItem(invalidIconRes).ruleId).toBe('navigation-icon-unknown');
+
+    const bindableItem = await createMenu(rootAgent, {
+      title: `Invalid createPage icon item ${uid()}`,
+      type: 'item',
+    });
+    const invalidPageIconRes = await rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        menuRouteId: bindableItem.routeId,
+        title: `Invalid createPage icon ${uid()}`,
+        icon: 'NotARealAntDesignIcon',
+        tabTitle: 'Overview',
+      },
+    });
+    expect(invalidPageIconRes.status).toBe(400);
+    expect(readErrorItem(invalidPageIconRes).ruleId).toBe('navigation-icon-unknown');
+  });
+
+  it('should allow hidden menu routes without icons', async () => {
+    const hiddenGroup = getData(
+      await rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          title: `Hidden group ${uid()}`,
+          type: 'group',
+          hideInMenu: true,
+        },
+      }),
+    );
+    const hiddenItem = getData(
+      await rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          title: `Hidden item ${uid()}`,
+          type: 'item',
+          parentMenuRouteId: hiddenGroup.routeId,
+          hideInMenu: true,
+        },
+      }),
+    );
+
+    expect(hiddenGroup.type).toBe('group');
+    expect(hiddenItem.type).toBe('flowPage');
+    expect(hiddenItem.parentMenuRouteId).toBe(hiddenGroup.routeId);
+  });
+
+  it('should reject same-parent same-title legacy group ambiguity instead of silently creating another group', async () => {
+    const parent = await createMenu(rootAgent, {
+      title: `Ambiguous parent ${uid()}`,
+      type: 'group',
+    });
+    const title = `Legacy duplicate group ${uid()}`;
+    await routesRepo.create({
+      values: {
+        type: 'group',
+        title,
+        schemaUid: uid(),
+        parentId: parent.routeId,
+      },
+    });
+    await routesRepo.create({
+      values: {
+        type: 'group',
+        title,
+        schemaUid: uid(),
+        parentId: parent.routeId,
+      },
+    });
+
+    const response = await rootAgent.resource('flowSurfaces').createMenu({
+      values: {
+        title,
+        type: 'group',
+        parentMenuRouteId: parent.routeId,
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expectStructuredError(readErrorItem(response), {
+      status: 400,
+      type: 'bad_request',
+    });
+    expect(readErrorMessage(response)).toContain('ambiguous');
+    expect(readErrorMessage(response)).toContain('parentMenuRouteId');
+  });
+
+  it('should allow same-title groups under different parent groups', async () => {
+    const leftParent = await createMenu(rootAgent, {
+      title: `Left parent ${uid()}`,
+      type: 'group',
+    });
+    const rightParent = await createMenu(rootAgent, {
+      title: `Right parent ${uid()}`,
+      type: 'group',
+    });
+    const title = `Shared child group ${uid()}`;
+
+    const leftGroup = await createMenu(rootAgent, {
+      title,
+      type: 'group',
+      parentMenuRouteId: leftParent.routeId,
+    });
+    const rightGroup = await createMenu(rootAgent, {
+      title,
+      type: 'group',
+      parentMenuRouteId: rightParent.routeId,
+    });
+
+    expect(leftGroup.routeId).not.toBe(rightGroup.routeId);
+    expect(leftGroup.parentMenuRouteId).toBe(leftParent.routeId);
+    expect(rightGroup.parentMenuRouteId).toBe(rightParent.routeId);
   });
 
   it('should support updating menu metadata and moving an item back to top level', async () => {

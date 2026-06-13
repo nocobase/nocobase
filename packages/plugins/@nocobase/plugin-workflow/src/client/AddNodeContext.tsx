@@ -25,12 +25,14 @@ import {
 
 import WorkflowPlugin, { Instruction, useStyles, useWorkflowExecuted } from '.';
 import { useFlowContext } from './FlowContext';
+import { getInstructionAvailable } from './utils';
 import { lang, NAMESPACE } from './locale';
 import { RadioWithTooltip } from './components';
 import { uid } from '@nocobase/utils/client';
 import { Button, Dropdown, Menu, Tooltip } from 'antd';
 import { SnippetsOutlined, PlusOutlined } from '@ant-design/icons';
 import { MenuItemGroupType } from 'antd/es/menu/interface';
+import { useBranchContext } from './BranchContext';
 import { useNodeDragContext } from './NodeDragContext';
 import { useNodeClipboardContext } from './NodeClipboardContext';
 
@@ -40,24 +42,37 @@ interface AddButtonProps {
   [key: string]: any;
 }
 
+function AddButtonPlaceholder() {
+  const { styles } = useStyles();
+  return (
+    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
+      <span className="ant-btn-placeholder" />
+    </div>
+  );
+}
+
 export function AddButton(props: AddButtonProps) {
   const { upstream, branchIndex = null } = props;
-  const { workflow } = useFlowContext() ?? {};
   const { styles } = useStyles();
+  const { workflow } = useFlowContext() ?? {};
   const addNodeContext = useAddNodeContext();
   const executed = useWorkflowExecuted();
+  const branchContext = useBranchContext();
 
   const onOpen = useCallback(
-    () => addNodeContext?.onMenuOpen?.({ upstream, branchIndex }),
-    [addNodeContext, upstream, branchIndex],
+    () =>
+      addNodeContext?.onMenuOpen?.({
+        upstream,
+        branchIndex,
+        branchContext: {
+          syncOnly: branchContext?.syncOnly ?? false,
+        },
+      }),
+    [addNodeContext, upstream, branchIndex, branchContext?.syncOnly],
   );
 
-  if (!workflow || !addNodeContext) {
-    return (
-      <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
-        <span className="ant-btn-placeholder" />
-      </div>
-    );
+  if (!workflow || !addNodeContext || branchContext?.addable === false) {
+    return <AddButtonPlaceholder />;
   }
 
   return (
@@ -86,12 +101,13 @@ export function AddButton(props: AddButtonProps) {
 
 function AddNodeDropZone(props: AddButtonProps) {
   const { upstream, branchIndex = null } = props;
+  const branchContext = useBranchContext();
   const { styles } = useStyles();
   const dragContext = useNodeDragContext();
   const target = useMemo(() => ({ upstream, branchIndex }), [upstream, branchIndex]);
   const impact = dragContext?.getDropImpact?.(target);
   const status = impact?.status ?? 'disabled';
-  const disabled = status === 'disabled';
+  const disabled = branchContext?.addable === false || status === 'disabled';
   const registerDropZone = dragContext?.registerDropZone;
   const getDropKey = dragContext?.getDropKey;
   const dropKey = getDropKey?.(target);
@@ -124,12 +140,13 @@ function AddNodeDropZone(props: AddButtonProps) {
 
 function AddNodePasteZone(props: AddButtonProps) {
   const { upstream, branchIndex = null } = props;
+  const branchContext = useBranchContext();
   const { styles } = useStyles();
   const clipboard = useNodeClipboardContext();
   const target = useMemo(() => ({ upstream, branchIndex }), [upstream, branchIndex]);
   const impact = clipboard?.getPasteImpact?.(target);
   const status = impact?.status ?? 'disabled';
-  const disabled = status === 'disabled';
+  const disabled = branchContext?.addable === false || status === 'disabled';
 
   const onClick = useCallback(() => {
     if (!disabled) {
@@ -156,9 +173,13 @@ function AddNodePasteZone(props: AddButtonProps) {
 }
 
 export function AddNodeSlot(props: AddButtonProps) {
+  const branchContext = useBranchContext();
   const dragContext = useNodeDragContext();
   const clipboard = useNodeClipboardContext();
   const executed = useWorkflowExecuted();
+  if (branchContext?.addable === false) {
+    return <AddButtonPlaceholder />;
+  }
   if (dragContext?.dragging) {
     return <AddNodeDropZone {...props} />;
   }
@@ -345,21 +366,15 @@ function NodeMenu() {
           ...group,
           type: 'group',
           children: groupInstructions.map((item) => {
-            const disabled = item.isAvailable ? !item.isAvailable({ engine, workflow, ...anchor }) : false;
+            const unavailableMessage = getInstructionAvailable(item, { engine, workflow, ...anchor });
             const title = compile(item.title);
             return {
               role: 'button',
               'aria-label': item.type,
               key: item.type,
-              label: disabled ? (
-                <Tooltip title={lang('This type of node can not be used in current type of workflow or execute mode.')}>
-                  {title}
-                </Tooltip>
-              ) : (
-                title
-              ),
+              label: unavailableMessage ? <Tooltip title={unavailableMessage}>{title}</Tooltip> : title,
               icon: item.icon,
-              disabled,
+              disabled: Boolean(unavailableMessage),
             };
           }),
         };
@@ -408,8 +423,8 @@ export function AddNodeContextProvider(props) {
   const [formValueChanged, setFormValueChanged] = useState(false);
   const { workflow, nodes, refresh } = useFlowContext() ?? {};
 
-  const onMenuOpen = useCallback(({ upstream, branchIndex }) => {
-    setAnchor({ upstream, branchIndex });
+  const onMenuOpen = useCallback(({ upstream, branchIndex, branchContext }) => {
+    setAnchor({ upstream, branchIndex, branchContext });
   }, []);
   const onMenuCancel = useCallback(() => {
     setAnchor(null);
@@ -446,12 +461,24 @@ export function AddNodeContextProvider(props) {
   );
 
   const onCreate = useCallback(
-    async ({ type, upstream, branchIndex }) => {
+    async ({ type, upstream, branchIndex, branchContext }) => {
       const instruction = engine.instructions.get(type);
       if (!instruction) {
         console.error(`Instruction "${type}" not found`);
         return;
       }
+
+      const unavailableMessage = getInstructionAvailable(instruction, {
+        engine,
+        workflow,
+        upstream,
+        branchIndex,
+        branchContext,
+      });
+      if (unavailableMessage) {
+        return;
+      }
+
       const data = {
         key: uid(),
         type,

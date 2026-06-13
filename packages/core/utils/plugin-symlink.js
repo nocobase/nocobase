@@ -283,6 +283,9 @@ async function syncPluginSymlinks() {
 }
 
 exports.resolvePluginStoragePath = resolvePluginStoragePath;
+exports.getStoragePluginNames = getStoragePluginNames;
+exports.getPluginSourceRoots = getPluginSourceRoots;
+exports.resolvePluginSourcePath = resolvePluginSourcePath;
 exports.createStoragePluginSymLink = createStoragePluginSymLink;
 exports.createStoragePluginsSymlink = createStoragePluginsSymlink;
 exports.createDevPluginSymLink = createDevPluginSymLink;

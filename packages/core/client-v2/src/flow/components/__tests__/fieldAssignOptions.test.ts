@@ -9,7 +9,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildCustomFieldTargetPath } from '../../internal/utils/modelUtils';
-import { collectFieldAssignCascaderOptions } from '../fieldAssignOptions';
+import {
+  buildFieldAssignCascaderOptionsFromCollection,
+  collectFieldAssignCascaderOptions,
+} from '../fieldAssignOptions';
 
 describe('fieldAssignOptions', () => {
   it('marks subform node as non-leaf so Cascader can lazy-load target collection fields', () => {
@@ -93,5 +96,72 @@ describe('fieldAssignOptions', () => {
     expect(
       options.some((o: any) => o?.value === customTargetPath && o?.label === 'Custom age' && o?.isLeaf === true),
     ).toBe(true);
+  });
+
+  it('hides configured association fields deeper than relation / relation / field', () => {
+    const makeItem = (fieldPath: string, field: any, label: string) => ({
+      props: { label },
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') return { fieldPath };
+        return {};
+      },
+      subModels: {
+        field: {
+          context: { collectionField: field },
+        },
+      },
+    });
+
+    const companyField = {
+      name: 'company',
+      title: 'Company',
+      interface: 'm2o',
+      target: 'companies',
+      isAssociationField: () => true,
+      targetCollection: { getFields: () => [] },
+    };
+    const nameField = {
+      name: 'name',
+      title: 'Name',
+      interface: 'input',
+      isAssociationField: () => false,
+    };
+    const formBlockModel = {
+      context: { collection: null },
+      subModels: {
+        grid: {
+          subModels: {
+            items: [
+              makeItem('users.department.name', nameField, 'Department name'),
+              makeItem('users.department.company', companyField, 'Company'),
+            ],
+          },
+        },
+      },
+    };
+
+    const options = collectFieldAssignCascaderOptions({ formBlockModel, t: (s) => s });
+
+    expect(options.map((item) => item.value)).toContain('name');
+    expect(options.map((item) => item.value)).not.toContain('company');
+  });
+
+  it('hides lazy-loaded association selector options after two association levels', () => {
+    const collection = {
+      getFields: () => [
+        { name: 'name', title: 'Name', interface: 'input' },
+        {
+          name: 'company',
+          title: 'Company',
+          interface: 'm2o',
+          target: 'companies',
+          targetCollection: { getFields: () => [] },
+        },
+      ],
+    };
+
+    const options = buildFieldAssignCascaderOptionsFromCollection(collection, (s) => s, { associationDepth: 2 });
+
+    expect(options.map((item) => item.value)).toEqual(['name']);
   });
 });

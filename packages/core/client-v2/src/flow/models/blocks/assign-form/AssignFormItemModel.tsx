@@ -28,6 +28,72 @@ import { customAlphabet as Alphabet } from 'nanoid';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../../../internal/utils/enumOptionsUtils';
 import { RunJSValueEditor } from '../../../components/RunJSValueEditor';
 
+type AssignFormTempOriginField = {
+  uid?: string;
+  props?: {
+    fieldNames?: unknown;
+    titleField?: unknown;
+  };
+  getStepParams?: (flowKey: string, stepKey: string) => unknown;
+};
+
+function getAssignFormTempFieldOptions(
+  originField: AssignFormTempOriginField | undefined,
+  init: Record<string, unknown>,
+) {
+  const inheritedFieldNames = originField?.props?.fieldNames;
+  const inheritedTitleField = originField?.props?.titleField;
+  const inheritedSelectFieldNamesStep = originField?.getStepParams?.('selectSettings', 'fieldNames');
+
+  return {
+    stepParams: {
+      fieldSettings: {
+        init,
+      },
+      ...(inheritedSelectFieldNamesStep
+        ? {
+            selectSettings: {
+              fieldNames: inheritedSelectFieldNamesStep,
+            },
+          }
+        : {}),
+    },
+    props: {
+      ...(typeof inheritedFieldNames !== 'undefined' ? { fieldNames: inheritedFieldNames } : {}),
+      ...(typeof inheritedTitleField !== 'undefined' ? { titleField: inheritedTitleField } : {}),
+    },
+  };
+}
+
+function stringifyAssignFormTempFieldOption(value: unknown) {
+  try {
+    return JSON.stringify(value) ?? '';
+  } catch {
+    return String(value);
+  }
+}
+
+function getAssignFormTempFieldRefreshKey(originField: AssignFormTempOriginField | undefined) {
+  const inheritedFieldNames = originField?.props?.fieldNames;
+  const inheritedTitleField = originField?.props?.titleField;
+  const inheritedSelectFieldNamesStep = originField?.getStepParams?.('selectSettings', 'fieldNames');
+
+  return [
+    originField?.uid || '',
+    stringifyAssignFormTempFieldOption(inheritedFieldNames),
+    stringifyAssignFormTempFieldOption(inheritedTitleField),
+    stringifyAssignFormTempFieldOption(inheritedSelectFieldNamesStep),
+  ].join('|');
+}
+
+function normalizeAssignFormInputValue(value: unknown) {
+  if (!value || typeof value !== 'object' || !('target' in value)) {
+    return value;
+  }
+  const target = (value as { target?: { value?: unknown } }).target;
+  return target && 'value' in target ? target.value : value;
+}
+
 /**
  * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型。
  */
@@ -108,6 +174,8 @@ export class AssignFormItemModel extends FormItemModel {
     const init = this.fieldInit;
     const namePath = this.props?.name || (this.fieldPath ? [this.fieldPath] : undefined);
     const fieldPath = this.fieldPath;
+    const originField = this.subModels?.field as AssignFormTempOriginField | undefined;
+    const tempFieldRefreshKey = getAssignFormTempFieldRefreshKey(originField);
 
     const FieldRow: React.FC = () => {
       const [tempRoot, setTempRoot] = React.useState<any>(null);
@@ -121,13 +189,14 @@ export class AssignFormItemModel extends FormItemModel {
           return;
         }
         const fieldModel = binding.modelName;
+        const tempFieldOptions = getAssignFormTempFieldOptions(originField, init);
         const created = ctx?.engine?.createModel?.({
           use: 'VariableFieldFormModel',
           subModels: {
             fields: [
               {
                 use: fieldModel,
-                stepParams: { fieldSettings: { init } },
+                ...tempFieldOptions,
               },
             ],
           },
@@ -169,7 +238,6 @@ export class AssignFormItemModel extends FormItemModel {
         fm?.setProps?.({
           disabled: false,
           readPretty: false,
-          pattern: 'editable',
           updateAssociation: false,
           multiple: multi,
         });
@@ -199,9 +267,12 @@ export class AssignFormItemModel extends FormItemModel {
           if (fm) {
             fm.setProps?.({
               value: inputProps?.value,
-              onChange: (...args: any[]) => {
-                const next = args && args.length ? args[0] : undefined;
-                inputProps?.onChange?.(next);
+              onChange: (...args: unknown[]) => {
+                const nextArg = args && args.length ? args[0] : undefined;
+                const nextValue = normalizeAssignFormInputValue(nextArg);
+                fm.setProps?.({ value: nextValue });
+                this.assignValue = nextValue;
+                inputProps?.onChange?.(nextValue);
               },
             });
           }
@@ -302,7 +373,7 @@ export class AssignFormItemModel extends FormItemModel {
       );
     };
 
-    return <FieldRow />;
+    return <FieldRow key={tempFieldRefreshKey} />;
   }
 }
 

@@ -38,11 +38,11 @@ Wenn Client-Code geändert wurde, aber kein Hot-Reload erfolgt, versuchen Sie zu
 
 ### Die registrierte Seitenroute ist nicht erreichbar
 
-Die Routen von NocoBase v2 erhalten standardmäßig das Präfix `/v2`. Wenn Sie z. B. `path: '/hello'` registriert haben, ist die tatsächliche Adresse `/v2/hello`:
+Die Routen von NocoBase v2 erhalten standardmäßig das Präfix `/v`. Wenn Sie z. B. `path: '/hello'` registriert haben, ist die tatsächliche Adresse `/v/hello`:
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // Tatsächlicher Aufruf -> /v2/hello
+  path: '/hello', // Tatsächlicher Aufruf -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -285,7 +285,7 @@ Das Build-System von NocoBase pflegt eine [external-Liste](../../dependency-mana
 ## Verwandte Links
 
 - [Plugin](../plugin) — Plugin-Einstiegspunkt und Lebenszyklus
-- [Router](../router) — Routen-Registrierung und `/v2`-Präfix
+- [Router](../router) — Routen-Registrierung und `/v`-Präfix
 - [FlowEngine-Übersicht](../flow-engine/index.md) — Grundlegende Verwendung von FlowModel
 - [FlowEngine → Block-Erweiterung](../flow-engine/block) — BlockModel, TableBlockModel, filterCollection
 - [FlowEngine → Feld-Erweiterung](../flow-engine/field) — FieldModel, bindModelToInterface

@@ -8,7 +8,6 @@
 
 **Файлы резервной копии**:
 - [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata)
-- [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip)
 
 **Содержимое обновления**:
 - Исправлена ошибка некорректного отображения сводки Summary в таблице
@@ -24,7 +23,6 @@
 
 **Файлы резервной копии**:
 - [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata)
-- [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip)
 
 **Содержимое обновления**:
 
@@ -52,7 +50,6 @@
 
 **Файлы резервной копии**:
 - nocobase_crm_v2_backup_260223.nbdata
-- nocobase_crm_v2_sql_260223.zip
 
 **Содержимое обновления**:
 - Первый выпуск CRM 2.0

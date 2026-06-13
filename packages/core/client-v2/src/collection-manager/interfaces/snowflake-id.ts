@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { defaultProps, operators, unique, primaryKey } from './properties';
+import { defaultProps, unique, primaryKey } from './properties';
 
 export class SnowflakeIdFieldInterface extends CollectionFieldInterface {
   name = 'snowflakeId';
@@ -52,7 +52,7 @@ export class SnowflakeIdFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.number,
+    operators: 'number',
   };
 
   description =

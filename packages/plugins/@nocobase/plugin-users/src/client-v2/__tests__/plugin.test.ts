@@ -21,6 +21,21 @@ describe('plugin-users client-v2', () => {
     vi.restoreAllMocks();
   });
 
+  it('should not register user form models as global model loaders', async () => {
+    const app = createMockClient({ publicPath: '/v2/' });
+    const registerModelLoaders = vi.spyOn(app.flowEngine, 'registerModelLoaders');
+
+    await app.pm.add(PluginUsersClientV2);
+    await app.load();
+
+    const registeredLoaders = Object.assign(
+      {},
+      ...registerModelLoaders.mock.calls.map(([loaders]) => loaders as Record<string, unknown>),
+    );
+    expect(registeredLoaders).not.toHaveProperty('UserCreateFormModel');
+    expect(registeredLoaders).not.toHaveProperty('UserEditFormModel');
+  });
+
   it('should use same-origin signin redirect returned by server when whitelisted', async () => {
     const replace = vi.fn();
     Object.defineProperty(globalThis.window, 'location', {
@@ -39,7 +54,7 @@ describe('plugin-users client-v2', () => {
     await app.pm.add(PluginUsersClientV2);
     await app.load();
 
-    const SignOutItemModel = app.flowEngine.getModelClass('SignOutItemModel') as any;
+    const SignOutItemModel = await app.flowEngine.getModelClassAsync('SignOutItemModel');
     const model = app.flowEngine.createModel({ use: 'SignOutItemModel', uid: 'sign-out' }) as any;
     expect(SignOutItemModel).toBeTruthy();
 
@@ -76,6 +91,7 @@ describe('plugin-users client-v2', () => {
     await app.pm.add(PluginUsersClientV2);
     await app.load();
 
+    await app.flowEngine.getModelClassAsync('SignOutItemModel');
     const model = app.flowEngine.createModel({ use: 'SignOutItemModel', uid: 'sign-out' }) as any;
 
     app.apiClient.auth.signOut = vi.fn().mockResolvedValue({
@@ -111,6 +127,7 @@ describe('plugin-users client-v2', () => {
     await app.pm.add(PluginUsersClientV2);
     await app.load();
 
+    await app.flowEngine.getModelClassAsync('SignOutItemModel');
     const model = app.flowEngine.createModel({ use: 'SignOutItemModel', uid: 'sign-out' }) as any;
 
     app.apiClient.auth.signOut = vi.fn().mockResolvedValue({

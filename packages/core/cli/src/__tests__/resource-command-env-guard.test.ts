@@ -91,14 +91,19 @@ test('resource commands reject cross-env requests in non-interactive agent sessi
 
   try {
     await expect(
-      runResourceCommand(command as any, 'list', {
-        env: 'prod',
-        yes: false,
-        verbose: false,
-        'json-output': true,
-      }, {
-        resource: 'users',
-      }),
+      runResourceCommand(
+        command as any,
+        'list',
+        {
+          env: 'prod',
+          yes: false,
+          verbose: false,
+          'json-output': true,
+        },
+        {
+          resource: 'users',
+        },
+      ),
     ).rejects.toThrow(/Refusing to run against env "prod" because the current env is "dev"/);
     expect(mocks.executeResourceRequest).not.toHaveBeenCalled();
   } finally {
@@ -112,14 +117,19 @@ test('resource commands ask for confirmation before cross-env requests in intera
   mocks.confirm.mockResolvedValue(true);
 
   try {
-    await runResourceCommand(command as any, 'list', {
-      env: 'prod',
-      yes: false,
-      verbose: false,
-      'json-output': true,
-    }, {
-      resource: 'users',
-    });
+    await runResourceCommand(
+      command as any,
+      'list',
+      {
+        env: 'prod',
+        yes: false,
+        verbose: false,
+        'json-output': true,
+      },
+      {
+        resource: 'users',
+      },
+    );
 
     expect(mocks.confirm).toHaveBeenCalledWith({
       message:
@@ -139,14 +149,19 @@ test('resource commands treat a canceled confirmation as a no-op', async () => {
   mocks.confirm.mockRejectedValue(new Error('canceled'));
 
   try {
-    await runResourceCommand(command as any, 'list', {
-      env: 'prod',
-      yes: false,
-      verbose: false,
-      'json-output': true,
-    }, {
-      resource: 'users',
-    });
+    await runResourceCommand(
+      command as any,
+      'list',
+      {
+        env: 'prod',
+        yes: false,
+        verbose: false,
+        'json-output': true,
+      },
+      {
+        resource: 'users',
+      },
+    );
 
     expect(mocks.executeResourceRequest).not.toHaveBeenCalled();
   } finally {
@@ -159,14 +174,45 @@ test('resource commands let --yes skip the interactive cross-env confirmation pr
   const command = createCommand();
 
   try {
-    await runResourceCommand(command as any, 'list', {
-      env: 'prod',
-      yes: true,
-      verbose: false,
-      'json-output': true,
-    }, {
-      resource: 'users',
-    });
+    await runResourceCommand(
+      command as any,
+      'list',
+      {
+        env: 'prod',
+        yes: true,
+        verbose: false,
+        'json-output': true,
+      },
+      {
+        resource: 'users',
+      },
+    );
+
+    expect(mocks.confirm).not.toHaveBeenCalled();
+    expect(mocks.executeResourceRequest).toHaveBeenCalledOnce();
+  } finally {
+    restoreTerminal();
+  }
+});
+
+test('resource commands let --yes skip the non-interactive cross-env refusal', async () => {
+  const restoreTerminal = setTerminalInteractivity(false);
+  const command = createCommand();
+
+  try {
+    await runResourceCommand(
+      command as any,
+      'list',
+      {
+        env: 'prod',
+        yes: true,
+        verbose: false,
+        'json-output': true,
+      },
+      {
+        resource: 'users',
+      },
+    );
 
     expect(mocks.confirm).not.toHaveBeenCalled();
     expect(mocks.executeResourceRequest).toHaveBeenCalledOnce();

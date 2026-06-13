@@ -11,6 +11,7 @@ import path from 'path';
 
 import { Snowflake } from 'nodejs-snowflake';
 import { Transactionable } from 'sequelize';
+import type { Sequelize } from 'sequelize';
 import { LRUCache } from 'lru-cache';
 
 import { Op } from '@nocobase/database';
@@ -21,6 +22,8 @@ import { Logger, LoggerOptions } from '@nocobase/logger';
 
 import Dispatcher, { EventOptions } from './Dispatcher';
 import Processor from './Processor';
+import ExecutionTimeoutManager from './ExecutionTimeoutManager';
+import RunningExecutionRegistry from './RunningExecutionRegistry';
 import initActions from './actions';
 import { NodeValidationError } from './actions/nodes';
 import { WorkflowValidationError } from './actions/workflows';
@@ -41,8 +44,10 @@ import MultiConditionsInstruction from './instructions/MultiConditionsInstructio
 
 import type { ExecutionModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
+import type { Transaction } from '@nocobase/database';
 
 type ID = number | string;
+type TransactionWithSequelize = Transaction & { sequelize?: Sequelize };
 
 export const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
 
@@ -54,6 +59,8 @@ export default class PluginWorkflowServer extends Plugin {
   snowflake: Snowflake;
 
   private dispatcher = new Dispatcher(this);
+  public readonly timeoutManager = new ExecutionTimeoutManager(this);
+  public readonly runningExecutionRegistry = new RunningExecutionRegistry();
 
   public get channelPendingExecution() {
     return `${this.name}.pendingExecution`;
@@ -61,7 +68,7 @@ export default class PluginWorkflowServer extends Plugin {
 
   private loggerCache: LRUCache<string, Logger>;
   private meter = null;
-  private checker: NodeJS.Timeout = null;
+  private checker: NodeJS.Timeout | null = null;
 
   private onBeforeSave = async (instance: WorkflowModel, { transaction, cycling }) => {
     if (cycling) {
@@ -167,9 +174,10 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     this.checker = setInterval(() => {
-      this.getLogger('dispatcher').debug(`(cycling) check for queueing executions`);
       this.dispatcher.dispatch();
     }, 300_000);
+
+    await this.timeoutManager.load();
 
     this.app.on('workflow:dispatch', () => {
       this.app.logger.info('workflow:dispatch');
@@ -187,6 +195,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (this.checker) {
       clearInterval(this.checker);
     }
+    await this.timeoutManager.unload();
 
     await this.dispatcher.beforeStop();
 
@@ -227,6 +236,22 @@ export default class PluginWorkflowServer extends Plugin {
     return this.app.serving(WORKER_JOB_WORKFLOW_PROCESS);
   }
 
+  public async abortExecutionIfExpired(execution: ExecutionModel, options: { transaction?: Transaction } = {}) {
+    return this.timeoutManager.abortExecutionIfExpired(execution, options);
+  }
+
+  public registerRunningExecution(executionId: number | string, abort: (reason?: string) => void) {
+    this.runningExecutionRegistry.register(executionId, { abort });
+  }
+
+  public unregisterRunningExecution(executionId: number | string) {
+    this.runningExecutionRegistry.unregister(executionId);
+  }
+
+  public abortRunningExecution(executionId: number | string, reason?: string) {
+    return this.runningExecutionRegistry.abort(executionId, reason);
+  }
+
   /**
    * @experimental
    */
@@ -235,7 +260,7 @@ export default class PluginWorkflowServer extends Plugin {
     const date = `${now.getFullYear()}-${`0${now.getMonth() + 1}`.slice(-2)}-${`0${now.getDate()}`.slice(-2)}`;
     const key = `${date}-${workflowId}`;
     if (this.loggerCache.has(key)) {
-      return this.loggerCache.get(key);
+      return this.loggerCache.get(key) as Logger;
     }
 
     const logger = this.createLogger({
@@ -489,6 +514,10 @@ export default class PluginWorkflowServer extends Plugin {
     return this.dispatcher.run(pending);
   }
 
+  public dispatch() {
+    return this.dispatcher.dispatch();
+  }
+
   public async resume(job) {
     return this.dispatcher.resume(job);
   }
@@ -520,18 +549,33 @@ export default class PluginWorkflowServer extends Plugin {
    * @experimental
    * @param {string} dataSourceName
    * @param {Transaction} transaction
-   * @param {boolean} create
-   * @returns {Trasaction}
+   * @param {boolean} create Create a new transaction when the input transaction does not belong to this data source.
+   * @returns {Transaction}
    */
-  useDataSourceTransaction(dataSourceName = 'main', transaction, create = false) {
-    const { db } = this.app.dataSourceManager.dataSources.get(dataSourceName)
-      .collectionManager as SequelizeCollectionManager;
+  useDataSourceTransaction(
+    dataSourceName?: string,
+    transaction?: Transaction | null,
+    create?: false,
+  ): Transaction | undefined;
+  useDataSourceTransaction(
+    dataSourceName: string | undefined,
+    transaction: Transaction | null | undefined,
+    create: true,
+  ): Transaction | Promise<Transaction> | undefined;
+  useDataSourceTransaction(dataSourceName = 'main', transaction?: Transaction | null, create = false) {
+    const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceName);
+    if (!dataSource) {
+      throw new Error(`data source ${dataSourceName} is not found`);
+    }
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     if (!db) {
       return;
     }
-    if (db.sequelize === transaction?.sequelize) {
+
+    if (db.sequelize === (transaction as TransactionWithSequelize | undefined)?.sequelize) {
       return transaction;
     }
+
     if (create) {
       return db.sequelize.transaction();
     }

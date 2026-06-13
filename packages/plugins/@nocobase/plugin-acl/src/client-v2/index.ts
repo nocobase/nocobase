@@ -8,3 +8,6 @@
  */
 
 export { default } from './plugin';
+export * from './locale';
+export * from './plugin';
+export * from './registries';

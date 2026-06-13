@@ -9,20 +9,10 @@
 
 import { defineAction } from '@nocobase/flow-engine';
 import { FilterFormItemModel } from '../../filter-form/FilterFormItemModel';
-
-function getOperatorMeta(model: FilterFormItemModel) {
-  const ops = model.collectionField?.filterable?.operators || [];
-  if (!ops.length) {
-    return null;
-  }
-  if (!model.operator) {
-    return null;
-  }
-  return ops.find((op) => op.value === model.operator) || null;
-}
+import { getFilterFormOperatorMeta } from '../utils';
 
 function applyOperatorComponentProps(model: FilterFormItemModel) {
-  const meta = getOperatorMeta(model);
+  const meta = getFilterFormOperatorMeta(model, model.operator);
   if (!meta) {
     return;
   }

@@ -12,20 +12,17 @@ import pc from 'picocolors';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
-import {
-  DEFAULT_DOCKER_REGISTRY,
-  DEFAULT_DOCKER_VERSION,
-  resolveDockerImageRef,
-} from '../../../lib/docker-image.ts';
+import { DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_VERSION, resolveDockerImageRef } from '../../../lib/docker-image.ts';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../../lib/env-guard.js';
 import {
   createLicenseEnvFlag,
   licenseJsonFlag,
   licensePkgUrlFlag,
   licenseYesFlag,
+  readSavedLicenseKey,
   requireLicenseRuntime,
 } from '../shared.js';
-import { syncLicensedPlugins } from './shared.js';
+import { MissingSavedLicenseKeyError, syncLicensedPlugins } from './shared.js';
 import { resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
 import { commandOutput } from '../../../lib/run-npm.js';
 import { announceTargetEnv, startTask, stopTask, succeedTask, updateTask } from '../../../lib/ui.js';
@@ -111,22 +108,12 @@ async function resolveDockerAppVersion(runtime: Extract<ManagedAppRuntime, { kin
     defaultRegistry: DEFAULT_DOCKER_REGISTRY,
     defaultVersion: DEFAULT_DOCKER_VERSION,
   });
-  const args = [
-    'run',
-    '--rm',
-    '--network',
-    runtime.workspaceName,
-  ];
+  const args = ['run', '--rm', '--network', runtime.workspaceName];
   const dockerPlatform = normalizeDockerPlatform(config.dockerPlatform);
   if (dockerPlatform) {
     args.push('--platform', dockerPlatform);
   }
-  args.push(
-    '--entrypoint',
-    'nb',
-    imageRef,
-    '--version',
-  );
+  args.push('--entrypoint', 'nb', imageRef, '--version');
 
   let output: string;
   try {
@@ -135,7 +122,9 @@ async function resolveDockerAppVersion(runtime: Extract<ManagedAppRuntime, { kin
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to read app version for env "${runtime.envName}" from Docker image ${imageRef}. ${message}`);
+    throw new Error(
+      `Failed to read app version for env "${runtime.envName}" from Docker image ${imageRef}. ${message}`,
+    );
   }
 
   const versionMatch = output.match(/@nocobase\/cli\/([^\s]+)/);
@@ -156,10 +145,20 @@ async function resolveManagedAppVersion(runtime: ManagedAppRuntime): Promise<str
   throw new Error(`Env "${runtime.envName}" does not support automatic app version detection.`);
 }
 
+function buildNoLicenseSkipPayload(runtime: ManagedAppRuntime, dryRun: boolean) {
+  return {
+    ok: true,
+    env: runtime.envName,
+    kind: runtime.kind,
+    dryRun,
+    status: 'skipped',
+    skipReason: 'no-license-key',
+  };
+}
+
 export default class LicensePluginsSync extends Command {
   static override summary = 'Synchronize commercial plugins for the selected env';
-  static override description =
-    'Synchronize the commercial plugins allowed by the current saved license key.';
+  static override description = 'Synchronize the commercial plugins allowed by the current saved license key.';
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env app1',
@@ -176,6 +175,10 @@ export default class LicensePluginsSync extends Command {
     }),
     version: Flags.string({
       description: 'Registry version or dist-tag to synchronize. Defaults to the current workspace version.',
+    }),
+    'skip-if-no-license': Flags.boolean({
+      description: 'Skip without error when this env does not have a saved license key',
+      default: false,
     }),
     verbose: Flags.boolean({
       description: 'Show detailed per-plugin sync logs',
@@ -203,7 +206,17 @@ export default class LicensePluginsSync extends Command {
     if (!flags.json) {
       announceTargetEnv(runtime.envName);
     }
-    const version = trimValue(flags.version) || await resolveManagedAppVersion(runtime);
+    if (flags['skip-if-no-license']) {
+      const savedLicenseKey = await readSavedLicenseKey(runtime);
+      if (!savedLicenseKey) {
+        const payload = buildNoLicenseSkipPayload(runtime, Boolean(flags['dry-run']));
+        if (flags.json) {
+          this.log(JSON.stringify(payload, null, 2));
+        }
+        return;
+      }
+    }
+    const version = trimValue(flags.version) || (await resolveManagedAppVersion(runtime));
     const registryVersion = normalizePluginRegistryVersion(version);
     const shouldStreamLogs = !flags.json && Boolean(flags.verbose);
     const pluginStoragePath = resolvePluginStoragePath(runtime.env.storagePath);
@@ -251,20 +264,31 @@ export default class LicensePluginsSync extends Command {
 
     let result;
     try {
-      result = await syncLicensedPlugins(runtime, {
-        pkgUrl: flags['pkg-url'],
-        version: registryVersion,
-        dryRun: Boolean(flags['dry-run']),
-        onProgress: shouldStreamLogs
-          ? async (detail) => {
-            this.log(`${formatActionLabel(detail.action)} ${pc.bold(detail.packageName)}`);
-            this.log(pc.dim(`  output: ${detail.outputDir}`));
-            if (detail.warning) {
-              this.log(pc.yellow(`  warning: ${detail.warning}`));
-            }
+      try {
+        result = await syncLicensedPlugins(runtime, {
+          pkgUrl: flags['pkg-url'],
+          version: registryVersion,
+          dryRun: Boolean(flags['dry-run']),
+          onProgress: shouldStreamLogs
+            ? async (detail) => {
+                this.log(`${formatActionLabel(detail.action)} ${pc.bold(detail.packageName)}`);
+                this.log(pc.dim(`  output: ${detail.outputDir}`));
+                if (detail.warning) {
+                  this.log(pc.yellow(`  warning: ${detail.warning}`));
+                }
+              }
+            : undefined,
+        });
+      } catch (error) {
+        if (flags['skip-if-no-license'] && error instanceof MissingSavedLicenseKeyError) {
+          const payload = buildNoLicenseSkipPayload(runtime, Boolean(flags['dry-run']));
+          if (flags.json) {
+            this.log(JSON.stringify(payload, null, 2));
           }
-          : undefined,
-      });
+          return;
+        }
+        throw error;
+      }
     } finally {
       if (loadingTimer) {
         clearTimeout(loadingTimer);
@@ -292,11 +316,7 @@ export default class LicensePluginsSync extends Command {
     }
 
     if (loadingStarted) {
-      succeedTask(
-        flags['dry-run']
-          ? 'Commercial plugin sync preview is ready.'
-          : 'Commercial plugin sync completed.',
-      );
+      succeedTask(flags['dry-run'] ? 'Commercial plugin sync preview is ready.' : 'Commercial plugin sync completed.');
     }
 
     if (!flags.verbose) {

@@ -132,7 +132,13 @@ describe('flowSurfaces formal block fixtures', () => {
           expect(tree.props?.defaultView).toBe('month');
           expect(tree.props?.enableQuickCreateEvent).toBe(true);
           expect(tree.props?.weekStart).toBe(1);
-          expect(getActionUses(tree)).toEqual(['FilterActionModel', 'RefreshActionModel', 'AddNewActionModel']);
+          expect(getActionUses(tree)).toEqual([
+            'FilterActionModel',
+            'CalendarNavActionModel',
+            'CalendarViewSelectActionModel',
+            'RefreshActionModel',
+            'AddNewActionModel',
+          ]);
           expect(getCalendarPopupHostUses(tree)).toEqual({
             quickCreateAction: 'CalendarQuickCreateActionModel',
             eventViewAction: 'CalendarEventViewActionModel',
@@ -151,7 +157,7 @@ describe('flowSurfaces formal block fixtures', () => {
               pageModelClass: 'ChildPageModel',
               dataSourceKey: 'main',
               collectionName: 'pets',
-              filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              filterByTk: '{{ctx.record.id}}',
             },
           });
           break;

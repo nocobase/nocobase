@@ -1,6 +1,11 @@
 [
   {
     "type": "dir",
+    "name": "all-in-one",
+    "label": "Sistem Manajemen Bisnis Terintegrasi"
+  },
+  {
+    "type": "dir",
     "name": "ticket-system",
     "label": "Ticket"
   },

@@ -20,6 +20,7 @@ export class AIEmployeeInstruction extends Instruction {
   });
   type = 'ai-employee';
   group = 'ai';
+  async = true;
   // @ts-ignore
   icon = (<UserOutlined />);
   fieldset = {
@@ -32,10 +33,6 @@ export class AIEmployeeInstruction extends Instruction {
     Configuration,
     WorkflowVariableRawTextArea,
   };
-
-  isAvailable({ engine, workflow }) {
-    return !engine.isWorkflowSync(workflow);
-  }
 
   useVariables(node) {
     const outputSchema = node.config?.structuredOutput?.schema;

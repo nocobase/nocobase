@@ -25,11 +25,13 @@ import { I18nextProvider } from 'react-i18next';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 import { isValidElementType } from 'react-is';
+import type { AppListProps } from '@ant-design/pro-layout/es/components/AppsLogoComponents/types';
 import AntdAppProvider from './theme/AntdAppProvider';
 import { GlobalThemeProvider } from './theme';
 import { AIManager } from './ai';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import { SystemSettingsSource } from './flow/system-settings';
+import { LayoutManager } from './layout-manager/LayoutManager';
 import type { PluginClass, PluginManager, PluginType } from './PluginManager';
 import { RouteRepository } from './RouteRepository';
 import type {
@@ -54,6 +56,7 @@ declare global {
 }
 
 type AnyComponent = RenderableComponentType<any>;
+type AppListLoader = (app: BaseApplication<any>) => Promise<AppListProps> | AppListProps;
 type AuthTokenPayload = {
   token: string;
   authenticator: string | null;
@@ -122,6 +125,7 @@ export abstract class BaseApplication<
   public components: Record<string, AnyComponent> = {};
   public pluginManager: TPluginManager;
   public pluginSettingsManager: TPluginSettingsManager;
+  public layoutManager: LayoutManager<this>;
   public aiManager!: AIManager;
   public devDynamicImport?: DevDynamicImport;
   public requirejs!: RequireJS;
@@ -153,8 +157,10 @@ export abstract class BaseApplication<
   private wsAuthorized = false;
   apps: {
     Component?: AnyComponent | null;
+    loadAppList?: AppListLoader | null;
   } = {
     Component: null,
+    loadAppList: null,
   };
 
   get pm(): TPluginManager {
@@ -169,6 +175,18 @@ export abstract class BaseApplication<
     return this.wsAuthorized;
   }
 
+  public setDocumentLanguage(language?: string | null) {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (language) {
+      document.documentElement.lang = language;
+    } else {
+      document.documentElement.removeAttribute('lang');
+    }
+  }
+
   constructor(protected options: TOptions = {} as TOptions) {
     this.initRequireJs();
     this.defineObservableState();
@@ -180,6 +198,7 @@ export abstract class BaseApplication<
     this.initializeExtendedState();
     this.i18n = this.createI18n(options);
     this.router = this.createRouterManager(options);
+    this.layoutManager = this.createLayoutManager(options);
     this.pluginManager = this.createPluginManager(options);
     this.flowEngine = new FlowEngine();
     this.flowEngine.registerModels({ ApplicationModel });
@@ -205,6 +224,7 @@ export abstract class BaseApplication<
     this.addRoutes();
     this.i18n.on('languageChanged', (lng) => {
       this.apiClient.auth.locale = lng;
+      this.setDocumentLanguage(lng);
     });
     this.initListeners();
     this.afterManagersInitialized();
@@ -218,6 +238,7 @@ export abstract class BaseApplication<
       maintained: observable.ref,
       maintaining: observable.ref,
       error: observable.ref,
+      apps: observable,
     });
   }
 
@@ -517,6 +538,14 @@ export abstract class BaseApplication<
     });
   }
 
+  setAppsComponent({ Component }: { Component: AnyComponent }) {
+    this.apps.Component = Component;
+  }
+
+  setAppsProvider({ loadAppList }: { loadAppList: AppListLoader }) {
+    this.apps.loadAppList = loadAppList;
+  }
+
   protected getRootFallback() {
     return this.renderComponent('AppSpin');
   }
@@ -554,6 +583,9 @@ export abstract class BaseApplication<
   protected abstract createRouterManager(options: TOptions): TRouterManager;
   protected abstract createPluginManager(options: TOptions): TPluginManager;
   protected abstract createPluginSettingsManager(options: TOptions): TPluginSettingsManager;
+  protected createLayoutManager(_options: TOptions) {
+    return new LayoutManager(this);
+  }
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws ?? false);
   }

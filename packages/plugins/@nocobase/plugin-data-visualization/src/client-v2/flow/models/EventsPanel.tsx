@@ -9,7 +9,6 @@
 
 import React from 'react';
 import { Button, Radio } from 'antd';
-import { ObjectField, Field, connect, useForm } from '@formily/react';
 import EventsEditor from './EventsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined } from '@ant-design/icons';
@@ -25,13 +24,27 @@ const DEFAULT_EVENTS_RAW = `// chart.off('click');
 // });
 `;
 
-const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
+const getFormValues = (ctx: any) => ctx.getStepFormValues('chartSettings', 'configure') || {};
+
+const setIn = (target: any, path: string[], value: any) => {
+  let cursor = target;
+  path.slice(0, -1).forEach((key) => {
+    cursor[key] = cursor[key] || {};
+    cursor = cursor[key];
+  });
+  cursor[path[path.length - 1]] = value;
+};
+
+const OptionsMode: React.FC<{
+  value?: string;
+  onChange?: (value: string) => void;
+}> = ({ value = 'custom', onChange }) => {
   const t = useT();
   return (
     <Radio.Group
       value={value}
-      onChange={(value) => {
-        onChange(value);
+      onChange={(event) => {
+        onChange?.(event.target.value);
       }}
     >
       {/* <Radio.Button disabled value="basic">
@@ -42,17 +55,34 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
       </Radio.Button>
     </Radio.Group>
   );
-});
+};
 
 export const EventsPanel: React.FC = observer(() => {
   const t = useT();
-  const form = useForm();
   const ctx = useFlowSettingsContext<any>();
-  const mode = form?.values?.chart?.events?.mode || 'custom';
-  const rawValue = form?.values?.chart?.events?.raw;
+  const [, forceUpdate] = React.useState(0);
+  const formValues = getFormValues(ctx);
+  const mode = formValues?.chart?.events?.mode || 'custom';
+  const rawValue = formValues?.chart?.events?.raw ?? DEFAULT_EVENTS_RAW;
+
+  React.useEffect(() => {
+    const values = getFormValues(ctx);
+    if (!values?.chart?.events?.mode) {
+      setIn(values, ['chart', 'events', 'mode'], 'custom');
+    }
+    if (!values?.chart?.events?.raw) {
+      setIn(values, ['chart', 'events', 'raw'], DEFAULT_EVENTS_RAW);
+    }
+  }, [ctx]);
+
+  const updateEventValue = (path: string[], value: any) => {
+    const values = getFormValues(ctx);
+    setIn(values, path, value);
+    forceUpdate((v) => v + 1);
+  };
 
   return (
-    <ObjectField name="chart.events">
+    <>
       <div
         style={{
           display: 'flex',
@@ -62,13 +92,12 @@ export const EventsPanel: React.FC = observer(() => {
           padding: 1,
         }}
       >
-        <Field name="mode" component={[OptionsMode]} initialValue="custom" />
+        <OptionsMode value={mode} onChange={(value) => updateEventValue(['chart', 'events', 'mode'], value)} />
         {mode === 'custom' ? (
           <Button
             type="link"
             onClick={async () => {
-              // 写入事件参数，统一走 onPreview 方便回滚
-              await ctx.model.onPreview(form.values);
+              await ctx.model.onPreview(getFormValues(ctx));
             }}
           >
             {t('Preview')}
@@ -76,8 +105,7 @@ export const EventsPanel: React.FC = observer(() => {
         ) : null}
       </div>
 
-      {/* 保持原有编辑器 */}
-      <Field name="raw" component={[EventsEditor]} initialValue={DEFAULT_EVENTS_RAW} />
-    </ObjectField>
+      <EventsEditor value={rawValue} onChange={(value) => updateEventValue(['chart', 'events', 'raw'], value)} />
+    </>
   );
 });

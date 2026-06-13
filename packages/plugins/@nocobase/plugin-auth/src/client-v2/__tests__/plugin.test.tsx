@@ -33,6 +33,8 @@ describe('plugin-auth client-v2', () => {
       plugins: [PluginAuthClientV2 as any],
       router: { type: 'memory', initialEntries: ['/v2/admin/7vu4c2sdk6h?tab=overview#panel'] },
     });
+    // `addPageTabItem({ menuKey: 'security' })` in plugin-auth's `load()` requires the parent menu to exist. In production, the v2 buildin plugin registers it; `createMockClient` does not load that plugin, so the test registers the menu directly before `app.load()`.
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
     await app.load();
     app.router.router = {
       basename: '/v2',
@@ -79,6 +81,8 @@ describe('plugin-auth client-v2', () => {
       plugins: [PluginAuthClientV2 as any],
       router: { type: 'memory', initialEntries: ['/v2/admin/anywhere'] },
     });
+    // `addPageTabItem({ menuKey: 'security' })` in plugin-auth's `load()` requires the parent menu to exist. In production, the v2 buildin plugin registers it; `createMockClient` does not load that plugin, so the test registers the menu directly before `app.load()`.
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
     await app.load();
     app.apiClient.auth.setToken('stale-token');
     app.router.router = {
@@ -107,6 +111,8 @@ describe('plugin-auth client-v2', () => {
       plugins: [PluginAuthClientV2 as any],
       router: { type: 'memory', initialEntries: ['/v2/signin'] },
     });
+    // `addPageTabItem({ menuKey: 'security' })` in plugin-auth's `load()` requires the parent menu to exist. In production, the v2 buildin plugin registers it; `createMockClient` does not load that plugin, so the test registers the menu directly before `app.load()`.
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
     await app.load();
     app.router.router = {
       basename: '/v2',

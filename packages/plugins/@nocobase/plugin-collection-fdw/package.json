@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-fdw",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "keywords": [
@@ -33,7 +33,10 @@
     "@nocobase/client": "workspace:*",
     "@nocobase/database": "workspace:*",
     "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*"
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
   },
   "volta": {
     "node": "18.18.2",

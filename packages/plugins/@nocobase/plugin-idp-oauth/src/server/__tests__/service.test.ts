@@ -107,6 +107,63 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(service.getSupportedScopes()).toEqual(['openid', 'offline_access', 'profile', 'email']);
   });
 
+  test('resolveClient should use registered client resolvers in registration order', async () => {
+    const service = new IdpOauthService({} as any, {} as any);
+    const firstResolver = {
+      resolveClient: vi.fn().mockResolvedValue(null),
+    };
+    const secondResolver = {
+      resolveClient: vi.fn().mockResolvedValue({
+        client_id: 'app:alpha',
+      }),
+    };
+
+    service.registerClientResolver('first', firstResolver);
+    service.registerClientResolver('second', secondResolver);
+
+    await expect(service.resolveClient('app:alpha')).resolves.toEqual({
+      client_id: 'app:alpha',
+    });
+    expect(firstResolver.resolveClient).toHaveBeenCalledWith('app:alpha', undefined);
+    expect(secondResolver.resolveClient).toHaveBeenCalledWith('app:alpha', undefined);
+
+    service.unregisterClientResolver('second');
+
+    await expect(service.resolveClient('app:alpha')).resolves.toBeUndefined();
+  });
+
+  test('resolveClient should pass current provider context to resolvers', async () => {
+    const service = new IdpOauthService({ name: 'main' } as any, {} as any);
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
+    const resolver = {
+      resolveClient: vi.fn().mockResolvedValue({
+        client_id: 'app:alpha',
+      }),
+    };
+    service.registerClientResolver('app-supervisor', resolver);
+
+    await service.runWithProviderContext(
+      {
+        app: { name: 'main' },
+        path: '/api/idpOAuth/authorize',
+        protocol: 'http',
+        host: 'localhost:13003',
+        headers: {},
+      },
+      () => service.resolveClient('app:alpha'),
+    );
+
+    expect(resolver.resolveClient).toHaveBeenCalledWith(
+      'app:alpha',
+      expect.objectContaining({
+        origin: 'http://localhost:13003',
+        issuer: 'http://localhost:13003/api',
+      }),
+    );
+  });
+
   test('should use system token policy for OAuth token TTLs', async () => {
     const getConfig = vi.fn().mockResolvedValue({
       tokenExpirationTime: 60 * 60 * 1000,
@@ -272,5 +329,38 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(ctx.request.headers['x-authenticator']).toBe('basic');
     expect(ctx.state.currentUser).toEqual({ id: 1 });
     expect(ctx.auth.user).toEqual({ id: 1 });
+  });
+
+  test('destroyProviderSession should destroy provider session and clear session cookie', async () => {
+    const service = new IdpOauthService({ name: 'main' } as any, {} as any);
+    const session = {
+      new: false,
+      destroy: vi.fn(),
+    };
+    const provider = {
+      Session: {
+        get: vi.fn().mockResolvedValue(session),
+      },
+      cookieName: vi.fn().mockReturnValue('_session'),
+    };
+    vi.spyOn(service, 'ensureProviderForContext').mockResolvedValue(provider as any);
+    const ctx = {
+      app: { name: 'main' },
+      protocol: 'https',
+      headers: {},
+      cookies: {
+        set: vi.fn(),
+      },
+    } as any;
+
+    await service.destroyProviderSession(ctx);
+
+    expect(provider.Session.get).toHaveBeenCalledWith(ctx);
+    expect(session.destroy).toHaveBeenCalled();
+    expect(ctx.cookies.set).toHaveBeenCalledWith('_session', null, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: true,
+    });
   });
 });

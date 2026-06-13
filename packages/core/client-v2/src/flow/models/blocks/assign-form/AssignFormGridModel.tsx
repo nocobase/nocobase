@@ -12,11 +12,16 @@ import { AddSubModelButton, FlowSettingsButton, tExpr, EditableItemModel } from 
 import { SettingOutlined } from '@ant-design/icons';
 import { FormGridModel } from '../form/FormGridModel';
 
+const MAX_ASSIGN_FORM_ASSOCIATION_FIELD_DEPTH = 2;
+
 // 使用范型准确标注 subModels.items 的类型
 export class AssignFormGridModel extends FormGridModel {
   renderAddSubModelButton() {
     const collection = (this.context as any)?.collection;
     const fields = collection?.getFields?.() || [];
+    const associationDepth = this.context.prefixFieldPath
+      ? this.context.prefixFieldPath.split('.').filter(Boolean).length
+      : 0;
     // 过滤主键/过滤键字段，避免产生“更新主键”的无效配置
     const pk = typeof collection?.getPrimaryKey === 'function' ? collection.getPrimaryKey() : undefined;
     const filterKey = collection?.filterTargetKey;
@@ -29,6 +34,12 @@ export class AssignFormGridModel extends FormGridModel {
     };
     const items = fields
       .filter((field: any) => !isForbidden(field?.name))
+      .filter((field: any) => {
+        if (associationDepth < MAX_ASSIGN_FORM_ASSOCIATION_FIELD_DEPTH) {
+          return true;
+        }
+        return !(field?.isAssociationField?.() || field?.target || field?.targetCollection);
+      })
       .map((field: any) => {
         const fullName = field.name as string;
         const label = field.title || field.name;
@@ -111,7 +122,7 @@ export class AssignFormGridModel extends FormGridModel {
       return;
     }
     const fieldModel = binding.modelName;
-    const created = this.flowEngine.createModel({
+    const created = this.addSubModel('items', {
       use: 'AssignFormItemModel',
       stepParams: {
         fieldSettings: {
@@ -137,8 +148,6 @@ export class AssignFormGridModel extends FormGridModel {
           },
         },
       },
-      parentId: this.uid,
-      subKey: 'items',
     });
     created['assignValue'] = value;
   }

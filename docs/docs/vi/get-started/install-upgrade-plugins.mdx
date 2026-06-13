@@ -1,29 +1,29 @@
 ---
-title: "Cài đặt và nâng cấp Plugin"
-description: "Bắt đầu nhanh với NocoBase: Cài đặt và nâng cấp Plugin"
-keywords: "install, upgrade, plugins, NocoBase"
+title: 'Cài đặt và nâng cấp plugin'
+description: 'Bắt đầu nhanh với NocoBase: cài đặt và nâng cấp plugin'
+keywords: 'install,upgrade,plugins,NocoBase'
 ---
 
-# Cài đặt và nâng cấp Plugin
+# Cài đặt và nâng cấp plugin
 
 ## Plugin tích hợp sẵn
 
-Plugin tích hợp sẵn của NocoBase sẽ được tự động cập nhật theo phiên bản kernel, không cần thao tác thủ công.
+Các plugin tích hợp sẵn của NocoBase sẽ được cập nhật tự động cùng với phiên bản lõi, không cần thao tác thủ công.
 
 ## Plugin thương mại
 
-Cách cài đặt và nâng cấp chi tiết vui lòng tham khảo: [Hướng dẫn kích hoạt Plugin thương mại](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
+Để biết chi tiết về cách kích hoạt và nâng cấp, vui lòng tham khảo: [Kích hoạt và nâng cấp plugin thương mại](../api/cli/license/index.md)
 
 ## Plugin bên thứ ba
 
-### Cài đặt Plugin bằng dòng lệnh
+### Cài đặt plugin bằng dòng lệnh
 
 ```bash
 yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
 yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
 ```
 
-Nếu ứng dụng đã cài Plugin này và cần nâng cấp, vui lòng thực thi:
+Nếu ứng dụng đã cài đặt plugin này và cần nâng cấp, hãy chạy:
 
 ```bash
 yarn nocobase upgrade --skip-code-update
@@ -31,17 +31,17 @@ yarn nocobase upgrade --skip-code-update
 
 ### Tải lên và giải nén thủ công
 
-Vui lòng tải gói Plugin về máy trước, sau đó upload và giải nén thủ công vào thư mục `./storage/plugins`. Nếu Plugin này đã được kích hoạt, vui lòng thực thi lệnh sau sau khi upload và giải nén để hoàn thành nâng cấp Plugin.
+Vui lòng tải gói plugin về máy cục bộ trước, sau đó tải lên và giải nén thủ công vào thư mục `./storage/plugins`. Nếu plugin này đã được bật, hãy chạy lệnh sau sau khi tải lên và giải nén xong để hoàn tất việc nâng cấp plugin.
 
-> **Lưu ý**: Để tránh vấn đề cache, vui lòng đảm bảo ứng dụng NocoBase đã dừng chạy trước khi thực thi.
+> ⚠️ **Lưu ý**: Để tránh sự cố bộ nhớ đệm, hãy đảm bảo ứng dụng NocoBase đã dừng chạy trước khi thực hiện.
 
 ```bash
 yarn nocobase upgrade --skip-code-update
 ```
 
-### Cách giải nén Plugin đúng
+### Cách giải nén plugin đúng cách
 
-Ví dụ sau minh họa cách giải nén gói Plugin đúng vào thư mục đích:
+Ví dụ sau minh họa cách giải nén đúng gói plugin vào thư mục được chỉ định:
 
 ```bash
 mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
@@ -50,13 +50,13 @@ mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
   --strip-components=1
 ```
 
-Lệnh này sẽ giải nén Plugin vào thư mục đích và không tạo ra cấp thư mục `package` thừa.
+Lệnh này sẽ giải nén plugin vào thư mục được chỉ định và không tạo thêm một cấp thư mục `package` dư thừa.
 
 ```bash
 /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
 ```
 
-### Ví dụ cấu trúc thư mục đúng
+### Ví dụ về cấu trúc thư mục đúng
 
 ```bash
 ./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js

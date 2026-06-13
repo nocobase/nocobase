@@ -33,7 +33,7 @@ El navegador abrirá automáticamente la página de configuración visual y le g
 
 :::warning Atención
 
-- NocoBase está migrando de `client` (v1) a `client-v2`. Actualmente `client-v2` aún está en desarrollo. El código de cliente generado por el desarrollo con AI se basa en `client-v2` y solo puede usarse en la ruta `/v2/`. Está disponible para que lo pruebe, pero no se recomienda su uso directo en producción.
+- NocoBase está migrando de `client` (v1) a `client-v2`. Actualmente `client-v2` aún está en desarrollo. El código de cliente generado por el desarrollo con AI se basa en `client-v2` y solo puede usarse en la ruta `/v/`. Está disponible para que lo pruebe, pero no se recomienda su uso directo en producción.
 - El código generado por la AI no siempre es 100% correcto. Le recomendamos revisarlo antes de habilitarlo. Si encuentra problemas en tiempo de ejecución, puede enviar el mensaje de error a la AI para que continúe diagnosticando y corrigiendo. Normalmente, unas pocas rondas de conversación son suficientes para resolverlos.
 - Se recomienda utilizar modelos de la serie GPT o Claude para el desarrollo, ya que ofrecen los mejores resultados. Otros modelos también pueden funcionar, aunque la calidad de la generación puede variar.
 

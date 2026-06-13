@@ -135,7 +135,7 @@ function SetTargetDataScope(props) {
   return (
     <FilterGroup
       value={props.value}
-      FilterItem={(p) => <VariableFilterItem {...p} model={targetModel} rightAsVariable />}
+      FilterItem={(p) => <VariableFilterItem {...p} model={targetModel} rightAsVariable maxAssociationFieldDepth={2} />}
     />
   );
 }

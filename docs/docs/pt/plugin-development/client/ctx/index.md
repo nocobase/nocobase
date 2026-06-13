@@ -85,7 +85,7 @@ async load() {
 ```tsx
 // 组件里：页面导航
 const ctx = useFlowContext();
-ctx.router.navigate('/hello'); // -> /v2/hello
+ctx.router.navigate('/hello'); // -> /v/hello
 ```
 
 ## Capacidades comuns oferecidas pelo contexto

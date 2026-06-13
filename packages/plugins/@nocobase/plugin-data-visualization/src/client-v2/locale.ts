@@ -16,6 +16,13 @@ export function tExpr(key: string) {
   return _tExpr(key, { ns: [NAMESPACE, 'client'] });
 }
 
+export function translateExpr(source: any, t: (key: string) => string = (key) => key) {
+  if (typeof source === 'string') {
+    return source.replace(/\{\{\s*t\((['"])(.*?)\1(?:\s*,\s*\{[^}]*\})?\)\s*\}\}/g, (_, __, key) => t(key));
+  }
+  return source;
+}
+
 export function useChartsTranslation() {
   return useTranslation([NAMESPACE, 'client'], {
     nsMode: 'fallback',

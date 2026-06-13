@@ -56,6 +56,25 @@ const classEventRegistries = new WeakMap<typeof FlowModel, ModelEventRegistry>()
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
+type SortableModelLike = {
+  sortIndex?: number | null;
+};
+
+function getStableSortIndex(item: SortableModelLike, fallbackIndex: number) {
+  return typeof item?.sortIndex === 'number' && Number.isFinite(item.sortIndex) ? item.sortIndex : fallbackIndex + 1;
+}
+
+function sortByStableSortIndex<T extends SortableModelLike>(items: T[]) {
+  return items
+    .map((item, index) => ({
+      item,
+      index,
+      sortIndex: getStableSortIndex(item, index),
+    }))
+    .sort((a, b) => a.sortIndex - b.sortIndex || a.index - b.index)
+    .map(({ item }) => item);
+}
+
 // 使用WeakMap存储每个类的 GlobalFlowRegistry
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
@@ -242,7 +261,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     };
     this.stepParams = options.stepParams || {};
     this.subModels = {};
-    this.sortIndex = options.sortIndex || 0;
+    this.sortIndex = getStableSortIndex({ sortIndex: options.sortIndex }, -1);
     this._options = options;
     this._title = '';
     this._extraTitle = '';
@@ -511,11 +530,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     Object.entries(mergedSubModels || {}).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value
-          .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
-          .forEach((item) => {
-            this.addSubModel(key, item);
-          });
+        sortByStableSortIndex(value).forEach((item) => {
+          this.addSubModel(key, item);
+        });
       } else {
         this.setSubModel(key, value);
       }
@@ -778,25 +795,42 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     stepKeyOrStepsParams?: string | Record<string, ParamObject>,
     params?: ParamObject,
   ): void {
+    let hasChanged = false;
+
     if (typeof flowKeyOrAllParams === 'string') {
       const flowKey = flowKeyOrAllParams;
       if (typeof stepKeyOrStepsParams === 'string' && params !== undefined) {
-        if (!this.stepParams[flowKey]) {
-          this.stepParams[flowKey] = {};
+        const currentStepParams = this.stepParams[flowKey]?.[stepKeyOrStepsParams] || {};
+        const nextStepParams = { ...currentStepParams, ...params };
+        if (!_.isEqual(currentStepParams, nextStepParams)) {
+          if (!this.stepParams[flowKey]) {
+            this.stepParams[flowKey] = {};
+          }
+          this.stepParams[flowKey][stepKeyOrStepsParams] = nextStepParams;
+          hasChanged = true;
         }
-        this.stepParams[flowKey][stepKeyOrStepsParams] = {
-          ...this.stepParams[flowKey][stepKeyOrStepsParams],
-          ...params,
-        };
       } else if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
-        this.stepParams[flowKey] = { ...(this.stepParams[flowKey] || {}), ...stepKeyOrStepsParams };
+        const currentFlowParams = this.stepParams[flowKey] || {};
+        const nextFlowParams = { ...currentFlowParams, ...stepKeyOrStepsParams };
+        if (!_.isEqual(currentFlowParams, nextFlowParams)) {
+          this.stepParams[flowKey] = nextFlowParams;
+          hasChanged = true;
+        }
       }
     } else if (typeof flowKeyOrAllParams === 'object' && flowKeyOrAllParams !== null) {
       for (const fk in flowKeyOrAllParams) {
         if (Object.prototype.hasOwnProperty.call(flowKeyOrAllParams, fk)) {
-          this.stepParams[fk] = { ...(this.stepParams[fk] || {}), ...flowKeyOrAllParams[fk] };
+          const currentFlowParams = this.stepParams[fk] || {};
+          const nextFlowParams = { ...currentFlowParams, ...flowKeyOrAllParams[fk] };
+          if (!_.isEqual(currentFlowParams, nextFlowParams)) {
+            this.stepParams[fk] = nextFlowParams;
+            hasChanged = true;
+          }
         }
       }
+    }
+    if (!hasChanged) {
+      return;
     }
     // 发起配置修改事件
     this.emitter.emit('onStepParamsChanged');
@@ -823,7 +857,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     const isFork = (this as any).isFork === true;
     const target = this;
-    console.log(
+    currentFlowEngine.logger.debug(
       `[FlowModel] applyFlow: uid=${this.uid}, flowKey=${flowKey}, isFork=${isFork}, cleanRun=${
         this.cleanRun
       }, targetIsFork=${(target as any)?.isFork === true}`,
@@ -843,7 +877,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     const isFork = (this as any).isFork === true;
     const target = this;
-    console.log(
+    currentFlowEngine.logger.debug(
       `[FlowModel] dispatchEvent: uid=${this.uid}, event=${eventName}, isFork=${isFork}, cleanRun=${
         this.cleanRun
       }, targetIsFork=${(target as any)?.isFork === true}`,
@@ -1206,7 +1240,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (!Array.isArray(subModels[subKey])) {
       subModels[subKey] = observable.shallow([]);
     }
-    const maxSortIndex = Math.max(...(subModels[subKey] as FlowModel[]).map((item) => item.sortIndex || 0), 0);
+    const maxSortIndex = Math.max(
+      ...(subModels[subKey] as FlowModel[]).map((item, index) => getStableSortIndex(item, index)),
+      0,
+    );
     model.sortIndex = maxSortIndex + 1;
     subModels[subKey].push(model);
     actualParent.emitter.emit('onSubModelAdded', model);
@@ -1264,14 +1301,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     const results: ArrayElementType<NonNullable<Structure['subModels']>[K]>[] = [];
 
-    _.castArray(model)
-      .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
-      .forEach((item, index) => {
-        const result = (callback as (model: any, index: number) => boolean)(item, index);
-        if (result) {
-          results.push(item);
-        }
-      });
+    sortByStableSortIndex(_.castArray(model)).forEach((item, index) => {
+      const result = (callback as (model: any, index: number) => boolean)(item, index);
+      if (result) {
+        results.push(item);
+      }
+    });
 
     return results;
   }
@@ -1288,12 +1323,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     const results: R[] = [];
 
-    _.castArray(model)
-      .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
-      .forEach((item, index) => {
-        const result = (callback as (model: any, index: number) => R)(item, index);
-        results.push(result);
-      });
+    sortByStableSortIndex(_.castArray(model)).forEach((item, index) => {
+      const result = (callback as (model: any, index: number) => R)(item, index);
+      results.push(result);
+    });
 
     return results;
   }
@@ -1379,7 +1412,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   clearForks() {
-    console.log(`FlowModel ${this.uid} clearing all forks.`);
+    this.flowEngine.logger.debug(`FlowModel ${this.uid} clearing all forks.`);
     // 主动使所有 fork 失效
     if (this.forks?.size) {
       this.forks.forEach((fork) => fork.dispose());

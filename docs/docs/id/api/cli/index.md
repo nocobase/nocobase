@@ -1,21 +1,21 @@
 ---
-title: "NocoBase CLI"
-description: "Referensi NocoBase CLI (perintah nb): inisialisasi, konfigurasi, manajemen lingkungan, runtime aplikasi, source code, database, plugin, lisensi komersial, API, pembaruan mandiri CLI dan manajemen Skills."
-keywords: "NocoBase CLI,nb,command line,referensi perintah,konfigurasi,manajemen lingkungan,manajemen plugin,lisensi komersial,API"
+title: 'NocoBase CLI'
+description: 'Referensi NocoBase CLI (perintah nb): inisialisasi, pencadangan dan pemulihan, konfigurasi, manajemen lingkungan, menjalankan aplikasi, kode sumber, basis data, plugin, lisensi komersial, API, pembaruan mandiri CLI, dan manajemen Skills.'
+keywords: 'NocoBase CLI,nb,baris perintah,referensi perintah,pencadangan,pemulihan,manajemen lingkungan,manajemen plugin,lisensi komersial,API'
 ---
 
 # NocoBase CLI
 
 ## Deskripsi
 
-NocoBase CLI (`nb`) adalah entry point command line dari NocoBase, digunakan untuk menginisialisasi, menghubungkan, dan mengelola aplikasi NocoBase di workspace lokal.
+NocoBase CLI (`nb`) adalah titik masuk baris perintah NocoBase, yang digunakan untuk menginisialisasi, menghubungkan, dan mengelola aplikasi NocoBase di ruang kerja lokal.
 
-CLI ini mendukung dua jalur inisialisasi umum:
+Ini mendukung dua jalur inisialisasi umum:
 
-- Menghubungkan aplikasi NocoBase yang sudah ada, dan menyimpannya sebagai env CLI
-- Menginstal aplikasi NocoBase baru melalui Docker, npm, atau Git, lalu menyimpannya sebagai env CLI
+- Menghubungkan aplikasi NocoBase yang sudah ada, lalu menyimpannya sebagai CLI env
+- Menginstal aplikasi NocoBase baru melalui Docker, npm, atau Git, lalu menyimpannya sebagai CLI env
 
-Saat membuat aplikasi lokal baru, [`nb init`](./init.md) juga dapat menginstal atau memperbarui NocoBase AI coding skills. Jika Anda perlu melewati langkah ini, Anda dapat menggunakan `--skip-skills`.
+Saat membuat aplikasi lokal baru, [`nb init`](./init.md) juga dapat menginstal atau memperbarui skill coding AI NocoBase. Jika perlu melewati langkah ini, Anda dapat menggunakan `--skip-skills`.
 
 ## Penggunaan
 
@@ -23,48 +23,50 @@ Saat membuat aplikasi lokal baru, [`nb init`](./init.md) juga dapat menginstal a
 nb [command]
 ```
 
-Perintah root sendiri terutama digunakan untuk menampilkan help, dan mendistribusikan panggilan ke grup perintah atau perintah independen.
+Perintah root sendiri terutama digunakan untuk menampilkan bantuan dan meneruskan pemanggilan ke grup perintah atau perintah mandiri.
 
-## Grup Perintah (Topics)
+## Grup perintah (Topics)
 
-Grup perintah berikut akan ditampilkan di `nb --help`:
+`nb --help` akan menampilkan grup perintah berikut:
 
-| Grup Perintah | Penjelasan |
-| --- | --- |
-| [`nb api`](./api/index.md) | Memanggil API NocoBase melalui CLI. |
-| [`nb app`](./app/index.md) | Mengelola runtime aplikasi: start, stop, restart, logs, dan upgrade. |
-| [`nb config`](./config/index.md) | Mengelola konfigurasi default CLI. |
-| [`nb db`](./db/index.md) | Mengelola database bawaan dari env yang dipilih. |
-| [`nb env`](./env/index.md) | Mengelola environment proyek NocoBase, env saat ini, status, detail, dan runtime perintah. |
-| [`nb license`](./license/index.md) | Mengelola lisensi komersial dan plugin berlisensi. |
-| [`nb plugin`](./plugin/index.md) | Mengelola plugin dari env NocoBase yang dipilih. |
-| [`nb scaffold`](./scaffold/index.md) | Menghasilkan scaffold pengembangan plugin NocoBase. |
-| [`nb self`](./self/index.md) | Memeriksa atau memperbarui NocoBase CLI itu sendiri. |
-| [`nb session`](./session/index.md) | Mengatur `NB_SESSION_ID` agar env saat ini terisolasi per shell atau runtime agent. |
-| [`nb skills`](./skills/index.md) | Memeriksa atau menyinkronkan NocoBase AI coding skills di workspace saat ini. |
-| [`nb source`](./source/index.md) | Mengelola proyek source code lokal: download, dev, build, dan test. |
+| Grup perintah                        | Deskripsi                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| [`nb api`](./api/index.md)           | Memanggil API NocoBase melalui CLI.                                                              |
+| [`nb app`](./app/index.md)           | Mengelola status runtime aplikasi: mulai, berhenti, mulai ulang, log, dan upgrade.               |
+| [`nb backup`](./backup/index.md)     | Membuat cadangan dan mengunduhnya ke lokal, atau memulihkan file cadangan lokal ke env target.   |
+| [`nb config`](./config/index.md)     | Mengelola konfigurasi default CLI.                                                               |
+| [`nb db`](./db/index.md)             | Mengelola basis data bawaan dari env yang dipilih.                                               |
+| [`nb env`](./env/index.md)           | Mengelola lingkungan proyek NocoBase, env saat ini, status, detail, dan perintah runtime.        |
+| [`nb license`](./license/index.md)   | Mengelola lisensi komersial dan plugin berlisensi.                                               |
+| [`nb plugin`](./plugin/index.md)     | Mengelola plugin dari env NocoBase yang dipilih.                                                 |
+| [`nb scaffold`](./scaffold/index.md) | Menghasilkan scaffold pengembangan plugin NocoBase.                                              |
+| [`nb self`](./self/index.md)         | Memeriksa atau memperbarui NocoBase CLI itu sendiri.                                             |
+| [`nb session`](./session/index.md)   | Mengonfigurasi `NB_SESSION_ID` agar current env terisolasi berdasarkan shell atau agent runtime. |
+| [`nb skills`](./skills/index.md)     | Memeriksa atau menyinkronkan skill coding AI NocoBase di ruang kerja saat ini.                   |
+| [`nb source`](./source/index.md)     | Mengelola proyek kode sumber lokal: unduh, pengembangan, build, dan pengujian.                   |
 
 ## Perintah (Commands)
 
-Perintah independen yang langsung diekspos oleh perintah root saat ini:
+Perintah mandiri yang saat ini diekspos langsung oleh perintah root:
 
-| Perintah | Penjelasan |
-| --- | --- |
-| [`nb init`](./init.md) | Menginisialisasi NocoBase, sehingga coding agent dapat terhubung dan bekerja. |
+| Perintah               | Deskripsi                                                                |
+| ---------------------- | ------------------------------------------------------------------------ |
+| [`nb init`](./init.md) | Menginisialisasi NocoBase agar coding agent dapat terhubung dan bekerja. |
 
-## Melihat Bantuan
+## Melihat bantuan
 
-Lihat help perintah root:
+Melihat bantuan untuk perintah root:
 
 ```bash
 nb --help
 ```
 
-Lihat help perintah atau grup perintah tertentu:
+Melihat bantuan untuk perintah atau grup perintah tertentu:
 
 ```bash
 nb init --help
 nb app --help
+nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
@@ -98,7 +100,7 @@ nb env current
 nb env status
 ```
 
-Memulai aplikasi dan memuat ulang perintah runtime:
+Menyinkronkan ulang status env setelah aplikasi dijalankan:
 
 ```bash
 nb app start -e app1
@@ -125,14 +127,27 @@ nb license status -e app1
 nb license plugins list -e app1
 ```
 
-## Variabel Lingkungan
+Membuat dan mengunduh cadangan:
 
-Variabel lingkungan berikut akan memengaruhi perilaku CLI:
+```bash
+nb backup create -e app1 --output ./backups
+```
 
-| Variabel | Penjelasan |
-| --- | --- |
-| `NB_CLI_ROOT` | Direktori root tempat CLI menyimpan konfigurasi `.nocobase` dan file aplikasi lokal. Defaultnya adalah direktori home pengguna saat ini. |
-| `NB_LOCALE` | Bahasa prompt CLI dan UI inisialisasi lokal, mendukung `en-US` dan `zh-CN`. |
+Memulihkan cadangan lokal:
+
+```bash
+nb backup restore -e app1 --file ./backups/backup_20260520_190408_8397.nbdata --yes --force
+```
+
+## Variabel lingkungan
+
+Variabel lingkungan berikut memengaruhi perilaku CLI:
+
+| Variabel        | Deskripsi                                                                                                                                 |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `NB_CLI_ROOT`   | Direktori root tempat CLI menyimpan konfigurasi `.nocobase` dan file aplikasi lokal. Default-nya adalah direktori home pengguna saat ini. |
+| `NB_LOCALE`     | Bahasa prompt CLI dan bahasa UI inisialisasi lokal, mendukung `en-US` dan `zh-CN`.                                                        |
+| `NB_SESSION_ID` | ID sesi dari shell saat ini atau agent runtime. Setelah disetel, `nb env use` dan `nb env current` akan diisolasi per sesi.               |
 
 Contoh:
 
@@ -141,7 +156,7 @@ export NB_CLI_ROOT=/your/workspace
 export NB_LOCALE=zh-CN
 ```
 
-## File Konfigurasi
+## File konfigurasi
 
 File konfigurasi default:
 
@@ -149,7 +164,7 @@ File konfigurasi default:
 ~/.nocobase/config.json
 ```
 
-Setelah mengatur `NB_CLI_ROOT=/your/workspace`, path file konfigurasi akan menjadi:
+Setelah mengatur `NB_CLI_ROOT=/your/workspace`, jalur file konfigurasi akan menjadi:
 
 ```text
 /your/workspace/.nocobase/config.json
@@ -157,11 +172,13 @@ Setelah mengatur `NB_CLI_ROOT=/your/workspace`, path file konfigurasi akan menja
 
 CLI juga kompatibel untuk membaca konfigurasi project lama di direktori kerja saat ini.
 
+Cache tingkat sesi untuk env saat ini disimpan di:
 
-Cache sesi untuk env saat ini disimpan di:
-
+```text
 .nocobase/sessions/<NB_SESSION_ID>.json
-Env terakhir yang digunakan secara global disimpan di field `lastEnv` pada `config.json`. Saat `NB_SESSION_ID` tidak diatur, CLI akan fallback ke nilai global tersebut.
+```
+
+Env terakhir yang digunakan secara global disimpan di field `lastEnv` dalam `config.json`. Jika tidak ada `NB_SESSION_ID`, CLI akan kembali ke nilai global ini.
 
 Cache perintah runtime disimpan di:
 
@@ -169,12 +186,11 @@ Cache perintah runtime disimpan di:
 .nocobase/versions/<hash>/commands.json
 ```
 
-File ini dihasilkan atau dimuat ulang oleh [`nb env update`](./env/update.md), digunakan untuk men-cache perintah runtime yang disinkronkan dari aplikasi target.
+File ini dibuat atau diperbarui oleh [`nb env update`](./env/update.md), dan digunakan untuk menyimpan cache perintah runtime yang disinkronkan dari aplikasi target.
 
-## Tautan Terkait
+## Tautan terkait
 
-- [Mulai Cepat](../../ai/quick-start.mdx)
-- [Instalasi, Upgrade, dan Migrasi](../../ai/install-upgrade-migration.mdx)
-- [Variabel Lingkungan Global](../app/env.md)
-- [AI Builder](../../ai-builder/index.md)
-- [Pengembangan Plugin](../../plugin-development/index.md)
+- [Mulai cepat](../../ai/quick-start.mdx)
+- [Variabel lingkungan global](../app/env.md)
+- [Pembangunan AI](../../ai-builder/index.md)
+- [Pengembangan plugin](../../plugin-development/index.md)

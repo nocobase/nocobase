@@ -17,6 +17,21 @@
         "type": "custom-link",
         "label": "多环境模式",
         "link": "/multi-app/multi-app/remote"
+      },
+      {
+        "type": "custom-link",
+        "label": "应用区块和应用切换",
+        "link": "/multi-app/multi-app/app-block-and-switcher"
+      },
+      {
+        "type": "custom-link",
+        "label": "应用单点登录",
+        "link": "/multi-app/multi-app/app-sso"
+      },
+      {
+        "type": "custom-link",
+        "label": "调用子应用 API",
+        "link": "/multi-app/multi-app/sub-app-api"
       }
     ]
   },

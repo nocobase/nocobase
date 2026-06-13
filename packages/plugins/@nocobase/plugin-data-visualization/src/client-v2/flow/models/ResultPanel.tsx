@@ -19,6 +19,11 @@ export const ResultPanel: React.FC = () => {
   const t = useT();
   const ctx = useFlowSettingsContext();
   const uid = ctx.model.uid;
+  React.useSyncExternalStore(
+    configStore.subscribe,
+    () => configStore.version,
+    () => configStore.version,
+  );
   const data = configStore.results[uid]?.result;
   const error = configStore.results[uid]?.error;
 

@@ -20,6 +20,14 @@ import { useTranslation } from 'react-i18next';
 
 const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
+function getDataSourceHeaders(dataSourceKey?: string) {
+  return dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {};
+}
+
+function getModelDataSourceKey(model) {
+  return model.context.collection?.dataSourceKey || model.context.blockModel.collection?.dataSourceKey;
+}
+
 function useSizeHint(size: number) {
   const s = size ?? FILE_SIZE_LIMIT_DEFAULT;
   const { t, i18n } = useTranslation();
@@ -72,12 +80,17 @@ const useUploadFiles = (model) => {
   const ctx = useFlowContext();
   const action = useMemo(() => {
     let action = `${model.context.collection.name}:create`;
-    if (ctx.view?.inputArgs?.sourceId) {
-      const [s, t] = model.context.blockModel.association.resourceName.split('.');
+    const associationResourceName = model.context.blockModel.association?.resourceName;
+    if (ctx.view?.inputArgs?.sourceId && associationResourceName) {
+      const [s, t] = associationResourceName.split('.');
       action = `${s}/${ctx.view?.inputArgs.sourceId}/${t}:create`;
     }
     return action;
-  }, [model.context.collection.name, ctx.view?.inputArgs?.sourceId]);
+  }, [
+    model.context.blockModel.association?.resourceName,
+    model.context.collection.name,
+    ctx.view?.inputArgs?.sourceId,
+  ]);
   const uploadingFiles = {};
 
   let pendingNumber = 0;
@@ -115,7 +128,7 @@ const useUploadFiles = (model) => {
   };
 };
 
-export function useStorage(storage) {
+export function useStorage(storage, dataSourceKey?: string) {
   const name = storage ?? '';
   const url = `storages:getBasicInfo/${name}`;
   const ctx = useFlowContext();
@@ -123,14 +136,15 @@ export function useStorage(storage) {
     async () => {
       const response = await ctx.api.request({
         url,
+        headers: getDataSourceHeaders(dataSourceKey),
         skipNotify: true,
       });
       return response?.data;
     },
     {
       manual: true,
-      refreshDeps: [name],
-      cacheKey: url,
+      refreshDeps: [name, dataSourceKey],
+      cacheKey: `${dataSourceKey || 'main'}:${url}`,
     },
   );
   useEffect(() => {
@@ -145,21 +159,29 @@ export function useStorageCfg(model) {
   const targetCollection = ctx.collectionField?.targetCollection;
   const plugin = ctx.app.pm.get('@nocobase/plugin-file-manager');
   const collection = model.context.blockModel.collection;
-  const storage = useStorage(field?.storage || collection.storage || targetCollection.storage);
+  const dataSourceKey = getModelDataSourceKey(model) || ctx.collection?.dataSourceKey;
+  const storage = useStorage(field?.storage || collection.storage || targetCollection.storage, dataSourceKey);
   const storageType = plugin.getStorageType(storage?.type);
   return {
     storage,
     storageType,
+    dataSourceKey,
   };
 }
 
 export function useStorageUploadProps(props, model) {
-  const { storage, storageType } = useStorageCfg(model);
+  const { storage, storageType, dataSourceKey } = useStorageCfg(model);
   const useStorageTypeUploadProps = storageType?.useUploadProps;
   const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
+  const headers = {
+    ...getDataSourceHeaders(dataSourceKey),
+    ...storageTypeUploadProps.headers,
+  };
+
   return {
     rules: storage?.rules,
     ...storageTypeUploadProps,
+    headers,
   };
 }
 type RuleFunction = (file: UploadFile, options: any) => string | null;
@@ -217,7 +239,7 @@ export function useBeforeUpload(rules) {
       }
       return error ? false : Promise.resolve(proxiedFile);
     },
-    [rules],
+    [rules, t],
   );
 }
 

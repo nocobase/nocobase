@@ -252,6 +252,7 @@ type CalendarBlockProps = {
     title: string;
   };
   getBackgroundColor?: (value: string) => string | null;
+  getBorderColor?: (value: string) => string | null;
   getFontColor?: (value: string) => string | null;
   height?: number;
   heightMode?: string;
@@ -496,6 +497,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
 
     const fontColor = props.getFontColor?.(event.colorFieldValue);
     const backgroundColor = props.getBackgroundColor?.(event.colorFieldValue);
+    const borderColor = props.getBorderColor?.(event.colorFieldValue);
     const style = {} as Record<string, string>;
 
     if (fontColor) {
@@ -503,6 +505,9 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
     }
     if (backgroundColor) {
       style.backgroundColor = backgroundColor;
+    }
+    if (borderColor) {
+      style.borderColor = borderColor;
     }
 
     return { style };

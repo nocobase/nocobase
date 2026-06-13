@@ -382,8 +382,4 @@ export class Application extends BaseApplication<
   getVariables() {
     return this.variables;
   }
-
-  setAppsComponent({ Component }: { Component: ComponentType }) {
-    this.apps.Component = Component;
-  }
 }

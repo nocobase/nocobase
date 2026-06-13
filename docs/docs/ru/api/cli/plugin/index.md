@@ -1,7 +1,7 @@
 ---
 title: "nb plugin"
-description: "Справочник по команде nb plugin: управление плагинами выбранного env NocoBase."
-keywords: "nb plugin,NocoBase CLI,управление плагинами,enable,disable,list"
+description: "Справочник по команде nb plugin: управление плагинами выбранного env NocoBase и импорт упакованных плагинов в storage/plugins."
+keywords: "nb plugin,NocoBase CLI,управление плагинами,enable,disable,list,import"
 ---
 
 # nb plugin
@@ -18,6 +18,7 @@ nb plugin <command>
 
 | Команда | Описание |
 | --- | --- |
+| [`nb plugin import`](./import.md) | Импортирует упакованный архив плагина или npm-пакет |
 | [`nb plugin list`](./list.md) | Перечисляет установленные плагины |
 | [`nb plugin enable`](./enable.md) | Включает один или несколько плагинов |
 | [`nb plugin disable`](./disable.md) | Отключает один или несколько плагинов |
@@ -25,6 +26,7 @@ nb plugin <command>
 ## Примеры
 
 ```bash
+nb plugin import ./plugin-auth-cas-1.4.0.tgz --storage-path ./storage
 nb plugin list -e local
 nb plugin enable @nocobase/plugin-sample
 nb plugin disable -e local @nocobase/plugin-sample

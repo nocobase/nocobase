@@ -375,8 +375,10 @@ Formats pris en charge :
 Utilisée pour ajouter des `plugins` locaux prédéfinis et non activés. La valeur est le nom du package du `plugin` (le paramètre `name` dans `package.json`), avec plusieurs `plugins` séparés par des virgules.
 
 :::info
+
 1. Assurez-vous que le `plugin` est téléchargé localement et qu'il se trouve dans le répertoire `node_modules`. Pour plus de détails, consultez l'« [Organisation des plugins](/plugin-development/project-structure) ».
 2. Après avoir ajouté la variable d'environnement, le `plugin` n'apparaîtra sur la page du gestionnaire de `plugins` qu'après une installation initiale (`nocobase install`) ou une mise à jour (`nocobase upgrade`).
+
 :::
 
 ```bash
@@ -388,8 +390,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Utilisée pour ajouter des `plugins` intégrés et installés par défaut. La valeur est le nom du package du `plugin` (le paramètre `name` dans `package.json`), avec plusieurs `plugins` séparés par des virgules.
 
 :::info
+
 1. Assurez-vous que le `plugin` est téléchargé localement et qu'il se trouve dans le répertoire `node_modules`. Pour plus de détails, consultez l'« [Organisation des plugins](/plugin-development/project-structure) ».
 2. Après avoir ajouté la variable d'environnement, le `plugin` sera automatiquement installé ou mis à jour lors de l'installation initiale (`nocobase install`) ou de la mise à jour (`nocobase upgrade`).
+
 :::
 
 ```bash

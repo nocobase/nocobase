@@ -18,6 +18,7 @@ import {
   STORAGE_TYPE_TX_COS,
 } from '../constants';
 import { NAMESPACE } from '../common/constants';
+import { tExpr } from './locale';
 
 type UploadFileResult = {
   errorMessage?: string;
@@ -33,6 +34,7 @@ type StorageUploadOptions = {
     size?: number;
     mimetype?: string | string[];
   };
+  dataSourceKey?: string;
   fileCollectionName: string;
   query?: Record<string, string | number | boolean>;
 };
@@ -87,6 +89,140 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
 
   async load() {
     const title = this.app.i18n.t('File manager', { ns: NAMESPACE });
+    const dataSourceManager = (this.app.pm.get('@nocobase/plugin-data-source-manager') ||
+      this.app.pm.get('data-source-manager')) as
+      | {
+          registerCollectionTemplate?: (options: Record<string, unknown>) => void;
+        }
+      | undefined;
+    dataSourceManager?.registerCollectionTemplate?.({
+      name: 'file',
+      title: tExpr('File collection'),
+      order: 25,
+      color: 'blue',
+      collection: {
+        options: {
+          template: 'file',
+          createdBy: true,
+          updatedBy: true,
+        },
+        fields: [
+          {
+            name: 'title',
+            interface: 'input',
+            type: 'string',
+            title: tExpr('Title'),
+            deletable: false,
+          },
+          {
+            name: 'filename',
+            interface: 'input',
+            type: 'string',
+            title: tExpr('File name'),
+            deletable: false,
+            uiSchema: {
+              'x-read-pretty': true,
+            },
+          },
+          {
+            name: 'extname',
+            interface: 'input',
+            type: 'string',
+            title: tExpr('Extension name'),
+            deletable: false,
+            uiSchema: {
+              'x-read-pretty': true,
+            },
+          },
+          {
+            name: 'size',
+            interface: 'integer',
+            type: 'integer',
+            title: tExpr('Size'),
+            deletable: false,
+            componentProps: {
+              stringMode: true,
+              step: '0',
+            },
+            uiSchema: {
+              'x-read-pretty': true,
+            },
+          },
+          {
+            name: 'mimetype',
+            interface: 'input',
+            type: 'string',
+            title: tExpr('MIME type'),
+            deletable: false,
+            uiSchema: {
+              'x-read-pretty': true,
+            },
+          },
+          {
+            name: 'path',
+            interface: 'textarea',
+            type: 'text',
+            title: tExpr('Path'),
+            deletable: false,
+            component: 'TextAreaWithGlobalScope',
+            uiSchema: {
+              'x-read-pretty': true,
+            },
+          },
+          {
+            name: 'url',
+            interface: 'url',
+            type: 'text',
+            title: tExpr('URL'),
+            deletable: false,
+            uiSchema: {
+              'x-read-pretty': true,
+            },
+          },
+          {
+            name: 'preview',
+            interface: 'url',
+            type: 'text',
+            title: tExpr('Preview'),
+            field: 'url',
+            deletable: false,
+            component: 'Preview',
+            uiSchema: {
+              'x-read-pretty': true,
+            },
+          },
+          {
+            name: 'storage',
+            interface: 'm2o',
+            type: 'belongsTo',
+            title: tExpr('Storage'),
+            target: 'storages',
+            foreignKey: 'storageId',
+            deletable: false,
+            componentProps: {
+              fieldNames: {
+                value: 'id',
+                label: 'title',
+              },
+            },
+            uiSchema: {
+              type: 'object',
+              'x-read-pretty': true,
+            },
+          },
+          {
+            name: 'meta',
+            interface: 'json',
+            type: 'jsonb',
+            defaultValue: {},
+            deletable: false,
+          },
+        ],
+      },
+      presetFields: {
+        disabled: true,
+      },
+    });
 
     this.pluginSettingsManager.addMenuItem({
       key: NAMESPACE,
@@ -166,13 +302,14 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
     storageType?: string;
     storageId?: number;
     storageRules?: StorageUploadOptions['storageRules'];
+    dataSourceKey?: string;
     query?: StorageUploadOptions['query'];
   }): Promise<UploadFileResult> {
     if (!options?.file) {
       return { errorMessage: 'Missing file' };
     }
 
-    const { file, storageType, storageId, storageRules, query = {} } = options;
+    const { file, storageType, storageId, storageRules, dataSourceKey, query = {} } = options;
     const fileCollectionName = options.fileCollectionName || 'attachments';
     const storageTypeObject = this.getStorageType(storageType);
 
@@ -183,6 +320,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         storageType,
         storageId,
         storageRules,
+        dataSourceKey,
         fileCollectionName,
         query,
       });
@@ -201,6 +339,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         url,
         method: 'post',
         data: formData,
+        headers: dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {},
       });
 
       return { data: response.data?.data };

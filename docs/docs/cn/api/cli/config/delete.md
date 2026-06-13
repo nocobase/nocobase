@@ -18,14 +18,19 @@ nb config delete <key>
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| `<key>` | string | 配置项名称：`license.pkg-url`、`docker.network`、`docker.container-prefix` |
+| `<key>` | string | 配置项名称；支持的值见 [`nb config`](./index.md) |
 
 ## 示例
 
 ```bash
-nb config delete license.pkg-url
+nb config delete locale
+nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete proxy.nb-cli-root
+nb config delete proxy.upstream-host
+nb config delete bin.nginx
+nb config delete bin.git
 ```
 
 ## 相关命令

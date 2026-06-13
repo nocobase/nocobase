@@ -49,7 +49,11 @@ export class ChildPageModel extends PageModel {
       throw new Error('Invalid drag event');
     }
 
-    this.flowEngine.moveModel(event.active.id, event.over.id);
+    if (event.active.id === event.over.id) {
+      return;
+    }
+
+    await this.flowEngine.moveModel(event.active.id, event.over.id);
   }
 
   render() {

@@ -291,6 +291,10 @@ async function createFields(
     const block = requireBlockState(fieldTask.blockKey, state);
     const targetUid =
       fieldTask.containerSource === 'item' ? block.result.itemUid || block.result.uid : block.result.uid;
+    const targetKey = readComposeFieldTargetKey(fieldTask.spec.target);
+    const resolvedTargetUid = targetKey
+      ? resolveComposeTargetKey(targetKey, state.keyMap, 'field')
+      : fieldTask.spec.defaultTargetUid || fieldTask.spec.targetBlockUid;
     let createdField: FlowSurfaceComposeFieldResult | null;
     try {
       createdField = await deps.createField(
@@ -299,15 +303,8 @@ async function createFields(
             uid: targetUid,
           },
           ...fieldTask.payload,
-          ...(readComposeFieldTargetKey(fieldTask.spec.target)
-            ? {
-                defaultTargetUid: resolveComposeTargetKey(
-                  readComposeFieldTargetKey(fieldTask.spec.target) as string,
-                  state.keyMap,
-                  'field',
-                ),
-              }
-            : {}),
+          ...(resolvedTargetUid ? { defaultTargetUid: resolvedTargetUid } : {}),
+          ...(fieldTask.spec.targetBlockUid ? { targetBlockUid: fieldTask.spec.targetBlockUid } : {}),
         },
         fieldTask.spec,
         block.result,

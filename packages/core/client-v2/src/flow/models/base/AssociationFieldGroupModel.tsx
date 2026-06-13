@@ -11,13 +11,20 @@ import { Collection, DisplayItemModel, FlowModel, FlowModelContext } from '@noco
 
 export class AssociationFieldGroupModel extends FlowModel {
   static itemModelName = 'DetailsItemModel';
+  static maxAssociationFieldDepth = 2;
   static defineChildren(ctx: FlowModelContext) {
     const itemModel = this.itemModelName;
-    const displayAssociationFields = (targetCollection: Collection, fieldPath = '') => {
+    const maxAssociationFieldDepth = this.maxAssociationFieldDepth ?? 2;
+    const displayAssociationFields = (targetCollection: Collection, fieldPath = '', associationDepth = 0) => {
+      if (associationDepth >= maxAssociationFieldDepth) {
+        return [];
+      }
+
       return targetCollection
         .getToOneAssociationFields()
         .map((field) => {
           const fPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
+          const nextAssociationDepth = associationDepth + 1;
           if (!field.targetCollection) {
             console.error(
               `AssociationFieldGroupModel: target collection ${field.target} not found for field ${field.name}`,
@@ -37,6 +44,12 @@ export class AssociationFieldGroupModel extends FlowModel {
                   children: field.targetCollection
                     .getFields()
                     .map((f) => {
+                      if (
+                        nextAssociationDepth >= maxAssociationFieldDepth &&
+                        (f.isAssociationField?.() || f.target || f.targetCollection)
+                      ) {
+                        return;
+                      }
                       const fp = `${fPath}.${f.name}`;
                       const binding = DisplayItemModel.getDefaultBindingByField(ctx, f, {
                         fallbackToTargetTitleField: true,
@@ -81,9 +94,13 @@ export class AssociationFieldGroupModel extends FlowModel {
                   key: `${fPath}-children-associationField`,
                   label: 'Display association fields',
                   type: 'group',
-                  children: (displayAssociationFields(field.targetCollection, fPath) || []).filter(Boolean),
+                  children: (
+                    displayAssociationFields(field.targetCollection, fPath, nextAssociationDepth) || []
+                  ).filter(Boolean),
                 },
-              ];
+              ].filter((item) => {
+                return item.key !== `${fPath}-children-associationField` || (item.children as any[])?.length > 0;
+              });
             },
           };
         })

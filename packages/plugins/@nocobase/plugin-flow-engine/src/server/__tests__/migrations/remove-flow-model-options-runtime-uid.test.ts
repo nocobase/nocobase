@@ -7,16 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import FlowModelRepository from '../../repository';
 import Migration from '../../migrations/20260508000000-remove-flow-model-options-runtime-uid';
+import { createFlowEngineMockServer } from '../test-utils';
 
 describe('remove flow model options runtime uid migration', () => {
   let app: MockServer;
   let repository: FlowModelRepository;
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       registerActions: true,
       plugins: ['flow-engine'],
     });

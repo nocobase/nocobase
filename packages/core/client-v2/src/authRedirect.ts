@@ -113,6 +113,49 @@ function getV2BasePath(app: AppLike) {
   return trimTrailingSlashes(getV2PublicPath(app)) || '/';
 }
 
+type ModernClientWindow = {
+  __nocobase_modern_client_prefix__?: string;
+  __nocobase_public_path__?: string;
+};
+
+function getModernClientWindow(): ModernClientWindow | undefined {
+  return typeof window !== 'undefined' ? (window as unknown as ModernClientWindow) : undefined;
+}
+
+/**
+ * The runtime URL segment under which the modern (v2) client is served.
+ * Injected by the server as `window.__nocobase_modern_client_prefix__`. Falls
+ * back to the trailing segment of `window.__nocobase_public_path__`, then to
+ * the default `v`. Returns a bare segment (no slashes).
+ */
+export function getModernClientPrefix(): string {
+  const win = getModernClientWindow();
+  const fromWindow = win?.__nocobase_modern_client_prefix__;
+  if (typeof fromWindow === 'string' && fromWindow.trim()) {
+    return trimLeadingSlashes(trimTrailingSlashes(fromWindow.trim()));
+  }
+  const publicPath = win?.__nocobase_public_path__;
+  if (typeof publicPath === 'string' && publicPath.trim()) {
+    const segments = trimTrailingSlashes(publicPath.trim()).split('/');
+    const last = segments[segments.length - 1];
+    if (last) {
+      return last;
+    }
+  }
+  return 'v';
+}
+
+/**
+ * Strip the trailing modern-client prefix segment from a public path,
+ * recovering the app root public path (e.g. `/nocobase/v/` -> `/nocobase/`).
+ */
+export function stripModernClientPrefix(publicPath?: string): string {
+  const normalized = normalizePublicPath(publicPath);
+  const prefix = getModernClientPrefix();
+  const suffixPattern = new RegExp(`/${escapeRegExp(prefix)}/?$`);
+  return normalizePublicPath(normalized.replace(suffixPattern, '/'));
+}
+
 export function getV2EffectiveBasePath(app: AppLike): string {
   const basename = app.router?.getBasename?.();
   if (basename) {

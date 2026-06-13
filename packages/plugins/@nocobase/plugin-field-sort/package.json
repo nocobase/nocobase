@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-sort",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "license": "Apache-2.0",
   "displayName": "Collection field: Sort",
   "displayName.ru-RU": "Поле коллекции: Сортировка",
@@ -17,7 +17,9 @@
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*",
     "lodash": "4.x",
-    "sequelize": "^6.26.0"
+    "sequelize": "^6.26.0",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
   },
   "keywords": [
     "Collection fields"

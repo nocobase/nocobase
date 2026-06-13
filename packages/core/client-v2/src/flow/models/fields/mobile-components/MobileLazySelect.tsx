@@ -10,7 +10,7 @@
 import { useFlowModelContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import type { CSSProperties } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, CheckList, Popup, SearchBar, SpinLoading } from 'antd-mobile';
 import { css } from '@emotion/css';
 import {
@@ -51,7 +51,7 @@ function deriveRecordsFromValue(
 ) {
   if (isMultiple) {
     if (Array.isArray(value)) {
-      return (value.filter(Boolean) as any[]).map((item) => {
+      return (value.filter((item) => item !== null && item !== undefined) as any[]).map((item) => {
         if (valueMode === 'value') {
           return optionMap.get(item) ?? { [valueKey]: item };
         }
@@ -113,11 +113,13 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
   );
 
   const [selectedRecords, setSelectedRecords] = useState<AssociationOption[]>(() => derivedRecords);
+  const wasVisibleRef = useRef(visible);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !wasVisibleRef.current) {
       setSelectedRecords(derivedRecords);
     }
+    wasVisibleRef.current = visible;
   }, [derivedRecords, visible]);
 
   useEffect(() => {

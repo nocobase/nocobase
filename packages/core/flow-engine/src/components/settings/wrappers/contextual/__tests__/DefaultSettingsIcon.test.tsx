@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, cleanup, waitFor, act } from '@testing-library/react';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { App, ConfigProvider } from 'antd';
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FlowEngine } from '../../../../../flowEngine';
 import { FlowModel } from '../../../../../models/flowModel';
@@ -139,6 +139,86 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+  });
+
+  it('defers nested configurable step resolution and clears stale config while closed', async () => {
+    class TestFlowModel extends FlowModel {}
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-lazy-settings', flowEngine: engine });
+    const hideInSettings = vi.fn((ctx) => !!ctx.getStepParams('general')?.hidden);
+    const uiSchema = vi.fn(() => ({
+      field: { type: 'string', 'x-component': 'Input' },
+    }));
+
+    TestFlowModel.registerFlow({
+      key: 'lazyFlow',
+      title: 'Lazy Flow',
+      steps: {
+        general: {
+          title: 'General',
+          hideInSettings,
+          uiSchema,
+        },
+      },
+    });
+
+    const { getByLabelText } = render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, { model, menuLevels: 2 }),
+        ),
+      ),
+    );
+
+    expect(getByLabelText('flows-settings')).toBeTruthy();
+    expect(hideInSettings).not.toHaveBeenCalled();
+    expect(uiSchema).not.toHaveBeenCalled();
+
+    await act(async () => {
+      (globalThis as any).__lastDropdownOnOpenChange?.(true, { source: 'trigger' });
+    });
+
+    await waitFor(() => {
+      expect(hideInSettings).toHaveBeenCalledTimes(1);
+      expect(uiSchema).toHaveBeenCalledTimes(1);
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      expect(items.some((it) => String(it.key || '') === 'lazyFlow:general')).toBe(true);
+    });
+
+    await act(async () => {
+      (globalThis as any).__lastDropdownOnOpenChange?.(false, { source: 'trigger' });
+    });
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      expect(items.some((it) => String(it.key || '') === 'lazyFlow:general')).toBe(false);
+    });
+
+    await act(async () => {
+      model.setStepParams('lazyFlow', 'general', { hidden: true });
+    });
+
+    expect(hideInSettings).toHaveBeenCalledTimes(1);
+    expect(uiSchema).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      (globalThis as any).__lastDropdownOnOpenChange?.(true, { source: 'trigger' });
+    });
+
+    await waitFor(() => {
+      expect(hideInSettings).toHaveBeenCalledTimes(2);
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      expect(items.some((it) => String(it.key || '') === 'lazyFlow:general')).toBe(false);
+    });
+    expect(uiSchema).toHaveBeenCalledTimes(1);
   });
 
   it('excludes instance (dynamic) flows from the settings menu', async () => {
@@ -720,6 +800,10 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       ),
     );
 
+    await act(async () => {
+      (globalThis as any).__lastDropdownOnOpenChange?.(true, { source: 'trigger' });
+    });
+
     await waitFor(() => {
       const menu = (globalThis as any).__lastDropdownMenu;
       expect(menu).toBeTruthy();
@@ -800,14 +884,16 @@ describe('DefaultSettingsIcon - extra menu items', () => {
       await waitFor(() => {
         const menu = (globalThis as any).__lastDropdownMenu;
         const items = (menu?.items || []) as any[];
-        expect(items.some((it) => String(it.key || '') === 'extra-action')).toBe(true);
+        const extraActionItem = items.find((it) => String(it.key || '') === 'extra-action');
+        expect(extraActionItem).toBeTruthy();
+        expect(extraActionItem.onClick).toBeUndefined();
       });
 
       const menu = (globalThis as any).__lastDropdownMenu;
       await act(async () => {
         menu.onClick?.({ key: 'extra-action' });
       });
-      expect(onClick).toHaveBeenCalled();
+      expect(onClick).toHaveBeenCalledTimes(1);
       expect((globalThis as any).__lastDropdownOpen).toBe(false);
     } finally {
       dispose?.();
@@ -880,6 +966,7 @@ describe('DefaultSettingsIcon - extra menu items', () => {
           'insert-after',
           'insert-inner',
         ]);
+        expect((nested.children || []).find((it) => String(it.key || '') === 'insert-before')?.onClick).toBeUndefined();
         expect((nested.children || []).find((it) => String(it.key || '') === 'insert-inner')?.disabled).toBe(true);
       });
 
@@ -896,6 +983,69 @@ describe('DefaultSettingsIcon - extra menu items', () => {
       });
       expect(onInsertBefore).toHaveBeenCalledTimes(1);
       expect((globalThis as any).__lastDropdownOpen).toBe(false);
+    } finally {
+      dispose?.();
+    }
+  });
+
+  it('uses common extra actions to defer nested configurable step resolution', async () => {
+    const onClick = vi.fn();
+
+    class TestFlowModel extends FlowModel {}
+    const dispose = TestFlowModel.registerExtraMenuItems({
+      group: 'common-actions',
+      sort: 10,
+      items: [{ key: 'extra-action', label: 'Extra Action', onClick }],
+    });
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'm-extra-lazy', flowEngine: engine });
+    const uiSchema = vi.fn(() => ({
+      f: { type: 'string', 'x-component': 'Input' },
+    }));
+
+    TestFlowModel.registerFlow({
+      key: 'flow',
+      title: 'Flow',
+      steps: { s: { title: 'S', uiSchema } },
+    });
+
+    try {
+      const { getByLabelText } = render(
+        React.createElement(
+          ConfigProvider as any,
+          null,
+          React.createElement(
+            App as any,
+            null,
+            React.createElement(DefaultSettingsIcon as any, {
+              model,
+              menuLevels: 2,
+              showCopyUidButton: false,
+              showDeleteButton: false,
+            }),
+          ),
+        ),
+      );
+
+      await waitFor(() => {
+        expect(getByLabelText('flows-settings')).toBeTruthy();
+        const menu = (globalThis as any).__lastDropdownMenu;
+        const items = (menu?.items || []) as any[];
+        expect(items.some((it) => String(it.key || '') === 'extra-action')).toBe(true);
+      });
+      expect(uiSchema).not.toHaveBeenCalled();
+
+      await act(async () => {
+        (globalThis as any).__lastDropdownOnOpenChange?.(true, { source: 'trigger' });
+      });
+
+      await waitFor(() => {
+        expect(uiSchema).toHaveBeenCalledTimes(1);
+        const menu = (globalThis as any).__lastDropdownMenu;
+        const items = (menu?.items || []) as any[];
+        expect(items.some((it) => String(it.key || '') === 'flow:s')).toBe(true);
+      });
     } finally {
       dispose?.();
     }

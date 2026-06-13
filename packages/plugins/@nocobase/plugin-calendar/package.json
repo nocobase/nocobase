@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-calendar",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "displayName": "Calendar",
   "displayName.ru-RU": "Календарь",
   "displayName.zh-CN": "日历",
@@ -33,7 +33,8 @@
     "@nocobase/client": "workspace:*",
     "@nocobase/client-v2": "workspace:*",
     "@nocobase/database": "workspace:*",
-    "@nocobase/server": "workspace:*"
+    "@nocobase/server": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
   },
   "repository": {
     "type": "git",

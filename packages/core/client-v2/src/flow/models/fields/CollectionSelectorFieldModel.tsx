@@ -38,6 +38,12 @@ const CollectionSelector = (props) => {
   );
 };
 
+function getConfiguredCollectionNames(collectionField) {
+  return (collectionField?.uiSchema?.enum || collectionField?.enum || [])
+    .map((item) => (item && typeof item === 'object' ? item.value : item))
+    .filter((value) => value !== null && typeof value !== 'undefined');
+}
+
 export class CollectionSelectorFieldModel extends FieldModel {
   render() {
     return <CollectionSelector {...this.props} />;
@@ -66,12 +72,12 @@ CollectionSelectorFieldModel.registerFlow({
           });
         } else {
           const collections = ctx.dataSourceManager.getDataSource('main').getCollections();
-          const defaultOptions = ctx.model.context.collectionField.enum || [];
+          const defaultOptions = getConfiguredCollectionNames(ctx.model.context.collectionField);
           const options = collections
             .filter((item: any) => !item.options.hidden)
             .filter((v) => {
               if (defaultOptions.length) {
-                return defaultOptions.find((c) => c.value === v.name);
+                return defaultOptions.includes(v.name);
               }
               return true;
             })

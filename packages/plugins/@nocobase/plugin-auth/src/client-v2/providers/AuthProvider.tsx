@@ -28,6 +28,7 @@ const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     app.apiClient.auth.setToken(token);
     app.apiClient.auth.setAuthenticator(authenticator);
     searchParams.delete('token');
+    searchParams.delete('authenticator');
 
     const nextSearch = searchParams.toString();
     navigate(

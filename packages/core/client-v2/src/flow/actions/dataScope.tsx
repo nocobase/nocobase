@@ -33,7 +33,14 @@ export const dataScope = defineAction({
         return (
           <FilterGroup
             value={props.value}
-            FilterItem={(p) => <VariableFilterItem {...p} model={flowContext.model} rightAsVariable />}
+            FilterItem={(p) => (
+              <VariableFilterItem
+                {...p}
+                model={flowContext.model}
+                rightAsVariable
+                maxAssociationFieldDepth={flowContext.model instanceof FieldModel ? undefined : 2}
+              />
+            )}
           />
         );
       },

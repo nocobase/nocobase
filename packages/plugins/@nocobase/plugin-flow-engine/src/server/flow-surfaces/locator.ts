@@ -45,6 +45,20 @@ export class SurfaceLocator {
       if (isPageRoute(route)) {
         return this.resolvePageSchemaUid(route.get('schemaUid'), target, transaction);
       }
+      if (route?.get?.('type') === 'group') {
+        throw new FlowSurfaceBadRequestError(
+          `flowSurfaces routeId '${target.routeId}' points to a menu group, not a page surface. Menu group routeIds can be used directly as navigation.group.routeId; do not use flowSurfaces:get to check whether a menu group exists.`,
+          undefined,
+          {
+            ruleId: 'route-id-points-to-menu-group',
+            details: {
+              routeId: String(target.routeId),
+              title: route.get('title') ?? null,
+              type: 'group',
+            },
+          },
+        );
+      }
       if (route?.get?.('schemaUid')) {
         return this.resolveByUid(route.get('schemaUid'), target, transaction);
       }

@@ -7,10 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import enUS from '../locale/en-US.json';
-import zhCN from '../locale/zh-CN.json';
+import { tExpr as flowTExpr, useFlowEngine } from '@nocobase/flow-engine';
 
-export const aclLocaleResources = {
-  'en-US': enUS,
-  'zh-CN': zhCN,
-};
+export const NAMESPACE = '@nocobase/plugin-acl';
+
+// Locale resources under `@nocobase/plugin-acl` and `acl` are auto-loaded by
+// v2 buildin `LocalePlugin.afterAdd`.
+export function useT() {
+  const engine = useFlowEngine();
+  return (key: string, options?: Record<string, unknown>) =>
+    engine.context.t(key, { ns: [NAMESPACE, 'acl', 'client'], ...options });
+}
+
+export function tExpr(key: string, options?: Record<string, unknown>) {
+  return flowTExpr(key, { ns: [NAMESPACE, 'acl', 'client'], ...options });
+}

@@ -44,6 +44,10 @@ yarn build @my-project/plugin-hello --tar
 
 Upload và giải nén file `.tar.gz` vào thư mục `./storage/plugins` của ứng dụng đích. Các bước chi tiết xem tại [Cài đặt và nâng cấp Plugin](../get-started/install-upgrade-plugins.mdx).
 
+### Tự động kích hoạt Plugin sau khi upload
+
+Sau khi upload, Plugin mặc định sẽ không được tự động kích hoạt — nó sẽ xuất hiện trong "Trình quản lý Plugin" và cần bạn bật thủ công. Nếu bạn đang duy trì ứng dụng NocoBase của riêng mình và muốn Plugin được kích hoạt mặc định cùng với ứng dụng, bạn có thể dùng biến môi trường `APPEND_PRESET_BUILT_IN_PLUGINS` (Thêm Plugin tích hợp mặc định) để kiểm soát, xem cách dùng tại [Đặt Plugin thành mặc định hoặc tự động kích hoạt](./write-your-first-plugin.md#đặt-plugin-thành-mặc-định-hoặc-tự-động-kích-hoạt-tùy-chọn).
+
 ## Cấu hình build tùy chỉnh
 
 Thường thì cấu hình build mặc định là đủ dùng. Nếu bạn cần tùy chỉnh — như sửa entry đóng gói, thêm alias, điều chỉnh tùy chọn nén, v.v. — bạn có thể tạo file `build.config.ts` trong thư mục gốc Plugin:
@@ -84,3 +88,4 @@ Một vài điểm chính:
 - [Quản lý dependency](./dependency-management.md) — Khai báo dependency của Plugin và dependency toàn cục
 - [Tổng quan phát triển Plugin](./index.md) — Giới thiệu tổng thể về phát triển Plugin
 - [Cài đặt và nâng cấp Plugin](../get-started/install-upgrade-plugins.mdx) — Upload file đóng gói sang môi trường đích
+- [Biến môi trường](../get-started/installation/env.md) — Cấu hình biến môi trường cho Plugin preset, Plugin tích hợp, v.v.

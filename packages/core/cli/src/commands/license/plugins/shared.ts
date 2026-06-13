@@ -8,22 +8,14 @@
  */
 
 import path from 'node:path';
-import { access, mkdir, rm } from 'node:fs/promises';
+import { access, mkdir, readFile, rm } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { createGunzip } from 'node:zlib';
 import * as tar from 'tar';
 import type { ManagedAppRuntime } from '../../../lib/app-runtime.js';
-import {
-  removeStoragePluginSymlink,
-  resolvePluginStoragePath,
-} from '../../../lib/plugin-storage.js';
-import {
-  parseLicenseKey,
-  readSavedLicenseKey,
-  resolveLicensePkgUrl,
-  type LicenseKeyData,
-} from '../shared.js';
+import { removeStoragePluginSymlink, resolvePluginStoragePath } from '../../../lib/plugin-storage.js';
+import { parseLicenseKey, readSavedLicenseKey, resolveLicensePkgUrl, type LicenseKeyData } from '../shared.js';
 
 export type LicensedPluginPackages = {
   commercialPlugins: string[];
@@ -64,6 +56,13 @@ export type LicensePluginCleanResult = {
 
 export type LicensePluginCleanDetail = LicensePluginCleanResult['details'][number];
 
+export class MissingSavedLicenseKeyError extends Error {
+  constructor(envName: string) {
+    super(`No saved license key was found for env "${envName}". Run \`nb license activate\` first.`);
+    this.name = 'MissingSavedLicenseKeyError';
+  }
+}
+
 async function resolvePkgBaseUrl(pkgUrl?: string): Promise<string> {
   return await resolveLicensePkgUrl(pkgUrl);
 }
@@ -79,6 +78,11 @@ async function pathExists(target: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function trimString(value: unknown): string | undefined {
+  const text = String(value ?? '').trim();
+  return text || undefined;
 }
 
 async function loginPkg(baseURL: string, keyData: LicenseKeyData): Promise<string> {
@@ -109,7 +113,7 @@ async function loginPkg(baseURL: string, keyData: LicenseKeyData): Promise<strin
 export async function loadSavedLicenseKeyData(runtime: ManagedAppRuntime): Promise<LicenseKeyData> {
   const licenseKey = await readSavedLicenseKey(runtime);
   if (!licenseKey) {
-    throw new Error(`No saved license key was found for env "${runtime.envName}". Run \`nb license activate\` first.`);
+    throw new MissingSavedLicenseKeyError(runtime.envName);
   }
   return parseLicenseKey(licenseKey);
 }
@@ -146,7 +150,23 @@ export async function fetchLicensedPluginPackages(
   };
 }
 
-async function packageMetadata(baseURL: string, token: string, pluginName: string): Promise<any | undefined> {
+type PackageRegistryMetadata = {
+  versions?: Record<
+    string,
+    {
+      dist?: {
+        tarball?: string;
+      };
+    }
+  >;
+  'dist-tags'?: Record<string, string | undefined>;
+};
+
+async function packageMetadata(
+  baseURL: string,
+  token: string,
+  pluginName: string,
+): Promise<PackageRegistryMetadata | undefined> {
   try {
     const response = await fetch(`${baseURL}${pluginName}`, {
       headers: {
@@ -156,15 +176,16 @@ async function packageMetadata(baseURL: string, token: string, pluginName: strin
     if (!response.ok) {
       return undefined;
     }
-    return await response.json();
+    return (await response.json()) as PackageRegistryMetadata;
   } catch {
     return undefined;
   }
 }
 
-function resolveTarball(metadata: any, requestedVersion: string): [string, string] | undefined {
-  if (metadata.versions?.[requestedVersion]) {
-    return [requestedVersion, metadata.versions[requestedVersion].dist.tarball];
+function resolveTarball(metadata: PackageRegistryMetadata, requestedVersion: string): [string, string] | undefined {
+  const requestedTarball = trimString(metadata.versions?.[requestedVersion]?.dist?.tarball);
+  if (requestedTarball) {
+    return [requestedVersion, requestedTarball];
   }
 
   let version = requestedVersion;
@@ -188,11 +209,88 @@ function resolveTarball(metadata: any, requestedVersion: string): [string, strin
     version = metadata['dist-tags']?.alpha || metadata['dist-tags']?.next;
   }
 
-  if (!metadata.versions?.[version]) {
+  const tarball = trimString(metadata.versions?.[version]?.dist?.tarball);
+  if (!tarball) {
     return undefined;
   }
 
-  return [version, metadata.versions[version].dist.tarball];
+  return [version, tarball];
+}
+
+async function readDownloadedPluginVersion(outputDir: string): Promise<string | undefined> {
+  const packageJsonPath = path.resolve(outputDir, 'package.json');
+  let content: string;
+  try {
+    content = await readFile(packageJsonPath, 'utf8');
+  } catch {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(content) as { version?: unknown };
+    return trimString(parsed.version);
+  } catch {
+    return undefined;
+  }
+}
+
+type PlannedPluginDownload =
+  | {
+      action: 'installed' | 'updated';
+      outputDir: string;
+      resolvedVersion: string;
+      tarballUrl: string;
+      warning?: string;
+    }
+  | {
+      action: 'skipped';
+      outputDir: string;
+      warning?: string;
+    };
+
+async function planPluginDownload(
+  baseURL: string,
+  token: string,
+  pluginName: string,
+  requestedVersion: string,
+  storagePath: string,
+): Promise<PlannedPluginDownload> {
+  const metadata = await packageMetadata(baseURL, token, pluginName);
+  const outputDir = path.resolve(storagePath, pluginName);
+  if (!metadata) {
+    return {
+      action: 'skipped',
+      outputDir,
+      warning: `Commercial plugin package "${pluginName}" does not exist in the package registry.`,
+    };
+  }
+
+  const tarball = resolveTarball(metadata, requestedVersion);
+  if (!tarball) {
+    return {
+      action: 'skipped',
+      outputDir,
+      warning: `Package ${pluginName} does not have a downloadable version for "${requestedVersion}".`,
+    };
+  }
+
+  const [resolvedVersion, tarballUrl] = tarball;
+  const packageJsonPath = path.resolve(outputDir, 'package.json');
+  const localVersion = await readDownloadedPluginVersion(outputDir);
+  if (localVersion === resolvedVersion) {
+    return {
+      action: 'skipped',
+      outputDir,
+    };
+  }
+
+  const existedBefore = await pathExists(packageJsonPath);
+  return {
+    action: existedBefore ? 'updated' : 'installed',
+    outputDir,
+    resolvedVersion,
+    tarballUrl,
+  };
 }
 
 async function downloadPlugin(
@@ -202,25 +300,15 @@ async function downloadPlugin(
   requestedVersion: string,
   storagePath: string,
 ): Promise<{ action: 'installed' | 'updated' | 'skipped'; warning?: string }> {
-  const metadata = await packageMetadata(baseURL, token, pluginName);
-  if (!metadata) {
+  const plan = await planPluginDownload(baseURL, token, pluginName, requestedVersion, storagePath);
+  if (plan.action === 'skipped') {
     return {
       action: 'skipped',
-      warning: `Commercial plugin package "${pluginName}" does not exist in the package registry.`,
+      ...(plan.warning ? { warning: plan.warning } : {}),
     };
   }
 
-  const tarball = resolveTarball(metadata, requestedVersion);
-  if (!tarball) {
-    return {
-      action: 'skipped',
-      warning: `Package ${pluginName} does not have a downloadable version for "${requestedVersion}".`,
-    };
-  }
-
-  const [resolvedVersion, tarballUrl] = tarball;
-  const outputDir = path.resolve(storagePath, pluginName);
-  const existedBefore = await pathExists(path.resolve(storagePath, pluginName, 'package.json'));
+  const { action, outputDir, resolvedVersion, tarballUrl } = plan;
   try {
     await rm(outputDir, { recursive: true, force: true });
     await mkdir(outputDir, { recursive: true });
@@ -246,7 +334,7 @@ async function downloadPlugin(
     });
 
     return {
-      action: existedBefore ? 'updated' : 'installed',
+      action,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -332,25 +420,27 @@ export async function syncLicensedPlugins(
 
   for (const pluginName of licensedPlugins) {
     if (options.dryRun) {
-      const outputDir = path.resolve(storagePath, pluginName);
-      const existedBefore = await pathExists(path.resolve(outputDir, 'package.json'));
-      const action = existedBefore ? 'updated' : 'installed';
+      const { action, outputDir, warning } = await planPluginDownload(
+        baseURL,
+        token,
+        pluginName,
+        options.version,
+        storagePath,
+      );
       result[action].push(pluginName);
+      if (warning) {
+        result.warnings.push(warning);
+      }
       await emitDetail({
         packageName: pluginName,
         action,
         outputDir,
+        ...(warning ? { warning } : {}),
       });
       continue;
     }
 
-    const { action, warning } = await downloadPlugin(
-      baseURL,
-      token,
-      pluginName,
-      options.version,
-      storagePath,
-    );
+    const { action, warning } = await downloadPlugin(baseURL, token, pluginName, options.version, storagePath);
     if (warning) {
       result.warnings.push(warning);
     }

@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context } from '@nocobase/actions';
-import { DynamicToolsProvider } from '@nocobase/ai';
-import PluginWorkflowServer, { JOB_STATUS } from '@nocobase/plugin-workflow';
-import { Plugin } from '@nocobase/server';
+import type { Context } from '@nocobase/actions';
+import type { DynamicToolsProvider } from '@nocobase/ai';
+import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import type { Plugin } from '@nocobase/server';
+import { AI_WORKFLOW_TASK_STATUS, REQUIRES_APPROVAL } from './constants';
 
 export type WorkflowTaskToolProvider = (plugin: Plugin) => DynamicToolsProvider;
 
@@ -60,7 +61,7 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
     additionalProperties: false,
   };
 
-  if (config.requiresApproval === 'ai_decision') {
+  if (config.requiresApproval === REQUIRES_APPROVAL.AI_DECISION) {
     (schema.properties as any).requiresApproval = {
       type: 'boolean',
       description: `This field is mandatory.
@@ -76,7 +77,7 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
 
   register.registerTools({
     scope: 'SPECIFIED',
-    defaultPermission: config.requiresApproval !== 'no_required' ? 'ASK' : 'ALLOW',
+    defaultPermission: config.requiresApproval !== REQUIRES_APPROVAL.NO_REQUIRED ? 'ASK' : 'ALLOW',
     from: 'workflow',
     definition: {
       name: 'aiEmployeeWorkflowTaskOutput',
@@ -86,6 +87,30 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
       schema,
     },
     invoke: async (_ctx: Context, args: Record<string, any>) => {
+      const executionExpired = await workflowPlugin.abortExecutionIfExpired(execution);
+      const latestExecution = executionExpired
+        ? execution
+        : await plugin.db.getRepository('executions').findByTargetKey(task.executionId);
+      if (executionExpired) {
+        await plugin.db.getRepository('aiWorkflowTasks').update({
+          values: {
+            status: AI_WORKFLOW_TASK_STATUS.ABORTED,
+          },
+          filter: {
+            id: task.id,
+            status: {
+              $in: [AI_WORKFLOW_TASK_STATUS.PROCESSING, AI_WORKFLOW_TASK_STATUS.PENDING_ACCEPTANCE],
+            },
+          },
+        });
+      }
+
+      if (executionExpired || !latestExecution || latestExecution.status !== EXECUTION_STATUS.STARTED) {
+        return {
+          status: 'success',
+        };
+      }
+
       const job = await plugin.db.getModel('jobs').findByPk(task.jobId);
       if (!job) {
         return {
@@ -93,7 +118,7 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
           message: 'job not existed',
         };
       }
-      if (job.status === JOB_STATUS.ABORTED) {
+      if (job.status !== JOB_STATUS.PENDING) {
         return {
           status: 'success',
         };
@@ -101,12 +126,12 @@ export const getWorkflowTasks: WorkflowTaskToolProvider = (plugin) => async (reg
 
       await plugin.db.getRepository('aiWorkflowTasks').update({
         values: {
-          status: 'approved',
+          status: AI_WORKFLOW_TASK_STATUS.APPROVED,
         },
         filter: {
           id: task.id,
           status: {
-            $ne: 'aborted',
+            $ne: AI_WORKFLOW_TASK_STATUS.ABORTED,
           },
         },
       });

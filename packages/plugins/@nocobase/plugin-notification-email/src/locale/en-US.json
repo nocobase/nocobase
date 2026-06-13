@@ -10,6 +10,7 @@
   "From": "From",
   "Host": "Host",
   "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "No": "No",
   "Password": "Password",
   "Plain text": "Plain text",
   "Port": "Port",
@@ -18,6 +19,8 @@
   "Secure": "Secure",
   "Subject": "Subject",
   "The email address that will be used as the sender": "The email address that will be used as the sender",
+  "The field value is required": "The field value is required",
   "To": "To",
-  "Transport": "Transport"
+  "Transport": "Transport",
+  "Yes": "Yes"
 }

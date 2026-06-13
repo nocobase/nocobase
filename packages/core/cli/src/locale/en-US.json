@@ -34,6 +34,8 @@
       "back": "Back",
       "next": "Next",
       "submit": "Submit & continue in terminal",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "checking": "Checking...",
       "sending": "Sending...",
       "successTitle": "Success",
@@ -52,6 +54,7 @@
     "apiBaseUrl": {
       "invalid": "Enter a valid URL, for example {{example}}.",
       "invalidProtocol": "URL must start with http:// or https://, for example {{example}}.",
+      "missingApiPrefix": "The API base URL must include the /api prefix, for example {{example}}.",
       "healthCheckPathNotAllowed": "Do not include /__health_check in the API base URL. Enter the application API base URL, for example http://localhost:13000/api.",
       "maintaining": "The API base URL is reachable, but the app is still starting or in maintenance mode. Please try again later.",
       "healthCheckFailed": "The API base URL did not pass the health check (HTTP {{status}}). Make sure it points to a running NocoBase API endpoint.",
@@ -60,6 +63,9 @@
     },
     "envKey": {
       "invalid": "Use letters and numbers only."
+    },
+    "appPublicPath": {
+      "invalid": "Use / or a slash-separated path like /nocobase/ or /foo-bar/baz_2/. Each path segment may contain letters, numbers, hyphens, and underscores only."
     },
     "tcpPort": {
       "invalid": "Enter a valid TCP port between 1 and 65535, for example {{example}}.",
@@ -73,7 +79,8 @@
       "timeout": "Timed out connecting to the database at {{host}}:{{port}} after about {{seconds}} seconds.",
       "authenticationFailed": "Failed to sign in to database \"{{database}}\" with user \"{{user}}\". Check the username and password.",
       "databaseNotFound": "Database \"{{database}}\" does not exist or is not accessible with the current connection settings.",
-      "connectionFailed": "Database connection check failed. Details: {{details}}"
+      "connectionFailed": "Database connection check failed. Details: {{details}}",
+      "lowerCaseTableNamesRequiresUnderscored": "MySQL lower_case_table_names=1 requires DB_UNDERSCORED=true."
     }
   },
   "commands": {
@@ -93,14 +100,109 @@
           "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
         },
         "authType": {
-          "message": "How would you like to sign in?",
-          "oauthLabel": "OAuth (browser login)",
+          "message": "Which authentication method would you like to use?",
+          "basicLabel": "Basic authentication (username + password)",
+          "basicHint": "uses your credentials to fetch a token after save",
+          "oauthLabel": "OAuth (browser authentication)",
           "oauthHint": "runs nb env auth after save",
           "tokenLabel": "API token / API key"
+        },
+        "username": {
+          "message": "Enter the username for basic login",
+          "placeholder": "admin"
+        },
+        "password": {
+          "message": "Enter the password for basic login"
         },
         "accessToken": {
           "message": "Enter an API token or API key",
           "placeholder": "Enter your API token / API key"
+        }
+      }
+    },
+    "envProxy": {
+      "messages": {
+        "generating": "Generating proxy config for env \"{{envName}}\"...",
+        "printed": "Printed proxy config for env \"{{envName}}\".",
+        "saved": "Saved generated proxy config for env \"{{envName}}\" at {{outputPath}}.",
+        "savedWithAppEntryCreated": "Saved generated proxy config for env \"{{envName}}\" at {{outputPath}}, and created editable app entry config at {{appConfigPath}}.",
+        "savedWithAppEntryMigrated": "Saved generated proxy config for env \"{{envName}}\" at {{outputPath}}, and migrated the app entry config at {{appConfigPath}}.",
+        "savedNginxBundleCreated": "Saved nginx proxy files for env \"{{envName}}\" under {{entryDir}}, and created editable app entry config at {{appConfigPath}}.",
+        "savedNginxBundleUpdated": "Saved nginx proxy files for env \"{{envName}}\" under {{entryDir}}, and refreshed editable app entry config at {{appConfigPath}}.",
+        "savedCaddyBundleCreated": "Saved caddy proxy files for env \"{{envName}}\" under {{entryDir}}, and created editable app entry config at {{appConfigPath}}.",
+        "savedCaddyBundleMigrated": "Saved caddy proxy files for env \"{{envName}}\" under {{entryDir}}, and migrated the app entry config at {{appConfigPath}}.",
+        "savedCaddyBundleUpdated": "Saved caddy proxy files for env \"{{envName}}\" under {{entryDir}}, and refreshed editable app entry config at {{appConfigPath}}.",
+        "failed": "Failed to generate proxy config for env \"{{envName}}\".",
+        "installingProvider": "Installing the shared proxy config into {{provider}}...",
+        "providerInstalled": "Installed the shared proxy config into the {{provider}} main config at {{configPath}}.",
+        "providerAlreadyInstalled": "The shared proxy config is already installed in the {{provider}} main config at {{configPath}}.",
+        "installProviderFailed": "Failed to install the shared proxy config into {{provider}}.",
+        "reloadingProvider": "Validating and reloading {{provider}}...",
+        "providerReloaded": "Validated and reloaded {{provider}}.",
+        "reloadProviderFailed": "Failed to validate and reload {{provider}}."
+      },
+      "errors": {
+        "httpEnvUnsupported": "Can't generate a proxy config for \"{{envName}}\" from this machine because the env only has an API connection.",
+        "sshEnvUnsupported": "Can't generate a proxy config for \"{{envName}}\" yet because SSH envs are not implemented.",
+        "invalidProxyPort": "Invalid proxy entry port \"{{port}}\". Use an integer between 1 and 65535.",
+        "missingAppPort": "Missing appPort for env \"{{envName}}\". Save or update the app port before generating proxy config.",
+        "missingVersion": "Couldn't determine the app version for env \"{{envName}}\". Run `nb env update {{envName}}` and try again.",
+        "appEntryMissingInclude": "The editable app entry config at {{appConfigPath}} does not reference {{generatedConfigPath}}. Add the managed generated-config reference back into the editable app entry and rerun the command.",
+        "nginxOutputUnsupported": "The nginx provider does not support `--output`. It writes `app.conf`, `public/index-v1.html`, `public/index-v2.html`, and `nocobase.conf` into `~/.nocobase/proxy/nginx/<env>/`.",
+        "caddyOutputUnsupported": "The caddy provider does not support `--output`. It writes `app.caddy`, `generated.caddy`, `public/index-v1.html`, `public/index-v2.html`, and `nocobase.caddy` into `~/.nocobase/proxy/caddy/<env>/`.",
+        "nginxAppEntryMissingManagedBlock": "The editable nginx app entry config at {{appConfigPath}} does not contain the NocoBase managed block. Restore the managed block or delete the file and rerun `nb proxy nginx generate`."
+      }
+    },
+    "shared": {
+      "missingCommand": "Couldn't run `{{action}}` because the {{displayName}} executable could not be found. Install {{displayName}} or update `nb config set {{configKey}} <path>` and try again.",
+      "dockerDaemonUnavailable": "Couldn't run `{{action}}` because Docker is installed but the Docker daemon is not running. Start Docker Desktop or the Docker daemon service, then try again. Details: {{details}}",
+      "targetEnv": "Using env \"{{envName}}\".",
+      "crossEnv": {
+        "prompt": "Current env is \"{{currentEnv}}\", but this command targets \"{{requestedEnv}}\" via --env. Continue without switching the current env?",
+        "refusal": "Refusing to run against env \"{{requestedEnv}}\" because the current env is \"{{currentEnv}}\" and interactive confirmation is unavailable in the current agent session.\n\nFor safety, the agent will not switch envs automatically and will not add --yes on your behalf.\n\nTo continue:\n- run `nb env use {{requestedEnv}}` yourself and then re-run the command, or\n- re-run the same command with `--env {{requestedEnv}} --yes` to confirm this one-off cross-env operation."
+      }
+    },
+    "license": {
+      "activate": {
+        "interactive": {
+          "notice": {
+            "hostnameLabel": "❯ Hostname",
+            "instanceIdLabel": "❯ Instance ID",
+            "copyHintWithHostname": "Copy this hostname and instance ID when checking or activating the license key.",
+            "copyHintWithoutHostname": "Copy this instance ID when checking or activating the license key."
+          },
+          "prompts": {
+            "provideMethod": {
+              "message": "How do you want to provide the license key?",
+              "keyOption": "Paste the license key",
+              "fileOption": "Read the key from a file"
+            },
+            "key": {
+              "message": "License key",
+              "transformer": "Entered {{count}} chars",
+              "required": "License key is required."
+            },
+            "keyFile": {
+              "message": "Path to the license key file",
+              "required": "License key file path is required."
+            }
+          }
+        },
+        "errors": {
+          "provideKeyOrKeyFile": "Provide --key or --key-file to continue.",
+          "emptyInput": "License key input was empty.",
+          "activationFailed": "Failed to activate the license for env \"{{envName}}\": {{reason}}.",
+          "reasons": {
+            "keyStatus": "license key is {{status}}",
+            "envMismatch": "license key does not match the current instance environment",
+            "domainMismatch": "license key does not match the current app domain",
+            "licenseStatus": "license status is {{status}}",
+            "validationFailed": "license validation failed"
+          }
+        },
+        "messages": {
+          "activated": "Activated the license for env \"{{envName}}\".",
+          "savedLicenseKey": "Saved the license key securely for this env"
         }
       }
     },
@@ -206,6 +308,10 @@
       }
     },
     "install": {
+      "messages": {
+        "skipDownloadDockerImageMissing": "Cannot continue with `--skip-download` because Docker image \"{{imageRef}}\" is not available locally. Load or pull the image first, or run the command again without `--skip-download`.",
+        "skipDownloadLocalAppMissing": "Cannot continue with `--skip-download` because \"{{projectRoot}}\" is missing or does not contain a package.json file. Point `--app-root-path` to an existing NocoBase app, or run the command again without `--skip-download`."
+      },
       "validation": {
         "builtinDbUnsupported": "Built-in database does not support \"{{dialect}}\" yet. Choose PostgreSQL, MySQL, or MariaDB, or turn off built-in database."
       },
@@ -215,22 +321,23 @@
           "placeholder": "local"
         },
         "lang": {
-          "message": "Which language would you like to use?"
+          "message": "Which language would you like to use for the app?"
         },
-        "appRootPath": {
-          "message": "Where should this app be stored?",
-          "placeholder": "./<env>/source/"
+        "appPath": {
+          "message": "Where should this app be stored? (relative to {{root}})",
+          "placeholder": "./<env>/"
         },
         "appPort": {
           "message": "Which port should this app use?",
           "placeholder": "13000"
         },
+        "appPublicPath": {
+          "message": "What is the app subpath? (for example, /nocobase/)",
+          "placeholder": "/ or /nocobase/"
+        },
         "storagePath": {
           "message": "Where should uploads and local files be stored?",
           "placeholder": "./<env>/storage/"
-        },
-        "fetchSource": {
-          "message": "Download NocoBase automatically if the app directory is empty?"
         },
         "dbDialect": {
           "message": "Which database would you like to use?"
@@ -259,6 +366,17 @@
         "dbPassword": {
           "message": "What is the database password?"
         },
+        "dbSchema": {
+          "message": "What is the database schema? (PostgreSQL only, optional)",
+          "placeholder": "Leave empty to use the default schema"
+        },
+        "dbTablePrefix": {
+          "message": "What table prefix should be used? (optional)",
+          "placeholder": "For example: nb_"
+        },
+        "dbUnderscored": {
+          "message": "Use underscored names for database tables and columns?"
+        },
         "rootUsername": {
           "message": "Choose the initial admin username",
           "placeholder": "nocobase"
@@ -281,7 +399,7 @@
         "envExists": "Env \"{{envName}}\" already exists. Choose another env name."
       },
       "messages": {
-        "title": "Set Up NocoBase for Coding Agents",
+        "title": "Set up NocoBase",
         "appNameRequiredWhenSkipped": "Env name is required when prompts are skipped.",
         "appNameEnvHelp": "Use `nb init --yes --env <envName>` to continue.",
         "resumeEnvRequired": "Env name is required when resuming setup.",
@@ -290,17 +408,22 @@
         "uiOpening": "A local setup form will open in your browser. That form needs a person to fill it in. If you are using an AI agent, do not stop this process while the CLI waits for the submission.",
         "uiReady": "Local setup form is ready.",
         "uiReadyHelp": "If your browser does not open automatically, copy the URL below into your browser to continue. Keep this terminal session running while the CLI waits for the submission.",
-        "uiOpenBrowserFallback": "We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process."
+        "uiOpenBrowserFallback": "We could not open your browser automatically. Copy the URL above into your browser to continue setup, and keep this terminal session running. If you are using an AI agent, do not stop the current process.",
+        "skillsSyncRegistryUnavailable": "Couldn't reach the npm registry to sync NocoBase AI coding skills. Skipping skills install and continuing init. Run `nb skills install` later when registry access is available."
       },
       "prompts": {
         "appName": {
           "message": "What should this environment use for `--env`?",
           "placeholder": "local"
         },
-        "hasNocobase": {
-          "message": "Do you already have a NocoBase application?",
-          "noLabel": "I don't have a NocoBase application yet",
-          "yesLabel": "I already have a NocoBase application"
+        "setupMode": {
+          "message": "How would you like to set up this environment?",
+          "installNewLabel": "Install a new app",
+          "installNewHint": "Install a brand-new app from scratch. Best for first-time setup, evaluation, or a fresh local environment.",
+          "manageLocalLabel": "Manage an app already on this machine",
+          "manageLocalHint": "Bring an app on this machine under nb management so install, upgrade, and startup can be handled in one place. During takeover, nb will re-download the app source or image and upgrade the app; storage will be created automatically when needed.",
+          "connectRemoteLabel": "Connect a remote app",
+          "connectRemoteHint": "Save only the remote app connection. Nothing will be installed or taken over on this machine."
         },
         "installSkills": {
           "message": "Install NocoBase AI coding skills (nocobase/skills)?"
@@ -308,27 +431,30 @@
         "apiBaseUrl": {
           "message": "API base URL",
           "placeholder": "https://demo.example.com/api or https://demo.example.com/api/__app/<subapp>"
+        },
+        "skipDownload": {
+          "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
         }
       },
       "webUi": {
-        "pageTitle": "Set Up NocoBase for Coding Agents",
-        "documentHeading": "Set Up NocoBase for Coding Agents",
-        "documentHint": "Connect an existing NocoBase app, or install a new one, so coding agents can access and work with NocoBase.",
+        "pageTitle": "Set up NocoBase",
+        "documentHeading": "Set up NocoBase",
+        "documentHint": "Install a new app, manage an existing one, or connect a remote app. You can use it directly or let a coding agent access it later.",
         "gettingStarted": {
           "title": "Getting started",
-          "description": "Choose whether to connect an existing app or install a new one."
+          "description": "Choose whether to install a new app, manage a local app, or connect a remote app."
         },
         "connectExistingApp": {
-          "title": "Connect an existing app",
-          "description": "Save your app connection."
+          "title": "Connection & authentication",
+          "description": "Enter the app access URL and choose an authentication method."
         },
         "createNewApp": {
-          "title": "Install a new app",
-          "description": "Set app basics and install options."
+          "title": "App environment",
+          "description": "Set the app basics, storage location, and runtime port."
         },
         "downloadAppFiles": {
-          "title": "Download app files",
-          "description": "Choose how to get the app files."
+          "title": "App source and version",
+          "description": "Choose how to get the app and which source and version to use."
         },
         "configureDatabase": {
           "title": "Configure the database",
@@ -339,6 +465,62 @@
           "description": "Set up the first admin."
         }
       }
+    },
+    "env": {
+      "messages": {
+        "noEnvsConfigured": "No envs configured.",
+        "noEnvsConfiguredHelp": "Run `nb init --ui` to create one first."
+      }
     }
+  },
+  "apiCommandCompat": {
+    "refusalTitle": "Refusing to run `nb api {{commandId}}` because the current CLI version is {{cliVersion}} while the target app version is {{appVersion}}.",
+    "refusalTitleMissingVersion": "Refusing to run `nb api {{commandId}}` because the {{versionLabel}} is unavailable.",
+    "refusalTitleGeneric": "Refusing to run `nb api {{commandId}}` because the current version combination is not compatible.",
+    "currentVersionsLine": "Current versions: {{versions}}.",
+    "refusalBodyWithRequirements": "This API command is blocked when used with {{requirements}}.",
+    "refusalBody": "This API command may not be compatible with the current CLI and app version combination.",
+    "channel": {
+      "stable": "stable",
+      "beta": "beta",
+      "alpha": "alpha",
+      "rc": "rc",
+      "unknownPrerelease": "unsupported prerelease"
+    },
+    "requirement": {
+      "cli": "CLI version {{condition}}",
+      "app": "app version {{condition}}",
+      "skills": "NocoBase AI skills version {{condition}}",
+      "appChannel": "{{channelLabel}} app version {{condition}}",
+      "appUnknownPrereleaseBlocked": "{{channelLabel}} app versions are blocked"
+    },
+    "currentVersion": {
+      "cli": "CLI {{version}}",
+      "app": "app {{version}}",
+      "appUnavailable": "app unavailable",
+      "skills": "NocoBase AI skills {{version}}",
+      "skillsUnavailable": "NocoBase AI skills unavailable"
+    },
+    "versionLabel": {
+      "cli": "CLI version",
+      "app": "target app version",
+      "skills": "installed NocoBase AI skills version"
+    },
+    "join": {
+      "two": "{{left}} and {{right}}",
+      "many": "{{head}}, and {{tail}}"
+    },
+    "continueTitle": "To continue:",
+    "continueUpgradeApp": "- upgrade the app to a compatible version",
+    "continueUpgradeAppToVersion": "- upgrade the app to {{suggestedUpgradeTarget}}",
+    "continueUseSupportedAppVersion": "- use a supported app version: {{supportedTargets}}",
+    "continueRefreshAppVersion": "- refresh the target env runtime so the current app version can be detected, then retry",
+    "continueUseCompatibleCli": "- or use a compatible CLI version",
+    "continueUseCompatibleCliVersion": "- or use a CLI version {{suggestedCliTarget}}",
+    "continueUpdateSkillsToVersion": "- install or update the NocoBase AI coding skills to {{suggestedSkillsUpgradeTarget}}. Run `nb skills update --yes` to refresh the managed skills.",
+    "continueUseCompatibleSkillsVersion": "- or use a NocoBase AI skills version {{suggestedSkillsTarget}}",
+    "continueInstallOrUpdateSkillsToVersion": "- run `nb skills install --yes` or `nb skills update --yes`, and make sure the managed skills version is {{suggestedSkillsUpgradeTarget}} before retrying",
+    "continueInstallOrUpdateSkills": "- run `nb skills install --yes` or `nb skills update --yes`, then retry once the managed skills version is available",
+    "supportedAppTarget": "{{channelLabel}} {{target}}"
   }
 }

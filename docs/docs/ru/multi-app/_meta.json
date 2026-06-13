@@ -17,6 +17,21 @@
         "type": "custom-link",
         "label": "Режим мультисреды",
         "link": "/multi-app/multi-app/remote"
+      },
+      {
+        "type": "custom-link",
+        "label": "Блок приложений и переключатель",
+        "link": "/multi-app/multi-app/app-block-and-switcher"
+      },
+      {
+        "type": "custom-link",
+        "label": "SSO приложений",
+        "link": "/multi-app/multi-app/app-sso"
+      },
+      {
+        "type": "custom-link",
+        "label": "Вызов API дочерних приложений",
+        "link": "/multi-app/multi-app/sub-app-api"
       }
     ]
   },

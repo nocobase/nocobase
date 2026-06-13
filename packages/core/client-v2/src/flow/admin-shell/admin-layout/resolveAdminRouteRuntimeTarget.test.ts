@@ -23,6 +23,17 @@ const app = {
   },
 } as any;
 
+// These fixtures mount the modern client under the `v2` segment; tell the
+// runtime-prefix helper so `isV2AdminRuntime` detects it (the server injects
+// this in production).
+beforeAll(() => {
+  (window as any).__nocobase_modern_client_prefix__ = 'v2';
+});
+
+afterAll(() => {
+  delete (window as any).__nocobase_modern_client_prefix__;
+});
+
 describe('resolveAdminRouteRuntimeTarget', () => {
   it('should resolve flowPage to v2 spa runtime target', () => {
     expect(

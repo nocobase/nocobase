@@ -9,6 +9,8 @@
 
 import React from 'react';
 import { createMockClient } from '@nocobase/client-v2';
+import { createMemoryRouter } from 'react-router-dom';
+import type { RouteObject } from 'react-router-dom';
 
 describe('PluginSettingsManager v2', () => {
   it('should return menu -> page two-level structure', () => {
@@ -72,7 +74,7 @@ describe('PluginSettingsManager v2', () => {
     expect(app.pluginSettingsManager.getRoutePath('demo.advanced')).toBe('/admin/settings/demo/advanced');
 
     expect(app.router.get('admin.settings.demo')).toMatchObject({ path: 'demo' });
-    expect(app.router.get('admin.settings.demo.index')).toMatchObject({ index: true });
+    expect(app.router.get('admin.settings.demo.index')).toMatchObject({ path: '' });
     expect(app.router.get('admin.settings.demo.advanced')).toMatchObject({ path: 'advanced' });
   });
 
@@ -110,7 +112,44 @@ describe('PluginSettingsManager v2', () => {
     });
 
     expect(app.pluginSettingsManager.get('demo.index')).toMatchObject({ componentLoader });
-    expect(app.router.get('admin.settings.demo.index')).toMatchObject({ componentLoader, index: true });
+    expect(app.router.get('admin.settings.demo.index')).toMatchObject({ componentLoader, path: '' });
+  });
+
+  it('should allow nested routes under index page route', () => {
+    const app = createMockClient();
+    const findRoute = (routes: RouteObject[], routeId: string): RouteObject | null => {
+      for (const route of routes) {
+        if (route.id === routeId) {
+          return route;
+        }
+        const matched = route.children ? findRoute(route.children, routeId) : null;
+        if (matched) {
+          return matched;
+        }
+      }
+      return null;
+    };
+
+    app.pluginSettingsManager.addMenuItem({ key: 'demo', title: 'Demo' });
+    app.pluginSettingsManager.addPageTabItem({ menuKey: 'demo', key: 'index', title: 'Overview' });
+    app.router.add('admin.settings.demo.index.layout', {
+      path: 'configure',
+      Component: () => React.createElement('div', null, 'configure'),
+    });
+
+    const routes = app.router.getRoutesTree();
+    const indexRoute = findRoute(routes, 'admin.settings.demo.index');
+
+    expect(indexRoute).toMatchObject({
+      id: 'admin.settings.demo.index',
+      path: '',
+    });
+    expect(indexRoute).not.toHaveProperty('index');
+    expect(findRoute(routes, 'admin.settings.demo.index.layout')).toMatchObject({
+      id: 'admin.settings.demo.index.layout',
+      path: 'configure',
+    });
+    expect(() => createMemoryRouter(routes, { initialEntries: ['/demo/configure/form-1'] })).not.toThrow();
   });
 
   it('should merge duplicate registration and refresh route config', () => {

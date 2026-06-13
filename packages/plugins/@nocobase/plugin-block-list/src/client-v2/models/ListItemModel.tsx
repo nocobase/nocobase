@@ -8,6 +8,8 @@
  */
 
 import {
+  createRecordResolveOnServerWithLocal,
+  ForkFlowModel,
   PropertyMetaFactory,
   createRecordMetaFactory,
   DndProvider,
@@ -30,6 +32,36 @@ type ListItemModelStructure = {
     actions: ActionModel[];
   };
 };
+
+const recordIdentityByFork = new WeakMap<ForkFlowModel<FlowModel>, string>();
+
+type CollectionLike = {
+  filterTargetKey?: string | string[];
+  getFilterByTK?: (record: Record<string, unknown>) => unknown;
+  getFilterTargetKey?: () => string | string[];
+};
+
+function getRecordValue(record: unknown, key: string) {
+  if (!record || typeof record !== 'object') return undefined;
+
+  return (record as Record<string, unknown>)[key];
+}
+
+function getRecordIdentity(record: unknown, collection?: CollectionLike) {
+  if (record && typeof record === 'object') {
+    const filterByTk = collection?.getFilterByTK?.(record as Record<string, unknown>);
+
+    if (typeof filterByTk !== 'undefined' && filterByTk !== null) {
+      return String(filterByTk);
+    }
+  }
+
+  const filterTargetKey = collection?.getFilterTargetKey?.() || collection?.filterTargetKey || 'id';
+  const keys = Array.isArray(filterTargetKey) ? filterTargetKey : [filterTargetKey];
+  const values = keys.map((key) => getRecordValue(record, key));
+
+  return values.map((value) => String(value ?? '')).join('-');
+}
 
 export class ListItemModel extends FlowModel<ListItemModelStructure> {
   onInit(options: any): void {
@@ -111,10 +143,22 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
             >
               <Space wrap>
                 {this.mapSubModels('actions', (action, i) => {
-                  const fork = action.createFork({}, `${index}`);
-                  if (fork.hidden && !isConfigMode) {
+                  if (action.hidden && !isConfigMode) {
                     return;
                   }
+                  const slotKey = `${getRecordValue(record, '__index') ?? index}`;
+                  const recordIdentity = getRecordIdentity(record, this.context.collection);
+                  const cachedFork = action.getFork?.(slotKey);
+
+                  if (cachedFork && recordIdentityByFork.get(cachedFork) !== recordIdentity) {
+                    cachedFork.dispose();
+                  }
+
+                  const fork = action.createFork({}, slotKey);
+                  recordIdentityByFork.set(fork, recordIdentity);
+                  fork.invalidateFlowCache('beforeRender');
+                  const actionRenderKey = `${fork.uid}-${slotKey}-${recordIdentity}`;
+
                   const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
                     () => (fork.context as any).collection,
                     fork.context.t('Current record'),
@@ -130,12 +174,15 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
                   );
                   fork.context.defineProperty('record', {
                     get: () => this.context.record,
-                    resolveOnServer: true,
+                    resolveOnServer: createRecordResolveOnServerWithLocal(
+                      () => (fork.context as any).collection,
+                      () => record,
+                    ),
                     meta: recordMeta,
                     cache: false,
                   });
                   return (
-                    <Droppable model={fork} key={fork.uid}>
+                    <Droppable model={fork} key={actionRenderKey}>
                       <div
                         className={css`
                           button {
@@ -145,7 +192,9 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
                         `}
                       >
                         <FlowModelRenderer
+                          key={actionRenderKey}
                           model={fork}
+                          inputArgs={record}
                           showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                           extraToolbarItems={[
                             {

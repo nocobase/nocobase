@@ -10,7 +10,7 @@
 import { MockDatabase } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import Processor from '../Processor';
 
 describe('workflow > Processor', () => {
@@ -87,7 +87,10 @@ describe('workflow > Processor', () => {
 
     it('workflow with single simple node', async () => {
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -108,7 +111,10 @@ describe('workflow > Processor', () => {
     it('workflow with multiple simple nodes', async () => {
       const n1 = await workflow.createNode({
         title: 'echo 1',
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const n2 = await workflow.createNode({
@@ -264,6 +270,81 @@ describe('workflow > Processor', () => {
       expect(jobs.length).toEqual(1);
       expect(jobs[0].status).toEqual(JOB_STATUS.ERROR);
       expect(jobs[0].result.message).toEqual('input failed');
+    });
+
+    it('workflow timeout should abort pending execution', async () => {
+      workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        options: {
+          timeout: 300,
+        },
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'prompt',
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(200);
+
+      let [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
+      expect(execution.startedAt).toBeTruthy();
+      expect(execution.expiresAt).toBeTruthy();
+
+      for (let i = 0; i < 10; i++) {
+        [execution] = await workflow.getExecutions();
+        if (execution.status === EXECUTION_STATUS.ABORTED) {
+          break;
+        }
+        await sleep(100);
+      }
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.ABORTED);
+      expect(execution.reason).toEqual(EXECUTION_REASON.TIMEOUT);
+      const [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.ABORTED);
+    });
+
+    it('workflow timeout should record timeout reason for running execution', async () => {
+      workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        options: {
+          timeout: 100,
+        },
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'timeConsume',
+        config: {
+          duration: 300,
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      for (let i = 0; i < 10; i++) {
+        const [execution] = await workflow.getExecutions();
+        if (execution?.status === EXECUTION_STATUS.ABORTED) {
+          expect(execution.reason).toEqual(EXECUTION_REASON.TIMEOUT);
+          return;
+        }
+        await sleep(100);
+      }
+
+      throw new Error('execution was not aborted by timeout in time');
     });
   });
 

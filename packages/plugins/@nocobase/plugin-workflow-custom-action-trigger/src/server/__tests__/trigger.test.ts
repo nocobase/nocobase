@@ -190,7 +190,10 @@ describe('workflow: custom action trigger', () => {
       });
 
       const n1 = await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const p1 = await PostRepo.create({

@@ -8,7 +8,6 @@ Diese Seite dokumentiert die Änderungen der einzelnen Versionen der Ticket-Lös
 
 **Backup-Dateien**:
 - [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
-- [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip)
 
 **Änderungen**:
 - Fehler behoben, bei dem beim Klicken auf „Abgeschlossen" eines Tickets die SLA Config nicht gefunden wurde
@@ -21,7 +20,6 @@ Diese Seite dokumentiert die Änderungen der einzelnen Versionen der Ticket-Lös
 
 **Backup-Dateien**:
 - nocobase_tts_v2_backup_260302.nbdata
-- nocobase_tts_v2_sql_260302.zip
 
 **Änderungen**:
 - Erstveröffentlichung des Ticketsystems v2

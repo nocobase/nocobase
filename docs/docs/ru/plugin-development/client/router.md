@@ -1,92 +1,171 @@
-# Роутер
+---
+title: "Router"
+description: "Маршрутизация клиента NocoBase: this.router.add для регистрации маршрутов страниц, pluginSettingsManager для регистрации страниц настроек плагинов (addMenuItem + addPageTabItem)."
+keywords: "Router,маршрутизация,router.add,pluginSettingsManager,addMenuItem,addPageTabItem,componentLoader,регистрация страниц,NocoBase"
+---
 
-Клиент NocoBase предоставляет гибкий менеджер маршрутизации, который позволяет расширять страницы и страницы настроек плагинов с помощью `router.add()` и `pluginSettingsManager`.
+# Router
 
-## Зарегистрированные маршруты страниц по умолчанию
+В NocoBase плагины регистрируют страницы через маршруты. Есть два распространённых способа:
 
-| Название           | Путь               | Компонент                | Описание                      |
-| :----------------- | :----------------- | :----------------------- | :---------------------------- |
-| admin              | /admin/\*          | AdminLayout              | Страницы административной панели |
-| admin.page         | /admin/:name       | AdminDynamicPage         | Динамически создаваемые страницы |
-| admin.settings     | /admin/settings/\* | AdminSettingsLayout      | Страницы настроек плагинов    |
+- `this.router.add()` — регистрирует обычные маршруты страниц
+- `this.pluginSettingsManager.addMenuItem()` + `addPageTabItem()` — регистрирует страницы настроек плагинов
 
-## Расширение обычных страниц
+Регистрация маршрутов обычно выполняется в методе `load()` плагина. Подробнее см. [Plugin](./plugin).
 
-Добавляйте обычные маршруты страниц с помощью `router.add()`. Для компонентов страниц используйте `componentLoader`, чтобы модуль страницы загружался только при фактическом переходе на маршрут.
+:::warning Примечание
 
-Файлы страниц должны использовать `export default`:
+В плагинах NocoBase v2 зарегистрированные маршруты по умолчанию получают префикс `/v`. При обращении к маршрутам необходимо указывать этот префикс.
+
+:::
+
+## Маршруты по умолчанию
+
+В NocoBase зарегистрированы следующие маршруты по умолчанию:
+
+| Имя            | Путь                  | Компонент           | Описание                       |
+| -------------- | --------------------- | ------------------- | ------------------------------ |
+| admin          | /v/admin/\*          | AdminLayout         | Страницы администрирования     |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | Динамически создаваемые страницы |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Страницы настроек плагинов     |
+
+## Маршруты страниц
+
+Регистрируйте маршруты страниц через `this.router.add()`. Для компонентов страниц следует использовать `componentLoader` для отложенной загрузки, чтобы код страницы загружался только при фактическом обращении к ней.
+
+:::warning Примечание
+
+Файлы страниц должны экспортировать компонент через `export default`.
+
+:::
 
 ```tsx
-// routes/HomePage.tsx
-export default function HomePage() {
-  return <h1>Home</h1>;
+// pages/HelloPage.tsx
+export default function HelloPage() {
+  return <h1>Hello, NocoBase!</h1>;
 }
 ```
 
-```tsx
-import { Link, Outlet } from 'react-router-dom';
-import { Application, Plugin } from '@nocobase/client';
+Регистрация в методе `load()` плагина:
 
-const Layout = () => (
-  <div>
-    <div>
-      <Link to="/">Home</Link> | <Link to="/about">About</Link>
-    </div>
-    <Outlet />
-  </div>
-);
+```tsx
+import { Plugin } from '@nocobase/client-v2';
 
 class MyPlugin extends Plugin {
   async load() {
-    this.router.add('root', { element: <Layout /> });
-
-    this.router.add('root.home', {
-      path: '/',
-      // Динамический импорт: модуль страницы загружается только при переходе на этот маршрут
-      componentLoader: () => import('./routes/HomePage'),
-    });
-
-    this.router.add('root.about', {
-      path: '/about',
-      componentLoader: () => import('./routes/AboutPage'),
+    this.router.add('hello', {
+      path: '/hello',
+      // Отложенная загрузка: модуль загружается только при обращении к /v/hello
+      componentLoader: () => import('./pages/HelloPage'),
     });
   }
 }
-
-const app = new Application({
-  router: { type: 'memory', initialEntries: ['/'] },
-  plugins: [MyPlugin]
-});
-
-export default app.getRootComponent();
 ```
 
-Поддерживает динамические параметры
+Первый аргумент `router.add()` — это имя маршрута, поддерживающее точечную нотацию `.` для выражения отношений «родитель — потомок». Например, `root.home` представляет дочерний маршрут `root`.
+
+В компонентах можно перейти к маршруту через `ctx.router.navigate('/hello')`.
+
+```tsx
+import { useFlowContext } from '@nocobase/flow-engine';
+import { Button } from 'antd';
+
+export default function SomeComponent() {
+  const ctx = useFlowContext();
+  return (
+    <Button onClick={() => ctx.router.navigate('/hello')}>
+      Go to Hello Page
+    </Button>
+  );
+}
+```
+
+Подробнее см. раздел о маршрутизации в [Component](./component/index.md).
+
+### Вложенные маршруты
+
+Вложенность реализуется через точечную нотацию. Родительские маршруты используют `<Outlet />` для отображения содержимого дочерних маршрутов:
+
+```tsx
+import { Outlet } from 'react-router-dom';
+
+class MyPlugin extends Plugin {
+  async load() {
+    // Родительский маршрут, element как встроенный макет
+    this.router.add('root', {
+      element: (
+        <div>
+          <nav>Панель навигации</nav>
+          <Outlet />
+        </div>
+      ),
+    });
+
+    // Дочерний маршрут, componentLoader для отложенной загрузки
+    this.router.add('root.home', {
+      path: '/', // -> /v/
+      componentLoader: () => import('./pages/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about', // -> /v/about
+      componentLoader: () => import('./pages/AboutPage'),
+    });
+  }
+}
+```
+
+### Динамические параметры
+
+Пути маршрутов поддерживают динамические параметры:
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id',
-  element: ({ params }) => <div>User ID: {params.id}</div>
+  path: '/user/:id', // -> /v/user/:id
+  componentLoader: () => import('./pages/UserPage'),
 });
 ```
 
-Если страница тяжёлая или не нужна при первом рендере, отдавайте предпочтение `componentLoader`; `element` по-прежнему подходит для layout-маршрутов или очень лёгких inline-страниц.
+В компонентах можно получить динамические параметры через `ctx.route.params`:
 
-## Расширение страниц настроек плагинов
+```tsx
+import { useFlowContext } from '@nocobase/flow-engine';
 
-Register plugin settings pages via `this.pluginSettingsManager`. Registration has two steps — first use `addMenuItem()` to register the menu entry, then use `addPageTabItem()` to register the actual page. Settings pages appear in the NocoBase "Plugin Settings" menu.
+export default function UserPage() {
+  const ctx = useFlowContext();
+  const { id } = ctx.route.params; // Получить динамический параметр id
+  return <h1>User ID: {id}</h1>;
+}
+```
+
+Подробнее см. раздел о маршрутизации в [Component](./component/index.md).
+
+### componentLoader или element
+
+- **`componentLoader`** (рекомендуется): отложенная загрузка, подходит для компонентов страниц. Файлам страниц нужен `export default`.
+- **`element`**: передаёт JSX напрямую, подходит для компонентов макета или очень лёгких встроенных страниц.
+
+Если страница сама по себе имеет тяжёлые зависимости, предпочтительнее использовать `componentLoader`.
+
+## Страницы настроек плагинов
+
+Регистрируйте страницы настроек плагинов через `this.pluginSettingsManager`. Регистрация состоит из двух шагов — сначала используйте `addMenuItem()` для регистрации пункта меню, затем `addPageTabItem()` для регистрации самой страницы. Страницы настроек появляются в меню «Настройки плагинов» NocoBase.
+
+![20260403155201](https://static-docs.nocobase.com/20260403155201.png)
 
 ```tsx
 import { Plugin, Application } from '@nocobase/client-v2';
 
 export class HelloPlugin extends Plugin<any, Application> {
   async load() {
+    // Регистрация пункта меню
     this.pluginSettingsManager.addMenuItem({
       key: 'hello',
       title: this.t('Hello Settings'),
-      icon: 'ApiOutlined',
+      icon: 'ApiOutlined', // Имя иконки Ant Design, см. https://5x.ant.design/components/icon
     });
 
+    // Регистрация страницы (ключ 'index' сопоставляется с корневым путём меню)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -97,19 +176,25 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-To add multiple sub-pages under a single menu entry, register multiple `addPageTabItem` calls with the same `menuKey` — tabs will appear automatically:
+После регистрации путь доступа — `/v/admin/settings/hello`. Когда под меню есть только одна страница, верхняя панель вкладок автоматически скрывается.
+
+### Страница настроек с несколькими вкладками
+
+Если странице настроек нужно несколько подстраниц, зарегистрируйте несколько вызовов `addPageTabItem` с одним и тем же `menuKey` — сверху автоматически появится панель вкладок:
 
 ```tsx
 import { Plugin, Application } from '@nocobase/client-v2';
 
 class HelloPlugin extends Plugin<any, Application> {
   async load() {
+    // Регистрация пункта меню
     this.pluginSettingsManager.addMenuItem({
       key: 'hello',
       title: this.t('HelloWorld'),
       icon: 'ApiOutlined',
     });
 
+    // Вкладка 1: Общие настройки (ключ 'index' сопоставляется с /v/admin/settings/hello)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -117,6 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
+    // Вкладка 2: Расширенные настройки (сопоставляется с /v/admin/settings/hello/advanced)
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',
@@ -126,3 +212,33 @@ class HelloPlugin extends Plugin<any, Application> {
   }
 }
 ```
+
+### Параметры addMenuItem
+
+| Поле       | Тип                   | Обязательно | Описание                                                             |
+| ---------- | --------------------- | ----------- | ------------------------------------------------------------------- |
+| `key`      | `string`              | Да          | Уникальный идентификатор меню, не может содержать `.`               |
+| `title`    | `ReactNode`           | Нет         | Заголовок меню                                                      |
+| `icon`     | `string \| ReactNode` | Нет         | Иконка меню; для строки отображается как встроенный `Icon`          |
+| `sort`     | `number`              | Нет         | Значение сортировки; меньшие значения выше, по умолчанию `0`        |
+| `showTabs` | `boolean`             | Нет         | Показывать ли верхнюю панель вкладок; по умолчанию определяется числом страниц |
+| `hidden`   | `boolean`             | Нет         | Скрывать ли пункт навигации                                         |
+
+### Параметры addPageTabItem
+
+| Поле              | Тип         | Обязательно | Описание                                                            |
+| ----------------- | ----------- | ----------- | ------------------------------------------------------------------- |
+| `menuKey`         | `string`    | Да          | `key` родительского меню, соответствует `key` из `addMenuItem`      |
+| `key`             | `string`    | Да          | Уникальный идентификатор страницы. `'index'` обозначает страницу по умолчанию, сопоставленную с корневым путём меню |
+| `title`           | `ReactNode` | Нет         | Заголовок страницы (отображается на вкладке)                        |
+| `componentLoader` | `Function`  | Нет         | Компонент страницы с отложенной загрузкой (рекомендуется)           |
+| `Component`       | `Component` | Нет         | Передать компонент напрямую (альтернатива `componentLoader`)        |
+| `sort`            | `number`    | Нет         | Значение сортировки; меньшие значения выше                          |
+| `hidden`          | `boolean`   | Нет         | Скрывать ли на панели вкладок                                       |
+| `link`            | `string`    | Нет         | Внешняя ссылка; если задана, клик по вкладке ведёт на внешний URL   |
+
+## Связанные ссылки
+
+- [Plugin](./plugin) — маршруты регистрируются в `load()`
+- [Component](./component/index.md) — как писать компоненты страниц, монтируемые маршрутами
+- [Пример плагина: создание страницы настроек](./examples/settings-page) — полный пример страницы настроек

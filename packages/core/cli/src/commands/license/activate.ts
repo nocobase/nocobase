@@ -8,19 +8,19 @@
  */
 
 import { Command, Flags } from '@oclif/core';
+import pc from 'picocolors';
 import { readFile } from 'node:fs/promises';
+import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { input, password as promptPassword, select } from '../../lib/inquirer.ts';
 import {
   createLicenseEnvFlag,
   ensureInstanceId,
   licenseJsonFlag,
-  licensePkgUrlFlag,
   licenseYesFlag,
   redactLicenseKey,
   requireLicenseRuntime,
   resolveLicenseKeyFile,
-  resolveLicenseServiceUrl,
   saveLicenseKey,
   sanitizeLicenseOutput,
   validateLicenseKey,
@@ -28,220 +28,100 @@ import {
 import { announceTargetEnv, isInteractiveTerminal } from '../../lib/ui.js';
 import { appUrl } from '../env/shared.js';
 
-type ActivationMode = 'key' | 'online' | 'cancel';
-type OnlineActivationAnswers = {
-  account: string;
-  password: string;
-  appName: string;
-  serviceUrl: string;
-};
+const licenseActivateText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
+  translateCli(`commands.license.activate.${key}`, values, { fallback });
 
-function resolveOnlineInputValue(value: unknown): string {
-  return String(value ?? '').trim();
-}
+function resolveHostnameNoticeValue(runtime: Awaited<ReturnType<typeof requireLicenseRuntime>>): string | undefined {
+  const currentAppUrl = String(appUrl(runtime) ?? '').trim();
+  if (!currentAppUrl) {
+    return;
+  }
 
-async function promptActivationMode(): Promise<ActivationMode> {
   try {
-    return await select<ActivationMode>({
-      message: 'How do you want to activate the license?',
-      choices: [
-        { value: 'online', name: 'Request and activate a license online' },
-        { value: 'key', name: 'Use an existing license key' },
-        { value: 'cancel', name: 'Cancel' },
-      ],
-      default: 'online',
-    });
+    const url = new URL(currentAppUrl);
+    return url.host || undefined;
   } catch {
-    return 'cancel';
+    return currentAppUrl;
   }
 }
 
-async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string }> {
+function formatInstanceIdNotice(instanceId: string, hostname?: string): string {
+  return [
+    '',
+    ...(hostname
+      ? [pc.cyan(pc.bold(licenseActivateText('interactive.notice.hostnameLabel'))), `  ${pc.bold(hostname)}`, '']
+      : []),
+    pc.cyan(pc.bold(licenseActivateText('interactive.notice.instanceIdLabel'))),
+    `  ${pc.bold(instanceId)}`,
+    pc.dim(
+      `  ${licenseActivateText(
+        hostname ? 'interactive.notice.copyHintWithHostname' : 'interactive.notice.copyHintWithoutHostname',
+      )}`,
+    ),
+    '',
+  ].join('\n');
+}
+
+async function promptLicenseKeyInput(): Promise<{ key?: string; keyFile?: string } | undefined> {
   let answer: 'key' | 'file';
   try {
     answer = await select<'key' | 'file'>({
-      message: 'How do you want to provide the license key?',
+      message: licenseActivateText('interactive.prompts.provideMethod.message'),
       choices: [
-        { value: 'key', name: 'Paste the license key' },
-        { value: 'file', name: 'Read the key from a file' },
+        { value: 'key', name: licenseActivateText('interactive.prompts.provideMethod.keyOption') },
+        { value: 'file', name: licenseActivateText('interactive.prompts.provideMethod.fileOption') },
       ],
       default: 'key',
     });
   } catch {
-    return {};
+    return;
   }
 
   if (answer === 'key') {
     try {
-      const key = await input({
-        message: 'License key',
-        validate: (value) => String(value ?? '').trim() ? true : 'License key is required.',
+      const key = await promptPassword({
+        message: licenseActivateText('interactive.prompts.key.message'),
+        mask: false,
+        transformer: (value) => licenseActivateText('interactive.prompts.key.transformer', { count: value.length }),
+        validate: (value) =>
+          String(value ?? '').trim() ? true : licenseActivateText('interactive.prompts.key.required'),
       });
       return { key: String(key ?? '').trim() || undefined };
     } catch {
-      return {};
+      return;
     }
   }
 
   try {
     const keyFile = await input({
-      message: 'Path to the license key file',
-      validate: (value) => String(value ?? '').trim() ? true : 'License key file path is required.',
+      message: licenseActivateText('interactive.prompts.keyFile.message'),
+      validate: (value) =>
+        String(value ?? '').trim() ? true : licenseActivateText('interactive.prompts.keyFile.required'),
     });
     return { keyFile: String(keyFile ?? '').trim() || undefined };
   } catch {
-    return {};
-  }
-}
-
-async function promptOnlineActivationInput(
-  initial: Partial<OnlineActivationAnswers>,
-  defaultAppName?: string,
-): Promise<OnlineActivationAnswers | undefined> {
-  let account = String(initial.account ?? '').trim();
-  if (!account) {
-    try {
-      const answer = await input({
-        message: 'Service account',
-        validate: (value) => String(value ?? '').trim() ? true : 'Service account is required.',
-      });
-      account = String(answer ?? '').trim();
-    } catch {
-      return;
-    }
-  }
-  if (!account) {
     return;
   }
-
-  let password = String(initial.password ?? '').trim();
-  if (!password) {
-    try {
-      const answer = await promptPassword({
-        message: 'Service password',
-        mask: '•',
-        validate: (value) => String(value ?? '').trim() ? true : 'Service password is required.',
-      });
-      password = String(answer ?? '').trim();
-    } catch {
-      return;
-    }
-  }
-  if (!password) {
-    return;
-  }
-
-  let appName = String(initial.appName ?? '').trim();
-  if (!appName) {
-    try {
-      const resolvedDefaultAppName = String(defaultAppName ?? '').trim();
-      const answer = await input({
-        message: 'Application name',
-        default: resolvedDefaultAppName || undefined,
-        validate: (value) => String(value ?? '').trim() ? true : 'Application name is required.',
-      });
-      appName = String(answer ?? '').trim();
-    } catch {
-      return;
-    }
-  }
-  if (!appName) {
-    return;
-  }
-
-  return {
-    account,
-    password,
-    appName,
-    serviceUrl: await resolveLicenseServiceUrl(initial.serviceUrl),
-  };
-}
-
-function resolveAppUrlOrThrow(runtime: Awaited<ReturnType<typeof requireLicenseRuntime>>): string {
-  const currentAppUrl = appUrl(runtime);
-  if (!currentAppUrl) {
-    throw new Error(`Env "${runtime.envName}" does not have an app URL or app port configured.`);
-  }
-
-  try {
-    return new URL(currentAppUrl).toString();
-  } catch {
-    throw new Error(`Env "${runtime.envName}" has an invalid app URL: ${currentAppUrl}`);
-  }
-}
-
-async function requestOnlineLicenseKey(
-  serviceUrl: string,
-  account: string,
-  password: string,
-  payload: {
-    appUrl: string;
-    appName: string;
-    instanceId: string;
-    type: 'internal';
-  },
-): Promise<string> {
-  const response = await fetch(`${serviceUrl}/license-key`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      account,
-      password,
-      appUrl: payload.appUrl,
-      appName: payload.appName,
-      instanceId: payload.instanceId,
-      type: payload.type,
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(`License service request failed with status ${response.status}.`);
-  }
-  const data = await response.json();
-
-  const key = String(data?.data?.key ?? '').trim();
-  if (!key) {
-    throw new Error('License service did not return a license key.');
-  }
-  return key;
 }
 
 export default class LicenseActivate extends Command {
-  static override summary = 'Activate commercial licensing for the selected env';
-  static override description =
-    'Activate a commercial license for the selected env. Provide an existing license key directly, or use `--online` to request and activate one from the online license service.';
+  static override summary = 'Activate an existing commercial license key for the selected env';
+  static override description = 'Activate an existing commercial license key for the selected env.';
   static override examples = [
+    '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --env app1 --key <licenseKey>',
     '<%= config.bin %> <%= command.id %> --env app1 --key-file ./license.txt',
-    '<%= config.bin %> <%= command.id %> --env app1 --online',
-    '<%= config.bin %> <%= command.id %> --env app1 --online --account aa --password bb --desc test24',
-    '<%= config.bin %> <%= command.id %> --env app1 --online --account aa --password bb --desc test24 --yes',
     '<%= config.bin %> <%= command.id %> --env app1 --json --key-file ./license.txt',
   ];
   static override flags = {
     env: createLicenseEnvFlag('CLI env name to activate a license for. Defaults to the current env when omitted'),
     json: licenseJsonFlag,
     key: Flags.string({
-      description: 'Existing license key to activate',
+      description: 'Existing commercial license key to activate',
     }),
     'key-file': Flags.string({
-      description: 'Path to a file containing the license key to activate',
+      description: 'Path to a file containing the existing commercial license key to activate',
     }),
-    online: Flags.boolean({
-      description: 'Request a license online and activate it',
-      default: false,
-    }),
-    account: Flags.string({
-      description: 'License service account for online activation',
-    }),
-    password: Flags.string({
-      description: 'License service password for online activation',
-    }),
-    desc: Flags.string({
-      description: 'Application name for online activation',
-    }),
-    'pkg-url': licensePkgUrlFlag,
     yes: licenseYesFlag,
   };
 
@@ -266,134 +146,38 @@ export default class LicenseActivate extends Command {
     }
     let key = String(flags.key ?? '').trim();
     let keyFile = String(flags['key-file'] ?? '').trim();
-    let online = Boolean(flags.online);
+    let interactiveKeyFlowInstanceId: string | undefined;
 
-    if (!key && !keyFile && !online) {
+    if (!key && !keyFile) {
       if (!isInteractiveTerminal()) {
-        this.error('Provide --key, --key-file, or --online to continue.');
+        this.error(licenseActivateText('errors.provideKeyOrKeyFile'));
       }
 
-      const mode = await promptActivationMode();
-      if (mode === 'cancel') {
+      interactiveKeyFlowInstanceId = await ensureInstanceId(runtime);
+      const hostname = resolveHostnameNoticeValue(runtime);
+      this.log(formatInstanceIdNotice(interactiveKeyFlowInstanceId, hostname));
+      const prompted = await promptLicenseKeyInput();
+      if (!prompted) {
         return;
       }
-
-      if (mode === 'online') {
-        online = true;
-      } else {
-        const prompted = await promptLicenseKeyInput();
-        key = String(prompted.key ?? '').trim();
-        keyFile = String(prompted.keyFile ?? '').trim();
-        if (!key && !keyFile) {
-          this.error('License key input was empty.');
-        }
+      key = String(prompted.key ?? '').trim();
+      keyFile = String(prompted.keyFile ?? '').trim();
+      if (!key && !keyFile) {
+        this.error(licenseActivateText('errors.emptyInput'));
       }
-    }
-
-    if ((key || keyFile) && online) {
-      this.error('Use either an existing key (--key / --key-file) or --online, not both.');
-    }
-
-    if (online) {
-      const resolvedServiceUrl = await resolveLicenseServiceUrl(flags['pkg-url']);
-      const initialOnline = {
-        account: resolveOnlineInputValue(flags.account),
-        password: resolveOnlineInputValue(flags.password),
-        appName: resolveOnlineInputValue(flags.desc),
-        serviceUrl: resolvedServiceUrl,
-      };
-
-      let onlineInput = initialOnline;
-      if (
-        !onlineInput.account
-        || !onlineInput.password
-        || !onlineInput.appName
-      ) {
-        if (!isInteractiveTerminal()) {
-          this.error('Online activation requires --account, --password, and --desc when not using a TTY.');
-        }
-
-        const prompted = await promptOnlineActivationInput(initialOnline, runtime.envName);
-        if (!prompted) {
-          return;
-        }
-        onlineInput = prompted;
-      }
-
-      const instanceId = await ensureInstanceId(runtime);
-      const resolvedAppUrl = resolveAppUrlOrThrow(runtime);
-      const resolvedKey = await requestOnlineLicenseKey(
-        onlineInput.serviceUrl,
-        onlineInput.account,
-        onlineInput.password,
-        {
-          appUrl: resolvedAppUrl,
-          appName: onlineInput.appName,
-          instanceId,
-          type: 'internal',
-        },
-      );
-      const validation = await validateLicenseKey(runtime, resolvedKey);
-      const ok =
-        !validation.keyStatus
-        && validation.envMatch
-        && validation.domainMatch
-        && validation.licenseStatus === 'active';
-      const licenseKeyPath = ok ? await saveLicenseKey(runtime, resolvedKey) : resolveLicenseKeyFile(runtime);
-      const payload = {
-        ok,
-        env: runtime.envName,
-        kind: runtime.kind,
-        instanceId,
-        mode: 'online',
-        serviceUrl: onlineInput.serviceUrl,
-        appUrl: resolvedAppUrl,
-        appName: onlineInput.appName,
-        key: redactLicenseKey(resolvedKey),
-        licenseKeyPath,
-        validation: sanitizeLicenseOutput(validation),
-      };
-
-      if (flags.json) {
-        this.log(JSON.stringify(payload, null, 2));
-        if (!ok) {
-          this.exit(1);
-        }
-        return;
-      }
-
-      if (!ok) {
-        const reason = validation.keyStatus
-          ? `license key is ${validation.keyStatus}`
-          : !validation.envMatch
-            ? 'license key does not match the current instance environment'
-            : !validation.domainMatch
-              ? 'license key does not match the current app domain'
-              : validation.licenseStatus !== 'active'
-                ? `license status is ${validation.licenseStatus}`
-                : 'license validation failed';
-        this.error(`Failed to activate the online license for env "${runtime.envName}": ${reason}.`);
-      }
-
-      this.log(`Activated the online license for env "${runtime.envName}".`);
-      this.log(`Saved license key at ${licenseKeyPath}`);
-      return;
     }
 
     const resolvedKey = key || String(await readFile(keyFile, 'utf8')).trim();
     const validation = await validateLicenseKey(runtime, resolvedKey);
     const ok =
-      !validation.keyStatus
-      && validation.envMatch
-      && validation.domainMatch
-      && validation.licenseStatus === 'active';
+      !validation.keyStatus && validation.envMatch && validation.domainMatch && validation.licenseStatus === 'active';
     const licenseKeyPath = ok ? await saveLicenseKey(runtime, resolvedKey) : resolveLicenseKeyFile(runtime);
 
     const payload = {
       ok,
       env: runtime.envName,
       kind: runtime.kind,
-      instanceId: await ensureInstanceId(runtime),
+      instanceId: interactiveKeyFlowInstanceId ?? (await ensureInstanceId(runtime)),
       mode: 'key',
       key: redactLicenseKey(resolvedKey),
       keyFile: keyFile || undefined,
@@ -411,18 +195,18 @@ export default class LicenseActivate extends Command {
 
     if (!ok) {
       const reason = validation.keyStatus
-        ? `license key is ${validation.keyStatus}`
+        ? licenseActivateText('errors.reasons.keyStatus', { status: validation.keyStatus })
         : !validation.envMatch
-          ? 'license key does not match the current instance environment'
+          ? licenseActivateText('errors.reasons.envMismatch')
           : !validation.domainMatch
-            ? 'license key does not match the current app domain'
+            ? licenseActivateText('errors.reasons.domainMismatch')
             : validation.licenseStatus !== 'active'
-              ? `license status is ${validation.licenseStatus}`
-              : 'license validation failed';
-      this.error(`Failed to activate the license for env "${runtime.envName}": ${reason}.`);
+              ? licenseActivateText('errors.reasons.licenseStatus', { status: validation.licenseStatus })
+              : licenseActivateText('errors.reasons.validationFailed');
+      this.error(licenseActivateText('errors.activationFailed', { envName: runtime.envName, reason }));
     }
 
-    this.log(`Activated the license for env "${runtime.envName}".`);
-    this.log(`Saved license key at ${licenseKeyPath}`);
+    this.log(licenseActivateText('messages.activated', { envName: runtime.envName }));
+    this.log(licenseActivateText('messages.savedLicenseKey'));
   }
 }

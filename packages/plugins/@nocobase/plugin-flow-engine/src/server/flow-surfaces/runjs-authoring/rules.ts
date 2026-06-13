@@ -21,6 +21,7 @@ import { resourceRuntimeContractStopRule } from './resource-runtime-contract-sto
 import { sourceLimitStopRule } from './source-limit-stop';
 import { switchToResourceApiRule } from './switch-to-resource-api';
 import { syntaxStopRule } from './syntax-stop';
+import { unknownGlobalStopRule } from './unknown-global-stop';
 import { unknownModelStopRule } from './unknown-model-stop';
 import { unknownSurfaceStopRule } from './unknown-surface-stop';
 import { valueSurfaceForbidsRenderRule } from './value-surface-forbids-render';
@@ -39,6 +40,7 @@ export const RUNJS_AUTHORING_RULES: RunJsAuthoringRuleDefinition[] = [
   renderTopLevelFunctionWrapperRule,
   renderUnreachableRenderCallRule,
   blockedGlobalStopRule,
+  unknownGlobalStopRule,
   blockedCapabilityRerouteRule,
   reactRuntimeContractStopRule,
   resourceRuntimeContractStopRule,

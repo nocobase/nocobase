@@ -8,7 +8,6 @@ Trang này ghi lại nội dung cập nhật của từng phiên bản giải ph
 
 **Tệp backup**:
 - [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
-- [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip)
 
 **Nội dung cập nhật**:
 - Sửa lỗi báo "không tìm thấy SLA Config" khi nhấn "Đã hoàn thành" trên Ticket
@@ -21,7 +20,6 @@ Trang này ghi lại nội dung cập nhật của từng phiên bản giải ph
 
 **Tệp backup**:
 - nocobase_tts_v2_backup_260302.nbdata
-- nocobase_tts_v2_sql_260302.zip
 
 **Nội dung cập nhật**:
 - Hệ thống Ticket v2 phát hành lần đầu

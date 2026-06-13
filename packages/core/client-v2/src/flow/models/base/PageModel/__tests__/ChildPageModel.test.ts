@@ -107,6 +107,18 @@ describe('ChildPageModel', () => {
       expect(mockFlowEngine.moveModel).toHaveBeenCalledWith('active-model-id', 'over-model-id');
     });
 
+    it('should ignore self-drop', async () => {
+      await childPageModel.handleDragEnd({
+        ...mockDragEndEvent,
+        over: {
+          ...(mockDragEndEvent.over as NonNullable<DragEndEvent['over']>),
+          id: 'active-model-id',
+        },
+      });
+
+      expect(mockFlowEngine.moveModel).not.toHaveBeenCalled();
+    });
+
     it('should handle case when over is null', async () => {
       const eventWithNullOver = {
         ...mockDragEndEvent,

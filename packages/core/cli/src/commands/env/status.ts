@@ -11,6 +11,7 @@ import { Args, Command, Flags } from '@oclif/core';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { getCurrentEnvName, listEnvs } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import { translateCli } from '../../lib/cli-locale.js';
 import { renderTable } from '../../lib/ui.js';
 import { apiStatus, runtimeStatus } from './shared.js';
 
@@ -32,7 +33,8 @@ export default class EnvStatus extends Command {
 
   static override args = {
     name: Args.string({
-      description: 'Configured environment name to inspect. Defaults to the current env when omitted; cannot be used with --all',
+      description:
+        'Configured environment name to inspect. Defaults to the current env when omitted; cannot be used with --all',
       required: false,
     }),
   };
@@ -61,14 +63,12 @@ export default class EnvStatus extends Command {
     const configuredEnvNames = Object.keys(envs).sort();
 
     if (!configuredEnvNames.length) {
-      this.log('No envs configured.');
-      this.log('Run `nb env add <name> --api-base-url <url>` to add one.');
+      this.log(translateCli('commands.env.messages.noEnvsConfigured'));
+      this.log(translateCli('commands.env.messages.noEnvsConfiguredHelp'));
       return;
     }
 
-    const envNames = flags.all
-      ? configuredEnvNames
-      : [requestedEnv || (await getCurrentEnvName({ scope }))];
+    const envNames = flags.all ? configuredEnvNames : [requestedEnv || (await getCurrentEnvName({ scope }))];
 
     const rows: EnvStatusJsonRow[] = [];
     for (const envName of envNames) {
@@ -86,19 +86,30 @@ export default class EnvStatus extends Command {
         continue;
       }
 
-      const status = runtime.kind === 'http' || runtime.kind === 'ssh'
-        ? await apiStatus(envName, {
-            ...envs[envName],
-            ...(runtime.env.config ?? {}),
-          }, { scope })
-        : await runtimeStatus(runtime);
+      const status =
+        runtime.kind === 'http' || runtime.kind === 'ssh'
+          ? await apiStatus(
+              envName,
+              {
+                ...envs[envName],
+                ...(runtime.env.config ?? {}),
+              },
+              { scope },
+            )
+          : await runtimeStatus(runtime);
 
       rows.push({
         env: runtime.envName,
         status,
         apiBaseUrl:
-          runtime.env.apiBaseUrl
-          || String(runtime.env.config.apiBaseUrl ?? runtime.env.config.baseUrl ?? envs[envName]?.apiBaseUrl ?? envs[envName]?.baseUrl ?? '').trim(),
+          runtime.env.apiBaseUrl ||
+          String(
+            runtime.env.config.apiBaseUrl ??
+              runtime.env.config.baseUrl ??
+              envs[envName]?.apiBaseUrl ??
+              envs[envName]?.baseUrl ??
+              '',
+          ).trim(),
       });
     }
 

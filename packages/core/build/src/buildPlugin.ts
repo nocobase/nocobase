@@ -181,9 +181,7 @@ const external = [
   '@langchain/ollama',
   '@langchain/mcp-adapters',
 ];
-const pluginPrefix = (
-  process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
-).split(',');
+const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
 
 const target_dir = 'dist';
 
@@ -312,7 +310,7 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
-  let tips = [];
+  const tips = [];
   if (includePackages.length) {
     tips.push(
       `These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.italic(
@@ -431,6 +429,7 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
+        '.txt': 'copy',
       },
     }),
   );
@@ -487,6 +486,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
+        '.txt': 'copy',
       },
     }),
   );
@@ -541,6 +541,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
+        '.txt': 'copy',
       },
 
       ...externalOptions,

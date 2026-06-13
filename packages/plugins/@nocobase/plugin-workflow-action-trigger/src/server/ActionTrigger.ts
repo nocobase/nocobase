@@ -31,6 +31,8 @@ interface Context extends ActionContext {
   [key: string]: any;
 }
 
+const ASYNC_WORKFLOW_TRIGGER_DELAY_MS = 200;
+
 class RequestOnActionTriggerError extends Error {
   status = 400;
   messages: any[] = [];
@@ -294,9 +296,39 @@ export default class extends Trigger {
       return context.throw(500, 'Workflow on your action hangs, please contact the administrator');
     }
 
-    for (const event of asyncGroup) {
-      this.workflow.trigger(event[0], event[1]);
+    this.scheduleAsyncWorkflowTriggers(context, asyncGroup);
+  }
+
+  private scheduleAsyncWorkflowTriggers(context: Context, events: [WorkflowModel, Record<string, any>][]) {
+    if (!events.length) {
+      return;
     }
+
+    const triggerAsyncWorkflows = () => {
+      const triggerAsyncWorkflow = async (workflow: WorkflowModel, values: Record<string, any>) => {
+        await this.workflow.trigger(workflow, values);
+      };
+
+      setTimeout(() => {
+        for (const [workflow, values] of events) {
+          triggerAsyncWorkflow(workflow, values).catch((error) => {
+            context.logger.error('[Workflow post-action]: async workflow trigger failed', {
+              error,
+              workflowId: workflow.id,
+              workflowKey: workflow.key,
+              workflowTitle: workflow.title,
+            });
+          });
+        }
+      }, ASYNC_WORKFLOW_TRIGGER_DELAY_MS);
+    };
+
+    if (context.res.writableEnded) {
+      triggerAsyncWorkflows();
+      return;
+    }
+
+    context.res.once('finish', triggerAsyncWorkflows);
   }
 
   async execute(workflow: WorkflowModel, values, options: EventOptions) {

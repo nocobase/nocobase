@@ -19,8 +19,10 @@
 import {Command, Flags} from '@oclif/core';
 import type {Interfaces} from '@oclif/core';
 import {executeApiRequest} from './api-client.js';
+import {findApiCommandCompatViolation, formatApiCommandCompatViolation} from './api-command-compat.js';
 import {ensureCrossEnvConfirmed} from './env-guard.js';
 import {applyPostProcessor} from './post-processors.js';
+import {readInstalledManagedSkillsVersion} from './skills-manager.js';
 import {registerPostProcessors} from '../post-processors/index.js';
 
 export interface GeneratedParameter {
@@ -193,6 +195,7 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
 
 export abstract class GeneratedApiCommand extends Command {
   static operation: GeneratedOperation;
+  static runtimeVersion?: string;
 
   async run(): Promise<void> {
     registerPostProcessors();
@@ -208,7 +211,22 @@ export abstract class GeneratedApiCommand extends Command {
       return;
     }
 
+    const cliVersion = String(this.config.pjson.version ?? '').trim();
+    const skillsVersion = await readInstalledManagedSkillsVersion();
+    const compatViolation = findApiCommandCompatViolation({
+      packageJson: this.config.pjson,
+      commandId: ctor.operation.commandId,
+      cliVersion,
+      appVersion: ctor.runtimeVersion,
+      skillsVersion,
+    });
+    if (compatViolation) {
+      this.error(formatApiCommandCompatViolation(compatViolation));
+    }
+
     const response = await executeApiRequest({
+      cliVersion,
+      skillsVersion,
       envName: flags.env,
       baseUrl: flags['api-base-url'],
       role: flags.role,

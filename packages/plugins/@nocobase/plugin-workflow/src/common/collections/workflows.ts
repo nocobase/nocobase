@@ -13,6 +13,7 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'workflows',
+  dataCategory: 'system',
   shared: true,
   repository: 'WorkflowRepository',
   createdBy: true,
@@ -159,7 +160,9 @@ export default {
     {
       type: 'jsonb',
       name: 'options',
-      defaultValue: {},
+      defaultValue: {
+        timeout: 0,
+      },
     },
     {
       type: 'hasOne',

@@ -50,9 +50,24 @@ export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;
   componentLoader?: ComponentLoader;
   skipAuthCheck?: boolean;
+  authCheck?: boolean;
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 export type RouterComponentType = React.FC<{ BaseLayout?: ComponentType }>;
+
+function removeBasename(pathname: string, basename?: string) {
+  if (!basename || basename === '/') {
+    return pathname;
+  }
+  const normalizedBasename = basename.replace(/\/$/, '');
+  if (pathname === normalizedBasename) {
+    return '/';
+  }
+  if (pathname.startsWith(`${normalizedBasename}/`)) {
+    return pathname.slice(normalizedBasename.length) || '/';
+  }
+  return pathname;
+}
 
 export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected routes: Record<string, RouteType> = {};
@@ -186,8 +201,9 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
 
   matchRoutes(pathname: string) {
     const routes = this.getRoutesTree();
+    const basename = this.router?.basename || this.getBasename();
     // @ts-ignore
-    return matchRoutes<RouteType>(routes, pathname, this.basename);
+    return matchRoutes<RouteType>(routes, removeBasename(pathname, basename));
   }
 
   isSkippedAuthCheckRoute(pathname: string) {

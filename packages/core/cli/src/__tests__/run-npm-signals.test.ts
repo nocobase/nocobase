@@ -48,10 +48,20 @@ test('run forwards terminal interrupts to the active child process', async () =>
 
   const promise = run('yarn', ['install'], { stdio: 'ignore' });
 
-  const sigintListenersAfter = process.listeners('SIGINT');
-  const sigtermListenersAfter = process.listeners('SIGTERM');
-  const addedSigintListener = sigintListenersAfter.find((listener) => !sigintListenersBefore.has(listener));
-  const addedSigtermListener = sigtermListenersAfter.find((listener) => !sigtermListenersBefore.has(listener));
+  let addedSigintListener: (() => void) | undefined;
+  let addedSigtermListener: (() => void) | undefined;
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const sigintListenersAfter = process.listeners('SIGINT');
+    const sigtermListenersAfter = process.listeners('SIGTERM');
+    const nextSigintListener = sigintListenersAfter.find((listener) => !sigintListenersBefore.has(listener));
+    const nextSigtermListener = sigtermListenersAfter.find((listener) => !sigtermListenersBefore.has(listener));
+    if (typeof nextSigintListener === 'function' && typeof nextSigtermListener === 'function') {
+      addedSigintListener = nextSigintListener as () => void;
+      addedSigtermListener = nextSigtermListener as () => void;
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
 
   expect(addedSigintListener).toBeTypeOf('function');
   expect(addedSigtermListener).toBeTypeOf('function');

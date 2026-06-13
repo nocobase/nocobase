@@ -35,11 +35,12 @@ import { RadioWithTooltip } from './components';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTranslation } from 'react-i18next';
 import { TriggerOptionRender } from './components/TriggerOptionRender';
-import { lang, NAMESPACE } from './locale';
+import { NAMESPACE } from './locale';
 import { CategoryTabs } from './WorkflowCategoryTabs';
 import { EnumerationField } from './components/EmunerationField';
 import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
 import { ExecutionStatusOptions } from './constants';
+import TimeoutInput from './components/TimeoutInput';
 
 function SyncOptionSelect(props) {
   const field = useField<any>();
@@ -233,6 +234,7 @@ export function WorkflowPane() {
           EnumerationField,
           WorkflowEnabledSwitch,
           TriggerPresetFieldset,
+          TimeoutInput,
         }}
         scope={{
           useTriggersOptions,

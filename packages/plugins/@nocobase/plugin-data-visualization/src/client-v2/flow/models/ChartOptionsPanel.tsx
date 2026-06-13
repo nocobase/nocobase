@@ -9,7 +9,6 @@
 
 import React from 'react';
 import { Alert, Button, Radio } from 'antd';
-import { ObjectField, useForm } from '@formily/react';
 import { ChartOptionsEditor } from './ChartOptionsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
@@ -36,6 +35,17 @@ const toFieldPath = (field: string | string[] | undefined) => {
   return Array.isArray(field) ? field.filter(Boolean).join('.') : field;
 };
 
+const getFormValues = (ctx: any) => ctx.getStepFormValues('chartSettings', 'configure') || {};
+
+const setIn = (target: any, path: string[], value: any) => {
+  let cursor = target;
+  path.slice(0, -1).forEach((key) => {
+    cursor[key] = cursor[key] || {};
+    cursor = cursor[key];
+  });
+  cursor[path[path.length - 1]] = value;
+};
+
 export const chartOptionDefaultValue = `return {
   dataset: { source: ctx.data.objects || [] },
   xAxis: { type: 'category' },
@@ -52,15 +62,20 @@ export const chartOptionDefaultValue = `return {
 
 export const ChartOptionsPanel: React.FC = observer(() => {
   const t = useT();
-  const form = useForm();
-  // 从 flow ctx 和 configStore 计算 columns
   const ctx = useFlowSettingsContext<any>();
   const dm = ctx?.model?.context?.dataSourceManager;
   const compile = useCompile();
   const uid = ctx?.model?.uid;
+  const [, forceUpdate] = React.useState(0);
+  React.useSyncExternalStore(
+    configStore.subscribe,
+    () => configStore.version,
+    () => configStore.version,
+  );
   const previewData = configStore.results[uid]?.result;
   const previewColumns = React.useMemo<string[]>(() => Object.keys(previewData?.[0] ?? {}), [previewData]);
-  const query = form?.values?.query;
+  const formValues = getFormValues(ctx);
+  const query = formValues?.query;
   const collectionPath = query?.collectionPath;
 
   const fieldOptionMap = React.useMemo(() => {
@@ -96,31 +111,29 @@ export const ChartOptionsPanel: React.FC = observer(() => {
     }));
   }, [fieldOptionMap, previewColumns, query?.dimensions, query?.measures]);
 
-  // 受控 value 与回写 formily
-  const mode = form?.values?.chart?.option?.mode || 'basic';
-  const builderValue = form?.values?.chart?.option?.builder;
-  const rawValue = form?.values?.chart?.option?.raw;
+  const mode = formValues?.chart?.option?.mode || 'basic';
+  const builderValue = formValues?.chart?.option?.builder;
+  const rawValue = formValues?.chart?.option?.raw;
 
   // 当 raw 尚未初始化时，设置默认值（等效于原先 Field 的 initialValue 行为）
   React.useEffect(() => {
     if (mode === 'custom' && !rawValue) {
-      form?.setValuesIn?.('chart.option.raw', chartOptionDefaultValue);
+      setIn(getFormValues(ctx), ['chart', 'option', 'raw'], chartOptionDefaultValue);
     }
-  }, [mode, rawValue, form]);
+  }, [ctx, mode, rawValue]);
 
-  // 图形化模式，修改自动触发预览
   const handleBuilderChange = async (next: any) => {
-    await form?.setValuesIn?.('chart.option.builder', next);
-    // 写入图表参数，统一走 onPreview 方便回滚
-    await ctx.model.onPreview(form.values);
+    const values = getFormValues(ctx);
+    setIn(values, ['chart', 'option', 'builder'], next);
+    await ctx.model.onPreview(values);
   };
 
   const handleRawChange = async (raw: string) => {
-    form?.setValuesIn?.('chart.option.raw', raw);
-    // 代码模式下，修改不自动触发预览，等待用户点击预览按钮
+    setIn(getFormValues(ctx), ['chart', 'option', 'raw'], raw);
+    forceUpdate((v) => v + 1);
   };
 
-  const userId = ctx.auth?.user.id ?? 'anonymous';
+  const userId = ctx.auth?.user?.id ?? 'anonymous';
   const TIP_KEY = `plugin-data-visualization:ChartConfig:tipRunQuery:${userId}`;
 
   const [showFirstVisitTip, setShowFirstVisitTip] = React.useState(false);
@@ -129,7 +142,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
   }, [TIP_KEY]);
 
   return (
-    <ObjectField name="chart.option">
+    <>
       {showFirstVisitTip && (
         <Alert
           message={t("Please click 'Run Query' to fetch data before configuring chart options")}
@@ -143,7 +156,6 @@ export const ChartOptionsPanel: React.FC = observer(() => {
           }}
         />
       )}
-      {/* 配置模式切换与预览 */}
       <div
         style={{
           display: 'flex',
@@ -153,11 +165,11 @@ export const ChartOptionsPanel: React.FC = observer(() => {
           padding: 1,
         }}
       >
-        {/* 配置模式切换 */}
         <Radio.Group
           value={mode}
           onChange={(e) => {
-            form?.setValuesIn?.('chart.option.mode', e.target.value);
+            setIn(getFormValues(ctx), ['chart', 'option', 'mode'], e.target.value);
+            forceUpdate((v) => v + 1);
           }}
         >
           <Radio.Button value={'basic'}>
@@ -168,14 +180,12 @@ export const ChartOptionsPanel: React.FC = observer(() => {
           </Radio.Button>
         </Radio.Group>
 
-        {/* 仅在 custom 模式下显示右侧预览按钮，手动应用图表配置更新预览 */}
         {mode === 'custom' ? (
           <Button
             type="link"
             style={{ marginRight: '8px' }}
             onClick={async () => {
-              // 写入图表参数，统一走 onPreview 方便回滚
-              await ctx.model.onPreview(form.values);
+              await ctx.model.onPreview(getFormValues(ctx));
             }}
           >
             {t('Preview')}
@@ -196,6 +206,6 @@ export const ChartOptionsPanel: React.FC = observer(() => {
           <ChartOptionsEditor value={rawValue ?? chartOptionDefaultValue} onChange={handleRawChange} />
         </div>
       )}
-    </ObjectField>
+    </>
   );
 });

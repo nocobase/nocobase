@@ -11,21 +11,21 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /get-started/how-nocobase-works
+      link: /ai/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
 
 features:
   - title: Start
-    details: Get started with NocoBase the traditional way - install, configure, and explore step by step.
+    details: Get started with NocoBase quickly - install, configure, and explore step by step.
     items:
-      - title: NocoBase Getting Started
+      - title: How NocoBase Works
         details: Understand NocoBase's core concepts and basic operations.
-        link: /get-started/how-nocobase-works
-      - title: Install & Upgrade Plugins
-        details: Learn how to add, manage and update plugins to extend system capabilities.
-        link: /get-started/install-upgrade-plugins
+        link: /ai/how-nocobase-works
+      - title: Install NocoBase App
+        details: Use NocoBase CLI to install an application quickly.
+        link: /ai/install-nocobase-app
       - title: Tutorials
         details: Step-by-step tutorials to build real projects with NocoBase from scratch.
         link: /tutorials/v2/
@@ -33,9 +33,6 @@ features:
   - title: AI
     details: An AI-powered new way to get started - use natural language to build, use, and develop.
     items:
-      - title: Quick Start
-        details: Install NocoBase CLI, configure AI Skills, and connect your AI Agent, preparing for AI building, using, and developing NocoBase.
-        link: /ai/quick-start
       - title: AI Builder
         details: Build NocoBase applications from scratch with AI, covering the full process from data modeling, UI configuration, workflows to release management.
         link: /ai-builder

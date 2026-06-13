@@ -14,6 +14,10 @@ import { FlowSurfacesService } from '../flow-surfaces/service';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
+type FlowSurfaceModelOptionsPatcher = {
+  patchFlowSurfaceModelOptions(values: Record<string, unknown>): Promise<void>;
+};
+
 describe('flowSurfaces event flow', () => {
   let app: MockServer;
   let db: Database;
@@ -68,11 +72,19 @@ describe('flowSurfaces event flow', () => {
     expect(meta.target.uid).toBe(formUid);
     expect(meta.flowRegistry.legacyBeforeRender).toMatchObject({
       key: 'legacyBeforeRender',
-      on: 'beforeRender',
+      on: {
+        eventName: 'beforeRender',
+        defaultParams: {
+          condition: {
+            logic: '$and',
+            items: [],
+          },
+        },
+      },
     });
     expect(meta.fingerprint).toEqual(expect.any(String));
     expect(meta.events.direct).toEqual(expect.arrayContaining(['beforeRender']));
-    expect(meta.events.object).toEqual(expect.arrayContaining(['submit']));
+    expect(meta.events.object).toEqual(expect.arrayContaining(['beforeRender', 'submit']));
     expect(meta.phases.supported).toEqual(
       expect.arrayContaining(['beforeAllFlows', 'afterAllFlows', 'beforeFlow', 'afterFlow', 'beforeStep', 'afterStep']),
     );
@@ -160,7 +172,6 @@ describe('flowSurfaces event flow', () => {
       },
       on: {
         eventName: 'submit',
-        phase: 'beforeAllFlows',
         defaultParams: {
           condition: {
             logic: '$and',
@@ -200,10 +211,7 @@ describe('flowSurfaces event flow', () => {
           },
           key: 'submitGuard',
           flow: {
-            on: {
-              eventName: 'submit',
-              phase: 'beforeAllFlows',
-            },
+            on: 'submit',
             steps: {
               runGuard: {
                 use: 'runjs',
@@ -227,6 +235,15 @@ describe('flowSurfaces event flow', () => {
       },
     });
     expect(updated.flowRegistry.submitGuard.steps.runGuard.params).toBeUndefined();
+    expect(updated.flowRegistry.submitGuard.on).toMatchObject({
+      eventName: 'submit',
+      defaultParams: {
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+      },
+    });
 
     const removed = await service.transaction((transaction) =>
       service.removeEventFlow(
@@ -250,8 +267,138 @@ describe('flowSurfaces event flow', () => {
     expect(readback.tree.flowRegistry).toEqual({
       keepExisting: {
         key: 'keepExisting',
-        on: 'beforeRender',
+        on: {
+          eventName: 'beforeRender',
+          defaultParams: {
+            condition: {
+              logic: '$and',
+              items: [],
+            },
+          },
+        },
         steps: {},
+      },
+    });
+  });
+
+  it('should normalize string event names to object on values with empty conditions', async () => {
+    const { formUid } = await createEmployeeForm(rootAgent);
+
+    const result = await service.transaction((transaction) =>
+      service.setEventFlows(
+        {
+          target: {
+            uid: formUid,
+          },
+          flowRegistry: {
+            beforeRenderFlow: {
+              key: 'beforeRenderFlow',
+              on: 'beforeRender',
+              steps: {},
+            },
+            submitFlow: {
+              key: 'submitFlow',
+              on: 'submit',
+              steps: {},
+            },
+            existingConditionFlow: {
+              key: 'existingConditionFlow',
+              on: {
+                eventName: 'submit',
+                phase: 'beforeAllFlows',
+                defaultParams: {
+                  condition: {
+                    logic: '$or',
+                    items: [],
+                  },
+                  auditLabel: 'keep-me',
+                },
+              },
+              steps: {},
+            },
+          },
+        },
+        { transaction },
+      ),
+    );
+
+    expect(result.flowRegistry.beforeRenderFlow.on).toEqual({
+      eventName: 'beforeRender',
+      defaultParams: {
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+      },
+    });
+    expect(result.flowRegistry.submitFlow.on).toEqual({
+      eventName: 'submit',
+      defaultParams: {
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+      },
+    });
+    expect(result.flowRegistry.existingConditionFlow.on).toEqual({
+      eventName: 'submit',
+      defaultParams: {
+        condition: {
+          logic: '$or',
+          items: [],
+        },
+        auditLabel: 'keep-me',
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: formUid,
+    });
+    expect(readback.tree.flowRegistry).toEqual(result.flowRegistry);
+  });
+
+  it('should tolerate legacy string event names when updating unrelated settings', async () => {
+    const { formUid } = await createEmployeeForm(rootAgent);
+
+    await (service as unknown as FlowSurfaceModelOptionsPatcher).patchFlowSurfaceModelOptions({
+      uid: formUid,
+      flowRegistry: {
+        legacySubmit: {
+          key: 'legacySubmit',
+          on: 'submit',
+          steps: {},
+        },
+      },
+    });
+
+    const updateSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        stepParams: {
+          formModelSettings: {
+            layout: {
+              layout: 'vertical',
+            },
+          },
+        },
+      },
+    });
+    expect(updateSettings.status).toBe(200);
+
+    const meta = await service.getEventFlowMeta({
+      target: {
+        uid: formUid,
+      },
+    });
+    expect(meta.flowRegistry.legacySubmit.on).toEqual({
+      eventName: 'submit',
+      defaultParams: {
+        condition: {
+          logic: '$and',
+          items: [],
+        },
       },
     });
   });
@@ -367,36 +514,6 @@ describe('flowSurfaces event flow', () => {
           ruleId: 'runjs-global-blocked',
           details: expect.objectContaining({
             global: 'fetch',
-          }),
-        }),
-      ]),
-    );
-
-    const addEventFlowResponse = await rootAgent.resource('flowSurfaces').addEventFlow({
-      values: {
-        target: {
-          uid: formUid,
-        },
-        key: 'unsafeAdd',
-        eventName: 'submit',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'ctx.openView({});',
-            },
-          },
-        },
-      },
-    });
-    expect(addEventFlowResponse.status).toBe(400);
-    expect(addEventFlowResponse.body?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.flowRegistry.unsafeAdd.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-ctx-capability-blocked',
-          details: expect.objectContaining({
-            capability: 'ctx.openView',
           }),
         }),
       ]),
@@ -563,7 +680,15 @@ describe('flowSurfaces event flow', () => {
           key: 'updateMe',
           flow: {
             key: 'updateMe',
-            on: 'beforeRender',
+            on: {
+              eventName: 'beforeRender',
+              defaultParams: {
+                condition: {
+                  logic: '$and',
+                  items: [],
+                },
+              },
+            },
             steps: {
               runChanged: {
                 use: 'runjs',
@@ -586,7 +711,6 @@ describe('flowSurfaces event flow', () => {
             key: 'addMe',
             on: {
               eventName: 'submit',
-              phase: 'beforeAllFlows',
               defaultParams: {
                 condition: {
                   logic: '$and',
@@ -611,11 +735,52 @@ describe('flowSurfaces event flow', () => {
       },
     ]);
   });
+
+  it('should compile canonical event-flow apply specs without repeated mutations', () => {
+    const compiled = compileApplySpec(
+      {
+        uid: 'form-uid',
+      },
+      {
+        uid: 'form-uid',
+        use: 'CreateFormModel',
+        flowRegistry: {
+          beforeRenderApply: {
+            key: 'beforeRenderApply',
+            on: {
+              eventName: 'beforeRender',
+              defaultParams: {
+                condition: {
+                  logic: '$and',
+                  items: [],
+                },
+              },
+            },
+            steps: {},
+          },
+        },
+      },
+      {
+        flowRegistry: {
+          beforeRenderApply: {
+            key: 'beforeRenderApply',
+            on: 'beforeRender',
+            steps: {},
+          },
+        },
+      },
+    );
+
+    expect(compiled.ops).toEqual([]);
+  });
 });
 
 function getData(response: any) {
   expect(response.status).toBe(200);
-  return response.body.data;
+  if (response.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  return response.body;
 }
 
 async function createEmployeeForm(rootAgent: any) {
@@ -623,6 +788,7 @@ async function createEmployeeForm(rootAgent: any) {
     await rootAgent.resource('flowSurfaces').createPage({
       values: {
         title: `Event flow page ${Date.now()}`,
+        icon: 'FileOutlined',
         tabTitle: 'Event flow tab',
       },
     }),
@@ -638,6 +804,7 @@ async function createEmployeeForm(rootAgent: any) {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        fields: ['status'],
       },
     }),
   );

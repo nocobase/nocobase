@@ -34,7 +34,7 @@ Pastikan Anda telah:
 
 :::warning Perhatian
 
-- NocoBase sedang bermigrasi dari `client` (v1) ke `client-v2`, saat ini `client-v2` masih dalam pengembangan. Kode klien yang dihasilkan oleh Pengembangan AI berbasis pada `client-v2`, hanya dapat digunakan di path `/v2/`, untuk pengalaman mencoba, tidak disarankan langsung digunakan di lingkungan production.
+- NocoBase sedang bermigrasi dari `client` (v1) ke `client-v2`, saat ini `client-v2` masih dalam pengembangan. Kode klien yang dihasilkan oleh Pengembangan AI berbasis pada `client-v2`, hanya dapat digunakan di path `/v/`, untuk pengalaman mencoba, tidak disarankan langsung digunakan di lingkungan production.
 - Kode yang dihasilkan AI tidak selalu 100% benar, disarankan melakukan review terlebih dahulu sebelum diaktifkan. Jika menemui masalah saat runtime, Anda dapat mengirim informasi error ke AI, biarkan ia melanjutkan troubleshooting dan perbaikan — biasanya beberapa putaran dialog dapat menyelesaikannya.
 
 :::

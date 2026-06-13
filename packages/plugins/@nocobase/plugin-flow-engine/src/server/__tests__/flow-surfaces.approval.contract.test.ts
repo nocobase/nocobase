@@ -159,6 +159,7 @@ describe('flowSurfaces approval API contract', () => {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        fields: ['nickname'],
       },
     });
     expect(invalidAddRes.status).toBe(400);
@@ -211,6 +212,7 @@ describe('flowSurfaces approval API contract', () => {
           dataSourceKey: 'main',
           collectionName: 'employees',
         },
+        fields: ['nickname'],
       },
     });
     expect(invalidGenericPageLikeBlockRes.status).toBe(400);

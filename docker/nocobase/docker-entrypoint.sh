@@ -13,6 +13,30 @@ if [ ! -f "/app/nocobase/package.json" ]; then
 fi
 
 cd /app/nocobase && pnpm nocobase postinstall
+case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
+  1|true|TRUE|yes|YES)
+    echo 'NOCOBASE_EXTRACT_CLIENT_ASSETS is enabled; extracting client assets...'
+    cd /app/nocobase && pnpm nocobase client:extract
+    ;;
+esac
+
+if [ -z "${CDN_BASE_URL:-}" ]; then
+  ACTIVE_VERSION_FILE='/app/nocobase/storage/dist-client/active-version'
+  if [ -f "${ACTIVE_VERSION_FILE}" ]; then
+    ACTIVE_VERSION="$(tr -d '\r\n' < "${ACTIVE_VERSION_FILE}")"
+    if [ -n "${ACTIVE_VERSION}" ]; then
+      APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH:-/}"
+      case "${APP_PUBLIC_PATH_VALUE}" in
+        /*) ;;
+        *) APP_PUBLIC_PATH_VALUE="/${APP_PUBLIC_PATH_VALUE}" ;;
+      esac
+      APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH_VALUE%/}/"
+      export CDN_BASE_URL="${APP_PUBLIC_PATH_VALUE%/}/dist/${ACTIVE_VERSION}/"
+      echo "CDN_BASE_URL is not set; defaulting to ${CDN_BASE_URL}"
+    fi
+  fi
+fi
+
 cd /app/nocobase && pnpm nocobase db:auth
 cd /app/nocobase && pnpm nocobase create-nginx-conf
 cd /app/nocobase && pnpm nocobase generate-instance-id

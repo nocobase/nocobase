@@ -34,7 +34,7 @@
       },
       "calendarSettings": {
         "eventPopupSettings": {
-          "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
+          "filterByTk": "{{ctx.record.id}}"
         }
       }
     },
@@ -61,12 +61,28 @@
           }
         },
         {
+          "uid": "fcal9b1ock1-calendarNavAction",
+          "use": "CalendarNavActionModel",
+          "parentId": "fcal9b1ock1",
+          "subKey": "actions",
+          "subType": "array",
+          "sortIndex": 2
+        },
+        {
+          "uid": "fcal9b1ock1-calendarViewSelectAction",
+          "use": "CalendarViewSelectActionModel",
+          "parentId": "fcal9b1ock1",
+          "subKey": "actions",
+          "subType": "array",
+          "sortIndex": 3
+        },
+        {
           "uid": "fcal9b1ock1-refreshAction",
           "use": "RefreshActionModel",
           "parentId": "fcal9b1ock1",
           "subKey": "actions",
           "subType": "array",
-          "sortIndex": 2,
+          "sortIndex": 4,
           "stepParams": {
             "buttonSettings": {
               "general": {
@@ -81,7 +97,7 @@
           "parentId": "fcal9b1ock1",
           "subKey": "actions",
           "subType": "array",
-          "sortIndex": 3,
+          "sortIndex": 5,
           "stepParams": {
             "buttonSettings": {
               "general": {
@@ -109,7 +125,7 @@
               "uid": "fcal9b1ock1-eventViewAction",
               "collectionName": "pets",
               "dataSourceKey": "main",
-              "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
+              "filterByTk": "{{ctx.record.id}}"
             }
           }
         }
@@ -169,6 +185,14 @@
     "fcal9b1ock1-filterAction": {
       "uid": "fcal9b1ock1-filterAction",
       "use": "FilterActionModel"
+    },
+    "fcal9b1ock1-calendarNavAction": {
+      "uid": "fcal9b1ock1-calendarNavAction",
+      "use": "CalendarNavActionModel"
+    },
+    "fcal9b1ock1-calendarViewSelectAction": {
+      "uid": "fcal9b1ock1-calendarViewSelectAction",
+      "use": "CalendarViewSelectActionModel"
     },
     "fcal9b1ock1-addNewAction": {
       "uid": "fcal9b1ock1-addNewAction",

@@ -118,6 +118,33 @@ Sau khi kích hoạt, hãy tạo một trang "Modern page (v2)" mới, khi thêm
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
+### Đặt Plugin thành mặc định hoặc tự động kích hoạt (tùy chọn)
+
+Ở trên là cách bật từng Plugin thủ công. Nếu bạn đang duy trì ứng dụng NocoBase của riêng mình và muốn một số Plugin tự động sẵn sàng sau khi chạy `nocobase install` (cài đặt lần đầu) hoặc `nocobase upgrade` (nâng cấp), bạn có thể dùng hai biến môi trường để kiểm soát trạng thái mặc định của Plugin:
+
+- **`APPEND_PRESET_LOCAL_PLUGINS` (Thêm Plugin preset mặc định)** — Thêm Plugin vào danh sách Plugin preset local, sau khi cài đặt Plugin sẽ xuất hiện trong "Trình quản lý Plugin", nhưng mặc định không kích hoạt, cần bạn bật thủ công
+- **`APPEND_PRESET_BUILT_IN_PLUGINS` (Thêm Plugin tích hợp mặc định)** — Thêm Plugin vào danh sách Plugin tích hợp, Plugin sẽ được tự động kích hoạt khi cài đặt, và vì là Plugin tích hợp nên **không thể tắt hay xóa trong "Trình quản lý Plugin"**
+
+Giá trị của cả hai biến là tên package của Plugin (trường `name` trong `package.json`), nhiều Plugin phân tách bằng dấu phẩy tiếng Anh. Cấu hình trong file `.env` như sau:
+
+```bash
+# Preset mặc định: xuất hiện trong danh sách Trình quản lý Plugin, nhưng không tự động kích hoạt
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# Tự động kích hoạt: tự động cài đặt và kích hoạt, và không thể tắt trên giao diện
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+Thông thường, `yarn pm enable` ở trên là đủ cho phát triển và debug local. Hai biến này phù hợp hơn cho các kịch bản phát hành "mở hộp là dùng được" — ví dụ khi bạn đóng gói một ứng dụng NocoBase kèm theo bộ Plugin cố định và muốn Plugin sẵn sàng ngay sau khi khởi tạo.
+
+:::tip Mẹo
+
+- Plugin cần đã được tải về local và có thể tìm thấy trong `node_modules`, xem [Cấu trúc thư mục dự án](./project-structure.md)
+- Sau khi cấu hình, cần chạy lại `nocobase install` hoặc `nocobase upgrade` thì mới có hiệu lực
+- Xem đầy đủ các biến môi trường tại [Biến môi trường](../get-started/installation/env.md#append_preset_local_plugins)
+
+:::
+
 ## Bước 4: Build và đóng gói
 
 Khi bạn chuẩn bị phân phối Plugin sang môi trường khác, cần build trước rồi đóng gói:
@@ -158,3 +185,4 @@ Upload và giải nén file đóng gói vào thư mục `./storage/plugins` củ
 - [Cài đặt bằng create-nocobase-app](../get-started/installation/create-nocobase-app) — Một trong các cách cài đặt NocoBase
 - [Cài đặt từ source code Git](../get-started/installation/git) — Cài đặt NocoBase từ source code
 - [Cài đặt và nâng cấp Plugin](../get-started/install-upgrade-plugins.mdx) — Upload Plugin đã đóng gói sang môi trường khác
+- [Biến môi trường](../get-started/installation/env.md) — Cấu hình biến môi trường cho Plugin preset, Plugin tích hợp, v.v.

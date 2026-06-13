@@ -10,15 +10,32 @@
 import { IncomingMessage } from 'http';
 import { IncomingRequest } from '.';
 
+// Fixed on-disk build-output directory name for the modern (v2) client, and
+// the sentinel segment baked into its HTML at build time. NOT the runtime URL
+// prefix (that is APP_MODERN_CLIENT_PREFIX, read per-request). A sibling copy
+// of this default lives in packages/core/cli-v1/src/util.js
+// (DEFAULT_MODERN_CLIENT_PREFIX). See docs/adr/0001-modern-client-prefix.md.
+export const MODERN_CLIENT_DIST_DIR = 'v';
+
 export function resolvePublicPath(appPublicPath = '/') {
   const normalized = String(appPublicPath || '/').trim() || '/';
   const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`;
   return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
 }
 
+// Normalize APP_MODERN_CLIENT_PREFIX (accepts `v`, `/v`, `/v/`)
+// down to a bare segment. Falls back to the fixed dist dir name.
+export function normalizeModernClientPrefix(value?: string) {
+  const segment = String(value || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '');
+  return segment || MODERN_CLIENT_DIST_DIR;
+}
+
 export function resolveV2PublicPath(appPublicPath = '/') {
   const publicPath = resolvePublicPath(appPublicPath);
-  return `${publicPath.replace(/\/$/, '')}/v2/`;
+  const prefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
+  return `${publicPath.replace(/\/$/, '')}/${prefix}/`;
 }
 
 function ensureTrailingSlash(value: string) {
@@ -27,11 +44,15 @@ function ensureTrailingSlash(value: string) {
 
 export function rewriteV2AssetPublicPath(html: string, assetPublicPath: string) {
   const normalizedAssetPublicPath = ensureTrailingSlash(assetPublicPath);
-  if (normalizedAssetPublicPath === '/v2/') {
+  // HTML is built with the fixed dist-dir sentinel (`/v/`) baked into
+  // asset URLs; rewrite it to the runtime asset path when they differ.
+  const sentinel = `/${MODERN_CLIENT_DIST_DIR}/`;
+  if (normalizedAssetPublicPath === sentinel) {
     return html;
   }
 
-  return html.replace(/((?:src|href)=["'])\/v2\//g, `$1${normalizedAssetPublicPath}`);
+  const sentinelPattern = new RegExp(`((?:src|href)=["'])${sentinel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+  return html.replace(sentinelPattern, `$1${normalizedAssetPublicPath}`);
 }
 
 export function injectRuntimeScript(html: string, runtimeScript: string) {

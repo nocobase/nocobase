@@ -7,13 +7,19 @@ import { pluginOgDescription } from './plugins/pluginOgDescription';
 import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
 import { pluginPreview } from '@rspress/plugin-preview';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
-import { pluginCrossRefSidebar, crossRefCanonicalMap } from './plugins/pluginCrossRef';
+import {
+  pluginCrossRefSidebar,
+  crossRefCanonicalMap,
+} from './plugins/pluginCrossRef';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
 const lang = process.env.DOCS_LANG || 'en';
 const base = process.env.DOCS_BASE || lang === 'en' ? '/' : `/${lang}/`;
 const checkDeadLinks = process.env.CHECK_DEAD_LINKS !== 'false';
+const rspressI18nAliases: Readonly<Record<string, string>> = {
+  cn: 'zh',
+};
 
 const locales = {
   en: {
@@ -24,11 +30,22 @@ const locales = {
     title: 'NocoBase 文档',
     description: '快速学习和掌握 NocoBase',
   },
-}
+};
 
 const currentLocale = locales[lang as keyof typeof locales] || locales.en;
 
-const indexLanguages = ['en', 'cn', 'ja', 'es', 'pt', 'de', 'fr', 'ru', 'id', 'vi'];
+const indexLanguages = [
+  'en',
+  'cn',
+  'ja',
+  'es',
+  'pt',
+  'de',
+  'fr',
+  'ru',
+  'id',
+  'vi',
+];
 
 const langMap = {
   en: 'en-US',
@@ -42,6 +59,24 @@ const langMap = {
   id: 'id-ID',
   vi: 'vi-VN',
 };
+
+function withRspressI18nAliases(
+  source: Record<string, Record<string, string>>,
+) {
+  return Object.fromEntries(
+    Object.entries(source).map(([key, translations]) => {
+      const nextTranslations = { ...translations };
+
+      for (const [alias, original] of Object.entries(rspressI18nAliases)) {
+        if (!nextTranslations[alias] && nextTranslations[original]) {
+          nextTranslations[alias] = nextTranslations[original];
+        }
+      }
+
+      return [key, nextTranslations];
+    }),
+  );
+}
 
 function sitemap(): RspressPlugin {
   const routes = new Set<string>();
@@ -129,25 +164,38 @@ function sitemap(): RspressPlugin {
 }
 export default defineConfig({
   head: [
-    ['meta', { name: 'robots', content: indexLanguages.includes(lang) ? 'index,follow' : 'noindex,nofollow' }],
+    [
+      'meta',
+      {
+        name: 'robots',
+        content: indexLanguages.includes(lang)
+          ? 'index,follow'
+          : 'noindex,nofollow',
+      },
+    ],
     (route) => {
       // 跨模块虚拟路由通过 frontmatter canonicalPath 指向原始页面
-      const canonicalRoute = crossRefCanonicalMap?.[route.routePath] || route.routePath;
+      const canonicalRoute =
+        crossRefCanonicalMap?.[route.routePath] || route.routePath;
       if (lang !== 'en') {
-        return `<link rel="canonical" href="https://docs.nocobase.com/${lang}${canonicalRoute}" />`
+        return `<link rel="canonical" href="https://docs.nocobase.com/${lang}${canonicalRoute}" />`;
       }
-      return `<link rel="canonical" href="https://docs.nocobase.com${canonicalRoute}" />`
+      return `<link rel="canonical" href="https://docs.nocobase.com${canonicalRoute}" />`;
     },
     (route) => {
       const links = [];
-      links.push(...indexLanguages.map(language => {
-        if (language === 'en') {
-          return `<link rel="alternate" hreflang="en-US" href="https://docs.nocobase.com${route.routePath}" />`;
-        }
-        const hreflang = langMap[language as keyof typeof langMap];
-        return `<link rel="alternate" hreflang="${hreflang}" href="https://docs.nocobase.com/${language}${route.routePath}" />`
-      }));
-      links.push(`<link rel="alternate" hreflang="x-default" href="https://docs.nocobase.com${route.routePath}" />`);
+      links.push(
+        ...indexLanguages.map((language) => {
+          if (language === 'en') {
+            return `<link rel="alternate" hreflang="en-US" href="https://docs.nocobase.com${route.routePath}" />`;
+          }
+          const hreflang = langMap[language as keyof typeof langMap];
+          return `<link rel="alternate" hreflang="${hreflang}" href="https://docs.nocobase.com/${language}${route.routePath}" />`;
+        }),
+      );
+      links.push(
+        `<link rel="alternate" hreflang="x-default" href="https://docs.nocobase.com${route.routePath}" />`,
+      );
       return links.join('\n');
     },
   ],
@@ -188,6 +236,8 @@ export default defineConfig({
       checkDeadLinks,
     },
   },
+  // Rspress ships built-in Simplified Chinese strings under `zh`, while this site uses `/cn/`.
+  i18nSource: (value) => withRspressI18nAliases(value),
   plugins: [
     pluginPreview(),
     pluginLlms(),
@@ -205,7 +255,7 @@ export default defineConfig({
         icon: 'github',
         mode: 'link',
         content: 'https://github.com/nocobase/nocobase',
-      }
+      },
     ],
   },
 });

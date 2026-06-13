@@ -21,6 +21,7 @@ nb self update [flags]
 | `--channel` | string | 更新到的发布 channel，默认 `auto`；可选 `auto`、`latest`、`beta`、`alpha` |
 | `--yes`, `-y` | boolean | 跳过更新确认 |
 | `--json` | boolean | 输出 JSON |
+| `--skills` | boolean | 同时刷新全局安装的 NocoBase AI coding skills |
 | `--verbose` | boolean | 显示详细更新输出 |
 
 ## 示例
@@ -28,6 +29,7 @@ nb self update [flags]
 ```bash
 nb self update
 nb self update --yes
+nb self update --skills
 nb self update --channel alpha --json
 ```
 

@@ -796,6 +796,29 @@ describe('FlowContext.getApiInfos', () => {
     expect((infos.bar?.ref as any)?.url).toBe('https://example.com');
   });
 
+  it('should include completion only when requested by getApiInfos()', async () => {
+    const ctx = new FlowContext();
+    ctx.defineMethod('bar', () => 2, {
+      description: 'Bar',
+      completion: { insertText: 'ctx.bar()' },
+    });
+    ctx.defineProperty('token', {
+      value: 't',
+      info: {
+        description: 'Token string',
+        completion: { insertText: 'ctx.token' },
+      },
+    });
+
+    const compact = await ctx.getApiInfos();
+    expect((compact.bar as any)?.completion).toBeUndefined();
+    expect((compact.token as any)?.completion).toBeUndefined();
+
+    const editorInfos = await ctx.getApiInfos({ includeCompletion: true });
+    expect((editorInfos.bar as any)?.completion?.insertText).toBe('ctx.bar()');
+    expect((editorInfos.token as any)?.completion?.insertText).toBe('ctx.token');
+  });
+
   it('should return property infos with completion/ref/examples', async () => {
     const ctx = new FlowContext();
     ctx.defineProperty('token', {

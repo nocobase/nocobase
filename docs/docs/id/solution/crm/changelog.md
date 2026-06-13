@@ -8,7 +8,6 @@ Halaman ini mencatat konten pembaruan setiap versi dari solusi CRM. Setiap kali 
 
 **File backup**:
 - [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata)
-- [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip)
 
 **Konten Pembaruan**:
 - Memperbaiki masalah tampilan Summary tabel yang tidak normal
@@ -24,7 +23,6 @@ Halaman ini mencatat konten pembaruan setiap versi dari solusi CRM. Setiap kali 
 
 **File backup**:
 - [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata)
-- [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip)
 
 **Konten Pembaruan**:
 
@@ -52,7 +50,6 @@ Halaman ini mencatat konten pembaruan setiap versi dari solusi CRM. Setiap kali 
 
 **File backup**:
 - nocobase_crm_v2_backup_260223.nbdata
-- nocobase_crm_v2_sql_260223.zip
 
 **Konten Pembaruan**:
 - Rilis pertama CRM 2.0

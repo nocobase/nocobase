@@ -14,11 +14,17 @@ import { translateCli } from './cli-locale.ts';
 
 const API_BASE_URL_EXAMPLE = 'http://localhost:13000/api';
 const ENV_KEY_PATTERN = /^[A-Za-z0-9]+$/;
+const APP_PUBLIC_PATH_PATTERN = /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?\/?$/;
 const TCP_PORT_EXAMPLE = '13000';
 const API_BASE_URL_REQUEST_TIMEOUT_MS = 5_000;
+const TCP_PORT_PROBE_HOSTS = ['127.0.0.1', '0.0.0.0', '::1'] as const;
 
 function buildHealthCheckUrl(apiBaseUrl: string): string {
   return `${apiBaseUrl.replace(/\/+$/, '')}/__health_check`;
+}
+
+function hasSupportedApiBasePath(pathname: string): boolean {
+  return /\/api(?:\/__app\/[^/]+)?\/?$/.test(pathname);
 }
 
 function isMaintainingHealthCheckResponse(status: number, body: unknown): boolean {
@@ -59,6 +65,10 @@ export async function validateApiBaseUrl(value: PromptValue): Promise<string | u
 
   if (/\/__health_check\/?$/i.test(url.pathname)) {
     return translateCli('validators.apiBaseUrl.healthCheckPathNotAllowed');
+  }
+
+  if (!hasSupportedApiBasePath(url.pathname)) {
+    return translateCli('validators.apiBaseUrl.missingApiPrefix', { example: API_BASE_URL_EXAMPLE });
   }
 
   const controller = new AbortController();
@@ -118,6 +128,23 @@ export function validateEnvKey(value: PromptValue): string | undefined {
   return undefined;
 }
 
+export function validateAppPublicPath(value: PromptValue): string | undefined {
+  const raw = String(value ?? '').trim();
+  if (raw === '') {
+    return undefined;
+  }
+
+  if (!raw.startsWith('/')) {
+    return translateCli('validators.appPublicPath.invalid');
+  }
+
+  if (!APP_PUBLIC_PATH_PATTERN.test(raw)) {
+    return translateCli('validators.appPublicPath.invalid');
+  }
+
+  return undefined;
+}
+
 function parseTcpPort(value: PromptValue): number | undefined {
   const raw = String(value ?? '').trim();
   if (raw === '') {
@@ -149,11 +176,14 @@ export function validateTcpPort(value: PromptValue): string | undefined {
   return undefined;
 }
 
-async function canListenOnTcpPort(port: number): Promise<boolean> {
-  return await new Promise<boolean>((resolve) => {
+async function canListenOnTcpPortHost(
+  port: number,
+  host: (typeof TCP_PORT_PROBE_HOSTS)[number],
+): Promise<boolean | undefined> {
+  return await new Promise<boolean | undefined>((resolve) => {
     const server = net.createServer();
 
-    const resolveAndCleanup = (result: boolean) => {
+    const resolveAndCleanup = (result: boolean | undefined) => {
       server.removeAllListeners();
       if (server.listening) {
         server.close(() => resolve(result));
@@ -162,7 +192,11 @@ async function canListenOnTcpPort(port: number): Promise<boolean> {
       }
     };
 
-    server.once('error', () => {
+    server.once('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EADDRNOTAVAIL' || error.code === 'EAFNOSUPPORT') {
+        resolveAndCleanup(undefined);
+        return;
+      }
       resolveAndCleanup(false);
     });
 
@@ -170,8 +204,19 @@ async function canListenOnTcpPort(port: number): Promise<boolean> {
       resolveAndCleanup(true);
     });
 
-    server.listen(port, '127.0.0.1');
+    server.listen(port, host);
   });
+}
+
+async function canListenOnTcpPort(port: number): Promise<boolean> {
+  for (const host of TCP_PORT_PROBE_HOSTS) {
+    const result = await canListenOnTcpPortHost(port, host);
+    if (result === false) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function parseDockerPublishedTcpPorts(output: string): Set<number> {
@@ -260,9 +305,10 @@ async function allocateAvailableTcpPort(): Promise<string> {
 export async function findAvailableTcpPort(): Promise<string> {
   const dockerPorts = await getDockerPublishedTcpPorts();
 
-  for (let attempt = 0; attempt < 10; attempt += 1) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
     const candidate = await allocateAvailableTcpPort();
-    if (!dockerPorts.has(Number.parseInt(candidate, 10))) {
+    const port = Number.parseInt(candidate, 10);
+    if (!dockerPorts.has(port) && (await canListenOnTcpPort(port))) {
       return candidate;
     }
   }
@@ -280,7 +326,10 @@ export async function validateAvailableTcpPort(value: PromptValue): Promise<stri
   if (formatError) {
     return formatError;
   }
-  const port = parseTcpPort(raw)!;
+  const port = parseTcpPort(raw);
+  if (port === undefined) {
+    return translateCli('validators.tcpPort.invalid', { example: TCP_PORT_EXAMPLE });
+  }
 
   const dockerPorts = await getDockerPublishedTcpPorts();
   if (dockerPorts.has(port)) {

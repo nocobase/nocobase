@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-tree",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "displayName": "Collection: Tree",
   "displayName.ru-RU": "Древовидная Коллекция",
   "displayName.zh-CN": "数据表：树",
@@ -15,7 +15,9 @@
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
     "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*"
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
   },
   "license": "Apache-2.0"
 }

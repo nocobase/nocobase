@@ -48,5 +48,10 @@
     "type": "file",
     "name": "publish",
     "label": "Quản lý phát hành"
+  },
+  {
+    "type": "file",
+    "name": "version-control",
+    "label": "Quản lý phiên bản"
   }
 ]

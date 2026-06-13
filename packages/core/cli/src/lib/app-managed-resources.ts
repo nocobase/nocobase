@@ -9,16 +9,22 @@
 
 import { mkdir, readdir } from 'node:fs/promises';
 import type { ManagedAppRuntime } from './app-runtime.js';
-import { dockerContainerExists, runLocalNocoBaseCommand, startDockerContainer } from './app-runtime.js';
+import { resolveAppPublicPath } from './app-public-path.js';
+import {
+  dockerContainerExists,
+  managedAppLifecycleEnvVars,
+  runLocalNocoBaseCommand,
+  startDockerContainer,
+} from './app-runtime.js';
 import { deriveBuiltinDbConnection, resolveBuiltinDbConnection } from './builtin-db.js';
-import { resolveConfiguredEnvPath } from './cli-home.js';
+import { resolveConfiguredStoragePath } from './env-paths.js';
 import { resolveDockerEnvFileArg } from './docker-env-file.ts';
 import {
   DEFAULT_DOCKER_REGISTRY,
   DEFAULT_DOCKER_VERSION,
   resolveDockerImageRef,
 } from './docker-image.ts';
-import { commandSucceeds, run } from './run-npm.js';
+import { commandSucceeds, ensureDockerDaemonRunning, run } from './run-npm.js';
 import Install from '../commands/install.js';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
 type ManagedDownloadableLocalRuntime = Extract<ManagedAppRuntime, { kind: 'local' }> & {
@@ -30,6 +36,8 @@ function commandStdio(verbose?: boolean): 'inherit' | 'ignore' {
 }
 
 async function ensureDockerNetwork(networkName: string): Promise<void> {
+  await ensureDockerDaemonRunning('prepare Docker resources for this environment');
+
   if (await commandSucceeds('docker', ['network', 'inspect', networkName])) {
     return;
   }
@@ -59,6 +67,19 @@ function pushOptionalEnvArg(args: string[], key: string, value: string | boolean
   if (typeof value === 'boolean') {
     args.push('-e', `${key}=${String(value)}`);
   }
+}
+
+function resolveDockerClientAssetsExtractEnabled(envValue: unknown): boolean {
+  const text = trimValue(envValue).toLowerCase();
+  if (!text) {
+    return true;
+  }
+
+  if (['0', 'false', 'no', 'off'].includes(text)) {
+    return false;
+  }
+
+  return true;
 }
 
 function normalizeDockerPlatform(value: unknown): string | undefined {
@@ -105,7 +126,7 @@ function formatSavedDockerSettingsIncomplete(envName: string, missing: string[])
   return [
     `Can't start NocoBase for "${envName}" yet.`,
     `The saved Docker settings for this env are incomplete. Missing: ${missing.join(', ')}.`,
-    'Re-run `nb init` or `nb env add` to refresh this env config, then try again.',
+    `Re-run \`nb init --ui --env ${envName}\` to refresh this env config, then try again.`,
   ].join('\n');
 }
 
@@ -129,6 +150,9 @@ async function localProjectHasFiles(projectRoot: string): Promise<boolean> {
 
 export async function buildSavedDockerRunArgs(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
+  options?: {
+    initEnvVars?: Record<string, string>;
+  },
 ): Promise<{
   appPort?: string;
   storagePath: string;
@@ -137,16 +161,14 @@ export async function buildSavedDockerRunArgs(
   args: string[];
 }> {
   const config = runtime.env.config ?? {};
-  const configuredStoragePath = trimValue(config.storagePath);
-  const storagePath = configuredStoragePath
-    ? trimValue(resolveConfiguredEnvPath(configuredStoragePath))
-    : '';
+  const storagePath = trimValue(resolveConfiguredStoragePath(config));
   const envFile = await resolveDockerEnvFileArg(runtime.envName, config);
   const appPort =
     runtime.env.appPort === undefined || runtime.env.appPort === null
       ? ''
       : trimValue(runtime.env.appPort);
   const appKey = trimValue(config.appKey);
+  const appPublicPath = trimValue(config.appPublicPath);
   const timeZone = trimValue(config.timezone) || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const builtinDbConnection = config.builtinDb ? deriveBuiltinDbConnection(runtime) : undefined;
   const dbDialect = builtinDbConnection?.dbDialect || trimValue(config.dbDialect);
@@ -159,6 +181,7 @@ export async function buildSavedDockerRunArgs(
   const dbTablePrefix = trimValue(config.dbTablePrefix);
   const dbUnderscored =
     typeof config.dbUnderscored === 'boolean' ? config.dbUnderscored : undefined;
+  const extractClientAssets = resolveDockerClientAssetsExtractEnabled(process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS);
   const dockerRegistry = trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY;
   const version = trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION;
   const imageRef = resolveDockerImageRef(dockerRegistry, version, {
@@ -220,7 +243,16 @@ export async function buildSavedDockerRunArgs(
     args.push('--env-file', envFile);
   }
 
+  for (const [key, value] of Object.entries(options?.initEnvVars ?? {})) {
+    args.push('-e', `${key}=${value}`);
+  }
+
+  const lifecycleEnvVars = managedAppLifecycleEnvVars();
   args.push(
+    '-e',
+    `APP_ENV=${lifecycleEnvVars.APP_ENV}`,
+    '-e',
+    `NODE_ENV=${lifecycleEnvVars.NODE_ENV}`,
     '-e',
     `APP_KEY=${appKey}`,
     '-e',
@@ -240,9 +272,11 @@ export async function buildSavedDockerRunArgs(
     '-v',
     `${storagePath}:${DOCKER_APP_STORAGE_DESTINATION}`,
   );
+  pushOptionalEnvArg(args, 'APP_PUBLIC_PATH', appPublicPath ? resolveAppPublicPath(appPublicPath) : undefined);
   pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema || undefined);
   pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix || undefined);
   pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
+  pushOptionalEnvArg(args, 'NOCOBASE_EXTRACT_CLIENT_ASSETS', extractClientAssets);
   args.push(imageRef);
 
   return {
@@ -256,9 +290,11 @@ export async function buildSavedDockerRunArgs(
 
 export async function recreateSavedDockerApp(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
-  options?: { verbose?: boolean },
+  options?: { verbose?: boolean; initEnvVars?: Record<string, string> },
 ): Promise<void> {
-  const plan = await buildSavedDockerRunArgs(runtime);
+  const plan = await buildSavedDockerRunArgs(runtime, {
+    initEnvVars: options?.initEnvVars,
+  });
 
   try {
     await ensureDockerNetwork(runtime.workspaceName);
@@ -298,6 +334,7 @@ export async function ensureBuiltinDbReady(
     envName: runtime.envName,
     workspaceName: runtime.workspaceName,
     dockerContainerPrefix: runtime.dockerContainerPrefix,
+    appPath: config.appPath,
     storagePath: config.storagePath,
     source: runtime.source,
     dbDialect: builtinDbConnection.dbDialect,
@@ -412,6 +449,7 @@ export async function ensureLocalPostinstall(
   runtime: Extract<ManagedAppRuntime, { kind: 'local' }>,
   options?: {
     verbose?: boolean;
+    env?: Record<string, string>;
     onStartTask?: (message: string) => void;
     onSucceedTask?: (message: string) => void;
     onFailTask?: (message: string) => void;
@@ -420,6 +458,7 @@ export async function ensureLocalPostinstall(
   options?.onStartTask?.(`Running local postinstall for "${runtime.envName}"...`);
   try {
     await runLocalNocoBaseCommand(runtime, ['postinstall'], {
+      env: options?.env,
       stdio: commandStdio(options?.verbose),
     });
     options?.onSucceedTask?.(`Local postinstall finished for "${runtime.envName}".`);

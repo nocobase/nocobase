@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { dateTimeProps, defaultProps, operators } from './properties';
+import { dateTimeProps, defaultProps } from './properties';
 
 export class DatetimeNoTzFieldInterface extends CollectionFieldInterface {
   name = 'datetimeNoTz';
@@ -60,7 +60,7 @@ export class DatetimeNoTzFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.datetime,
+    operators: 'datetime',
   };
   titleUsable = true;
 }

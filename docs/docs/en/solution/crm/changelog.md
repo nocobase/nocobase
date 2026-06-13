@@ -8,7 +8,6 @@ This page documents the update history for the CRM solution. New entries are add
 
 **Backup files**:
 - [nocobase_crm_v2_backup_260406.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260406.nbdata)
-- [nocobase_crm_v2_sql_260406.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260406.zip)
 
 **Changes**:
 - Fixed table Summary aggregation display issue
@@ -24,7 +23,6 @@ This page documents the update history for the CRM solution. New entries are add
 
 **Backup files**:
 - [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata)
-- [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip)
 
 **Changes**:
 
@@ -52,7 +50,6 @@ This page documents the update history for the CRM solution. New entries are add
 
 **Backup files**:
 - nocobase_crm_v2_backup_260223.nbdata
-- nocobase_crm_v2_sql_260223.zip
 
 **Changes**:
 - Initial release of CRM 2.0

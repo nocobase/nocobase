@@ -30,7 +30,7 @@
       },
       "calendarSettings": {
         "eventPopupSettings": {
-          "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
+          "filterByTk": "{{ctx.record.id}}"
         }
       }
     },
@@ -46,6 +46,14 @@
               }
             }
           }
+        },
+        {
+          "alias": "action.calendarNav1",
+          "use": "CalendarNavActionModel"
+        },
+        {
+          "alias": "action.calendarViewSelect1",
+          "use": "CalendarViewSelectActionModel"
         },
         {
           "alias": "node.RefreshActionModel1",
@@ -83,7 +91,7 @@
                 "pageModelClass": "ChildPageModel",
                 "collectionName": "pets",
                 "dataSourceKey": "main",
-                "filterByTk": "{{ctx.view.inputArgs.filterByTk}}"
+                "filterByTk": "{{ctx.record.id}}"
               }
             }
           }

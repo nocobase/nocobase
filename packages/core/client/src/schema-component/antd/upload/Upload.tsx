@@ -186,7 +186,7 @@ attachmentFileTypes.add({
   },
 });
 
-const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*', 'text/plain'];
+const iframePreviewSupportedTypes = ['audio/*', 'image/*', 'video/*', 'text/plain'];
 
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();

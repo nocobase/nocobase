@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'usersAiEmployees',
+  dataCategory: 'business',
   migrationRules: ['schema-only'],
   fields: [
     { type: 'sort', name: 'sort' },

@@ -293,6 +293,9 @@ export type FlowSurfaceComposeValues = {
   target: FlowSurfaceWriteTarget;
   mode?: FlowSurfaceComposeMode;
   blocks?: Array<Record<string, any>>;
+  assets?: {
+    charts?: Record<string, any>;
+  };
   layout?: Record<string, any>;
   defaults?: FlowSurfaceApplyBlueprintDefaults;
 };

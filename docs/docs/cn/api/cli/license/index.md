@@ -6,7 +6,7 @@ keywords: "nb license,NocoBase CLI,商业授权,License"
 
 # nb license
 
-管理 NocoBase 商业授权，包括激活授权、查看实例 ID、查看授权状态，以及同步授权插件。
+管理 NocoBase 商业授权，包括用已有 license key 激活授权、查看实例 ID、查看授权状态，以及同步授权插件。
 
 ## 用法
 
@@ -18,7 +18,7 @@ nb license <command>
 
 | 命令 | 说明 |
 | --- | --- |
-| [`nb license activate`](./activate.md) | 为当前 env 激活商业授权 |
+| [`nb license activate`](./activate.md) | 用已有 license key 为当前 env 激活商业授权 |
 | [`nb license id`](./id.md) | 查看或生成当前 env 的实例 ID |
 | [`nb license status`](./status.md) | 查看当前 env 的商业授权状态 |
 | [`nb license plugins`](./plugins/index.md) | 管理当前授权允许使用的商业插件 |

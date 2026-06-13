@@ -1,12 +1,12 @@
 ---
-title: "nb env info"
-description: "nb env info Befehlsreferenz: Zeigt die Anwendungs-, Datenbank-, API- und Authentifizierungskonfiguration einer NocoBase CLI env an."
-keywords: "nb env info,NocoBase CLI,Umgebungsdetails,Konfiguration"
+title: 'nb env info'
+description: 'Referenz für den Befehl nb env info: Zeigt die App-, Datenbank-, API- und Authentifizierungskonfiguration der angegebenen NocoBase-CLI-Umgebung an.'
+keywords: 'nb env info,NocoBase CLI,Umgebungsdetails,Konfiguration'
 ---
 
 # nb env info
 
-Zeigt Detailinformationen einer einzelnen env an, einschließlich Anwendung, Datenbank, API und Authentifizierungskonfiguration.
+Zeigt detaillierte Informationen zu einer einzelnen env an, einschließlich App-, Datenbank-, API- und Authentifizierungskonfiguration.
 
 ## Verwendung
 
@@ -16,17 +16,19 @@ nb env info [name] [flags]
 
 ## Parameter
 
-| Parameter | Typ | Beschreibung |
-| --- | --- | --- |
-| `[name]` | string | Name der konfigurierten Umgebung, die angezeigt werden soll; wird bei Weglassen aus der aktuellen env übernommen |
-| `--json` | boolean | Ausgabe als JSON |
-| `--show-secrets` | boolean | Token, Passwörter und andere Geheimnisse im Klartext anzeigen |
+| Parameter        | Typ     | Beschreibung                                                                                                   |
+| ---------------- | ------- | -------------------------------------------------------------------------------------------------------------- |
+| `[name]`         | string  | Name der konfigurierten Umgebung, die angezeigt werden soll; wenn ausgelassen, wird die aktuelle env verwendet |
+| `--json`         | boolean | JSON ausgeben                                                                                                  |
+| `--field`        | string  | Gibt nur ein Feld über einen Punktpfad zurück, z. B. `app.url`, `app.appPath` oder `api.auth.type`             |
+| `--show-secrets` | boolean | Zeigt Tokens, Passwörter und andere Geheimnisse im Klartext an                                                 |
 
 ## Beispiele
 
 ```bash
 nb env info app1
 nb env info app1 --json
+nb env info app1 --field app.appPath
 nb env info app1 --show-secrets
 ```
 

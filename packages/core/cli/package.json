@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
@@ -73,6 +73,9 @@
       "skills": {
         "description": "Inspect or synchronize NocoBase AI coding skills for the current workspace."
       },
+      "revision": {
+        "description": "Manage restorable revisions during NocoBase app building."
+      },
       "examples": {
         "description": "Internal example commands for prompt and UI experiments.",
         "hidden": true
@@ -80,6 +83,38 @@
       "api": {
         "description": "Work with NocoBase API."
       }
+    }
+  },
+  "nocobase": {
+    "apiCommandCompat": {
+      "rules": [
+        {
+          "code": "FLOW_SURFACES_OLD_APP_NEW_SKILLS_UNSUPPORTED",
+          "target": {
+            "commandPrefix": "flow-surfaces"
+          },
+          "when": {
+            "appByChannel": {
+              "stable": {
+                "lt": "2.1.0"
+              },
+              "beta": {
+                "lt": "2.1.0-beta.36"
+              },
+              "alpha": {
+                "lt": "2.1.0-alpha.40"
+              },
+              "rc": {
+                "lt": "2.1.0"
+              },
+              "unknownPrerelease": "block"
+            },
+            "skills": {
+              "gt": "1.0.20"
+            }
+          }
+        }
+      ]
     }
   },
   "dependencies": {
@@ -96,7 +131,7 @@
     "ora": "^8.2.0",
     "pg": "^8.14.1",
     "picocolors": "^1.1.1",
-    "tar": "^7.4.3"
+    "tar": "^7.5.15"
   },
   "devDependencies": {
     "@types/node": "^18.19.130",

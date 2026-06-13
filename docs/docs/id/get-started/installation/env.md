@@ -300,7 +300,7 @@ Format pencetakan log, environment development default-nya `console`, environmen
 LOGGER_FORMAT=json
 ```
 
-Referensi: [Format Log](/log-and-monitor/logger/index.md#日志格式)
+Referensi: [Format Log](/log-and-monitor/logger/index.md#format-log)
 
 ### CACHE_DEFAULT_STORE
 
@@ -355,7 +355,7 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### WORKER_MODE
 
-Digunakan untuk mengonfigurasi mode kerja node yang berbeda saat melakukan service splitting di mode cluster. Untuk detailnya lihat "[Service Splitting: Cara Membagi Service](/cluster-mode/services-splitting#如何拆分服务)".
+Digunakan untuk mengonfigurasi mode kerja node yang berbeda saat melakukan service splitting di mode cluster. Untuk detailnya lihat "[Service Splitting: Cara Membagi Service](/cluster-mode/services-splitting#cara-memisahkan-service)".
 
 ### SERVER_REQUEST_WHITELIST
 
@@ -388,7 +388,8 @@ Digunakan untuk menambahkan plugin preset yang belum diaktifkan, nilainya adalah
 
 1. Pastikan plugin sudah diunduh ke lokal dan dapat ditemukan di direktori `node_modules`. Untuk informasi lebih lanjut lihat [Cara Pengorganisasian Plugin](/plugin-development/project-structure).
 2. Setelah menambahkan environment variable, plugin akan tampil di halaman plugin manager setelah instalasi awal `nocobase install` atau upgrade `nocobase upgrade`.
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -402,7 +403,8 @@ Digunakan untuk menambahkan plugin built-in yang diinstal secara default, nilain
 
 1. Pastikan plugin sudah diunduh ke lokal dan dapat ditemukan di direktori `node_modules`. Untuk informasi lebih lanjut lihat [Cara Pengorganisasian Plugin](/plugin-development/project-structure).
 2. Setelah menambahkan environment variable, plugin akan diinstal atau di-upgrade secara otomatis saat instalasi awal `nocobase install` atau upgrade `nocobase upgrade`.
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -484,7 +486,7 @@ yarn cross-env \
 
 ### WORKFLOW_SCRIPT_MODULES
 
-Daftar modul yang dapat digunakan oleh node JavaScript pada workflow. Untuk detailnya lihat "[Node JavaScript: Menggunakan Modul Eksternal](/workflow/nodes/javascript#使用外部模块)".
+Daftar modul yang dapat digunakan oleh node JavaScript pada workflow. Untuk detailnya lihat "[Node JavaScript: Menggunakan Modul Eksternal](/workflow/nodes/javascript#mode-tidak-aman-membutuhkan-dukungan-modul)".
 
 ### WORKFLOW_LOOP_LIMIT
 

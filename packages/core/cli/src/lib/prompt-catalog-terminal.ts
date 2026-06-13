@@ -127,8 +127,7 @@ function defaultOnCancel(locale: string | undefined): never {
 }
 
 function defaultOnMissingNonInteractive(message: string): never {
-  console.error(message);
-  exit(1);
+  throw new Error(message);
 }
 
 function createTerminalHooks(

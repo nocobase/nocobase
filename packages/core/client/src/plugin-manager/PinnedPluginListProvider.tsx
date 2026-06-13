@@ -71,6 +71,12 @@ const pinnedPluginListClassName = css`
         line-height: 10px;
         font-size: 8px;
       }
+      > .ant-badge-count-sm {
+        min-width: 12px;
+      }
+      > .ant-badge-multiple-words {
+        padding: 0 4px;
+      }
     }
 
     &:hover {

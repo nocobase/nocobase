@@ -10,3 +10,4 @@
 export * from './AssignFormModel';
 export * from './AssignFormGridModel';
 export * from './AssignFormItemModel';
+export * from './assignFieldValuesFlow';

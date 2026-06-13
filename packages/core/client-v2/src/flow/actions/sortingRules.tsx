@@ -33,9 +33,8 @@ export const sortingRule = defineAction({
   name: 'sortingRule',
   title: tExpr('Default sorting'),
   uiSchema: (ctx) => {
-    const fields = ctx.collectionField?.targetCollection
-      ? ctx.collectionField.targetCollection.getFields()
-      : ctx.blockModel.collection.getFields();
+    const collection = ctx.collectionField?.targetCollection || ctx.blockModel?.collection;
+    const fields = typeof collection?.getFields === 'function' ? collection.getFields() : [];
     const sortFields = getSortFields(fields);
     return {
       sort: {
@@ -109,7 +108,7 @@ export const sortingRule = defineAction({
     };
   },
   async handler(ctx, params) {
-    const sortArr = params.sort.map((item) => {
+    const sortArr = (params.sort || []).map((item) => {
       return item.direction === 'desc' ? `-${item.field}` : item.field;
     });
     // @ts-ignore

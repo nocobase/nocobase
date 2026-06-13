@@ -388,7 +388,8 @@ SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
 
 1. 需要确保插件已经下载到本地，并且在 `node_modules` 目录里可以找到，更多内容查看 [插件的组织方式](/plugin-development/project-structure)。
 2. 添加了环境变量后，需要在初始化安装 `nocobase install` 或升级 `nocobase upgrade` 后才会在插件管理器页面里显示。
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -402,7 +403,8 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 
 1. 需要确保插件已经下载到本地，并且在 `node_modules` 目录里可以找到，更多内容查看 [插件的组织方式](/plugin-development/project-structure)。
 2. 添加了环境变量后，需要在初始化安装 `nocobase install` 或升级 `nocobase upgrade` 时会自动安装或升级插件。
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -484,7 +486,7 @@ yarn cross-env \
 
 ### WORKFLOW_SCRIPT_MODULES
 
-工作流 JavaScript 节点可用的模块列表，详情查看「[JavaScript 节点：使用外部模块](/workflow/nodes/javascript#使用外部模块)」。
+工作流 JavaScript 节点可用的模块列表，详情查看「[JavaScript 节点：使用外部模块](/workflow/nodes/javascript#非安全模式需要模块支持)」。
 
 ### WORKFLOW_LOOP_LIMIT
 

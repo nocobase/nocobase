@@ -1745,6 +1745,21 @@ function attachDefaultActionPopupMetadata(
   return attachCompiledPopupDefaults(defaultPopup, metadata);
 }
 
+function isFieldClickToOpenEnabled(settings: Record<string, any> | undefined) {
+  if (!_.isPlainObject(settings) || !Object.prototype.hasOwnProperty.call(settings, 'clickToOpen')) {
+    return false;
+  }
+  const value = settings.clickToOpen;
+  return value === true || (_.isPlainObject(value) && value.clickToOpen === true);
+}
+
+function buildGeneratedDefaultFieldPopup(): FlowSurfaceApplyBlueprintPopup {
+  return {
+    tryTemplate: true,
+    defaultType: 'view',
+  };
+}
+
 function hasNestedDefaultPopupMetadata(value: any): boolean {
   if (Array.isArray(value)) {
     return value.some((item) => hasNestedDefaultPopupMetadata(item));
@@ -2165,7 +2180,10 @@ function compileField(
     parentContext: parentResourceContext,
     getCollection,
   });
-  const popupResult = compilePopup(input.popup, `${key}.popup`, assets, `${context}[${index}].popup`, defaults, {
+  const shouldAutoCompleteClickPopup = _.isUndefined(input.popup) && isFieldClickToOpenEnabled(settings);
+  const popupInput = shouldAutoCompleteClickPopup ? buildGeneratedDefaultFieldPopup() : input.popup;
+  const shouldAutoRelationFieldPopup = _.isUndefined(input.popup) && !!fieldPath && !syntheticType;
+  const popupResult = compilePopup(popupInput, `${key}.popup`, assets, `${context}[${index}].popup`, defaults, {
     getCollection,
     mode: popupOptions.mode,
     popupDepth: popupOptions.popupDepth,
@@ -2177,7 +2195,7 @@ function compileField(
     associationName: popupOptions.associationName || fieldAssociationContext?.associationName,
   });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
-  const popup = shouldAttachDefaultPopupMetadata(input.popup, undefined)
+  const popup = shouldAttachDefaultPopupMetadata(popupInput, undefined)
     ? attachCompiledPopupDefaults(popupResult.popup, popupDefaultsMetadata)
     : popupResult.popup;
   return buildDefinedPayload({
@@ -2196,6 +2214,10 @@ function compileField(
     target: resolveTargetBlockKey(input.target, localBlockKeys, `${context}[${index}].target`),
     settings: Object.keys(settings).length ? settings : undefined,
     popup,
+    __autoPopupForRelationField: shouldAutoRelationFieldPopup ? true : undefined,
+    ...(shouldAutoRelationFieldPopup && popupDefaultsMetadata
+      ? { [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: _.cloneDeep(popupDefaultsMetadata) }
+      : {}),
   });
 }
 

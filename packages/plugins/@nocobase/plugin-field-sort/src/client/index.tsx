@@ -9,23 +9,12 @@
 
 import { Plugin } from '@nocobase/client';
 import { SortFieldInterface } from './sort-interface';
-import { SortFieldModel } from './SortFieldModel';
+import { SortFieldModel } from '../client-v2/models/SortFieldModel';
+
 export class PluginFieldSortClient extends Plugin {
-  async afterAdd() {
-    // await this.app.pm.add()
-  }
-
-  async beforeLoad() {}
-
-  // You can get and modify the app instance here
   async load() {
     this.app.addFieldInterfaces([SortFieldInterface]);
     this.flowEngine.registerModels({ SortFieldModel });
-    // this.app.addComponents({})
-    // this.app.addScopes({})
-    // this.app.addProvider()
-    // this.app.addProviders()
-    // this.app.router.add()
   }
 }
 

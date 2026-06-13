@@ -33,7 +33,7 @@ import React, { useRef, useMemo, useEffect } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base/FieldModel';
 import { DetailsItemModel } from '../../../blocks/details/DetailsItemModel';
-import { FieldDeletePlaceholder, CustomWidth } from '../../../blocks/table/TableColumnModel';
+import { FieldDeletePlaceholder, CustomWidth, normalizeTableColumnWidth } from '../../../blocks/table/TableColumnModel';
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
 import { getSubTableRowIdentity } from './rowIdentity';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../../internal/utils/rebuildFieldSubModel';
@@ -67,7 +67,7 @@ export function FieldWithoutPermissionPlaceholder({ targetModel }) {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, []);
+  }, [collection, dataSource.displayName, dataSource.key, name, t]);
   const { actionName } = fieldModel.forbidden || {};
   const messageValue = useMemo(() => {
     return t(
@@ -77,7 +77,7 @@ export function FieldWithoutPermissionPlaceholder({ targetModel }) {
         actionName: t(capitalize(actionName)),
       },
     ).replaceAll('&gt;', '>');
-  }, [nameValue, t]);
+  }, [actionName, nameValue, t]);
   return (
     <Tooltip title={messageValue}>
       <LockOutlined style={{ opacity: '0.3' }} />
@@ -100,10 +100,9 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     const handleChange = useMemo(
       () =>
         debounce((val) => {
-          if (props.onChange) props.onChange(val);
           if (onChange) onChange(val);
         }, 200),
-      [props.onChange, onChange],
+      [onChange],
     );
 
     return <FieldModelRenderer model={model} {...rest} onChange={handleChange} />;
@@ -149,7 +148,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         </Space>
       );
     }
-  }, [collectionField.interface, defaultValue, fieldModel]);
+  }, [collectionField.interface, defaultValue, disabled, fieldModel]);
   return (
     <div
       ref={ref}
@@ -830,7 +829,7 @@ SubTableColumnModel.registerFlow({
         width: 200,
       },
       handler(ctx, params) {
-        ctx.model.setProps('width', params.width);
+        ctx.model.setProps('width', normalizeTableColumnWidth(params.width));
       },
     },
     aclCheck: {

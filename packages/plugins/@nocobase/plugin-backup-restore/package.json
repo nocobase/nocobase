@@ -6,7 +6,7 @@
   "description": "Backup and restore applications for scenarios such as application replication, migration, and upgrades.",
   "description.ru-RU": "Резервное копирование и восстановление приложений для задач репликации, миграции и обновления.",
   "description.zh-CN": "备份和还原应用，可用于应用的复制、迁移、升级等场景。",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
@@ -35,7 +35,7 @@
     "object-path": "^0.11.8",
     "react": "^18.2.0",
     "semver": "^7.7.1",
-    "tar": "^7.4.3"
+    "tar": "^7.5.15"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",

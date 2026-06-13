@@ -8,6 +8,14 @@ pkg: '@nocobase/plugin-app-supervisor'
 
 La gestion multi-applications est une solution de gestion d'applications unifiée fournie par NocoBase, utilisée pour créer et gérer plusieurs instances d'applications NocoBase physiquement isolées dans un ou plusieurs environnements d'exécution. Grâce au gestionnaire d'applications (AppSupervisor), vous pouvez créer et maintenir plusieurs applications à partir d'un point d'entrée unique, répondant ainsi aux besoins de différentes activités et de différentes étapes de croissance.
 
+Le mode multi-applications convient aux scénarios suivants :
+
+- Découper un grand système en plusieurs applications par module métier, par exemple CRM, service après-vente, opérations ou analyse de données
+- Permettre aux équipes de développer en parallèle par ligne métier ou par module, en réduisant l'impact des configurations et des livraisons entre modules
+- Créer des applications isolées pour différents clients, locataires ou organisations
+- Créer en lot des applications indépendantes de démonstration, de test ou de bac à sable
+- Répartir les applications sur différents environnements d'exécution lorsque leur nombre ou leur charge augmente
+
 ## Application unique
 
 Au début d'un projet, la plupart des utilisateurs commencent par une application unique.

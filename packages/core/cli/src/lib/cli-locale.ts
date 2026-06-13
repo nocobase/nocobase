@@ -10,12 +10,12 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveCliHomeDir } from './cli-home.js';
 
 export const SUPPORTED_CLI_LOCALES = ['en-US', 'zh-CN'] as const;
-export type CliLocale = typeof SUPPORTED_CLI_LOCALES[number];
+export type CliLocale = (typeof SUPPORTED_CLI_LOCALES)[number];
 export const CLI_LOCALE_FLAG_OPTIONS = [...SUPPORTED_CLI_LOCALES];
-export const CLI_LOCALE_FLAG_DESCRIPTION =
-  'Language for CLI prompts and the local setup UI.';
+export const CLI_LOCALE_FLAG_DESCRIPTION = 'Language for CLI prompts and the local setup UI.';
 
 export type LocalizedTextDef = {
   key: string;
@@ -25,11 +25,7 @@ export type LocalizedTextDef = {
 
 export type LocalizedText = string | LocalizedTextDef;
 
-export type CliTranslateFn = (
-  key: string,
-  values?: Record<string, unknown>,
-  fallback?: string,
-) => string;
+export type CliTranslateFn = (key: string, values?: Record<string, unknown>, fallback?: string) => string;
 
 const DEFAULT_CLI_LOCALE: CliLocale = 'en-US';
 
@@ -37,7 +33,7 @@ type LocaleMessages = Record<string, unknown>;
 
 const localeCache: Partial<Record<CliLocale, LocaleMessages>> = {};
 
-function normalizeCliLocale(value: string | null | undefined): CliLocale | undefined {
+export function normalizeCliLocale(value: string | null | undefined): CliLocale | undefined {
   const raw = String(value ?? '').trim();
   if (!raw) {
     return undefined;
@@ -54,6 +50,21 @@ function normalizeCliLocale(value: string | null | undefined): CliLocale | undef
   return undefined;
 }
 
+function readConfiguredCliLocale(): CliLocale | undefined {
+  try {
+    const configPath = path.join(resolveCliHomeDir(), 'config.json');
+    const content = readFileSync(configPath, 'utf8');
+    const parsed = JSON.parse(content) as {
+      settings?: {
+        locale?: unknown;
+      };
+    };
+    return normalizeCliLocale(parsed.settings?.locale === undefined ? undefined : String(parsed.settings.locale));
+  } catch {
+    return undefined;
+  }
+}
+
 function loadLocaleMessages(locale: CliLocale): LocaleMessages {
   if (localeCache[locale]) {
     return localeCache[locale] as LocaleMessages;
@@ -67,7 +78,8 @@ function loadLocaleMessages(locale: CliLocale): LocaleMessages {
   try {
     parsed = JSON.parse(readFileSync(fileUrl, 'utf8')) as LocaleMessages;
   } catch (error: unknown) {
-    const code = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : '';
+    const code =
+      error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : '';
     if (code !== 'ENOENT') {
       throw error;
     }
@@ -96,9 +108,11 @@ function interpolateTemplate(template: string, values?: Record<string, unknown>)
   });
 }
 
-export function detectCliLocale(): CliLocale {
+export function detectCliLocale(configuredLocale?: string | null): CliLocale {
+  const resolvedConfiguredLocale = configuredLocale ?? readConfiguredCliLocale();
   const candidates = [
     process.env.NB_LOCALE,
+    resolvedConfiguredLocale,
     process.env.LC_ALL,
     process.env.LC_MESSAGES,
     process.env.LANG,
@@ -115,8 +129,13 @@ export function detectCliLocale(): CliLocale {
   return DEFAULT_CLI_LOCALE;
 }
 
-export function resolveCliLocale(preferred?: string | null): CliLocale {
-  return normalizeCliLocale(preferred) ?? detectCliLocale();
+export function resolveCliLocale(
+  preferred?: string | null,
+  options?: {
+    configuredLocale?: string | null;
+  },
+): CliLocale {
+  return normalizeCliLocale(preferred) ?? detectCliLocale(options?.configuredLocale);
 }
 
 export function applyCliLocale(preferred?: string | null): CliLocale {
@@ -148,11 +167,7 @@ export function translateCli(
   return createCliTranslate(options?.locale)(key, values, options?.fallback);
 }
 
-export function localeText(
-  key: string,
-  values?: Record<string, unknown>,
-  fallback?: string,
-): LocalizedTextDef {
+export function localeText(key: string, values?: Record<string, unknown>, fallback?: string): LocalizedTextDef {
   return {
     key,
     ...(values ? { values } : {}),
@@ -161,11 +176,7 @@ export function localeText(
 }
 
 export function isLocalizedTextDef(value: unknown): value is LocalizedTextDef {
-  return Boolean(
-    value
-      && typeof value === 'object'
-      && typeof (value as LocalizedTextDef).key === 'string',
-  );
+  return Boolean(value && typeof value === 'object' && typeof (value as LocalizedTextDef).key === 'string');
 }
 
 export function resolveLocalizedText(

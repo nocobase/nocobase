@@ -58,6 +58,7 @@ describe('flowSurfaces context', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -155,6 +156,7 @@ describe('flowSurfaces context', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -184,6 +186,7 @@ describe('flowSurfaces context', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -374,6 +377,7 @@ describe('flowSurfaces context', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          fields: ['nickname', 'department'],
         },
       }),
     );
@@ -451,6 +455,7 @@ describe('flowSurfaces context', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -676,6 +681,7 @@ describe('flowSurfaces context', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -692,7 +698,16 @@ describe('flowSurfaces context', () => {
 });
 
 function getData(response: any) {
-  return response?.body?.data || response?.data || response;
+  if (response?.body?.data && Object.prototype.hasOwnProperty.call(response.body.data, 'data')) {
+    return response.body.data.data;
+  }
+  if (response?.body && Object.prototype.hasOwnProperty.call(response.body, 'data')) {
+    return response.body.data;
+  }
+  if (response && Object.prototype.hasOwnProperty.call(response, 'data')) {
+    return response.data;
+  }
+  return response?.body || response;
 }
 
 function readErrorMessage(response: any) {
@@ -700,7 +715,7 @@ function readErrorMessage(response: any) {
 }
 
 async function createPage(rootAgent: any, values: Record<string, any>) {
-  const response = await rootAgent.resource('flowSurfaces').createPage({ values });
+  const response = await rootAgent.resource('flowSurfaces').createPage({ values: { icon: 'FileOutlined', ...values } });
   expect(response.status).toBe(200);
   return getData(response);
 }

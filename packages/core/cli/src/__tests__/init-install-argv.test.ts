@@ -31,7 +31,6 @@ test('buildInstallArgv does not forward api-base-url for new installs', () => {
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: true,
       source: 'docker',
       version: 'beta',
       builtinDb: true,
@@ -93,7 +92,6 @@ test('buildInstallArgv forwards db schema and db underscored for new installs', 
       appRootPath: './app7593/source/',
       appPort: '13000',
       storagePath: './app7593/storage/',
-      fetchSource: true,
       source: 'docker',
       version: 'beta',
       builtinDb: true,
@@ -113,4 +111,216 @@ test('buildInstallArgv forwards db schema and db underscored for new installs', 
   expect(argv).toContain('--db-table-prefix');
   expect(argv).toContain('nb_');
   expect(argv).toContain('--db-underscored');
+});
+
+test('buildInstallArgv forwards app public path for new installs', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      hasNocobase: 'no',
+      appName: 'app7593',
+      authType: 'oauth',
+      lang: 'en-US',
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      appPublicPath: '/console/',
+      storagePath: './app7593/storage/',
+      source: 'docker',
+      version: 'beta',
+      builtinDb: true,
+      dbDialect: 'postgres',
+    },
+    {
+      yes: true,
+    },
+  );
+
+  expect(argv).toContain('--app-public-path');
+  expect(argv).toContain('/console/');
+});
+
+test('buildInstallArgv prefers --app-path and omits derived legacy path flags', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      hasNocobase: 'no',
+      appName: 'app7593',
+      authType: 'oauth',
+      lang: 'en-US',
+      appPath: './app7593/',
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      source: 'docker',
+      version: 'beta',
+      builtinDb: true,
+      dbDialect: 'postgres',
+    },
+    {
+      yes: true,
+    },
+  );
+
+  expect(argv).toContain('--app-path');
+  expect(argv).toContain('./app7593/');
+  expect(argv).not.toContain('--app-root-path');
+  expect(argv).not.toContain('--storage-path');
+});
+
+test('buildInstallArgv omits equivalent legacy path flags with different separators', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      hasNocobase: 'no',
+      appName: 'app7593',
+      authType: 'oauth',
+      lang: 'en-US',
+      appPath: './app7593/',
+      appRootPath: '.\\app7593\\source',
+      appPort: '13000',
+      storagePath: './app7593/storage',
+      source: 'docker',
+      version: 'beta',
+      builtinDb: true,
+      dbDialect: 'postgres',
+    },
+    {
+      yes: true,
+    },
+  );
+
+  expect(argv).toContain('--app-path');
+  expect(argv).not.toContain('--app-root-path');
+  expect(argv).not.toContain('--storage-path');
+});
+
+test('buildInstallArgv forwards --skip-download and omits download execution options', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'skip-download'?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      hasNocobase: 'no',
+      appName: 'app7593',
+      authType: 'oauth',
+      lang: 'en-US',
+      appRootPath: './app7593/source/',
+      appPort: '13000',
+      storagePath: './app7593/storage/',
+      skipDownload: true,
+      source: 'git',
+      version: 'beta',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+      npmRegistry: 'https://registry.npmmirror.com',
+      outputDir: './app7593/source/',
+      replace: true,
+      builtinDb: true,
+      dbDialect: 'postgres',
+    },
+    {
+      yes: true,
+      'skip-download': true,
+    },
+  );
+
+  expect(argv).toContain('--skip-download');
+  expect(argv).toContain('--source');
+  expect(argv).toContain('git');
+  expect(argv).toContain('--version');
+  expect(argv).toContain('beta');
+  expect(argv).toContain('--git-url');
+  expect(argv).toContain('https://github.com/nocobase/nocobase.git');
+  expect(argv).toContain('--npm-registry');
+  expect(argv).toContain('https://registry.npmmirror.com');
+  expect(argv).not.toContain('--output-dir');
+  expect(argv).not.toContain('--replace');
+});
+
+test('buildInstallArgv keeps builtin db available and omits admin init args for manage-local setup', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'skip-download'?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      setupMode: 'manage-local',
+      appName: 'legacy-app',
+      authType: 'oauth',
+      lang: 'en-US',
+      appRootPath: './legacy-app/source/',
+      appPort: '13000',
+      storagePath: './legacy-app/storage/',
+      skipDownload: true,
+      source: 'git',
+      version: 'beta',
+      gitUrl: 'https://github.com/nocobase/nocobase.git',
+      outputDir: './legacy-app/source/',
+      builtinDb: true,
+      dbDialect: 'postgres',
+      builtinDbImage: 'registry.example.com/postgres:16',
+      dbDatabase: 'legacy',
+      dbUser: 'nocobase',
+      dbPassword: 'secret',
+      rootUsername: 'admin',
+      rootEmail: 'admin@nocobase.com',
+      rootPassword: 'admin123',
+      rootNickname: 'Admin',
+    },
+    {
+      yes: true,
+      'skip-download': true,
+    },
+  );
+
+  expect(argv).not.toContain('--skip-download');
+  expect(argv).toContain('--builtin-db');
+  expect(argv).not.toContain('--no-builtin-db');
+  expect(argv).toContain('--builtin-db-image');
+  expect(argv).toContain('registry.example.com/postgres:16');
+  expect(argv).not.toContain('--root-username');
+  expect(argv).not.toContain('--root-email');
+  expect(argv).not.toContain('--root-password');
+  expect(argv).not.toContain('--root-nickname');
+  expect(argv).toContain('--db-database');
+  expect(argv).toContain('legacy');
 });

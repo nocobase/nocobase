@@ -37,17 +37,17 @@ const makePublicBlockDefaultFilter = (
 const makeAIEmployeeActionSettings = (target = 'self') => ({
   username: 'dex',
   auto: false,
-  workContext: [{ type: 'flow-model', target }],
+  workContext: [{ target }],
   tasks: [
     {
       title: 'Analyze current context',
+      prompt: 'Analyze the current record and suggest next steps.',
       message: {
         system: 'Use the current UI context.',
-        user: 'Analyze the current record and suggest next steps.',
-        workContext: [{ type: 'flow-model', target }],
+        workContext: [{ target }],
       },
       autoSend: false,
-      skillSettings: { skills: [], tools: [] },
+      skillSettings: null,
       model: null,
       webSearch: false,
     },
@@ -1870,9 +1870,9 @@ export const flowSurfaceExamples = {
     tasks: [
       {
         title: 'Generate table insights',
+        prompt: 'Summarize the current table and identify risks.',
         message: {
-          user: 'Summarize the current table and identify risks.',
-          workContext: [{ type: 'flow-model', target: 'self' }],
+          workContext: [{ target: 'self' }],
         },
         autoSend: true,
         webSearch: false,

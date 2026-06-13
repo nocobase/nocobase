@@ -303,6 +303,9 @@ IframeBlockModel.registerFlow({
             type: 'string',
             'x-decorator': 'FormItem',
             'x-component': TextAreaWithContextSelector,
+            'x-component-props': {
+              placeholder: t('https://www.example.com'),
+            },
             description: t('Do not concatenate search params in the URL'),
             required: true,
             'x-reactions': {

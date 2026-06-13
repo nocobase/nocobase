@@ -2,7 +2,6 @@
 title: "Guia de integração para AI Agent"
 description: "Instale o NocoBase CLI, conecte-se ou instale um aplicativo NocoBase, e deixe o AI Agent começar a operar o seu sistema de negócio."
 keywords: "NocoBase CLI,AI Agent,integração,conectar,instalação,Skills,início rápido"
-sidebar: false
 ---
 
 # Guia de integração para AI Agent
@@ -42,7 +41,7 @@ Se você ainda não tem um aplicativo NocoBase, pode instalar e inicializar um n
 #### Passo 1: instale o CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // confirme que a instalação foi bem-sucedida
 ```
 
@@ -58,15 +57,16 @@ Os arquivos de configuração e dados de aplicação gerados pela inicializaçã
 
 :::
 
-O navegador abre automaticamente uma página visual de configuração que orienta você em 5 passos:
+O navegador abre automaticamente uma página visual de configuração que orienta você em 6 passos:
 
-1. **Iniciar configuração** — defina o nome do aplicativo (que também será o nome do ambiente do CLI) e escolha "Nova instalação"
-2. **Criar aplicativo** — escolha o método de instalação (Docker / npm / Git), defina a porta e demais configurações básicas
-3. **Baixar arquivos do aplicativo** — escolha a fonte e a versão, baixe o código-fonte ou a imagem do NocoBase
-4. **Configurar banco de dados** — utilize o banco de dados embutido ou configure um banco externo (PostgreSQL, MySQL, MariaDB)
-5. **Criar conta de administrador** — defina o e-mail e a senha do administrador
+1. "Primeiros passos" — escolha instalar um novo app, gerenciar um app local ou conectar um app remoto.
+2. "Ambiente do app" — defina os dados básicos do app, o local de armazenamento e a porta de execução.
+3. "Fonte e versão do app" — escolha como obter o app e qual fonte e versão usar.
+4. "Configurar o banco de dados" — use embutido ou personalizado.
+5. "Criar uma conta de administrador" — configure o primeiro administrador.
+6. "Conexão e autenticação" — informe a URL de acesso do app e escolha um método de autenticação.
 
-![assistente visual do nocobase cli](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+![assistente visual do nocobase cli](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
 Após a instalação, abra o navegador e acesse `http://localhost:13000` (porta padrão), fazendo login com a conta de administrador que você acabou de definir.
 
@@ -100,7 +100,7 @@ Se você já tem uma instância do NocoBase em execução, pode conectá-la dire
 #### Passo 1: instale o CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // confirme que a instalação foi bem-sucedida
 ```
 
@@ -116,12 +116,12 @@ Os arquivos de configuração gerados pela inicialização ficam, por padrão, s
 
 :::
 
-O navegador abre automaticamente uma página visual de configuração. No primeiro passo "Iniciar configuração", escolha "Conectar a aplicativo existente" e, em seguida:
+O navegador abre automaticamente uma página visual de configuração. No primeiro passo "Iniciar configuração", escolha "Conexão remota" e, em seguida:
 
 1. **Preencha o endereço da API** — informe o endereço da API da sua instância NocoBase já existente (por exemplo: `http://localhost:13000/api`)
 2. **Escolha o método de autenticação** — selecione um [método de autenticação](../ai-builder/security) (para começar rápido, recomendamos OAuth)
 
-![assistente visual do nocobase cli](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
+![assistente visual do nocobase cli](https://static-docs.nocobase.com/2026-06-11-21-18-31.png)
 
 Não é necessário configurar método de instalação, banco de dados ou conta de administrador — o assistente pula essas etapas.
 
@@ -132,7 +132,7 @@ Inicie ou reinicie a sessão do AI Agent, e ele já poderá começar a operar o 
 </Tab>
 <Tab label="Conectar via AI Agent" value="ai-connect">
 
-Copie o prompt abaixo para o seu assistente de IA, e ele cuidará da instalação do CLI e o orientará na configuração da conexão com a instância NocoBase existente — basta escolher "Conectar a aplicativo existente" no primeiro passo do assistente visual:
+Copie o prompt abaixo para o seu assistente de IA, e ele cuidará da instalação do CLI e o orientará na configuração da conexão com a instância NocoBase existente — basta escolher "Conexão remota" no primeiro passo do assistente visual:
 
 ```
 Me ajuda a instalar o NocoBase CLI e finalizar a inicialização: https://docs.nocobase.com/cn/ai/ai-quick-start.md (acesse o conteúdo do link diretamente)
@@ -144,6 +144,13 @@ Após concluir a configuração, reinicie a sessão do seu AI Agent e você já 
 </Tabs>
 
 ## Próximos passos
+
+### Instalação e implantação em produção
+
+Se você está se preparando para implantar o NocoBase em produção, esta ordem costuma funcionar melhor:
+
+1. [Instale usando CLI (recomendado)](../nocobase-cli/installation/cli.md) — o fluxo completo de instalação. Este é o lugar certo se você quer instalar o CLI do zero, inicializar o env e confirmar que o aplicativo já está rodando normalmente no servidor
+2. [Visão geral da implantação do ambiente de produção](../nocobase-cli/production/index.md) — o próximo passo depois que o aplicativo já estiver em execução. Aqui o foco principal é autostart, proxy reverso, domínio e HTTPS
 
 ### Gerenciar ambientes da aplicação
 
@@ -172,4 +179,4 @@ Se você já tem o aplicativo NocoBase em execução ou já concluiu a inicializ
 - [Funcionários de IA](../ai-employees/index.md) — colabore com a IA dentro da interface de negócio
 - [Gerenciamento de ambientes](../ai-builder/env-bootstrap) — verificação de ambiente, adição de ambientes, atualização e diagnóstico de falhas
 - [Referência de comandos do NocoBase CLI](../api/cli/index.md) — descrição completa de todos os parâmetros dos comandos
-- [Comparação de métodos de instalação e versões](../get-started/quickstart) — diferentes métodos de instalação e canais de versão do NocoBase
+- [Comparação de métodos de instalação e versões](../ai/quickstart) — diferentes métodos de instalação e canais de versão do NocoBase

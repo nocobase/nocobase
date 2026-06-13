@@ -5,6 +5,12 @@
   "node.FilterActionModel1": {
     "uid": "fcal9b1ock1-filterAction"
   },
+  "action.calendarNav1": {
+    "uid": "fcal9b1ock1-calendarNavAction"
+  },
+  "action.calendarViewSelect1": {
+    "uid": "fcal9b1ock1-calendarViewSelectAction"
+  },
   "node.RefreshActionModel1": {
     "uid": "fcal9b1ock1-refreshAction"
   },

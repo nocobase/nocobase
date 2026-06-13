@@ -31,7 +31,90 @@ import {
   createRootItemChain,
   type ItemChain,
 } from './itemChain';
-import { buildOpenerUids, LabelByField } from './recordSelectShared';
+import { buildOpenerUids, LabelByField, type AssociationFieldNames } from './recordSelectShared';
+
+const MULTIPLE_ASSOCIATION_TYPES = ['belongsToMany', 'hasMany', 'belongsToArray'];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function canRecordPickerSelectMultiple(
+  collectionField: { type?: string } | null | undefined,
+  allowMultiple?: boolean,
+) {
+  return (
+    !!collectionField?.type && MULTIPLE_ASSOCIATION_TYPES.includes(collectionField.type) && allowMultiple !== false
+  );
+}
+
+export function shouldClearRecordPickerValueOnMultipleChange(
+  collectionField: { type?: string } | null | undefined,
+  previousAllowMultiple?: boolean,
+  nextAllowMultiple?: boolean,
+) {
+  return (
+    canRecordPickerSelectMultiple(collectionField, previousAllowMultiple) !==
+    canRecordPickerSelectMultiple(collectionField, nextAllowMultiple)
+  );
+}
+
+export function normalizeRecordPickerSelectedRows(value: unknown, allowMultiple: boolean) {
+  if (!value) {
+    return [];
+  }
+  if (allowMultiple) {
+    return Array.isArray(value) ? value : [value];
+  }
+  return Array.isArray(value) ? value.slice(0, 1) : [value];
+}
+
+export function getRecordPickerEmptyValue(allowMultiple: boolean) {
+  return allowMultiple ? [] : undefined;
+}
+
+export function getRecordPickerClearedValue() {
+  return undefined;
+}
+
+export function normalizeRecordPickerValue(value: unknown, fieldNames: AssociationFieldNames, allowMultiple: boolean) {
+  if (!value) {
+    return getRecordPickerEmptyValue(allowMultiple);
+  }
+  const toSelectItem = (item: Record<string, unknown>) => ({
+    ...item,
+    label: item[fieldNames.label],
+    value: item[fieldNames.value],
+  });
+  if (!allowMultiple) {
+    const item = Array.isArray(value) ? value[0] : value;
+    return isRecord(item) ? toSelectItem(item) : undefined;
+  }
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter(isRecord).map(toSelectItem);
+}
+
+function applyRecordPickerAllowMultiple(ctx: any, params: any, previousParams?: any) {
+  const shouldClearValue =
+    previousParams &&
+    shouldClearRecordPickerValueOnMultipleChange(
+      ctx.collectionField,
+      previousParams?.allowMultiple,
+      params?.allowMultiple,
+    );
+  const emptyValue = getRecordPickerClearedValue();
+
+  ctx.model.setProps({
+    allowMultiple: params?.allowMultiple,
+    ...(shouldClearValue ? { value: emptyValue } : {}),
+  });
+  if (shouldClearValue) {
+    ctx.model.selectedRows.value = emptyValue;
+    ctx.model.props.onChange?.(emptyValue);
+  }
+}
 
 export function buildRecordPickerParentItemContext(ctx: any): {
   parentItem: ItemChain;
@@ -241,25 +324,10 @@ export function RecordPickerContent({ model, toOne = false }) {
 function RecordPickerField(props) {
   const { fieldNames, onClick, disabled } = props;
   const ctx = useFlowContext();
-  const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
+  const allowMultiple = canRecordPickerSelectMultiple(ctx.collectionField, props.allowMultiple);
   useEffect(() => {
     ctx.model.selectedRows.value = props.value;
-  }, [props.value]);
-  const normalizeValue = (value, fieldNames, toOne) => {
-    if (!value) return toOne ? undefined : [];
-    if (toOne) {
-      return {
-        ...value,
-        label: value[fieldNames.label],
-        value: value[fieldNames.value],
-      };
-    }
-    return value.map((v) => ({
-      ...v,
-      label: v[fieldNames.label],
-      value: v[fieldNames.value],
-    }));
-  };
+  }, [ctx.model.selectedRows, props.value]);
 
   return (
     <Select
@@ -270,12 +338,12 @@ function RecordPickerField(props) {
           onClick(e);
         }
       }}
-      value={normalizeValue(props.value, fieldNames, toOne)}
+      value={normalizeRecordPickerValue(props.value, fieldNames, allowMultiple)}
       labelRender={(item) => {
         return <LabelByField option={item} fieldNames={fieldNames} />;
       }}
       labelInValue
-      mode={toOne ? undefined : 'multiple'}
+      mode={allowMultiple ? 'multiple' : undefined}
       options={props.value}
       allowClear
       onChange={(newValue, option) => {
@@ -405,7 +473,7 @@ RecordPickerFieldModel.registerFlow({
       },
       handler(ctx, params) {
         const { onChange } = ctx.inputArgs;
-        const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
+        const allowMultiple = canRecordPickerSelectMultiple(ctx.collectionField, ctx.model.props.allowMultiple);
         const sizeToWidthMap: Record<string, any> = {
           drawer: {
             small: '30%',
@@ -441,9 +509,9 @@ RecordPickerFieldModel.registerFlow({
               currentItemValue: ctx.inputArgs.currentItemValue ?? {},
             }),
             rowSelectionProps: {
-              type: toOne ? 'radio' : 'checkbox',
+              type: allowMultiple ? 'checkbox' : 'radio',
               defaultSelectedRows: () => {
-                return ctx.model.props.value;
+                return normalizeRecordPickerSelectedRows(ctx.model.props.value, allowMultiple);
               },
               renderCell: undefined,
               selectedRowKeys: undefined,
@@ -452,8 +520,7 @@ RecordPickerFieldModel.registerFlow({
                 const selectTable = selectBlockModel.findSubModel('items', (m) => {
                   return m;
                 });
-                if (toOne) {
-                  // 单选
+                if (!allowMultiple) {
                   ctx.model.selectedRows.value = selectedRows?.[0];
                   onChange(ctx.model.selectedRows.value);
                   ctx.model._closeView?.();
@@ -475,7 +542,7 @@ RecordPickerFieldModel.registerFlow({
               },
             },
           },
-          content: () => <RecordPickerContent model={ctx.model} toOne={toOne} />,
+          content: () => <RecordPickerContent model={ctx.model} toOne={!allowMultiple} />,
           styles: {
             content: {
               padding: 0,
@@ -499,6 +566,24 @@ RecordPickerFieldModel.registerFlow({
   steps: {
     fieldNames: {
       use: 'titleField',
+    },
+    allowMultiple: {
+      title: tExpr('Multiple'),
+      uiMode: { type: 'switch', key: 'allowMultiple' },
+      hideInSettings(ctx) {
+        return !canRecordPickerSelectMultiple(ctx.collectionField, true);
+      },
+      defaultParams(ctx) {
+        return {
+          allowMultiple: canRecordPickerSelectMultiple(ctx.collectionField, true),
+        };
+      },
+      afterParamsSave(ctx, params, previousParams) {
+        applyRecordPickerAllowMultiple(ctx, params, previousParams);
+      },
+      handler(ctx, params) {
+        applyRecordPickerAllowMultiple(ctx, params);
+      },
     },
   },
 });

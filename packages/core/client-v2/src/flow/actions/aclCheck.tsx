@@ -24,6 +24,10 @@ const getRecordPkValue = (value: any) => {
 export const aclCheck = defineAction({
   name: 'aclCheck',
   async handler(ctx, params) {
+    if (ctx.skipAclCheck) {
+      return;
+    }
+
     const result = await ctx.aclCheck({
       dataSourceKey: ctx.dataSource?.key,
       resourceName: ctx.collectionField?.collectionName || ctx.resourceName,

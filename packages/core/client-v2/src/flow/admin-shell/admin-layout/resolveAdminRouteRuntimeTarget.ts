@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getV2EffectiveBasePath } from '../../../authRedirect';
+import { getModernClientPrefix, getV2EffectiveBasePath } from '../../../authRedirect';
 import type { BaseApplication } from '../../../BaseApplication';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
 
@@ -25,8 +25,6 @@ export type AdminRouteRuntimeTarget = {
   isLegacy: boolean;
   reason: AdminRouteRuntimeTargetReason;
 };
-
-const V2_PUBLIC_PATH_SUFFIX = '/v2/';
 
 type LocationLike = {
   pathname: string;
@@ -69,7 +67,7 @@ function normalizePublicPath(value = '/') {
 }
 
 export function isV2AdminRuntime(app?: ResolveAdminRouteRuntimeTargetOptions['app']) {
-  return !!app?.getPublicPath && normalizePublicPath(app.getPublicPath()).endsWith(V2_PUBLIC_PATH_SUFFIX);
+  return !!app?.getPublicPath && normalizePublicPath(app.getPublicPath()).endsWith(`/${getModernClientPrefix()}/`);
 }
 
 export function toRouterNavigationPath(pathname: string, basename?: string) {

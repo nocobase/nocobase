@@ -1,7 +1,7 @@
 ---
 title: "nb plugin"
-description: "nb plugin Befehlsreferenz: Verwaltet die Plugins der ausgewählten NocoBase env."
-keywords: "nb plugin,NocoBase CLI,Pluginverwaltung,enable,disable,list"
+description: "nb plugin Befehlsreferenz: Verwaltet die Plugins der ausgewählten NocoBase env und importiert verpackte Plugins nach storage/plugins."
+keywords: "nb plugin,NocoBase CLI,Pluginverwaltung,enable,disable,list,import"
 ---
 
 # nb plugin
@@ -18,6 +18,7 @@ nb plugin <command>
 
 | Befehl | Beschreibung |
 | --- | --- |
+| [`nb plugin import`](./import.md) | Importiert ein verpacktes Plugin-Archiv oder npm-Paket |
 | [`nb plugin list`](./list.md) | Listet die installierten Plugins auf |
 | [`nb plugin enable`](./enable.md) | Aktiviert ein oder mehrere Plugins |
 | [`nb plugin disable`](./disable.md) | Deaktiviert ein oder mehrere Plugins |
@@ -25,6 +26,7 @@ nb plugin <command>
 ## Beispiele
 
 ```bash
+nb plugin import ./plugin-auth-cas-1.4.0.tgz --storage-path ./storage
 nb plugin list -e local
 nb plugin enable @nocobase/plugin-sample
 nb plugin disable -e local @nocobase/plugin-sample

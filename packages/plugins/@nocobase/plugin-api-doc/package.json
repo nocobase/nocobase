@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-api-doc",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "displayName": "API documentation",
   "displayName.ru-RU": "Документация API",
   "displayName.zh-CN": "API 文档",
@@ -19,7 +19,9 @@
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
     "@nocobase/database": "workspace:*",
-    "@nocobase/server": "workspace:*"
+    "@nocobase/server": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*"
   },
   "repository": {
     "type": "git",

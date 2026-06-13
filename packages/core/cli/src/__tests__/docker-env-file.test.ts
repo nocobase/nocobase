@@ -39,6 +39,16 @@ test('docker env file defaults to <envName>/.env', () => {
   expect(resolveConfiguredDockerEnvFilePath('local')).toBe('local/.env');
 });
 
+test('docker env file defaults to <app-path>/.env when appPath is saved', () => {
+  expect(resolveConfiguredDockerEnvFilePath('local', { appPath: './apps/local/' })).toBe('./apps/local/.env');
+});
+
+test('docker env file infers <app-path>/.env from legacy source paths', () => {
+  expect(resolveConfiguredDockerEnvFilePath('local', { appRootPath: './apps/local/source/' })).toBe(
+    './apps/local/.env',
+  );
+});
+
 test('docker env file resolves default relative paths under CLI root', async () => {
   await withCliRoot(async (root) => {
     expect(resolveDockerEnvFilePath('demo')).toBe(path.resolve(root, 'demo/.env'));

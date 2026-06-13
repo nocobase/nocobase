@@ -1,14 +1,35 @@
-const basename = window['__nocobase_public_path__'] || '/';
-let currentPath = window.location.pathname;
-if (currentPath === basename.slice(0, -1)) {
+function ensureLeadingSlash(value) {
+  if (!value) {
+    return '/';
+  }
+  return value.startsWith('/') ? value : `/${value}`;
+}
+
+function ensureTrailingSlash(value) {
+  if (!value) {
+    return '/';
+  }
+  return value.endsWith('/') ? value : `${value}/`;
+}
+
+function normalizePublicPath(value) {
+  const normalized = ensureLeadingSlash(String(value || '/').trim() || '/').replace(/\/{2,}/g, '/');
+  return ensureTrailingSlash(normalized);
+}
+
+const basename = normalizePublicPath(window['__nocobase_public_path__'] || '/');
+const currentPath = ensureLeadingSlash(String(window.location.pathname || '/').trim() || '/').replace(/\/{2,}/g, '/');
+const basenameWithoutTrailingSlash = basename === '/' ? '/' : basename.replace(/\/+$/, '');
+
+if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
   const newUrl = `${window.location.origin}${basename}${window.location.search}${window.location.hash}`;
   window.location.replace(newUrl);
-} else if (!currentPath.startsWith(basename)) {
-  let newPath = basename + (currentPath.startsWith('/') ? currentPath.slice(1) : currentPath);
+} else if (basename !== '/' && !currentPath.startsWith(basename)) {
+  const newPath = currentPath === '/' ? basename : `${basenameWithoutTrailingSlash}${currentPath}`;
   let newUrl = window.location.origin + newPath + window.location.search + window.location.hash;
   window.location.replace(newUrl);
 }
-showLog = true;
+let showLog = true;
 function log(m) {
   if (window.console && showLog) {
     console.log(m);
@@ -46,105 +67,109 @@ function css_browser_selector(u) {
     dv = 'device_',
     html = document.documentElement,
     b = [
-      (!/opera|webtv/i.test(ua) && /msie\s(\d+)/.test(ua)) || /trident\/.*rv:([0-9]{1,}[\.0-9]{0,})/.test(ua)
+      (!/opera|webtv/i.test(ua) && /msie\s(\d+)/.test(ua)) || /trident\/.*rv:([0-9]{1,}[.0-9]{0,})/.test(ua)
         ? 'ie ie' + (/trident\/4\.0/.test(ua) ? '8' : RegExp.$1 == '11.0' ? '11' : RegExp.$1)
         : is('firefox/')
-        ? g +
-          ' ' +
-          f +
-          (/firefox\/((\d+)(\.(\d+))(\.\d+)*)/.test(ua)
-            ? ' ' + f + RegExp.$2 + ' ' + f + RegExp.$2 + '_' + RegExp.$4
-            : '')
-        : is('gecko/')
-        ? g
-        : is('opera')
-        ? o +
-          (/version\/((\d+)(\.(\d+))(\.\d+)*)/.test(ua)
-            ? ' ' + o + RegExp.$2 + ' ' + o + RegExp.$2 + '_' + RegExp.$4
-            : /opera(\s|\/)(\d+)\.(\d+)/.test(ua)
-            ? ' ' + o + RegExp.$2 + ' ' + o + RegExp.$2 + '_' + RegExp.$3
-            : '')
-        : is('konqueror')
-        ? 'konqueror'
-        : is('blackberry')
-        ? bb +
-          (/Version\/(\d+)(\.(\d+)+)/i.test(ua)
-            ? ' ' + bb + RegExp.$1 + ' ' + bb + RegExp.$1 + RegExp.$2.replace('.', '_')
-            : /Blackberry ?(([0-9]+)([a-z]?))[\/|;]/gi.test(ua)
-            ? ' ' + bb + RegExp.$2 + (RegExp.$3 ? ' ' + bb + RegExp.$2 + RegExp.$3 : '')
-            : '')
-        : is('android')
-        ? a +
-          (/Version\/(\d+)(\.(\d+))+/i.test(ua)
-            ? ' ' + a + RegExp.$1 + ' ' + a + RegExp.$1 + RegExp.$2.replace('.', '_')
-            : '') +
-          (/Android (.+); (.+) Build/i.test(ua) ? ' ' + dv + RegExp.$2.replace(/ /g, '_').replace(/-/g, '_') : '')
-        : is('chrome')
-        ? w +
-          ' ' +
-          c +
-          (/chrome\/((\d+)(\.(\d+))(\.\d+)*)/.test(ua)
-            ? ' ' + c + RegExp.$2 + (RegExp.$4 > 0 ? ' ' + c + RegExp.$2 + '_' + RegExp.$4 : '')
-            : '')
-        : is('iron')
-        ? w + ' iron'
-        : is('applewebkit/')
-        ? w +
-          ' ' +
-          s +
-          (/version\/((\d+)(\.(\d+))(\.\d+)*)/.test(ua)
-            ? ' ' + s + RegExp.$2 + ' ' + s + RegExp.$2 + RegExp.$3.replace('.', '_')
-            : / Safari\/(\d+)/i.test(ua)
-            ? RegExp.$1 == '419' || RegExp.$1 == '417' || RegExp.$1 == '416' || RegExp.$1 == '412'
-              ? ' ' + s + '2_0'
-              : RegExp.$1 == '312'
-              ? ' ' + s + '1_3'
-              : RegExp.$1 == '125'
-              ? ' ' + s + '1_2'
-              : RegExp.$1 == '85'
-              ? ' ' + s + '1_0'
-              : ''
-            : '')
-        : is('mozilla/')
-        ? g
-        : '',
+          ? g +
+            ' ' +
+            f +
+            (/firefox\/((\d+)(\.(\d+))(\.\d+)*)/.test(ua)
+              ? ' ' + f + RegExp.$2 + ' ' + f + RegExp.$2 + '_' + RegExp.$4
+              : '')
+          : is('gecko/')
+            ? g
+            : is('opera')
+              ? o +
+                (/version\/((\d+)(\.(\d+))(\.\d+)*)/.test(ua)
+                  ? ' ' + o + RegExp.$2 + ' ' + o + RegExp.$2 + '_' + RegExp.$4
+                  : /opera(\s|\/)(\d+)\.(\d+)/.test(ua)
+                    ? ' ' + o + RegExp.$2 + ' ' + o + RegExp.$2 + '_' + RegExp.$3
+                    : '')
+              : is('konqueror')
+                ? 'konqueror'
+                : is('blackberry')
+                  ? bb +
+                    (/Version\/(\d+)(\.(\d+)+)/i.test(ua)
+                      ? ' ' + bb + RegExp.$1 + ' ' + bb + RegExp.$1 + RegExp.$2.replace('.', '_')
+                      : /Blackberry ?(([0-9]+)([a-z]?))[/|;]/gi.test(ua)
+                        ? ' ' + bb + RegExp.$2 + (RegExp.$3 ? ' ' + bb + RegExp.$2 + RegExp.$3 : '')
+                        : '')
+                  : is('android')
+                    ? a +
+                      (/Version\/(\d+)(\.(\d+))+/i.test(ua)
+                        ? ' ' + a + RegExp.$1 + ' ' + a + RegExp.$1 + RegExp.$2.replace('.', '_')
+                        : '') +
+                      (/Android (.+); (.+) Build/i.test(ua)
+                        ? ' ' + dv + RegExp.$2.replace(/ /g, '_').replace(/-/g, '_')
+                        : '')
+                    : is('chrome')
+                      ? w +
+                        ' ' +
+                        c +
+                        (/chrome\/((\d+)(\.(\d+))(\.\d+)*)/.test(ua)
+                          ? ' ' + c + RegExp.$2 + (RegExp.$4 > 0 ? ' ' + c + RegExp.$2 + '_' + RegExp.$4 : '')
+                          : '')
+                      : is('iron')
+                        ? w + ' iron'
+                        : is('applewebkit/')
+                          ? w +
+                            ' ' +
+                            s +
+                            (/version\/((\d+)(\.(\d+))(\.\d+)*)/.test(ua)
+                              ? ' ' + s + RegExp.$2 + ' ' + s + RegExp.$2 + RegExp.$3.replace('.', '_')
+                              : / Safari\/(\d+)/i.test(ua)
+                                ? RegExp.$1 == '419' || RegExp.$1 == '417' || RegExp.$1 == '416' || RegExp.$1 == '412'
+                                  ? ' ' + s + '2_0'
+                                  : RegExp.$1 == '312'
+                                    ? ' ' + s + '1_3'
+                                    : RegExp.$1 == '125'
+                                      ? ' ' + s + '1_2'
+                                      : RegExp.$1 == '85'
+                                        ? ' ' + s + '1_0'
+                                        : ''
+                                : '')
+                          : is('mozilla/')
+                            ? g
+                            : '',
       is('android|mobi|mobile|j2me|iphone|ipod|ipad|blackberry|playbook|kindle|silk') ? m : '',
       is('j2me')
         ? 'j2me'
         : is('ipad|ipod|iphone')
-        ? (/CPU( iPhone)? OS (\d+[_|\.]\d+([_|\.]\d+)*)/i.test(ua) ? 'ios' + version('ios', RegExp.$2) : '') +
-          ' ' +
-          (/(ip(ad|od|hone))/gi.test(ua) ? RegExp.$1 : '')
-        : is('playbook')
-        ? 'playbook'
-        : is('kindle|silk')
-        ? 'kindle'
-        : is('playbook')
-        ? 'playbook'
-        : is('mac')
-        ? 'mac' +
-          (/mac os x ((\d+)[.|_](\d+))/.test(ua) ? ' mac' + RegExp.$2 + ' mac' + RegExp.$1.replace('.', '_') : '')
-        : is('win')
-        ? 'win' +
-          (is('windows nt 6.2')
-            ? ' win8'
-            : is('windows nt 6.1')
-            ? ' win7'
-            : is('windows nt 6.0')
-            ? ' vista'
-            : is('windows nt 5.2') || is('windows nt 5.1')
-            ? ' win_xp'
-            : is('windows nt 5.0')
-            ? ' win_2k'
-            : is('windows nt 4.0') || is('WinNT4.0')
-            ? ' win_nt'
-            : '')
-        : is('freebsd')
-        ? 'freebsd'
-        : is('x11|linux')
-        ? 'linux'
-        : '',
-      /[; |\[](([a-z]{2})(\-[a-z]{2})?)[)|;|\]]/i.test(ua)
+          ? (/CPU( iPhone)? OS (\d+[_.]\d+([_.]\d+)*)/i.test(ua) ? 'ios' + version('ios', RegExp.$2) : '') +
+            ' ' +
+            (/(ip(ad|od|hone))/gi.test(ua) ? RegExp.$1 : '')
+          : is('playbook')
+            ? 'playbook'
+            : is('kindle|silk')
+              ? 'kindle'
+              : is('playbook')
+                ? 'playbook'
+                : is('mac')
+                  ? 'mac' +
+                    (/mac os x ((\d+)[.|_](\d+))/.test(ua)
+                      ? ' mac' + RegExp.$2 + ' mac' + RegExp.$1.replace('.', '_')
+                      : '')
+                  : is('win')
+                    ? 'win' +
+                      (is('windows nt 6.2')
+                        ? ' win8'
+                        : is('windows nt 6.1')
+                          ? ' win7'
+                          : is('windows nt 6.0')
+                            ? ' vista'
+                            : is('windows nt 5.2') || is('windows nt 5.1')
+                              ? ' win_xp'
+                              : is('windows nt 5.0')
+                                ? ' win_2k'
+                                : is('windows nt 4.0') || is('WinNT4.0')
+                                  ? ' win_nt'
+                                  : '')
+                    : is('freebsd')
+                      ? 'freebsd'
+                      : is('x11|linux')
+                        ? 'linux'
+                        : '',
+      /(?:[; |]|\[)(([a-z]{2})(-[a-z]{2})?)(?:\)|;|\||])/i.test(ua)
         ? (lang + RegExp.$2).replace('-', '_') + (RegExp.$3 != '' ? (' ' + lang + RegExp.$1).replace('-', '_') : '')
         : '',
       is('ipad|iphone|ipod') && !is('safari') ? 'ipad_app' : '',
@@ -161,7 +186,7 @@ function css_browser_selector(u) {
         break;
       }
     }
-    widthClasses = '';
+    let widthClasses = '';
     for (var info in uaInfo) {
       widthClasses += ' ' + info + '_' + uaInfo[info];
     }

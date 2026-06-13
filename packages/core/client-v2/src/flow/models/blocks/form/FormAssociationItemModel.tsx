@@ -22,6 +22,8 @@ import { FieldModel } from '../../base/FieldModel';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { useJsonTemplateResolver } from '../../../utils/useJsonTemplateResolver';
 
+const MAX_FORM_ASSOCIATION_FIELD_DEPTH = 2;
+
 function mergeArrays(a, b) {
   if (!b) {
     return a;
@@ -84,10 +86,17 @@ const AssociationItem = (props) => {
 export class FormAssociationItemModel extends DisplayItemModel {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
+    const associationDepth = ctx.prefixFieldPath ? ctx.prefixFieldPath.split('.').filter(Boolean).length : 0;
 
     return collection
       .getFields()
       .map((field) => {
+        if (
+          associationDepth >= MAX_FORM_ASSOCIATION_FIELD_DEPTH &&
+          (field.isAssociationField?.() || field.target || field.targetCollection)
+        ) {
+          return null;
+        }
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
         if (!binding) return null;
         const fieldModel = binding.modelName;

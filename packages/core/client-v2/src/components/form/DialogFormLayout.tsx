@@ -16,17 +16,9 @@ export interface DialogFormLayoutProps {
   title: React.ReactNode;
   /** Form body — typically a `<Form>` wrapping `<Form.Item>` fields. */
   children: React.ReactNode;
-  /**
-   * Called before the dialog is closed by the Cancel button or the
-   * top-right close (X) icon. Use for "discard changes" confirmations.
-   */
+  /** Called before the dialog is closed by the Cancel button or the top-right close (X) icon. Use for "discard changes" confirmations. */
   onCancel?: () => void | Promise<void>;
-  /**
-   * Called when the Submit button is clicked. Caller owns validation
-   * + the actual API call; the dialog is closed automatically when
-   * `onSubmit` resolves. Throw from `onSubmit` to keep the dialog open
-   * (e.g. on a validation error).
-   */
+  /** Called when the Submit button is clicked. Caller owns validation + the actual API call; the dialog is closed automatically when `onSubmit` resolves. Throw from `onSubmit` to keep the dialog open (e.g. on a validation error). */
   onSubmit?: () => void | Promise<void>;
   /** Drives the Submit button's loading state. */
   submitting?: boolean;
@@ -34,30 +26,14 @@ export interface DialogFormLayoutProps {
   submitText?: React.ReactNode;
   /** Override the Cancel button label. Defaults to "Cancel". */
   cancelText?: React.ReactNode;
-  /**
-   * Full override of the footer content. When provided, the default
-   * Cancel + Submit buttons are replaced. Useful for forms that need
-   * extra actions (e.g. Preview, Save draft).
-   */
+  /** Full override of the footer content. When provided, the default Cancel + Submit buttons are replaced. Useful for forms that need extra actions (e.g. Preview, Save draft). */
   footer?: React.ReactNode;
 }
 
 /**
- * Standard layout for dialog-hosted forms — the dialog counterpart of
- * `DrawerFormLayout`. Title sits left-aligned in the dialog's native
- * header (no inline close icon — the dialog provides its own X in the
- * top-right when opened with `viewer.dialog({ closable: true, ... })`),
- * the form body fills the middle, and a Cancel + Submit footer sits
- * at the bottom.
+ * Standard layout for dialog-hosted forms — the dialog counterpart of `DrawerFormLayout`. Title sits left-aligned in the dialog's native header, the form body fills the middle, and a Cancel + Submit footer sits at the bottom. Neither this layout nor `DrawerFormLayout` renders a close icon — both rely on the caller passing `closable: true` at the `viewer.dialog` / `viewer.drawer` call site to surface antd Modal's native top-right X (Dialog) or antd Drawer's native left-side X (Drawer).
  *
- * Why not just reuse `DrawerFormLayout`? `DrawerFormLayout` injects a
- * `<CloseOutlined>` button next to the title — that's the drawer
- * visual contract (close lives near the title in a side panel). In a
- * centered dialog the native top-right close button is the expected
- * affordance, so a separate layout keeps the visual contract clean.
- *
- * Callers own the `<Form>` instance, validation, and the actual API
- * call. This component only handles the chrome and close behaviour.
+ * Callers own the `<Form>` instance, validation, and the actual API call. This component only handles the chrome and close behaviour.
  *
  * Example:
  *

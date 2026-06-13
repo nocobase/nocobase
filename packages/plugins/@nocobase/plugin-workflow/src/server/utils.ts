@@ -7,23 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model } from '@nocobase/database';
+import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { parseCollectionName } from '@nocobase/data-source-manager';
 import type { DataSourceManager } from '@nocobase/data-source-manager';
-import { EXECUTION_STATUS } from './constants';
-import type { WorkflowModel } from './types';
+import type PluginWorkflowServer from './Plugin';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from './constants';
+import type { ExecutionModel, WorkflowModel } from './types';
 import Processor from './Processor';
+
+type AbortOptions = Transactionable & {
+  reason?: (typeof EXECUTION_REASON)[keyof typeof EXECUTION_REASON];
+};
+
+export function getExecutionLockKey(executionId: number | string) {
+  return `workflow:execution:${executionId}`;
+}
+
+export function isLockAcquireError(error: unknown) {
+  return error instanceof Error && error.constructor.name === 'LockAcquireError';
+}
+
+function afterTransactionCommit(transaction: Transaction, callback: () => void) {
+  if (typeof (transaction as any).afterCommit === 'function') {
+    (transaction as any).afterCommit(callback);
+    return;
+  }
+
+  callback();
+}
 
 export function validateCollectionField(
   collection: string,
   dataSourceManager: DataSourceManager,
 ): Record<string, string> | null {
   const [dataSourceName, collectionName] = parseCollectionName(collection);
-  if (collection.includes(':')) {
-    const parts = collection.split(':');
-    if (parts.length !== 2 || !parts[0] || !parts[1]) {
-      return { collection: `"collection" must be in the format "dataSourceName:collectionName"` };
-    }
+  if (!dataSourceName || !collectionName) {
+    return { collection: `"collection" must be in the format "dataSourceName:collectionName"` };
   }
 
   const dataSource = dataSourceManager.dataSources.get(dataSourceName);
@@ -64,6 +83,99 @@ export function getWorkflowExecutionLogMeta(workflow: WorkflowModel, processor?:
     lastJobId: lastSavedJob?.id ?? null,
     lastJobStatus: lastSavedJob?.status ?? null,
   };
+}
+
+export async function abortExecution(
+  plugin: PluginWorkflowServer,
+  execution: ExecutionModel,
+  options: AbortOptions = {},
+): Promise<boolean> {
+  const logger = plugin.getLogger(execution.workflowId);
+  const transaction = options.transaction ?? undefined;
+  const ExecutionRepo = plugin.db.getRepository('executions');
+  const JobRepo = plugin.db.getRepository('jobs');
+
+  try {
+    const abortValues = {
+      status: EXECUTION_STATUS.ABORTED,
+      ...(options.reason
+        ? {
+            reason: options.reason,
+          }
+        : {}),
+    };
+
+    if (transaction) {
+      const lockedExecution = await ExecutionRepo.findOne({
+        filterByTk: execution.id,
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!lockedExecution || lockedExecution.status !== EXECUTION_STATUS.STARTED) {
+        return false;
+      }
+
+      await lockedExecution.update(abortValues, { transaction });
+    } else {
+      const [affected] = await ExecutionRepo.model.update(abortValues, {
+        where: {
+          id: execution.id,
+          status: EXECUTION_STATUS.STARTED,
+        },
+        individualHooks: true,
+      });
+
+      if (!affected) {
+        return false;
+      }
+    }
+
+    const updated = await JobRepo.update({
+      values: {
+        status: JOB_STATUS.ABORTED,
+      },
+      filter: {
+        executionId: execution.id,
+        status: JOB_STATUS.PENDING,
+      },
+      individualHooks: false,
+      transaction,
+    });
+
+    const childExecutions = await plugin.db.getRepository('executions').find({
+      filter: {
+        parentExecutionId: execution.id,
+        status: EXECUTION_STATUS.STARTED,
+      },
+      transaction,
+    });
+
+    for (const child of childExecutions) {
+      await abortExecution(plugin, child, { transaction, reason: EXECUTION_REASON.PARENT_ABORTED });
+    }
+
+    const updateLocalState = () => {
+      execution.set('status', EXECUTION_STATUS.ABORTED);
+      execution.set('reason', options.reason ?? null);
+      plugin.timeoutManager.clear(execution.id);
+      plugin.abortRunningExecution(execution.id, options.reason);
+    };
+    if (transaction) {
+      afterTransactionCommit(transaction, updateLocalState);
+    } else {
+      updateLocalState();
+    }
+
+    logger.info(`execution (${execution.id}) aborted`, {
+      workflowId: execution.workflowId,
+      pendingJobs: Array.isArray(updated) ? updated.length : updated,
+    });
+
+    return true;
+  } catch (error) {
+    throw error;
+  }
 }
 
 export function toJSON(data: any): any {

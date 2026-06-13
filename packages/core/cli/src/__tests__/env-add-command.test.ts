@@ -120,9 +120,7 @@ test('env add saves builtinDb into env config when provided by install', async (
     },
     { scope: 'global' },
   ]);
-  expect(runCommand.mock.calls).toEqual([
-    ['env:update', ['local']],
-  ]);
+  expect(runCommand.mock.calls).toEqual([['env:update', ['local']]]);
   expect(mocks.setCurrentEnv).toHaveBeenCalledWith('local', { scope: 'global' });
   expect(mocks.printSuccess).toHaveBeenCalledWith('✔ Env "local" is ready.');
 });
@@ -218,5 +216,41 @@ test('env add can defer authentication and tell the user to run env auth later',
   expect(mocks.printSuccess).toHaveBeenCalledWith('✔ Env "local" was saved.');
   expect(mocks.printInfo).toHaveBeenCalledWith(
     'Authentication was skipped for env "local". Run `nb env auth local` to finish setup. You will be prompted for an access token.',
+  );
+});
+
+test('env add explains that deferred basic auth will prompt for username and password', async () => {
+  const { default: EnvAdd } = await import('../commands/env/add.js');
+  mocks.runPromptCatalog.mockResolvedValue({
+    name: 'local',
+    apiBaseUrl: 'http://127.0.0.1:13000/api',
+    authType: 'basic',
+    username: 'admin',
+  });
+  mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.setCurrentEnv.mockResolvedValue(undefined);
+
+  const runCommand = vi.fn(async () => undefined);
+  const command = Object.assign(Object.create(EnvAdd.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'local' },
+      flags: {
+        verbose: false,
+        'api-base-url': 'http://127.0.0.1:13000/api',
+        'auth-type': 'basic',
+        username: 'admin',
+        'skip-auth': true,
+      },
+    })),
+    config: {
+      runCommand,
+    },
+  });
+
+  await EnvAdd.prototype.run.call(command);
+
+  expect(runCommand).not.toHaveBeenCalled();
+  expect(mocks.printInfo).toHaveBeenCalledWith(
+    'Authentication was skipped for env "local". Run `nb env auth local` to finish setup. You will be prompted for a username and password.',
   );
 });

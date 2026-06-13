@@ -34,7 +34,7 @@ Sau khi enable plugin:
 
 :::warning Lưu ý
 
-- NocoBase đang chuyển từ `client` (v1) sang `client-v2`, hiện `client-v2` vẫn đang trong quá trình phát triển. Mã client do AI Development sinh ra dựa trên `client-v2`, chỉ có thể dùng dưới đường dẫn `/v2/`, dùng để trải nghiệm trước, không khuyến nghị dùng trực tiếp trong môi trường production.
+- NocoBase đang chuyển từ `client` (v1) sang `client-v2`, hiện `client-v2` vẫn đang trong quá trình phát triển. Mã client do AI Development sinh ra dựa trên `client-v2`, chỉ có thể dùng dưới đường dẫn `/v/`, dùng để trải nghiệm trước, không khuyến nghị dùng trực tiếp trong môi trường production.
 - Mã do AI sinh ra không phải lúc nào cũng đúng 100%, khuyến nghị review trước khi enable. Nếu gặp vấn đề khi runtime, có thể gửi thông báo lỗi cho AI để nó tiếp tục kiểm tra và sửa — thường vài lượt trao đổi là giải quyết được.
 
 :::

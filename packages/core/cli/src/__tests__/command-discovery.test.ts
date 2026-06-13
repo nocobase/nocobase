@@ -19,4 +19,5 @@ test('commandRelativePathToRegistryKey maps index modules to parent commands', (
   expect(commandRelativePathToRegistryKey('license/plugins/index.ts')).toBe('license:plugins');
   expect(commandRelativePathToRegistryKey('license/plugins/clean.ts')).toBe('license:plugins:clean');
   expect(commandRelativePathToRegistryKey('license/plugins/sync.ts')).toBe('license:plugins:sync');
+  expect(commandRelativePathToRegistryKey('revision/create.ts')).toBe('revision:create');
 });

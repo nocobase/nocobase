@@ -8,20 +8,24 @@
  */
 
 import React, { useRef } from 'react';
-import { connect, mapProps, useForm } from '@formily/react';
 import { Select, Form } from 'antd';
 import { CodeEditor, CodeEditorHandle } from '../components/CodeEditor';
 import { FlowContextSelector, observer, useFlowContext } from '@nocobase/flow-engine';
 import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client-v2';
 import { useT } from '../../locale';
 import { useCompile } from '../utils';
+import { getDataSourceCapabilities } from './QueryBuilder.service';
 
-const SQLEditorBase: React.FC<any> = observer((props) => {
-  const { value, onChange } = props;
+export const SQLEditor: React.FC<{
+  value?: string;
+  onChange?: (value: string) => void;
+  dataSource?: string;
+  onDataSourceChange?: (value: string) => void;
+}> = observer((props) => {
+  const { value, onChange, dataSource, onDataSourceChange } = props;
   const editorRef = useRef<CodeEditorHandle>(null);
   const ctx = useFlowContext();
 
-  const form = useForm();
   const dm = ctx?.dataSourceManager;
   const compile = useCompile();
   const t = useT();
@@ -32,20 +36,22 @@ const SQLEditorBase: React.FC<any> = observer((props) => {
     return dataSources
       .filter(
         (dataSource: any) =>
-          dataSource?.key === DEFAULT_DATA_SOURCE_KEY || dataSource?.options?.isDBInstance || dataSource?.isDBInstance,
+          dataSource?.key === DEFAULT_DATA_SOURCE_KEY ||
+          dataSource?.options?.isDBInstance ||
+          dataSource?.isDBInstance ||
+          getDataSourceCapabilities(dataSource)?.runSQL,
       )
       .map(({ key, displayName }: any) => ({ value: key, label: compile(displayName) }));
   }, [dm, compile]);
 
   // 当前 SQL 模式的数据源（默认 main）
-  const sqlDsKey = form?.values?.query?.sqlDatasource ?? DEFAULT_DATA_SOURCE_KEY;
+  const sqlDsKey = dataSource ?? DEFAULT_DATA_SOURCE_KEY;
   const onDsChange = (key: string) => {
-    form?.setValuesIn?.('query.sqlDatasource', key);
+    onDataSourceChange?.(key);
   };
 
   return (
     <div>
-      {/* 选择数据源 */}
       <Form.Item
         label={<span style={{ fontWeight: 500 }}>{t('Data source')}</span>}
         rules={[{ required: true }]}
@@ -60,7 +66,6 @@ const SQLEditorBase: React.FC<any> = observer((props) => {
         />
       </Form.Item>
 
-      {/* SQL 编辑器 */}
       <CodeEditor
         ref={editorRef}
         language="sql"
@@ -79,11 +84,3 @@ const SQLEditorBase: React.FC<any> = observer((props) => {
     </div>
   );
 });
-
-export const SQLEditor = connect(
-  SQLEditorBase,
-  mapProps((props) => ({
-    value: props.value,
-    onChange: props.onChange,
-  })),
-);

@@ -50,7 +50,7 @@ describe('DataSource & Collection APIs', () => {
         { name: 'body', type: 'string', interface: 'text' },
       ],
     });
-    const bodyField = ds.getCollection('posts')!.getField('body');
+    const bodyField = ds.getCollection('posts')?.getField('body');
     expect(bodyField?.name).toBe('body');
 
     // remove collection
@@ -109,7 +109,7 @@ describe('DataSource & Collection APIs', () => {
       ],
     });
 
-    const rules = ds.getCollection('posts')!.getField('title')!.getComponentProps().rules;
+    const rules = ds.getCollection('posts')?.getField('title')?.getComponentProps().rules || [];
 
     await expect(rules[0].validator({}, '123')).rejects.toBe('单行文本 长度必须为 18 个字符');
   });

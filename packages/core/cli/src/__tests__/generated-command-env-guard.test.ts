@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   applyPostProcessor: vi.fn(),
   registerPostProcessors: vi.fn(),
   confirm: vi.fn(),
+  readInstalledManagedSkillsVersion: vi.fn(),
 }));
 
 vi.mock('../lib/auth-store.js', () => ({
@@ -35,6 +36,10 @@ vi.mock('../post-processors/index.js', () => ({
 
 vi.mock('../lib/inquirer.ts', () => ({
   confirm: mocks.confirm,
+}));
+
+vi.mock('../lib/skills-manager.js', () => ({
+  readInstalledManagedSkillsVersion: mocks.readInstalledManagedSkillsVersion,
 }));
 
 import { GeneratedApiCommand, createGeneratedFlags, type GeneratedOperation } from '../lib/generated-command.js';
@@ -79,6 +84,11 @@ function createCommand(flags: Record<string, unknown>) {
   const log = vi.fn();
   return {
     command: Object.assign(Object.create(TestGeneratedCommand.prototype), {
+      config: {
+        pjson: {
+          version: '2.1.0-beta.41',
+        },
+      },
       parse: vi.fn(async () => ({ flags })),
       log,
       error: (message: string) => {
@@ -98,6 +108,7 @@ beforeEach(() => {
     data: { ok: true },
   });
   mocks.applyPostProcessor.mockResolvedValue({ ok: true });
+  mocks.readInstalledManagedSkillsVersion.mockResolvedValue(undefined);
 });
 
 test('generated API commands reject cross-env requests in non-interactive agent sessions without --yes', async () => {
@@ -137,6 +148,12 @@ test('generated API commands ask for confirmation before cross-env requests in i
       default: false,
     });
     expect(mocks.executeApiRequest).toHaveBeenCalledOnce();
+    expect(mocks.executeApiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cliVersion: '2.1.0-beta.41',
+        skillsVersion: undefined,
+      }),
+    );
     expect(log).toHaveBeenCalledWith(JSON.stringify({ ok: true }, null, 2));
   } finally {
     restoreTerminal();
@@ -175,6 +192,170 @@ test('generated API commands let --yes skip the interactive cross-env confirmati
     expect(mocks.confirm).not.toHaveBeenCalled();
     expect(mocks.executeApiRequest).toHaveBeenCalledOnce();
   } finally {
+    restoreTerminal();
+  }
+});
+
+test('generated API commands let --yes skip the non-interactive cross-env refusal', async () => {
+  const restoreTerminal = setTerminalInteractivity(false);
+  const { command } = createCommand({
+    env: 'prod',
+    yes: true,
+    verbose: false,
+    'json-output': true,
+  });
+
+  try {
+    await TestGeneratedCommand.prototype.run.call(command);
+    expect(mocks.confirm).not.toHaveBeenCalled();
+    expect(mocks.executeApiRequest).toHaveBeenCalledOnce();
+  } finally {
+    restoreTerminal();
+  }
+});
+
+test('generated API commands reject incompatible CLI and app version combinations before sending the request', async () => {
+  const restoreTerminal = setTerminalInteractivity(true);
+  const { command } = createCommand({
+    yes: true,
+    verbose: false,
+    'json-output': true,
+  });
+
+  TestGeneratedCommand.runtimeVersion = '2.1.0-beta.18';
+  command.config = {
+    pjson: {
+      version: '2.1.0-beta.41',
+      nocobase: {
+        apiCommandCompat: {
+          rules: [
+            {
+              code: 'TEST_APP_TOO_OLD',
+              target: {
+                command: 'test guard',
+              },
+              when: {
+                cli: {
+                  gte: '2.1.0-beta.40',
+                },
+                app: {
+                  lt: '2.1.0-beta.20',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  try {
+    await expect(TestGeneratedCommand.prototype.run.call(command)).rejects.toThrow(
+      /Refusing to run `nb api test guard` because the current CLI version is 2\.1\.0-beta\.41 while the target app version is 2\.1\.0-beta\.18\.[\s\S]*upgrade the app to >= 2\.1\.0-beta\.20[\s\S]*use a CLI version < 2\.1\.0-beta\.40/,
+    );
+    expect(mocks.executeApiRequest).not.toHaveBeenCalled();
+  } finally {
+    TestGeneratedCommand.runtimeVersion = undefined;
+    restoreTerminal();
+  }
+});
+
+test('generated API commands reject incompatible skills version combinations before sending the request', async () => {
+  const restoreTerminal = setTerminalInteractivity(true);
+  const { command } = createCommand({
+    yes: true,
+    verbose: false,
+    'json-output': true,
+  });
+
+  TestGeneratedCommand.runtimeVersion = '2.1.0-beta.18';
+  mocks.readInstalledManagedSkillsVersion.mockResolvedValue('1.0.4');
+  command.config = {
+    pjson: {
+      version: '2.1.0-beta.41',
+      nocobase: {
+        apiCommandCompat: {
+          rules: [
+            {
+              code: 'TEST_SKILLS_TOO_OLD',
+              target: {
+                command: 'test guard',
+              },
+              when: {
+                cli: {
+                  gte: '2.1.0-beta.40',
+                },
+                app: {
+                  lt: '2.1.0-beta.20',
+                },
+                skills: {
+                  lt: '1.0.5',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  try {
+    await expect(TestGeneratedCommand.prototype.run.call(command)).rejects.toThrow(
+      /Current versions: CLI 2\.1\.0-beta\.41, app 2\.1\.0-beta\.18, and NocoBase AI skills 1\.0\.4\.[\s\S]*NocoBase AI skills version < 1\.0\.5[\s\S]*update the NocoBase AI coding skills to >= 1\.0\.5/,
+    );
+    expect(mocks.executeApiRequest).not.toHaveBeenCalled();
+  } finally {
+    TestGeneratedCommand.runtimeVersion = undefined;
+    restoreTerminal();
+  }
+});
+
+test('generated API commands reject when a skills version rule applies but the managed skills version is unavailable', async () => {
+  const restoreTerminal = setTerminalInteractivity(true);
+  const { command } = createCommand({
+    yes: true,
+    verbose: false,
+    'json-output': true,
+  });
+
+  TestGeneratedCommand.runtimeVersion = '2.1.0-beta.18';
+  mocks.readInstalledManagedSkillsVersion.mockResolvedValue(undefined);
+  command.config = {
+    pjson: {
+      version: '2.1.0-beta.41',
+      nocobase: {
+        apiCommandCompat: {
+          rules: [
+            {
+              code: 'TEST_SKILLS_REQUIRED',
+              target: {
+                command: 'test guard',
+              },
+              when: {
+                cli: {
+                  gte: '2.1.0-beta.40',
+                },
+                app: {
+                  lt: '2.1.0-beta.20',
+                },
+                skills: {
+                  lt: '1.0.5',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  try {
+    await expect(TestGeneratedCommand.prototype.run.call(command)).rejects.toThrow(
+      /installed NocoBase AI skills version is unavailable[\s\S]*run `nb skills install --yes` or `nb skills update --yes`/,
+    );
+    expect(mocks.executeApiRequest).not.toHaveBeenCalled();
+  } finally {
+    TestGeneratedCommand.runtimeVersion = undefined;
     restoreTerminal();
   }
 });

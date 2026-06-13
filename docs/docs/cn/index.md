@@ -11,21 +11,21 @@ hero:
   actions:
     - theme: brand
       text: 快速上手
-      link: /get-started/how-nocobase-works
+      link: /ai/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
 
 features:
   - title: 开始
-    details: 传统方式上手 NocoBase——安装、配置、逐步探索。
+    details: 快速上手 NocoBase —— 安装、配置、逐步探索。
     items:
       - title: NocoBase 使用入门
         details: 了解 NocoBase 的核心概念和基本操作。
-        link: /get-started/how-nocobase-works
-      - title: 安装与升级插件
-        details: 了解如何添加、管理和更新插件，扩展系统能力。
-        link: /get-started/install-upgrade-plugins
+        link: /ai/how-nocobase-works
+      - title: 安装 NocoBase 应用
+        details: 使用 NocoBase CLI 快速安装应用。
+        link: /ai/install-nocobase-app
       - title: 教程
         details: 从零开始，跟着教程一步步搭建真实项目。
         link: /tutorials/v2/
@@ -33,9 +33,6 @@ features:
   - title: AI
     details: AI 驱动的全新上手方式——用自然语言完成搭建、使用和开发。
     items:
-      - title: 快速开始
-        details: 安装 NocoBase CLI 以及配置 AI Skills，并连接 AI Agent，为 AI 搭建、使用和开发 NocoBase 做好准备。
-        link: /ai/quick-start
       - title: AI 搭建
         details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
         link: /ai-builder

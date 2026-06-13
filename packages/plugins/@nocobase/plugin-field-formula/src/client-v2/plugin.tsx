@@ -8,7 +8,7 @@
  */
 
 import { Application, Plugin } from '@nocobase/client-v2';
-import { FormulaFieldInterface } from './interfaces/formula';
+import { FormulaFieldInterface, formulaDateOperators } from './interfaces/formula';
 import { FormulaExpression } from './components';
 
 export class PluginFieldFormulaClient extends Plugin<any, Application> {
@@ -48,6 +48,7 @@ export class PluginFieldFormulaClient extends Plugin<any, Application> {
     this.app.addComponents({
       FormulaExpression,
     });
+    this.app.registerFieldFilterOperatorGroup('formulaDate', formulaDateOperators);
     this.app.addFieldInterfaces([FormulaFieldInterface]);
     this.flowEngine.context.defineProperty('fieldFormula', {
       get: () => ({

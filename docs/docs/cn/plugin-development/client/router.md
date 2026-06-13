@@ -15,7 +15,7 @@ keywords: "Router,路由,router.add,pluginSettingsManager,addMenuItem,addPageTab
 
 :::warning 注意
 
-NocoBase v2 的插件，路由注册后会默认加上 `/v2` 前缀，访问时需要带上这个前缀。
+NocoBase v2 的插件，路由注册后会默认加上 `/v` 前缀，访问时需要带上这个前缀。
 
 :::
 
@@ -25,9 +25,9 @@ NocoBase 已经注册了以下默认路由：
 
 | 名称           | 路径                  | 组件                | 说明           |
 | -------------- | --------------------- | ------------------- | -------------- |
-| admin          | /v2/admin/\*          | AdminLayout         | 后台管理页面   |
-| admin.page     | /v2/admin/:name       | AdminDynamicPage    | 动态创建的页面 |
-| admin.settings | /v2/admin/settings/\* | AdminSettingsLayout | 插件配置页面   |
+| admin          | /v/admin/\*          | AdminLayout         | 后台管理页面   |
+| admin.page     | /v/admin/:name       | AdminDynamicPage    | 动态创建的页面 |
+| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | 插件配置页面   |
 
 ## 页面路由
 
@@ -55,7 +55,7 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('hello', {
       path: '/hello',
-      // 按需加载，访问 /v2/hello 时才加载该模块
+      // 按需加载，访问 /v/hello 时才加载该模块
       componentLoader: () => import('./pages/HelloPage'),
     });
   }
@@ -103,12 +103,12 @@ class MyPlugin extends Plugin {
 
     // 子路由，用 componentLoader 按需加载
     this.router.add('root.home', {
-      path: '/', // -> /v2/
+      path: '/', // -> /v/
       componentLoader: () => import('./pages/HomePage'),
     });
 
     this.router.add('root.about', {
-      path: '/about', // -> /v2/about
+      path: '/about', // -> /v/about
       componentLoader: () => import('./pages/AboutPage'),
     });
   }
@@ -121,7 +121,7 @@ class MyPlugin extends Plugin {
 
 ```tsx
 this.router.add('root.user', {
-  path: '/user/:id', // -> /v2/user/:id
+  path: '/user/:id', // -> /v/user/:id
   componentLoader: () => import('./pages/UserPage'),
 });
 ```
@@ -176,7 +176,7 @@ export class HelloPlugin extends Plugin<any, Application> {
 }
 ```
 
-注册后，访问路径为 `/admin/settings/hello`。当菜单下只有一个页面时，顶部 tab 栏会自动隐藏。
+注册后，访问路径为 `/v/admin/settings/hello`。当菜单下只有一个页面时，顶部 tab 栏会自动隐藏。
 
 ### 多 Tab 设置页
 
@@ -194,7 +194,7 @@ class HelloPlugin extends Plugin<any, Application> {
       icon: 'ApiOutlined',
     });
 
-    // Tab 1：基础设置（key 为 'index'，映射到 /admin/settings/hello）
+    // Tab 1：基础设置（key 为 'index'，映射到 /v/admin/settings/hello）
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'index',
@@ -202,7 +202,7 @@ class HelloPlugin extends Plugin<any, Application> {
       componentLoader: () => import('./settings/GeneralPage'),
     });
 
-    // Tab 2：高级设置（映射到 /admin/settings/hello/advanced）
+    // Tab 2：高级设置（映射到 /v/admin/settings/hello/advanced）
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'hello',
       key: 'advanced',

@@ -8,7 +8,6 @@
 
 **バックアップファイル**：
 - [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
-- [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip)
 
 **更新内容**：
 - チケットで「完了」をクリックした際に SLA Config が見つからないエラーが発生する問題を修正しました
@@ -21,7 +20,6 @@
 
 **バックアップファイル**：
 - nocobase_tts_v2_backup_260302.nbdata
-- nocobase_tts_v2_sql_260302.zip
 
 **更新内容**：
 - チケットシステム v2 初回リリース

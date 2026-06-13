@@ -21,6 +21,7 @@ nb self update [flags]
 | `--channel` | string | Channel phát hành để cập nhật, mặc định `auto`; có thể chọn `auto`, `latest`, `beta`, `alpha` |
 | `--yes`, `-y` | boolean | Bỏ qua xác nhận cập nhật |
 | `--json` | boolean | Đầu ra dạng JSON |
+| `--skills` | boolean | Đồng thời cập nhật các NocoBase AI coding skills được cài đặt toàn cục |
 | `--verbose` | boolean | Hiển thị thông tin cập nhật chi tiết |
 
 ## Ví dụ
@@ -28,6 +29,7 @@ nb self update [flags]
 ```bash
 nb self update
 nb self update --yes
+nb self update --skills
 nb self update --channel alpha --json
 ```
 

@@ -2299,6 +2299,63 @@ describe('basic importer', () => {
     expect(users[1].get('email')).toBe('test2@test.com');
   });
 
+  it('should generate different sort values for imported rows', async () => {
+    await app.destroy();
+    app = await createMockServer({
+      plugins: ['field-sort', 'data-source-main', 'error-handler'],
+    });
+
+    const Task = app.db.collection({
+      name: 'tasks',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'sort',
+          name: 'sort',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const columns = [
+      {
+        dataIndex: ['name'],
+        defaultTitle: 'Name',
+      },
+    ];
+
+    const templateCreator = new TemplateCreator({
+      collection: Task,
+      columns,
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['task1'], ['task2'], ['task3']], {
+      origin: 'A2',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Task,
+      columns,
+      workbook: template,
+    });
+
+    await importer.run();
+
+    const tasks = await Task.repository.find({
+      sort: ['id'],
+    });
+
+    expect(tasks.map((task) => task.get('sort'))).toEqual([1, 2, 3]);
+  });
+
   describe('template creator', () => {
     it('should create template with explain and field descriptions', async () => {
       const User = app.db.collection({
@@ -2717,7 +2774,7 @@ describe('basic importer', () => {
     await expect(importer.run()).rejects.toThrow();
   });
 
-  it('should import password field, insert data is encrypt', async () => {
+  it('should import numeric password field values as strings', async () => {
     const User = app.db.collection({
       name: 'users',
       fields: [
@@ -2743,7 +2800,7 @@ describe('basic importer', () => {
     const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
     const worksheet = template.Sheets[template.SheetNames[0]];
 
-    XLSX.utils.sheet_add_aoa(worksheet, [['zhangsan', '123456']], {
+    XLSX.utils.sheet_add_aoa(worksheet, [['zhangsan', 123456]], {
       origin: 'A2',
     });
 

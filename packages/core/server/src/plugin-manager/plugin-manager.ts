@@ -24,6 +24,7 @@ import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
 import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
+import { getPluginPackagePrefixes, parsePluginName } from '../../../utils/plugin-package';
 import {
   checkAndGetCompatible,
   copyTempPackageToStorageAndLinkToNodeModules,
@@ -189,9 +190,7 @@ export class PluginManager {
    * @internal
    */
   static getPluginPkgPrefix() {
-    return (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-').split(
-      ',',
-    );
+    return getPluginPackagePrefixes();
   }
 
   /**
@@ -252,32 +251,10 @@ export class PluginManager {
     if (this.parsedNames[nameOrPkg]) {
       return this.parsedNames[nameOrPkg];
     }
-    if (nameOrPkg.startsWith('@nocobase/plugin-')) {
-      this.parsedNames[nameOrPkg] = {
-        packageName: nameOrPkg,
-        name: nameOrPkg.replace('@nocobase/plugin-', ''),
-      };
-      return this.parsedNames[nameOrPkg];
-    }
-    if (nameOrPkg.startsWith('@nocobase/preset-')) {
-      this.parsedNames[nameOrPkg] = {
-        packageName: nameOrPkg,
-        name: nameOrPkg.replace('@nocobase/preset-', ''),
-      };
-      return this.parsedNames[nameOrPkg];
-    }
-    const exists = async (name: string, isPreset = false) => {
-      return fs.exists(
-        resolve(process.env.NODE_MODULES_PATH, `@nocobase/${isPreset ? 'preset' : 'plugin'}-${name}`, 'package.json'),
-      );
-    };
-    if (await exists(nameOrPkg)) {
-      this.parsedNames[nameOrPkg] = { name: nameOrPkg, packageName: `@nocobase/plugin-${nameOrPkg}` };
-    } else if (await exists(nameOrPkg, true)) {
-      this.parsedNames[nameOrPkg] = { name: nameOrPkg, packageName: `@nocobase/preset-${nameOrPkg}` };
-    } else {
-      this.parsedNames[nameOrPkg] = { name: nameOrPkg, packageName: nameOrPkg };
-    }
+    this.parsedNames[nameOrPkg] = await parsePluginName(nameOrPkg, {
+      nodeModulesPath: process.env.NODE_MODULES_PATH,
+      pluginPackagePrefixes: this.getPluginPkgPrefix(),
+    });
     return this.parsedNames[nameOrPkg];
   }
 

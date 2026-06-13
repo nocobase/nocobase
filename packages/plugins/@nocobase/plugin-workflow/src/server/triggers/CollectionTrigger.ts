@@ -117,6 +117,13 @@ export default class CollectionTrigger extends Trigger {
     }
 
     if (workflow.sync) {
+      if (transaction && this.workflow.db.options.dialect === 'sqlite') {
+        transaction.afterCommit(async () => {
+          await this.workflow.trigger(workflow, ctx, { stack });
+        });
+        return;
+      }
+
       await this.workflow.trigger(workflow, ctx, {
         transaction,
         stack,

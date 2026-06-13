@@ -38,11 +38,11 @@ Nếu code client đã sửa nhưng không hot reload, thử làm mới trình d
 
 ### Route trang đã đăng ký không truy cập được
 
-Route của NocoBase v2 mặc định sẽ thêm tiền tố `/v2`. Ví dụ bạn đã đăng ký `path: '/hello'`, địa chỉ truy cập thực tế là `/v2/hello`:
+Route của NocoBase v2 mặc định sẽ thêm tiền tố `/v`. Ví dụ bạn đã đăng ký `path: '/hello'`, địa chỉ truy cập thực tế là `/v/hello`:
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // Truy cập thực tế -> /v2/hello
+  path: '/hello', // Truy cập thực tế -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -285,7 +285,7 @@ Hệ thống build của NocoBase duy trì một [danh sách external](../../dep
 ## Liên kết liên quan
 
 - [Plugin](../plugin) — Lối vào Plugin và vòng đời
-- [Router](../router) — Đăng ký route và tiền tố `/v2`
+- [Router](../router) — Đăng ký route và tiền tố `/v`
 - [Tổng quan FlowEngine](../flow-engine/index.md) — Cách dùng cơ bản FlowModel
 - [FlowEngine → Mở rộng Block](../flow-engine/block) — BlockModel, TableBlockModel, filterCollection
 - [FlowEngine → Mở rộng Field](../flow-engine/field) — FieldModel, bindModelToInterface

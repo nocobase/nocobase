@@ -1,12 +1,12 @@
 ---
 title: "nb config delete"
-description: "Referensi perintah nb config delete: menghapus pengaturan CLI yang dikonfigurasi secara eksplisit."
-keywords: "nb config delete,NocoBase CLI,configuration"
+description: "Referensi perintah nb config delete: menghapus item konfigurasi CLI yang diatur secara eksplisit."
+keywords: "nb config delete,NocoBase CLI,menghapus konfigurasi"
 ---
 
 # nb config delete
 
-Menghapus pengaturan CLI yang dikonfigurasi secara eksplisit. Setelah dihapus, CLI akan kembali memakai nilai default untuk key tersebut.
+Menghapus item konfigurasi CLI yang sudah diatur secara eksplisit. Setelah dihapus, item konfigurasi tersebut akan kembali ke nilai default.
 
 ## Penggunaan
 
@@ -16,19 +16,24 @@ nb config delete <key>
 
 ## Parameter
 
-| Parameter | Tipe | Penjelasan |
+| Parameter | Tipe | Deskripsi |
 | --- | --- | --- |
-| `<key>` | string | Key konfigurasi: `license.pkg-url`, `docker.network`, atau `docker.container-prefix` |
+| `<key>` | string | Nama item konfigurasi. Lihat [`nb config`](./index.md) untuk nilai yang didukung |
 
 ## Contoh
 
 ```bash
-nb config delete license.pkg-url
+nb config delete locale
+nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete proxy.nb-cli-root
+nb config delete proxy.upstream-host
+nb config delete bin.nginx
+nb config delete bin.git
 ```
 
-## Perintah Terkait
+## Perintah terkait
 
 - [`nb config set`](./set.md)
 - [`nb config get`](./get.md)

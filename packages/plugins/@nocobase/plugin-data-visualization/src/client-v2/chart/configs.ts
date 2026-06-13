@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaProperties } from '@formily/react';
 import { lang } from '../locale';
 
 export type FieldConfigProps = Partial<{
@@ -20,7 +19,8 @@ export type FieldConfigProps = Partial<{
   componentProps: Record<string, any>;
 }>;
 
-export type AnySchemaProperties = SchemaProperties<any, any, any, any, any, any, any, any>;
+export type AnySchema = Record<string, any>;
+export type AnySchemaProperties = Record<string, AnySchema>;
 export type ConfigType =
   | (FieldConfigProps & { configType?: string })
   | ((props?: FieldConfigProps) => AnySchemaProperties)

@@ -33,6 +33,7 @@ describe('app', () => {
 
     afterEach(() => {
       document.querySelectorAll('link[rel="shortcut icon"]').forEach((node) => node.remove());
+      document.documentElement.removeAttribute('lang');
       vi.restoreAllMocks();
     });
 
@@ -87,6 +88,14 @@ describe('app', () => {
       const favicon = document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement;
       expect(favicon).toBeInTheDocument();
       expect(favicon.getAttribute('href')).toBe('/favicon/favicon.ico');
+    });
+
+    it('should sync document language when app language changes', async () => {
+      const app = new Application({ router });
+
+      await app.i18n.changeLanguage('ja-JP');
+
+      expect(document.documentElement.lang).toBe('ja-JP');
     });
 
     it('should escape app version html placeholder content', () => {
@@ -234,6 +243,10 @@ describe('app', () => {
     });
     await renderApp(app);
     expect(await screen.findByText('Hello Basename Route')).toBeInTheDocument();
+    expect(app.router.matchRoutes('/v2/demo/app-info')?.some((match) => match.route.path === '/demo/app-info')).toBe(
+      true,
+    );
+    expect(app.router.matchRoutes('/demo/app-info')?.some((match) => match.route.path === '/demo/app-info')).toBe(true);
   });
 
   it('should support plugin settings componentLoader lazy functionality', async () => {
@@ -370,7 +383,10 @@ describe('app', () => {
 
       await waitFor(() => expect(screen.queryByText('maintaining error message')).not.toBeInTheDocument());
       expect(screen.getByText('Hello')).toBeInTheDocument();
-      expect(reloadMock).toHaveBeenCalled();
+      // Aligned with v1: a routine maintaining→APP_RUNNING cycle does not
+      // reload the page. Only `hasLoadError === true` (set when the initial
+      // `app.load()` itself fails) triggers a recovery reload.
+      expect(reloadMock).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(globalThis.window, 'location', {
         configurable: true,

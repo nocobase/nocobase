@@ -10,7 +10,11 @@
 import _ from 'lodash';
 import { getNodeContract } from './catalog';
 import { throwBadRequest } from './errors';
-import { FLOW_SURFACE_FILTER_GROUP_EXAMPLE, normalizeFlowSurfaceFilterGroupValue } from './filter-group';
+import {
+  FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
+  normalizeFlowSurfaceCompatibleFilterGroupValue,
+  normalizeFlowSurfaceFilterGroupValue,
+} from './filter-group';
 import type { FlowSurfaceDomainContract, FlowSurfaceDomainGroupContract, FlowSurfaceNodeDomain } from './types';
 
 const EMPTY_GRID_ITEM_UID = '__EMPTY__';
@@ -148,7 +152,7 @@ export class FlowSurfaceContractGuard {
       if (typeof on === 'string' && !allowedDirectEvents.has(eventName)) {
         throwBadRequest(`flowSurfaces flow '${key}' event '${eventName}' is not allowed on '${node?.use}'`);
       }
-      if (typeof on !== 'string' && !allowedObjectEvents.has(eventName)) {
+      if (typeof on !== 'string' && !allowedObjectEvents.has(eventName) && !allowedDirectEvents.has(eventName)) {
         throwBadRequest(`flowSurfaces flow '${key}' event '${eventName}' is not allowed on '${node?.use}'`);
       }
       const phase = onObj?.phase;
@@ -358,10 +362,14 @@ function normalizeDomainValue(
 ) {
   const normalized = _.cloneDeep(value);
   Object.entries(contract.pathSchemas || {}).forEach(([path, schema]) => {
-    if (!_.has(normalized, path) || !isFilterGroupSchema(schema)) {
+    if (!_.has(normalized, path)) {
       return;
     }
-    _.set(normalized, path, normalizeFilterGroupValue(_.get(normalized, path), context, path));
+    if (isFilterGroupSchema(schema)) {
+      _.set(normalized, path, normalizeFilterGroupValue(_.get(normalized, path), context, path));
+    } else if (isLinkageRulesSchema(schema)) {
+      _.set(normalized, path, normalizeLinkageRulesValue(_.get(normalized, path), context, path));
+    }
   });
   return normalized;
 }
@@ -373,16 +381,24 @@ function normalizeGroupValue(
 ) {
   const normalized = _.cloneDeep(value);
   Object.entries(groupContract.pathSchemas || {}).forEach(([path, schema]) => {
-    if (!_.has(normalized, path) || !isFilterGroupSchema(schema)) {
+    if (!_.has(normalized, path)) {
       return;
     }
-    _.set(normalized, path, normalizeFilterGroupValue(_.get(normalized, path), context, path));
+    if (isFilterGroupSchema(schema)) {
+      _.set(normalized, path, normalizeFilterGroupValue(_.get(normalized, path), context, path));
+    } else if (isLinkageRulesSchema(schema)) {
+      _.set(normalized, path, normalizeLinkageRulesValue(_.get(normalized, path), context, path));
+    }
   });
   return normalized;
 }
 
 function isFilterGroupSchema(schema: Record<string, any> | undefined) {
   return schema?.['x-flowSurfaceFormat'] === 'filter-group';
+}
+
+function isLinkageRulesSchema(schema: Record<string, any> | undefined) {
+  return schema?.['x-flowSurfaceFormat'] === 'linkage-rules';
 }
 
 function normalizeFilterGroupValue(
@@ -394,7 +410,39 @@ function normalizeFilterGroupValue(
   return normalizeFlowSurfaceFilterGroupValue(
     value,
     `flowSurfaces updateSettings domain '${domainPath}' on '${context.use}' expects FilterGroup like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+    { strictDateValues: true },
   );
+}
+
+function normalizeLinkageRulesValue(
+  value: any,
+  context: { domain: FlowSurfaceNodeDomain; groupKey?: string; use: string },
+  path: string,
+) {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+
+  return value.map((rule, index) => {
+    if (!_.isPlainObject(rule) || !_.has(rule, 'condition')) {
+      return rule;
+    }
+
+    const normalizedRule = _.cloneDeep(rule);
+    const domainPath = context.groupKey
+      ? `${context.domain}.${context.groupKey}.${path}[${index}].condition`
+      : `${context.domain}.${path}[${index}].condition`;
+    _.set(
+      normalizedRule,
+      'condition',
+      normalizeFlowSurfaceCompatibleFilterGroupValue(
+        _.get(normalizedRule, 'condition'),
+        `flowSurfaces updateSettings domain '${domainPath}' on '${context.use}' expects FilterGroup or backend query filter like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+        { strictDateValues: true },
+      ),
+    );
+    return normalizedRule;
+  });
 }
 
 function isContractDefinedFlowGroup(groupContract: FlowSurfaceDomainGroupContract | undefined) {

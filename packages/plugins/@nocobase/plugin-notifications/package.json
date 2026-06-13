@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notifications",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "description": "",
   "displayName.ru-RU": "Уведомления",
   "description.ru-RU": "Пакет плагинов для отправки и тестирования уведомлений.",
@@ -19,5 +19,12 @@
     "@nocobase/test": "workspace:*",
     "@nocobase/utils": "workspace:*"
   },
-  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
+  "nocobase": {
+    "deprecated": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  }
 }

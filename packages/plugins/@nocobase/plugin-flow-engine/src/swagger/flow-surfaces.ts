@@ -208,6 +208,117 @@ function jsonContent(schema: Record<string, any>, example?: Record<string, any>)
   };
 }
 
+function flowSurfaceErrorItemSchema() {
+  return {
+    type: 'object',
+    properties: {
+      index: {
+        type: 'integer',
+        description: 'Optional 1-based position in an aggregate authoring errors[] response',
+        example: 1,
+      },
+      code: {
+        type: 'string',
+        description: 'Stable machine-readable error code',
+        example: 'FLOW_SURFACE_BAD_REQUEST',
+      },
+      message: {
+        type: 'string',
+        description: 'Human-readable error message for the caller',
+      },
+      status: {
+        type: 'integer',
+        description: 'HTTP status mapped from the FlowSurfaces error',
+        example: 400,
+      },
+      type: {
+        type: 'string',
+        description: 'Error category such as bad_request, forbidden, conflict or internal_error',
+        example: 'bad_request',
+        enum: ['bad_request', 'forbidden', 'conflict', 'internal_error'],
+      },
+      path: {
+        type: 'string',
+        description: 'Optional JSON-path-like request location for validation errors',
+        example: '$.changes.titleField',
+      },
+      ruleId: {
+        type: 'string',
+        description: 'Optional stable machine-readable validation rule id',
+        example: 'relation-titleField-unreadable',
+      },
+      details: {
+        type: 'object',
+        description: 'Optional structured context that helps callers repair the request',
+        additionalProperties: true,
+        example: {
+          action: 'configure',
+          fieldPath: 'manager',
+          titleField: 'id',
+          targetCollection: 'employees',
+          invalidReason: 'id',
+          availableFields: ['nickname', 'title'],
+          suggestion: 'Use one of: nickname, title.',
+        },
+      },
+    },
+    required: ['message', 'type', 'code', 'status'],
+    additionalProperties: false,
+  };
+}
+
+function flowSurfaceAggregateRepairDetailsSchema() {
+  return {
+    type: 'object',
+    description:
+      'Optional aggregate authoring repair contract. When present, callers should fix every listed child error before retrying the same write.',
+    properties: {
+      errorCount: {
+        type: 'integer',
+        description: 'Number of child errors in the aggregate response',
+        example: 2,
+      },
+      mustFixAllErrorsBeforeRetry: {
+        type: 'boolean',
+        example: true,
+      },
+      retryPolicy: {
+        type: 'string',
+        example: 'fix_all_errors_before_retry_same_write',
+      },
+      sameWriteRetryRequired: {
+        type: 'boolean',
+        example: true,
+      },
+      agentInstruction: {
+        type: 'string',
+        description: 'Human-readable repair instruction for agentic callers',
+      },
+      requiredBlockPolicy: {
+        type: 'object',
+        properties: {
+          requiredBlockTypes: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+          fixStrategy: {
+            type: 'string',
+            example: 'repair_same_block_type',
+          },
+          doNotReplaceOrDrop: {
+            type: 'boolean',
+            example: true,
+          },
+        },
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: true,
+  };
+}
+
 function requestBody(schemaName: string, example?: Record<string, any>, description?: string) {
   return {
     required: true,
@@ -1830,6 +1941,10 @@ const schemas = {
       },
       schemaUid: {
         type: 'string',
+      },
+      menuSchemaUid: {
+        type: 'string',
+        nullable: true,
       },
       tabSchemaName: {
         type: 'string',
@@ -4432,6 +4547,9 @@ const schemas = {
       pageSchemaUid: {
         type: 'string',
       },
+      menuSchemaUid: {
+        type: 'string',
+      },
       pageUid: {
         type: 'string',
       },
@@ -4543,6 +4661,9 @@ const schemas = {
         nullable: true,
       },
       pageSchemaUid: {
+        type: 'string',
+      },
+      menuSchemaUid: {
         type: 'string',
       },
       pageUid: {
@@ -5098,6 +5219,16 @@ const schemas = {
         type: 'string',
         enum: ['bad_request', 'forbidden', 'conflict', 'internal_error'],
       },
+      errorCount: {
+        type: 'integer',
+        description: 'Present for aggregate authoring failures and equal to errors.length',
+      },
+      details: flowSurfaceAggregateRepairDetailsSchema(),
+      errors: {
+        type: 'array',
+        description: 'Present for aggregate item failures; contains the structured child authoring errors',
+        items: flowSurfaceErrorItemSchema(),
+      },
     },
     required: ['message', 'type', 'code', 'status'],
     additionalProperties: false,
@@ -5441,10 +5572,9 @@ const schemas = {
       workContext: {
         type: 'array',
         description:
-          'AIEmployeeButtonModel only. Public work context entries. Use `target: "self"` for the owning block/action context, or pass existing resolved Flow Model `uid` values in localized writes.',
+          'AIEmployeeButtonModel only. Public work context entries. Use `target: "self"` for the owning block/action context, or pass existing resolved Flow Model `uid` values in localized writes. `type` is optional and defaults to `flow-model`.',
         items: {
           type: 'object',
-          required: ['type'],
           anyOf: [{ required: ['uid'] }, { required: ['target'] }],
           properties: {
             type: {
@@ -5477,6 +5607,10 @@ const schemas = {
             title: {
               type: 'string',
             },
+            prompt: {
+              type: 'string',
+              description: 'Alias for message.user. Do not send prompt together with message.user.',
+            },
             message: {
               type: 'object',
               properties: {
@@ -5490,7 +5624,6 @@ const schemas = {
                   type: 'array',
                   items: {
                     type: 'object',
-                    required: ['type'],
                     anyOf: [{ required: ['uid'] }, { required: ['target'] }],
                     properties: {
                       type: {
@@ -5519,6 +5652,8 @@ const schemas = {
             skillSettings: {
               type: 'object',
               nullable: true,
+              description:
+                'Task-level skill/tool override. Omit or use null to inherit the AI employee preset. Unversioned empty skills/tools arrays are normalized to null for compatibility; use skillsVersion/toolsVersion when intentionally disabling all skills/tools.',
               properties: {
                 skills: {
                   type: 'array',
@@ -6029,59 +6164,21 @@ const schemas = {
       ],
     },
     properties: {
+      message: {
+        type: 'string',
+        description: 'Present for aggregate authoring failures and summarizes the full validation batch',
+        example:
+          'flowSurfaces authoring validation failed with 2 error(s); fix all errors before retrying the same write',
+      },
+      errorCount: {
+        type: 'integer',
+        description: 'Present for aggregate authoring failures and equal to errors.length',
+        example: 2,
+      },
+      details: flowSurfaceAggregateRepairDetailsSchema(),
       errors: {
         type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            code: {
-              type: 'string',
-              description: 'Stable machine-readable error code',
-              example: 'FLOW_SURFACE_BAD_REQUEST',
-            },
-            message: {
-              type: 'string',
-              description: 'Human-readable error message for the caller',
-            },
-            status: {
-              type: 'integer',
-              description: 'HTTP status mapped from the FlowSurfaces error',
-              example: 400,
-            },
-            type: {
-              type: 'string',
-              description: 'Error category such as bad_request, forbidden, conflict or internal_error',
-              example: 'bad_request',
-              enum: ['bad_request', 'forbidden', 'conflict', 'internal_error'],
-            },
-            path: {
-              type: 'string',
-              description: 'Optional JSON-path-like request location for validation errors',
-              example: '$.changes.titleField',
-            },
-            ruleId: {
-              type: 'string',
-              description: 'Optional stable machine-readable validation rule id',
-              example: 'relation-titleField-unreadable',
-            },
-            details: {
-              type: 'object',
-              description: 'Optional structured context that helps callers repair the request',
-              additionalProperties: true,
-              example: {
-                action: 'configure',
-                fieldPath: 'manager',
-                titleField: 'id',
-                targetCollection: 'employees',
-                invalidReason: 'id',
-                availableFields: ['nickname', 'title'],
-                suggestion: 'Use one of: nickname, title.',
-              },
-            },
-          },
-          required: ['message', 'type', 'code', 'status'],
-          additionalProperties: false,
-        },
+        items: flowSurfaceErrorItemSchema(),
       },
     },
     additionalProperties: true,

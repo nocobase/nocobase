@@ -13,18 +13,25 @@ import { Collapse, Card } from 'antd';
 import { QueryPanel } from './QueryPanel';
 import { ChartOptionsPanel } from './ChartOptionsPanel';
 import { EventsPanel } from './EventsPanel';
-import { useForm } from '@formily/react';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client-v2';
 
+const getFormValues = (ctx: any) => ctx.getStepFormValues('chartSettings', 'configure') || {};
+
+const setIn = (target: any, path: string[], value: any) => {
+  let cursor = target;
+  path.slice(0, -1).forEach((key) => {
+    cursor[key] = cursor[key] || {};
+    cursor = cursor[key];
+  });
+  cursor[path[path.length - 1]] = value;
+};
+
 export const ConfigPanel: React.FC = () => {
   const t = useT();
-  const form = useForm();
   const ctx = useFlowSettingsContext<any>();
-  // 默认展开前两个面板 - 必填
   const [activeKeys, setActiveKeys] = useState<string | string[]>(['query', 'chartOption']);
 
-  // 根据当前展开数量动态分配每个面板的高度；只展开一个时占满原高度
   const getCardStyle = (panelKey: string) => {
     const keys = Array.isArray(activeKeys) ? activeKeys : [activeKeys];
     const isOpen = keys.includes(panelKey);
@@ -39,25 +46,28 @@ export const ConfigPanel: React.FC = () => {
 
   useEffect(() => {
     ctx?.defineMethod?.('writeSql', async (sql: string, dataSource?: string) => {
-      const dsKey = dataSource || form?.values?.query?.sqlDatasource || DEFAULT_DATA_SOURCE_KEY;
-      form?.setValuesIn?.('query.mode', 'sql');
-      form?.setValuesIn?.('query.sql', sql);
-      form?.setValuesIn?.('query.sqlDatasource', dsKey);
-      return ctx.model.onPreview(form?.values, true);
+      const values = getFormValues(ctx);
+      const dsKey = dataSource || values?.query?.sqlDatasource || DEFAULT_DATA_SOURCE_KEY;
+      setIn(values, ['query', 'mode'], 'sql');
+      setIn(values, ['query', 'sql'], sql);
+      setIn(values, ['query', 'sqlDatasource'], dsKey);
+      return ctx.model.onPreview(values, true);
     });
 
     ctx?.defineMethod?.('writeChartConfig', async (raw: string) => {
-      form?.setValuesIn?.('chart.option.mode', 'custom');
-      form?.setValuesIn?.('chart.option.raw', raw);
-      return ctx.model.onPreview(form?.values);
+      const values = getFormValues(ctx);
+      setIn(values, ['chart', 'option', 'mode'], 'custom');
+      setIn(values, ['chart', 'option', 'raw'], raw);
+      return ctx.model.onPreview(values);
     });
 
     ctx?.defineMethod?.('writeChartEvents', async (raw: string) => {
-      form?.setValuesIn?.('chart.events.mode', 'custom');
-      form?.setValuesIn?.('chart.events.raw', raw);
-      return ctx.model.onPreview(form?.values);
+      const values = getFormValues(ctx);
+      setIn(values, ['chart', 'events', 'mode'], 'custom');
+      setIn(values, ['chart', 'events', 'raw'], raw);
+      return ctx.model.onPreview(values);
     });
-  }, [ctx, form]);
+  }, [ctx]);
 
   return (
     <>

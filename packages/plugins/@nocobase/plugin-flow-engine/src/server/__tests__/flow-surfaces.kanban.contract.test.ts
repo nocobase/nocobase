@@ -443,6 +443,7 @@ describe('flowSurfaces kanban contract', () => {
       resource: {
         binding: 'currentCollection',
       },
+      fields: ['title'],
     });
 
     expect(quickCreateForm.uid).toBeTruthy();
@@ -704,16 +705,6 @@ describe('flowSurfaces kanban contract', () => {
       },
       defaultFilter: kanbanDefaultFilter(),
     });
-
-    const addFieldRes = await rootAgent.resource('flowSurfaces').addField({
-      values: {
-        target: {
-          uid: kanban.uid,
-        },
-        fieldPath: 'title',
-      },
-    });
-    expect(addFieldRes.status, readErrorMessage(addFieldRes)).toBe(200);
 
     const catalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -3118,6 +3109,7 @@ describe('flowSurfaces kanban contract', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
+          fields: ['nickname'],
         },
       }),
     );
@@ -3337,6 +3329,9 @@ describe('flowSurfaces kanban contract', () => {
         expect.objectContaining({
           path: '$.tabs[0].blocks[0].fields',
           ruleId: 'kanban-main-fields-too-many',
+          details: expect.objectContaining({
+            repairHint: expect.stringContaining('Keep at most 2 fields'),
+          }),
         }),
       ]),
     );

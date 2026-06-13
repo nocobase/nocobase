@@ -1,12 +1,12 @@
 ---
 title: "nb config get"
-description: "nb config get command reference: get the effective value for a CLI configuration key."
-keywords: "nb config get,NocoBase CLI,configuration"
+description: "nb config get command reference: read the effective value of a CLI configuration item."
+keywords: "nb config get,NocoBase CLI,read configuration"
 ---
 
 # nb config get
 
-Get the effective value for a CLI configuration key. If no explicit value is set, the default value is returned.
+Read the effective value of the specified CLI configuration item. If it has not been explicitly set, the default value is returned.
 
 ## Usage
 
@@ -18,17 +18,25 @@ nb config get <key>
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `<key>` | string | Configuration key: `license.pkg-url`, `docker.network`, or `docker.container-prefix` |
+| `<key>` | string | Configuration item name. See [`nb config`](./index.md) for supported values |
 
 ## Examples
 
 ```bash
+nb config get locale
+nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get proxy.nb-cli-root
+nb config get proxy.upstream-host
+nb config get proxy.nginx-driver
+nb config get proxy.caddy-driver
+nb config get bin.nginx
+nb config get bin.git
 ```
 
-## Related Commands
+## Related commands
 
 - [`nb config set`](./set.md)
 - [`nb config list`](./list.md)

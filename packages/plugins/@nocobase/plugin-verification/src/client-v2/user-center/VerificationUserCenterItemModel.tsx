@@ -38,9 +38,8 @@ export class VerificationUserCenterItemModel extends UserCenterActionItemModel {
 
   async onClick() {
     // `closable: true` overrides DrawerComponent's `closable={false}`
-    // default so antd Drawer renders its native left-side X next to the
-    // title — matches the v1 user-center drawer and the form-style
-    // drawers that inject a close icon via DrawerFormLayout.
+    // default so antd Drawer renders its native left-side X next to
+    // the title — matches the v1 user-center drawer.
     this.context.viewer.drawer({
       title: this.context.t('Verification', { ns: VERIFICATION_LABEL_NS, nsMode: 'fallback' }),
       width: '50%',

@@ -12,7 +12,7 @@ import { Empty, Space, Spin, Tabs } from 'antd';
 import React, { lazy, Suspense, useContext, useMemo } from 'react';
 import { AuthenticatorsContext, type Authenticator } from '../authenticator';
 import { useDocumentTitle } from '../hooks';
-import { useAuthTranslation } from '../locale';
+import { useAuthTranslation, useT } from '../locale';
 import PluginAuthClientV2, { type AuthOptions } from '../plugin';
 
 type LoaderMap<L> = Record<string, L>;
@@ -44,6 +44,11 @@ function lazyByAuthType<P>(loaderMap: LoaderMap<() => Promise<{ default: React.C
 
 export default function SignInPage() {
   const { t } = useAuthTranslation();
+  // `authTypeTitle` 从服务端来时是 `tval` 生成的原始模板字符串
+  // （`{{t("Password", {"ns":"@nocobase/plugin-auth"})}}`），不展开就会直出到 tab label
+  // 上。v1 走 `Schema.compile(value, { t })` 展开；v2 用 `useT()`，它内部走
+  // `flowEngine.context.t`，对纯字符串和模板字符串都安全（无模板时原样返回）。
+  const compileT = useT();
   const authenticators = useContext(AuthenticatorsContext);
   const signInFormLoaders = useLoaderMap('signInFormLoader');
   const signInButtonLoaders = useLoaderMap('signInButtonLoader');
@@ -60,9 +65,10 @@ export default function SignInPage() {
         if (!FormComponent) {
           return null;
         }
+        const typeLabel = compileT(authenticator.authTypeTitle || authenticator.authType);
         return {
           key: authenticator.name,
-          label: authenticator.title || `${t('Sign-in')} (${authenticator.authTypeTitle || authenticator.authType})`,
+          label: authenticator.title || `${t('Sign-in')} (${typeLabel})`,
           children: (
             <Suspense fallback={<Spin />}>
               <FormComponent authenticator={authenticator} />
@@ -71,7 +77,7 @@ export default function SignInPage() {
         };
       })
       .filter(Boolean);
-  }, [authenticators, resolveSignInForm, t]);
+  }, [authenticators, resolveSignInForm, t, compileT]);
 
   const buttons = useMemo(() => {
     return authenticators

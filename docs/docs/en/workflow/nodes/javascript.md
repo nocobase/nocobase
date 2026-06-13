@@ -64,7 +64,9 @@ This is the recommended default mode, suitable for pure computation and data pro
 When `WORKFLOW_SCRIPT_MODULES` **is configured**, scripts switch to the Node.js built-in `vm` engine to enable `require` capability.
 
 :::warning{title="Security Warning"}
-In unsafe mode, although scripts run in a `vm` sandbox with a restricted module whitelist, the Node.js `vm` module is not a secure sandbox mechanism. Enabling this mode implies trusting all users who have permission to edit workflow scripts. Administrators should assess the security risks independently and strictly control the module whitelist and workflow editing permissions.
+Unsafe mode uses Node.js `vm` only to provide CommonJS `require` support. The Node.js `vm` module is not a secure sandbox mechanism. Enabling this mode means trusting every user who can edit, test, or run workflow scripts as someone who can execute code with the NocoBase server's privileges.
+
+`WORKFLOW_SCRIPT_MODULES` is not a security boundary or a permission model. It only controls which module names are accepted by `require()` before script code runs.
 :::
 
 Modules can be used in the script consistent with CommonJS, using the `require()` directive to import modules.
@@ -76,7 +78,7 @@ WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
 :::info{title="Note"}
-Modules not declared in the `WORKFLOW_SCRIPT_MODULES` environment variable **cannot** be used in the script, even if they are native to Node.js or already installed in `node_modules`. This policy can be used at the operational level to control the list of modules available to users, preventing scripts from having excessive permissions in some scenarios.
+Modules not declared in the `WORKFLOW_SCRIPT_MODULES` environment variable **cannot** be imported directly with `require()`, even if they are native to Node.js or already installed in `node_modules`. This list is intended only to configure supported imports. Do not rely on it to reduce script permissions or to safely delegate script editing to less-trusted users.
 :::
 
 When in a non-source-deployed environment, if a module is not installed in `node_modules`, you can manually install the required package into the `storage` directory. For example, to use the `exceljs` package, you can perform the following steps:

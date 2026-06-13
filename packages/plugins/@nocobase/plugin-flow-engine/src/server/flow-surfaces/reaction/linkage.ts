@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import _ from 'lodash';
 import { isBareFlowContextPath } from '../context';
 import { throwBadRequest } from '../errors';
+import { normalizeFlowSurfaceCompatibleFilterGroupValue } from '../filter-group';
 import {
   FLOW_SURFACE_REACTION_INVALID_CONDITION_OPERATOR,
   FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
@@ -178,6 +179,11 @@ function normalizeReactionFilter(rawFilter: unknown): FlowSurfaceReactionFilter 
     return clonePlain(EMPTY_FILTER);
   }
 
+  const normalizedFilter = normalizeFlowSurfaceCompatibleFilterGroupValue(
+    rawFilter,
+    'flowSurfaces linkage rule condition',
+  );
+
   const visit = (node: any): any => {
     if (!_.isPlainObject(node)) {
       return node;
@@ -200,7 +206,7 @@ function normalizeReactionFilter(rawFilter: unknown): FlowSurfaceReactionFilter 
     return next;
   };
 
-  return visit(rawFilter);
+  return visit(normalizedFilter);
 }
 
 function compileReactionFilter(filter: FlowSurfaceReactionFilter) {

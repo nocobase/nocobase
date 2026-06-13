@@ -9,7 +9,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { FlowContext, FlowEngineContext } from './flowContext';
-import { FlowView } from './views/FlowView';
+import { FlowView, FlowViewer } from './views/FlowView';
 
 export const FlowReactContext = createContext<FlowContext>(null);
 export const FlowViewContext = createContext<FlowContext>(null);
@@ -39,4 +39,12 @@ export function useFlowViewContext<T = FlowEngineContext>() {
 export function useFlowView() {
   const ctx = useFlowContext();
   return ctx.view as FlowView;
+}
+
+/**
+ * Access the `FlowViewer` that opens new drawers / modals / pages (`viewer.drawer({...})`, `viewer.modal({...})`, etc.). This is the counterpart to `useFlowView()`: `useFlowView()` returns the *current* mounted view (use it to close yourself, render Header/Footer slots, etc.), while `useFlowViewer()` returns the surface that lets you open a *new* view from inside any flow-context subtree.
+ */
+export function useFlowViewer() {
+  const ctx = useFlowContext();
+  return ctx.viewer as FlowViewer;
 }

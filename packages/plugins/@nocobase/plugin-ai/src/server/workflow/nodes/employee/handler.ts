@@ -11,6 +11,7 @@ import { JOB_STATUS } from '@nocobase/plugin-workflow';
 import _ from 'lodash';
 import PluginAIServer from '../../../plugin';
 import { Model, Transactionable } from '@nocobase/database';
+import { AI_WORKFLOW_TASK_STATUS } from './constants';
 
 export const registerOnJobAbortedHandler = (plugin: PluginAIServer) => {
   plugin.db.on('jobs.afterBulkUpdate', async (options: any) => {
@@ -28,11 +29,31 @@ export const registerOnJobAbortedHandler = (plugin: PluginAIServer) => {
     if (!aiWorkflowTasks.length) {
       return;
     }
+    const sessionIds = aiWorkflowTasks.map((task) => task.sessionId).filter(Boolean);
     for (const aiWorkflowTask of aiWorkflowTasks) {
       await plugin.db.getRepository('aiWorkflowTasks').update({
-        values: { status: 'aborted' },
+        values: { status: AI_WORKFLOW_TASK_STATUS.ABORTED },
         filter: {
           id: aiWorkflowTask.id,
+        },
+        transaction,
+      });
+    }
+    if (sessionIds.length) {
+      await plugin.db.getRepository('aiToolMessages').update({
+        values: {
+          invokeStatus: 'done',
+          status: 'error',
+          content: 'Workflow execution aborted.',
+          invokeEndTime: new Date(),
+        },
+        filter: {
+          sessionId: {
+            $in: sessionIds,
+          },
+          invokeStatus: {
+            $in: ['init', 'interrupted', 'waiting', 'pending'],
+          },
         },
         transaction,
       });
@@ -56,7 +77,7 @@ export const registerAIEmployeeTaskNotification = (plugin: PluginAIServer) => {
         return;
       }
 
-      if (values.status === 'pending_acceptance') {
+      if (values.status === AI_WORKFLOW_TASK_STATUS.PENDING_ACCEPTANCE) {
         await plugin.db.getRepository('usersAiWorkflowTasks').update({
           values: {
             read: false,

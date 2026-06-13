@@ -8,7 +8,6 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { operators } from './properties';
 
 export class TableoidFieldInterface extends CollectionFieldInterface {
   name = 'tableoid';
@@ -48,6 +47,6 @@ export class TableoidFieldInterface extends CollectionFieldInterface {
     },
   };
   filterable = {
-    operators: operators.tableoid,
+    operators: 'tableoid',
   };
 }

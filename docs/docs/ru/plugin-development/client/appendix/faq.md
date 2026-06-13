@@ -38,11 +38,11 @@ keywords: "FAQ,частые проблемы,устранение неполад
 
 ### Зарегистрированный маршрут страницы недоступен
 
-В NocoBase v2 маршруты по умолчанию имеют префикс `/v2`. Например, если Вы зарегистрировали `path: '/hello'`, фактический адрес — `/v2/hello`:
+В NocoBase v2 маршруты по умолчанию имеют префикс `/v`. Например, если Вы зарегистрировали `path: '/hello'`, фактический адрес — `/v/hello`:
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // 实际访问 -> /v2/hello
+  path: '/hello', // 实际访问 -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -285,7 +285,7 @@ TypeError: Cannot assign to read only property 'constructor' of object '[object 
 ## Связанные ссылки
 
 - [Plugin (Плагин)](../plugin) — точка входа плагина и жизненный цикл
-- [Router (Маршрутизация)](../router) — регистрация маршрутов и префикс `/v2`
+- [Router (Маршрутизация)](../router) — регистрация маршрутов и префикс `/v`
 - [Обзор FlowEngine](../flow-engine/index.md) — базовое использование FlowModel
 - [FlowEngine → Расширение блоков](../flow-engine/block) — BlockModel, TableBlockModel, filterCollection
 - [FlowEngine → Расширение полей](../flow-engine/field) — FieldModel, bindModelToInterface

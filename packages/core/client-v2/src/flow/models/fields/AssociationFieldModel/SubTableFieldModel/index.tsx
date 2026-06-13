@@ -60,13 +60,13 @@ export class SubTableFieldModel extends AssociationFieldModel {
   setCurrentPage;
   currentPageSize;
 
-  getCurrentValue = () => {
+  getCurrentValue() {
     const fallback = Array.isArray(this.props.value) ? this.props.value : [];
-    const fieldPathArray = this.parent?.context?.fieldPathArray;
+    const fieldPathArray = this.context.fieldPathArray ?? this.parent?.context?.fieldPathArray;
     if (!Array.isArray(fieldPathArray) || !fieldPathArray.length) return fallback;
     const latest = this.context.blockModel?.context?.form?.getFieldValue?.(fieldPathArray as any);
     return Array.isArray(latest) ? latest : fallback;
-  };
+  }
 
   get collection() {
     return this.context.collection;
@@ -111,6 +111,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
       },
     };
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const fieldPathArray = this.context.fieldPathArray ?? this.parent?.context?.fieldPathArray;
     return (
       <SubTableField
         {...this.props}
@@ -121,8 +122,8 @@ export class SubTableFieldModel extends AssociationFieldModel {
         parentItem={this.context.item}
         filterTargetKey={this.collection.filterTargetKey}
         formValuesChangeEmitter={this.context.blockModel?.emitter}
-        fieldPathArray={this.parent?.context?.fieldPathArray}
-        getCurrentValue={this.getCurrentValue}
+        fieldPathArray={fieldPathArray}
+        getCurrentValue={() => this.getCurrentValue()}
       />
     );
   }

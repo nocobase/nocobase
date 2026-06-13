@@ -1,21 +1,21 @@
 ---
-title: "NocoBase CLI"
-description: "Tài liệu NocoBase CLI (lệnh nb): khởi tạo, cấu hình, quản lý môi trường, runtime ứng dụng, mã nguồn, cơ sở dữ liệu, plugin, giấy phép thương mại, API, tự cập nhật CLI và quản lý Skills."
-keywords: "NocoBase CLI,nb,dòng lệnh,tài liệu lệnh,cấu hình,quản lý môi trường,quản lý plugin,giấy phép thương mại,API"
+title: 'NocoBase CLI'
+description: 'Tài liệu tham khảo NocoBase CLI (lệnh nb): khởi tạo, sao lưu và khôi phục, cấu hình, quản lý môi trường, chạy ứng dụng, mã nguồn, cơ sở dữ liệu, plugin, giấy phép thương mại, API, tự cập nhật CLI và quản lý Skills.'
+keywords: 'NocoBase CLI,nb,dòng lệnh,tài liệu lệnh,sao lưu,khôi phục,quản lý môi trường,quản lý plugin,giấy phép thương mại,API'
 ---
 
 # NocoBase CLI
 
 ## Mô tả
 
-NocoBase CLI (`nb`) là điểm vào dòng lệnh của NocoBase, dùng để khởi tạo, kết nối và quản lý các ứng dụng NocoBase trong workspace cục bộ.
+NocoBase CLI (`nb`) là điểm vào dòng lệnh của NocoBase, dùng để khởi tạo, kết nối và quản lý các ứng dụng NocoBase trong không gian làm việc cục bộ.
 
-CLI hỗ trợ hai con đường khởi tạo phổ biến:
+Nó hỗ trợ hai cách khởi tạo phổ biến:
 
-- Kết nối tới ứng dụng NocoBase có sẵn và lưu thành CLI env
-- Cài đặt ứng dụng NocoBase mới qua Docker, npm hoặc Git rồi lưu thành CLI env
+- Kết nối một ứng dụng NocoBase hiện có và lưu nó thành CLI env
+- Cài đặt một ứng dụng NocoBase mới thông qua Docker, npm hoặc Git, rồi lưu nó thành CLI env
 
-Khi tạo ứng dụng cục bộ mới, [`nb init`](./init.md) cũng có thể cài đặt hoặc cập nhật NocoBase AI coding skills. Nếu bạn muốn bỏ qua bước này, hãy dùng `--skip-skills`.
+Khi tạo một ứng dụng cục bộ mới, [`nb init`](./init.md) cũng có thể cài đặt hoặc cập nhật các AI coding skills của NocoBase. Nếu cần bỏ qua bước này, bạn có thể dùng `--skip-skills`.
 
 ## Cách dùng
 
@@ -23,48 +23,50 @@ Khi tạo ứng dụng cục bộ mới, [`nb init`](./init.md) cũng có thể 
 nb [command]
 ```
 
-Lệnh gốc chủ yếu để hiển thị help và phân phối lời gọi tới các nhóm lệnh hoặc lệnh độc lập.
+Bản thân lệnh gốc chủ yếu dùng để hiển thị trợ giúp và phân phối lời gọi đến các nhóm lệnh hoặc lệnh độc lập.
 
 ## Nhóm lệnh (Topics)
 
-Các nhóm lệnh sau hiển thị trong `nb --help`:
+`nb --help` sẽ hiển thị các nhóm lệnh sau:
 
-| Nhóm lệnh | Mô tả |
-| --- | --- |
-| [`nb api`](./api/index.md) | Gọi NocoBase API thông qua CLI. |
-| [`nb app`](./app/index.md) | Quản lý runtime ứng dụng: khởi động, dừng, khởi động lại, log và nâng cấp. |
-| [`nb config`](./config/index.md) | Quản lý cấu hình mặc định của CLI. |
-| [`nb db`](./db/index.md) | Quản lý database tích hợp của env đã chọn. |
-| [`nb env`](./env/index.md) | Quản lý môi trường dự án NocoBase, env hiện tại, trạng thái, chi tiết và runtime lệnh. |
-| [`nb license`](./license/index.md) | Quản lý giấy phép thương mại và các plugin được cấp phép. |
-| [`nb plugin`](./plugin/index.md) | Quản lý plugin của env NocoBase đã chọn. |
-| [`nb scaffold`](./scaffold/index.md) | Sinh scaffold để phát triển plugin NocoBase. |
-| [`nb self`](./self/index.md) | Kiểm tra hoặc cập nhật chính NocoBase CLI. |
-| [`nb session`](./session/index.md) | Cấu hình `NB_SESSION_ID` để cô lập env hiện tại theo từng shell hoặc runtime agent. |
-| [`nb skills`](./skills/index.md) | Kiểm tra hoặc đồng bộ NocoBase AI coding skills cho workspace hiện tại. |
-| [`nb source`](./source/index.md) | Quản lý dự án source code cục bộ: tải về, develop, build và test. |
+| Nhóm lệnh                            | Mô tả                                                                                       |
+| ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [`nb api`](./api/index.md)           | Gọi API NocoBase thông qua CLI.                                                             |
+| [`nb app`](./app/index.md)           | Quản lý trạng thái chạy của ứng dụng: khởi động, dừng, khởi động lại, nhật ký và nâng cấp.  |
+| [`nb backup`](./backup/index.md)     | Tạo bản sao lưu và tải xuống cục bộ, hoặc khôi phục tệp sao lưu cục bộ vào env mục tiêu.    |
+| [`nb config`](./config/index.md)     | Quản lý cấu hình mặc định của CLI.                                                          |
+| [`nb db`](./db/index.md)             | Quản lý cơ sở dữ liệu tích hợp của env đã chọn.                                             |
+| [`nb env`](./env/index.md)           | Quản lý môi trường dự án NocoBase, env hiện tại, trạng thái, chi tiết và các lệnh runtime.  |
+| [`nb license`](./license/index.md)   | Quản lý giấy phép thương mại và các plugin được cấp phép.                                   |
+| [`nb plugin`](./plugin/index.md)     | Quản lý các plugin của env NocoBase đã chọn.                                                |
+| [`nb scaffold`](./scaffold/index.md) | Tạo scaffold phát triển plugin NocoBase.                                                    |
+| [`nb self`](./self/index.md)         | Kiểm tra hoặc cập nhật chính NocoBase CLI.                                                  |
+| [`nb session`](./session/index.md)   | Cấu hình `NB_SESSION_ID` để current env được tách biệt theo shell hoặc agent runtime.       |
+| [`nb skills`](./skills/index.md)     | Kiểm tra hoặc đồng bộ các AI coding skills của NocoBase trong không gian làm việc hiện tại. |
+| [`nb source`](./source/index.md)     | Quản lý dự án mã nguồn cục bộ: tải xuống, phát triển, build và kiểm thử.                    |
 
 ## Lệnh (Commands)
 
-Các lệnh độc lập do lệnh gốc trực tiếp đưa ra:
+Các lệnh độc lập hiện được lệnh gốc hiển thị trực tiếp:
 
-| Lệnh | Mô tả |
-| --- | --- |
-| [`nb init`](./init.md) | Khởi tạo NocoBase để coding agent có thể kết nối và làm việc. |
+| Lệnh                   | Mô tả                                                          |
+| ---------------------- | -------------------------------------------------------------- |
+| [`nb init`](./init.md) | Khởi tạo NocoBase để coding agent có thể kết nối và hoạt động. |
 
-## Xem help
+## Xem trợ giúp
 
-Xem help của lệnh gốc:
+Xem trợ giúp của lệnh gốc:
 
 ```bash
 nb --help
 ```
 
-Xem help của một lệnh hoặc nhóm lệnh:
+Xem trợ giúp của một lệnh hoặc nhóm lệnh:
 
 ```bash
 nb init --help
 nb app --help
+nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
@@ -78,19 +80,19 @@ Khởi tạo tương tác:
 nb init
 ```
 
-Khởi tạo bằng form trên trình duyệt:
+Khởi tạo bằng biểu mẫu trên trình duyệt:
 
 ```bash
 nb init --ui
 ```
 
-Tạo ứng dụng Docker không tương tác:
+Tạo một ứng dụng Docker theo cách không tương tác:
 
 ```bash
 nb init --env app1 --yes --source docker --version alpha
 ```
 
-Kết nối ứng dụng có sẵn:
+Kết nối ứng dụng hiện có:
 
 ```bash
 nb env add app1 --api-base-url http://localhost:13000/api
@@ -98,7 +100,7 @@ nb env current
 nb env status
 ```
 
-Khởi động ứng dụng và làm mới các lệnh runtime:
+Đồng bộ lại trạng thái env sau khi khởi động ứng dụng:
 
 ```bash
 nb app start -e app1
@@ -125,14 +127,27 @@ nb license status -e app1
 nb license plugins list -e app1
 ```
 
+Tạo và tải xuống bản sao lưu:
+
+```bash
+nb backup create -e app1 --output ./backups
+```
+
+Khôi phục bản sao lưu cục bộ:
+
+```bash
+nb backup restore -e app1 --file ./backups/backup_20260520_190408_8397.nbdata --yes --force
+```
+
 ## Biến môi trường
 
-Các biến môi trường sau ảnh hưởng đến hành vi CLI:
+Các biến môi trường sau sẽ ảnh hưởng đến hành vi của CLI:
 
-| Biến | Mô tả |
-| --- | --- |
-| `NB_CLI_ROOT` | Thư mục gốc nơi CLI lưu cấu hình `.nocobase` và file ứng dụng cục bộ. Mặc định là home directory của bạn. |
-| `NB_LOCALE` | Ngôn ngữ của CLI prompt và UI khởi tạo cục bộ, hỗ trợ `en-US` và `zh-CN`. |
+| Biến            | Mô tả                                                                                                                            |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `NB_CLI_ROOT`   | Thư mục gốc nơi CLI lưu cấu hình `.nocobase` và các tệp ứng dụng cục bộ. Mặc định là thư mục home của người dùng hiện tại.       |
+| `NB_LOCALE`     | Ngôn ngữ gợi ý của CLI và ngôn ngữ UI khởi tạo cục bộ, hỗ trợ `en-US` và `zh-CN`.                                                |
+| `NB_SESSION_ID` | ID phiên của shell hiện tại hoặc agent runtime. Sau khi được đặt, `nb env use` và `nb env current` sẽ được tách biệt theo phiên. |
 
 Ví dụ:
 
@@ -141,40 +156,41 @@ export NB_CLI_ROOT=/your/workspace
 export NB_LOCALE=zh-CN
 ```
 
-## File cấu hình
+## Tệp cấu hình
 
-File cấu hình mặc định:
+Tệp cấu hình mặc định:
 
 ```text
 ~/.nocobase/config.json
 ```
 
-Sau khi đặt `NB_CLI_ROOT=/your/workspace`, đường dẫn cấu hình sẽ thành:
+Sau khi đặt `NB_CLI_ROOT=/your/workspace`, đường dẫn tệp cấu hình sẽ trở thành:
 
 ```text
 /your/workspace/.nocobase/config.json
 ```
 
-CLI cũng đọc tương thích cấu hình project cũ trong thư mục làm việc hiện tại.
+CLI cũng tương thích với việc đọc cấu hình project cũ trong thư mục làm việc hiện tại.
 
+Bộ nhớ đệm cấp phiên của env hiện tại được lưu tại:
 
-Cache phiên của env hiện tại được lưu tại:
-
+```text
 .nocobase/sessions/<NB_SESSION_ID>.json
-Env được dùng gần nhất trên toàn cục được lưu trong trường `lastEnv` của `config.json`. Khi `NB_SESSION_ID` chưa được thiết lập, CLI sẽ fallback về giá trị toàn cục đó.
+```
 
-Cache lệnh runtime được lưu tại:
+Env được dùng gần nhất trên toàn cục được lưu trong trường `lastEnv` của `config.json`. Khi không có `NB_SESSION_ID`, CLI sẽ quay lại giá trị toàn cục này.
+
+Bộ nhớ đệm lệnh runtime được lưu tại:
 
 ```text
 .nocobase/versions/<hash>/commands.json
 ```
 
-File này được [`nb env update`](./env/update.md) sinh ra hoặc làm mới, dùng để cache các lệnh runtime đồng bộ từ ứng dụng đích.
+Tệp này được tạo hoặc làm mới bởi [`nb env update`](./env/update.md), dùng để lưu bộ nhớ đệm các lệnh runtime được đồng bộ từ ứng dụng đích.
 
 ## Liên kết liên quan
 
 - [Bắt đầu nhanh](../../ai/quick-start.mdx)
-- [Cài đặt, nâng cấp và di chuyển](../../ai/install-upgrade-migration.mdx)
 - [Biến môi trường toàn cục](../app/env.md)
-- [AI Builder](../../ai-builder/index.md)
+- [Xây dựng bằng AI](../../ai-builder/index.md)
 - [Phát triển plugin](../../plugin-development/index.md)

@@ -1,12 +1,12 @@
 ---
 title: "nb app start"
-description: "Referensi perintah nb app start: memulai aplikasi NocoBase atau container Docker dari env yang ditentukan."
+description: "Referensi perintah nb app start: memulai aplikasi NocoBase pada env yang ditentukan; bila berlaku, CLI terlebih dahulu menyinkronkan plugin komersial yang diizinkan oleh lisensi saat ini, lalu env lokal secara default akan otomatis menyiapkan instalasi atau upgrade yang diperlukan sebelum startup, dan untuk env Docker, container aplikasi dibuat ulang dari konfigurasi yang tersimpan."
 keywords: "nb app start,NocoBase CLI,memulai aplikasi,Docker,pm2"
 ---
 
 # nb app start
 
-Memulai aplikasi NocoBase dari env yang ditentukan. Instalasi npm/Git akan menjalankan perintah aplikasi lokal, instalasi Docker akan memulai container aplikasi yang tersimpan.
+Memulai aplikasi NocoBase dari env yang ditentukan. Bila berlaku, CLI terlebih dahulu menyinkronkan plugin komersial yang diizinkan oleh lisensi saat ini. Setelah itu, instalasi npm/Git akan otomatis menyiapkan instalasi atau upgrade yang diperlukan sebelum menjalankan perintah aplikasi lokal, sedangkan instalasi Docker akan membuat ulang container aplikasi dari konfigurasi env yang tersimpan.
 
 ## Penggunaan
 
@@ -20,11 +20,6 @@ nb app start [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | Nama env CLI yang akan dimulai, jika dilewati menggunakan env saat ini |
 | `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
-| `--quickstart` | boolean | Memulai aplikasi dengan cepat |
-| `--port`, `-p` | string | Mengganti `appPort` di konfigurasi env |
-| `--daemon`, `-d` / `--no-daemon` | boolean | Apakah dijalankan dalam mode daemon, default aktif |
-| `--instances`, `-i` | integer | Jumlah instance yang dijalankan |
-| `--launch-mode` | string | Mode peluncuran: `pm2` atau `node` |
 | `--verbose` | boolean | Menampilkan output perintah lokal atau Docker yang mendasarinya |
 
 ## Contoh
@@ -32,18 +27,13 @@ nb app start [flags]
 ```bash
 nb app start
 nb app start --env local
-nb app start --env local --quickstart
-nb app start --env local --port 12000
-nb app start --env local --daemon
-nb app start --env local --no-daemon
-nb app start --env local --instances 2
-nb app start --env local --launch-mode pm2
 nb app start --env local --verbose
 nb app start --env local-docker
 ```
 
 Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
 
+Secara default, bila berlaku, CLI terlebih dahulu menjalankan `nb license plugins sync --skip-if-no-license` untuk menyinkronkan plugin komersial yang diizinkan oleh lisensi saat ini. Setelah itu, env lokal akan otomatis menyiapkan instalasi atau upgrade yang diperlukan sebelum berjalan di background, sedangkan env Docker akan membuat ulang container aplikasi dari konfigurasi env yang tersimpan. Setiap kali CLI perlu menunggu aplikasi siap, CLI akan memeriksa `__health_check`: pertama menampilkan satu baris waiting, lalu satu baris progress setiap 10 detik sampai aplikasi tersedia atau waktunya habis.
 ## Perintah Terkait
 
 - [`nb app stop`](./stop.md)

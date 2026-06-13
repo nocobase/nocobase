@@ -6,7 +6,7 @@
   "description": "Provides SQL collection template",
   "description.ru-RU": "Предоставляет шаблон коллекции на основе SQL",
   "description.zh-CN": "提供 SQL 数据表模板",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "homepage": "https://docs-cn.nocobase.com/handbook/collection-sql",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/collection-sql",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/collection-sql",
@@ -16,7 +16,10 @@
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
     "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*"
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
   },
   "keywords": [
     "Collections"

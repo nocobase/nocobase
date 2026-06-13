@@ -18,6 +18,7 @@ import {
 } from './cli-locale.ts';
 import {
   isPromptBlockSkipped,
+  type PasswordPromptBlock,
   type PromptBlock,
   type PromptCatalogValues,
   type PromptInitialValues,
@@ -54,6 +55,14 @@ function hasValueKey(iv: PromptInitialValues, key: string): boolean {
 }
 
 function resolveTextDefault(def: TextPromptBlock, out: PromptCatalogValues): string {
+  const iv = def.initialValue;
+  if (typeof iv === 'function') {
+    return String(iv(out) ?? '');
+  }
+  return String(iv ?? '');
+}
+
+function resolvePasswordDefault(def: PasswordPromptBlock, out: PromptCatalogValues): string {
   const iv = def.initialValue;
   if (typeof iv === 'function') {
     return String(iv(out) ?? '');
@@ -127,7 +136,7 @@ function defaultValueForInput(
       return firstValue ?? '';
     }
     case 'password':
-      return def.initialValue ?? '';
+      return resolvePasswordDefault(def, out);
     case 'integer':
       return def.initialValue !== undefined && Number.isFinite(def.initialValue) ? def.initialValue : 0;
     default:
@@ -367,6 +376,10 @@ function computePwcWizardSteps(
 const PWC_FORM_ITEM_EXPLAIN = '<div class="pwc-form-item-explain" data-pwc-explain="1" role="alert" hidden></div>';
 /** Suffix slot for status icon (e.g. fail) — filled by client script. */
 const PWC_FORM_ITEM_SUFFIX = '<span class="pwc-form-item-suffix" data-pwc-suffix="1" aria-hidden="true"></span>';
+/** Password visibility toggle icon (`eye`). */
+const PWC_FORM_EYE_ICON_SVG = `<svg class="pwc-form-toggle__svg" viewBox="0 0 14 14" width="14" height="14" focusable="false" aria-hidden="true"><path fill="currentColor" d="M7 3c-3.14 0-5.67 2.06-6.69 4c1.02 1.94 3.55 4 6.69 4s5.67-2.06 6.69-4C12.67 5.06 10.14 3 7 3zm0 6.8A2.8 2.8 0 1 1 7 4.2a2.8 2.8 0 0 1 0 5.6zm0-1.2A1.6 1.6 0 1 0 7 5.4a1.6 1.6 0 0 0 0 3.2z"/></svg>`;
+/** Password visibility toggle icon (`eye-off`). */
+const PWC_FORM_EYE_OFF_ICON_SVG = `<svg class="pwc-form-toggle__svg" viewBox="0 0 14 14" width="14" height="14" focusable="false" aria-hidden="true"><path fill="currentColor" d="M2.17 1.32l10.51 10.51-.85.85-2.04-2.04A7.37 7.37 0 0 1 7 11C3.86 11 1.33 8.94.31 7c.54-1.02 1.53-2.15 2.84-2.98L1.32 2.17l.85-.85zm1.88 3.58A6.26 6.26 0 0 0 1.69 7c1.02 1.63 3.12 2.8 5.31 2.8c.79 0 1.56-.15 2.25-.43l-1.1-1.1A2.8 2.8 0 0 1 4.88 5l-.83-.1zm5.87 2.48l-.9-.9a2 2 0 0 0-1.68-1.68l-.9-.9a2.8 2.8 0 0 1 3.48 3.48zM7 3c3.14 0 5.67 2.06 6.69 4a8.4 8.4 0 0 1-2.13 2.43l-.84-.84A6.98 6.98 0 0 0 12.31 7C11.29 5.37 9.19 4.2 7 4.2c-.39 0-.77.04-1.14.11l-.98-.98C5.56 3.12 6.27 3 7 3z"/></svg>`;
 
 function renderPwcRadioOptions(
   key: string,
@@ -410,6 +423,10 @@ function renderPwcFieldRow(
   defaults: PromptInitialValues,
   show: Record<string, boolean>,
   locale: CliLocale,
+  uiText?: {
+    showPassword?: string;
+    hidePassword?: string;
+  },
 ): string {
   if (!isInputBlock(def)) {
     return '';
@@ -421,6 +438,11 @@ function renderPwcFieldRow(
     `<div class="pwc-form-item${extraClass ? ` ${extraClass}` : ''}" data-pwc-wrap="${escapeHtml(
       key,
     )}" data-pwc-field="${escapeHtml(key)}" style="display:${display}">`;
+  const label = `<span class="pwc-form-item-label-text">${
+    'required' in def && def.required
+      ? '<span class="pwc-form-item-required" aria-hidden="true">*</span>'
+      : ''
+  }<span class="pwc-l">${escapeHtml(labelText)}</span></span>`;
   if (def.type === 'text') {
     const req = def.required ? ' required' : '';
     const disabled = hidden ? ' disabled' : '';
@@ -428,7 +450,7 @@ function renderPwcFieldRow(
     const v = escapeHtml(String(defaults[key] ?? ''));
     return (
       itemOpen('') +
-      `<div class="pwc-form-item-label"><span class="pwc-l">${escapeHtml(labelText)}</span></div>` +
+      `<div class="pwc-form-item-label">${label}</div>` +
       `<div class="pwc-form-item-control">` +
       `<div class="pwc-form-item-control-input">` +
       `<div class="pwc-input-affix-wrapper">` +
@@ -446,7 +468,7 @@ function renderPwcFieldRow(
       itemOpen('pwc-form-item--bool') +
       `<div class="pwc-bool-wrap"><label><input class="pwc-bool-input" name="${escapeHtml(
         key,
-      )}" type="checkbox" value="1"${checked}${disabled} /> <span class="pwc-l">${escapeHtml(labelText)}</span></label></div>` +
+      )}" type="checkbox" value="1"${checked}${disabled} /> ${label}</label></div>` +
       PWC_FORM_ITEM_EXPLAIN +
       `</div>`
     );
@@ -456,7 +478,7 @@ function renderPwcFieldRow(
       const opts = renderPwcRadioOptions(key, def, defaults, hidden, locale);
       return (
         itemOpen('') +
-        `<div class="pwc-form-item-label"><span class="pwc-l">${escapeHtml(labelText)}</span></div>` +
+        `<div class="pwc-form-item-label">${label}</div>` +
         `<div class="pwc-form-item-control">` +
         `<div class="pwc-form-item-control-input">` +
         `<div class="pwc-radio-group" role="radiogroup" aria-label="${escapeHtml(labelText)}">` +
@@ -479,7 +501,7 @@ function renderPwcFieldRow(
     const disabled = hidden ? ' disabled' : '';
     return (
       itemOpen('') +
-      `<div class="pwc-form-item-label"><span class="pwc-l">${escapeHtml(labelText)}</span></div>` +
+      `<div class="pwc-form-item-label">${label}</div>` +
       `<div class="pwc-form-item-control">` +
       `<div class="pwc-form-item-control-input">` +
       `<div class="pwc-input-affix-wrapper pwc-input-affix-wrapper--select">` +
@@ -494,14 +516,18 @@ function renderPwcFieldRow(
     const req = def.required ? ' required' : '';
     const disabled = hidden ? ' disabled' : '';
     const v = escapeHtml(String(defaults[key] ?? ''));
+    const showPassword = escapeHtml(uiText?.showPassword ?? 'Show password');
     return (
       itemOpen('') +
-      `<div class="pwc-form-item-label"><span class="pwc-l">${escapeHtml(labelText)}</span></div>` +
+      `<div class="pwc-form-item-label">${label}</div>` +
       `<div class="pwc-form-item-control">` +
       `<div class="pwc-form-item-control-input">` +
-      `<div class="pwc-input-affix-wrapper">` +
-      `<input class="pwc-form-input" name="${escapeHtml(key)}" type="password" value="${v}"${req}${disabled} autocomplete="new-password" />` +
+      `<div class="pwc-input-affix-wrapper pwc-input-affix-wrapper--password" data-pwc-password-wrap="1">` +
+      `<input class="pwc-form-input" data-pwc-password-input="1" name="${escapeHtml(
+        key,
+      )}" type="password" value="${v}"${req}${disabled} autocomplete="new-password" />` +
       PWC_FORM_ITEM_SUFFIX +
+      `<button class="pwc-password-toggle" type="button" data-pwc-password-toggle="1" aria-label="${showPassword}" title="${showPassword}" aria-pressed="false"${disabled}>${PWC_FORM_EYE_ICON_SVG}</button>` +
       `</div></div>` +
       PWC_FORM_ITEM_EXPLAIN +
       `</div></div>`
@@ -514,7 +540,7 @@ function renderPwcFieldRow(
     const v = String(defaults[key] ?? 0);
     return (
       itemOpen('') +
-      `<div class="pwc-form-item-label"><span class="pwc-l">${escapeHtml(labelText)}</span></div>` +
+      `<div class="pwc-form-item-label">${label}</div>` +
       `<div class="pwc-form-item-control">` +
       `<div class="pwc-form-item-control-input">` +
       `<div class="pwc-input-affix-wrapper">` +
@@ -633,6 +659,8 @@ function buildPwcFormHtml(
     stepsSidebarAriaLabel: string;
     stepNavigationAriaLabel: string;
     submitAriaLabel: string;
+    showPassword: string;
+    hidePassword: string;
     back: string;
     next: string;
     submit: string;
@@ -669,7 +697,7 @@ function buildPwcFormHtml(
     for (const key of sd.keys) {
       const def = catalog[key];
       if (def) {
-        out.push(renderPwcFieldRow(key, def, defaults, show, locale));
+        out.push(renderPwcFieldRow(key, def, defaults, show, locale, uiText));
       }
     }
     out.push('</section>');
@@ -984,6 +1012,8 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     back: t('promptCatalog.web.back'),
     next: t('promptCatalog.web.next'),
     submit: t('promptCatalog.web.submit'),
+    showPassword: t('promptCatalog.web.showPassword'),
+    hidePassword: t('promptCatalog.web.hidePassword'),
     checking: t('promptCatalog.web.checking'),
     sending: t('promptCatalog.web.sending'),
     successTitle: t('promptCatalog.web.successTitle'),
@@ -1502,6 +1532,8 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     /* antd Form.Item: label + control + explain — @see https://ant.design/components/form */
     .pwc-form-item { margin: 0 0 24px 0; }
     .pwc-form-item-label { margin: 0; padding: 0; }
+    .pwc-form-item-label-text { display: inline-flex; align-items: flex-start; gap: 4px; }
+    .pwc-form-item-required { color: var(--pwc-form-color-error); font-weight: 600; line-height: 1; margin-top: 2px; }
     .pwc-form-item-control { width: 100%; }
     .pwc-form-item--bool { margin: 0 0 24px 0; }
     .pwc-form-item--bool .pwc-bool-wrap { margin: 0; }
@@ -1515,7 +1547,71 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       pointer-events: none;
     }
     .pwc-input-affix-wrapper .pwc-form-input { padding-right: 32px; }
-    .pwc-input-affix-wrapper--select .pwc-form-input { padding-right: 32px; }
+    .pwc-input-affix-wrapper--select::after {
+      content: '';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      margin-top: -6px;
+      border-right: 2px solid var(--pwc-ad-color-text-description);
+      border-bottom: 2px solid var(--pwc-ad-color-text-description);
+      transform: rotate(45deg);
+      pointer-events: none;
+      transition: border-color 0.2s;
+    }
+    .pwc-input-affix-wrapper--select:hover::after {
+      border-color: var(--pwc-ad-color-text);
+    }
+    .pwc-input-affix-wrapper--select:focus-within::after {
+      border-color: var(--pwc-ad-color-primary);
+    }
+    .pwc-input-affix-wrapper--select .pwc-form-input {
+      padding-right: 56px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: none;
+    }
+    .pwc-input-affix-wrapper--select .pwc-form-item-suffix { right: 36px; }
+    .pwc-input-affix-wrapper--password .pwc-form-input { padding-right: 68px; }
+    .pwc-input-affix-wrapper--password .pwc-form-item-suffix { right: 39px; }
+    .pwc-password-toggle {
+      position: absolute;
+      z-index: 1;
+      right: 8px;
+      top: 50%;
+      width: 24px;
+      height: 24px;
+      margin: 0;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--pwc-ad-color-text-description);
+      cursor: pointer;
+      transform: translateY(-50%);
+      transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .pwc-password-toggle:hover {
+      color: var(--pwc-ad-color-text);
+      background: color-mix(in srgb, var(--pwc-ad-color-text) 6%, transparent);
+    }
+    .pwc-password-toggle:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--pwc-ad-color-primary) 16%, transparent);
+    }
+    .pwc-password-toggle:disabled {
+      color: color-mix(in srgb, var(--pwc-ad-color-text-description) 60%, transparent);
+      cursor: not-allowed;
+      background: transparent;
+      box-shadow: none;
+    }
+    .pwc-form-toggle__svg { display: block; }
     .pwc-form-item-explain { font-size: 14px; line-height: 1.5715; margin-top: 4px; clear: both; }
     .pwc-form-item-explain[hidden] { display: none !important; }
     .pwc-form-item-explain:not([hidden]) { color: var(--pwc-form-color-error); }
@@ -1545,6 +1641,9 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       border: 1px solid var(--pwc-ad-color-border);
       border-radius: 6px;
       transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    input.pwc-form-input, select.pwc-form-input {
+      height: 40px;
     }
     input.pwc-form-input:hover, select.pwc-form-input:hover, textarea:hover {
       border-color: var(--pwc-ad-color-primary);
@@ -1700,6 +1799,8 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     var pwcErrIcon = ${JSON.stringify(PWC_AD_ALERT_ERROR_ICON_SVG)};
     var pwcOkIcon = ${JSON.stringify(PWC_AD_ALERT_SUCCESS_ICON_SVG)};
     var pwcFieldFail = ${JSON.stringify(PWC_FORM_FAIL_ICON_SVG)};
+    var pwcEyeIcon = ${JSON.stringify(PWC_FORM_EYE_ICON_SVG)};
+    var pwcEyeOffIcon = ${JSON.stringify(PWC_FORM_EYE_OFF_ICON_SVG)};
     var pwcCloseTimer = null;
     var pwcCloseProbeTimer = null;
     var pwcFieldReqSeq = {};
@@ -1757,7 +1858,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     }
     function pwcSetFieldError(key, message) {
       if (!form || !key) { return; }
-      var wrap = form.querySelector('[data-pwc-field=\"' + String(key) + '\"]');
+      var wrap = form.querySelector('[data-pwc-field="' + String(key) + '"]');
       if (!wrap) { return; }
       var ex = wrap.querySelector('[data-pwc-explain]');
       var suf = wrap.querySelector('[data-pwc-suffix]');
@@ -1795,9 +1896,50 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       } catch (e) {}
       return { msg: msg, fk: fk };
     }
+    function pwcSyncPasswordToggle(toggle, input) {
+      if (!toggle || !input) { return; }
+      var visible = input.getAttribute('type') === 'text';
+      var label = visible ? uiText.hidePassword : uiText.showPassword;
+      toggle.setAttribute('aria-label', String(label));
+      toggle.setAttribute('title', String(label));
+      toggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+      toggle.innerHTML = visible ? pwcEyeOffIcon : pwcEyeIcon;
+    }
+    function pwcInitPasswordToggles() {
+      if (!form) { return; }
+      var toggles = form.querySelectorAll('[data-pwc-password-toggle]');
+      for (var i = 0; i < toggles.length; i++) {
+        (function () {
+          var toggle = toggles[i];
+          var wrap = toggle.parentElement;
+          var input = wrap ? wrap.querySelector('[data-pwc-password-input]') : null;
+          pwcSyncPasswordToggle(toggle, input);
+          toggle.addEventListener('click', function () {
+            if (!input || input.disabled) { return; }
+            var nextType = input.getAttribute('type') === 'text' ? 'password' : 'text';
+            var start = typeof input.selectionStart === 'number' ? input.selectionStart : null;
+            var end = typeof input.selectionEnd === 'number' ? input.selectionEnd : null;
+            input.setAttribute('type', nextType);
+            pwcSyncPasswordToggle(toggle, input);
+            if (typeof input.focus === 'function') {
+              input.focus({ preventScroll: true });
+            }
+            if (
+              start !== null &&
+              end !== null &&
+              typeof input.setSelectionRange === 'function'
+            ) {
+              try {
+                input.setSelectionRange(start, end);
+              } catch (e) {}
+            }
+          });
+        })();
+      }
+    }
     function pwcSetFieldDirty(key, dirty) {
       if (!form || !key) { return; }
-      var wrap = form.querySelector('[data-pwc-field=\"' + String(key) + '\"]');
+      var wrap = form.querySelector('[data-pwc-field="' + String(key) + '"]');
       if (!wrap) { return; }
       if (dirty) {
         wrap.setAttribute('data-pwc-dirty', '1');
@@ -1807,7 +1949,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     }
     function pwcIsFieldDirty(key) {
       if (!form || !key) { return false; }
-      var wrap = form.querySelector('[data-pwc-field=\"' + String(key) + '\"]');
+      var wrap = form.querySelector('[data-pwc-field="' + String(key) + '"]');
       return !!(wrap && wrap.getAttribute('data-pwc-dirty') === '1');
     }
     function getControl(formEl, k) {
@@ -1898,7 +2040,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
             var wasHidden = w.style.display === 'none';
             var hidden = k != null && sh[k] === false;
             w.style.display = hidden ? 'none' : 'block';
-            var ctrls = w.querySelectorAll('input, select, textarea');
+            var ctrls = w.querySelectorAll('input, select, textarea, button[data-pwc-password-toggle]');
             for (var i = 0; i < ctrls.length; i++) {
               ctrls[i].disabled = hidden || ctrls[i].getAttribute('data-pwc-static-disabled') === '1';
             }
@@ -1922,7 +2064,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       }
       for (var i = 0; i < st.keys.length; i++) {
         var key = st.keys[i];
-        var wrap = form.querySelector('[data-pwc-wrap=\"' + String(key) + '\"]');
+        var wrap = form.querySelector('[data-pwc-wrap="' + String(key) + '"]');
         if (wrap && wrap.style.display !== 'none') {
           return true;
         }
@@ -2060,7 +2202,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       }
       for (var j = 0; j < st.keys.length; j++) {
         var k = st.keys[j];
-        var w = form.querySelector('[data-pwc-wrap=\"' + k + '\"]');
+        var w = form.querySelector('[data-pwc-wrap="' + k + '"]');
         if (!w || w.style.display === 'none') { continue; }
         var inp = getControl(form, k);
         if (inp == null) { continue; }
@@ -2085,7 +2227,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     }
     function pwcValidateField(key) {
       if (!form || !key || pwcValField == null) { return Promise.resolve(); }
-      var wrap = form.querySelector('[data-pwc-wrap=\"' + String(key) + '\"]');
+      var wrap = form.querySelector('[data-pwc-wrap="' + String(key) + '"]');
       if (!wrap || wrap.style.display === 'none') { return Promise.resolve(); }
       var reqSeq = (pwcFieldReqSeq[key] || 0) + 1;
       pwcFieldReqSeq[key] = reqSeq;
@@ -2187,6 +2329,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     var pwcNext = document.getElementById('pwcNext');
     if (pwcNext) { pwcNext.addEventListener('click', function () { void pwcTryAdvanceNext(); }); }
     pwcRefreshVisibleSteps();
+    pwcInitPasswordToggles();
     if (form) { setTimeout(function () { reflow(); }, 0); }
     if (form) {
       form.addEventListener('submit', function (e) {
@@ -2223,7 +2366,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       });
     }
   })();
-  <\/script>
+  </script>
 </body>
 </html>`;
       return page;

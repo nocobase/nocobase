@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-public-forms",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "displayName": "Public forms",
@@ -18,7 +18,10 @@
     "@nocobase/plugin-client": "workspace:*",
     "@nocobase/plugin-ui-schema-storage": "workspace:*",
     "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*"
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-flow-engine": "workspace:*"
   },
   "devDependencies": {
     "react-device-detect": "2.2.3"

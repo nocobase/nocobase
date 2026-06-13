@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-license",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "displayName": "License settings",
@@ -12,7 +12,8 @@
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
     "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*"
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "scripts": {
     "ts:env": "tsc -p tsconfig.env.json"

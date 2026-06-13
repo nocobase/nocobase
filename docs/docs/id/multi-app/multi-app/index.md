@@ -1,14 +1,22 @@
 ---
 pkg: '@nocobase/plugin-app-supervisor'
 title: "Manajemen Multi-app NocoBase"
-description: "AppSupervisor manajemen multi-app: aplikasi tunggal, multi-app shared memory, deployment campuran multi-environment, skenario SaaS/multi-tenant, pembuatan, startup, stop, dan manajemen lifecycle aplikasi."
-keywords: "multi-app,Multi App,AppSupervisor,shared memory,multi-environment deployment,SaaS,multi-tenant,NocoBase"
+description: "Manajemen multi-app AppSupervisor: aplikasi tunggal, multi-app shared memory, deployment campuran multi-environment, skenario SaaS/multi-tenant, pemisahan modul bisnis, pembuatan, startup, stop, dan manajemen lifecycle aplikasi."
+keywords: "multi-app,Multi App,AppSupervisor,shared memory,multi-environment deployment,SaaS,multi-tenant,pemisahan modul bisnis,NocoBase"
 ---
 # Manajemen Multi-app
 
 ## Ikhtisar Fitur
 
 Manajemen multi-app adalah solusi manajemen aplikasi terpadu yang disediakan NocoBase, untuk membuat dan mengelola beberapa instance aplikasi NocoBase yang terisolasi secara fisik dalam satu atau lebih environment runtime. Melalui Application Supervisor (AppSupervisor), pengguna dapat membuat dan memelihara beberapa aplikasi melalui entry point terpadu, memenuhi kebutuhan bisnis yang berbeda dan tahap skala yang berbeda.
+
+Multi-app cocok untuk skenario berikut:
+
+- Memisahkan sistem besar menjadi beberapa aplikasi berdasarkan modul bisnis, seperti CRM, layanan purnajual, operasional, atau analisis data
+- Memungkinkan tim mengembangkan secara paralel berdasarkan lini bisnis atau modul, sehingga mengurangi dampak konfigurasi dan rilis antar modul
+- Membuat aplikasi terisolasi untuk pelanggan, tenant, atau organisasi yang berbeda
+- Membuat aplikasi demo, pengujian, atau sandbox independen secara batch
+- Menempatkan aplikasi ke environment runtime yang berbeda saat jumlah aplikasi atau beban meningkat
 
 ## Aplikasi Tunggal
 

@@ -42,12 +42,21 @@ const interfacesOfUnsupportedDefaultValue = [
   'formula',
 ];
 
+const MAX_FORM_ASSOCIATION_FIELD_DEPTH = 2;
+
 export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends EditableItemModel<T> {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
+    const associationDepth = ctx.prefixFieldPath ? ctx.prefixFieldPath.split('.').filter(Boolean).length : 0;
     return collection
       .getFields()
       .map((field) => {
+        if (
+          associationDepth >= MAX_FORM_ASSOCIATION_FIELD_DEPTH &&
+          (field.isAssociationField?.() || field.target || field.targetCollection)
+        ) {
+          return;
+        }
         const binding = this.getDefaultBindingByField(ctx, field);
         if (!binding) {
           return;
@@ -138,6 +147,10 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
                 });
               }
             }
+            fork.context.defineProperty('fieldPathArray', {
+              get: () => this.context.fieldPathArray,
+              cache: false,
+            });
             if (isHiddenReservedValuePreview) {
               fork.setProps({ hidden: false });
             }
@@ -151,7 +164,10 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
       : { hidden, ...mergedPropsWithoutInitial };
     const fieldPath = buildDynamicNamePath(this.props.name, idx);
     this.context.defineProperty('fieldPathArray', {
-      value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
+      get: () => {
+        return [...parentFieldPathArray, ..._.castArray(fieldPath)];
+      },
+      cache: false,
     });
     const record = this.context.item?.value || this.context.record;
     const content = (

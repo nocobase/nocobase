@@ -9,35 +9,40 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import { EVENT_TYPE } from '../common/constants';
+import {
+  CollectionTriggerWorkflowActionModel,
+  FormTriggerWorkflowActionModel,
+  RecordTriggerWorkflowActionModel,
+  registerTriggerWorkflowActionGroups,
+  WorkbenchTriggerWorkflowActionModel,
+} from './models/actions/TriggerWorkflowActionModels';
 import { CustomActionTrigger } from './triggers/CustomActionTrigger';
 
-export class CustomActionTriggerPlugin extends Plugin {
-  async load() {
-    this.flowEngine.registerModelLoaders({
-      FormTriggerWorkflowActionModel: {
-        loader: () => import('./models/actions/TriggerWorkflowActionModels'),
-      },
-      RecordTriggerWorkflowActionModel: {
-        loader: () => import('./models/actions/TriggerWorkflowActionModels'),
-      },
-      CollectionTriggerWorkflowActionModel: {
-        loader: () => import('./models/actions/TriggerWorkflowActionModels'),
-      },
-      WorkbenchTriggerWorkflowActionModel: {
-        loader: () => import('./models/actions/TriggerWorkflowActionModels'),
-      },
-    });
+type WorkflowPluginLike = {
+  registerTrigger?: (eventType: typeof EVENT_TYPE, trigger: typeof CustomActionTrigger) => void;
+};
 
-    const workflow = this.app.pm.get('workflow') as any;
+export class CustomActionTriggerPlugin extends Plugin {
+  private registerWorkbenchActionGroups = async () => {
+    await this.flowEngine.getModelClassAsync('ActionPanelGroupActionModel');
+    registerTriggerWorkflowActionGroups(this.flowEngine);
+  };
+
+  async beforeLoad() {
+    this.app.eventBus.addEventListener('plugin:block-workbench:loaded', this.registerWorkbenchActionGroups);
+  }
+
+  async load() {
+    this.flowEngine.registerModels({
+      FormTriggerWorkflowActionModel,
+      RecordTriggerWorkflowActionModel,
+      CollectionTriggerWorkflowActionModel,
+      WorkbenchTriggerWorkflowActionModel,
+    });
+    const workflow = this.app.pm.get('workflow') as WorkflowPluginLike | undefined;
     workflow?.registerTrigger?.(EVENT_TYPE, CustomActionTrigger);
 
-    const registerActionGroups = async () => {
-      const { registerTriggerWorkflowActionGroups } = await import('./models/actions/TriggerWorkflowActionModels');
-      registerTriggerWorkflowActionGroups(this.flowEngine);
-    };
-
-    await registerActionGroups();
-    this.app.eventBus.addEventListener('plugin:block-workbench:loaded', registerActionGroups);
+    registerTriggerWorkflowActionGroups(this.flowEngine);
   }
 }
 

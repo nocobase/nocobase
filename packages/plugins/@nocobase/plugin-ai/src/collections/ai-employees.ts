@@ -29,6 +29,7 @@ export default {
       name: 'avatar',
       type: 'string',
       interface: 'image',
+      defaultValue: 'nocobase-015-male',
     },
     {
       name: 'bio',

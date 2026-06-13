@@ -1,59 +1,47 @@
+---
+title: 'Instalar y actualizar plugins'
+description: 'Inicio rápido de NocoBase: instalar y actualizar plugins'
+keywords: 'install,upgrade,plugins,NocoBase'
+---
 
-# Instalar y Actualizar `plugins`
+# Instalar y actualizar plugins
 
-## `plugins` Integrados
+## Plugins integrados
 
-Los `plugins` integrados de NocoBase se actualizan automáticamente con la versión del núcleo, por lo que no requieren ninguna acción manual por su parte.
+Los plugins integrados de NocoBase se actualizan automáticamente junto con la versión del núcleo, sin necesidad de operaciones manuales.
 
-## `plugins` Comerciales
+## Plugins comerciales
 
-Por favor, inicie sesión en NocoBase Service y consulte la documentación para aprender a instalar y actualizar los `plugins` comerciales.
+Para ver los métodos detallados de activación y actualización, consulta: [Activación y actualización de plugins comerciales](../api/cli/license/index.md)
 
-## `plugins` de Terceros
+## Plugins de terceros
 
-### Instalación de `plugins` en línea
-
-![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
-
-:::warning Atención
-
-NocoBase permite la instalación de `plugins` en línea a través de la interfaz, pero la experiencia actual no es la ideal. Las razones incluyen:
-
-- Debido a las limitaciones del mecanismo de ejecución de procesos de Node.js, después de instalar o actualizar `plugins`, es necesario detener el proceso y luego ejecutar el comando `upgrade` para que los cambios surtan efecto.
-- En escenarios de múltiples aplicaciones, la instalación en línea tiene dificultades para gestionar la sincronización de `plugins` en varias subaplicaciones simultáneamente.
-- No se admiten las actualizaciones de `plugins` por lotes.
-- La instalación o actualización de `plugins` en línea puede provocar fácilmente la terminación anormal del proceso de la aplicación.
-
-Por lo tanto, se recomienda utilizar métodos de línea de comandos o carga manual para instalar y actualizar `plugins`. Sugerimos integrar esto con flujos de trabajo de CI/CD, utilizando métodos de línea de comandos para descargar, extraer y actualizar `plugins`, asegurando la consistencia y fiabilidad en cada despliegue de actualización.
-
-:::
-
-### Instalación de `plugins` mediante línea de comandos
+### Instalar plugins mediante la línea de comandos
 
 ```bash
 yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
 yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
 ```
 
-Si el `plugin` ya está instalado y necesita ser actualizado, ejecute el siguiente comando:
+Si la aplicación ya tiene instalado este plugin y necesitas actualizarlo, ejecuta:
 
 ```bash
 yarn nocobase upgrade --skip-code-update
 ```
 
-### Carga y Extracción Manual
+### Cargar y extraer manualmente
 
-Primero, descargue el paquete del `plugin` a su máquina local. Luego, cárguelo manualmente y extráigalo en el directorio `./storage/plugins`. Si el `plugin` ya está habilitado, ejecute el siguiente comando para completar la actualización del `plugin` después de la carga y extracción.
+Primero descarga el paquete del plugin en local y luego súbelo y extráelo manualmente en el directorio `./storage/plugins`. Si el plugin ya está habilitado, ejecuta el siguiente comando después de completar la carga y la extracción para finalizar la actualización del plugin.
 
-> ⚠️ **Atención**: Para evitar problemas de caché, asegúrese de que la aplicación NocoBase esté detenida antes de ejecutar el comando.
+> ⚠️ **Nota**: Para evitar problemas de caché, asegúrate de que la aplicación NocoBase esté detenida antes de ejecutar el comando.
 
 ```bash
 yarn nocobase upgrade --skip-code-update
 ```
 
-### Forma Correcta de Extraer un `plugin`
+### Forma correcta de extraer un plugin
 
-El siguiente ejemplo demuestra cómo extraer correctamente un paquete de `plugin` al directorio especificado:
+El siguiente ejemplo muestra cómo extraer correctamente el paquete del plugin en el directorio especificado:
 
 ```bash
 mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
@@ -62,13 +50,13 @@ mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
   --strip-components=1
 ```
 
-Este comando extraerá el `plugin` al directorio especificado sin crear una capa de directorio `package` adicional.
+Este comando extrae el plugin en el directorio especificado y no genera una capa adicional de directorio `package`.
 
 ```bash
 /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
 ```
 
-### Ejemplo de Estructura de Directorios Correcta
+### Ejemplo de estructura de directorios correcta
 
 ```bash
 ./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js

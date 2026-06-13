@@ -14,13 +14,14 @@ import models from './models';
 
 export class PluginIdpOauthClient extends Plugin {
   async load() {
-    this.flowEngine.registerModels(models);
-    this.router.add('idp-oauth.interaction', {
+    const plugin = this as any;
+    plugin.flowEngine.registerModels(models);
+    plugin.router.add('idp-oauth.interaction', {
       path: '/idp-oauth/interaction/:uid',
       Component: InteractionPage,
       skipAuthCheck: true,
     });
-    this.router.add('idp-oauth.error', {
+    plugin.router.add('idp-oauth.error', {
       path: '/idp-oauth/error',
       Component: ErrorPage,
       skipAuthCheck: true,

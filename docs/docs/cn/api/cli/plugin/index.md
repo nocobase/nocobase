@@ -1,7 +1,7 @@
 ---
 title: "nb plugin"
-description: "nb plugin 命令参考：管理选中 NocoBase env 的插件。"
-keywords: "nb plugin,NocoBase CLI,插件管理,enable,disable,list"
+description: "nb plugin 命令参考：管理选中 NocoBase env 的插件，也可以把插件包导入目标 storage/plugins。"
+keywords: "nb plugin,NocoBase CLI,插件管理,enable,disable,list,import"
 ---
 
 # nb plugin
@@ -18,6 +18,7 @@ nb plugin <command>
 
 | 命令 | 说明 |
 | --- | --- |
+| [`nb plugin import`](./import.md) | 导入插件压缩包或 npm 插件包 |
 | [`nb plugin list`](./list.md) | 列出已安装插件 |
 | [`nb plugin enable`](./enable.md) | 启用一个或多个插件 |
 | [`nb plugin disable`](./disable.md) | 停用一个或多个插件 |
@@ -25,6 +26,7 @@ nb plugin <command>
 ## 示例
 
 ```bash
+nb plugin import ./plugin-auth-cas-1.4.0.tgz --storage-path ./storage
 nb plugin list -e local
 nb plugin enable @nocobase/plugin-sample
 nb plugin disable -e local @nocobase/plugin-sample

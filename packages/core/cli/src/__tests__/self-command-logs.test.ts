@@ -147,6 +147,132 @@ test('self update logs detailed messages in verbose mode', async () => {
   );
 });
 
+test('self update optionally refreshes skills and logs both results', async () => {
+  const { default: SelfUpdate } = await import('../commands/self/update.js');
+
+  const command = Object.assign(Object.create(SelfUpdate.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        channel: 'auto',
+        yes: true,
+        json: false,
+        skills: true,
+        verbose: false,
+      },
+    })),
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  mocks.inspectSelfStatus.mockResolvedValue({
+    packageName: '@nocobase/cli',
+    packageRoot: '/usr/local/lib/node_modules/@nocobase/cli',
+    currentVersion: '2.1.0-beta.23',
+    latestVersion: '2.1.0-beta.25',
+    channel: 'beta',
+    updateAvailable: true,
+    installMethod: 'npm-global',
+    updatable: true,
+  });
+  mocks.updateSelf.mockResolvedValue({
+    action: 'updated',
+    status: {
+      currentVersion: '2.1.0-beta.23',
+      channel: 'beta',
+    },
+    targetVersion: '2.1.0-beta.25',
+  });
+  mocks.updateNocoBaseSkills.mockResolvedValue({
+    action: 'updated',
+    status: {},
+  });
+
+  await SelfUpdate.prototype.run.call(command);
+
+  expect(mocks.updateNocoBaseSkills).toHaveBeenCalledWith({
+    verbose: false,
+  });
+  expect(command.log).toHaveBeenNthCalledWith(1, 'Updated NocoBase CLI: 2.1.0-beta.23 -> 2.1.0-beta.25.');
+  expect(command.log).toHaveBeenNthCalledWith(2, 'Updated NocoBase AI coding skills globally.');
+});
+
+test('self update --skills extends json output with the skills result', async () => {
+  const { default: SelfUpdate } = await import('../commands/self/update.js');
+
+  const command = Object.assign(Object.create(SelfUpdate.prototype), {
+    parse: vi.fn(async () => ({
+      flags: {
+        channel: 'auto',
+        yes: true,
+        json: true,
+        skills: true,
+        verbose: false,
+      },
+    })),
+    log: vi.fn(),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  mocks.inspectSelfStatus.mockResolvedValue({
+    packageName: '@nocobase/cli',
+    packageRoot: '/usr/local/lib/node_modules/@nocobase/cli',
+    currentVersion: '2.1.0-beta.25',
+    latestVersion: '2.1.0-beta.25',
+    channel: 'beta',
+    updateAvailable: false,
+    installMethod: 'npm-global',
+    updatable: true,
+  });
+  mocks.updateSelf.mockResolvedValue({
+    action: 'noop',
+    status: {
+      packageName: '@nocobase/cli',
+      currentVersion: '2.1.0-beta.25',
+      channel: 'beta',
+    },
+    packageSpec: '@nocobase/cli@beta',
+    targetVersion: '2.1.0-beta.25',
+  });
+  mocks.updateNocoBaseSkills.mockResolvedValue({
+    action: 'noop',
+    reason: 'up-to-date',
+    status: {
+      globalRoot: '/Users/chen/.nocobase',
+      workspaceRoot: '/Users/chen/.nocobase',
+      installedSkillNames: ['nocobase-env-manage'],
+      installedVersion: '1.0.5',
+      installedRef: '1.0.5',
+    },
+  });
+
+  await SelfUpdate.prototype.run.call(command);
+
+  expect(command.log).toHaveBeenCalledTimes(1);
+  expect(JSON.parse(command.log.mock.calls[0][0])).toEqual({
+    ok: true,
+    kind: 'self',
+    action: 'noop',
+    packageName: '@nocobase/cli',
+    packageSpec: '@nocobase/cli@beta',
+    channel: 'beta',
+    fromVersion: '2.1.0-beta.25',
+    toVersion: '2.1.0-beta.25',
+    skills: {
+      action: 'noop',
+      reason: 'up-to-date',
+      globalRoot: '/Users/chen/.nocobase',
+      workspaceRoot: '/Users/chen/.nocobase',
+      installedSkillNames: ['nocobase-env-manage'],
+      installedVersion: '1.0.5',
+      installedRef: '1.0.5',
+    },
+  });
+});
+
 test('self check prints the shorter update hint', async () => {
   const { default: SelfCheck } = await import('../commands/self/check.js');
 
@@ -274,9 +400,7 @@ test('skills install, remove, and update use compact logs by default and detaile
   expect(mocks.removeNocoBaseSkills).toHaveBeenLastCalledWith({
     verbose: true,
   });
-  expect(removeVerboseCommand.log).toHaveBeenLastCalledWith(
-    'NocoBase AI coding skills are not installed globally.',
-  );
+  expect(removeVerboseCommand.log).toHaveBeenLastCalledWith('NocoBase AI coding skills are not installed globally.');
 
   const updateCommand = Object.assign(Object.create(SkillsUpdate.prototype), {
     parse: vi.fn(async () => ({
@@ -336,7 +460,5 @@ test('skills install, remove, and update use compact logs by default and detaile
   expect(mocks.updateNocoBaseSkills).toHaveBeenLastCalledWith({
     verbose: true,
   });
-  expect(updateVerboseCommand.log).toHaveBeenLastCalledWith(
-    'Updated the global NocoBase AI coding skills.',
-  );
+  expect(updateVerboseCommand.log).toHaveBeenLastCalledWith('Updated the global NocoBase AI coding skills.');
 });

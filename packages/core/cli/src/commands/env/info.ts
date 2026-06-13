@@ -11,11 +11,13 @@ import { Args, Command, Flags } from '@oclif/core';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { resolveBuiltinDbConnection } from '../../lib/builtin-db.js';
 import { renderTable } from '../../lib/ui.js';
-import { appRootPath, dbStatus, runtimeStatus, storagePath } from './shared.js';
+import { appPath, appUrl, dbStatus, runtimeStatus, sourcePath, storagePath } from './shared.js';
 
 type EnvInfoValue = string | boolean | number | null | undefined;
 
 type EnvInfoGroup = Record<string, EnvInfoValue>;
+const MISSING_FIELD = Symbol('missingField');
+const FORBIDDEN_FIELD_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
 function normalizeJsonValue(value: EnvInfoValue): string | boolean | number {
   if (value === undefined || value === null || value === '') {
@@ -56,9 +58,32 @@ function createGroupTable(title: string, values: EnvInfoGroup): string {
 }
 
 function serializeGroup(values: EnvInfoGroup): Record<string, string | boolean | number> {
-  return Object.fromEntries(
-    Object.entries(values).map(([field, value]) => [field, normalizeJsonValue(value)]),
-  );
+  return Object.fromEntries(Object.entries(values).map(([field, value]) => [field, normalizeJsonValue(value)]));
+}
+
+function resolveFieldPath(value: unknown, path: string): unknown | typeof MISSING_FIELD {
+  const segments = path
+    .split('.')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  if (segments.length === 0) {
+    return MISSING_FIELD;
+  }
+
+  let current: unknown = value;
+  for (const segment of segments) {
+    if (
+      !current ||
+      typeof current !== 'object' ||
+      FORBIDDEN_FIELD_PATH_SEGMENTS.has(segment) ||
+      !Object.prototype.hasOwnProperty.call(current, segment)
+    ) {
+      return MISSING_FIELD;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  return current;
 }
 
 export default class EnvInfo extends Command {
@@ -70,6 +95,7 @@ export default class EnvInfo extends Command {
     '<%= config.bin %> <%= command.id %> app1',
     '<%= config.bin %> <%= command.id %> app1 --json',
     '<%= config.bin %> <%= command.id %> app1 --show-secrets',
+    '<%= config.bin %> <%= command.id %> app1 --field app.url',
   ];
 
   static override args = {
@@ -91,6 +117,9 @@ export default class EnvInfo extends Command {
       description: 'Output the result as JSON',
       default: false,
     }),
+    field: Flags.string({
+      description: 'Return only a single field using dot notation, for example app.url or api.auth.type',
+    }),
     'show-secrets': Flags.boolean({
       description: 'Show secret values in plain text',
       default: false,
@@ -108,6 +137,7 @@ export default class EnvInfo extends Command {
     }
     const requestedEnv = envNameArg || envNameFlag;
     const showSecrets = flags['show-secrets'];
+    const fieldPath = flags.field?.trim() || undefined;
     const runtime = await resolveManagedAppRuntime(requestedEnv);
 
     if (!runtime) {
@@ -119,8 +149,11 @@ export default class EnvInfo extends Command {
       (runtime.kind === 'local' || runtime.kind === 'docker') && runtime.env.config.builtinDb
         ? await resolveBuiltinDbConnection(runtime)
         : undefined;
+    const dbDialect = builtinDbConnection?.dbDialect ?? runtime.env.config.dbDialect;
     const appGroup: EnvInfoGroup = {
-      appRootPath: appRootPath(runtime),
+      url: appUrl(runtime),
+      appPath: appPath(runtime),
+      sourcePath: sourcePath(runtime),
       storagePath: storagePath(runtime),
       appPort: runtime.env.config.appPort,
       appStatus: await runtimeStatus(runtime),
@@ -134,17 +167,22 @@ export default class EnvInfo extends Command {
     const dbGroup: EnvInfoGroup = {
       databaseStatus: await dbStatus(runtime),
       builtinDb: runtime.env.config.builtinDb,
-      dbDialect: runtime.env.config.dbDialect,
+      dbDialect,
       builtinDbImage: runtime.env.config.builtinDbImage,
       dbHost: builtinDbConnection?.dbHost ?? runtime.env.config.dbHost,
       dbPort: builtinDbConnection?.dbPort ?? runtime.env.config.dbPort,
       dbDatabase: runtime.env.config.dbDatabase,
       dbUser: runtime.env.config.dbUser,
       dbPassword: maskSecret(runtime.env.config.dbPassword, showSecrets),
+      dbTablePrefix: runtime.env.config.dbTablePrefix,
+      dbUnderscored: runtime.env.config.dbUnderscored,
+      ...(dbDialect === 'postgres' ? { dbSchema: runtime.env.config.dbSchema } : {}),
     };
 
     const authGroup: EnvInfoGroup = {
-      type: auth?.type,
+      type: runtime.env.authType ?? auth?.type,
+      sessionType: auth?.type,
+      username: runtime.env.config.authUsername,
       expiresAt: auth?.type === 'oauth' ? auth.expiresAt : undefined,
       scope: auth?.type === 'oauth' ? auth.scope : undefined,
       issuer: auth?.type === 'oauth' ? auth.issuer : undefined,
@@ -157,6 +195,8 @@ export default class EnvInfo extends Command {
     const apiGroup: EnvInfoGroup = {
       apiBaseUrl: runtime.env.apiBaseUrl,
       'auth.type': authGroup.type,
+      'auth.sessionType': authGroup.sessionType,
+      'auth.username': authGroup.username,
       'auth.expiresAt': authGroup.expiresAt,
       'auth.scope': authGroup.scope,
       'auth.issuer': authGroup.issuer,
@@ -178,15 +218,30 @@ export default class EnvInfo extends Command {
       },
     };
 
+    if (fieldPath) {
+      const selected = resolveFieldPath(output, fieldPath);
+      if (selected === MISSING_FIELD) {
+        this.error(`Unknown field "${fieldPath}". Use dot notation like app.url, db.databaseStatus, or api.auth.type.`);
+      }
+
+      if (flags.json) {
+        this.log(JSON.stringify(selected, null, 2));
+        return;
+      }
+
+      this.log(typeof selected === 'object' ? JSON.stringify(selected, null, 2) : String(selected));
+      return;
+    }
+
     if (flags.json) {
       this.log(JSON.stringify(output, null, 2));
       return;
     }
 
-    this.log([
-      createGroupTable('App', appGroup),
-      createGroupTable('DB', dbGroup),
-      createGroupTable('API', apiGroup),
-    ].join('\n\n'));
+    this.log(
+      [createGroupTable('App', appGroup), createGroupTable('DB', dbGroup), createGroupTable('API', apiGroup)].join(
+        '\n\n',
+      ),
+    );
   }
 }

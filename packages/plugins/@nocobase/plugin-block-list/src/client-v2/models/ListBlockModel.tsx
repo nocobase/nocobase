@@ -10,6 +10,7 @@
 import {
   DndProvider,
   MultiRecordResource,
+  FlowModelContext,
   FlowModelRenderer,
   Droppable,
   DragHandler,
@@ -17,6 +18,8 @@ import {
   FlowSettingsButton,
   FlowModel,
   observer,
+  buildItems,
+  SubModelItem,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel, dispatchEventDeep } from '@nocobase/client-v2';
@@ -32,6 +35,26 @@ type ListBlockModelStructure = {
     item: ListItemModel;
     actions: ActionModel[];
   };
+};
+
+type CollectionSelectionActionModelClass = typeof ActionModel & {
+  capabilityActionName?: string | null;
+};
+
+const selectedRecordActionNames = new Set(['destroyMany', 'updateMany']);
+
+const getCollectionActionNameFromClass = (ModelClass?: CollectionSelectionActionModelClass) => {
+  return ModelClass?.capabilityActionName;
+};
+
+const filterSelectedRecordActionItems = (ctx: FlowModelContext, items: SubModelItem[]) => {
+  return items.filter((item) => {
+    const ModelClass = item.useModel
+      ? (ctx.engine.getModelClass(item.useModel) as CollectionSelectionActionModelClass | undefined)
+      : undefined;
+    const actionName = getCollectionActionNameFromClass(ModelClass);
+    return !actionName || !selectedRecordActionNames.has(actionName);
+  });
 };
 
 export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure> {
@@ -52,18 +75,25 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
   createResource(ctx, params) {
     return this.context.createResource(MultiRecordResource);
   }
+
+  async getCollectionActionItems(ctx: FlowModelContext) {
+    const items = await buildItems(this.getModelClassName('CollectionActionGroupModel'))(ctx);
+    return filterSelectedRecordActionItems(ctx, items);
+  }
+
   renderConfigureActions() {
     return (
       <AddSubModelButton
         key={'table-column-add-actions'}
         model={this}
-        subModelBaseClass={this.getModelClassName('CollectionActionGroupModel')}
+        items={(ctx) => this.getCollectionActionItems(ctx)}
         subModelKey="actions"
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
       </AddSubModelButton>
     );
   }
+
   pagination() {
     const totalCount = this.resource.getMeta('count');
     const pageSize = this.resource.getPageSize();
@@ -229,7 +259,7 @@ const ListBlockContent = observer(
           min-height: 100%;
         }
       `,
-      [],
+      [token.marginLG],
     );
     const listStyle = useMemo(() => {
       if (listHeight == null) return model.props?.style;

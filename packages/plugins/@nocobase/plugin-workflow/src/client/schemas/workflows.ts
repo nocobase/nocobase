@@ -86,20 +86,16 @@ const workflowFieldset = {
   options: {
     type: 'object',
     'x-decorator': 'FormItem',
-    // title: `{{ t("Options", { ns: "${NAMESPACE}" }) }}`,
+    title: `{{ t("Advance options", { ns: "${NAMESPACE}" }) }}`,
     'x-component': 'Fieldset',
     properties: {
-      deleteExecutionOnStatus: {
-        type: 'array',
-        title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
+      timeout: {
+        type: 'number',
+        title: `{{ t("Timeout settings", { ns: "${NAMESPACE}" }) }}`,
+        description: `{{ t("0 means unlimited. If you set any other value and the execution is still not completed when the timeout is reached, the execution plan will be terminated and the remaining nodes will not be executed. Time spent in queue is not counted; timing starts only after it first enters a processor.", { ns: "${NAMESPACE}" }) }}`,
         'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-component-props': {
-          multiple: true,
-          optionRender: ExecutionStatusOption,
-          tagRender: LabelTag,
-        },
-        enum: ExecutionStatusOptions.filter((item) => Boolean(item.value)),
+        'x-component': 'TimeoutInput',
+        default: 0,
       },
       stackLimit: {
         type: 'number',
@@ -113,6 +109,18 @@ const workflowFieldset = {
           precision: 0,
           className: 'auto-width',
         },
+      },
+      deleteExecutionOnStatus: {
+        type: 'array',
+        title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        'x-component-props': {
+          multiple: true,
+          optionRender: ExecutionStatusOption,
+          tagRender: LabelTag,
+        },
+        enum: ExecutionStatusOptions.filter((item) => Boolean(item.value)),
       },
     },
   },

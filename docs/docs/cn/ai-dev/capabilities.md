@@ -18,7 +18,7 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 
 :::warning 注意
 
-- NocoBase 正在从 `client`（v1）向 `client-v2` 迁移，目前 `client-v2` 还在开发中。AI 开发生成的客户端代码基于 `client-v2`，只能在 `/v2/` 路径下使用，供尝鲜体验，不建议直接上生产环境。
+- NocoBase 正在从 `client`（v1）向 `client-v2` 迁移，目前 `client-v2` 还在开发中。AI 开发生成的客户端代码基于 `client-v2`，只能在 `/v/` 路径下使用，供尝鲜体验，不建议直接上生产环境。
 - AI 生成的代码不一定 100% 正确，建议在启用前先 review 一遍。如果运行时遇到问题，可以把错误信息发给 AI，让它继续排查和修复——通常几轮对话就能解决。
 - 推荐使用 GPT 或 Claude 系列的大模型进行开发，效果最好。其他大模型也能用，不过生成质量可能会有差异。
 

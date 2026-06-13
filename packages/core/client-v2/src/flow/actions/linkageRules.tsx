@@ -46,7 +46,7 @@ import { useAssociationTitleFieldSync } from '../components/useAssociationTitleF
 import _ from 'lodash';
 import { SubFormFieldModel, SubFormListFieldModel } from '../models';
 import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
-import { enumToOptions } from '../internal/utils/enumOptionsUtils';
+import { enumToOptions, translateOptionLabel } from '../internal/utils/enumOptionsUtils';
 import {
   findFormItemModelByFieldPath,
   getCollectionFromModel,
@@ -106,6 +106,18 @@ const getLinkageScopeDepthFromContext = (ctx: FlowContext): number => {
   return getLinkageScopeDepthFromModel((ctx as any)?.model);
 };
 
+const isActionFlowModel = (model: any): boolean => {
+  if (!model || typeof model !== 'object') return false;
+
+  let proto = model.constructor?.prototype;
+  while (proto) {
+    if (proto.constructor?.name === 'ActionModel') return true;
+    proto = Object.getPrototypeOf(proto);
+  }
+
+  return false;
+};
+
 // 获取表单中所有字段的 model 实例的通用函数
 const getFormFields = (ctx: any) => {
   try {
@@ -156,7 +168,7 @@ const getFieldModelOptions = (fieldModel: any, t: (s: string) => string) => {
   if (originalOptions) {
     return originalOptions.map((option: any) =>
       option && typeof option === 'object' && typeof option.label === 'string'
-        ? { ...option, label: t(option.label) }
+        ? { ...option, label: translateOptionLabel(option.label, t) }
         : option,
     );
   }
@@ -1606,7 +1618,9 @@ const LinkageRulesUI = observer(
             <div style={{ paddingLeft: 12 }}>
               <FilterGroup
                 value={rule.condition}
-                FilterItem={(props) => <LinkageFilterItem model={ctx.model} value={props.value} />}
+                FilterItem={(props) => (
+                  <LinkageFilterItem model={ctx.model} value={props.value} maxAssociationFieldDepth={2} />
+                )}
               />
             </div>
           </div>
@@ -1766,6 +1780,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
   const modelsToApply = new Set<FlowModel>(allModels);
   const patchPropsByModel = new Map<FlowModel, any>();
+  const clearValueOnHiddenModelUids = new Set<string>();
   const directValuePatches: Array<{ path: Array<string | number>; value: any; whenEmpty?: boolean }> = [];
   const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
   const isSafeToWriteAssociationSubpath = (namePath: any): boolean => {
@@ -1876,6 +1891,16 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       ...(whenEmpty ? { whenEmpty: true } : {}),
     });
   };
+  const removePendingFormValuePatches = (path: any) => {
+    const resolvedPath = resolveNamePathForPatch(path);
+    if (!resolvedPath) return;
+    const resolvedPathKey = namePathToPathKey(resolvedPath);
+    for (let i = directValuePatches.length - 1; i >= 0; i--) {
+      if (namePathToPathKey(directValuePatches[i].path) === resolvedPathKey) {
+        directValuePatches.splice(i, 1);
+      }
+    }
+  };
 
   const getModelTargetPathForPatch = (model: any): string | null => {
     if (!model || typeof model !== 'object') return null;
@@ -1916,6 +1941,137 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     return null;
   };
+  const normalizeNamePathForKey = (namePath: any): Array<string | number> | null => {
+    if (!Array.isArray(namePath) || !namePath.length) return null;
+    const normalized = namePath.filter((seg) => typeof seg === 'string' || typeof seg === 'number') as Array<
+      string | number
+    >;
+    return normalized.length ? normalized : null;
+  };
+  const getFieldIndexEntries = (fieldIndex: any): Array<{ name: string; index: number }> => {
+    if (!Array.isArray(fieldIndex)) return [];
+    return fieldIndex
+      .map((entry) => {
+        if (typeof entry !== 'string') return null;
+        const [name, indexText] = entry.split(':');
+        const index = Number(indexText);
+        if (!name || !Number.isFinite(index)) return null;
+        return { name, index };
+      })
+      .filter(Boolean) as Array<{ name: string; index: number }>;
+  };
+  const resolveIndexedRelativePath = (path: string, fieldIndex: any): Array<string | number> | null => {
+    const pathSegs = parsePathString(path).filter((seg) => typeof seg === 'string' || typeof seg === 'number') as Array<
+      string | number
+    >;
+    if (!pathSegs.length) return null;
+
+    const entries = getFieldIndexEntries(fieldIndex);
+    if (!entries.length) return null;
+
+    const firstSeg = typeof pathSegs[0] === 'string' ? pathSegs[0] : '';
+    const matchedEntryIndex = firstSeg ? entries.findIndex((entry) => entry.name === firstSeg) : -1;
+    const prefixEntries = matchedEntryIndex >= 0 ? entries.slice(0, matchedEntryIndex) : entries;
+    const remainingEntries = matchedEntryIndex >= 0 ? entries.slice(matchedEntryIndex) : [];
+    const out: Array<string | number> = [];
+
+    prefixEntries.forEach((entry) => {
+      out.push(entry.name, entry.index);
+    });
+
+    let entryIndex = 0;
+    pathSegs.forEach((seg, index) => {
+      out.push(seg);
+      const entry = remainingEntries[entryIndex];
+      if (typeof seg !== 'string' || !entry || entry.name !== seg) return;
+
+      const nextSeg = pathSegs[index + 1];
+      if (typeof nextSeg === 'number') {
+        entryIndex += 1;
+        return;
+      }
+      out.push(entry.index);
+      entryIndex += 1;
+    });
+
+    return out;
+  };
+  const getModelTargetPathForHiddenClear = (model: any): string | Array<string | number> | null => {
+    const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
+    const targetPath = getModelTargetPathForPatch(model);
+    if (fieldPathArray) {
+      const targetPathLastString = targetPath
+        ? ([...parsePathString(targetPath)].reverse().find((seg) => typeof seg === 'string') as string | undefined)
+        : undefined;
+      const fieldPathArrayLastString = [...fieldPathArray].reverse().find((seg) => typeof seg === 'string');
+      if (!targetPathLastString || targetPathLastString === fieldPathArrayLastString) {
+        return fieldPathArray;
+      }
+    }
+
+    if (!targetPath) return null;
+
+    return resolveIndexedRelativePath(targetPath, model?.context?.fieldIndex) || targetPath;
+  };
+  const getModelTargetPathKeys = (model: any): Set<string> => {
+    const keys = new Set<string>();
+    const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
+    if (fieldPathArray) {
+      keys.add(namePathToPathKey(fieldPathArray));
+      return keys;
+    }
+
+    const targetPath = getModelTargetPathForPatch(model);
+    if (targetPath) {
+      const fieldIndexEntries = getFieldIndexEntries(model?.context?.fieldIndex);
+      if (!fieldIndexEntries.length) {
+        keys.add(`raw:${targetPath}`);
+      }
+
+      const resolved = normalizeNamePathForKey(resolveDynamicNamePath(targetPath, model?.context?.fieldIndex));
+      if (resolved) {
+        keys.add(namePathToPathKey(resolved));
+      }
+
+      const indexedRelativePath = resolveIndexedRelativePath(targetPath, model?.context?.fieldIndex);
+      if (indexedRelativePath) {
+        keys.add(namePathToPathKey(indexedRelativePath));
+      }
+    }
+
+    return keys;
+  };
+  const forEachModelIncludingForks = (visitor: (model: any) => void) => {
+    const engine = (ctx as any)?.engine || ctx.model?.flowEngine;
+    if (!engine?.forEachModel) return;
+    engine.forEachModel((model: any) => {
+      visitor(model);
+
+      const forks: any = model?.forks;
+      if (forks && typeof forks.forEach === 'function') {
+        forks.forEach((fork: any) => {
+          if (!fork || fork.disposed) return;
+          visitor(fork);
+        });
+      }
+    });
+  };
+  const syncHiddenStateByTargetPath = (targetModel: any, hidden: boolean) => {
+    const targetPathKeys = getModelTargetPathKeys(targetModel);
+    if (!targetPathKeys.size) return;
+
+    const targetBlockUid = targetModel?.context?.blockModel?.uid;
+    if (!targetBlockUid) return;
+    forEachModelIncludingForks((model: any) => {
+      if (!model || typeof model !== 'object') return;
+      const modelBlockUid = model?.context?.blockModel?.uid;
+      if (String(modelBlockUid) !== String(targetBlockUid)) return;
+      const modelPathKeys = getModelTargetPathKeys(model);
+      if (!Array.from(modelPathKeys).some((key) => targetPathKeys.has(key))) return;
+
+      model.hidden = hidden;
+    });
+  };
 
   // 1. 运行所有的联动规则
   for (const rule of linkageRules.filter((r) => r.enable)) {
@@ -1943,6 +2099,13 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           ...(patchPropsByModel.get(model) || {}),
           ...props,
         });
+
+        if (
+          (action.name === 'linkageSetFieldProps' || action.name === 'subFormLinkageSetFieldProps') &&
+          props?.hiddenModel === true
+        ) {
+          clearValueOnHiddenModelUids.add(model?.uid || String(model));
+        }
 
         if (allModels.indexOf(model) === -1) {
           allModels.push(model);
@@ -1981,16 +2144,22 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     }
   });
 
+  const hiddenStatePatches: Array<{ model: any; hidden: boolean }> = [];
   mergedByUid.forEach((model: any, uid) => {
     const patchProps = mergedPropsByUid.get(uid) || {};
     const newProps = { ...model.__originalProps, ...patchProps };
+    const prevHidden = !!model.hidden;
+    const nextHidden = !!newProps.hiddenModel;
 
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
     syncFieldOptionsToForks(model, patchProps);
     if (typeof model.setHidden === 'function') {
-      model.setHidden(!!newProps.hiddenModel);
+      model.setHidden(nextHidden);
     } else {
-      model.hidden = !!newProps.hiddenModel;
+      model.hidden = nextHidden;
+    }
+    if (prevHidden !== nextHidden && !isActionFlowModel(model)) {
+      hiddenStatePatches.push({ model, hidden: nextHidden });
     }
 
     if (newProps.required === true) {
@@ -2025,7 +2194,28 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       }
     }
 
+    if (
+      clearValueOnHiddenModelUids.has(uid) &&
+      Object.prototype.hasOwnProperty.call(patchProps, 'hiddenModel') &&
+      patchProps.hiddenModel === true
+    ) {
+      const targetPath = getModelTargetPathForHiddenClear(model);
+      if (!targetPath) {
+        console.warn('[linkageRules] Skip clearing hidden field value due to missing target path', {
+          flowKey: ctx.flowKey,
+          modelUid: ctx.model?.uid,
+          targetUid: model?.uid,
+        });
+      } else {
+        removePendingFormValuePatches(targetPath);
+        addFormValuePatch({ path: targetPath, value: undefined });
+      }
+    }
+
     model.__props = null;
+  });
+  hiddenStatePatches.forEach(({ model, hidden }) => {
+    syncHiddenStateByTargetPath(model, hidden);
   });
 
   const allPatches = [...directValuePatches];

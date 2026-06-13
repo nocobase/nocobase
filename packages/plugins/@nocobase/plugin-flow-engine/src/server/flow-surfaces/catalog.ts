@@ -118,6 +118,10 @@ const FILTER_GROUP_SCHEMA = {
   additionalProperties: false,
   'x-flowSurfaceFormat': 'filter-group',
 };
+const LINKAGE_RULES_SCHEMA = {
+  type: 'array',
+  'x-flowSurfaceFormat': 'linkage-rules',
+};
 const DEFAULT_DIRECT_EVENTS = ['beforeRender'];
 const ACTION_DIRECT_EVENTS = ['click', 'beforeRender'];
 const ACTION_OBJECT_EVENTS = ['click'];
@@ -206,7 +210,7 @@ const ACTION_BUTTON_SETTINGS_GROUP = {
     'general.type': STRING_SCHEMA,
     'general.danger': BOOLEAN_SCHEMA,
     'general.color': STRING_SCHEMA,
-    'linkageRules.value': ARRAY_SCHEMA,
+    'linkageRules.value': LINKAGE_RULES_SCHEMA,
   },
 };
 const TRIGGER_WORKFLOWS_SETTINGS_GROUP = {
@@ -301,7 +305,7 @@ const EVENT_SETTINGS_GROUP = {
   allowedPaths: ['linkageRules.value'],
   eventBindingSteps: ['linkageRules'],
   pathSchemas: {
-    'linkageRules.value': ARRAY_SCHEMA,
+    'linkageRules.value': LINKAGE_RULES_SCHEMA,
   },
 };
 const CREATE_FORM_SETTINGS_EVENT_ONLY_GROUP = {
@@ -322,7 +326,7 @@ const DETAILS_SETTINGS_GROUP = {
     ...FORM_LAYOUT_PATH_SCHEMAS,
     'dataScope.filter': FILTER_GROUP_SCHEMA,
     'defaultSorting.sort': ARRAY_SCHEMA,
-    'linkageRules.value': ARRAY_SCHEMA,
+    'linkageRules.value': LINKAGE_RULES_SCHEMA,
   },
 };
 const FILTER_FORM_BLOCK_SETTINGS_GROUP = {
@@ -349,7 +353,7 @@ const BLOCK_CARD_SETTINGS_GROUP = {
     'titleDescription.description': STRING_SCHEMA,
     'blockHeight.heightMode': BLOCK_HEIGHT_MODE_SCHEMA,
     'blockHeight.height': NUMBER_SCHEMA,
-    'linkageRules.value': ARRAY_SCHEMA,
+    'linkageRules.value': LINKAGE_RULES_SCHEMA,
   },
 };
 const CALENDAR_SETTINGS_GROUP = {
@@ -483,6 +487,7 @@ const KANBAN_SETTINGS_GROUP = {
 const TABLE_SETTINGS_GROUP = {
   allowedPaths: [
     'quickEdit.editable',
+    'enableRowSelection.enableRowSelection',
     'showRowNumbers.showIndex',
     'pageSize.pageSize',
     'dataScope.filter',
@@ -495,6 +500,7 @@ const TABLE_SETTINGS_GROUP = {
   ],
   eventBindingSteps: [
     'quickEdit',
+    'enableRowSelection',
     'showRowNumbers',
     'pageSize',
     'dataScope',
@@ -507,6 +513,7 @@ const TABLE_SETTINGS_GROUP = {
   ],
   pathSchemas: {
     'quickEdit.editable': BOOLEAN_SCHEMA,
+    'enableRowSelection.enableRowSelection': BOOLEAN_SCHEMA,
     'showRowNumbers.showIndex': BOOLEAN_SCHEMA,
     'pageSize.pageSize': NUMBER_SCHEMA,
     'dataScope.filter': FILTER_GROUP_SCHEMA,
@@ -2285,7 +2292,7 @@ CALENDAR_READONLY_ACTION_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     eventBindingSteps: ['linkageRules'],
     pathSchemas: {
-      'linkageRules.value': ARRAY_SCHEMA,
+      'linkageRules.value': LINKAGE_RULES_SCHEMA,
     },
   },
 });
@@ -2546,15 +2553,25 @@ JS_ITEM_ACTION_CONTRACT.domains.stepParams = groupedDomain({
 });
 
 const AI_EMPLOYEE_ACTION_CONTRACT = createContract({
-  editableDomains: ['props'],
-  props: ['aiEmployee', 'context', 'auto', 'tasks', 'style'],
+  editableDomains: ['props', 'stepParams'],
+  props: ['aiEmployee', 'context', 'auto', 'style'],
+  stepParams: ['shortcutSettings'],
 });
-AI_EMPLOYEE_ACTION_CONTRACT.domains.props = keyedDomain(['aiEmployee', 'context', 'auto', 'tasks', 'style'], 'deep', {
+AI_EMPLOYEE_ACTION_CONTRACT.domains.props = keyedDomain(['aiEmployee', 'context', 'auto', 'style'], 'deep', {
   aiEmployee: OBJECT_SCHEMA,
   context: OBJECT_SCHEMA,
   auto: BOOLEAN_SCHEMA,
-  tasks: ARRAY_SCHEMA,
   style: OBJECT_SCHEMA,
+});
+AI_EMPLOYEE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  shortcutSettings: {
+    allowedPaths: ['editTasks.tasks'],
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['editTasks'],
+    pathSchemas: {
+      'editTasks.tasks': ARRAY_SCHEMA,
+    },
+  },
 });
 
 const APPROVAL_FORM_BLOCK_CONTRACT = createContract({

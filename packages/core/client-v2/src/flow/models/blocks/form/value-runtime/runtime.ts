@@ -846,7 +846,11 @@ export class FormValueRuntime {
       const changedPaths: NamePath[] = [];
 
       if (!Array.isArray(patch)) {
-        const patchEntries = Object.entries(patch || {}).filter(([pathKey]) => !shouldSkipByLinkageScope(pathKey));
+        const patchEntries = Object.entries(patch || {}).filter(([pathKey, rawValue]) => {
+          if (shouldSkipByLinkageScope(pathKey)) return false;
+          const value = isObservable(rawValue) ? toJS(rawValue) : rawValue;
+          return !_.isEqual(this.getFormValueAtPath([pathKey]), value);
+        });
         const patchToApply = Object.fromEntries(patchEntries);
         const patchKeys = patchEntries.map(([pathKey]) => pathKey);
         if (!patchKeys.length) {

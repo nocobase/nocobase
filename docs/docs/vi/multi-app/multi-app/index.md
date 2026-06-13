@@ -1,14 +1,22 @@
 ---
 pkg: '@nocobase/plugin-app-supervisor'
 title: "Quản lý Multi-app NocoBase"
-description: "Quản lý Multi-app AppSupervisor: ứng dụng đơn, multi-app shared memory, triển khai hỗn hợp đa môi trường, tình huống SaaS/multi-tenant, tạo, khởi động, dừng ứng dụng, quản lý vòng đời."
-keywords: "Multi-app,Multi App,AppSupervisor,shared memory,triển khai đa môi trường,SaaS,multi-tenant,NocoBase"
+description: "Quản lý Multi-app AppSupervisor: ứng dụng đơn, multi-app shared memory, triển khai hỗn hợp đa môi trường, tình huống SaaS/multi-tenant, tách module nghiệp vụ, tạo, khởi động, dừng ứng dụng, quản lý vòng đời."
+keywords: "Multi-app,Multi App,AppSupervisor,shared memory,triển khai đa môi trường,SaaS,multi-tenant,tách module nghiệp vụ,NocoBase"
 ---
 # Quản lý Multi-app
 
 ## Tổng quan tính năng
 
 Quản lý Multi-app là giải pháp quản lý ứng dụng thống nhất do NocoBase cung cấp, dùng để tạo và quản lý nhiều instance ứng dụng NocoBase được cô lập vật lý trong một hoặc nhiều môi trường runtime. Thông qua AppSupervisor, bạn có thể tạo và duy trì nhiều ứng dụng trong một entry thống nhất, đáp ứng nhu cầu của các nghiệp vụ và quy mô khác nhau.
+
+Multi-app phù hợp với các tình huống sau:
+
+- Tách một hệ thống lớn thành nhiều ứng dụng theo module nghiệp vụ, ví dụ CRM, hậu mãi, vận hành hoặc phân tích dữ liệu
+- Cho phép các nhóm phát triển song song theo dòng nghiệp vụ hoặc module, giảm ảnh hưởng cấu hình và phát hành giữa các module
+- Tạo ứng dụng độc lập cho các khách hàng, tenant hoặc tổ chức khác nhau
+- Tạo hàng loạt ứng dụng demo, thử nghiệm hoặc sandbox độc lập
+- Phân bổ ứng dụng vào các môi trường runtime khác nhau khi số lượng ứng dụng hoặc tải tăng lên
 
 ## Ứng dụng đơn
 

@@ -8,7 +8,7 @@
  */
 
 import { CollectionFieldInterface } from '../../collection-field-interface/CollectionFieldInterface';
-import { dataSource, defaultProps, operators } from './properties';
+import { dataSource, defaultProps } from './properties';
 
 export class RadioGroupFieldInterface extends CollectionFieldInterface {
   name = 'radioGroup';
@@ -31,7 +31,7 @@ export class RadioGroupFieldInterface extends CollectionFieldInterface {
     'uiSchema.enum': dataSource,
   };
   filterable = {
-    operators: operators.enumType,
+    operators: 'enumType',
   };
   titleUsable = true;
 }

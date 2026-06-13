@@ -6,7 +6,7 @@
   "description": "Useful plugin for doing dynamic calculation based on expression collection records in workflow.",
   "description.zh-CN": "用于在工作流中进行基于数据行的动态表达式计算。",
   "description.ru-RU": "Плагин для выполнения динамических вычислений на основе записей коллекции выражений в рабочем процессе.",
-  "version": "2.1.0-alpha.39",
+  "version": "2.2.0-alpha.1",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
@@ -32,7 +32,10 @@
     "@nocobase/plugin-workflow": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*",
-    "@nocobase/utils": "workspace:*"
+    "@nocobase/utils": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

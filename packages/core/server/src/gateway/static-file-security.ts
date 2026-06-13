@@ -9,7 +9,7 @@
 
 import path from 'node:path';
 
-const ACTIVE_CONTENT_EXTENSIONS = new Set(['.htm', '.html', '.svg', '.svgz', '.xhtml']);
+const ACTIVE_CONTENT_EXTENSIONS = new Set(['.htm', '.html', '.pdf', '.svg', '.svgz', '.xhtml']);
 
 function stripQueryAndHash(pathname = '') {
   return pathname.split('?')[0].split('#')[0];

@@ -38,11 +38,11 @@ Si le code client a été modifié mais le hot reload ne s'est pas déclenché, 
 
 ### Impossible d'accéder à une route de page enregistrée
 
-Les routes de NocoBase v2 sont préfixées par `/v2` par défaut. Par exemple, si vous enregistrez `path: '/hello'`, l'adresse réelle est `/v2/hello` :
+Les routes de NocoBase v2 sont préfixées par `/v` par défaut. Par exemple, si vous enregistrez `path: '/hello'`, l'adresse réelle est `/v/hello` :
 
 ```ts
 this.router.add('hello', {
-  path: '/hello', // accès réel -> /v2/hello
+  path: '/hello', // accès réel -> /v/hello
   componentLoader: () => import('./pages/HelloPage'),
 });
 ```
@@ -285,7 +285,7 @@ Le système de build de NocoBase maintient une [liste d'externals](../../depende
 ## Liens connexes
 
 - [Plugin](../plugin) — point d'entrée et cycle de vie du plugin
-- [Router](../router) — enregistrement de routes et préfixe `/v2`
+- [Router](../router) — enregistrement de routes et préfixe `/v`
 - [Aperçu de FlowEngine](../flow-engine/index.md) — utilisation de base de FlowModel
 - [FlowEngine → Extension de bloc](../flow-engine/block) — BlockModel, TableBlockModel, filterCollection
 - [FlowEngine → Extension de champ](../flow-engine/field) — FieldModel, bindModelToInterface

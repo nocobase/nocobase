@@ -7,9 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// @ts-ignore
+import { name as namespace } from '../../../package.json';
 import { ResourceOptions } from '@nocobase/resourcer';
 import { PluginAIServer } from '../plugin';
 import _ from 'lodash';
+
+const getModelsListFailedMessage = 'Get models list failed, you can enter a model name manually.';
+const testFlightFailedMessage = 'LLM service test failed. Please check the service configuration.';
 
 const aiResource: ResourceOptions = {
   name: 'ai',
@@ -68,10 +73,7 @@ const aiResource: ResourceOptions = {
         const res = await provider.listModels();
         if (res.errMsg) {
           ctx.log.error(res.errMsg);
-          ctx.throw(
-            res.code || 500,
-            `${ctx.t('Get models list failed, you can enter a model name manually.')} ${res.errMsg}`,
-          );
+          ctx.throw(res.code || 500, ctx.t(getModelsListFailedMessage, { ns: namespace }));
         }
         ctx.body = res.models || [];
       }
@@ -96,10 +98,7 @@ const aiResource: ResourceOptions = {
       const res = await providerClient.listModels();
       if (res.errMsg) {
         ctx.log.error(res.errMsg);
-        ctx.throw(
-          res.code || 500,
-          `${ctx.t('Get models list failed, you can enter a model name manually.')} ${res.errMsg}`,
-        );
+        ctx.throw(res.code || 500, ctx.t(getModelsListFailedMessage, { ns: namespace }));
       }
       const models = res.models || [];
       if (model) {
@@ -126,7 +125,12 @@ const aiResource: ResourceOptions = {
           responseFormat: 'text',
         },
       });
-      ctx.body = await providerClient.testFlight();
+      const result = await providerClient.testFlight();
+      if (result.status === 'error') {
+        ctx.log.error(result.message);
+        result.message = ctx.t(testFlightFailedMessage, { ns: namespace });
+      }
+      ctx.body = result;
       return next();
     },
 

@@ -1,12 +1,12 @@
 ---
 title: "nb config set"
-description: "Справочник по команде nb config set: установка значения конфигурации CLI."
-keywords: "nb config set,NocoBase CLI,configuration"
+description: "Справка по команде nb config set: задать параметр конфигурации CLI."
+keywords: "nb config set,NocoBase CLI,задать конфигурацию"
 ---
 
 # nb config set
 
-Устанавливает значение конфигурации CLI. Поддерживаются ключи `license.pkg-url`, `docker.network` и `docker.container-prefix`.
+Задаёт параметр конфигурации CLI. Поддерживаемые ключи конфигурации см. в [`nb config`](./index.md).
 
 ## Использование
 
@@ -18,20 +18,29 @@ nb config set <key> <value>
 
 | Параметр | Тип | Описание |
 | --- | --- | --- |
-| `<key>` | string | Ключ конфигурации: `license.pkg-url`, `docker.network` или `docker.container-prefix` |
-| `<value>` | string | Значение конфигурации; не должно быть пустым |
+| `<key>` | string | Имя параметра конфигурации. Поддерживаемые значения см. в [`nb config`](./index.md) |
+| `<value>` | string | Значение конфигурации, не может быть пустым |
 
 ## Примеры
 
 ```bash
+nb config set locale zh-CN
+nb config set update.policy auto
 nb config set license.pkg-url https://pkg.nocobase.com/
 nb config set docker.network nocobase
 nb config set docker.container-prefix nb
+nb config set bin.docker /usr/local/bin/docker
+nb config set bin.caddy /opt/homebrew/bin/caddy
+nb config set bin.git /usr/bin/git
+nb config set bin.nginx /usr/sbin/nginx
+nb config set proxy.nb-cli-root /workspace
+nb config set proxy.upstream-host host.docker.internal
+nb config set bin.yarn yarn
 ```
 
 ## Примечания
 
-При установке `license.pkg-url` CLI нормализует URL так, чтобы он оканчивался на `/`.
+`update.policy` поддерживает `prompt`, `auto` и `off`, значение по умолчанию — `prompt`.
 
 ## Связанные команды
 
