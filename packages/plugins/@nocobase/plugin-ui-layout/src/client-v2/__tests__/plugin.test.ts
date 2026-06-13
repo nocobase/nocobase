@@ -54,12 +54,23 @@ describe('PluginUiLayoutClientV2', () => {
 
     await plugin.load();
 
+    expect(app.pluginSettingsManager.addMenuItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: 'ui-layout',
+      }),
+    );
     expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
-      key: 'ui-layout',
-      title: 'UI layout',
-      icon: 'LayoutOutlined',
+      key: 'mobile',
+      title: 'Mobile',
+      icon: 'MobileOutlined',
       aclSnippet: 'pm.ui-layout',
-      showTabs: true,
+    });
+    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
+      menuKey: 'mobile',
+      key: 'index',
+      title: 'Mobile',
+      aclSnippet: 'pm.ui-layout',
+      link: '/mobile',
     });
     expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
       key: 'routes',
@@ -80,13 +91,12 @@ describe('PluginUiLayoutClientV2', () => {
         key: 'routes',
       }),
     );
-    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
-      menuKey: 'ui-layout',
-      key: 'mobile',
-      title: 'Mobile',
-      aclSnippet: 'pm.ui-layout',
-      link: '/mobile',
-    });
+    expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'ui-layout',
+        key: 'mobile',
+      }),
+    );
     expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
       expect.objectContaining({
         menuKey: 'ui-layout',
@@ -103,6 +113,8 @@ describe('PluginUiLayoutClientV2', () => {
     settingsApp.pluginSettingsManager.setAclSnippets(['pm.*', '!pm.ui-layout']);
     expect(settingsApp.pluginSettingsManager.get('ui-layout')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('ui-layout.index')).toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('mobile')).toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('mobile.index')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('routes')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('routes.index')).toBeNull();
     expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({

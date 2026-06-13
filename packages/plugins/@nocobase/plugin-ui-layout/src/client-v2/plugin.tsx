@@ -17,8 +17,6 @@ import { registerLayoutAwareDesktopRoutesPermissionsTab } from './permissions/la
 
 export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
-    const title = this.t('UI layout') as unknown as string;
-
     this.app.flowEngine.registerModelLoaders({
       MobileLayoutModel: {
         loader: () => import('./models/MobileLayoutModel'),
@@ -42,11 +40,18 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
     registerMobilePageModelResolution();
 
     this.pluginSettingsManager.addMenuItem({
-      key: 'ui-layout',
-      title,
-      icon: 'LayoutOutlined',
+      key: 'mobile',
+      title: this.t('Mobile') as unknown as string,
+      icon: 'MobileOutlined',
       aclSnippet: 'pm.ui-layout',
-      showTabs: true,
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'mobile',
+      key: 'index',
+      title: this.t('Mobile') as unknown as string,
+      aclSnippet: 'pm.ui-layout',
+      link: '/mobile',
     });
 
     this.pluginSettingsManager.addMenuItem({
@@ -62,14 +67,6 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       title: this.t('Routes') as unknown as string,
       aclSnippet: 'pm.ui-layout',
       componentLoader: () => import('./pages/RoutesPage'),
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: 'ui-layout',
-      key: 'mobile',
-      title: this.t('Mobile') as unknown as string,
-      aclSnippet: 'pm.ui-layout',
-      link: '/mobile',
     });
 
     registerLayoutAwareDesktopRoutesPermissionsTab(this.app, (key) => this.t(key));
