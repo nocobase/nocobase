@@ -1,0 +1,26 @@
+{
+  "name": "@nocobase/plugin-multi-portal",
+  "version": "2.2.0-beta.1",
+  "main": "dist/server/index.js",
+  "displayName": "Multi-portal",
+  "displayName.zh-CN": "多工作区",
+  "description": "Provides multi-portal layout management.",
+  "description.zh-CN": "提供多工作区布局管理。",
+  "dependencies": {},
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "ahooks": "3.x",
+    "antd": "5.x",
+    "react": "^18.2.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-ui-layout": "2.x",
+    "@nocobase/resourcer": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}
