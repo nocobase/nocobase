@@ -38,6 +38,7 @@ type DesktopRouteRolePermissionTargetField = (typeof DESKTOP_ROUTE_ROLE_PERMISSI
 type DesktopRouteCreateValue = Record<string, unknown> & {
   children?: unknown;
 };
+type DesktopRouteId = string | number;
 interface MultiPortalAccessContext {
   portalUid: string;
   uiLayoutUid: string;
@@ -59,6 +60,35 @@ function getRecordField(record: unknown, field: string) {
   }
 
   return (record as Record<string, unknown>)[field];
+}
+
+function uniqueDesktopRouteIds(routeIds: DesktopRouteId[]) {
+  const seen = new Set<DesktopRouteId>();
+  return routeIds.filter((routeId) => {
+    if (seen.has(routeId)) {
+      return false;
+    }
+    seen.add(routeId);
+    return true;
+  });
+}
+
+function collectDesktopRouteIds(record: unknown): DesktopRouteId[] {
+  if (Array.isArray(record)) {
+    return uniqueDesktopRouteIds(record.flatMap((item) => collectDesktopRouteIds(item)));
+  }
+
+  const routeId = getRecordField(record, 'id');
+  const children = getRecordField(record, 'children');
+  const routeIds: DesktopRouteId[] = [];
+  if (typeof routeId === 'string' || typeof routeId === 'number') {
+    routeIds.push(routeId);
+  }
+  if (Array.isArray(children)) {
+    routeIds.push(...children.flatMap((child) => collectDesktopRouteIds(child)));
+  }
+
+  return uniqueDesktopRouteIds(routeIds);
 }
 
 function pickMultiPortalUiLayoutRuntimeFields(record: unknown) {
@@ -418,6 +448,10 @@ async function addDesktopRouteCreateMultiPortal(ctx: ResourcerContext, next: () 
   }
 
   await next();
+
+  if (typeof portalUid === 'string' && portalUid) {
+    await grantDefaultRouteAccessToNewMultiPortalRoutes(ctx, portalUid, collectDesktopRouteIds(ctx.body));
+  }
 }
 
 async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promise<void>) {
@@ -432,6 +466,51 @@ async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promis
 
   ctx.body = records.map((record) => pickMultiPortalRuntimeFields(record));
   await next();
+}
+
+async function grantDefaultRouteAccessToNewMultiPortalRoutes(
+  ctx: ResourcerContext,
+  multiPortalUid: string,
+  desktopRouteIds: DesktopRouteId[],
+) {
+  if (!desktopRouteIds.length) {
+    return;
+  }
+  if (
+    !ctx.db.getCollection('rolesMultiPortalRoutePolicies') ||
+    !ctx.db.getCollection('rolesMultiPortalDesktopRoutes')
+  ) {
+    return;
+  }
+
+  const routePolicies = await ctx.db.getRepository('rolesMultiPortalRoutePolicies').find({
+    fields: ['roleName'],
+    filter: {
+      multiPortalUid,
+      allowNewMenu: true,
+    },
+  });
+  const roleNames = routePolicies
+    .map((routePolicy) => routePolicy.get('roleName'))
+    .filter((roleName): roleName is string => typeof roleName === 'string' && !!roleName);
+  if (!roleNames.length) {
+    return;
+  }
+
+  const routePermissionRepository = ctx.db.getRepository('rolesMultiPortalDesktopRoutes');
+  for (const roleName of roleNames) {
+    for (const desktopRouteId of desktopRouteIds) {
+      await routePermissionRepository.firstOrCreate({
+        filterKeys: ['roleName', 'multiPortalUid', 'desktopRouteId'],
+        values: {
+          roleName,
+          multiPortalUid,
+          desktopRouteId,
+        },
+        context: ctx,
+      });
+    }
+  }
 }
 
 async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Model, options?: DatabaseHookOptions) {

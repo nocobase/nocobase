@@ -743,6 +743,154 @@ describe('plugin-multi-portal server', () => {
     expect(layoutChildRoute?.get('multiPortals')).toEqual([]);
   });
 
+  it('should grant new portal routes by the portal route default policy', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portalRepository = app.db.getRepository('multiPortals');
+    const firstPortal = await portalRepository.create({
+      values: {
+        uid: 'route-default-policy-first-portal',
+        title: 'Route default policy first portal',
+        routeName: 'routeDefaultPolicyFirstPortal',
+        routePath: '/route-default-policy-first-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const secondPortal = await portalRepository.create({
+      values: {
+        uid: 'route-default-policy-second-portal',
+        title: 'Route default policy second portal',
+        routeName: 'routeDefaultPolicySecondPortal',
+        routePath: '/route-default-policy-second-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const allowedRole = await app.db.getRepository('roles').create({
+      values: {
+        name: 'route-default-policy-allowed-role',
+      },
+    });
+    const deniedRole = await app.db.getRepository('roles').create({
+      values: {
+        name: 'route-default-policy-denied-role',
+      },
+    });
+    const missingPolicyRole = await app.db.getRepository('roles').create({
+      values: {
+        name: 'route-default-policy-missing-role',
+      },
+    });
+    const otherPortalRole = await app.db.getRepository('roles').create({
+      values: {
+        name: 'route-default-policy-other-portal-role',
+      },
+    });
+    const portalAccessRepository = app.db.getRepository('rolesMultiPortals');
+    for (const roleName of [allowedRole, deniedRole, missingPolicyRole].map((role) => role.get('name'))) {
+      await portalAccessRepository.create({
+        values: {
+          roleName,
+          multiPortalUid: firstPortal.get('uid'),
+        },
+      });
+    }
+    await portalAccessRepository.create({
+      values: {
+        roleName: otherPortalRole.get('name'),
+        multiPortalUid: secondPortal.get('uid'),
+      },
+    });
+    await app.db.getRepository('rolesMultiPortalRoutePolicies').create({
+      values: {
+        roleName: allowedRole.get('name'),
+        multiPortalUid: firstPortal.get('uid'),
+        allowNewMenu: true,
+      },
+    });
+    await app.db.getRepository('rolesMultiPortalRoutePolicies').create({
+      values: {
+        roleName: deniedRole.get('name'),
+        multiPortalUid: firstPortal.get('uid'),
+        allowNewMenu: false,
+      },
+    });
+    await app.db.getRepository('rolesMultiPortalRoutePolicies').create({
+      values: {
+        roleName: otherPortalRole.get('name'),
+        multiPortalUid: secondPortal.get('uid'),
+        allowNewMenu: true,
+      },
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const createResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: firstPortal.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'route default policy created page',
+        schemaUid: 'route-default-policy-created-page',
+      },
+    });
+    const upsertResponse = await rootAgent.resource('desktopRoutes').updateOrCreate({
+      portal: firstPortal.get('uid'),
+      filterKeys: ['schemaUid'],
+      values: {
+        type: 'flowPage',
+        title: 'route default policy upserted page',
+        schemaUid: 'route-default-policy-upserted-page',
+      },
+    });
+    await rootAgent.resource('desktopRoutes').updateOrCreate({
+      portal: firstPortal.get('uid'),
+      filterKeys: ['schemaUid'],
+      values: {
+        type: 'flowPage',
+        title: 'route default policy upserted page renamed',
+        schemaUid: 'route-default-policy-upserted-page',
+      },
+    });
+
+    expect(createResponse.status).toBe(200);
+    expect(upsertResponse.status).toBe(200);
+
+    const upsertRoute = await app.db.getRepository('desktopRoutes').findOne({
+      filter: {
+        schemaUid: 'route-default-policy-upserted-page',
+      },
+    });
+    const routePermissions = await app.db.getRepository('rolesMultiPortalDesktopRoutes').find({
+      filter: {
+        desktopRouteId: [createResponse.body.data.id, upsertRoute?.get('id')],
+        roleName: [
+          allowedRole.get('name'),
+          deniedRole.get('name'),
+          missingPolicyRole.get('name'),
+          otherPortalRole.get('name'),
+        ],
+      },
+      sort: ['desktopRouteId', 'roleName', 'multiPortalUid'],
+    });
+    const permissionKeys = routePermissions.map((permission) => [
+      permission.get('desktopRouteId'),
+      permission.get('roleName'),
+      permission.get('multiPortalUid'),
+    ]);
+
+    expect(permissionKeys).toEqual([
+      [createResponse.body.data.id, allowedRole.get('name'), firstPortal.get('uid')],
+      [upsertRoute?.get('id'), allowedRole.get('name'), firstPortal.get('uid')],
+    ]);
+  });
+
   it('should enforce role portal access before listing portal routes', async () => {
     app = await createMultiPortalAclMockServer();
 
