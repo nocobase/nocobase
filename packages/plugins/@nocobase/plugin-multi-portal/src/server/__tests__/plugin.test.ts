@@ -793,7 +793,7 @@ describe('plugin-multi-portal server', () => {
     expect(collectRouteTitles(portalResponse.body.data as RouteResponseItem[])).toEqual(['DATA-SHADOWED-PORTAL-ROUTE']);
   });
 
-  it('should create desktop routes with exactly one portal or layout owner', async () => {
+  it('should keep portal-only and dual-owned desktop route scopes distinct', async () => {
     app = await createMultiPortalAclMockServer();
 
     const portal = await app.db.getRepository('multiPortals').create({
@@ -819,22 +819,30 @@ describe('plugin-multi-portal server', () => {
     });
     const rootAgent = await app.agent().login(rootUser);
 
-    const portalCreateResponse = await rootAgent.resource('desktopRoutes').create({
-      layout: portal.get('uid'),
+    const dualOwnedCreateResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: portal.get('uid'),
       values: {
         type: 'flowPage',
-        title: 'portal owned page',
-        schemaUid: 'portal-owned-page',
-        uiLayouts: [portal.get('uid')],
+        title: 'dual owned page',
+        schemaUid: 'dual-owned-page',
+        uiLayouts: [mobileLayout?.get('uid')],
         children: [
           {
             type: 'tabs',
-            title: 'portal owned tabs',
-            schemaUid: 'portal-owned-tabs',
+            title: 'dual owned tabs',
+            schemaUid: 'dual-owned-tabs',
             hidden: true,
-            uiLayouts: [portal.get('uid')],
+            uiLayouts: [mobileLayout?.get('uid')],
           },
         ],
+      },
+    });
+    const portalOnlyCreateResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: portal.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'portal only page',
+        schemaUid: 'portal-only-page',
       },
     });
     const layoutCreateResponse = await rootAgent.resource('desktopRoutes').create({
@@ -854,13 +862,13 @@ describe('plugin-multi-portal server', () => {
       },
     });
     const portalUpsertResponse = await rootAgent.resource('desktopRoutes').updateOrCreate({
-      layout: portal.get('uid'),
+      portal: portal.get('uid'),
       filterKeys: ['schemaUid'],
       values: {
         type: 'tabs',
-        title: 'portal owned upsert tab',
-        schemaUid: 'portal-owned-upsert-tab',
-        uiLayouts: [portal.get('uid')],
+        title: 'portal dual owned upsert tab',
+        schemaUid: 'portal-dual-owned-upsert-tab',
+        uiLayouts: [mobileLayout?.get('uid')],
       },
     });
     const crossScopeLayoutResponse = await rootAgent.resource('desktopRoutes').create({
@@ -880,16 +888,31 @@ describe('plugin-multi-portal server', () => {
         schemaUid: 'cross-scope-page',
       },
     });
+    const [mobileLayoutListResponse, portalListResponse] = await Promise.all([
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        layout: mobileLayout?.get('uid'),
+      }),
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        portal: portal.get('uid'),
+      }),
+    ]);
 
-    expect(portalCreateResponse.status).toBe(200);
+    expect(dualOwnedCreateResponse.status).toBe(200);
+    expect(portalOnlyCreateResponse.status).toBe(200);
     expect(layoutCreateResponse.status).toBe(200);
     expect(portalUpsertResponse.status).toBe(200);
     expect(crossScopeLayoutResponse.status).toBe(200);
     expect(crossScopePortalResponse.status).toBe(200);
+    expect(mobileLayoutListResponse.status).toBe(200);
+    expect(portalListResponse.status).toBe(200);
 
-    const [portalRoute, layoutRoute, upsertRoute, crossScopeRoute] = await Promise.all([
+    const [dualOwnedRoute, portalOnlyRoute, layoutRoute, upsertRoute, crossScopeRoute] = await Promise.all([
       app.db.getRepository('desktopRoutes').findOne({
-        filterByTk: portalCreateResponse.body.data.id,
+        filterByTk: dualOwnedCreateResponse.body.data.id,
+        appends: ['multiPortals', 'uiLayouts', 'children.multiPortals', 'children.uiLayouts'],
+      }),
+      app.db.getRepository('desktopRoutes').findOne({
+        filterByTk: portalOnlyCreateResponse.body.data.id,
         appends: ['multiPortals', 'uiLayouts', 'children.multiPortals', 'children.uiLayouts'],
       }),
       app.db.getRepository('desktopRoutes').findOne({
@@ -898,7 +921,7 @@ describe('plugin-multi-portal server', () => {
       }),
       app.db.getRepository('desktopRoutes').findOne({
         filter: {
-          schemaUid: 'portal-owned-upsert-tab',
+          schemaUid: 'portal-dual-owned-upsert-tab',
         },
         appends: ['multiPortals', 'uiLayouts'],
       }),
@@ -909,21 +932,32 @@ describe('plugin-multi-portal server', () => {
         appends: ['multiPortals', 'uiLayouts'],
       }),
     ]);
-    const portalChildRoute = portalRoute?.get('children')?.[0];
+    const dualOwnedChildRoute = dualOwnedRoute?.get('children')?.[0];
     const layoutChildRoute = layoutRoute?.get('children')?.[0];
+    const mobileLayoutRouteTitles = collectRouteTitles(mobileLayoutListResponse.body.data as RouteResponseItem[]);
+    const portalRouteTitles = collectRouteTitles(portalListResponse.body.data as RouteResponseItem[]);
 
-    expect(portalRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
-    expect(portalRoute?.get('uiLayouts')).toEqual([]);
-    expect(portalChildRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
-    expect(portalChildRoute?.get('uiLayouts')).toEqual([]);
+    expect(dualOwnedRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(dualOwnedRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
+    expect(dualOwnedChildRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(dualOwnedChildRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
+    expect(portalOnlyRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(portalOnlyRoute?.get('uiLayouts')).toEqual([]);
     expect(upsertRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
-    expect(upsertRoute?.get('uiLayouts')).toEqual([]);
+    expect(upsertRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
     expect(crossScopeRoute?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
-    expect(crossScopeRoute?.get('uiLayouts')).toEqual([]);
+    expect(crossScopeRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
     expect(layoutRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
     expect(layoutRoute?.get('multiPortals')).toEqual([]);
     expect(layoutChildRoute?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
     expect(layoutChildRoute?.get('multiPortals')).toEqual([]);
+    expect(mobileLayoutRouteTitles).toEqual(expect.arrayContaining(['dual owned page', 'layout owned page']));
+    expect(mobileLayoutRouteTitles).not.toContain('portal only page');
+    expect(mobileLayoutRouteTitles).toContain('cross scope portal page');
+    expect(portalRouteTitles).toEqual(
+      expect.arrayContaining(['dual owned page', 'portal only page', 'cross scope portal page']),
+    );
+    expect(portalRouteTitles).not.toContain('layout owned page');
   });
 
   it('should grant new portal routes by the portal route default policy', async () => {

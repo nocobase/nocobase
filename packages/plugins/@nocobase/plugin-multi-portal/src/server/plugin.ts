@@ -19,6 +19,7 @@ const MULTI_PORTAL_RUNTIME_FIELDS = ['uid', 'title', 'routeName', 'routePath', '
 const MULTI_PORTAL_RUNTIME_QUERY_FIELDS = [...MULTI_PORTAL_RUNTIME_FIELDS, 'uiLayoutUid'] as const;
 const MULTI_PORTAL_UI_LAYOUT_RUNTIME_FIELDS = ['layoutType'] as const;
 const DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS = ['id', 'title', 'hidden', 'parentId', 'options'] as const;
+const MULTI_PORTAL_ROUTE_WRITE_LAYOUT_SENTINEL = '__multi_portal_route_write__';
 const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:list',
   'multiPortals:get',
@@ -37,6 +38,7 @@ type MultiPortalUiLayoutRuntimeField = (typeof MULTI_PORTAL_UI_LAYOUT_RUNTIME_FI
 type DesktopRouteRolePermissionTargetField = (typeof DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS)[number];
 type DesktopRouteCreateValue = Record<string, unknown> & {
   children?: unknown;
+  multiPortals?: unknown;
 };
 type DesktopRouteId = string | number;
 interface MultiPortalAccessContext {
@@ -192,21 +194,33 @@ function isDesktopRouteCreateValue(value: unknown): value is DesktopRouteCreateV
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function withDesktopRouteMultiPortal(value: unknown, multiPortalUid: string): unknown {
+function hasDesktopRouteField(value: DesktopRouteCreateValue | undefined, field: string) {
+  return !!value && Object.prototype.hasOwnProperty.call(value, field);
+}
+
+function withDesktopRouteMultiPortal(value: unknown, multiPortalUid: string, explicitValue: unknown = value): unknown {
   if (Array.isArray(value)) {
-    return value.map((item) => withDesktopRouteMultiPortal(item, multiPortalUid));
+    const explicitValues = Array.isArray(explicitValue) ? explicitValue : [];
+    return value.map((item, index) => withDesktopRouteMultiPortal(item, multiPortalUid, explicitValues[index]));
   }
 
   if (!isDesktopRouteCreateValue(value)) {
     return value;
   }
 
-  const { uiLayouts: _uiLayouts, ...route } = value;
+  const explicitRoute = isDesktopRouteCreateValue(explicitValue) ? explicitValue : undefined;
+  const existingMultiPortals = Array.isArray(value.multiPortals)
+    ? value.multiPortals.filter((uid): uid is string => typeof uid === 'string' && !!uid)
+    : [];
+  const { uiLayouts: _uiLayouts, children: _children, ...route } = value;
 
   return {
     ...route,
-    multiPortals: [multiPortalUid],
-    ...(Array.isArray(value.children) ? { children: withDesktopRouteMultiPortal(value.children, multiPortalUid) } : {}),
+    ...(hasDesktopRouteField(explicitRoute, 'uiLayouts') ? { uiLayouts: explicitRoute?.uiLayouts } : {}),
+    multiPortals: Array.from(new Set([...existingMultiPortals, multiPortalUid])),
+    ...(Array.isArray(value.children)
+      ? { children: withDesktopRouteMultiPortal(value.children, multiPortalUid, explicitRoute?.children) }
+      : {}),
   };
 }
 
@@ -378,33 +392,37 @@ function removeDesktopRoutesByIds(routes: unknown[], routeIds: Set<string>) {
     .filter((route): route is unknown => route !== null);
 }
 
-async function getMultiPortalOwnedDesktopRouteIds(ctx: ResourcerContext, routeIds: DesktopRouteId[]) {
+async function getPortalOnlyDesktopRouteIds(ctx: ResourcerContext, routeIds: DesktopRouteId[]) {
   if (!routeIds.length) {
     return new Set<string>();
   }
 
   const routes = await ctx.db.getRepository('desktopRoutes').find({
     fields: ['id'],
-    appends: ['multiPortals'],
+    appends: ['multiPortals', 'uiLayouts'],
     filter: {
       id: uniqueDesktopRouteIds(routeIds),
     },
   });
-  const multiPortalRouteIds = new Set<string>();
+  const portalOnlyRouteIds = new Set<string>();
 
   for (const route of routes) {
     const multiPortals = route.get('multiPortals');
+    const uiLayouts = route.get('uiLayouts');
     if (!Array.isArray(multiPortals) || multiPortals.length === 0) {
+      continue;
+    }
+    if (Array.isArray(uiLayouts) && uiLayouts.length > 0) {
       continue;
     }
 
     const routeId = route.get('id');
     if (routeId !== null && routeId !== undefined) {
-      multiPortalRouteIds.add(String(routeId));
+      portalOnlyRouteIds.add(String(routeId));
     }
   }
 
-  return multiPortalRouteIds;
+  return portalOnlyRouteIds;
 }
 
 async function removeMultiPortalOwnedRoutesFromListResponse(ctx: ResourcerContext) {
@@ -412,12 +430,12 @@ async function removeMultiPortalOwnedRoutesFromListResponse(ctx: ResourcerContex
     return;
   }
 
-  const multiPortalRouteIds = await getMultiPortalOwnedDesktopRouteIds(ctx, collectDesktopRouteIds(ctx.body));
-  if (multiPortalRouteIds.size === 0) {
+  const portalOnlyRouteIds = await getPortalOnlyDesktopRouteIds(ctx, collectDesktopRouteIds(ctx.body));
+  if (portalOnlyRouteIds.size === 0) {
     return;
   }
 
-  ctx.body = removeDesktopRoutesByIds(ctx.body, multiPortalRouteIds);
+  ctx.body = removeDesktopRoutesByIds(ctx.body, portalOnlyRouteIds);
 }
 
 async function removeMultiPortalOwnedRouteFromGetResponse(ctx: ResourcerContext) {
@@ -426,8 +444,8 @@ async function removeMultiPortalOwnedRouteFromGetResponse(ctx: ResourcerContext)
   }
 
   const routeIds = collectDesktopRouteIds(ctx.body);
-  const multiPortalRouteIds = await getMultiPortalOwnedDesktopRouteIds(ctx, routeIds);
-  if (multiPortalRouteIds.size === 0) {
+  const portalOnlyRouteIds = await getPortalOnlyDesktopRouteIds(ctx, routeIds);
+  if (portalOnlyRouteIds.size === 0) {
     return;
   }
 
@@ -590,19 +608,27 @@ async function addDesktopRouteCreateMultiPortal(ctx: ResourcerContext, next: () 
   const portalUid = portal?.get('uid');
 
   if (typeof portalUid === 'string' && portalUid) {
+    const explicitValues = ctx.request.body;
+    const previousLayout = ctx.action?.params.layout;
     ctx.action?.mergeParams({
-      values: withDesktopRouteMultiPortal(ctx.action?.params.values, portalUid),
+      layout: MULTI_PORTAL_ROUTE_WRITE_LAYOUT_SENTINEL,
+      values: withDesktopRouteMultiPortal(ctx.action?.params.values, portalUid, explicitValues),
     });
+    try {
+      await next();
+    } finally {
+      if (ctx.action?.params) {
+        ctx.action.params.layout = previousLayout;
+      }
+    }
+
+    const desktopRouteIds = collectDesktopRouteIds(ctx.body);
+    await removeUiLayoutRoutePermissionsFromPortalOnlyRoutes(ctx, desktopRouteIds);
+    await grantDefaultRouteAccessToNewMultiPortalRoutes(ctx, portalUid, desktopRouteIds);
+    return;
   }
 
   await next();
-
-  if (typeof portalUid === 'string' && portalUid) {
-    const desktopRouteIds = collectDesktopRouteIds(ctx.body);
-    await removeUiLayoutOwnershipFromMultiPortalRoutes(ctx, desktopRouteIds);
-    await removeUiLayoutRoutePermissionsFromMultiPortalRoutes(ctx, desktopRouteIds);
-    await grantDefaultRouteAccessToNewMultiPortalRoutes(ctx, portalUid, desktopRouteIds);
-  }
 }
 
 async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promise<void>) {
@@ -665,7 +691,7 @@ async function grantDefaultRouteAccessToNewMultiPortalRoutes(
   }
 }
 
-async function removeUiLayoutRoutePermissionsFromMultiPortalRoutes(
+async function removeUiLayoutRoutePermissionsFromPortalOnlyRoutes(
   ctx: ResourcerContext,
   desktopRouteIds: DesktopRouteId[],
 ) {
@@ -673,24 +699,17 @@ async function removeUiLayoutRoutePermissionsFromMultiPortalRoutes(
     return;
   }
 
-  await ctx.db.getRepository('rolesUiLayoutDesktopRoutes').destroy({
-    filter: {
-      desktopRouteId: desktopRouteIds,
-    },
-    context: ctx,
-  });
-}
-
-async function removeUiLayoutOwnershipFromMultiPortalRoutes(ctx: ResourcerContext, desktopRouteIds: DesktopRouteId[]) {
-  if (!desktopRouteIds.length) {
+  const portalOnlyRouteIds = await getPortalOnlyDesktopRouteIds(ctx, desktopRouteIds);
+  if (portalOnlyRouteIds.size === 0) {
     return;
   }
 
-  for (const desktopRouteId of uniqueDesktopRouteIds(desktopRouteIds)) {
-    await ctx.db.getRepository('desktopRoutes.uiLayouts', desktopRouteId).set({
-      tk: [],
-    });
-  }
+  await ctx.db.getRepository('rolesUiLayoutDesktopRoutes').destroy({
+    filter: {
+      desktopRouteId: Array.from(portalOnlyRouteIds),
+    },
+    context: ctx,
+  });
 }
 
 async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Model, options?: DatabaseHookOptions) {
