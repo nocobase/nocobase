@@ -5,6 +5,7 @@
   "license": "Apache-2.0",
   "main": "./src/index.js",
   "dependencies": {
+    "@nocobase/app": "2.2.0-beta.1",
     "@nocobase/build": "2.2.0-beta.1",
     "@nocobase/client": "2.2.0-beta.1",
     "@nocobase/test": "2.2.0-beta.1",

@@ -26,7 +26,6 @@
     "tree-kill": "^1.2.2"
   },
   "devDependencies": {
-    "@nocobase/devtools": "2.2.0-beta.1",
     "@types/fs-extra": "^11.0.1"
   },
   "repository": {
