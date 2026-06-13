@@ -40,8 +40,10 @@ type MobileLayoutRouteModel = {
 
 type MobileLayoutRouteRepositoryState = {
   refs: number;
+  model: MobileLayoutRouteModel;
   layoutUid: string;
   loadedLayoutUid?: string;
+  loadingLayoutUid?: string;
   loadingPromise?: Promise<NocoBaseDesktopRoute[]>;
   requestId: number;
   originalEnsureAccessibleLoaded?: MobileLayoutRouteRepository['ensureAccessibleLoaded'];
@@ -132,7 +134,8 @@ function startMobileLayoutRouteRequest(
   options: { force?: boolean } = {},
 ) {
   const state = mobileLayoutRouteRepositoryStates.get(routeRepository);
-  if (state?.loadingPromise && !options.force) {
+  const layoutUid = getMobileLayoutUid(model);
+  if (state?.loadingPromise && state.loadingLayoutUid === layoutUid && !options.force) {
     return state.loadingPromise;
   }
 
@@ -145,9 +148,11 @@ function startMobileLayoutRouteRequest(
     const loadingPromise = requestPromise.finally(() => {
       if (state.loadingPromise === loadingPromise) {
         state.loadingPromise = undefined;
+        state.loadingLayoutUid = undefined;
       }
     });
     state.loadingPromise = loadingPromise;
+    state.loadingLayoutUid = layoutUid;
     return state.loadingPromise;
   }
 
@@ -207,6 +212,7 @@ export function installMobileLayoutRouteRepository(
   const existingState = mobileLayoutRouteRepositoryStates.get(routeRepository);
   if (existingState) {
     existingState.refs += 1;
+    existingState.model = model;
     if (existingState.layoutUid !== layoutUid) {
       existingState.deactivateLayout?.();
       existingState.deactivateLayout = routeRepository.activateLayout?.(model.layout);
@@ -227,6 +233,7 @@ export function installMobileLayoutRouteRepository(
 
   const state: MobileLayoutRouteRepositoryState = {
     refs: 1,
+    model,
     layoutUid,
     requestId: 0,
     originalEnsureAccessibleLoaded: routeRepository.ensureAccessibleLoaded,
@@ -234,8 +241,16 @@ export function installMobileLayoutRouteRepository(
     deactivateLayout: routeRepository.activateLayout?.(model.layout),
   };
   mobileLayoutRouteRepositoryStates.set(routeRepository, state);
-  routeRepository.ensureAccessibleLoaded = () => ensureMobileLayoutAccessibleRoutes(model, routeRepository);
-  routeRepository.refreshAccessible = () => refreshMobileLayoutAccessibleRoutes(model, routeRepository);
+  routeRepository.ensureAccessibleLoaded = () =>
+    ensureMobileLayoutAccessibleRoutes(
+      mobileLayoutRouteRepositoryStates.get(routeRepository)?.model ?? model,
+      routeRepository,
+    );
+  routeRepository.refreshAccessible = () =>
+    refreshMobileLayoutAccessibleRoutes(
+      mobileLayoutRouteRepositoryStates.get(routeRepository)?.model ?? model,
+      routeRepository,
+    );
 
   return () => {
     state.refs -= 1;
