@@ -482,6 +482,10 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
         async handler(ctx, params) {
           const model = getGanttModel(ctx);
           model.setPopupSettings(params);
+        },
+        async beforeParamsSave(ctx, params) {
+          const model = getGanttModel(ctx);
+          model.setPopupSettings(params);
           await model.ensurePopupAction('eventViewAction', { persist: true });
         },
       },
