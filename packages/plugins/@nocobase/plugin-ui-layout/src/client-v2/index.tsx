@@ -8,3 +8,5 @@
  */
 
 export { default } from './plugin';
+export { MobileLayoutModel } from './models/MobileLayoutModel';
+export { MobileChildPageModel, MobileRootPageModel } from './models/MobilePageModels';

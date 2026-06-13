@@ -50,6 +50,11 @@ import {
   writeMobileFlowSettingsPreference,
 } from '../models/MobileLayoutModel';
 import {
+  MobileChildPageModel as ExportedMobileChildPageModel,
+  MobileLayoutModel as ExportedMobileLayoutModel,
+  MobileRootPageModel as ExportedMobileRootPageModel,
+} from '@nocobase/plugin-ui-layout/client-v2';
+import {
   collectMobileTabRoutes,
   getMobilePagePath,
   MobileLayoutMenuItemModel,
@@ -96,6 +101,12 @@ describe('plugin-ui-layout mobile models', () => {
 
   it('should export the core KeepAlive component for client-v2 layouts', () => {
     expect(KeepAlive).toBeDefined();
+  });
+
+  it('should export mobile model classes from the stable client-v2 package entry', () => {
+    expect(ExportedMobileLayoutModel).toBe(MobileLayoutModel);
+    expect(ExportedMobileRootPageModel).toBe(MobileRootPageModel);
+    expect(ExportedMobileChildPageModel).toBe(MobileChildPageModel);
   });
 
   beforeEach(() => {

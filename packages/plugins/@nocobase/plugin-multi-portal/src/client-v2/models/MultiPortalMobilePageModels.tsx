@@ -9,11 +9,7 @@
 
 import type { ChildPageModel, RootPageModel } from '@nocobase/client-v2';
 import type { CreateModelOptions } from '@nocobase/flow-engine';
-import { MobileLayoutModel } from '../../../../plugin-ui-layout/src/client-v2/models/MobileLayoutModel';
-import {
-  MobileChildPageModel,
-  MobileRootPageModel,
-} from '../../../../plugin-ui-layout/src/client-v2/models/MobilePageModels';
+import { MobileChildPageModel, MobileLayoutModel, MobileRootPageModel } from '@nocobase/plugin-ui-layout/client-v2';
 import { getMultiPortalRouteScopeCacheKey, getMultiPortalUidFromRouteScopeCacheKey } from '../routeRepositoryScope';
 
 type RouteWithOwnership = Record<string, unknown> & {

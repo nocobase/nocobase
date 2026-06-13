@@ -43,6 +43,17 @@ function createLayoutManager(options: { registeredRouteNames?: string[] } = {}) 
 }
 
 describe('PluginMultiPortalClientV2', () => {
+  it('should depend on the stable plugin-ui-layout client-v2 package entry', () => {
+    const modelSources = import.meta.glob('../models/*.{ts,tsx}', {
+      as: 'raw',
+      eager: true,
+    }) as Record<string, string>;
+    const sourceText = Object.values(modelSources).join('\n');
+
+    expect(sourceText).toContain('@nocobase/plugin-ui-layout/client-v2');
+    expect(sourceText).not.toContain('plugin-ui-layout/src/');
+  });
+
   it('should load as an isolated client-v2 plugin', async () => {
     const app = createMockClient({
       plugins: [PluginMultiPortalClientV2],
