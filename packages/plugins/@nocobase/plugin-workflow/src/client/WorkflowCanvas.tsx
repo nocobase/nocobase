@@ -17,6 +17,7 @@ import {
   Button,
   Descriptions,
   Dropdown,
+  Input,
   Modal,
   Result,
   Spin,
@@ -321,6 +322,7 @@ function WorkflowMenu() {
   const { workflow, revisions = [] } = useFlowContext();
   const [historyVisible, setHistoryVisible] = useState(false);
   const [detailsVisible, setDetailsVisible] = useState(false);
+  const [editingDescription, setEditingDescription] = useState('');
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { modal } = App.useApp();
@@ -328,6 +330,7 @@ function WorkflowMenu() {
   const { resource } = useResourceContext();
   const { refresh } = useResourceActionContext();
   const { message } = App.useApp();
+  const { styles } = useStyles();
   const allExecuted = useWorkflowAnyExecuted();
 
   const onRevision = useCallback(async () => {
@@ -413,6 +416,33 @@ function WorkflowMenu() {
   const formatUser = useCallback((user) => user?.nickname || user?.username || user?.email || user?.id || '-', []);
   const formatTime = useCallback((value) => (value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-'), []);
 
+  useEffect(() => {
+    if (detailsVisible) {
+      setEditingDescription(workflow.description ?? '');
+    }
+  }, [detailsVisible, workflow.description]);
+
+  const onChangeDescription = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditingDescription(event.target.value);
+  }, []);
+
+  const onBlurDescription = useCallback(
+    async (event: React.FocusEvent<HTMLTextAreaElement>) => {
+      const description = event.target.value;
+      if (description === (workflow.description ?? '')) {
+        return;
+      }
+      await resource.update({
+        filterByTk: workflow.id,
+        values: {
+          description,
+        },
+      });
+      refresh();
+    },
+    [refresh, resource, workflow.description, workflow.id],
+  );
+
   return (
     <>
       <Dropdown
@@ -472,7 +502,15 @@ function WorkflowMenu() {
           <Descriptions.Item label={t('Last updated by')}>{formatUser(workflow.updatedBy)}</Descriptions.Item>
           <Descriptions.Item label={t('Last updated at')}>{formatTime(workflow.updatedAt)}</Descriptions.Item>
           <Descriptions.Item label={t('Description')} span={2}>
-            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{workflow.description || '-'}</div>
+            <Input.TextArea
+              aria-label={t('Description')}
+              value={editingDescription}
+              onChange={onChangeDescription}
+              onBlur={onBlurDescription}
+              placeholder="-"
+              className={styles.workflowDetailsDescriptionClass}
+              autoSize={{ minRows: 3, maxRows: 8 }}
+            />
           </Descriptions.Item>
         </Descriptions>
       </Modal>

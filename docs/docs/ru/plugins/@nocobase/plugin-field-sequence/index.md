@@ -1,14 +1,14 @@
 ---
 title: "Collection field: Sequence"
 keywords: "Collection fields"
-displayName: "Collection field: Sequence"
+displayName: "Поле коллекции: последовательность"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
+  Автоматическая генерация кодов по правилам: дата, число, текст и их сочетания.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sequence
+# Поле коллекции: последовательность

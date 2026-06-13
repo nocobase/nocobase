@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support users in binding a TOTP authenticator and verifying their identity using time-based one-time codes (TOTP).
+  Позволяет пользователям привязать TOTP-аутентификатор и подтверждать личность одноразовыми кодами, основанными на времени.
 isFree: false
 builtIn: false
 defaultEnabled: false

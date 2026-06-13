@@ -6,7 +6,7 @@ packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Allow users to save form drafts and continue editing later.
+  Позволяет пользователям сохранять черновики форм и продолжить редактирование позже.
 isFree: true
 builtIn: true
 defaultEnabled: false
