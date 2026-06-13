@@ -194,6 +194,52 @@ describe('plugin-multi-portal server', () => {
     ).rejects.toThrow();
   });
 
+  it('should reject portal route names that conflict with UI layouts', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const agent = app.agent();
+    const repository = app.db.getRepository('multiPortals');
+    const createResponse = await agent.resource('multiPortals').create({
+      values: {
+        uid: 'conflicting-admin-portal',
+        title: 'Conflicting admin portal',
+        routeName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
+        routePath: '/conflicting-admin-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(createResponse.status).toBe(400);
+    expect(await repository.findOne({ filterByTk: 'conflicting-admin-portal' })).toBeNull();
+
+    await repository.create({
+      values: {
+        uid: 'valid-route-name-portal',
+        title: 'Valid route name portal',
+        routeName: 'validRouteNamePortal',
+        routePath: '/valid-route-name-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const updateResponse = await agent.resource('multiPortals').update({
+      filterByTk: 'valid-route-name-portal',
+      values: {
+        routeName: DEFAULT_MOBILE_UI_LAYOUT.routeName,
+      },
+    });
+    const persistedPortal = await repository.findOne({
+      filterByTk: 'valid-route-name-portal',
+    });
+
+    expect(updateResponse.status).toBe(400);
+    expect(persistedPortal?.get('routeName')).toBe('validRouteNamePortal');
+  });
+
   it('should relate desktop routes to multi-portals explicitly', async () => {
     app = await createMultiPortalAclMockServer();
     await app.db.sync();

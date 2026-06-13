@@ -142,6 +142,39 @@ function getCurrentRoles(ctx: ResourcerContext) {
   return currentRoles.filter((role): role is string => typeof role === 'string');
 }
 
+function getMultiPortalRouteNameFromValues(ctx: ResourcerContext) {
+  const values = ctx.action?.params.values;
+  if (!values || typeof values !== 'object' || Array.isArray(values)) {
+    return;
+  }
+
+  const routeName = (values as Record<string, unknown>).routeName;
+  if (typeof routeName === 'string' && routeName.trim()) {
+    return routeName;
+  }
+}
+
+async function preventUiLayoutRouteNameConflict(ctx: ResourcerContext, next: () => Promise<void>) {
+  const routeName = getMultiPortalRouteNameFromValues(ctx);
+  if (!routeName) {
+    await next();
+    return;
+  }
+
+  const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
+    filter: {
+      routeName,
+    },
+    fields: ['uid'],
+  });
+  if (uiLayout) {
+    ctx.throw(400, 'Portal route name conflicts with an existing UI layout');
+    return;
+  }
+
+  await next();
+}
+
 async function findRequestedMultiPortal(ctx: ResourcerContext): Promise<MultiPortalRequestResult> {
   const portalUid = getRequestedMultiPortalUid(ctx);
   if (portalUid === undefined) {
@@ -784,6 +817,8 @@ export class PluginMultiPortalServer extends Plugin {
       'desktopRoutes:listRolePermissionTargets',
       mapMultiPortalLayoutToUiLayoutForRolePermissionTargets,
     );
+    this.app.resourceManager.registerPreActionHandler('multiPortals:create', preventUiLayoutRouteNameConflict);
+    this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateMultiPortal);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:updateOrCreate', addDesktopRouteCreateMultiPortal);
   }
