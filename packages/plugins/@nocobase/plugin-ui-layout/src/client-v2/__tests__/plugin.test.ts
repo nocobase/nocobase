@@ -38,6 +38,7 @@ describe('PluginUiLayoutClientV2', () => {
           },
         }),
       },
+      getRouteUrl: vi.fn((pathname: string) => `/v/${pathname.replace(/^\/+/, '')}`),
       layoutManager: {
         hasLayout: vi.fn(() => false),
         registerLayout: vi.fn(),
@@ -64,6 +65,7 @@ describe('PluginUiLayoutClientV2', () => {
       title: 'Mobile',
       icon: 'MobileOutlined',
       aclSnippet: 'pm.ui-layout',
+      link: '/v/mobile',
     });
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'mobile',
@@ -111,6 +113,10 @@ describe('PluginUiLayoutClientV2', () => {
       settingsApp.pluginSettingsManager.addPageTabItem(pageTab);
     }
     const mobileSetting = settingsApp.pluginSettingsManager.get('mobile', false);
+    expect(mobileSetting).toMatchObject({
+      name: 'mobile',
+      link: '/v/mobile',
+    });
     expect(mobileSetting?.children?.[0]).toMatchObject({
       name: 'mobile.index',
       path: '/admin/settings/mobile',

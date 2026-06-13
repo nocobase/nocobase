@@ -21,6 +21,10 @@ function MobileSettingsRedirect() {
   return <Navigate replace to="/mobile" />;
 }
 
+function getMobileSettingsLink(app: Application) {
+  return app.getRouteUrl?.('/mobile') || '/mobile';
+}
+
 export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
     this.app.flowEngine.registerModelLoaders({
@@ -50,6 +54,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       title: this.t('Mobile') as unknown as string,
       icon: 'MobileOutlined',
       aclSnippet: 'pm.ui-layout',
+      link: getMobileSettingsLink(this.app),
     });
 
     this.pluginSettingsManager.addPageTabItem({
