@@ -48,5 +48,10 @@
     "type": "file",
     "name": "publish",
     "label": "Управление публикацией"
+  },
+  {
+    "type": "file",
+    "name": "version-control",
+    "label": "Управление версиями"
   }
 ]

@@ -1,12 +1,14 @@
 ---
-displayName: "Aktion: Drucken"
+title: "Action: Print"
+keywords: "Actions"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  Ruft die Druckfunktion des Browsers auf, um einen einzelnen Datensatz zu drucken.
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Aktion: Drucken
+# Action: Print

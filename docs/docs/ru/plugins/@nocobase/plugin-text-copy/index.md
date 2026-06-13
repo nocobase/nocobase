@@ -1,12 +1,14 @@
 ---
-displayName: "Копирование текста"
+title: "Text copy"
+keywords: "Clipboard,Copy"
+displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  Добавляет кнопку копирования в текстовые поля
+  Add copy button to text fields
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Копирование текста
+# Text copy

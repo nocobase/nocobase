@@ -11,6 +11,14 @@ A excepción de los escenarios de validación de funciones o puramente experimen
 
 La configuración del sistema y la planificación de la capacidad de dichos servicios deben evaluarse y ajustarse por separado en función del **volumen de datos real, la carga de trabajo y la escala de concurrencia**.
 
+## Sistema operativo
+
+Para entornos de producción se recomiendan servidores Linux, como Ubuntu LTS, Debian, Rocky Linux o AlmaLinux. Docker, proxy inverso, gestión de procesos, logs y flujos de backup están más maduros en Linux y se integran con más facilidad con los entornos habituales de servidores cloud.
+
+NocoBase también se puede instalar en Windows Server. Si eliges Windows Server, confirma Node.js, base de datos, proxy inverso, supervisión de procesos, backups, permisos de archivos, firewall y operaciones relacionadas según tu método de despliegue real.
+
+macOS suele ser más adecuado para desarrollo local y pruebas, y no se recomienda como servidor de producción. Si estás preparando NocoBase localmente para desarrollo o uso con AI Agent, consulta [Local Development Setup](../ai/local-development-setup.md).
+
 ## Modo de implementación de nodo único
 
 El modo de implementación de nodo único significa que el servicio de la aplicación NocoBase se ejecuta en un solo servidor o instancia de contenedor.

@@ -1,15 +1,17 @@
 ---
-displayName: "Adaptador de fila RabbitMQ"
+title: "RabbitMQ queue adapter"
+keywords: "RabbitMQ queue adapter,Plugin,NocoBase"
+displayName: "RabbitMQ queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Utilizado para processar filas de mensagens da aplicação com RabbitMQ.
+  Used for hanlding message queue with RabbitMQ.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Adaptador de fila RabbitMQ
+# RabbitMQ queue adapter

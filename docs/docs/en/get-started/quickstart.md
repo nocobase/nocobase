@@ -55,4 +55,9 @@ You can install NocoBase in different ways.
 | **Scenarios** | No-code users; users who want to quickly deploy to a server. | Front-end/full-stack developers; team projects; low-code development. | Technical developers; users who want to try unreleased versions. |
 | **Technical Requirement** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Upgrade Method** | Pull the latest image and restart the container. | Update dependencies with yarn. | Synchronize updates through Git. |
-| **Tutorials** | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) |
+
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
+## What's Next
+
+If you've already picked an installation method, the next step is [Install NocoBase App](/ai/install-nocobase-app). It walks you through installing NocoBase CLI and finishing the app installation and initialization.

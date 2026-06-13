@@ -1,14 +1,16 @@
 ---
-displayName: "マルチスペース"
+title: "Multi-space"
+keywords: "Architecture"
+displayName: "Multi-space"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
-  単一のアプリケーションインスタンス内で、論理的な分離を通じて複数の独立したデータスペースを実現します。
+  Implements multiple independent data spaces within a single application instance through logical isolation.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# マルチスペース
+# Multi-space

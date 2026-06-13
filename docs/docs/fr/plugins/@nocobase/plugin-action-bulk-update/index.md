@@ -1,15 +1,17 @@
 ---
-displayName: "Action : Mise à jour groupée"
+title: "Action: Batch update"
+keywords: "Actions"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Mise à jour groupée de toutes les données ou des données sélectionnées.
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action : Mise à jour groupée
+# Action: Batch update

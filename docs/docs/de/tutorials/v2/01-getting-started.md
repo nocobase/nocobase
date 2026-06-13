@@ -2,7 +2,7 @@
 
 In dieser Reihe bauen wir gemeinsam von Grund auf ein **minimales Ticket-System (HelpDesk)** mit NocoBase. Das gesamte System benötigt nur **2 [Datentabellen](/data-sources/data-modeling/collection)** und keine Zeile Code - es bietet Ticket-Erfassung, Kategorienverwaltung, Änderungsverfolgung, Berechtigungssteuerung und ein [Dashboard](/data-visualization).
 
-In diesem Kapitel deployen wir NocoBase per [Docker](/get-started/installation/docker) mit einem Befehl, melden uns erstmals an, lernen den Unterschied zwischen [Konfigurations- und Nutzungsmodus](/quickstart/how-nocobase-works) und erhalten eine Vorschau auf das Ticket-System.
+In diesem Kapitel deployen wir NocoBase per [Docker](/get-started/installation/docker) mit einem Befehl, melden uns erstmals an, lernen den Unterschied zwischen [Konfigurations- und Nutzungsmodus](/get-started/how-nocobase-works) und erhalten eine Vorschau auf das Ticket-System.
 
 
 ## 1.1 Was ist NocoBase?
@@ -97,7 +97,7 @@ Die NocoBase-Oberfläche kennt zwei Modi:
 | **Nutzungsmodus** | Tägliche Oberfläche der Anwender | Alle |
 | **Konfigurationsmodus** | Designmodus zum Aufbau und Anpassen | Administratoren |
 
-Umschalten: Klicken Sie oben rechts auf **„[UI Editor](/quickstart/how-nocobase-works)"** (Markersymbol).
+Umschalten: Klicken Sie oben rechts auf **„[UI Editor](/get-started/how-nocobase-works)"** (Markersymbol).
 
 ![01-getting-started-2026-03-11-08-17-26](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-17-26.png)
 
@@ -173,4 +173,4 @@ Bis zum nächsten Kapitel!
 
 - [Detaillierte Docker-Installation](/get-started/installation/docker) - alle Installationsoptionen und Umgebungsvariablen
 - [Systemanforderungen](/get-started/system-requirements) - Hardware und Software
-- [Wie NocoBase funktioniert](/quickstart/how-nocobase-works) - Datenquellen, Blöcke, Aktionen
+- [Wie NocoBase funktioniert](/get-started/how-nocobase-works) - Datenquellen, Blöcke, Aktionen

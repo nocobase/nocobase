@@ -1,12 +1,12 @@
 ---
 title: "Version control"
-description: "Version control plugin guide: create versions, restore versions, configure retention, set shortcuts, and include user collections in saved versions."
-keywords: "Version control,ops management,create version,restore version,NocoBase"
+description: "Version control plugin guide: automatically save versions during AI Builder sessions, create and restore versions manually, configure retention, set shortcuts, and include user collections in saved versions."
+keywords: "Version control,ops management,AI Builder,nocobase-revision,nb revision create,create version,restore version,NocoBase"
 ---
 
 # Version control
 
-In NocoBase, **Version control** lets you save a restorable version of the current application. You can create versions manually, restore the application to a saved version when needed, and use the plugin settings to control how many versions to keep, which shortcut to use, and which user collections should be saved with the version.
+In NocoBase, **Version control** lets you save a restorable version of the current application. You can create versions manually, restore the application to a saved version when needed, and let AI Builder automatically save versions after meaningful milestones.
 
 Version control depends on [Backup manager](../backup-manager/index.mdx) to save and restore application states. Before using Version control, enable Backup manager first.
 
@@ -16,17 +16,31 @@ Community and Standard editions do not include the Version control plugin. If yo
 
 :::
 
+## AI auto-saved versions
+
+After the Version control plugin is enabled, AI Builder gets an extra rollback safeguard. When an AI Agent starts working on a request, it checks the NocoBase Skills available to the current application. If it finds the `nocobase-revision` skill, it can save key building milestones as restorable versions.
+
+![AI detects the nocobase-revision skill when building starts](https://static-docs.nocobase.com/20260611115845.png)
+
+When AI completes a piece of work that can be reviewed on its own, such as building a page, creating a set of collections, or configuring a workflow, it runs `nb revision create` through the NocoBase CLI. You do not need to click 「Create version」 manually each time, and small adjustments will not create noisy version records.
+
+![AI creates a version after building](https://static-docs.nocobase.com/20260611115804.png)
+
+These versions appear in the versions list. If later changes do not match your expectations, you can restore to the previous clear building milestone and continue adjusting from there.
+
 ## Open the plugin
 
-You can open the plugin from 「System settings」 → 「Version control」. A Version control button also appears in the top bar. Click it to create a version directly or jump to the versions list. The default shortcut for creating a version is `Ctrl + K`, and you can change it in the settings tab.
+After the plugin is enabled, a 「Version control」 menu appears in the top bar. You can create a version directly from there or open the versions list.
 
-![](https://static-docs.nocobase.com/20260526220402.png)
+You can also open the plugin from 「System settings / Version control」. The default shortcut for creating a version is `Ctrl + K`, and you can change it in the settings tab.
+
+![Version control menu](https://static-docs.nocobase.com/20260611112317.png)
 
 ## Create a version
 
 Click 「Create version」, enter a description, and save it. The description can be up to 2000 characters. It is useful for recording the background of the change, such as “Adjusted approval fields and permissions”.
 
-![](https://static-docs.nocobase.com/20260526220510.png)
+![Create version](https://static-docs.nocobase.com/20260611112739.png)
 
 After you click save, the list first shows a temporary “Saving” entry. When the task finishes, the saved version appears in the list.
 
@@ -77,3 +91,4 @@ If you include a user collection, NocoBase also includes related collections aut
 - [Backup manager](../backup-manager/index.mdx) — the underlying capability required by Version control
 - [Migration manager](../migration-manager/index.md) — move application configuration across environments
 - [Release management](../release-management/index.md) — plan release workflows with backups, migrations, and variables
+- [AI Builder quick start](../../ai-builder/index.md) — use natural language to complete data modeling, page configuration, and workflow orchestration

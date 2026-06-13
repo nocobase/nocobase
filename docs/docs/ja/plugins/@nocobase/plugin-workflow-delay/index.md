@@ -1,12 +1,14 @@
 ---
-displayName: "ワークフロー：遅延ノード"
+title: "Workflow: Delay node"
+keywords: "Workflow"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  ワークフローの並列ブランチ内で、他のブランチの実行完了を待機するために使用できます。
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# ワークフロー：遅延ノード
+# Workflow: Delay node

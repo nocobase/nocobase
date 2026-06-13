@@ -1,15 +1,17 @@
 ---
-displayName: "RabbitMQ-Warteschlangen-Adapter"
+title: "RabbitMQ queue adapter"
+keywords: "RabbitMQ queue adapter,Plugin,NocoBase"
+displayName: "RabbitMQ queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Basiert auf RabbitMQ zur Verarbeitung von Nachrichten-Warteschlangen der Anwendung.
+  Used for hanlding message queue with RabbitMQ.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# RabbitMQ-Warteschlangen-Adapter
+# RabbitMQ queue adapter

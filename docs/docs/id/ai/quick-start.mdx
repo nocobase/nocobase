@@ -2,7 +2,6 @@
 title: "Panduan Integrasi AI Agent"
 description: "Pasang NocoBase CLI, hubungkan atau pasang aplikasi NocoBase, biarkan AI Agent mulai mengoperasikan sistem bisnis Anda."
 keywords: "NocoBase CLI,AI Agent,Integrasi,Koneksi,Instalasi,Skills,Mulai Cepat"
-sidebar: false
 ---
 
 # Panduan Integrasi AI Agent
@@ -58,15 +57,16 @@ File konfigurasi dan data aplikasi yang dihasilkan oleh inisialisasi disimpan se
 
 :::
 
-Browser akan secara otomatis membuka halaman konfigurasi visual, yang memandu Anda menyelesaikan konfigurasi dalam 5 langkah:
+Browser akan secara otomatis membuka halaman konfigurasi visual, yang memandu Anda menyelesaikan konfigurasi dalam 6 langkah:
 
-1. **Mulai Konfigurasi** — Atur nama aplikasi (sekaligus menjadi nama lingkungan CLI), pilih "Instalasi Baru"
-2. **Buat Aplikasi** — Pilih metode instalasi (Docker / npm / Git), atur port, dan konfigurasi dasar lainnya
-3. **Unduh File Aplikasi** — Pilih sumber dan versi, unduh kode sumber atau image NocoBase
-4. **Konfigurasi Database** — Gunakan database bawaan atau konfigurasikan database eksternal (PostgreSQL, MySQL, MariaDB)
-5. **Buat Akun Administrator** — Atur email dan password administrator
+1. "Memulai" — Pilih apakah akan memasang aplikasi baru, mengelola aplikasi lokal, atau menghubungkan aplikasi jarak jauh.
+2. "Lingkungan aplikasi" — Atur informasi dasar aplikasi, lokasi penyimpanan, dan port runtime.
+3. "Sumber dan versi aplikasi" — Pilih cara mendapatkan aplikasi serta sumber dan versi yang akan digunakan.
+4. "Konfigurasi database" — Gunakan bawaan atau kustom.
+5. "Buat akun administrator" — Siapkan administrator pertama.
+6. "Koneksi dan autentikasi" — Masukkan URL akses aplikasi dan pilih metode autentikasi.
 
-![panduan visual nocobase cli](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+![panduan visual nocobase cli](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
 Setelah instalasi selesai, buka browser dan akses `http://localhost:13000` (port default), gunakan akun administrator yang baru Anda atur untuk login.
 
@@ -92,7 +92,7 @@ Setelah konfigurasi selesai, restart sesi AI Agent Anda, dan Anda dapat mulai me
 
 ## AI Agent Menghubungkan NocoBase yang Sudah Ada
 
-Jika Anda sudah memiliki instance NocoBase yang berjalan, Anda dapat langsung membiarkan AI Agent terhubung dengannya. **Karena kemampuan AI berkembang dengan cepat, saat ini hanya versi beta terbaru yang mendukung pengalaman lengkap, dengan persyaratan versi minimum >= 2.1.0-beta.20, sangat disarankan untuk memperbarui ke versi terbaru.**
+Jika Anda sudah memiliki instance NocoBase yang berjalan, Anda dapat langsung membiarkan AI Agent terhubung dengannya. **Karena kemampuan AI berkembang dengan cepat, versi minimum yang diperlukan adalah NocoBase 2.1.0. Disarankan untuk memperbarui ke versi terbaru.**
 
 <Tabs>
 <Tab label="Hubungkan secara Manual" value="manual-connect">
@@ -116,12 +116,12 @@ File konfigurasi yang dihasilkan oleh inisialisasi disimpan secara default di di
 
 :::
 
-Browser akan secara otomatis membuka halaman konfigurasi visual. Pada langkah pertama "Mulai Konfigurasi", pilih "Hubungkan Aplikasi yang Sudah Ada", kemudian:
+Browser akan secara otomatis membuka halaman konfigurasi visual. Pada langkah pertama "Mulai Konfigurasi", pilih "Koneksi Jarak Jauh", kemudian:
 
 1. **Isi Alamat API** — Masukkan alamat API instance NocoBase yang sudah ada (misalnya: `http://localhost:13000/api`)
 2. **Pilih Metode Autentikasi** — Pilih [metode autentikasi](../ai-builder/security) (untuk mulai cepat disarankan OAuth)
 
-![panduan visual nocobase cli](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
+![panduan visual nocobase cli](https://static-docs.nocobase.com/2026-06-11-21-18-31.png)
 
 Tidak perlu mengonfigurasi metode instalasi, database, dan akun administrator, wizard akan melewati langkah-langkah ini.
 
@@ -132,7 +132,7 @@ Buka sesi baru atau restart sesi AI Agent, dan AI Agent dapat mulai mengoperasik
 </Tab>
 <Tab label="Hubungkan dengan AI Agent" value="ai-connect">
 
-Salin prompt di bawah ini ke asisten AI Anda, ia akan menyelesaikan instalasi CLI dan memandu Anda menyelesaikan konfigurasi koneksi ke instance NocoBase yang sudah ada, pada langkah pertama wizard visual pilih "Hubungkan Aplikasi yang Sudah Ada":
+Salin prompt di bawah ini ke asisten AI Anda, ia akan menyelesaikan instalasi CLI dan memandu Anda menyelesaikan konfigurasi koneksi ke instance NocoBase yang sudah ada, pada langkah pertama wizard visual pilih "Koneksi Jarak Jauh":
 
 ```
 Bantu saya memasang NocoBase CLI dan menyelesaikan inisialisasi: https://docs.nocobase.com/cn/ai/ai-quick-start.md (silakan akses langsung konten link)
@@ -144,6 +144,13 @@ Setelah konfigurasi selesai, restart sesi AI Agent Anda, dan Anda dapat mulai me
 </Tabs>
 
 ## Selanjutnya
+
+### Instalasi dan deployment production
+
+Jika Anda sedang menyiapkan NocoBase untuk deployment production, urutan ini biasanya paling cocok:
+
+1. [Instal menggunakan CLI (disarankan)](../nocobase-cli/installation/cli.md) — alur instalasi lengkap. Ini adalah tempat yang tepat jika Anda ingin memasang CLI dari nol, menginisialisasi env, dan memastikan aplikasi sudah berjalan normal di server
+2. [Ikhtisar penerapan lingkungan produksi](../nocobase-cli/production/index.md) — langkah berikutnya setelah aplikasi berjalan. Bagian ini terutama membahas autostart, reverse proxy, domain, dan HTTPS
 
 ### Mengelola Lingkungan Aplikasi
 
@@ -172,4 +179,4 @@ Jika Anda sudah memiliki aplikasi NocoBase yang berjalan, atau telah berhasil me
 - [Karyawan AI](../ai-employees/index.md) — Berkolaborasi dengan AI di antarmuka bisnis
 - [Manajemen Lingkungan](../ai-builder/env-bootstrap) — Pemeriksaan lingkungan, penambahan lingkungan, upgrade, dan diagnostik masalah
 - [Referensi Perintah NocoBase CLI](../api/cli/index.md) — Penjelasan parameter lengkap untuk semua perintah
-- [Perbandingan Metode Instalasi dan Versi](../get-started/quickstart) — Berbagai metode instalasi dan saluran versi NocoBase
+- [Perbandingan Metode Instalasi dan Versi](../ai/quickstart) — Berbagai metode instalasi dan saluran versi NocoBase

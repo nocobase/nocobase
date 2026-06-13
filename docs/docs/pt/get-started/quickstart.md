@@ -56,4 +56,9 @@ Você pode instalar o NocoBase de diferentes maneiras.
 | **Cenários de Uso** | Usuários sem código, usuários que desejam implantar rapidamente em um servidor. | Desenvolvedores front-end/full-stack, projetos em equipe, desenvolvimento low-code. | Desenvolvedores técnicos, usuários que desejam experimentar versões não lançadas. |
 | **Requisito Técnico** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Método de Atualização** | Puxe a imagem mais recente e reinicie o contêiner. | Atualize as dependências com yarn. | Sincronize as atualizações através do fluxo Git. |
-| **Tutoriais** | [<code>Instalação</code>](#) [<code>Atualização</code>](#) [<code>Implantação</code>](#) | [<code>Instalação</code>](#) [<code>Atualização</code>](#) [<code>Implantação</code>](#) | [<code>Instalação</code>](#) [<code>Atualização</code>](#) [<code>Implantação</code>](#) |
+
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
+## O que fazer em seguida
+
+Se você já escolheu um método de instalação, o próximo passo é [Instalar o aplicativo NocoBase](/ai/install-nocobase-app). Lá você instala o NocoBase CLI e conclui a instalação e a inicialização do aplicativo.
