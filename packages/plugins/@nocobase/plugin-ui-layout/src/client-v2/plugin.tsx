@@ -49,9 +49,16 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       showTabs: true,
     });
 
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: 'ui-layout',
+    this.pluginSettingsManager.addMenuItem({
       key: 'routes',
+      title: this.t('Routes') as unknown as string,
+      icon: 'ApartmentOutlined',
+      aclSnippet: 'pm.ui-layout',
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'routes',
+      key: 'index',
       title: this.t('Routes') as unknown as string,
       aclSnippet: 'pm.ui-layout',
       componentLoader: () => import('./pages/RoutesPage'),

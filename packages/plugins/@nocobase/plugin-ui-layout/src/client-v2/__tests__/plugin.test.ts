@@ -61,13 +61,25 @@ describe('PluginUiLayoutClientV2', () => {
       aclSnippet: 'pm.ui-layout',
       showTabs: true,
     });
-    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
-      menuKey: 'ui-layout',
+    expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
       key: 'routes',
+      title: 'Routes',
+      icon: 'ApartmentOutlined',
+      aclSnippet: 'pm.ui-layout',
+    });
+    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
+      menuKey: 'routes',
+      key: 'index',
       title: 'Routes',
       aclSnippet: 'pm.ui-layout',
       componentLoader: expect.any(Function),
     });
+    expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        menuKey: 'ui-layout',
+        key: 'routes',
+      }),
+    );
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'ui-layout',
       key: 'mobile',
@@ -82,13 +94,17 @@ describe('PluginUiLayoutClientV2', () => {
       }),
     );
     const settingsApp = createMockClient();
-    settingsApp.pluginSettingsManager.addMenuItem(app.pluginSettingsManager.addMenuItem.mock.calls[0][0]);
+    for (const [menuItem] of app.pluginSettingsManager.addMenuItem.mock.calls) {
+      settingsApp.pluginSettingsManager.addMenuItem(menuItem);
+    }
     for (const [pageTab] of app.pluginSettingsManager.addPageTabItem.mock.calls) {
       settingsApp.pluginSettingsManager.addPageTabItem(pageTab);
     }
     settingsApp.pluginSettingsManager.setAclSnippets(['pm.*', '!pm.ui-layout']);
     expect(settingsApp.pluginSettingsManager.get('ui-layout')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('ui-layout.index')).toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('routes')).toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('routes.index')).toBeNull();
     expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
       MobileLayoutModel: {
         loader: expect.any(Function),

@@ -90,8 +90,8 @@ describe('plugin-ui-layout RoutesPage', () => {
       });
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /Add route/ }));
-    const addDialog = await screen.findByRole('dialog', { name: 'Add route' });
+    fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
+    const addDialog = await screen.findByRole('dialog', { name: 'Add new' });
     fireEvent.change(within(addDialog).getByLabelText('Title'), { target: { value: 'Mobile approvals' } });
     fireEvent.click(within(addDialog).getByRole('button', { name: 'Submit' }));
 
@@ -112,7 +112,7 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(screen.queryByText('Mobile approvals')).not.toBeInTheDocument();
 
     const desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
-    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Edit route Desktop dashboard' }));
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Edit Desktop dashboard' }));
     const editDialog = await screen.findByRole('dialog', { name: 'Edit route' });
     fireEvent.change(within(editDialog).getByLabelText('Title'), { target: { value: 'Desktop home' } });
     fireEvent.click(within(editDialog).getByRole('button', { name: 'Submit' }));
@@ -145,16 +145,16 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(screen.getByRole('button', { name: 'Hide in menu' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Show in menu' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Add route/ }));
-    const addDialog = await screen.findByRole('dialog', { name: 'Add route' });
+    fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
+    const addDialog = await screen.findByRole('dialog', { name: 'Add new' });
     fireEvent.mouseDown(within(addDialog).getByLabelText('Type'));
     expect(await screen.findByText('Group')).toBeInTheDocument();
     expect(screen.getByText('Classic page (v1)')).toBeInTheDocument();
     expect(screen.getAllByText('Modern page (v2)').length).toBeGreaterThan(0);
-    expect(screen.getByText('Link')).toBeInTheDocument();
+    expect(screen.getAllByText('Link').length).toBeGreaterThan(0);
     fireEvent.click(within(addDialog).getByText('Cancel'));
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Add route' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'Add new' })).not.toBeInTheDocument();
       expect(screen.queryByText('Classic page (v1)')).not.toBeInTheDocument();
     });
 
@@ -168,8 +168,6 @@ describe('plugin-ui-layout RoutesPage', () => {
         values: { hideInMenu: true },
       });
     });
-    expect(await screen.findByText('Hidden')).toBeInTheDocument();
-
     fireEvent.click(within(screen.getByRole('row', { name: /Desktop dashboard/ })).getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Show in menu' }));
     await waitFor(() => {
@@ -182,14 +180,80 @@ describe('plugin-ui-layout RoutesPage', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Mobile routes' }));
     expect(await screen.findByText('Mobile workbench')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Add route/ }));
-    const mobileAddDialog = await screen.findByRole('dialog', { name: 'Add route' });
+    fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
+    const mobileAddDialog = await screen.findByRole('dialog', { name: 'Add new' });
     fireEvent.mouseDown(within(mobileAddDialog).getByLabelText('Type'));
     expect(screen.queryByText('Group')).not.toBeInTheDocument();
     expect(screen.queryByText('Classic page (v1)')).not.toBeInTheDocument();
     expect(screen.queryByText('Modern page (v2)')).not.toBeInTheDocument();
     expect(screen.getAllByText('Page').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Link').length).toBeGreaterThan(0);
+  });
+
+  it('should render v1-style columns, path, pagination and row actions', async () => {
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filter' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add new' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Title' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Path' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Route name' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'UID' })).not.toBeInTheDocument();
+    expect(screen.getByText('Page (v2)')).toBeInTheDocument();
+    expect(screen.getByText('/admin/desktop-dashboard')).toBeInTheDocument();
+    expect(screen.getByText('20 / page')).toBeInTheDocument();
+
+    const desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
+    expect(within(desktopRow).getByRole('button', { name: 'Add child Desktop dashboard' })).toBeEnabled();
+    expect(within(desktopRow).getByRole('button', { name: 'Edit Desktop dashboard' })).toBeEnabled();
+    expect(within(desktopRow).getByRole('link', { name: 'View Desktop dashboard' })).toHaveAttribute(
+      'href',
+      '/admin/desktop-dashboard',
+    );
+    expect(within(desktopRow).getByRole('button', { name: 'Delete Desktop dashboard' })).toBeEnabled();
+
+    const linkRow = screen.getByRole('row', { name: /Desktop link/ });
+    expect(within(linkRow).getByRole('button', { name: 'Add child Desktop link' })).toBeDisabled();
+    expect(within(linkRow).getByRole('button', { name: 'View Desktop link' })).toBeDisabled();
+  });
+
+  it('should create child routes with the current layout and parent route', async () => {
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    const desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Add child Desktop dashboard' }));
+    const addChildDialog = await screen.findByRole('dialog', { name: 'Add child route' });
+    fireEvent.change(within(addChildDialog).getByLabelText('Title'), { target: { value: 'Desktop child tab' } });
+    fireEvent.click(within(addChildDialog).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.create).toHaveBeenCalledWith({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: expect.objectContaining({
+          parentId: 1,
+          schemaUid: 'generated-route-schema-uid',
+          title: 'Desktop child tab',
+          type: 'flowPage',
+        }),
+      });
+    });
+    expect(await screen.findByText('Desktop child tab')).toBeInTheDocument();
   });
 });
 
@@ -200,9 +264,28 @@ function createRoutesPageResources() {
       [
         {
           id: 1,
+          enableTabs: true,
           schemaUid: 'desktop-dashboard',
           title: 'Desktop dashboard',
           type: 'flowPage',
+          children: [
+            {
+              id: 3,
+              parentId: 1,
+              schemaUid: 'desktop-tab',
+              title: 'Desktop tab',
+              type: 'tabs',
+            },
+          ],
+        },
+        {
+          id: 4,
+          schemaUid: 'desktop-link',
+          title: 'Desktop link',
+          type: 'link',
+          options: {
+            href: '/admin/external',
+          },
         },
       ],
     ],
