@@ -9,11 +9,17 @@
 
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { registerUiLayoutsFromApi } from './layoutRegistration';
 import { mobileOpenView } from './mobileOpenViewAction';
 import { registerMobilePageModelResolution } from './mobilePageModelResolution';
 import { MobileMenuSettingsIconPicker } from './models/MobileMenuComponents';
 import { registerLayoutAwareDesktopRoutesPermissionsTab } from './permissions/layoutAwareDesktopRoutesPermissions';
+
+function MobileSettingsRedirect() {
+  return <Navigate replace to="/mobile" />;
+}
 
 export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
@@ -51,7 +57,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       key: 'index',
       title: this.t('Mobile') as unknown as string,
       aclSnippet: 'pm.ui-layout',
-      link: '/mobile',
+      Component: MobileSettingsRedirect,
     });
 
     this.pluginSettingsManager.addMenuItem({

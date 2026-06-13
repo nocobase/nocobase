@@ -70,7 +70,7 @@ describe('PluginUiLayoutClientV2', () => {
       key: 'index',
       title: 'Mobile',
       aclSnippet: 'pm.ui-layout',
-      link: '/mobile',
+      Component: expect.any(Function),
     });
     expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
       key: 'routes',
@@ -110,6 +110,13 @@ describe('PluginUiLayoutClientV2', () => {
     for (const [pageTab] of app.pluginSettingsManager.addPageTabItem.mock.calls) {
       settingsApp.pluginSettingsManager.addPageTabItem(pageTab);
     }
+    const mobileSetting = settingsApp.pluginSettingsManager.get('mobile', false);
+    expect(mobileSetting?.children?.[0]).toMatchObject({
+      name: 'mobile.index',
+      path: '/admin/settings/mobile',
+      Component: expect.any(Function),
+    });
+    expect(mobileSetting?.children?.[0]).not.toHaveProperty('link');
     settingsApp.pluginSettingsManager.setAclSnippets(['pm.*', '!pm.ui-layout']);
     expect(settingsApp.pluginSettingsManager.get('ui-layout')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('ui-layout.index')).toBeNull();
