@@ -23,6 +23,7 @@
   "Menu permissions": "Menu permissions",
   "Multi-portal": "Multi-portal",
   "New portals are allowed to be accessed by default": "New portals are allowed to be accessed by default",
+  "New routes are allowed to be accessed by default": "New routes are allowed to be accessed by default",
   "Must start with /. For example: /portal.": "Must start with /. For example: /portal.",
   "No matching routes": "No matching routes",
   "No portals": "No portals",

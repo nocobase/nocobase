@@ -66,6 +66,13 @@ interface MultiPortalRoutePermissionRecord {
   desktopRouteId?: number;
 }
 
+interface MultiPortalRoutePolicyRecord {
+  id?: number;
+  roleName?: string;
+  multiPortalUid?: string;
+  allowNewMenu?: boolean;
+}
+
 interface ResourceResponse {
   data?: unknown;
 }
@@ -98,6 +105,26 @@ interface RoleMultiPortalDesktopRoutesResource {
   }) => Promise<unknown>;
 }
 
+interface RoleMultiPortalRoutePoliciesResource {
+  list: (params?: Record<string, unknown>) => Promise<ResourceResponse>;
+  create: (params: {
+    values: {
+      roleName: string;
+      multiPortalUid: string;
+      allowNewMenu: boolean;
+    };
+  }) => Promise<unknown>;
+  update: (params: {
+    filter: {
+      roleName: string;
+      multiPortalUid: string;
+    };
+    values: {
+      allowNewMenu: boolean;
+    };
+  }) => Promise<unknown>;
+}
+
 function toPayload(responseData: unknown): MultiPortalPayload {
   if (!responseData || typeof responseData !== 'object') {
     return {};
@@ -124,6 +151,14 @@ function toRoutePermissionData(responseData: unknown): MultiPortalRoutePermissio
   }
   const payload = responseData as { data?: MultiPortalRoutePermissionRecord[] };
   return Array.isArray(payload.data) ? payload.data : [];
+}
+
+function toRoutePolicyData(responseData: unknown): MultiPortalRoutePolicyRecord | undefined {
+  if (!responseData || typeof responseData !== 'object') {
+    return undefined;
+  }
+  const payload = responseData as { data?: MultiPortalRoutePolicyRecord[] };
+  return Array.isArray(payload.data) ? payload.data[0] : undefined;
 }
 
 function toRoutePath(options: DesktopRouteOptions | undefined) {
@@ -259,6 +294,8 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
   const [selectedUids, setSelectedUids] = useState<string[]>([]);
   const [selectedPortalUid, setSelectedPortalUid] = useState<string>();
   const [selectedRouteIds, setSelectedRouteIds] = useState<number[]>([]);
+  const [routeDefaultPolicy, setRouteDefaultPolicy] = useState<MultiPortalRoutePolicyRecord>();
+  const [routeDefaultPolicyChecked, setRouteDefaultPolicyChecked] = useState(false);
   const [routeKeyword, setRouteKeyword] = useState('');
 
   const roleMultiPortalsResource = useMemo(
@@ -268,6 +305,10 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
   );
   const roleRoutePermissionsResource = useMemo(
     () => ctx.api.resource('rolesMultiPortalDesktopRoutes') as unknown as RoleMultiPortalDesktopRoutesResource,
+    [ctx.api],
+  );
+  const roleRoutePoliciesResource = useMemo(
+    () => ctx.api.resource('rolesMultiPortalRoutePolicies') as unknown as RoleMultiPortalRoutePoliciesResource,
     [ctx.api],
   );
 
@@ -376,15 +417,42 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
       },
     },
   );
+  const roleRoutePolicyService = useRequest(
+    async () => {
+      if (!role || !selectedPortalUid) {
+        return undefined;
+      }
+      const response = await roleRoutePoliciesResource.list({
+        paginate: false,
+        filter: {
+          roleName: role.name,
+          multiPortalUid: selectedPortalUid,
+        },
+      });
+      return toRoutePolicyData(response?.data);
+    },
+    {
+      ready: active && !!role && !!selectedPortalUid,
+      refreshDeps: [active, role?.name, selectedPortalUid],
+      onSuccess(data) {
+        setRouteDefaultPolicy(data);
+        setRouteDefaultPolicyChecked(!!data?.allowNewMenu);
+      },
+    },
+  );
 
   useEffect(() => {
     setSelectedPortalUid(undefined);
     setSelectedRouteIds([]);
+    setRouteDefaultPolicy(undefined);
+    setRouteDefaultPolicyChecked(false);
     setRouteKeyword('');
   }, [role?.name]);
 
   useEffect(() => {
     setSelectedRouteIds([]);
+    setRouteDefaultPolicy(undefined);
+    setRouteDefaultPolicyChecked(false);
     setRouteKeyword('');
   }, [selectedPortalUid]);
 
@@ -515,6 +583,39 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     }
   });
 
+  const updateRouteDefaultPolicy = useMemoizedFn(async (allowNewMenu: boolean) => {
+    if (!role || !selectedPortalUid) {
+      return;
+    }
+
+    try {
+      if (routeDefaultPolicy) {
+        await roleRoutePoliciesResource.update({
+          filter: {
+            roleName: role.name,
+            multiPortalUid: selectedPortalUid,
+          },
+          values: {
+            allowNewMenu,
+          },
+        });
+      } else {
+        await roleRoutePoliciesResource.create({
+          values: {
+            roleName: role.name,
+            multiPortalUid: selectedPortalUid,
+            allowNewMenu,
+          },
+        });
+      }
+      await roleRoutePolicyService.refreshAsync();
+      setRouteDefaultPolicyChecked(allowNewMenu);
+      ctx.message.success(t('Saved successfully'));
+    } catch {
+      await roleRoutePolicyService.refreshAsync().catch(() => undefined);
+    }
+  });
+
   const setAllRoutes = useMemoizedFn(async () => {
     const selectedRouteIdSet = new Set(selectedRouteIds);
     const visibleRouteIdSet = new Set(visibleRouteIds);
@@ -615,6 +716,12 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
       >
         {selectedPortal ? (
           <Space direction="vertical" size={token.marginSM} style={{ width: '100%' }}>
+            <Checkbox
+              checked={routeDefaultPolicyChecked}
+              onChange={(event) => updateRouteDefaultPolicy(event.target.checked)}
+            >
+              {t('New routes are allowed to be accessed by default')}
+            </Checkbox>
             <Input.Search
               allowClear
               aria-label={t('Search routes')}
@@ -624,7 +731,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
             />
             <Table<RoutePermissionRecord>
               rowKey="id"
-              loading={routeService.loading || roleRoutePermissionService.loading}
+              loading={routeService.loading || roleRoutePermissionService.loading || roleRoutePolicyService.loading}
               pagination={false}
               expandable={{
                 defaultExpandAllRows: false,

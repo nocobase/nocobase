@@ -8,7 +8,7 @@
  */
 
 import { App as AntdApp } from 'antd';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import MultiPortalPermissionsTab from '../permissions/MultiPortalPermissionsTab';
@@ -111,6 +111,112 @@ describe('plugin-multi-portal route permissions', () => {
       });
     });
     expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
+  });
+
+  it('should configure the default route access policy in the portal route drawer', async () => {
+    const resource = createMultiPortalPermissionResources({
+      routeDefaultPolicy: {
+        id: 1001,
+        allowNewMenu: true,
+      },
+      selectedPortalUids: ['customer-portal'],
+      selectedRouteIds: [],
+    });
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(
+      <AntdApp>
+        <MultiPortalPermissionsTab activeKey="multi-portals" activeRole={{ name: 'portal-member', title: 'Member' }} />
+      </AntdApp>,
+    );
+
+    const configureButton = await screen.findByRole('button', {
+      name: 'Configure menu permissions for Customer portal',
+    });
+    await act(async () => {
+      await user.click(configureButton);
+    });
+
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Configure menu permissions for Customer portal',
+    });
+    const routeDefaultPolicy = within(drawer).getByRole('checkbox', {
+      name: 'New routes are allowed to be accessed by default',
+    });
+    const routeSearch = within(drawer).getByRole('searchbox', { name: 'Search routes' });
+
+    expect(routeDefaultPolicy).toBeChecked();
+    expect(routeDefaultPolicy.compareDocumentPosition(routeSearch)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    await waitFor(() => {
+      expect(resource.routeDefaultPolicyList).toHaveBeenCalledWith({
+        paginate: false,
+        filter: {
+          roleName: 'portal-member',
+          multiPortalUid: 'customer-portal',
+        },
+      });
+    });
+
+    await act(async () => {
+      await user.click(routeDefaultPolicy);
+    });
+
+    await waitFor(() => {
+      expect(resource.routeDefaultPolicyUpdate).toHaveBeenCalledWith({
+        filter: {
+          roleName: 'portal-member',
+          multiPortalUid: 'customer-portal',
+        },
+        values: {
+          allowNewMenu: false,
+        },
+      });
+    });
+    expect(routeDefaultPolicy).not.toBeChecked();
+    expect(screen.getByRole('dialog', { name: 'Configure menu permissions for Customer portal' })).toBeInTheDocument();
+    expect(screen.getByText('Multi-portal')).toBeInTheDocument();
+    expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
+  });
+
+  it('should not show saved state when the default route access policy save fails', async () => {
+    const resource = createMultiPortalPermissionResources({
+      routeDefaultPolicy: {
+        id: 1001,
+        allowNewMenu: true,
+      },
+      routeDefaultPolicyUpdateError: new Error('update failed'),
+      selectedPortalUids: ['customer-portal'],
+      selectedRouteIds: [],
+    });
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(
+      <AntdApp>
+        <MultiPortalPermissionsTab activeKey="multi-portals" activeRole={{ name: 'portal-member', title: 'Member' }} />
+      </AntdApp>,
+    );
+
+    const configureButton = await screen.findByRole('button', {
+      name: 'Configure menu permissions for Customer portal',
+    });
+    await act(async () => {
+      await user.click(configureButton);
+    });
+    const routeDefaultPolicy = await screen.findByRole('checkbox', {
+      name: 'New routes are allowed to be accessed by default',
+    });
+
+    await act(async () => {
+      await user.click(routeDefaultPolicy);
+    });
+
+    await waitFor(() => {
+      expect(resource.routeDefaultPolicyUpdate).toHaveBeenCalled();
+    });
+    expect(routeDefaultPolicy).toBeChecked();
+    expect(resource.messageSuccess).not.toHaveBeenCalled();
   });
 
   it('should update the current role default portal access without leaving the tab', async () => {
@@ -228,6 +334,12 @@ describe('plugin-multi-portal route permissions', () => {
 type MultiPortalPermissionResourceOptions = {
   createRouteError?: Error;
   destroyRouteError?: Error;
+  routeDefaultPolicy?: {
+    id?: number;
+    allowNewMenu: boolean;
+  } | null;
+  routeDefaultPolicyCreateError?: Error;
+  routeDefaultPolicyUpdateError?: Error;
   routes?: Array<{
     id: number;
     title: string;
@@ -239,6 +351,22 @@ type MultiPortalPermissionResourceOptions = {
 function createMultiPortalPermissionResources(options: MultiPortalPermissionResourceOptions) {
   const selectedPortalUids = new Set(options.selectedPortalUids);
   const selectedRouteIds = new Set(options.selectedRouteIds);
+  let routeDefaultPolicyRecord =
+    options.routeDefaultPolicy === undefined
+      ? {
+          id: 1001,
+          roleName: 'portal-member',
+          multiPortalUid: 'customer-portal',
+          allowNewMenu: false,
+        }
+      : options.routeDefaultPolicy
+        ? {
+            id: options.routeDefaultPolicy.id ?? 1001,
+            roleName: 'portal-member',
+            multiPortalUid: 'customer-portal',
+            allowNewMenu: options.routeDefaultPolicy.allowNewMenu,
+          }
+        : undefined;
   const portals = [
     {
       uid: 'customer-portal',
@@ -303,6 +431,33 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
     }
     (filter.desktopRouteId ?? []).forEach((desktopRouteId) => selectedRouteIds.delete(desktopRouteId));
   });
+  const routeDefaultPolicyList = vi.fn(async () => ({
+    data: {
+      data: routeDefaultPolicyRecord ? [routeDefaultPolicyRecord] : [],
+    },
+  }));
+  const routeDefaultPolicyCreate = vi.fn(
+    async ({ values }: { values: { roleName: string; multiPortalUid: string; allowNewMenu: boolean } }) => {
+      if (options.routeDefaultPolicyCreateError) {
+        throw options.routeDefaultPolicyCreateError;
+      }
+      routeDefaultPolicyRecord = {
+        id: 1001,
+        ...values,
+      };
+    },
+  );
+  const routeDefaultPolicyUpdate = vi.fn(async ({ values }: { values: { allowNewMenu: boolean } }) => {
+    if (options.routeDefaultPolicyUpdateError) {
+      throw options.routeDefaultPolicyUpdateError;
+    }
+    if (routeDefaultPolicyRecord) {
+      routeDefaultPolicyRecord = {
+        ...routeDefaultPolicyRecord,
+        allowNewMenu: values.allowNewMenu,
+      };
+    }
+  });
   const resource = vi.fn((name: string, sourceId?: string) => {
     if (name === 'roles.multiPortals' && sourceId === 'portal-member') {
       return {
@@ -316,6 +471,13 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
         create: routePermissionCreate,
         destroy: routePermissionDestroy,
         list: routePermissionList,
+      };
+    }
+    if (name === 'rolesMultiPortalRoutePolicies') {
+      return {
+        create: routeDefaultPolicyCreate,
+        list: routeDefaultPolicyList,
+        update: routeDefaultPolicyUpdate,
       };
     }
     if (name === 'roles') {
@@ -344,6 +506,9 @@ function createMultiPortalPermissionResources(options: MultiPortalPermissionReso
     rolePortalList,
     rolePortalRemove,
     rolesUpdate,
+    routeDefaultPolicyCreate,
+    routeDefaultPolicyList,
+    routeDefaultPolicyUpdate,
     routePermissionCreate,
     routePermissionDestroy,
     routePermissionList,

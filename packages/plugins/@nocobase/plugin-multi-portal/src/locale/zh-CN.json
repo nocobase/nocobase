@@ -23,6 +23,7 @@
   "Menu permissions": "菜单权限",
   "Multi-portal": "多工作区",
   "New portals are allowed to be accessed by default": "新建多工作区默认允许访问",
+  "New routes are allowed to be accessed by default": "新建路由默认允许访问",
   "Must start with /. For example: /portal.": "必须以 / 开头，例如 /portal。",
   "No matching routes": "无匹配路由",
   "No portals": "暂无门户",
