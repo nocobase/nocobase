@@ -335,6 +335,35 @@ describe('PluginMultiPortalClientV2', () => {
     });
   });
 
+  it('should ignore stale portal route refresh responses', async () => {
+    const firstRefresh = Promise.withResolvers<{ data: { data: Array<{ schemaUid: string }> } }>();
+    const secondRefresh = Promise.withResolvers<{ data: { data: Array<{ schemaUid: string }> } }>();
+    const request = vi.fn().mockReturnValueOnce(firstRefresh.promise).mockReturnValueOnce(secondRefresh.promise);
+    const repository = new RouteRepository({
+      api: {
+        request,
+        resource: vi.fn(() => ({
+          create: vi.fn(),
+        })),
+      },
+    } as never);
+
+    installMultiPortalRouteRepositoryScope(repository, () => ['customer-portal']);
+
+    const deactivatePortal = repository.activateLayout({ uid: 'customer-portal' });
+    const olderRefresh = repository.refreshAccessible();
+    const newerRefresh = repository.refreshAccessible();
+
+    secondRefresh.resolve({ data: { data: [{ schemaUid: 'newer-route' }] } });
+    await newerRefresh;
+    expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['newer-route']);
+
+    firstRefresh.resolve({ data: { data: [{ schemaUid: 'older-route' }] } });
+    await olderRefresh;
+    expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['newer-route']);
+    deactivatePortal();
+  });
+
   it('should use a distinct cache key for portal scoped routes', () => {
     expect(getMultiPortalRouteScopeCacheKey('customer-portal')).toBe('portal:customer-portal');
   });

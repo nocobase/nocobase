@@ -54,6 +54,7 @@ type MultiPortalRouteRepositoryState = {
   originalEnsureAccessibleLoaded: RouteRepositoryLike['ensureAccessibleLoaded'];
   originalRefreshAccessible: RouteRepositoryLike['refreshAccessible'];
   portalUids: () => string[];
+  refreshRequestIds: Map<string, number>;
   scopeStack: Array<{
     deactivate: () => void;
     scope: RouteScope;
@@ -112,7 +113,13 @@ function getRepositoryApi(routeRepository: RouteRepositoryLike) {
   return (routeRepository as RouteRepositoryWithApi).getAPIClient();
 }
 
-async function refreshPortalAccessibleRoutes(routeRepository: RouteRepositoryLike, scope: RouteScope) {
+async function refreshPortalAccessibleRoutes(
+  routeRepository: RouteRepositoryLike,
+  scope: RouteScope,
+  state: MultiPortalRouteRepositoryState,
+) {
+  const requestId = (state.refreshRequestIds.get(scope.cacheKey) || 0) + 1;
+  state.refreshRequestIds.set(scope.cacheKey, requestId);
   const response = await getRepositoryApi(routeRepository).request({
     url: '/desktopRoutes:listAccessible',
     params: {
@@ -122,7 +129,9 @@ async function refreshPortalAccessibleRoutes(routeRepository: RouteRepositoryLik
     },
   });
   const routes = Array.isArray(response?.data?.data) ? response.data.data : [];
-  routeRepository.setRoutes(routes, scope.cacheKey);
+  if (state.refreshRequestIds.get(scope.cacheKey) === requestId) {
+    routeRepository.setRoutes(routes, scope.cacheKey);
+  }
   return routes;
 }
 
@@ -146,6 +155,7 @@ export function installMultiPortalRouteRepositoryScope(routeRepository: unknown,
     originalEnsureAccessibleLoaded: repository.ensureAccessibleLoaded.bind(repository),
     originalRefreshAccessible: repository.refreshAccessible.bind(repository),
     portalUids,
+    refreshRequestIds: new Map(),
     scopeStack: [],
   };
   repository[MULTI_PORTAL_ROUTE_REPOSITORY_STATE] = state;
@@ -178,7 +188,7 @@ export function installMultiPortalRouteRepositoryScope(routeRepository: unknown,
       return state.originalRefreshAccessible();
     }
 
-    return refreshPortalAccessibleRoutes(repository, scope);
+    return refreshPortalAccessibleRoutes(repository, scope, state);
   };
 
   repository.ensureAccessibleLoaded = async () => {
@@ -196,7 +206,7 @@ export function installMultiPortalRouteRepositoryScope(routeRepository: unknown,
       return existingLoadingPromise;
     }
 
-    const loadingPromise = refreshPortalAccessibleRoutes(repository, scope).finally(() => {
+    const loadingPromise = refreshPortalAccessibleRoutes(repository, scope, state).finally(() => {
       if (state.loadingPromises.get(scope.cacheKey) === loadingPromise) {
         state.loadingPromises.delete(scope.cacheKey);
       }
