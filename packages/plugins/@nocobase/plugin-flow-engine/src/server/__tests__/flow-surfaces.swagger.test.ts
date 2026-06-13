@@ -510,6 +510,8 @@ describe('flowSurfaces swagger', () => {
       'approvalInitiator',
       'approvalApprover',
       'approvalInformation',
+      'markdown',
+      'jsBlock',
     ]);
     expect(schemas.FlowSurfaceApprovalBlueprintBlockSpec.properties.template.$ref).toBe(
       '#/components/schemas/FlowSurfaceBlockTemplateRef',
@@ -526,6 +528,10 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('initiator');
     expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('taskCard');
     expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('template: { uid, mode }');
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('markdown');
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('jsBlock');
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('approvalSubmit');
+    expect(schemas.FlowSurfaceApplyApprovalBlueprintRequest.description).toContain('aggregate `errors[]`');
     expect(schemas.FlowSurfaceApplyApprovalBlueprintResponse.required).toEqual([
       'version',
       'mode',
