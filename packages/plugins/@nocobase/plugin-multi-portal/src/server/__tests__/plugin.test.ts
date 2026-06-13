@@ -18,6 +18,11 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:update',
   'multiPortals:destroy',
 ];
+const ROLE_MULTI_PORTAL_PERMISSION_ACTIONS = [
+  'roles.multiPortals:*',
+  'rolesMultiPortalDesktopRoutes:*',
+  'rolesMultiPortalRoutePolicies:*',
+];
 
 interface RouteResponseItem {
   title?: string;
@@ -395,6 +400,41 @@ describe('plugin-multi-portal server', () => {
       targetKey: 'id',
       foreignKey: 'desktopRouteId',
       onDelete: 'CASCADE',
+    });
+  });
+
+  it('should define role multi-portal route default policy relation', async () => {
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+
+    const collection = app.db.getCollection('rolesMultiPortalRoutePolicies');
+    expect(collection).toBeTruthy();
+    expect(collection.options.autoGenId).toBe(false);
+    expect(collection.options.indexes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          unique: true,
+          fields: ['role_name', 'multi_portal_uid'],
+        }),
+      ]),
+    );
+    expect(collection.getField('role')?.options).toMatchObject({
+      type: 'belongsTo',
+      target: 'roles',
+      targetKey: 'name',
+      foreignKey: 'roleName',
+      onDelete: 'CASCADE',
+    });
+    expect(collection.getField('multiPortal')?.options).toMatchObject({
+      type: 'belongsTo',
+      target: 'multiPortals',
+      targetKey: 'uid',
+      foreignKey: 'multiPortalUid',
+      onDelete: 'CASCADE',
+    });
+    expect(collection.getField('allowNewMenu')?.options).toMatchObject({
+      type: 'boolean',
+      defaultValue: false,
     });
   });
 
@@ -1229,10 +1269,14 @@ describe('plugin-multi-portal server', () => {
     app = await createMultiPortalAclMockServer();
 
     const snippet = app.acl.snippetManager.snippets.get('pm.multi-portal');
+    const roleSnippet = app.acl.snippetManager.snippets.get('pm.acl.roles');
 
     expect(snippet).toBeDefined();
     expect(snippet?.actions.sort()).toEqual([...MULTI_PORTAL_MANAGEMENT_ACTIONS].sort());
     expect(snippet?.actions).not.toContain('multiPortals:listEnabled');
+    expect(snippet?.actions).not.toContain('rolesMultiPortalRoutePolicies:*');
+    expect(roleSnippet).toBeDefined();
+    expect(roleSnippet?.actions).toEqual(expect.arrayContaining(ROLE_MULTI_PORTAL_PERMISSION_ACTIONS));
   });
 
   it('should keep multiPortals management actions behind plugin configuration snippets', async () => {

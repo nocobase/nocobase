@@ -26,7 +26,11 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:update',
   'multiPortals:destroy',
 ];
-const ROLE_MULTI_PORTAL_PERMISSION_ACTIONS = ['roles.multiPortals:*', 'rolesMultiPortalDesktopRoutes:*'];
+const ROLE_MULTI_PORTAL_PERMISSION_ACTIONS = [
+  'roles.multiPortals:*',
+  'rolesMultiPortalDesktopRoutes:*',
+  'rolesMultiPortalRoutePolicies:*',
+];
 
 type MultiPortalRuntimeField = (typeof MULTI_PORTAL_RUNTIME_FIELDS)[number];
 type MultiPortalUiLayoutRuntimeField = (typeof MULTI_PORTAL_UI_LAYOUT_RUNTIME_FIELDS)[number];
