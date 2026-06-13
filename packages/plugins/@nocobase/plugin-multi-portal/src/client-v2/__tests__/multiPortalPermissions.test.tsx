@@ -113,6 +113,59 @@ describe('plugin-multi-portal route permissions', () => {
     expect(resource.messageSuccess).toHaveBeenCalledWith('Saved successfully');
   });
 
+  it('should include hidden descendants when bulk granting visible portal routes', async () => {
+    const resource = createMultiPortalPermissionResources({
+      routes: [
+        {
+          id: 1,
+          title: 'Home',
+          children: [
+            {
+              id: 2,
+              title: 'Hidden setup',
+              hidden: true,
+            },
+          ],
+        },
+        {
+          id: 3,
+          title: 'Reports',
+        },
+      ],
+      selectedPortalUids: ['customer-portal'],
+      selectedRouteIds: [],
+    });
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+
+    render(
+      <AntdApp>
+        <MultiPortalPermissionsTab activeKey="multi-portals" activeRole={{ name: 'portal-member', title: 'Member' }} />
+      </AntdApp>,
+    );
+
+    const configureButton = await screen.findByRole('button', {
+      name: 'Configure menu permissions for Customer portal',
+    });
+    await act(async () => {
+      await user.click(configureButton);
+    });
+    const drawer = await screen.findByRole('dialog', {
+      name: 'Configure menu permissions for Customer portal',
+    });
+
+    await act(async () => {
+      await user.click(within(drawer).getByRole('checkbox', { name: 'Allow access' }));
+    });
+
+    await waitFor(() => {
+      expect(resource.routePermissionCreate).toHaveBeenCalledTimes(3);
+    });
+    expect(resource.routePermissionCreate.mock.calls.map(([params]) => params.values.desktopRouteId)).toEqual([
+      1, 2, 3,
+    ]);
+  });
+
   it('should configure the default route access policy in the portal route drawer', async () => {
     const resource = createMultiPortalPermissionResources({
       routeDefaultPolicy: {
@@ -331,6 +384,13 @@ describe('plugin-multi-portal route permissions', () => {
   });
 });
 
+type TestRouteRecord = {
+  id: number;
+  children?: TestRouteRecord[];
+  hidden?: boolean;
+  title: string;
+};
+
 type MultiPortalPermissionResourceOptions = {
   createRouteError?: Error;
   destroyRouteError?: Error;
@@ -340,10 +400,7 @@ type MultiPortalPermissionResourceOptions = {
   } | null;
   routeDefaultPolicyCreateError?: Error;
   routeDefaultPolicyUpdateError?: Error;
-  routes?: Array<{
-    id: number;
-    title: string;
-  }>;
+  routes?: TestRouteRecord[];
   selectedPortalUids: string[];
   selectedRouteIds: number[];
 };

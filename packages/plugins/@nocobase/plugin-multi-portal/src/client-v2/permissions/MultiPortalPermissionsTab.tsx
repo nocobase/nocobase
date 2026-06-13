@@ -190,6 +190,25 @@ function collectRouteIds(items: RoutePermissionRecord[] | undefined): number[] {
   return items.flatMap((item) => [item.id, ...collectRouteIds(item.children)]);
 }
 
+function collectRouteIdsWithSourceDescendants(
+  items: RoutePermissionRecord[] | undefined,
+  sourceItemById: Map<number, RoutePermissionRecord>,
+): number[] {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+  return uniqueOrdered(
+    items.flatMap((item) => {
+      const sourceItem = sourceItemById.get(item.id) ?? item;
+      return [
+        item.id,
+        ...collectRouteIds(sourceItem.children),
+        ...collectRouteIdsWithSourceDescendants(item.children, sourceItemById),
+      ];
+    }),
+  );
+}
+
 function flattenItems(items: RoutePermissionRecord[]): RoutePermissionRecord[] {
   return items.flatMap((item) => [item, ...flattenItems(item.children ?? [])]);
 }
@@ -384,6 +403,10 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     [routeItems, routeKeyword, t],
   );
   const visibleRouteIds = useMemo(() => collectRouteIds(visibleRouteItems), [visibleRouteItems]);
+  const bulkVisibleRouteIds = useMemo(
+    () => collectRouteIdsWithSourceDescendants(visibleRouteItems, routeItemById),
+    [routeItemById, visibleRouteItems],
+  );
   const visibleSelectedRouteCount = useMemo(() => {
     const selectedRouteIdSet = new Set(selectedRouteIds);
     return visibleRouteIds.filter((id) => selectedRouteIdSet.has(id)).length;
@@ -621,8 +644,8 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     const visibleRouteIdSet = new Set(visibleRouteIds);
     const visibleAllSelected = !!visibleRouteIds.length && visibleRouteIds.every((id) => selectedRouteIdSet.has(id));
     const nextIds = visibleAllSelected
-      ? selectedRouteIds.filter((id) => !visibleRouteIdSet.has(id))
-      : uniqueOrdered([...selectedRouteIds, ...visibleRouteIds]);
+      ? selectedRouteIds.filter((id) => !visibleRouteIdSet.has(id) && !bulkVisibleRouteIds.includes(id))
+      : uniqueOrdered([...selectedRouteIds, ...bulkVisibleRouteIds]);
     await applyRoutePermissionChanges(nextIds);
   });
 
