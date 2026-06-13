@@ -891,6 +891,94 @@ describe('plugin-multi-portal server', () => {
     ]);
   });
 
+  it('should keep default route grants isolated between ui layouts and portals', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'default-grant-isolation-portal',
+        title: 'Default grant isolation portal',
+        routeName: 'defaultGrantIsolationPortal',
+        routePath: '/default-grant-isolation-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'default-grant-isolation-role',
+        allowNewMenu: true,
+      },
+    });
+    await app.db.getRepository('rolesUiLayouts').create({
+      values: {
+        roleName: role.get('name'),
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    await app.db.getRepository('rolesMultiPortals').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: portal.get('uid'),
+      },
+    });
+    await app.db.getRepository('rolesMultiPortalRoutePolicies').create({
+      values: {
+        roleName: role.get('name'),
+        multiPortalUid: portal.get('uid'),
+        allowNewMenu: true,
+      },
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const portalRouteResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: portal.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'default grant isolation portal page',
+        schemaUid: 'default-grant-isolation-portal-page',
+      },
+    });
+    const layoutRouteResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      values: {
+        type: 'flowPage',
+        title: 'default grant isolation layout page',
+        schemaUid: 'default-grant-isolation-layout-page',
+      },
+    });
+    const portalRouteId = portalRouteResponse.body.data.id;
+    const layoutRouteId = layoutRouteResponse.body.data.id;
+
+    const layoutRoutePermissions = await app.db.getRepository('rolesUiLayoutDesktopRoutes').find({
+      filter: {
+        roleName: role.get('name'),
+        desktopRouteId: [portalRouteId, layoutRouteId],
+      },
+      sort: ['desktopRouteId', 'uiLayoutUid'],
+    });
+    const portalRoutePermissions = await app.db.getRepository('rolesMultiPortalDesktopRoutes').find({
+      filter: {
+        roleName: role.get('name'),
+        desktopRouteId: [portalRouteId, layoutRouteId],
+      },
+      sort: ['desktopRouteId', 'multiPortalUid'],
+    });
+
+    expect(
+      layoutRoutePermissions.map((permission) => [permission.get('desktopRouteId'), permission.get('uiLayoutUid')]),
+    ).toEqual([[layoutRouteId, DEFAULT_ADMIN_UI_LAYOUT.uid]]);
+    expect(
+      portalRoutePermissions.map((permission) => [permission.get('desktopRouteId'), permission.get('multiPortalUid')]),
+    ).toEqual([[portalRouteId, portal.get('uid')]]);
+  });
+
   it('should enforce role portal access before listing portal routes', async () => {
     app = await createMultiPortalAclMockServer();
 

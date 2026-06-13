@@ -450,7 +450,9 @@ async function addDesktopRouteCreateMultiPortal(ctx: ResourcerContext, next: () 
   await next();
 
   if (typeof portalUid === 'string' && portalUid) {
-    await grantDefaultRouteAccessToNewMultiPortalRoutes(ctx, portalUid, collectDesktopRouteIds(ctx.body));
+    const desktopRouteIds = collectDesktopRouteIds(ctx.body);
+    await removeUiLayoutRoutePermissionsFromMultiPortalRoutes(ctx, desktopRouteIds);
+    await grantDefaultRouteAccessToNewMultiPortalRoutes(ctx, portalUid, desktopRouteIds);
   }
 }
 
@@ -511,6 +513,22 @@ async function grantDefaultRouteAccessToNewMultiPortalRoutes(
       });
     }
   }
+}
+
+async function removeUiLayoutRoutePermissionsFromMultiPortalRoutes(
+  ctx: ResourcerContext,
+  desktopRouteIds: DesktopRouteId[],
+) {
+  if (!desktopRouteIds.length || !ctx.db.getCollection('rolesUiLayoutDesktopRoutes')) {
+    return;
+  }
+
+  await ctx.db.getRepository('rolesUiLayoutDesktopRoutes').destroy({
+    filter: {
+      desktopRouteId: desktopRouteIds,
+    },
+    context: ctx,
+  });
 }
 
 async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Model, options?: DatabaseHookOptions) {
