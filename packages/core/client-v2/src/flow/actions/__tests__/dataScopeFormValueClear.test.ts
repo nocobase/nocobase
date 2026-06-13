@@ -371,4 +371,748 @@ describe('ensureFormValueDrivenDataScopeClear', () => {
 
     expect(onChange).toHaveBeenCalledWith(null);
   });
+
+  it('does not clear a row field when another row is removed after it', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_o2m: [
+            { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 1 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:0'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: '{{ ctx.item.value.companyName }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [{ __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } }],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('does not clear a row field when another row is removed before it and the row index changes', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_o2m: [
+            { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: '{{ ctx.item.value.companyName }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [{ __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } }],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('does not clear a row field after reindexing when rows use a custom filter target key', () => {
+    const emitter = new EventEmitter();
+    const usersField = {
+      targetCollection: { filterTargetKey: 'name' },
+      isAssociationField: () => true,
+    };
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        collection: { getField: (name: string) => (name === 'org_o2m' ? usersField : null) },
+        formValues: {
+          org_o2m: [
+            { name: 'alice', companyName: 'a', user_m2o: { id: 1 } },
+            { name: 'bob', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: '{{ ctx.item.value.companyName }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [{ name: 'bob', companyName: 'b', user_m2o: { id: 2 } }],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('does not clear a row field after reindexing when rows use a composite filter target key', () => {
+    const emitter = new EventEmitter();
+    const usersField = {
+      targetCollection: { filterTargetKey: ['tenantId', 'code'] },
+      isAssociationField: () => true,
+    };
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        collection: { getField: (name: string) => (name === 'org_o2m' ? usersField : null) },
+        formValues: {
+          org_o2m: [
+            { tenantId: 1, code: 'a', companyName: 'a', user_m2o: { id: 1 } },
+            { tenantId: 1, code: 'b', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: '{{ ctx.item.value.companyName }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [{ tenantId: 1, code: 'b', companyName: 'b', user_m2o: { id: 2 } }],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps tracking a row after its custom filter target key changes', () => {
+    const emitter = new EventEmitter();
+    const usersField = {
+      targetCollection: { filterTargetKey: 'name' },
+      isAssociationField: () => true,
+    };
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        collection: { getField: (name: string) => (name === 'org_o2m' ? usersField : null) },
+        formValues: {
+          org_o2m: [
+            { name: 'alice', companyName: 'a', user_m2o: { id: 1 } },
+            { name: 'bob', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: '{{ ctx.item.value.companyName }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m', 1, 'name']],
+      allValues: {
+        org_o2m: [
+          { name: 'alice', companyName: 'a', user_m2o: { id: 1 } },
+          { name: 'robert', companyName: 'b', user_m2o: { id: 2 } },
+        ],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m', 1, 'companyName']],
+      allValues: {
+        org_o2m: [
+          { name: 'alice', companyName: 'a', user_m2o: { id: 1 } },
+          { name: 'robert', companyName: 'c', user_m2o: { id: 2 } },
+        ],
+      },
+    });
+
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('keeps tracking a row after its temporary identity changes to a persisted key', () => {
+    const emitter = new EventEmitter();
+    const usersField = {
+      targetCollection: { filterTargetKey: 'id' },
+      isAssociationField: () => true,
+    };
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        collection: { getField: (name: string) => (name === 'org_o2m' ? usersField : null) },
+        formValues: {
+          org_o2m: [
+            { id: 1, companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', __is_new__: true, companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: '{{ ctx.item.value.companyName }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m', 1, 'id']],
+      allValues: {
+        org_o2m: [
+          { id: 1, companyName: 'a', user_m2o: { id: 1 } },
+          { __index__: 'row-b', id: 2, companyName: 'b', user_m2o: { id: 2 } },
+        ],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m', 1, 'companyName']],
+      allValues: {
+        org_o2m: [
+          { id: 1, companyName: 'a', user_m2o: { id: 1 } },
+          { __index__: 'row-b', id: 2, companyName: 'c', user_m2o: { id: 2 } },
+        ],
+      },
+    });
+
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('does not clear a stale row field binding when its row has been removed', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_o2m: [
+            { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: '{{ ctx.item.value.companyName }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [{ __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } }],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('does not reattach a stale row field binding to the next row after deletion', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_o2m: [
+            { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } },
+            { __index__: 'row-c', companyName: 'c', user_m2o: { id: 3 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: '{{ ctx.item.value.companyName }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [
+          { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+          { __index__: 'row-c', companyName: 'c', user_m2o: { id: 3 } },
+        ],
+      },
+    });
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m', 1, 'companyName']],
+      allValues: {
+        org_o2m: [
+          { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+          { __index__: 'row-c', companyName: 'changed', user_m2o: { id: 3 } },
+        ],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('does not reattach a stale row field binding when the first stale event is an old index child change', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_o2m: [
+            { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } },
+            { __index__: 'row-c', companyName: 'c', user_m2o: { id: 3 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: '{{ ctx.item.value.companyName }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m', 1, 'companyName']],
+      allValues: {
+        org_o2m: [
+          { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+          { __index__: 'row-c', companyName: 'changed', user_m2o: { id: 3 } },
+        ],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('does not clear a stale removed row binding when data scope depends on the item length', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_o2m: [
+            { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'count', operator: '$eq', value: '{{ ctx.item.length }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [{ __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } }],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('still clears a row field when data scope explicitly depends on the item length', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_o2m: [
+            { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 1 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:0'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'count', operator: '$eq', value: '{{ ctx.item.length }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [{ __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } }],
+      },
+    });
+
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('does not clear a row field when data scope depends on the item index and another row is removed after it', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_o2m: [
+            { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 1 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:0'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'index', operator: '$eq', value: '{{ ctx.item.index }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [{ __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } }],
+      },
+    });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('clears a row field when data scope depends on the item index and the row index changes', () => {
+    const emitter = new EventEmitter();
+    const formBlock = {
+      uid: 'form-1',
+      disposed: false,
+      emitter,
+      context: {
+        form: {},
+        formValues: {
+          org_o2m: [
+            { __index__: 'row-a', companyName: 'a', user_m2o: { id: 1 } },
+            { __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } },
+          ],
+        },
+      },
+    };
+
+    const onChange = vi.fn();
+    const model: any = {
+      disposed: false,
+      props: {
+        value: { id: 2 },
+        onChange,
+      },
+      context: {
+        blockModel: formBlock,
+        fieldIndex: ['org_o2m:1'],
+      },
+    };
+
+    const ctx: any = {
+      model,
+      flowKey: 'selectSettings',
+    };
+
+    const filter = {
+      logic: '$and',
+      items: [{ path: 'index', operator: '$eq', value: '{{ ctx.item.index }}' }],
+    };
+
+    ensureFormValueDrivenDataScopeClear(ctx, filter);
+
+    emitter.emit('formValuesChange', {
+      changedPaths: [['org_o2m']],
+      allValues: {
+        org_o2m: [{ __index__: 'row-b', companyName: 'b', user_m2o: { id: 2 } }],
+      },
+    });
+
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
 });
