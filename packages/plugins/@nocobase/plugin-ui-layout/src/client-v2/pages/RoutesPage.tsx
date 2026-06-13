@@ -233,16 +233,40 @@ function filterRoutesByKeyword(
     .filter((route): route is NocoBaseDesktopRoute => !!route);
 }
 
-function normalizeRouteValues(values: RouteFormValues, route?: NocoBaseDesktopRoute): Partial<NocoBaseDesktopRoute> {
+function normalizeRouteValues(
+  values: RouteFormValues,
+  route?: NocoBaseDesktopRoute,
+  options?: {
+    withInitialPageTab?: boolean;
+  },
+): Partial<NocoBaseDesktopRoute> {
   const routePath = values.routePath?.trim();
   const shouldPersistSchemaUid =
     values.type === NocoBaseDesktopRouteType.page || values.type === NocoBaseDesktopRouteType.flowPage;
-  return {
+  const routeValues: Partial<NocoBaseDesktopRoute> = {
     ...(shouldPersistSchemaUid ? { schemaUid: route?.schemaUid || randomId() } : {}),
     title: values.title.trim(),
     type: values.type,
     ...(routePath ? { options: { ...(route?.options ?? {}), href: routePath } } : {}),
   };
+
+  if (options?.withInitialPageTab && shouldPersistSchemaUid) {
+    return {
+      ...routeValues,
+      menuSchemaUid: randomId(),
+      enableTabs: false,
+      children: [
+        {
+          type: NocoBaseDesktopRouteType.tabs,
+          schemaUid: randomId(),
+          tabSchemaName: randomId(),
+          hidden: true,
+        },
+      ],
+    };
+  }
+
+  return routeValues;
 }
 
 function RouteTypeTag({ type }: { type: NocoBaseDesktopRouteType | undefined }) {
@@ -507,7 +531,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
           await desktopRoutesResource.create({
             layout: layout.uid,
             values: {
-              ...normalizeRouteValues(values),
+              ...normalizeRouteValues(values, undefined, { withInitialPageTab: true }),
               ...(parentRoute?.id !== undefined ? { parentId: parentRoute.id } : {}),
             },
           });

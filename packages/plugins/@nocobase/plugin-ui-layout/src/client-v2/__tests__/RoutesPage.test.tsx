@@ -99,6 +99,16 @@ describe('plugin-ui-layout RoutesPage', () => {
       expect(resource.create).toHaveBeenCalledWith({
         layout: DEFAULT_MOBILE_UI_LAYOUT.uid,
         values: expect.objectContaining({
+          children: [
+            expect.objectContaining({
+              hidden: true,
+              schemaUid: 'generated-route-schema-uid',
+              tabSchemaName: 'generated-route-schema-uid',
+              type: 'tabs',
+            }),
+          ],
+          enableTabs: false,
+          menuSchemaUid: 'generated-route-schema-uid',
           schemaUid: 'generated-route-schema-uid',
           title: 'Mobile approvals',
           type: 'flowPage',
@@ -253,6 +263,16 @@ describe('plugin-ui-layout RoutesPage', () => {
       expect(resource.create).toHaveBeenCalledWith({
         layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
         values: expect.objectContaining({
+          children: [
+            expect.objectContaining({
+              hidden: true,
+              schemaUid: 'generated-route-schema-uid',
+              tabSchemaName: 'generated-route-schema-uid',
+              type: 'tabs',
+            }),
+          ],
+          enableTabs: false,
+          menuSchemaUid: 'generated-route-schema-uid',
           parentId: 1,
           schemaUid: 'generated-route-schema-uid',
           title: 'Desktop child tab',
