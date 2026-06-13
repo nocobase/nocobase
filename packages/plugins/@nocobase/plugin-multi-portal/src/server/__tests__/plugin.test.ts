@@ -372,6 +372,53 @@ describe('plugin-multi-portal server', () => {
     );
 
     expect(portalAccessKeys).toEqual(['new-portal-default-allowed:default-policy-new-portal']);
+
+    const routePolicyRecords = await app.db.getRepository('rolesMultiPortalRoutePolicies').find({
+      filter: {
+        roleName: ['new-portal-default-allowed', 'new-portal-default-denied'],
+      },
+      sort: ['roleName', 'multiPortalUid'],
+    });
+    const routePolicyValues = routePolicyRecords.map((record) => [
+      `${record.get('roleName')}:${record.get('multiPortalUid')}`,
+      record.get('allowNewMenu'),
+    ]);
+
+    expect(routePolicyValues).toEqual([['new-portal-default-allowed:default-policy-new-portal', true]]);
+  });
+
+  it('should initialize route default policies for built-in roles when granting new multi-portals', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'built-in-default-policy-portal',
+        title: 'Built-in default policy portal',
+        routeName: 'builtInDefaultPolicyPortal',
+        routePath: '/built-in-default-policy-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const routePolicyRecords = await app.db.getRepository('rolesMultiPortalRoutePolicies').find({
+      filter: {
+        roleName: ['admin', 'member'],
+        multiPortalUid: 'built-in-default-policy-portal',
+      },
+      sort: ['roleName', 'multiPortalUid'],
+    });
+    const routePolicyValues = routePolicyRecords.map((record) => [
+      record.get('roleName'),
+      record.get('multiPortalUid'),
+      record.get('allowNewMenu'),
+    ]);
+
+    expect(routePolicyValues).toEqual([
+      ['admin', 'built-in-default-policy-portal', true],
+      ['member', 'built-in-default-policy-portal', true],
+    ]);
   });
 
   it('should define role multi-portal desktop route permission relation', async () => {

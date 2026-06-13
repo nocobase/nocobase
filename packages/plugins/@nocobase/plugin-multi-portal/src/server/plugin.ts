@@ -453,13 +453,18 @@ async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Mod
     },
     transaction: options?.transaction,
   });
-  const records = roles
+  const roleNames = roles
     .map((role) => role.get('name'))
-    .filter((roleName): roleName is string => typeof roleName === 'string' && !!roleName)
-    .map((roleName) => ({
-      roleName,
-      multiPortalUid,
-    }));
+    .filter((roleName): roleName is string => typeof roleName === 'string' && !!roleName);
+  const records = roleNames.map((roleName) => ({
+    roleName,
+    multiPortalUid,
+  }));
+  const routePolicyRecords = roleNames.map((roleName) => ({
+    roleName,
+    multiPortalUid,
+    allowNewMenu: true,
+  }));
 
   if (!records.length) {
     return;
@@ -468,6 +473,19 @@ async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Mod
   const repository = db.getRepository('rolesMultiPortals');
   for (const values of records) {
     await repository.firstOrCreate({
+      filterKeys: ['roleName', 'multiPortalUid'],
+      values,
+      transaction: options?.transaction,
+    });
+  }
+
+  if (!db.getCollection('rolesMultiPortalRoutePolicies')) {
+    return;
+  }
+
+  const routePolicyRepository = db.getRepository('rolesMultiPortalRoutePolicies');
+  for (const values of routePolicyRecords) {
+    await routePolicyRepository.firstOrCreate({
       filterKeys: ['roleName', 'multiPortalUid'],
       values,
       transaction: options?.transaction,
