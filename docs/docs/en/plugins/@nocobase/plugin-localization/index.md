@@ -1,8 +1,10 @@
 ---
+title: "Localization"
+keywords: "System management"
 displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
-  Supports managing localization resources of the application.
+  Allows to manage localization resources of the application.
 isFree: true
 builtIn: true
 defaultEnabled: false

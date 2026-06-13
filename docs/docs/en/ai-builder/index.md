@@ -95,13 +95,27 @@ The AI first outputs a design plan, then builds everything at once after confirm
 
 To learn more about building complete systems, see [Solutions](./dsl-reconciler).
 
+### Build a milestone, and the AI saves a restorable version for you
+
+After finishing a page, a set of data tables, or a workflow, let the AI save the current state as a version — if a configuration goes wrong, you can always roll back to the last clear milestone.
+
+```
+Save the current build as a version: completed customer management page, filter area, and edit form configuration
+```
+
+![AI creates a version after building](https://static-docs.nocobase.com/20260611115804.png)
+
+The AI won't save a version every time it changes a field; it only saves after completing and verifying a clear milestone, which keeps the version list easy to read and makes it easier to decide where to roll back to.
+
+To learn more about version control, see [Version Control](./version-control).
+
 ## Security & Audit
 
 Before letting an AI Agent operate NocoBase, we recommend understanding the authentication methods, permission controls, and operation auditing — ensuring the AI only does what it should, with every step recorded. See [Security & Audit](./security).
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) are domain knowledge packages that can be installed into AI Agents, enabling AI to understand NocoBase's configuration system. NocoBase provides 8 Skills covering the entire building workflow:
+[NocoBase Skills](https://github.com/nocobase/skills) are domain knowledge packages that can be installed into AI Agents, enabling AI to understand NocoBase's configuration system. NocoBase provides 9 Skills covering the entire building workflow:
 
 - [Environment Management](./env-bootstrap) — Environment checks, installation, deployment, upgrades, and troubleshooting
 - [Data Modeling](./data-modeling) — Create and manage data tables, fields, and relationships
@@ -111,6 +125,7 @@ Before letting an AI Agent operate NocoBase, we recommend understanding the auth
 - [Solutions](./dsl-reconciler) — Batch-build entire business systems from YAML
 - [Plugin Management](./plugin-manage) — View, enable, and disable plugins
 - [Release Management](./publish) — Cross-environment releases, backup & restore, and migration
+- [Version Control](./version-control) — Save restorable versions after completed milestones
 
 :::tip
 

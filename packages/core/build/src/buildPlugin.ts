@@ -344,6 +344,7 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
     }
 
     // copy package
+    await fs.remove(outputDir);
     await fs.copy(depDir, outputDir, { errorOnExist: false });
 
     // delete files

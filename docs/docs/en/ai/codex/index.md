@@ -61,7 +61,7 @@ Before starting, make sure you have the following environment ready:
 
 - Codex installed (`npm install -g @openai/codex`)
 - Node.js >= 22 (for running NocoBase CLI and Skills)
-- If you already have a NocoBase instance, **AI capabilities are evolving rapidly and only the latest beta version provides the full experience. Minimum version >= 2.1.0-beta.20, latest version strongly recommended.**
+- If you already have a NocoBase instance, **AI capabilities are evolving rapidly. The minimum required version is NocoBase 2.1.0, and we recommend updating to the latest version.**
 
 ## Quick Start
 

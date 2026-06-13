@@ -1,10 +1,10 @@
 ---
-title: "NocoBase 快速开始 - AI Agent 接入指南"
+title: "AI Agent 接入指南"
 description: "安装 NocoBase CLI，连接或安装 NocoBase 应用，让 AI Agent 开始操作你的业务系统。"
 keywords: "NocoBase CLI,AI Agent,接入,连接,安装,Skills,快速开始"
 ---
 
-# 快速开始
+# AI Agent 接入指南
 
 NocoBase 全面支持 AI Agent 协同——你可以用自然语言完成数据建模、页面搭建、工作流编排、权限配置，甚至开发自定义插件。无论你使用 Claude Code、Codex、Cursor 还是其他 AI 工具，都可以通过以下两个基础组件与 NocoBase 协同工作：
 
@@ -57,15 +57,16 @@ nb init --ui
 
 :::
 
-浏览器会自动打开可视化配置页面，分 5 步引导你完成配置：
+浏览器会自动打开可视化配置页面，分 6 步引导你完成配置：
 
-1. **开始配置** — 设置应用名称（同时作为 CLI 环境名），选择「全新安装」
-2. **创建应用** — 选择安装方式（Docker / npm / Git）、设置端口等基础配置
-3. **下载应用文件** — 选择来源和版本，下载 NocoBase 源码或镜像
-4. **配置数据库** — 使用内置数据库或配置外部数据库（PostgreSQL、MySQL、MariaDB）
-5. **创建管理员账号** — 设置管理员邮箱和密码
+1. 「开始设置」——选择新安装、本机接管，或远程连接。
+2. 「应用环境信息」——设置应用的基础信息、存储位置和运行端口。
+3. 「应用来源和版本」——选择应用的获取方式，以及要使用的来源和版本。
+4. 「配置数据库」——选择内置数据库或自定义数据库。
+5. 「创建管理员账号」——设置第一个管理员账号。
+6. 「连接与认证」——填写应用访问地址并选择认证方式。
 
-![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
 安装完成后，打开浏览器访问 `http://localhost:13000`（默认端口），用你刚才设置的管理员账号登录即可。
 
@@ -91,7 +92,7 @@ nb init --ui
 
 ## AI Agent 连接已有的 NocoBase
 
-如果你已经有一个运行中的 NocoBase 实例，可以直接让 AI Agent 连接它。**由于 AI 能力迭代快速，目前仅 beta 最新版本支持完整体验，最低版本要求 >= 2.1.0-beta.20，强烈建议更新到最新版本。**
+如果你已经有一个运行中的 NocoBase 实例，可以直接让 AI Agent 连接它。**由于 AI 能力迭代快速，最低版本要求为 NocoBase 2.1.0，建议更新到最新版本。**
 
 <Tabs>
 <Tab label="手动连接" value="manual-connect">
@@ -115,12 +116,12 @@ nb init --ui
 
 :::
 
-浏览器会自动打开可视化配置页面。在第一步「开始配置」中选择「连接已有应用」，然后：
+浏览器会自动打开可视化配置页面。在第一步「开始配置」中选择「远程连接」，然后：
 
 1. **填写 API 地址** — 输入你已有 NocoBase 实例的 API 地址（比如：`http://localhost:13000/api`）
 2. **选择认证方式** — 选择 [认证方式](../ai-builder/security)（快速上手推荐 OAuth）
 
-![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-06-11-21-18-31.png)
 
 无需配置安装方式、数据库和管理员账号，向导会跳过这些步骤。
 
@@ -131,7 +132,7 @@ nb init --ui
 </Tab>
 <Tab label="用 AI Agent 连接" value="ai-connect">
 
-将下方提示词复制给你的 AI 助手，它会完成 CLI 的安装和引导你完成连接已有 NocoBase 实例的配置，在可视化向导的第一步选择「连接已有应用」即可：
+将下方提示词复制给你的 AI 助手，它会完成 CLI 的安装和引导你完成连接已有 NocoBase 实例的配置，在可视化向导的第一步选择「远程连接」即可：
 
 ```
 帮我安装 NocoBase CLI 并完成初始化：https://docs.nocobase.com/cn/ai/ai-quick-start.md （请直接访问链接内容）

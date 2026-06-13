@@ -399,7 +399,7 @@
         "envExists": "Env \"{{envName}}\" already exists. Choose another env name."
       },
       "messages": {
-        "title": "Set up NocoBase for coding agents",
+        "title": "Set up NocoBase",
         "appNameRequiredWhenSkipped": "Env name is required when prompts are skipped.",
         "appNameEnvHelp": "Use `nb init --yes --env <envName>` to continue.",
         "resumeEnvRequired": "Env name is required when resuming setup.",
@@ -437,9 +437,9 @@
         }
       },
       "webUi": {
-        "pageTitle": "Set up NocoBase for coding agents",
-        "documentHeading": "Set up NocoBase for coding agents",
-        "documentHint": "Install a new app, manage one that already exists on this machine, or connect a remote app so coding agents can access and work with NocoBase.",
+        "pageTitle": "Set up NocoBase",
+        "documentHeading": "Set up NocoBase",
+        "documentHint": "Install a new app, manage an existing one, or connect a remote app. You can use it directly or let a coding agent access it later.",
         "gettingStarted": {
           "title": "Getting started",
           "description": "Choose whether to install a new app, manage a local app, or connect a remote app."

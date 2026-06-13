@@ -1,34 +1,62 @@
 [
   {
     "type": "custom-link",
-    "label": "Wie NocoBase funktioniert",
-    "link": "/get-started/how-nocobase-works"
-  },
-  {
-    "type": "custom-link",
-    "label": "Systemanforderungen",
-    "link": "/get-started/system-requirements"
-  },
-  {
-    "type": "custom-link",
-    "label": "Installationsmethoden und Versionsvergleich",
-    "link": "/get-started/quickstart"
-  },
-  {
-    "type": "custom-link",
     "label": "Schnellstart",
-    "link": "/ai/quick-start"
-  },
-  {
-    "type": "custom-link",
-    "label": "NocoBase CLI",
-    "proxy": false,
-    "link": "/nocobase-cli/"
-  },
-  {
-    "type": "custom-link",
-    "label": "Erste Schritte (Legacy)",
-    "proxy": false,
-    "link": "/get-started/how-nocobase-works"
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Wie NocoBase funktioniert",
+        "link": "/get-started/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "Betriebssystemanforderungen",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Produktion",
+            "link": "/get-started/system-requirements"
+          },
+          {
+            "type": "custom-link",
+            "label": "Lokale Entwicklungsumgebung",
+            "link": "/ai/local-development-setup"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "type": "custom-link",
+        "label": "Installationsmethoden und Versionsvergleich",
+        "link": "/get-started/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase-App installieren",
+        "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase-App aktualisieren",
+        "link": "/ai/upgrade-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Anbindungsanleitung für AI Agents",
+        "link": "/ai/quick-start"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase CLI",
+        "proxy": false,
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Erste Schritte (Legacy)",
+        "proxy": false,
+        "link": "/get-started/how-nocobase-works"
+      }
+    ]
   }
 ]

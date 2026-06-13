@@ -1,12 +1,12 @@
 ---
 title: "Control de versiones"
-description: "Guía del plugin de control de versiones: crear versiones, restaurarlas, configurar la retención, el atajo y las colecciones de usuario incluidas."
-keywords: "Control de versiones,Version control,gestión operativa,crear versión,restaurar versión,NocoBase"
+description: "Guía del plugin de control de versiones: guardar versiones automáticamente durante la construcción con IA, crear y restaurar versiones manualmente, configurar la retención, el atajo y las colecciones de usuario incluidas."
+keywords: "Control de versiones,Version control,gestión operativa,AI Builder,nocobase-revision,nb revision create,crear versión,restaurar versión,NocoBase"
 ---
 
 # Control de versiones
 
-En NocoBase, **Control de versiones** te permite guardar una versión recuperable de la aplicación actual. Puedes crear versiones manualmente, restaurar una versión guardada cuando lo necesites y usar la configuración del plugin para controlar cuántas versiones conservar, qué atajo usar y qué colecciones de usuario deben guardarse junto con la versión.
+En NocoBase, **Control de versiones** te permite guardar una versión recuperable de la aplicación actual. Puedes crear versiones manualmente, restaurar una versión guardada cuando lo necesites y hacer que AI Builder guarde versiones automáticamente después de hitos significativos.
 
 El control de versiones depende de [Gestión de copias de seguridad](../backup-manager/index.mdx) para guardar y restaurar estados de la aplicación. Antes de usar el control de versiones, habilita primero la gestión de copias de seguridad.
 
@@ -16,17 +16,31 @@ Las ediciones Community y Standard no incluyen el plugin de control de versiones
 
 :::
 
+## Versiones automáticas con IA
+
+Después de habilitar el plugin de control de versiones, AI Builder cuenta con una capa adicional de recuperación. Cuando un AI Agent empieza a trabajar en una solicitud, revisa las NocoBase Skills disponibles para la aplicación actual. Si encuentra la skill `nocobase-revision`, puede guardar hitos importantes de construcción como versiones recuperables.
+
+![La IA detecta la skill nocobase-revision al comenzar la construcción](https://static-docs.nocobase.com/20260611115845.png)
+
+Cuando la IA completa una parte que puede revisarse por separado, como crear una página, crear un conjunto de colecciones o configurar un flujo de trabajo, ejecuta `nb revision create` mediante NocoBase CLI. No necesitas hacer clic manualmente en 「Create version」 cada vez, y los ajustes pequeños no generarán demasiados registros de versión.
+
+![La IA crea una versión después de construir](https://static-docs.nocobase.com/20260611115804.png)
+
+Estas versiones aparecen en la lista de versiones. Si los cambios posteriores no son los esperados, puedes restaurar el hito anterior y continuar ajustando desde ahí.
+
 ## Abrir el plugin
 
-Puedes abrirlo desde 「System settings」 → 「Version control」. También aparece un botón de control de versiones en la barra superior. Desde ahí puedes crear una versión directamente o ir a la lista de versiones. El atajo predeterminado para crear una versión es `Ctrl + K`, y puedes cambiarlo en la pestaña de configuración.
+Después de habilitar el plugin, aparece el menú 「Version control」 en la barra superior. Desde ahí puedes crear una versión directamente o ir a la lista de versiones.
 
-![](https://static-docs.nocobase.com/20260526220402.png)
+También puedes abrir la página del plugin desde 「System settings / Version control」. El atajo predeterminado para crear una versión es `Ctrl + K`, y puedes cambiarlo en la pestaña de configuración.
+
+![Menú Version control](https://static-docs.nocobase.com/20260611112317.png)
 
 ## Crear una versión
 
 Haz clic en 「Create version」, escribe una descripción y guarda. La descripción puede tener hasta 2000 caracteres. Suele usarse para registrar el contexto del cambio, por ejemplo “Ajuste de campos y permisos del flujo de aprobación”.
 
-![](https://static-docs.nocobase.com/20260526220510.png)
+![Crear una versión](https://static-docs.nocobase.com/20260611112739.png)
 
 Después de hacer clic en guardar, la lista muestra primero una entrada temporal en estado “Saving”. Cuando termina, la versión aparece en la lista.
 
@@ -77,3 +91,4 @@ Si incluyes una colección de usuario, NocoBase también incluye automáticament
 - [Gestión de copias de seguridad](../backup-manager/index.mdx) — capacidad base de la que depende el control de versiones
 - [Gestión de migraciones](../migration-manager/index.md) — mover la configuración de la aplicación entre entornos
 - [Gestión de publicaciones](../release-management/index.md) — planificar flujos de publicación con copias de seguridad, migraciones y variables
+- [Inicio rápido del Constructor de IA](../../ai-builder/index.md) — completar modelado de datos, configuración de páginas y orquestación de flujos de trabajo con lenguaje natural

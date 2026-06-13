@@ -195,14 +195,27 @@ function compareWithOperator(version: string, operator: keyof ApiCommandCompatVe
 
 function normalizeAppByChannelComparableVersion(version: string): string {
   const normalized = String(version ?? '').trim();
-  const match = normalized.match(/^(\d+\.\d+\.\d+)-(alpha|beta|rc)(?:\.(\d+))?(?:\..+)?$/);
+  const match = normalized.match(/^(\d+\.\d+\.\d+)(?:-([0-9A-Za-z-.]+))?$/);
 
   if (!match) {
     return normalized;
   }
 
-  const [, base, channel, sequence] = match;
-  return sequence ? `${base}-${channel}.${sequence}` : `${base}-${channel}`;
+  const [, base, prerelease] = match;
+  if (!prerelease) {
+    return base;
+  }
+
+  const [channel, sequence] = prerelease.split('.');
+  if ((channel === 'alpha' || channel === 'beta') && sequence && /^\d+$/.test(sequence)) {
+    return `${base}-${channel}.${sequence}`;
+  }
+
+  if (channel === 'alpha' || channel === 'beta') {
+    return `${base}-${channel}`;
+  }
+
+  return base;
 }
 
 function normalizeAppByChannelCondition(
@@ -222,6 +235,55 @@ function normalizeAppByChannelCondition(
   }
 
   return normalized;
+}
+
+function compareAppByChannelVersions(version: string, expected: string): number {
+  const comparableVersion = normalizeAppByChannelComparableVersion(version);
+  const comparableExpected = normalizeAppByChannelComparableVersion(expected);
+
+  if (
+    comparableVersion === comparableExpected ||
+    comparableVersion.startsWith(`${comparableExpected}.`) ||
+    comparableVersion.startsWith(`${comparableExpected}-`)
+  ) {
+    return 0;
+  }
+
+  return compareVersions(comparableVersion, comparableExpected);
+}
+
+function compareAppByChannelWithOperator(
+  version: string,
+  operator: keyof ApiCommandCompatVersionCondition,
+  expected: string,
+): boolean {
+  const compared = compareAppByChannelVersions(version, expected);
+
+  switch (operator) {
+    case 'eq':
+      return compared === 0;
+    case 'gt':
+      return compared > 0;
+    case 'gte':
+      return compared >= 0;
+    case 'lt':
+      return compared < 0;
+    case 'lte':
+      return compared <= 0;
+    default:
+      return false;
+  }
+}
+
+function matchesAppByChannelVersionCondition(version: string, condition?: ApiCommandCompatVersionCondition): boolean {
+  if (!condition) {
+    return true;
+  }
+
+  return (['eq', 'gt', 'gte', 'lt', 'lte'] as const).every((operator) => {
+    const expected = condition[operator];
+    return expected ? compareAppByChannelWithOperator(version, operator, expected) : true;
+  });
 }
 
 function matchesVersionCondition(version: string, condition?: ApiCommandCompatVersionCondition): boolean {
@@ -271,11 +333,8 @@ function resolveAppChannel(version: string): ApiCommandCompatAppChannel {
   if (channel === 'beta') {
     return 'beta';
   }
-  if (channel === 'rc') {
-    return 'rc';
-  }
 
-  return 'unknownPrerelease';
+  return 'stable';
 }
 
 function evaluateAppByChannelCondition(
@@ -322,7 +381,7 @@ function evaluateAppByChannelCondition(
   const comparableCondition = normalizeAppByChannelCondition(channelCondition);
 
   return {
-    result: matchesVersionCondition(comparableVersion, comparableCondition) ? 'match' : 'mismatch',
+    result: matchesAppByChannelVersionCondition(comparableVersion, comparableCondition) ? 'match' : 'mismatch',
     channel,
     condition: channelCondition,
   };

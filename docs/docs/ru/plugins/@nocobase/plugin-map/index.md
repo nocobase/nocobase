@@ -1,12 +1,14 @@
 ---
-displayName: "Блок: Карта"
+title: "Block: Map"
+keywords: "Blocks"
+displayName: "Block: Map"
 packageName: '@nocobase/plugin-map'
 description: |
-  Блок карты, поддерживает карты Gaode и Google, вы также можете расширить его другими типами карт.
+  Map block, support Gaode map and Google map, you can also extend more map types.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Блок: Карта
+# Block: Map

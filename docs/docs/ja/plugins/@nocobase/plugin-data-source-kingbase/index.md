@@ -1,15 +1,17 @@
 ---
-displayName: "データソース：人大金倉（KingbaseES）"
+title: "Data source: KingbaseES"
+keywords: "Data sources"
+displayName: "Data source: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  人大金倉（KingbaseES）データベースをデータソースとして使用します。メインデータベースとしても、外部データベースとしても使用できます。
+  Using the KingbaseES database as a data source, it can serve as the main database or as an external database.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# データソース：人大金倉（KingbaseES）
+# Data source: KingbaseES

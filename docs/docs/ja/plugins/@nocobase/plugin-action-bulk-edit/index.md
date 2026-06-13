@@ -1,15 +1,17 @@
 ---
-displayName: "操作：一括編集"
+title: "Action: Batch edit"
+keywords: "Actions"
+displayName: "Action: Batch edit"
 packageName: '@nocobase/plugin-action-bulk-edit'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  すべてのデータまたは選択したデータを一括編集します。
+  Batch edit all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# 操作：一括編集
+# Action: Batch edit

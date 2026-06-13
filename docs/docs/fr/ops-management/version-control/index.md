@@ -1,12 +1,12 @@
 ---
 title: "Gestion des versions"
-description: "Guide du plugin de gestion des versions : créer des versions, les restaurer, régler la rétention, définir un raccourci et inclure des collections utilisateur."
-keywords: "Gestion des versions,Version control,gestion des opérations,créer une version,restaurer une version,NocoBase"
+description: "Guide du plugin de gestion des versions : enregistrer automatiquement des versions pendant la création avec l'IA, créer et restaurer des versions manuellement, régler la rétention, définir un raccourci et inclure des collections utilisateur."
+keywords: "Gestion des versions,Version control,gestion des opérations,AI Builder,nocobase-revision,nb revision create,créer une version,restaurer une version,NocoBase"
 ---
 
 # Gestion des versions
 
-Dans NocoBase, **Gestion des versions** permet d'enregistrer une version restaurable de l'application actuelle. Tu peux créer des versions manuellement, restaurer une version enregistrée quand nécessaire, et utiliser les réglages du plugin pour définir combien de versions conserver, quel raccourci utiliser et quelles collections utilisateur doivent être incluses dans une version.
+Dans NocoBase, **Gestion des versions** permet d'enregistrer une version restaurable de l'application actuelle. Tu peux créer des versions manuellement, restaurer une version enregistrée quand nécessaire, et laisser AI Builder enregistrer automatiquement des versions après des étapes significatives.
 
 La gestion des versions s'appuie sur [Gestion des sauvegardes](../backup-manager/index.mdx) pour enregistrer et restaurer les états de l'application. Avant d'utiliser la gestion des versions, active d'abord la gestion des sauvegardes.
 
@@ -16,17 +16,31 @@ Les éditions Community et Standard n'incluent pas le plugin de gestion des vers
 
 :::
 
+## Versions automatiques avec l'IA
+
+Une fois le plugin de gestion des versions activé, AI Builder dispose d'un point de retour supplémentaire. Quand un AI Agent commence à traiter une demande, il vérifie les NocoBase Skills disponibles pour l'application actuelle. S'il trouve la skill `nocobase-revision`, il peut enregistrer les étapes importantes de construction sous forme de versions restaurables.
+
+![L'IA détecte la skill nocobase-revision au début de la construction](https://static-docs.nocobase.com/20260611115845.png)
+
+Quand l'IA termine un résultat qui peut être vérifié séparément, comme une page, un groupe de collections ou un workflow, elle exécute `nb revision create` via NocoBase CLI. Tu n'as pas besoin de cliquer manuellement sur 「Create version」 à chaque fois, et les petits ajustements ne créent pas trop d'enregistrements de version.
+
+![L'IA crée une version après la construction](https://static-docs.nocobase.com/20260611115804.png)
+
+Ces versions apparaissent dans la liste des versions. Si les modifications suivantes ne correspondent pas à tes attentes, tu peux restaurer l'étape précédente clairement identifiée et continuer les ajustements à partir de là.
+
 ## Ouvrir le plugin
 
-Tu peux ouvrir le plugin depuis 「System settings」 → 「Version control」. Un bouton de gestion des versions apparaît aussi dans la barre supérieure. Il permet de créer une version directement ou d'aller à la liste des versions. Le raccourci par défaut pour créer une version est `Ctrl + K`, et tu peux le modifier dans l'onglet des réglages.
+Une fois le plugin activé, le menu 「Version control」 apparaît dans la barre supérieure. Tu peux y créer une version directement ou accéder à la liste des versions.
 
-![](https://static-docs.nocobase.com/20260526220402.png)
+Tu peux aussi ouvrir la page du plugin depuis 「System settings / Version control」. Le raccourci par défaut pour créer une version est `Ctrl + K`, et tu peux le modifier dans l'onglet des réglages.
+
+![Menu Version control](https://static-docs.nocobase.com/20260611112317.png)
 
 ## Créer une version
 
 Clique sur 「Create version」, saisis une description, puis enregistre. La description peut contenir jusqu'à 2000 caractères. Elle sert bien à noter le contexte du changement, par exemple « Ajustement des champs et permissions du flux d'approbation ».
 
-![](https://static-docs.nocobase.com/20260526220510.png)
+![Créer une version](https://static-docs.nocobase.com/20260611112739.png)
 
 Après avoir cliqué sur enregistrer, la liste affiche d'abord une ligne temporaire avec l'état « Saving ». Une fois terminée, la version enregistrée apparaît dans la liste.
 
@@ -77,3 +91,4 @@ Si tu inclus une collection utilisateur, NocoBase inclut aussi automatiquement l
 - [Gestion des sauvegardes](../backup-manager/index.mdx) — capacité de base requise par la gestion des versions
 - [Gestion des migrations](../migration-manager/index.md) — déplacer la configuration de l'application entre plusieurs environnements
 - [Gestion des publications](../release-management/index.md) — planifier un processus de publication avec sauvegardes, migrations et variables
+- [Démarrage rapide de la construction par IA](../../ai-builder/index.md) — utiliser le langage naturel pour la modélisation des données, la configuration de pages et l'orchestration de workflows

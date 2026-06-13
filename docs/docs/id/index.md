@@ -18,12 +18,12 @@ features:
   - title: Mulai
     details: 'Cara tradisional untuk memulai NocoBase — instalasi, konfigurasi, dan eksplorasi langkah demi langkah.'
     items:
-      - title: Mulai Cepat
-        details: 'Instal NocoBase CLI, konfigurasi AI Skills, dan hubungkan AI Agent untuk mempersiapkan AI dalam membangun, menggunakan, dan mengembangkan NocoBase.'
-        link: /ai/quick-start
       - title: Memulai NocoBase
         details: Pahami konsep inti dan operasi dasar NocoBase.
         link: /ai/how-nocobase-works
+      - title: Instal aplikasi NocoBase
+        details: Gunakan NocoBase CLI untuk memasang aplikasi dengan cepat.
+        link: /ai/install-nocobase-app
       - title: Tutorial
         details: 'Mulai dari nol, ikuti tutorial untuk membangun proyek nyata langkah demi langkah.'
         link: /tutorials/v2/
