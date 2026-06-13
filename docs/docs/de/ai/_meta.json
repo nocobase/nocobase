@@ -42,6 +42,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Von 2.0 auf 2.1 aktualisieren",
+        "link": "/ai/upgrade-from-2-0-to-2-1"
+      },
+      {
+        "type": "custom-link",
         "label": "Anbindungsanleitung für AI Agents",
         "link": "/ai/quick-start"
       },
