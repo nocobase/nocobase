@@ -98,11 +98,6 @@ type CalendarPopupActionOptions = {
   persist?: boolean;
 };
 
-const CALENDAR_LEGACY_POPUP_ACTION_UID_MARKERS: Record<'quickCreateAction' | 'eventViewAction', string[]> = {
-  quickCreateAction: ['quickCreateAction', 'quick-create-action'],
-  eventViewAction: ['eventViewAction', 'event-view-action'],
-};
-
 const DRAG_HANDLER_TOOLBAR_ITEMS = [
   {
     key: 'drag-handler',
@@ -306,12 +301,6 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return this.subModels?.eventViewAction as any;
   }
 
-  isLegacyPopupActionUid(actionKey: 'quickCreateAction' | 'eventViewAction', actionUid?: string) {
-    return Boolean(
-      actionUid && CALENDAR_LEGACY_POPUP_ACTION_UID_MARKERS[actionKey].some((marker) => actionUid.includes(marker)),
-    );
-  }
-
   getPopupSettingsDefaults(actionUid?: string) {
     return {
       mode: normalizeEventOpenMode(this.props?.eventOpenMode),
@@ -437,33 +426,11 @@ export class CalendarBlockModel extends CollectionBlockModel {
       action = this.subModels?.[actionKey] as any;
     }
 
-    const legacyAction =
-      action?.__legacyPopupAction || (this.isLegacyPopupActionUid(actionKey, action?.uid) ? action : null);
-    if (legacyAction === action && typeof action?.clone === 'function') {
-      const clonedAction = action.clone();
-      Object.defineProperty(clonedAction, '__legacyPopupAction', {
-        value: action,
-        configurable: true,
-      });
-      action = clonedAction;
-      this.setSubModel(actionKey, action);
-    }
-
     if (options.persist && this.context.flowSettingsEnabled && action?.save) {
       await action.save();
     }
 
     await this.syncPopupActionSettings(action, actionKey, options);
-
-    if (
-      options.persist &&
-      legacyAction &&
-      legacyAction.uid !== action?.uid &&
-      typeof legacyAction.destroy === 'function'
-    ) {
-      await legacyAction.destroy();
-      delete action.__legacyPopupAction;
-    }
 
     return action;
   }
@@ -866,6 +833,10 @@ CalendarBlockModel.registerFlow({
       async handler(ctx, params) {
         const model = ctx.model as CalendarBlockModel;
         model.setPopupSettings('quickCreateAction', params);
+      },
+      async beforeParamsSave(ctx, params) {
+        const model = ctx.model as CalendarBlockModel;
+        model.setPopupSettings('quickCreateAction', params);
         await model.ensurePopupAction('quickCreateAction', { persist: true });
       },
     },
@@ -878,6 +849,10 @@ CalendarBlockModel.registerFlow({
         return model.getPopupSettings(action, 'eventViewAction', action?.uid);
       },
       async handler(ctx, params) {
+        const model = ctx.model as CalendarBlockModel;
+        model.setPopupSettings('eventViewAction', params);
+      },
+      async beforeParamsSave(ctx, params) {
         const model = ctx.model as CalendarBlockModel;
         model.setPopupSettings('eventViewAction', params);
         await model.ensurePopupAction('eventViewAction', { persist: true });
