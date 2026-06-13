@@ -5,6 +5,12 @@ description: Upgrade a NocoBase app saved as a CLI env with nb app upgrade, incl
 
 # Upgrade NocoBase App
 
+:::tip Scope
+
+This guide applies to apps installed with `nb init`. If your app was installed with the old method, read [How to upgrade NocoBase from 2.0 to 2.1](./upgrade-from-2-0-to-2-1.md) first.
+
+:::
+
 ## Step 1: Confirm the Current Env
 
 ```bash

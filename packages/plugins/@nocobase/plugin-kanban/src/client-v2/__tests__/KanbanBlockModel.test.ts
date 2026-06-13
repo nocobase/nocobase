@@ -459,20 +459,15 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(model.subModels.quickCreateAction).toBe(loadedAction);
   });
 
-  test('replaces legacy kanban popup action uid when popup settings are saved', async () => {
+  test('keeps legacy kanban popup action uid usable when popup settings are saved', async () => {
     const destroy = vi.fn();
-    const clonedAction = {
-      uid: 'u_card_view_popup',
-      getStepParams: vi.fn(() => ({})),
-      setStepParams: vi.fn(),
-      save: vi.fn(),
-      saveStepParams: vi.fn(),
-    };
     const action = {
       uid: 'kanban-block-card-view-action',
       getStepParams: vi.fn(() => ({})),
       setStepParams: vi.fn(),
-      clone: vi.fn(() => clonedAction),
+      clone: vi.fn(),
+      save: vi.fn(),
+      saveStepParams: vi.fn(),
       destroy,
     };
     const model = Object.create(KanbanBlockModel.prototype) as KanbanBlockModel;
@@ -507,18 +502,19 @@ describe('KanbanBlockModel.filterCollection', () => {
 
     await model.ensureCardViewAction();
 
-    expect(action.clone).toHaveBeenCalledTimes(1);
-    expect(model.subModels.cardViewAction).toBe(clonedAction);
-    expect(clonedAction.save).not.toHaveBeenCalled();
-    expect(clonedAction.saveStepParams).not.toHaveBeenCalled();
+    expect(action.clone).not.toHaveBeenCalled();
+    expect(model.subModels.cardViewAction).toBe(action);
+    expect(action.save).not.toHaveBeenCalled();
+    expect(action.saveStepParams).not.toHaveBeenCalled();
     expect(destroy).not.toHaveBeenCalled();
 
     await model.ensureCardViewAction({ persist: true });
 
-    expect(action.clone).toHaveBeenCalledTimes(1);
-    expect(clonedAction.save).toHaveBeenCalledTimes(1);
-    expect(clonedAction.saveStepParams).toHaveBeenCalledTimes(1);
-    expect(destroy).toHaveBeenCalledTimes(1);
+    expect(action.clone).not.toHaveBeenCalled();
+    expect(model.subModels.cardViewAction).toBe(action);
+    expect(action.save).toHaveBeenCalledTimes(1);
+    expect(action.saveStepParams).toHaveBeenCalledTimes(1);
+    expect(destroy).not.toHaveBeenCalled();
   });
 
   test('syncPopupAction overwrites removed popup settings with undefined so stale template params do not survive merges', async () => {
@@ -705,6 +701,7 @@ describe('KanbanBlockModel.filterCollection', () => {
       pageModelClass: undefined,
       uid: 'quick-create-action',
     });
+    expect(model.ensureQuickCreateAction).toHaveBeenCalledWith({ persist: true });
   });
 
   test('card popup getter treats an explicitly cleared item template as higher priority than legacy block props', () => {
@@ -767,7 +764,7 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(parentModel.props).toMatchObject({
       cardPopupPageModelClass: 'PopupPageModel',
     });
-    expect(ensureCardViewAction).toHaveBeenCalledWith({ persist: true });
+    expect(ensureCardViewAction).not.toHaveBeenCalled();
     expect(syncCardViewAction).not.toHaveBeenCalled();
   });
 
@@ -1803,7 +1800,7 @@ describe('KanbanBlockModel.filterCollection', () => {
       popupTemplateUid: 'tpl-quick-create',
       popupTargetUid: 'popup-action-1',
     });
-    expect(ensureQuickCreateAction).toHaveBeenCalledWith({ persist: true });
+    expect(ensureQuickCreateAction).not.toHaveBeenCalled();
     expect(syncQuickCreateAction).not.toHaveBeenCalled();
   });
 

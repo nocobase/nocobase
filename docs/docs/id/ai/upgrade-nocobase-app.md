@@ -5,6 +5,12 @@ description: Upgrade aplikasi NocoBase yang disimpan sebagai CLI env dengan nb a
 
 # Upgrade aplikasi NocoBase
 
+:::tip Cakupan
+
+Panduan ini berlaku untuk aplikasi yang diinstal dengan `nb init`. Jika aplikasimu diinstal dengan cara lama, baca dulu [Cara upgrade NocoBase dari 2.0 ke 2.1](./upgrade-from-2-0-to-2-1.md).
+
+:::
+
 ## Langkah 1: konfirmasi env saat ini
 
 Konfirmasi dulu CLI env yang sedang aktif:

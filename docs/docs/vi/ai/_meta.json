@@ -42,6 +42,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Nâng cấp từ 2.0 lên 2.1",
+        "link": "/ai/upgrade-from-2-0-to-2-1"
+      },
+      {
+        "type": "custom-link",
         "label": "Hướng dẫn tích hợp AI Agent",
         "link": "/ai/quick-start"
       },

@@ -5,6 +5,12 @@ description: Aktualisiere eine als CLI env gespeicherte NocoBase App mit nb app 
 
 # NocoBase App aktualisieren
 
+:::tip Geltungsbereich
+
+Diese Anleitung gilt für Apps, die mit `nb init` installiert wurden. Wenn deine App mit der alten Methode installiert wurde, lies zuerst [So aktualisierst du NocoBase von 2.0 auf 2.1](./upgrade-from-2-0-to-2-1.md).
+
+:::
+
 ## Schritt 1: Aktuelle env prüfen
 
 Prüfe zuerst die aktuell aktive CLI env:
