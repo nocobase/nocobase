@@ -41,6 +41,12 @@ import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import {
+  FieldStateRulesEditor,
+  isFieldStateTargetPathAllowed,
+  isVisibilityFieldState,
+} from '../components/FieldStateRulesEditor';
+import type { FieldStateOption, FieldStateRuleItem, FieldStateValue } from '../components/FieldStateRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import _ from 'lodash';
@@ -50,6 +56,8 @@ import { enumToOptions, translateOptionLabel } from '../internal/utils/enumOptio
 import {
   findFormItemModelByFieldPath,
   getCollectionFromModel,
+  getFormItemFieldPathCandidates,
+  getFormItemPreferredFieldPath,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
@@ -187,29 +195,6 @@ const getFieldOptionsBySelectedFields = (fieldOptions: any[], fields: string[] =
     deduped.set(JSON.stringify(option?.value), option);
   });
   return Array.from(deduped.values());
-};
-
-const getFieldStateProps = (state: string, selectedOptions?: any[]) => {
-  switch (state) {
-    case 'visible':
-      return { hiddenModel: false };
-    case 'hidden':
-      return { hiddenModel: true };
-    case 'hiddenReservedValue':
-      return { hidden: true };
-    case 'required':
-      return { required: true };
-    case 'notRequired':
-      return { required: false };
-    case 'disabled':
-      return { disabled: true };
-    case 'enabled':
-      return { disabled: false };
-    case 'limitOptions':
-      return Array.isArray(selectedOptions) ? { options: selectedOptions } : {};
-    default:
-      return null;
-  }
 };
 
 const getFieldStateTargetModel = (state: string, model: any) => {
@@ -483,6 +468,330 @@ function createLegacyTargetPathResolver(ctx: FlowContext) {
   };
 }
 
+function getFormItemModelsFromRoot(model: any): any[] {
+  const subModels = model?.subModels;
+  if (!subModels || typeof subModels !== 'object') return [];
+
+  if (Array.isArray(subModels.items)) {
+    return subModels.items;
+  }
+
+  const gridItems = subModels.grid?.subModels?.items;
+  return Array.isArray(gridItems) ? gridItems : [];
+}
+
+function getChildFormItemModels(model: any): any[] {
+  const fieldModel = model?.subModels?.field;
+  return getFormItemModelsFromRoot(fieldModel);
+}
+
+function getFieldStateTargetChildren(model: any): any[] {
+  const subModels = model?.subModels;
+  if (!subModels || typeof subModels !== 'object') return [];
+
+  const out: any[] = [];
+  const pushItems = (items: any) => {
+    if (Array.isArray(items)) {
+      out.push(...items.filter(Boolean));
+    }
+  };
+
+  pushItems(subModels.items);
+  pushItems(subModels.grid?.subModels?.items);
+  pushItems(subModels.columns);
+
+  const fieldModel = subModels.field;
+  if (fieldModel && fieldModel !== model) {
+    const fieldSubModels = fieldModel?.subModels;
+    pushItems(fieldSubModels?.items);
+    pushItems(fieldSubModels?.grid?.subModels?.items);
+    pushItems(fieldSubModels?.columns);
+  }
+
+  return _.uniq(out);
+}
+
+function findFieldStateTargetModel(root: any, predicate: (model: any) => boolean): any | null {
+  const seen = new Set<any>();
+  const walk = (model: any): any | null => {
+    if (!model || seen.has(model)) return null;
+    seen.add(model);
+    if (predicate(model)) return model;
+
+    for (const child of getFieldStateTargetChildren(model)) {
+      const hit = walk(child);
+      if (hit) return hit;
+    }
+    return null;
+  };
+
+  return walk(root);
+}
+
+function findFormItemModelByUid(root: any, uid: string): any | null {
+  if (!uid) return null;
+
+  const walk = (items: any[]): any | null => {
+    for (const item of items || []) {
+      if (!item) continue;
+      if (String(item.uid || '') === uid) return item;
+      const hit = walk(getChildFormItemModels(item));
+      if (hit) return hit;
+    }
+    return null;
+  };
+
+  return walk(getFormItemModelsFromRoot(root));
+}
+
+function findFieldStateModelByUid(root: any, uid: string): any | null {
+  if (!uid) return null;
+  return findFieldStateTargetModel(root, (model) => String(model?.uid || '') === uid);
+}
+
+function findFieldStateModelByFieldPath(root: any, targetPath: string): any | null {
+  const normalizedTargetPath = String(targetPath || '').trim();
+  if (!normalizedTargetPath) return null;
+
+  return findFieldStateTargetModel(root, (model) =>
+    getFormItemFieldPathCandidates(model).some((path) => path === normalizedTargetPath),
+  );
+}
+
+function createFieldStateTargetPathResolver(ctx: FlowContext) {
+  const legacyResolver = createLegacyTargetPathResolver(ctx);
+  return (fieldUid: string) => {
+    const fromEngine = legacyResolver(fieldUid);
+    if (fromEngine) return fromEngine;
+
+    const fromCurrent = findFieldStateModelByUid(ctx.model, fieldUid) || findFormItemModelByUid(ctx.model, fieldUid);
+    const currentPath = getFormItemPreferredFieldPath(fromCurrent);
+    if (currentPath) return currentPath;
+
+    const blockModel = (ctx.model as any)?.context?.blockModel;
+    const fromBlock = findFieldStateModelByUid(blockModel, fieldUid) || findFormItemModelByUid(blockModel, fieldUid);
+    const blockPath = getFormItemPreferredFieldPath(fromBlock);
+    return blockPath;
+  };
+}
+
+function normalizeFieldStateRuleItemsFromParams(
+  raw: any,
+  resolveTargetPath?: (legacyFieldUid: string) => string | undefined,
+): FieldStateRuleItem[] {
+  if (Array.isArray(raw)) {
+    return raw as FieldStateRuleItem[];
+  }
+
+  if (!raw || typeof raw !== 'object') return [];
+
+  const fields = Array.isArray((raw as any)?.fields) ? (raw as any).fields : [];
+  const state = typeof (raw as any)?.state === 'string' ? ((raw as any).state as FieldStateValue) : undefined;
+  const selectedOptions = Array.isArray((raw as any)?.selectedOptions) ? (raw as any).selectedOptions : undefined;
+  if (!fields.length || !state) return [];
+
+  return fields
+    .map((fieldUid: unknown, index: number) => {
+      const uid = String(fieldUid || '');
+      if (!uid) return null;
+      return {
+        key: `legacy:${uid}:${index}`,
+        enable: true,
+        fieldUid: uid,
+        targetPath: resolveTargetPath?.(uid),
+        state,
+        selectedOptions,
+        condition: { logic: '$and', items: [] },
+      } as FieldStateRuleItem;
+    })
+    .filter(Boolean) as FieldStateRuleItem[];
+}
+
+const FIELD_STATE_VALUES: FieldStateValue[] = [
+  'visible',
+  'hidden',
+  'hiddenReservedValue',
+  'required',
+  'notRequired',
+  'disabled',
+  'enabled',
+  'limitOptions',
+];
+
+const DETAILS_FIELD_STATE_VALUES: FieldStateValue[] = ['visible', 'hidden', 'hiddenReservedValue'];
+
+function getFieldStateOptions(t: (key: string) => string, values: FieldStateValue[]): FieldStateOption[] {
+  const labelMap: Record<FieldStateValue, string> = {
+    visible: 'Visible',
+    hidden: 'Hidden',
+    hiddenReservedValue: 'Hidden (reserved value)',
+    required: 'Required',
+    notRequired: 'Not required',
+    disabled: 'Disabled',
+    enabled: 'Enabled',
+    limitOptions: 'Options',
+  };
+
+  return values.map((value) => ({ value, label: t(labelMap[value]) }));
+}
+
+function getFieldStatePatchProps(
+  state: FieldStateValue | undefined,
+  allowedStates: FieldStateValue[],
+  selectedOptions?: any[],
+) {
+  if (!state || !allowedStates.includes(state)) return null;
+
+  switch (state) {
+    case 'visible':
+      return { hiddenModel: false };
+    case 'hidden':
+      return { hiddenModel: true };
+    case 'hiddenReservedValue':
+      return { hidden: true };
+    case 'required':
+      return { required: true };
+    case 'notRequired':
+      return { required: false };
+    case 'disabled':
+      return { disabled: true };
+    case 'enabled':
+      return { disabled: false };
+    case 'limitOptions':
+      return Array.isArray(selectedOptions) ? { options: selectedOptions } : {};
+    default:
+      return null;
+  }
+}
+
+function resolveFieldStateForkModel(ctx: FlowContext, formItemModel: any): any | null {
+  if (!formItemModel) return null;
+  if (formItemModel.isFork) return formItemModel;
+
+  const ctxModel = (ctx as any)?.model;
+  const hasSubTableRowMarker = (model: any): boolean => {
+    const markerOptions = model?.context?.getPropertyOptions?.('subTableRowFork');
+    if (markerOptions) return true;
+    return (
+      typeof model?.context?.subTableRowFork !== 'undefined' ||
+      typeof model?.subTableRowFork !== 'undefined' ||
+      model?.subTableRowFork === true
+    );
+  };
+  const getFieldIndexKey = (model: any): string | null => {
+    const fieldIndex = model?.context?.fieldIndex;
+    if (!Array.isArray(fieldIndex) || !fieldIndex.length) return null;
+    return fieldIndex.map((entry) => String(entry)).join('|');
+  };
+
+  if (hasSubTableRowMarker(ctxModel)) {
+    const currentFieldIndexKey = getFieldIndexKey(ctxModel);
+    if (!currentFieldIndexKey) return null;
+
+    const forks = formItemModel?.forks;
+    if (forks && typeof forks.forEach === 'function') {
+      let hit: any = null;
+      forks.forEach((fork: any) => {
+        if (hit || !fork || fork.disposed || !hasSubTableRowMarker(fork)) return;
+        if (getFieldIndexKey(fork) === currentFieldIndexKey) {
+          hit = fork;
+        }
+      });
+      return hit;
+    }
+
+    return null;
+  }
+
+  const fieldKey = (ctx.model as any)?.context?.fieldKey;
+  const forkKey = fieldKey ? `${fieldKey}:${formItemModel.uid}` : undefined;
+  const forkModel =
+    forkKey && typeof formItemModel.getFork === 'function' ? (formItemModel as any).getFork(forkKey) : null;
+
+  return forkModel || formItemModel;
+}
+
+function resolveFieldStateModelByUid(ctx: FlowContext, fieldUid?: string): any | null {
+  if (!fieldUid) return null;
+  const fromEngine = ctx.engine?.getModel?.(fieldUid);
+  const fromCurrent =
+    fromEngine || findFieldStateModelByUid(ctx.model, fieldUid) || findFormItemModelByUid(ctx.model, fieldUid);
+  const blockModel = (ctx.model as any)?.context?.blockModel;
+  const model =
+    fromCurrent || findFieldStateModelByUid(blockModel, fieldUid) || findFormItemModelByUid(blockModel, fieldUid);
+  return resolveFieldStateForkModel(ctx, model);
+}
+
+function resolveFieldStateModelByPath(ctx: FlowContext, targetPath?: string): any | null {
+  const rawPath = String(targetPath || '').trim();
+  if (!rawPath) return null;
+
+  const normalized = normalizeSubFormTargetPath(ctx, rawPath);
+  const path = normalized?.targetPath || rawPath;
+  const blockModel = (ctx.model as any)?.context?.blockModel;
+  const fieldModel =
+    normalized?.fieldModel ||
+    findFieldStateModelByFieldPath(ctx.model, path) ||
+    findFieldStateModelByFieldPath((ctx.model as any)?.parent, path) ||
+    findFieldStateModelByFieldPath(blockModel, path) ||
+    findFormItemModelByFieldPath((ctx.model as any)?.context?.blockModel ?? ctx.model, path) ||
+    findFormItemModelByFieldPath(ctx.model, path);
+
+  return resolveFieldStateForkModel(ctx, fieldModel);
+}
+
+function resolveFieldStateTargetModel(ctx: FlowContext, item: FieldStateRuleItem): any | null {
+  return resolveFieldStateModelByPath(ctx, item?.targetPath) || resolveFieldStateModelByUid(ctx, item?.fieldUid);
+}
+
+function applyFieldStateRules(
+  ctx: FlowContext,
+  options: {
+    value: any;
+    setProps: (model: FlowModel, props: any) => void;
+    allowedStates: FieldStateValue[];
+    missingTargetWarning?: (item: FieldStateRuleItem) => void;
+  },
+) {
+  const resolveTargetPath = createFieldStateTargetPathResolver(ctx);
+  const items = normalizeFieldStateRuleItemsFromParams(options.value, resolveTargetPath);
+  if (!items.length) return;
+
+  const evaluator = (path: any, operator: string, right: any) => {
+    if (!operator) return true;
+    return ctx.app.jsonLogic.apply({ [operator]: [path, right] });
+  };
+
+  for (const item of items) {
+    if (item?.enable === false) continue;
+
+    const props = getFieldStatePatchProps(item?.state, options.allowedStates, item?.selectedOptions);
+    if (!props) {
+      if (item?.state) console.warn(`Unknown state: ${item.state}`);
+      continue;
+    }
+
+    const targetPath = item?.targetPath || (item?.fieldUid ? resolveTargetPath(item.fieldUid) : undefined);
+    if (!isFieldStateTargetPathAllowed(item?.state, targetPath)) {
+      continue;
+    }
+
+    const condition = item?.condition;
+    if (condition && !evaluateConditions(removeInvalidFilterItems(condition), evaluator as any)) {
+      continue;
+    }
+
+    const targetItem = targetPath && targetPath !== item?.targetPath ? { ...item, targetPath } : item;
+    const model = resolveFieldStateTargetModel(ctx, targetItem);
+    if (!model) {
+      options.missingTargetWarning?.(item);
+      continue;
+    }
+
+    options.setProps(getFieldStateTargetModel(item?.state || '', model) as FlowModel, props);
+  }
+}
+
 const SKIP_RUNJS_ASSIGN_VALUE = Symbol('SKIP_RUNJS_ASSIGN_VALUE');
 
 async function resolveLinkageAssignRuntimeValue(ctx: FlowContext, rawValue: any) {
@@ -700,6 +1009,74 @@ export const linkageSetActionProps = defineAction({
   },
 });
 
+type FieldStateComponentProps = {
+  value?: unknown;
+  onChange?: (value: unknown) => void;
+  allowedStates: FieldStateValue[];
+  includeFormStates?: boolean;
+  fieldOptionsGetter?: typeof getFormFields;
+};
+
+const isLegacyFieldStateEditorValue = (value: unknown): value is FieldStateEditorValue => {
+  return !Array.isArray(value) && !!value && typeof value === 'object' && Array.isArray((value as any).fields);
+};
+
+const FieldStateRulesActionComponent: React.FC<FieldStateComponentProps> = (props) => {
+  const { value, onChange, allowedStates, includeFormStates = true, fieldOptionsGetter } = props;
+  const ctx = useFlowContext();
+  const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
+
+  const fieldOptions = React.useMemo(() => {
+    return collectFieldAssignCascaderOptions({
+      formBlockModel: ctx.model,
+      t,
+      maxFormItemDepth: 1,
+    });
+  }, [ctx.model, t]);
+
+  const getOptionsForTargetPath = React.useCallback(
+    (targetPath?: string) => {
+      const fieldModel =
+        findFieldStateModelByFieldPath(ctx.model, String(targetPath || '')) ||
+        findFieldStateModelByFieldPath((ctx.model as any)?.context?.blockModel, String(targetPath || ''));
+      return fieldModel ? getFieldModelOptions(fieldModel, t) : [];
+    },
+    [ctx.model, t],
+  );
+
+  const normalized = normalizeFieldStateRuleItemsFromParams(value, createFieldStateTargetPathResolver(ctx));
+
+  const handleChange = React.useCallback(
+    (next: FieldStateRuleItem[]) => {
+      onChange?.(next);
+    },
+    [onChange],
+  );
+
+  if (isLegacyFieldStateEditorValue(value)) {
+    return (
+      <FieldStateEditor
+        value={value}
+        onChange={onChange as (value: FieldStateEditorValue) => void}
+        includeFormStates={includeFormStates}
+        fieldOptionsGetter={fieldOptionsGetter}
+      />
+    );
+  }
+
+  return (
+    <FieldStateRulesEditor
+      t={t}
+      fieldOptions={fieldOptions}
+      rootCollection={getCollectionFromModel(ctx.model)}
+      value={normalized}
+      onChange={handleChange}
+      stateOptions={getFieldStateOptions(t, allowedStates)}
+      getOptionsForTargetPath={getOptionsForTargetPath}
+    />
+  );
+};
+
 export const linkageSetMenuItemProps = defineAction({
   name: 'linkageSetMenuItemProps',
   title: tExpr('Set menu item state'),
@@ -742,37 +1119,15 @@ export const linkageSetFieldProps = defineAction({
   sort: 100,
   uiSchema: {
     value: {
-      type: 'object',
-      'x-component': (props) => {
-        return <FieldStateEditor {...props} />;
-      },
+      type: 'array',
+      'x-component': (props) => <FieldStateRulesActionComponent {...props} allowedStates={FIELD_STATE_VALUES} />,
     },
   },
   handler: (ctx, { value, setProps }) => {
-    const { fields, state } = value || {};
-
-    if (!fields || !Array.isArray(fields) || !state) {
-      return;
-    }
-
-    // 根据 uid 找到对应的字段 model 并设置属性
-    fields.forEach((fieldUid: string) => {
-      try {
-        const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-        const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
-
-        if (fieldModel) {
-          const props = getFieldStateProps(state, value?.selectedOptions);
-          if (!props) {
-            console.warn(`Unknown state: ${state}`);
-            return;
-          }
-
-          setProps(getFieldStateTargetModel(state, fieldModel) as FlowModel, props);
-        }
-      } catch (error) {
-        console.warn(`Failed to set props for field ${fieldUid}:`, error);
-      }
+    applyFieldStateRules(ctx, {
+      value,
+      setProps,
+      allowedStates: FIELD_STATE_VALUES,
     });
   },
 });
@@ -784,57 +1139,36 @@ export const subFormLinkageSetFieldProps = defineAction({
   sort: 100,
   uiSchema: {
     value: {
-      type: 'object',
+      type: 'array',
       'x-component': (props) => {
-        return <FieldStateEditor {...props} fieldOptionsGetter={getFormFieldsByForkModel} />;
+        return (
+          <FieldStateRulesActionComponent
+            {...props}
+            allowedStates={FIELD_STATE_VALUES}
+            fieldOptionsGetter={getFormFieldsByForkModel}
+          />
+        );
       },
     },
   },
   handler: (ctx, { value, setProps }) => {
-    const { fields, state } = value || {};
-
-    if (!fields || !Array.isArray(fields) || !state) {
-      return;
-    }
-
-    // 根据 uid 找到对应的字段 model 并设置属性
-    fields.forEach((fieldUid: string) => {
-      try {
-        const formItemModel = ctx.engine?.getModel?.(fieldUid);
-        if (!formItemModel) {
+    applyFieldStateRules(ctx, {
+      value,
+      setProps,
+      allowedStates: FIELD_STATE_VALUES,
+      missingTargetWarning: (item) => {
+        if (item.fieldUid) {
           console.warn('[subFormLinkageSetFieldProps] Target field model not found', {
-            fieldUid,
+            fieldUid: item.fieldUid,
             modelUid: ctx.model?.uid,
           });
           return;
         }
-
-        const fieldKey = ctx.model?.context?.fieldKey;
-        const forkKey = fieldKey ? `${fieldKey}:${fieldUid}` : undefined;
-        const forkModel =
-          forkKey && typeof (formItemModel as any).getFork === 'function'
-            ? (formItemModel as any).getFork(forkKey)
-            : null;
-
-        let model = forkModel;
-
-        // 适配对一子表单的场景
-        if (!forkModel) {
-          model = formItemModel;
-        }
-
-        if (model) {
-          const props = getFieldStateProps(state, value?.selectedOptions);
-          if (!props) {
-            console.warn(`Unknown state: ${state}`);
-            return;
-          }
-
-          setProps(getFieldStateTargetModel(state, model) as FlowModel, props);
-        }
-      } catch (error) {
-        console.warn(`Failed to set props for field ${fieldUid}:`, error);
-      }
+        console.warn('[subFormLinkageSetFieldProps] Target field model not found', {
+          targetPath: item.targetPath,
+          modelUid: ctx.model?.uid,
+        });
+      },
     });
   },
 });
@@ -846,37 +1180,21 @@ export const linkageSetDetailsFieldProps = defineAction({
   sort: 100,
   uiSchema: {
     value: {
-      type: 'object',
-      'x-component': (props) => {
-        return <FieldStateEditor {...props} includeFormStates={false} />;
-      },
+      type: 'array',
+      'x-component': (props) => (
+        <FieldStateRulesActionComponent
+          {...props}
+          allowedStates={DETAILS_FIELD_STATE_VALUES}
+          includeFormStates={false}
+        />
+      ),
     },
   },
   handler: (ctx, { value, setProps }) => {
-    const { fields, state } = value || {};
-
-    if (!fields || !Array.isArray(fields) || !state) {
-      return;
-    }
-
-    // 根据 uid 找到对应的字段 model 并设置属性
-    fields.forEach((fieldUid: string) => {
-      try {
-        const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-        const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
-
-        if (fieldModel) {
-          const props = getFieldStateProps(state);
-          if (!props) {
-            console.warn(`Unknown state: ${state}`);
-            return;
-          }
-
-          setProps(getFieldStateTargetModel(state, fieldModel) as FlowModel, props);
-        }
-      } catch (error) {
-        console.warn(`Failed to set props for field ${fieldUid}:`, error);
-      }
+    applyFieldStateRules(ctx, {
+      value,
+      setProps,
+      allowedStates: DETAILS_FIELD_STATE_VALUES,
     });
   },
 });
@@ -2470,6 +2788,7 @@ export const fieldLinkageRules = defineAction({
     };
 
     const legacyTargetPathResolver = createLegacyTargetPathResolver(ctx);
+    const fieldStateTargetPathResolver = createFieldStateTargetPathResolver(ctx);
     const splitParams = () => {
       const rawRules = params?.value;
       if (!Array.isArray(rawRules) || !rawRules.length) {
@@ -2486,6 +2805,49 @@ export const fieldLinkageRules = defineAction({
         rowRulesByKey.set(rowKey, arr);
       };
 
+      const splitRowScopedAction = (action: any, actionParams: any, items: any[]) => {
+        if (!items.length) return { block: null as any, rows: new Map<string, any>() };
+
+        const blockItems: any[] = [];
+        const rowItemsByKey = new Map<string, any[]>();
+
+        for (const it of items) {
+          const targetPath = it?.targetPath ? String(it.targetPath) : '';
+          if (!targetPath) {
+            blockItems.push(it);
+            continue;
+          }
+
+          const rowScopeKey = getRowScopeKeyForTargetPath(targetPath);
+          if (rowScopeKey && requiresRowIndexForTargetPath(targetPath)) {
+            const arr = rowItemsByKey.get(rowScopeKey) || [];
+            arr.push(it);
+            rowItemsByKey.set(rowScopeKey, arr);
+          } else {
+            blockItems.push(it);
+          }
+        }
+
+        const block =
+          blockItems.length > 0
+            ? {
+                ...action,
+                params: { ...actionParams, value: blockItems },
+              }
+            : null;
+
+        const rows = new Map<string, any>();
+        for (const [rowScopeKey, rowItems] of rowItemsByKey.entries()) {
+          if (!rowItems.length) continue;
+          rows.set(rowScopeKey, {
+            ...action,
+            params: { ...actionParams, value: rowItems },
+          });
+        }
+
+        return { block, rows };
+      };
+
       for (const rule of rawRules) {
         if (!rule || typeof rule !== 'object') continue;
         const baseRule = {
@@ -2499,77 +2861,58 @@ export const fieldLinkageRules = defineAction({
         const blockActions: any[] = [];
         const rowActionsByKey = new Map<string, any[]>();
 
+        const addSplitActions = (split: { block: any; rows: Map<string, any> }) => {
+          if (split.block) blockActions.push(split.block);
+          split.rows.forEach((a, rowKey) => {
+            const arr = rowActionsByKey.get(rowKey) || [];
+            arr.push(a);
+            rowActionsByKey.set(rowKey, arr);
+          });
+        };
+
         for (const action of actions) {
           const actionName = (action as any)?.name;
           const actionParams = (action as any)?.params;
           const rawValue = actionParams?.value;
 
-          const splitAssignAction = (legacy: {
-            mode: 'default' | 'assign';
-            valueKey: 'assignValue' | 'initialValue';
-          }) => {
-            const items = normalizeAssignRuleItemsFromLinkageParams(rawValue, legacy, legacyTargetPathResolver);
-            if (!items.length) return { block: null as any, rows: new Map<string, any>() };
-
-            const blockItems: any[] = [];
-            const rowItemsByKey = new Map<string, any[]>();
-
-            for (const it of items) {
-              const targetPath = it?.targetPath ? String(it.targetPath) : '';
-              if (!targetPath) {
-                blockItems.push(it);
-                continue;
-              }
-
-              const rowScopeKey = getRowScopeKeyForTargetPath(targetPath);
-              if (rowScopeKey && requiresRowIndexForTargetPath(targetPath)) {
-                const arr = rowItemsByKey.get(rowScopeKey) || [];
-                arr.push(it);
-                rowItemsByKey.set(rowScopeKey, arr);
-              } else {
-                blockItems.push(it);
-              }
-            }
-
-            const blockAction =
-              blockItems.length > 0
-                ? {
-                    ...action,
-                    params: { ...actionParams, value: blockItems },
-                  }
-                : null;
-
-            const rowActions = new Map<string, any>();
-            for (const [rowScopeKey, rowItems] of rowItemsByKey.entries()) {
-              if (!rowItems.length) continue;
-              rowActions.set(rowScopeKey, {
-                ...action,
-                params: { ...actionParams, value: rowItems },
-              });
-            }
-
-            return { block: blockAction, rows: rowActions };
-          };
-
           if (actionName === 'linkageAssignField') {
-            const split = splitAssignAction({ mode: 'assign', valueKey: 'assignValue' });
-            if (split.block) blockActions.push(split.block);
-            split.rows.forEach((a, rowKey) => {
-              const arr = rowActionsByKey.get(rowKey) || [];
-              arr.push(a);
-              rowActionsByKey.set(rowKey, arr);
-            });
+            addSplitActions(
+              splitRowScopedAction(
+                action,
+                actionParams,
+                normalizeAssignRuleItemsFromLinkageParams(
+                  rawValue,
+                  { mode: 'assign', valueKey: 'assignValue' },
+                  legacyTargetPathResolver,
+                ),
+              ),
+            );
             continue;
           }
 
           if (actionName === 'setFieldsDefaultValue') {
-            const split = splitAssignAction({ mode: 'default', valueKey: 'initialValue' });
-            if (split.block) blockActions.push(split.block);
-            split.rows.forEach((a, rowKey) => {
-              const arr = rowActionsByKey.get(rowKey) || [];
-              arr.push(a);
-              rowActionsByKey.set(rowKey, arr);
-            });
+            addSplitActions(
+              splitRowScopedAction(
+                action,
+                actionParams,
+                normalizeAssignRuleItemsFromLinkageParams(
+                  rawValue,
+                  { mode: 'default', valueKey: 'initialValue' },
+                  legacyTargetPathResolver,
+                ),
+              ),
+            );
+            continue;
+          }
+
+          if (actionName === 'linkageSetFieldProps') {
+            addSplitActions(
+              splitRowScopedAction(
+                action,
+                actionParams,
+                normalizeFieldStateRuleItemsFromParams(rawValue, fieldStateTargetPathResolver),
+              ),
+            );
             continue;
           }
 
