@@ -1831,7 +1831,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
-    expect(tableFilterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status', 'email']);
+    expect(tableFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(tableFilterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
     expect(listFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
     expect(gridCardFilterAction?.props?.defaultFilterValue).toEqual(explicitActionFilter);

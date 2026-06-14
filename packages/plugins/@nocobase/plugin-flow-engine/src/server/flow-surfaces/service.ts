@@ -8830,11 +8830,6 @@ export class FlowSurfacesService {
           requiredFieldCount: options.requiredFieldCount,
         },
       );
-      if (!hasOwnDefined(normalizedSettings, 'filterableFieldNames')) {
-        normalizedSettings.filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(
-          normalizedSettings.defaultFilter,
-        );
-      }
     }
     return normalizedSettings;
   }
@@ -15416,17 +15411,6 @@ export class FlowSurfacesService {
       const filterValue = this.normalizeEffectivePublicDataSurfaceDefaultFilter(normalizedFilterValue, {
         requiredFieldCount: options.requiredFieldCount,
       });
-      if (!hasPropsFilterableFieldNames && !hasStepFilterableFieldNames) {
-        const filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(filterValue);
-        if (filterableFieldNames.length) {
-          nextProps.filterableFieldNames = filterableFieldNames;
-          _.set(
-            nextStepParams,
-            ['filterSettings', 'filterableFieldNames', 'filterableFieldNames'],
-            _.cloneDeep(filterableFieldNames),
-          );
-        }
-      }
       nextProps.defaultFilterValue = _.cloneDeep(filterValue);
       nextProps.filterValue = _.cloneDeep(filterValue);
       _.set(nextStepParams, ['filterSettings', 'defaultFilter', 'defaultFilter'], _.cloneDeep(filterValue));

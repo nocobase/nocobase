@@ -3019,7 +3019,7 @@ export function exportFlowSurfaceBlueprintDocument(input: {
       target: {
         pageSchemaUid: input.target.pageSchemaUid,
       },
-      pageTitle: readPageTitle(input.page, input.pageRoute),
+      pageTitle: readPageTitle(input.page),
     },
     warnings: ctx.warnings,
     unsupported: ctx.unsupported,
