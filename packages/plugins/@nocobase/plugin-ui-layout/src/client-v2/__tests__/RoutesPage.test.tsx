@@ -73,10 +73,13 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     await waitFor(() => {
       expect(resource.request).toHaveBeenCalledWith({
-        url: '/desktopRoutes:listAccessible',
+        url: '/desktopRoutes:list',
         method: 'get',
         params: {
-          layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+          filter: {
+            hidden: { $ne: true },
+            $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.uid.$notExists': true }],
+          },
           paginate: false,
           sort: 'sort',
           tree: true,
@@ -95,10 +98,13 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(await screen.findByText('Mobile workbench')).toBeInTheDocument();
     await waitFor(() => {
       expect(resource.request).toHaveBeenCalledWith({
-        url: '/desktopRoutes:listAccessible',
+        url: '/desktopRoutes:list',
         method: 'get',
         params: {
-          layout: DEFAULT_MOBILE_UI_LAYOUT.uid,
+          filter: {
+            hidden: { $ne: true },
+            'uiLayouts.uid': DEFAULT_MOBILE_UI_LAYOUT.uid,
+          },
           paginate: false,
           sort: 'sort',
           tree: true,
@@ -106,6 +112,11 @@ describe('plugin-ui-layout RoutesPage', () => {
         skipNotify: true,
       });
     });
+    expect(resource.request).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/desktopRoutes:listAccessible',
+      }),
+    );
 
     fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
     const addDrawer = await findOpenDrawer('Add new');
@@ -622,6 +633,32 @@ function createRoutesPageResources() {
     ],
   ]);
 
+  const getLayoutFromRequestParams = (params?: Record<string, unknown>) => {
+    if (typeof params?.layout === 'string') {
+      return params.layout;
+    }
+    const filter = params?.filter;
+    if (filter && typeof filter === 'object' && !Array.isArray(filter)) {
+      const routeFilter = filter as Record<string, unknown>;
+      if (typeof routeFilter['uiLayouts.uid'] === 'string') {
+        return routeFilter['uiLayouts.uid'];
+      }
+      if (Array.isArray(routeFilter.$or)) {
+        const hasDefaultAdminScope = routeFilter.$or.some((item) => {
+          return (
+            item &&
+            typeof item === 'object' &&
+            !Array.isArray(item) &&
+            (item as Record<string, unknown>)['uiLayouts.uid'] === DEFAULT_ADMIN_UI_LAYOUT.uid
+          );
+        });
+        if (hasDefaultAdminScope) {
+          return DEFAULT_ADMIN_UI_LAYOUT.uid;
+        }
+      }
+    }
+    return undefined;
+  };
   const getRoutes = (layout: unknown) => routesByLayout.get(String(layout)) ?? [];
   const cloneRoutes = (routes: MutableRouteRecord[]): MutableRouteRecord[] =>
     routes.map((route) => ({
@@ -642,7 +679,7 @@ function createRoutesPageResources() {
   };
   const request = vi.fn(async ({ params }: { params?: Record<string, unknown> }) => ({
     data: {
-      data: cloneRoutes(getRoutes(params?.layout)),
+      data: cloneRoutes(getRoutes(getLayoutFromRequestParams(params))),
     },
   }));
   const create = vi.fn(async ({ layout, values }: { layout: string; values: Record<string, unknown> }) => {

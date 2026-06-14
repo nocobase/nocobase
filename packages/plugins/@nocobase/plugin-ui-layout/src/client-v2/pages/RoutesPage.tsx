@@ -41,6 +41,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constants';
 import { useT } from '../locale';
 import { MobileMenuSettingsIconPicker } from '../models/MobileMenuComponents';
+import { createDesktopRouteLayoutPermissionFilter } from '../permissions/layoutAwareDesktopRoutesPermissions';
 import { getUiLayoutRouteUrl } from './UiLayoutsPage';
 
 type RouteLayoutConfig = {
@@ -636,10 +637,10 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
     setLoading(true);
     try {
       const response = await ctx.api.request({
-        url: '/desktopRoutes:listAccessible',
+        url: '/desktopRoutes:list',
         method: 'get',
         params: {
-          layout: layout.uid,
+          filter: createDesktopRouteLayoutPermissionFilter(layout.uid),
           paginate: false,
           sort: 'sort',
           tree: true,
