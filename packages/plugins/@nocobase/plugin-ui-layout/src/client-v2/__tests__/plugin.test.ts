@@ -64,35 +64,35 @@ describe('PluginUiLayoutClientV2', () => {
       key: 'mobile',
       title: 'Mobile',
       icon: 'MobileOutlined',
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.mobile',
       link: '/v/mobile',
     });
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'mobile',
       key: 'index',
       title: 'Mobile',
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.mobile',
       Component: expect.any(Function),
     });
     expect(app.pluginSettingsManager.addMenuItem).toHaveBeenCalledWith({
       key: 'routes',
       title: 'Routes',
       icon: 'ApartmentOutlined',
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.routes',
       showTabs: true,
     });
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'routes',
       key: 'index',
       title: 'Desktop routes',
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.routes',
       componentLoader: expect.any(Function),
     });
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'routes',
       key: 'mobile',
       title: 'Mobile routes',
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.routes',
       componentLoader: expect.any(Function),
     });
     expect(app.pluginSettingsManager.addPageTabItem).not.toHaveBeenCalledWith(
@@ -131,14 +131,20 @@ describe('PluginUiLayoutClientV2', () => {
       Component: expect.any(Function),
     });
     expect(mobileSetting?.children?.[0]).not.toHaveProperty('link');
-    settingsApp.pluginSettingsManager.setAclSnippets(['pm.*', '!pm.ui-layout']);
+    settingsApp.pluginSettingsManager.setAclSnippets(['pm.*', '!pm.routes']);
     expect(settingsApp.pluginSettingsManager.get('ui-layout')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('ui-layout.index')).toBeNull();
-    expect(settingsApp.pluginSettingsManager.get('mobile')).toBeNull();
-    expect(settingsApp.pluginSettingsManager.get('mobile.index')).toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('mobile')).not.toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('mobile.index')).not.toBeNull();
     expect(settingsApp.pluginSettingsManager.get('routes')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('routes.index')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('routes.mobile')).toBeNull();
+    settingsApp.pluginSettingsManager.setAclSnippets(['pm.*', '!pm.mobile']);
+    expect(settingsApp.pluginSettingsManager.get('mobile')).toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('mobile.index')).toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('routes')).not.toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('routes.index')).not.toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('routes.mobile')).not.toBeNull();
     expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
       MobileLayoutModel: {
         loader: expect.any(Function),

@@ -14,13 +14,7 @@ import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constan
 import { ensureDefaultUiLayout } from '../ensureDefaultUiLayout';
 import type { PluginUiLayoutServer } from '../plugin';
 
-const UI_LAYOUT_MANAGEMENT_ACTIONS = [
-  'uiLayouts:list',
-  'uiLayouts:get',
-  'uiLayouts:create',
-  'uiLayouts:update',
-  'uiLayouts:destroy',
-];
+const ROUTES_MANAGEMENT_ACTIONS = ['desktopRoutes:list'];
 
 const UI_LAYOUT_RUNTIME_FIELDS = ['uid', 'title', 'layoutType', 'routeName', 'routePath', 'authCheck', 'enabled'];
 const UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS = ['uid', 'title', 'layoutType', 'routeName', 'enabled'];
@@ -1318,157 +1312,117 @@ describe('plugin-ui-layout server', () => {
     }
   });
 
-  it('should register the pm.ui-layout ACL snippet with management actions only', async () => {
+  it('should register the pm.routes ACL snippet with route list access only', async () => {
     app = await createUiLayoutMockServer();
 
-    const snippet = app.acl.snippetManager.snippets.get('pm.ui-layout');
+    const snippet = app.acl.snippetManager.snippets.get('pm.routes');
+    const legacyDesktopRoutesSnippet = app.acl.snippetManager.snippets.get('pm.desktopRoutes');
 
+    expect(app.acl.snippetManager.snippets.get('pm.ui-layout')).toBeUndefined();
     expect(snippet).toBeDefined();
-    expect(snippet?.actions.sort()).toEqual([...UI_LAYOUT_MANAGEMENT_ACTIONS].sort());
-    expect(snippet?.actions).not.toContain('uiLayouts:listEnabled');
-    expect(snippet?.actions).not.toContain('uiLayouts:listAccessible');
+    expect(snippet?.actions.sort()).toEqual([...ROUTES_MANAGEMENT_ACTIONS].sort());
+    expect(legacyDesktopRoutesSnippet?.actions).not.toContain('desktopRoutes:list');
+    expect(snippet?.actions).not.toContain('desktopRoutes:create');
+    expect(snippet?.actions).not.toContain('desktopRoutes:update');
+    expect(snippet?.actions).not.toContain('desktopRoutes:move');
+    expect(snippet?.actions).not.toContain('desktopRoutes:destroy');
+    expect(snippet?.actions).not.toContain('desktopRoutes:updateOrCreate');
   });
 
-  it('should keep uiLayouts management actions behind plugin configuration snippets', async () => {
+  it('should keep route writes outside the routes plugin configuration snippet', async () => {
     app = await createUiLayoutMockServer();
 
-    const repository = app.db.getRepository('uiLayouts');
-    const deniedLayout = await repository.create({
+    const route = await app.db.getRepository('desktopRoutes').create({
       values: {
-        uid: 'management-denied-layout',
-        title: 'Management denied layout',
-        layoutType: 'mobile',
-        routeName: 'managementDeniedLayout',
-        routePath: '/management-denied-layout',
-        authCheck: true,
-        enabled: true,
+        type: 'flowPage',
+        title: 'DATA-ROUTES-SNIPPET-LIST',
+        schemaUid: 'routes-snippet-list',
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', route.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'routes-no-snippet',
       },
     });
     await app.db.getRepository('roles').create({
       values: {
-        name: 'ui-layout-no-snippet',
-      },
-    });
-    await app.db.getRepository('roles').create({
-      values: {
-        name: 'ui-layout-pm-all',
+        name: 'routes-pm-all',
         snippets: ['pm.*'],
       },
     });
     await app.db.getRepository('roles').create({
       values: {
-        name: 'ui-layout-negated',
-        snippets: ['pm.*', '!pm.ui-layout'],
+        name: 'routes-negated',
+        snippets: ['pm.*', '!pm.routes'],
+      },
+    });
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'routes-list-only',
+        snippets: ['pm.routes'],
       },
     });
     const noSnippetUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['ui-layout-no-snippet'],
+        roles: ['routes-no-snippet'],
       },
     });
     const pmAllUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['ui-layout-pm-all'],
+        roles: ['routes-pm-all'],
       },
     });
     const negatedUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['ui-layout-negated'],
+        roles: ['routes-negated'],
+      },
+    });
+    const listOnlyUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['routes-list-only'],
       },
     });
     const noSnippetAgent = await app.agent().login(noSnippetUser);
     const pmAllAgent = await app.agent().login(pmAllUser);
     const negatedAgent = await app.agent().login(negatedUser);
+    const listOnlyAgent = await app.agent().login(listOnlyUser);
 
-    const noSnippetResponses = [
-      await noSnippetAgent.resource('uiLayouts').list(),
-      await noSnippetAgent.resource('uiLayouts').get({
-        filterByTk: deniedLayout.get('uid'),
-      }),
-      await noSnippetAgent.resource('uiLayouts').create({
+    expect((await noSnippetAgent.resource('desktopRoutes').list()).status).toBe(403);
+    expect((await negatedAgent.resource('desktopRoutes').list()).status).toBe(403);
+    expect((await pmAllAgent.resource('desktopRoutes').list()).status).toBe(200);
+    expect((await listOnlyAgent.resource('desktopRoutes').list()).status).toBe(200);
+
+    const writeResponses = await Promise.all([
+      listOnlyAgent.resource('desktopRoutes').create({
         values: {
-          uid: 'management-no-snippet-layout',
-          title: 'Management no snippet layout',
-          layoutType: 'mobile',
-          routeName: 'managementNoSnippetLayout',
-          routePath: '/management-no-snippet-layout',
-          authCheck: true,
-          enabled: true,
+          type: 'flowPage',
+          title: 'DATA-ROUTES-SNIPPET-CREATE',
+          schemaUid: 'routes-snippet-create',
         },
       }),
-      await noSnippetAgent.resource('uiLayouts').update({
-        filterByTk: deniedLayout.get('uid'),
+      listOnlyAgent.resource('desktopRoutes').update({
+        filterByTk: route.get('id'),
         values: {
-          title: 'Management no snippet layout updated',
+          title: 'DATA-ROUTES-SNIPPET-UPDATED',
         },
       }),
-      await noSnippetAgent.resource('uiLayouts').destroy({
-        filterByTk: deniedLayout.get('uid'),
+      listOnlyAgent.resource('desktopRoutes').destroy({
+        filterByTk: route.get('id'),
       }),
-    ];
-
-    expect(noSnippetResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403]);
-
-    const createResponse = await pmAllAgent.resource('uiLayouts').create({
-      values: {
-        uid: 'management-allowed-layout',
-        title: 'Management allowed layout',
-        layoutType: 'mobile',
-        routeName: 'managementAllowedLayout',
-        routePath: '/management-allowed-layout',
-        authCheck: true,
-        enabled: true,
-      },
-    });
-    expect(createResponse.status).toBe(200);
-    const createdLayoutUid = createResponse.body.data.uid;
-    const managementResponses = [
-      await pmAllAgent.resource('uiLayouts').list(),
-      await pmAllAgent.resource('uiLayouts').get({
-        filterByTk: createdLayoutUid,
-      }),
-      createResponse,
-      await pmAllAgent.resource('uiLayouts').update({
-        filterByTk: createdLayoutUid,
+      listOnlyAgent.resource('desktopRoutes').updateOrCreate({
+        filterKeys: ['schemaUid'],
         values: {
-          title: 'Management allowed layout updated',
+          type: 'flowPage',
+          title: 'DATA-ROUTES-SNIPPET-UPSERT',
+          schemaUid: 'routes-snippet-upsert',
         },
-      }),
-      await pmAllAgent.resource('uiLayouts').destroy({
-        filterByTk: createdLayoutUid,
-      }),
-    ];
-
-    expect(managementResponses.map((response) => response.status)).toEqual([200, 200, 200, 200, 200]);
-
-    const negatedResponses = await Promise.all([
-      negatedAgent.resource('uiLayouts').list(),
-      negatedAgent.resource('uiLayouts').get({
-        filterByTk: deniedLayout.get('uid'),
-      }),
-      negatedAgent.resource('uiLayouts').create({
-        values: {
-          uid: 'management-negated-layout',
-          title: 'Management negated layout',
-          layoutType: 'mobile',
-          routeName: 'managementNegatedLayout',
-          routePath: '/management-negated-layout',
-          authCheck: true,
-          enabled: true,
-        },
-      }),
-      negatedAgent.resource('uiLayouts').update({
-        filterByTk: deniedLayout.get('uid'),
-        values: {
-          title: 'Management denied layout updated',
-        },
-      }),
-      negatedAgent.resource('uiLayouts').destroy({
-        filterByTk: deniedLayout.get('uid'),
       }),
     ]);
 
-    expect(negatedResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403]);
+    expect(writeResponses.map((response) => response.status)).toEqual([403, 403, 403, 403]);
   });
 
   it('should reject ui layout uid changes through the management API', async () => {
@@ -1485,15 +1439,9 @@ describe('plugin-ui-layout server', () => {
         enabled: true,
       },
     });
-    await app.db.getRepository('roles').create({
-      values: {
-        name: 'ui-layout-uid-manager',
-        snippets: ['pm.ui-layout'],
-      },
-    });
-    const user = await app.db.getRepository('users').create({
-      values: {
-        roles: ['ui-layout-uid-manager'],
+    const user = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
       },
     });
     const agent = await app.agent().login(user);
@@ -1522,15 +1470,9 @@ describe('plugin-ui-layout server', () => {
   it('should protect the default AdminLayout from unsafe management API changes', async () => {
     app = await createUiLayoutMockServer();
 
-    await app.db.getRepository('roles').create({
-      values: {
-        name: 'default-ui-layout-manager',
-        snippets: ['pm.ui-layout'],
-      },
-    });
-    const user = await app.db.getRepository('users').create({
-      values: {
-        roles: ['default-ui-layout-manager'],
+    const user = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
       },
     });
     const agent = await app.agent().login(user);
@@ -1640,8 +1582,8 @@ describe('plugin-ui-layout server', () => {
     });
     await app.db.getRepository('roles').create({
       values: {
-        name: 'role-acl-ui-layout-manager',
-        snippets: ['pm.ui-layout'],
+        name: 'role-acl-routes-manager',
+        snippets: ['pm.routes'],
       },
     });
     await app.db.getRepository('roles').create({
@@ -1655,9 +1597,9 @@ describe('plugin-ui-layout server', () => {
         roles: ['role-acl-logged-in'],
       },
     });
-    const uiLayoutManagerUser = await app.db.getRepository('users').create({
+    const routesManagerUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['role-acl-ui-layout-manager'],
+        roles: ['role-acl-routes-manager'],
       },
     });
     const roleManagerUser = await app.db.getRepository('users').create({
@@ -1666,7 +1608,7 @@ describe('plugin-ui-layout server', () => {
       },
     });
     const loggedInAgent = await app.agent().login(loggedInUser);
-    const uiLayoutManagerAgent = await app.agent().login(uiLayoutManagerUser);
+    const routesManagerAgent = await app.agent().login(routesManagerUser);
     const roleManagerAgent = await app.agent().login(roleManagerUser);
     const deniedOperations = async (agent: typeof loggedInAgent): Promise<number[]> => {
       const responses = [
@@ -1719,7 +1661,7 @@ describe('plugin-ui-layout server', () => {
     };
 
     expect(await deniedOperations(loggedInAgent)).toEqual([403, 403, 403, 403, 403, 403, 403, 403]);
-    expect(await deniedOperations(uiLayoutManagerAgent)).toEqual([403, 403, 403, 403, 403, 403, 403, 403]);
+    expect(await deniedOperations(routesManagerAgent)).toEqual([403, 403, 403, 403, 403, 403, 403, 403]);
 
     const layoutCreateResponse = await roleManagerAgent.resource('rolesUiLayouts').create({
       values: {
@@ -1832,8 +1774,8 @@ describe('plugin-ui-layout server', () => {
     });
     await app.db.getRepository('roles').create({
       values: {
-        name: 'role-target-ui-layout-manager',
-        snippets: ['pm.ui-layout'],
+        name: 'role-target-routes-manager',
+        snippets: ['pm.routes'],
       },
     });
     await app.db.getRepository('roles').create({
@@ -1847,9 +1789,9 @@ describe('plugin-ui-layout server', () => {
         roles: ['role-target-no-snippet'],
       },
     });
-    const uiLayoutManagerUser = await app.db.getRepository('users').create({
+    const routesManagerUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['role-target-ui-layout-manager'],
+        roles: ['role-target-routes-manager'],
       },
     });
     const roleManagerUser = await app.db.getRepository('users').create({
@@ -1858,14 +1800,14 @@ describe('plugin-ui-layout server', () => {
       },
     });
     const noSnippetAgent = await app.agent().login(noSnippetUser);
-    const uiLayoutManagerAgent = await app.agent().login(uiLayoutManagerUser);
+    const routesManagerAgent = await app.agent().login(routesManagerUser);
     const roleManagerAgent = await app.agent().login(roleManagerUser);
 
     const deniedResponses = await Promise.all([
       noSnippetAgent.get('/uiLayouts:listRolePermissionTargets'),
       noSnippetAgent.get('/desktopRoutes:listRolePermissionTargets').query({ layout: enabledLayout.get('uid') }),
-      uiLayoutManagerAgent.get('/uiLayouts:listRolePermissionTargets'),
-      uiLayoutManagerAgent.get('/desktopRoutes:listRolePermissionTargets').query({ layout: enabledLayout.get('uid') }),
+      routesManagerAgent.get('/uiLayouts:listRolePermissionTargets'),
+      routesManagerAgent.get('/desktopRoutes:listRolePermissionTargets').query({ layout: enabledLayout.get('uid') }),
     ]);
     expect(deniedResponses.map((response) => response.status)).toEqual([403, 403, 403, 403]);
     expect((await roleManagerAgent.resource('uiLayouts').list()).status).toBe(403);

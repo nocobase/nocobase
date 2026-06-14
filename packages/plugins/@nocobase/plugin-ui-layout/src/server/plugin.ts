@@ -44,13 +44,7 @@ type MultipleRelationRepositoryWithAdd = MultipleRelationRepository & {
   add: (values: unknown) => Promise<void>;
 };
 
-const UI_LAYOUT_MANAGEMENT_ACTIONS = [
-  'uiLayouts:list',
-  'uiLayouts:get',
-  'uiLayouts:create',
-  'uiLayouts:update',
-  'uiLayouts:destroy',
-];
+const ROUTES_MANAGEMENT_ACTIONS = ['desktopRoutes:list'];
 
 const ROLE_UI_LAYOUT_PERMISSION_ACTIONS = [
   'rolesUiLayouts:*',
@@ -922,8 +916,8 @@ export class PluginUiLayoutServer extends Plugin {
 
   async load() {
     this.app.acl.registerSnippet({
-      name: 'pm.ui-layout',
-      actions: UI_LAYOUT_MANAGEMENT_ACTIONS,
+      name: 'pm.routes',
+      actions: ROUTES_MANAGEMENT_ACTIONS,
     });
     this.app.acl.registerSnippet({
       name: 'pm.acl.roles',

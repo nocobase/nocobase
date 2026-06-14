@@ -53,7 +53,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       key: 'mobile',
       title: this.t('Mobile') as unknown as string,
       icon: 'MobileOutlined',
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.mobile',
       link: getMobileSettingsLink(this.app),
     });
 
@@ -61,7 +61,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       menuKey: 'mobile',
       key: 'index',
       title: this.t('Mobile') as unknown as string,
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.mobile',
       Component: MobileSettingsRedirect,
     });
 
@@ -69,7 +69,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       key: 'routes',
       title: this.t('Routes') as unknown as string,
       icon: 'ApartmentOutlined',
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.routes',
       showTabs: true,
     });
 
@@ -77,7 +77,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       menuKey: 'routes',
       key: 'index',
       title: this.t('Desktop routes') as unknown as string,
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.routes',
       componentLoader: () => import('./pages/RoutesPage'),
     });
 
@@ -85,7 +85,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       menuKey: 'routes',
       key: 'mobile',
       title: this.t('Mobile routes') as unknown as string,
-      aclSnippet: 'pm.ui-layout',
+      aclSnippet: 'pm.routes',
       componentLoader: async () => {
         const module = await import('./pages/RoutesPage');
         return { default: module.MobileRoutesPage };
