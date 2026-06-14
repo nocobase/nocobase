@@ -441,10 +441,8 @@ function RouteEditorDrawer(props: {
       destroyOnClose
       footer={renderFooter}
       forceRender
-      getContainer={false}
       onClose={props.onCancel}
       open={props.open}
-      rootStyle={{ position: 'absolute' }}
       title={props.title}
       width={token.screenSM}
     >

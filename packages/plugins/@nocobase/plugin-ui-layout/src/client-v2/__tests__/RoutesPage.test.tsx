@@ -104,6 +104,7 @@ describe('plugin-ui-layout RoutesPage', () => {
     const addDrawer = await findOpenDrawer('Add new');
     expect(addDrawer.closest('.ant-drawer')).toBeTruthy();
     expect(addDrawer.closest('.ant-modal')).toBeFalsy();
+    expect(addDrawer.closest('[role="tabpanel"]')).toBeFalsy();
     expect(within(addDrawer).getByRole('radio', { name: 'Page' })).toBeChecked();
     fireEvent.change(within(addDrawer).getByLabelText('Title'), { target: { value: 'Mobile approvals' } });
     fireEvent.click(within(addDrawer).getByRole('button', { name: 'Submit' }));
