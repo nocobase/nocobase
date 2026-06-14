@@ -117,6 +117,10 @@ const routeLayouts: RouteLayoutConfig[] = [
   },
 ];
 
+const actionLinkButtonStyle: React.CSSProperties = {
+  paddingInline: 0,
+};
+
 function toRoutePayload(responseData: unknown): RouteListPayload {
   if (!responseData || typeof responseData !== 'object') {
     return {};
@@ -848,12 +852,13 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
           const accessHref = accessPath ? getUiLayoutRouteUrl(ctx.app, accessPath) : '';
           const addChildDisabled = !canRouteHaveChildren(route);
           return (
-            <Space size={token.marginXXS}>
+            <Space size="small">
               <Button
                 aria-label={t('Add child {{route}}', { route: routeTitle })}
                 disabled={addChildDisabled}
                 onClick={() => openAddChildModal(route)}
                 size="small"
+                style={actionLinkButtonStyle}
                 type="link"
               >
                 {t('Add child')}
@@ -862,6 +867,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
                 aria-label={t('Edit {{route}}', { route: routeTitle })}
                 onClick={() => openEditModal(route)}
                 size="small"
+                style={actionLinkButtonStyle}
                 type="link"
               >
                 {t('Edit')}
@@ -871,6 +877,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
                 disabled={!accessPath}
                 href={accessHref || undefined}
                 size="small"
+                style={actionLinkButtonStyle}
                 target="_blank"
                 type="link"
               >
@@ -883,7 +890,12 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
                 onConfirm={() => handleDelete(route)}
                 title={t('Delete route')}
               >
-                <Button aria-label={t('Delete {{route}}', { route: routeTitle })} size="small" type="link">
+                <Button
+                  aria-label={t('Delete {{route}}', { route: routeTitle })}
+                  size="small"
+                  style={actionLinkButtonStyle}
+                  type="link"
+                >
                   {t('Delete')}
                 </Button>
               </Popconfirm>
@@ -892,18 +904,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         },
       },
     ],
-    [
-      handleDelete,
-      ctx.app,
-      layout,
-      openAddChildModal,
-      openEditModal,
-      routes,
-      t,
-      token.colorError,
-      token.colorSuccess,
-      token.marginXXS,
-    ],
+    [handleDelete, ctx.app, layout, openAddChildModal, openEditModal, routes, t, token.colorError, token.colorSuccess],
   );
 
   return (
