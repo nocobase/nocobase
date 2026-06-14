@@ -19,7 +19,7 @@ const MULTI_PORTAL_RUNTIME_FIELDS = ['uid', 'title', 'routeName', 'routePath', '
 const MULTI_PORTAL_RUNTIME_QUERY_FIELDS = [...MULTI_PORTAL_RUNTIME_FIELDS, 'uiLayoutUid'] as const;
 const MULTI_PORTAL_UI_LAYOUT_RUNTIME_FIELDS = ['layoutType'] as const;
 const DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS = ['id', 'title', 'hidden', 'parentId', 'options'] as const;
-const MULTI_PORTAL_ROUTE_WRITE_LAYOUT_SENTINEL = '__multi_portal_route_write__';
+const UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG = 'plugin-ui-layout:desktop-route-write-layout';
 const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:list',
   'multiPortals:get',
@@ -39,6 +39,7 @@ type DesktopRouteRolePermissionTargetField = (typeof DESKTOP_ROUTE_ROLE_PERMISSI
 type DesktopRouteCreateValue = Record<string, unknown> & {
   children?: unknown;
   multiPortals?: unknown;
+  uiLayouts?: unknown;
 };
 type DesktopRouteId = string | number;
 interface MultiPortalAccessContext {
@@ -51,6 +52,10 @@ interface MultiPortalRequestResult {
 }
 type DatabaseHookOptions = {
   transaction?: Transaction;
+};
+const EXPLICIT_DESKTOP_ROUTE_UI_LAYOUTS = Symbol('explicitDesktopRouteUiLayouts');
+type MultiPortalResourcerContext = ResourcerContext & {
+  [EXPLICIT_DESKTOP_ROUTE_UI_LAYOUTS]?: unknown;
 };
 
 function getRecordField(record: unknown, field: string) {
@@ -231,6 +236,26 @@ function hasDesktopRouteField(value: DesktopRouteCreateValue | undefined, field:
   return !!value && Object.prototype.hasOwnProperty.call(value, field);
 }
 
+function pickExplicitDesktopRouteUiLayouts(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => pickExplicitDesktopRouteUiLayouts(item));
+  }
+
+  if (!isDesktopRouteCreateValue(value)) {
+    return;
+  }
+
+  const route: DesktopRouteCreateValue = {};
+  if (hasDesktopRouteField(value, 'uiLayouts')) {
+    route.uiLayouts = value.uiLayouts;
+  }
+  if (Array.isArray(value.children)) {
+    route.children = value.children.map((child) => pickExplicitDesktopRouteUiLayouts(child));
+  }
+
+  return route;
+}
+
 function withDesktopRouteMultiPortal(value: unknown, multiPortalUid: string, explicitValue: unknown = value): unknown {
   if (Array.isArray(value)) {
     const explicitValues = Array.isArray(explicitValue) ? explicitValue : [];
@@ -255,6 +280,13 @@ function withDesktopRouteMultiPortal(value: unknown, multiPortalUid: string, exp
       ? { children: withDesktopRouteMultiPortal(value.children, multiPortalUid, explicitRoute?.children) }
       : {}),
   };
+}
+
+async function captureExplicitDesktopRouteUiLayouts(ctx: ResourcerContext, next: () => Promise<void>) {
+  (ctx as MultiPortalResourcerContext)[EXPLICIT_DESKTOP_ROUTE_UI_LAYOUTS] = pickExplicitDesktopRouteUiLayouts(
+    ctx.action?.params.values,
+  );
+  await next();
 }
 
 async function canAccessMultiPortal(ctx: ResourcerContext, multiPortalUid: string) {
@@ -641,19 +673,16 @@ async function addDesktopRouteCreateMultiPortal(ctx: ResourcerContext, next: () 
   const portalUid = portal?.get('uid');
 
   if (typeof portalUid === 'string' && portalUid) {
-    const explicitValues = ctx.request.body;
-    const previousLayout = ctx.action?.params.layout;
-    ctx.action?.mergeParams({
-      layout: MULTI_PORTAL_ROUTE_WRITE_LAYOUT_SENTINEL,
-      values: withDesktopRouteMultiPortal(ctx.action?.params.values, portalUid, explicitValues),
-    });
-    try {
-      await next();
-    } finally {
-      if (ctx.action?.params) {
-        ctx.action.params.layout = previousLayout;
-      }
-    }
+    const explicitValues = (ctx as MultiPortalResourcerContext)[EXPLICIT_DESKTOP_ROUTE_UI_LAYOUTS];
+    ctx.action?.mergeParams(
+      {
+        values: withDesktopRouteMultiPortal(ctx.action?.params.values, portalUid, explicitValues),
+      },
+      {
+        values: 'overwrite',
+      },
+    );
+    await next();
 
     const desktopRouteIds = collectDesktopRouteIds(ctx.body);
     await removeUiLayoutRoutePermissionsFromPortalOnlyRoutes(ctx, desktopRouteIds);
@@ -819,8 +848,26 @@ export class PluginMultiPortalServer extends Plugin {
     );
     this.app.resourceManager.registerPreActionHandler('multiPortals:create', preventUiLayoutRouteNameConflict);
     this.app.resourceManager.registerPreActionHandler('multiPortals:update', preventUiLayoutRouteNameConflict);
-    this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateMultiPortal);
-    this.app.resourceManager.registerPreActionHandler('desktopRoutes:updateOrCreate', addDesktopRouteCreateMultiPortal);
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', captureExplicitDesktopRouteUiLayouts, {
+      before: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
+    });
+    this.app.resourceManager.registerPreActionHandler(
+      'desktopRoutes:updateOrCreate',
+      captureExplicitDesktopRouteUiLayouts,
+      {
+        before: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
+      },
+    );
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateMultiPortal, {
+      after: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
+    });
+    this.app.resourceManager.registerPreActionHandler(
+      'desktopRoutes:updateOrCreate',
+      addDesktopRouteCreateMultiPortal,
+      {
+        after: UI_LAYOUT_DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
+      },
+    );
   }
 
   async load() {

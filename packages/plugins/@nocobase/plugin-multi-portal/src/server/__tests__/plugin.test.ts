@@ -713,7 +713,13 @@ describe('plugin-multi-portal server', () => {
     });
     const rootAgent = await app.agent().login(rootUser);
 
-    const [missingListResponse, missingGetResponse, missingTargetsResponse, missingCreateResponse] = await Promise.all([
+    const [
+      missingListResponse,
+      missingGetResponse,
+      missingTargetsResponse,
+      missingCreateResponse,
+      missingUpdateOrCreateResponse,
+    ] = await Promise.all([
       rootAgent.get('/desktopRoutes:listAccessible').query({
         portal: 'missing-portal',
       }),
@@ -732,31 +738,59 @@ describe('plugin-multi-portal server', () => {
           schemaUid: 'invalid-portal-created-page',
         },
       }),
+      rootAgent.resource('desktopRoutes').updateOrCreate({
+        portal: 'missing-portal',
+        filterKeys: ['schemaUid'],
+        values: {
+          type: 'flowPage',
+          title: 'invalid portal upserted page',
+          schemaUid: 'invalid-portal-upserted-page',
+        },
+      }),
     ]);
-    const [disabledListResponse, disabledGetResponse, disabledTargetsResponse, disabledCreateResponse] =
-      await Promise.all([
-        rootAgent.get('/desktopRoutes:listAccessible').query({
-          portal: disabledPortal.get('uid'),
-        }),
-        rootAgent.get('/desktopRoutes:getAccessible').query({
-          filterByTk: adminRoute.get('id'),
-          portal: disabledPortal.get('uid'),
-        }),
-        rootAgent.get('/desktopRoutes:listRolePermissionTargets').query({
-          portal: disabledPortal.get('uid'),
-        }),
-        rootAgent.resource('desktopRoutes').create({
-          portal: disabledPortal.get('uid'),
-          values: {
-            type: 'flowPage',
-            title: 'disabled portal created page',
-            schemaUid: 'disabled-portal-created-page',
-          },
-        }),
-      ]);
+    const [
+      disabledListResponse,
+      disabledGetResponse,
+      disabledTargetsResponse,
+      disabledCreateResponse,
+      disabledUpdateOrCreateResponse,
+    ] = await Promise.all([
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        portal: disabledPortal.get('uid'),
+      }),
+      rootAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: adminRoute.get('id'),
+        portal: disabledPortal.get('uid'),
+      }),
+      rootAgent.get('/desktopRoutes:listRolePermissionTargets').query({
+        portal: disabledPortal.get('uid'),
+      }),
+      rootAgent.resource('desktopRoutes').create({
+        portal: disabledPortal.get('uid'),
+        values: {
+          type: 'flowPage',
+          title: 'disabled portal created page',
+          schemaUid: 'disabled-portal-created-page',
+        },
+      }),
+      rootAgent.resource('desktopRoutes').updateOrCreate({
+        portal: disabledPortal.get('uid'),
+        filterKeys: ['schemaUid'],
+        values: {
+          type: 'flowPage',
+          title: 'disabled portal upserted page',
+          schemaUid: 'disabled-portal-upserted-page',
+        },
+      }),
+    ]);
     const createdRouteCount = await app.db.getRepository('desktopRoutes').count({
       filter: {
-        schemaUid: ['invalid-portal-created-page', 'disabled-portal-created-page'],
+        schemaUid: [
+          'invalid-portal-created-page',
+          'invalid-portal-upserted-page',
+          'disabled-portal-created-page',
+          'disabled-portal-upserted-page',
+        ],
       },
     });
 
@@ -767,6 +801,7 @@ describe('plugin-multi-portal server', () => {
     expect(missingTargetsResponse.status).toBe(200);
     expect(missingTargetsResponse.body.data).toEqual([]);
     expect(missingCreateResponse.status).toBe(400);
+    expect(missingUpdateOrCreateResponse.status).toBe(400);
     expect(disabledListResponse.status).toBe(200);
     expect(disabledListResponse.body.data).toEqual([]);
     expect(disabledGetResponse.status).toBe(204);
@@ -774,6 +809,7 @@ describe('plugin-multi-portal server', () => {
     expect(disabledTargetsResponse.status).toBe(200);
     expect(disabledTargetsResponse.body.data).toEqual([]);
     expect(disabledCreateResponse.status).toBe(400);
+    expect(disabledUpdateOrCreateResponse.status).toBe(400);
     expect(createdRouteCount).toBe(0);
   });
 
@@ -1004,6 +1040,154 @@ describe('plugin-multi-portal server', () => {
       expect.arrayContaining(['dual owned page', 'portal only page', 'cross scope portal page']),
     );
     expect(portalRouteTitles).not.toContain('layout owned page');
+  });
+
+  it('should create portal-scoped link routes without leaking into the default layout', async () => {
+    app = await createMultiPortalAclMockServer();
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'portal-link-route-owner',
+        title: 'Portal link route owner',
+        routeName: 'portalLinkRouteOwner',
+        routePath: '/portal-link-route-owner',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const mobileLayout = await app.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const portalOnlyLinkResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: portal.get('uid'),
+      values: {
+        type: 'link',
+        title: 'portal only docs link',
+        options: {
+          href: '/docs',
+          params: {
+            q: 'portal',
+          },
+        },
+      },
+    });
+    const portalOnlyGroupResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: portal.get('uid'),
+      values: {
+        type: 'group',
+        title: 'portal only link group',
+        children: [
+          {
+            type: 'link',
+            title: 'portal only child docs link',
+            options: {
+              href: '/docs/child',
+            },
+          },
+        ],
+      },
+    });
+    const dualOwnedLinkResponse = await rootAgent.resource('desktopRoutes').create({
+      portal: portal.get('uid'),
+      values: {
+        type: 'link',
+        title: 'dual owned docs link',
+        options: {
+          href: '/mobile-docs',
+        },
+        uiLayouts: [mobileLayout?.get('uid')],
+      },
+    });
+    const portalOnlyUpsertResponse = await rootAgent.resource('desktopRoutes').updateOrCreate({
+      portal: portal.get('uid'),
+      filterKeys: ['title'],
+      values: {
+        type: 'link',
+        title: 'portal only upsert docs link',
+        options: {
+          href: '/docs/upsert',
+          params: {
+            source: 'portal',
+          },
+        },
+      },
+    });
+
+    expect(portalOnlyLinkResponse.status).toBe(200);
+    expect(portalOnlyGroupResponse.status).toBe(200);
+    expect(dualOwnedLinkResponse.status).toBe(200);
+    expect(portalOnlyUpsertResponse.status).toBe(200);
+
+    const [portalOnlyLink, portalOnlyGroup, dualOwnedLink, portalOnlyUpsert] = await Promise.all([
+      app.db.getRepository('desktopRoutes').findOne({
+        filterByTk: portalOnlyLinkResponse.body.data.id,
+        appends: ['multiPortals', 'uiLayouts'],
+      }),
+      app.db.getRepository('desktopRoutes').findOne({
+        filterByTk: portalOnlyGroupResponse.body.data.id,
+        appends: ['multiPortals', 'uiLayouts', 'children.multiPortals', 'children.uiLayouts'],
+      }),
+      app.db.getRepository('desktopRoutes').findOne({
+        filterByTk: dualOwnedLinkResponse.body.data.id,
+        appends: ['multiPortals', 'uiLayouts'],
+      }),
+      app.db.getRepository('desktopRoutes').findOne({
+        filter: {
+          title: 'portal only upsert docs link',
+        },
+        appends: ['multiPortals', 'uiLayouts'],
+      }),
+    ]);
+    const portalOnlyChildLink = portalOnlyGroup?.get('children')?.[0];
+    const [adminLayoutListResponse, mobileLayoutListResponse, portalListResponse] = await Promise.all([
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        layout: mobileLayout?.get('uid'),
+      }),
+      rootAgent.get('/desktopRoutes:listAccessible').query({
+        portal: portal.get('uid'),
+      }),
+    ]);
+    const adminLayoutRouteTitles = collectRouteTitles(adminLayoutListResponse.body.data as RouteResponseItem[]);
+    const mobileLayoutRouteTitles = collectRouteTitles(mobileLayoutListResponse.body.data as RouteResponseItem[]);
+    const portalRouteTitles = collectRouteTitles(portalListResponse.body.data as RouteResponseItem[]);
+
+    expect(portalOnlyLink?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(portalOnlyLink?.get('uiLayouts')).toEqual([]);
+    expect(portalOnlyGroup?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(portalOnlyGroup?.get('uiLayouts')).toEqual([]);
+    expect(portalOnlyChildLink?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(portalOnlyChildLink?.get('uiLayouts')).toEqual([]);
+    expect(dualOwnedLink?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(dualOwnedLink?.get('uiLayouts').map((item) => item.get('uid'))).toEqual([mobileLayout?.get('uid')]);
+    expect(portalOnlyUpsert?.get('multiPortals').map((item) => item.get('uid'))).toEqual([portal.get('uid')]);
+    expect(portalOnlyUpsert?.get('uiLayouts')).toEqual([]);
+    expect(adminLayoutRouteTitles).not.toEqual(
+      expect.arrayContaining(['portal only docs link', 'portal only link group', 'portal only upsert docs link']),
+    );
+    expect(mobileLayoutRouteTitles).toContain('dual owned docs link');
+    expect(mobileLayoutRouteTitles).not.toContain('portal only docs link');
+    expect(portalRouteTitles).toEqual(
+      expect.arrayContaining([
+        'portal only docs link',
+        'portal only link group',
+        'portal only child docs link',
+        'dual owned docs link',
+        'portal only upsert docs link',
+      ]),
+    );
   });
 
   it('should grant new portal routes by the portal route default policy', async () => {

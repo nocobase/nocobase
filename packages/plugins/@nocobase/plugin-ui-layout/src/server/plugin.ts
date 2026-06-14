@@ -58,6 +58,7 @@ const ROLE_UI_LAYOUT_PERMISSION_ACTIONS = [
   'uiLayouts:listRolePermissionTargets',
   'desktopRoutes:listRolePermissionTargets',
 ];
+const DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG = 'plugin-ui-layout:desktop-route-write-layout';
 
 const DEFAULT_ADMIN_UI_LAYOUT_PROTECTED_FIELDS = [
   'uid',
@@ -965,8 +966,12 @@ export class PluginUiLayoutServer extends Plugin {
     this.app.resourceManager.registerPreActionHandler('uiLayouts:update', preventUiLayoutUidChange);
     this.app.resourceManager.registerPreActionHandler('uiLayouts:update', preventDefaultAdminUiLayoutUpdate);
     this.app.resourceManager.registerPreActionHandler('uiLayouts:destroy', preventDefaultAdminUiLayoutDestroy);
-    this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteWriteLayout);
-    this.app.resourceManager.registerPreActionHandler('desktopRoutes:updateOrCreate', addDesktopRouteWriteLayout);
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteWriteLayout, {
+      tag: DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
+    });
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:updateOrCreate', addDesktopRouteWriteLayout, {
+      tag: DESKTOP_ROUTE_WRITE_LAYOUT_HANDLER_TAG,
+    });
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);
     this.app.db.on('roles.beforeCreate', (role: Model) => {
