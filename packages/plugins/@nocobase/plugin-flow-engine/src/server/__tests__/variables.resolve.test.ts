@@ -288,6 +288,82 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
   });
 
+  it('should allow configured optional chaining variable paths', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record?.name }}' });
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.record?.name }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(typeof data.name).toBe('string');
+    expect(data.name.length).toBeGreaterThan(0);
+  });
+
+  it('should allow configured optional bracket variable paths with whitespace', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record?. ["name"] }}' });
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.record?. ["name"] }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(typeof data.name).toBe('string');
+    expect(data.name.length).toBeGreaterThan(0);
+  });
+
+  it('should reject unconfigured optional chaining variable paths', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record?.name }}' });
+    const payload = {
+      flowModelUid,
+      template: { password: '{{ ctx.record?.password }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject unconfigured optional bracket variable paths with whitespace', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record?. ["name"] }}' });
+    const payload = {
+      flowModelUid,
+      template: { password: "{{ ctx.record?. ['password'] }}" },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
   it('should allow configure roles to resolve unsaved variables not yet in the flow model allow-list', async () => {
     const configureRole = await createConfigureRole();
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.id }}' }, { collectionName: 'users' });
@@ -365,6 +441,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const payload = {
       template: {
         dynamic: '{{ ctx.record[ctx.field] }}',
+        optionalDynamic: '{{ ctx.record?. [ctx.field] }}',
       },
       contextParams: {
         record: {
@@ -481,7 +558,31 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
   });
 
-  it('should reject source tampering when the flow model source is known', async () => {
+  it('should reject optional dynamic paths even without a flow model uid', async () => {
+    const payload = {
+      template: {
+        dynamic: '{{ ctx.record?. [ctx.field] }}',
+        timestamp: '{{ ctx.timestamp }}',
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject optional dynamic root paths even without a flow model uid', async () => {
+    const payload = {
+      template: {
+        dynamic: '{{ ctx?. [ctx.field] }}',
+        timestamp: '{{ ctx.timestamp }}',
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should allow a different record collection when the variable path is configured', async () => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.name }}' }, { collectionName: 'users' });
     const payload = {
       flowModelUid,
@@ -495,11 +596,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.name).toBe('root');
   });
 
-  it('should reject flattened record source tampering when the flow model source is known', async () => {
+  it('should allow a different flattened record collection when the variable path is configured', async () => {
     const flowModelUid = await createTestFlowModel(
       { allowed: '{{ ctx.view.record.name }}' },
       { collectionName: 'users' },
@@ -516,11 +618,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.name).toBe('root');
   });
 
-  it('should reject array-indexed record source tampering when the flow model source is known', async () => {
+  it('should allow a different array-indexed record collection when the variable path is configured', async () => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.list[0].name }}' });
     const payload = {
       flowModelUid,
@@ -534,8 +637,9 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.name).toBe('root');
   });
 
   it('should allow association target collection for nested record context params', async () => {
@@ -591,6 +695,33 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(record?.id).toBe(1);
   });
 
+  it('should keep whole record allow-list entries when the model also uses record subpaths', async () => {
+    const flowModelUid = await createTestFlowModel(
+      {
+        full: '{{ ctx.record }}',
+        name: '{{ ctx.record.name }}',
+      },
+      { collectionName: 'users' },
+    );
+    const payload = {
+      flowModelUid,
+      template: { record: '{{ ctx.record }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    const data = res.body?.data ?? res.body;
+    const record = typeof data.record === 'string' ? JSON.parse(data.record) : data.record;
+    expect(res.status).toBeUndefined();
+    expect(record?.id).toBe(1);
+    expect(Object.keys(record).length).toBeGreaterThan(1);
+  });
+
   it('should allow configured whole association variables from nested record context params', async () => {
     const roleName = 'whole_association_target_role';
     const rolesRepo = app.db.getRepository('roles');
@@ -623,7 +754,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(role?.name).toBe(roleName);
   });
 
-  it('should not allow another source from the same flow model for a different variable key', async () => {
+  it('should allow another source from the same flow model when the variable key is configured', async () => {
     const flowModelUid = await createTestFlowModel({
       allowedUserName: '{{ ctx.view.record.name }}',
       otherRoleSource: {
@@ -650,8 +781,9 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.name).toBe('root');
   });
 
   it('should ignore explicit fields/appends on public resolve and infer selects from template', async () => {

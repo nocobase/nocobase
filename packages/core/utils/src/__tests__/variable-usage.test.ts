@@ -8,7 +8,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractUsedVariableNames, extractUsedVariablePaths, type JSONValue } from '../variable-usage';
+import {
+  extractUsedVariableNames,
+  extractUsedVariablePaths,
+  hasUnsupportedDynamicVariablePath,
+  type JSONValue,
+} from '../variable-usage';
 
 describe('variable-usage utils', () => {
   describe('extractUsedVariableNames', () => {
@@ -80,6 +85,55 @@ describe('variable-usage utils', () => {
       const tpl: JSONValue = { a: '{{  ctx.user.name  }}' };
       const usage = extractUsedVariablePaths(tpl);
       expect(usage.user).toEqual(['name']);
+    });
+
+    it('should support optional chaining and non-null assertion paths', () => {
+      const tpl: JSONValue = {
+        a: '{{ ctx.record?.name }}',
+        b: '{{ ctx.record!.profile?.nickname }}',
+        c: '{{ ctx.record?.roles?.[0]?.name }}',
+        d: '{{ ctx["record"]?.["roles"]?.[0]?.title }}',
+      };
+      const usage = extractUsedVariablePaths(tpl);
+      expect(usage.record).toEqual(['name', 'profile.nickname', 'roles[0].name', 'roles[0].title']);
+    });
+
+    it('should support optional bracket access with whitespace', () => {
+      const tpl: JSONValue = {
+        a: '{{ ctx.record?. ["roles"]?. [0]?.name }}',
+        b: "{{ ctx['record']?. ['roles']?. [0]?.title }}",
+        c: "{{ ctx.record?. ['password'] }}",
+      };
+      const usage = extractUsedVariablePaths(tpl);
+      expect(usage.record).toEqual(['roles[0].name', 'roles[0].title', 'password']);
+    });
+
+    it('should preserve direct references alongside subpaths', () => {
+      const tpl: JSONValue = {
+        full: '{{ ctx.record }}',
+        name: '{{ ctx.record.name }}',
+      };
+      const usage = extractUsedVariablePaths(tpl);
+      expect(usage.record).toEqual(['', 'name']);
+    });
+
+    it('should extract ctx paths from method call arguments', () => {
+      const tpl: JSONValue = { a: '{{ ctx.echo(ctx.record?.name) }}' };
+      const usage = extractUsedVariablePaths(tpl);
+      expect(usage.echo).toEqual(['']);
+      expect(usage.record).toEqual(['name']);
+    });
+  });
+
+  describe('hasUnsupportedDynamicVariablePath', () => {
+    it('should reject dynamic computed paths including optional bracket whitespace', () => {
+      expect(hasUnsupportedDynamicVariablePath('{{ ctx.record?. [ctx.field] }}')).toBe(true);
+      expect(hasUnsupportedDynamicVariablePath('{{ ctx?. [ctx.field] }}')).toBe(true);
+      expect(hasUnsupportedDynamicVariablePath('{{ ctx["record"]?. [ctx.field] }}')).toBe(true);
+    });
+
+    it('should allow static optional bracket paths', () => {
+      expect(hasUnsupportedDynamicVariablePath('{{ ctx.record?. ["roles"]?. [0]?.name }}')).toBe(false);
     });
   });
 });

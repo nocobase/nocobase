@@ -129,7 +129,7 @@ export function collectStaticDepsFromTemplateValue(value: any, collector: DepCol
     const usage = extractUsedVariablePaths(value as any) || {};
     for (const [varName, rawPaths] of Object.entries(usage)) {
       const paths = Array.isArray(rawPaths) ? rawPaths : [];
-      // NOTE: extractUsedVariablePaths 在 `{{ ctx.foo }}` 场景下会生成空数组，表示顶层变量被使用
+      // NOTE: 顶层变量使用会以空字符串子路径表示；保留空数组 fallback 兼容旧解析结果。
       const normalized = paths.length ? paths : [''];
 
       for (const subPath of normalized) {
