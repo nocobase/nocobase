@@ -24,13 +24,17 @@ export class OpenAIResponsesProvider extends LLMProvider {
   createModel() {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
+    const { name, schema, strict } = structuredOutput || {};
+    let responseFormatOptions: Record<string, any> = {
       type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['name'] = 'default';
-      responseFormatOptions['schema'] = schema;
+      responseFormatOptions = {
+        ...responseFormatOptions,
+        schema,
+        name: name ?? 'default',
+        strict: strict ?? false,
+      };
     }
     return new ChatOpenAI({
       apiKey,

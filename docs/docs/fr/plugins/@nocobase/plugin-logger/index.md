@@ -1,12 +1,14 @@
 ---
-displayName: "Journal"
+title: "Logger"
+keywords: "Logging and monitoring"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  Journaux côté serveur, incluant principalement les journaux de requêtes API et les journaux d'exécution du système, avec prise en charge de l'archivage et du téléchargement des fichiers journaux.
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Journal
+# Logger

@@ -132,6 +132,30 @@ const useStyles: any = createStyles(({ css, token }) => {
       }
     `,
 
+    workflowDetailsDescriptionClass: css`
+      &.ant-input {
+        border-color: transparent;
+        background: transparent;
+        box-shadow: none;
+        cursor: text;
+        resize: none;
+        transition:
+          background-color 0.3s ease,
+          border-color 0.3s ease;
+
+        &:hover {
+          border-color: ${token.colorPrimaryBorderHover};
+          background: ${token.colorBgContainer};
+        }
+
+        &:focus {
+          border-color: ${token.colorPrimary};
+          background: ${token.colorBgContainer};
+          box-shadow: 0 0 0 2px ${token.colorPrimaryBg};
+        }
+      }
+    `,
+
     branchBlockClass: css`
       display: flex;
       position: relative;

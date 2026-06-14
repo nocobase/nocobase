@@ -1,12 +1,14 @@
 ---
-displayName: "Registros"
+title: "Logger"
+keywords: "Logging and monitoring"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  Registros del servidor, que incluyen principalmente registros de solicitudes de API y registros de ejecución del sistema, y permite empaquetar y descargar archivos de registro.
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Registros
+# Logger

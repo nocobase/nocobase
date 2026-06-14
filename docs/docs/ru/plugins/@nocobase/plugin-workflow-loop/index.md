@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Loop node"
+title: "Workflow: Loop node"
+keywords: "Workflow"
+displayName: "Рабочий процесс: узел цикла"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Используется для циклической обработки каждого значения в массиве, а также для выполнения подпроцесса фиксированное количество раз.
+  Повторяет подпроцесс для каждого значения фиксированное число раз.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Loop node
+# Рабочий процесс: узел цикла

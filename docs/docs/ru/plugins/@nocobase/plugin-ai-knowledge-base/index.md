@@ -1,14 +1,16 @@
 ---
-displayName: "AI: База знаний"
+title: "AI: Knowledge base"
+keywords: "AI"
+displayName: "ИИ: база знаний"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
-  Поддерживает интеграцию с векторными базами данных для векторизации документов, обеспечивая AI-сотрудников интеллектуальным поиском и информационной поддержкой.
+  Поддержка интеграции с векторными БД для векторизации документов; даёт ИИ-сотрудникам интеллектуальный поиск и опору на знания.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# AI: База знаний
+# ИИ: база знаний

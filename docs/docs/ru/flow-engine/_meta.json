@@ -20,14 +20,14 @@
       },
       {
         "type": "custom-link",
-        "label": "План обучения",
+        "label": "Дорожная карта обучения",
         "link": "/flow-engine/learning-roadmap"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Руководство",
+    "label": "Руководства",
     "items": [
       {
         "type": "custom-link",
@@ -76,7 +76,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Component vs FlowModel",
+        "label": "Компонент vs FlowModel",
         "link": "/plugin-development/client/component-vs-flow-model"
       },
       {
@@ -93,7 +93,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Definitions",
+    "label": "Определения",
     "items": [
       {
         "type": "custom-link",

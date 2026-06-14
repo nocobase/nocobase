@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Parallel-Zweig-Knoten"
+title: "Workflow: Parallel node"
+keywords: "Workflow"
+displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Wird für Zweigprozesse im Workflow verwendet, die parallel ausgeführt werden müssen.
+  Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Parallel-Zweig-Knoten
+# Workflow: Parallel node

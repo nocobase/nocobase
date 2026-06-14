@@ -1,12 +1,12 @@
 # Расширение типов каналов уведомлений
 
-NocoBase позволяет расширять типы каналов уведомлений по мере необходимости, например, для SMS-уведомлений или push-уведомлений в приложениях.
+NocoBase поддерживает расширение типов каналов уведомлений по мере необходимости, например для SMS-уведомлений и пуш-уведомлений приложений.
 
 ## Клиент
 
 ### Регистрация типа канала
 
-Интерфейсы для настройки каналов и сообщений на стороне клиента регистрируются с помощью метода `registerChannelType`, который предоставляет клиент плагина управления уведомлениями:
+Интерфейсы конфигурации канала и сообщения на клиенте регистрируются через метод `registerChannelType`, который предоставляет клиентская часть менеджера уведомлений:
 
 ```ts
 import PluginNotificationManagerClient from '@nocobase/plugin-notification-manager/client';
@@ -34,9 +34,9 @@ export default PluginNotificationExampleClient;
 
 ## Сервер
 
-### Наследование от абстрактного класса
+### Расширение абстрактного класса
 
-В основе разработки на стороне сервера лежит наследование от абстрактного класса `BaseNotificationChannel` и реализация метода `send`. Внутри метода `send` содержится бизнес-логика отправки уведомлений через расширяемый плагин.
+Основа серверной разработки — расширить абстрактный класс `BaseNotificationChannel` и реализовать метод `send`, который содержит бизнес-логику отправки уведомлений через расширение.
 
 ```ts
 import { BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
@@ -51,7 +51,7 @@ export class ExampleServer extends BaseNotificationChannel {
 
 ### Регистрация на сервере
 
-Далее необходимо вызвать метод `registerChannelType` ядра сервера уведомлений, чтобы зарегистрировать разработанный класс реализации сервера:
+Нужно вызвать метод `registerChannelType` ядра сервера уведомлений, чтобы зарегистрировать класс серверной реализации:
 
 ```ts
 import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
@@ -69,20 +69,20 @@ export default PluginNotificationExampleServer;
 
 ## Полный пример
 
-Ниже представлен полный пример расширения для уведомлений, который подробно описывает процесс разработки такого расширения.
-Предположим, мы хотим добавить функцию SMS-уведомлений в NocoBase, используя SMS-шлюз сторонней платформы.
+Ниже приведён пример расширения уведомлений, который подробно показывает, как разрабатывать расширение.
+Предположим, мы хотим добавить SMS-уведомления в NocoBase с использованием SMS-шлюза некоторой платформы.
 
 ### Создание плагина
 
-1. Выполните команду для создания плагина: `yarn pm add @nocobase/plugin-notification-example`
+1. Выполните команду создания плагина: `yarn pm add @nocobase/plugin-notification-example`
 
-### Разработка клиентской части
+### Разработка клиента
 
-Для клиентской части нам потребуется разработать два компонента формы: `ChannelConfigForm` (форма настройки канала) и `MessageConfigForm` (форма настройки сообщения).
+На клиенте разработайте два компонента форм: `ChannelConfigForm` и `MessageConfigForm`.
 
-#### ChannelConfigForm
+#### `ChannelConfigForm`
 
-Для отправки SMS-сообщений через стороннюю платформу требуются API-ключ и секрет. Поэтому наша форма настройки канала будет включать эти два поля. Создайте новый файл `ChannelConfigForm.tsx` в директории `src/client` со следующим содержимым:
+Чтобы отправлять SMS, требуются `ключ API` и `secret`. Создайте новый файл `ChannelConfigForm.tsx` в директории `src/client`:
 
 ```ts
 import React from 'react';
@@ -100,13 +100,13 @@ const ChannelConfigForm = () => {
           apiKey: {
             'x-decorator': 'FormItem',
             type: 'string',
-            title: '{{t("Транспорт")}}',
+            title: '{{t("Transport")}}',
             'x-component': 'Input',
           },
           secret: {
             'x-decorator': 'FormItem',
             type: 'string',
-            title: '{{t("Транспорт")}}',
+            title: '{{t("Transport")}}',
             'x-component': 'Input',
           },
         },
@@ -118,9 +118,9 @@ const ChannelConfigForm = () => {
 export default ChannelConfigForm;
 ```
 
-#### MessageConfigForm
+#### `MessageConfigForm`
 
-Форма настройки сообщения в основном включает конфигурацию получателей (`receivers`) и содержимого сообщения (`content`). Создайте новый файл `MessageConfigForm.tsx` в директории `src/client`. Компонент принимает `variableOptions` в качестве параметра для переменных. В настоящее время форма содержимого настраивается в узле рабочего процесса и обычно должна использовать переменные узла рабочего процесса. Конкретное содержимое файла приведено ниже:
+Форма настройки сообщения в основном включает настройки получателей (`receivers`) и содержимого сообщения (`content`). Создайте новый файл `MessageConfigForm.tsx` в директории `src/client`. Компонент получает `variableOptions` как параметр переменных. Форма содержимого настраивается в узле рабочего процесса и, как правило, должна использовать переменные этого узла. Содержимое файла:
 
 ```ts
 import React from 'react';
@@ -138,7 +138,7 @@ const MessageConfigForm = ({ variableOptions }) => {
           to: {
             type: 'array',
             required: true,
-            title: `{{t("Получатели")}}`,
+            title: `{{t("Receivers")}}`,
             'x-decorator': 'FormItem',
             'x-component': 'ArrayItems',
             items: {
@@ -157,7 +157,7 @@ const MessageConfigForm = ({ variableOptions }) => {
                   'x-component-props': {
                     scope: variableOptions,
                     useTypedConstant: ['string'],
-                    placeholder: `{{t("Номер телефона")}}`,
+                    placeholder: `{{t("Phone number")}}`,
                   },
                 },
                 remove: {
@@ -170,7 +170,7 @@ const MessageConfigForm = ({ variableOptions }) => {
             properties: {
               add: {
                 type: 'void',
-                title: `{{t("Добавить номер телефона")}}`,
+                title: `{{t("Add phone number")}}`,
                 'x-component': 'ArrayItems.Addition',
               },
             },
@@ -178,7 +178,7 @@ const MessageConfigForm = ({ variableOptions }) => {
           content: {
             type: 'string',
             required: true,
-            title: `{{t("Содержимое")}}`,
+            title: `{{t("Content")}}`,
             'x-decorator': 'FormItem',
             'x-component': 'Variable.RawTextArea',
             'x-component-props': {
@@ -200,7 +200,7 @@ export default MessageConfigForm
 
 #### Регистрация клиентских компонентов
 
-После разработки компонентов формы настройки их необходимо зарегистрировать в ядре управления уведомлениями. Предположим, название нашей платформы — "Example". Тогда отредактированный файл `src/client/index.tsx` будет выглядеть следующим образом:
+После разработки форм конфигурации зарегистрируйте их в ядре менеджера уведомлений. Предположим, название платформы — `Example`. Отредактируйте `src/client/index.tsx` следующим образом:
 
 ```ts
 import { Plugin } from '@nocobase/client';
@@ -232,9 +232,9 @@ export default PluginNotificationExampleClient;
 
 На этом разработка клиентской части завершена.
 
-### Разработка серверной части
+### Разработка сервера
 
-В основе разработки на стороне сервера лежит наследование от абстрактного класса `BaseNotificationChannel` и реализация метода `send`. Внутри метода `send` содержится бизнес-логика отправки уведомлений через расширяемый плагин. Поскольку это пример, мы просто выведем полученные аргументы в консоль. В директории `src/server` создайте новый файл `example-server.ts` со следующим содержимым:
+Основа серверной разработки — расширить абстрактный класс `BaseNotificationChannel` и реализовать метод `send`. Метод `send` содержит бизнес-логику отправки уведомлений расширением. Поскольку это пример, мы просто выведем полученные аргументы в консоль. В директории `src/server` добавьте файл `example-server.ts`:
 
 ```ts
 import { BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
@@ -247,7 +247,7 @@ export class ExampleServer extends BaseNotificationChannel {
 }
 ```
 
-Далее необходимо вызвать метод `registerChannelType` ядра сервера уведомлений, чтобы зарегистрировать расширяемый плагин на стороне сервера. Отредактированный файл `src/server/plugin.ts` будет выглядеть следующим образом:
+Затем зарегистрируйте серверный плагин расширения, отредактировав `src/server/plugin.ts`:
 
 ```ts
 import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
@@ -270,12 +270,12 @@ export default PluginNotificationExampleServer;
 
 ### Регистрация и запуск плагина
 
-1. Выполните команду для регистрации плагина: `yarn pm add @nocobase/plugin-notification-example`
-2. Выполните команду для включения плагина: `yarn pm enable @nocobase/plugin-notification-example`
+1. Выполните команду регистрации: `yarn pm add @nocobase/plugin-notification-example`
+2. Выполните команду включения: `yarn pm enable @nocobase/plugin-notification-example`
 
 ### Настройка канала
 
-Теперь, перейдя на страницу каналов в разделе управления уведомлениями, вы увидите, что канал `Example SMS` активирован.
+После перехода на страницу каналов менеджера уведомлений вы увидите, что канал `Example SMS` включён.
 
 ![20241009164207-2024-10-09-16-42-08](https://static-docs.nocobase.com/20241009164207-2024-10-09-16-42-08.png)
 
@@ -283,10 +283,10 @@ export default PluginNotificationExampleServer;
 
 ![20250418074409-2025-04-18-07-44-09](https://static-docs.nocobase.com/20250418074409-2025-04-18-07-44-09.png)
 
-Создайте новый рабочий процесс и настройте узел уведомлений.
+Создайте новый рабочий процесс и настройте узел уведомления.
 
 ![20250418074832-2025-04-18-07-48-32](https://static-docs.nocobase.com/20250418074832-2025-04-18-07-48-32.png)
 
-Запустите выполнение рабочего процесса, и вы увидите следующую информацию в консоли:
+Запустите рабочий процесс, чтобы увидеть следующий вывод в консоли.
 
 ![20250418081746-2025-04-18-08-17-48](https://static-docs.nocobase.com/20250418081746-2025-04-18-08-17-48.png)

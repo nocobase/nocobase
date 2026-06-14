@@ -1,8 +1,8 @@
 ---
-displayName: "迁移管理"
-packageName: '@nocobase/plugin-migration-manager'
 title: "迁移管理"
 keywords: "迁移管理,插件,NocoBase"
+displayName: "迁移管理"
+packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
   - 1.x
   - 2.x

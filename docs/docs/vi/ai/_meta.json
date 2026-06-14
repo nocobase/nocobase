@@ -10,8 +10,20 @@
       },
       {
         "type": "custom-link",
-        "label": "Yêu cầu hệ thống",
-        "link": "/get-started/system-requirements"
+        "label": "Yêu cầu hệ điều hành",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Môi trường production",
+            "link": "/get-started/system-requirements"
+          },
+          {
+            "type": "custom-link",
+            "label": "Thiết lập phát triển cục bộ",
+            "link": "/ai/local-development-setup"
+          }
+        ],
+        "collapsed": true
       },
       {
         "type": "custom-link",
@@ -22,6 +34,16 @@
         "type": "custom-link",
         "label": "Cài đặt ứng dụng NocoBase",
         "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nâng cấp ứng dụng NocoBase",
+        "link": "/ai/upgrade-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nâng cấp từ 2.0 lên 2.1",
+        "link": "/ai/upgrade-from-2-0-to-2-1"
       },
       {
         "type": "custom-link",

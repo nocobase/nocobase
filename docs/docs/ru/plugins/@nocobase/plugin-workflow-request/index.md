@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Node HTTP-запроса"
+title: "Workflow: HTTP request node"
+keywords: "Workflow"
+displayName: "Рабочий процесс: узел HTTP-запроса"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Используется для отправки HTTP-запросов к любому HTTP-сервису в Workflow для взаимодействия с данными.
+  Отправка HTTP-запросов к любому сервису для обмена данными в рабочем процессе.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Node HTTP-запроса
+# Рабочий процесс: узел HTTP-запроса

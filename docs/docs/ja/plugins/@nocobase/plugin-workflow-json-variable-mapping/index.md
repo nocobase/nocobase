@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: JSON 変数マッピング"
+title: "Workflow: JSON variable mapping"
+keywords: "Workflow"
+displayName: "Workflow: JSON variable mapping"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 description: |
-  任意の JSON データを構造化された変数にマッピングし、後続の Node で使用できるようにします。
+  Used for mapping any JSON data to structured variables for usage in subsequent nodes.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: JSON 変数マッピング
+# Workflow: JSON variable mapping

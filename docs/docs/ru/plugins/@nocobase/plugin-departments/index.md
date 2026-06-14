@@ -1,12 +1,14 @@
 ---
-displayName: "Департаменты"
+title: "Departments"
+keywords: "Users & permissions"
+displayName: "Отделы"
 packageName: '@nocobase/plugin-departments'
 description: |
-  Организация пользователей по департаментам, настройка иерархических связей, привязка ролей для управления доступом и поддержка использования в качестве переменных в Workflow и выражениях.
+  Иерархия Отделов, привязка ролей для прав доступа, использование отделов как переменных в рабочем процессе и выражениях.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Департаменты
+# Отделы

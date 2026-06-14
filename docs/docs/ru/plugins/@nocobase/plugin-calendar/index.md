@@ -1,12 +1,14 @@
 ---
-displayName: "Календарь"
+title: "Calendar"
+keywords: "Collections,Blocks"
+displayName: "Calendar"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  Предоставляет шаблон коллекции и блок календаря для управления данными о датах, обычно используемыми для событий, встреч, задач и другой информации, связанной с датой/временем.
+  Шаблон коллекции «календарь» и блок для работы с датами: события, встречи, задачи и другое.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Календарь
+# Calendar

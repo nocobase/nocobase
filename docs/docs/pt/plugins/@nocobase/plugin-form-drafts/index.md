@@ -1,14 +1,16 @@
 ---
-displayName: "Rascunhos de formulário"
+title: "Form drafts"
+keywords: "Form drafts,Plugin,NocoBase"
+displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Permite salvar rascunhos ao preencher formulários, para continuar editando e enviando mais tarde.
+  Allow users to save form drafts and continue editing later.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Rascunhos de formulário
+# Form drafts

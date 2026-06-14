@@ -1,12 +1,14 @@
 ---
-displayName: "Менеджер уведомлений"
+title: "Notification manager"
+keywords: "Notification"
+displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Предоставляет унифицированный сервис управления, охватывающий конфигурацию каналов, ведение журналов и другие функции, поддерживая настройку различных каналов уведомлений, включая внутренние сообщения и электронную почту.
+  Единая служба управления: настройка каналов, логирование и др.; поддерживаются различные каналы уведомлений, включая сообщения в приложении и электронную почту.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Менеджер уведомлений
+# Notification manager

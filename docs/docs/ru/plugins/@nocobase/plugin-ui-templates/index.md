@@ -1,14 +1,16 @@
 ---
-displayName: "UI шаблоны"
+title: "UI templates"
+keywords: "nocobase,plugin,ui,templates,block,popup"
+displayName: "Шаблоны UI"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
 description: |
-  Предоставляет возможность повторного использования шаблонов блоков и всплывающих окон.
+  Шаблоны блоков и всплывающих окон для повторного использования в интерфейсе.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI шаблоны
+# Шаблоны UI

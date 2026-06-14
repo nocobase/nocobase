@@ -1,14 +1,16 @@
 ---
-displayName: "Диспетчер приложений"
+title: "App supervisor"
+keywords: "Architecture"
+displayName: "Супервизор приложений"
 packageName: '@nocobase/plugin-app-supervisor'
 supportedVersions:
   - 2.x
 description: |
-  Плагин «Диспетчер приложений» предназначен для централизованного контроля и управления несколькими экземплярами приложений NocoBase, обеспечивая функции обнаружения приложений и управления их работой.
+  Единый надзор и оркестрация нескольких экземпляров NocoBase: обнаружение приложений и управление средой выполнения.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Диспетчер приложений
+# Супервизор приложений

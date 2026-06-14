@@ -5,8 +5,6 @@ description: Pasang NocoBase CLI dan buat aplikasi NocoBase baru dengan cepat me
 
 # Instal aplikasi NocoBase
 
-Jika Anda belum memiliki aplikasi NocoBase, cara tercepat adalah memasang `@nocobase/cli` terlebih dahulu, lalu menjalankan `nb init --ui` sekali. Dalam kebanyakan kasus, konfigurasi default pada wizard sudah cukup.
-
 ## Prasyarat
 
 - Node.js >= 22
@@ -88,6 +86,13 @@ Konfigurasi CLI secara default disimpan di `~/.nocobase/`, sehingga AI Agents bi
 
 Jika aplikasi ini nantinya akan dibuka untuk pengguna sungguhan, kami tidak menyarankan penggunaan jangka panjang dengan `IP + port` secara langsung. Langkah berikutnya biasanya adalah menambahkan reverse proxy dan mengaktifkan HTTPS.
 
+## Langkah berikutnya
+
+- Jika Anda sudah memiliki aplikasi NocoBase yang berjalan, lihat [Panduan Integrasi AI Agent](./quick-start.mdx)
+- Jika Anda ingin mengelola startup, shutdown, log, dan upgrade aplikasi, lihat [Kelola aplikasi](../nocobase-cli/operations/manage-app.md)
+- Jika Anda ingin melanjutkan deployment produksi, lihat [Instal aplikasi dengan CLI](../nocobase-cli/installation/cli.md) dan [Ringkasan deployment produksi](../nocobase-cli/production/index.md)
+- Jika Anda ingin AI mulai membangun aplikasi, lihat [AI Builder](../ai-builder/index.md)
+
 ## Tautan terkait
 
 - [Perbandingan Metode Instalasi dan Versi](../get-started/quickstart.md) — Bandingkan dulu metode instalasi dan kanal versi, lalu putuskan cara instalasinya
@@ -95,4 +100,5 @@ Jika aplikasi ini nantinya akan dibuka untuk pengguna sungguhan, kami tidak meny
 - [Referensi perintah `nb init`](../api/cli/init.md) — Inisialisasi aplikasi baru, ambil alih aplikasi lokal yang sudah ada, atau hubungkan aplikasi remote
 - [Referensi perintah `nb env info`](../api/cli/env/info.md) — Lihat detail koneksi dan konfigurasi runtime dari env saat ini
 - [NocoBase CLI](../api/cli/index.md) — Referensi lengkap untuk semua perintah `nb`
+- [Kelola aplikasi](../nocobase-cli/operations/manage-app.md) — Mulai, hentikan, restart, lihat log, dan upgrade aplikasi
 - [Beberapa manajemen lingkungan](../nocobase-cli/operations/multi-environment.md) — Operasi umum saat Anda memelihara beberapa env sekaligus

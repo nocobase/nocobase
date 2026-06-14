@@ -1,1 +1,1 @@
-# Настройки FlowModel
+# Конфигурация FlowModel

@@ -1,12 +1,14 @@
 ---
-displayName: "Визуализация данных"
+title: "Data visualization"
+keywords: "Blocks"
+displayName: "Data visualization"
 packageName: '@nocobase/plugin-data-visualization'
 description: |
-  Предоставляет функции визуализации данных, включая блоки графиков и блоки фильтров. Поддерживает более десяти типов диаграмм (линейные, с областями, гистограммы и др.) и позволяет добавлять новые типы.
+  Визуализация данных: блок диаграмм и блок фильтров; линейные, областные, столбчатые и более десяти видов графиков, с возможностью расширения.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Визуализация данных
+# Data visualization

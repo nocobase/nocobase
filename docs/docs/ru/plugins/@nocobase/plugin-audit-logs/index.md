@@ -1,8 +1,10 @@
 ---
-displayName: "Журнал аудита (устарело)"
+title: "Audit logs (deprecated)"
+keywords: "System & security"
+displayName: "Логи аудита (устарело)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  Этот плагин устарел и не рекомендуется к использованию. В будущем появится новый плагин журнала аудита.
+  Плагин устарел. В будущем будет новый плагин логов аудита.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Журнал аудита (устарело)
+# Логи аудита (устарело)
 
-> Примечание: этот плагин устарел (deprecated).
+> Примечание: этот плагин устарел.

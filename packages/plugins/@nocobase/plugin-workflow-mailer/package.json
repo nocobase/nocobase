@@ -22,6 +22,7 @@
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
     "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-file-manager": "workspace:*",
     "@nocobase/plugin-workflow": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"

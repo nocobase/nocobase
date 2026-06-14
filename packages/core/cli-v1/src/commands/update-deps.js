@@ -68,6 +68,13 @@ module.exports = (cli) => {
       if (descJson['dependencies']?.['@nocobase/app']) {
         descJson['dependencies']['@nocobase/app'] = stdout;
       }
+      if (descJson['dependencies']?.['@nocobase/cli']) {
+        descJson['dependencies']['@nocobase/app'] = stdout;
+        console.log(
+          chalk.yellow('The @nocobase/cli package is no longer needed, it will be removed from dependencies.'),
+        );
+        delete descJson['dependencies']['@nocobase/cli'];
+      }
       if (descJson['devDependencies']?.['@nocobase/devtools']) {
         descJson['devDependencies']['@nocobase/devtools'] = stdout;
       }
