@@ -140,6 +140,18 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceApplyApprovalBlueprintResponse',
       'FlowSurfaceBindKey',
       'FlowSurfaceKeysMap',
+      'FlowSurfaceCapabilityKind',
+      'FlowSurfaceCapabilityOriginSource',
+      'FlowSurfaceCapabilityReadiness',
+      'FlowSurfaceCapabilityAvailability',
+      'FlowSurfacePublicCapabilityItem',
+      'FlowSurfaceCapabilitiesTarget',
+      'FlowSurfaceCapabilitiesRequest',
+      'FlowSurfaceCapabilitiesResponse',
+      'FlowSurfaceDescribeCapabilityRequest',
+      'FlowSurfaceDescribeCapabilityResponse',
+      'FlowSurfaceValidateCapabilityCreateRequest',
+      'FlowSurfaceValidateCapabilityCreateResponse',
       'FlowSurfaceCatalogItem',
       'FlowSurfaceNodeContract',
       'FlowSurfaceDomainContract',
@@ -332,6 +344,59 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceSetFieldLinkageRulesRequest.required).toEqual(['target', 'rules']);
     expect(schemas.FlowSurfaceSetActionLinkageRulesRequest.required).toEqual(['target', 'rules']);
     expect(schemas.FlowSurfaceReactionSlot.properties.valuePath.description).toContain('nested value path');
+    expect(schemas.FlowSurfaceCapabilityKind.enum).toEqual(['block', 'action', 'fieldComponent']);
+    expect(schemas.FlowSurfaceCapabilityReadiness.enum).toEqual([
+      'discovered',
+      'readbackVerified',
+      'contractDeclared',
+      'createDryRunPassed',
+      'createEnabled',
+      'blocked',
+    ]);
+    expect(schemas.FlowSurfaceCapabilityAvailability.properties.create).toMatchObject({
+      type: 'object',
+      required: ['supported'],
+      additionalProperties: false,
+      properties: {
+        supported: {
+          type: 'boolean',
+        },
+        reasonSource: {
+          enum: ['registry', 'provider', 'catalog', 'builder'],
+        },
+        acceptsInitParams: {
+          type: 'boolean',
+        },
+        acceptsSettings: {
+          type: 'boolean',
+        },
+      },
+    });
+    expect(schemas.FlowSurfaceCapabilityAvailability.properties.create.allOf).toBeUndefined();
+    expect(schemas.FlowSurfaceDescribeCapabilityRequest.anyOf).toEqual([
+      { required: ['capabilityId'] },
+      { required: ['publicType'] },
+    ]);
+    expect(schemas.FlowSurfaceDescribeCapabilityRequest.properties.expand.items.enum).toEqual([
+      'item.identity',
+      'item.semantic',
+      'item.settings',
+      'item.warnings',
+    ]);
+    expect(schemas.FlowSurfaceDescribeCapabilityResponse.properties.data.$ref).toBe(
+      '#/components/schemas/FlowSurfacePublicCapabilityItem',
+    );
+    expect(schemas.FlowSurfaceValidateCapabilityCreateRequest.required).toEqual(['publicType']);
+    expect(schemas.FlowSurfaceValidateCapabilityCreateRequest.properties.kind.enum).toEqual(['block']);
+    expect(schemas.FlowSurfaceValidateCapabilityCreateRequest.properties.target.$ref).toBe(
+      '#/components/schemas/FlowSurfaceWriteTarget',
+    );
+    expect(schemas.FlowSurfaceValidateCapabilityCreateRequest.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceValidateCapabilityCreateResponse.properties.dryRunNode.required).toEqual(['publicType']);
+    expect(schemas.FlowSurfaceValidateCapabilityCreateResponse.properties.dryRunNode.properties.use).toBeUndefined();
+    expect(
+      schemas.FlowSurfaceValidateCapabilityCreateResponse.properties.dryRunNode.properties.modelUse,
+    ).toBeUndefined();
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.target.description).toContain(
       'outer form block uid',
     );
@@ -789,6 +854,18 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:catalog'].post.description).toContain(
       'prefer `getReactionMeta` + `set*Rules`',
     );
+    expect(swaggerDocument.paths['/flowSurfaces:describeCapability'].post.description).toContain(
+      'not write authorization',
+    );
+    expect(swaggerDocument.paths['/flowSurfaces:describeCapability'].post.description).toContain(
+      '`implementation.modelUse`',
+    );
+    const validateCapabilityCreatePath = swaggerDocument.paths['/flowSurfaces:validateCapabilityCreate'].post;
+    expect(validateCapabilityCreatePath.description).toContain('does not persist FlowModel nodes');
+    expect(validateCapabilityCreatePath.description).toContain('does not return internal `use`');
+    expect(validateCapabilityCreatePath.description).toContain('public-path errors');
+    expect(validateCapabilityCreatePath.description).toContain('target-scoped `catalog` write confirmation');
+    expect(validateCapabilityCreatePath.description).toContain('`loggedIn`');
     const describeRequest =
       swaggerDocument.paths['/flowSurfaces:describeSurface'].post.requestBody.content['application/json'];
     expect(describeRequest.example?.locator?.pageSchemaUid).toBe('employees-page-schema');
@@ -1957,9 +2034,64 @@ describe('flowSurfaces swagger', () => {
 
     const catalogPath = swaggerDocument.paths['/flowSurfaces:catalog'].post;
     expect(catalogPath.description).toContain('truly available public capabilities');
+    expect(catalogPath.description).toContain(
+      'Legacy raw node contracts are returned only when callers explicitly request',
+    );
+    expect(catalogPath.description).toContain('not write authorization');
+    expect(catalogPath.description).toContain('strict allowlist');
+    expect(catalogPath.description).toContain('create actions still revalidate before persisting');
     expect(catalogPath.description).toContain('When `sections` is omitted');
     expect(catalogPath.description).toContain('`selectedSections` in the response as the final authoritative result');
     expect(catalogPath.description).toContain('`loggedIn`');
+    const capabilitiesPath = swaggerDocument.paths['/flowSurfaces:capabilities'].post;
+    expect(capabilitiesPath.description).toContain('Global results are discovery only');
+    expect(capabilitiesPath.description).toContain('target-scoped `catalog`');
+    expect(capabilitiesPath.description).toContain('`verifiedAuto`');
+    expect(capabilitiesPath.description).toContain('trusted admission evidence');
+    expect(capabilitiesPath.description).toContain('target-scoped `catalog` may expose');
+    expect(capabilitiesPath.description).toContain('Write actions still revalidate');
+    expect(capabilitiesPath.description).toContain('only supports concrete `targetUid` / `uid` lookup');
+    expect(capabilitiesPath.description).toContain('`debugImplementation` expand is forbidden');
+    expect(capabilitiesPath.description).toContain('`loggedIn`');
+    expect(capabilitiesPath.description).not.toContain('implementation.modelUse');
+    const describeCapabilityPath = swaggerDocument.paths['/flowSurfaces:describeCapability'].post;
+    expect(describeCapabilityPath.description).toContain('`verifiedAuto`');
+    expect(describeCapabilityPath.description).toContain('trusted admission evidence');
+    expect(describeCapabilityPath.description).toContain('discovery/detail metadata only');
+    expect(schemas.FlowSurfaceCapabilitiesRequest.properties.target.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCapabilitiesTarget',
+    );
+    expect(schemas.FlowSurfaceCapabilitiesRequest.properties.locale).toBeUndefined();
+    expect(Object.keys(schemas.FlowSurfaceCapabilitiesTarget.properties).sort()).toEqual(['targetUid', 'uid']);
+    expect(schemas.FlowSurfaceCapabilitiesTarget.anyOf).toEqual([{ required: ['targetUid'] }, { required: ['uid'] }]);
+    expect(schemas.FlowSurfaceCapabilitiesTarget.properties.scene).toBeUndefined();
+    expect(schemas.FlowSurfaceCapabilitySemantic.properties.antiPatterns.items.type).toBe('string');
+    expect(schemas.FlowSurfaceCapabilitySemantic.properties.locale.type).toBe('string');
+    expect(schemas.FlowSurfaceCapabilityReadiness.enum).toEqual([
+      'discovered',
+      'readbackVerified',
+      'contractDeclared',
+      'createDryRunPassed',
+      'createEnabled',
+      'blocked',
+    ]);
+    expect(schemas.FlowSurfacePublicCapabilityItem.required).toContain('readiness');
+    expect(schemas.FlowSurfacePublicCapabilityItem.properties.readiness.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCapabilityReadiness',
+    );
+    const diagnosticsPath = swaggerDocument.paths['/flowSurfaces:diagnoseCapabilities'].post;
+    expect(diagnosticsPath.description).toContain('registry diagnostics');
+    expect(diagnosticsPath.description).toContain('includeImplementation` is forbidden');
+    expect(diagnosticsPath.description).toContain('does not return internal `modelUse`');
+    expect(diagnosticsPath.description).toContain('administrator roles');
+    expect(diagnosticsPath.description).toContain('Stale or incomplete create-enabled admission reports');
+    expect(schemas.FlowSurfaceCapabilityDiagnosticsResponse.required).toEqual(['data', 'meta']);
+    expect(
+      schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.meta.properties.implementationIncluded.enum,
+    ).toEqual([false]);
+    expect(
+      schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.data.properties.admissionRecords.items.$ref,
+    ).toBe('#/components/schemas/FlowSurfaceCapabilityDiagnosticsAdmissionRecord');
     const composePath = swaggerDocument.paths['/flowSurfaces:compose'].post;
     expect(composePath.description).toContain('low-level building primitive');
     expect(composePath.description).not.toContain('preferred creation entry for AI callers');
@@ -1976,6 +2108,9 @@ describe('flowSurfaces swagger', () => {
 
     for (const actionName of [
       'catalog',
+      'capabilities',
+      'validateCapabilityCreate',
+      'diagnoseCapabilities',
       'context',
       'listTemplates',
       'getTemplate',

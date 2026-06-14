@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { getPublicFieldTypeForUse } from './field-type-resolver';
 import type {
   FlowSurfaceCatalogExpandFlags,
   FlowSurfaceCatalogItemOptionalFieldsOptions,
@@ -26,6 +27,15 @@ const LIGHT_CATALOG_ITEM_KEYS = [
   'label',
   'use',
   'kind',
+  'publicType',
+  'acceptedAliases',
+  'semantic',
+  'ownerPlugin',
+  'origin',
+  'supportLevel',
+  'confidence',
+  'availability',
+  'warnings',
   'scope',
   'scene',
   'fieldUse',
@@ -39,8 +49,106 @@ const LIGHT_CATALOG_ITEM_KEYS = [
   'type',
 ] as const;
 
+function resolveCatalogPublicType(item: FlowSurfaceCatalogProjectableItem) {
+  if (item.kind === 'field') {
+    if (item.publicType) {
+      return String(item.publicType).trim();
+    }
+    if (item.type) {
+      return String(item.type).trim();
+    }
+    if (item.renderer === 'js') {
+      return 'js';
+    }
+    const publicFieldType = getPublicFieldTypeForUse(item.fieldUse || item.use);
+    if (publicFieldType) {
+      return publicFieldType;
+    }
+  }
+  return String(item.publicType || item.type || item.key || '').trim();
+}
+
+function resolveCatalogSemantic(item: FlowSurfaceCatalogProjectableItem, publicType: string) {
+  const rawAliases =
+    item.kind === 'field'
+      ? [item.key, item.type, item.renderer, publicType]
+      : [item.key, item.type, item.renderer, publicType];
+  const aliases = rawAliases.filter(
+    (value, index, values): value is string =>
+      typeof value === 'string' && !!value.trim() && values.indexOf(value) === index,
+  );
+  return {
+    title: item.label,
+    aliases,
+  };
+}
+
+function hasSettingsContract(item: FlowSurfaceCatalogProjectableItem) {
+  return Object.keys(item.settingsContract || {}).length > 0 || Object.keys(item.configureOptions || {}).length > 0;
+}
+
+function resolveCatalogAvailability(item: FlowSurfaceCatalogProjectableItem) {
+  const createSupported = item.createSupported !== false;
+  const acceptsSettings = hasSettingsContract(item);
+  return {
+    render: { supported: true },
+    readback: { supported: true },
+    create: {
+      supported: createSupported,
+      ...(createSupported ? {} : { reasonCode: 'missing-create-contract' as const, reasonSource: 'catalog' as const }),
+      acceptsInitParams: !!item.requiredInitParams?.length,
+      acceptsSettings,
+    },
+    configure: {
+      supported: acceptsSettings,
+      ...(acceptsSettings ? {} : { reasonCode: 'unsupported' as const, reasonSource: 'catalog' as const }),
+    },
+  };
+}
+
+function resolveCatalogSupportLevel(item: FlowSurfaceCatalogProjectableItem) {
+  if (item.createSupported === false) {
+    return 'readback-only';
+  }
+  return hasSettingsContract(item) ? 'create-and-configure' : 'create-only';
+}
+
+function resolveCatalogIdentity(item: FlowSurfaceCatalogProjectableItem, publicType: string) {
+  const kind = item.kind === 'field' ? 'fieldComponent' : item.kind;
+  return {
+    capabilityId: [
+      'builtInStatic',
+      kind,
+      encodeURIComponent(item.ownerPlugin || 'core'),
+      encodeURIComponent(publicType),
+    ]
+      .filter(Boolean)
+      .join(':'),
+  };
+}
+
 function pickLightCatalogItem(item: FlowSurfaceCatalogProjectableItem): FlowSurfaceCatalogProjectedItem {
   const projected = _.pick(item, LIGHT_CATALOG_ITEM_KEYS) as FlowSurfaceCatalogProjectedItem;
+  const publicType = resolveCatalogPublicType(item);
+
+  if (publicType && !projected.publicType) {
+    projected.publicType = publicType;
+  }
+  if (!projected.semantic) {
+    projected.semantic = resolveCatalogSemantic(item, publicType);
+  }
+  if (!projected.origin) {
+    projected.origin = 'builtInStatic';
+  }
+  if (!projected.supportLevel) {
+    projected.supportLevel = resolveCatalogSupportLevel(item);
+  }
+  if (!projected.confidence) {
+    projected.confidence = 'high';
+  }
+  if (!projected.availability) {
+    projected.availability = resolveCatalogAvailability(item);
+  }
 
   if (item.resourceBindings?.length) {
     projected.resourceBindings = item.resourceBindings;
@@ -106,6 +214,10 @@ export function projectCatalogItem(
 
   if (expand.includeItemAllowedContainerUses && item.allowedContainerUses?.length) {
     projected.allowedContainerUses = item.allowedContainerUses;
+  }
+
+  if (expand.includeItemIdentity) {
+    projected.identity = item.identity || resolveCatalogIdentity(item, projected.publicType || item.key);
   }
 
   if (expand.includeItemConfigureOptions) {

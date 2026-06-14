@@ -13,6 +13,7 @@ import { uid } from '@nocobase/utils';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import { FlowSurfacesService } from '../flow-surfaces/service';
+import type { FlowSurfaceCatalogItem } from '../flow-surfaces/types';
 import { createFlowSurfaceFixture, listFixtureAliases } from './flow-surfaces.fixtures';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
@@ -46,6 +47,32 @@ const FLOW_SURFACE_TEST_DEFAULT_FILTER_FIELDS_BY_COLLECTION: Record<string, stri
   kanban_tasks: ['title', 'status', 'priority', 'scope'],
   no_interface_fields: ['name', 'code', 'label', 'scope'],
   roles: ['title', 'name'],
+};
+
+type FlowSurfaceTestPostAgent = {
+  post: (url: string) => {
+    set: (
+      key: string,
+      value: string,
+    ) => {
+      send: (values: Record<string, unknown>) => Promise<unknown>;
+    };
+  };
+};
+
+type FlowSurfaceTestStatusResponse = {
+  status: number;
+};
+
+type FlowSurfaceTestTreeItem = {
+  uid?: string;
+  props?: {
+    content?: string;
+  };
+};
+
+type FlowSurfaceTestUidResult = {
+  uid: string;
 };
 
 describe('flowSurfaces resource', () => {
@@ -4392,7 +4419,7 @@ describe('flowSurfaces resource', () => {
     expect(templatedPopup.collectionName).toBe('departments');
     expect(templatedPopup.associationName).toBe('employees.department');
 
-    const zhAgent = await loginFlowSurfacesRootAgent(app);
+    const zhAgent = (await loginFlowSurfacesRootAgent(app)) as FlowSurfaceTestPostAgent;
     const prefix = app.resourcer.options.prefix || '';
     const zhTemplatedPopup = getData(
       await zhAgent.post(`${prefix}/flowSurfaces:getTemplate`).set('X-Locale', 'zh-CN').send({
@@ -7965,23 +7992,33 @@ describe('flowSurfaces resource', () => {
     expect(pageCatalog.blocks.map((item: any) => item.key)).toContain('jsBlock');
     expect(tableCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
       use: 'TableColumnModel',
+      publicType: 'js',
       fieldUse: 'JSFieldModel',
       renderer: 'js',
     });
     expect(tableCatalog.fields.find((item: any) => item.key === 'jsColumn')).toMatchObject({
       use: 'JSColumnModel',
+      publicType: 'jsColumn',
       fieldUse: 'JSColumnModel',
       type: 'jsColumn',
     });
     expect(createFormCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
       use: 'FormItemModel',
+      publicType: 'js',
       fieldUse: 'JSEditableFieldModel',
       renderer: 'js',
     });
     expect(createFormCatalog.fields.find((item: any) => item.key === 'jsItem')).toMatchObject({
       use: 'JSItemModel',
+      publicType: 'jsItem',
       fieldUse: 'JSItemModel',
       type: 'jsItem',
+    });
+    expect(tableCatalog.fields.find((item: FlowSurfaceCatalogItem) => item.key === 'nickname')).toMatchObject({
+      publicType: 'text',
+    });
+    expect(createFormCatalog.fields.find((item: FlowSurfaceCatalogItem) => item.key === 'nickname')).toMatchObject({
+      publicType: 'input',
     });
     expect(filterFormCatalog.fields.some((item: any) => item.renderer === 'js' || item.type === 'jsItem')).toBe(false);
 
@@ -9586,7 +9623,7 @@ describe('flowSurfaces resource', () => {
       ),
     );
 
-    const firstBlock = await service.transaction((transaction) =>
+    const firstBlock = (await service.transaction((transaction) =>
       service.addBlock(
         {
           target: {
@@ -9599,8 +9636,8 @@ describe('flowSurfaces resource', () => {
         },
         { transaction },
       ),
-    );
-    const secondBlock = await service.transaction((transaction) =>
+    )) as FlowSurfaceTestUidResult;
+    const secondBlock = (await service.transaction((transaction) =>
       service.addBlock(
         {
           target: {
@@ -9613,7 +9650,7 @@ describe('flowSurfaces resource', () => {
         },
         { transaction },
       ),
-    );
+    )) as FlowSurfaceTestUidResult;
 
     const applyRes = await service.transaction((transaction) =>
       service.apply(
@@ -9648,7 +9685,7 @@ describe('flowSurfaces resource', () => {
     const readback = await service.get({
       uid: page.gridUid,
     });
-    const items = _.castArray(readback.tree.subModels?.items || []);
+    const items = _.castArray(readback.tree.subModels?.items || []) as FlowSurfaceTestTreeItem[];
     expect(items).toHaveLength(2);
     expect(items[0].uid).toBe(firstBlock.uid);
     expect(items[1].uid).toBe(secondBlock.uid);
@@ -11376,7 +11413,7 @@ async function addAction(rootAgent: any, targetUid: string, type: string, extraV
     type,
     ...extraValues,
   };
-  const response = await runFlowSurfaceHelper(() =>
+  const response = await runFlowSurfaceHelper<FlowSurfaceTestStatusResponse>(() =>
     rootAgent.resource('flowSurfaces').addAction({
       values,
     }),
