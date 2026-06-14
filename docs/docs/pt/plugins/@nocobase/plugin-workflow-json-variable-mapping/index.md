@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Mapeamento de variáveis JSON"
+title: "Workflow: JSON variable mapping"
+keywords: "Workflow"
+displayName: "Workflow: JSON variable mapping"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 description: |
-  Usado para mapear quaisquer dados JSON para variáveis estruturadas para uso em Nodes subsequentes.
+  Used for mapping any JSON data to structured variables for usage in subsequent nodes.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Mapeamento de variáveis JSON
+# Workflow: JSON variable mapping

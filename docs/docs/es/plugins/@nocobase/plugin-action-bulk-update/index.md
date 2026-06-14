@@ -1,15 +1,17 @@
 ---
-displayName: "Acción: Actualización masiva"
+title: "Action: Batch update"
+keywords: "Actions"
+displayName: "Action: Batch update"
 packageName: '@nocobase/plugin-action-bulk-update'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Actualiza de forma masiva todos los registros o los registros seleccionados.
+  Batch update all records or selected records.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Acción: Actualización masiva
+# Action: Batch update

@@ -96,6 +96,15 @@ export async function abortExecution(
   const JobRepo = plugin.db.getRepository('jobs');
 
   try {
+    if (!transaction) {
+      return plugin.db.sequelize.transaction((transaction) =>
+        abortExecution(plugin, execution, {
+          ...options,
+          transaction,
+        }),
+      );
+    }
+
     const abortValues = {
       status: EXECUTION_STATUS.ABORTED,
       ...(options.reason
@@ -105,30 +114,17 @@ export async function abortExecution(
         : {}),
     };
 
-    if (transaction) {
-      const lockedExecution = await ExecutionRepo.findOne({
-        filterByTk: execution.id,
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
+    const [affected] = await ExecutionRepo.model.update(abortValues, {
+      where: {
+        id: execution.id,
+        status: EXECUTION_STATUS.STARTED,
+      },
+      individualHooks: true,
+      transaction,
+    });
 
-      if (!lockedExecution || lockedExecution.status !== EXECUTION_STATUS.STARTED) {
-        return false;
-      }
-
-      await lockedExecution.update(abortValues, { transaction });
-    } else {
-      const [affected] = await ExecutionRepo.model.update(abortValues, {
-        where: {
-          id: execution.id,
-          status: EXECUTION_STATUS.STARTED,
-        },
-        individualHooks: true,
-      });
-
-      if (!affected) {
-        return false;
-      }
+    if (!affected) {
+      return false;
     }
 
     const updated = await JobRepo.update({
@@ -161,11 +157,7 @@ export async function abortExecution(
       plugin.timeoutManager.clear(execution.id);
       plugin.abortRunningExecution(execution.id, options.reason);
     };
-    if (transaction) {
-      afterTransactionCommit(transaction, updateLocalState);
-    } else {
-      updateLocalState();
-    }
+    afterTransactionCommit(transaction, updateLocalState);
 
     logger.info(`execution (${execution.id}) aborted`, {
       workflowId: execution.workflowId,

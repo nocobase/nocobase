@@ -12,15 +12,9 @@ import React from 'react';
 import DocumentationContent from '../client-v2/pages/DocumentationContent';
 import { useTranslation } from '../locale';
 
-type AppInfo = {
-  data?: {
-    name?: string;
-  };
-};
-
 const Documentation = () => {
   const apiClient = useAPIClient();
-  const appInfo = useCurrentAppInfo<AppInfo>();
+  const appInfo = useCurrentAppInfo();
   const { t } = useTranslation();
 
   return <DocumentationContent apiClient={apiClient} appName={appInfo?.data?.name} t={t} />;

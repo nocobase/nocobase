@@ -1,15 +1,17 @@
 ---
-displayName: "Data Source: внешняя MariaDB"
+title: "Data source: External MariaDB"
+keywords: "Data sources"
+displayName: "Data source: External MariaDB"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Использование внешней базы данных MariaDB в качестве Data Source.
+  Use external MariaDB databases as data sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Data Source: внешняя MariaDB
+# Data source: External MariaDB

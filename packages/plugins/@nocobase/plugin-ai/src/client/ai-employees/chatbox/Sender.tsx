@@ -161,12 +161,16 @@ export const Sender: React.FC = () => {
           setAttachments((prev) =>
             prev.map((item) => {
               if (item.uid === uid) {
+                if (!fileData) {
+                  return {
+                    ...item,
+                    status: 'done',
+                    response,
+                  };
+                }
                 return {
-                  ...item,
-                  status: 'done',
-                  response: response,
                   ...fileData,
-                  url: fileData?.url || item.url,
+                  status: 'done',
                 };
               }
               return item;

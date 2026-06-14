@@ -5,8 +5,6 @@ description: Install NocoBase CLI and quickly create a new NocoBase application 
 
 # Install NocoBase App
 
-If you do not have a NocoBase application yet, the fastest way is to install `@nocobase/cli` first, then run `nb init --ui` once. In most cases, the default options in the wizard are enough.
-
 ## Prerequisites
 
 - Node.js >= 22
@@ -32,13 +30,16 @@ We recommend opening the visual wizard directly:
 nb init --ui
 ```
 
-In the wizard, complete these steps in order:
+![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-1. Set the app name - it also becomes the env name in CLI
-2. Choose "Fresh Installation"
-3. Choose the installation method - Docker, npm, or Git
-4. Set the port, database, and administrator account
-5. Wait for the download, installation, and startup to finish
+Different setup paths show slightly different steps. If you follow the default `Install a new app` path, you will usually see these six steps:
+
+1. `Getting started` - set the `--env` identifier and choose `Install a new app`
+2. `App environment` - set the app basics, storage location, and runtime port
+3. `App source and version` - choose how to get the app and which source and version to use
+4. `Configure the database` - choose the built-in database or a custom database
+5. `Create an admin account` - set up the first admin account
+6. `Connection & authentication` - enter the app access URL and choose an authentication method
 
 If you prefer terminal interaction, you can also run:
 
@@ -75,7 +76,7 @@ Common commands:
 
 ```bash
 nb env list
-nb env status
+nb env info
 nb app logs
 ```
 
@@ -85,8 +86,19 @@ CLI configuration is stored in `~/.nocobase/` by default, so AI Agents can usual
 
 If this app will be exposed to real users later, we do not recommend using `IP + port` for the long term. The next step is usually to put it behind a reverse proxy and enable HTTPS.
 
-## What's next
+## Next Steps
 
-- If you already have a running NocoBase instance, go to [AI Agent Integration Guide](./quick-start.mdx)
-- If you want to continue with production deployment, go to [Install using CLI](../nocobase-cli/installation/cli.md) and [Production deployment overview](../nocobase-cli/production/index.md)
-- If you want AI to start building the app next, go to [AI Builder](../ai-builder/index.md)
+- If you already have a running NocoBase app, see [AI Agent Integration Guide](./quick-start.mdx)
+- If you want to manage app startup, shutdown, logs, and upgrades, see [Manage apps](../nocobase-cli/operations/manage-app.md)
+- If you want to continue with production deployment, see [Install apps with CLI](../nocobase-cli/installation/cli.md) and [Production deployment overview](../nocobase-cli/production/index.md)
+- If you want AI to start building apps, see [AI Builder](../ai-builder/index.md)
+
+## Related Links
+
+- [Installation and Version Comparison](../get-started/quickstart.md) — Compare installation methods and version channels first, then decide how to install
+- [AI Agent Integration Guide](./quick-start.mdx) — Connect an existing NocoBase app and let your AI Agent start working
+- [`nb init` command reference](../api/cli/init.md) — Initialize a new app, take over an existing local app, or connect a remote app
+- [`nb env info` command reference](../api/cli/env/info.md) — View the connection details and runtime configuration of the current env
+- [NocoBase CLI](../api/cli/index.md) — Full reference for all `nb` commands
+- [Manage apps](../nocobase-cli/operations/manage-app.md) — Start, stop, restart, view logs, and upgrade apps
+- [Multiple environment management](../nocobase-cli/operations/multi-environment.md) — Common operations when you maintain multiple envs at the same time

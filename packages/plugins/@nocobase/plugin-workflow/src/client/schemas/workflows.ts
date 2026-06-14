@@ -456,14 +456,11 @@ export const workflowSchema: ISchema = {
                               type: 'void',
                               title: `{{t("Duplicate to new workflow", { ns: "${NAMESPACE}" })}}`,
                               'x-decorator': 'FormV2',
+                              'x-use-decorator-props': 'useDuplicateWorkflowFormProps',
                               'x-component': 'Action.Modal',
                               properties: {
-                                title: {
-                                  type: 'string',
-                                  title: '{{t("Title")}}',
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Input',
-                                },
+                                title: workflowFieldset.title,
+                                description: workflowFieldset.description,
                                 footer: {
                                   type: 'void',
                                   'x-component': 'Action.Modal.Footer',
