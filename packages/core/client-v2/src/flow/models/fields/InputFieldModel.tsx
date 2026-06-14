@@ -9,10 +9,56 @@
 
 import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Input } from 'antd';
-import React from 'react';
+import type { InputProps, InputRef } from 'antd';
+import React, { useEffect, useRef } from 'react';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FieldModel } from '../base/FieldModel';
 import { ScanInput } from '../../../components/form/ScanInput';
+
+function IMESafeInput(props: InputProps) {
+  const { value, onChange, onCompositionStart, onCompositionEnd, ...rest } = props;
+  const inputRef = useRef<InputRef>(null);
+  const previousValueRef = useRef(value);
+  const defaultValue = typeof value === 'bigint' ? String(value) : value;
+
+  useEffect(() => {
+    if (Object.is(previousValueRef.current, value)) {
+      return;
+    }
+    previousValueRef.current = value;
+
+    const input = inputRef.current?.input;
+    if (input) {
+      const nextValue = value == null ? '' : String(value);
+      if (input.value !== nextValue) {
+        input.value = nextValue;
+      }
+    }
+  }, [value]);
+
+  const getEventValue = (event: React.ChangeEvent<HTMLInputElement> | React.CompositionEvent<HTMLInputElement>) =>
+    event.currentTarget.value;
+
+  return (
+    <Input
+      {...rest}
+      ref={inputRef}
+      defaultValue={defaultValue}
+      onChange={(event) => {
+        previousValueRef.current = getEventValue(event);
+        onChange?.(event);
+      }}
+      onCompositionStart={(event) => {
+        previousValueRef.current = getEventValue(event);
+        onCompositionStart?.(event);
+      }}
+      onCompositionEnd={(event) => {
+        previousValueRef.current = getEventValue(event);
+        onCompositionEnd?.(event);
+      }}
+    />
+  );
+}
 
 export class InputFieldModel extends FieldModel {
   render() {
@@ -20,7 +66,7 @@ export class InputFieldModel extends FieldModel {
       return <ScanInput {...this.props} />;
     }
     const { enableScan, disableManualInput, ...inputProps } = this.props;
-    return <Input {...inputProps} />;
+    return <IMESafeInput {...inputProps} />;
   }
 }
 
