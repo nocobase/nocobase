@@ -168,10 +168,9 @@ describe('workflow > actions > workflows', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
-      const c1 = await workflow.countExecutions();
-      expect(c1).toBe(1);
+      await vi.waitFor(async () => {
+        expect(await workflow.countExecutions()).toBe(1);
+      });
 
       const { status, body } = await agent.resource('workflows').update({
         filterByTk: workflow.id,
@@ -190,13 +189,10 @@ describe('workflow > actions > workflows', () => {
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
 
-      await sleep(500);
-
-      const c2 = await workflow.countExecutions();
-      expect(c2).toBe(4);
-
-      const p2s = await PostRepo.find();
-      expect(p2s.length).toBe(6);
+      await vi.waitFor(async () => {
+        expect(await workflow.countExecutions()).toBe(4);
+        expect(await PostRepo.count()).toBe(6);
+      });
     });
   });
 
