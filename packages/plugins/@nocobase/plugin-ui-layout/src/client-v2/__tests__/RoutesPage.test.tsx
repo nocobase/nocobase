@@ -310,6 +310,98 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(within(groupChildDialog).queryByRole('radio', { name: 'Tab' })).not.toBeInTheDocument();
   });
 
+  it('should hide hidden tab routes and sync tab visibility when page tabs are toggled', async () => {
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    let desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Expand row' }));
+    expect(await screen.findByText('Desktop tab')).toBeInTheDocument();
+    expect(screen.queryByText('Hidden desktop tab')).not.toBeInTheDocument();
+
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Edit Desktop dashboard' }));
+    let editDrawer = await findOpenDrawer('Edit route');
+    expect(within(editDrawer).getByRole('checkbox', { name: 'Enable page tabs' })).toBeChecked();
+    fireEvent.click(within(editDrawer).getByRole('checkbox', { name: 'Enable page tabs' }));
+    fireEvent.click(within(editDrawer).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 1,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: expect.objectContaining({
+          enableTabs: false,
+        }),
+      });
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 3,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: {
+          hidden: true,
+        },
+      });
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 6,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: {
+          hidden: true,
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Desktop tab')).not.toBeInTheDocument();
+      desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
+      expect(within(desktopRow).getByRole('button', { name: 'Add child Desktop dashboard' })).toBeDisabled();
+    });
+
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Edit Desktop dashboard' }));
+    editDrawer = await findOpenDrawer('Edit route');
+    expect(within(editDrawer).getByRole('checkbox', { name: 'Enable page tabs' })).not.toBeChecked();
+    fireEvent.click(within(editDrawer).getByRole('checkbox', { name: 'Enable page tabs' }));
+    fireEvent.click(within(editDrawer).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 1,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: expect.objectContaining({
+          enableTabs: true,
+        }),
+      });
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 3,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: {
+          hidden: false,
+        },
+      });
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 6,
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: {
+          hidden: false,
+        },
+      });
+    });
+
+    desktopRow = await screen.findByRole('row', { name: /Desktop dashboard/ });
+    expect(within(desktopRow).getByRole('button', { name: 'Add child Desktop dashboard' })).toBeEnabled();
+    const expandButton = within(desktopRow).queryByRole('button', { name: 'Expand row' });
+    if (expandButton) {
+      fireEvent.click(expandButton);
+    }
+    expect(await screen.findByText('Desktop tab')).toBeInTheDocument();
+    expect(await screen.findByText('Hidden desktop tab')).toBeInTheDocument();
+  });
+
   it('should render link fields and persist desktop and mobile link options', async () => {
     const resource = createRoutesPageResources();
     flowContext.current = resource.context;
@@ -421,8 +513,14 @@ describe('plugin-ui-layout RoutesPage', () => {
   });
 });
 
+type MutableRouteRecord = Record<string, unknown> & {
+  children?: MutableRouteRecord[];
+  id?: number;
+  parentId?: number;
+};
+
 function createRoutesPageResources() {
-  const routesByLayout = new Map<string, Array<Record<string, unknown>>>([
+  const routesByLayout = new Map<string, MutableRouteRecord[]>([
     [
       DEFAULT_ADMIN_UI_LAYOUT.uid,
       [
@@ -438,6 +536,14 @@ function createRoutesPageResources() {
               parentId: 1,
               schemaUid: 'desktop-tab',
               title: 'Desktop tab',
+              type: 'tabs',
+            },
+            {
+              id: 6,
+              hidden: true,
+              parentId: 1,
+              schemaUid: 'hidden-desktop-tab',
+              title: 'Hidden desktop tab',
               type: 'tabs',
             },
           ],
@@ -472,9 +578,26 @@ function createRoutesPageResources() {
   ]);
 
   const getRoutes = (layout: unknown) => routesByLayout.get(String(layout)) ?? [];
+  const cloneRoutes = (routes: MutableRouteRecord[]): MutableRouteRecord[] =>
+    routes.map((route) => ({
+      ...route,
+      ...(route.children ? { children: cloneRoutes(route.children) } : {}),
+    }));
+  const findRouteRecord = (routes: MutableRouteRecord[], id: number): MutableRouteRecord | undefined => {
+    for (const route of routes) {
+      if (route.id === id) {
+        return route;
+      }
+      const child = route.children ? findRouteRecord(route.children, id) : undefined;
+      if (child) {
+        return child;
+      }
+    }
+    return undefined;
+  };
   const request = vi.fn(async ({ params }: { params?: Record<string, unknown> }) => ({
     data: {
-      data: getRoutes(params?.layout).map((route) => ({ ...route })),
+      data: cloneRoutes(getRoutes(params?.layout)),
     },
   }));
   const create = vi.fn(async ({ layout, values }: { layout: string; values: Record<string, unknown> }) => {
@@ -487,7 +610,7 @@ function createRoutesPageResources() {
   const update = vi.fn(
     async ({ filterByTk, layout, values }: { filterByTk: number; layout: string; values: Record<string, unknown> }) => {
       const routes = getRoutes(layout);
-      const route = routes.find((item) => item.id === filterByTk);
+      const route = findRouteRecord(routes, filterByTk);
       if (route) {
         Object.assign(route, values);
       }

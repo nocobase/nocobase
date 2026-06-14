@@ -284,6 +284,19 @@ function findRouteById(routes: NocoBaseDesktopRoute[], id: number | undefined): 
   return undefined;
 }
 
+function filterHiddenRoutes(routes: NocoBaseDesktopRoute[]): NocoBaseDesktopRoute[] {
+  return routes
+    .filter((route) => route.hidden !== true)
+    .map((route) => ({
+      ...route,
+      children: route.children ? filterHiddenRoutes(route.children) : route.children,
+    }));
+}
+
+function getDirectTabRouteChildren(route: NocoBaseDesktopRoute) {
+  return (route.children ?? []).filter((child) => child.type === NocoBaseDesktopRouteType.tabs);
+}
+
 function getRouteAccessPath(route: NocoBaseDesktopRoute, layout: RouteLayoutConfig, routes: NocoBaseDesktopRoute[]) {
   if (route.type === NocoBaseDesktopRouteType.group || route.type === NocoBaseDesktopRouteType.link) {
     return '';
@@ -654,11 +667,14 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
     setEditorOpen(true);
   }, []);
 
-  const openEditModal = useCallback((route: NocoBaseDesktopRoute) => {
-    setEditingRoute(route);
-    setParentRoute(null);
-    setEditorOpen(true);
-  }, []);
+  const openEditModal = useCallback(
+    (route: NocoBaseDesktopRoute) => {
+      setEditingRoute(findRouteById(routes, route.id) ?? route);
+      setParentRoute(null);
+      setEditorOpen(true);
+    },
+    [routes],
+  );
 
   const closeEditor = useCallback(() => {
     setEditorOpen(false);
@@ -671,11 +687,27 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
       setSaving(true);
       try {
         if (editingRoute?.id !== undefined) {
+          const shouldSyncTabVisibility =
+            isPageRouteType(editingRoute.type) && editingRoute.enableTabs !== !!values.enableTabs;
           await desktopRoutesResource.update({
             filterByTk: editingRoute.id,
             layout: layout.uid,
             values: normalizeRouteValues(values, editingRoute, { mobile: layout.mobile }),
           });
+          if (shouldSyncTabVisibility) {
+            for (const childRoute of getDirectTabRouteChildren(editingRoute)) {
+              if (childRoute.id === undefined) {
+                continue;
+              }
+              await desktopRoutesResource.update({
+                filterByTk: childRoute.id,
+                layout: layout.uid,
+                values: {
+                  hidden: !values.enableTabs,
+                },
+              });
+            }
+          }
           ctx.message?.success?.(t('Updated successfully'));
         } else {
           await desktopRoutesResource.create({
@@ -726,9 +758,11 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
   );
   const hasSelectedRoutes = selectedRouteIds.length > 0;
 
+  const visibleRoutes = useMemo(() => filterHiddenRoutes(routes), [routes]);
+
   const filteredRoutes = useMemo(
-    () => filterRoutesByKeyword(routes, filterValues.keyword || '', t),
-    [filterValues.keyword, routes, t],
+    () => filterRoutesByKeyword(visibleRoutes, filterValues.keyword || '', t),
+    [filterValues.keyword, visibleRoutes, t],
   );
 
   const updateSelectedRoutes = useCallback(
