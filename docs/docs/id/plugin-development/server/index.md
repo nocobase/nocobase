@@ -25,6 +25,7 @@ Plugin server NocoBase dapat melakukan banyak hal: mendefinisikan tabel data, me
 | Output log kustom | [Logger Log](./logger.md) |
 | Memperluas perintah CLI | [Command Command Line](./command.md) |
 | Menulis test case | [Test Pengujian](./test.md) |
+| Memperluas retrieval external knowledge base untuk AI employees | [KnowledgeBase](./knowledge-base.md) |
 
 ## Tautan Terkait
 
@@ -35,3 +36,4 @@ Plugin server NocoBase dapat melakukan banyak hal: mendefinisikan tabel data, me
 - [ACL Kontrol Hak Akses](./acl.md) — Hak akses role, snippet hak akses, dan kontrol akses
 - [Ikhtisar Plugin Development](../index.md) — Pengantar menyeluruh tentang plugin development
 - [Menulis Plugin Pertama](../write-your-first-plugin.md) — Membuat plugin lengkap dari nol
+- [KnowledgeBase](./knowledge-base.md) — Menghubungkan retrieval external knowledge base untuk AI employees

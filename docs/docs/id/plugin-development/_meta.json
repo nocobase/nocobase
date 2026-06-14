@@ -118,6 +118,11 @@
         "type": "custom-link",
         "label": "Test Pengujian",
         "link": "/plugin-development/server/test"
+      },
+      {
+        "type": "custom-link",
+        "label": "KnowledgeBase Plugin basis pengetahuan",
+        "link": "/plugin-development/server/knowledge-base"
       }
     ]
   },
