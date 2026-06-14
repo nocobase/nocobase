@@ -292,6 +292,28 @@ describe('calendarPopupModels', () => {
     expect(step?.hideInSettings?.({ model } as any)).toBe(true);
   });
 
+  it('should persist popup actions only from popup settings save hooks', async () => {
+    const flow: any = (CalendarBlockModel as any).globalFlowRegistry.getFlow('calendarSettings');
+    const quickCreateStep = flow?.steps?.quickCreatePopupSettings;
+    const eventStep = flow?.steps?.eventPopupSettings;
+    const ensurePopupAction = vi.fn().mockResolvedValue({ uid: 'u_popup_action' });
+    const model = {
+      setPopupSettings: vi.fn(),
+      ensurePopupAction,
+    };
+
+    await quickCreateStep.handler({ model } as any, { mode: 'drawer' });
+    await eventStep.handler({ model } as any, { mode: 'dialog' });
+
+    expect(ensurePopupAction).not.toHaveBeenCalled();
+
+    await quickCreateStep.beforeParamsSave({ model } as any, { mode: 'drawer' });
+    await eventStep.beforeParamsSave({ model } as any, { mode: 'dialog' });
+
+    expect(ensurePopupAction).toHaveBeenCalledWith('quickCreateAction', { persist: true });
+    expect(ensurePopupAction).toHaveBeenCalledWith('eventViewAction', { persist: true });
+  });
+
   it('should build quick-create formData from the selected slot', () => {
     const slotInfo = {
       start: new Date(2026, 3, 20, 9, 30, 0),
@@ -749,20 +771,15 @@ describe('calendarPopupModels', () => {
     expect(saveStepParams).toHaveBeenCalledTimes(1);
   });
 
-  it('should replace legacy calendar popup action uid when popup settings are saved', async () => {
+  it('should keep legacy calendar popup action uid usable when popup settings are saved', async () => {
     const destroy = vi.fn();
-    const clonedAction = {
-      uid: 'u_event_popup',
-      getStepParams: vi.fn(() => ({})),
-      setStepParams: vi.fn(),
-      save: vi.fn(),
-      saveStepParams: vi.fn(),
-    };
     const action = {
       uid: 'calendar-block-eventViewAction',
       getStepParams: vi.fn(() => ({})),
       setStepParams: vi.fn(),
-      clone: vi.fn(() => clonedAction),
+      clone: vi.fn(),
+      save: vi.fn(),
+      saveStepParams: vi.fn(),
       destroy,
     };
     const model = Object.create(CalendarBlockModel.prototype) as CalendarBlockModel;
@@ -796,18 +813,19 @@ describe('calendarPopupModels', () => {
 
     await model.ensurePopupAction('eventViewAction');
 
-    expect(action.clone).toHaveBeenCalledTimes(1);
-    expect(model.subModels.eventViewAction).toBe(clonedAction);
-    expect(clonedAction.save).not.toHaveBeenCalled();
-    expect(clonedAction.saveStepParams).not.toHaveBeenCalled();
+    expect(action.clone).not.toHaveBeenCalled();
+    expect(model.subModels.eventViewAction).toBe(action);
+    expect(action.save).not.toHaveBeenCalled();
+    expect(action.saveStepParams).not.toHaveBeenCalled();
     expect(destroy).not.toHaveBeenCalled();
 
     await model.ensurePopupAction('eventViewAction', { persist: true });
 
-    expect(action.clone).toHaveBeenCalledTimes(1);
-    expect(clonedAction.save).toHaveBeenCalledTimes(1);
-    expect(clonedAction.saveStepParams).toHaveBeenCalledTimes(1);
-    expect(destroy).toHaveBeenCalledTimes(1);
+    expect(action.clone).not.toHaveBeenCalled();
+    expect(model.subModels.eventViewAction).toBe(action);
+    expect(action.save).toHaveBeenCalledTimes(1);
+    expect(action.saveStepParams).toHaveBeenCalledTimes(1);
+    expect(destroy).not.toHaveBeenCalled();
   });
 
   it('should open quick-create drawer through flow context openView with selected slot data', async () => {

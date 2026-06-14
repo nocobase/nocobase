@@ -5,6 +5,12 @@ description: Nâng cấp ứng dụng NocoBase đã lưu dưới dạng CLI env 
 
 # Nâng cấp ứng dụng NocoBase
 
+:::tip Phạm vi áp dụng
+
+Hướng dẫn này áp dụng cho ứng dụng được cài đặt bằng `nb init`. Nếu ứng dụng của bạn được cài đặt theo cách cũ, hãy đọc trước [Cách nâng cấp NocoBase từ 2.0 lên 2.1](./upgrade-from-2-0-to-2-1.md).
+
+:::
+
 ## Bước 1: xác nhận env hiện tại
 
 Trước tiên xác nhận CLI env đang có hiệu lực:
