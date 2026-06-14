@@ -23,12 +23,13 @@ import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import {
   Button,
   Card,
+  Checkbox,
+  Drawer,
   Form,
   Input,
-  Modal,
   Popconfirm,
   Popover,
-  Select,
+  Radio,
   Space,
   Tabs,
   Tag,
@@ -40,6 +41,7 @@ import type { Key } from 'antd/es/table/interface';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constants';
 import { useT } from '../locale';
+import { MobileMenuSettingsIconPicker } from '../models/MobileMenuComponents';
 import { getUiLayoutRouteUrl } from './UiLayoutsPage';
 
 type RouteLayoutConfig = {
@@ -51,9 +53,18 @@ type RouteLayoutConfig = {
 };
 
 type RouteFormValues = {
+  enableTabs?: boolean;
+  icon?: string;
+  params?: RouteSearchParameter[];
+  routePath?: string;
+  showInMenu?: boolean;
   title: string;
   type: NocoBaseDesktopRouteType;
-  routePath?: string;
+};
+
+type RouteSearchParameter = {
+  name?: string;
+  value?: string;
 };
 
 type RouteFilterValues = {
@@ -121,20 +132,42 @@ function getRouteTitle(route: NocoBaseDesktopRoute, t: (key: string, options?: R
   return route.title || route.schemaUid || t('Untitled');
 }
 
+function getRouteOptionString(route: NocoBaseDesktopRoute, key: string) {
+  const value = route.options?.[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
 function getLinkRoutePath(route: NocoBaseDesktopRoute) {
-  const path = route.options?.path;
-  return typeof path === 'string' && path.trim() ? path.trim() : '';
+  return (
+    getRouteOptionString(route, 'path') || getRouteOptionString(route, 'href') || getRouteOptionString(route, 'url')
+  );
+}
+
+function getLinkRouteParams(route: NocoBaseDesktopRoute): RouteSearchParameter[] {
+  const params = route.options?.params;
+  if (!Array.isArray(params)) {
+    return [];
+  }
+  return params
+    .map((param) => {
+      if (!param || typeof param !== 'object') {
+        return null;
+      }
+      const item = param as RouteSearchParameter;
+      return {
+        name: typeof item.name === 'string' ? item.name : '',
+        value: typeof item.value === 'string' ? item.value : '',
+      };
+    })
+    .filter((param): param is RouteSearchParameter => !!param);
 }
 
 function getRouteTypeLabel(type: NocoBaseDesktopRouteType | undefined) {
   if (type === NocoBaseDesktopRouteType.group) {
     return 'Group';
   }
-  if (type === NocoBaseDesktopRouteType.page) {
-    return 'Page (v1)';
-  }
-  if (type === NocoBaseDesktopRouteType.flowPage) {
-    return 'Page (v2)';
+  if (type === NocoBaseDesktopRouteType.page || type === NocoBaseDesktopRouteType.flowPage) {
+    return 'Page';
   }
   if (type === NocoBaseDesktopRouteType.link) {
     return 'Link';
@@ -166,6 +199,73 @@ function canRouteHaveChildren(route: NocoBaseDesktopRoute) {
     return !!route.enableTabs;
   }
   return false;
+}
+
+function isPageRouteType(type: NocoBaseDesktopRouteType | undefined) {
+  return type === NocoBaseDesktopRouteType.page || type === NocoBaseDesktopRouteType.flowPage;
+}
+
+function getDefaultRouteType(options: { mobile?: boolean; parentRoute?: NocoBaseDesktopRoute | null }) {
+  if (
+    options.parentRoute?.type === NocoBaseDesktopRouteType.page ||
+    options.parentRoute?.type === NocoBaseDesktopRouteType.flowPage
+  ) {
+    return NocoBaseDesktopRouteType.tabs;
+  }
+  return NocoBaseDesktopRouteType.flowPage;
+}
+
+function getRouteTypeOptions(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  options: { mobile?: boolean; parentRoute?: NocoBaseDesktopRoute | null },
+) {
+  if (
+    options.parentRoute?.type === NocoBaseDesktopRouteType.page ||
+    options.parentRoute?.type === NocoBaseDesktopRouteType.flowPage
+  ) {
+    return [
+      {
+        label: t('Tab'),
+        value: NocoBaseDesktopRouteType.tabs,
+      },
+    ];
+  }
+
+  if (options.parentRoute?.type === NocoBaseDesktopRouteType.group) {
+    return [
+      {
+        label: t('Group'),
+        value: NocoBaseDesktopRouteType.group,
+      },
+      {
+        label: t('Page'),
+        value: NocoBaseDesktopRouteType.flowPage,
+      },
+      {
+        label: t('Link'),
+        value: NocoBaseDesktopRouteType.link,
+      },
+    ];
+  }
+
+  return [
+    ...(options.mobile
+      ? []
+      : [
+          {
+            label: t('Group'),
+            value: NocoBaseDesktopRouteType.group,
+          },
+        ]),
+    {
+      label: t('Page'),
+      value: NocoBaseDesktopRouteType.flowPage,
+    },
+    {
+      label: t('Link'),
+      value: NocoBaseDesktopRouteType.link,
+    },
+  ];
 }
 
 function findRouteById(routes: NocoBaseDesktopRoute[], id: number | undefined): NocoBaseDesktopRoute | undefined {
@@ -237,30 +337,45 @@ function normalizeRouteValues(
   values: RouteFormValues,
   route?: NocoBaseDesktopRoute,
   options?: {
+    mobile?: boolean;
     withInitialPageTab?: boolean;
   },
 ): Partial<NocoBaseDesktopRoute> {
   const routePath = values.routePath?.trim();
-  const shouldPersistSchemaUid =
-    values.type === NocoBaseDesktopRouteType.page || values.type === NocoBaseDesktopRouteType.flowPage;
+  const params = (values.params ?? []).filter((param) => {
+    return !!param?.name?.trim() || !!param?.value?.trim();
+  });
+  const shouldPersistPageSchemaUid = isPageRouteType(values.type);
+  const shouldPersistTabSchemaUid = values.type === NocoBaseDesktopRouteType.tabs;
   const routeValues: Partial<NocoBaseDesktopRoute> = {
-    ...(shouldPersistSchemaUid ? { schemaUid: route?.schemaUid || randomId() } : {}),
+    ...(shouldPersistPageSchemaUid || shouldPersistTabSchemaUid ? { schemaUid: route?.schemaUid || randomId() } : {}),
+    ...(shouldPersistTabSchemaUid ? { tabSchemaName: route?.tabSchemaName || randomId() } : {}),
+    ...(shouldPersistPageSchemaUid ? { enableTabs: !!values.enableTabs } : {}),
+    hideInMenu: values.showInMenu === false,
+    icon: values.icon,
     title: values.title.trim(),
     type: values.type,
-    ...(routePath ? { options: { ...(route?.options ?? {}), href: routePath } } : {}),
   };
 
-  if (options?.withInitialPageTab && shouldPersistSchemaUid) {
+  if (values.type === NocoBaseDesktopRouteType.link) {
+    const { href: _href, params: _params, path: _path, url: _url, ...restOptions } = route?.options ?? {};
+    routeValues.options = {
+      ...restOptions,
+      ...(routePath ? { [options?.mobile ? 'url' : 'href']: routePath } : {}),
+      ...(params.length ? { params } : {}),
+    };
+  }
+
+  if (options?.withInitialPageTab && shouldPersistPageSchemaUid) {
     return {
       ...routeValues,
       menuSchemaUid: randomId(),
-      enableTabs: false,
       children: [
         {
           type: NocoBaseDesktopRouteType.tabs,
           schemaUid: randomId(),
           tabSchemaName: randomId(),
-          hidden: true,
+          hidden: !values.enableTabs,
         },
       ],
     };
@@ -274,84 +389,89 @@ function RouteTypeTag({ type }: { type: NocoBaseDesktopRouteType | undefined }) 
   return <Tag color={getRouteTypeColor(type)}>{t(getRouteTypeLabel(type))}</Tag>;
 }
 
-function RouteEditorModal(props: {
+function RouteEditorDrawer(props: {
   confirmLoading?: boolean;
-  defaultType?: NocoBaseDesktopRouteType;
   initialRoute?: NocoBaseDesktopRoute | null;
   mobile?: boolean;
   onCancel: () => void;
   onSubmit: (values: RouteFormValues) => Promise<void>;
   open: boolean;
+  parentRoute?: NocoBaseDesktopRoute | null;
   title: string;
 }) {
   const t = useT();
+  const { token } = theme.useToken();
   const [form] = Form.useForm<RouteFormValues>();
-  const routeType = Form.useWatch('type', form);
+  const watchedRouteType = Form.useWatch('type', form);
+  const routeType = props.initialRoute?.type ?? watchedRouteType;
+  const routeTypeOptions = useMemo(
+    () => getRouteTypeOptions(t, { mobile: props.mobile, parentRoute: props.parentRoute }),
+    [props.mobile, props.parentRoute, t],
+  );
 
   useEffect(() => {
     if (!props.open) {
       return;
     }
+    const type =
+      props.initialRoute?.type || getDefaultRouteType({ mobile: props.mobile, parentRoute: props.parentRoute });
+    form.resetFields();
     form.setFieldsValue({
-      routePath: props.initialRoute
-        ? getLinkRoutePath(props.initialRoute) || String(props.initialRoute.options?.href || '')
-        : '',
+      enableTabs: !!props.initialRoute?.enableTabs,
+      icon: props.initialRoute?.icon,
+      params: props.initialRoute ? getLinkRouteParams(props.initialRoute) : [],
+      routePath: props.initialRoute ? getLinkRoutePath(props.initialRoute) : '',
+      showInMenu: props.initialRoute ? !props.initialRoute.hideInMenu : true,
       title: props.initialRoute?.title || '',
-      type: props.initialRoute?.type || props.defaultType || NocoBaseDesktopRouteType.flowPage,
+      type,
     });
-  }, [form, props.defaultType, props.initialRoute, props.open]);
-  const routeTypeOptions = useMemo(() => {
-    if (props.mobile) {
-      return [
-        {
-          label: t('Page'),
-          value: NocoBaseDesktopRouteType.flowPage,
-        },
-        {
-          label: t('Link'),
-          value: NocoBaseDesktopRouteType.link,
-        },
-      ];
-    }
+  }, [form, props.initialRoute, props.mobile, props.open, props.parentRoute]);
 
-    return [
-      {
-        label: t('Group'),
-        value: NocoBaseDesktopRouteType.group,
-      },
-      {
-        label: t('Classic page (v1)'),
-        value: NocoBaseDesktopRouteType.page,
-      },
-      {
-        label: t('Modern page (v2)'),
-        value: NocoBaseDesktopRouteType.flowPage,
-      },
-      {
-        label: t('Link'),
-        value: NocoBaseDesktopRouteType.link,
-      },
-    ];
-  }, [props.mobile, t]);
+  const renderFooter = (
+    <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <Button onClick={props.onCancel}>{t('Cancel')}</Button>
+      <Button loading={props.confirmLoading} onClick={() => form.submit()} type="primary">
+        {t('Submit')}
+      </Button>
+    </Space>
+  );
 
   return (
-    <Modal
-      cancelText={t('Cancel')}
-      confirmLoading={props.confirmLoading}
+    <Drawer
       destroyOnClose
-      okText={t('Submit')}
-      onCancel={props.onCancel}
-      onOk={() => form.submit()}
+      footer={renderFooter}
+      forceRender
+      getContainer={false}
+      onClose={props.onCancel}
       open={props.open}
+      rootStyle={{ position: 'absolute' }}
       title={props.title}
+      width={token.screenSM}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={(values) => {
-          props.onSubmit(values);
-        }}
-      >
+      <Form form={form} layout="vertical" onFinish={props.onSubmit}>
+        {props.initialRoute ? (
+          <>
+            <Form.Item hidden name="type">
+              <Input />
+            </Form.Item>
+            <Form.Item label={t('Type')}>
+              <RouteTypeTag type={routeType} />
+            </Form.Item>
+          </>
+        ) : (
+          <Form.Item
+            label={t('Type')}
+            name="type"
+            rules={[
+              {
+                message: t('The field value is required'),
+                required: true,
+              },
+            ]}
+          >
+            <Radio.Group options={routeTypeOptions} />
+          </Form.Item>
+        )}
         <Form.Item
           label={t('Title')}
           name="title"
@@ -365,35 +485,67 @@ function RouteEditorModal(props: {
         >
           <Input />
         </Form.Item>
-        <Form.Item
-          label={t('Type')}
-          name="type"
-          rules={[
-            {
-              message: t('The field value is required'),
-              required: true,
-            },
-          ]}
-        >
-          <Select options={routeTypeOptions} />
+        <Form.Item label={t('Icon')} name="icon">
+          <MobileMenuSettingsIconPicker />
         </Form.Item>
         {routeType === NocoBaseDesktopRouteType.link ? (
+          <>
+            <Form.Item
+              extra={t('Do not concatenate search params in the URL')}
+              label={t('URL')}
+              name="routePath"
+              rules={[
+                {
+                  message: t('URL field is required'),
+                  required: true,
+                  whitespace: true,
+                },
+              ]}
+            >
+              <Input.TextArea autoSize />
+            </Form.Item>
+            <Form.Item label={t('Search parameters')}>
+              <Form.List name="params">
+                {(fields, { add, remove }) => (
+                  <Space direction="vertical" size={token.marginXS} style={{ width: '100%' }}>
+                    {fields.map((field) => (
+                      <Space.Compact block key={field.key}>
+                        <Form.Item name={[field.name, 'name']} noStyle>
+                          <Input placeholder={t('Name')} />
+                        </Form.Item>
+                        <Form.Item name={[field.name, 'value']} noStyle>
+                          <Input placeholder={t('Value')} />
+                        </Form.Item>
+                        <Button aria-label={t('Delete')} icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
+                      </Space.Compact>
+                    ))}
+                    <Button onClick={() => add()} type="dashed">
+                      {t('Add parameter')}
+                    </Button>
+                  </Space>
+                )}
+              </Form.List>
+            </Form.Item>
+          </>
+        ) : null}
+        <Form.Item
+          extra={t('If selected, the route will be displayed in the menu.')}
+          name="showInMenu"
+          valuePropName="checked"
+        >
+          <Checkbox>{t('Show in menu')}</Checkbox>
+        </Form.Item>
+        {isPageRouteType(routeType) ? (
           <Form.Item
-            label={t('URL')}
-            name="routePath"
-            rules={[
-              {
-                message: t('URL field is required'),
-                required: true,
-                whitespace: true,
-              },
-            ]}
+            extra={t('If selected, the page will display Tab pages.')}
+            name="enableTabs"
+            valuePropName="checked"
           >
-            <Input />
+            <Checkbox>{t('Enable page tabs')}</Checkbox>
           </Form.Item>
         ) : null}
       </Form>
-    </Modal>
+    </Drawer>
   );
 }
 
@@ -524,14 +676,14 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
           await desktopRoutesResource.update({
             filterByTk: editingRoute.id,
             layout: layout.uid,
-            values: normalizeRouteValues(values, editingRoute),
+            values: normalizeRouteValues(values, editingRoute, { mobile: layout.mobile }),
           });
           ctx.message?.success?.(t('Updated successfully'));
         } else {
           await desktopRoutesResource.create({
             layout: layout.uid,
             values: {
-              ...normalizeRouteValues(values, undefined, { withInitialPageTab: true }),
+              ...normalizeRouteValues(values, undefined, { mobile: layout.mobile, withInitialPageTab: true }),
               ...(parentRoute?.id !== undefined ? { parentId: parentRoute.id } : {}),
             },
           });
@@ -543,7 +695,17 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         setSaving(false);
       }
     },
-    [closeEditor, ctx.message, desktopRoutesResource, editingRoute, layout.uid, loadRoutes, parentRoute, t],
+    [
+      closeEditor,
+      ctx.message,
+      desktopRoutesResource,
+      editingRoute,
+      layout.mobile,
+      layout.uid,
+      loadRoutes,
+      parentRoute,
+      t,
+    ],
   );
 
   const handleDelete = useCallback(
@@ -679,9 +841,10 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
               </Button>
               <Popconfirm
                 cancelText={t('Cancel')}
+                description={t('Are you sure you want to delete it?')}
                 okText={t('Delete')}
                 onConfirm={() => handleDelete(route)}
-                title={t('Are you sure you want to delete it?')}
+                title={t('Delete route')}
               >
                 <Button aria-label={t('Delete {{route}}', { route: routeTitle })} size="small" type="link">
                   {t('Delete')}
@@ -714,14 +877,18 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
           <Button icon={<ReloadOutlined />} loading={loading} onClick={loadRoutes}>
             {t('Refresh')}
           </Button>
-          <Button
-            aria-label={t('Delete')}
+          <Popconfirm
+            cancelText={t('Cancel')}
+            description={t('Are you sure you want to delete it?')}
             disabled={!hasSelectedRoutes}
-            icon={<DeleteOutlined />}
-            onClick={deleteSelectedRoutes}
+            okText={t('Delete')}
+            onConfirm={deleteSelectedRoutes}
+            title={t('Delete routes')}
           >
-            {t('Delete')}
-          </Button>
+            <Button aria-label={t('Delete')} disabled={!hasSelectedRoutes} icon={<DeleteOutlined />}>
+              {t('Delete')}
+            </Button>
+          </Popconfirm>
           <Button
             aria-label={t('Hide in menu')}
             disabled={!hasSelectedRoutes}
@@ -760,14 +927,14 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         }}
         rowKey={(route) => route.id ?? String(route.schemaUid)}
       />
-      <RouteEditorModal
+      <RouteEditorDrawer
         confirmLoading={saving}
-        defaultType={NocoBaseDesktopRouteType.flowPage}
         initialRoute={editingRoute}
         mobile={layout.mobile}
         onCancel={closeEditor}
         onSubmit={handleSubmit}
         open={editorOpen}
+        parentRoute={parentRoute}
         title={editingRoute ? t('Edit route') : parentRoute ? t('Add child route') : t('Add new')}
       />
     </Space>
