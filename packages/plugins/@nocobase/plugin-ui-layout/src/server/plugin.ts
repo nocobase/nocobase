@@ -110,6 +110,10 @@ function getExplicitRequestedLayoutUid(layout: unknown) {
   }
 }
 
+function hasActionParam(params: unknown, key: string) {
+  return !!params && typeof params === 'object' && Object.prototype.hasOwnProperty.call(params, key);
+}
+
 function getDesktopRouteLayoutFilterByUid(layoutUid: string) {
   const currentLayoutFilter = {
     'uiLayouts.uid': layoutUid,
@@ -369,14 +373,28 @@ async function removeRouteIdsWithUnauthorizedAncestors(ctx: ResourcerContext, ro
   }
 }
 
-async function addDesktopRouteCreateLayout(ctx: ResourcerContext, next: () => Promise<void>) {
-  const layoutUid = getRequestedLayoutUid(ctx.action?.params.layout);
+async function addDesktopRouteWriteLayout(ctx: ResourcerContext, next: () => Promise<void>) {
+  const params = ctx.action?.params;
+  const hasExplicitLayoutScope = hasActionParam(params, 'layout');
+  const explicitLayoutUid = hasExplicitLayoutScope ? getExplicitRequestedLayoutUid(params.layout) : undefined;
+
+  if (hasExplicitLayoutScope && !explicitLayoutUid) {
+    ctx.throw(400, ctx.t('Invalid layout scope', { ns: NAMESPACE }));
+    return;
+  }
+
+  const layoutUid = explicitLayoutUid ?? DEFAULT_ADMIN_UI_LAYOUT.uid;
   const uiLayout = await ctx.db.getRepository('uiLayouts').findOne({
     filter: {
       uid: layoutUid,
       enabled: true,
     },
   });
+
+  if (!uiLayout && hasExplicitLayoutScope) {
+    ctx.throw(400, ctx.t('Invalid layout scope', { ns: NAMESPACE }));
+    return;
+  }
 
   if (uiLayout) {
     ctx.action?.mergeParams({
@@ -947,7 +965,8 @@ export class PluginUiLayoutServer extends Plugin {
     this.app.resourceManager.registerPreActionHandler('uiLayouts:update', preventUiLayoutUidChange);
     this.app.resourceManager.registerPreActionHandler('uiLayouts:update', preventDefaultAdminUiLayoutUpdate);
     this.app.resourceManager.registerPreActionHandler('uiLayouts:destroy', preventDefaultAdminUiLayoutDestroy);
-    this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteCreateLayout);
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:create', addDesktopRouteWriteLayout);
+    this.app.resourceManager.registerPreActionHandler('desktopRoutes:updateOrCreate', addDesktopRouteWriteLayout);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:listAccessible', addDesktopRouteLayoutFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:getAccessible', addDesktopRouteGetLayoutFilter);
     this.app.db.on('roles.beforeCreate', (role: Model) => {

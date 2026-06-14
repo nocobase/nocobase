@@ -1950,6 +1950,140 @@ describe('plugin-ui-layout server', () => {
     expect(childRoute?.get('uiLayouts').map((layout) => layout.get('uid'))).toEqual([mobileLayout.get('uid')]);
   });
 
+  it('should reject desktop route writes with an invalid explicit layout scope', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+      ],
+    });
+
+    const disabledLayout = await app.db.getRepository('uiLayouts').create({
+      values: {
+        uid: 'disabled-layout-write-scope-test',
+        title: 'Disabled layout write scope test',
+        layoutType: 'mobile',
+        routeName: 'disabledLayoutWriteScopeTest',
+        routePath: '/v/disabled-layout-write-scope-test',
+        authCheck: true,
+        enabled: false,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const missingCreateResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: 'missing-layout-write-scope-test',
+      values: {
+        type: 'flowPage',
+        title: 'missing layout create leak',
+        schemaUid: 'missing-layout-create-leak',
+      },
+    });
+    const disabledCreateResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: disabledLayout.get('uid'),
+      values: {
+        type: 'flowPage',
+        title: 'disabled layout create leak',
+        schemaUid: 'disabled-layout-create-leak',
+      },
+    });
+    const emptyCreateResponse = await rootAgent.resource('desktopRoutes').create({
+      layout: '',
+      values: {
+        type: 'flowPage',
+        title: 'empty layout create leak',
+        schemaUid: 'empty-layout-create-leak',
+      },
+    });
+    const missingUpdateOrCreateResponse = await rootAgent.resource('desktopRoutes').updateOrCreate({
+      layout: 'missing-layout-write-scope-test',
+      filterKeys: ['schemaUid'],
+      values: {
+        type: 'flowPage',
+        title: 'missing layout upsert leak',
+        schemaUid: 'missing-layout-upsert-leak',
+      },
+    });
+    const disabledUpdateOrCreateResponse = await rootAgent.resource('desktopRoutes').updateOrCreate({
+      layout: disabledLayout.get('uid'),
+      filterKeys: ['schemaUid'],
+      values: {
+        type: 'flowPage',
+        title: 'disabled layout upsert leak',
+        schemaUid: 'disabled-layout-upsert-leak',
+      },
+    });
+    const unscopedCreateResponse = await rootAgent.resource('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'unscoped admin fallback page',
+        schemaUid: 'unscoped-admin-fallback-page',
+      },
+    });
+    const unscopedUpdateOrCreateResponse = await rootAgent.resource('desktopRoutes').updateOrCreate({
+      filterKeys: ['schemaUid'],
+      values: {
+        type: 'flowPage',
+        title: 'unscoped admin fallback upsert page',
+        schemaUid: 'unscoped-admin-fallback-upsert-page',
+      },
+    });
+    const adminResponse = await rootAgent.get('/desktopRoutes:listAccessible').query({
+      layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+    });
+    const adminTitles = adminResponse.body.data.map((route) => route.title);
+    const rejectedRouteCount = await app.db.getRepository('desktopRoutes').count({
+      filter: {
+        schemaUid: [
+          'missing-layout-create-leak',
+          'disabled-layout-create-leak',
+          'empty-layout-create-leak',
+          'missing-layout-upsert-leak',
+          'disabled-layout-upsert-leak',
+        ],
+      },
+    });
+
+    expect([
+      missingCreateResponse.status,
+      disabledCreateResponse.status,
+      emptyCreateResponse.status,
+      missingUpdateOrCreateResponse.status,
+      disabledUpdateOrCreateResponse.status,
+    ]).toEqual([400, 400, 400, 400, 400]);
+    expect(unscopedCreateResponse.status).toBe(200);
+    expect(unscopedUpdateOrCreateResponse.status).toBe(200);
+    expect(rejectedRouteCount).toBe(0);
+    expect(adminTitles).toEqual(
+      expect.arrayContaining(['unscoped admin fallback page', 'unscoped admin fallback upsert page']),
+    );
+    expect(adminTitles).not.toEqual(
+      expect.arrayContaining([
+        'missing layout create leak',
+        'disabled layout create leak',
+        'empty layout create leak',
+        'missing layout upsert leak',
+        'disabled layout upsert leak',
+      ]),
+    );
+  });
+
   it('should fallback to AdminLayout when listAccessible omits layout', async () => {
     app = await createMockServer({
       registerActions: true,

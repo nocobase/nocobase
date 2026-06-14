@@ -32,6 +32,7 @@
   "Data reports": "Data reports",
   "Default AdminLayout cannot be changed": "Default AdminLayout cannot be changed",
   "Default AdminLayout cannot be deleted": "Default AdminLayout cannot be deleted",
+  "Invalid layout scope": "Invalid layout scope",
   "Delete": "Delete",
   "Delete failed": "Delete failed",
   "Delete {{route}}": "Delete {{route}}",

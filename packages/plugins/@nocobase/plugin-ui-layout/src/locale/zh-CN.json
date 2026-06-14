@@ -32,6 +32,7 @@
   "Data reports": "数据报表",
   "Default AdminLayout cannot be changed": "默认 AdminLayout 不能修改",
   "Default AdminLayout cannot be deleted": "默认 AdminLayout 不能删除",
+  "Invalid layout scope": "无效的布局范围",
   "Delete": "删除",
   "Delete failed": "删除失败",
   "Delete {{route}}": "删除 {{route}}",
