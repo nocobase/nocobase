@@ -1,0 +1,33 @@
+{
+  "name": "@nocobase/plugin-auth-email",
+  "displayName": "Auth: Email",
+  "displayName.zh-CN": "认证：邮箱",
+  "description": "Email authentication with verification code.",
+  "description.zh-CN": "通过邮箱验证码认证身份。",
+  "version": "2.0.0-beta.22",
+  "main": "./dist/server/index.js",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "@formily/react": "2.x",
+    "antd": "5.x",
+    "react": "18.x",
+    "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "2.x",
+    "@nocobase/auth": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/plugin-auth": ">=0.17.0-alpha.7",
+    "@nocobase/plugin-verification": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "scripts": {
+    "build": "nocobase-build",
+    "dev": "nocobase-build --watch"
+  },
+  "keywords": [
+    "Authentication"
+  ]
+}
