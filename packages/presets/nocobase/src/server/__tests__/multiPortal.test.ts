@@ -12,14 +12,26 @@ import path from 'node:path';
 
 const MULTI_PORTAL_PACKAGE = '@nocobase/plugin-multi-portal';
 const UI_LAYOUT_PACKAGE = '@nocobase/plugin-ui-layout';
+const PRO_MULTI_PORTAL_ROOT = 'packages/pro-plugins/@nocobase/plugin-multi-portal';
 
 function readJson(relativePath: string) {
   return JSON.parse(fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8'));
 }
 
-describe('plugin-multi-portal preset integration', () => {
-  it('should keep the Multi-Portal plugin scaffold isolated and layout-aware', () => {
-    const pluginRoot = path.resolve(process.cwd(), 'packages/plugins/@nocobase/plugin-multi-portal');
+describe('plugin-multi-portal preset boundary', () => {
+  it('should not include Multi-Portal in the default NocoBase preset', () => {
+    const packageJson = readJson('packages/presets/nocobase/package.json');
+    const ossPluginRoot = path.resolve(process.cwd(), 'packages/plugins/@nocobase/plugin-multi-portal');
+
+    expect(fs.existsSync(ossPluginRoot)).toBe(false);
+    expect(packageJson.dependencies).not.toHaveProperty(MULTI_PORTAL_PACKAGE);
+    expect(packageJson.builtIn).not.toContain(MULTI_PORTAL_PACKAGE);
+    expect(packageJson.dependencies).toHaveProperty(UI_LAYOUT_PACKAGE);
+    expect(packageJson.builtIn).toContain(UI_LAYOUT_PACKAGE);
+  });
+
+  it('should keep the Multi-Portal package scaffold in ProPlugins', () => {
+    const pluginRoot = path.resolve(process.cwd(), PRO_MULTI_PORTAL_ROOT);
     const requiredFiles = [
       'package.json',
       'client-v2.js',
@@ -44,7 +56,7 @@ describe('plugin-multi-portal preset integration', () => {
       expect(fs.existsSync(path.join(pluginRoot, file))).toBe(true);
     }
 
-    const packageJson = readJson('packages/plugins/@nocobase/plugin-multi-portal/package.json');
+    const packageJson = readJson(`${PRO_MULTI_PORTAL_ROOT}/package.json`);
     expect(packageJson).toMatchObject({
       name: MULTI_PORTAL_PACKAGE,
       displayName: 'Multi-portal',
@@ -65,23 +77,5 @@ describe('plugin-multi-portal preset integration', () => {
       antd: '5.x',
       react: '^18.2.0',
     });
-  });
-
-  it('should declare Multi-Portal after UI Layout in the NocoBase preset dependencies and built-ins', () => {
-    const packageJson = readJson('packages/presets/nocobase/package.json');
-    const dependencyNames = Object.keys(packageJson.dependencies);
-    const uiLayoutIndex = dependencyNames.indexOf(UI_LAYOUT_PACKAGE);
-    const multiPortalIndex = dependencyNames.indexOf(MULTI_PORTAL_PACKAGE);
-    const builtInNames = packageJson.builtIn;
-    const uiLayoutBuiltInIndex = builtInNames.indexOf(UI_LAYOUT_PACKAGE);
-    const multiPortalBuiltInIndex = builtInNames.indexOf(MULTI_PORTAL_PACKAGE);
-
-    expect(uiLayoutIndex).toBeGreaterThanOrEqual(0);
-    expect(multiPortalIndex).toBeGreaterThanOrEqual(0);
-    expect(multiPortalIndex).toBeGreaterThan(uiLayoutIndex);
-    expect(packageJson.dependencies[MULTI_PORTAL_PACKAGE]).toBe(packageJson.version);
-    expect(uiLayoutBuiltInIndex).toBeGreaterThanOrEqual(0);
-    expect(multiPortalBuiltInIndex).toBeGreaterThanOrEqual(0);
-    expect(multiPortalBuiltInIndex).toBeGreaterThan(uiLayoutBuiltInIndex);
   });
 });
