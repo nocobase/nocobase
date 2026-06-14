@@ -50,6 +50,26 @@ async function createApprovalNode(workflow: any) {
   });
 }
 
+function expectApprovalAuthoringError(response: any, ruleId: string) {
+  expect(response.status).toBe(400);
+  expect(response.body).toMatchObject({
+    message: expect.stringContaining('flowSurfaces authoring validation failed'),
+    errorCount: expect.any(Number),
+    details: expect.objectContaining({
+      mustFixAllErrorsBeforeRetry: true,
+      sameWriteRetryRequired: true,
+    }),
+    errors: expect.arrayContaining([
+      expect.objectContaining({
+        ruleId,
+        code: 'FLOW_SURFACE_AUTHORING_VALIDATION_ERROR',
+        status: 400,
+      }),
+    ]),
+  });
+  return response.body.errors.find((error: any) => error?.ruleId === ruleId);
+}
+
 describe('flowSurfaces approval blueprint API contract', () => {
   let context: FlowSurfacesContractContext;
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
@@ -68,6 +88,40 @@ describe('flowSurfaces approval blueprint API contract', () => {
 
   it('should apply an initiator approval blueprint on the workflow trigger and persist workflow.config.approvalUid', async () => {
     const workflow = await createApprovalWorkflow(context);
+
+    const duplicateDefaultSubmitRes = await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
+      values: {
+        surface: 'initiator',
+        workflowId: workflow.id,
+        blocks: [
+          {
+            key: 'applyForm',
+            type: 'approvalInitiator',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname'],
+            actions: ['approvalSubmit', 'approvalSaveDraft'],
+          },
+        ],
+      },
+    });
+    const duplicateDefaultSubmitError = expectApprovalAuthoringError(
+      duplicateDefaultSubmitRes,
+      'approval-initiator-submit-action-default',
+    );
+    expect(duplicateDefaultSubmitError).toMatchObject({
+      path: '$.blocks[0].actions',
+      details: expect.objectContaining({
+        invalidAction: 'approvalSubmit',
+        suggestedFix: expect.stringContaining('Remove approvalSubmit'),
+      }),
+    });
+    const workflowAfterInvalidSubmit = await context.db.getCollection('workflows').repository.findOne({
+      filterByTk: workflow.id,
+    });
+    expect(workflowAfterInvalidSubmit.config.approvalUid).toBeUndefined();
 
     const result = getData(
       await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
@@ -328,6 +382,7 @@ describe('flowSurfaces approval blueprint API contract', () => {
       },
     });
     expect(invalidBlockRes.status).toBe(400);
+    expectApprovalAuthoringError(invalidBlockRes, 'approval-task-card-blocks-forbidden');
     expect(readErrorMessage(invalidBlockRes)).toContain(`surface 'taskCard' does not accept blocks`);
 
     const result = getData(
@@ -512,7 +567,51 @@ describe('flowSurfaces approval blueprint API contract', () => {
       },
     });
     expect(invalidRes.status).toBe(400);
+    expect(invalidRes.body.errorCount).toBe(2);
+    expectApprovalAuthoringError(invalidRes, 'approval-initiator-workflow-id-required');
+    expectApprovalAuthoringError(invalidRes, 'approval-initiator-node-id-forbidden');
     expect(readErrorMessage(invalidRes)).toContain(`surface 'initiator' requires workflowId`);
+
+    const duplicateApproverActionRes = await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
+      values: {
+        surface: 'approver',
+        nodeId: node.id,
+        blocks: [
+          {
+            key: 'process',
+            type: 'approvalApprover',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname'],
+            actions: [
+              'approvalApprove',
+              {
+                key: 'approveAgain',
+                type: 'approvalApprove',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const duplicateApproverActionError = expectApprovalAuthoringError(
+      duplicateApproverActionRes,
+      'approval-action-singleton-duplicate',
+    );
+    expect(duplicateApproverActionError).toMatchObject({
+      path: '$.blocks[0].actions[1]',
+      details: expect.objectContaining({
+        actionType: 'approvalApprove',
+        firstIndex: 0,
+        duplicateIndex: 1,
+      }),
+    });
+    const nodeAfterInvalidDuplicateAction = await context.db.getCollection('flow_nodes').repository.findOne({
+      filterByTk: node.id,
+    });
+    expect(nodeAfterInvalidDuplicateAction.config.approvalUid).toBeUndefined();
 
     const approverResult = getData(
       await rootAgent.resource('flowSurfaces').applyApprovalBlueprint({
