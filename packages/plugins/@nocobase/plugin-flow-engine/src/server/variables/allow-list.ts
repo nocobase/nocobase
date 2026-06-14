@@ -19,7 +19,13 @@ type RecordParams = {
 };
 
 type VariableAllowList = {
+  sourceKeysByContextVariableKey: Map<string, Set<string>>;
   variables: Set<string>;
+};
+
+type SourceRef = {
+  collection: string;
+  dataSourceKey: string;
 };
 
 const unsupportedVariableKey = '__unsupported_dynamic_variable_path__';
@@ -109,6 +115,151 @@ export function extractVariableKeys(template: JSONValue): Set<string> {
   return keys;
 }
 
+function toSourceKey(recordParams: Pick<RecordParams, 'collection' | 'dataSourceKey'>): string {
+  return `${recordParams.dataSourceKey || 'main'}:${recordParams.collection}`;
+}
+
+function makeContextVariableKey(contextKey: string, variableKey: string) {
+  return `${contextKey}\n${variableKey}`;
+}
+
+function addSourceKey(map: Map<string, Set<string>>, contextKey: string, variableKey: string, sourceKey: string) {
+  if (!contextKey || !variableKey || !sourceKey) return;
+  const key = makeContextVariableKey(contextKey, variableKey);
+  let sources = map.get(key);
+  if (!sources) {
+    sources = new Set<string>();
+    map.set(key, sources);
+  }
+  sources.add(sourceKey);
+}
+
+function normalizeContextKey(contextKey: string): string {
+  return normalizeVariablePath(contextKey.replace(/(^|\.)\d+(?=\.|$)/g, '$1'));
+}
+
+function getSourceKey(source: SourceRef): string {
+  return toSourceKey(source);
+}
+
+function getCollectionField(ctx: ResourcerContext, source: SourceRef, fieldName: string) {
+  try {
+    const app = ctx.app as unknown as {
+      dataSourceManager?: {
+        get?: (key: string) => { collectionManager?: { getCollection?: (name: string) => unknown } };
+      };
+    };
+    const collection =
+      app.dataSourceManager?.get?.(source.dataSourceKey)?.collectionManager?.getCollection?.(source.collection) ||
+      ctx.db.getCollection(source.collection);
+    return (
+      (
+        collection as {
+          fields?: { get?: (name: string) => { target?: string; options?: { target?: string } } };
+          getField?: (name: string) => { target?: string; options?: { target?: string } };
+        }
+      )?.fields?.get?.(fieldName) ||
+      (
+        collection as {
+          getField?: (name: string) => { target?: string; options?: { target?: string } };
+        }
+      )?.getField?.(fieldName)
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+function resolveContextSource(ctx: ResourcerContext, ownerSource: SourceRef, contextParts: string[]): SourceRef | null {
+  if (!contextParts.length) return null;
+
+  const recordAnchorIndex = contextParts.findIndex(
+    (part, index) => index > 0 && ['record', 'sourceRecord'].includes(part),
+  );
+  const rootRecordKeys = new Set(['record', 'clickedRowRecord', 'currentObject', 'formValues']);
+  const associationPath =
+    recordAnchorIndex >= 0
+      ? contextParts.slice(recordAnchorIndex + 1)
+      : rootRecordKeys.has(contextParts[0])
+        ? contextParts.slice(1)
+        : contextParts.slice(1);
+
+  let currentSource = ownerSource;
+  for (const segment of associationPath) {
+    if (!segment || /^\d+$/.test(segment)) continue;
+    const field = getCollectionField(ctx, currentSource, segment);
+    const target = field?.target || field?.options?.target;
+    if (!target) return null;
+    currentSource = { collection: target, dataSourceKey: currentSource.dataSourceKey };
+  }
+  return currentSource;
+}
+
+function addVariableSourceBindings(
+  ctx: ResourcerContext,
+  sources: Map<string, Set<string>>,
+  ownerSource: SourceRef,
+  variableKey: string,
+) {
+  if (!variableKey || variableKey === unsupportedVariableKey) return;
+  const parts = variableKey.split('.').filter(Boolean);
+  for (let index = 1; index < parts.length; index += 1) {
+    const contextKey = normalizeContextKey(parts.slice(0, index).join('.'));
+    const source = resolveContextSource(ctx, ownerSource, contextKey.split('.').filter(Boolean));
+    if (source) {
+      addSourceKey(sources, contextKey, variableKey, getSourceKey(source));
+    }
+  }
+
+  const exactContextKey = normalizeContextKey(variableKey);
+  const exactSource = resolveContextSource(ctx, ownerSource, exactContextKey.split('.').filter(Boolean));
+  if (exactSource) {
+    addSourceKey(sources, exactContextKey, variableKey, getSourceKey(exactSource));
+  }
+}
+
+function collectSourceKeysFromModel(ctx: ResourcerContext, model: unknown): Map<string, Set<string>> {
+  const sources = new Map<string, Set<string>>();
+
+  const addTemplateSources = (source: SourceRef | undefined, template: JSONValue) => {
+    if (!source) return;
+    extractVariableKeys(template).forEach((variableKey) =>
+      addVariableSourceBindings(ctx, sources, source, variableKey),
+    );
+  };
+
+  const getSourceFromNode = (node: Record<string, unknown>) => {
+    const stepParams = node.stepParams;
+    const resourceSettings =
+      isObject(stepParams) && isObject(stepParams.resourceSettings) ? stepParams.resourceSettings : undefined;
+    const init = isObject(resourceSettings?.init) ? resourceSettings.init : undefined;
+    const collectionName = typeof init?.collectionName === 'string' ? init.collectionName : undefined;
+    if (!collectionName) return undefined;
+    return {
+      collection: collectionName,
+      dataSourceKey: typeof init?.dataSourceKey === 'string' ? init.dataSourceKey : 'main',
+    };
+  };
+
+  const visit = (node: unknown, inheritedSource?: SourceRef) => {
+    if (Array.isArray(node)) {
+      node.forEach((item) => visit(item, inheritedSource));
+      return;
+    }
+    if (typeof node === 'string') {
+      addTemplateSources(inheritedSource, node);
+      return;
+    }
+    if (!isObject(node)) return;
+
+    const source = getSourceFromNode(node) || inheritedSource;
+    Object.values(node).forEach((child) => visit(child, source));
+  };
+
+  visit(model);
+  return sources;
+}
+
 async function getVariableAllowList(ctx: ResourcerContext, flowModelUid: string): Promise<VariableAllowList | null> {
   const state = (ctx as ResourcerContext & { state?: Record<string, unknown> }).state;
   const cacheKey = '__variableResolveAllowListCache';
@@ -126,6 +277,7 @@ async function getVariableAllowList(ctx: ResourcerContext, flowModelUid: string)
 
   const variables = extractVariableKeys(model as JSONValue);
   const allowList: VariableAllowList = {
+    sourceKeysByContextVariableKey: collectSourceKeysFromModel(ctx, model),
     variables,
   };
   cache.set(flowModelUid, allowList);
@@ -173,6 +325,35 @@ async function currentRoleAllowsConfigure(ctx: ResourcerContext): Promise<boolea
   } catch {
     return false;
   }
+}
+
+function collectRecordParamEntries(
+  value: unknown,
+  path: string[] = [],
+  output: Array<{ contextKey: string; params: RecordParams }> = [],
+): Array<{ contextKey: string; params: RecordParams }> {
+  if (isRecordParams(value)) {
+    output.push({ contextKey: path.join('.'), params: value });
+    return output;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectRecordParamEntries(item, [...path, String(index)], output));
+    return output;
+  }
+  if (!isObject(value)) return output;
+
+  for (const [key, child] of Object.entries(value)) {
+    collectRecordParamEntries(child, [...path, key], output);
+  }
+  return output;
+}
+
+function getRequestedKeysForContext(requestedKeys: Set<string>, contextKey: string): string[] {
+  const normalizedContextKey = normalizeContextKey(contextKey);
+  const candidates = new Set([contextKey, normalizedContextKey].filter(Boolean));
+  return [...requestedKeys].filter((key) =>
+    [...candidates].some((candidate) => key === candidate || key.startsWith(`${candidate}.`)),
+  );
 }
 
 export async function authorizeVariablesResolve(
@@ -229,6 +410,30 @@ export async function authorizeVariablesResolve(
         code: 'VARIABLE_NOT_ALLOWED',
         message: `Variable is not configured in current flow model: ${key}`,
       });
+    }
+  }
+
+  for (const { contextKey, params } of collectRecordParamEntries(sanitizedContextParams)) {
+    const relevantKeys = getRequestedKeysForContext(requestedKeys, contextKey);
+    if (!relevantKeys.length) {
+      continue;
+    }
+
+    const sourceKey = toSourceKey(params);
+    const normalizedContextKey = normalizeContextKey(contextKey);
+    for (const key of relevantKeys) {
+      const allowedSources = allowList.sourceKeysByContextVariableKey.get(
+        makeContextVariableKey(normalizedContextKey, key),
+      );
+      if (!allowedSources) {
+        continue;
+      }
+      if (!allowedSources.has(sourceKey)) {
+        ctx.throw(403, {
+          code: 'VARIABLE_NOT_ALLOWED',
+          message: `Variable source is not configured in current flow model: ${contextKey}`,
+        });
+      }
     }
   }
 

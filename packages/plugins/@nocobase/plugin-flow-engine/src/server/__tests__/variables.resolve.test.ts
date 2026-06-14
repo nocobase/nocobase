@@ -582,6 +582,129 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
   });
 
+  it('should reject a different record collection when the variable source is configured', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.name }}' }, { collectionName: 'users' });
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.record.name }}' },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject a different flattened record collection when the variable source is configured', async () => {
+    const flowModelUid = await createTestFlowModel(
+      { allowed: '{{ ctx.view.record.name }}' },
+      { collectionName: 'users' },
+    );
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.view.record.name }}' },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject a different array-indexed record collection when the variable source is configured', async () => {
+    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.list[0].name }}' });
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.list[0].name }}' },
+      contextParams: {
+        'list.0': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should reject another source from the same flow model when the requested variable source does not match', async () => {
+    const flowModelUid = await createTestFlowModel({
+      allowedUserName: '{{ ctx.view.record.name }}',
+      otherRoleSource: {
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'roles',
+            },
+          },
+        },
+        template: '{{ ctx.view.record.title }}',
+      },
+    });
+    const payload = {
+      flowModelUid,
+      template: { name: '{{ ctx.view.record.name }}' },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    expect(res.status).toBe(403);
+    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+  });
+
+  it('should allow unresolved association source to keep compatible record context params', async () => {
+    const roleName = 'unresolved_association_source_role';
+    const rolesRepo = app.db.getRepository('roles');
+    const existing = await rolesRepo.findOne({ filter: { name: roleName } }).catch(() => null);
+    if (!existing) {
+      await rolesRepo.create({
+        values: {
+          name: roleName,
+          title: 'Unresolved Association Source Role',
+          allowConfigure: true,
+        },
+      });
+    }
+
+    const flowModelUid = await createTestFlowModel(
+      { allowed: '{{ ctx.record.unknownProfile.name }}' },
+      { collectionName: 'users' },
+    );
+    const payload = {
+      flowModelUid,
+      template: { roleName: '{{ ctx.record.unknownProfile.name }}' },
+      contextParams: {
+        'record.unknownProfile': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: roleName,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.roleName).toBe(roleName);
+  });
+
   it('should allow association target collection for nested record context params', async () => {
     const roleName = 'association_target_role';
     const rolesRepo = app.db.getRepository('roles');
