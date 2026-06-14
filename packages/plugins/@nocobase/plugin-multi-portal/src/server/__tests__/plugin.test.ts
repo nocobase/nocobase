@@ -987,6 +987,9 @@ describe('plugin-multi-portal server', () => {
         sort: 20,
       },
     });
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminRoute.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
     await app.db.getRepository('desktopRoutes.multiPortals', portalRoute.get('id')).set({
       tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
     });

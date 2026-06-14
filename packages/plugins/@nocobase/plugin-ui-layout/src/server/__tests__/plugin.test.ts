@@ -26,6 +26,10 @@ const UI_LAYOUT_RUNTIME_FIELDS = ['uid', 'title', 'layoutType', 'routeName', 'ro
 const UI_LAYOUT_ROLE_PERMISSION_TARGET_FIELDS = ['uid', 'title', 'layoutType', 'routeName', 'enabled'];
 const DESKTOP_ROUTE_ROLE_PERMISSION_TARGET_FIELDS = ['id', 'title', 'hidden', 'parentId', 'options', 'children'];
 
+type RelationRecordLike = {
+  get: (field: string) => unknown;
+};
+
 async function createUiLayoutMockServer() {
   return createMockServer({
     registerActions: true,
@@ -153,6 +157,131 @@ describe('plugin-ui-layout server', () => {
     for (const layout of layouts) {
       expect(Object.keys(layout).sort()).toEqual([...UI_LAYOUT_RUNTIME_FIELDS].sort());
     }
+  });
+
+  it('should backfill ordinary legacy desktop routes without claiming portal-only routes', async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'error-handler',
+        'users',
+        'auth',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'ui-layout',
+        'multi-portal',
+      ],
+    });
+
+    const portal = await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'admin-backfill-portal',
+        title: 'Admin backfill portal',
+        routeName: 'adminBackfillPortal',
+        routePath: '/admin-backfill-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const ordinaryRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'legacy ordinary route',
+        schemaUid: 'legacy-ordinary-route',
+      },
+    });
+    const adminOwnedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'admin owned route',
+        schemaUid: 'admin-owned-route',
+      },
+    });
+    const portalOnlyRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'portal only route',
+        schemaUid: 'portal-only-route',
+      },
+    });
+    const dualOwnedRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'dual owned route',
+        schemaUid: 'dual-owned-route',
+      },
+    });
+
+    await app.db.getRepository('desktopRoutes.uiLayouts', adminOwnedRoute.get('id')).set({
+      tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
+    });
+    await app.db.getRepository('desktopRoutes.multiPortals', portalOnlyRoute.get('id')).set({
+      tk: [portal.get('uid')],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', dualOwnedRoute.get('id')).set({
+      tk: [DEFAULT_MOBILE_UI_LAYOUT.uid],
+    });
+    await app.db.getRepository('desktopRoutes.multiPortals', dualOwnedRoute.get('id')).set({
+      tk: [portal.get('uid')],
+    });
+
+    const { default: BackfillAdminLayoutDesktopRoutesMigration } = await import(
+      '../migrations/20260615090000-backfill-admin-layout-desktop-routes'
+    );
+    const migration = new BackfillAdminLayoutDesktopRoutesMigration({ db: app.db, app } as never);
+    await migration.up();
+
+    const [ordinary, adminOwned, portalOnly, dualOwned] = await Promise.all(
+      [ordinaryRoute, adminOwnedRoute, portalOnlyRoute, dualOwnedRoute].map((route) =>
+        app.db.getRepository('desktopRoutes').findOne({
+          filterByTk: route.get('id'),
+          appends: ['uiLayouts', 'multiPortals'],
+        }),
+      ),
+    );
+    const getRelationUids = (route: RelationRecordLike | null | undefined, relation: string) => {
+      const records = route?.get(relation);
+      return Array.isArray(records) ? records.map((record: RelationRecordLike) => record.get('uid')) : [];
+    };
+
+    expect(getRelationUids(ordinary, 'uiLayouts')).toEqual([DEFAULT_ADMIN_UI_LAYOUT.uid]);
+    expect(getRelationUids(adminOwned, 'uiLayouts')).toEqual([DEFAULT_ADMIN_UI_LAYOUT.uid]);
+    expect(getRelationUids(portalOnly, 'uiLayouts')).toEqual([]);
+    expect(getRelationUids(portalOnly, 'multiPortals')).toEqual([portal.get('uid')]);
+    expect(getRelationUids(dualOwned, 'uiLayouts')).toEqual([DEFAULT_MOBILE_UI_LAYOUT.uid]);
+    expect(getRelationUids(dualOwned, 'multiPortals')).toEqual([portal.get('uid')]);
+  });
+
+  it('should backfill ordinary legacy desktop routes when multi-portal is unavailable', async () => {
+    app = await createUiLayoutMockServer();
+
+    const ordinaryRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'legacy ordinary route without multi portal',
+        schemaUid: 'legacy-ordinary-route-without-multi-portal',
+      },
+    });
+
+    const { default: BackfillAdminLayoutDesktopRoutesMigration } = await import(
+      '../migrations/20260615090000-backfill-admin-layout-desktop-routes'
+    );
+    const migration = new BackfillAdminLayoutDesktopRoutesMigration({ db: app.db, app } as never);
+    await migration.up();
+
+    const route = await app.db.getRepository('desktopRoutes').findOne({
+      filterByTk: ordinaryRoute.get('id'),
+      appends: ['uiLayouts'],
+    });
+
+    expect(route?.get('uiLayouts').map((layout) => layout.get('uid'))).toEqual([DEFAULT_ADMIN_UI_LAYOUT.uid]);
   });
 
   it('should rollback default AdminLayout creation when title backfill fails', async () => {
@@ -2084,7 +2213,7 @@ describe('plugin-ui-layout server', () => {
     );
   });
 
-  it('should fallback to AdminLayout when listAccessible omits layout', async () => {
+  it('should default to explicit AdminLayout routes when listAccessible omits layout', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -2159,20 +2288,44 @@ describe('plugin-ui-layout server', () => {
     });
     const agent = await app.agent().login(rootUser);
 
-    const [omittedResponse, emptyResponse, adminResponse] = await Promise.all([
+    const [
+      omittedResponse,
+      emptyResponse,
+      adminResponse,
+      omittedUnassignedGetResponse,
+      adminUnassignedGetResponse,
+      adminRouteGetResponse,
+    ] = await Promise.all([
       agent.get('/desktopRoutes:listAccessible'),
       agent.get('/desktopRoutes:listAccessible').query({ layout: '' }),
       agent.get('/desktopRoutes:listAccessible').query({ layout: DEFAULT_ADMIN_UI_LAYOUT.uid }),
+      agent.get('/desktopRoutes:getAccessible').query({ filterByTk: unassignedRoute.get('id') }),
+      agent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: unassignedRoute.get('id'),
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
+      agent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: adminRoute.get('id'),
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      }),
     ]);
     const adminRouteTitles = adminResponse.body.data.map((route) => route.title).sort();
     const omittedRouteTitles = omittedResponse.body.data.map((route) => route.title).sort();
 
-    expect([omittedResponse.status, emptyResponse.status, adminResponse.status]).toEqual([200, 200, 200]);
-    expect(omittedRouteTitles).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
+    expect([
+      omittedResponse.status,
+      emptyResponse.status,
+      adminResponse.status,
+      omittedUnassignedGetResponse.status,
+      adminUnassignedGetResponse.status,
+      adminRouteGetResponse.status,
+    ]).toEqual([200, 200, 200, 204, 204, 200]);
+    expect(omittedRouteTitles).toEqual([adminRoute.get('title')]);
     expect(omittedRouteTitles).not.toContain(mobileRoute.get('title'));
     expect(emptyResponse.body.data).toEqual([]);
-    expect(adminRouteTitles).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
+    expect(adminRouteTitles).toEqual([adminRoute.get('title')]);
     expect(adminRouteTitles).not.toContain(mobileRoute.get('title'));
+    expect(adminRouteGetResponse.body.data.title).toBe(adminRoute.get('title'));
   });
 
   it('should not fallback to AdminLayout for invalid runtime layouts', async () => {
@@ -2385,7 +2538,8 @@ describe('plugin-ui-layout server', () => {
     ];
 
     expect([rootAdminResponse.status, memberAdminResponse.status]).toEqual([200, 200]);
-    expect(rootAdminTitles).toEqual(expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]));
+    expect(rootAdminTitles).toEqual([adminRoute.get('title')]);
+    expect(rootAdminTitles).not.toContain(unassignedRoute.get('title'));
     expect(rootAdminTitles).not.toEqual(
       expect.arrayContaining([disabledRoute.get('title'), deletedRoute.get('title')]),
     );
@@ -2394,9 +2548,7 @@ describe('plugin-ui-layout server', () => {
     expect(memberAdminGetResponse.status).toBe(200);
     expect(rootAdminGetResponse.body.data.title).toBe(adminRoute.get('title'));
     expect(memberAdminGetResponse.body.data.title).toBe(adminRoute.get('title'));
-    expect(rootOmittedResponse.body.data.map((route) => route.title)).toEqual(
-      expect.arrayContaining([unassignedRoute.get('title'), adminRoute.get('title')]),
-    );
+    expect(rootOmittedResponse.body.data.map((route) => route.title)).toEqual([adminRoute.get('title')]);
     expect(memberOmittedResponse.body.data.map((route) => route.title)).toEqual([adminRoute.get('title')]);
     expect(rootOmittedGetResponse.body.data.title).toBe(adminRoute.get('title'));
     expect(memberOmittedGetResponse.body.data.title).toBe(adminRoute.get('title'));
@@ -2787,7 +2939,7 @@ describe('plugin-ui-layout server', () => {
     expect(legacyRoleRoutesResponse.body.data.map((route) => route.title)).toContain('DATA-DENIED-LAYOUT-LEGACY-ROUTE');
   });
 
-  it('should sync live legacy route permissions into AdminLayout access', async () => {
+  it('should sync live legacy route permissions without exposing unassigned routes', async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -2881,10 +3033,7 @@ describe('plugin-ui-layout server', () => {
     expect(layoutAccessCount).toBe(1);
     expect(routePermissionCount).toBe(2);
     expect(routeListResponse.status).toBe(200);
-    expect(routeListResponse.body.data.map((route) => route.title)).toEqual([
-      'DATA-LIVE-LEGACY-ADMIN',
-      'DATA-LIVE-LEGACY-UNASSIGNED',
-    ]);
+    expect(routeListResponse.body.data.map((route) => route.title)).toEqual(['DATA-LIVE-LEGACY-ADMIN']);
   });
 
   it('should not require legacy layout-scoped route permissions for layout route access', async () => {
@@ -3671,7 +3820,7 @@ describe('plugin-ui-layout server', () => {
       paginate: false,
       filter: {
         hidden: { $ne: true },
-        $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.uid.$notExists': true }],
+        'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
     });
     const mobileRoutesResponse = await agent.resource('roles.desktopRoutes', role.get('name')).list({
@@ -3694,7 +3843,7 @@ describe('plugin-ui-layout server', () => {
       paginate: false,
       filter: {
         hidden: { $ne: true },
-        $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.uid.$notExists': true }],
+        'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
     });
     const mobileRoutesAfterMobileRemoveResponse = await agent.resource('roles.desktopRoutes', role.get('name')).list({

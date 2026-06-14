@@ -76,10 +76,10 @@ describe('plugin-ui-layout route permissions', () => {
     flowMocks.context = undefined;
   });
 
-  it('should create an AdminLayout route permission filter with unassigned routes', () => {
+  it('should create an AdminLayout route permission filter with explicit layout ownership', () => {
     expect(createDesktopRouteLayoutPermissionFilter(DEFAULT_ADMIN_UI_LAYOUT.uid)).toEqual({
       hidden: { $ne: true },
-      $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.uid.$notExists': true }],
+      'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid,
     });
   });
 

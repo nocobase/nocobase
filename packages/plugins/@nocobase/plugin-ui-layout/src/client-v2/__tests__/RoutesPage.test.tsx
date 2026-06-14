@@ -78,7 +78,7 @@ describe('plugin-ui-layout RoutesPage', () => {
         params: {
           filter: {
             hidden: { $ne: true },
-            $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.uid.$notExists': true }],
+            'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid,
           },
           paginate: false,
           sort: 'sort',
@@ -642,19 +642,6 @@ function createRoutesPageResources() {
       const routeFilter = filter as Record<string, unknown>;
       if (typeof routeFilter['uiLayouts.uid'] === 'string') {
         return routeFilter['uiLayouts.uid'];
-      }
-      if (Array.isArray(routeFilter.$or)) {
-        const hasDefaultAdminScope = routeFilter.$or.some((item) => {
-          return (
-            item &&
-            typeof item === 'object' &&
-            !Array.isArray(item) &&
-            (item as Record<string, unknown>)['uiLayouts.uid'] === DEFAULT_ADMIN_UI_LAYOUT.uid
-          );
-        });
-        if (hasDefaultAdminScope) {
-          return DEFAULT_ADMIN_UI_LAYOUT.uid;
-        }
       }
     }
     return undefined;

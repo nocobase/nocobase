@@ -116,16 +116,8 @@ function hasActionParam(params: unknown, key: string) {
 }
 
 function getDesktopRouteLayoutFilterByUid(layoutUid: string) {
-  const currentLayoutFilter = {
-    'uiLayouts.uid': layoutUid,
-  };
-
-  if (layoutUid !== DEFAULT_ADMIN_UI_LAYOUT.uid) {
-    return currentLayoutFilter;
-  }
-
   return {
-    $or: [currentLayoutFilter, { 'uiLayouts.uid.$notExists': true }],
+    'uiLayouts.uid': layoutUid,
   };
 }
 

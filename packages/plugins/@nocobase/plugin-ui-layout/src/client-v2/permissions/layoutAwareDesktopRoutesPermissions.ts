@@ -49,16 +49,9 @@ export function createDesktopRouteLayoutPermissionFilter(layoutUid: unknown): Re
     hidden: { $ne: true },
   };
 
-  if (normalizedLayoutUid !== DEFAULT_ADMIN_UI_LAYOUT.uid) {
-    return {
-      ...routeVisibilityFilter,
-      'uiLayouts.uid': normalizedLayoutUid,
-    };
-  }
-
   return {
     ...routeVisibilityFilter,
-    $or: [{ 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid }, { 'uiLayouts.uid.$notExists': true }],
+    'uiLayouts.uid': normalizedLayoutUid,
   };
 }
 

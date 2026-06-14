@@ -553,7 +553,6 @@ async function replaceGetAccessibleRouteWithPortalScopedRoute(
     sort: 'sort',
     filterByTk: ctx.action?.params.filterByTk,
     filter: {
-      ...ctx.action?.params.filter,
       ...getDesktopRoutePortalFilter(portalContext.portalUid),
       ...(routeIds ? { id: Array.from(routeIds) } : {}),
     },
