@@ -346,6 +346,47 @@ describe('PluginMultiPortalClientV2', () => {
     });
   });
 
+  it('should unwrap prefixed mobile portal route scope keys before requesting routes', async () => {
+    const request = vi.fn().mockResolvedValue({ data: { data: [{ schemaUid: 'mobile-portal-page' }] } });
+    const create = vi.fn().mockResolvedValue({ data: { data: {} } });
+    const repository = new RouteRepository({
+      api: {
+        request,
+        resource: vi.fn(() => ({
+          create,
+        })),
+      },
+    } as never);
+
+    installMultiPortalRouteRepositoryScope(repository, () => ['mobile-portal']);
+
+    const deactivatePortal = repository.activateLayout({ uid: 'portal:mobile-portal' });
+    await repository.refreshAccessible();
+    expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['mobile-portal-page']);
+    await repository.createRoute({ title: 'Mobile portal page' }, { refreshAfterMutation: false });
+    deactivatePortal();
+
+    const reactivatePortal = repository.activateLayout({ uid: 'portal:mobile-portal' });
+    expect(repository.listAccessible().map((route) => route.schemaUid)).toEqual(['mobile-portal-page']);
+    reactivatePortal();
+
+    expect(request).toHaveBeenCalledWith({
+      url: '/desktopRoutes:listAccessible',
+      params: {
+        tree: true,
+        sort: 'sort',
+        portal: 'mobile-portal',
+      },
+    });
+    expect(request.mock.calls[0][0].params).not.toHaveProperty('layout');
+    expect(create).toHaveBeenCalledWith({
+      values: {
+        title: 'Mobile portal page',
+      },
+      portal: 'mobile-portal',
+    });
+  });
+
   it('should ignore stale portal route refresh responses', async () => {
     const firstRefresh = Promise.withResolvers<{ data: { data: Array<{ schemaUid: string }> } }>();
     const secondRefresh = Promise.withResolvers<{ data: { data: Array<{ schemaUid: string }> } }>();
@@ -444,5 +485,105 @@ describe('PluginMultiPortalClientV2', () => {
 
     expect(layoutManager.hasLayout).toHaveBeenCalledWith('portalDesktop');
     expect(layoutManager.registerLayout).not.toHaveBeenCalled();
+  });
+
+  it('should not let skipped or failed portal registrations pollute route repository scopes', async () => {
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { data: [{ schemaUid: 'admin-layout-page' }] } })
+      .mockResolvedValueOnce({ data: { data: [{ schemaUid: 'customer-portal-page' }] } });
+    const repository = new RouteRepository({
+      api: {
+        request,
+        resource: vi.fn(() => ({
+          create: vi.fn(),
+        })),
+      },
+    } as never);
+    const layoutManager = {
+      hasLayout: vi.fn((routeName: string) => routeName === 'existingPortal'),
+      registerLayout: vi.fn((options) => {
+        if (options.uid === 'failed-portal-model') {
+          throw new Error('uid conflict');
+        }
+      }),
+    };
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    try {
+      await registerMultiPortalsFromApi({
+        apiClient: {
+          request: vi.fn().mockResolvedValue({
+            data: {
+              data: [
+                {
+                  ...desktopPortal,
+                  uid: 'admin-layout-model',
+                  routeName: 'existingPortal',
+                  routePath: '/existing-portal',
+                },
+                {
+                  ...desktopPortal,
+                  uid: 'failed-portal-model',
+                  routeName: 'failedPortal',
+                  routePath: '/failed-portal',
+                },
+                {
+                  ...desktopPortal,
+                  uid: 'customer-portal',
+                  routeName: 'customerPortal',
+                  routePath: '/customer-portal',
+                },
+              ],
+            },
+          }),
+        },
+        flowEngine: {
+          context: {
+            routeRepository: repository,
+          },
+        },
+        layoutManager,
+      });
+    } finally {
+      warnSpy.mockRestore();
+    }
+
+    expect(layoutManager.registerLayout).toHaveBeenCalledTimes(2);
+    expect(layoutManager.registerLayout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: 'failed-portal-model',
+      }),
+    );
+    expect(layoutManager.registerLayout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uid: 'customer-portal',
+      }),
+    );
+
+    const deactivateAdminLayout = repository.activateLayout({ uid: 'admin-layout-model' });
+    await repository.refreshAccessible();
+    deactivateAdminLayout();
+
+    const deactivateRegisteredPortal = repository.activateLayout({ uid: 'customer-portal' });
+    await repository.refreshAccessible();
+    deactivateRegisteredPortal();
+
+    expect(request).toHaveBeenNthCalledWith(1, {
+      url: '/desktopRoutes:listAccessible',
+      params: {
+        tree: true,
+        sort: 'sort',
+        layout: 'admin-layout-model',
+      },
+    });
+    expect(request).toHaveBeenNthCalledWith(2, {
+      url: '/desktopRoutes:listAccessible',
+      params: {
+        tree: true,
+        sort: 'sort',
+        portal: 'customer-portal',
+      },
+    });
   });
 });

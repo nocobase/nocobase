@@ -84,11 +84,14 @@ function normalizePortalUids(portalUids: () => string[]) {
 }
 
 function getScopeForUid(uid: string, portalUids: () => string[]): RouteScope {
-  if (normalizePortalUids(portalUids).has(uid)) {
+  const portalUidFromCacheKey = getMultiPortalUidFromRouteScopeCacheKey(uid);
+  const portalUid = portalUidFromCacheKey || uid;
+
+  if (normalizePortalUids(portalUids).has(portalUid)) {
     return {
-      cacheKey: getMultiPortalRouteScopeCacheKey(uid),
+      cacheKey: getMultiPortalRouteScopeCacheKey(portalUid),
       kind: 'portal',
-      uid,
+      uid: portalUid,
     };
   }
 

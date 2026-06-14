@@ -94,6 +94,8 @@ export function registerMultiPortalRecords(
   layoutManager: MultiPortalRegistrationApp['layoutManager'],
   records: MultiPortalRuntimeRecord[],
 ) {
+  const registeredPortalUids: string[] = [];
+
   for (const record of records) {
     const options = toMultiPortalLayoutRegisterOptions(record);
     if (!options || layoutManager.hasLayout(options.routeName)) {
@@ -102,10 +104,13 @@ export function registerMultiPortalRecords(
 
     try {
       layoutManager.registerLayout(options);
+      registeredPortalUids.push(record.uid);
     } catch (error) {
       console.warn(`[NocoBase] plugin-multi-portal failed to register portal '${options.routeName}'.`, error);
     }
   }
+
+  return registeredPortalUids;
 }
 
 export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationApp) {
@@ -117,8 +122,6 @@ export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationAp
     return;
   }
 
-  registerMultiPortalRecords(app.layoutManager, records);
-  installMultiPortalRouteRepositoryScope(app.flowEngine?.context?.routeRepository, () =>
-    records.filter((record) => record.enabled).map((record) => record.uid),
-  );
+  const registeredPortalUids = registerMultiPortalRecords(app.layoutManager, records);
+  installMultiPortalRouteRepositoryScope(app.flowEngine?.context?.routeRepository, () => registeredPortalUids);
 }
