@@ -23,7 +23,7 @@ export class EmailAuth extends BaseAuth {
 
   async validate() {
     const ctx = this.ctx;
-    const verificationPlugin: VerificationPlugin = ctx.app.getPlugin('verification');
+    const verificationPlugin: VerificationPlugin = ctx.app.pm.get('verification');
     if (!verificationPlugin) {
       ctx.log.error('auth-email: @nocobase/plugin-verification is required', { method: 'validate' });
       ctx.throw(500);

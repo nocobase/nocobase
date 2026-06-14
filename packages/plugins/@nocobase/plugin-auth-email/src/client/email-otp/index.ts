@@ -11,6 +11,9 @@ import { VerificationForm } from './VerificationForm';
 import { AdminSettingsForm } from './AdminSettingsForm';
 import { BindForm } from './BindForm';
 
+export type { BindFormProps } from './BindForm';
+export type { VerificationFormProps } from './VerificationForm';
+
 export const emailOTPVerificationOptions = {
   components: {
     VerificationForm,

@@ -10,8 +10,7 @@
 import { SchemaComponent, useAPIClient, useCurrentUserContext, usePlugin } from '@nocobase/client';
 import { ISchema, useForm } from '@formily/react';
 import React from 'react';
-import { Authenticator, useRedirect } from '@nocobase/plugin-auth/client';
-import PluginVerificationClient from '@nocobase/plugin-verification/client';
+import { useRedirect } from '@nocobase/plugin-auth/client';
 import { useAuthTranslation } from './locale';
 
 const EMAIL_OTP_VERIFICATION_TYPE = 'email-otp';
@@ -72,7 +71,7 @@ export const SigninPage = (props: { authenticator: any }) => {
   const authenticator = props.authenticator as any;
   const { name, options } = authenticator;
   const autoSignup = !!options?.autoSignup;
-  const verficationPlugin = usePlugin('verification') as PluginVerificationClient;
+  const verficationPlugin = usePlugin('verification') as any;
   const emailVerification = verficationPlugin.verificationManager.getVerification(EMAIL_OTP_VERIFICATION_TYPE);
   const VerificationForm = emailVerification?.components.VerificationForm;
 

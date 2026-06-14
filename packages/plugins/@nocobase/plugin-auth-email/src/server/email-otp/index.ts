@@ -9,6 +9,9 @@
 
 import { Registry } from '@nocobase/utils';
 import { Verification, CODE_STATUS_UNUSED, CODE_STATUS_USED } from '@nocobase/plugin-verification';
+import { Context } from '@nocobase/actions';
+import { Model } from '@nocobase/database';
+import { randomInt } from 'crypto';
 import { EmailProvider } from './providers';
 import PluginAuthEmailServer from '../plugin';
 import dayjs from 'dayjs';
@@ -34,13 +37,21 @@ export class EmailOTPProviderManager {
 }
 
 export class EmailOTPVerification extends Verification {
+  protected ctx: Context;
+  protected options: Record<string, any>;
+  verifier: Model;
+
+  getBoundInfo(userId: number): Promise<any> {
+    return super.getBoundInfo(userId);
+  }
+
   codeLength = 6;
   codeType = 'numeric'; // 'numeric', 'alpha', 'alphanumeric'
   expiresIn = 120;
   resendInterval = 60;
   maxVerifyAttempts = 5;
 
-  constructor(props) {
+  constructor(props: { ctx: Context; verifier: Model; options: Record<string, any> }) {
     super(props);
     const { options } = props;
     this.codeLength = options.codeLength || this.codeLength;
@@ -55,7 +66,7 @@ export class EmailOTPVerification extends Verification {
     if (!code) {
       return this.ctx.throw(400, 'Verification code is invalid');
     }
-    const plugin = this.ctx.app.getPlugin('@nocobase/plugin-auth-email') as PluginAuthEmailServer;
+    const plugin = this.ctx.app.pm.get('auth-email') as PluginAuthEmailServer;
     const counter = plugin.emailOTPCounter;
     const key = `${resource}:${action}:${receiver}`;
     let attempts = 0;
@@ -163,7 +174,7 @@ export class EmailOTPVerification extends Verification {
 
     let code = '';
     for (let i = 0; i < length; i++) {
-      code += charset.charAt(Math.floor(Math.random() * charset.length));
+      code += charset.charAt(randomInt(charset.length));
     }
     return code;
   }
@@ -173,7 +184,7 @@ export class EmailOTPVerification extends Verification {
     if (!providerType) {
       return null;
     }
-    const plugin = this.ctx.app.pm.get('@nocobase/plugin-auth-email') as PluginAuthEmailServer;
+    const plugin = this.ctx.app.pm.get('auth-email') as PluginAuthEmailServer;
     const providerOptions = plugin.emailOTPProviderManager.providers.get(providerType);
     if (!providerOptions) {
       return null;

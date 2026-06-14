@@ -38,7 +38,7 @@ export class PluginAuthEmailServer extends Plugin {
   }
 
   async load() {
-    const verificationPlugin: VerificationPlugin = this.app.getPlugin('verification');
+    const verificationPlugin: VerificationPlugin = this.app.pm.get('verification');
     if (!verificationPlugin) {
       this.app.logger.warn('auth-email: @nocobase/plugin-verification is required');
       return;
@@ -89,7 +89,7 @@ export class PluginAuthEmailServer extends Plugin {
   async afterEnable() {}
 
   async afterDisable() {
-    const verificationPlugin: VerificationPlugin = this.app.getPlugin('verification');
+    const verificationPlugin: VerificationPlugin = this.app.pm.get('verification');
     if (!verificationPlugin) {
       return;
     }

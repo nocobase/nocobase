@@ -11,7 +11,12 @@ import { ISchema } from '@formily/react';
 import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { VerificationCode } from './VerificationCode';
-import { BindFormProps } from '@nocobase/plugin-verification/src/client/verification-manager';
+
+export interface BindFormProps {
+  verifier: string;
+  actionType: string;
+  isLogged?: boolean;
+}
 
 const schema: ISchema = {
   type: 'void',

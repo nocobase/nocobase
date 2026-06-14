@@ -15,7 +15,7 @@ import PluginAuthEmailClient from '../..';
 import { useAuthTranslation } from '../locale';
 
 export const useAdminSettingsForm = (providerType: string) => {
-  const plugin = usePlugin('@nocobase/plugin-auth-email') as any;
+  const plugin = usePlugin('auth-email') as any;
   const provider = plugin.emailOTPProviderManager?.getProvider?.(providerType);
   return provider?.components?.AdminSettingsForm;
 };

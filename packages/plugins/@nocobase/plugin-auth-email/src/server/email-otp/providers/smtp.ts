@@ -47,11 +47,6 @@ export class SMTPProvider extends EmailProvider {
       html,
       text,
     };
-    try {
-      return await this.transporter.sendMail(mailOptions);
-    } catch (error) {
-      console.error('SMTP send error:', error);
-      throw error;
-    }
+    return await this.transporter.sendMail(mailOptions);
   }
 }

@@ -9,8 +9,7 @@
 
 import { Context, Next } from '@nocobase/actions';
 import dayjs from 'dayjs';
-import { randomInt, randomUUID } from 'crypto';
-import { promisify } from 'util';
+import { randomUUID } from 'crypto';
 import PluginAuthEmailServer from '../../plugin';
 import { EmailOTPVerification } from '..';
 import { namespace } from '../../../constants';
@@ -18,12 +17,10 @@ import { namespace } from '../../../constants';
 const CODE_STATUS_UNUSED = 0;
 const CODE_STATUS_USED = 1;
 
-const asyncRandomInt = promisify(randomInt);
-
 async function create(ctx: Context, next: Next) {
   const { action: actionName, verifier: verifierName } = ctx.action.params?.values || {};
-  const plugin = ctx.app.getPlugin('@nocobase/plugin-auth-email') as PluginAuthEmailServer;
-  const verificationManager = ctx.app.getPlugin('verification').verificationManager;
+  const plugin = ctx.app.pm.get('auth-email') as PluginAuthEmailServer;
+  const verificationManager = ctx.app.pm.get('verification').verificationManager;
   const action = verificationManager.actions.get(actionName);
   if (!action) {
     return ctx.throw(400, 'Invalid action type');
@@ -77,7 +74,7 @@ async function create(ctx: Context, next: Next) {
       expiresIn: verification.expiresIn,
     });
   } catch (error) {
-    console.error('Email OTP send error:', error);
+    ctx.logger.error(error, { method: 'emailOTP.create' });
     switch (error.code) {
       case 'ECONNECTION':
         return ctx.throw(500, ctx.t('SMTP connection failed, please check SMTP settings', { ns: namespace }));
