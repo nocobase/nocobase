@@ -326,6 +326,9 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(await screen.findByText('Desktop tab')).toBeInTheDocument();
     expect(screen.queryByText('Hidden desktop tab')).not.toBeInTheDocument();
 
+    const hiddenOnlyPageRow = screen.getByRole('row', { name: /Desktop page with hidden tabs/ });
+    expect(within(hiddenOnlyPageRow).queryByRole('button', { name: 'Expand row' })).not.toBeInTheDocument();
+
     fireEvent.click(within(desktopRow).getByRole('button', { name: 'Edit Desktop dashboard' }));
     let editDrawer = await findOpenDrawer('Edit route');
     expect(within(editDrawer).getByRole('checkbox', { name: 'Enable page tabs' })).toBeChecked();
@@ -561,6 +564,23 @@ function createRoutesPageResources() {
           id: 5,
           title: 'Desktop group',
           type: 'group',
+        },
+        {
+          id: 7,
+          enableTabs: false,
+          schemaUid: 'hidden-only-page',
+          title: 'Desktop page with hidden tabs',
+          type: 'flowPage',
+          children: [
+            {
+              id: 8,
+              hidden: true,
+              parentId: 7,
+              schemaUid: 'hidden-only-tab',
+              title: 'Hidden only tab',
+              type: 'tabs',
+            },
+          ],
         },
       ],
     ],

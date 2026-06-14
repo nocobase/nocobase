@@ -287,10 +287,16 @@ function findRouteById(routes: NocoBaseDesktopRoute[], id: number | undefined): 
 function filterHiddenRoutes(routes: NocoBaseDesktopRoute[]): NocoBaseDesktopRoute[] {
   return routes
     .filter((route) => route.hidden !== true)
-    .map((route) => ({
-      ...route,
-      children: route.children ? filterHiddenRoutes(route.children) : route.children,
-    }));
+    .map((route) => {
+      const { children, ...routeWithoutChildren } = route;
+      const visibleChildren = children ? filterHiddenRoutes(children) : [];
+      return visibleChildren.length
+        ? {
+            ...routeWithoutChildren,
+            children: visibleChildren,
+          }
+        : routeWithoutChildren;
+    });
 }
 
 function getDirectTabRouteChildren(route: NocoBaseDesktopRoute) {
@@ -945,6 +951,9 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
       <Table<NocoBaseDesktopRoute>
         columns={columns}
         dataSource={filteredRoutes}
+        expandable={{
+          rowExpandable: (route) => !!route.children?.length,
+        }}
         loading={loading}
         locale={{
           emptyText: t('No routes in {{layout}}', { layout: t(layout.label) }),
