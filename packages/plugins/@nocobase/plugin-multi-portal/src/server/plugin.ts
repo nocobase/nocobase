@@ -135,7 +135,7 @@ function getRequestedMultiPortalUid(ctx: ResourcerContext) {
     return;
   }
 
-  return portalUid ?? layoutUid;
+  return portalUid;
 }
 
 function getCurrentRoles(ctx: ResourcerContext) {
