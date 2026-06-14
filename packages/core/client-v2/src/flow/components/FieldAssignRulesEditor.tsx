@@ -138,6 +138,14 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
   }, [fieldOptions]);
 
   const getRuleKey = React.useCallback((item: FieldAssignRuleItem, index: number) => item?.key || String(index), []);
+  const parseTargetPathToSegments = React.useCallback((targetPath?: string): string[] => {
+    const raw = String(targetPath || '');
+    if (!raw) return [];
+    return raw
+      .split('.')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, []);
   const [titleFieldDraftMap, setTitleFieldDraftMap] = React.useState<Record<string, string | undefined>>({});
   const [advancedOpenMap, setAdvancedOpenMap] = React.useState<Record<string, boolean>>({});
   const [syncingRuleKey, setSyncingRuleKey] = React.useState<string | null>(null);
@@ -173,15 +181,6 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       setSyncingRuleKey(null);
     }
   }, [getRuleKey, syncingRuleKey, value]);
-
-  const parseTargetPathToSegments = React.useCallback((targetPath?: string): string[] => {
-    const raw = String(targetPath || '');
-    if (!raw) return [];
-    return raw
-      .split('.')
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }, []);
 
   const isAssociationFieldLike = React.useCallback((field?: CollectionFieldLike | null) => {
     return !!(field?.isAssociationField?.() || field?.target || field?.targetCollection);
@@ -881,6 +880,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 maxAssociationFieldDepth={maxAssociationFieldDepth}
                 {...(getValueInputProps?.(item, index) || {})}
                 enableDateVariableAsConstant={enableDateVariableAsConstant}
+                preserveCascadeParentChain={getEffectiveMode(item) === 'default'}
                 associationFieldNamesOverride={
                   associationQuickContext && previewTitleField
                     ? {
