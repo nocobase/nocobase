@@ -60,9 +60,6 @@ type GanttPopupActionOptions = {
   persist?: boolean;
 };
 
-const isLegacyGanttPopupActionUid = (actionUid?: string) =>
-  Boolean(actionUid && ['eventViewAction', 'event-view-action'].some((marker) => actionUid.includes(marker)));
-
 export class GanttBlockModel extends TableBlockModel {
   static scene = BlockSceneEnum.many;
 
@@ -472,32 +469,11 @@ export class GanttBlockModel extends TableBlockModel {
       action = (this.subModels as GanttBlockStructure['subModels'])?.[actionKey] as any;
     }
 
-    const legacyAction = action?.__legacyPopupAction || (isLegacyGanttPopupActionUid(action?.uid) ? action : null);
-    if (legacyAction === action && typeof action?.clone === 'function') {
-      const clonedAction = action.clone();
-      Object.defineProperty(clonedAction, '__legacyPopupAction', {
-        value: action,
-        configurable: true,
-      });
-      action = clonedAction;
-      this.setSubModel(actionKey, action);
-    }
-
     if (options.persist && this.context.flowSettingsEnabled && action?.save) {
       await action.save();
     }
 
     await this.syncPopupActionSettings(action, options);
-
-    if (
-      options.persist &&
-      legacyAction &&
-      legacyAction.uid !== action?.uid &&
-      typeof legacyAction.destroy === 'function'
-    ) {
-      await legacyAction.destroy();
-      delete action.__legacyPopupAction;
-    }
 
     return action;
   }

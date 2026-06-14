@@ -51,6 +51,25 @@ describe('workflow > actions > nodes', () => {
       expect(data.type).toBe('echo');
     });
 
+    it('updates workflow updatedBy when creating node', async () => {
+      const user = await db.getCollection('users').repository.findOne();
+      const userAgent = await app.agent().loginUsingId(user.id);
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const { status } = await userAgent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+      expect(status).toBe(200);
+
+      await workflow.reload();
+      expect(String(workflow.get('updatedById'))).toBe(String(user.id));
+    });
+
     it.skipIf(process.env.DB_DIALECT === 'sqlite')('create in executed workflow', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
@@ -230,6 +249,32 @@ describe('workflow > actions > nodes', () => {
       } else {
         delete process.env.WORKFLOW_NODES_LIMIT;
       }
+    });
+  });
+
+  describe('update', () => {
+    it('updates workflow updatedBy when updating node', async () => {
+      const user = await db.getCollection('users').repository.findOne();
+      const userAgent = await app.agent().loginUsingId(user.id);
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const node = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const { status } = await userAgent.resource('flow_nodes').update({
+        filterByTk: node.id,
+        values: {
+          title: 'Updated node',
+        },
+      });
+      expect(status).toBe(200);
+
+      await workflow.reload();
+      expect(String(workflow.get('updatedById'))).toBe(String(user.id));
     });
   });
 

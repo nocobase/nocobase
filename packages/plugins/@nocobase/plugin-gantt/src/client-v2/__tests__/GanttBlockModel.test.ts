@@ -775,6 +775,22 @@ describe('GanttBlockModel settings', () => {
     expect(params.uid).not.toContain('eventViewAction');
   });
 
+  test('persists popup actions only from popup settings save hooks', async () => {
+    const step = (GanttBlockModel as any).globalFlowRegistry.getFlow('ganttSettings')?.steps?.eventPopupSettings;
+    const model = {
+      setPopupSettings: vi.fn(),
+      ensurePopupAction: vi.fn().mockResolvedValue({ uid: 'u_event_popup' }),
+    };
+
+    await step?.handler?.({ model } as any, { mode: 'drawer' });
+
+    expect(model.ensurePopupAction).not.toHaveBeenCalled();
+
+    await step?.beforeParamsSave?.({ model } as any, { mode: 'dialog' });
+
+    expect(model.ensurePopupAction).toHaveBeenCalledWith('eventViewAction', { persist: true });
+  });
+
   test('opens the configured event popup with the clicked task record', async () => {
     const flowEngine = new FlowEngine();
     flowEngine.registerModels({ GanttBlockModel, GanttEventViewActionModel });
@@ -898,20 +914,15 @@ describe('GanttBlockModel settings', () => {
     expect(saveStepParams).toHaveBeenCalledTimes(1);
   });
 
-  test('replaces legacy gantt popup action uid when popup settings are saved', async () => {
+  test('keeps legacy gantt popup action uid usable when popup settings are saved', async () => {
     const destroy = vi.fn();
-    const clonedAction = {
-      uid: 'u_event_popup',
-      getStepParams: vi.fn(() => ({})),
-      setStepParams: vi.fn(),
-      save: vi.fn(),
-      saveStepParams: vi.fn(),
-    };
     const action = {
       uid: 'calendar-gantt-eventViewAction',
       getStepParams: vi.fn(() => ({})),
       setStepParams: vi.fn(),
-      clone: vi.fn(() => clonedAction),
+      clone: vi.fn(),
+      save: vi.fn(),
+      saveStepParams: vi.fn(),
       destroy,
     };
     const model = Object.create(GanttBlockModel.prototype) as GanttBlockModel;
@@ -946,18 +957,19 @@ describe('GanttBlockModel settings', () => {
 
     await model.ensurePopupAction('eventViewAction');
 
-    expect(action.clone).toHaveBeenCalledTimes(1);
-    expect(model.subModels.eventViewAction).toBe(clonedAction);
-    expect(clonedAction.save).not.toHaveBeenCalled();
-    expect(clonedAction.saveStepParams).not.toHaveBeenCalled();
+    expect(action.clone).not.toHaveBeenCalled();
+    expect(model.subModels.eventViewAction).toBe(action);
+    expect(action.save).not.toHaveBeenCalled();
+    expect(action.saveStepParams).not.toHaveBeenCalled();
     expect(destroy).not.toHaveBeenCalled();
 
     await model.ensurePopupAction('eventViewAction', { persist: true });
 
-    expect(action.clone).toHaveBeenCalledTimes(1);
-    expect(clonedAction.save).toHaveBeenCalledTimes(1);
-    expect(clonedAction.saveStepParams).toHaveBeenCalledTimes(1);
-    expect(destroy).toHaveBeenCalledTimes(1);
+    expect(action.clone).not.toHaveBeenCalled();
+    expect(model.subModels.eventViewAction).toBe(action);
+    expect(action.save).toHaveBeenCalledTimes(1);
+    expect(action.saveStepParams).toHaveBeenCalledTimes(1);
+    expect(destroy).not.toHaveBeenCalled();
   });
 });
 

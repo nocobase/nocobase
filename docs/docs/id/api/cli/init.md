@@ -74,7 +74,7 @@ Secara default, CLI akan mengatur file lokal di bawah `app-path` mengikuti konve
 
 Secara umum:
 
-- `source/` terutama mengacu pada direktori aplikasi lokal untuk env npm / Git. Untuk Docker env, CLI juga mempertahankan turunan path default ini, tetapi biasanya Anda tidak perlu memperhatikannya secara manual
+- `source/` terutama mengacu pada direktori aplikasi lokal untuk env npm / Git. Untuk Docker env, CLI juga mempertahankan turunan path default ini, tetapi biasanya Anda tidak perlu memperhatikannya secara manual. Perhatikan saat upgrade: direktori `source/` akan dihapus lalu diunduh ulang, jadi jangan simpan file yang perlu dipertahankan di sini
 - `storage/` digunakan untuk menyimpan data runtime, seperti data database bawaan, plugin, log, dan sebagainya
 - `.env` adalah file variabel lingkungan aplikasi yang opsional. Anda hanya perlu menambahkannya ke `<app-path>/.env` saat ingin menyesuaikan variabel lingkungan; jika file ini ada, sumber instalasi Docker, npm, dan Git akan membacanya secara default
 
