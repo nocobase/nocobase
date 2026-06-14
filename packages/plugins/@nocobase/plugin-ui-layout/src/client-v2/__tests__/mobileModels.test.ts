@@ -46,6 +46,7 @@ import {
   FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT,
   FLOW_SETTINGS_PREFERENCE_STORAGE_KEY,
   MobileLayoutModel,
+  normalizeAccessibleDesktopRoutesToMobileRoutes,
   readMobileFlowSettingsPreference,
   writeMobileFlowSettingsPreference,
 } from '../models/MobileLayoutModel';
@@ -227,11 +228,13 @@ describe('plugin-ui-layout mobile models', () => {
 
   function createMobileMenuSettingsContext(
     route: NocoBaseDesktopRoute,
+    modelOverrides: Partial<MobileLayoutMenuItemModel> = {},
   ): FlowSettingsContext<MobileLayoutMenuItemModel> {
     return {
       t: (key: string) => key,
       model: {
         getRoute: () => route,
+        ...modelOverrides,
       },
     } as unknown as FlowSettingsContext<MobileLayoutMenuItemModel>;
   }
@@ -3253,6 +3256,63 @@ describe('plugin-ui-layout mobile models', () => {
     ]);
   });
 
+  it('should read mobile link routes from url with href fallback', () => {
+    const urlRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.link,
+        title: 'Docs',
+        schemaUid: 'docs-link',
+        options: {
+          url: '/mobile-docs',
+        },
+      },
+    ];
+    const hrefRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 2,
+        type: NocoBaseDesktopRouteType.link,
+        title: 'Legacy docs',
+        schemaUid: 'legacy-docs-link',
+        options: {
+          href: '/legacy-docs',
+        },
+      },
+    ];
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileLayoutModel,
+      MobileLayoutMenuItemModel,
+    });
+    engine.context.defineProperty('t', {
+      value: (key: string) => key,
+    });
+    const model = engine.createModel<MobileLayoutModel>({
+      uid: 'mobile-layout-link-url-test',
+      use: 'MobileLayoutModel',
+      props: {
+        layout: {
+          routeName: 'mobile',
+          routePath: '/v/mobile',
+          uid: 'mobile-layout-link-url-test',
+        },
+      },
+    });
+
+    expect(normalizeAccessibleDesktopRoutesToMobileRoutes(urlRoutes, (key) => key)[0]).toMatchObject({
+      href: '/mobile-docs',
+    });
+    expect(normalizeAccessibleDesktopRoutesToMobileRoutes(hrefRoutes, (key) => key)[0]).toMatchObject({
+      href: '/legacy-docs',
+    });
+
+    model.syncMenuRoutes(urlRoutes);
+
+    expect(model.toMobileTabNodes({ basePathname: '/v/mobile', t: (key) => key })[0]).toMatchObject({
+      href: '/mobile-docs',
+    });
+  });
+
   it('should keep the current flow page active when a link tab opens in a new window', async () => {
     const openWindow = vi.spyOn(window, 'open').mockImplementation(() => null);
     const routes: NocoBaseDesktopRoute[] = [
@@ -3469,6 +3529,47 @@ describe('plugin-ui-layout mobile models', () => {
       href: {
         required: true,
       },
+    });
+  });
+
+  it('should read and save mobile link edit settings with options.url', async () => {
+    const mobileMenuSettings = MobileLayoutMenuItemModel.globalFlowRegistry.getFlow('mobileMenuSettings');
+    const updateMenuRoute = vi.fn(async () => {});
+    const route: NocoBaseDesktopRoute = {
+      id: 1,
+      type: NocoBaseDesktopRouteType.link,
+      title: 'Docs',
+      icon: 'LinkOutlined',
+      schemaUid: 'docs-link',
+      options: {
+        href: '/legacy-docs',
+        params: [{ name: 'from', value: 'menu' }],
+        url: '/mobile-docs',
+      },
+    };
+    const ctx = createMobileMenuSettingsContext(route, {
+      updateMenuRoute,
+    });
+
+    await expect(mobileMenuSettings?.steps?.edit?.defaultParams?.(ctx)).resolves.toMatchObject({
+      href: '/mobile-docs',
+    });
+
+    await mobileMenuSettings?.steps?.edit?.beforeParamsSave?.(ctx, {
+      href: '/updated-mobile-docs',
+      icon: 'LinkOutlined',
+      openInNewWindow: false,
+      title: 'Updated docs',
+    });
+
+    expect(updateMenuRoute).toHaveBeenCalledWith({
+      icon: 'LinkOutlined',
+      options: {
+        openInNewWindow: false,
+        params: [{ name: 'from', value: 'menu' }],
+        url: '/updated-mobile-docs',
+      },
+      title: 'Updated docs',
     });
   });
 
@@ -3984,8 +4085,8 @@ describe('plugin-ui-layout mobile models', () => {
           title: 'Docs',
           icon: expect.stringMatching(/link/i),
           options: expect.objectContaining({
-            href: 'https://docs.example.com',
             openInNewWindow: true,
+            url: 'https://docs.example.com',
           }),
         }),
         {
@@ -4088,8 +4189,8 @@ describe('plugin-ui-layout mobile models', () => {
         title: 'Docs',
         icon: 'LinkOutlined',
         options: expect.objectContaining({
-          href: '/docs',
           openInNewWindow: true,
+          url: '/docs',
         }),
       }),
     );

@@ -99,6 +99,14 @@ export function getMobilePagePath(basePathname: string | undefined, route: NocoB
   return `${normalizeBasePathname(basePathname)}/${encodeURIComponent(pageUid)}`;
 }
 
+function getRouteOptionString(value: unknown) {
+  return typeof value === 'string' && value ? value : undefined;
+}
+
+export function getMobileLinkRouteHref(route: NocoBaseDesktopRoute | undefined) {
+  return getRouteOptionString(route?.options?.url) || getRouteOptionString(route?.options?.href);
+}
+
 export function toMobileRouterNavigationPath(pathname: string, basename?: string) {
   const normalizedPathname = normalizeBasePathname(pathname);
   const normalizedBasename = basename && basename !== '/' ? normalizeBasePathname(basename) : '';

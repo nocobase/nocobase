@@ -13,6 +13,7 @@ import { useLocation, useMatches, useNavigate } from 'react-router-dom';
 import { NocoBaseDesktopRouteType } from '../../../flow-compat';
 import { useApp } from '../../../hooks/useApp';
 import { isLayoutContentRouteName } from '../../../layout-manager/utils';
+import type { LayoutDefinition } from '../../../layout-manager/types';
 import {
   findFirstV2LandingRoute,
   getAdminLayoutRoutePath,
@@ -20,6 +21,8 @@ import {
   toRouterNavigationPath,
 } from './resolveAdminRouteRuntimeTarget';
 import type { AdminLayoutModel } from './AdminLayoutModel';
+
+type StableAdminEntryLayout = Partial<Pick<LayoutDefinition, 'authCheck' | 'routeName' | 'routePath' | 'uid'>>;
 
 export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: AdminLayoutModel }> = ({
   children,
@@ -33,7 +36,23 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: Admi
   const [ready, setReady] = useState(false);
   const replaceTriggeredRef = useRef(false);
   const routeRepository = flowEngine.context.routeRepository;
-  const layout = model?.layout;
+  const rawLayout = model?.layout;
+  const layoutUid = rawLayout?.uid;
+  const layoutRouteNameValue = rawLayout?.routeName;
+  const layoutRoutePathValue = rawLayout?.routePath;
+  const layoutAuthCheck = rawLayout?.authCheck;
+  const layout = useMemo<StableAdminEntryLayout | undefined>(() => {
+    if (!layoutUid && !layoutRouteNameValue && !layoutRoutePathValue && typeof layoutAuthCheck === 'undefined') {
+      return undefined;
+    }
+
+    return {
+      authCheck: layoutAuthCheck,
+      routeName: layoutRouteNameValue,
+      routePath: layoutRoutePathValue,
+      uid: layoutUid,
+    };
+  }, [layoutAuthCheck, layoutRouteNameValue, layoutRoutePathValue, layoutUid]);
   const layoutRoutePath = getAdminLayoutRoutePath(layout);
   const layoutRouteName = layout?.routeName || 'admin';
   const layoutRuntime = useMemo(() => ({ routePath: layoutRoutePath }), [layoutRoutePath]);

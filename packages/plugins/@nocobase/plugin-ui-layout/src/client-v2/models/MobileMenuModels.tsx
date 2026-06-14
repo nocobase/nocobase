@@ -19,6 +19,7 @@ import React, { type ReactNode } from 'react';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from './mobileFlowCompat';
 import {
   collectMobileTabRoutes,
+  getMobileLinkRouteHref,
   getMobileMenuItemUid,
   getMobilePagePath,
   getMobileRouteIcon,
@@ -132,7 +133,7 @@ function getMobileMenuEditDefaultParams(route: NocoBaseDesktopRoute | undefined)
   return {
     title: route?.title,
     icon: route?.icon,
-    href: typeof route?.options?.href === 'string' ? route.options.href : undefined,
+    href: getMobileLinkRouteHref(route),
     openInNewWindow: route?.options?.openInNewWindow !== false,
   };
 }
@@ -174,6 +175,16 @@ function getMobileMenuEditUiSchema(
   }
 
   return schema;
+}
+
+function getMobileLinkEditOptions(route: NocoBaseDesktopRoute | undefined, params: MobileMenuEditParams) {
+  const { href: _href, path: _path, url: _url, ...restOptions } = route?.options || {};
+
+  return {
+    ...restOptions,
+    url: params.href,
+    openInNewWindow: params.openInNewWindow !== false,
+  };
 }
 
 export function reconcileMobileLayoutMenuItems(
@@ -613,7 +624,7 @@ export class MobileLayoutMenuItemModel extends FlowModel {
       type: route.type,
       active: key === options.activeKey || mobileRouteTreeContainsTabKey(route.children, options.activeKey),
       path: isFlowPage ? getMobilePagePath(options.basePathname, route) : undefined,
-      href: !isFlowPage && typeof route.options?.href === 'string' ? route.options.href : undefined,
+      href: !isFlowPage ? getMobileLinkRouteHref(route) : undefined,
       route,
       model: this,
     };
@@ -644,13 +655,7 @@ MobileLayoutMenuItemModel.registerFlow({
           title: params.title,
           icon: params.icon,
           options:
-            route?.type === NocoBaseDesktopRouteType.link
-              ? {
-                  ...(route.options || {}),
-                  href: params.href,
-                  openInNewWindow: params.openInNewWindow !== false,
-                }
-              : route?.options,
+            route?.type === NocoBaseDesktopRouteType.link ? getMobileLinkEditOptions(route, params) : route?.options,
         });
       },
     },

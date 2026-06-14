@@ -8,7 +8,7 @@
  */
 
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -150,5 +150,161 @@ describe('AdminLayoutEntryGuard', () => {
       });
     });
     expect(screen.getByText('Mobile layout shell')).toBeInTheDocument();
+  });
+
+  it('should keep guard stable when layout getter returns a new object with the same fields', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [],
+      },
+    });
+    const routeRepository = new RouteRepository({
+      api: {
+        request,
+        resource: vi.fn(),
+      },
+    } as never);
+    const activateLayout = vi.spyOn(routeRepository, 'activateLayout');
+    engine.context.defineProperty('routeRepository', {
+      value: routeRepository,
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        router: {
+          getBasename: () => '',
+        },
+      },
+    });
+
+    const model = {
+      get layout() {
+        return {
+          authCheck: true,
+          routeName: 'admin',
+          routePath: '/admin',
+          uid: 'admin-layout-model',
+        };
+      },
+    } as AdminLayoutModel;
+    let forceRerender = () => {};
+    const GuardShell = () => {
+      const [, setVersion] = React.useState(0);
+      forceRerender = () => setVersion((version) => version + 1);
+      return (
+        <AdminLayoutEntryGuard model={model}>
+          <div>Admin layout shell</div>
+        </AdminLayoutEntryGuard>
+      );
+    };
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/admin',
+          id: 'admin',
+          element: (
+            <FlowEngineProvider engine={engine}>
+              <GuardShell />
+            </FlowEngineProvider>
+          ),
+        },
+      ],
+      {
+        initialEntries: ['/admin'],
+      },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Admin layout shell')).toBeInTheDocument();
+    });
+    expect(activateLayout).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      forceRerender();
+    });
+
+    expect(activateLayout).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it('should reactivate the guard when stable layout fields change', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [],
+      },
+    });
+    const routeRepository = new RouteRepository({
+      api: {
+        request,
+        resource: vi.fn(),
+      },
+    } as never);
+    const activateLayout = vi.spyOn(routeRepository, 'activateLayout');
+    engine.context.defineProperty('routeRepository', {
+      value: routeRepository,
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        router: {
+          getBasename: () => '',
+        },
+      },
+    });
+
+    let layoutUid = 'admin-layout-model';
+    const model = {
+      get layout() {
+        return {
+          authCheck: true,
+          routeName: 'admin',
+          routePath: '/admin',
+          uid: layoutUid,
+        };
+      },
+    } as AdminLayoutModel;
+    let forceRerender = () => {};
+    const GuardShell = () => {
+      const [, setVersion] = React.useState(0);
+      forceRerender = () => setVersion((version) => version + 1);
+      return (
+        <AdminLayoutEntryGuard model={model}>
+          <div>Admin layout shell</div>
+        </AdminLayoutEntryGuard>
+      );
+    };
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/admin',
+          id: 'admin',
+          element: (
+            <FlowEngineProvider engine={engine}>
+              <GuardShell />
+            </FlowEngineProvider>
+          ),
+        },
+      ],
+      {
+        initialEntries: ['/admin'],
+      },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Admin layout shell')).toBeInTheDocument();
+    });
+    expect(activateLayout).toHaveBeenCalledWith(expect.objectContaining({ uid: 'admin-layout-model' }));
+
+    await act(async () => {
+      layoutUid = 'admin-layout-next';
+      forceRerender();
+    });
+
+    expect(activateLayout).toHaveBeenCalledTimes(2);
+    expect(activateLayout).toHaveBeenLastCalledWith(expect.objectContaining({ uid: 'admin-layout-next' }));
   });
 });

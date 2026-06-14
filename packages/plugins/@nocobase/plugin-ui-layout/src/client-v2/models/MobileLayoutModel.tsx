@@ -83,7 +83,7 @@ import {
   resolveMobileMenuDragMoveOptionsFromEvent,
   toMobileRouterNavigationPath,
 } from './MobileMenuModels';
-import { getMobilePagePath, mobileRouteTreeContainsTabKey } from './MobileMenuUtils';
+import { getMobileLinkRouteHref, getMobilePagePath, mobileRouteTreeContainsTabKey } from './MobileMenuUtils';
 import { MobilePageSurface } from './mobileComponents';
 
 type MobileHomeAddMenuKey = 'page' | 'link';
@@ -347,10 +347,7 @@ export function normalizeAccessibleDesktopRoutesToMobileRoutes(
       icon: getAccessibleDesktopRouteIcon(route),
       sort: typeof route.sort === 'number' ? route.sort : index,
       path: type === NocoBaseDesktopRouteType.flowPage ? getMobilePagePath(basePathname, route) : undefined,
-      href:
-        type === NocoBaseDesktopRouteType.link && typeof route.options?.href === 'string'
-          ? route.options.href
-          : undefined,
+      href: type === NocoBaseDesktopRouteType.link ? getMobileLinkRouteHref(route) : undefined,
       route,
       hidden: route.hidden,
       hideInMenu: route.hideInMenu,
@@ -568,8 +565,8 @@ export function createMobileDesktopRouteCreationValues(
         icon,
         schemaUid,
         options: {
-          href,
           openInNewWindow: true,
+          url: href,
         },
       },
       activeRouteKey: schemaUid,
