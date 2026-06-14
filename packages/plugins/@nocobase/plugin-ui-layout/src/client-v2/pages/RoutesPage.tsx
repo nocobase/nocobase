@@ -31,7 +31,6 @@ import {
   Popover,
   Radio,
   Space,
-  Tabs,
   Tag,
   Typography,
   theme,
@@ -982,21 +981,19 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
   );
 }
 
-const RoutesPage: React.FC = () => {
-  const t = useT();
+type RoutesPageProps = {
+  layoutKey?: RouteLayoutConfig['key'];
+};
 
+const RoutesPage: React.FC<RoutesPageProps> = ({ layoutKey = 'desktop' }) => {
+  const layout = routeLayouts.find((item) => item.key === layoutKey) ?? routeLayouts[0];
   return (
     <Card>
-      <Tabs
-        destroyInactiveTabPane
-        items={routeLayouts.map((layout) => ({
-          key: layout.key,
-          label: t(layout.label),
-          children: <RoutesTable layout={layout} />,
-        }))}
-      />
+      <RoutesTable layout={layout} />
     </Card>
   );
 };
+
+export const MobileRoutesPage: React.FC = () => <RoutesPage layoutKey="mobile" />;
 
 export default RoutesPage;

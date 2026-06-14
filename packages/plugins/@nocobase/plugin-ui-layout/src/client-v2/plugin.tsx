@@ -70,14 +70,26 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       title: this.t('Routes') as unknown as string,
       icon: 'ApartmentOutlined',
       aclSnippet: 'pm.ui-layout',
+      showTabs: true,
     });
 
     this.pluginSettingsManager.addPageTabItem({
       menuKey: 'routes',
       key: 'index',
-      title: this.t('Routes') as unknown as string,
+      title: this.t('Desktop routes') as unknown as string,
       aclSnippet: 'pm.ui-layout',
       componentLoader: () => import('./pages/RoutesPage'),
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'routes',
+      key: 'mobile',
+      title: this.t('Mobile routes') as unknown as string,
+      aclSnippet: 'pm.ui-layout',
+      componentLoader: async () => {
+        const module = await import('./pages/RoutesPage');
+        return { default: module.MobileRoutesPage };
+      },
     });
 
     registerLayoutAwareDesktopRoutesPermissionsTab(this.app, (key) => this.t(key));

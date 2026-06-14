@@ -79,11 +79,19 @@ describe('PluginUiLayoutClientV2', () => {
       title: 'Routes',
       icon: 'ApartmentOutlined',
       aclSnippet: 'pm.ui-layout',
+      showTabs: true,
     });
     expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
       menuKey: 'routes',
       key: 'index',
-      title: 'Routes',
+      title: 'Desktop routes',
+      aclSnippet: 'pm.ui-layout',
+      componentLoader: expect.any(Function),
+    });
+    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
+      menuKey: 'routes',
+      key: 'mobile',
+      title: 'Mobile routes',
       aclSnippet: 'pm.ui-layout',
       componentLoader: expect.any(Function),
     });
@@ -130,6 +138,7 @@ describe('PluginUiLayoutClientV2', () => {
     expect(settingsApp.pluginSettingsManager.get('mobile.index')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('routes')).toBeNull();
     expect(settingsApp.pluginSettingsManager.get('routes.index')).toBeNull();
+    expect(settingsApp.pluginSettingsManager.get('routes.mobile')).toBeNull();
     expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
       MobileLayoutModel: {
         loader: expect.any(Function),

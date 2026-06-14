@@ -12,7 +12,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constants';
-import RoutesPage from '../pages/RoutesPage';
+import RoutesPage, { MobileRoutesPage } from '../pages/RoutesPage';
 
 const flowContext = vi.hoisted(() => ({
   current: undefined as
@@ -70,6 +70,7 @@ describe('plugin-ui-layout RoutesPage', () => {
     );
 
     expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
     await waitFor(() => {
       expect(resource.request).toHaveBeenCalledWith({
         url: '/desktopRoutes:listAccessible',
@@ -84,7 +85,13 @@ describe('plugin-ui-layout RoutesPage', () => {
       });
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Mobile routes' }));
+    cleanup();
+    flowContext.current = resource.context;
+    render(
+      <AntdApp>
+        <MobileRoutesPage />
+      </AntdApp>,
+    );
     expect(await screen.findByText('Mobile workbench')).toBeInTheDocument();
     await waitFor(() => {
       expect(resource.request).toHaveBeenCalledWith({
@@ -131,7 +138,13 @@ describe('plugin-ui-layout RoutesPage', () => {
     });
     expect(await screen.findByText('Mobile approvals')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Desktop routes' }));
+    cleanup();
+    flowContext.current = resource.context;
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
     expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
     expect(screen.queryByText('Mobile approvals')).not.toBeInTheDocument();
 
@@ -212,7 +225,13 @@ describe('plugin-ui-layout RoutesPage', () => {
       });
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Mobile routes' }));
+    cleanup();
+    flowContext.current = resource.context;
+    render(
+      <AntdApp>
+        <MobileRoutesPage />
+      </AntdApp>,
+    );
     expect(await screen.findByText('Mobile workbench')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
     const mobileAddDialog = await findOpenDrawer('Add new');
@@ -443,7 +462,13 @@ describe('plugin-ui-layout RoutesPage', () => {
       });
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Mobile routes' }));
+    cleanup();
+    flowContext.current = resource.context;
+    render(
+      <AntdApp>
+        <MobileRoutesPage />
+      </AntdApp>,
+    );
     expect(await screen.findByText('Mobile workbench')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
     const mobileDrawer = await findOpenDrawer('Add new');
