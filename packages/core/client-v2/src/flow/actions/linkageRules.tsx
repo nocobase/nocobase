@@ -3185,7 +3185,7 @@ export const subFormFieldLinkageRules = defineAction({
       }
     } else {
       await Promise.all(
-        (grid.forks || []).map(async (forkModel: FlowModel) => {
+        Array.from(grid.forks || []).map(async (forkModel: FlowModel) => {
           if (forkModel.hidden) {
             return;
           }

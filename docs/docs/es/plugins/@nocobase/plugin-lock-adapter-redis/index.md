@@ -1,15 +1,17 @@
 ---
-displayName: "Adaptador de bloqueo Redis"
+title: "Redis lock adapter"
+keywords: "Architecture"
+displayName: "Redis lock adapter"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Implementación de bloqueo distribuido basada en Redis.
+  Distributed lock implemention based on Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Adaptador de bloqueo Redis
+# Redis lock adapter

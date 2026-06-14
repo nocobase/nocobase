@@ -1,8 +1,8 @@
 ---
-displayName: "UI 模板"
-packageName: '@nocobase/plugin-ui-templates'
 title: "UI 模板"
 keywords: "UI 模板,插件,NocoBase"
+displayName: "UI 模板"
+packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
 description: |

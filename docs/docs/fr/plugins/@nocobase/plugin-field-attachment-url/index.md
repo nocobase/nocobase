@@ -1,12 +1,14 @@
 ---
-displayName: "Champ de collection : Pièce jointe (URL)"
+title: "Collection field: Attachment(URL)"
+keywords: "Collection fields"
+displayName: "Collection field: Attachment(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  Prend en charge les pièces jointes au format URL.
+  Supports attachments in URL format.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Champ de collection : Pièce jointe (URL)
+# Collection field: Attachment(URL)

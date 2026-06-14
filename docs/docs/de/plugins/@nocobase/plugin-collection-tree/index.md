@@ -1,12 +1,14 @@
 ---
-displayName: "Collection: Baum"
+title: "Collection: Tree"
+keywords: "Collections"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Stellt eine Baum-Collection-Vorlage bereit
+  Provides tree collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection: Baum
+# Collection: Tree

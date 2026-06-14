@@ -5,8 +5,6 @@ description: Installez NocoBase CLI et créez rapidement une nouvelle applicatio
 
 # Installer l'application NocoBase
 
-Si vous n'avez pas encore d'application NocoBase, le plus rapide est d'installer d'abord `@nocobase/cli`, puis d'exécuter une fois `nb init --ui`. Dans la plupart des cas, les options par défaut de l'assistant suffisent.
-
 ## Prérequis
 
 - Node.js >= 22
@@ -32,13 +30,16 @@ Par défaut, nous vous recommandons d'ouvrir directement l'assistant visuel :
 nb init --ui
 ```
 
-Dans l'assistant, suivez ces étapes dans l'ordre :
+![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-1. Définir le nom de l'application - il devient aussi le nom de l'env dans la CLI
-2. Choisir « Nouvelle installation »
-3. Choisir la méthode d'installation - Docker, npm ou Git
-4. Définir le port, la base de données et le compte administrateur
-5. Attendre la fin du téléchargement, de l'installation et du démarrage
+Selon le chemin de setup choisi, les étapes affichées peuvent varier un peu. Si vous suivez le chemin par défaut `Install a new app`, vous verrez généralement ces six étapes :
+
+1. `Getting started` - définir l'identifiant `--env` et choisir `Install a new app`
+2. `App environment` - définir les informations de base de l'application, l'emplacement de stockage et le port d'exécution
+3. `App source and version` - choisir comment récupérer l'application, ainsi que la source et la version à utiliser
+4. `Configure the database` - choisir la base de données intégrée ou une base de données personnalisée
+5. `Create an admin account` - configurer le premier compte administrateur
+6. `Connection & authentication` - saisir l'URL d'accès de l'application et choisir une méthode d'authentification
 
 Si vous préférez rester dans le terminal, vous pouvez aussi exécuter directement :
 
@@ -75,7 +76,7 @@ Les commandes les plus courantes sont :
 
 ```bash
 nb env list
-nb env status
+nb env info
 nb app logs
 ```
 
@@ -85,8 +86,19 @@ La configuration de la CLI est enregistrée par défaut dans `~/.nocobase/`, de 
 
 Si cette application doit ensuite être exposée à de vrais utilisateurs, nous ne recommandons pas d'utiliser durablement `IP + port` tel quel. L'étape suivante consiste généralement à mettre en place un reverse proxy et à activer HTTPS.
 
-## Et ensuite
+## Étapes suivantes
 
-- Si vous avez déjà une instance NocoBase en cours d'exécution, allez directement au [Guide d'intégration pour AI Agent](./quick-start.mdx)
-- Si vous voulez continuer avec un déploiement en production, consultez [Installer avec la CLI](../nocobase-cli/installation/cli.md) et [Vue d'ensemble du déploiement en production](../nocobase-cli/production/index.md)
-- Si vous voulez laisser l'IA commencer à construire l'application ensuite, consultez [AI Builder](../ai-builder/index.md)
+- Si vous avez déjà une application NocoBase en cours d'exécution, consultez le [Guide d'intégration pour AI Agent](./quick-start.mdx)
+- Si vous voulez gérer le démarrage, l'arrêt, les logs et les mises à jour de l'application, consultez [Gérer les applications](../nocobase-cli/operations/manage-app.md)
+- Si vous voulez continuer avec le déploiement en production, consultez [Installer une application avec la CLI](../nocobase-cli/installation/cli.md) et [Vue d'ensemble du déploiement en production](../nocobase-cli/production/index.md)
+- Si vous voulez laisser l'IA commencer à construire l'application, consultez [AI Builder](../ai-builder/index.md)
+
+## Liens connexes
+
+- [Comparaison des méthodes d'installation et des versions](../get-started/quickstart.md) — Comparez d'abord les méthodes d'installation et les canaux de version, puis choisissez comment installer
+- [Guide d'intégration pour AI Agent](./quick-start.mdx) — Connectez une application NocoBase existante et laissez votre AI Agent commencer à travailler
+- [Référence de la commande `nb init`](../api/cli/init.md) — Initialiser une nouvelle application, reprendre une application locale existante ou connecter une application distante
+- [Référence de la commande `nb env info`](../api/cli/env/info.md) — Voir les détails de connexion et la configuration d'exécution du env actuel
+- [NocoBase CLI](../api/cli/index.md) — Référence complète de toutes les commandes `nb`
+- [Gérer les applications](../nocobase-cli/operations/manage-app.md) — Démarrer, arrêter, redémarrer, consulter les logs et mettre à jour les applications
+- [Gestion d'environnements multiples](../nocobase-cli/operations/multi-environment.md) — Opérations courantes quand vous maintenez plusieurs env en même temps

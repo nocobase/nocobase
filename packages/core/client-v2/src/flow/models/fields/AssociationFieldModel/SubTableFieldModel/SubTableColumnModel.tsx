@@ -26,6 +26,7 @@ import {
   observer,
   FlowModelProvider,
   FlowErrorFallback,
+  extractUsedVariablePaths,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip, Input, Space, Divider } from 'antd';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -37,6 +38,14 @@ import { FieldDeletePlaceholder, CustomWidth, normalizeTableColumnWidth } from '
 import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
 import { getSubTableRowIdentity } from './rowIdentity';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../../internal/utils/rebuildFieldSubModel';
+import {
+  buildCurrentItemTitle,
+  createAssociationItemChainContextPropertyOptions,
+  createItemChainGetter,
+  createParentItemAccessorsFromContext,
+  createRootItemChain,
+  type ItemChain,
+} from '../itemChain';
 
 export const SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT = 'subTableColumn';
 
@@ -179,6 +188,25 @@ const handleModelName = (modelName) => {
   }
   return modelName;
 };
+
+const DATA_SCOPE_FLOW_KEYS = ['selectSettings', 'cascadeSelectSettings'];
+
+function hasFormValueDrivenDataScope(filter: any) {
+  if (!filter) return false;
+  try {
+    const usage = extractUsedVariablePaths(filter) || {};
+    return ['item', 'formValues'].some((name) => Object.prototype.hasOwnProperty.call(usage, name));
+  } catch {
+    return false;
+  }
+}
+
+function hasFormValueDrivenDataScopeField(fieldModel: any) {
+  return DATA_SCOPE_FLOW_KEYS.some((flowKey) => {
+    const params = fieldModel?.getStepParams?.(flowKey, 'dataScope');
+    return hasFormValueDrivenDataScope(params?.filter);
+  });
+}
 
 export function shouldReuseSubTableFieldRenderer(prev: any, next: any): boolean {
   return (
@@ -369,7 +397,10 @@ const MemoCell = observer<CellProps>(
           const fork: any = action.createFork({}, `${id}`);
           fork.context.defineProperty('currentObject', { get: () => record });
           if (rowFork) {
+            const itemOptions = rowFork.context.getPropertyOptions?.('item');
+            const { value: _value, ...itemOptionsWithoutValue } = (itemOptions || {}) as any;
             fork.context.defineProperty('item', {
+              ...itemOptionsWithoutValue,
               get: () => rowFork.context.item,
               cache: false,
             });
@@ -448,6 +479,57 @@ export class SubTableColumnModel<
   static renderMode = ModelRenderMode.RenderFunction;
   static fieldComponentContext = SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT;
 
+  private getAssociationField() {
+    return (this.parent as any)?.context?.collectionField;
+  }
+
+  private getParentFormValues() {
+    return (this.context?.blockModel as any)?.context?.formValues;
+  }
+
+  private createParentItemAccessors(parentItemAccessor?: () => ItemChain | undefined) {
+    const baseAccessors = createParentItemAccessorsFromContext({
+      parentContextAccessor: () => (this.parent as any)?.context,
+      fallbackParentPropertiesAccessor: () => this.getParentFormValues(),
+    });
+
+    if (!parentItemAccessor) {
+      return baseAccessors;
+    }
+
+    return {
+      parentPropertiesAccessor: (ctx?: any) =>
+        parentItemAccessor()?.value ?? baseAccessors.parentPropertiesAccessor(ctx),
+      parentItemMetaAccessor: baseAccessors.parentItemMetaAccessor,
+      parentItemResolverAccessor: baseAccessors.parentItemResolverAccessor,
+    };
+  }
+
+  private createRowItemContextPropertyOptions(
+    options: {
+      resolverPropertiesAccessor?: () => unknown;
+      parentItemAccessor?: () => ItemChain | undefined;
+      showParentIndex?: boolean;
+    } = {},
+  ) {
+    const associationField = this.getAssociationField();
+
+    return createAssociationItemChainContextPropertyOptions({
+      t: this.context.t,
+      title: buildCurrentItemTitle(this.context.t, associationField, this.props?.name),
+      showIndex: true,
+      showParentIndex:
+        options.showParentIndex ??
+        (Array.isArray((this.parent as any)?.context?.fieldIndex) &&
+          (this.parent as any).context.fieldIndex.length > 0),
+      collectionAccessor: () => (this.parent as any)?.collection ?? associationField?.targetCollection ?? null,
+      propertiesAccessor: (ctx) => ctx?.item?.value,
+      resolverPropertiesAccessor: options.resolverPropertiesAccessor ?? (() => undefined),
+      parentCollectionAccessor: () => associationField?.collection,
+      parentAccessors: this.createParentItemAccessors(options.parentItemAccessor),
+    });
+  }
+
   renderHiddenInConfig() {
     return <FieldWithoutPermissionPlaceholder targetModel={this} />;
   }
@@ -508,6 +590,14 @@ export class SubTableColumnModel<
     ).some(Boolean);
   }
 
+  get hasFormValueDrivenDataScopeColumn() {
+    return (
+      this.parent?.mapSubModels('columns', (column: SubTableColumnModel) => {
+        return hasFormValueDrivenDataScopeField(column?.subModels?.field);
+      }) || []
+    ).some(Boolean);
+  }
+
   onInit(options: any): void {
     super.onInit(options);
     this.context.defineProperty('resourceName', {
@@ -518,6 +608,10 @@ export class SubTableColumnModel<
     });
     this.context.defineProperty('actionName', {
       get: () => 'view',
+    });
+    this.context.defineProperty('item', {
+      get: () => undefined,
+      ...this.createRowItemContextPropertyOptions(),
     });
     this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
       if (this.collectionField) {
@@ -676,25 +770,30 @@ export class SubTableColumnModel<
             value: [...baseArr, `${associationKey}:${rowIndex}`],
           });
         }
-        fork.context.defineProperty('item', {
-          get: () => {
-            const form = (fork.context as any)?.form || (this.context?.blockModel as any)?.context?.form;
-            const rowRecord = getLatestSubTableRowRecord(form, fork.context.fieldIndex, record);
-            const parentItemCtx = (parentItem ?? this.context?.item) as any;
-            const isNew = rowRecord?.__is_new__;
-            const isStored = rowRecord?.__is_stored__;
+        const getRowRecord = () => {
+          const form = (fork.context as any)?.form || (this.context?.blockModel as any)?.context?.form;
+          return getLatestSubTableRowRecord(form, fork.context.fieldIndex, record);
+        };
+        const getParentItem = () => {
+          const parentItemCtx = (parentItem ?? (this.parent as any)?.context?.item) as ItemChain | undefined;
+          return parentItemCtx ?? createRootItemChain(this.getParentFormValues());
+        };
+        const getRowItem = createItemChainGetter({
+          valueAccessor: getRowRecord,
+          parentItemAccessor: getParentItem,
+          indexAccessor: () => (Number.isFinite(rowIndex) ? rowIndex : undefined),
+          lengthAccessor: () => {
             const list = (this.parent as any)?.props?.value;
-            const length = Array.isArray(list) ? list.length : undefined;
-            return {
-              index: Number.isFinite(rowIndex) ? rowIndex : undefined,
-              length,
-              __is_new__: isNew,
-              __is_stored__: isStored,
-              value: rowRecord,
-              parentItem: parentItemCtx,
-            };
+            return Array.isArray(list) ? list.length : undefined;
           },
-          cache: false,
+        });
+        fork.context.defineProperty('item', {
+          get: getRowItem,
+          ...this.createRowItemContextPropertyOptions({
+            resolverPropertiesAccessor: getRowRecord,
+            parentItemAccessor: getParentItem,
+            showParentIndex: baseArr.length > 0,
+          }),
         });
         return fork;
       })();
@@ -710,7 +809,7 @@ export class SubTableColumnModel<
           rowFork={rowFork}
           memoKey={cellModeKey}
           width={this.props.width}
-          commitOnChange={this.hasFormulaColumn}
+          commitOnChange={this.hasFormulaColumn || this.hasFormValueDrivenDataScopeColumn}
         />
       );
     };

@@ -17,6 +17,14 @@ Ngoại trừ các tình huống chỉ dùng để xác minh tính năng hoặc 
 
 Cấu hình hệ thống và quy hoạch dung lượng cho các dịch vụ liên quan cần được đánh giá và tinh chỉnh riêng dựa trên **lượng dữ liệu thực tế, tải nghiệp vụ và quy mô đồng thời**.
 
+## Hệ điều hành
+
+Với môi trường production, khuyến nghị dùng server Linux như Ubuntu LTS, Debian, Rocky Linux hoặc AlmaLinux. Docker, reverse proxy, quản lý tiến trình, log và quy trình backup trên Linux đã trưởng thành hơn và dễ tích hợp với các môi trường server cloud phổ biến.
+
+NocoBase cũng có thể được cài đặt trên Windows Server. Nếu chọn Windows Server, hãy xác nhận Node.js, database, reverse proxy, process supervision, backup, quyền tệp, firewall và các quy trình vận hành liên quan theo phương thức triển khai thực tế.
+
+macOS thường phù hợp hơn cho phát triển cục bộ và kiểm thử, không được khuyến nghị làm server production. Nếu bạn thiết lập NocoBase cục bộ cho phát triển hoặc sử dụng với AI Agent, xem [Local Development Setup](../ai/local-development-setup.md).
+
 ## Chế độ triển khai node đơn
 
 Chế độ triển khai node đơn là khi dịch vụ ứng dụng NocoBase chỉ chạy trên một server hoặc một container duy nhất.

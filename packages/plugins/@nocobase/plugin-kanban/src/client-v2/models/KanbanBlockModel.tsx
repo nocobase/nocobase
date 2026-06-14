@@ -84,6 +84,10 @@ const KANBAN_POPUP_WIDTH_MAP: Record<'drawer' | 'dialog', Record<string, string>
   },
 };
 
+type KanbanPopupActionOptions = {
+  persist?: boolean;
+};
+
 const DRAG_SORT_FIELD_TIP =
   'Choose the sorting field that matches the current grouping field. Other sorting fields cannot be used for drag sorting.';
 const DRAG_SORT_FIELD_TIP_EXPR = tExpr(DRAG_SORT_FIELD_TIP, { ns: 'kanban' });
@@ -218,7 +222,11 @@ const resolveKanbanPopupTargetUid = ({
     : nextPopupTargetUid;
 };
 
-const applyKanbanBlockPopupSettings = async (model: KanbanBlockModel, params: Record<string, any>) => {
+const applyKanbanBlockPopupSettings = async (
+  model: KanbanBlockModel,
+  params: Record<string, any>,
+  options: KanbanPopupActionOptions = {},
+) => {
   const nextPopupTemplateUid = normalizeKanbanPopupTemplateUid(params.popupTemplateUid);
   const nextPopupTargetUid = normalizeKanbanPopupTargetUid(params.uid);
   const currentPopupTemplateUid =
@@ -253,8 +261,9 @@ const applyKanbanBlockPopupSettings = async (model: KanbanBlockModel, params: Re
     popupTargetUid: normalizedParams.uid,
   });
 
-  const action = await model.ensureQuickCreateAction();
-  await model.syncQuickCreateAction(action);
+  if (options.persist) {
+    await model.ensureQuickCreateAction({ persist: true });
+  }
 };
 
 const getKanbanBaseOpenViewAction = (ctx: any): ActionDefinition | undefined => {
@@ -833,11 +842,19 @@ export class KanbanBlockModel extends CollectionBlockModel<{
   }
 
   getPopupActionUid() {
-    return `${this.uid}-card-view-action`;
+    return this.subModels?.cardViewAction?.uid;
   }
 
   getQuickCreateActionUid() {
-    return `${this.uid}-quick-create-action`;
+    return this.subModels?.quickCreateAction?.uid;
+  }
+
+  async loadPopupAction(actionKey: 'cardViewAction' | 'quickCreateAction') {
+    try {
+      return await this.flowEngine.loadModel({ parentId: this.uid, subKey: actionKey });
+    } catch (error) {
+      return null;
+    }
   }
 
   async syncPopupAction(
@@ -851,6 +868,7 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       dataSourceKey?: string;
       collectionName?: string;
     },
+    syncOptions: KanbanPopupActionOptions = {},
   ) {
     if (!action) {
       return;
@@ -900,35 +918,44 @@ export class KanbanBlockModel extends CollectionBlockModel<{
 
     action.setStepParams('popupSettings', 'openView', nextParams);
 
-    if (this.context.flowSettingsEnabled && action?.saveStepParams) {
+    if (syncOptions.persist && this.context.flowSettingsEnabled && action?.saveStepParams) {
       await action.saveStepParams();
     }
   }
 
-  async syncCardViewAction(action: any) {
-    await this.syncPopupAction(action, {
-      mode: this.getCardOpenMode(),
-      size: this.getCardPopupSize(),
-      popupTemplateUid: this.getCardPopupTemplateUid(),
-      uid: this.getCardPopupTargetUid(),
-      pageModelClass: this.getCardPopupPageModelClass(),
-      dataSourceKey: this.collection?.dataSourceKey,
-      collectionName: this.collection?.name,
-    });
+  async syncCardViewAction(action: any, options: KanbanPopupActionOptions = {}) {
+    await this.syncPopupAction(
+      action,
+      {
+        mode: this.getCardOpenMode(),
+        size: this.getCardPopupSize(),
+        popupTemplateUid: this.getCardPopupTemplateUid(),
+        uid: this.getCardPopupTargetUid(),
+        pageModelClass: this.getCardPopupPageModelClass(),
+        dataSourceKey: this.collection?.dataSourceKey,
+        collectionName: this.collection?.name,
+      },
+      options,
+    );
   }
 
-  async ensureCardViewAction() {
+  async ensureCardViewAction(options: KanbanPopupActionOptions = {}) {
     let action = this.subModels?.cardViewAction as any;
     if (!action) {
-      this.setSubModel('cardViewAction', createKanbanCardViewActionOptions(this.getPopupActionUid()));
+      const loadedAction = await this.loadPopupAction('cardViewAction');
+      if (loadedAction) {
+        this.setSubModel('cardViewAction', loadedAction);
+      } else {
+        this.setSubModel('cardViewAction', createKanbanCardViewActionOptions());
+      }
       action = this.subModels?.cardViewAction as any;
     }
 
-    if (this.context.flowSettingsEnabled && action?.save) {
+    if (options.persist && this.context.flowSettingsEnabled && action?.save) {
       await action.save();
     }
 
-    await this.syncCardViewAction(action);
+    await this.syncCardViewAction(action, options);
 
     return action;
   }
@@ -937,32 +964,41 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     return this.subModels?.quickCreateAction as any;
   }
 
-  async ensureQuickCreateAction() {
+  async ensureQuickCreateAction(options: KanbanPopupActionOptions = {}) {
     let action = this.subModels?.quickCreateAction as any;
     if (!action) {
-      this.setSubModel('quickCreateAction', createKanbanQuickCreateActionOptions(this.getQuickCreateActionUid()));
+      const loadedAction = await this.loadPopupAction('quickCreateAction');
+      if (loadedAction) {
+        this.setSubModel('quickCreateAction', loadedAction);
+      } else {
+        this.setSubModel('quickCreateAction', createKanbanQuickCreateActionOptions());
+      }
       action = this.subModels?.quickCreateAction as any;
     }
 
-    if (this.context.flowSettingsEnabled && action?.save) {
+    if (options.persist && this.context.flowSettingsEnabled && action?.save) {
       await action.save();
     }
 
-    await this.syncQuickCreateAction(action);
+    await this.syncQuickCreateAction(action, options);
 
     return action;
   }
 
-  async syncQuickCreateAction(action: any) {
-    await this.syncPopupAction(action, {
-      mode: this.getPopupMode(),
-      size: this.getPopupSize(),
-      popupTemplateUid: this.getPopupTemplateUid(),
-      uid: this.getPopupTargetUid(),
-      pageModelClass: this.getPopupPageModelClass(),
-      dataSourceKey: this.collection?.dataSourceKey,
-      collectionName: this.collection?.name,
-    });
+  async syncQuickCreateAction(action: any, options: KanbanPopupActionOptions = {}) {
+    await this.syncPopupAction(
+      action,
+      {
+        mode: this.getPopupMode(),
+        size: this.getPopupSize(),
+        popupTemplateUid: this.getPopupTemplateUid(),
+        uid: this.getPopupTargetUid(),
+        pageModelClass: this.getPopupPageModelClass(),
+        dataSourceKey: this.collection?.dataSourceKey,
+        collectionName: this.collection?.name,
+      },
+      options,
+    );
   }
 
   async openEmptyPopupShell(options: { mode?: string; size?: string; title?: string }) {
@@ -1028,7 +1064,6 @@ export class KanbanBlockModel extends CollectionBlockModel<{
           formData: this.buildQuickCreateFormData(column),
           ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
           ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
-          navigation: false,
           target: this.context.layoutContentElement,
         });
         return;
@@ -1040,7 +1075,6 @@ export class KanbanBlockModel extends CollectionBlockModel<{
           formData: this.buildQuickCreateFormData(column),
           ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
           ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
-          navigation: false,
           target: this.context?.layoutContentElement,
         },
         { debounce: true },
@@ -1081,7 +1115,6 @@ export class KanbanBlockModel extends CollectionBlockModel<{
           ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
           ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
           filterByTk,
-          navigation: false,
           target: this.context.layoutContentElement,
         });
         return;
@@ -1094,7 +1127,6 @@ export class KanbanBlockModel extends CollectionBlockModel<{
           ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
           ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
           filterByTk,
-          navigation: false,
           target: this.context?.layoutContentElement,
         },
         { debounce: true },
@@ -1510,11 +1542,11 @@ KanbanBlockModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params);
+        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params, { persist: false });
       },
       async beforeParamsSave(ctx, params, previousParams) {
         await ctx.model?.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
-        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params);
+        await applyKanbanBlockPopupSettings(ctx.model as KanbanBlockModel, params, { persist: true });
       },
     },
     pageSize: {
