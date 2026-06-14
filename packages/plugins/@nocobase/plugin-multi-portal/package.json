@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-multi-portal",
-  "version": "2.2.0-beta.1",
+  "version": "2.2.0-beta.2",
   "main": "dist/server/index.js",
   "displayName": "Multi-portal",
   "displayName.zh-CN": "多工作区",
