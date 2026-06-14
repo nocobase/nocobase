@@ -131,18 +131,20 @@ export default class CollectionTrigger extends Trigger {
         transaction,
         stack,
       });
-      if (workflow.config.rollbackOnFailure && (!processor || processor.execution.status < EXECUTION_STATUS.STARTED)) {
+      const execution = processor ? processor.execution : null;
+      const lastSavedJob = processor ? processor.lastSavedJob : null;
+      if (workflow.config.rollbackOnFailure && (!execution || execution.status < EXECUTION_STATUS.STARTED)) {
         this.workflow
           .getLogger(workflow.id)
           .error('[CollectionTrigger] source operation rolled back because sync workflow failed', {
             workflowId: workflow.id,
             workflowKey: workflow.key,
             workflowTitle: workflow.title,
-            executionId: processor?.execution?.id,
-            executionStatus: processor?.execution?.status,
-            lastJobId: processor?.lastSavedJob?.id,
-            lastJobStatus: processor?.lastSavedJob?.status,
-            lastJobResult: processor?.lastSavedJob?.result,
+            executionId: execution?.id,
+            executionStatus: execution?.status,
+            lastJobId: lastSavedJob?.id,
+            lastJobStatus: lastSavedJob?.status,
+            lastJobResult: lastSavedJob?.result,
           });
         throw this.createRollbackOnFailureError(options.context?.getCurrentLocale?.());
       }
