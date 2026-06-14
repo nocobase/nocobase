@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, type InstallOptions } from '@nocobase/server';
+import { InstallOptions, Plugin } from '@nocobase/server';
 
 export class PluginGanttServer extends Plugin {
   afterAdd() {}
@@ -16,9 +16,7 @@ export class PluginGanttServer extends Plugin {
 
   async load() {}
 
-  async install(options?: InstallOptions) {
-    void options;
-  }
+  async install(options?: InstallOptions) {}
 
   async afterEnable() {}
 
