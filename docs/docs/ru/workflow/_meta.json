@@ -186,6 +186,11 @@
             "type": "custom-link",
             "label": "Операция SQL",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Транзакция базы данных",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },

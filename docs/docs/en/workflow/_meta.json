@@ -186,6 +186,11 @@
             "type": "custom-link",
             "label": "SQL Operation",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Database Transaction",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },
