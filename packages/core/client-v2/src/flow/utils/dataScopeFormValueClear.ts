@@ -8,51 +8,187 @@
  */
 
 import type { FlowContext, FlowModel } from '@nocobase/flow-engine';
-import _ from 'lodash';
-import { namePathToPathKey, pathKeyToNamePath } from '../models/blocks/form/value-runtime/path';
+import { namePathToPathKey } from '../models/blocks/form/value-runtime/path';
 import { collectStaticDepsFromTemplateValue, type DepCollector } from '../models/blocks/form/value-runtime/deps';
-
-type NamePath = Array<string | number>;
-
-type DataScopeClearDeps = {
-  wildcard: boolean;
-  valuePaths: NamePath[];
-};
+import {
+  buildItemListRootPath,
+  buildItemRowPath,
+  findFormValueChangeSource,
+  getChangedPathsFromPayload,
+  isNamePathPrefix,
+  isSameNamePath,
+  parseFieldIndexEntries,
+  parsePathKey,
+  type NamePath,
+} from './formValueDeps';
+import {
+  applyDataScopeFieldIndexTargetKeys,
+  buildDepsSnapshot,
+  createDataScopeRowScope,
+  getDepsChangeStatus,
+  type DataScopeClearDeps,
+  type DataScopeClearSnapshot,
+  type DataScopeStructuralPath,
+  type DataScopeTriggerPath,
+  type DataScopeValuePath,
+} from './dataScopeRowSnapshot';
 
 type DataScopeClearBinding = {
   signature: string;
+  snapshot: DataScopeClearSnapshot | null;
   dispose: () => void;
 };
 
 const FORM_VALUES_CHANGE_EVENT = 'formValuesChange';
 const DATA_SCOPE_CLEAR_BINDINGS_KEY = '__formValueDrivenDataScopeClearBindings';
 
-function dedupeNamePaths(paths: NamePath[]) {
-  const byKey = new Map<string, NamePath>();
+function dedupeValuePaths(paths: DataScopeValuePath[]) {
+  const byKey = new Map<string, DataScopeValuePath>();
   for (const path of paths) {
-    if (!path?.length) continue;
-    byKey.set(namePathToPathKey(path), path);
+    if (!path?.path?.length) continue;
+    byKey.set(namePathToPathKey(path.path), path);
   }
   return Array.from(byKey.values());
 }
 
-function isNamePathPrefix(prefix: NamePath, path: NamePath) {
-  if (prefix.length > path.length) return false;
-  return prefix.every((seg, index) => seg === path[index]);
-}
-
-function minimizeValueNamePaths(paths: NamePath[]) {
-  const deduped = dedupeNamePaths(paths);
+function minimizeValuePaths(paths: DataScopeValuePath[]) {
+  const deduped = dedupeValuePaths(paths);
   return deduped.filter((path, index) => {
-    return !deduped.some((other, otherIndex) => otherIndex !== index && isNamePathPrefix(path, other));
+    return !deduped.some((other, otherIndex) => otherIndex !== index && isNamePathPrefix(path.path, other.path));
   });
 }
 
-function collectDataScopeClearDeps(params: any): DataScopeClearDeps {
+function dedupeStructuralPaths(paths: DataScopeStructuralPath[]) {
+  const byKey = new Map<string, DataScopeStructuralPath>();
+  for (const path of paths) {
+    if (!path?.path?.length) continue;
+    byKey.set(`${path.kind}:${namePathToPathKey(path.path)}`, path);
+  }
+  return Array.from(byKey.values());
+}
+
+function dedupeTriggerPaths(paths: DataScopeTriggerPath[]) {
+  const byKey = new Map<string, DataScopeTriggerPath>();
+  for (const path of paths) {
+    if (!path?.path?.length) continue;
+    byKey.set(`${path.includeChildren ? 'children' : 'exact'}:${namePathToPathKey(path.path)}`, path);
+  }
+  return Array.from(byKey.values());
+}
+
+function emptyDeps(): DataScopeClearDeps {
+  return { wildcard: false, valuePaths: [], structuralPaths: [], triggerPaths: [] };
+}
+
+function wildcardDeps(): DataScopeClearDeps {
+  return { wildcard: true, valuePaths: [], structuralPaths: [], triggerPaths: [] };
+}
+
+function resolveRootItemDependencyPath(cursor: NamePath): DataScopeClearDeps {
+  const head = cursor[0];
+  if (head === 'value') {
+    const rootValuePath = cursor.slice(1);
+    return rootValuePath.length
+      ? { wildcard: false, valuePaths: [{ path: rootValuePath }], structuralPaths: [], triggerPaths: [] }
+      : wildcardDeps();
+  }
+
+  if (head === '__is_new__' || head === '__is_stored__') {
+    return { wildcard: false, valuePaths: [{ path: [head] }], structuralPaths: [], triggerPaths: [] };
+  }
+
+  return emptyDeps();
+}
+
+function resolveItemDependencyPath(ctx: FlowContext, depPath: NamePath): DataScopeClearDeps {
+  const entries = applyDataScopeFieldIndexTargetKeys(
+    ctx,
+    parseFieldIndexEntries((ctx.model as any)?.context?.fieldIndex ?? (ctx as any)?.fieldIndex),
+  );
+  if (!entries.length) {
+    return wildcardDeps();
+  }
+
+  let parentDepth = 0;
+  let cursor = [...depPath];
+  while (cursor[0] === 'parentItem') {
+    parentDepth += 1;
+    cursor = cursor.slice(1);
+  }
+
+  const head = cursor[0];
+  if (!head) {
+    return wildcardDeps();
+  }
+
+  if (parentDepth === entries.length) {
+    return resolveRootItemDependencyPath(cursor);
+  }
+
+  if (parentDepth > entries.length) {
+    return wildcardDeps();
+  }
+
+  if (head === 'value') {
+    const rowPath = buildItemRowPath(entries, parentDepth);
+    if (!rowPath) return wildcardDeps();
+    const listRootPath = buildItemListRootPath(entries, parentDepth);
+    const tailPath = cursor.slice(1);
+    return {
+      wildcard: false,
+      valuePaths: [
+        {
+          path: [...rowPath, ...tailPath],
+          rowScope: createDataScopeRowScope(entries, parentDepth, tailPath),
+        },
+      ],
+      structuralPaths: [],
+      triggerPaths: [
+        { path: rowPath, includeChildren: true },
+        ...(listRootPath ? [{ path: listRootPath, includeChildren: false }] : []),
+      ],
+    };
+  }
+
+  if (head === 'index' || head === 'length') {
+    const listRootPath = buildItemListRootPath(entries, parentDepth);
+    if (!listRootPath) return wildcardDeps();
+    return {
+      wildcard: false,
+      valuePaths: [],
+      structuralPaths: [
+        { path: listRootPath, kind: head, rowScope: createDataScopeRowScope(entries, parentDepth, []) },
+      ],
+      triggerPaths: [{ path: listRootPath, includeChildren: false }],
+    };
+  }
+
+  if (head === '__is_new__' || head === '__is_stored__') {
+    const rowPath = buildItemRowPath(entries, parentDepth);
+    if (!rowPath) return wildcardDeps();
+    return {
+      wildcard: false,
+      valuePaths: [
+        {
+          path: [...rowPath, head],
+          rowScope: createDataScopeRowScope(entries, parentDepth, [head]),
+        },
+      ],
+      structuralPaths: [],
+      triggerPaths: [{ path: rowPath, includeChildren: true }],
+    };
+  }
+
+  return wildcardDeps();
+}
+
+function collectDataScopeClearDeps(ctx: FlowContext, params: any): DataScopeClearDeps {
   const collector: DepCollector = { deps: new Set(), wildcard: false };
   collectStaticDepsFromTemplateValue(params, collector);
 
-  const valuePaths: NamePath[] = [];
+  const valuePaths: DataScopeValuePath[] = [];
+  const structuralPaths: DataScopeStructuralPath[] = [];
+  const triggerPaths: DataScopeTriggerPath[] = [];
   let wildcard = collector.wildcard;
 
   for (const depKey of collector.deps) {
@@ -61,6 +197,15 @@ function collectDataScopeClearDeps(params: any): DataScopeClearDeps {
       continue;
     }
     if (!depKey.startsWith('fv:')) {
+      if (depKey === 'ctx:item' || depKey.startsWith('ctx:item:')) {
+        const subPath = depKey === 'ctx:item' ? '' : depKey.slice('ctx:item:'.length);
+        const depPath = subPath ? parsePathKey(subPath) : [];
+        const resolved = resolveItemDependencyPath(ctx, depPath);
+        wildcard ||= resolved.wildcard;
+        valuePaths.push(...resolved.valuePaths);
+        structuralPaths.push(...resolved.structuralPaths);
+        triggerPaths.push(...resolved.triggerPaths);
+      }
       continue;
     }
     const inner = depKey.slice('fv:'.length);
@@ -68,17 +213,19 @@ function collectDataScopeClearDeps(params: any): DataScopeClearDeps {
       wildcard = true;
       continue;
     }
-    valuePaths.push(pathKeyToNamePath(inner));
+    valuePaths.push({ path: parsePathKey(inner) });
   }
 
   return {
     wildcard,
-    valuePaths: minimizeValueNamePaths(valuePaths),
+    valuePaths: minimizeValuePaths(valuePaths),
+    structuralPaths: dedupeStructuralPaths(structuralPaths),
+    triggerPaths: dedupeTriggerPaths(triggerPaths),
   };
 }
 
 function hasDeps(deps: DataScopeClearDeps) {
-  return deps.wildcard || deps.valuePaths.length > 0;
+  return deps.wildcard || deps.valuePaths.length > 0 || deps.structuralPaths.length > 0 || deps.triggerPaths.length > 0;
 }
 
 function hasModelValue(model: any) {
@@ -86,36 +233,6 @@ function hasModelValue(model: any) {
   if (current == null) return false;
   if (Array.isArray(current)) return current.length > 0;
   return true;
-}
-
-function getChangedPathsFromPayload(payload: any): NamePath[] {
-  const rawChangedPaths = Array.isArray(payload?.changedPaths) ? payload.changedPaths : [];
-  const out: NamePath[] = [];
-
-  for (const path of rawChangedPaths) {
-    if (Array.isArray(path)) {
-      const segs = path.filter((seg) => typeof seg === 'string' || typeof seg === 'number') as NamePath;
-      if (segs.length) out.push(segs);
-      continue;
-    }
-    if (typeof path === 'string' && path) {
-      out.push(pathKeyToNamePath(path));
-    }
-  }
-
-  if (out.length) {
-    return out;
-  }
-
-  const changedValues = payload?.changedValues;
-  if (changedValues && typeof changedValues === 'object' && !Array.isArray(changedValues)) {
-    for (const key of Object.keys(changedValues)) {
-      const namePath = pathKeyToNamePath(key);
-      if (namePath.length) out.push(namePath);
-    }
-  }
-
-  return out;
 }
 
 function depsMatchPayload(deps: DataScopeClearDeps, payload: any) {
@@ -127,7 +244,28 @@ function depsMatchPayload(deps: DataScopeClearDeps, payload: any) {
 
   for (const changedPath of changedPaths) {
     for (const depPath of deps.valuePaths) {
-      if (isNamePathPrefix(depPath, changedPath) || isNamePathPrefix(changedPath, depPath)) {
+      if (isNamePathPrefix(depPath.path, changedPath) || isNamePathPrefix(changedPath, depPath.path)) {
+        return true;
+      }
+    }
+
+    for (const depPath of deps.structuralPaths) {
+      if (isSameNamePath(depPath.path, changedPath)) {
+        return true;
+      }
+      if (isNamePathPrefix(changedPath, depPath.path)) {
+        return true;
+      }
+    }
+
+    for (const depPath of deps.triggerPaths) {
+      if (
+        depPath.includeChildren &&
+        (isNamePathPrefix(depPath.path, changedPath) || isNamePathPrefix(changedPath, depPath.path))
+      ) {
+        return true;
+      }
+      if (!depPath.includeChildren && isSameNamePath(depPath.path, changedPath)) {
         return true;
       }
     }
@@ -136,11 +274,17 @@ function depsMatchPayload(deps: DataScopeClearDeps, payload: any) {
 }
 
 function getDepsSignature(deps: DataScopeClearDeps, formBlock: any) {
-  const toKeys = (paths: NamePath[]) => paths.map((path) => namePathToPathKey(path)).sort();
+  const toKeys = (paths: DataScopeValuePath[]) => paths.map((path) => namePathToPathKey(path.path)).sort();
+  const toStructuralKeys = (paths: DataScopeStructuralPath[]) =>
+    paths.map((path) => `${path.kind}:${namePathToPathKey(path.path)}`).sort();
   return JSON.stringify({
     formBlockUid: formBlock?.uid,
     wildcard: deps.wildcard,
     valuePaths: toKeys(deps.valuePaths),
+    structuralPaths: toStructuralKeys(deps.structuralPaths),
+    triggerPaths: deps.triggerPaths
+      .map((path) => `${path.includeChildren ? 'children' : 'exact'}:${namePathToPathKey(path.path)}`)
+      .sort(),
   });
 }
 
@@ -148,28 +292,8 @@ function getBindings(model: any): Map<string, DataScopeClearBinding> {
   return (model[DATA_SCOPE_CLEAR_BINDINGS_KEY] ||= new Map<string, DataScopeClearBinding>());
 }
 
-function isFormBlock(model: any) {
-  if (!model || typeof model !== 'object') return false;
-  if (!model.emitter || typeof model.emitter.on !== 'function' || typeof model.emitter.off !== 'function') return false;
-  return !!model.formValueRuntime || !!model.context?.form || typeof model.context?.setFormValues === 'function';
-}
-
 function findFormBlock(ctx: FlowContext): any | null {
-  const candidates: any[] = [];
-  const push = (model: any) => {
-    if (model && !candidates.includes(model)) candidates.push(model);
-  };
-
-  push((ctx.model as any)?.context?.blockModel);
-  push(ctx.model);
-
-  let cursor: any = (ctx.model as any)?.parent;
-  while (cursor) {
-    push(cursor);
-    cursor = cursor?.parent;
-  }
-
-  return candidates.find(isFormBlock) || null;
+  return findFormValueChangeSource(ctx) as any;
 }
 
 function clearModelValue(model: any) {
@@ -207,7 +331,7 @@ export function ensureFormValueDrivenDataScopeClear(ctx: FlowContext, params: an
 
   const stepKey = 'dataScope';
   const bindingKey = `${flowKey}:${stepKey}`;
-  const deps = collectDataScopeClearDeps(params);
+  const deps = collectDataScopeClearDeps(ctx, params);
   if (!hasDeps(deps)) {
     disposeBinding(model, bindingKey);
     return;
@@ -233,6 +357,7 @@ export function ensureFormValueDrivenDataScopeClear(ctx: FlowContext, params: an
 
   const binding: DataScopeClearBinding = {
     signature,
+    snapshot: buildDepsSnapshot(deps, formBlock),
     dispose: () => {},
   };
 
@@ -251,7 +376,19 @@ export function ensureFormValueDrivenDataScopeClear(ctx: FlowContext, params: an
       return;
     }
 
-    if (!hasModelValue(model) || !depsMatchPayload(deps, payload)) {
+    if (!depsMatchPayload(deps, payload)) {
+      return;
+    }
+
+    const changeStatus = getDepsChangeStatus(deps, formBlock, payload, binding.snapshot);
+    if (changeStatus.snapshot?.complete) {
+      binding.snapshot = changeStatus.snapshot;
+    }
+    if (changeStatus.status === 'unchanged') {
+      return;
+    }
+
+    if (!hasModelValue(model)) {
       return;
     }
 
