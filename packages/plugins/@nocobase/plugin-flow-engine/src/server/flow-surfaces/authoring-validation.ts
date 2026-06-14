@@ -48,12 +48,14 @@ import {
   resolveFlowSurfaceDefaultFilterRequiredFieldCount,
 } from './public-data-surface-default-filter';
 import {
+  collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths,
   hasFlowSurfaceInlinePopupBlocks,
   hasFlowSurfaceInlinePopupTemplate,
   isFlowSurfaceDefaultActionPopupBusinessField,
   pickFlowSurfaceDefaultActionPopupFieldGroups,
   pickFlowSurfaceDefaultActionPopupFieldPaths,
 } from './default-action-popup';
+import { isRelationBackingForeignKeyField } from './relation-backing-foreign-key';
 import { getFlowSurfaceDefaultBlockActions } from './default-block-actions';
 import { hiddenPopupHostHasLocalContent } from './hidden-popup-contract';
 import { FIELD_WRAPPER_USES } from './node-use-sets';
@@ -4327,6 +4329,9 @@ function getGeneratedPopupBusinessFieldCandidates(collection: any) {
     if (!fieldName || !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
       return [];
     }
+    if (isRelationBackingForeignKeyField(collection, field)) {
+      return [];
+    }
     return [
       {
         field,
@@ -4490,9 +4495,13 @@ function getGeneratedPopupRuntimeFieldCandidates(input: {
   context: FlowSurfaceAuthoringValidationContext;
 }) {
   const candidateContext = DEFAULT_ACTION_POPUP_FIELD_CONTEXT_BY_TYPE[input.actionType];
+  const explicitDefaultFieldPaths = collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths(input.fieldGroups);
   return getCollectionFields(input.collection).flatMap((field) => {
     const fieldName = getFieldName(field);
     if (!fieldName || !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
+      return [];
+    }
+    if (isRelationBackingForeignKeyField(input.collection, field) && !explicitDefaultFieldPaths.has(fieldName)) {
       return [];
     }
     const fieldInterface = getFieldInterface(field);

@@ -179,6 +179,7 @@ import {
   getCollectionModelAttributes,
   getCollectionName,
   getCollectionTitle,
+  getCollectionTitleFieldName,
   getInvalidChartBuilderRelationDirectSubfieldDetails,
   getUnsupportedChartBuilderRelationSubfieldDetails,
   getFieldFilterable,
@@ -264,6 +265,7 @@ import {
 } from './association-title-field';
 import {
   buildFlowSurfaceDefaultActionPopupBlocks,
+  collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths,
   getFlowSurfaceDefaultActionPopupConfigByUse,
   hasFlowSurfaceInlinePopupBlocks,
   hasFlowSurfaceInlinePopupTemplate,
@@ -273,6 +275,7 @@ import {
   pickFlowSurfaceDefaultActionPopupFieldPaths,
   resolveFlowSurfaceDefaultActionPopupTabTitle,
 } from './default-action-popup';
+import { isRelationBackingForeignKeyField } from './relation-backing-foreign-key';
 import type {
   FlowSurfaceDefaultActionPopupConfig,
   FlowSurfaceDefaultActionPopupFieldCandidate,
@@ -23910,6 +23913,12 @@ export class FlowSurfacesService {
     });
   }
 
+  private isCollectionTitleField(collection: any, fieldName: string) {
+    const normalizedFieldName = String(fieldName || '').trim();
+    const titleFieldName = String(getCollectionTitleFieldName(collection) || '').trim();
+    return !!normalizedFieldName && normalizedFieldName === titleFieldName;
+  }
+
   private resolveAssociationLeafDisplaySemantics(
     field: any,
     dataSourceKey: string,
@@ -23959,6 +23968,9 @@ export class FlowSurfacesService {
     generatedPopupOnly?: boolean;
   }) {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
+    const explicitDefaultFieldPaths = collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths(
+      input.defaultFieldGroups,
+    );
     return getCollectionFields(collection).flatMap((field) => {
       const fieldName = getFieldName(field);
       const fieldInterface = getFieldInterface(field);
@@ -23966,6 +23978,9 @@ export class FlowSurfacesService {
         return [];
       }
       if (input.generatedPopupOnly && !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
+        return [];
+      }
+      if (isRelationBackingForeignKeyField(collection, field) && !explicitDefaultFieldPaths.has(fieldName)) {
         return [];
       }
       if (input.mode === 'table' && field?.options?.treeChildren) {
@@ -24078,6 +24093,12 @@ export class FlowSurfacesService {
         }
         const targetFieldName = getFieldName(targetField);
         if (!targetFieldName) {
+          continue;
+        }
+        if (
+          isRelationBackingForeignKeyField(targetCollection, targetField) &&
+          !this.isCollectionTitleField(targetCollection, targetFieldName)
+        ) {
           continue;
         }
         nextCandidates.push({
@@ -24317,10 +24338,12 @@ export class FlowSurfacesService {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
     const getFields = (targetCollection: any) => getCollectionFields(targetCollection);
     const isFilterFieldVisible = (field: any) => getFieldFilterable(field) !== false && !!getFieldInterface(field);
-    const directFields = getFields(collection).filter((field) =>
-      ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
-        ? isFilterFieldVisible(field)
-        : !!getFieldInterface(field),
+    const directFields = getFields(collection).filter(
+      (field) =>
+        !isRelationBackingForeignKeyField(collection, field) &&
+        (['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
+          ? isFilterFieldVisible(field)
+          : !!getFieldInterface(field)),
     );
     if (!directFields.length && !collection) {
       return [];
@@ -24335,11 +24358,18 @@ export class FlowSurfacesService {
         return [];
       }
       return getFields(targetCollection)
-        .filter((targetField) =>
-          ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
+        .filter((targetField) => {
+          const targetFieldName = getFieldName(targetField);
+          if (
+            isRelationBackingForeignKeyField(targetCollection, targetField) &&
+            !this.isCollectionTitleField(targetCollection, targetFieldName)
+          ) {
+            return false;
+          }
+          return ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
             ? isFilterFieldVisible(targetField)
-            : !!getFieldInterface(targetField),
-        )
+            : !!getFieldInterface(targetField);
+        })
         .map((targetField) => ({
           field: targetField,
           fieldPath: `${getFieldName(field)}.${getFieldName(targetField)}`,
