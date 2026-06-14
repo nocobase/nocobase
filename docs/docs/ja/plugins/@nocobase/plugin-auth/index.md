@@ -1,12 +1,14 @@
 ---
-displayName: "ユーザー認証"
+title: "Authentication"
+keywords: "Authentication,Security"
+displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
-  パスワード認証、SMS認証、SSOプロトコル認証などのユーザー認証管理。拡張可能です。
+  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# ユーザー認証
+# Authentication

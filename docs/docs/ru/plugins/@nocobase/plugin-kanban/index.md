@@ -1,12 +1,14 @@
 ---
-displayName: "Блок: Канбан"
+title: "Block: Kanban"
+keywords: "Blocks"
+displayName: "Block: Kanban"
 packageName: '@nocobase/plugin-kanban'
 description: |
-  Предоставляет блок канбан.
+  Provides kanban block.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Блок: Канбан
+# Block: Kanban

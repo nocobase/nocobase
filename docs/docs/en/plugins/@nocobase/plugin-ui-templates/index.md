@@ -1,5 +1,7 @@
 ---
-displayName: "UI Templates"
+title: "UI templates"
+keywords: "nocobase,plugin,ui,templates,block,popup"
+displayName: "UI templates"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
@@ -11,4 +13,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI Templates
+# UI templates

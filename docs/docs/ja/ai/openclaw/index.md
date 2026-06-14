@@ -63,7 +63,7 @@ OpenClaw は以下の方法で NocoBase と連携します：
 
 - デプロイ済みの OpenClaw Agent（[Lark ワンクリックデプロイ](https://openclaw.feishu.cn) またはローカルデプロイ）
 - Node.js >= 22（NocoBase CLI と Skills の実行に必要）
-- 既存の NocoBase インスタンスがある場合、**AI 機能は急速に進化しているため、現時点では beta 最新版のみが完全な体験をサポートしています。最低バージョン要件は >= 2.1.0-beta.20 で、最新版への更新を強くお勧めします。**
+- 既存の NocoBase インスタンスがある場合、**AI 機能は急速に進化しているため、最低バージョン要件は NocoBase 2.1.0 です。最新版への更新をお勧めします。**
 
 :::warning 注意
 

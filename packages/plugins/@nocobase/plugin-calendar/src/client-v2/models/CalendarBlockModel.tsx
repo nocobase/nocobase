@@ -94,6 +94,10 @@ type CalendarActionSubModel = ActionModel & {
   uid: string;
 };
 
+type CalendarPopupActionOptions = {
+  persist?: boolean;
+};
+
 const DRAG_HANDLER_TOOLBAR_ITEMS = [
   {
     key: 'drag-handler',
@@ -297,10 +301,6 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return this.subModels?.eventViewAction as any;
   }
 
-  getPopupActionUid(actionKey: 'quickCreateAction' | 'eventViewAction') {
-    return `${this.uid}-${actionKey}`;
-  }
-
   getPopupSettingsDefaults(actionUid?: string) {
     return {
       mode: normalizeEventOpenMode(this.props?.eventOpenMode),
@@ -374,7 +374,11 @@ export class CalendarBlockModel extends CollectionBlockModel {
     };
   }
 
-  async syncPopupActionSettings(action: any, actionKey: 'quickCreateAction' | 'eventViewAction') {
+  async syncPopupActionSettings(
+    action: any,
+    actionKey: 'quickCreateAction' | 'eventViewAction',
+    options: CalendarPopupActionOptions = {},
+  ) {
     if (!action) {
       return;
     }
@@ -387,25 +391,27 @@ export class CalendarBlockModel extends CollectionBlockModel {
 
     action.setStepParams('popupSettings', 'openView', nextSettings);
 
-    if (this.context.flowSettingsEnabled && action?.saveStepParams) {
+    if (options.persist && this.context.flowSettingsEnabled && action?.saveStepParams) {
       await action.saveStepParams();
     }
   }
 
   async loadPopupAction(actionKey: 'quickCreateAction' | 'eventViewAction') {
-    const actionUid = this.getPopupActionUid(actionKey);
     try {
-      return this.flowEngine.getModel(actionUid) || (await this.flowEngine.loadModel({ uid: actionUid }));
+      return await this.flowEngine.loadModel({ parentId: this.uid, subKey: actionKey });
     } catch (error) {
       return null;
     }
   }
 
-  async ensurePopupAction(actionKey: 'quickCreateAction' | 'eventViewAction') {
+  async ensurePopupAction(
+    actionKey: 'quickCreateAction' | 'eventViewAction',
+    options: CalendarPopupActionOptions = {},
+  ) {
     const buildActionOptions =
       actionKey === 'quickCreateAction'
-        ? () => createCalendarQuickCreateActionOptions(this.getPopupActionUid(actionKey))
-        : () => createCalendarEventViewActionOptions(this.getPopupActionUid(actionKey));
+        ? () => createCalendarQuickCreateActionOptions()
+        : () => createCalendarEventViewActionOptions();
     let action = this.subModels?.[actionKey] as any;
 
     if (!action) {
@@ -420,11 +426,11 @@ export class CalendarBlockModel extends CollectionBlockModel {
       action = this.subModels?.[actionKey] as any;
     }
 
-    if (this.context.flowSettingsEnabled && action?.save) {
+    if (options.persist && this.context.flowSettingsEnabled && action?.save) {
       await action.save();
     }
 
-    await this.syncPopupActionSettings(action, actionKey);
+    await this.syncPopupActionSettings(action, actionKey, options);
 
     return action;
   }
@@ -449,12 +455,7 @@ export class CalendarBlockModel extends CollectionBlockModel {
       ...(Object.keys(formData).length ? { formData } : {}),
       ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
       ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
-      navigation: false,
       target: this.context?.layoutContentElement,
-      defineProperties: {
-        calendarSelectedSlot: { value: slotInfo },
-        calendarFieldNames: { value: this.getFieldNames() },
-      },
     };
 
     if (typeof this.context?.openView === 'function' && action.uid) {
@@ -479,7 +480,6 @@ export class CalendarBlockModel extends CollectionBlockModel {
       ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
       ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
       filterByTk,
-      navigation: false,
       target: this.context?.layoutContentElement,
     };
 
@@ -594,11 +594,11 @@ const CalendarBlockRenderer = observer(
         weekStart={model.getWeekStart()}
         resource={model.resource}
         rangeLoadEnabled
-        onSelectSlot={(slotInfo) => {
-          void model.openQuickCreate(slotInfo);
+        onSelectSlot={async (slotInfo) => {
+          await model.openQuickCreate(slotInfo);
         }}
-        onSelectEvent={({ record }) => {
-          void model.openEvent(record);
+        onSelectEvent={async ({ record }) => {
+          await model.openEvent(record);
         }}
         {...colorFunctions}
       />
@@ -828,13 +828,16 @@ CalendarBlockModel.registerFlow({
       async defaultParams(ctx) {
         const model = ctx.model as CalendarBlockModel;
         const action = await model.ensurePopupAction('quickCreateAction');
-        return model.getPopupSettings(action, 'quickCreateAction', model.getPopupActionUid('quickCreateAction'));
+        return model.getPopupSettings(action, 'quickCreateAction', action?.uid);
       },
       async handler(ctx, params) {
         const model = ctx.model as CalendarBlockModel;
         model.setPopupSettings('quickCreateAction', params);
-        const action = await model.ensurePopupAction('quickCreateAction');
-        await model.syncPopupActionSettings(action, 'quickCreateAction');
+      },
+      async beforeParamsSave(ctx, params) {
+        const model = ctx.model as CalendarBlockModel;
+        model.setPopupSettings('quickCreateAction', params);
+        await model.ensurePopupAction('quickCreateAction', { persist: true });
       },
     },
     eventPopupSettings: {
@@ -843,13 +846,16 @@ CalendarBlockModel.registerFlow({
       async defaultParams(ctx) {
         const model = ctx.model as CalendarBlockModel;
         const action = await model.ensurePopupAction('eventViewAction');
-        return model.getPopupSettings(action, 'eventViewAction', model.getPopupActionUid('eventViewAction'));
+        return model.getPopupSettings(action, 'eventViewAction', action?.uid);
       },
       async handler(ctx, params) {
         const model = ctx.model as CalendarBlockModel;
         model.setPopupSettings('eventViewAction', params);
-        const action = await model.ensurePopupAction('eventViewAction');
-        await model.syncPopupActionSettings(action, 'eventViewAction');
+      },
+      async beforeParamsSave(ctx, params) {
+        const model = ctx.model as CalendarBlockModel;
+        model.setPopupSettings('eventViewAction', params);
+        await model.ensurePopupAction('eventViewAction', { persist: true });
       },
     },
     showLunar: {

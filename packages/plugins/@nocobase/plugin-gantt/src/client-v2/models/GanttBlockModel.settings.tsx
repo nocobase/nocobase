@@ -477,13 +477,16 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
         async defaultParams(ctx) {
           const model = getGanttModel(ctx);
           const action = await model.ensurePopupAction('eventViewAction');
-          return model.getPopupSettings(action, model.getPopupActionUid('eventViewAction'));
+          return model.getPopupSettings(action, action?.uid);
         },
         async handler(ctx, params) {
           const model = getGanttModel(ctx);
           model.setPopupSettings(params);
-          const action = await model.ensurePopupAction('eventViewAction');
-          await model.syncPopupActionSettings(action);
+        },
+        async beforeParamsSave(ctx, params) {
+          const model = getGanttModel(ctx);
+          model.setPopupSettings(params);
+          await model.ensurePopupAction('eventViewAction', { persist: true });
         },
       },
     },

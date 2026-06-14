@@ -1,12 +1,14 @@
 ---
-displayName: "データソース：メインデータベース"
+title: "Data source: Main"
+keywords: "Data sources"
+displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  NocoBase メインデータベース。PostgreSQL、MySQL、MariaDB などのリレーショナルデータベースをサポートしています。
+  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# データソース：メインデータベース
+# Data source: Main

@@ -1,12 +1,14 @@
 ---
-displayName: "ブロック：マップ"
+title: "Block: Map"
+keywords: "Blocks"
+displayName: "Block: Map"
 packageName: '@nocobase/plugin-map'
 description: |
-  マップブロックは、高徳地図と Google マップをサポートしています。また、より多くの地図タイプを拡張することもできます。
+  Map block, support Gaode map and Google map, you can also extend more map types.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# ブロック：マップ
+# Block: Map

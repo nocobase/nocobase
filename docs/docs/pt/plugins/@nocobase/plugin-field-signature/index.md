@@ -1,16 +1,16 @@
 ---
-displayName: "Campo de tabela: Assinatura manuscrita"
-packageName: '@nocobase/plugin-field-signature'
 title: "Campo de tabela: Assinatura manuscrita"
-keywords: "Campo de tabela: Assinatura manuscrita,Plugin,NocoBase"
+keywords: "Collection fields"
+displayName: "Collection field: Signature"
+packageName: '@nocobase/plugin-field-signature'
 supportedVersions:
   - 2.x
 description: |
-  Suporta assinatura manuscrita por toque ou mouse; a imagem é salva na tabela de arquivos selecionada e o upload e o armazenamento são tratados pelo Gerenciador de Arquivos. Requer licença Pro ou superior.
+  Supports handwritten signature input with touch and mouse support.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Campo de tabela: Assinatura manuscrita
+# Collection field: Signature

@@ -15,10 +15,7 @@ export default class SkillsCheck extends Command {
   static override summary = 'Check the globally installed NocoBase AI coding skills';
   static override description =
     'Inspect the global NocoBase AI coding skills and report whether they are managed by the CLI and whether an update is available.';
-  static override examples = [
-    '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> --json',
-  ];
+  static override examples = ['<%= config.bin %> <%= command.id %>', '<%= config.bin %> <%= command.id %> --json'];
 
   static override flags = {
     json: Flags.boolean({
@@ -30,6 +27,7 @@ export default class SkillsCheck extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(SkillsCheck);
     const status = await inspectSkillsStatus();
+    const displaySkillNames = status.packageSkillNames.length ? status.packageSkillNames : status.installedSkillNames;
 
     if (flags.json) {
       this.log(
@@ -43,6 +41,7 @@ export default class SkillsCheck extends Command {
             managedByNb: status.managedByNb,
             sourcePackage: status.sourcePackage,
             npmPackageName: status.npmPackageName,
+            packageSkillNames: status.packageSkillNames,
             installedSkillNames: status.installedSkillNames,
             installedVersion: status.installedVersion,
             latestVersion: status.latestVersion,
@@ -66,7 +65,7 @@ export default class SkillsCheck extends Command {
           ['Skills home', status.globalRoot],
           ['Installed', status.installed ? 'yes' : 'no'],
           ['Managed by nb', status.managedByNb ? 'yes' : 'no'],
-          ['Installed skills', status.installedSkillNames.length ? status.installedSkillNames.join(', ') : '(none)'],
+          ['Installed skills', displaySkillNames.length ? displaySkillNames.join(', ') : '(none)'],
           ['Installed version', status.installedVersion ?? '(unknown)'],
           ['Latest version', status.latestVersion ?? '(unknown)'],
           ['Update available', status.updateAvailable === null ? 'unknown' : status.updateAvailable ? 'yes' : 'no'],

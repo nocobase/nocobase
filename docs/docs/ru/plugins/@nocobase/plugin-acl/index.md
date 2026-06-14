@@ -1,15 +1,17 @@
 ---
-displayName: "Управление доступом"
+title: "Access control"
+keywords: "Users & permissions"
+displayName: "Access control"
 packageName: '@nocobase/plugin-acl'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Управление доступом на основе ролей, ресурсов и действий позволяет точно контролировать права на конфигурацию интерфейса, операции с данными, доступ к меню и плагинам.
+  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
 isFree: true
 builtIn: true
 defaultEnabled: true
 editionLevel: 0
 ---
 
-# Управление доступом
+# Access control

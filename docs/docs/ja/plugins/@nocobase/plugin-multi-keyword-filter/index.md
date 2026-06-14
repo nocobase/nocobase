@@ -1,14 +1,17 @@
 ---
-displayName: "複数キーワードフィルター"
+title: "Multi-keyword filter"
+keywords: "Multiple keywords"
+displayName: "Multi-keyword filter"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  一般的なフィールドの複数キーワードフィルターをサポートし、クイック入力や Excel からのキーワードの一括インポートに対応しています。
+  Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# 複数キーワードフィルター
+# Multi-keyword filter

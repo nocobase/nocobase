@@ -61,7 +61,7 @@ Antes de começar, certifique-se de que o ambiente abaixo está pronto:
 
 - Codex instalado (`npm install -g @openai/codex`)
 - Node.js >= 22 (para rodar o NocoBase CLI e os Skills)
-- Se você já tem uma instância NocoBase, **como as capacidades de IA evoluem rápido, atualmente apenas a versão beta mais recente oferece a experiência completa, com a versão mínima requerida >= 2.1.0-beta.20. Recomendamos fortemente atualizar para a versão mais recente.**
+- Se você já tem uma instância NocoBase, **como as capacidades de IA evoluem rapidamente, a versão mínima requerida é NocoBase 2.1.0. Recomendamos atualizar para a versão mais recente.**
 
 ## Início rápido
 

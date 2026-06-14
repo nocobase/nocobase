@@ -67,7 +67,11 @@ const replaceModelStepParams = (model: any, flowKey: string, stepKey: string, pa
   model.emitter?.emit?.('onStepParamsChanged');
 };
 
-const applyKanbanCardPopupSettings = async (model: any, params: Record<string, any>) => {
+const applyKanbanCardPopupSettings = async (
+  model: any,
+  params: Record<string, any>,
+  options: { persist?: boolean } = {},
+) => {
   const parentModel = getKanbanCardPersistentParentModel(model);
   const nextPopupTemplateUid = normalizeKanbanPopupTemplateUid(params.popupTemplateUid);
   const nextPopupTargetUid = normalizeKanbanPopupTargetUid(params.uid);
@@ -105,8 +109,9 @@ const applyKanbanCardPopupSettings = async (model: any, params: Record<string, a
   parentModel?.setProps?.({
     cardPopupPageModelClass: normalizedParams.pageModelClass,
   });
-  const action = await parentModel?.ensureCardViewAction?.();
-  await parentModel?.syncCardViewAction?.(action || parentModel?.subModels?.cardViewAction);
+  if (options.persist) {
+    await parentModel?.ensureCardViewAction?.({ persist: true });
+  }
 };
 
 export class KanbanCardItemModel extends FlowModel<KanbanCardItemStructure> {
@@ -263,11 +268,11 @@ KanbanCardItemModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        await applyKanbanCardPopupSettings(ctx.model, params);
+        await applyKanbanCardPopupSettings(ctx.model, params, { persist: false });
       },
       async beforeParamsSave(ctx, params, previousParams) {
         await ctx.model?.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
-        await applyKanbanCardPopupSettings(ctx.model, params);
+        await applyKanbanCardPopupSettings(ctx.model, params, { persist: true });
       },
     },
     layout: {

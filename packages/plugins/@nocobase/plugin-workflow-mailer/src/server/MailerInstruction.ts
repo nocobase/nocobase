@@ -8,7 +8,9 @@
  */
 
 import Joi from 'joi';
-import nodemailer, { Transporter } from 'nodemailer';
+import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
+import type Mail from 'nodemailer/lib/mailer';
 import {
   FlowNodeModel,
   IJob,
@@ -22,6 +24,7 @@ import {
   ExecutionModel,
   WorkflowTimeoutError,
 } from '@nocobase/plugin-workflow';
+import PluginFileManagerServer, { AttachmentModel } from '@nocobase/plugin-file-manager';
 import get from 'lodash/get';
 
 interface Provider {
@@ -45,6 +48,59 @@ interface MailerInstructionConfig {
   html?: string;
   text?: string;
   ignoreFail?: boolean;
+  attachments?: unknown;
+}
+
+type FileRecord = AttachmentModel & {
+  extname?: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object';
+}
+
+function toPlainRecord(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if ('dataValues' in value && isRecord(value.dataValues)) {
+    return value.dataValues;
+  }
+
+  return value;
+}
+
+function isPlainFileRecord(record: unknown): record is FileRecord {
+  return Boolean(
+    isRecord(record) &&
+      typeof record.title === 'string' &&
+      typeof record.storageId === 'number' &&
+      typeof record.path === 'string' &&
+      typeof record.filename === 'string' &&
+      record.filename.length > 0,
+  );
+}
+
+function getAttachmentFilename(file: FileRecord) {
+  if (file.title && file.extname) {
+    return `${file.title}${file.extname}`;
+  }
+
+  return file.title || file.filename;
+}
+
+function normalizeFiles(value: unknown): FileRecord[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => normalizeFiles(item));
+  }
+
+  const record = toPlainRecord(value);
+  if (isPlainFileRecord(record)) {
+    return [record];
+  }
+
+  return [];
 }
 
 const transporterMap = new Map<string, Transporter>();
@@ -92,6 +148,7 @@ function getTransporter(provider: Provider): Transporter {
   if (!transporter) {
     return createNewTransporter(key, newConfig);
   }
+
   return transporter;
 }
 
@@ -219,39 +276,40 @@ export default class MailerInstruction extends Instruction {
     contentType: Joi.string().valid('html', 'text').default('html'),
     html: Joi.string(),
     text: Joi.string(),
+    attachments: Joi.any(),
     ignoreFail: Joi.boolean().default(false),
   });
 
-  async run(
-    node: FlowNodeModel,
-    prevJob: JobModel,
-    processor: Processor,
-    options?: { signal?: AbortSignal },
-  ): Promise<InstructionResult> {
-    const {
-      provider,
-      contentType,
-      to = [],
-      cc,
-      bcc,
-      subject,
-      html,
-      text,
-      ignoreFail,
-      ...others
-    }: MailerInstructionConfig = processor.getParsedValue(node.config, node.id);
+  private async getAttachments(attachments: unknown = []): Promise<Mail.Attachment[] | undefined> {
+    const files = normalizeFiles(attachments);
 
-    const { workflow } = processor.execution as ExecutionModel & { workflow: WorkflowModel };
-    const currentWorkflow = workflow?.options || workflow?.get?.('options') ? workflow : await node.getWorkflow();
-    const sync = processor.isInstructionSync(node);
-    const workflowOptions = currentWorkflow?.options ?? currentWorkflow?.get?.('options') ?? {};
-    const workflowTimeout = Number(workflowOptions.timeout ?? 0);
+    if (!files.length) {
+      return undefined;
+    }
 
-    const transporterKey = getTransporterKey(provider);
-    const transporter = getTransporter(provider);
-    const mailAbort = createAbortSignal(processor, options?.signal, workflowTimeout);
+    const fileManager = this.workflow.app.pm.get(PluginFileManagerServer) as PluginFileManagerServer | undefined;
+    if (!fileManager) {
+      throw new Error('[workflow-mailer] file-manager plugin is required to send attachments');
+    }
 
-    const payload = {
+    return Promise.all(
+      files.map(async (file) => {
+        const { stream, contentType } = await fileManager.getFileStream(file);
+        const resolvedContentType = contentType || file.mimetype;
+
+        return {
+          filename: getAttachmentFilename(file),
+          content: stream,
+          ...(resolvedContentType ? { contentType: resolvedContentType } : {}),
+        };
+      }),
+    );
+  }
+
+  private async getPayload(config: MailerInstructionConfig) {
+    const { provider, contentType, to = [], cc, bcc, subject, html, text, ignoreFail, attachments, ...others } = config;
+
+    return {
       ...others,
       ...(contentType === 'html' ? { html } : { text }),
       subject: subject?.trim(),
@@ -273,10 +331,32 @@ export default class MailerInstruction extends Instruction {
             .map((item) => item?.trim())
             .filter(Boolean)
         : [],
+      attachments: await this.getAttachments(attachments),
     };
+  }
+
+  async run(
+    node: FlowNodeModel,
+    prevJob: JobModel,
+    processor: Processor,
+    options?: { signal?: AbortSignal },
+  ): Promise<InstructionResult> {
+    const config: MailerInstructionConfig = processor.getParsedValue(node.config, node.id);
+    const { provider, ignoreFail } = config;
+
+    const { workflow } = processor.execution as ExecutionModel & { workflow: WorkflowModel };
+    const currentWorkflow = workflow?.options || workflow?.get?.('options') ? workflow : await node.getWorkflow();
+    const sync = processor.isInstructionSync(node);
+    const workflowOptions = currentWorkflow?.options ?? currentWorkflow?.get?.('options') ?? {};
+    const workflowTimeout = Number(workflowOptions.timeout ?? 0);
+
+    const transporterKey = getTransporterKey(provider);
+    const transporter = getTransporter(provider);
+    const mailAbort = createAbortSignal(processor, options?.signal, workflowTimeout);
 
     if (sync) {
       try {
+        const payload = await this.getPayload(config);
         const result = await sendMail(transporter, transporterKey, payload, mailAbort.signal);
         return {
           status: JOB_STATUS.RESOLVED,
@@ -307,6 +387,7 @@ export default class MailerInstruction extends Instruction {
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
 
     try {
+      const payload = await this.getPayload(config);
       const response = await sendMail(transporter, transporterKey, payload, mailAbort.signal);
       processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
       jobDone.status = JOB_STATUS.RESOLVED;

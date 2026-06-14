@@ -5,8 +5,6 @@ description: Instale o NocoBase CLI e crie rapidamente um novo aplicativo NocoBa
 
 # Instalar o aplicativo NocoBase
 
-Se você ainda não tem um aplicativo NocoBase, a forma mais rápida é instalar primeiro o `@nocobase/cli` e depois executar `nb init --ui` uma vez. Na maioria dos casos, as opções padrão do assistente já resolvem.
-
 ## Pré-requisitos
 
 - Node.js >= 22
@@ -88,6 +86,13 @@ As configurações do CLI ficam salvas em `~/.nocobase/` por padrão, então os 
 
 Se esse aplicativo for exposto a usuários reais no futuro, não recomendamos manter o uso direto de `IP + port` no longo prazo. O próximo passo costuma ser colocar a aplicação atrás de um proxy reverso e habilitar HTTPS.
 
+## Próximos passos
+
+- Se você já tem um aplicativo NocoBase em execução, veja o [Guia de integração para AI Agent](./quick-start.mdx)
+- Se você quer gerenciar inicialização, parada, logs e upgrades do aplicativo, veja [Gerenciar aplicativos](../nocobase-cli/operations/manage-app.md)
+- Se você quer continuar com o deploy em produção, veja [Instalar aplicativos com CLI](../nocobase-cli/installation/cli.md) e [Visão geral do deploy em produção](../nocobase-cli/production/index.md)
+- Se você quer deixar a IA começar a construir aplicativos, veja [AI Builder](../ai-builder/index.md)
+
 ## Links relacionados
 
 - [Comparação de Métodos de Instalação e Versões](../get-started/quickstart.md) — Compare primeiro os métodos de instalação e os canais de versão, depois decida como instalar
@@ -95,4 +100,5 @@ Se esse aplicativo for exposto a usuários reais no futuro, não recomendamos ma
 - [Referência do comando `nb init`](../api/cli/init.md) — Inicializar um aplicativo novo, assumir um aplicativo local existente ou conectar um aplicativo remoto
 - [Referência do comando `nb env info`](../api/cli/env/info.md) — Ver os detalhes de conexão e a configuração de runtime do env atual
 - [NocoBase CLI](../api/cli/index.md) — Referência completa de todos os comandos `nb`
+- [Gerenciar aplicativos](../nocobase-cli/operations/manage-app.md) — Iniciar, parar, reiniciar, ver logs e fazer upgrade de aplicativos
 - [Gerenciamento de múltiplos ambientes](../nocobase-cli/operations/multi-environment.md) — Operações comuns quando você mantém vários envs ao mesmo tempo
