@@ -418,7 +418,7 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   const resource = useMemo(() => ctx.api.resource('multiPortals') as MultiPortalResource, [ctx.api]);
   const layoutOptionsService = useRequest(async () => {
     const response = await ctx.api.request<{ data?: UiLayoutOptionRecord[] }>({
-      url: 'uiLayouts:list',
+      url: 'uiLayouts:listEnabled',
       method: 'get',
       params: {
         pageSize: 200,

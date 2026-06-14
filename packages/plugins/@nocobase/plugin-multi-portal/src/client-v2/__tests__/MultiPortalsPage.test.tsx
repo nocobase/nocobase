@@ -256,7 +256,7 @@ describe('plugin-multi-portal settings page', () => {
 
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith({
-        url: 'uiLayouts:list',
+        url: 'uiLayouts:listEnabled',
         method: 'get',
         params: {
           pageSize: 200,
@@ -265,6 +265,7 @@ describe('plugin-multi-portal settings page', () => {
         skipNotify: true,
       });
     });
+    expect(request).not.toHaveBeenCalledWith(expect.objectContaining({ url: 'uiLayouts:list' }));
   });
 
   it('should derive route name from access path when creating a portal', async () => {
