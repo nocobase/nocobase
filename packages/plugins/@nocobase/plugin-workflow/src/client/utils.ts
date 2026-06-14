@@ -10,19 +10,9 @@
 import type { BranchContextValue } from './BranchContext';
 import { lang } from './locale';
 
-export function linkNodes(nodes): void {
-  const nodesMap = new Map();
-  nodes.forEach((item) => nodesMap.set(item.id, item));
-  for (const node of nodesMap.values()) {
-    if (node.upstreamId) {
-      node.upstream = nodesMap.get(node.upstreamId);
-    }
-
-    if (node.downstreamId) {
-      node.downstream = nodesMap.get(node.downstreamId);
-    }
-  }
-}
+// `linkNodes` now lives in `src/client-v2/canvas/nodeTree.ts` and is shared by both canvases (ADR-0003); re-exported
+// here via the allowed `v1 → v2` import direction so existing v1 import sites are unchanged.
+export { linkNodes } from '../client-v2/canvas/nodeTree';
 
 export function traverseSchema(schema, fn) {
   fn(schema);

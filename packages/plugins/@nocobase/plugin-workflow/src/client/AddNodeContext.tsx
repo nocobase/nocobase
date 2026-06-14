@@ -35,6 +35,11 @@ import { MenuItemGroupType } from 'antd/es/menu/interface';
 import { useBranchContext } from './BranchContext';
 import { useNodeDragContext } from './NodeDragContext';
 import { useNodeClipboardContext } from './NodeClipboardContext';
+import { useFlowEngine } from '@nocobase/flow-engine';
+import { useMemoizedFn } from 'ahooks';
+import { PresetDialogForm } from '../client-v2/canvas/AddNodeContext';
+import { getDownstreamBranchOptions } from '../client-v2/canvas/DownstreamBranchIndex';
+import { resolveLegacyPresetRenderMode } from '../client-v2/canvas/nodeRenderDispatch';
 
 interface AddButtonProps {
   upstream;
@@ -416,6 +421,7 @@ function NodeMenu() {
 export function AddNodeContextProvider(props) {
   const api = useAPIClient();
   const compile = useCompile();
+  const flowEngine = useFlowEngine();
   const engine = usePlugin(WorkflowPlugin);
   const [anchor, setAnchor] = useState(null);
   const [creating, setCreating] = useState(null);
@@ -460,49 +466,118 @@ export function AddNodeContextProvider(props) {
     [api, refresh, workflow.id],
   );
 
-  const onCreate = useCallback(
-    async ({ type, upstream, branchIndex, branchContext }) => {
-      const instruction = engine.instructions.get(type);
-      if (!instruction) {
-        console.error(`Instruction "${type}" not found`);
-        return;
+  // Create a node from the v2 preset dialog's submit values, then (when a branching node landed above an existing
+  // downstream node and the user chose a branch) re-parent that downstream node — mirrors v1's `useAddNodeSubmitAction`
+  // and v2's `createNode`. Used only on the modern (`PresetFieldsetLoader`) path.
+  const createModernNode = useMemoizedFn(async (anchor, instruction, presetValues) => {
+    const { downstreamBranchIndex, config: presetConfig } = presetValues ?? {};
+    const values = {
+      key: uid(),
+      type: instruction.type,
+      upstreamId: anchor.upstream?.id ?? null,
+      branchIndex: anchor.branchIndex ?? null,
+      title: flowEngine.context.t(instruction.title),
+      config: { ...(instruction.createDefaultConfig?.() ?? {}), ...(presetConfig ?? {}) },
+    };
+    setCreating(values);
+    try {
+      const {
+        data: { data: newNode },
+      } = await api.resource('workflows.nodes', workflow.id).create({ values });
+      if (typeof downstreamBranchIndex === 'number' && newNode?.downstreamId) {
+        await api.resource('flow_nodes').update({
+          filterByTk: newNode.downstreamId,
+          values: {
+            branchIndex: downstreamBranchIndex,
+            upstream: { id: newNode.id, downstreamId: null },
+          },
+          updateAssociationValues: ['upstream'],
+        });
       }
+      refresh();
+    } catch (err) {
+      console.error(err);
+      throw err;
+    } finally {
+      setCreating(null);
+    }
+  });
 
-      const unavailableMessage = getInstructionAvailable(instruction, {
-        engine,
-        workflow,
-        upstream,
-        branchIndex,
-        branchContext,
+  const onCreate = useMemoizedFn(async ({ type, upstream, branchIndex, branchContext }) => {
+    const instruction = engine.instructions.get(type);
+    if (!instruction) {
+      console.error(`Instruction "${type}" not found`);
+      return;
+    }
+
+    const unavailableMessage = getInstructionAvailable(instruction, {
+      engine,
+      workflow,
+      upstream,
+      branchIndex,
+      branchContext,
+    });
+    if (unavailableMessage) {
+      return;
+    }
+
+    const data = {
+      key: uid(),
+      type,
+      upstreamId: upstream?.id ?? null,
+      branchIndex,
+      title: compile(instruction.title),
+      config: instruction.createDefaultConfig?.() ?? {},
+    };
+    const downstream = upstream?.id
+      ? nodes.find((item) => item.upstreamId === data.upstreamId && item.branchIndex === data.branchIndex)
+      : nodes.find((item) => item.upstreamId === null);
+
+    // Preset dispatch (ADR-0003), v1-first like the card/drawer surfaces: a legacy `presetFieldset` (with entries)
+    // keeps the Formily preset modal; only a node that dropped it falls through to the inherited `PresetFieldsetLoader`
+    // and the v2 antd preset dialog (`ctx.viewer.dialog`), maintained once in client-v2.
+    const presetMode = resolveLegacyPresetRenderMode(instruction);
+
+    if (presetMode === 'legacy-fieldset') {
+      setPresetting({ data, instruction });
+      return;
+    }
+
+    if (presetMode === 'modern-loader') {
+      const t = (key, options?) => flowEngine.context.t(key, options);
+      const downstreamOptions = getDownstreamBranchOptions({
+        instruction,
+        config: data.config,
+        hasDownstream: Boolean(downstream),
+        t,
       });
-      if (unavailableMessage) {
-        return;
-      }
+      const anchor = { upstream, branchIndex };
+      flowEngine.context.viewer.dialog({
+        width: 520,
+        closable: true,
+        content: () => (
+          <PresetDialogForm
+            instruction={instruction}
+            downstreamOptions={downstreamOptions}
+            onSubmit={(values) => createModernNode(anchor, instruction, values)}
+          />
+        ),
+      });
+      return;
+    }
 
-      const data = {
-        key: uid(),
-        type,
-        upstreamId: upstream?.id ?? null,
-        branchIndex,
-        title: compile(instruction.title),
-        config: instruction.createDefaultConfig?.() ?? {},
-      };
-      const downstream = upstream?.id
-        ? nodes.find((item) => item.upstreamId === data.upstreamId && item.branchIndex === data.branchIndex)
-        : nodes.find((item) => item.upstreamId === null);
-      if (
-        instruction.presetFieldset ||
-        ((typeof instruction.branching === 'function' ? instruction.branching(data.config) : instruction.branching) &&
-          downstream)
-      ) {
-        setPresetting({ data, instruction });
-        return;
-      }
+    // No preset form on either side — still show the v1 branch-preservation modal when the node branches into an
+    // existing downstream.
+    if (
+      (typeof instruction.branching === 'function' ? instruction.branching(data.config) : instruction.branching) &&
+      downstream
+    ) {
+      setPresetting({ data, instruction });
+      return;
+    }
 
-      await create(data);
-    },
-    [compile, create, engine.instructions, nodes],
-  );
+    await create(data);
+  });
 
   return (
     <AddNodeContext.Provider

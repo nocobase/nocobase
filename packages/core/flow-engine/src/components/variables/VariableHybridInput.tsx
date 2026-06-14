@@ -9,12 +9,17 @@
 
 import { css, cx } from '@emotion/css';
 import { Space, theme } from 'antd';
-import React, { isValidElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FormItemInputContext } from 'antd/es/form/context';
+import React, { isValidElement, useContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MetaTreeNode } from '../../flowContext';
 import { useFlowContext } from '../../FlowContextProvider';
 import { FlowContextSelector } from '../FlowContextSelector';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
-import { formatPathToValue as defaultFormatPathToValue, parseValueToPath as defaultParseValueToPath } from './utils';
+import {
+  formatPathToValue as defaultFormatPathToValue,
+  loadMetaTreeChildren,
+  parseValueToPath as defaultParseValueToPath,
+} from './utils';
 
 type RangeIndexes = [number, number, number, number];
 
@@ -37,6 +42,14 @@ export interface VariableHybridInputProps {
   converters?: VariableHybridInputConverters;
   style?: React.CSSProperties;
   className?: string;
+  /**
+   * Validation status — turns the input border red (`error`) or amber
+   * (`warning`). Usually omitted: when rendered inside an antd `Form.Item`, the
+   * status is read automatically from `FormItemInputContext`, so dropping this
+   * into a `Form.Item` with failing rules colours the border with no extra
+   * wiring. An explicit prop wins over the inherited form status.
+   */
+  status?: 'error' | 'warning';
 }
 
 function reactNodeToPlainText(node: React.ReactNode): string {
@@ -83,12 +96,36 @@ function normalizeVariableKey(value: string): string {
     .trim();
 }
 
-function renderHTML(value: string, labelMap: Map<string, string>, regExp: RegExp) {
+function renderHTML(value: string, regExp: RegExp, resolveLabel: (matched: string) => string | undefined) {
   const re = new RegExp(regExp.source, regExp.flags.includes('g') ? regExp.flags : `${regExp.flags}g`);
   return escapeHtml(value || '').replace(re, (matched) => {
-    const label = labelMap.get(normalizeVariableKey(matched)) || matched;
+    const label = resolveLabel(matched) || matched;
     return createTagHTML(matched, label);
   });
+}
+
+// Resolve a `{{ … }}` reference path to its slash-joined title chain by walking the (possibly lazily-expanded) meta tree
+// live. Unlike `buildLabelMap` — which pre-walks only already-loaded (array) children into a memoized map — this reads
+// the tree's CURRENT contents at call time, so a level expanded in place (by the cascader's loadData when the user
+// drills in, or by the preload effect) is reflected on the very next render without the memoized map having to rebuild.
+// This is what fixes a just-picked deep node rendering as its raw `{{ … }}` token. Returns undefined if any segment is
+// missing or sits below a still-unresolved (thunk) level — the caller then falls back to the raw token.
+function resolveTitlesByPath(
+  roots: MetaTreeNode[] | undefined,
+  path: string[] | undefined,
+  ctxT: (text: string) => string,
+): string | undefined {
+  if (!roots || !path || !path.length) return undefined;
+  const titles: string[] = [];
+  let nodes: MetaTreeNode[] | undefined = roots;
+  for (const segment of path) {
+    if (!nodes) return undefined;
+    const matched: MetaTreeNode | undefined = nodes.find((node) => node.name === segment);
+    if (!matched) return undefined;
+    titles.push(reactNodeToPlainText(matched.title || matched.name));
+    nodes = Array.isArray(matched.children) ? (matched.children as MetaTreeNode[]) : undefined;
+  }
+  return titles.map(ctxT).join('/');
 }
 
 function buildLabelMap(
@@ -114,6 +151,42 @@ function buildLabelMap(
 
   walk(nodes);
   return map;
+}
+
+// Collect every variable reference path in `value` (one per `{{ … }}` token). Used to preload lazy meta-tree levels so
+// a saved reference whose label lives below an unexpanded (thunk) level still resolves to a readable tag.
+function collectReferencePaths(
+  value: string,
+  regExp: RegExp,
+  parseValueToPath: (value?: string) => string[] | undefined,
+): string[][] {
+  const re = new RegExp(regExp.source, regExp.flags.includes('g') ? regExp.flags : `${regExp.flags}g`);
+  const paths: string[][] = [];
+  for (const matched of value.match(re) ?? []) {
+    const path = parseValueToPath(matched);
+    if (path && path.length) {
+      paths.push(path);
+    }
+  }
+  return paths;
+}
+
+// Walk one reference path down the meta tree, resolving each lazy `children` thunk in place. Returns true if it
+// resolved at least one level (so the caller knows to recompute the label map). Mirrors `TypedVariableInput`'s preload.
+async function preloadReferencePath(path: string[], roots: MetaTreeNode[]): Promise<boolean> {
+  let nodes: MetaTreeNode[] | undefined = roots;
+  let didLoad = false;
+  for (const segment of path) {
+    if (!nodes) break;
+    const matched: MetaTreeNode | undefined = nodes.find((node) => node.name === segment);
+    if (!matched) break;
+    if (typeof matched.children === 'function') {
+      matched.children = await loadMetaTreeChildren(matched);
+      didLoad = true;
+    }
+    nodes = Array.isArray(matched.children) ? matched.children : undefined;
+  }
+  return didLoad;
 }
 
 function pasteHTML(container: HTMLElement, html: string, indexes?: RangeIndexes) {
@@ -226,6 +299,10 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
   const { token } = theme.useToken();
   const ctx = useFlowContext();
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
+  // Inherit the antd Form.Item validation status (red/amber border) unless an explicit `status` prop overrides it — so
+  // the border colours automatically inside a failing `Form.Item`, no extra wiring for callers.
+  const formItemStatus = useContext(FormItemInputContext)?.status;
+  const effectiveStatus = props.status ?? formItemStatus;
   const inputRef = useRef<HTMLDivElement>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [changed, setChanged] = useState(false);
@@ -233,13 +310,63 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
 
   const value = typeof props.value === 'string' ? props.value : props.value == null ? '' : String(props.value);
   const variableRegExp = converters?.variableRegExp ?? DEFAULT_VARIABLE_REGEXP;
+  const parseValueToPath = converters?.parseValueToPath ?? defaultParseValueToPath;
+
+  // Bumped after a saved reference's lazy meta-tree levels are resolved, so the label map (below) recomputes once the
+  // deep titles are actually loaded.
+  const [loadedFlag, setLoadedFlag] = useState(0);
+
+  // Preload the lazy levels every `{{ … }}` reference in `value` points through. `buildLabelMap` only walks
+  // already-loaded (array) children, so without this a reference below an unexpanded thunk level (e.g. a workflow
+  // node's output fields under `$jobsMapByNodeKey.<nodeKey>`) renders as the raw `{{ … }}` text instead of its
+  // node/field labels. Mirrors `TypedVariableInput`'s preload.
+  useEffect(() => {
+    if (!value || !Array.isArray(resolvedMetaTree) || !resolvedMetaTree.length) {
+      return;
+    }
+    const paths = collectReferencePaths(value, variableRegExp, parseValueToPath);
+    if (!paths.length) {
+      return;
+    }
+    let cancelled = false;
+    const run = async () => {
+      let didLoad = false;
+      for (const path of paths) {
+        const loaded = await preloadReferencePath(path, resolvedMetaTree as MetaTreeNode[]);
+        if (cancelled) return;
+        didLoad = didLoad || loaded;
+      }
+      if (didLoad && !cancelled) {
+        setLoadedFlag((prev) => prev + 1);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [value, resolvedMetaTree, variableRegExp, parseValueToPath]);
 
   const labelMap = useMemo(
     () => buildLabelMap(resolvedMetaTree as MetaTreeNode[] | undefined, ctx.t, converters),
-    [resolvedMetaTree, ctx, converters],
+    // `loadedFlag` is read so the map recomputes after a lazy level resolves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [resolvedMetaTree, ctx, converters, loadedFlag],
   );
 
-  const [html, setHtml] = useState(() => renderHTML(value, labelMap, variableRegExp));
+  // Resolve one `{{ … }}` token to its label: the pre-built map first (cheap, covers statically-loaded levels), then a LIVE walk of the current meta tree. The live fallback is what makes a just-picked deep reference render its label immediately — when the user drills into a lazy level, the cascader resolves that level onto the meta tree in place WITHOUT changing the tree reference or bumping `loadedFlag`, so the memoized `labelMap` still misses it; walking the tree's current contents finds the freshly-loaded titles on the same render.
+  const resolveLabel = useCallback(
+    (matched: string): string | undefined => {
+      const mapped = labelMap.get(normalizeVariableKey(matched));
+      if (mapped) return mapped;
+      const path = parseValueToPath(matched);
+      return resolveTitlesByPath(resolvedMetaTree as MetaTreeNode[] | undefined, path, ctx.t);
+    },
+    // `loadedFlag` is read so a resolved lazy level re-creates this callback and re-renders the tags. `ctx` carries the translation fn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [labelMap, parseValueToPath, resolvedMetaTree, ctx, loadedFlag],
+  );
+
+  const [html, setHtml] = useState(() => renderHTML(value, variableRegExp, resolveLabel));
 
   const emitChange = useCallback(
     (target: HTMLElement) => {
@@ -249,12 +376,12 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
   );
 
   useEffect(() => {
-    setHtml(renderHTML(value, labelMap, variableRegExp));
+    setHtml(renderHTML(value, variableRegExp, resolveLabel));
     if (!changed) {
       setRange([-1, 0, -1, 0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, labelMap]);
+  }, [value, resolveLabel]);
 
   // Restore caret position after html update
   useEffect(() => {
@@ -492,6 +619,34 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
           border-color: ${token.colorBorder};
         }
       }
+
+      &.is-error {
+        border-color: ${token.colorError};
+
+        &:hover {
+          border-color: ${token.colorErrorBorderHover};
+        }
+
+        &:focus,
+        &:focus-visible {
+          border-color: ${token.colorError};
+          box-shadow: 0 0 0 ${token.controlOutlineWidth}px ${token.colorErrorOutline};
+        }
+      }
+
+      &.is-warning {
+        border-color: ${token.colorWarning};
+
+        &:hover {
+          border-color: ${token.colorWarningBorderHover};
+        }
+
+        &:focus,
+        &:focus-visible {
+          border-color: ${token.colorWarning};
+          box-shadow: 0 0 0 ${token.controlOutlineWidth}px ${token.colorWarningOutline};
+        }
+      }
     `;
   }, [token, addonBefore]);
 
@@ -505,6 +660,8 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
           aria-label="textbox"
           className={cx(editorClassName, {
             'is-disabled': disabled,
+            'is-error': effectiveStatus === 'error',
+            'is-warning': effectiveStatus === 'warning',
           })}
           contentEditable={!disabled}
           data-placeholder={placeholder}
@@ -519,7 +676,7 @@ const VariableHybridInputComponent: React.FC<VariableHybridInputProps> = (props)
         <FlowContextSelector
           metaTree={metaTree}
           disabled={disabled}
-          parseValueToPath={converters?.parseValueToPath ?? defaultParseValueToPath}
+          parseValueToPath={parseValueToPath}
           formatPathToValue={(item) => converters?.formatPathToValue?.(item) || defaultFormatPathToValue(item)}
           onChange={handleSelectorChange}
         />

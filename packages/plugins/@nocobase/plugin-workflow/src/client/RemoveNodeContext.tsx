@@ -7,234 +7,48 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { createForm } from '@formily/core';
+/**
+ * The remove-node context + provider now live in client-v2 and are shared by both
+ * canvases (ADR-0003). v1 keeps a thin wrapper that injects its own canvas runtime
+ * (v1 `useAPIClient` / `FlowContext` / instruction registry) into the shared
+ * provider, and re-exports the hook so existing v1 import sites
+ * (`from './RemoveNodeContext'`) are unchanged. Delete on legacy-canvas retirement.
+ *
+ * This replaces v1's former Formily `Action.Modal` keep-branch dialog with the
+ * shared antd one; the variable-reference safety check (which the modern canvas
+ * previously lacked) is now the shared logic, so both canvases block deleting a
+ * node whose result is still referenced.
+ */
+
+import React from 'react';
+import { useAPIClient, usePlugin } from '@nocobase/client';
 import {
-  ActionContextProvider,
-  SchemaComponent,
-  useAPIClient,
-  useCancelAction,
-  useCompile,
-  usePlugin,
-} from '@nocobase/client';
-
-import { lang, NAMESPACE } from './locale';
-import { App, Radio, Select, Space } from 'antd';
+  RemoveNodeContextProvider as SharedRemoveNodeContextProvider,
+  type CanvasRemoveRuntime,
+} from '../client-v2/canvas/RemoveNodeContext';
 import { useFlowContext } from './FlowContext';
-import { useForm } from '@formily/react';
 import PluginWorkflowClient from '.';
-import { parse } from '@nocobase/utils/client';
 
-const RemoveNodeContext = createContext<any>({});
+export { useRemoveNodeContext } from '../client-v2/canvas/RemoveNodeContext';
 
-export function useRemoveNodeContext() {
-  return useContext(RemoveNodeContext);
-}
-
-function findBranchNodes(nodes, branchHead) {
-  const result = new Map();
-  for (let node = branchHead; node; node = node.downstream) {
-    result.set(node.id, node);
-    const subBranches = nodes.filter((item) => item.upstream === node && item.branchIndex != null);
-    for (const subBranch of subBranches) {
-      const subBranchNodes = findBranchNodes(nodes, subBranch);
-      for (const [key, value] of subBranchNodes) {
-        result.set(key, value);
-      }
-    }
-  }
-  return result;
-}
-
-function KeepBranchRadioGroup(props) {
-  const { value, onChange } = props;
-  const { deletingNode, deletingBranches } = useRemoveNodeContext();
-  const plugin = usePlugin(PluginWorkflowClient) as PluginWorkflowClient;
-  const compile = useCompile();
-  const branchOptions = useMemo(() => {
-    if (!deletingNode || deletingBranches?.length === 0) {
-      return [];
-    }
-    const instruction = plugin.instructions.get(deletingNode?.type);
-    const branching =
-      typeof instruction.branching === 'function'
-        ? instruction.branching(deletingNode.config ?? {})
-        : instruction.branching;
-    return branching
-      ? deletingBranches.map((item, index) => {
-          const option = Array.isArray(branching)
-            ? branching.find((branch) => branch.value === item.branchIndex) ?? {}
-            : {};
-          return {
-            label: option['label']
-              ? lang('"{{branchName}}" branch', { branchName: compile(option['label']) })
-              : lang('Branch {{index}}', { index: index + 1 }),
-            value: item.branchIndex,
-          };
-        })
-      : [];
-  }, [deletingNode, deletingBranches, plugin.instructions, compile]);
-
-  return (
-    <>
-      <Radio.Group
-        value={typeof value === 'number' ? 1 : 0}
-        onChange={(e) => {
-          if (e.target.value === 0) {
-            onChange(null);
-          } else {
-            onChange(deletingBranches[0].branchIndex);
-          }
-        }}
-      >
-        <Space direction="vertical">
-          <Radio key="0" value={0}>
-            {lang('Delete all')}
-          </Radio>
-          <Space>
-            <Radio key="1" value={1}>
-              {lang('Keep')}
-            </Radio>
-            <Select options={branchOptions} onChange={onChange} defaultValue={deletingBranches[0]?.branchIndex} />
-          </Space>
-        </Space>
-      </Radio.Group>
-    </>
-  );
-}
-
-function useRemoveNodeSubmitAction() {
+/** Legacy-canvas runtime source: v1's `useAPIClient`, `FlowContext`, and the v1
+ *  instruction registry (for branch labels). */
+function useLegacyCanvasRuntime(): CanvasRemoveRuntime {
   const api = useAPIClient();
   const { nodes, refresh } = useFlowContext() ?? {};
-  const { deletingNode, deletingBranches, setDeletingNode } = useRemoveNodeContext();
-  const { values, clearFormGraph } = useForm();
-  const { modal } = App.useApp();
-
-  const keepBranchValues = values.keepBranch != null ? values : {};
-
+  const plugin = usePlugin(PluginWorkflowClient) as PluginWorkflowClient;
   return {
-    async run() {
-      if (!deletingNode) {
-        return;
-      }
-      const branchNodesUsingVariable = [];
-      const branchHead =
-        values.keepBranch != null ? deletingBranches.find((item) => values.keepBranch === item.branchIndex) : null;
-      const relatedNodes = findBranchNodes(nodes, branchHead);
-      const downstreamNodes = findBranchNodes(nodes, deletingNode.downstream);
-      for (const [key, node] of downstreamNodes) {
-        relatedNodes.set(key, node);
-      }
-      for (const node of relatedNodes.values()) {
-        const template = parse((node as any).config);
-        const refs = template.parameters.filter(({ key }) => {
-          return (
-            key.startsWith(`$jobsMapByNodeKey.${deletingNode.key}.`) ||
-            key === `$jobsMapByNodeKey.${deletingNode.key}` ||
-            key.startsWith(`$scopes.${deletingNode.key}.`) ||
-            key === `$scopes.${deletingNode.key}`
-          );
-        });
-        if (refs.length) {
-          branchNodesUsingVariable.push(node);
-        }
-      }
-      if (branchNodesUsingVariable.length) {
-        modal.error({
-          title: lang('Can not delete'),
-          content: lang(
-            'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
-            { nodes: branchNodesUsingVariable.map((item) => item.title).join(', ') },
-          ),
-        });
-        return;
-      }
-      await api.resource('flow_nodes').destroy?.({
-        filterByTk: deletingNode.id,
-        ...keepBranchValues,
-      });
-      clearFormGraph('*');
-      setDeletingNode(null);
-      refresh();
-    },
+    api,
+    nodes,
+    refresh,
+    getInstruction: (type: string) => plugin?.instructions.get(type),
   };
 }
 
-export function RemoveNodeContextProvider(props) {
-  const [deletingNode, setDeletingNode] = useState(null);
-  const form = useMemo(() => createForm(), []);
-  const { nodes } = useFlowContext();
-  const deletingBranches = nodes.filter((item) => item.upstream === deletingNode && item.branchIndex != null);
-
+export function RemoveNodeContextProvider(props: { children: React.ReactNode }) {
   return (
-    <RemoveNodeContext.Provider value={{ deletingNode, setDeletingNode, deletingBranches }}>
+    <SharedRemoveNodeContextProvider useCanvasRuntime={useLegacyCanvasRuntime}>
       {props.children}
-      <ActionContextProvider
-        value={{
-          visible: Boolean(deletingBranches.length),
-          setVisible() {
-            setDeletingNode(null);
-          },
-          openSize: 'small',
-        }}
-      >
-        <SchemaComponent
-          scope={{
-            useCancelAction,
-            useRemoveNodeSubmitAction,
-          }}
-          components={{
-            KeepBranchRadioGroup,
-          }}
-          schema={{
-            type: 'void',
-            name: 'deleteBranchModel',
-            'x-decorator': 'FormV2',
-            'x-decorator-props': {
-              form,
-            },
-            'x-component': 'Action.Modal',
-            title: `{{ t("Delete node", { ns: "${NAMESPACE}" }) }}`,
-            properties: {
-              keepBranch: {
-                type: 'number',
-                'x-decorator': 'FormItem',
-                title: `{{ t("Branch to keep", { ns: "${NAMESPACE}" }) }}`,
-                'x-component': 'KeepBranchRadioGroup',
-              },
-              footer: {
-                'x-component': 'Action.Modal.Footer',
-                properties: {
-                  actions: {
-                    type: 'void',
-                    'x-component': 'ActionBar',
-                    properties: {
-                      cancel: {
-                        type: 'void',
-                        title: '{{ t("Cancel") }}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          useAction: '{{ useCancelAction }}',
-                        },
-                      },
-                      submit: {
-                        type: 'void',
-                        title: `{{ t("Submit") }}`,
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          type: 'primary',
-                          htmlType: 'submit',
-                          useAction: '{{ useRemoveNodeSubmitAction }}',
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          }}
-        />
-      </ActionContextProvider>
-    </RemoveNodeContext.Provider>
+    </SharedRemoveNodeContextProvider>
   );
 }

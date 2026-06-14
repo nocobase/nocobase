@@ -58,6 +58,16 @@ export interface CollectionFilterItemProps {
   t?: (key: string) => string;
   /** Optional v2 app registry used to resolve plugin-provided operator components. */
   app?: { getComponent?: (name: string) => React.ComponentType<any> | undefined };
+  /** Optional override for the left field picker placeholder. */
+  fieldPlaceholder?: string;
+  /** Optional override for the operator picker placeholder. */
+  operatorPlaceholder?: string;
+  /** Optional override for the value input placeholder. Pass `null` to suppress it. */
+  valuePlaceholder?: string | null;
+  /** Optional override for the left field picker width. Defaults to v2's original 200px. */
+  fieldWidth?: number;
+  /** Optional override for the operator picker min-width. Defaults to v2's original 120px. */
+  operatorMinWidth?: number;
 }
 
 const identity = (s: string) => s;
@@ -98,6 +108,12 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
     const { path: leftValue, operator, value: rightValue } = props.value;
     const flowEngine = useFlowEngine({ throwError: false }) as any;
     const app = props.app || flowEngine?.context?.app;
+    const fieldPlaceholder = props.fieldPlaceholder ?? t('Select field');
+    const operatorPlaceholder = props.operatorPlaceholder ?? t('Comparision');
+    const valuePlaceholder =
+      props.valuePlaceholder === undefined ? t('Enter value') : props.valuePlaceholder || undefined;
+    const fieldWidth = props.fieldWidth ?? 200;
+    const operatorMinWidth = props.operatorMinWidth ?? 120;
 
     const options = useFilterOptions(collection, { filterableFieldNames, nonfilterableFieldNames, noIgnore, t });
 
@@ -135,8 +151,8 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
     return (
       <Space wrap>
         <Cascader
-          style={{ width: 200 }}
-          placeholder={t('Select field')}
+          style={{ width: fieldWidth }}
+          placeholder={fieldPlaceholder}
           options={cascaderOptions}
           value={fieldPath}
           onChange={handleFieldChange}
@@ -145,15 +161,15 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
           popupClassName={cascaderPopupClass}
         />
         <Select
-          style={{ width: 120 }}
-          placeholder={t('Comparision')}
+          style={{ minWidth: operatorMinWidth }}
+          placeholder={operatorPlaceholder}
           value={operator || undefined}
           onChange={handleOperatorChange}
           disabled={!leftValue || operatorOptions.length === 0}
         >
           {operatorOptions.map((op) => (
             <Select.Option key={op.value} value={op.value}>
-              {op.label}
+              {typeof op.label === 'string' ? t(op.label) : op.label}
             </Select.Option>
           ))}
         </Select>
@@ -162,7 +178,7 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
           operator={selectedOperator}
           value={rightValue}
           onChange={handleValueChange}
-          placeholder={t('Enter value')}
+          placeholder={valuePlaceholder}
           t={t}
           app={app}
         />
@@ -179,7 +195,16 @@ export function createCollectionFilterItem(
   collection: Collection,
   bound?: Pick<
     CollectionFilterItemProps,
-    'filterableFieldNames' | 'nonfilterableFieldNames' | 'noIgnore' | 't' | 'app'
+    | 'filterableFieldNames'
+    | 'nonfilterableFieldNames'
+    | 'noIgnore'
+    | 't'
+    | 'app'
+    | 'fieldPlaceholder'
+    | 'operatorPlaceholder'
+    | 'valuePlaceholder'
+    | 'fieldWidth'
+    | 'operatorMinWidth'
   >,
 ) {
   const Component: FC<{ value: CollectionFilterItemValue }> = (props) => (

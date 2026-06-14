@@ -102,6 +102,9 @@
   "Executed at": "Выполнено в",
   "Executed workflow cannot be modified. Could be copied to a new version to modify.": "Выполненный рабочий процесс не может быть изменен. Может быть скопирован в новую версию для изменения.",
   "Execution history": "История запусков",
+  "Version ID": "ID версии",
+  "Parent execution ID": "ID родительского запуска",
+  "Triggered manually": "Запущено вручную",
   "Timeout settings": "Настройки тайм-аута",
   "0 means unlimited. If you set any other value and the execution is still not completed when the timeout is reached, the execution plan will be terminated and the remaining nodes will not be executed. Time spent in queue is not counted; timing starts only after it first enters a processor.": "0 означает без ограничений. Если установить любое другое значение и к моменту достижения тайм-аута выполнение все еще не завершено, план выполнения будет остановлен, а оставшиеся узлы не будут выполнены. Время в очереди не учитывается; отсчет начинается только после первого входа в процессор.",
   "Exit when query result is null": "Выйти, если результат запроса равен null",
@@ -265,5 +268,14 @@
   "Impacted dependent node variables": "Узлы, которые ссылаются на переменные текущего узла",
   "Keep variable references": "Сохранить ссылки на переменные",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Сохранение ссылок на переменные требует ручной настройки, иначе рабочий процесс может завершиться ошибкой.",
-  "Failed to update node variables": "Не удалось обновить переменные узла"
+  "Failed to update node variables": "Не удалось обновить переменные узла",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

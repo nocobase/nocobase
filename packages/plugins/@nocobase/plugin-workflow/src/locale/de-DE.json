@@ -102,6 +102,9 @@
   "Executed at": "Ausgeführt am",
   "Executed workflow cannot be modified. Could be copied to a new version to modify.": "Ausgeführter Workflow kann nicht geändert werden. Kann in eine neue Version kopiert werden, um Änderungen vorzunehmen.",
   "Execution history": "Ausführungsverlauf",
+  "Version ID": "Versions-ID",
+  "Parent execution ID": "Übergeordnete Ausführungs-ID",
+  "Triggered manually": "Manuell ausgelöst",
   "Timeout settings": "Zeitlimit-Einstellungen",
   "0 means unlimited. If you set any other value and the execution is still not completed when the timeout is reached, the execution plan will be terminated and the remaining nodes will not be executed. Time spent in queue is not counted; timing starts only after it first enters a processor.": "0 bedeutet unbegrenzt. Wenn Sie einen anderen Wert festlegen und die Ausführung beim Erreichen des Zeitlimits noch nicht abgeschlossen ist, wird der Ausführungsplan beendet und die verbleibenden Knoten werden nicht mehr ausgeführt. Die Zeit in der Warteschlange wird nicht mitgezählt; die Zeitmessung beginnt erst, nachdem die Ausführung erstmals einen Prozessor erreicht hat.",
   "Exit when query result is null": "Beenden, wenn das Abfrageergebnis null ist",
@@ -265,5 +268,14 @@
   "Impacted dependent node variables": "Knoten, die Variablen des aktuellen Knotens referenzieren",
   "Keep variable references": "Variablenreferenzen beibehalten",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Das Beibehalten von Variablenreferenzen erfordert eine manuelle Anpassung, andernfalls kann der Workflow fehlschlagen.",
-  "Failed to update node variables": "Aktualisierung der Knotenvariablen fehlgeschlagen"
+  "Failed to update node variables": "Aktualisierung der Knotenvariablen fehlgeschlagen",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }
