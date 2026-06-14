@@ -58,6 +58,27 @@ const SyncTransactionNotice = observer(() => {
   );
 });
 
+const useSyncModeVisibleReaction = (field) => {
+  const form = useForm();
+  const { workflow } = useFlowContext() ?? {};
+  const sync = workflow?.sync ?? form.values?.sync;
+
+  field.visible = Boolean(sync);
+  if (!sync && field.value) {
+    field.value = false;
+  }
+};
+
+const rollbackOnFailure = {
+  type: 'boolean',
+  'x-content': `{{t("Rollback when workflow execution fails", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Only available in synchronous mode. When enabled, if the workflow execution ends with a failed status, the data operation that triggered it will fail and be rolled back.", { ns: "${NAMESPACE}" })}}`,
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
+  default: false,
+  'x-reactions': ['{{useSyncModeVisibleReaction}}'],
+};
+
 function useVariables(config, options) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
   const compile = useCompile();
@@ -100,12 +121,9 @@ export default class extends Trigger {
         },
       },
     },
+    rollbackOnFailure,
   };
   fieldset = {
-    syncTransactionNotice: {
-      type: 'void',
-      'x-component': 'SyncTransactionNotice',
-    },
     collection: {
       ...collection,
       'x-disabled': true,
@@ -225,9 +243,17 @@ export default class extends Trigger {
         },
       ],
     },
+    syncTransactionNotice: {
+      type: 'void',
+      'x-component': 'SyncTransactionNotice',
+    },
+    rollbackOnFailure: {
+      ...rollbackOnFailure,
+    },
   };
   scope = {
     useCollectionDataSource,
+    useSyncModeVisibleReaction,
     useWorkflowAnyExecuted,
   };
   components = {
