@@ -1,1 +1,67 @@
-[]
+[
+  {
+    "type": "custom-link",
+    "label": "Démarrage rapide",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Comment fonctionne NocoBase",
+        "link": "/get-started/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "Exigences du système d'exploitation",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Production",
+            "link": "/get-started/system-requirements"
+          },
+          {
+            "type": "custom-link",
+            "label": "Configuration du développement local",
+            "link": "/ai/local-development-setup"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "type": "custom-link",
+        "label": "Méthodes d'installation et comparaison des versions",
+        "link": "/get-started/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "Installer l'application NocoBase",
+        "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mettre à niveau l'application NocoBase",
+        "link": "/ai/upgrade-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Passer de 2.0 à 2.1",
+        "link": "/ai/upgrade-from-2-0-to-2-1"
+      },
+      {
+        "type": "custom-link",
+        "label": "Guide d'intégration pour AI Agent",
+        "link": "/ai/quick-start"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase CLI",
+        "proxy": false,
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Premiers pas (ancienne version)",
+        "proxy": false,
+        "link": "/get-started/how-nocobase-works"
+      }
+    ]
+  }
+]

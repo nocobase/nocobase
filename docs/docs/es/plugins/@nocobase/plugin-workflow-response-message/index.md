@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Mensaje de respuesta"
+title: "Workflow: Response message"
+keywords: "Workflow"
+displayName: "Workflow: Response message"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Se utiliza para ensamblar y mostrar mensajes de respuesta al cliente en Workflows de eventos de Form e interceptación de solicitudes.
+  Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Mensaje de respuesta
+# Workflow: Response message

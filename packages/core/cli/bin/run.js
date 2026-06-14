@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import pc from 'picocolors';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { formatUnsupportedNodeVersionMessage, isSupportedNodeVersion } from './node-version.js';
 import { normalizeNodeOptions, normalizeSessionEnv } from './session-env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,6 +17,11 @@ const isSourcePackage = realRoot.split(path.sep).join('/').endsWith('/packages/c
 let isDev = isSourcePackage;
 if (process.env.NB_CLI_USE_DIST === '1') {
   isDev = false;
+}
+
+if (!isSupportedNodeVersion()) {
+  console.error(pc.red(formatUnsupportedNodeVersionMessage(process.version)));
+  process.exit(1);
 }
 
 normalizeSessionEnv();
@@ -79,6 +85,7 @@ const cliEntryErrorPath = isDev
   : path.join(root, 'dist/lib/cli-entry-error.js');
 const { appendDiagnosticLogPath, formatCliEntryError } = await import(pathToFileURL(cliEntryErrorPath).href);
 const { flush, run, settings } = await import('@oclif/core');
+const forcedColors = pc.createColors(true);
 
 if (isDev) {
   settings.debug = true;
@@ -138,7 +145,7 @@ try {
     formatCliEntryError(error, process.argv.slice(2)),
     commandLogSession?.logFile,
   );
-  console.error(pc.red(message));
+  console.error(forcedColors.red(message));
   finalizeCommandLogOnce({ exitCode: 1, errorMessage: message });
   process.exit(1);
 }

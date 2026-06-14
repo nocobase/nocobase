@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   printInfo: vi.fn(),
   renderTable: vi.fn(() => 'TABLE'),
   setVerboseMode: vi.fn(),
+  startTask: vi.fn(),
+  stopTask: vi.fn(),
   installNocoBaseSkills: vi.fn(),
   removeNocoBaseSkills: vi.fn(),
   updateNocoBaseSkills: vi.fn(),
@@ -35,6 +37,8 @@ vi.mock('../lib/ui.js', () => ({
   printInfo: mocks.printInfo,
   renderTable: mocks.renderTable,
   setVerboseMode: mocks.setVerboseMode,
+  startTask: mocks.startTask,
+  stopTask: mocks.stopTask,
 }));
 
 beforeEach(() => {

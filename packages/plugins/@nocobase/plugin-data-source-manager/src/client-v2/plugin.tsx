@@ -78,6 +78,10 @@ export interface DataSourceTypeOptions {
   disableAddFields?: boolean;
   disableConfigureFields?: boolean;
   disableTestConnection?: boolean;
+  capabilities?: {
+    query?: boolean;
+    runSQL?: boolean;
+  };
   AddCollection?: ComponentType<DataSourceCollectionActionProps>;
   EditCollection?: ComponentType<DataSourceCollectionActionProps>;
   DeleteCollection?: ComponentType<DataSourceCollectionActionProps>;

@@ -1,8 +1,8 @@
 ---
-displayName: "审计日志"
-packageName: '@nocobase/plugin-audit-logger'
 title: "审计日志"
 keywords: "审计日志,插件,NocoBase"
+displayName: "审计日志"
+packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:
   - 1.x
   - 2.x

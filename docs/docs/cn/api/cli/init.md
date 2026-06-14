@@ -38,6 +38,27 @@ nb init --env app1 --resume
 
 `--resume` 只适用于已经保存过 env 配置的初始化流程，并且必须显式传入 `--env`。
 
+## 先准备 env，稍后再安装应用
+
+`--prepare-only` 适用于需要先准备 env、再激活 license、最后再安装并启动应用的场景。
+
+如果你想先保存 env 配置、准备源码或镜像，并把数据库准备好，但暂时不执行应用安装和首次启动，可以使用：
+
+```bash
+nb init --env app1 --prepare-only
+nb init --env app1 --prepare-only --ui
+nb init --env app1 --prepare-only --yes
+```
+
+这个模式适用于本地安装类流程，包括 `--ui` 向导；但不适用于远程连接流程。CLI 会把当前 env 保存为 prepared 状态，后续你可以按下面的方式继续：
+
+```bash
+nb license activate --env app1
+nb app start --env app1
+```
+
+之后 `nb app start` 会完成首次安装，并把 env 从 prepared 状态切换为普通的 installed 状态。
+
 ## 安装目录说明
 
 可以通过 `nb env info app1 --field app.appPath` 查看完整路径。
@@ -53,7 +74,7 @@ nb init --env app1 --resume
 
 通常来说：
 
-- `source/` 主要对应 npm / Git env 的本地应用目录。对于 Docker env，CLI 也会保留这套默认路径推导，不过大多数时候你不需要手动关心它
+- `source/` 主要对应 npm / Git env 的本地应用目录。对于 Docker env，CLI 也会保留这套默认路径推导，不过大多数时候你不需要手动关心它。需要特别注意的是，升级应用时，`source/` 目录会被删除后重新下载，不要把需要保留的文件放在这里
 - `storage/` 用来放运行时数据，比如内置数据库数据、插件、日志等内容
 - `.env` 是可选的应用环境变量文件。只有当你需要自定义环境变量时，才需要在 `<app-path>/.env` 里添加它；如果这个文件存在，Docker、npm 和 Git 这几种安装来源默认都会读取它
 
@@ -104,6 +125,7 @@ nb init --env app1 --resume
 | `--ui-port` | integer | `0` | `--ui` 本地服务端口，`0` 表示自动分配 |
 | `--locale` | string | 跟随 `NB_LOCALE`、CLI 配置或系统 locale；最终回退 `en-US` | CLI 提示和本地 setup UI 语言：`en-US` 或 `zh-CN` |
 | `--resume` | boolean | `false` | 继续上一次未完成的初始化，复用已保存的 workspace env config |
+| `--prepare-only` | boolean | `false` | 保存并准备本地安装 env，包括 `--ui` 流程，但暂时不安装也不启动应用 |
 
 ### 连接已有应用
 
@@ -178,6 +200,14 @@ nb init
 ```bash
 nb init --ui
 nb init --ui --ui-port 3000
+```
+
+### 先准备，再激活 license 并稍后启动
+
+```bash
+nb init --env app1 --prepare-only
+nb license activate --env app1
+nb app start --env app1
 ```
 
 ### 非交互方式新安装一个本地应用

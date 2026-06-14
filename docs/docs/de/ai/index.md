@@ -92,7 +92,7 @@ features:
     items:
       - title: NocoBase CLI
         details: Das Kommandozeilenwerkzeug von NocoBase, sofort nach der Installation einsatzbereit – mit integrierten AI Skills, sodass Ihr KI-Assistent NocoBase direkt bedienen kann.
-        link: /api/cli/
+        link: /nocobase-cli/
       - title: NocoBase Skills
         details: Domänenwissenpakete, die in einen AI Agent installiert werden können, damit dieser die Fähigkeiten und Konventionen von NocoBase versteht.
         link: /ai-builder#nocobase-skills

@@ -27,7 +27,7 @@ Jika lingkungan prasyarat tidak terpenuhi, beri tahu pengguna bahwa mereka perlu
 Jika lingkungan pengguna sudah memasang NocoBase CLI (jalankan `nb --version` untuk memeriksa), langsung lanjutkan ke langkah berikutnya. Jika belum, jalankan perintah berikut untuk memasang:
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 ```
 
 Jalankan `nb --version` untuk mengonfirmasi instalasi berhasil.

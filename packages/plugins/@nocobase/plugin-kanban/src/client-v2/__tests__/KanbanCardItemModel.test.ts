@@ -83,8 +83,8 @@ describe('KanbanCardItemModel.cardSettings', () => {
       popupTemplateUid: 'tpl-card',
       popupTargetUid: 'popup-card-1',
     });
-    expect(ensureCardViewAction).toHaveBeenCalledTimes(1);
-    expect(syncCardViewAction).toHaveBeenCalledWith(masterBlock.subModels.cardViewAction);
+    expect(ensureCardViewAction).not.toHaveBeenCalled();
+    expect(syncCardViewAction).not.toHaveBeenCalled();
   });
 
   test('popup default params keep an explicitly cleared item template instead of falling back to parent template', async () => {
@@ -193,6 +193,7 @@ describe('KanbanCardItemModel.cardSettings', () => {
 
     expect(masterItem.props.popupTargetUid).toBeUndefined();
     expect(masterItem.stepParams.cardSettings.popup.uid).toBeUndefined();
+    expect(ensureCardViewAction).toHaveBeenCalledWith({ persist: true });
   });
 
   test('layout changes persist from card forks and propagate to details items', () => {

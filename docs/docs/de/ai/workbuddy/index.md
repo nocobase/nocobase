@@ -70,7 +70,7 @@ Stellen Sie vor dem Start sicher, dass die folgende Umgebung bereitsteht:
 
 - Ein WorkBuddy-Konto ([Registrierung](https://www.codebuddy.cn))
 - Node.js >= 22 (zum Ausführen von NocoBase CLI und Skills)
-- Falls Sie bereits eine NocoBase-Instanz haben: **Da sich die KI-Fähigkeiten schnell weiterentwickeln, unterstützt derzeit nur die neueste Beta-Version den vollständigen Funktionsumfang. Mindestens erforderliche Version: >= 2.1.0-beta.20. Es wird dringend empfohlen, auf die neueste Version zu aktualisieren.**
+- Falls Sie bereits eine NocoBase-Instanz haben: **Da sich die KI-Fähigkeiten schnell weiterentwickeln, ist mindestens NocoBase 2.1.0 erforderlich. Wir empfehlen, auf die neueste Version zu aktualisieren.**
 
 :::warning Hinweis
 
@@ -91,7 +91,7 @@ Hilf mir, die NocoBase CLI zu installieren und die Initialisierung abzuschließe
 ### Manuelle Installation
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

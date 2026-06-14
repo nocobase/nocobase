@@ -1,8 +1,10 @@
 ---
-displayName: "Block : Template (obsolète)"
+title: "Block: template (deprecated)"
+keywords: "Block,Template"
+displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  Créer et gérer des templates de blocks pour une réutilisation sur les pages.
+  Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Block : Template (obsolète)
+# Block: template (deprecated)
 
-> Note : Ce plugin est obsolète (deprecated).
+> Note: This plugin is deprecated.

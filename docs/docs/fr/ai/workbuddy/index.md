@@ -70,7 +70,7 @@ Avant de commencer, assurez-vous de disposer de l'environnement suivant :
 
 - Un compte WorkBuddy ([page d'inscription](https://www.codebuddy.cn))
 - Node.js >= 22 (pour exécuter NocoBase CLI et Skills)
-- Si vous disposez déjà d'une instance NocoBase, **en raison de l'évolution rapide des capacités AI, seule la dernière version beta offre actuellement une expérience complète, avec une version minimale requise >= 2.1.0-beta.20. Nous recommandons fortement la mise à jour vers la dernière version.**
+- Si vous disposez déjà d'une instance NocoBase, **en raison de l'évolution rapide des capacités AI, la version minimale requise est NocoBase 2.1.0. Nous recommandons la mise à jour vers la dernière version.**
 
 :::warning Attention
 
@@ -91,7 +91,7 @@ Aide-moi à installer NocoBase CLI et à terminer l'initialisation : https://doc
 ### Installation manuelle
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

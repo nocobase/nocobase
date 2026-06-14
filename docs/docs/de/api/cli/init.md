@@ -38,6 +38,27 @@ nb init --env app1 --resume
 
 `--resume` gilt nur für Initialisierungsabläufe, bei denen die env-Konfiguration bereits gespeichert wurde, und `--env` muss ausdrücklich angegeben werden.
 
+## Zuerst das env vorbereiten und die App später installieren
+
+`--prepare-only` ist für Abläufe gedacht, bei denen zuerst das env vorbereitet, dann die Lizenz aktiviert und erst danach die App installiert und gestartet wird.
+
+Wenn du zuerst die env-Konfiguration speichern, den Quellcode oder das Image vorbereiten und die Datenbank einrichten möchtest, die eigentliche App-Installation und den ersten Start aber zunächst verschieben willst, kannst du Folgendes verwenden:
+
+```bash
+nb init --env app1 --prepare-only
+nb init --env app1 --prepare-only --ui
+nb init --env app1 --prepare-only --yes
+```
+
+Dieser Modus ist für lokale Installationsabläufe verfügbar, einschließlich des `--ui`-Assistenten. Für Remote-Verbindungsabläufe ist er nicht verfügbar. Die CLI speichert das aktuelle env im Status prepared, sodass du später mit einem Ablauf wie diesem fortfahren kannst:
+
+```bash
+nb license activate --env app1
+nb app start --env app1
+```
+
+Danach schließt `nb app start` die Erstinstallation ab und wechselt das env vom prepared-Status in den normalen installed-Status.
+
 ## Hinweise zum Installationsverzeichnis
 
 Den vollständigen Pfad kannst du mit `nb env info app1 --field app.appPath` anzeigen.
@@ -53,7 +74,7 @@ Standardmäßig organisiert die CLI lokale Dateien unter `app-path` nach dieser 
 
 In der Regel gilt:
 
-- `source/` entspricht hauptsächlich dem lokalen App-Verzeichnis für npm-/Git-envs. Bei Docker-envs behält die CLI diese Standardpfadableitung ebenfalls bei, allerdings musst du dich in den meisten Fällen nicht manuell darum kümmern
+- `source/` entspricht hauptsächlich dem lokalen App-Verzeichnis für npm-/Git-envs. Bei Docker-envs behält die CLI diese Standardpfadableitung ebenfalls bei, allerdings musst du dich in den meisten Fällen nicht manuell darum kümmern. Achte bei Upgrades besonders darauf: Das Verzeichnis `source/` wird gelöscht und erneut heruntergeladen. Lege hier also keine Dateien ab, die erhalten bleiben müssen
 - `storage/` dient zum Speichern von Laufzeitdaten wie eingebetteten Datenbankdaten, Plugins, Logs usw.
 - `.env` ist eine optionale Datei für Umgebungsvariablen der App. Du musst sie nur in `<app-path>/.env` anlegen, wenn du Umgebungsvariablen anpassen möchtest; falls diese Datei vorhanden ist, wird sie bei den Installationsquellen Docker, npm und Git standardmäßig eingelesen
 
@@ -78,7 +99,7 @@ Wenn du dem lokalen UI-Assistenten Schritt für Schritt folgst, kannst du dich m
 
 | Step                      | Wichtige Parameter                                                                                                                                                                                                |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`                                                                                                                                    |
+| `Getting started`         | `--env`、`--yes`、`--ui`、`--locale`、`--verbose`、`--skip-skills`、`--resume`、`--prepare-only`                                                                                                                 |
 | `App environment`         | `--lang`、`--app-path`、`--app-port`、`--force`                                                                                                                                                                   |
 | `App source and version`  | `--source`、`--version`、`--skip-download`、`--git-url`、`--docker-registry`、`--docker-platform`、`--npm-registry`、`--replace`、`--dev-dependencies`、`--output-dir`、`--docker-save`、`--build`、`--build-dts` |
 | `Configure the database`  | `--builtin-db`、`--db-dialect`、`--builtin-db-image`、`--db-host`、`--db-port`、`--db-database`、`--db-user`、`--db-password`、`--db-schema`、`--db-table-prefix`、`--db-underscored`                             |
@@ -104,6 +125,7 @@ Der „Standardwert“ unten steht für den Wert oder das Verhalten, das `nb ini
 | `--ui-port`     | integer | `0`                                                                                           | Port des lokalen `--ui`-Dienstes; `0` bedeutet automatische Zuweisung                                                          |
 | `--locale`      | string  | Folgt `NB_LOCALE`, der CLI-Konfiguration oder dem System-Locale; endgültiger Fallback `en-US` | Sprache der CLI-Prompts und der lokalen Setup-UI: `en-US` oder `zh-CN`                                                         |
 | `--resume`      | boolean | `false`                                                                                       | Setzt eine zuvor unvollständige Initialisierung fort und verwendet die bereits gespeicherte Workspace-env-Konfiguration wieder |
+| `--prepare-only` | boolean | `false`                                                                                      | Speichert und bereitet ein lokales Installations-env vor, einschließlich `--ui`-Abläufen, ohne die App schon zu installieren oder zu starten |
 
 ### Verbindung mit einer bestehenden App
 
@@ -178,6 +200,14 @@ nb init
 ```bash
 nb init --ui
 nb init --ui --ui-port 3000
+```
+
+### Zuerst vorbereiten, dann die Lizenz aktivieren und später starten
+
+```bash
+nb init --env app1 --prepare-only
+nb license activate --env app1
+nb app start --env app1
 ```
 
 ### Eine neue lokale App nicht interaktiv installieren

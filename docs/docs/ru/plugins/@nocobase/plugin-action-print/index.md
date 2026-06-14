@@ -1,12 +1,14 @@
 ---
-displayName: "Действие: Печать"
+title: "Action: Print"
+keywords: "Actions"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  Вызывает функцию печати браузера для печати одной записи.
+  Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Действие: Печать
+# Action: Print

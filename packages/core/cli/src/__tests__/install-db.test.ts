@@ -8,6 +8,8 @@
  */
 
 import net from 'node:net';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, test, expect, vi } from 'vitest';
 import Install from '../commands/install.js';
@@ -188,51 +190,64 @@ test('install uses configured default-api-host for the connection step apiBaseUr
   const command = Object.create(Install.prototype) as Install & {
     resolveResumePresetValues: typeof Install.prototype.resolveResumePresetValues;
   };
+  const previousCliRoot = process.env.NB_CLI_ROOT;
+  const tempCliRoot = await mkdtemp(path.join(os.tmpdir(), 'nocobase-install-db-config-'));
 
   vi.spyOn(command as any, 'resolveResumePresetValues').mockResolvedValue(undefined);
 
-  const { setCliConfigValue } = await import('../lib/cli-config.js');
-  await setCliConfigValue('default-api-host', '192.168.1.10');
-
-  const runPromptCatalogMock = vi
-    .fn()
-    .mockResolvedValueOnce({ env: 'app7593' })
-    .mockResolvedValueOnce({
-      appRootPath: './app7593/source/',
-      appPort: '13000',
-      storagePath: './app7593/storage/',
-    })
-    .mockResolvedValueOnce({})
-    .mockResolvedValueOnce({
-      dbDialect: 'postgres',
-      builtinDb: true,
-    })
-    .mockResolvedValueOnce({
-      rootUsername: 'nocobase',
-      rootEmail: 'admin@nocobase.com',
-      rootPassword: 'nocobase',
-      rootNickname: 'NocoBase',
-    })
-    .mockResolvedValueOnce({
-      name: 'app7593',
-      apiBaseUrl: 'http://192.168.1.10:13000/api',
-      authType: 'oauth',
-    });
-
-  const promptCatalogModule = await import('../lib/prompt-catalog.js');
-  const runPromptCatalogSpy = vi
-    .spyOn(promptCatalogModule, 'runPromptCatalog')
-    .mockImplementation(runPromptCatalogMock as any);
-
   try {
-    await (Install.prototype as any).collectPromptResults.call(command, { resume: false }, true);
-  } finally {
-    runPromptCatalogSpy.mockRestore();
-    await deleteCliConfigValue('default-api-host');
-  }
+    process.env.NB_CLI_ROOT = tempCliRoot;
 
-  const envAddOptions = runPromptCatalogMock.mock.calls[5]?.[1];
-  expect(envAddOptions.initialValues.apiBaseUrl).toBe('http://192.168.1.10:13000/api');
+    const { setCliConfigValue } = await import('../lib/cli-config.js');
+    await setCliConfigValue('default-api-host', '192.168.1.10');
+
+    const runPromptCatalogMock = vi
+      .fn()
+      .mockResolvedValueOnce({ env: 'app7593' })
+      .mockResolvedValueOnce({
+        appRootPath: './app7593/source/',
+        appPort: '13000',
+        storagePath: './app7593/storage/',
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({
+        dbDialect: 'postgres',
+        builtinDb: true,
+      })
+      .mockResolvedValueOnce({
+        rootUsername: 'nocobase',
+        rootEmail: 'admin@nocobase.com',
+        rootPassword: 'nocobase',
+        rootNickname: 'NocoBase',
+      })
+      .mockResolvedValueOnce({
+        name: 'app7593',
+        apiBaseUrl: 'http://192.168.1.10:13000/api',
+        authType: 'oauth',
+      });
+
+    const promptCatalogModule = await import('../lib/prompt-catalog.js');
+    const runPromptCatalogSpy = vi
+      .spyOn(promptCatalogModule, 'runPromptCatalog')
+      .mockImplementation(runPromptCatalogMock as any);
+
+    try {
+      await (Install.prototype as any).collectPromptResults.call(command, { resume: false }, true);
+    } finally {
+      runPromptCatalogSpy.mockRestore();
+      await deleteCliConfigValue('default-api-host');
+    }
+
+    const envAddOptions = runPromptCatalogMock.mock.calls[5]?.[1];
+    expect(envAddOptions.initialValues.apiBaseUrl).toBe('http://192.168.1.10:13000/api');
+  } finally {
+    if (previousCliRoot === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previousCliRoot;
+    }
+    await rm(tempCliRoot, { recursive: true, force: true });
+  }
 });
 
 test('install hides the deferred accessToken prompt when --skip-auth is used with token auth', async () => {

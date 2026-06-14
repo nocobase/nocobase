@@ -70,7 +70,7 @@ WorkBuddy は以下の方法で NocoBase と連携します：
 
 - WorkBuddy アカウント（[登録ページ](https://www.codebuddy.cn)）
 - Node.js >= 22（NocoBase CLI と Skills の実行に必要）
-- 既存の NocoBase インスタンスがある場合、**AI 機能は急速に進化しているため、現時点では beta 最新版のみ完全な体験をサポートしています。最低バージョン要件は >= 2.1.0-beta.20 で、最新版への更新を強く推奨します。**
+- 既存の NocoBase インスタンスがある場合、**AI 機能は急速に進化しているため、最低バージョン要件は NocoBase 2.1.0 です。最新版への更新をお勧めします。**
 
 :::warning 注意
 
@@ -91,7 +91,7 @@ NocoBase CLI をインストールして初期化を完了してください：h
 ### 手動インストール
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

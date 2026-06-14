@@ -1,4 +1,6 @@
 ---
+title: "RabbitMQ queue adapter"
+keywords: "RabbitMQ queue adapter,Plugin,NocoBase"
 displayName: "RabbitMQ queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:

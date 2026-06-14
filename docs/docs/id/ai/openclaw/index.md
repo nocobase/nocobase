@@ -63,7 +63,7 @@ Sebelum memulai, pastikan Anda telah menyiapkan lingkungan berikut:
 
 - OpenClaw Agent yang sudah dideploy ([deployment Lark sekali klik](https://openclaw.feishu.cn) atau deployment lokal)
 - Node.js >= 22 (untuk menjalankan NocoBase CLI dan Skills)
-- Jika sudah memiliki instance NocoBase, **karena kemampuan AI berkembang dengan cepat, saat ini hanya versi beta terbaru yang mendukung pengalaman lengkap, dengan persyaratan versi minimum >= 2.1.0-beta.20, sangat disarankan untuk memperbarui ke versi terbaru.**
+- Jika sudah memiliki instance NocoBase, **karena kemampuan AI berkembang dengan cepat, versi minimum yang diperlukan adalah NocoBase 2.1.0. Disarankan untuk memperbarui ke versi terbaru.**
 
 :::warning Perhatian
 
@@ -84,7 +84,7 @@ Bantu saya memasang NocoBase CLI dan menyelesaikan inisialisasi: https://docs.no
 ### Instalasi Manual
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

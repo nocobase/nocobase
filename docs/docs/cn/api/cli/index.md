@@ -191,7 +191,6 @@ CLI 也兼容读取当前工作目录下的旧 project 配置。
 ## 相关链接
 
 - [快速开始](../../ai/quick-start.mdx)
-- [安装、升级与迁移](../../ai/install-upgrade-migration.mdx)
 - [全局环境变量](../app/env.md)
 - [AI 搭建](../../ai-builder/index.md)
 - [插件开发](../../plugin-development/index.md)

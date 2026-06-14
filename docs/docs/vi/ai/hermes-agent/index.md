@@ -69,7 +69,7 @@ Trước khi bắt đầu, hãy đảm bảo bạn đã chuẩn bị các môi t
 
 - Một server chạy Hermes Agent (Linux / macOS, Python 3.10+)
 - Node.js >= 22 (để chạy NocoBase CLI và Skills)
-- Nếu đã có NocoBase, **do năng lực AI được lặp nhanh chóng, hiện tại chỉ phiên bản beta mới nhất hỗ trợ trải nghiệm đầy đủ, yêu cầu phiên bản tối thiểu >= 2.1.0-beta.20, khuyến nghị mạnh mẽ cập nhật lên phiên bản mới nhất.**
+- Nếu đã có NocoBase, **do năng lực AI được cập nhật nhanh chóng, yêu cầu phiên bản tối thiểu là NocoBase 2.1.0. Khuyến nghị cập nhật lên phiên bản mới nhất.**
 
 Cài đặt Hermes chỉ cần một dòng lệnh:
 
@@ -96,7 +96,7 @@ Giúp tôi cài đặt NocoBase CLI và hoàn thành khởi tạo: https://docs.
 ### Cài đặt thủ công
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 

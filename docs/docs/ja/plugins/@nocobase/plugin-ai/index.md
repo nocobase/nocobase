@@ -1,12 +1,16 @@
 ---
-displayName: "AI 従業員"
+title: "AI employees"
+keywords: "AI"
+displayName: "AI employees"
 packageName: '@nocobase/plugin-ai'
+supportedVersions:
+  - 2.x
 description: |
-  多様なスキルを持つ AI 従業員を作成し、人間と協力してシステムを構築し、業務を処理します。
+  Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# AI 従業員
+# AI employees

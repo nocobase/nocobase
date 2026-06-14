@@ -324,7 +324,7 @@ async function reloadLocalNginxProxy(runtimeContext: NginxProxyRuntimeContext): 
   await installEnvProxyProvider('nginx', { runtimeCliRoot: runtimeContext.runtimeCliRoot });
 
   if (!(await isLocalNginxRunning())) {
-    throw new Error('Local nginx is not running. Start it first with `nb proxy nginx start`.');
+    return await startLocalNginxProxy(runtimeContext);
   }
 
   await reloadEnvProxyProvider('nginx', { runtimeCliRoot: runtimeContext.runtimeCliRoot });
@@ -386,7 +386,7 @@ async function reloadDockerNginxProxy(runtimeContext: NginxProxyRuntimeContext):
   await ensureNginxProxyMainConfig(runtimeContext);
 
   if (!(await dockerContainerIsRunning(containerName))) {
-    throw new Error('Docker nginx proxy is not running. Start it first with `nb proxy nginx start`.');
+    return await startDockerNginxProxy(runtimeContext);
   }
 
   await run('docker', ['exec', containerName, 'nginx', '-s', 'reload'], {

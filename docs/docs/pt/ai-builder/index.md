@@ -23,7 +23,7 @@ Me ajude a instalar o NocoBase CLI e fazer a inicialização: https://docs.nocob
 ### Instalação manual
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 
@@ -95,13 +95,27 @@ A IA primeiro apresenta a proposta de design e, após confirmação, executa tod
 
 Para saber mais sobre como construir sistemas completos, consulte [Soluções](./dsl-reconciler).
 
+### Construa um marco e a IA salva uma versão restaurável para você
+
+Depois de concluir uma página, um conjunto de tabelas de dados ou um fluxo de trabalho, deixe a IA salvar o estado atual como versão — se uma configuração der errado, você sempre pode voltar ao último marco claro.
+
+```
+Salve a construção atual como versão: página de gerenciamento de clientes, área de filtros e formulário de edição concluídos
+```
+
+![A IA cria uma versão após a criação](https://static-docs.nocobase.com/20260611115804.png)
+
+A IA não salva uma versão a cada alteração de campo; ela só salva após concluir e verificar um marco claro, o que mantém a lista de versões legível e facilita decidir para onde voltar.
+
+Para saber mais sobre o controle de versão, consulte [Controle de Versão](./version-control).
+
 ## Segurança e auditoria
 
 Antes de deixar um AI Agent operar o NocoBase, recomendamos que você entenda primeiro os métodos de autenticação, o controle de permissões e a auditoria de operações — para garantir que a IA faça apenas o que deve e que cada passo fique registrado. Consulte [Segurança e Auditoria](./security).
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) são pacotes de conhecimento de domínio que podem ser instalados em AI Agents, permitindo que a IA entenda o sistema de configuração do NocoBase. O NocoBase oferece 8 Skills, cobrindo todo o fluxo de construção:
+[NocoBase Skills](https://github.com/nocobase/skills) são pacotes de conhecimento de domínio que podem ser instalados em AI Agents, permitindo que a IA entenda o sistema de configuração do NocoBase. O NocoBase oferece 9 Skills, cobrindo todo o fluxo de construção:
 
 - [Gerenciamento de Ambiente](./env-bootstrap) — Verificação de ambiente, instalação, atualização e diagnóstico de falhas
 - [Modelagem de Dados](./data-modeling) — Criar e gerenciar tabelas, campos e relacionamentos
@@ -111,6 +125,7 @@ Antes de deixar um AI Agent operar o NocoBase, recomendamos que você entenda pr
 - [Soluções](./dsl-reconciler) — Construir sistemas de negócio completos em lote a partir de YAML
 - [Gerenciamento de Plugins](./plugin-manage) — Visualizar, ativar e desativar plugins
 - [Gerenciamento de Publicação](./publish) — Publicação entre ambientes, backup, restauração e migração
+- [Controle de Versão](./version-control) — Salvar versões restauráveis após marcos concluídos
 
 :::tip Dica
 

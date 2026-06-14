@@ -1,12 +1,14 @@
 ---
-displayName: "Bloque: Gantt"
+title: "Block: Gantt"
+keywords: "Blocks"
+displayName: "Block: Gantt"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  Proporciona el bloque Gantt.
+  Provides Gantt block.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Bloque: Gantt
+# Block: Gantt

@@ -1,15 +1,17 @@
 ---
-displayName: "Хранилище файлов: S3 (Pro)"
+title: "File storage: S3(Pro)"
+keywords: "Collections,Collection fields"
+displayName: "File storage: S3(Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Поддержка S3-совместимых хранилищ файлов, таких как Amazon S3, Aliyun OSS, Tencent Cloud COS, MinIO и др. Поддерживает прямую загрузку файлов и приватный доступ.
+  Support S3-compatible file storage, including services like Amazon S3, Aliyun OSS, Tencent Cloud COS, and MinIO. Features include direct file uploads and private access control.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Хранилище файлов: S3 (Pro)
+# File storage: S3(Pro)

@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Benachrichtigungs-Node"
+title: "Workflow: notification node"
+keywords: "Workflow"
+displayName: "Workflow: notification node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  Ermöglicht das Senden verschiedener Arten von Benachrichtigungen innerhalb eines Workflows.
+  Send notification in workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Benachrichtigungs-Node
+# Workflow: notification node

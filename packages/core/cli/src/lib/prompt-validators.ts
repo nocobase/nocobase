@@ -23,6 +23,10 @@ function buildHealthCheckUrl(apiBaseUrl: string): string {
   return `${apiBaseUrl.replace(/\/+$/, '')}/__health_check`;
 }
 
+function hasSupportedApiBasePath(pathname: string): boolean {
+  return /\/api(?:\/__app\/[^/]+)?\/?$/.test(pathname);
+}
+
 function isMaintainingHealthCheckResponse(status: number, body: unknown): boolean {
   if (status !== 503 || !body || typeof body !== 'object') {
     return false;
@@ -61,6 +65,10 @@ export async function validateApiBaseUrl(value: PromptValue): Promise<string | u
 
   if (/\/__health_check\/?$/i.test(url.pathname)) {
     return translateCli('validators.apiBaseUrl.healthCheckPathNotAllowed');
+  }
+
+  if (!hasSupportedApiBasePath(url.pathname)) {
+    return translateCli('validators.apiBaseUrl.missingApiPrefix', { example: API_BASE_URL_EXAMPLE });
   }
 
   const controller = new AbortController();

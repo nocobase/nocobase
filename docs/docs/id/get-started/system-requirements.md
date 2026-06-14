@@ -17,6 +17,14 @@ Kecuali untuk skenario verifikasi fungsi atau eksperimental, **sangat disarankan
 
 Konfigurasi sistem dan perencanaan kapasitas untuk layanan terkait harus dievaluasi dan dioptimalkan secara terpisah berdasarkan **volume data aktual, beban bisnis, dan skala konkurensi**.
 
+## Sistem Operasi
+
+Untuk lingkungan produksi, server Linux direkomendasikan, seperti Ubuntu LTS, Debian, Rocky Linux, atau AlmaLinux. Docker, reverse proxy, manajemen proses, logging, dan alur backup lebih matang di Linux dan lebih mudah diintegrasikan dengan lingkungan server cloud umum.
+
+NocoBase juga dapat diinstal di Windows Server. Jika Anda memilih Windows Server, pastikan Node.js, database, reverse proxy, process supervision, backup, izin file, firewall, dan operasi terkait sudah disesuaikan dengan metode deployment yang digunakan.
+
+macOS biasanya lebih cocok untuk pengembangan lokal dan pengujian, dan tidak direkomendasikan sebagai server produksi. Jika Anda menyiapkan NocoBase secara lokal untuk pengembangan atau penggunaan AI Agent, lihat [Local Development Setup](../ai/local-development-setup.md).
+
 ## Mode Deployment Node Tunggal
 
 Mode deployment node tunggal mengacu pada layanan aplikasi NocoBase yang hanya berjalan pada satu instans server atau container.

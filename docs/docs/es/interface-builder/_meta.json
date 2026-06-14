@@ -328,6 +328,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Entrada por Escaneo",
+            "link": "/interface-builder/fields/field-settings/scan-input"
+          },
+          {
+            "type": "custom-link",
             "label": "Campo de título",
             "link": "/interface-builder/fields/field-settings/title-field"
           },

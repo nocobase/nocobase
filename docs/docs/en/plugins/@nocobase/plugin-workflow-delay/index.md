@@ -1,8 +1,10 @@
 ---
+title: "Workflow: Delay node"
+keywords: "Workflow"
 displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Can be used in parallel branches of a workflow to wait for other branches to complete execution.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false

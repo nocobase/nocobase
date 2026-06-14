@@ -217,6 +217,7 @@ export { ModelSelect, Chat };
 export type { LLMProviderOptions, ToolOptions } from './manager/ai-manager';
 export type { AIEmployee, ToolCall } from './ai-employees/types';
 export * from './features';
+export { defaultVectorStorePropForm } from './features/components';
 export { AIEmployeeActionModel } from './ai-employees/flow/models/AIEmployeeActionModel';
 export { useChatMessagesStore } from './ai-employees/chatbox/stores/chat-messages';
 export { useChat } from './ai-employees/chatbox/hooks/useChat';

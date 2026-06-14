@@ -1,14 +1,16 @@
 ---
-displayName: "App Supervisor"
+title: "App supervisor"
+keywords: "Architecture"
+displayName: "App supervisor"
 packageName: '@nocobase/plugin-app-supervisor'
 supportedVersions:
   - 2.x
 description: |
-  O plugin App Supervisor é utilizado para a supervisão e o agendamento unificados de múltiplas instâncias de aplicativos NocoBase, fornecendo recursos de descoberta de aplicativos e gerenciamento de tempo de execução (runtime).
+  The App Supervisor plugin provides unified supervision and orchestration of multiple NocoBase application instances, offering application discovery and runtime management capabilities.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# App Supervisor
+# App supervisor

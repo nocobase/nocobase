@@ -58,4 +58,9 @@ Anda dapat menginstal NocoBase dengan berbagai cara.
 | **Skenario yang Sesuai** | Pengguna no-code, pengguna yang ingin deployment cepat ke server. | Developer frontend/fullstack, proyek tim, pengembangan low-code. | Developer teknis, pengguna yang ingin mencoba versi yang belum dirilis. |
 | **Persyaratan Teknis** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Cara Upgrade** | Tarik image terbaru dan restart container | Gunakan yarn untuk memperbarui dependencies | Sinkronisasi pembaruan melalui alur Git |
-| **Tutorial** | [<code>Instalasi</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Instalasi</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Instalasi</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) |
+
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
+## Langkah selanjutnya
+
+Jika Anda sudah memilih metode instalasi, langkah berikutnya adalah [Instal aplikasi NocoBase](/ai/install-nocobase-app). Di sana Anda akan memasang NocoBase CLI dan menyelesaikan instalasi serta inisialisasi aplikasi.

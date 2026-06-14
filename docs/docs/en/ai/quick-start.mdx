@@ -2,7 +2,6 @@
 title: "AI Agent Integration Guide"
 description: "Install NocoBase CLI, connect to or install a NocoBase application, and let AI Agents start operating your business system."
 keywords: "NocoBase CLI,AI Agent,integration,connect,installation,Skills,quick start"
-sidebar: false
 ---
 
 # AI Agent Integration Guide
@@ -42,7 +41,7 @@ If you don't have a NocoBase application yet, you can use CLI to install and ini
 #### Step 1: Install CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // Confirm successful installation
 ```
 
@@ -58,15 +57,16 @@ Configuration files and application data are stored in your home directory by de
 
 :::
 
-The browser will automatically open a visual configuration page, guiding you through 5 steps:
+The browser will automatically open a visual configuration page, guiding you through 6 steps:
 
-1. **Start Configuration** — Set the application name (also used as the CLI environment name), select "Fresh Installation"
-2. **Create Application** — Choose the installation method (Docker / npm / Git), set port and other basic configurations
-3. **Download Application Files** — Select source and version, download NocoBase source code or image
-4. **Configure Database** — Use the built-in database or configure an external database (PostgreSQL, MySQL, MariaDB)
-5. **Create Admin Account** — Set the admin email and password
+1. "Getting started" — Choose whether to install a new app, manage a local app, or connect a remote app.
+2. "App environment" — Set the app basics, storage location, and runtime port.
+3. "App source and version" — Choose how to get the app and which source and version to use.
+4. "Configure the database" — Use built-in or custom.
+5. "Create an admin account" — Set up the first admin.
+6. "Connection & authentication" — Enter the app access URL and choose an authentication method.
 
-![nocobase cli visual wizard](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+![nocobase cli visual wizard](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
 After installation is complete, open your browser and visit `http://localhost:13000` (default port), then log in with the admin account you just set up.
 
@@ -92,7 +92,7 @@ After configuration is complete, restart your AI Agent session and you can start
 
 ## Connect AI Agent to an Existing NocoBase
 
-If you already have a running NocoBase instance, you can connect AI Agent to it directly. **Since AI capabilities are evolving rapidly, only the latest beta version provides the full experience. The minimum required version is 2.1.0-beta.20 — we strongly recommend updating to the latest.**
+If you already have a running NocoBase instance, you can connect AI Agent to it directly. **Since AI capabilities are evolving rapidly, the minimum required version is NocoBase 2.1.0, and we recommend updating to the latest version.**
 
 <Tabs>
 <Tab label="Manual Connection" value="manual-connect">
@@ -100,7 +100,7 @@ If you already have a running NocoBase instance, you can connect AI Agent to it 
 #### Step 1: Install CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb --version // Confirm successful installation
 ```
 
@@ -116,12 +116,12 @@ Configuration files are stored in your home directory by default. See [NB_CLI_RO
 
 :::
 
-The browser will automatically open a visual configuration page. In the first step "Start Configuration", select "Connect to Existing Application", then:
+The browser will automatically open a visual configuration page. In the first step "Start Configuration", select "Remote Connection", then:
 
 1. **Enter API Address** — Input the API address of your existing NocoBase instance (e.g., `http://localhost:13000/api`)
 2. **Select Authentication Method** — Choose an [authentication method](../ai-builder/security) (OAuth is recommended for quick setup)
 
-![nocobase cli visual wizard](https://static-docs.nocobase.com/2026-04-29-15-55-55.png)
+![nocobase cli visual wizard](https://static-docs.nocobase.com/2026-06-11-21-18-31.png)
 
 No need to configure installation method, database, or admin account — the wizard will skip those steps.
 
@@ -132,7 +132,7 @@ Start a new or restart the AI Agent session, and you can let the AI Agent start 
 </Tab>
 <Tab label="Connect with AI Agent" value="ai-connect">
 
-Copy the prompt below to your AI assistant. It will complete CLI installation and guide you through connecting to your existing NocoBase instance. Select "Connect to Existing Application" in the first step of the visual wizard:
+Copy the prompt below to your AI assistant. It will complete CLI installation and guide you through connecting to your existing NocoBase instance. Select "Remote Connection" in the first step of the visual wizard:
 
 ```
 Help me install NocoBase CLI and complete initialization: https://docs.nocobase.com/ai/ai-quick-start.md (please read the linked content directly)
@@ -144,6 +144,13 @@ After configuration is complete, restart your AI Agent session and you can start
 </Tabs>
 
 ## What's Next
+
+### Production Installation and Deployment
+
+If you're preparing to deploy NocoBase to production, this order usually works best:
+
+1. [Install using CLI](../nocobase-cli/installation/cli.md) - the complete installation flow. This is the right place when you want to install CLI from scratch, initialize env, and confirm the app is already running on your server
+2. [Production deployment overview](../nocobase-cli/production/index.md) - the next step after the app is running. This mainly covers autostart, reverse proxy, domain setup, and HTTPS
 
 ### Manage Application Environments
 
@@ -172,4 +179,4 @@ If you already have a NocoBase application running, or have successfully complet
 - [AI Employees](../ai-employees/index.md) — Collaborate with AI in the business interface
 - [Environment Management](../ai-builder/env-bootstrap) — Environment checks, adding environments, upgrades, and troubleshooting
 - [NocoBase CLI Command Reference](../api/cli/index.md) — Full parameter documentation for all commands
-- [Installation Methods and Version Comparison](../get-started/quickstart) — Different installation methods and version channels for NocoBase
+- [Installation Methods and Version Comparison](../ai/quickstart) — Different installation methods and version channels for NocoBase

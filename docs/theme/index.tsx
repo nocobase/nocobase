@@ -1,12 +1,30 @@
-import { NoSSR, useFrontmatter, useLang, useNavigate, usePage, usePages } from '@rspress/core/runtime';
+import {
+  NoSSR,
+  useFrontmatter,
+  useLang,
+  useNavigate,
+  usePage,
+  usePages,
+} from '@rspress/core/runtime';
 import type { Feature } from '@rspress/core';
-import { Badge, DocContent, DocLayout as OriginalDocLayout, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme-original';
+import {
+  Badge,
+  DocContent,
+  DocLayout as OriginalDocLayout,
+  getCustomMDXComponent as basicGetCustomMDXComponent,
+  Layout as BasicLayout,
+  HomeFooter,
+  Link as OriginalLink,
+  renderHtmlOrText,
+  Tab,
+  Tabs,
+} from '@rspress/core/theme-original';
 import {
   LlmsContainer,
   LlmsCopyButton,
   LlmsViewOptions,
 } from '@rspress/plugin-llms/runtime';
-import type { ComponentProps, JSX, ReactNode } from 'react';
+import React, { type ComponentProps, type JSX, type ReactNode } from 'react';
 import { PluginCard } from './components/PluginCard';
 import { PluginInfo } from './components/PluginInfo';
 import { PluginList } from './components/PluginList';
@@ -14,6 +32,7 @@ import { ProvidedBy } from './components/ProvidedBy';
 import './index.scss';
 import { transformHref, useLangPrefix } from './utils';
 import { HomeHero } from './components/HomeHero';
+import { decodeTargetBlankHref } from '../shared/blankTargetLink';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -45,6 +64,24 @@ function getCustomMDXComponent() {
 }
 
 export { getCustomMDXComponent };
+
+export function Link(props: ComponentProps<typeof OriginalLink>) {
+  const { href = '/', rel, target, ...restProps } = props;
+  const { href: nextHref, targetBlank } = decodeTargetBlankHref(href);
+
+  if (!targetBlank) {
+    return <OriginalLink {...props} />;
+  }
+
+  return (
+    <OriginalLink
+      {...restProps}
+      href={nextHref}
+      target={target ?? '_blank'}
+      rel={rel ?? 'noopener noreferrer'}
+    />
+  );
+}
 
 export interface HomeLayoutProps {
   beforeHero?: ReactNode;
@@ -78,15 +115,20 @@ type ThemePage = {
   frontmatter?: ThemeFrontmatter & Record<string, unknown>;
 };
 
-function getFeatureGroups(page?: ThemePage | { frontmatter?: ThemeFrontmatter }): HomeFeatureGroup[] {
+function getFeatureGroups(
+  page?: ThemePage | { frontmatter?: ThemeFrontmatter },
+): HomeFeatureGroup[] {
   return page?.frontmatter?.features ?? [];
 }
 
-function isPluginDetailPage(frontmatter?: ThemeFrontmatter, routePath?: string): boolean {
+function isPluginDetailPage(
+  frontmatter?: ThemeFrontmatter,
+  routePath?: string,
+): boolean {
   return Boolean(
     frontmatter?.displayName &&
-    frontmatter?.packageName &&
-    routePath?.includes('/plugins/@nocobase/'),
+      frontmatter?.packageName &&
+      routePath?.includes('/plugins/@nocobase/'),
   );
 }
 
@@ -117,16 +159,14 @@ export function HomeLayout(props: HomeLayoutProps) {
     >
       <div className="rp-pb-12">
         {beforeHero}
-        {
-          frontmatter.hero && (
-            <HomeHero
-              frontmatter={frontmatter}
-              routePath={routePath}
-              beforeHeroActions={beforeHeroActions}
-              afterHeroActions={afterHeroActions}
-            />
-          )
-        }
+        {frontmatter.hero && (
+          <HomeHero
+            frontmatter={frontmatter}
+            routePath={routePath}
+            beforeHeroActions={beforeHeroActions}
+            afterHeroActions={afterHeroActions}
+          />
+        )}
         {afterHero}
         {beforeFeatures}
         <HomeFeature />
@@ -168,8 +208,8 @@ export const Layout = () => {
   };
   const isPluginDetailPage = Boolean(
     frontmatter?.displayName &&
-    frontmatter?.packageName &&
-    routePath?.startsWith('/plugins/@'),
+      frontmatter?.packageName &&
+      routePath?.startsWith('/plugins/@'),
   );
   const pageClassName = [
     isPluginDetailPage ? 'plugin-detail-page' : '',
@@ -199,7 +239,9 @@ export const Layout = () => {
 
 export function DocLayout(props: ComponentProps<typeof OriginalDocLayout>) {
   const { page } = usePage();
-  const { frontmatter } = useFrontmatter() as { frontmatter?: ThemeFrontmatter };
+  const { frontmatter } = useFrontmatter() as {
+    frontmatter?: ThemeFrontmatter;
+  };
 
   if (!isPluginDetailPage(frontmatter, page.routePath)) {
     return <OriginalDocLayout {...props} />;
@@ -237,7 +279,9 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
       <div className="rp-home-feature__item-wrapper">
         <article
           key={title}
-          className={`rp-home-feature__card ${link ? 'rp-home-feature__card--clickable' : ''}`}
+          className={`rp-home-feature__card ${
+            link ? 'rp-home-feature__card--clickable' : ''
+          }`}
           onClick={() => {
             if (link) {
               navigate(transformHref(link, langPrefix));
@@ -252,7 +296,9 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
             <h2 className="rp-home-feature__title">
               {link ? (
                 <Link href={transformHref(link, langPrefix)}>{title}</Link>
-              ) : title}
+              ) : (
+                title
+              )}
             </h2>
           </div>
           <p
@@ -266,7 +312,9 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
 }
 
 export function HomeFeature() {
-  const { frontmatter } = useFrontmatter() as { frontmatter?: ThemeFrontmatter };
+  const { frontmatter } = useFrontmatter() as {
+    frontmatter?: ThemeFrontmatter;
+  };
   const { pages } = usePages() as { pages: ThemePage[] };
   const lang = useLang();
   const featureGroups = frontmatter?.features ?? [];
@@ -278,17 +326,32 @@ export function HomeFeature() {
           let items = feature.items ?? [];
 
           if (index === 2) {
-            const page = pages.find((currentPage) => currentPage.lang === lang && currentPage.frontmatter?.pageName === 'guide');
+            const page = pages.find(
+              (currentPage) =>
+                currentPage.lang === lang &&
+                currentPage.frontmatter?.pageName === 'guide',
+            );
             if (page) {
-              const allItems = getFeatureGroups(page).flatMap((group) => group.items ?? []);
+              const allItems = getFeatureGroups(page).flatMap(
+                (group) => group.items ?? [],
+              );
               items = [...allItems.filter((item) => item.showOnHome), ...items];
             }
           } else if (index === 3) {
-            const page = pages.find((currentPage) => currentPage.lang === lang && currentPage.frontmatter?.pageName === 'development');
+            const page = pages.find(
+              (currentPage) =>
+                currentPage.lang === lang &&
+                currentPage.frontmatter?.pageName === 'development',
+            );
             if (page) {
               // 把 page.frontmatter?.features 里的 items 都拍平合并，取前 8 个
-              const allItems = getFeatureGroups(page).flatMap((group) => group.items ?? []);
-              items = [...allItems.filter((item) => item.showOnHome), ...(feature.items ?? [])];
+              const allItems = getFeatureGroups(page).flatMap(
+                (group) => group.items ?? [],
+              );
+              items = [
+                ...allItems.filter((item) => item.showOnHome),
+                ...(feature.items ?? []),
+              ];
             }
           }
 
@@ -304,7 +367,7 @@ export function HomeFeature() {
                 })}
               </div>
             </div>
-          )
+          );
         })}
       </div>
     );
@@ -325,7 +388,7 @@ export function HomeFeature() {
               })}
             </div>
           </div>
-        )
+        );
       })}
     </div>
   );

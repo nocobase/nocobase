@@ -259,6 +259,7 @@ test('runLocalNocoBaseCommand falls back to the parent .env when only source/ is
 
 test('runLocalNocoBaseCommand prefers an explicit internal env file path when it is saved', async () => {
   const { runLocalNocoBaseCommand } = await import('../lib/app-runtime.js');
+  const { resolveManagedLocalEnvFilePath } = await import('../lib/managed-env-file.js');
   process.env.NB_CLI_ROOT = '/tmp/nb-home';
   const runtime = createLocalRuntime({
     env: {
@@ -276,7 +277,7 @@ test('runLocalNocoBaseCommand prefers an explicit internal env file path when it
     cwd: '/tmp/app1/source',
     env: {
       APP_PORT: '13000',
-      APP_ENV_PATH: '/tmp/nb-home/configs/app1.env',
+      APP_ENV_PATH: resolveManagedLocalEnvFilePath(runtime),
     },
     stdio: undefined,
     onStdout: undefined,

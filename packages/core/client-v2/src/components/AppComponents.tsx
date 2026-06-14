@@ -21,7 +21,13 @@ import type { Application } from '../Application';
 interface AppErrorPayload {
   code?: string;
   message?: string;
-  command?: { name: string };
+  command?: {
+    name: string;
+    components?: {
+      maintaining?: string;
+      maintainingDialog?: string;
+    };
+  };
   [key: string]: any;
 }
 
@@ -188,7 +194,12 @@ export const AppError: FC<{ error: Error & { title?: string }; app: Application 
 );
 
 export const AppMaintaining: FC<{ app: Application; error: Error }> = observer(
-  ({ app }) => {
+  ({ app, error }) => {
+    const component = (error as AppErrorPayload | undefined)?.command?.components?.maintaining;
+    if (component) {
+      return app.renderComponent(component, { app, error });
+    }
+
     const { icon, status, title, subTitle } = getProps(app);
     return (
       <div>
@@ -211,7 +222,12 @@ export const AppMaintaining: FC<{ app: Application; error: Error }> = observer(
 );
 
 export const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(
-  ({ app }) => {
+  ({ app, error }) => {
+    const component = (error as AppErrorPayload | undefined)?.command?.components?.maintainingDialog;
+    if (component) {
+      return app.renderComponent(component, { app, error });
+    }
+
     const { icon, status, title, subTitle } = getProps(app);
     return (
       <Modal open={true} footer={null} closable={false}>
