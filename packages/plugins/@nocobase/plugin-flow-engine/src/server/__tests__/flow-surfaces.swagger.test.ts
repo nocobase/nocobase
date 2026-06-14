@@ -116,6 +116,13 @@ describe('flowSurfaces swagger', () => {
       'FlowSurfaceApplyBlueprintReactionItemSetActionLinkageRules',
       'FlowSurfaceDescribeSurfaceRequest',
       'FlowSurfaceDescribeSurfaceResponse',
+      'FlowSurfaceExportBlueprintUnsupportedPolicy',
+      'FlowSurfaceExportBlueprintUnsupportedItem',
+      'FlowSurfaceExportBlueprintTarget',
+      'FlowSurfaceExportBlueprintRequest',
+      'FlowSurfaceExportBlueprintSource',
+      'FlowSurfaceExportBlueprintDocument',
+      'FlowSurfaceExportBlueprintResponse',
       'FlowSurfaceApplyBlueprintReactionItem',
       'FlowSurfaceApplyBlueprintReaction',
       'FlowSurfaceApplyBlueprintDefaultFieldSpec',
@@ -313,6 +320,58 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.fingerprint.type).toBe('string');
     expect(schemas.FlowSurfaceDescribeSurfaceResponse.properties.keys.$ref).toBe(
       '#/components/schemas/FlowSurfaceKeysMap',
+    );
+    expect(schemas.FlowSurfaceExportBlueprintRequest.required).toEqual(['target']);
+    expect(schemas.FlowSurfaceExportBlueprintRequest.properties.options.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceExportBlueprintRequest.properties.options.properties.unsupported.$ref).toBe(
+      '#/components/schemas/FlowSurfaceExportBlueprintUnsupportedPolicy',
+    );
+    expect(schemas.FlowSurfaceExportBlueprintRequest.properties.target.$ref).toBe(
+      '#/components/schemas/FlowSurfaceExportBlueprintTarget',
+    );
+    expect(schemas.FlowSurfaceExportBlueprintTarget.oneOf.map((item) => item.required)).toEqual([
+      ['uid'],
+      ['pageSchemaUid'],
+      ['tabSchemaUid'],
+      ['routeId'],
+    ]);
+    schemas.FlowSurfaceExportBlueprintTarget.oneOf.forEach((item) => {
+      expect(item.additionalProperties).toBe(false);
+    });
+    expect(schemas.FlowSurfaceExportBlueprintUnsupportedPolicy.enum).toEqual(['error', 'warn']);
+    expect(schemas.FlowSurfaceExportBlueprintUnsupportedItem.required).toEqual([
+      'kind',
+      'path',
+      'reasonCode',
+      'manualAction',
+    ]);
+    expect(schemas.FlowSurfaceExportBlueprintResponse.required).toEqual([
+      'document',
+      'source',
+      'warnings',
+      'unsupported',
+    ]);
+    expect(schemas.FlowSurfaceExportBlueprintResponse.properties.document.$ref).toBe(
+      '#/components/schemas/FlowSurfaceExportBlueprintDocument',
+    );
+    expect(schemas.FlowSurfaceExportBlueprintDocument.required).toEqual([
+      'version',
+      'mode',
+      'target',
+      'tabs',
+      'assets',
+    ]);
+    expect(schemas.FlowSurfaceExportBlueprintDocument.properties.mode.enum).toEqual(['replace']);
+    expect(schemas.FlowSurfaceExportBlueprintDocument.properties.target.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintTarget',
+    );
+    expect(schemas.FlowSurfaceExportBlueprintDocument.properties.navigation).toBeUndefined();
+    expect(schemas.FlowSurfaceExportBlueprintDocument.additionalProperties).toBe(false);
+    expect(schemas.FlowSurfaceExportBlueprintResponse.properties.source.$ref).toBe(
+      '#/components/schemas/FlowSurfaceExportBlueprintSource',
+    );
+    expect(schemas.FlowSurfaceExportBlueprintSource.properties.target.$ref).toBe(
+      '#/components/schemas/FlowSurfaceApplyBlueprintTarget',
     );
     expect(schemas.FlowSurfaceGetReactionMetaRequest.required).toEqual(['target']);
     expect(schemas.FlowSurfaceGetReactionMetaResult.required).toEqual(['target', 'capabilities', 'unavailable']);

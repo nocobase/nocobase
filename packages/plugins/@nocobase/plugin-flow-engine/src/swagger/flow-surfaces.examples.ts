@@ -87,6 +87,14 @@ export const flowSurfaceExamples = {
       },
     ],
   },
+  exportBlueprint: {
+    target: {
+      pageSchemaUid: 'employees-page-schema',
+    },
+    options: {
+      unsupported: 'error',
+    },
+  },
   applyBlueprint: {
     version: '1',
     mode: 'create',

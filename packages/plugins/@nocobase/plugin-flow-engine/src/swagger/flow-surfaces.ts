@@ -526,7 +526,7 @@ function buildReactionCapabilitySchema(
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `exportBlueprint` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -638,6 +638,15 @@ const actionDocs: Record<string, any> = {
     ),
     requestBody: requestBody('FlowSurfaceDescribeSurfaceRequest', examples.describeSurface),
     responses: responses('FlowSurfaceDescribeSurfaceResponse'),
+  },
+  exportBlueprint: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Export one root Modern page as an applyBlueprint replace document',
+    description: valuesCompatibilityNote(
+      `Exports an existing root flow page into a v1 \`FlowSurfaceApplyBlueprintDocument\` that can be sent back to \`flowSurfaces:applyBlueprint\` for same-instance \`replace\`. The request body uses \`{ target, options }\` and does not change the \`flowSurfaces:get\` GET query-locator contract. v1 only supports root page export; block, field, action, tab, and \`tabSchemaUid\` subtree targets return HTTP 400. The exported document intentionally omits \`navigation\` and does not expose raw \`tree\`, \`nodeMap\`, node uid, internal refs, or internal metadata. \`document.target.pageSchemaUid\` is retained for same-instance replace. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceExportBlueprintRequest', examples.exportBlueprint),
+    responses: responses('FlowSurfaceExportBlueprintResponse'),
   },
   applyBlueprint: {
     tags: [FLOW_SURFACES_TAG],
@@ -1383,6 +1392,152 @@ const schemas = {
       },
       routeId: {
         type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintUnsupportedPolicy: {
+    type: 'string',
+    enum: ['error', 'warn'],
+    description:
+      '`error` rejects visible nodes the v1 mapper cannot express. `warn` skips them and reports warnings/unsupported items.',
+  },
+  FlowSurfaceExportBlueprintUnsupportedItem: {
+    type: 'object',
+    required: ['kind', 'path', 'reasonCode', 'manualAction'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['page', 'tab', 'block', 'field', 'action', 'recordAction', 'reaction', 'layout', 'popup'],
+      },
+      use: {
+        type: 'string',
+        example: 'UnknownModel',
+      },
+      type: {
+        type: 'string',
+        example: 'unknown',
+      },
+      path: {
+        type: 'string',
+        example: '$.tabs[0].blocks[2]',
+      },
+      reasonCode: {
+        type: 'string',
+        example: 'unsupported-node',
+      },
+      manualAction: {
+        type: 'string',
+        example: 'Recreate this block manually or add mapper support.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintTarget: {
+    oneOf: [
+      {
+        type: 'object',
+        required: ['uid'],
+        properties: {
+          uid: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: ['pageSchemaUid'],
+        properties: {
+          pageSchemaUid: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: ['tabSchemaUid'],
+        properties: {
+          tabSchemaUid: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: ['routeId'],
+        properties: {
+          routeId: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+    ],
+    description:
+      'Exactly one root locator. v1 accepts pageSchemaUid, routeId, or a uid that resolves to the root page. tabSchemaUid and non-root uid targets return HTTP 400.',
+  },
+  FlowSurfaceExportBlueprintRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceExportBlueprintTarget'),
+      options: {
+        type: 'object',
+        properties: {
+          unsupported: ref('FlowSurfaceExportBlueprintUnsupportedPolicy'),
+        },
+        additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintSource: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceApplyBlueprintTarget'),
+      pageTitle: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintDocument: {
+    type: 'object',
+    required: ['version', 'mode', 'target', 'tabs', 'assets'],
+    description:
+      'Prepared v1 applyBlueprint document in replace mode. It intentionally omits navigation and retains target.pageSchemaUid for same-instance replace.',
+    properties: {
+      version: {
+        type: 'string',
+        enum: ['1'],
+      },
+      mode: {
+        type: 'string',
+        enum: ['replace'],
+      },
+      target: ref('FlowSurfaceApplyBlueprintTarget'),
+      page: ref('FlowSurfaceApplyBlueprintPage'),
+      tabs: {
+        type: 'array',
+        minItems: 1,
+        items: ref('FlowSurfaceApplyBlueprintTab'),
+      },
+      assets: ref('FlowSurfaceApplyBlueprintAssets'),
+      reaction: ref('FlowSurfaceApplyBlueprintReaction'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintResponse: {
+    type: 'object',
+    required: ['document', 'source', 'warnings', 'unsupported'],
+    properties: {
+      document: ref('FlowSurfaceExportBlueprintDocument'),
+      source: ref('FlowSurfaceExportBlueprintSource'),
+      warnings: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      unsupported: {
+        type: 'array',
+        items: ref('FlowSurfaceExportBlueprintUnsupportedItem'),
       },
     },
     additionalProperties: false,
