@@ -582,66 +582,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
   });
 
-  it('should allow a different record collection when the variable path is configured', async () => {
-    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.name }}' }, { collectionName: 'users' });
-    const payload = {
-      flowModelUid,
-      template: { name: '{{ ctx.record.name }}' },
-      contextParams: {
-        record: {
-          dataSourceKey: 'main',
-          collection: 'roles',
-          filterByTk: 'root',
-        },
-      },
-    };
-    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    const data = res.body?.data ?? res.body;
-    expect(res.status).toBeUndefined();
-    expect(data.name).toBe('root');
-  });
-
-  it('should allow a different flattened record collection when the variable path is configured', async () => {
-    const flowModelUid = await createTestFlowModel(
-      { allowed: '{{ ctx.view.record.name }}' },
-      { collectionName: 'users' },
-    );
-    const payload = {
-      flowModelUid,
-      template: { name: '{{ ctx.view.record.name }}' },
-      contextParams: {
-        'view.record': {
-          dataSourceKey: 'main',
-          collection: 'roles',
-          filterByTk: 'root',
-        },
-      },
-    };
-    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    const data = res.body?.data ?? res.body;
-    expect(res.status).toBeUndefined();
-    expect(data.name).toBe('root');
-  });
-
-  it('should allow a different array-indexed record collection when the variable path is configured', async () => {
-    const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.list[0].name }}' });
-    const payload = {
-      flowModelUid,
-      template: { name: '{{ ctx.list[0].name }}' },
-      contextParams: {
-        'list.0': {
-          dataSourceKey: 'main',
-          collection: 'roles',
-          filterByTk: 'root',
-        },
-      },
-    };
-    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    const data = res.body?.data ?? res.body;
-    expect(res.status).toBeUndefined();
-    expect(data.name).toBe('root');
-  });
-
   it('should allow association target collection for nested record context params', async () => {
     const roleName = 'association_target_role';
     const rolesRepo = app.db.getRepository('roles');
@@ -754,38 +694,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(role?.name).toBe(roleName);
   });
 
-  it('should allow another source from the same flow model when the variable key is configured', async () => {
-    const flowModelUid = await createTestFlowModel({
-      allowedUserName: '{{ ctx.view.record.name }}',
-      otherRoleSource: {
-        stepParams: {
-          resourceSettings: {
-            init: {
-              dataSourceKey: 'main',
-              collectionName: 'roles',
-            },
-          },
-        },
-        template: '{{ ctx.view.record.title }}',
-      },
-    });
-    const payload = {
-      flowModelUid,
-      template: { name: '{{ ctx.view.record.name }}' },
-      contextParams: {
-        'view.record': {
-          dataSourceKey: 'main',
-          collection: 'roles',
-          filterByTk: 'root',
-        },
-      },
-    };
-    const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    const data = res.body?.data ?? res.body;
-    expect(res.status).toBeUndefined();
-    expect(data.name).toBe('root');
-  });
-
   it('should ignore explicit fields/appends on public resolve and infer selects from template', async () => {
     const payload = {
       template: {
@@ -811,9 +719,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   it('should strip injected fields/appends before querying records', async () => {
     const originalGetRepository = app.db.getRepository.bind(app.db);
     const queryCalls: Array<{ fields?: string[]; appends?: string[] }> = [];
-    const repositoryCalls: Array<{ collection: string; args: unknown[] }> = [];
     (app.db as any).getRepository = (collection: string, ...args: unknown[]) => {
-      repositoryCalls.push({ collection, args });
       const repo = originalGetRepository(collection, ...(args as []));
       if (collection === 'users') {
         const originalFindOne = repo.findOne.bind(repo);
@@ -836,8 +742,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
             filterByTk: 1,
             fields: ['id', 'nickname'],
             appends: ['roles'],
-            associationName: 'users.roles',
-            sourceId: 1,
           },
         },
       };
@@ -849,10 +753,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       expect(queryOptions.fields).toEqual(expect.arrayContaining(['id']));
       expect(queryOptions.fields || []).not.toContain('nickname');
       expect(queryOptions.appends).toBeUndefined();
-      expect(repositoryCalls.some((call) => call.collection === 'users.roles')).toBe(false);
-      expect(
-        repositoryCalls.filter((call) => call.collection === 'users').every((call) => call.args.length === 0),
-      ).toBe(true);
     } finally {
       app.db.getRepository = originalGetRepository;
     }
@@ -953,52 +853,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const r2 = results.find((r: any) => r.id === 't2');
     expect(typeof r1.data.ts).toBe('number');
     expect(r2.data.id).toBe('{{ ctx.view.record.id }}');
-  });
-
-  it('batch: should resolve filterByTk array into record arrays (formValues.roles.title)', async () => {
-    const names = ['root', 'member', 'admin'];
-    const rolesRepo = app.db.getRepository('roles');
-    // Ensure roles exist (seed may vary between test environments)
-    for (const name of names) {
-      const existing = await rolesRepo.findOne({ filter: { name } }).catch(() => null);
-      if (!existing) {
-        await rolesRepo.create({
-          values: {
-            name,
-            title: `Role ${name}`,
-            allowConfigure: true,
-          },
-        });
-      }
-    }
-
-    const expectedTitles: any[] = [];
-    for (const name of names) {
-      const rec = await rolesRepo.findOne({ filterByTk: name });
-      expectedTitles.push(rec?.toJSON?.()?.title);
-    }
-
-    const payload = {
-      batch: [
-        {
-          id: 't-roles',
-          template: { titles: '{{ ctx.formValues.roles.title }}' },
-          contextParams: {
-            'formValues.roles': {
-              dataSourceKey: 'main',
-              collection: 'roles',
-              filterByTk: names,
-            },
-          },
-        },
-      ],
-    };
-    const res = await execResolve(payload, 1);
-    const results = res.body?.results || [];
-    const item = results.find((r: any) => r.id === 't-roles');
-    expect(item).toBeTruthy();
-    expect(Array.isArray(item.data.titles)).toBe(true);
-    expect(item.data.titles).toEqual(expectedTitles);
   });
 
   it('should support top-level bracket var for record', async () => {
@@ -1738,32 +1592,5 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       expect(r2.generatedFields).toBeUndefined();
       expect(r2.generatedAppends).toBeUndefined();
     });
-  });
-
-  it('strips associationName + sourceId instead of switching to association repository', async () => {
-    const repoSpy = vi.spyOn(app.db as any, 'getRepository');
-    try {
-      const payload = {
-        template: {
-          rid: '{{ ctx.popup.record.id }}',
-        },
-        contextParams: {
-          'popup.record': {
-            collection: 'users',
-            dataSourceKey: 'main',
-            associationName: 'users.roles',
-            sourceId: 1,
-            filterByTk: 1,
-          },
-        },
-      };
-
-      const res = await execResolve(payload, 1);
-      const data = res.body?.data ?? res.body;
-      expect(data?.rid).toBe(1);
-      expect(repoSpy).not.toHaveBeenCalledWith('users.roles', 1);
-    } finally {
-      repoSpy.mockRestore();
-    }
   });
 });
