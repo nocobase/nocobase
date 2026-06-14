@@ -795,15 +795,23 @@ describe('FieldAssignRulesEditor', () => {
     );
 
     expect(screen.getByLabelText('Default value')).toBeInTheDocument();
+    expect(screen.getByLabelText('Override value')).toBeInTheDocument();
     expect(screen.getByLabelText('Fixed value')).toBeInTheDocument();
     expect(screen.getByLabelText('Fixed value')).toBeChecked();
     await userEvent.click(screen.getByLabelText('Default value'));
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
     });
-
-    const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+    let lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
     expect(lastCall?.[0]?.mode).toBe('default');
+
+    onChange.mockClear();
+    await userEvent.click(screen.getByLabelText('Override value'));
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+    lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+    expect(lastCall?.[0]?.mode).toBe('override');
   });
 
   it('shows assignment mode tooltips for each option', async () => {
@@ -821,7 +829,7 @@ describe('FieldAssignRulesEditor', () => {
     );
 
     const questionIcons = Array.from(container.querySelectorAll('.anticon-question-circle'));
-    expect(questionIcons).toHaveLength(2);
+    expect(questionIcons).toHaveLength(3);
 
     await userEvent.hover(questionIcons[0] as Element);
     await waitFor(() => {
@@ -836,8 +844,77 @@ describe('FieldAssignRulesEditor', () => {
 
     await userEvent.hover(questionIcons[1] as Element);
     await waitFor(() => {
+      expect(screen.getByText('Always override, editable.')).toBeInTheDocument();
+    });
+
+    await userEvent.unhover(questionIcons[1] as Element);
+
+    await userEvent.hover(questionIcons[2] as Element);
+    await waitFor(() => {
       expect(screen.getByText('A system-set value. Read-only.')).toBeInTheDocument();
     });
+  });
+
+  it('honors allowed assignment modes', () => {
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'title',
+        mode: 'override',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          value={value}
+          allowedModes={['default', 'assign']}
+          showCondition={false}
+          showEnable={false}
+        />,
+      ),
+    );
+
+    expect(screen.getByLabelText('Default value')).toBeInTheDocument();
+    expect(screen.getByLabelText('Fixed value')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Override value')).toBeNull();
+    expect(screen.getByLabelText('Fixed value')).toBeChecked();
+  });
+
+  it('normalizes disallowed assignment mode before emitting changes', async () => {
+    const onChange = vi.fn();
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'title',
+        mode: 'override',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          value={value}
+          onChange={onChange}
+          allowedModes={['default', 'assign']}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    await userEvent.click(screen.getByRole('switch'));
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+    const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+    expect(lastCall?.[0]?.mode).toBe('assign');
   });
 
   it('merges extra item tree into base item while keeping order', () => {
@@ -897,7 +974,7 @@ describe('FieldAssignRulesEditor', () => {
 
     const itemNode = merged.find((node) => node.name === 'item');
     expect(itemNode).toBeTruthy();
-    const parent = (itemNode.children as MetaTreeNode[]).find((node) => node.name === 'parentItem');
+    const parent = ((itemNode?.children as MetaTreeNode[]) || []).find((node) => node.name === 'parentItem');
     expect(parent).toBeTruthy();
 
     const nestedParent = ((parent?.children as MetaTreeNode[]) || []).find((node) => node.name === 'parentItem');

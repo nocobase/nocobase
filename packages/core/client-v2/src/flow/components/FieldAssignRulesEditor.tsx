@@ -28,7 +28,7 @@ import { buildFieldAssignCascaderOptionsFromCollection, type FieldAssignCascader
 import { isRunJSValue, isVariableExpression, type MetaTreeNode } from '@nocobase/flow-engine';
 import { isToManyAssociationField } from '../internal/utils/modelUtils';
 
-export type AssignMode = 'default' | 'assign';
+export type AssignMode = 'default' | 'assign' | 'override';
 
 type CollectionFieldLike = {
   name?: unknown;
@@ -89,6 +89,8 @@ export interface FieldAssignRulesEditorProps {
   defaultMode?: AssignMode;
   /** 固定 mode：用于“仅默认值/仅赋值”的场景 */
   fixedMode?: AssignMode;
+  /** 可选 mode 列表；fixedMode 优先级更高 */
+  allowedModes?: AssignMode[];
   /** 是否显示 condition */
   showCondition?: boolean;
   /** 是否显示 enable 开关 */
@@ -109,6 +111,23 @@ export interface FieldAssignRulesEditorProps {
   maxAssociationFieldDepth?: number;
 }
 
+const ALL_ASSIGN_MODES: AssignMode[] = ['default', 'override', 'assign'];
+
+function isAssignMode(mode: unknown): mode is AssignMode {
+  return mode === 'default' || mode === 'override' || mode === 'assign';
+}
+
+function normalizeAssignModes(modes?: AssignMode[]): AssignMode[] {
+  const source = Array.isArray(modes) && modes.length ? modes : ALL_ASSIGN_MODES;
+  const out: AssignMode[] = [];
+  for (const mode of source) {
+    if (!isAssignMode(mode)) continue;
+    if (out.includes(mode)) continue;
+    out.push(mode);
+  }
+  return out.length ? out : ALL_ASSIGN_MODES;
+}
+
 export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (props) => {
   const {
     t,
@@ -118,6 +137,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     onChange,
     defaultMode = 'assign',
     fixedMode,
+    allowedModes: rawAllowedModes,
     showCondition = true,
     showEnable = true,
     showValueEditorWhenNoField = false,
@@ -129,6 +149,28 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
   } = props;
 
   const value = React.useMemo(() => (Array.isArray(rawValue) ? rawValue : []), [rawValue]);
+  const allowedModes = React.useMemo(
+    () => normalizeAssignModes(fixedMode ? [fixedMode] : rawAllowedModes),
+    [fixedMode, rawAllowedModes],
+  );
+  const getDefaultMode = React.useCallback((): AssignMode => {
+    if (fixedMode) return fixedMode;
+    if (isAssignMode(defaultMode) && allowedModes.includes(defaultMode)) return defaultMode;
+    return allowedModes[0] || 'assign';
+  }, [allowedModes, defaultMode, fixedMode]);
+  const normalizeItemMode = React.useCallback(
+    (item: FieldAssignRuleItem): FieldAssignRuleItem => {
+      const mode = isAssignMode(item?.mode) && allowedModes.includes(item.mode) ? item.mode : getDefaultMode();
+      return item?.mode === mode ? item : { ...item, mode };
+    },
+    [allowedModes, getDefaultMode],
+  );
+  const emitChange = React.useCallback(
+    (next: FieldAssignRuleItem[]) => {
+      onChange?.(next.map((item) => normalizeItemMode(item)));
+    },
+    [normalizeItemMode, onChange],
+  );
   const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
     Array.isArray(fieldOptions) ? (fieldOptions as FieldAssignCascaderOption[]) : [],
   );
@@ -312,7 +354,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
   const patchItem = (index: number, patch: Partial<FieldAssignRuleItem>) => {
     const next = value.map((it, i) => (i === index ? { ...it, ...patch } : it));
-    onChange?.(next);
+    emitChange(next);
   };
 
   const removeItem = (index: number) => {
@@ -334,7 +376,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       setSyncingRuleKey(null);
     }
     const next = value.filter((_, i) => i !== index);
-    onChange?.(next);
+    emitChange(next);
   };
 
   const moveItem = (index: number, direction: 'up' | 'down') => {
@@ -343,7 +385,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
     if (targetIndex < 0 || targetIndex >= next.length) return;
     const [item] = next.splice(index, 1);
     next.splice(targetIndex, 0, item);
-    onChange?.(next);
+    emitChange(next);
   };
 
   const addItem = () => {
@@ -352,29 +394,33 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
       {
         key: uid(),
         enable: true,
-        mode: fixedMode || defaultMode,
+        mode: getDefaultMode(),
         condition: { logic: '$and', items: [] },
         targetPath: undefined,
         value: undefined,
       },
     ];
-    onChange?.(next);
+    emitChange(next);
   };
 
   const getEffectiveMode = (item: FieldAssignRuleItem): AssignMode => {
     if (fixedMode) return fixedMode;
-    return item?.mode === 'default' ? 'default' : 'assign';
+    if (isAssignMode(item?.mode) && allowedModes.includes(item.mode)) return item.mode;
+    return getDefaultMode();
   };
 
   const renderAssignModeLabel = React.useCallback(
     (mode: AssignMode) => {
-      const modeText = mode === 'default' ? t('Default value') : t('Fixed value');
+      const modeText =
+        mode === 'default' ? t('Default value') : mode === 'override' ? t('Override value') : t('Fixed value');
       const modeHelpText =
         mode === 'default'
           ? t(
               'A pre-filled value. Editable, for new entries only, and won’t affect existing data (including empty values).',
             )
-          : t('A system-set value. Read-only.');
+          : mode === 'override'
+            ? t('Always override, editable.')
+            : t('A system-set value. Read-only.');
 
       const preventModeToggle = (e: React.MouseEvent<HTMLElement>) => {
         e.preventDefault();
@@ -627,7 +673,8 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
 
   const renderPanelHeader = (item: FieldAssignRuleItem, index: number) => {
     const mode = getEffectiveMode(item);
-    const modeText = mode === 'default' ? t('Default value') : t('Fixed value');
+    const modeText =
+      mode === 'default' ? t('Default value') : mode === 'override' ? t('Override value') : t('Fixed value');
     const fieldLabel = getFieldLabel(item.targetPath);
     const title = fieldLabel ? String(fieldLabel) : t('Please select field');
 
@@ -935,8 +982,11 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
                 onChange={(event) => patchItem(index, { mode: event.target.value as AssignMode })}
               >
                 <Space size={16}>
-                  <Radio value="default">{renderAssignModeLabel('default')}</Radio>
-                  <Radio value="assign">{renderAssignModeLabel('assign')}</Radio>
+                  {allowedModes.map((allowedMode) => (
+                    <Radio key={allowedMode} value={allowedMode}>
+                      {renderAssignModeLabel(allowedMode)}
+                    </Radio>
+                  ))}
                 </Space>
               </Radio.Group>
             </div>

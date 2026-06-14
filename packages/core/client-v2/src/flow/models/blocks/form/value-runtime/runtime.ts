@@ -44,6 +44,7 @@ export class FormValueRuntime {
 
   private readonly valuesMirror = observable({});
   private readonly explicitSet = new Set<string>();
+  private readonly userEditedSet = new Set<string>();
   private readonly lastDefaultValueByPathKey = new Map<string, any>();
   private readonly lastWriteMetaByPathKey = new Map<string, FormValueWriteMeta>();
   private readonly observableBindings = new Map<string, ObservableBinding>();
@@ -99,6 +100,7 @@ export class FormValueRuntime {
       getFormValueAtPath: (namePath) => this.getFormValueAtPath(namePath),
       setFormValues: (callerCtx, patch, ruleOptions) => this.setFormValues(callerCtx, patch, ruleOptions),
       findExplicitHit: (pathKey) => this.findExplicitHit(pathKey),
+      findUserEditedHit: (pathKey) => this.findUserEditedHit(pathKey),
       lastDefaultValueByPathKey: this.lastDefaultValueByPathKey,
       lastWriteMetaByPathKey: this.lastWriteMetaByPathKey,
       observableBindings: this.observableBindings,
@@ -117,6 +119,7 @@ export class FormValueRuntime {
    *
    * - mode=default → source=default（遵循 explicit/空值覆盖语义）
    * - mode=assign  → source=system（不受 explicit 影响，依赖变化时持续生效）
+   * - mode=override → source=override（首次覆盖已有值，用户修改后停止）
    */
   syncAssignRules(items: FormAssignRuleItem[]) {
     this.ruleEngine.syncAssignRules(items);
@@ -137,6 +140,15 @@ export class FormValueRuntime {
     return this.getForm().getFieldsValue(true);
   }
 
+  private toMirrorSnapshot(value: any) {
+    const raw = isObservable(value) ? toJS(value) : value;
+    return _.cloneDeepWith(raw, (item) => {
+      if (!item || typeof item !== 'object') return undefined;
+      if (Array.isArray(item) || _.isPlainObject(item)) return undefined;
+      return item;
+    });
+  }
+
   canApplyDefaultValuePatch(namePath: NamePath, resolved: any) {
     if (!namePath?.length) return false;
     if (typeof resolved === 'undefined') return false;
@@ -153,11 +165,16 @@ export class FormValueRuntime {
 
     const canOverwrite = isEmptyValue(current) || currentEqualsLastDefault;
     if (!canOverwrite && _.isEqual(current, nextSnapshot)) {
-      this.lastDefaultValueByPathKey.set(pathKey, nextSnapshot);
+      this.lastDefaultValueByPathKey.set(pathKey, this.toMirrorSnapshot(nextSnapshot));
       return false;
     }
 
     return canOverwrite;
+  }
+
+  canApplyOverrideValuePatch(namePath: NamePath) {
+    if (!namePath?.length) return false;
+    return !this.findUserEditedHit(namePathToPathKey(namePath));
   }
 
   recordDefaultValuePatch(namePath: NamePath, value?: any) {
@@ -165,7 +182,7 @@ export class FormValueRuntime {
     const pathKey = namePathToPathKey(namePath);
     const snapshot =
       arguments.length >= 2 ? (isObservable(value) ? toJS(value) : value) : this.getFormValueAtPath(namePath);
-    this.lastDefaultValueByPathKey.set(pathKey, snapshot);
+    this.lastDefaultValueByPathKey.set(pathKey, this.toMirrorSnapshot(snapshot));
     const current = this.getFormValueAtPath(namePath);
     const currentSnapshot = isObservable(current) ? toJS(current) : current;
     if (_.isEqual(currentSnapshot, snapshot)) {
@@ -208,7 +225,7 @@ export class FormValueRuntime {
     if (options?.sync) {
       const snapshot = this.getFormValuesSnapshot();
       if (snapshot && typeof snapshot === 'object') {
-        _.merge(this.valuesMirror, snapshot);
+        _.merge(this.valuesMirror, this.toMirrorSnapshot(snapshot));
         this.bumpChangeTick();
       }
       this.ruleEngine.enable();
@@ -241,6 +258,7 @@ export class FormValueRuntime {
     if (this.disposed) return;
 
     this.explicitSet.clear();
+    this.userEditedSet.clear();
     this.lastDefaultValueByPathKey.clear();
     this.lastWriteMetaByPathKey.clear();
     this.txWriteCounts.clear();
@@ -258,11 +276,18 @@ export class FormValueRuntime {
       delete (this.valuesMirror as Record<string, any>)[key];
     }
     if (snapshot && typeof snapshot === 'object') {
-      _.merge(this.valuesMirror, snapshot);
+      _.merge(this.valuesMirror, this.toMirrorSnapshot(snapshot));
     }
 
     this.writeSeq += 1;
     this.bumpChangeTick();
+    this.ruleEngine.rescheduleAllRules();
+  }
+
+  resetUserEditedState() {
+    if (this.disposed) return;
+
+    this.userEditedSet.clear();
     this.ruleEngine.rescheduleAllRules();
   }
 
@@ -292,7 +317,7 @@ export class FormValueRuntime {
         this.writeSeq += 1;
         bumpedWriteSeq = true;
       }
-      _.set(this.valuesMirror, namePath, nextValue);
+      _.set(this.valuesMirror, namePath, this.toMirrorSnapshot(nextValue));
       changedPaths.push(namePath);
       const isMeaningfulTouched =
         field?.touched === true && !this.shouldIgnoreSyntheticTouchedInit(namePath, prevValue, nextValue);
@@ -311,6 +336,7 @@ export class FormValueRuntime {
     if (!suppressed && touchedChangedPathKeys.size) {
       for (const key of touchedChangedPathKeys) {
         this.markExplicit(key);
+        this.markUserEdited(key);
       }
     }
 
@@ -372,6 +398,11 @@ export class FormValueRuntime {
     for (const key of Array.from(this.explicitSet)) {
       if (!this.isDeletedArrayItemPath(key, snapshot)) continue;
       this.explicitSet.delete(key);
+    }
+
+    for (const key of Array.from(this.userEditedSet)) {
+      if (!this.isDeletedArrayItemPath(key, snapshot)) continue;
+      this.userEditedSet.delete(key);
     }
 
     for (const key of Array.from(this.lastDefaultValueByPathKey.keys())) {
@@ -444,6 +475,7 @@ export class FormValueRuntime {
       if (!nextIndexByIdentity.size) continue;
 
       this.reconcileArrayItemSet(this.explicitSet, path, prevValue, nextIndexByIdentity);
+      this.reconcileArrayItemSet(this.userEditedSet, path, prevValue, nextIndexByIdentity);
       this.reconcileArrayItemMap(this.lastDefaultValueByPathKey, path, prevValue, nextIndexByIdentity);
       this.reconcileArrayItemMap(this.lastWriteMetaByPathKey, path, prevValue, nextIndexByIdentity);
       this.reconcileObservableBindings(path, prevValue, nextIndexByIdentity);
@@ -647,7 +679,7 @@ export class FormValueRuntime {
         this.writeSeq += 1;
         bumpedWriteSeq = true;
       }
-      _.set(this.valuesMirror, p, nextValue);
+      _.set(this.valuesMirror, p, this.toMirrorSnapshot(nextValue));
       hasMirrorChange = true;
       actuallyChangedPaths.push(p);
     }
@@ -665,7 +697,11 @@ export class FormValueRuntime {
 
     // 非 default 来源写入：需要使默认值永久失效（explicit）
     for (const p of explicitPathsToMark) {
-      this.markExplicit(namePathToPathKey(p));
+      const pathKey = namePathToPathKey(p);
+      this.markExplicit(pathKey);
+      if (source === 'user') {
+        this.markUserEdited(pathKey);
+      }
     }
 
     if (hasMirrorChange) {
@@ -870,7 +906,7 @@ export class FormValueRuntime {
             } else {
               form.setFieldsValue?.({ [pathKey]: value });
             }
-            _.set(this.valuesMirror, [pathKey], value);
+            _.set(this.valuesMirror, [pathKey], this.toMirrorSnapshot(value));
           }
           this.bumpChangeTick();
         } finally {
@@ -885,6 +921,9 @@ export class FormValueRuntime {
         if (markExplicit) {
           for (const k of patchKeys) {
             this.markExplicit(k);
+            if (source === 'user') {
+              this.markUserEdited(k);
+            }
           }
         }
 
@@ -969,7 +1008,7 @@ export class FormValueRuntime {
       try {
         for (const { namePath, value } of filteredToWrite) {
           form.setFieldValue?.(namePath, value);
-          _.set(this.valuesMirror, namePath, value);
+          _.set(this.valuesMirror, namePath, this.toMirrorSnapshot(value));
           changedPaths.push(namePath);
         }
         this.bumpChangeTick();
@@ -984,13 +1023,16 @@ export class FormValueRuntime {
       if (markExplicit) {
         for (const { pathKey } of filteredToWrite) {
           this.markExplicit(pathKey);
+          if (source === 'user') {
+            this.markUserEdited(pathKey);
+          }
         }
       }
 
       if (source === 'default') {
         for (const { namePath, pathKey } of filteredToWrite) {
           const current = this.getFormValueAtPath(namePath);
-          this.lastDefaultValueByPathKey.set(pathKey, current);
+          this.lastDefaultValueByPathKey.set(pathKey, this.toMirrorSnapshot(current));
         }
       }
 
@@ -1052,6 +1094,7 @@ export class FormValueRuntime {
     if (this.disposed) return;
     const form = this.getForm?.();
     if (!form) return;
+    if (source === 'override' && this.findUserEditedHit(pathKey)) return;
 
     const prevValue = _.get(this.valuesMirror, namePath);
     if (_.isEqual(prevValue, nextValue)) return;
@@ -1062,7 +1105,7 @@ export class FormValueRuntime {
     this.suppressFormCallbackDepth++;
     try {
       form.setFieldValue?.(namePath, nextValue);
-      _.set(this.valuesMirror, namePath, nextValue);
+      _.set(this.valuesMirror, namePath, this.toMirrorSnapshot(nextValue));
       this.bumpChangeTick();
     } finally {
       this.suppressFormCallbackDepth--;
@@ -1098,7 +1141,10 @@ export class FormValueRuntime {
     }
     this.emitFormValuesChange(payload);
 
-    if (source === 'default' && this.isExplicit(pathKey)) {
+    if (
+      (source === 'default' && this.isExplicit(pathKey)) ||
+      (source === 'override' && this.findUserEditedHit(pathKey))
+    ) {
       const existing = this.observableBindings.get(pathKey);
       if (existing) {
         existing.dispose();
@@ -1107,7 +1153,7 @@ export class FormValueRuntime {
     }
 
     if (source === 'default') {
-      this.lastDefaultValueByPathKey.set(pathKey, this.getFormValueAtPath(namePath));
+      this.lastDefaultValueByPathKey.set(pathKey, this.toMirrorSnapshot(this.getFormValueAtPath(namePath)));
     }
   }
 
@@ -1149,6 +1195,18 @@ export class FormValueRuntime {
     for (const [k, binding] of Array.from(this.observableBindings.entries())) {
       if (binding.source !== 'default') continue;
       if (!this.isExplicit(k)) continue;
+      binding.dispose();
+      this.observableBindings.delete(k);
+    }
+  }
+
+  private markUserEdited(pathKey: string) {
+    if (this.userEditedSet.has(pathKey)) return;
+    this.userEditedSet.add(pathKey);
+
+    for (const [k, binding] of Array.from(this.observableBindings.entries())) {
+      if (binding.source !== 'override') continue;
+      if (!this.findUserEditedHit(k)) continue;
       binding.dispose();
       this.observableBindings.delete(k);
     }
@@ -1215,5 +1273,36 @@ export class FormValueRuntime {
       return key;
     }
     return null;
+  }
+
+  private findUserEditedHit(pathKey: string): string | null {
+    if (this.userEditedSet.has(pathKey)) return pathKey;
+    const namePath = pathKeyToNamePath(pathKey);
+    const prefix: NamePath = [];
+
+    for (let i = 0; i < namePath.length; i++) {
+      prefix.push(namePath[i]);
+      const key = namePathToPathKey(prefix as any);
+      if (!this.userEditedSet.has(key)) continue;
+
+      const nextSeg = namePath[i + 1];
+      if (typeof nextSeg === 'number') {
+        continue;
+      }
+      return key;
+    }
+    for (const key of this.userEditedSet) {
+      if (!this.isDescendantPathKey(key, pathKey)) continue;
+      return key;
+    }
+    return null;
+  }
+
+  private isDescendantPathKey(candidateKey: string, parentKey: string) {
+    if (!candidateKey || !parentKey || candidateKey === parentKey) return false;
+    const candidatePath = pathKeyToNamePath(candidateKey);
+    const parentPath = pathKeyToNamePath(parentKey);
+    if (candidatePath.length <= parentPath.length) return false;
+    return parentPath.every((seg, index) => candidatePath[index] === seg);
   }
 }
