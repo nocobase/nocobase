@@ -89,6 +89,30 @@ function isRecordRefLike(val: any): boolean {
   return !!(val && typeof val === 'object' && 'collection' in val && 'filterByTk' in val);
 }
 
+function hasServerRecordContextParams(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  if (Array.isArray(value)) return value.some((item) => hasServerRecordContextParams(item));
+  const record = value as Record<string, unknown>;
+  if (typeof record.collection === 'string' && Object.prototype.hasOwnProperty.call(record, 'filterByTk')) {
+    return true;
+  }
+  return Object.values(record).some((item) => hasServerRecordContextParams(item));
+}
+
+function isVariablesResolveClientError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { response?: { status?: unknown }; status?: unknown; statusCode?: unknown };
+  const status =
+    typeof candidate.response?.status === 'number'
+      ? candidate.response.status
+      : typeof candidate.status === 'number'
+        ? candidate.status
+        : typeof candidate.statusCode === 'number'
+          ? candidate.statusCode
+          : undefined;
+  return typeof status === 'number' && status >= 400 && status < 500;
+}
+
 // Helper: Filter builder output by subpaths that need server resolution
 // - built can be RecordRef (top-level var) or an object mapping subKey -> RecordRef (e.g., { record: ref })
 function filterBuilderOutputByPaths(built: any, neededPaths: string[]): any {
@@ -3224,6 +3248,33 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const needServer = Object.keys(serverVarPaths).length > 0;
       let serverResolved = template;
       if (needServer) {
+        const hasServerResolvedReference = (value: string) => {
+          const stringUsage = extractUsedVariablePaths(value) || {};
+          return Object.entries(stringUsage).some(([varName, paths]) => {
+            const serverPaths = serverVarPaths[varName];
+            if (!serverPaths) return false;
+            if (!serverPaths.length) return true;
+            return paths.some((path) => serverPaths.includes(path));
+          });
+        };
+
+        const resolveClientOnlyExpressions = async (value: any): Promise<any> => {
+          if (typeof value === 'string') {
+            return hasServerResolvedReference(value) ? value : await resolveExpressions(value, this);
+          }
+          if (Array.isArray(value)) {
+            return Promise.all(value.map((item) => resolveClientOnlyExpressions(item)));
+          }
+          if (value && typeof value === 'object') {
+            const output: Record<string, any> = {};
+            for (const [key, item] of Object.entries(value)) {
+              output[key] = await resolveClientOnlyExpressions(item);
+            }
+            return output;
+          }
+          return value;
+        };
+
         const inferRecordRefWithMeta = (ctx: any): RecordRef | undefined => {
           const ref = inferRecordRef(ctx as any);
           if (ref) return ref as RecordRef;
@@ -3352,11 +3403,18 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
         if (this.api) {
           try {
+            if (autoContextParams && hasServerRecordContextParams(autoContextParams) && !this.model?.uid) {
+              return await resolveClientOnlyExpressions(template);
+            }
             serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
+              flowModelUid: this.model?.uid,
               template,
               contextParams: autoContextParams || {},
             });
           } catch (e) {
+            if (isVariablesResolveClientError(e)) {
+              throw e;
+            }
             this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
             serverResolved = template;
           }

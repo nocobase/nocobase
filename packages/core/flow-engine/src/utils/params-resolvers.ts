@@ -78,6 +78,7 @@ export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 // =========================
 
 type BatchPayload = {
+  flowModelUid?: string;
   template: JSONValue;
   contextParams?: ServerContextParams | undefined;
 };
@@ -122,6 +123,25 @@ function stableStringifyOrdered(obj: unknown): string {
       return String(obj);
     }
   }
+}
+
+function getErrorStatus(error: unknown) {
+  if (!error || typeof error !== 'object') return undefined;
+  const candidate = error as { response?: { status?: unknown }; status?: unknown; statusCode?: unknown };
+  const value =
+    typeof candidate.response?.status === 'number'
+      ? candidate.response.status
+      : typeof candidate.status === 'number'
+        ? candidate.status
+        : typeof candidate.statusCode === 'number'
+          ? candidate.statusCode
+          : undefined;
+  return value && value >= 400 && value < 600 ? value : undefined;
+}
+
+function isClientError(error: unknown) {
+  const status = getErrorStatus(error);
+  return typeof status === 'number' && status >= 400 && status < 500;
 }
 
 export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchPayload): Promise<unknown> {
@@ -169,6 +189,7 @@ export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchP
     }
     try {
       const batch = items.map((it) => ({
+        flowModelUid: it.payload.flowModelUid,
         id: it.id,
         template: it.payload.template,
         contextParams: it.payload.contextParams || {},
@@ -202,6 +223,10 @@ export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchP
     } catch (e) {
       for (const it of items) {
         try {
+          if (isClientError(e)) {
+            it.reject(e);
+            continue;
+          }
           ctx?.logger?.warn?.({ err: e }, 'variables:resolve(batch) failed, fallback');
           it.resolve(it.payload.template);
         } catch (err) {

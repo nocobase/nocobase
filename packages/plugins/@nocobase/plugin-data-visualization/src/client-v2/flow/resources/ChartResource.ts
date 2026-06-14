@@ -131,6 +131,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       }),
       limit: query.limit,
       offset: query.offset,
+      flowModelUid: query.flowModelUid,
       contextParams: query.contextParams,
     };
     return data;

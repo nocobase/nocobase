@@ -145,6 +145,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     }
     return {
       ...query,
+      flowModelUid: this.uid,
       contextParams,
     };
   }

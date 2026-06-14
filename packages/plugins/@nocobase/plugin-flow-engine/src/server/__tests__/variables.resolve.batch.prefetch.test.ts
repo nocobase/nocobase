@@ -9,6 +9,7 @@
 
 import { MockServer } from '@nocobase/test';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
+import FlowModelRepository from '../repository';
 
 describe('variables:resolve batch prefetch merges selects (integration)', () => {
   let app: MockServer;
@@ -75,30 +76,54 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       return repo;
     };
 
-    const payload = {
-      batch: [
-        {
-          id: 't1',
-          template: { a: '{{ ctx.view.record.id }}' },
-          contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
+    try {
+      const flowModelUid = 'batch-prefetch-flow-model';
+      const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+      await repository.insertModel({
+        uid: flowModelUid,
+        use: 'VariablesResolveBatchPrefetchModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+          },
+          variablesResolveTest: {
+            templates: [{ a: '{{ ctx.view.record.id }}' }, { b: '{{ ctx.view.record.roles[0].name }}' }],
+          },
         },
-        {
-          id: 't2',
-          template: { b: '{{ ctx.view.record.roles[0].name }}' },
-          contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
-        },
-      ],
-    };
+      });
 
-    const res = await execResolve(payload, 1);
-    const results = res.body?.results || [];
-    const r1 = results.find((r: any) => r.id === 't1');
-    const r2 = results.find((r: any) => r.id === 't2');
-    expect(r1?.data?.a).toBe(1);
-    expect(typeof r2?.data?.b).toBe('string');
-    expect((r2?.data?.b || '').length).toBeGreaterThan(0);
+      const payload = {
+        batch: [
+          {
+            flowModelUid,
+            id: 't1',
+            template: { a: '{{ ctx.view.record.id }}' },
+            contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
+          },
+          {
+            flowModelUid,
+            id: 't2',
+            template: { b: '{{ ctx.view.record.roles[0].name }}' },
+            contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
+          },
+        ],
+      };
 
-    // ensure only one DB call for users collection due to prefetch merge
-    expect(calls).toBe(1);
+      const res = await execResolve(payload, 1);
+      const results = res.body?.results || [];
+      const r1 = results.find((r: any) => r.id === 't1');
+      const r2 = results.find((r: any) => r.id === 't2');
+      expect(r1?.data?.a).toBe(1);
+      expect(typeof r2?.data?.b).toBe('string');
+      expect((r2?.data?.b || '').length).toBeGreaterThan(0);
+
+      // ensure only one DB call for users collection due to prefetch merge
+      expect(calls).toBe(1);
+    } finally {
+      db.getRepository = originalGetRepository;
+    }
   });
 });

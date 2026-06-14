@@ -148,6 +148,40 @@ describe('query', () => {
     });
   });
 
+  describe('parseVariables authorization', () => {
+    it('should require explicit flowModelUid for record variable context', async () => {
+      const context = {
+        throw(status: number, body: any) {
+          throw { status, body };
+        },
+        action: {
+          params: {
+            values: {
+              uid: 'chart-uid-is-not-a-flow-model',
+              filter: {
+                id: { $eq: '{{ ctx.record.id }}' },
+              },
+              contextParams: {
+                record: {
+                  dataSourceKey: 'main',
+                  collection: 'users',
+                  filterByTk: 1,
+                },
+              },
+            },
+          },
+        },
+      };
+
+      await expect(parseVariables(context as any, async () => {})).rejects.toMatchObject({
+        status: 400,
+        body: {
+          code: 'FLOW_MODEL_UID_REQUIRED',
+        },
+      });
+    });
+  });
+
   describe('cacheMiddleware', () => {
     const key = 'test-key';
     const value = 'test-val';
@@ -247,6 +281,36 @@ describe('query', () => {
       await compose([cacheMiddleware, query])(context, async () => {});
       expect(query).toBeCalled();
       expect(context.body).toEqual(value);
+    });
+    it('should bypass cache when variable context is present', async () => {
+      const context = {
+        ...ctx,
+        action: {
+          params: {
+            values: {
+              cache: {
+                enabled: true,
+              },
+              refresh: false,
+              uid: key,
+              flowModelUid: 'flow-model-uid',
+              contextParams: {
+                record: {
+                  dataSourceKey: 'main',
+                  collection: 'users',
+                  filterByTk: 1,
+                },
+              },
+            },
+          },
+        },
+      };
+      const cache = context.app.cacheManager.getCache();
+      cache.set(key, 'cached-value');
+      await compose([cacheMiddleware, query])(context, async () => {});
+      expect(query).toBeCalled();
+      expect(context.body).toEqual(value);
+      expect(cache.get(key)).toEqual('cached-value');
     });
   });
 });

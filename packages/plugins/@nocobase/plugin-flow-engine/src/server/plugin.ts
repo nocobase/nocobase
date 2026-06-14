@@ -73,11 +73,14 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           // 批量解析分支
           if (Array.isArray(values?.batch)) {
             const batchItems = values.batch as Array<{
+              flowModelUid?: string | number;
               id?: string | number;
               template: JSONValue;
               contextParams?: Record<string, unknown>;
             }>;
-            const results = await resolveVariablesBatch(ctx as ResourcerContext, batchItems);
+            const results = await resolveVariablesBatch(ctx as ResourcerContext, batchItems, {
+              requireFlowModelUid: true,
+            });
             ctx.body = { results };
             await next();
             return;
@@ -92,7 +95,10 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           }
           const template = values.template as JSONValue;
           const contextParams = values?.contextParams || {};
-          ctx.body = await resolveVariablesTemplate(ctx as ResourcerContext, template, contextParams);
+          ctx.body = await resolveVariablesTemplate(ctx as ResourcerContext, template, contextParams, {
+            flowModelUid: values?.flowModelUid,
+            requireFlowModelUid: true,
+          });
           await next();
         },
       },

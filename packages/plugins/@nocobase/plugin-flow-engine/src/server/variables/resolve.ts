@@ -10,13 +10,20 @@
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { GlobalContext, HttpRequestContext } from '../template/contexts';
 import { JSONValue, resolveJsonTemplate } from '../template/resolver';
+import { authorizeVariablesResolve } from './allow-list';
 import { variables } from './registry';
 import { prefetchRecordsForResolve } from './utils';
 
 type ResolveBatchItem = {
+  flowModelUid?: string | number;
   id?: string | number;
   template: JSONValue;
   contextParams?: Record<string, unknown>;
+};
+
+type ResolveVariablesOptions = {
+  flowModelUid?: string | number;
+  requireFlowModelUid?: boolean;
 };
 
 const GLOBAL_CONTEXT_KEY = Symbol.for('nocobase.flow-engine.variables.global-context');
@@ -33,9 +40,16 @@ export async function resolveVariablesTemplate(
   ctx: ResourcerContext,
   template: JSONValue,
   contextParams: Record<string, unknown> = {},
+  options: ResolveVariablesOptions = {},
 ) {
-  await prefetchRecordsForResolve(ctx, [{ template, contextParams }]);
-  return resolveVariablesTemplateWithPrefetchedRecords(ctx, template, contextParams);
+  const safeContextParams = await authorizeVariablesResolve(ctx, {
+    contextParams,
+    flowModelUid: options.flowModelUid,
+    requireFlowModelUid: options.requireFlowModelUid,
+    template,
+  });
+  await prefetchRecordsForResolve(ctx, [{ template, contextParams: safeContextParams }]);
+  return resolveVariablesTemplateWithPrefetchedRecords(ctx, template, safeContextParams);
 }
 
 async function resolveVariablesTemplateWithPrefetchedRecords(
@@ -49,17 +63,38 @@ async function resolveVariablesTemplateWithPrefetchedRecords(
   return resolveJsonTemplate(template, requestCtx);
 }
 
-export async function resolveVariablesBatch(ctx: ResourcerContext, items: ResolveBatchItem[]) {
+export async function resolveVariablesBatch(
+  ctx: ResourcerContext,
+  items: ResolveBatchItem[],
+  options: Pick<ResolveVariablesOptions, 'requireFlowModelUid'> = {},
+) {
+  const authorizedItems: ResolveBatchItem[] = [];
+  for (const item of items) {
+    const template = item?.template ?? {};
+    const contextParams = await authorizeVariablesResolve(ctx, {
+      contextParams: (item?.contextParams || {}) as Record<string, unknown>,
+      flowModelUid: item?.flowModelUid,
+      requireFlowModelUid: options.requireFlowModelUid,
+      template,
+    });
+    authorizedItems.push({
+      flowModelUid: item?.flowModelUid,
+      id: item?.id,
+      template,
+      contextParams,
+    });
+  }
+
   await prefetchRecordsForResolve(
     ctx,
-    items.map((item) => ({
+    authorizedItems.map((item) => ({
       template: item?.template ?? {},
       contextParams: (item?.contextParams || {}) as Record<string, unknown>,
     })),
   );
 
   const results: Array<{ id?: string | number; data: unknown }> = [];
-  for (const item of items) {
+  for (const item of authorizedItems) {
     const data = await resolveVariablesTemplateWithPrefetchedRecords(
       ctx,
       item?.template ?? {},
