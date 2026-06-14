@@ -9,9 +9,12 @@
 
 import React from 'react';
 import { ThunderboltOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import {
   ActionDefinition,
   ActionScene,
+  FlowContext,
+  FlowContextProvider,
   FlowEngineContext,
   FlowEventPhase,
   FlowModel,
@@ -31,8 +34,9 @@ import {
   DetachedFlowRegistry,
   replaceFlowRegistry,
   serializeFlowRegistry,
+  type DynamicFlowSource,
 } from '@nocobase/flow-engine';
-import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
+import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select, Tabs, theme } from 'antd';
 import { uid } from '@formily/shared';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
@@ -40,6 +44,11 @@ import _ from 'lodash';
 type FlowOnObject = Exclude<FlowDefinition['on'], string | undefined>;
 type FlowRegistryAvailability = {
   hasFlow(flowKey: string): boolean;
+};
+type ClosableView = {
+  close?: () => Promise<unknown> | unknown;
+  beforeClose?: (payload: Record<string, unknown>) => Promise<boolean | void> | boolean | void;
+  destroy?: () => void;
 };
 
 function isFlowOnObject(on: FlowDefinition['on']): on is FlowOnObject {
@@ -97,16 +106,35 @@ function validateFlowOnPhase(onObj: FlowOnObject): 'flowKey' | 'stepKey' | undef
   }
 }
 
+const confirmDiscardUnsavedChanges = async (ctx: FlowEngineContext, t: (key: string) => string) => {
+  return (
+    (await ctx.modal?.confirm?.({
+      title: t('Unsaved changes'),
+      content: t("Are you sure you don't want to save?"),
+      okText: t('Confirm'),
+      cancelText: t('Cancel'),
+    })) ?? true
+  );
+};
+
 export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const { model } = props;
   const t = React.useMemo(() => model.translate.bind(model), [model]);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     const target = document.querySelector<HTMLDivElement>(`#${GLOBAL_EMBED_CONTAINER_ID}`);
 
     if (!target) {
       return;
     }
+
+    const sources = await model.flowEngine.flowSettings.getDynamicFlowSources(model);
+    const content =
+      sources.length > 1 ? (
+        <DynamicFlowsSourceTabs sources={sources} />
+      ) : (
+        <DynamicFlowsEditor model={sources[0].model} />
+      );
 
     model.context.viewer.embed({
       type: 'embed',
@@ -124,12 +152,148 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
           target.style.minWidth = 'auto';
         }
       },
-      content: <DynamicFlowsEditor model={model} />,
+      content,
     });
   };
 
   return <ThunderboltOutlined style={{ cursor: 'pointer' }} onClick={handleClick} />;
 };
+
+const DynamicFlowsSourceTabs = observer(({ sources }: { sources: DynamicFlowSource[] }) => {
+  const [activeKey, setActiveKey] = React.useState(sources[0]?.key);
+  const ctx = useFlowContext<FlowEngineContext>();
+  const { token } = theme.useToken();
+  const dirtySourceKeysRef = React.useRef(new Set<string>());
+  const t = React.useMemo(
+    () => sources[0]?.model.translate.bind(sources[0].model) || ((key: string) => key),
+    [sources],
+  );
+  const tabBarStyle = React.useMemo(
+    () => ({
+      paddingLeft: token.paddingLG,
+      paddingRight: token.paddingLG,
+      marginBottom: 0,
+    }),
+    [token.paddingLG],
+  );
+  const handleDirtyChange = React.useCallback((sourceKey: string, dirty: boolean) => {
+    if (dirty) {
+      dirtySourceKeysRef.current.add(sourceKey);
+    } else {
+      dirtySourceKeysRef.current.delete(sourceKey);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    const view = ctx.view;
+    if (!view) {
+      return;
+    }
+
+    const previousBeforeClose = view.beforeClose;
+    const beforeClose = async (payload) => {
+      if (dirtySourceKeysRef.current.size > 0) {
+        const confirmed = await confirmDiscardUnsavedChanges(ctx, t);
+        if (!confirmed) {
+          return false;
+        }
+      }
+
+      const result = await previousBeforeClose?.(payload);
+      return result !== false;
+    };
+
+    view.beforeClose = beforeClose;
+
+    return () => {
+      if (view.beforeClose === beforeClose) {
+        view.beforeClose = previousBeforeClose;
+      }
+    };
+  }, [ctx, t]);
+
+  return (
+    <Tabs
+      className={dynamicFlowsSourceTabsClass}
+      size="small"
+      activeKey={activeKey}
+      onChange={setActiveKey}
+      tabBarStyle={tabBarStyle}
+      items={sources.map((source) => ({
+        key: source.key,
+        label: source.label,
+        children: (
+          <DynamicFlowsSourceEditor
+            key={source.key}
+            source={source}
+            active={source.key === activeKey}
+            onDirtyChange={(dirty) => handleDirtyChange(source.key, dirty)}
+          />
+        ),
+      }))}
+    />
+  );
+});
+
+type DynamicFlowsSourceEditorProps = {
+  source: DynamicFlowSource;
+  active: boolean;
+  onDirtyChange: (dirty: boolean) => void;
+};
+
+const DynamicFlowsSourceEditor = observer(({ source, active, onDirtyChange }: DynamicFlowsSourceEditorProps) => {
+  const hostCtx = useFlowContext<FlowEngineContext>();
+  const sourceContext = React.useMemo(() => {
+    const context = new FlowContext();
+    if (hostCtx instanceof FlowContext) {
+      context.addDelegate(hostCtx);
+    }
+    if (source.model.context instanceof FlowContext) {
+      context.addDelegate(source.model.context);
+    }
+    if (hostCtx?.view) {
+      context.defineProperty('view', { value: hostCtx.view });
+    }
+    if (hostCtx?.modal) {
+      context.defineProperty('modal', { value: hostCtx.modal });
+    }
+    return context;
+  }, [hostCtx, source.model]);
+
+  return (
+    <FlowContextProvider context={sourceContext}>
+      <DynamicFlowsEditor
+        key={source.model.uid}
+        model={source.model}
+        active={active}
+        guardBeforeClose={false}
+        onDirtyChange={onDirtyChange}
+      />
+    </FlowContextProvider>
+  );
+});
+
+const dynamicFlowsSourceTabsClass = css`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  > .ant-tabs-nav {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  > .ant-tabs-content-holder {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  > .ant-tabs-content-holder > .ant-tabs-content,
+  > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+    height: 100%;
+  }
+`;
 
 const styles: Record<string, React.CSSProperties> = {
   sectionHeader: {
@@ -164,6 +328,15 @@ const styles: Record<string, React.CSSProperties> = {
   colon: {
     marginInlineStart: 2,
     marginInlineEnd: 8,
+  },
+  editorFooter: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: 8,
+    padding: '8px 16px',
+    borderTop: '1px solid #f0f0f0',
+    backgroundColor: '#fff',
+    flexShrink: 0,
   },
 };
 
@@ -458,8 +631,18 @@ const EventConfigSection = observer(
   },
 );
 
-const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
+type DynamicFlowsEditorProps = {
+  model: FlowModel;
+  active?: boolean;
+  guardBeforeClose?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
+};
+
+const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
   const { model } = props;
+  const active = props.active ?? true;
+  const guardBeforeClose = props.guardBeforeClose ?? true;
+  const onDirtyChange = props.onDirtyChange;
   const ctx = useFlowContext<FlowEngineContext>();
   const flowEngine = model.flowEngine;
   const latestFlows = serializeFlowRegistry(model.flowRegistry);
@@ -472,6 +655,10 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   }, [draftFlowRegistry]);
 
   React.useEffect(() => {
+    onDirtyChange?.(hasUnsavedChanges());
+  });
+
+  React.useEffect(() => {
     if (_.isEqual(initialFlowsRef.current, latestFlows) || hasUnsavedChanges()) {
       return;
     }
@@ -481,17 +668,19 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   }, [draftFlowRegistry, hasUnsavedChanges, latestFlows]);
 
   React.useEffect(() => {
+    if (!guardBeforeClose) {
+      return;
+    }
+
     const view = ctx.view;
+    if (!view) {
+      return;
+    }
+
     const previousBeforeClose = view.beforeClose;
     const beforeClose = async (payload) => {
       if (hasUnsavedChanges()) {
-        const confirmed =
-          (await ctx.modal?.confirm?.({
-            title: t('Unsaved changes'),
-            content: t("Are you sure you don't want to save?"),
-            okText: t('Confirm'),
-            cancelText: t('Cancel'),
-          })) ?? true;
+        const confirmed = await confirmDiscardUnsavedChanges(ctx, t);
 
         if (!confirmed) {
           return false;
@@ -509,7 +698,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
         view.beforeClose = previousBeforeClose;
       }
     };
-  }, [ctx, hasUnsavedChanges, t]);
+  }, [ctx, guardBeforeClose, hasUnsavedChanges, t]);
 
   // 添加新流
   const handleAddFlow = () => {
@@ -677,6 +866,130 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
       ),
     };
   });
+  const closeView = React.useCallback(async () => {
+    const view = ctx.view as ClosableView | undefined;
+
+    if (!view) {
+      return false;
+    }
+
+    if (typeof view.close === 'function') {
+      return (await view.close()) !== false;
+    }
+
+    const allowed = await view.beforeClose?.({});
+    if (allowed === false) {
+      return false;
+    }
+
+    view.destroy?.();
+    return true;
+  }, [ctx.view]);
+
+  const footerButtons = (
+    <Space>
+      <Button onClick={closeView}>{t('Cancel')}</Button>
+      <Button
+        type="primary"
+        loading={submitLoading}
+        onClick={async () => {
+          setSubmitLoading(true);
+          const invalid = draftFlowRegistry
+            .mapFlows((flow) => {
+              if (!isFlowOnObject(flow.on)) return;
+              normalizeFlowOnPhase(flow.on);
+              const invalidType = validateFlowOnPhase(flow.on);
+              if (!invalidType) return;
+              return { type: invalidType };
+            })
+            .filter(Boolean)[0] as { type: 'flowKey' | 'stepKey' } | undefined;
+
+          if (invalid) {
+            const msg =
+              invalid.type === 'flowKey' ? t('Please select a built-in flow') : t('Please select a built-in flow step');
+            model.context?.message?.error?.(msg);
+            setSubmitLoading(false);
+            return;
+          }
+          const previousFlows = serializeFlowRegistry(model.flowRegistry);
+          const afterSaves: Array<() => Promise<void>> = [];
+
+          try {
+            for (const flow of draftFlowRegistry.mapFlows((it) => it)) {
+              for (const step of flow.mapSteps((it) => it)) {
+                const serialized = step.serialize();
+                const actionDef = step.use ? model.getAction(step.use) : undefined;
+
+                const beforeParamsSave = serialized.beforeParamsSave || actionDef?.beforeParamsSave;
+                const afterParamsSave = serialized.afterParamsSave || actionDef?.afterParamsSave;
+
+                if (typeof beforeParamsSave !== 'function' && typeof afterParamsSave !== 'function') {
+                  continue;
+                }
+
+                const runtimeCtx = new FlowRuntimeContext(model, flow.key, 'settings');
+                setupRuntimeContextSteps(runtimeCtx, flow.steps, model, flow.key);
+                runtimeCtx.defineProperty('currentStep', { value: serialized });
+
+                const currentValues = { ...(step.defaultParams || {}) };
+                const previousParams = { ...(step.defaultParams || {}) };
+
+                if (typeof beforeParamsSave === 'function') {
+                  await beforeParamsSave(runtimeCtx as any, currentValues, previousParams);
+                }
+
+                if (typeof afterParamsSave === 'function') {
+                  afterSaves.push(async () => {
+                    await afterParamsSave(runtimeCtx as any, currentValues, previousParams);
+                  });
+                }
+
+                step.defaultParams = currentValues;
+              }
+            }
+
+            replaceFlowRegistry(model.flowRegistry, serializeFlowRegistry(draftFlowRegistry));
+            await model.flowRegistry.save();
+          } catch (error) {
+            replaceFlowRegistry(model.flowRegistry, previousFlows);
+            setSubmitLoading(false);
+            model.context?.message?.error?.('Steps post-save hooks failed to run');
+            console.error(error);
+            return;
+          }
+
+          initialFlowsRef.current = serializeFlowRegistry(model.flowRegistry);
+
+          try {
+            for (const runAfterSave of afterSaves) {
+              await runAfterSave();
+            }
+          } catch (error) {
+            model.context?.message?.error?.('Steps post-save hooks failed to run');
+            console.error(error);
+          }
+          // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
+          const beforeRenderFlows = model.flowRegistry
+            .mapFlows((flow) => {
+              if (isBeforeRenderFlow(flow)) {
+                return flow;
+              }
+            })
+            .filter(Boolean);
+          if (beforeRenderFlows.length > 0) {
+            model.rerender(); // 不阻塞，后续保存
+          }
+          setSubmitLoading(false);
+          onDirtyChange?.(false);
+          model.context?.message?.success?.(t('Configuration saved'));
+          await closeView();
+        }}
+      >
+        {t('Save')}
+      </Button>
+    </Space>
+  );
+  const ViewFooter = ctx.view?.Footer;
 
   return (
     <div
@@ -720,119 +1033,13 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
         </Button>
       </div>
 
-      {/* 底部按钮区域 */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '8px',
-          padding: '8px 16px',
-          borderTop: '1px solid #f0f0f0',
-          backgroundColor: '#fff',
-          flexShrink: 0,
-        }}
-      >
-        <Button onClick={() => ctx.view.close()}>{t('Cancel')}</Button>
-        <Button
-          type="primary"
-          loading={submitLoading}
-          onClick={async () => {
-            setSubmitLoading(true);
-            const invalid = draftFlowRegistry
-              .mapFlows((flow) => {
-                if (!isFlowOnObject(flow.on)) return;
-                normalizeFlowOnPhase(flow.on);
-                const invalidType = validateFlowOnPhase(flow.on);
-                if (!invalidType) return;
-                return { type: invalidType };
-              })
-              .filter(Boolean)[0] as { type: 'flowKey' | 'stepKey' } | undefined;
-
-            if (invalid) {
-              const msg =
-                invalid.type === 'flowKey'
-                  ? t('Please select a built-in flow')
-                  : t('Please select a built-in flow step');
-              model.context?.message?.error?.(msg);
-              setSubmitLoading(false);
-              return;
-            }
-            const previousFlows = serializeFlowRegistry(model.flowRegistry);
-            const afterSaves: Array<() => Promise<void>> = [];
-
-            try {
-              for (const flow of draftFlowRegistry.mapFlows((it) => it)) {
-                for (const step of flow.mapSteps((it) => it)) {
-                  const serialized = step.serialize();
-                  const actionDef = step.use ? model.getAction(step.use) : undefined;
-
-                  const beforeParamsSave = serialized.beforeParamsSave || actionDef?.beforeParamsSave;
-                  const afterParamsSave = serialized.afterParamsSave || actionDef?.afterParamsSave;
-
-                  if (typeof beforeParamsSave !== 'function' && typeof afterParamsSave !== 'function') {
-                    continue;
-                  }
-
-                  const runtimeCtx = new FlowRuntimeContext(model, flow.key, 'settings');
-                  setupRuntimeContextSteps(runtimeCtx, flow.steps, model, flow.key);
-                  runtimeCtx.defineProperty('currentStep', { value: serialized });
-
-                  const currentValues = { ...(step.defaultParams || {}) };
-                  const previousParams = { ...(step.defaultParams || {}) };
-
-                  if (typeof beforeParamsSave === 'function') {
-                    await beforeParamsSave(runtimeCtx as any, currentValues, previousParams);
-                  }
-
-                  if (typeof afterParamsSave === 'function') {
-                    afterSaves.push(async () => {
-                      await afterParamsSave(runtimeCtx as any, currentValues, previousParams);
-                    });
-                  }
-
-                  step.defaultParams = currentValues;
-                }
-              }
-
-              replaceFlowRegistry(model.flowRegistry, serializeFlowRegistry(draftFlowRegistry));
-              await model.flowRegistry.save();
-            } catch (error) {
-              replaceFlowRegistry(model.flowRegistry, previousFlows);
-              setSubmitLoading(false);
-              model.context?.message?.error?.('Steps post-save hooks failed to run');
-              console.error(error);
-              return;
-            }
-
-            initialFlowsRef.current = serializeFlowRegistry(model.flowRegistry);
-
-            try {
-              for (const runAfterSave of afterSaves) {
-                await runAfterSave();
-              }
-            } catch (error) {
-              model.context?.message?.error?.('Steps post-save hooks failed to run');
-              console.error(error);
-            }
-            // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
-            const beforeRenderFlows = model.flowRegistry
-              .mapFlows((flow) => {
-                if (isBeforeRenderFlow(flow)) {
-                  return flow;
-                }
-              })
-              .filter(Boolean);
-            if (beforeRenderFlows.length > 0) {
-              model.rerender(); // 不阻塞，后续保存
-            }
-            setSubmitLoading(false);
-            model.context?.message?.success?.(t('Configuration saved'));
-            ctx.view.destroy();
-          }}
-        >
-          {t('Save')}
-        </Button>
-      </div>
+      {active ? (
+        ViewFooter ? (
+          <ViewFooter>{footerButtons}</ViewFooter>
+        ) : (
+          <div style={styles.editorFooter}>{footerButtons}</div>
+        )
+      ) : null}
     </div>
   );
 });

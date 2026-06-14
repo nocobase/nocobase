@@ -191,7 +191,6 @@ describe('ReferenceBlockModel', () => {
         return { uid: copy.uid };
       }),
     };
-
     engine.setModelRepository(mockRepository);
     scopedEngine.setModelRepository(mockRepository);
 
@@ -281,7 +280,7 @@ describe('ReferenceBlockModel', () => {
         gridModel.addSubModel('items', referenceBlockModel);
 
         // 触发 beforeRender 事件，加载目标区块
-        await referenceBlockModel.dispatchEvent('beforeRender');
+        await referenceBlockModel.onDispatchEventStart('beforeRender');
 
         // 验证目标区块的 parentId 没有被修改
         const currentParentId = (targetBlockModel as any)._options.parentId;
@@ -296,7 +295,7 @@ describe('ReferenceBlockModel', () => {
     );
 
     it(
-      'should not persist target block when saving the reference block',
+      'should not persist runtime target block with the reference block',
       async () => {
         referenceBlockModel = engine.createModel({
           uid: 'reference-block-uid',

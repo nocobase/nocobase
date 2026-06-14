@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowEngine } from '@nocobase/flow-engine';
+import type { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { getPluginT } from '../client-v2/locale';
 import { registerMenuExtensions } from '../client-v2/menuExtensions';
 import { registerOpenViewPopupTemplateAction } from '../client-v2/openViewActionExtensions';
 
@@ -32,4 +33,37 @@ export function registerLegacyUiTemplateModelLoaders(flowEngine: FlowEngine) {
 export function registerLegacyUiTemplateExtensions(flowEngine: FlowEngine) {
   registerOpenViewPopupTemplateAction(flowEngine);
   registerMenuExtensions();
+  flowEngine.flowSettings.registerDynamicFlowSourceProvider({
+    key: 'ui-templates-reference-block',
+    visible(model) {
+      if (!isReferenceBlockModel(model)) {
+        return false;
+      }
+      const target = model.context?.refModel as FlowModel | undefined;
+      return !!target && target.getEvents().size > 0;
+    },
+    getSources(model) {
+      if (!isReferenceBlockModel(model)) {
+        return [];
+      }
+
+      const target = model.context?.refModel as FlowModel | undefined;
+      if (!target || target.uid === model.uid || target.getEvents().size === 0) {
+        return [];
+      }
+
+      return [
+        {
+          key: 'referenced-template',
+          label: getPluginT(model)('Referenced template'),
+          model: target,
+          sort: 10,
+        },
+      ];
+    },
+  });
+}
+
+function isReferenceBlockModel(model: FlowModel): boolean {
+  return model?.use === 'ReferenceBlockModel' || model?.constructor?.name === 'ReferenceBlockModel';
 }
