@@ -24,22 +24,35 @@ Se você costuma trabalhar com vários terminais ao mesmo tempo, ou quer operar 
 
 ## Passo 2: Inicializar o aplicativo
 
-Por padrão, recomendamos abrir o assistente visual diretamente:
+Recomendamos instalar pelo assistente de UI:
 
 ```bash
 nb init --ui
 ```
 
+1. `Getting started` - definir o identificador `--env` e escolher `Install a new app`
+
 ![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-Dependendo do caminho de setup escolhido, as etapas exibidas podem mudar um pouco. Se você seguir o caminho padrão `Install a new app`, normalmente verá estas seis etapas:
-
-1. `Getting started` - definir o identificador `--env` e escolher `Install a new app`
 2. `App environment` - definir as informações básicas do aplicativo, o local de armazenamento e a porta de execução
+
+![2026-06-14-10-03-06](https://static-docs.nocobase.com/2026-06-14-10-03-06.png)
+
 3. `App source and version` - escolher como obter o aplicativo e qual source e version usar
+
+![2026-06-14-09-51-33](https://static-docs.nocobase.com/2026-06-14-09-51-33.png)
+
 4. `Configure the database` - escolher o banco de dados embutido ou um banco de dados personalizado
+
+![2026-06-14-09-52-05](https://static-docs.nocobase.com/2026-06-14-09-52-05.png)
+
 5. `Create an admin account` - configurar a primeira conta de administrador
+
+![2026-06-14-09-52-56](https://static-docs.nocobase.com/2026-06-14-09-52-56.png)
+
 6. `Connection & authentication` - informar a URL de acesso do aplicativo e escolher um método de autenticação
+
+![2026-06-14-10-00-35](https://static-docs.nocobase.com/2026-06-14-10-00-35.png)
 
 Se preferir trabalhar pela linha de comando, você também pode executar:
 

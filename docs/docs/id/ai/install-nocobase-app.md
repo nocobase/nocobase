@@ -24,22 +24,35 @@ Jika Anda sering bekerja dengan beberapa terminal sekaligus atau ingin beroperas
 
 ## Langkah 2: Inisialisasi aplikasi
 
-Rekomendasi defaultnya adalah langsung membuka wizard visual:
+Rekomendasinya adalah memasang melalui UI wizard:
 
 ```bash
 nb init --ui
 ```
 
+1. `Getting started` - tetapkan identifier `--env` dan pilih `Install a new app`
+
 ![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-Tergantung jalur setup yang Anda pilih, langkah yang muncul bisa sedikit berbeda. Jika Anda mengikuti jalur default `Install a new app`, biasanya Anda akan melihat enam langkah berikut:
-
-1. `Getting started` - tetapkan identifier `--env` dan pilih `Install a new app`
 2. `App environment` - atur informasi dasar aplikasi, lokasi penyimpanan, dan port runtime
+
+![2026-06-14-10-03-06](https://static-docs.nocobase.com/2026-06-14-10-03-06.png)
+
 3. `App source and version` - pilih cara mendapatkan aplikasi serta source dan version yang akan digunakan
+
+![2026-06-14-09-51-33](https://static-docs.nocobase.com/2026-06-14-09-51-33.png)
+
 4. `Configure the database` - pilih database bawaan atau database kustom
+
+![2026-06-14-09-52-05](https://static-docs.nocobase.com/2026-06-14-09-52-05.png)
+
 5. `Create an admin account` - siapkan akun administrator pertama
+
+![2026-06-14-09-52-56](https://static-docs.nocobase.com/2026-06-14-09-52-56.png)
+
 6. `Connection & authentication` - masukkan URL akses aplikasi dan pilih metode autentikasi
+
+![2026-06-14-10-00-35](https://static-docs.nocobase.com/2026-06-14-10-00-35.png)
 
 Jika Anda lebih nyaman bekerja lewat terminal, Anda juga bisa langsung menjalankan:
 
