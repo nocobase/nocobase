@@ -2,6 +2,7 @@
 # ============================================
 # NocoBase Production Docker Image
 # Multi-stage build for optimized image size
+# Supports: linux/amd64, linux/arm64 (Apple Silicon/M4 PRO)
 # ============================================
 
 # -------------------
@@ -10,17 +11,19 @@
 FROM node:20-bookworm AS builder
 
 LABEL maintainer="NocoBase Team <team@nocobase.com>"
+LABEL architecture="multi-platform"
 
 # Set environment for production build
 ENV NODE_ENV=production
 ENV YARN_CACHE_FOLDER=/tmp/yarn-cache
 
-# Install build dependencies
+# Install build dependencies (arm64 compatible)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -46,18 +49,20 @@ RUN yarn build
 FROM node:20-bookworm-slim AS runtime
 
 LABEL maintainer="NocoBase Team <team@nocobase.com>"
+LABEL architecture="multi-platform"
 
 # Set environment
 ENV NODE_ENV=production
 ENV APP_DIR=/app/nocobase
 ENV STORAGE_DIR=/app/nocobase/storage
 ENV LOG_DIR=/app/nocobase/logs
+ENV PORT=3000
 
 # Create non-root user for security
 RUN groupadd -r nocobase && \
     useradd -r -g nocobase -d $APP_DIR nocobase
 
-# Install runtime dependencies
+# Install runtime dependencies (arm64 compatible)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     nginx \
@@ -102,7 +107,7 @@ EXPOSE 80 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s \
-    CMD curl -f http://localhost:3000/api/health || exit 1
+    CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
 # Entrypoint
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

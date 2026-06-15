@@ -31,6 +31,8 @@ jobs:
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -68,12 +70,14 @@ jobs:
           build-args: |
             COMMIT_HASH=${{ github.sha }}
             BUILD_DATE=${{ steps.meta.outputs.created }}
+          provenance: false
 
       - name: Run container tests
         if: github.event_name != 'pull_request'
         run: |
           docker run --rm \
             -e NODE_ENV=test \
+            --platform linux/amd64 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
             npm run test:server -- --testPathPattern="health"
 
@@ -86,7 +90,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Docker Image Deployed Successfully`,
-              body: `**Commit**: ${{ github.sha }}\n**Branch**: deploy/docker\n**Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}\n\nDeployment completed successfully!`,
+              body: `**Commit**: ${{ github.sha }}\n**Branch**: deploy/docker\n**Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}\n\nDeployment completed successfully!\n\n**Supported Architectures**: linux/amd64, linux/arm64 (Apple Silicon/M4 PRO)`,
               labels: ['deploy', 'success']
             })
 
