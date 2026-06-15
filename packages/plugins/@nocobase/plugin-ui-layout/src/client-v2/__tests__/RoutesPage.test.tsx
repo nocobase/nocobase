@@ -24,6 +24,9 @@ const flowContext = vi.hoisted(() => ({
         message: {
           success: ReturnType<typeof vi.fn>;
         };
+        routeRepository: {
+          refreshAccessible: ReturnType<typeof vi.fn>;
+        };
       }
     | undefined,
 }));
@@ -289,6 +292,172 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(within(mobileAddDialog).queryByText('Modern page (v2)')).not.toBeInTheDocument();
     expect(within(mobileAddDialog).getByRole('radio', { name: 'Page' })).toBeChecked();
     expect(within(mobileAddDialog).getByRole('radio', { name: 'Link' })).toBeInTheDocument();
+  });
+
+  it('should refresh desktop menu after desktop route mutations', async () => {
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    expect(resource.refreshAccessible).not.toHaveBeenCalled();
+    const initialListCalls = resource.request.mock.calls.length;
+
+    fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
+    const addDrawer = await findOpenDrawer('Add new');
+    fireEvent.change(within(addDrawer).getByLabelText('Title'), { target: { value: 'Desktop reports' } });
+    fireEvent.click(within(addDrawer).getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByText('Desktop reports')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(resource.refreshAccessible).toHaveBeenCalledTimes(1);
+    });
+
+    const desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Add child Desktop dashboard' }));
+    const addChildDrawer = await findOpenDrawer('Add child route');
+    fireEvent.change(within(addChildDrawer).getByLabelText('Title'), { target: { value: 'Desktop child tab' } });
+    fireEvent.click(within(addChildDrawer).getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByText('Desktop child tab')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(resource.refreshAccessible).toHaveBeenCalledTimes(2);
+    });
+
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Desktop dashboard/ })).getByRole('button', {
+        name: 'Edit Desktop dashboard',
+      }),
+    );
+    const editDrawer = await findOpenDrawer('Edit route');
+    fireEvent.change(within(editDrawer).getByLabelText('Title'), { target: { value: 'Desktop home' } });
+    fireEvent.click(within(editDrawer).getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByText('Desktop home')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(resource.refreshAccessible).toHaveBeenCalledTimes(3);
+    });
+
+    fireEvent.click(within(screen.getByRole('row', { name: /Desktop home/ })).getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Hide in menu' }));
+    await waitFor(() => {
+      expect(resource.refreshAccessible).toHaveBeenCalledTimes(4);
+    });
+
+    fireEvent.click(within(screen.getByRole('row', { name: /Desktop home/ })).getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Show in menu' }));
+    await waitFor(() => {
+      expect(resource.refreshAccessible).toHaveBeenCalledTimes(5);
+    });
+
+    const linkRow = screen.getByRole('row', { name: /Desktop link/ });
+    fireEvent.click(within(linkRow).getByRole('button', { name: 'Delete Desktop link' }));
+    fireEvent.click(
+      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
+    );
+    await waitFor(() => {
+      expect(resource.refreshAccessible).toHaveBeenCalledTimes(6);
+    });
+    expect(screen.queryByText('Desktop link')).not.toBeInTheDocument();
+
+    const groupRow = screen.getByRole('row', { name: /Desktop group/ });
+    fireEvent.click(within(groupRow).getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(
+      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
+    );
+    await waitFor(() => {
+      expect(resource.refreshAccessible).toHaveBeenCalledTimes(7);
+    });
+    expect(screen.queryByText('Desktop group')).not.toBeInTheDocument();
+    expect(resource.request.mock.calls.length).toBeGreaterThan(initialListCalls);
+  });
+
+  it('should not refresh desktop menu after mobile route mutations', async () => {
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <MobileRoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Mobile workbench')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
+    const addDrawer = await findOpenDrawer('Add new');
+    fireEvent.change(within(addDrawer).getByLabelText('Title'), { target: { value: 'Mobile approvals' } });
+    await selectFirstIcon(addDrawer);
+    fireEvent.click(within(addDrawer).getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByText('Mobile approvals')).toBeInTheDocument();
+    expect(resource.refreshAccessible).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      within(screen.getByRole('row', { name: /Mobile workbench/ })).getByRole('button', {
+        name: 'Edit Mobile workbench',
+      }),
+    );
+    const editDrawer = await findOpenDrawer('Edit route');
+    fireEvent.change(within(editDrawer).getByLabelText('Title'), { target: { value: 'Mobile home' } });
+    fireEvent.click(within(editDrawer).getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByText('Mobile home')).toBeInTheDocument();
+    expect(resource.refreshAccessible).not.toHaveBeenCalled();
+
+    fireEvent.click(within(screen.getByRole('row', { name: /Mobile home/ })).getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Hide in menu' }));
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 2,
+        layout: DEFAULT_MOBILE_UI_LAYOUT.uid,
+        values: { hideInMenu: true },
+      });
+    });
+    expect(resource.refreshAccessible).not.toHaveBeenCalled();
+
+    fireEvent.click(within(screen.getByRole('row', { name: /Mobile home/ })).getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Show in menu' }));
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 2,
+        layout: DEFAULT_MOBILE_UI_LAYOUT.uid,
+        values: { hideInMenu: false },
+      });
+    });
+    expect(resource.refreshAccessible).not.toHaveBeenCalled();
+
+    const approvalsRow = screen.getByRole('row', { name: /Mobile approvals/ });
+    fireEvent.click(within(approvalsRow).getByRole('button', { name: 'Delete Mobile approvals' }));
+    fireEvent.click(
+      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
+    );
+    await waitFor(() => {
+      expect(resource.destroy).toHaveBeenCalledWith({
+        filterByTk: 11,
+        layout: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      });
+    });
+    expect(resource.refreshAccessible).not.toHaveBeenCalled();
+
+    fireEvent.click(within(screen.getByRole('row', { name: /Mobile home/ })).getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(
+      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
+    );
+    await waitFor(() => {
+      expect(resource.destroy).toHaveBeenCalledWith({
+        filterByTk: [2],
+        layout: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      });
+    });
+    expect(resource.refreshAccessible).not.toHaveBeenCalled();
   });
 
   it('should render v1-style columns, path, pagination and row actions', async () => {
@@ -664,6 +833,7 @@ function createRoutesPageResources() {
       [
         {
           id: 2,
+          icon: 'MobileOutlined',
           schemaUid: 'mobile-workbench',
           title: 'Mobile workbench',
           type: 'flowPage',
@@ -754,6 +924,7 @@ function createRoutesPageResources() {
     throw new Error(`Unexpected resource: ${name}`);
   });
   const success = vi.fn();
+  const refreshAccessible = vi.fn(async () => undefined);
 
   return {
     context: {
@@ -764,9 +935,13 @@ function createRoutesPageResources() {
       message: {
         success,
       },
+      routeRepository: {
+        refreshAccessible,
+      },
     },
     create,
     destroy,
+    refreshAccessible,
     request,
     resource,
     success,

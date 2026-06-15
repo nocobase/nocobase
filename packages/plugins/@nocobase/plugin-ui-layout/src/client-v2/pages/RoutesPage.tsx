@@ -96,6 +96,9 @@ type RoutesPageFlowContext = {
     error?: (content: string) => void;
     success?: (content: string) => void;
   };
+  routeRepository?: {
+    refreshAccessible?: () => Promise<unknown>;
+  };
 };
 
 type RouteListPayload = {
@@ -675,6 +678,13 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
     run().catch(() => undefined);
   }, [loadRoutes]);
 
+  const refreshRoutesAfterMutation = useCallback(async () => {
+    await loadRoutes();
+    if (layout.uid === DEFAULT_ADMIN_UI_LAYOUT.uid) {
+      await ctx.routeRepository?.refreshAccessible?.();
+    }
+  }, [ctx.routeRepository, layout.uid, loadRoutes]);
+
   const openAddModal = useCallback(() => {
     setEditingRoute(null);
     setParentRoute(null);
@@ -740,7 +750,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
           ctx.message?.success?.(t('Saved successfully'));
         }
         closeEditor();
-        await loadRoutes();
+        await refreshRoutesAfterMutation();
       } finally {
         setSaving(false);
       }
@@ -752,8 +762,8 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
       editingRoute,
       layout.mobile,
       layout.uid,
-      loadRoutes,
       parentRoute,
+      refreshRoutesAfterMutation,
       t,
     ],
   );
@@ -768,9 +778,9 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         layout: layout.uid,
       });
       ctx.message?.success?.(t('Deleted successfully'));
-      await loadRoutes();
+      await refreshRoutesAfterMutation();
     },
-    [ctx.message, desktopRoutesResource, layout.uid, loadRoutes, t],
+    [ctx.message, desktopRoutesResource, layout.uid, refreshRoutesAfterMutation, t],
   );
   const selectedRouteIds = useMemo(
     () => selectedRowKeys.filter((key): key is number | string => typeof key === 'number' || typeof key === 'string'),
@@ -795,9 +805,9 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         });
       }
       ctx.message?.success?.(t('Updated successfully'));
-      await loadRoutes();
+      await refreshRoutesAfterMutation();
     },
-    [ctx.message, desktopRoutesResource, layout.uid, loadRoutes, selectedRouteIds, t],
+    [ctx.message, desktopRoutesResource, layout.uid, refreshRoutesAfterMutation, selectedRouteIds, t],
   );
 
   const deleteSelectedRoutes = useCallback(async () => {
@@ -809,8 +819,8 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
       layout: layout.uid,
     });
     ctx.message?.success?.(t('Deleted successfully'));
-    await loadRoutes();
-  }, [ctx.message, desktopRoutesResource, layout.uid, loadRoutes, selectedRouteIds, t]);
+    await refreshRoutesAfterMutation();
+  }, [ctx.message, desktopRoutesResource, layout.uid, refreshRoutesAfterMutation, selectedRouteIds, t]);
 
   const columns = useMemo<ColumnsType<NocoBaseDesktopRoute>>(
     () => [
