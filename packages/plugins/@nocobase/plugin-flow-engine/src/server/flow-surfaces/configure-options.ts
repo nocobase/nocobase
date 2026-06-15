@@ -607,6 +607,7 @@ const ACTION_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Button title', { example: 'Run' }),
   tooltip: stringOption('Tooltip'),
   icon: stringOption('Icon', { example: 'PlusOutlined' }),
+  onlyIcon: booleanOption('Whether to render only the icon without visible button text', { example: true }),
   type: stringOption('Button type', { example: 'primary' }),
   color: stringOption('Color'),
   htmlType: stringOption('HTML button type', { example: 'submit' }),

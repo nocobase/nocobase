@@ -1869,6 +1869,7 @@ describe('flowSurfaces resource', () => {
           htmlType: 'submit',
           position: 'fixed',
           tooltip: 'Open the popup view',
+          onlyIcon: true,
           danger: true,
           color: '#1677ff',
         },
@@ -1877,6 +1878,7 @@ describe('flowSurfaces resource', () => {
             general: {
               title: 'Open view',
               tooltip: 'Open the popup view',
+              onlyIcon: true,
               type: 'link',
               danger: true,
               color: '#1677ff',
@@ -1968,12 +1970,14 @@ describe('flowSurfaces resource', () => {
       htmlType: 'submit',
       position: 'fixed',
       tooltip: 'Open the popup view',
+      onlyIcon: true,
       danger: true,
       color: '#1677ff',
     });
     expect(actionReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       title: 'Open view',
       tooltip: 'Open the popup view',
+      onlyIcon: true,
       type: 'link',
       danger: true,
       color: '#1677ff',
@@ -1981,6 +1985,145 @@ describe('flowSurfaces resource', () => {
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.htmlType).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.position).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules?.value).toEqual([]);
+
+    const propsOnlyTableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const propsOnlyRefreshAction = await addAction(rootAgent, propsOnlyTableBlockUid, 'refresh');
+    const propsOnlyIconSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: propsOnlyRefreshAction.uid,
+        },
+        props: {
+          icon: 'QuestionCircleOutlined',
+          onlyIcon: true,
+          color: '#722ed1',
+        },
+      },
+    });
+    expect(propsOnlyIconSettings.status).toBe(200);
+
+    const stepOnlyTableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const stepOnlyRefreshAction = await addAction(rootAgent, stepOnlyTableBlockUid, 'refresh');
+    const stepOnlyIconSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: stepOnlyRefreshAction.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            general: {
+              icon: 'InfoCircleOutlined',
+              onlyIcon: true,
+              color: '#faad14',
+            },
+          },
+        },
+      },
+    });
+    expect(stepOnlyIconSettings.status).toBe(200);
+
+    const propsOnlyReadback = await getSurface(rootAgent, {
+      uid: propsOnlyRefreshAction.uid,
+    });
+    expect(propsOnlyReadback.tree.props).toMatchObject({
+      icon: 'QuestionCircleOutlined',
+      onlyIcon: true,
+      color: '#722ed1',
+    });
+    expect(propsOnlyReadback.tree.props?.title).toBeUndefined();
+    expect(propsOnlyReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
+
+    const stepOnlyReadback = await getSurface(rootAgent, {
+      uid: stepOnlyRefreshAction.uid,
+    });
+    expect(stepOnlyReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      icon: 'InfoCircleOutlined',
+      onlyIcon: true,
+      color: '#faad14',
+    });
+    expect(stepOnlyReadback.tree.props).toMatchObject({
+      icon: 'InfoCircleOutlined',
+      onlyIcon: true,
+      color: '#faad14',
+    });
+    expect(stepOnlyReadback.tree.props?.title).toBeUndefined();
+    expect(stepOnlyReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
+
+    const stepOnlyTitledRefreshAction = await addAction(rootAgent, stepOnlyTableBlockUid, 'refresh');
+    const stepOnlyTitledSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: stepOnlyTitledRefreshAction.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            general: {
+              title: 'Reload compact',
+              icon: 'SyncOutlined',
+              onlyIcon: true,
+            },
+          },
+        },
+      },
+    });
+    expect(stepOnlyTitledSettings.status).toBe(200);
+
+    const stepOnlyTitledReadback = await getSurface(rootAgent, {
+      uid: stepOnlyTitledRefreshAction.uid,
+    });
+    expect(stepOnlyTitledReadback.tree.props).toMatchObject({
+      title: 'Reload compact',
+      icon: 'SyncOutlined',
+      onlyIcon: true,
+    });
+    expect(stepOnlyTitledReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      title: 'Reload compact',
+      icon: 'SyncOutlined',
+      onlyIcon: true,
+    });
+
+    const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        options: {
+          unsupported: 'warn',
+        },
+      },
+    });
+    expect(exportRes.status, readErrorMessage(exportRes)).toBe(200);
+    const exported = getData(exportRes);
+    const exportedActions = _.castArray(exported.document?.tabs?.[0]?.blocks || []).flatMap((block: any) => [
+      ..._.castArray(block?.actions || []),
+      ..._.castArray(block?.recordActions || []),
+    ]);
+    const propsOnlyExported = exportedActions.find((action: any) => action?.settings?.color === '#722ed1');
+    expect(propsOnlyExported?.settings).toMatchObject({
+      icon: 'QuestionCircleOutlined',
+      onlyIcon: true,
+      color: '#722ed1',
+    });
+    expect(propsOnlyExported?.settings?.title).toBeUndefined();
+    const stepOnlyExported = exportedActions.find((action: any) => action?.settings?.color === '#faad14');
+    expect(stepOnlyExported?.settings).toMatchObject({
+      icon: 'InfoCircleOutlined',
+      onlyIcon: true,
+      color: '#faad14',
+    });
+    expect(stepOnlyExported?.settings?.title).toBeUndefined();
+    const stepOnlyTitledExported = exportedActions.find((action: any) => action?.settings?.title === 'Reload compact');
+    expect(stepOnlyTitledExported?.settings).toMatchObject({
+      title: 'Reload compact',
+      icon: 'SyncOutlined',
+      onlyIcon: true,
+    });
   });
 
   it('should expose and configure filter action built-in filter settings via flowSurfaces', async () => {

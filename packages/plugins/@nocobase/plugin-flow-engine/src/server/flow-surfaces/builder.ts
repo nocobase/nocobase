@@ -841,10 +841,19 @@ export function buildActionTree(options: {
     containerUse: options.containerUse,
     resourceInit: options.resourceInit,
   });
+  const requestedProps = options.props;
+  const requestedButtonGeneral = _.get(options.stepParams, ['buttonSettings', 'general']);
+  const stripImplicitTitle = shouldStripImplicitIconOnlyActionTitle(requestedProps, requestedButtonGeneral);
   const props = _.merge({}, _.cloneDeep(defaults.props || {}), _.cloneDeep(options.props || {}));
+  if (stripImplicitTitle) {
+    delete props.title;
+  }
   const stepParams = _.merge({}, _.cloneDeep(defaults.stepParams || {}), _.cloneDeep(options.stepParams || {}));
   if (_.isPlainObject(stepParams?.buttonSettings?.general)) {
     stepParams.buttonSettings.general = _.merge({}, stepParams.buttonSettings.general, pickButtonGeneralProps(props));
+    if (stripImplicitTitle) {
+      delete stepParams.buttonSettings.general.title;
+    }
   }
 
   return {
@@ -888,9 +897,21 @@ export function buildCanonicalTableActionsColumnNode(
 
 function pickButtonGeneralProps(props: Record<string, any>) {
   return _.pickBy(
-    _.pick(props || {}, ['title', 'tooltip', 'icon', 'type', 'danger', 'color']),
+    _.pick(props || {}, ['title', 'tooltip', 'icon', 'onlyIcon', 'type', 'danger', 'color']),
     (value) => !_.isUndefined(value),
   );
+}
+
+function shouldStripImplicitIconOnlyActionTitle(props?: Record<string, any>, buttonGeneral?: Record<string, any>) {
+  const hasRequestedOnlyIcon =
+    (_.isPlainObject(props) && Object.prototype.hasOwnProperty.call(props, 'onlyIcon') && props.onlyIcon === true) ||
+    (_.isPlainObject(buttonGeneral) &&
+      Object.prototype.hasOwnProperty.call(buttonGeneral, 'onlyIcon') &&
+      buttonGeneral.onlyIcon === true);
+  const hasRequestedTitle =
+    (_.isPlainObject(props) && Object.prototype.hasOwnProperty.call(props, 'title')) ||
+    (_.isPlainObject(buttonGeneral) && Object.prototype.hasOwnProperty.call(buttonGeneral, 'title'));
+  return hasRequestedOnlyIcon && !hasRequestedTitle;
 }
 
 export function assignClientKeysToUids(
@@ -1142,6 +1163,7 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       title: '',
       tooltip: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
+      onlyIcon: true,
       position: 'right',
     },
     BulkEditActionModel: {

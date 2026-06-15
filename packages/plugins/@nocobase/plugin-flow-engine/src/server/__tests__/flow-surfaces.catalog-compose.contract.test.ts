@@ -314,6 +314,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: '',
       tooltip: expected.tooltip,
       icon: expected.icon,
+      onlyIcon: true,
       position: 'right',
       ...(expected.type ? { type: expected.type } : {}),
     });
@@ -321,6 +322,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: '',
       tooltip: expected.tooltip,
       icon: expected.icon,
+      onlyIcon: true,
       ...(expected.type ? { type: expected.type } : {}),
     });
     expect(action?.stepParams?.buttonSettings?.general?.position).toBeUndefined();
@@ -1129,6 +1131,9 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: {
         type: 'string',
       },
+      onlyIcon: {
+        type: 'boolean',
+      },
       openView: {
         type: 'object',
       },
@@ -1144,6 +1149,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(tableCatalog.recordActions.find((item: any) => item.key === 'view')?.configureOptions).toMatchObject({
       title: {
         type: 'string',
+      },
+      onlyIcon: {
+        type: 'boolean',
       },
       openView: {
         type: 'object',
@@ -6274,6 +6282,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           settings: {
             type: 'primary',
             icon: 'EditOutlined',
+            onlyIcon: true,
           },
         },
       }),
@@ -6302,7 +6311,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(explicitListEditReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       type: 'primary',
       icon: 'EditOutlined',
+      onlyIcon: true,
     });
+    expect(explicitListEditReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
   });
 
   it('should create explicit bulk delete with icon-only right collection action defaults', async () => {
@@ -7260,6 +7271,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         changes: {
           title: 'Submit now',
           tooltip: 'Create the record',
+          onlyIcon: true,
           confirm: {
             enable: true,
             title: 'Please confirm',
@@ -7305,7 +7317,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(actionReadback.tree.props).toMatchObject({
       title: 'Submit now',
       tooltip: 'Create the record',
+      onlyIcon: true,
     });
+    expect(actionReadback.tree.stepParams?.buttonSettings?.general?.onlyIcon).toBe(true);
     expect(actionReadback.tree.stepParams?.submitSettings?.confirm).toMatchObject({
       enable: true,
       title: 'Please confirm',

@@ -652,6 +652,7 @@ type FlowSurfaceRuntimeOptions = {
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
 const AUTO_SUBMIT_FORM_BLOCK_USES = new Set(['CreateFormModel', 'EditFormModel']);
 const FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS = new Set(['filter']);
+const ACTION_BUTTON_GENERAL_SETTING_KEYS = ['title', 'tooltip', 'icon', 'onlyIcon', 'type', 'danger', 'color'];
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
 const SIMPLE_FORM_BLOCK_USES = new Set([
   'FormBlockModel',
@@ -14823,6 +14824,7 @@ export class FlowSurfacesService {
       normalizedValues,
       nextPayload,
     );
+    this.syncActionButtonSettingsForUpdateSettings(current, normalizedValues, nextPayload);
     this.syncActionTriggerWorkflowsForUpdateSettings(current, normalizedValues, nextPayload);
     const popupActionContext =
       options.popupActionContext ||
@@ -15470,6 +15472,84 @@ export class FlowSurfacesService {
     if (nextStepParams) {
       nextPayload.stepParams = nextStepParams;
     }
+  }
+
+  private syncActionButtonSettingsForUpdateSettings(
+    current: any,
+    normalizedValues: Record<string, any>,
+    nextPayload: Record<string, any>,
+  ) {
+    if (!this.supportsActionButtonSettingsSync(current)) {
+      return;
+    }
+    const requestedProps = this.pickRequestedActionButtonSettings(normalizedValues.props);
+    const requestedButtonGeneral = this.pickRequestedActionButtonSettings(
+      _.get(normalizedValues, ['stepParams', 'buttonSettings', 'general']),
+    );
+    const hasRequestedProps = Object.keys(requestedProps).length > 0;
+    const hasRequestedButtonGeneral = Object.keys(requestedButtonGeneral).length > 0;
+    if (!hasRequestedProps && !hasRequestedButtonGeneral) {
+      return;
+    }
+    const hasRequestedTitle =
+      Object.prototype.hasOwnProperty.call(requestedProps, 'title') ||
+      Object.prototype.hasOwnProperty.call(requestedButtonGeneral, 'title');
+    const shouldStripImplicitTitle =
+      (requestedProps.onlyIcon === true || requestedButtonGeneral.onlyIcon === true) && !hasRequestedTitle;
+    const nextProps = _.cloneDeep(
+      _.isPlainObject(nextPayload.props) ? nextPayload.props : _.isPlainObject(current?.props) ? current.props : {},
+    );
+    const nextStepParams = _.cloneDeep(
+      _.isPlainObject(nextPayload.stepParams)
+        ? nextPayload.stepParams
+        : _.isPlainObject(current?.stepParams)
+          ? current.stepParams
+          : {},
+    );
+
+    Object.entries(requestedProps).forEach(([key, value]) => {
+      if (Object.prototype.hasOwnProperty.call(requestedButtonGeneral, key)) {
+        return;
+      }
+      _.set(nextStepParams, ['buttonSettings', 'general', key], _.cloneDeep(value));
+    });
+    Object.entries(requestedButtonGeneral).forEach(([key, value]) => {
+      if (Object.prototype.hasOwnProperty.call(requestedProps, key)) {
+        return;
+      }
+      nextProps[key] = _.cloneDeep(value);
+    });
+
+    if (shouldStripImplicitTitle) {
+      delete nextProps.title;
+      if (_.isPlainObject(_.get(nextStepParams, ['buttonSettings', 'general']))) {
+        delete nextStepParams.buttonSettings.general.title;
+      }
+    }
+
+    nextPayload.props = nextProps;
+    nextPayload.stepParams = nextStepParams;
+  }
+
+  private supportsActionButtonSettingsSync(current: any) {
+    const contract = getNodeContract(current?.use);
+    return (
+      contract.domains.props?.allowedKeys?.includes('onlyIcon') &&
+      contract.domains.stepParams?.groups?.buttonSettings?.allowedPaths?.includes('general.onlyIcon')
+    );
+  }
+
+  private pickRequestedActionButtonSettings(input: Record<string, any>) {
+    const picked: Record<string, any> = {};
+    if (!_.isPlainObject(input)) {
+      return picked;
+    }
+    ACTION_BUTTON_GENERAL_SETTING_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(input, key) && !_.isUndefined(input[key])) {
+        picked[key] = _.cloneDeep(input[key]);
+      }
+    });
+    return picked;
   }
 
   private syncCreatedFieldWrapperTitleFieldStepParams(node: any) {
@@ -23680,14 +23760,15 @@ export class FlowSurfacesService {
       ? this.normalizeFilterActionDefaultFilterValue(changes.defaultFilter)
       : undefined;
     const stepParams: Record<string, any> = {};
-    if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'type', 'danger', 'color', 'linkageRules'])) {
+    if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'onlyIcon', 'type', 'danger', 'color', 'linkageRules'])) {
       stepParams.buttonSettings = {
-        ...(hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'type', 'danger', 'color'])
+        ...(hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'onlyIcon', 'type', 'danger', 'color'])
           ? {
               general: buildDefinedPayload({
                 title: changes.title,
                 tooltip: changes.tooltip,
                 icon: changes.icon,
+                onlyIcon: changes.onlyIcon,
                 type: changes.type,
                 danger: changes.danger,
                 color: changes.color,
@@ -23911,6 +23992,7 @@ export class FlowSurfacesService {
       title: changes.title,
       tooltip: changes.tooltip,
       icon: changes.icon,
+      onlyIcon: changes.onlyIcon,
       type: changes.type,
       htmlType: changes.htmlType,
       position: changes.position,
