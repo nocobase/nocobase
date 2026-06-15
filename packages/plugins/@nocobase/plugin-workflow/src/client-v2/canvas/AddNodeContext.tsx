@@ -17,7 +17,7 @@
  * a type implemented only in v1 simply does not appear (doc §9.1).
  */
 
-import React, { createContext, lazy, Suspense, useContext, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 import { App, Button, Form, Menu, Skeleton, Space } from 'antd';
 import { css } from '@emotion/css';
@@ -30,19 +30,10 @@ import { useT } from '../locale';
 import { PluginWorkflowClientV2 } from '../plugin';
 import type { Instruction } from './Instruction';
 import DownstreamBranchIndex, { getDownstreamBranchOptions } from './DownstreamBranchIndex';
+import { AddNodeContext, useAddNodeContext } from './AddNodeContext.shared';
+import { createNodeAndMaybeReparent, resolveAddNodeDecision } from './addNodeController';
 
 type Anchor = { upstream?: any; branchIndex?: number | null };
-
-type AddNodeContextValue = {
-  creating: { upstreamId: any; branchIndex: number | null } | null;
-  onMenuOpen: (anchor: Anchor) => void;
-};
-
-const AddNodeContext = createContext<AddNodeContextValue | null>(null);
-
-export function useAddNodeContext() {
-  return useContext(AddNodeContext);
-}
 
 // Two-column grouped menu — mirrors v1's `.ant-menu-item-group-list` grid.
 const menuGridClass = css`
@@ -165,17 +156,16 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
       .filter(Boolean) as MenuProps['items'];
   });
 
-  // Create the node, then (when a branching node was inserted above an existing downstream node and the user chose a
-  // branch) re-parent that downstream node into the chosen branch. Mirrors v1's `useAddNodeSubmitAction`.
   const createNode = useMemoizedFn(async (anchor: Anchor, instruction: Instruction, presetValues: any) => {
     const upstreamId = anchor.upstream?.id ?? null;
     const branchIndex = anchor.branchIndex ?? null;
     const { downstreamBranchIndex, config: presetConfig } = presetValues ?? {};
     setCreating({ upstreamId, branchIndex });
     try {
-      const {
-        data: { data: newNode },
-      } = await ctx.api.resource('workflows.nodes', workflow.id).create({
+      await createNodeAndMaybeReparent({
+        workflowId: workflow.id,
+        api: ctx.api,
+        refresh,
         values: {
           key: uid(),
           type: instruction.type,
@@ -184,18 +174,8 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
           title: t(instruction.title as string),
           config: { ...(instruction.createDefaultConfig?.() ?? {}), ...(presetConfig ?? {}) },
         },
+        downstreamBranchIndex,
       });
-      if (typeof downstreamBranchIndex === 'number' && newNode?.downstreamId) {
-        await ctx.api.resource('flow_nodes').update({
-          filterByTk: newNode.downstreamId,
-          values: {
-            branchIndex: downstreamBranchIndex,
-            upstream: { id: newNode.id, downstreamId: null },
-          },
-          updateAssociationValues: ['upstream'],
-        });
-      }
-      refresh?.();
     } catch (err) {
       message.error(t('Failed to add node'));
       // eslint-disable-next-line no-console
@@ -207,36 +187,41 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
   });
 
   const onCreate = useMemoizedFn(async (anchor: Anchor, type: string) => {
-    const instruction = plugin?.getInstruction(type);
-    if (!instruction || !workflow?.id) {
+    if (!workflow?.id) {
       return;
     }
-    // Does a branching node land above an existing downstream node? If so the user must pick where that downstream
-    // goes (DownstreamBranchIndex).
-    const upstreamId = anchor.upstream?.id ?? null;
-    const branchIndex = anchor.branchIndex ?? null;
-    const downstream = anchor.upstream?.id
-      ? (nodes ?? []).find((item: any) => item.upstreamId === upstreamId && item.branchIndex === branchIndex)
-      : (nodes ?? []).find((item: any) => item.upstreamId == null);
 
-    // Preset dialog when the node has an add-time preset form, or when a branching node needs the
-    // downstream-placement choice (mirrors v1).
-    if (instruction.PresetFieldsetLoader || Boolean(downstream && instruction.branching)) {
+    const decision = resolveAddNodeDecision({
+      type,
+      anchor,
+      runtime: {
+        workflow,
+        nodes: nodes ?? [],
+        getInstruction: (instructionType) => plugin?.getInstruction(instructionType),
+        translateTitle: (title) => t(title),
+      },
+    });
+
+    if (decision.kind === 'missing' || decision.kind === 'blocked') {
+      return;
+    }
+
+    if (decision.kind === 'modern-preset') {
       ctx.viewer.dialog({
         width: 520,
         closable: true,
         content: () => (
           <PresetDialogForm
-            instruction={instruction}
-            hasDownstream={Boolean(downstream)}
-            onSubmit={(values) => createNode(anchor, instruction, values)}
+            instruction={decision.instruction}
+            hasDownstream={decision.hasDownstream}
+            onSubmit={(values) => createNode(decision.anchor, decision.instruction, values)}
           />
         ),
       });
       return;
     }
 
-    await createNode(anchor, instruction, {});
+    await createNode(anchor, decision.instruction, {});
   });
 
   const onMenuOpen = useMemoizedFn((anchor: Anchor) => {
@@ -249,7 +234,14 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
     });
   });
 
-  const value = useMemo<AddNodeContextValue>(() => ({ creating, onMenuOpen }), [creating, onMenuOpen]);
+  const value = useMemo(
+    () => ({
+      creating,
+      anchor: null,
+      onMenuOpen,
+    }),
+    [creating, onMenuOpen],
+  );
 
   return <AddNodeContext.Provider value={value}>{props.children}</AddNodeContext.Provider>;
 }

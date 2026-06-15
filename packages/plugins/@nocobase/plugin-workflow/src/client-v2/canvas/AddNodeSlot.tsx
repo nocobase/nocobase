@@ -18,21 +18,40 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Button } from 'antd';
 import { PlusOutlined, SnippetsOutlined } from '@ant-design/icons';
 import useStyles from './style';
-import { useWorkflowCanvasExecuted } from './contexts';
-import { useAddNodeContext } from './AddNodeContext';
+import { useFlowContext, useWorkflowCanvasExecuted } from './contexts';
+import { useAddNodeContext } from './AddNodeContext.shared';
+import { useBranchContext } from './BranchContext';
 import { useNodeClipboardContext } from './NodeClipboardContext';
 import { useNodeDragContext } from './NodeDragContext';
+
+function AddButtonPlaceholder() {
+  const { styles } = useStyles();
+  return (
+    <div className={`${styles.addButtonClass} workflow-add-node-button`}>
+      <span className="ant-btn-placeholder" />
+    </div>
+  );
+}
 
 /** During a drag, every add-slot becomes a drop zone: it registers its DOM
  *  element for hit-testing and reflects the drop impact (safe / warning /
  *  disabled), highlighting when it's the active target. Mirrors v1. */
-function DropZone({ upstream, branchIndex }: { upstream?: any; branchIndex: number | null }) {
+function DropZone({
+  upstream,
+  branchIndex,
+  ariaLabel,
+}: {
+  upstream?: any;
+  branchIndex: number | null;
+  ariaLabel?: string;
+}) {
   const { styles, cx } = useStyles();
+  const branchContext = useBranchContext();
   const dragContext = useNodeDragContext();
   const target = useMemo(() => ({ upstream, branchIndex }), [upstream, branchIndex]);
   const impact = dragContext?.getDropImpact?.(target);
   const status = impact?.status ?? 'disabled';
-  const disabled = status === 'disabled';
+  const disabled = branchContext?.addable === false || status === 'disabled';
   const dropKey = dragContext?.getDropKey?.(target);
   const isActive = Boolean(dropKey && dragContext?.activeDropKey === dropKey);
   const registerDropZone = dragContext?.registerDropZone;
@@ -49,7 +68,7 @@ function DropZone({ upstream, branchIndex }: { upstream?: any; branchIndex: numb
     <div className={`${styles.addButtonClass} workflow-add-node-button`}>
       <div
         role="button"
-        aria-label="drop-zone"
+        aria-label={ariaLabel || 'drop-zone'}
         ref={zoneRef}
         className={cx(styles.dropZoneClass, {
           'drop-safe': status === 'safe',
@@ -62,18 +81,27 @@ function DropZone({ upstream, branchIndex }: { upstream?: any; branchIndex: numb
   );
 }
 
-function PasteZone({ upstream, branchIndex }: { upstream?: any; branchIndex: number | null }) {
+function PasteZone({
+  upstream,
+  branchIndex,
+  ariaLabel,
+}: {
+  upstream?: any;
+  branchIndex: number | null;
+  ariaLabel?: string;
+}) {
   const { styles, cx } = useStyles();
+  const branchContext = useBranchContext();
   const clipboard = useNodeClipboardContext();
   const target = { upstream, branchIndex };
   const impact = clipboard?.getPasteImpact(target);
   const status = impact?.status ?? 'disabled';
-  const disabled = status === 'disabled';
+  const disabled = branchContext?.addable === false || status === 'disabled';
 
   return (
     <div className={`${styles.addButtonClass} workflow-add-node-button`}>
       <Button
-        aria-label="paste-zone"
+        aria-label={ariaLabel || 'paste-zone'}
         shape="circle"
         size="small"
         icon={<SnippetsOutlined />}
@@ -88,16 +116,33 @@ function PasteZone({ upstream, branchIndex }: { upstream?: any; branchIndex: num
   );
 }
 
-export function AddNodeSlot({ upstream, branchIndex = null }: { upstream?: any; branchIndex?: number | null }) {
+export function AddNodeSlot({
+  upstream,
+  branchIndex = null,
+  'aria-label': ariaLabel,
+}: {
+  upstream?: any;
+  branchIndex?: number | null;
+  'aria-label'?: string;
+}) {
   const { styles } = useStyles();
+  const { workflow } = useFlowContext() ?? {};
   const executed = useWorkflowCanvasExecuted();
+  const branchContext = useBranchContext();
   const addNodeContext = useAddNodeContext();
   const clipboard = useNodeClipboardContext();
   const dragContext = useNodeDragContext();
 
   const onOpen = useCallback(
-    () => addNodeContext?.onMenuOpen({ upstream, branchIndex }),
-    [addNodeContext, upstream, branchIndex],
+    () =>
+      addNodeContext?.onMenuOpen?.({
+        upstream,
+        branchIndex,
+        branchContext: {
+          syncOnly: branchContext?.syncOnly ?? false,
+        },
+      }),
+    [addNodeContext, upstream, branchIndex, branchContext?.syncOnly],
   );
 
   const loading = Boolean(
@@ -106,28 +151,28 @@ export function AddNodeSlot({ upstream, branchIndex = null }: { upstream?: any; 
       addNodeContext.creating.branchIndex === branchIndex,
   );
 
+  if (!workflow || !addNodeContext || branchContext?.addable === false) {
+    return <AddButtonPlaceholder />;
+  }
+
   if (executed) {
-    return (
-      <div className={`${styles.addButtonClass} workflow-add-node-button`}>
-        <span className="ant-btn-placeholder" />
-      </div>
-    );
+    return <AddButtonPlaceholder />;
   }
 
   // While dragging, every slot is a drop zone (v1 behavior, takes precedence).
   if (dragContext?.dragging) {
-    return <DropZone upstream={upstream} branchIndex={branchIndex} />;
+    return <DropZone upstream={upstream} branchIndex={branchIndex} ariaLabel={ariaLabel} />;
   }
 
   // A copied node turns every add-slot into a paste zone (v1 behavior).
   if (clipboard?.clipboard) {
-    return <PasteZone upstream={upstream} branchIndex={branchIndex} />;
+    return <PasteZone upstream={upstream} branchIndex={branchIndex} ariaLabel={ariaLabel} />;
   }
 
   return (
     <div className={`${styles.addButtonClass} workflow-add-node-button`}>
       <Button
-        aria-label="add-button"
+        aria-label={ariaLabel || 'add-button'}
         shape="circle"
         icon={<PlusOutlined />}
         size="small"
