@@ -241,42 +241,51 @@ export default class Dispatcher {
 
     this.executing = (async () => {
       let next: ExecutionPlan | null = null;
-      const pending: Pending | null = this.pending.shift() ?? null;
-      if (pending || (this.ready && this.plugin.serving())) {
-        const execution: ExecutionModel | null = await this.prepare(pending?.execution ?? null, {
-          immediate: pending?.immediate,
-        });
-        if (execution) {
-          next = [execution, pending?.job, pending?.rerun];
+      let pending: Pending | null = null;
+      try {
+        pending = this.pending.shift() ?? null;
+        if (pending || (this.ready && this.plugin.serving())) {
+          const execution: ExecutionModel | null = await this.prepare(pending?.execution ?? null, {
+            immediate: pending?.immediate,
+          });
+          if (execution) {
+            next = [execution, pending?.job, pending?.rerun];
+          }
+          if (pending && next) {
+            this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
+          }
+        } else {
+          this.plugin
+            .getLogger('dispatcher')
+            .warn(
+              `${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance or app not ready, new dispatching will be ignored`,
+            );
         }
-        if (pending && next) {
-          this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
-        }
-      } else {
-        this.plugin
-          .getLogger('dispatcher')
-          .warn(
-            `${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance or app not ready, new dispatching will be ignored`,
-          );
-      }
-      if (next) {
-        try {
-          await this.process(next[0], next[1], { rerun: next[2] });
-        } catch (error) {
-          this.plugin.getLogger(next[0].workflowId).error(`execution (${next[0].id}) process failed`, { error });
-          if (pending && isLockAcquireError(error)) {
-            this.pending.unshift({ ...pending, execution: next[0], immediate: true });
+        if (next) {
+          try {
+            await this.process(next[0], next[1], { rerun: next[2] });
+          } catch (error) {
+            this.plugin.getLogger(next[0].workflowId).error(`execution (${next[0].id}) process failed`, { error });
+            if (pending && isLockAcquireError(error)) {
+              this.pending.unshift({ ...pending, execution: next[0], immediate: true });
+            }
           }
         }
-      }
-      setImmediate(() => {
-        this.executing = null;
-
-        if (next || this.pending.length) {
-          this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
-          this.dispatch();
+      } catch (error) {
+        this.plugin.getLogger('dispatcher').error(`workflow dispatch failed`, { error });
+        if (pending && !next) {
+          this.pending.unshift(pending);
         }
-      });
+      } finally {
+        setImmediate(() => {
+          this.executing = null;
+
+          if (next || this.pending.length) {
+            this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
+            this.dispatch();
+          }
+        });
+      }
     })();
   }
 
