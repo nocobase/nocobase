@@ -38,7 +38,8 @@ export const PWC_FORM_META_STEP = '_pwcStep';
 /** Form POST JSON meta field: current field key when validating a single field. */
 export const PWC_FORM_META_FIELD = '_pwcField';
 const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000;
-const DEFAULT_HOST = '127.0.0.1';
+const DEFAULT_PUBLIC_HOST = '127.0.0.1';
+const LISTEN_HOST = '0.0.0.0';
 
 function resolveUiText(
   text: LocalizedText | undefined,
@@ -823,14 +824,15 @@ export type RunPromptCatalogWebUIOptions = {
    * Default {@link DEFAULT_VALIDATE_FIELD}.
    */
   validateFieldPath?: string;
+  /** Hostname or IP address shown in the browser URL. The local setup server always listens on 0.0.0.0. */
   host?: string;
   port?: number;
   timeoutMs?: number;
   /**
    * Invoked once when the local HTTP server is listening (before the default browser is opened).
-   * Use to log the bound URL, especially when {@link port} is `0` and the OS assigns a port.
+   * Use to log the browser URL, especially when {@link port} is `0` and the OS assigns a port.
    */
-  onServerStart?: (args: { host: string; port: number; url: string }) => void;
+  onServerStart?: (args: { host: string; listenHost: string; port: number; url: string }) => void;
   onOpenBrowserError?: (url: string, error: unknown) => void;
   locale?: string;
 };
@@ -993,7 +995,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
   ).show;
   const submitPath = options.submitPath ?? DEFAULT_SUBMIT;
   const reflowPath = options.reflowPath ?? DEFAULT_REFLOW;
-  const host = options.host ?? DEFAULT_HOST;
+  const publicHost = options.host ?? DEFAULT_PUBLIC_HOST;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const pageTitle = resolveUiText(options.pageTitle, locale, t('promptCatalog.web.pageTitle'));
   const h1 = resolveUiText(options.documentHeading, locale, t('promptCatalog.web.documentHeading'));
@@ -1043,7 +1045,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     };
 
     const servePage = (port: number) => {
-      const base = `http://${host}:${port}`;
+      const base = `http://${publicHost}:${port}`;
       const formInner = buildPwcFormHtml(
         catalog,
         formDefaults,
@@ -2538,15 +2540,15 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       res.writeHead(404).end();
     });
 
-    server.listen(options.port ?? 0, '0.0.0.0', () => {
+    server.listen(options.port ?? 0, LISTEN_HOST, () => {
       const addr = server?.address();
       if (typeof addr !== 'object' || !addr) {
         rejectAndClose(new Error('Failed to bind HTTP server'));
         return;
       }
       const port = addr.port;
-      const startUrl = `http://${host}:${port}/`;
-      options.onServerStart?.({ host, port, url: startUrl });
+      const startUrl = `http://${publicHost}:${port}/`;
+      options.onServerStart?.({ host: publicHost, listenHost: LISTEN_HOST, port, url: startUrl });
       const onOpenBrowserError = options.onOpenBrowserError ?? ((u, err) => console.warn(String(err), u));
       try {
         openUrlInDefaultBrowser(startUrl, onOpenBrowserError);
