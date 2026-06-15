@@ -18,11 +18,13 @@ import {
   findFirstV2LandingRoute,
   getAdminLayoutRoutePath,
   resolveAdminRouteRuntimeTarget,
+  type AdminLayoutRoutePathLike,
   toRouterNavigationPath,
 } from './resolveAdminRouteRuntimeTarget';
 import type { AdminLayoutModel } from './AdminLayoutModel';
 
-type StableAdminEntryLayout = Partial<Pick<LayoutDefinition, 'authCheck' | 'routeName' | 'routePath' | 'uid'>>;
+type StableAdminEntryLayout = AdminLayoutRoutePathLike &
+  Partial<Pick<LayoutDefinition, 'authCheck' | 'routeName' | 'uid'>>;
 
 export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: AdminLayoutModel }> = ({
   children,
@@ -49,7 +51,7 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: Admi
     return {
       authCheck: layoutAuthCheck,
       routeName: layoutRouteNameValue,
-      routePath: layoutRoutePathValue,
+      routePath: layoutRoutePathValue || '',
       uid: layoutUid,
     };
   }, [layoutAuthCheck, layoutRouteNameValue, layoutRoutePathValue, layoutUid]);
