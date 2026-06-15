@@ -17,6 +17,7 @@ import {
   prepareFlowSurfaceApplyApprovalBlueprintDocument,
   type FlowSurfaceApprovalBlueprintSurface,
 } from './blueprint';
+import { assertFlowSurfaceApprovalBlueprintAuthoringPayload } from './authoring-validation';
 import {
   buildApprovalApproverSurfaceTree,
   buildApprovalInitiatorSurfaceTree,
@@ -669,6 +670,7 @@ export class FlowSurfaceApprovalBlueprintService {
   }
 
   async applyApprovalBlueprint(values: Record<string, any>, options: { transaction?: any } = {}) {
+    assertFlowSurfaceApprovalBlueprintAuthoringPayload(values);
     const document = prepareFlowSurfaceApplyApprovalBlueprintDocument(values);
     const bindingContext = await this.resolveApprovalBlueprintBindingContext(document, options.transaction);
     const surfaceRoot = await this.ensureApprovalBlueprintSurfaceRoot(bindingContext, options.transaction);

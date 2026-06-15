@@ -16,7 +16,12 @@ import { rethrowInlineConfigurationError, toFlowSurfaceBatchItemError } from '..
 describe('flowSurfaces authoring validation unit', () => {
   const createDefaultFilterValidationContext = (extra: Record<string, any> = {}) => {
     const fields = [
+      { name: 'id', type: 'bigInt', interface: 'integer' },
+      { name: 'index', type: 'datetime', interface: 'datetime' },
       { name: 'occurDate', interface: 'input' },
+      { name: 'lastFollowedAt', type: 'datetime', interface: 'datetime' },
+      { name: 'startAt', type: 'datetime', interface: 'datetime' },
+      { name: 'workTime', type: 'time', interface: 'time' },
       { name: 'nickname', interface: 'input' },
       { name: 'status', interface: 'select' },
       { name: 'email', interface: 'email' },
@@ -28,9 +33,28 @@ describe('flowSurfaces authoring validation unit', () => {
       getFields: () => fields,
       fields: fieldsByName,
     };
+    const userFields = [
+      { name: 'id', type: 'bigInt', interface: 'integer' },
+      { name: 'createdAt', type: 'datetime', interface: 'createdAt' },
+      { name: 'nickname', interface: 'input' },
+    ];
+    const userFieldsByName = new Map(userFields.map((field) => [field.name, field]));
+    const usersCollection = {
+      name: 'users',
+      getField: (fieldName: string) => userFieldsByName.get(fieldName),
+      getFields: () => userFields,
+      fields: userFieldsByName,
+    };
     return {
-      getCollection: (_dataSourceKey: string, collectionName: string) =>
-        collectionName === 'employees' ? collection : null,
+      getCollection: (_dataSourceKey: string, collectionName: string) => {
+        if (collectionName === 'employees') {
+          return collection;
+        }
+        if (collectionName === 'users') {
+          return usersCollection;
+        }
+        return null;
+      },
       ...extra,
     };
   };
@@ -918,6 +942,361 @@ describe('flowSurfaces authoring validation unit', () => {
     expect([...composeErrors, ...configureErrors].map((error: any) => error.ruleId)).not.toContain(
       'filter-group-date-value-invalid',
     );
+  });
+
+  it('should reject DateTime comparison template arithmetic across authoring condition surfaces', async () => {
+    const invalidTemplate = '{{$now - 14 * 24 * 60 * 60 * 1000}}';
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        assets: {
+          charts: {
+            staleContacts: {
+              query: {
+                mode: 'builder',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                measures: [{ field: 'id', aggregation: 'count', alias: 'employeeCount' }],
+                dimensions: [{ field: 'status', alias: 'status' }],
+                filter: {
+                  $and: [
+                    {
+                      lastFollowedAt: {
+                        $lt: invalidTemplate,
+                      },
+                    },
+                  ],
+                },
+              },
+              visual: {
+                mode: 'basic',
+                type: 'bar',
+                mappings: {
+                  x: 'status',
+                  y: 'employeeCount',
+                },
+              },
+            },
+          },
+        },
+        tabs: [
+          {
+            key: 'main',
+            title: 'Main',
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: ['nickname', 'status', 'email', 'lastFollowedAt'],
+                defaultFilter: {
+                  logic: '$and',
+                  items: [
+                    { path: 'lastFollowedAt', operator: '$lt', value: invalidTemplate },
+                    { path: 'nickname', operator: '$notEmpty' },
+                    { path: 'status', operator: '$notEmpty' },
+                    { path: 'email', operator: '$notEmpty' },
+                  ],
+                },
+                settings: {
+                  dataScope: {
+                    logic: '$and',
+                    items: [{ path: 'lastFollowedAt', operator: '$lt', value: invalidTemplate }],
+                  },
+                },
+              },
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['nickname', 'status', 'email', 'lastFollowedAt'],
+              },
+              {
+                key: 'staleContactsChart',
+                type: 'chart',
+                chart: 'staleContacts',
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: 'main.employeeForm',
+              rules: [
+                {
+                  key: 'staleStatus',
+                  targetPath: 'status',
+                  when: {
+                    logic: '$and',
+                    items: [{ path: 'formValues.lastFollowedAt', operator: '$lt', value: invalidTemplate }],
+                  },
+                  value: {
+                    source: 'literal',
+                    value: 'stale',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+      createDefaultFilterValidationContext(),
+    );
+
+    const dateConditionErrors = errors.filter((error: any) => error.ruleId === 'date-condition-value-invalid');
+    expect(dateConditionErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.assets.charts.staleContacts.query.filter.$and[0].lastFollowedAt.$lt',
+        '$.tabs[0].blocks[0].defaultFilter.items[0].value',
+        '$.tabs[0].blocks[0].settings.dataScope.items[0].value',
+        '$.reaction.items[0].rules[0].when.items[0].value',
+      ]),
+    );
+    expect(
+      dateConditionErrors.some((error: any) =>
+        String(error.details?.repairHint || '').includes('Do not use template arithmetic'),
+      ),
+    ).toBe(true);
+  });
+
+  it('should allow valid DateTime comparison values without blocking non-date comparisons', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: { uid: 'missing-target-never-resolved' },
+        blocks: [
+          {
+            key: 'validDateComparisonTable',
+            type: 'table',
+            collection: 'employees',
+            defaultFilter: {
+              logic: '$and',
+              items: [
+                { path: 'lastFollowedAt', operator: '$lt', value: '2026-05-27T00:00:00.000Z' },
+                { path: 'workTime', operator: '$eq', value: '09:30' },
+                { path: 'nickname', operator: '$lt', value: '{{$now - 14 * 24 * 60 * 60 * 1000}}' },
+                { path: 'status', operator: '$notEmpty' },
+                { path: 'email', operator: '$notEmpty' },
+              ],
+            },
+          },
+        ],
+      },
+      createDefaultFilterValidationContext(),
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('date-condition-value-invalid');
+  });
+
+  it('should reject DateTime comparison shorthand and empty values before database queries', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        target: { uid: 'missing-target-never-resolved' },
+        blocks: [
+          {
+            key: 'invalidDateComparisonTable',
+            type: 'table',
+            collection: 'employees',
+            defaultFilter: {
+              logic: '$and',
+              items: [
+                { path: 'lastFollowedAt', operator: '$lt', value: '' },
+                { path: 'lastFollowedAt', operator: '$lt', value: '2026' },
+                { path: 'lastFollowedAt', operator: '$lt', value: '2026-05' },
+                { path: 'lastFollowedAt', operator: '$lt', value: '2026-Q2' },
+                { path: 'nickname', operator: '$notEmpty' },
+                { path: 'status', operator: '$notEmpty' },
+                { path: 'email', operator: '$notEmpty' },
+              ],
+            },
+          },
+        ],
+      },
+      createDefaultFilterValidationContext(),
+    );
+
+    const dateConditionErrors = errors.filter((error: any) => error.ruleId === 'date-condition-value-invalid');
+    expect(dateConditionErrors.map((error: any) => error.details?.invalidValue)).toEqual([
+      '',
+      '2026',
+      '2026-05',
+      '2026-Q2',
+    ]);
+  });
+
+  it('should allow DateTime reaction conditions bound to context path values on applyBlueprint', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            key: 'main',
+            title: 'Main',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['nickname', 'status', 'email', 'lastFollowedAt'],
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: 'main.employeeForm',
+              rules: [
+                {
+                  key: 'copy-stale-status',
+                  targetPath: 'status',
+                  when: {
+                    logic: '$and',
+                    items: [
+                      {
+                        path: 'formValues.lastFollowedAt',
+                        operator: '$dateBefore',
+                        value: { source: 'path', path: 'formValues.lastFollowedAt' },
+                      },
+                    ],
+                  },
+                  value: {
+                    source: 'literal',
+                    value: 'stale',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+      createDefaultFilterValidationContext(),
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('date-condition-value-invalid');
+  });
+
+  it('should validate DateTime comparisons across authorable reaction context roots on applyBlueprint', async () => {
+    const invalidTemplate = '{{$now - 14 * 24 * 60 * 60 * 1000}}';
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            key: 'main',
+            title: 'Main',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['nickname', 'status', 'email', 'lastFollowedAt', 'startAt'],
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: 'main.employeeForm',
+              rules: [
+                {
+                  key: 'user-created-at',
+                  targetPath: 'status',
+                  when: {
+                    logic: '$and',
+                    items: [{ path: 'user.createdAt', operator: '$lt', value: invalidTemplate }],
+                  },
+                  value: {
+                    source: 'literal',
+                    value: 'stale',
+                  },
+                },
+                {
+                  key: 'item-start-at',
+                  targetPath: 'status',
+                  when: {
+                    logic: '$and',
+                    items: [{ path: 'item.startAt', operator: '$gte', value: invalidTemplate }],
+                  },
+                  value: {
+                    source: 'literal',
+                    value: 'active',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+      createDefaultFilterValidationContext(),
+    );
+
+    const dateConditionErrors = errors.filter((error: any) => error.ruleId === 'date-condition-value-invalid');
+    expect(dateConditionErrors.map((error: any) => error.path)).toEqual(
+      expect.arrayContaining([
+        '$.reaction.items[0].rules[0].when.items[0].value',
+        '$.reaction.items[0].rules[1].when.items[0].value',
+      ]),
+    );
+  });
+
+  it('should preserve built-in item context metadata when collection fields have the same names', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            key: 'main',
+            title: 'Main',
+            blocks: [
+              {
+                key: 'employeeForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: ['nickname', 'status', 'email', 'lastFollowedAt'],
+              },
+            ],
+          },
+        ],
+        reaction: {
+          items: [
+            {
+              type: 'setFieldValueRules',
+              target: 'main.employeeForm',
+              rules: [
+                {
+                  key: 'item-index',
+                  targetPath: 'status',
+                  when: {
+                    logic: '$and',
+                    items: [{ path: 'item.index', operator: '$lt', value: 2 }],
+                  },
+                  value: {
+                    source: 'literal',
+                    value: 'active',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+      createDefaultFilterValidationContext(),
+    );
+
+    expect(errors.map((error: any) => error.ruleId)).not.toContain('date-condition-value-invalid');
   });
 
   it('should reject invalid static date values inside templated chart date ranges on configure writes', async () => {
