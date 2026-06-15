@@ -138,10 +138,6 @@ function normalizeContextKey(contextKey: string): string {
   return normalizeVariablePath(contextKey.replace(/(^|\.)\d+(?=\.|$)/g, '$1'));
 }
 
-function getSourceKey(source: SourceRef): string {
-  return toSourceKey(source);
-}
-
 function getCollectionField(ctx: ResourcerContext, source: SourceRef, fieldName: string) {
   try {
     const app = ctx.app as unknown as {
@@ -176,13 +172,7 @@ function resolveContextSource(ctx: ResourcerContext, ownerSource: SourceRef, con
   const recordAnchorIndex = contextParts.findIndex(
     (part, index) => index > 0 && ['record', 'sourceRecord'].includes(part),
   );
-  const rootRecordKeys = new Set(['record', 'clickedRowRecord', 'currentObject', 'formValues']);
-  const associationPath =
-    recordAnchorIndex >= 0
-      ? contextParts.slice(recordAnchorIndex + 1)
-      : rootRecordKeys.has(contextParts[0])
-        ? contextParts.slice(1)
-        : contextParts.slice(1);
+  const associationPath = recordAnchorIndex >= 0 ? contextParts.slice(recordAnchorIndex + 1) : contextParts.slice(1);
 
   let currentSource = ownerSource;
   for (const segment of associationPath) {
@@ -207,14 +197,14 @@ function addVariableSourceBindings(
     const contextKey = normalizeContextKey(parts.slice(0, index).join('.'));
     const source = resolveContextSource(ctx, ownerSource, contextKey.split('.').filter(Boolean));
     if (source) {
-      addSourceKey(sources, contextKey, variableKey, getSourceKey(source));
+      addSourceKey(sources, contextKey, variableKey, toSourceKey(source));
     }
   }
 
   const exactContextKey = normalizeContextKey(variableKey);
   const exactSource = resolveContextSource(ctx, ownerSource, exactContextKey.split('.').filter(Boolean));
   if (exactSource) {
-    addSourceKey(sources, exactContextKey, variableKey, getSourceKey(exactSource));
+    addSourceKey(sources, exactContextKey, variableKey, toSourceKey(exactSource));
   }
 }
 

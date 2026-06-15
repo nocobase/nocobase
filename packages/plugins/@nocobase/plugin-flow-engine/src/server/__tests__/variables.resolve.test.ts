@@ -582,17 +582,16 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
   });
 
-  it('should reject a different record collection when the variable source is configured', async () => {
+  it.each([
+    ['record collection', { dataSourceKey: 'main', collection: 'roles', filterByTk: 'root' }],
+    ['data source', { dataSourceKey: 'external', collection: 'users', filterByTk: 1 }],
+  ])('should reject a different %s when the variable source is configured', async (_name, record) => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.name }}' }, { collectionName: 'users' });
     const payload = {
       flowModelUid,
       template: { name: '{{ ctx.record.name }}' },
       contextParams: {
-        record: {
-          dataSourceKey: 'main',
-          collection: 'roles',
-          filterByTk: 'root',
-        },
+        record,
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
