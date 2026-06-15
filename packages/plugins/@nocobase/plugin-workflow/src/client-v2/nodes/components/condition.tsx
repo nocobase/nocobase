@@ -20,41 +20,22 @@
  */
 
 import React from 'react';
-import { evaluators } from '@nocobase/evaluators/client';
 import { Form, Radio } from 'antd';
 
 import { Branch } from '../../canvas/Branch';
 import { NodeDefaultView } from '../../canvas/Node';
 import { useFlowContext } from '../../canvas/contexts';
-import { WorkflowVariableInput } from '../../canvas/WorkflowVariableInput';
 import useStyles from '../../canvas/style';
-import { CalculationConfig } from '../../components/Calculation';
-import { RadioWithTooltip, type RadioWithTooltipOption } from '../../components/RadioWithTooltip';
-import { renderEngineReference } from '../../components/renderEngineReference';
+import { ConditionRuleFields } from './conditionShared';
 import { useT } from '../../locale';
-
-const BASIC_ENGINE = 'basic';
 
 const BRANCH_INDEX = {
   ON_TRUE: 1,
   ON_FALSE: 0,
 } as const;
 
-// —— Config-drawer form (`FieldsetLoader`) ——————————————————————————————————
-
-function useEngineOptions(): RadioWithTooltipOption[] {
-  const tt = useT();
-  const extras = Array.from(evaluators.getEntities())
-    .filter(([key]) => ['math.js', 'formula.js'].includes(key))
-    .map(([value, options]) => ({ value, label: options.label, tooltip: options.tooltip }));
-  return [{ value: BASIC_ENGINE, label: tt('Basic') }, ...extras];
-}
-
 export function ConditionFieldset() {
   const tt = useT();
-  const engineOptions = useEngineOptions();
-  // Drives the calculation/expression visibility + the expression validator.
-  const engine = Form.useWatch(['config', 'engine']) ?? BASIC_ENGINE;
 
   return (
     <>
@@ -68,73 +49,7 @@ export function ConditionFieldset() {
         />
       </Form.Item>
 
-      <Form.Item
-        name={['config', 'engine']}
-        label={tt('Calculation engine')}
-        rules={[{ required: true }]}
-        initialValue={BASIC_ENGINE}
-      >
-        <RadioWithTooltip options={engineOptions} />
-      </Form.Item>
-
-      {/* Both fields stay mounted; visibility is toggled with `hidden` (not
-          conditional render) so antd keeps each Form.Item's value + validation
-          state across engine switches — the v1 `x-reactions` visible behaviour,
-          where the model (and its error) persists while the DOM hides.
-
-          The `rules` are kept STABLE (not toggled by engine) and each rule
-          no-ops for the inactive engine instead — toggling `rules` to `[]` when
-          hidden clears the field's error, and antd does not re-validate on the
-          way back, so the error would not reappear (characterized in
-          `nodes/__tests__/conditionFieldsetValidation.test.tsx`). `dependencies`
-          re-runs the validators when the engine changes, so the error reappears
-          on its own. */}
-      <Form.Item
-        name={['config', 'calculation']}
-        label={tt('Condition')}
-        hidden={engine !== BASIC_ENGINE}
-        dependencies={[['config', 'engine']]}
-        rules={[{ required: engine === BASIC_ENGINE }]}
-      >
-        <CalculationConfig />
-      </Form.Item>
-
-      <Form.Item
-        name={['config', 'expression']}
-        label={tt('Condition expression')}
-        hidden={engine === BASIC_ENGINE}
-        dependencies={[['config', 'engine']]}
-        validateTrigger={['onChange', 'onBlur']}
-        rules={[
-          { required: engine !== BASIC_ENGINE },
-          {
-            validator: async (_rule, value) => {
-              // No-op for the basic engine (the expression field is unused/hidden then) — keeps the rule array stable
-              // so the error survives the round-trip rather than being cleared.
-              if (engine === BASIC_ENGINE || !value) {
-                return;
-              }
-              const evaluator = evaluators.get(engine);
-              if (!evaluator) {
-                return;
-              }
-              // Replace every `{{ var }}` with a dummy literal so only the surrounding expression syntax is validated
-              // (mirrors v1).
-              const exp = String(value)
-                .trim()
-                .replace(/{{([^{}]+)}}/g, ' "1" ');
-              try {
-                evaluator.evaluate(exp);
-              } catch (err) {
-                throw new Error(tt('Expression syntax error'));
-              }
-            },
-          },
-        ]}
-        extra={engine === BASIC_ENGINE ? undefined : renderEngineReference(engine, tt)}
-      >
-        <WorkflowVariableInput />
-      </Form.Item>
+      <ConditionRuleFields prefix={['config']} />
     </>
   );
 }
