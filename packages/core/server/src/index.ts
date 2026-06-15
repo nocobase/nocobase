@@ -11,6 +11,7 @@ export * from './aes-encryptor';
 export * from './app-supervisor';
 export * from './application';
 export * from './gateway/ws-server';
+export * from './gateway/static-file-security';
 export { Application as default } from './application';
 export * from './audit-manager';
 export * from './gateway';

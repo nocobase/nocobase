@@ -16,6 +16,8 @@ describe('static file security', () => {
     expect(hasActiveContentExtension('/storage/uploads/a.pdf')).toBe(true);
     expect(hasActiveContentExtension('/storage/uploads/a.SVG')).toBe(true);
     expect(hasActiveContentExtension('/storage/uploads/a.svgz?download=1')).toBe(true);
+    expect(hasActiveContentExtension('/storage/uploads/a.xml')).toBe(true);
+    expect(hasActiveContentExtension('/storage/uploads/a.xsl')).toBe(true);
     expect(hasActiveContentExtension('/storage/uploads/a.txt')).toBe(false);
   });
 
@@ -26,6 +28,11 @@ describe('static file security', () => {
     });
 
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.pdf')).toEqual({
+      'Content-Disposition': 'attachment',
+      'X-Content-Type-Options': 'nosniff',
+    });
+
+    expect(getStorageUploadSecurityHeaders('/storage/uploads/a.xml')).toEqual({
       'Content-Disposition': 'attachment',
       'X-Content-Type-Options': 'nosniff',
     });

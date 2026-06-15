@@ -205,6 +205,19 @@ describe('action', () => {
         expect(res.text).toContain('Hello world!');
       });
 
+      it('should force uploaded XML files to download when served locally', async () => {
+        const { body, status } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/svg-as-xml.xml'),
+        });
+
+        expect(status).toBe(200);
+        expect(body.data.extname).toBe('.xml');
+
+        const res = await agent.get(body.data.url);
+        expect(res.headers['content-disposition']).toBe('attachment');
+        expect(res.headers['x-content-type-options']).toBe('nosniff');
+      });
+
       it('filename with special character (URL)', async () => {
         const rawText = '[]中文报告! 1%~50.4% (123) {$#}';
         const rawFilename = `${rawText}.txt`;

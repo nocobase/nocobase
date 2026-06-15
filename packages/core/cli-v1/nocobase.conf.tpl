@@ -36,7 +36,7 @@ server {
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
-    location ~* ^{{publicPath}}storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml))$ {
+    location ~* ^{{publicPath}}storage/uploads/(.*\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt))$ {
         alias {{cwd}}/storage/uploads/$1;
         add_header Cache-Control "public";
         add_header Content-Disposition "attachment" always;

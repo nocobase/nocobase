@@ -1284,7 +1284,7 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
         autoindex off;
     }
 
-    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
+    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt))$ {
         alias ${context.uploadsPath}/$1;
         add_header Cache-Control "public";
         add_header Content-Disposition "attachment" always;
@@ -1423,10 +1423,13 @@ function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateCo
     `${siteAddress} {`,
     `    encode zstd gzip${rootRedirectBlock}${appPublicPathRedirectBlock}${modernClientRedirectBlock}${shorthandModernClientRedirectBlock}`,
     '',
+    '    @activeUploadedContent path_regexp activeUploadedContent (?i)\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$',
+    '',
     `    handle_path ${uploadsPathMatcher} {`,
     `        root * ${context.uploadsPath}`,
     '        header Cache-Control public',
     '        header X-Content-Type-Options nosniff',
+    '        header @activeUploadedContent Content-Disposition attachment',
     '        file_server',
     '    }',
     '',
