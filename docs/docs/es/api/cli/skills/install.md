@@ -27,6 +27,7 @@ nb skills install [flags]
 ```bash
 nb skills install
 nb skills install --yes
+nb skills install --verbose
 nb skills install --json
 ```
 

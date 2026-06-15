@@ -41,6 +41,7 @@ export class BulkUpdateActionModel extends ActionModel<{
 
 BulkUpdateActionModel.define({
   label: tExpr('Bulk update'),
+  sort: 1020,
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
     return {

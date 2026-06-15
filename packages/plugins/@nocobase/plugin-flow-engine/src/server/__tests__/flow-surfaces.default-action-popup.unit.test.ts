@@ -18,8 +18,13 @@ import {
 import {
   buildFlowSurfaceDefaultActionPopupBlocks,
   pickFlowSurfaceDefaultActionPopupFieldGroups,
+  pickFlowSurfaceDefaultActionPopupFieldPaths,
   resolveFlowSurfaceDefaultActionPopupTabTitle,
 } from '../flow-surfaces/default-action-popup';
+import {
+  collectRelationBackingForeignKeyNames,
+  isRelationBackingForeignKeyField,
+} from '../flow-surfaces/relation-backing-foreign-key';
 
 function readSubmitActionSettings(actionUse: 'AddNewActionModel' | 'EditActionModel') {
   const [block] = buildFlowSurfaceDefaultActionPopupBlocks(actionUse, ['name']);
@@ -83,6 +88,48 @@ describe('flowSurfaces default action popup', () => {
         key: 'audit',
         title: 'Audit',
         fields: ['updatedAt'],
+      },
+    ]);
+  });
+
+  it('should filter relation backing foreign keys without guessing by field name', () => {
+    const fields = [
+      { name: 'title', type: 'string', interface: 'input' },
+      { name: 'customer_id', type: 'integer', interface: 'integer' },
+      { name: 'customer', type: 'belongsTo', interface: 'm2o', foreignKey: 'customer_id' },
+      { name: 'departmentId', type: 'integer', interface: 'integer' },
+      { name: 'profileId', type: 'integer', interface: 'integer' },
+      { name: 'profile', type: 'belongsTo', interface: 'o2o', foreignKey: 'profileId' },
+      { name: 'ownedPassportId', type: 'integer', interface: 'integer' },
+      { name: 'ownedPassport', type: 'hasOne', interface: 'o2o', foreignKey: 'ownedPassportId' },
+      { name: 'sourceId', type: 'integer', interface: 'integer' },
+      { name: 'tags', type: 'belongsToMany', interface: 'm2m', foreignKey: 'sourceId' },
+    ];
+    const collection = { getFields: () => fields };
+    const candidates = fields.map((field) => ({ field, fieldPath: field.name }));
+
+    expect(Array.from(collectRelationBackingForeignKeyNames(collection)).sort()).toEqual(['customer_id', 'profileId']);
+    expect(isRelationBackingForeignKeyField(collection, 'customer_id')).toBe(true);
+    expect(isRelationBackingForeignKeyField(collection, { name: 'profileId' })).toBe(true);
+    expect(isRelationBackingForeignKeyField(collection, 'departmentId')).toBe(false);
+    expect(isRelationBackingForeignKeyField(collection, 'ownedPassportId')).toBe(false);
+    expect(isRelationBackingForeignKeyField(collection, 'sourceId')).toBe(false);
+
+    const pickedFields = pickFlowSurfaceDefaultActionPopupFieldPaths(candidates);
+    expect(pickedFields).toEqual(expect.arrayContaining(['title', 'customer', 'departmentId', 'profile', 'sourceId']));
+    expect(pickedFields).not.toContain('customer_id');
+    expect(pickedFields).not.toContain('profileId');
+
+    const pickedGroups = pickFlowSurfaceDefaultActionPopupFieldGroups(candidates, [
+      {
+        title: 'Explicit fields',
+        fields: ['title', 'customer_id', 'profileId'],
+      },
+    ]);
+    expect(pickedGroups).toEqual([
+      {
+        title: 'Explicit fields',
+        fields: ['title', 'customer_id', 'profileId'],
       },
     ]);
   });

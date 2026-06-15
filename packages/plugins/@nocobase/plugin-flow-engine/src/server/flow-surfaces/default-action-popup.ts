@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import { MULTI_VALUE_ASSOCIATION_INTERFACES } from './association-interfaces';
+import { collectRelationBackingForeignKeyNames } from './relation-backing-foreign-key';
 import { getFieldInterface, getFieldName, getFieldType } from './service-helpers';
 
 export type FlowSurfaceDefaultActionPopupType = 'addNew' | 'view' | 'edit';
@@ -59,6 +60,7 @@ export type FlowSurfaceDefaultActionPopupFieldGroupCandidate = {
 type FlowSurfaceDefaultActionPopupFieldFilterOptions = {
   excludeAuditTimestampFields?: boolean;
   excludeAssociationFields?: boolean;
+  excludeRelationBackingForeignKeyFields?: boolean;
 };
 
 type FlowSurfaceDefaultActionPopupFieldsInput =
@@ -269,16 +271,12 @@ function isFlowSurfaceDefaultActionPopupAssociationField(field: any) {
   );
 }
 
-function collectFlowSurfaceDefaultActionPopupAssociationForeignKeys(
+function collectFlowSurfaceDefaultActionPopupRelationBackingForeignKeys(
   candidates: FlowSurfaceDefaultActionPopupFieldCandidate[],
 ) {
-  return new Set(
-    candidates
-      .map((candidate) => candidate?.field)
-      .filter((field) => getFieldType(field) === 'belongsTo')
-      .map((field) => String(field?.foreignKey || field?.options?.foreignKey || '').trim())
-      .filter(Boolean),
-  );
+  return collectRelationBackingForeignKeyNames({
+    getFields: () => candidates.map((candidate) => candidate?.field).filter(Boolean),
+  });
 }
 
 function isFlowSurfaceDefaultActionPopupAssociationForeignKeyField(
@@ -298,18 +296,35 @@ export function pickFlowSurfaceDefaultActionPopupFieldPaths(
     .filter(Boolean);
 }
 
+export function collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths(
+  fieldGroups: FlowSurfaceDefaultActionPopupFieldGroupCandidate[] | undefined,
+) {
+  const fieldPaths = new Set<string>();
+  _.castArray(fieldGroups || []).forEach((group) => {
+    _.castArray(group?.fields || []).forEach((field) => {
+      const fieldPath = getFlowSurfaceDefaultActionPopupFieldGroupFieldPath(field);
+      if (fieldPath) {
+        fieldPaths.add(fieldPath);
+      }
+    });
+  });
+  return fieldPaths;
+}
+
 function filterFlowSurfaceDefaultActionPopupFieldCandidates(
   candidates: FlowSurfaceDefaultActionPopupFieldCandidate[],
   options: FlowSurfaceDefaultActionPopupFieldFilterOptions = {},
 ) {
-  const associationForeignKeys = collectFlowSurfaceDefaultActionPopupAssociationForeignKeys(candidates);
+  const associationForeignKeys = collectFlowSurfaceDefaultActionPopupRelationBackingForeignKeys(candidates);
+  const excludeRelationBackingForeignKeyFields = options.excludeRelationBackingForeignKeyFields !== false;
   const preferredCandidates = candidates.filter(
     (candidate) =>
       !isFlowSurfaceDefaultActionPopupSystemField(candidate.field) &&
       (!options.excludeAuditTimestampFields || !isFlowSurfaceDefaultActionPopupAuditTimestampField(candidate.field)) &&
       (!options.excludeAssociationFields || !isFlowSurfaceDefaultActionPopupAssociationField(candidate.field)) &&
       !isFlowSurfaceDefaultActionPopupMultiValueAssociationField(candidate.field) &&
-      !isFlowSurfaceDefaultActionPopupAssociationForeignKeyField(candidate.field, associationForeignKeys),
+      (!excludeRelationBackingForeignKeyFields ||
+        !isFlowSurfaceDefaultActionPopupAssociationForeignKeyField(candidate.field, associationForeignKeys)),
   );
   const fallbackCandidates = candidates.filter(
     (candidate) =>
@@ -317,7 +332,8 @@ function filterFlowSurfaceDefaultActionPopupFieldCandidates(
       (!options.excludeAuditTimestampFields || !isFlowSurfaceDefaultActionPopupAuditTimestampField(candidate.field)) &&
       (!options.excludeAssociationFields || !isFlowSurfaceDefaultActionPopupAssociationField(candidate.field)) &&
       !isFlowSurfaceDefaultActionPopupMultiValueAssociationField(candidate.field) &&
-      !isFlowSurfaceDefaultActionPopupAssociationForeignKeyField(candidate.field, associationForeignKeys),
+      (!excludeRelationBackingForeignKeyFields ||
+        !isFlowSurfaceDefaultActionPopupAssociationForeignKeyField(candidate.field, associationForeignKeys)),
   );
   const baseCandidates = preferredCandidates.length ? preferredCandidates : fallbackCandidates;
   return baseCandidates.filter((candidate) => String(candidate?.fieldPath || '').trim());
@@ -358,9 +374,10 @@ export function pickFlowSurfaceDefaultActionPopupFieldGroups(
   options: FlowSurfaceDefaultActionPopupFieldFilterOptions = {},
 ) {
   const allowedFieldPaths = new Set(
-    filterFlowSurfaceDefaultActionPopupFieldCandidates(candidates, options).map((candidate) =>
-      String(candidate?.fieldPath || '').trim(),
-    ),
+    filterFlowSurfaceDefaultActionPopupFieldCandidates(candidates, {
+      ...options,
+      excludeRelationBackingForeignKeyFields: false,
+    }).map((candidate) => String(candidate?.fieldPath || '').trim()),
   );
   const usedFieldPaths = new Set<string>();
   return _.castArray(fieldGroups || []).flatMap((group) => {

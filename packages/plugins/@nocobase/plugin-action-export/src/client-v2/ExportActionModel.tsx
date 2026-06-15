@@ -145,6 +145,7 @@ export class ExportActionModel extends ActionModel {
 
 ExportActionModel.define({
   label: escapeT('Export'),
+  sort: 1030,
 });
 
 ExportActionModel.registerFlow({

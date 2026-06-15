@@ -1,6 +1,6 @@
 ---
 title: "Tổng quan Node Workflow"
-description: "Node Workflow: 29 loại Node như điều khiển luồng, tính toán, thao tác dữ liệu, trí tuệ nhân tạo, phán đoán điều kiện, vòng lặp, xử lý thủ công, LLM."
+description: "Node Workflow: 30 loại Node như điều khiển luồng, tính toán, thao tác dữ liệu, trí tuệ nhân tạo, phán đoán điều kiện, vòng lặp, xử lý thủ công, LLM."
 keywords: "node workflow,điều khiển luồng,phán đoán điều kiện,vòng lặp,xử lý thủ công,thao tác dữ liệu,NocoBase"
 ---
 
@@ -12,7 +12,7 @@ Một Workflow thường được kết nối từ một số bước thao tác,
 Trigger của Workflow không thuộc về Node, chỉ được hiển thị trong sơ đồ quy trình dưới dạng Node cổng vào, nhưng là khái niệm khác với Node, xem chi tiết tại [Trigger](../triggers/index.md).
 :::
 
-Từ góc độ chức năng, các Node hiện đã được triển khai có thể chia thành các nhóm lớn (tổng cộng 29 loại Node):
+Từ góc độ chức năng, các Node hiện đã được triển khai có thể chia thành các nhóm lớn (tổng cộng 30 loại Node):
 
 - Trí tuệ nhân tạo
   - [Mô hình ngôn ngữ lớn](../../ai-employees/workflow/nodes/llm/chat.md) (do plugin @nocobase/plugin-workflow-llm cung cấp)
@@ -38,6 +38,7 @@ Từ góc độ chức năng, các Node hiện đã được triển khai có th
   - [Truy vấn dữ liệu](./query.md)
   - [Truy vấn tổng hợp](./aggregate.md) (do plugin @nocobase/plugin-workflow-aggregate cung cấp)
   - [Thao tác SQL](./sql.md) (do plugin @nocobase/plugin-workflow-sql cung cấp)
+  - [Giao dịch cơ sở dữ liệu](./transaction.md) (do plugin @nocobase/plugin-workflow-transaction cung cấp)
 - Xử lý thủ công
   - [Xử lý thủ công](./manual.md) (do plugin @nocobase/plugin-workflow-manual cung cấp)
   - [Phê duyệt](./approval.md) (do plugin @nocobase/plugin-workflow-approval cung cấp)

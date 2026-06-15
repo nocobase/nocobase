@@ -16,6 +16,12 @@ import { resolveConfiguredAppPath } from '../../lib/env-paths.js';
 import { commandOutput, run } from '../../lib/run-npm.js';
 
 type CommandStdio = 'inherit' | 'pipe' | 'ignore';
+type RemovePathOptions = {
+  retryCommand?: string;
+};
+type NodeFileSystemError = Error & {
+  code?: unknown;
+};
 
 export function resolveConfiguredPath(value: unknown): string | undefined {
   return resolveConfiguredEnvPath(value);
@@ -32,10 +38,69 @@ function assertSafeRemovalPath(target: string, label: string): void {
   }
 }
 
-export async function removePathIfExists(target: string, label: string): Promise<void> {
+function getErrorCode(error: unknown): string | undefined {
+  if (!(error instanceof Error)) {
+    return undefined;
+  }
+  const { code } = error as NodeFileSystemError;
+  return typeof code === 'string' ? code : undefined;
+}
+
+function isPermissionDeniedError(error: unknown): boolean {
+  const code = getErrorCode(error);
+  return code === 'EACCES' || code === 'EPERM';
+}
+
+function formatOriginalError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = getErrorCode(error);
+  return code && !message.includes(code) ? `${code}: ${message}` : message;
+}
+
+function quoteShellValue(value: string): string {
+  return `"${value.replace(/(["\\$`])/g, '\\$1')}"`;
+}
+
+function formatPermissionDeniedRemovalError(
+  target: string,
+  label: string,
+  error: unknown,
+  options: RemovePathOptions,
+): string {
+  const retryLines =
+    os.platform() === 'win32' ? [] : [`  sudo chown -R "$(id -u):$(id -g)" ${quoteShellValue(target)}`];
+  if (options.retryCommand) {
+    retryLines.push(`  ${options.retryCommand}`);
+  }
+
+  return [
+    `Failed to remove ${label} at "${target}".`,
+    'The current user cannot delete one or more files under this path. Files may have been created by a Docker container running as root.',
+    '',
+    retryLines.length > 0
+      ? 'Fix ownership or permissions, then retry:'
+      : 'Fix ownership or permissions, then retry the command.',
+    ...retryLines,
+    '',
+    `Original error: ${formatOriginalError(error)}`,
+  ].join('\n');
+}
+
+export async function removePathIfExists(
+  target: string,
+  label: string,
+  options: RemovePathOptions = {},
+): Promise<void> {
   const resolved = path.resolve(target);
   assertSafeRemovalPath(resolved, label);
-  await fsp.rm(resolved, { recursive: true, force: true });
+  try {
+    await fsp.rm(resolved, { recursive: true, force: true });
+  } catch (error: unknown) {
+    if (isPermissionDeniedError(error)) {
+      throw new Error(formatPermissionDeniedRemovalError(resolved, label, error, options));
+    }
+    throw error;
+  }
 }
 
 function isMissingDockerContainerError(error: unknown): boolean {
@@ -144,7 +209,11 @@ export function managedDockerNetworkName(
 }
 
 export function resolveManagedLocalAppPath(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): string | undefined {
-  return resolveConfiguredAppPath(runtime.env.config) || runtime.projectRoot || resolveConfiguredPath(runtime.env.config.appRootPath);
+  return (
+    resolveConfiguredAppPath(runtime.env.config) ||
+    runtime.projectRoot ||
+    resolveConfiguredPath(runtime.env.config.appRootPath)
+  );
 }
 
 export function shouldRemoveManagedLocalAppFiles(runtime: Extract<ManagedAppRuntime, { kind: 'local' }>): boolean {
