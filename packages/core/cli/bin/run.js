@@ -27,6 +27,56 @@ if (!isSupportedNodeVersion()) {
 normalizeSessionEnv();
 normalizeNodeOptions();
 
+const windowsAdministratorCheckScript = [
+  '$identity = [Security.Principal.WindowsIdentity]::GetCurrent();',
+  '$principal = New-Object Security.Principal.WindowsPrincipal($identity);',
+  'if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 0 }',
+  'exit 1',
+].join(' ');
+
+function isWindowsAdministrator() {
+  for (const command of ['pwsh.exe', 'powershell.exe']) {
+    const result = spawnSync(
+      command,
+      ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', windowsAdministratorCheckScript],
+      {
+        stdio: 'ignore',
+        windowsHide: true,
+      },
+    );
+
+    if (result.error?.code === 'ENOENT') {
+      continue;
+    }
+
+    return result.status === 0;
+  }
+
+  return false;
+}
+
+function ensureWindowsAdministrator() {
+  if (process.platform !== 'win32' || process.env.NB_CLI_WINDOWS_ADMIN_CHECKED === '1') {
+    return;
+  }
+
+  if (!isWindowsAdministrator()) {
+    console.error(
+      pc.red(
+        [
+          'NocoBase CLI must be run as Administrator on Windows.',
+          'Open PowerShell 5 or PowerShell 7 with "Run as administrator", then run the command again.',
+        ].join('\n'),
+      ),
+    );
+    process.exit(1);
+  }
+
+  process.env.NB_CLI_WINDOWS_ADMIN_CHECKED = '1';
+}
+
+ensureWindowsAdministrator();
+
 /**
  * In the monorepo, plain `node` cannot load `.ts`. Re-exec once with `--import <tsx>`
  * (same effect as a dedicated dev entry with `#!/usr/bin/env -S node --import tsx`).
