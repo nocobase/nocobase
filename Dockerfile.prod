@@ -30,17 +30,12 @@ WORKDIR /app
 COPY package.json yarn.lock ./
 COPY lerna.json ./
 
-# Copy workspace package files
-COPY packages/core/*/package.json ./packages/core/
-COPY packages/plugins/*/package.json ./packages/plugins/ 2>/dev/null || true
-COPY packages/client/*/package.json ./packages/client/ 2>/dev/null || true
+# Copy all packages
+COPY packages ./packages/
 
 # Install dependencies
 RUN yarn install --production --frozen-lockfile && \
     yarn cache clean
-
-# Copy all source code
-COPY . .
 
 # Build the project
 RUN yarn build
