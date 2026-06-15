@@ -1632,7 +1632,7 @@ export const linkageSetMenuItemProps = defineAction({
 
 export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
-  title: tExpr('Set fields state'),
+  title: tExpr('Set form field state (Deprecated)'),
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -1674,7 +1674,7 @@ export const linkageSetFieldProps = defineAction({
 
 export const subFormLinkageSetFieldProps = defineAction({
   name: 'subFormLinkageSetFieldProps',
-  title: tExpr('Set fields state'),
+  title: tExpr('Set form field state (Deprecated)'),
   scene: ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -1736,7 +1736,7 @@ export const subFormLinkageSetFieldProps = defineAction({
 
 export const linkageSetDetailsFieldProps = defineAction({
   name: 'linkageSetDetailsFieldProps',
-  title: tExpr('Set fields state'),
+  title: tExpr('Set details field state (Deprecated)'),
   scene: ActionScene.DETAILS_FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -1778,7 +1778,7 @@ export const linkageSetDetailsFieldProps = defineAction({
 
 export const linkageSetFieldState = defineAction({
   name: 'linkageSetFieldState',
-  title: tExpr('Set field state'),
+  title: tExpr('Set fields state'),
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 110,
   uiSchema: {
@@ -1796,7 +1796,7 @@ export const linkageSetFieldState = defineAction({
 
 export const subFormLinkageSetFieldState = defineAction({
   name: 'subFormLinkageSetFieldState',
-  title: tExpr('Set field state'),
+  title: tExpr('Set fields state'),
   scene: ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   sort: 110,
   uiSchema: {
@@ -1814,7 +1814,7 @@ export const subFormLinkageSetFieldState = defineAction({
 
 export const linkageSetDetailsFieldState = defineAction({
   name: 'linkageSetDetailsFieldState',
-  title: tExpr('Set field state'),
+  title: tExpr('Set fields state'),
   scene: ActionScene.DETAILS_FIELD_LINKAGE_RULES,
   sort: 110,
   uiSchema: {
