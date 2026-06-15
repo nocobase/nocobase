@@ -18,7 +18,7 @@ const DEFAULT_PACKAGE_NAME = '@nocobase/cli';
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const INSTALL_METHOD_CACHE_FILE = 'self-install-methods.json';
 
-export type SelfChannel = 'latest' | 'beta' | 'alpha';
+export type SelfChannel = 'latest' | 'test' | 'beta' | 'alpha';
 export type SelfInstallMethod = 'npm-global' | 'package-local' | 'source' | 'unknown';
 
 export type SelfStatus = {
@@ -82,16 +82,20 @@ function isSubPath(parent: string, child: string): boolean {
 
 function parseVersion(version: string): ParsedVersion | undefined {
   const normalized = String(version ?? '').trim();
-  const match = normalized.match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-.]+))?$/);
+  const match = normalized.match(
+    /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-.]+)|\.((?:alpha|beta|test)(?:[.-][0-9A-Za-z-]+)*))?$/i,
+  );
   if (!match) {
     return undefined;
   }
+
+  const prerelease = match[4] ?? match[5];
 
   return {
     major: Number(match[1]),
     minor: Number(match[2]),
     patch: Number(match[3]),
-    prerelease: match[4] ? match[4].split('.').filter(Boolean) : [],
+    prerelease: prerelease ? prerelease.split(/[.-]/).filter(Boolean) : [],
   };
 }
 
@@ -169,12 +173,16 @@ export function compareVersions(leftVersion: string, rightVersion: string): numb
 }
 
 function detectChannel(currentVersion: string): SelfChannel {
-  if (/-alpha(?:[.-]|$)/i.test(currentVersion)) {
+  if (/(?:^|[.-])alpha(?:[.-]|$)/i.test(currentVersion)) {
     return 'alpha';
   }
 
-  if (/-beta(?:[.-]|$)/i.test(currentVersion)) {
+  if (/(?:^|[.-])beta(?:[.-]|$)/i.test(currentVersion)) {
     return 'beta';
+  }
+
+  if (/(?:^|[.-])test(?:[.-]|$)/i.test(currentVersion)) {
+    return 'test';
   }
 
   return 'latest';
