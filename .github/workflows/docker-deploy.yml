@@ -22,7 +22,6 @@ jobs:
       contents: read
       packages: write
       id-token: write
-      issues: write
 
     steps:
       - name: Checkout repository
@@ -73,28 +72,14 @@ jobs:
             BUILD_DATE=${{ steps.meta.outputs.created }}
           provenance: false
 
-      - name: Send notification on success
+      - name: Log deployment success
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/deploy/docker'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Docker Image Deployed Successfully`,
-              body: `**Commit**: ${{ github.sha }}\n**Branch**: deploy/docker\n**Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}\n\nDeployment completed successfully!`,
-              labels: ['deploy', 'success']
-            })
+        run: |
+          echo "✅ Docker image deployed successfully!"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
-      - name: Send notification on failure
+      - name: Log deployment failure
         if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/deploy/docker'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Docker Image Deploy Failed`,
-              body: `**Commit**: ${{ github.sha }}\n**Branch**: deploy/docker\n**Error**: Build failed\n\nPlease check the workflow logs for details.`,
-              labels: ['deploy', 'failed']
-            })
+        run: |
+          echo "❌ Docker image deployment failed!"
+          echo "Check workflow logs for details."
