@@ -7,11 +7,7 @@ keywords: "knowledge base segments,Segments,Chunk size,Chunk overlap,related que
 
 # Quản lý phân đoạn
 
-:::tip Document segments
-
 After a document is uploaded, NocoBase first splits the body into segments according to the segmentation parameters, then writes enabled segments into the vector store. RAG retrieval matches these segments, not the original whole document. Split document, Chunk size, and Chunk overlap affect the number of segments, context length, and continuity between adjacent segments.
-
-:::
 
 ## Open segment management
 
@@ -33,6 +29,14 @@ The segment list shows:
 | Updated at | Latest segment update time |
 
 After Enabled only is turned on, the list only shows enabled segments. This switch only affects display and does not modify segment data.
+
+:::tip Historical data note
+
+If a document was uploaded with an earlier version of the knowledge base plugin, its segment information may not have been saved separately. Earlier versions of the knowledge base plugin stored segment content and segment vectors together in the vector database, so the segment list in Segment management may be empty.
+
+This does not affect knowledge base retrieval. You only need to run vectorization again or regenerate segments if you need to view or edit the segment list. Usually, you do not need to reprocess documents only to make data appear in the list.
+
+:::
 
 ## Edit a segment
 
