@@ -58,6 +58,27 @@ async function findOpenDrawer(title: string) {
   return drawer as HTMLElement;
 }
 
+async function selectFirstIcon(container: HTMLElement) {
+  fireEvent.click(within(container).getByRole('button', { name: 'Select icon' }));
+
+  const iconOption = await waitFor(() => {
+    const popover = document.querySelector('.ant-popover') as HTMLElement | null;
+    expect(popover).toBeTruthy();
+    const option = Array.from((popover as HTMLElement).querySelectorAll<HTMLElement>('button[title]')).find((element) =>
+      element.getAttribute('title'),
+    );
+    expect(option).toBeTruthy();
+    return option as HTMLElement;
+  });
+
+  const iconName = iconOption.getAttribute('title') as string;
+  fireEvent.click(screen.getByRole('button', { name: iconName }));
+
+  await waitFor(() => {
+    expect(within(container).queryByRole('button', { name: 'Select icon' })).not.toBeInTheDocument();
+  });
+}
+
 describe('plugin-ui-layout RoutesPage', () => {
   it('should list and mutate desktopRoutes with the selected layout parameter', async () => {
     const resource = createRoutesPageResources();
@@ -125,6 +146,7 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(addDrawer.closest('[role="tabpanel"]')).toBeFalsy();
     expect(within(addDrawer).getByRole('radio', { name: 'Page' })).toBeChecked();
     fireEvent.change(within(addDrawer).getByLabelText('Title'), { target: { value: 'Mobile approvals' } });
+    await selectFirstIcon(addDrawer);
     fireEvent.click(within(addDrawer).getByRole('button', { name: 'Submit' }));
 
     await waitFor(() => {
@@ -148,6 +170,22 @@ describe('plugin-ui-layout RoutesPage', () => {
       });
     });
     expect(await screen.findByText('Mobile approvals')).toBeInTheDocument();
+
+    cleanup();
+    flowContext.current = resource.context;
+    render(
+      <AntdApp>
+        <MobileRoutesPage />
+      </AntdApp>,
+    );
+    expect(await screen.findByText('Mobile workbench')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Add new/ }));
+    const invalidAddDrawer = await findOpenDrawer('Add new');
+    fireEvent.change(within(invalidAddDrawer).getByLabelText('Title'), { target: { value: 'Mobile invalid' } });
+    fireEvent.click(within(invalidAddDrawer).getByRole('button', { name: 'Submit' }));
+    expect(await within(invalidAddDrawer).findByText('Icon field is required')).toBeInTheDocument();
+    expect(resource.create).toHaveBeenCalledTimes(1);
 
     cleanup();
     flowContext.current = resource.context;
@@ -485,6 +523,7 @@ describe('plugin-ui-layout RoutesPage', () => {
     const mobileDrawer = await findOpenDrawer('Add new');
     fireEvent.click(within(mobileDrawer).getByRole('radio', { name: 'Link' }));
     fireEvent.change(within(mobileDrawer).getByLabelText('Title'), { target: { value: 'Mobile docs' } });
+    await selectFirstIcon(mobileDrawer);
     fireEvent.change(within(mobileDrawer).getByLabelText('URL'), { target: { value: '/mobile-docs' } });
     fireEvent.click(within(mobileDrawer).getByRole('button', { name: 'Add parameter' }));
     fireEvent.change(within(mobileDrawer).getByPlaceholderText('Name'), { target: { value: 'scope' } });

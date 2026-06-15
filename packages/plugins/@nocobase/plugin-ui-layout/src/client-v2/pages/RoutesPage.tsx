@@ -503,7 +503,20 @@ function RouteEditorDrawer(props: {
         >
           <Input />
         </Form.Item>
-        <Form.Item label={t('Icon')} name="icon">
+        <Form.Item
+          label={t('Icon')}
+          name="icon"
+          rules={
+            props.mobile
+              ? [
+                  {
+                    message: t('Icon field is required'),
+                    required: true,
+                  },
+                ]
+              : undefined
+          }
+        >
           <MobileMenuSettingsIconPicker />
         </Form.Item>
         {routeType === NocoBaseDesktopRouteType.link ? (
