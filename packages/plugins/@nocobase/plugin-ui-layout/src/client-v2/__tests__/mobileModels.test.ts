@@ -245,6 +245,10 @@ describe('plugin-ui-layout mobile models', () => {
       .join('\n');
   }
 
+  function queryMobileSurfaceTitle() {
+    return document.querySelector('.nb-ui-layout-mobile-title');
+  }
+
   function MobileRoutePageProbe(props: {
     events: string[];
     getModel: () => MobileLayoutModel;
@@ -2244,6 +2248,132 @@ describe('plugin-ui-layout mobile models', () => {
       expect(screen.getByText('Portal home')).toBeInTheDocument();
     });
     expect(screen.queryByText('No mobile pages yet')).not.toBeInTheDocument();
+  });
+
+  it('should not flash the mobile root fallback while mobile routes are loading', async () => {
+    const events: string[] = [];
+    const subscribers = new Set<() => void>();
+    const loadedRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Portal home',
+        schemaUid: 'portal-home-page',
+        sort: 10,
+      },
+    ];
+    let cachedRoutes: NocoBaseDesktopRoute[] = [];
+    let accessibleLoaded = false;
+    let resolveRoutes: (() => void) | undefined;
+    let layoutModel: MobileLayoutModel | undefined;
+    const routeLoadPromise = new Promise<void>((resolve) => {
+      resolveRoutes = resolve;
+    });
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: vi.fn(() => cachedRoutes),
+      isAccessibleLoaded: vi.fn(() => accessibleLoaded),
+      ensureAccessibleLoaded: vi.fn(async () => {
+        await routeLoadPromise;
+        cachedRoutes = loadedRoutes;
+        accessibleLoaded = true;
+        subscribers.forEach((subscriber) => subscriber());
+        return loadedRoutes;
+      }),
+      subscribe: (subscriber) => {
+        subscribers.add(subscriber);
+      },
+      unsubscribe: (subscriber) => {
+        subscribers.delete(subscriber);
+      },
+    };
+
+    renderMobileLayoutWithRouteRepository(routeRepository, {
+      initialEntries: ['/v/mobile'],
+      outletElement: React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(MobileRoutePageProbe, {
+          events,
+          getModel: () => {
+            if (!layoutModel) {
+              throw new Error('Mobile layout model is not ready.');
+            }
+            return layoutModel;
+          },
+        }),
+        React.createElement(MobileCurrentPathProbe),
+      ),
+      beforeRender: (model) => {
+        layoutModel = model;
+      },
+    });
+
+    await waitFor(() => {
+      expect(routeRepository.ensureAccessibleLoaded).toHaveBeenCalled();
+    });
+    expect(queryMobileSurfaceTitle()?.textContent).not.toBe('Mobile');
+    expect(screen.queryByText('No mobile pages yet')).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveRoutes?.();
+      await routeLoadPromise;
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mobile-current-path')).toHaveTextContent('/v/mobile/portal-home-page');
+    });
+    expect(screen.getByTestId('mobile-route-page-portal-home-page')).toBeInTheDocument();
+    expect(queryMobileSurfaceTitle()?.textContent).not.toBe('Mobile');
+    expect(events).toContain('mount:portal-home-page');
+  });
+
+  it('should not flash the mobile root fallback before redirecting cached mobile routes', async () => {
+    const events: string[] = [];
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Cached home',
+        schemaUid: 'cached-home-page',
+        sort: 10,
+      },
+    ];
+    let layoutModel: MobileLayoutModel | undefined;
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: vi.fn(() => routes),
+      isAccessibleLoaded: vi.fn(() => true),
+      ensureAccessibleLoaded: vi.fn(async () => routes),
+    };
+
+    renderMobileLayoutWithRouteRepository(routeRepository, {
+      initialEntries: ['/v/mobile'],
+      outletElement: React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(MobileRoutePageProbe, {
+          events,
+          getModel: () => {
+            if (!layoutModel) {
+              throw new Error('Mobile layout model is not ready.');
+            }
+            return layoutModel;
+          },
+        }),
+        React.createElement(MobileCurrentPathProbe),
+      ),
+      beforeRender: (model) => {
+        layoutModel = model;
+      },
+    });
+
+    expect(queryMobileSurfaceTitle()?.textContent).not.toBe('Mobile');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mobile-current-path')).toHaveTextContent('/v/mobile/cached-home-page');
+    });
+    expect(screen.getByTestId('mobile-route-page-cached-home-page')).toBeInTheDocument();
+    expect(queryMobileSurfaceTitle()?.textContent).not.toBe('Mobile');
+    expect(events).toContain('mount:cached-home-page');
   });
 
   it('should enable the UI editor by default when the mobile menu is empty and no preference is stored', async () => {

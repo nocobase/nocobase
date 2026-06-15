@@ -1172,6 +1172,17 @@ function normalizeMobileLocationPath(pathname: string) {
   return normalized === '/' ? '/' : normalized;
 }
 
+function isMobileLayoutRootLocation(model: MobileLayoutModel, pathname: string) {
+  const basename = getMobileRouterBasename(model);
+  const mobileLayoutRootPath = toMobileRouterNavigationPath(model.getMobileBasePathname(), basename);
+
+  return normalizeMobileLocationPath(pathname) === normalizeMobileLocationPath(mobileLayoutRootPath);
+}
+
+function getDefaultMobileFlowPageRoute(tabItems: MobileTabNode[]) {
+  return tabItems.find((item) => item.type === NocoBaseDesktopRouteType.flowPage && item.path);
+}
+
 const MobileHomePlaceholder = observer(
   (props: { designModeEnabled: boolean; flowSettingsSyncVersion: number; model: MobileLayoutModel }) => {
     const { designModeEnabled, flowSettingsSyncVersion, model } = props;
@@ -1408,24 +1419,21 @@ const MobileHomePlaceholder = observer(
       }
     }, [activeRouteKey, activeRouteKeyFromLayout, tabItems]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
       if (activeRouteKeyFromLayout || !tabItems.length) {
         return;
       }
 
-      const basename = getMobileRouterBasename(model);
-      const mobileLayoutRootPath = toMobileRouterNavigationPath(model.getMobileBasePathname(), basename);
-      const currentPath = normalizeMobileLocationPath(location.pathname);
-
-      if (currentPath !== normalizeMobileLocationPath(mobileLayoutRootPath)) {
+      if (!isMobileLayoutRootLocation(model, location.pathname)) {
         return;
       }
 
-      const fallbackRoute = tabItems.find((item) => item.type === NocoBaseDesktopRouteType.flowPage && item.path);
+      const fallbackRoute = getDefaultMobileFlowPageRoute(tabItems);
       if (!fallbackRoute?.path) {
         return;
       }
 
+      const basename = getMobileRouterBasename(model);
       navigate(toMobileRouterNavigationPath(fallbackRoute.path, basename), { replace: true });
     }, [
       activeRouteKeyFromLayout,
@@ -1446,7 +1454,7 @@ const MobileHomePlaceholder = observer(
         return;
       }
 
-      const fallbackRoute = tabItems.find((item) => item.type === NocoBaseDesktopRouteType.flowPage && item.path);
+      const fallbackRoute = getDefaultMobileFlowPageRoute(tabItems);
       if (!fallbackRoute?.path) {
         return;
       }
@@ -1541,6 +1549,13 @@ const MobileHomePlaceholder = observer(
       [model, navigate],
     );
 
+    const activePageUid = routeParams.name;
+    const shouldDelayRootFallback =
+      !activePageUid &&
+      (routesLoadState === 'loading' ||
+        (routesLoadState === 'ready' &&
+          !!getDefaultMobileFlowPageRoute(tabItems)?.path &&
+          isMobileLayoutRootLocation(model, location.pathname)));
     const rootPageContent = (
       <MobilePageSurface title={t('Mobile')} displayTitle>
         <div className="nb-ui-layout-mobile-body">
@@ -1556,10 +1571,9 @@ const MobileHomePlaceholder = observer(
         </div>
       </MobilePageSurface>
     );
-    const activePageUid = routeParams.name;
     const pageSlotContent = activePageUid ? (
       <KeepAlive uid={activePageUid}>{() => <Outlet />}</KeepAlive>
-    ) : (
+    ) : shouldDelayRootFallback ? null : (
       rootPageContent
     );
     const className = useMemo(
