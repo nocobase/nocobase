@@ -2193,6 +2193,59 @@ describe('plugin-ui-layout mobile models', () => {
     expect(document.querySelectorAll('.nb-ui-layout-mobile-home-tabbar-item')).toHaveLength(0);
   });
 
+  it('should not flash the empty state while mobile routes are loading', async () => {
+    const subscribers = new Set<() => void>();
+    const loadedRoutes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'Portal home',
+        schemaUid: 'portal-home-page',
+        sort: 10,
+      },
+    ];
+    let cachedRoutes: NocoBaseDesktopRoute[] = [];
+    let accessibleLoaded = false;
+    let resolveRoutes: (() => void) | undefined;
+    const routeLoadPromise = new Promise<void>((resolve) => {
+      resolveRoutes = resolve;
+    });
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: vi.fn(() => cachedRoutes),
+      isAccessibleLoaded: vi.fn(() => accessibleLoaded),
+      ensureAccessibleLoaded: vi.fn(async () => {
+        await routeLoadPromise;
+        cachedRoutes = loadedRoutes;
+        accessibleLoaded = true;
+        subscribers.forEach((subscriber) => subscriber());
+        return loadedRoutes;
+      }),
+      subscribe: (subscriber) => {
+        subscribers.add(subscriber);
+      },
+      unsubscribe: (subscriber) => {
+        subscribers.delete(subscriber);
+      },
+    };
+
+    renderMobileLayoutWithRouteRepository(routeRepository);
+
+    await waitFor(() => {
+      expect(routeRepository.ensureAccessibleLoaded).toHaveBeenCalled();
+    });
+    expect(screen.queryByText('No mobile pages yet')).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveRoutes?.();
+      await routeLoadPromise;
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Portal home')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('No mobile pages yet')).not.toBeInTheDocument();
+  });
+
   it('should enable the UI editor by default when the mobile menu is empty and no preference is stored', async () => {
     const restoreBreakpoint = mockDesktopBreakpoint();
     const routeRepository: MobileRouteRepositoryForTest = {

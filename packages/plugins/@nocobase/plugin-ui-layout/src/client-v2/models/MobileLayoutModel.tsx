@@ -162,7 +162,7 @@ type MobileLayoutThemeToken = {
   colorSettings?: string;
   colorTextHeaderMenu?: string;
 };
-type MobileRoutesLoadState = 'ready' | 'error';
+type MobileRoutesLoadState = 'loading' | 'ready' | 'error';
 
 const MOBILE_PREVIEW_SIZE: MobilePreviewSize = {
   width: 390,
@@ -290,6 +290,16 @@ function isMobileRouteRepositoryMenuEmpty(model: MobileLayoutModel) {
   }
 
   return !hasVisibleMobileTabRoutes(routes);
+}
+
+function getInitialMobileRoutesLoadState(model: MobileLayoutModel): MobileRoutesLoadState {
+  const routeRepository = model.flowEngine.context.routeRepository;
+
+  if (!routeRepository) {
+    return 'ready';
+  }
+
+  return routeRepository.isAccessibleLoaded?.() === false ? 'loading' : 'ready';
 }
 
 function getAccessibleDesktopRouteKey(route: NocoBaseDesktopRoute, indexPath: number[]) {
@@ -964,7 +974,7 @@ function MobileHomeRouteGrid(props: {
   const status =
     loadState === 'error' ? (
       <Alert type="error" showIcon message={t('Failed to load mobile pages')} />
-    ) : !hasTabItems ? (
+    ) : loadState === 'loading' ? null : !hasTabItems ? (
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No mobile pages yet')} />
     ) : null;
 
@@ -1177,7 +1187,9 @@ const MobileHomePlaceholder = observer(
     const [accessibleDesktopRoutes, setAccessibleDesktopRoutes] = useState<NocoBaseDesktopRoute[]>(
       () => model.flowEngine.context.routeRepository?.listAccessible?.() || [],
     );
-    const [routesLoadState, setRoutesLoadState] = useState<MobileRoutesLoadState>('ready');
+    const [routesLoadState, setRoutesLoadState] = useState<MobileRoutesLoadState>(() =>
+      getInitialMobileRoutesLoadState(model),
+    );
     const [addTabDropdownOpen, setAddTabDropdownOpen] = useState(false);
     const [configuringTabType, setConfiguringTabType] = useState<MobileHomeAddMenuKey | null>(null);
     const [menuRouteVersion, setMenuRouteVersion] = useState(0);
@@ -1341,6 +1353,10 @@ const MobileHomePlaceholder = observer(
       };
       const loadAccessibleRoutes = async () => {
         try {
+          if (routeRepository.isAccessibleLoaded?.() === false) {
+            setRoutesLoadState('loading');
+          }
+
           await ensureMobileLayoutAccessibleRoutes(model, routeRepository);
           if (disposed) {
             return;
