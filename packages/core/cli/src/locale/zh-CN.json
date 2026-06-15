@@ -1,4 +1,10 @@
 {
+  "entry": {
+    "windowsAdministratorRequired": {
+      "message": "Windows 上运行 NocoBase CLI 必须使用管理员模式。",
+      "hint": "请以管理员身份打开终端，然后重新执行命令。"
+    }
+  },
   "promptCatalog": {
     "common": {
       "cancelled": "已取消。",
