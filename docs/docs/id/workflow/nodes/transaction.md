@@ -13,6 +13,8 @@ Node transaksi database digunakan untuk menjalankan sekumpulan operasi database 
 
 Node transaksi saat ini hanya mendukung sumber data database. Operasi data dari sumber data yang sama di dalam Node akan otomatis masuk ke transaksi ini; sumber data lain tidak akan menggunakan transaksi ini.
 
+Node ini didukung sejak versi 2.2.0.
+
 ## Membuat Node
 
 Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Transaksi Database".

@@ -13,6 +13,8 @@ El nodo de transacción de base de datos ejecuta un conjunto de operaciones de b
 
 Actualmente, el nodo de transacción solo admite fuentes de datos de base de datos. Las operaciones de datos de la misma fuente dentro del nodo se incluyen automáticamente en esta transacción; otras fuentes de datos no usan esta transacción.
 
+Este nodo es compatible desde la versión 2.2.0.
+
 ## Crear nodo
 
 En la interfaz de configuración del flujo de trabajo, haga clic en el botón más ("+") del flujo para añadir un nodo "Transacción de base de datos".
