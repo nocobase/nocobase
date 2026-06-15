@@ -82,20 +82,16 @@ function isSubPath(parent: string, child: string): boolean {
 
 function parseVersion(version: string): ParsedVersion | undefined {
   const normalized = String(version ?? '').trim();
-  const match = normalized.match(
-    /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-.]+)|\.((?:alpha|beta|test)(?:[.-][0-9A-Za-z-]+)*))?$/i,
-  );
+  const match = normalized.match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-.]+))?$/);
   if (!match) {
     return undefined;
   }
-
-  const prerelease = match[4] ?? match[5];
 
   return {
     major: Number(match[1]),
     minor: Number(match[2]),
     patch: Number(match[3]),
-    prerelease: prerelease ? prerelease.split(/[.-]/).filter(Boolean) : [],
+    prerelease: match[4] ? match[4].split('.').filter(Boolean) : [],
   };
 }
 
@@ -173,15 +169,15 @@ export function compareVersions(leftVersion: string, rightVersion: string): numb
 }
 
 function detectChannel(currentVersion: string): SelfChannel {
-  if (/(?:^|[.-])alpha(?:[.-]|$)/i.test(currentVersion)) {
+  if (/-alpha(?:[.-]|$)/i.test(currentVersion)) {
     return 'alpha';
   }
 
-  if (/(?:^|[.-])beta(?:[.-]|$)/i.test(currentVersion)) {
+  if (/-beta(?:[.-]|$)/i.test(currentVersion)) {
     return 'beta';
   }
 
-  if (/(?:^|[.-])test(?:[.-]|$)/i.test(currentVersion)) {
+  if (/-test(?:[.-]|$)/i.test(currentVersion)) {
     return 'test';
   }
 
