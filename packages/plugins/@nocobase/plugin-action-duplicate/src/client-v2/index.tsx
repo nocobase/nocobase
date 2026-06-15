@@ -8,12 +8,14 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-import { DuplicateActionModel } from './DuplicateActionModel';
 
 export class PluginActionDuplicateClient extends Plugin {
   async load() {
-    this.app.flowEngine.registerModels({
-      DuplicateActionModel,
+    this.app.flowEngine.registerModelLoaders({
+      DuplicateActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./DuplicateActionModel'),
+      },
     });
   }
 }
