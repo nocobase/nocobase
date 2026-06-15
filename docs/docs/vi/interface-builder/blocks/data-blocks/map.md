@@ -13,7 +13,7 @@ The Map block displays geographic data from a collection on a map. It is suitabl
 
 The Map block supports AMap and Google Maps. It can render point, line, polygon, and circle fields, and can open record views or run block actions from map overlays.
 
-![Map block interface](/images/interface-builder/map-block-interface.png)
+![Map block interface](https://static-docs.nocobase.com/20260615162922.png)
 
 ## Installation
 
@@ -43,7 +43,7 @@ When creating the field, choose the "Map type". This determines whether the fiel
 
 In page configuration mode, click "Add block" and choose "Map" from "Data Blocks".
 
-![Add a Map block from Data Blocks](/images/interface-builder/map-block-add-menu.png)
+![Add a Map block from Data Blocks](https://static-docs.nocobase.com/20260615163017.png)
 
 When creating the block, configure:
 

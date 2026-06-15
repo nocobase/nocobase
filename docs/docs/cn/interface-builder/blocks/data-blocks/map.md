@@ -13,7 +13,7 @@ keywords: '地图区块,高德地图,Google Maps,点,线,多边形,圆,NocoBase'
 
 地图区块支持高德地图和 Google Maps。它可以展示点、线、多边形、圆等地图字段，也可以通过地图覆盖物打开记录视图，或配合区块操作处理数据。
 
-![地图区块界面](/images/interface-builder/map-block-interface.png)
+![地图区块界面](https://static-docs.nocobase.com/20260615162922.png)
 
 ## 安装
 
@@ -43,7 +43,7 @@ keywords: '地图区块,高德地图,Google Maps,点,线,多边形,圆,NocoBase'
 
 进入页面配置模式后，点击「添加区块」，在「数据区块」里选择「地图」。
 
-![在数据区块中添加地图区块](/images/interface-builder/map-block-add-menu.png)
+![在数据区块中添加地图区块](https://static-docs.nocobase.com/20260615163017.png)
 
 创建区块时需要配置：
 
