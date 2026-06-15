@@ -910,13 +910,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       '$includes',
     ]);
     expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(generatedFilter);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
-    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
-      'nickname',
-      'email',
-      'status',
-      'phone',
-    ]);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should cap auto-generated defaultFilter fields at four candidates', async () => {
@@ -960,7 +955,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'capField3',
       'capField4',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should require three defaultFilter fields for collections with four or more candidates', async () => {
@@ -1084,7 +1080,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const generatedFilter = filterAction?.props?.defaultFilterValue;
     expect(generatedFilter?.items).toHaveLength(2);
     expect(generatedFilter.items.map((item: any) => item.path)).toEqual(['name', 'title']);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['name', 'title']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should require all available defaultFilter candidates for narrow direct-interface collections', async () => {
@@ -1232,7 +1229,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'capField3',
       'capField4',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should reject rich data blocks with too few visible business fields before applyBlueprint writes', async () => {

@@ -205,6 +205,7 @@
   "Syntax references: ": "Referensi sintaks: ",
   "System time": "Waktu sistem",
   "System variables": "Variabel sistem",
+  "System process failed, please contact administrator.": "Proses sistem gagal, hubungi administrator.",
   "Task type {{type}} is invalid": "Task type {{type}} is invalid",
   "Test run": "Jalankan uji",
   "Test run will do the actual data manipulating or API calling, please use with caution.": "Jalankan uji akan melakukan manipulasi data atau panggilan API yang sebenarnya, harap gunakan dengan hati-hati.",

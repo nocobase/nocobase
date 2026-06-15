@@ -21,7 +21,8 @@ export default class CollectionTrigger extends Trigger {
   title = `{{t("Collection event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t('Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike "Post-action event", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use "Post-action event".', { ns: "${NAMESPACE}" })}}`;
 
-  PresetFieldsetLoader: LoaderOf = () => import('./CollectionConfig');
+  PresetFieldsetLoader: LoaderOf = () =>
+    import('./CollectionConfig').then((module) => ({ default: module.CollectionPresetConfig }));
   FieldsetLoader: LoaderOf = () => import('./CollectionConfig');
   TriggerFieldsetLoader: LoaderOf = () => import('./TriggerCollectionConfig');
 

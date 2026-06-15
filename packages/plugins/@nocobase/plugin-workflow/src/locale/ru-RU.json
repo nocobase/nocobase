@@ -205,6 +205,7 @@
   "Syntax references: ": "Ссылки на синтаксис: ",
   "System time": "Системное время",
   "System variables": "Системные переменные",
+  "System process failed, please contact administrator.": "Системный процесс завершился с ошибкой, обратитесь к администратору.",
   "Task type {{type}} is invalid": "Task type {{type}} is invalid",
   "Test run": "Тестовый запуск",
   "Test run will do the actual data manipulating or API calling, please use with caution.": "Тестовый запуск выполнит реальные действия с данными или вызов API, используйте с осторожностью.",

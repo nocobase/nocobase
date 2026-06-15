@@ -24,6 +24,7 @@ type CollectionDataSourceManager = Parameters<typeof getCollectionFields>[0];
 
 function buildAssociationTree(
   dataSourceManager: CollectionDataSourceManager,
+  compile: (value: string) => string,
   collectionValue?: string,
   prefix = '',
   depth = 2,
@@ -40,10 +41,10 @@ function buildAssociationTree(
         : undefined;
       const children =
         depth > 1 && targetCollection
-          ? buildAssociationTree(dataSourceManager, targetCollection, value, depth - 1)
+          ? buildAssociationTree(dataSourceManager, compile, targetCollection, value, depth - 1)
           : [];
       return {
-        title: field.uiSchema?.title || field.name,
+        title: field.uiSchema?.title ? compile(field.uiSchema.title) : field.name,
         value,
         key: value,
         children: children.length ? children : undefined,
@@ -63,8 +64,8 @@ export function AppendsSelect({
   const flowEngine = useFlowEngine();
   const t = useT();
   const treeData = useMemo(
-    () => buildAssociationTree(flowEngine.context.dataSourceManager, collection),
-    [flowEngine, collection],
+    () => buildAssociationTree(flowEngine.context.dataSourceManager, t, collection),
+    [flowEngine, t, collection],
   );
 
   return (

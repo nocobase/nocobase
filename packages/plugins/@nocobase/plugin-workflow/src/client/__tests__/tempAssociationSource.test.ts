@@ -23,4 +23,14 @@ describe('temp association source hook', () => {
     });
     expect(source).toBeNull();
   });
+
+  it('does not expose query row lock configuration in fieldset schema', () => {
+    const instruction = new QueryInstruction();
+    const fieldsetText = JSON.stringify(instruction.fieldset);
+
+    expect(instruction.fieldset).not.toHaveProperty('lock');
+    expect(fieldsetText).not.toContain('FOR UPDATE');
+    expect(fieldsetText).not.toContain('FOR SHARE');
+    expect(fieldsetText).not.toContain('"lock"');
+  });
 });

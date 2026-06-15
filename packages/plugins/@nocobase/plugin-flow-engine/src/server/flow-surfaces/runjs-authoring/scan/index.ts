@@ -14,12 +14,15 @@ import type {
   StringLiteralBinding,
 } from '../internal-types';
 import {
+  collectArrowExpressionRanges,
+  collectAstFunctionBodyRanges,
   collectBraceRanges,
   collectStaticBlockRanges,
   findFunctionRanges,
   findMatches,
   isInsideRanges,
   maskJavaScriptSource,
+  mergeRanges,
 } from '../ast/source';
 import { walkAstAncestor, walkAstSimple } from '../ast/walk';
 import { collectSourceBindings, collectStringLiteralBindings, dedupeIndexedEntries } from '../ast/bindings';
@@ -105,7 +108,7 @@ import {
 
 export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAuthoringContext = {}, modelUse = '') {
   const masked = maskJavaScriptSource(source);
-  const functionRanges = findFunctionRanges(masked);
+  const functionRanges = collectScanFunctionRanges(masked, ast);
   const blockRanges = collectBraceRanges(masked);
   const staticBlockRanges = collectStaticBlockRanges(masked);
   const sourceBindings = collectSourceBindings(masked, functionRanges, blockRanges, staticBlockRanges);
@@ -206,6 +209,15 @@ export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAu
     dynamicCtxAccesses: findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g, sourceBindings),
     isTopLevelFunctionWrapper: isTopLevelFunctionWrapper(masked, functionRanges, topLevelReachableCtxRenderCalls),
   };
+}
+
+function collectScanFunctionRanges(masked: string, ast?: unknown) {
+  if (!ast) {
+    return findFunctionRanges(masked);
+  }
+  const ranges = collectAstFunctionBodyRanges(ast);
+  collectArrowExpressionRanges(masked, ranges);
+  return mergeRanges(ranges);
 }
 
 function collectAstUnknownBareGlobalsFromAst(

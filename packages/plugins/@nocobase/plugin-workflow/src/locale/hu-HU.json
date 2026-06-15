@@ -205,6 +205,7 @@
   "Syntax references: ": "Szintaxis referenciák: ",
   "System time": "Rendszeridő",
   "System variables": "Rendszerváltozók",
+  "System process failed, please contact administrator.": "A rendszerfolyamat sikertelen, forduljon az adminisztrátorhoz.",
   "Task type {{type}} is invalid": "Task type {{type}} is invalid",
   "Test run": "Teszt futtatás",
   "Test run will do the actual data manipulating or API calling, please use with caution.": "A teszt futtatás tényleges adatmanipulációt vagy API-hívást hajt végre, kérjük, használja óvatosan.",

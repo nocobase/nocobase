@@ -17,7 +17,7 @@ import {
 } from '../../../components/collection';
 import V2CollectionTrigger from '../index';
 import V1CollectionTrigger from '../../../../client/triggers/collection';
-import CollectionTriggerConfig from '../CollectionConfig';
+import CollectionTriggerConfig, { CollectionPresetConfig } from '../CollectionConfig';
 import TriggerCollectionConfig from '../TriggerCollectionConfig';
 
 describe('collection trigger progressive migration', () => {
@@ -64,7 +64,7 @@ describe('collection trigger progressive migration', () => {
     const presetModule = await trigger.PresetFieldsetLoader?.();
     const fieldsetModule = await trigger.FieldsetLoader?.();
 
-    expect(presetModule?.default).toBe(CollectionTriggerConfig);
+    expect(presetModule?.default).toBe(CollectionPresetConfig);
     expect(fieldsetModule?.default).toBe(CollectionTriggerConfig);
   });
 });

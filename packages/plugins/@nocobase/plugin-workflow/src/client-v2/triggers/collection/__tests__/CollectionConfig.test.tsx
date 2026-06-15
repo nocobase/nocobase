@@ -14,6 +14,8 @@ import { Form } from 'antd';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import CollectionTriggerConfig from '../CollectionConfig';
 
+const workflowState = vi.hoisted(() => ({ sync: true }));
+
 vi.mock('../../../locale', () => ({
   NAMESPACE: 'workflow',
   useT: () => (key: string) => key,
@@ -29,8 +31,13 @@ vi.mock('../../../components/FilterDynamicComponent', () => ({
   ConditionField: () => <div data-testid="condition-field" />,
 }));
 
+vi.mock('../../../canvas/contexts', () => ({
+  useCurrentWorkflowContext: () => ({ sync: workflowState.sync }),
+}));
+
 describe('CollectionTriggerConfig', () => {
   it('consumes extracted shared collection components', () => {
+    workflowState.sync = true;
     const engine = new FlowEngine();
 
     render(
@@ -45,5 +52,34 @@ describe('CollectionTriggerConfig', () => {
     expect(screen.getByTestId('fields-select')).toBeInTheDocument();
     expect(screen.getByTestId('condition-field')).toBeInTheDocument();
     expect(screen.getByTestId('appends-select')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Synchronous collection event workflows run within the trigger transaction by default. Related data operations automatically use this transaction.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Rollback when workflow execution fails')).toBeInTheDocument();
+
+    const notice = screen.getByText(
+      'Synchronous collection event workflows run within the trigger transaction by default. Related data operations automatically use this transaction.',
+    );
+    const rollback = screen.getByText('Rollback when workflow execution fails');
+    const appends = screen.getByTestId('appends-select');
+    expect(appends.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(notice.compareDocumentPosition(rollback) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('hides sync-only rollback configuration when workflow is asynchronous', () => {
+    workflowState.sync = false;
+    const engine = new FlowEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <Form initialValues={{ config: { collection: 'posts', mode: 2 } }}>
+          <CollectionTriggerConfig />
+        </Form>
+      </FlowEngineProvider>,
+    );
+
+    expect(screen.queryByText('Rollback when workflow execution fails')).not.toBeInTheDocument();
   });
 });

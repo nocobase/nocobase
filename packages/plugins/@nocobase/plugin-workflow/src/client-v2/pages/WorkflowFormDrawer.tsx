@@ -193,7 +193,7 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
             selected trigger type ships a create-config form. */}
         {ConfigForm ? (
           <div style={{ marginBottom: token.marginLG }}>
-            <div style={{ marginBottom: token.marginXS }}>{`${t('Trigger configuration')}:`}</div>
+            <div style={{ marginBottom: token.marginXS, fontWeight: 600 }}>{`${t('Trigger configuration')}:`}</div>
             <div
               style={{
                 padding: token.padding,

@@ -5,6 +5,12 @@ description: CLI env として保存された NocoBase アプリを nb app upgra
 
 # NocoBase アプリをアップグレード
 
+:::tip 対象範囲
+
+このガイドは `nb init` でインストールしたアプリ向けです。古い方法でインストールしたアプリの場合は、先に [NocoBase を 2.0 から 2.1 へアップグレードする方法](./upgrade-from-2-0-to-2-1.md) を確認してください。
+
+:::
+
 ## ステップ 1: 現在の env を確認する
 
 まず、現在有効な CLI env を確認します。

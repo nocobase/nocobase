@@ -8,8 +8,9 @@
  */
 
 import { css } from '@emotion/css';
-import { Form, Select } from 'antd';
+import { Alert, Checkbox, Form, Select } from 'antd';
 import React, { useMemo } from 'react';
+import { useCurrentWorkflowContext } from '../../canvas/contexts';
 import { ConditionField } from '../../components/FilterDynamicComponent';
 import {
   AppendsSelect,
@@ -25,6 +26,20 @@ function filterChangedField(field: CollectionTriggerField) {
     !field.hidden &&
     (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true) &&
     !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+  );
+}
+
+export function SyncTransactionNotice() {
+  const t = useT();
+  return (
+    <Alert
+      type="info"
+      showIcon
+      style={{ marginBottom: '1em' }}
+      message={t(
+        'Synchronous collection event workflows run within the trigger transaction by default. Related data operations automatically use this transaction.',
+      )}
+    />
   );
 }
 
@@ -49,8 +64,10 @@ export function TriggerModeField() {
 
 export function CollectionTriggerConfig() {
   const t = useT();
+  const workflow = useCurrentWorkflowContext();
   const collection = Form.useWatch(['config', 'collection']);
   const mode = Number(Form.useWatch(['config', 'mode']) || 0);
+  const sync = workflow?.sync;
 
   return (
     <fieldset
@@ -66,7 +83,6 @@ export function CollectionTriggerConfig() {
       </Form.Item>
 
       <TriggerModeField />
-
       {collection && hasCollectionTriggerMode(mode, COLLECTION_TRIGGER_MODE.UPDATED) ? (
         <Form.Item
           name={['config', 'changed']}
@@ -94,6 +110,21 @@ export function CollectionTriggerConfig() {
           )}
         >
           <AppendsSelect collection={collection} />
+        </Form.Item>
+      ) : null}
+
+      {sync ? <SyncTransactionNotice /> : null}
+
+      {sync ? (
+        <Form.Item
+          name={['config', 'rollbackOnFailure']}
+          valuePropName="checked"
+          extra={t(
+            'Only available in synchronous mode. When enabled, if the workflow execution ends with a failed status, the data operation that triggered it will fail and be rolled back.',
+          )}
+          initialValue={false}
+        >
+          <Checkbox>{t('Rollback when workflow execution fails')}</Checkbox>
         </Form.Item>
       ) : null}
     </fieldset>

@@ -1235,6 +1235,15 @@ describe('flowSurfaces association contract', () => {
     expect(tableCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
     expect(detailsCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
     expect(gridCardCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
+    [tableCatalog, detailsCatalog, gridCardCatalog, editFormCatalog].forEach((catalog) => {
+      const fieldKeys = catalog.fields.map((item: any) => item.key);
+      expect(fieldKeys).not.toContain('departmentId');
+      expect(fieldKeys).not.toContain('managerId');
+      expect(fieldKeys).not.toContain('js:departmentId');
+      expect(fieldKeys).not.toContain('js:managerId');
+      expect(fieldKeys).toContain('department');
+      expect(fieldKeys).toContain('manager');
+    });
     expect(tableCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
       use: 'TableColumnModel',
       fieldUse: 'DisplayTextFieldModel',
@@ -1408,6 +1417,110 @@ describe('flowSurfaces association contract', () => {
     });
     expect(profileWrapperReadback.tree.props || {}).not.toHaveProperty('titleField');
     expect(profileInnerReadback.tree.props || {}).not.toHaveProperty('titleField');
+  });
+
+  it('should keep association leaf backing foreign keys when they are target title fields', async () => {
+    const ownersCollectionName = 'flow_surface_catalog_title_fk_owners';
+    const targetsCollectionName = 'flow_surface_catalog_title_fk_targets';
+    const sourcesCollectionName = 'flow_surface_catalog_title_fk_sources';
+
+    expect(
+      (
+        await rootAgent.resource('collections').create({
+          values: {
+            name: ownersCollectionName,
+            title: 'Flow surface catalog title FK owners',
+            titleField: 'name',
+            fields: [{ name: 'name', type: 'string', interface: 'input' }],
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('collections').create({
+          values: {
+            name: targetsCollectionName,
+            title: 'Flow surface catalog title FK targets',
+            titleField: 'ownerId',
+            fields: [
+              { name: 'label', type: 'string', interface: 'input' },
+              { name: 'ownerId', type: 'integer', interface: 'integer' },
+            ],
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('collections.fields', targetsCollectionName).create({
+          values: {
+            name: 'owner',
+            type: 'belongsTo',
+            target: ownersCollectionName,
+            foreignKey: 'ownerId',
+            interface: 'm2o',
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('collections').create({
+          values: {
+            name: sourcesCollectionName,
+            title: 'Flow surface catalog title FK sources',
+            fields: [
+              { name: 'name', type: 'string', interface: 'input' },
+              { name: 'targetId', type: 'integer', interface: 'integer' },
+            ],
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await rootAgent.resource('collections.fields', sourcesCollectionName).create({
+          values: {
+            name: 'target',
+            type: 'belongsTo',
+            target: targetsCollectionName,
+            foreignKey: 'targetId',
+            interface: 'm2o',
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    const page = await createPage(rootAgent, {
+      title: 'Field catalog title FK page',
+      tabTitle: 'Field catalog title FK tab',
+    });
+    const tableBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: sourcesCollectionName,
+      },
+    });
+
+    const catalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: tableBlock.uid,
+          },
+        },
+      }),
+    );
+    const fieldKeys = catalog.fields.map((item: any) => item.key);
+    expect(fieldKeys).not.toContain('targetId');
+    expect(fieldKeys).not.toContain('js:targetId');
+    expect(fieldKeys).toContain('target');
+    expect(fieldKeys).toContain('target.ownerId');
   });
 
   it('should persist usable titleField defaults for association selectors and reject invalid overrides', async () => {

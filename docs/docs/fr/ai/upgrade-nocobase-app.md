@@ -5,6 +5,12 @@ description: Mettre à niveau une application NocoBase enregistrée comme CLI en
 
 # Mettre à niveau l’application NocoBase
 
+:::tip Portée
+
+Ce guide s’applique aux applications installées avec `nb init`. Si ton application a été installée avec l’ancienne méthode, lis d’abord [Comment passer NocoBase de 2.0 à 2.1](./upgrade-from-2-0-to-2-1.md).
+
+:::
+
 ## Étape 1 : confirmer l’env actuel
 
 Commence par confirmer le CLI env actif :

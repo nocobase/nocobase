@@ -251,7 +251,9 @@ describe('WorkflowPane (request layer)', () => {
       />,
     );
 
-    expect(await screen.findByText('Trigger configuration:')).toBeInTheDocument();
+    const label = await screen.findByText('Trigger configuration:');
+    expect(label).toBeInTheDocument();
+    expect(label).toHaveStyle({ fontWeight: '600' });
     expect(await screen.findByText('preset-field')).toBeInTheDocument();
   });
 });

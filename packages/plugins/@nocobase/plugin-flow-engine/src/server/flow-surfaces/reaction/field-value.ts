@@ -9,6 +9,11 @@
 
 import _ from 'lodash';
 import { throwBadRequest } from '../errors';
+import {
+  FLOW_SURFACE_DATE_FILTER_OPERATORS,
+  isFlowSurfaceDateLikeFieldMeta,
+  normalizeFlowSurfaceDateConditionValue,
+} from '../filter-group';
 import { FLOW_SURFACE_REACTION_FORM_ONLY } from './errors';
 import { buildReactionFingerprint } from './fingerprint';
 import { getReactionSlot } from './registry';
@@ -78,6 +83,77 @@ function normalizeFieldValueRule(
 export function normalizeFieldValueRules(rules: FlowSurfaceFieldValueRule[] | undefined): FlowSurfaceFieldValueRule[] {
   const list = Array.isArray(rules) ? rules : [];
   return list.map((rule, index) => normalizeFieldValueRule(rule, index));
+}
+
+export function validateFieldValueRulesAgainstCapability(
+  rules: FlowSurfaceFieldValueRule[],
+  capability: {
+    conditionMeta: {
+      operatorsByPath: Record<string, string[]>;
+      fieldMetaByPath?: Record<string, { type?: string; interface?: string }>;
+    };
+  },
+) {
+  for (const [ruleIndex, rule] of (rules || []).entries()) {
+    validateFieldValueDateConditionFilter(rule.when, capability, `rules[${ruleIndex}].when`);
+  }
+}
+
+function validateFieldValueDateConditionFilter(
+  filter: any,
+  capability: {
+    conditionMeta: {
+      fieldMetaByPath?: Record<string, { type?: string; interface?: string }>;
+    };
+  },
+  prefix: string,
+) {
+  const visit = (node: any, currentPrefix: string) => {
+    if (!_.isPlainObject(node)) {
+      return;
+    }
+    if (Array.isArray(node.items)) {
+      node.items.forEach((item: any, index: number) => visit(item, `${currentPrefix}.items[${index}]`));
+      return;
+    }
+    const operator = typeof node.operator === 'string' ? node.operator.trim() : '';
+    const path = typeof node.path === 'string' ? node.path.trim() : '';
+    if (!operator || !path || !Object.prototype.hasOwnProperty.call(node, 'value')) {
+      return;
+    }
+    const fieldMeta = resolveFieldValueConditionFieldMeta(path, capability.conditionMeta?.fieldMetaByPath);
+    if (!FLOW_SURFACE_DATE_FILTER_OPERATORS.has(operator) && !isFlowSurfaceDateLikeFieldMeta(fieldMeta)) {
+      return;
+    }
+    normalizeFlowSurfaceDateConditionValue(operator, node.value, `${currentPrefix}.value`, {
+      fieldPath: path,
+      fieldType: fieldMeta?.type,
+      fieldInterface: fieldMeta?.interface,
+      allowContextPathValue: true,
+    });
+  };
+
+  visit(filter, prefix);
+}
+
+function resolveFieldValueConditionFieldMeta(
+  path: string,
+  fieldMetaByPath?: Record<string, { type?: string; interface?: string }>,
+) {
+  if (!fieldMetaByPath) {
+    return undefined;
+  }
+  if (fieldMetaByPath[path]) {
+    return fieldMetaByPath[path];
+  }
+  const wildcardPath = Object.keys(fieldMetaByPath)
+    .filter((candidate) => candidate.endsWith('.*'))
+    .sort((a, b) => b.length - a.length)
+    .find((candidate) => {
+      const prefix = candidate.slice(0, -2);
+      return path.startsWith(`${prefix}.`) && path.length > prefix.length + 1;
+    });
+  return wildcardPath ? fieldMetaByPath[wildcardPath] : undefined;
 }
 
 export function compileFieldValueRulesToCanonical(rules: FlowSurfaceFieldValueRule[] | undefined) {

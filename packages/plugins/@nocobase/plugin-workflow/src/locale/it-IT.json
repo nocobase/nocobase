@@ -205,6 +205,7 @@
   "Syntax references: ": "Riferimenti di sintassi:",
   "System time": "Ora di sistema",
   "System variables": "Variabili di sistema",
+  "System process failed, please contact administrator.": "Processo di sistema non riuscito, contattare l'amministratore.",
   "Task type {{type}} is invalid": "Task type {{type}} is invalid",
   "Test run": "Test run",
   "Test run will do the actual data manipulating or API calling, please use with caution.": "Il test run farà l'effettiva manipolazione dei dati o la chiamata API, si prega di usare con cautela.",
