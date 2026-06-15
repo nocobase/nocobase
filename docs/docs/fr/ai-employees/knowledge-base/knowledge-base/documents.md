@@ -31,7 +31,7 @@ To import multiple documents at once, package them as a ZIP file and upload it. 
 
 :::tip Upload size limit
 
-ZIP import is also limited by the upload size configured for the file storage. If the upload reports that the file is too large, adjust the limit in the File storage used by this knowledge base. See [File storage](/file-manager/storage/) for the related configuration.
+ZIP import is also limited by the upload size configured for the file storage. If the upload reports that the file is too large, adjust the limit in the File storage used by this knowledge base. See [File storage](../../../file-manager/storage/) for the related configuration.
 
 :::
 

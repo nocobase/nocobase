@@ -57,7 +57,7 @@ A Local knowledge base usually needs the following information:
 
 :::tip Prerequisites
 
-Before creating a Local knowledge base, prepare two dependencies: file storage for original documents and segment files, see [File storage](/file-manager/storage/); and vector storage for generating and retrieving vectors, see [Vector database](../vector-database) and [Vector store](../vector-store).
+Before creating a Local knowledge base, prepare two dependencies: file storage for original documents and segment files, see [File storage](../../../file-manager/storage/); and vector storage for generating and retrieving vectors, see [Vector database](../vector-database) and [Vector store](../vector-store).
 
 :::
 

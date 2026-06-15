@@ -57,7 +57,7 @@ Local 知识库通常需要填写这些信息：
 
 :::tip 前置准备
 
-创建 Local 知识库前，需要先准备好两类依赖：文件存储用于保存原始文档和分段文件，配置见 [文件存储引擎](/cn/file-manager/storage/)；向量存储用于生成和检索向量，配置见 [向量数据库](../vector-database) 和 [向量存储](../vector-store)。
+创建 Local 知识库前，需要先准备好两类依赖：文件存储用于保存原始文档和分段文件，配置见 [文件存储引擎](../../../file-manager/storage/)；向量存储用于生成和检索向量，配置见 [向量数据库](../vector-database) 和 [向量存储](../vector-store)。
 
 :::
 
