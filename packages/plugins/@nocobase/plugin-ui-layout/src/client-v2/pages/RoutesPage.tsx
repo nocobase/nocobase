@@ -17,8 +17,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Table, type NocoBaseDesktopRoute } from '@nocobase/client-v2';
-import { NocoBaseDesktopRouteType } from '@nocobase/client-v2';
+import { Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import {
   Button,
@@ -41,6 +40,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constants';
 import { useT } from '../locale';
 import { MobileMenuSettingsIconPicker } from '../models/MobileMenuComponents';
+import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../models/mobileFlowCompat';
 import { createDesktopRouteLayoutPermissionFilter } from '../permissions/layoutAwareDesktopRoutesPermissions';
 import { getUiLayoutRouteUrl } from './UiLayoutsPage';
 
@@ -152,18 +152,17 @@ function getLinkRouteParams(route: NocoBaseDesktopRoute): RouteSearchParameter[]
   if (!Array.isArray(params)) {
     return [];
   }
-  return params
-    .map((param) => {
-      if (!param || typeof param !== 'object') {
-        return null;
-      }
-      const item = param as RouteSearchParameter;
-      return {
-        name: typeof item.name === 'string' ? item.name : '',
-        value: typeof item.value === 'string' ? item.value : '',
-      };
-    })
-    .filter((param): param is RouteSearchParameter => !!param);
+  return params.reduce<RouteSearchParameter[]>((items, param) => {
+    if (!param || typeof param !== 'object') {
+      return items;
+    }
+    const item = param as RouteSearchParameter;
+    items.push({
+      name: typeof item.name === 'string' ? item.name : '',
+      value: typeof item.value === 'string' ? item.value : '',
+    });
+    return items;
+  }, []);
 }
 
 function getRouteTypeLabel(type: NocoBaseDesktopRouteType | undefined) {
@@ -333,27 +332,25 @@ function filterRoutesByKeyword(
   if (!normalizedKeyword) {
     return routes;
   }
-  return routes
-    .map((route) => {
-      const children = filterRoutesByKeyword(route.children ?? [], normalizedKeyword, t);
-      const routeTitle = getRouteTitle(route, t).toLowerCase();
-      const schemaUid = String(route.schemaUid || '').toLowerCase();
-      const routeType = String(route.type || '').toLowerCase();
-      const linkPath = getLinkRoutePath(route).toLowerCase();
-      const matched =
-        routeTitle.includes(normalizedKeyword) ||
-        schemaUid.includes(normalizedKeyword) ||
-        routeType.includes(normalizedKeyword) ||
-        linkPath.includes(normalizedKeyword);
-      if (matched || children.length) {
-        return {
-          ...route,
-          children: children.length ? children : route.children,
-        };
-      }
-      return null;
-    })
-    .filter((route): route is NocoBaseDesktopRoute => !!route);
+  return routes.reduce<NocoBaseDesktopRoute[]>((items, route) => {
+    const children = filterRoutesByKeyword(route.children ?? [], normalizedKeyword, t);
+    const routeTitle = getRouteTitle(route, t).toLowerCase();
+    const schemaUid = String(route.schemaUid || '').toLowerCase();
+    const routeType = String(route.type || '').toLowerCase();
+    const linkPath = getLinkRoutePath(route).toLowerCase();
+    const matched =
+      routeTitle.includes(normalizedKeyword) ||
+      schemaUid.includes(normalizedKeyword) ||
+      routeType.includes(normalizedKeyword) ||
+      linkPath.includes(normalizedKeyword);
+    if (matched || children.length) {
+      items.push({
+        ...route,
+        children: children.length ? children : route.children,
+      });
+    }
+    return items;
+  }, []);
 }
 
 function normalizeRouteValues(

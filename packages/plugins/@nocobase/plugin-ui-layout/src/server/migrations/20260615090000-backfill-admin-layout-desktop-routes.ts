@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Model, Transaction } from '@nocobase/database';
+import type { BelongsToManyRepository, Database, Model, Transaction } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 import { DEFAULT_ADMIN_UI_LAYOUT } from '../../constants';
 
@@ -55,7 +55,7 @@ async function backfillAdminLayoutDesktopRoutesInTransaction(db: Database, trans
       continue;
     }
 
-    await db.getRepository('desktopRoutes.uiLayouts', routeId).set({
+    await db.getRepository<BelongsToManyRepository>('desktopRoutes.uiLayouts', routeId).set({
       tk: [DEFAULT_ADMIN_UI_LAYOUT.uid],
       transaction,
     });
