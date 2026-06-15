@@ -431,19 +431,25 @@ const getPluginStaticPublicPath = (browserWindow?: NocoBaseWindow) => {
   return publicPath.replace(new RegExp(`/${escapeRegExp(modernClientPrefix)}/$`), '/');
 };
 
+const getPdfjsBaseUrl = () => {
+  const browserWindow = typeof window === 'undefined' ? undefined : (window as NocoBaseWindow);
+  const publicPath = getPluginStaticPublicPath(browserWindow);
+  return `${publicPath}static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/`;
+};
+
 export const getPdfPreviewResourceOptions = (): Pick<
   DocumentInitParameters,
   'cMapPacked' | 'cMapUrl' | 'standardFontDataUrl'
 > => {
-  const browserWindow = typeof window === 'undefined' ? undefined : (window as NocoBaseWindow);
-  const publicPath = getPluginStaticPublicPath(browserWindow);
-  const pdfjsBaseUrl = `${publicPath}static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/`;
+  const pdfjsBaseUrl = getPdfjsBaseUrl();
   return {
     cMapPacked: true,
     cMapUrl: `${pdfjsBaseUrl}cmaps/`,
     standardFontDataUrl: `${pdfjsBaseUrl}standard_fonts/`,
   };
 };
+
+export const getPdfPreviewWorkerSrc = () => `${getPdfjsBaseUrl()}pdf.worker.min.mjs`;
 
 type PdfPreviewErrorCode = 'resources' | 'file' | 'document';
 
@@ -576,10 +582,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       }
       session.data = data;
       try {
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.min.mjs',
-          import.meta.url,
-        ).toString();
+        pdfjs.GlobalWorkerOptions.workerSrc = getPdfPreviewWorkerSrc();
         session.worker = pdfjs.PDFWorker.create({});
       } catch (error) {
         throw new PdfPreviewError('resources', 'Failed to load PDF.js worker.', error);

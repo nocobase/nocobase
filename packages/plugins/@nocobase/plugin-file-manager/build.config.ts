@@ -19,5 +19,9 @@ export default defineConfig({
         force: true,
       },
     );
+    await fs.copyFile(
+      path.resolve(pdfjsDist, 'build/pdf.worker.min.mjs'),
+      path.resolve(__dirname, 'dist/client/pdfjs/pdf.worker.min.mjs'),
+    );
   },
 });
