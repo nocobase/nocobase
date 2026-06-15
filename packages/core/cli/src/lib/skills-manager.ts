@@ -23,8 +23,8 @@ const NOCOBASE_SKILLS_NAME_PREFIX = 'nocobase-';
 // resolves and boots the package, even when the local skills installation is healthy.
 const SKILLS_LIST_TIMEOUT_MS = 15000;
 const SKILLS_NPM_VIEW_TIMEOUT_MS = 3000;
-const SKILLS_PACK_TIMEOUT_MS = 30000;
-const SKILLS_ADD_TIMEOUT_MS = 20000;
+const SKILLS_PACK_TIMEOUT_MS = 120000;
+const SKILLS_ADD_TIMEOUT_MS = 120000;
 const NPM_REGISTRY_UNAVAILABLE_PATTERNS = [
   'enotfound',
   'eai_again',
@@ -95,6 +95,7 @@ type SkillsSyncOptions = SkillsManagerOptions & {
   runFn?: typeof run;
   targetVersion?: string;
   verbose?: boolean;
+  onProgress?: (message: string) => void;
 };
 
 function collectErrorMessages(error: unknown): string[] {
@@ -402,6 +403,7 @@ async function prepareLocalSkillsPackage(
   await fsp.mkdir(cacheRoot, { recursive: true });
 
   if (targetVersion && cachedVersion && compareVersions(cachedVersion, targetVersion) === 0) {
+    options.onProgress?.(`Using cached ${NOCOBASE_SKILLS_PACKAGE_NAME}@${targetVersion}...`);
     return {
       packageDir,
       cleanup: async () => undefined,
@@ -412,12 +414,14 @@ async function prepareLocalSkillsPackage(
   await fsp.mkdir(packRoot, { recursive: true });
 
   try {
-    await (options.runFn ?? run)('npm', ['pack', '--silent', packageSpec], {
+    options.onProgress?.(`Downloading ${packageSpec}...`);
+    await (options.runFn ?? run)('npm', ['pack', ...(options.verbose ? [] : ['--silent']), packageSpec], {
       cwd: packRoot,
       stdio: options.verbose ? 'inherit' : 'ignore',
       errorName: 'npm pack',
       timeoutMs: SKILLS_PACK_TIMEOUT_MS,
     });
+    options.onProgress?.(`Extracting ${NOCOBASE_SKILLS_PACKAGE_NAME}...`);
     const tarballPath = await resolvePackedSkillsTarball(packRoot);
     await extractPackedSkillsTarball(tarballPath, cacheRoot, targetVersion);
   } finally {
@@ -528,6 +532,7 @@ async function reinstallManagedSkills(
 ): Promise<void> {
   const prepared = await prepareLocalSkillsPackage(globalRoot, options, targetVersion);
   try {
+    options.onProgress?.('Installing NocoBase AI coding skills globally...');
     await (options.runFn ?? run)('npx', ['-y', 'skills', 'add', prepared.packageDir, '-g', '-y', '--skill', '*'], {
       cwd: globalRoot,
       stdio: options.verbose ? 'inherit' : 'ignore',
@@ -557,6 +562,7 @@ async function removeObsoleteManagedSkills(
   const obsoleteSkillNames = pickObsoleteManagedSkillNames(installedSkillNames, packageSkillNames);
 
   for (const skillName of obsoleteSkillNames) {
+    options.onProgress?.(`Removing obsolete skill ${skillName}...`);
     await (options.runFn ?? run)('npx', ['-y', 'skills', 'remove', skillName, '-g', '-y'], {
       cwd: globalRoot,
       stdio: options.verbose ? 'inherit' : 'ignore',
@@ -570,6 +576,7 @@ export async function installNocoBaseSkills(options: SkillsSyncOptions = {}): Pr
   status: SkillsStatus;
 }> {
   const globalRoot = resolveSkillsRoot(options);
+  options.onProgress?.('Checking installed NocoBase AI coding skills...');
   const status = await inspectSkillsStatus({
     globalRoot,
     commandOutputFn: options.commandOutputFn,
@@ -594,6 +601,7 @@ export async function installNocoBaseSkills(options: SkillsSyncOptions = {}): Pr
   }
   await removeObsoleteManagedSkills(globalRoot, status.installedSkillNames, options);
 
+  options.onProgress?.('Verifying installed NocoBase AI coding skills...');
   return {
     action: 'installed',
     status: await persistManagedSkillsState(globalRoot, options, targetVersion),
@@ -612,6 +620,7 @@ export async function updateNocoBaseSkills(options: SkillsSyncOptions = {}): Pro
     }
 > {
   const globalRoot = resolveSkillsRoot(options);
+  options.onProgress?.('Checking installed NocoBase AI coding skills...');
   const status = await inspectSkillsStatus({
     globalRoot,
     commandOutputFn: options.commandOutputFn,
@@ -664,6 +673,7 @@ export async function updateNocoBaseSkills(options: SkillsSyncOptions = {}): Pro
   }
   await removeObsoleteManagedSkills(globalRoot, status.installedSkillNames, options);
 
+  options.onProgress?.('Verifying installed NocoBase AI coding skills...');
   return {
     action: 'updated',
     status: await persistManagedSkillsState(globalRoot, options, targetVersion),
