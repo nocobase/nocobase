@@ -11,13 +11,56 @@ import { Plugin } from '@nocobase/client-v2';
 import { bulkEditTitleField } from './flow/bulkEditTitleField';
 import { bulkEditFieldComponent } from './flow/bulkEditFieldComponent';
 
-import * as models from './flow/models';
-
 export class PluginActionBulkEditClient extends Plugin {
   async load() {
     // 先注册 bulkEditTitleField/bulkEditFieldComponent action，再导入 models
     this.app.flowEngine.registerActions({ bulkEditTitleField, bulkEditFieldComponent });
-    this.app.flowEngine.registerModels(models);
+    this.app.flowEngine.registerModelLoaders({
+      BulkEditActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./flow/models/BulkEditActionModel'),
+      },
+      BulkEditFormModel: {
+        extends: 'CreateFormModel',
+        loader: () => import('./flow/models/BulkEditFormModel'),
+      },
+      BulkEditFormItemModel: {
+        extends: 'FormItemModel',
+        loader: () => import('./flow/models/BulkEditFormItemModel'),
+      },
+      BulkEditFieldModel: {
+        extends: 'FieldModel',
+        loader: () => import('./flow/models/BulkEditFieldModel'),
+      },
+      BulkEditFormActionGroupModel: {
+        extends: 'ActionGroupModel',
+        loader: () => import('./flow/models/BulkEditFormActionGroupModel'),
+      },
+      BulkEditFormSubmitActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./flow/models/BulkEditFormSubmitActionModel'),
+      },
+      BulkEditChildPageTabModel: {
+        extends: 'ChildPageTabModel',
+        loader: () => import('./flow/models/BulkEditChildPageTabModel'),
+      },
+      BulkEditBlockGridModel: {
+        extends: 'BlockGridModel',
+        loader: () => import('./flow/models/BulkEditChildPageTabModel'),
+      },
+      BulkEditFormGridModel: {
+        extends: 'FormGridModel',
+        loader: () => import('./flow/models/BulkEditFormGridModel'),
+      },
+      BulkEditDataBlockModel: {
+        extends: 'DataBlockModel',
+        loader: () => import('./flow/models/BulkEditDataBlockModel'),
+      },
+      BulkEditBlockModel: {
+        extends: 'BlockModel',
+        loader: () => import('./flow/models/BulkEditDataBlockModel'),
+      },
+    });
   }
 }
 

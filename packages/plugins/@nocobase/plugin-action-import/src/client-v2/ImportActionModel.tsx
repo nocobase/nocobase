@@ -74,6 +74,7 @@ export class ImportActionModel extends ActionModel {
 
 ImportActionModel.define({
   label: escapeT('Import'),
+  sort: 1040,
 });
 
 const toArr = (value: any) => {
