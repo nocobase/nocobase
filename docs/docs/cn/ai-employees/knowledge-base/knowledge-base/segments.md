@@ -7,11 +7,7 @@ keywords: "知识库分段,Segments,Chunk size,Chunk overlap,关联问题,NocoBa
 
 # 分段管理
 
-:::tip 文档分段
-
 文档上传后，NocoBase 会先按分段参数把正文拆成若干分段，再把启用中的分段写入向量存储。RAG 检索命中的也是这些分段，而不是整篇原始文档。「Split document」「Chunk size」「Chunk overlap」会影响分段数量、上下文长度和相邻分段的衔接。
-
-:::
 
 ## 打开分段管理
 
@@ -33,6 +29,14 @@ keywords: "知识库分段,Segments,Chunk size,Chunk overlap,关联问题,NocoBa
 | 「Updated at」 | 分段最近更新时间 |
 
 打开「Enabled only」后，列表只显示启用中的分段。这个开关只影响列表显示，不会修改分段数据。
+
+:::tip 历史数据说明
+
+如果某篇文档是通过旧版本知识库插件上传的，可能没有单独保存分段信息。旧版本知识库插件会把分段内容和分段向量一起保存在向量数据库中，因此「Segment management」里的分段列表可能为空。
+
+这种情况不影响知识库检索。只有需要查看或编辑分段列表时，才需要重新向量化或重新分段；通常不需要仅为了让列表显示数据而重新处理文档。
+
+:::
 
 ## 编辑分段
 
