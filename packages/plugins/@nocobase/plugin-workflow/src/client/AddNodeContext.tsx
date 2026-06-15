@@ -38,7 +38,6 @@ import { useNodeClipboardContext } from './NodeClipboardContext';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { PresetDialogForm } from '../client-v2/canvas/AddNodeContext';
-import { getDownstreamBranchOptions } from '../client-v2/canvas/DownstreamBranchIndex';
 import { resolveLegacyPresetRenderMode } from '../client-v2/canvas/nodeRenderDispatch';
 
 interface AddButtonProps {
@@ -544,13 +543,6 @@ export function AddNodeContextProvider(props) {
     }
 
     if (presetMode === 'modern-loader') {
-      const t = (key, options?) => flowEngine.context.t(key, options);
-      const downstreamOptions = getDownstreamBranchOptions({
-        instruction,
-        config: data.config,
-        hasDownstream: Boolean(downstream),
-        t,
-      });
       const anchor = { upstream, branchIndex };
       flowEngine.context.viewer.dialog({
         width: 520,
@@ -558,7 +550,7 @@ export function AddNodeContextProvider(props) {
         content: () => (
           <PresetDialogForm
             instruction={instruction}
-            downstreamOptions={downstreamOptions}
+            hasDownstream={Boolean(downstream)}
             onSubmit={(values) => createModernNode(anchor, instruction, values)}
           />
         ),
