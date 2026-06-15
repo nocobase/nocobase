@@ -172,12 +172,17 @@ export default class LicenseActivate extends Command {
     const ok =
       !validation.keyStatus && validation.envMatch && validation.domainMatch && validation.licenseStatus === 'active';
     const licenseKeyPath = ok ? await saveLicenseKey(runtime, resolvedKey) : resolveLicenseKeyFile(runtime);
+    const shouldResolveInstanceId = Boolean(
+      interactiveKeyFlowInstanceId || ok || (flags.json && !validation.keyStatus),
+    );
 
     const payload = {
       ok,
       env: runtime.envName,
       kind: runtime.kind,
-      instanceId: interactiveKeyFlowInstanceId ?? (await ensureInstanceId(runtime)),
+      instanceId: shouldResolveInstanceId
+        ? interactiveKeyFlowInstanceId ?? (await ensureInstanceId(runtime))
+        : undefined,
       mode: 'key',
       key: redactLicenseKey(resolvedKey),
       keyFile: keyFile || undefined,

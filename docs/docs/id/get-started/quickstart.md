@@ -59,6 +59,8 @@ Anda dapat menginstal NocoBase dengan berbagai cara.
 | **Persyaratan Teknis** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Cara Upgrade** | Tarik image terbaru dan restart container | Gunakan yarn untuk memperbarui dependencies | Sinkronisasi pembaruan melalui alur Git |
 
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
 ## Langkah selanjutnya
 
-Jika Anda sudah memilih metode instalasi, langkah berikutnya adalah [Mulai Cepat](../ai/quick-start.md). Di sana Anda akan menginstal NocoBase CLI, terhubung ke aplikasi yang sudah ada atau menginisialisasi aplikasi baru, lalu membiarkan AI Agent mulai bekerja.
+Jika Anda sudah memilih metode instalasi, langkah berikutnya adalah [Instal aplikasi NocoBase](/ai/install-nocobase-app). Di sana Anda akan memasang NocoBase CLI dan menyelesaikan instalasi serta inisialisasi aplikasi.

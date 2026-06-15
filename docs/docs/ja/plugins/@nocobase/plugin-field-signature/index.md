@@ -1,16 +1,16 @@
 ---
-displayName: "データテーブルフィールド：手書き署名"
-packageName: '@nocobase/plugin-field-signature'
 title: "データテーブルフィールド：手書き署名"
-keywords: "データテーブルフィールド：手書き署名,プラグイン,NocoBase"
+keywords: "Collection fields"
+displayName: "Collection field: Signature"
+packageName: '@nocobase/plugin-field-signature'
 supportedVersions:
   - 2.x
 description: |
-  タッチおよびマウスによる手書き署名をサポートします。署名画像は選択したファイルデータテーブルに保存され、ファイルマネージャーを通じてアップロードとストレージを処理します。プロフェッショナル版以上のライセンスが必要です。
+  Supports handwritten signature input with touch and mouse support.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# データテーブルフィールド：手書き署名
+# Collection field: Signature

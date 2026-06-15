@@ -1,14 +1,16 @@
 ---
-displayName: "UI-Vorlagen"
+title: "UI templates"
+keywords: "nocobase,plugin,ui,templates,block,popup"
+displayName: "UI templates"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
 description: |
-  Bietet die Möglichkeit zur Wiederverwendung von Block- und Popup-Vorlagen.
+  Provides block templates and popup templates for UI reuse.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI-Vorlagen
+# UI templates

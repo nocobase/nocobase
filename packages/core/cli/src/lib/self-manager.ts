@@ -18,7 +18,7 @@ const DEFAULT_PACKAGE_NAME = '@nocobase/cli';
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const INSTALL_METHOD_CACHE_FILE = 'self-install-methods.json';
 
-export type SelfChannel = 'latest' | 'beta' | 'alpha';
+export type SelfChannel = 'latest' | 'test' | 'beta' | 'alpha';
 export type SelfInstallMethod = 'npm-global' | 'package-local' | 'source' | 'unknown';
 
 export type SelfStatus = {
@@ -175,6 +175,10 @@ function detectChannel(currentVersion: string): SelfChannel {
 
   if (/-beta(?:[.-]|$)/i.test(currentVersion)) {
     return 'beta';
+  }
+
+  if (/-test(?:[.-]|$)/i.test(currentVersion)) {
+    return 'test';
   }
 
   return 'latest';

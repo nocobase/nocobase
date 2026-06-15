@@ -6,7 +6,9 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import pc from 'picocolors';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { formatUnsupportedNodeVersionMessage, isSupportedNodeVersion } from './node-version.js';
 import { normalizeNodeOptions, normalizeSessionEnv } from './session-env.js';
+import { ensureWindowsAdministrator } from './windows-admin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const requireFromCli = createRequire(import.meta.url);
@@ -18,8 +20,15 @@ if (process.env.NB_CLI_USE_DIST === '1') {
   isDev = false;
 }
 
+if (!isSupportedNodeVersion()) {
+  console.error(pc.red(formatUnsupportedNodeVersionMessage(process.version)));
+  process.exit(1);
+}
+
 normalizeSessionEnv();
 normalizeNodeOptions();
+
+ensureWindowsAdministrator();
 
 /**
  * In the monorepo, plain `node` cannot load `.ts`. Re-exec once with `--import <tsx>`

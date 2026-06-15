@@ -1,12 +1,14 @@
 ---
-displayName: "Systemeinstellungen"
+title: "System settings"
+keywords: "System management"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
-  Dient zum Anpassen von Systemtitel, Logo, Sprache usw.
+  Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Systemeinstellungen
+# System settings

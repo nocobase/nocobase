@@ -8,13 +8,15 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-import { BulkUpdateActionModel } from './BulkUpdateActionModel';
 
 export class PluginActionBulkUpdateClient extends Plugin {
   async load() {
     // 注册 Flow 模型以支持新版流程引擎按钮动作
-    this.app.flowEngine.registerModels({
-      BulkUpdateActionModel,
+    this.app.flowEngine.registerModelLoaders({
+      BulkUpdateActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./BulkUpdateActionModel'),
+      },
     });
   }
 }

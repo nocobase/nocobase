@@ -1,15 +1,17 @@
 ---
-displayName: "Gestor de copias de seguridad"
+title: "Backup manager"
+keywords: "System management"
+displayName: "Backup manager"
 packageName: '@nocobase/plugin-backups'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Proporciona funciones de copia de seguridad y restauración, admite copias de seguridad programadas y garantiza la seguridad de los datos y una recuperación rápida.
-isFree: false
-builtIn: false
+  Provides backup and restore functionality, supports scheduled backups, and ensures data security and quick recovery.
+isFree: true
+builtIn: true
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 0
 ---
 
-# Gestor de copias de seguridad
+# Backup manager

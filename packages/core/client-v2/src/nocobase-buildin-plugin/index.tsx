@@ -28,6 +28,13 @@ export type CurrentUserState = {
   loading: boolean;
 };
 
+type CurrentUserAuthStatus = 'unknown' | 'authenticated' | 'unauthenticated' | 'redirecting';
+
+type CurrentUserInternalState = CurrentUserState & {
+  authStatus: CurrentUserAuthStatus;
+  error?: Error | null;
+};
+
 export type CurrentRoleOption = {
   name: string;
   title: string;
@@ -151,7 +158,7 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
       }
     };
 
-    void run();
+    run();
 
     return () => {
       mounted = false;
@@ -173,21 +180,33 @@ const CurrentUserProvider: FC = ({ children }) => {
   const app = useApp<Application>();
   const location = useLocation();
   const navigate = useNavigate();
-  const [state, setState] = useState<CurrentUserState>({ loading: true });
+  const [state, setState] = useState<CurrentUserInternalState>({ loading: true, authStatus: 'unknown' });
   const locationRef = useRef(location);
   locationRef.current = location;
   const authCheckRouteState = getCurrentUserAuthCheckRouteState(app, location.pathname);
+  const shouldBlockAuthRequiredRoute = authCheckRouteState === 'required' && state.authStatus !== 'authenticated';
+  const contextValue = useMemo<CurrentUserState>(
+    () => ({
+      data: state.data,
+      loading: state.loading,
+    }),
+    [state.data, state.loading],
+  );
 
   useEffect(() => {
     let mounted = true;
 
     if (authCheckRouteState !== 'required') {
       // 认证页等免鉴权路由不应再执行 `/auth:check`，否则未登录时会重复鉴权并触发重定向抖动。
-      setState({ loading: false });
+      setState({ loading: false, authStatus: 'unauthenticated', error: null });
       return;
     }
 
-    setState((previous) => (previous.loading ? previous : { ...previous, loading: true }));
+    setState((previous) =>
+      previous.authStatus === 'authenticated'
+        ? previous
+        : { data: previous.data, loading: true, authStatus: 'unknown', error: null },
+    );
 
     const run = async () => {
       try {
@@ -204,11 +223,12 @@ const CurrentUserProvider: FC = ({ children }) => {
         const user = res?.data?.data;
         // 服务端通过 `{ code: 302, redirect }` 通知客户端先去某个中间页(例如 2FA 验证页)。这类响应没有 user.id,但也不能视为未登录——否则会和处理 302 的全局响应拦截器 (例如 plugin-two-factor-authentication 注册的那一个)竞态,而 `window.location.replace` 会覆盖更早发出的 `window.location.href`,把用户错误地弹回登录页。让响应拦截器接管跳转。
         if (user?.code === 302) {
-          setState({ loading: false });
+          setState({ loading: false, authStatus: 'redirecting', error: null });
           return;
         }
         if (user?.id == null) {
           // 用 react-router navigate (虚拟跳转)而不是 location.replace, 这样如果有其他响应拦截器已经发起了 window.location.href 整页跳转(例如 2FA 插件接收到服务端 302 重定向), 真实跳转可以胜出 navigate, 不会被这里的 signin 重定向覆盖。
+          setState({ loading: true, authStatus: 'unauthenticated', error: null });
           navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
             replace: true,
           });
@@ -230,21 +250,28 @@ const CurrentUserProvider: FC = ({ children }) => {
         setState({
           data: res?.data,
           loading: false,
+          authStatus: 'authenticated',
+          error: null,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (!mounted) {
           return;
         }
 
-        const isAuthError = error?.response?.status === 401 || error?.status === 401;
+        const errorLike = error as { response?: { status?: number }; status?: number };
+        const isAuthError = errorLike?.response?.status === 401 || errorLike?.status === 401;
         if (isAuthError) {
+          setState({ loading: true, authStatus: 'unauthenticated', error: null });
           navigate(`/signin?redirect=${encodeURIComponent(getCurrentV2RedirectPath(app, locationRef.current))}`, {
             replace: true,
           });
           return;
         }
-        setState({ loading: false });
-        throw error;
+        setState({
+          loading: false,
+          authStatus: 'unknown',
+          error: error instanceof Error ? error : new Error(String(error)),
+        });
       }
     };
 
@@ -255,11 +282,15 @@ const CurrentUserProvider: FC = ({ children }) => {
     };
   }, [app, authCheckRouteState, navigate]);
 
-  if (state.loading) {
+  if (state.error) {
+    throw state.error;
+  }
+
+  if (state.loading || shouldBlockAuthRequiredRoute) {
     return app.renderComponent('AppSpin');
   }
 
-  return <CurrentUserContext.Provider value={state}>{children}</CurrentUserContext.Provider>;
+  return <CurrentUserContext.Provider value={contextValue}>{children}</CurrentUserContext.Provider>;
 };
 
 const RootRedirect: FC = () => {
@@ -289,8 +320,9 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
     this.addComponents();
     this.addRoutes();
 
-    this.app.use(DataSourceBootstrapProvider);
+    // Auth-required routes must finish auth check or redirect before data source metadata requests can start.
     this.app.use(CurrentUserProvider);
+    this.app.use(DataSourceBootstrapProvider);
     this.app.flowEngine.registerModels({
       AdminLayoutModel,
       AdminLayoutMenuItemModel,

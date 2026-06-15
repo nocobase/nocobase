@@ -1,14 +1,16 @@
 ---
-displayName: "Control de versiones"
+title: "Version control"
+keywords: "System management"
+displayName: "Version control"
 packageName: '@nocobase/plugin-version-control'
 supportedVersions:
   - 2.x
 description: |
-  Guarda versiones recuperables de la aplicación y permite restaurarla a una versión específica cuando sea necesario.
+  Save and restore versions during NocoBase builds.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Control de versiones
+# Version control

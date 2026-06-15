@@ -1,15 +1,17 @@
 ---
-displayName: "Colección: conectar a datos externos (FDW)"
+title: "Collection: Connect to foreign data (FDW)"
+keywords: "Collections"
+displayName: "Collection: Connect to foreign data (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Implementación de foreign data wrapper (FDW) basada en la base de datos para conectar a tablas de datos remotas, actualmente soporta bases de datos MySQL y PostgreSQL.
+  Database-based foreign data wrapper (FDW) implementation for connecting to remote data tables, currently supports MySQL and PostgreSQL databases.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Colección: conectar a datos externos (FDW)
+# Collection: Connect to foreign data (FDW)

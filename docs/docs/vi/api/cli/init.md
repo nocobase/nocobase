@@ -74,7 +74,7 @@ Theo mặc định, CLI sẽ tổ chức các tệp cục bộ dưới `app-path
 
 Thông thường:
 
-- `source/` chủ yếu tương ứng với thư mục ứng dụng cục bộ của env kiểu npm / Git. Với Docker env, CLI cũng giữ quy ước suy luận đường dẫn mặc định này, nhưng phần lớn trường hợp bạn không cần quan tâm thủ công đến nó
+- `source/` chủ yếu tương ứng với thư mục ứng dụng cục bộ của env kiểu npm / Git. Với Docker env, CLI cũng giữ quy ước suy luận đường dẫn mặc định này, nhưng phần lớn trường hợp bạn không cần quan tâm thủ công đến nó. Hãy đặc biệt chú ý khi nâng cấp: thư mục `source/` sẽ bị xóa rồi tải lại, vì vậy đừng đặt các tệp cần giữ lại ở đây
 - `storage/` dùng để lưu dữ liệu runtime, chẳng hạn như dữ liệu cơ sở dữ liệu tích hợp, plugin, log, v.v.
 - `.env` là tệp biến môi trường ứng dụng tùy chọn. Chỉ khi bạn cần tùy chỉnh biến môi trường thì mới cần thêm nó vào `<app-path>/.env`; nếu tệp này tồn tại, các nguồn cài đặt Docker, npm và Git sẽ mặc định đọc nó
 

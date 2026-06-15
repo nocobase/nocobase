@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Узел ручной обработки"
+title: "Workflow: Manual node"
+keywords: "Workflow"
+displayName: "Workflow: Manual node"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Используется для процессов, в которых часть решений принимается вручную.
+  Could be used for workflows which some of decisions are made by users.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Узел ручной обработки
+# Workflow: Manual node

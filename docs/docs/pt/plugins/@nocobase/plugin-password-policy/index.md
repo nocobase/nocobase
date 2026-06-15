@@ -1,15 +1,17 @@
 ---
-displayName: "Política de senha"
+title: "Password policy"
+keywords: "Security,Authentication"
+displayName: "Password policy"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Defina as regras de senha e a política de bloqueio de login para todos os usuários
+  Set the password rules and sign in lockout policy for all users
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Política de senha
+# Password policy
