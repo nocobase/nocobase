@@ -8,11 +8,15 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-import { ImportActionModel } from './ImportActionModel';
 
 export class PluginActionImportClient extends Plugin {
   async load() {
-    this.app.flowEngine.registerModels({ ImportActionModel });
+    this.app.flowEngine.registerModelLoaders({
+      ImportActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./ImportActionModel'),
+      },
+    });
   }
 }
 
