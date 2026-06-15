@@ -130,9 +130,14 @@ describe('TableColumnModel sorter settings', () => {
     const titleFieldStep = model.getFlow('tableColumnSettings')?.steps?.fieldNames as any;
     const setStepParams = vi.fn();
     const setProps = vi.fn();
+    const setFieldProps = vi.fn();
     const dispatchEvent = vi.fn();
+    const saveFieldModel = vi.fn();
     const targetCollectionField = {
-      getComponentProps: () => ({}),
+      getComponentProps: () => ({
+        format: 'hh:mm:ss a',
+        timeFormat: 'hh:mm:ss a',
+      }),
     };
 
     await titleFieldStep.beforeParamsSave(
@@ -156,8 +161,10 @@ describe('TableColumnModel sorter settings', () => {
           subModels: {
             field: {
               use: 'DisplayTextFieldModel',
+              setProps: setFieldProps,
               setStepParams,
               dispatchEvent,
+              save: saveFieldModel,
             },
           },
           setStepParams,
@@ -169,6 +176,90 @@ describe('TableColumnModel sorter settings', () => {
     );
 
     expect(setStepParams).toHaveBeenCalledWith('tableColumnSettings', 'model', { use: 'DisplayTextFieldModel' });
+    expect(setFieldProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        format: 'hh:mm:ss a',
+        timeFormat: 'hh:mm:ss a',
+        titleField: 'code',
+      }),
+    );
+    expect(setProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        format: 'hh:mm:ss a',
+        timeFormat: 'hh:mm:ss a',
+        titleField: 'code',
+      }),
+    );
+    expect(saveFieldModel).toHaveBeenCalled();
+  });
+
+  it('clears stale datetime display props when association title field changes to date only', async () => {
+    const engine = new FlowEngine();
+    const model = new TableColumnModel({ uid: 'table-column-title-field-date-only', flowEngine: engine } as any);
+    const titleFieldStep = model.getFlow('tableColumnSettings')?.steps?.fieldNames as any;
+    const setStepParams = vi.fn();
+    const setProps = vi.fn();
+    const setFieldProps = vi.fn();
+    const targetCollectionField = {
+      getComponentProps: () => ({
+        dateOnly: true,
+        showTime: false,
+      }),
+    };
+
+    await titleFieldStep.beforeParamsSave(
+      {
+        collectionField: {
+          isAssociationField: () => true,
+          targetCollection: {
+            name: 'departments',
+            getField: () => targetCollectionField,
+          },
+        },
+        model: {
+          collectionField: {
+            dataSourceKey: 'main',
+          },
+          constructor: {
+            getDefaultBindingByField: () => ({
+              modelName: 'DisplayDateTimeFieldModel',
+            }),
+          },
+          subModels: {
+            field: {
+              use: 'DisplayDateTimeFieldModel',
+              setProps: setFieldProps,
+              setStepParams,
+              dispatchEvent: vi.fn(),
+              save: vi.fn(),
+            },
+          },
+          setStepParams,
+          setProps,
+        },
+      },
+      { label: 'dateOnly' },
+      { label: 'time' },
+    );
+
+    expect(setFieldProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateOnly: true,
+        format: undefined,
+        showTime: false,
+        timeFormat: undefined,
+        titleField: 'dateOnly',
+      }),
+    );
+    expect(setProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateOnly: true,
+        format: undefined,
+        showTime: false,
+        timeFormat: undefined,
+        titleField: 'dateOnly',
+      }),
+    );
   });
 
   it('does not update field component setting when title field refresh fails', async () => {
@@ -203,8 +294,10 @@ describe('TableColumnModel sorter settings', () => {
             subModels: {
               field: {
                 use: 'DisplayTextFieldModel',
+                setProps: vi.fn(),
                 setStepParams: vi.fn(),
                 dispatchEvent: vi.fn().mockRejectedValue(new Error('beforeRender failed')),
+                save: vi.fn(),
               },
             },
             setStepParams,

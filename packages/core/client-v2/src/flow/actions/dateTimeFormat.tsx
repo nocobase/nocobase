@@ -12,12 +12,24 @@ import { defineAction, tExpr } from '@nocobase/flow-engine';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { DateFormatCom, ExpiresRadio } from '../components';
 
+const getDateTimeFormatCollectionField = (ctx) => {
+  const collectionField = ctx.model.context.collectionField;
+  const titleField = ctx.model.props?.titleField;
+  return collectionField?.targetCollection?.getField?.(titleField) || collectionField;
+};
+
+const isTimeCollectionField = (collectionField) =>
+  collectionField?.type === 'time' || collectionField?.interface === 'time';
+
+const isDateOnlyCollectionField = (collectionField) =>
+  collectionField?.type === 'dateOnly' || collectionField?.interface === 'dateOnly';
+
 export const dateTimeFormat = defineAction({
   title: tExpr('Date display format'),
   name: 'dateDisplayFormat',
   uiSchema: (ctx) => {
-    const { collectionField } = ctx.model.context as any;
-    const isTimeField = collectionField.type === 'time' || collectionField.interface === 'time';
+    const collectionField = getDateTimeFormatCollectionField(ctx);
+    const isTimeField = isTimeCollectionField(collectionField);
     const timeFormatField = {
       type: 'string',
       title: '{{t("Time format")}}',
@@ -43,7 +55,7 @@ export const dateTimeFormat = defineAction({
         (field) => {
           if (!isTimeField) {
             const { showTime, picker } = field.form.values || {};
-            field.hidden = !showTime || picker !== 'date';
+            field.hidden = isDateOnlyCollectionField(collectionField) || !showTime || picker !== 'date';
           }
         },
       ],
@@ -146,10 +158,11 @@ export const dateTimeFormat = defineAction({
             },
           },
           (field) => {
-            const { collectionField } = ctx.model.context as any;
+            const collectionField = getDateTimeFormatCollectionField(ctx);
             const { picker } = field.form.values || {};
-            field.hidden = collectionField.type === 'dateOnly' || picker !== 'date';
-            if (picker !== 'date') {
+            const isDateOnlyField = isDateOnlyCollectionField(collectionField);
+            field.hidden = isDateOnlyField || picker !== 'date';
+            if (isDateOnlyField || picker !== 'date') {
               field.value = false;
             }
           },
@@ -159,22 +172,24 @@ export const dateTimeFormat = defineAction({
     };
   },
   defaultParams: (ctx: any) => {
+    const collectionField = getDateTimeFormatCollectionField(ctx);
     const { showTime, dateFormat, format, timeFormat, picker }: any = {
-      ...ctx.model.context.collectionField.getComponentProps(),
+      ...collectionField?.getComponentProps?.(),
       ...ctx.model.props,
     };
-    const collectionField = ctx.model.context.collectionField;
-    const isTimeField = collectionField.type === 'time' || collectionField.interface === 'time';
+    const isTimeField = isTimeCollectionField(collectionField);
+    const isDateOnlyField = isDateOnlyCollectionField(collectionField);
     return {
       picker: picker || 'date',
       dateFormat: dateFormat || 'YYYY-MM-DD',
       timeFormat: timeFormat || (isTimeField ? format : undefined) || 'HH:mm:ss',
-      showTime,
+      showTime: isDateOnlyField ? false : showTime,
     };
   },
   handler(ctx: any, params) {
-    const { collectionField } = ctx.model.context as any;
-    const isTimeField = collectionField.type === 'time' || collectionField.interface === 'time';
+    const collectionField = getDateTimeFormatCollectionField(ctx);
+    const isTimeField = isTimeCollectionField(collectionField);
+    const isDateOnlyField = isDateOnlyCollectionField(collectionField);
     if (isTimeField) {
       const timeFormat = params?.timeFormat || params?.format || 'HH:mm:ss';
       ctx.model.setProps({
@@ -183,9 +198,11 @@ export const dateTimeFormat = defineAction({
         format: timeFormat,
       });
     } else {
+      const showTime = isDateOnlyField ? false : params?.showTime;
       ctx.model.setProps({
         ...params,
-        format: params?.showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
+        showTime,
+        format: showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
       });
     }
   },

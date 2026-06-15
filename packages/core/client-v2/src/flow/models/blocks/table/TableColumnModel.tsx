@@ -128,6 +128,15 @@ export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
   );
 };
 
+const resetDateTimeDisplayProps = {
+  dateOnly: undefined,
+  dateFormat: undefined,
+  format: undefined,
+  picker: undefined,
+  showTime: undefined,
+  timeFormat: undefined,
+};
+
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
@@ -539,21 +548,33 @@ TableColumnModel.registerFlow({
           typeof binding?.defaultProps === 'function'
             ? binding.defaultProps(ctx, targetCollectionField)
             : binding?.defaultProps;
+        const componentProps = targetCollectionField.getComponentProps?.() || {};
+        const nextFieldProps = {
+          ...(defaultProps || {}),
+          ...componentProps,
+          titleField: params.label,
+        };
+        const nextColumnProps = {
+          ...resetDateTimeDisplayProps,
+          ...nextFieldProps,
+        };
         if (targetUse && targetUse !== currentUse) {
           await rebuildFieldSubModel({
             parentModel: ctx.model as any,
             targetUse,
-            defaultProps,
+            defaultProps: nextFieldProps,
             fieldSettingsInit,
           });
         } else if (fieldModel) {
+          fieldModel.setProps(nextColumnProps);
           fieldModel.setStepParams('fieldSettings', 'init', fieldSettingsInit);
           await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+          await fieldModel.save();
         }
         if (targetUse) {
           ctx.model.setStepParams('tableColumnSettings', 'model', { use: targetUse });
         }
-        ctx.model.setProps(targetCollectionField.getComponentProps());
+        ctx.model.setProps(nextColumnProps);
       },
       defaultParams: (ctx: any) => {
         const titleField = ctx.model?.context?.collectionField?.targetCollectionTitleFieldName;

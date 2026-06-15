@@ -48,6 +48,164 @@ describe('dateTimeFormat', () => {
     });
   });
 
+  it('uses the association title field when deciding the format schema', () => {
+    const ctx = {
+      model: {
+        props: {
+          titleField: 'shipmentsTime',
+        },
+        context: {
+          collectionField: {
+            type: 'belongsTo',
+            targetCollection: {
+              getField: (name) =>
+                name === 'shipmentsTime'
+                  ? {
+                      type: 'time',
+                      interface: 'time',
+                    }
+                  : null,
+            },
+          },
+        },
+      },
+    };
+
+    expect(Object.keys(dateTimeFormat.uiSchema(ctx))).toEqual(['timeFormat']);
+  });
+
+  it('saves association title time field format as a time format', () => {
+    const setProps = vi.fn();
+    const ctx = {
+      model: {
+        props: {
+          titleField: 'shipmentsTime',
+        },
+        context: {
+          collectionField: {
+            type: 'belongsTo',
+            targetCollection: {
+              getField: (name) =>
+                name === 'shipmentsTime'
+                  ? {
+                      type: 'time',
+                      interface: 'time',
+                    }
+                  : null,
+            },
+          },
+        },
+        setProps,
+      },
+    };
+
+    dateTimeFormat.handler(ctx, { timeFormat: 'hh:mm:ss a' });
+
+    expect(setProps).toHaveBeenCalledWith({
+      timeFormat: 'hh:mm:ss a',
+      format: 'hh:mm:ss a',
+    });
+  });
+
+  it('hides time format for association title date-only fields', () => {
+    const ctx = {
+      model: {
+        props: {
+          titleField: 'shipmentsDateOnly',
+          showTime: true,
+        },
+        context: {
+          collectionField: {
+            type: 'belongsTo',
+            targetCollection: {
+              getField: (name) =>
+                name === 'shipmentsDateOnly'
+                  ? {
+                      type: 'dateOnly',
+                      interface: 'date',
+                      getComponentProps: () => ({
+                        dateOnly: true,
+                        showTime: false,
+                      }),
+                    }
+                  : null,
+            },
+          },
+        },
+      },
+    };
+    const schema = dateTimeFormat.uiSchema(ctx);
+    const timeFormatField: any = schema.timeFormat;
+    const showTimeField: any = schema.showTime;
+    const timeFormatState = {
+      hidden: false,
+      form: {
+        values: {
+          picker: 'date',
+          showTime: true,
+        },
+      },
+    };
+    const showTimeState = {
+      hidden: false,
+      value: true,
+      form: {
+        values: {
+          picker: 'date',
+        },
+      },
+    };
+
+    timeFormatField['x-reactions'][0](timeFormatState);
+    showTimeField['x-reactions'][1](showTimeState);
+
+    expect(timeFormatState.hidden).toBe(true);
+    expect(showTimeState.hidden).toBe(true);
+    expect(showTimeState.value).toBe(false);
+    expect(dateTimeFormat.defaultParams(ctx)).toMatchObject({
+      showTime: false,
+    });
+  });
+
+  it('saves association title date-only field format without time even when params contain showTime', () => {
+    const setProps = vi.fn();
+    const ctx = {
+      model: {
+        props: {
+          titleField: 'shipmentsDateOnly',
+        },
+        context: {
+          collectionField: {
+            type: 'belongsTo',
+            targetCollection: {
+              getField: (name) =>
+                name === 'shipmentsDateOnly'
+                  ? {
+                      type: 'dateOnly',
+                      interface: 'date',
+                    }
+                  : null,
+            },
+          },
+        },
+        setProps,
+      },
+    };
+
+    dateTimeFormat.handler(ctx, {
+      dateFormat: 'YYYY-MM-DD',
+      showTime: true,
+      timeFormat: 'HH:mm:ss',
+    });
+
+    expect(setProps).toHaveBeenCalledWith({
+      dateFormat: 'YYYY-MM-DD',
+      showTime: false,
+      timeFormat: 'HH:mm:ss',
+      format: 'YYYY-MM-DD',
+    });
+  });
+
   it('uses format as the default time format when timeFormat is missing', () => {
     const ctx = {
       model: {
