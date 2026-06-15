@@ -14,8 +14,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   fieldLinkageRules,
   linkageAssignField,
+  linkageSetDetailsFieldState,
+  linkageSetFieldState,
   linkageSetFieldProps,
   subFormFieldLinkageRules,
+  subFormLinkageSetFieldState,
   subFormLinkageSetFieldProps,
 } from '../linkageRules';
 
@@ -1138,5 +1141,473 @@ describe('linkageSetFieldProps action', () => {
       state: undefined,
       selectedOptions: [],
     });
+  });
+});
+
+describe('field state rule actions', () => {
+  it('should set a field state when the item condition matches', () => {
+    const setProps = vi.fn();
+    const fieldModel: any = {
+      uid: 'name-field',
+      props: { label: 'Name' },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'name' };
+        }
+      }),
+    };
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+      model: {
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+    };
+
+    linkageSetFieldState.handler(ctx, {
+      value: [
+        {
+          key: 'state-1',
+          enable: true,
+          targetPath: 'name',
+          state: 'disabled',
+          condition: {
+            logic: '$and',
+            items: [{ path: '{{ ctx.formValues.status }}', operator: '$eq', value: 'active' }],
+          },
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).toHaveBeenCalledWith(fieldModel, { disabled: true });
+    expect(ctx.app.jsonLogic.apply).toHaveBeenCalledWith({
+      $eq: ['{{ ctx.formValues.status }}', 'active'],
+    });
+  });
+
+  it('should set a nested association subfield state through targetPath', () => {
+    const setProps = vi.fn();
+    const roleNameFieldModel: any = {
+      uid: 'role-name-field',
+      props: { label: 'Role name' },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'roles.name' };
+        }
+      }),
+    };
+    const rolesFieldModel: any = {
+      uid: 'roles-field',
+      props: { label: 'Roles' },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'roles' };
+        }
+      }),
+      subModels: {
+        field: {
+          subModels: {
+            grid: {
+              subModels: {
+                items: [roleNameFieldModel],
+              },
+            },
+          },
+        },
+      },
+    };
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+      model: {
+        subModels: {
+          grid: {
+            subModels: {
+              items: [rolesFieldModel],
+            },
+          },
+        },
+      },
+    };
+
+    linkageSetFieldState.handler(ctx, {
+      value: [
+        {
+          key: 'state-1',
+          enable: true,
+          targetPath: 'roles.name',
+          state: 'disabled',
+          condition: { logic: '$and', items: [] },
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).toHaveBeenCalledWith(roleNameFieldModel, { disabled: true });
+  });
+
+  it('should skip a field state item when the item condition does not match', () => {
+    const setProps = vi.fn();
+    const fieldModel: any = {
+      uid: 'name-field',
+      props: { label: 'Name' },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'name' };
+        }
+      }),
+    };
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => false),
+        },
+      },
+      model: {
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+    };
+
+    linkageSetFieldState.handler(ctx, {
+      value: [
+        {
+          key: 'state-1',
+          enable: true,
+          targetPath: 'name',
+          state: 'disabled',
+          condition: {
+            logic: '$and',
+            items: [{ path: '{{ ctx.formValues.status }}', operator: '$eq', value: 'active' }],
+          },
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).not.toHaveBeenCalled();
+  });
+
+  it('should clear form value when a field is hidden by a field state rule', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const form = {
+      getFieldValue: vi.fn(() => '123'),
+      setFieldValue: vi.fn(),
+    };
+    const fieldModel: any = {
+      uid: 'name-field',
+      hidden: false,
+      context: { form },
+      props: {
+        label: 'Name',
+      },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'name' };
+        }
+      }),
+      setProps(key: any, value?: any) {
+        if (typeof key === 'string') {
+          this.props[key] = value;
+        } else {
+          this.props = { ...this.props, ...key };
+        }
+      },
+    };
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+      model: {
+        context: { form },
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+      setFormValues,
+      getAction: (name: string) => (name === 'linkageSetFieldState' ? linkageSetFieldState : null),
+      resolveJsonTemplate: vi.fn(async (value) => value),
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-1',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              key: 'action-1',
+              name: 'linkageSetFieldState',
+              params: {
+                value: [
+                  {
+                    key: 'state-1',
+                    enable: true,
+                    targetPath: 'name',
+                    state: 'hidden',
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fieldModel.hidden).toBe(true);
+    expect(setFormValues).toHaveBeenCalledWith(
+      [{ path: ['name'], value: undefined }],
+      expect.objectContaining({ source: 'linkage' }),
+    );
+    expect(form.setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('should keep form value when a field is hidden with reserved value by a field state rule', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const form = {
+      getFieldValue: vi.fn(() => '123'),
+      setFieldValue: vi.fn(),
+    };
+    const fieldModel: any = {
+      uid: 'name-field',
+      hidden: false,
+      context: { form },
+      props: {
+        label: 'Name',
+      },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'name' };
+        }
+      }),
+      setProps(key: any, value?: any) {
+        if (typeof key === 'string') {
+          this.props[key] = value;
+        } else {
+          this.props = { ...this.props, ...key };
+        }
+      },
+    };
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+      model: {
+        context: { form },
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+      setFormValues,
+      getAction: (name: string) => (name === 'linkageSetFieldState' ? linkageSetFieldState : null),
+      resolveJsonTemplate: vi.fn(async (value) => value),
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-1',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              key: 'action-1',
+              name: 'linkageSetFieldState',
+              params: {
+                value: [
+                  {
+                    key: 'state-1',
+                    enable: true,
+                    targetPath: 'name',
+                    state: 'hiddenReservedValue',
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fieldModel.hidden).toBe(false);
+    expect(fieldModel.props.hidden).toBe(true);
+    expect(setFormValues).not.toHaveBeenCalled();
+    expect(form.setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('should limit options through a field state rule', () => {
+    const setProps = vi.fn();
+    const selectedOptions = [{ label: 'Draft', value: 'draft' }];
+    const fieldComponentModel: any = {
+      uid: 'status-field-component',
+    };
+    const fieldModel: any = {
+      uid: 'status-field',
+      props: { label: 'Status' },
+      collectionField: {
+        interface: 'select',
+        uiSchema: {
+          enum: [
+            { label: 'Draft', value: 'draft' },
+            { label: 'Published', value: 'published' },
+          ],
+        },
+      },
+      subModels: {
+        field: fieldComponentModel,
+      },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'status' };
+        }
+      }),
+    };
+    const ctx: any = {
+      model: {
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+    };
+
+    linkageSetFieldState.handler(ctx, {
+      value: [
+        {
+          key: 'state-1',
+          enable: true,
+          targetPath: 'status',
+          state: 'limitOptions',
+          selectedOptions,
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).toHaveBeenCalledWith(fieldComponentModel, { options: selectedOptions });
+  });
+
+  it('should set a subform fork field state through a field state rule', () => {
+    const setProps = vi.fn();
+    const forkModel: any = {
+      uid: 'name-field',
+      isFork: true,
+    };
+    const formItemModel: any = {
+      uid: 'name-field',
+      props: { label: 'Name' },
+      getFork: vi.fn(() => forkModel),
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'name' };
+        }
+      }),
+    };
+    const ctx: any = {
+      model: {
+        context: {
+          fieldKey: ['items:0'],
+        },
+        subModels: {
+          grid: {
+            subModels: {
+              items: [formItemModel],
+            },
+          },
+        },
+      },
+      engine: {
+        getModel: vi.fn(() => formItemModel),
+      },
+    };
+
+    subFormLinkageSetFieldState.handler(ctx, {
+      value: [
+        {
+          key: 'state-1',
+          enable: true,
+          targetPath: 'name',
+          state: 'disabled',
+        },
+      ],
+      setProps,
+    });
+
+    expect(formItemModel.getFork).toHaveBeenCalledWith('items:0:name-field');
+    expect(setProps).toHaveBeenCalledWith(forkModel, { disabled: true });
+  });
+
+  it('should set a details field state through a field state rule', () => {
+    const setProps = vi.fn();
+    const fieldModel: any = {
+      uid: 'name-field',
+      props: { label: 'Name' },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'name' };
+        }
+      }),
+    };
+    const ctx: any = {
+      model: {
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+    };
+
+    linkageSetDetailsFieldState.handler(ctx, {
+      value: [
+        {
+          key: 'state-1',
+          enable: true,
+          targetPath: 'name',
+          state: 'hidden',
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).toHaveBeenCalledWith(fieldModel, { hiddenModel: true });
   });
 });

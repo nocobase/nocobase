@@ -63,4 +63,64 @@ describe('modelUtils', () => {
     const targetPath = buildCustomFieldTargetPath('custom_age');
     expect(findFormItemModelByFieldPath(root, targetPath)).toBe(customItem as any);
   });
+
+  it('finds the root model itself when its field path matches', () => {
+    const root = {
+      uid: 'role-name-row-fork',
+      fieldPath: 'roles.name',
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'roles.name' };
+        }
+        return undefined;
+      },
+      subModels: {
+        field: {},
+      },
+    };
+
+    expect(findFormItemModelByFieldPath(root, 'roles.name')).toBe(root as any);
+  });
+
+  it('finds nested subtable columns by field path', () => {
+    const roleNameColumn = {
+      uid: 'role-name-column',
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'roles.roleName' };
+        }
+        return undefined;
+      },
+      subModels: {
+        field: {},
+      },
+    };
+    const rolesItem = {
+      uid: 'roles-field',
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'roles' };
+        }
+        return undefined;
+      },
+      subModels: {
+        field: {
+          subModels: {
+            columns: [roleNameColumn],
+          },
+        },
+      },
+    };
+    const root = {
+      subModels: {
+        grid: {
+          subModels: {
+            items: [rolesItem],
+          },
+        },
+      },
+    };
+
+    expect(findFormItemModelByFieldPath(root, 'roles.roleName')).toBe(roleNameColumn as any);
+  });
 });

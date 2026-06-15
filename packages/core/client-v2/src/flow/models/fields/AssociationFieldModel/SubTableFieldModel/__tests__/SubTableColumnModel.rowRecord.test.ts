@@ -7,9 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { DisplayTitleFieldModel } from '../../../DisplayTitleFieldModel';
+import { InputFieldModel } from '../../../InputFieldModel';
+import { SelectFieldModel } from '../../../SelectFieldModel';
 import { titleField } from '../../../../../actions/titleField';
 import {
   SubTableColumnModel,
@@ -20,6 +24,23 @@ import {
   getSubTableColumnReadPrettyFieldProps,
   isSubTableColumnReadPretty,
 } from '../SubTableColumnModel';
+
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, any>;
+  const ReactModule = await import('react');
+  return {
+    ...actual,
+    FormItem: ({ children, disabled }: any) =>
+      ReactModule.createElement(
+        'div',
+        {
+          'data-testid': 'subtable-form-item',
+          'data-disabled': String(!!disabled),
+        },
+        typeof children === 'function' ? children() : children,
+      ),
+  };
+});
 
 function createMockCollection(name: string, fields: any[] = []) {
   const collection: any = {
@@ -182,6 +203,350 @@ describe('SubTableColumnModel row record helpers', () => {
       parentItem: {
         value: { id: 1, nickname: 'Alice' },
       },
+    });
+  });
+
+  it('updates editable cell disabled state from row fork props', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ SubTableColumnModel, InputFieldModel });
+
+    const roleNameField = {
+      name: 'roleName',
+      title: 'Role name',
+      type: 'string',
+      interface: 'input',
+      getComponentProps: () => ({}),
+    };
+    const rolesCollection = createMockCollection('roles', [roleNameField]);
+    const rolesField = {
+      name: 'roles',
+      title: 'Roles',
+      type: 'hasMany',
+      interface: 'o2m',
+      target: 'roles',
+      targetCollection: rolesCollection,
+      isAssociationField: () => true,
+    };
+    const rowRecord = { roleName: 'Role 1', __is_new__: true };
+    const form = {
+      getFieldValue: vi.fn((path: any) => {
+        if (JSON.stringify(path) === JSON.stringify(['roles', 0])) {
+          return rowRecord;
+        }
+      }),
+    };
+    const blockModel: any = engine.createModel({ use: 'FlowModel', uid: 'form-block-cell', structure: {} as any });
+    blockModel.context.defineProperty('form', { value: form });
+
+    const subTableFieldModel: any = engine.createModel({
+      use: 'FlowModel',
+      uid: 'roles-table-cell',
+      structure: {} as any,
+    });
+    subTableFieldModel.collection = rolesCollection;
+    subTableFieldModel.fieldPath = 'roles';
+    subTableFieldModel.setProps({ value: [rowRecord] });
+    subTableFieldModel.context.defineProperty('collectionField', { value: rolesField });
+    subTableFieldModel.context.defineProperty('fieldPath', { value: 'roles' });
+    subTableFieldModel.context.defineProperty('blockModel', { value: blockModel });
+
+    const column: any = engine.createModel({
+      use: 'SubTableColumnModel',
+      uid: 'roles-role-name-column',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'roles.roleName',
+          },
+        },
+      },
+      structure: {} as any,
+    });
+    column.setParent(subTableFieldModel);
+    column.context.defineProperty('collectionField', { value: roleNameField });
+    column.context.defineProperty('blockModel', { value: blockModel });
+    column.setProps({ dataIndex: 'roleName', name: 'roleName', title: 'Role name', width: 200 });
+    column.setSubModel('field', {
+      use: InputFieldModel,
+      uid: 'roles-role-name-input',
+    });
+
+    const renderCell = column.renderItem();
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        renderCell({
+          value: 'Role 1',
+          id: 'field-roleName-role-0',
+          rowIdx: 0,
+          record: rowRecord,
+          parentFieldIndex: [],
+        }),
+      ),
+    );
+
+    expect(screen.getByTestId('subtable-form-item')).toHaveAttribute('data-disabled', 'false');
+    const [rowFork] = Array.from(column.forks ?? []) as any[];
+    expect(rowFork).toBeDefined();
+    const [fieldFork] = Array.from(column.subModels.field.forks ?? []) as any[];
+    expect(fieldFork).toBeDefined();
+    expect(fieldFork.props.disabled).toBeUndefined();
+
+    act(() => {
+      rowFork.setProps({ disabled: true });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('subtable-form-item')).toHaveAttribute('data-disabled', 'true');
+      expect(fieldFork.props.disabled).toBe(true);
+    });
+  });
+
+  it('keeps the row cell mounted while row-scoped hidden state hides the inner field fork', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ SubTableColumnModel, InputFieldModel });
+
+    const roleNameField = {
+      name: 'roleName',
+      title: 'Role name',
+      type: 'string',
+      interface: 'input',
+      getComponentProps: () => ({}),
+    };
+    const rolesCollection = createMockCollection('roles', [roleNameField]);
+    const rolesField = {
+      name: 'roles',
+      title: 'Roles',
+      type: 'hasMany',
+      interface: 'o2m',
+      target: 'roles',
+      targetCollection: rolesCollection,
+      isAssociationField: () => true,
+    };
+    const rowRecord = { roleName: 'Role 1', __is_new__: true };
+    const form = {
+      getFieldValue: vi.fn((path: any) => {
+        if (JSON.stringify(path) === JSON.stringify(['roles', 0])) {
+          return rowRecord;
+        }
+      }),
+    };
+    const blockModel: any = engine.createModel({ use: 'FlowModel', uid: 'form-block-hidden', structure: {} as any });
+    blockModel.context.defineProperty('form', { value: form });
+
+    const subTableFieldModel: any = engine.createModel({
+      use: 'FlowModel',
+      uid: 'roles-table-hidden',
+      structure: {} as any,
+    });
+    subTableFieldModel.collection = rolesCollection;
+    subTableFieldModel.fieldPath = 'roles';
+    subTableFieldModel.setProps({ value: [rowRecord] });
+    subTableFieldModel.context.defineProperty('collectionField', { value: rolesField });
+    subTableFieldModel.context.defineProperty('fieldPath', { value: 'roles' });
+    subTableFieldModel.context.defineProperty('blockModel', { value: blockModel });
+
+    const column: any = engine.createModel({
+      use: 'SubTableColumnModel',
+      uid: 'roles-role-name-hidden-column',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'roles.roleName',
+          },
+        },
+      },
+      structure: {} as any,
+    });
+    column.setParent(subTableFieldModel);
+    column.context.defineProperty('collectionField', { value: roleNameField });
+    column.context.defineProperty('blockModel', { value: blockModel });
+    column.setProps({ dataIndex: 'roleName', name: 'roleName', title: 'Role name', width: 200 });
+    column.setSubModel('field', {
+      use: InputFieldModel,
+      uid: 'roles-role-name-hidden-input',
+    });
+
+    const renderCell = column.renderItem();
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        renderCell({
+          value: 'Role 1',
+          id: 'field-roleName-hidden-0',
+          rowIdx: 0,
+          record: rowRecord,
+          parentFieldIndex: [],
+        }),
+      ),
+    );
+
+    expect(screen.getByTestId('subtable-form-item')).toBeInTheDocument();
+    const [rowFork] = Array.from(column.forks ?? []) as any[];
+    expect(rowFork).toBeDefined();
+    const [fieldFork] = Array.from(column.subModels.field.forks ?? []) as any[];
+    expect(fieldFork).toBeDefined();
+
+    act(() => {
+      rowFork.setProps({ hidden: true });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('subtable-form-item')).toBeInTheDocument();
+      expect(fieldFork.props.hidden).toBe(true);
+    });
+    expect(rowFork.hidden).toBe(false);
+    expect(rowFork.disposed).toBe(false);
+
+    act(() => {
+      rowFork.setProps({ hidden: false });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('subtable-form-item')).toBeInTheDocument();
+      expect(fieldFork.props.hidden).toBe(false);
+    });
+    expect(rowFork.disposed).toBe(false);
+  });
+
+  it('keeps row-scoped option limits isolated to the matching subtable row field fork', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ SubTableColumnModel, SelectFieldModel });
+
+    const fullOptions = [
+      { label: 'Draft', value: 'draft' },
+      { label: 'Published', value: 'published' },
+    ];
+    const limitedOptions = [{ label: 'Draft', value: 'draft' }];
+    const statusField = {
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      interface: 'select',
+      uiSchema: {
+        enum: fullOptions,
+      },
+      getComponentProps: () => ({ options: fullOptions }),
+    };
+    const rolesCollection = createMockCollection('roles', [statusField]);
+    const rolesField = {
+      name: 'roles',
+      title: 'Roles',
+      type: 'hasMany',
+      interface: 'o2m',
+      target: 'roles',
+      targetCollection: rolesCollection,
+      isAssociationField: () => true,
+    };
+    const rows = [
+      { status: 'draft', __is_new__: true },
+      { status: 'published', __is_new__: true },
+    ];
+    const form = {
+      getFieldValue: vi.fn((path: any) => {
+        if (JSON.stringify(path) === JSON.stringify(['roles', 0])) return rows[0];
+        if (JSON.stringify(path) === JSON.stringify(['roles', 1])) return rows[1];
+      }),
+    };
+    const blockModel: any = engine.createModel({ use: 'FlowModel', uid: 'form-block-options', structure: {} as any });
+    blockModel.context.defineProperty('form', { value: form });
+
+    const subTableFieldModel: any = engine.createModel({
+      use: 'FlowModel',
+      uid: 'roles-table-options',
+      structure: {} as any,
+    });
+    subTableFieldModel.collection = rolesCollection;
+    subTableFieldModel.fieldPath = 'roles';
+    subTableFieldModel.setProps({ value: rows });
+    subTableFieldModel.context.defineProperty('collectionField', { value: rolesField });
+    subTableFieldModel.context.defineProperty('fieldPath', { value: 'roles' });
+    subTableFieldModel.context.defineProperty('blockModel', { value: blockModel });
+
+    const column: any = engine.createModel({
+      use: 'SubTableColumnModel',
+      uid: 'roles-status-column',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'roles.status',
+          },
+        },
+      },
+      structure: {} as any,
+    });
+    column.setParent(subTableFieldModel);
+    column.context.defineProperty('collectionField', { value: statusField });
+    column.context.defineProperty('blockModel', { value: blockModel });
+    column.setProps({ dataIndex: 'status', name: 'status', title: 'Status', width: 200 });
+    column.setSubModel('field', {
+      use: SelectFieldModel,
+      uid: 'roles-status-select',
+      props: {
+        options: fullOptions,
+      },
+    });
+
+    const renderCell = column.renderItem();
+    render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine },
+        React.createElement(
+          React.Fragment,
+          null,
+          renderCell({
+            value: 'draft',
+            id: 'field-status-role-0',
+            rowIdx: 0,
+            record: rows[0],
+            parentFieldIndex: [],
+          }),
+          renderCell({
+            value: 'published',
+            id: 'field-status-role-1',
+            rowIdx: 1,
+            record: rows[1],
+            parentFieldIndex: [],
+          }),
+        ),
+      ),
+    );
+
+    const rowForks = Array.from(column.forks ?? []) as any[];
+    const row0Fork = rowForks.find((fork) => JSON.stringify(fork.context.fieldIndex) === JSON.stringify(['roles:0']));
+    const row1Fork = rowForks.find((fork) => JSON.stringify(fork.context.fieldIndex) === JSON.stringify(['roles:1']));
+    expect(row0Fork).toBeDefined();
+    expect(row1Fork).toBeDefined();
+
+    act(() => {
+      row0Fork.setProps({ __rowScopedFieldOptions: limitedOptions });
+    });
+
+    const fieldForks = () => Array.from(column.subModels.field.forks ?? []) as any[];
+    await waitFor(() => {
+      const row0FieldFork = fieldForks().find(
+        (fork) => JSON.stringify(fork.context.fieldIndex) === JSON.stringify(['roles:0']),
+      );
+      expect(row0FieldFork?.props.options).toEqual(limitedOptions);
+    });
+
+    const row1FieldFork = fieldForks().find(
+      (fork) => JSON.stringify(fork.context.fieldIndex) === JSON.stringify(['roles:1']),
+    );
+    expect(row1FieldFork?.props.options).toEqual(fullOptions);
+
+    act(() => {
+      row0Fork.setProps({ __rowScopedFieldOptions: undefined });
+    });
+
+    await waitFor(() => {
+      const row0FieldFork = fieldForks().find(
+        (fork) => JSON.stringify(fork.context.fieldIndex) === JSON.stringify(['roles:0']),
+      );
+      expect(row0FieldFork?.props.options).toEqual(fullOptions);
     });
   });
 

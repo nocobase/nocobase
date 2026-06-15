@@ -53,13 +53,70 @@ export function isSubTableColumnFieldComponentContext(ctx) {
   return (ctx?.model?.constructor as any)?.fieldComponentContext === SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT;
 }
 
+const ROW_SCOPED_FIELD_OPTIONS_PROP = '__rowScopedFieldOptions';
+const ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP = '__rowScopedClearValueOnHidden';
+
+const cloneOptionList = (options: any[]) =>
+  options.map((option) => (option && typeof option === 'object' ? { ...option } : option));
+
+function clearForkLocalProp(model: any, prop: string) {
+  if (!model?.isFork || !model?.localProps || !Object.prototype.hasOwnProperty.call(model.localProps, prop)) {
+    return;
+  }
+  const next = { ...model.localProps };
+  delete next[prop];
+  model.localProps = next;
+}
+
+function applyRowScopedFieldOptionsToFork(fieldFork: any, options: unknown) {
+  if (!fieldFork?.isFork) return;
+
+  if (Array.isArray(options)) {
+    fieldFork.__subTableRowScopedOptionsApplied = true;
+    fieldFork.setProps({ options: cloneOptionList(options) });
+    return;
+  }
+
+  if (!fieldFork.__subTableRowScopedOptionsApplied) return;
+  fieldFork.__subTableRowScopedOptionsApplied = false;
+  clearForkLocalProp(fieldFork, 'options');
+}
+
+const ROW_SCOPED_FIELD_STATE_PROP_KEYS = ['disabled', 'required', 'hidden', 'hiddenModel'];
+
+function syncRowScopedFieldStatePropsToFork(fieldFork: any, fieldStateProps: Record<string, any>, disabled: boolean) {
+  if (!fieldFork?.isFork) return;
+
+  const nextProps: Record<string, any> = {};
+  for (const key of ROW_SCOPED_FIELD_STATE_PROP_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(fieldStateProps, key)) continue;
+    nextProps[key] = key === 'disabled' ? disabled : fieldStateProps[key];
+  }
+
+  if (Object.keys(nextProps).length) {
+    fieldFork.__subTableRowScopedStatePropsApplied = true;
+    fieldFork.setProps(nextProps);
+    return;
+  }
+
+  if (!fieldFork.__subTableRowScopedStatePropsApplied) return;
+  fieldFork.__subTableRowScopedStatePropsApplied = false;
+  for (const key of ROW_SCOPED_FIELD_STATE_PROP_KEYS) {
+    clearForkLocalProp(fieldFork, key);
+  }
+}
+
 const SubTableRowRuleBinder: React.FC<{ model: any }> = ({ model }) => {
   React.useEffect(() => {
     const emitter = model?.flowEngine?.emitter;
     if (!emitter) return;
-    void emitter.emitAsync('model:mounted', { uid: model?.uid, model });
+    emitter.emitAsync('model:mounted', { uid: model?.uid, model }).catch((error) => {
+      console.warn('[SubTableColumnModel] Failed to emit row fork mounted event', error);
+    });
     return () => {
-      void emitter.emitAsync('model:unmounted', { uid: model?.uid, model });
+      emitter.emitAsync('model:unmounted', { uid: model?.uid, model }).catch((error) => {
+        console.warn('[SubTableColumnModel] Failed to emit row fork unmounted event', error);
+      });
       model?.dispose?.();
     };
   }, [model]);
@@ -333,132 +390,134 @@ interface CellProps {
   commitOnChange?: boolean;
 }
 
-const MemoCell: React.FC<CellProps> = React.memo(
+const MemoCell: React.FC<CellProps> = observer(
   ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width, commitOnChange }) => {
     const isNew = record?.__is_new__;
+    const effectiveProps = rowFork ? { ...parent.props, ...rowFork.props } : parent.props;
+    const {
+      [ROW_SCOPED_FIELD_OPTIONS_PROP]: rowScopedFieldOptions,
+      [ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP]: _rowScopedClearValueOnHidden,
+      ...fieldStateProps
+    } = effectiveProps;
+    const disabled =
+      fieldStateProps.disabled ||
+      (!isNew && fieldStateProps.aclDisabled) ||
+      (isNew && fieldStateProps.aclCreateDisabled);
+
+    const content =
+      rowFork?.hidden && !parent.context?.flowSettingsEnabled ? null : (
+        <div
+          style={{
+            width,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+          title={value}
+          className={css`
+            .ant-form-item-explain-error {
+              white-space: break-spaces;
+            }
+            .edit-icon {
+              position: absolute;
+              display: none;
+              color: #1890ff;
+              margin-left: 8px;
+              cursor: pointer;
+              z-index: 100;
+              top: 50%;
+              right: 8px;
+              transform: translateY(-50%);
+            }
+            &:hover {
+              background: rgba(24, 144, 255, 0.1) !important;
+            }
+            &:hover .edit-icon {
+              display: inline-flex;
+            }
+          `}
+        >
+          {parent.mapSubModels('field', (action: FieldModel) => {
+            const fieldPath = action.context.fieldPath.split('.');
+            const namePath = fieldPath.pop();
+
+            const fork: any = action.createFork({}, `${id}`);
+            fork.context.defineProperty('currentObject', { get: () => record });
+            if (rowFork) {
+              const itemOptions = rowFork.context.getPropertyOptions?.('item');
+              const { value: _value, ...itemOptionsWithoutValue } = (itemOptions || {}) as any;
+              fork.context.defineProperty('item', {
+                ...itemOptionsWithoutValue,
+                get: () => rowFork.context.item,
+                cache: false,
+              });
+              fork.context.defineProperty('fieldIndex', {
+                get: () => rowFork.context.fieldIndex,
+                cache: false,
+              });
+            } else {
+              fork.context.defineProperty('item', {
+                get: () => {
+                  const list = (parent as any)?.parent?.props?.value;
+                  const length = Array.isArray(list) ? list.length : undefined;
+                  return {
+                    index: rowIdx,
+                    length,
+                    __is_new__: isNew,
+                    __is_stored__: record?.__is_stored__,
+                    value: record,
+                  };
+                },
+                cache: false,
+              });
+            }
+            applyRowScopedFieldOptionsToFork(fork, rowScopedFieldOptions);
+            syncRowScopedFieldStatePropsToFork(fork, fieldStateProps, disabled);
+
+            if (isSubTableColumnReadPretty(parent)) {
+              fork.setProps(getSubTableColumnReadPrettyFieldProps(parent, value));
+              return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
+            }
+
+            if (fieldStateProps.aclViewDisabled && !isNew) return null;
+
+            return (
+              <FormItem
+                {...fieldStateProps}
+                key={id}
+                name={buildDynamicNamePath([...fieldPath, rowIdx, namePath], parentFieldIndex)}
+                style={{ marginBottom: 0 }}
+                showLabel={false}
+                disabled={disabled}
+              >
+                {fork.constructor.isLargeField ? (
+                  <LargeFieldEdit
+                    model={fork}
+                    params={{
+                      fieldPath: [(parent as any).context.fieldPath, rowIdx, namePath],
+                      index: id,
+                    }}
+                    defaultValue={value}
+                    disabled={disabled}
+                  />
+                ) : (
+                  <FieldModelRendererOptimize
+                    model={fork}
+                    id={[(parent as any).context.fieldPath, rowIdx]}
+                    commitOnChange={commitOnChange}
+                  />
+                )}
+              </FormItem>
+            );
+          })}
+        </div>
+      );
+
     return (
-      <div
-        style={{
-          width,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-        title={value}
-        className={css`
-          .ant-form-item-explain-error {
-            white-space: break-spaces;
-          }
-          .edit-icon {
-            position: absolute;
-            display: none;
-            color: #1890ff;
-            margin-left: 8px;
-            cursor: pointer;
-            z-index: 100;
-            top: 50%;
-            right: 8px;
-            transform: translateY(-50%);
-          }
-          &:hover {
-            background: rgba(24, 144, 255, 0.1) !important;
-          }
-          &:hover .edit-icon {
-            display: inline-flex;
-          }
-        `}
-      >
+      <>
         <SubTableRowRuleBinder model={rowFork} />
-        {parent.mapSubModels('field', (action: FieldModel) => {
-          const fieldPath = action.context.fieldPath.split('.');
-          const namePath = fieldPath.pop();
-
-          const fork: any = action.createFork({}, `${id}`);
-          fork.context.defineProperty('currentObject', { get: () => record });
-          if (rowFork) {
-            const itemOptions = rowFork.context.getPropertyOptions?.('item');
-            const { value: _value, ...itemOptionsWithoutValue } = (itemOptions || {}) as any;
-            fork.context.defineProperty('item', {
-              ...itemOptionsWithoutValue,
-              get: () => rowFork.context.item,
-              cache: false,
-            });
-            fork.context.defineProperty('fieldIndex', {
-              get: () => rowFork.context.fieldIndex,
-              cache: false,
-            });
-          } else {
-            fork.context.defineProperty('item', {
-              get: () => {
-                const list = (parent as any)?.parent?.props?.value;
-                const length = Array.isArray(list) ? list.length : undefined;
-                return {
-                  index: rowIdx,
-                  length,
-                  __is_new__: isNew,
-                  __is_stored__: record?.__is_stored__,
-                  value: record,
-                };
-              },
-              cache: false,
-            });
-          }
-
-          if (isSubTableColumnReadPretty(parent)) {
-            fork.setProps(getSubTableColumnReadPrettyFieldProps(parent, value));
-            return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
-          }
-
-          if (parent.props.aclViewDisabled && !isNew) return null;
-
-          return (
-            <FormItem
-              {...parent.props}
-              key={id}
-              name={buildDynamicNamePath([...fieldPath, rowIdx, namePath], parentFieldIndex)}
-              style={{ marginBottom: 0 }}
-              showLabel={false}
-              disabled={
-                parent.props.disabled ||
-                (!isNew && parent.props.aclDisabled) ||
-                (isNew && parent.props.aclCreateDisabled)
-              }
-            >
-              {fork.constructor.isLargeField ? (
-                <LargeFieldEdit
-                  model={fork}
-                  params={{
-                    fieldPath: [(parent as any).context.fieldPath, rowIdx, namePath],
-                    index: id,
-                  }}
-                  defaultValue={value}
-                  disabled={
-                    parent.props.disabled ||
-                    (!isNew && parent.props.aclDisabled) ||
-                    (isNew && parent.props.aclCreateDisabled)
-                  }
-                />
-              ) : (
-                <FieldModelRendererOptimize
-                  model={fork}
-                  id={[(parent as any).context.fieldPath, rowIdx]}
-                  commitOnChange={commitOnChange}
-                />
-              )}
-            </FormItem>
-          );
-        })}
-      </div>
-    );
-  },
-  (prev, next) => {
-    return (
-      prev.value === next.value &&
-      prev.id === next.id &&
-      prev.memoKey === next.memoKey &&
-      prev.width === next.width &&
-      prev.commitOnChange === next.commitOnChange &&
-      prev.rowIdx === next.rowIdx
+        {content}
+      </>
     );
   },
 );

@@ -115,6 +115,9 @@ function getSubModelItems(model: unknown): unknown[] {
   const directItems = (subModels as Record<string, unknown>).items;
   if (Array.isArray(directItems)) return directItems;
 
+  const columns = (subModels as Record<string, unknown>).columns;
+  if (Array.isArray(columns)) return columns;
+
   const grid = (subModels as Record<string, unknown>).grid;
   if (!grid || typeof grid !== 'object') return [];
 
@@ -142,6 +145,10 @@ function getChildFormItems(formItemModel: unknown): unknown[] {
 export function findFormItemModelByFieldPath(root: unknown, targetPath: string): FormItemModel | null {
   const normalizedTargetPath = normalizePath(targetPath);
   if (!normalizedTargetPath) return null;
+
+  if (getFormItemFieldPathCandidates(root).some((p) => p === normalizedTargetPath)) {
+    return root as FormItemModel;
+  }
 
   const walk = (items: unknown[]): FormItemModel | null => {
     if (!Array.isArray(items)) return null;
