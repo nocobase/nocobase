@@ -24,22 +24,35 @@ Nếu bạn thường mở nhiều terminal cùng lúc hoặc muốn thao tác s
 
 ## Bước 2: Khởi tạo ứng dụng
 
-Theo mặc định, cách được khuyến nghị là mở thẳng wizard trực quan:
+Cách được khuyến nghị là cài đặt qua UI wizard:
 
 ```bash
 nb init --ui
 ```
 
+1. `Getting started` - đặt identifier `--env` và chọn `Install a new app`
+
 ![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-Tùy theo đường đi setup bạn chọn, các bước hiện ra sẽ hơi khác nhau. Nhưng nếu đi theo nhánh mặc định `Install a new app`, thông thường bạn sẽ thấy 6 bước sau:
-
-1. `Getting started` - đặt identifier `--env` và chọn `Install a new app`
 2. `App environment` - thiết lập thông tin cơ bản của ứng dụng, vị trí lưu trữ và cổng runtime
+
+![2026-06-14-10-03-06](https://static-docs.nocobase.com/2026-06-14-10-03-06.png)
+
 3. `App source and version` - chọn cách lấy ứng dụng cùng source và version sẽ dùng
+
+![2026-06-14-09-51-33](https://static-docs.nocobase.com/2026-06-14-09-51-33.png)
+
 4. `Configure the database` - chọn cơ sở dữ liệu tích hợp sẵn hoặc cơ sở dữ liệu tùy chỉnh
+
+![2026-06-14-09-52-05](https://static-docs.nocobase.com/2026-06-14-09-52-05.png)
+
 5. `Create an admin account` - thiết lập tài khoản quản trị đầu tiên
+
+![2026-06-14-09-52-56](https://static-docs.nocobase.com/2026-06-14-09-52-56.png)
+
 6. `Connection & authentication` - nhập URL truy cập ứng dụng và chọn phương thức xác thực
+
+![2026-06-14-10-00-35](https://static-docs.nocobase.com/2026-06-14-10-00-35.png)
 
 Nếu bạn quen thao tác trong terminal hơn, bạn cũng có thể chạy trực tiếp:
 

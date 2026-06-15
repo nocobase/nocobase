@@ -24,22 +24,35 @@ If you often work with multiple terminals or want to operate in parallel with AI
 
 ## Step 2: Initialize the app
 
-We recommend opening the visual wizard directly:
+We recommend installing through the UI wizard:
 
 ```bash
 nb init --ui
 ```
 
+1. `Getting started` - set the `--env` identifier and choose `Install a new app`
+
 ![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-Different setup paths show slightly different steps. If you follow the default `Install a new app` path, you will usually see these six steps:
-
-1. `Getting started` - set the `--env` identifier and choose `Install a new app`
 2. `App environment` - set the app basics, storage location, and runtime port
+
+![2026-06-14-10-03-06](https://static-docs.nocobase.com/2026-06-14-10-03-06.png)
+
 3. `App source and version` - choose how to get the app and which source and version to use
+
+![2026-06-14-09-51-33](https://static-docs.nocobase.com/2026-06-14-09-51-33.png)
+
 4. `Configure the database` - choose the built-in database or a custom database
+
+![2026-06-14-09-52-05](https://static-docs.nocobase.com/2026-06-14-09-52-05.png)
+
 5. `Create an admin account` - set up the first admin account
+
+![2026-06-14-09-52-56](https://static-docs.nocobase.com/2026-06-14-09-52-56.png)
+
 6. `Connection & authentication` - enter the app access URL and choose an authentication method
+
+![2026-06-14-10-00-35](https://static-docs.nocobase.com/2026-06-14-10-00-35.png)
 
 If you prefer terminal interaction, you can also run:
 
