@@ -2373,13 +2373,6 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     };
 
     server = createServer((req, res) => {
-      if (
-        !req.socket.remoteAddress ||
-        !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
-      ) {
-        res.writeHead(403).end();
-        return;
-      }
 
       if (req.method === 'GET' && (req.url === '/' || req.url === '')) {
         const addr = server?.address();
@@ -2545,7 +2538,7 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       res.writeHead(404).end();
     });
 
-    server.listen(options.port ?? 0, host, () => {
+    server.listen(options.port ?? 0, '0.0.0.0', () => {
       const addr = server?.address();
       if (typeof addr !== 'object' || !addr) {
         rejectAndClose(new Error('Failed to bind HTTP server'));
