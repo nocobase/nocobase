@@ -55,6 +55,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Карта",
+            "link": "/interface-builder/blocks/data-blocks/map"
+          },
+          {
+            "type": "custom-link",
             "label": "Канбан",
             "link": "/interface-builder/blocks/data-blocks/kanban"
           },
