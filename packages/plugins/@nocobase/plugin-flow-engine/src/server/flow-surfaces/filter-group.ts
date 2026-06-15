@@ -34,7 +34,7 @@ const FLOW_SURFACE_FILTER_OPERATOR_REPAIR_EXAMPLE = {
   ],
 };
 
-const FLOW_SURFACE_DATE_FILTER_OPERATORS = new Set([
+export const FLOW_SURFACE_DATE_FILTER_OPERATORS = new Set([
   '$dateOn',
   '$dateNotOn',
   '$dateBefore',
@@ -42,6 +42,20 @@ const FLOW_SURFACE_DATE_FILTER_OPERATORS = new Set([
   '$dateNotBefore',
   '$dateNotAfter',
   '$dateBetween',
+]);
+
+const FLOW_SURFACE_DATE_COMPARISON_OPERATORS = new Set(['$eq', '$ne', '$lt', '$lte', '$gt', '$gte', '$in', '$notIn']);
+
+const FLOW_SURFACE_EMPTY_FILTER_OPERATORS = new Set(['$empty', '$notEmpty', '$exists', '$notExists']);
+
+const FLOW_SURFACE_DATE_LIKE_TYPES = new Set([
+  'date',
+  'datetime',
+  'dateonly',
+  'datetimenotz',
+  'unixtimestamp',
+  'createdat',
+  'updatedat',
 ]);
 
 const FLOW_SURFACE_DATE_RANGE_TYPES = new Set([
@@ -81,6 +95,23 @@ const FLOW_SURFACE_DATE_VALUE_REPAIR_EXAMPLE = {
     },
   ],
 };
+
+const FLOW_SURFACE_DATE_CONDITION_REPAIR_HINT =
+  'Date/DateTime condition values must be valid UI date values or safe context-path templates. Do not use template arithmetic such as {{$now - 14 * 24 * 60 * 60 * 1000}}; use date operators such as $dateBefore with a relative descriptor instead.';
+
+const FLOW_SURFACE_DATE_CONDITION_REPAIR_EXAMPLE = {
+  logic: '$and',
+  items: [
+    {
+      path: 'lastFollowUpAt',
+      operator: '$dateBefore',
+      value: { type: 'past', number: 14, unit: 'day' },
+    },
+  ],
+};
+
+const FLOW_SURFACE_ISO_DATE_VALUE_RE =
+  /^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 
 const FLOW_SURFACE_KNOWN_FILTER_OPERATORS = buildFlowSurfaceKnownFilterOperators();
 
@@ -142,14 +173,31 @@ export function assertFlowSurfaceFilterOperator(operator: unknown, path: string)
   }
 }
 
-export function normalizeFlowSurfaceFilterDateValue(operator: unknown, value: unknown, path: string) {
+export function normalizeFlowSurfaceFilterDateValue(
+  operator: unknown,
+  value: unknown,
+  path: string,
+  options: {
+    allowContextPathValue?: boolean;
+  } = {},
+) {
   if (typeof operator !== 'string' || !FLOW_SURFACE_DATE_FILTER_OPERATORS.has(operator)) {
+    return value;
+  }
+  if (options.allowContextPathValue && isFlowSurfaceContextPathValueObject(value)) {
     return value;
   }
   return normalizeFlowSurfaceDateValue(value, path);
 }
 
-export function normalizeFlowSurfaceStrictFilterDateValue(operator: unknown, value: unknown, path: string) {
+export function normalizeFlowSurfaceStrictFilterDateValue(
+  operator: unknown,
+  value: unknown,
+  path: string,
+  options: {
+    allowContextPathValue?: boolean;
+  } = {},
+) {
   if (typeof operator !== 'string' || !FLOW_SURFACE_DATE_FILTER_OPERATORS.has(operator)) {
     return value;
   }
@@ -158,7 +206,48 @@ export function normalizeFlowSurfaceStrictFilterDateValue(operator: unknown, val
       invalidReason: 'date filter value is required',
     });
   }
+  if (options.allowContextPathValue && isFlowSurfaceContextPathValueObject(value)) {
+    return value;
+  }
   return normalizeFlowSurfaceDateValue(value, path);
+}
+
+export function isFlowSurfaceDateLikeFieldMeta(value: { type?: unknown; interface?: unknown } | undefined | null) {
+  const fieldType = String(value?.type || '')
+    .trim()
+    .toLowerCase();
+  const fieldInterface = String(value?.interface || '')
+    .trim()
+    .toLowerCase();
+  return FLOW_SURFACE_DATE_LIKE_TYPES.has(fieldType) || FLOW_SURFACE_DATE_LIKE_TYPES.has(fieldInterface);
+}
+
+export function normalizeFlowSurfaceDateConditionValue(
+  operator: unknown,
+  value: unknown,
+  path: string,
+  options: {
+    fieldPath?: string;
+    fieldType?: unknown;
+    fieldInterface?: unknown;
+    allowContextPathValue?: boolean;
+  } = {},
+) {
+  const normalizedOperator = typeof operator === 'string' ? operator.trim() : '';
+  if (!normalizedOperator || FLOW_SURFACE_EMPTY_FILTER_OPERATORS.has(normalizedOperator)) {
+    return value;
+  }
+  if (options.allowContextPathValue && isFlowSurfaceContextPathValueObject(value)) {
+    return value;
+  }
+  if (FLOW_SURFACE_DATE_FILTER_OPERATORS.has(normalizedOperator)) {
+    assertNoUnsafeFlowSurfaceDateTemplateValues(value, path, options);
+    return normalizeFlowSurfaceStrictFilterDateValue(normalizedOperator, value, path);
+  }
+  if (!FLOW_SURFACE_DATE_COMPARISON_OPERATORS.has(normalizedOperator)) {
+    return value;
+  }
+  return normalizeFlowSurfaceDateComparisonValue(normalizedOperator, value, path, options);
 }
 
 export function normalizeFlowSurfaceFilterGroupValue(
@@ -166,6 +255,7 @@ export function normalizeFlowSurfaceFilterGroupValue(
   errorPrefix: string,
   options: {
     strictDateValues?: boolean;
+    allowContextPathValue?: boolean;
   } = {},
 ) {
   const normalized =
@@ -193,6 +283,7 @@ export function normalizeFlowSurfaceCompatibleFilterGroupValue(
   errorPrefix: string,
   options: {
     strictDateValues?: boolean;
+    allowContextPathValue?: boolean;
   } = {},
 ) {
   const input =
@@ -354,6 +445,7 @@ function normalizeFlowSurfaceFilterGroupDateValues(
   errorPrefix: string,
   options: {
     strictDateValues?: boolean;
+    allowContextPathValue?: boolean;
   },
 ) {
   filter.items.forEach((item: any, index: number) => {
@@ -363,8 +455,12 @@ function normalizeFlowSurfaceFilterGroupDateValues(
       return;
     }
     item.value = options.strictDateValues
-      ? normalizeFlowSurfaceStrictFilterDateValue(item.operator, item.value, `${itemPath}.value`)
-      : normalizeFlowSurfaceFilterDateValue(item.operator, item.value, `${itemPath}.value`);
+      ? normalizeFlowSurfaceStrictFilterDateValue(item.operator, item.value, `${itemPath}.value`, {
+          allowContextPathValue: options.allowContextPathValue,
+        })
+      : normalizeFlowSurfaceFilterDateValue(item.operator, item.value, `${itemPath}.value`, {
+          allowContextPathValue: options.allowContextPathValue,
+        });
   });
 }
 
@@ -378,6 +474,107 @@ function normalizeFlowSurfaceDateValue(value: unknown, path: string): unknown {
   }
 
   return normalizeFlowSurfaceDateValuePart(value, path);
+}
+
+function normalizeFlowSurfaceDateComparisonValue(
+  operator: string,
+  value: unknown,
+  path: string,
+  options: {
+    fieldPath?: string;
+    fieldType?: unknown;
+    fieldInterface?: unknown;
+    allowContextPathValue?: boolean;
+  },
+) {
+  if (operator === '$in' || operator === '$notIn') {
+    if (!Array.isArray(value)) {
+      throwInvalidFlowSurfaceDateConditionValue(path, value, {
+        ...options,
+        operator,
+        invalidReason: 'date comparison array operators require an array value',
+      });
+    }
+    return value.map((item, index) =>
+      normalizeFlowSurfaceDateComparisonValuePart(item, `${path}[${index}]`, {
+        ...options,
+        operator,
+      }),
+    );
+  }
+  return normalizeFlowSurfaceDateComparisonValuePart(value, path, {
+    ...options,
+    operator,
+  });
+}
+
+function normalizeFlowSurfaceDateComparisonValuePart(
+  value: unknown,
+  path: string,
+  options: {
+    fieldPath?: string;
+    fieldType?: unknown;
+    fieldInterface?: unknown;
+    allowContextPathValue?: boolean;
+    operator?: string;
+  },
+) {
+  if (_.isNil(value) || value === '') {
+    throwInvalidFlowSurfaceDateConditionValue(path, value, {
+      ...options,
+      invalidReason: 'date comparison value is required; use $empty or $notEmpty for empty checks',
+    });
+  }
+  if (options.allowContextPathValue && isFlowSurfaceContextPathValueObject(value)) {
+    return value;
+  }
+  if (isTemplateDateString(value)) {
+    if (isUnsafeFlowSurfaceDateTemplateString(value)) {
+      throwInvalidFlowSurfaceDateConditionValue(path, value, {
+        ...options,
+        invalidReason:
+          'date condition template strings must be simple context-path references; template arithmetic, $now, Date/dayjs/moment calls, and Invalid date are not supported',
+      });
+    }
+    return value;
+  }
+  if (_.isDate(value)) {
+    if (!Number.isNaN(value.getTime())) {
+      return value;
+    }
+    throwInvalidFlowSurfaceDateConditionValue(path, value, {
+      ...options,
+      invalidReason: 'date condition value must be a valid Date',
+    });
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (/invalid\s+date/i.test(normalized)) {
+      throwInvalidFlowSurfaceDateConditionValue(path, value, {
+        ...options,
+        invalidReason: 'date condition value cannot be Invalid date',
+      });
+    }
+    if (isFlowSurfaceIsoLikeDateValue(normalized)) {
+      return normalized;
+    }
+    throwInvalidFlowSurfaceDateConditionValue(path, value, {
+      ...options,
+      invalidReason: 'date comparison strings must use concrete YYYY-MM-DD or ISO-like date/datetime strings',
+    });
+  }
+  if (_.isPlainObject(value)) {
+    throwInvalidFlowSurfaceDateConditionValue(path, value, {
+      ...options,
+      invalidReason:
+        'relative date descriptors require date operators such as $dateBefore or $dateBetween instead of comparison operators',
+    });
+  }
+  throwInvalidFlowSurfaceDateConditionValue(path, value, {
+    ...options,
+    invalidReason:
+      'date condition value must be an exact date string, ISO datetime string, or safe context path template',
+  });
 }
 
 function normalizeFlowSurfaceDateArrayValue(value: unknown[], path: string) {
@@ -427,6 +624,29 @@ function isFlowSurfaceExactDateValue(value: string) {
     const parsed = dayjs(value, format, true);
     return parsed.isValid() && parsed.format(format) === value;
   });
+}
+
+function isFlowSurfaceIsoLikeDateValue(value: string) {
+  const match = FLOW_SURFACE_ISO_DATE_VALUE_RE.exec(value);
+  if (!match) {
+    return false;
+  }
+  const [year, month, day] = value
+    .slice(0, 10)
+    .split('-')
+    .map((item) => Number(item));
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return false;
+  }
+  const timeMatch = /[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,6}))?)?/.exec(value);
+  if (!timeMatch) {
+    return true;
+  }
+  const hour = Number(timeMatch[1]);
+  const minute = Number(timeMatch[2]);
+  const second = Number(timeMatch[3] || 0);
+  return hour <= 23 && minute <= 59 && second <= 59 && dayjs(value).isValid();
 }
 
 function normalizeRelativeDateDescriptor(value: Record<string, unknown>, path: string) {
@@ -506,6 +726,85 @@ function isTemplateDateString(value: unknown): value is string {
   return typeof value === 'string' && /^\s*\{\{[\s\S]*\}\}\s*$/.test(value);
 }
 
+function isFlowSurfaceContextPathValueObject(value: unknown) {
+  if (!_.isPlainObject(value) || (value as Record<string, unknown>).source !== 'path') {
+    return false;
+  }
+  const path = (value as Record<string, unknown>).path;
+  if (typeof path !== 'string') {
+    return false;
+  }
+  const normalizedPath = path.trim();
+  if (isTemplateDateString(normalizedPath)) {
+    return !isUnsafeFlowSurfaceDateTemplateString(normalizedPath);
+  }
+  return isSimpleFlowSurfaceTemplateReference(normalizedPath);
+}
+
+function extractTemplateDateExpression(value: string) {
+  return value
+    .replace(/^\s*\{\{\s*/, '')
+    .replace(/\s*\}\}\s*$/, '')
+    .trim();
+}
+
+function isSimpleFlowSurfaceTemplateReference(expression: string) {
+  const identifier = '[A-Za-z_$][A-Za-z0-9_$-]*';
+  const segment = `(?:\\.${identifier}|\\[(?:\\d+|"[^"\\]]+"|'[^'\\]]+')\\])`;
+  return new RegExp(`^${identifier}(?:${segment})*$`).test(expression.replace(/\s+/g, ''));
+}
+
+function isUnsafeFlowSurfaceDateTemplateString(value: string) {
+  const expression = extractTemplateDateExpression(value);
+  if (!expression) {
+    return true;
+  }
+  if (/\$now\b/i.test(expression)) {
+    return true;
+  }
+  if (/invalid\s+date/i.test(expression)) {
+    return true;
+  }
+  if (/\bnew\s+Date\b|\bDate\s*\(|\bdayjs\s*\(|\bmoment\s*\(/.test(expression)) {
+    return true;
+  }
+  if (isSimpleFlowSurfaceTemplateReference(expression)) {
+    return false;
+  }
+  return /[+\-*/%()]|=>/.test(expression);
+}
+
+function assertNoUnsafeFlowSurfaceDateTemplateValues(
+  value: unknown,
+  path: string,
+  options: {
+    fieldPath?: string;
+    fieldType?: unknown;
+    fieldInterface?: unknown;
+    operator?: string;
+  } = {},
+) {
+  if (isTemplateDateString(value)) {
+    if (isUnsafeFlowSurfaceDateTemplateString(value)) {
+      throwInvalidFlowSurfaceDateConditionValue(path, value, {
+        ...options,
+        invalidReason:
+          'date filter template strings must be simple context-path references; template arithmetic, $now, Date/dayjs/moment calls, and Invalid date are not supported',
+      });
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => assertNoUnsafeFlowSurfaceDateTemplateValues(item, `${path}[${index}]`, options));
+    return;
+  }
+  if (_.isPlainObject(value)) {
+    Object.entries(value).forEach(([key, item]) =>
+      assertNoUnsafeFlowSurfaceDateTemplateValues(item, `${path}.${key}`, options),
+    );
+  }
+}
+
 function hasTemplateDateValue(value: unknown): boolean {
   if (isTemplateDateString(value)) {
     return true;
@@ -517,6 +816,23 @@ function hasTemplateDateValue(value: unknown): boolean {
     return Object.values(value).some((item) => hasTemplateDateValue(item));
   }
   return false;
+}
+
+function throwInvalidFlowSurfaceDateConditionValue(
+  path: string,
+  value: unknown,
+  details: Record<string, any> = {},
+): never {
+  throwBadRequest(`${path} must be a valid Date/DateTime condition value`, {
+    path,
+    ruleId: 'date-condition-value-invalid',
+    details: {
+      invalidValue: value,
+      ...details,
+      repairHint: FLOW_SURFACE_DATE_CONDITION_REPAIR_HINT,
+      repairExample: FLOW_SURFACE_DATE_CONDITION_REPAIR_EXAMPLE,
+    },
+  });
 }
 
 function throwInvalidFlowSurfaceDateValue(path: string, value: unknown, details: Record<string, any> = {}): never {
