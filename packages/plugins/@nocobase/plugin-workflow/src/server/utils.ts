@@ -114,10 +114,17 @@ export async function abortExecution(
         : {}),
     };
 
+    const expectedStatus =
+      typeof execution.status === 'undefined' ? EXECUTION_STATUS.STARTED : (execution.status as number | null);
+
+    if (![EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED].includes(expectedStatus)) {
+      return false;
+    }
+
     const [affected] = await ExecutionRepo.model.update(abortValues, {
       where: {
         id: execution.id,
-        status: EXECUTION_STATUS.STARTED,
+        status: expectedStatus ?? null,
       },
       individualHooks: true,
       transaction,
@@ -142,12 +149,14 @@ export async function abortExecution(
     const childExecutions = await plugin.db.getRepository('executions').find({
       filter: {
         parentExecutionId: execution.id,
-        status: EXECUTION_STATUS.STARTED,
       },
       transaction,
     });
 
     for (const child of childExecutions) {
+      if (![EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED].includes(child.status)) {
+        continue;
+      }
       await abortExecution(plugin, child, { transaction, reason: EXECUTION_REASON.PARENT_ABORTED });
     }
 

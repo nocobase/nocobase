@@ -71,7 +71,7 @@ describe('workflow > utils', () => {
     expect(execution.set).toHaveBeenCalledWith('reason', EXECUTION_REASON.TIMEOUT);
   });
 
-  it('should cascade timeout abort to started child executions', async () => {
+  it('should cascade timeout abort to started and queueing child executions', async () => {
     const parent = {
       id: 1,
       workflowId: 1,
@@ -83,6 +83,13 @@ describe('workflow > utils', () => {
       id: 2,
       workflowId: 2,
       status: EXECUTION_STATUS.STARTED,
+      update: vi.fn(),
+      set: vi.fn(),
+    };
+    const queueingChild = {
+      id: 3,
+      workflowId: 3,
+      status: EXECUTION_STATUS.QUEUEING,
       update: vi.fn(),
       set: vi.fn(),
     };
@@ -103,11 +110,14 @@ describe('workflow > utils', () => {
         if (filterByTk === child.id) {
           return child;
         }
+        if (filterByTk === queueingChild.id) {
+          return queueingChild;
+        }
         return null;
       }),
       find: vi.fn(({ filter }) => {
         if (filter.parentExecutionId === parent.id) {
-          return [child];
+          return [child, queueingChild];
         }
         return [];
       }),
@@ -170,8 +180,23 @@ describe('workflow > utils', () => {
         transaction,
       },
     );
+    expect(executionRepo.model.update).toHaveBeenCalledWith(
+      {
+        status: EXECUTION_STATUS.ABORTED,
+        reason: EXECUTION_REASON.PARENT_ABORTED,
+      },
+      {
+        where: {
+          id: queueingChild.id,
+          status: EXECUTION_STATUS.QUEUEING,
+        },
+        individualHooks: true,
+        transaction,
+      },
+    );
     expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(parent.id);
     expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(child.id);
+    expect(plugin.timeoutManager.clear).toHaveBeenCalledWith(queueingChild.id);
   });
 
   it('should abort pending jobs when aborting execution', async () => {
