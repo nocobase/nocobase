@@ -17,7 +17,8 @@
  * a type implemented only in v1 simply does not appear (doc §9.1).
  */
 
-import React, { createContext, lazy, Suspense, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, lazy, Suspense, useContext, useMemo, useState } from 'react';
+import { useMemoizedFn } from 'ahooks';
 import { App, Button, Form, Menu, Skeleton, Space } from 'antd';
 import { css } from '@emotion/css';
 import { DialogFormLayout } from '@nocobase/client-v2';
@@ -87,11 +88,11 @@ function AddNodeMenu({ items, onPick }: { items: MenuProps['items']; onPick: (ty
  */
 export function PresetDialogForm({
   instruction,
-  downstreamOptions,
+  hasDownstream,
   onSubmit,
 }: {
   instruction: Instruction;
-  downstreamOptions: ReturnType<typeof getDownstreamBranchOptions>;
+  hasDownstream: boolean;
   onSubmit: (values: any) => Promise<void>;
 }) {
   const t = useT();
@@ -103,7 +104,19 @@ export function PresetDialogForm({
     [instruction],
   );
 
-  const handleSubmit = async () => {
+  const config = Form.useWatch('config', form);
+  const downstreamOptions = useMemo(
+    () =>
+      getDownstreamBranchOptions({
+        instruction,
+        config: config ?? {},
+        hasDownstream,
+        t,
+      }),
+    [instruction, config, hasDownstream, t],
+  );
+
+  const handleSubmit = useMemoizedFn(async () => {
     const values = await form.validateFields();
     setSubmitting(true);
     try {
@@ -111,7 +124,7 @@ export function PresetDialogForm({
     } finally {
       setSubmitting(false);
     }
-  };
+  });
 
   return (
     <DialogFormLayout title={t('Add node')} onSubmit={handleSubmit} submitting={submitting}>
@@ -136,7 +149,7 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
 
   const [creating, setCreating] = useState<{ upstreamId: any; branchIndex: number | null } | null>(null);
 
-  const buildItems = useCallback((): MenuProps['items'] => {
+  const buildItems = useMemoizedFn((): MenuProps['items'] => {
     const instructionList = Array.from(plugin?.instructions?.getValues?.() ?? []) as Instruction[];
     const groupList = Array.from(plugin?.instructionGroups?.getValues?.() ?? []) as Array<{
       key: string;
@@ -150,107 +163,91 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
         return children.length ? { type: 'group' as const, key: group.key, label: t(group.label), children } : null;
       })
       .filter(Boolean) as MenuProps['items'];
-  }, [plugin, t]);
+  });
 
   // Create the node, then (when a branching node was inserted above an existing downstream node and the user chose a
   // branch) re-parent that downstream node into the chosen branch. Mirrors v1's `useAddNodeSubmitAction`.
-  const createNode = useCallback(
-    async (anchor: Anchor, instruction: Instruction, presetValues: any) => {
-      const upstreamId = anchor.upstream?.id ?? null;
-      const branchIndex = anchor.branchIndex ?? null;
-      const { downstreamBranchIndex, config: presetConfig } = presetValues ?? {};
-      setCreating({ upstreamId, branchIndex });
-      try {
-        const {
-          data: { data: newNode },
-        } = await ctx.api.resource('workflows.nodes', workflow.id).create({
+  const createNode = useMemoizedFn(async (anchor: Anchor, instruction: Instruction, presetValues: any) => {
+    const upstreamId = anchor.upstream?.id ?? null;
+    const branchIndex = anchor.branchIndex ?? null;
+    const { downstreamBranchIndex, config: presetConfig } = presetValues ?? {};
+    setCreating({ upstreamId, branchIndex });
+    try {
+      const {
+        data: { data: newNode },
+      } = await ctx.api.resource('workflows.nodes', workflow.id).create({
+        values: {
+          key: uid(),
+          type: instruction.type,
+          upstreamId,
+          branchIndex,
+          title: t(instruction.title as string),
+          config: { ...(instruction.createDefaultConfig?.() ?? {}), ...(presetConfig ?? {}) },
+        },
+      });
+      if (typeof downstreamBranchIndex === 'number' && newNode?.downstreamId) {
+        await ctx.api.resource('flow_nodes').update({
+          filterByTk: newNode.downstreamId,
           values: {
-            key: uid(),
-            type: instruction.type,
-            upstreamId,
-            branchIndex,
-            title: t(instruction.title as string),
-            config: { ...(instruction.createDefaultConfig?.() ?? {}), ...(presetConfig ?? {}) },
+            branchIndex: downstreamBranchIndex,
+            upstream: { id: newNode.id, downstreamId: null },
           },
+          updateAssociationValues: ['upstream'],
         });
-        if (typeof downstreamBranchIndex === 'number' && newNode?.downstreamId) {
-          await ctx.api.resource('flow_nodes').update({
-            filterByTk: newNode.downstreamId,
-            values: {
-              branchIndex: downstreamBranchIndex,
-              upstream: { id: newNode.id, downstreamId: null },
-            },
-            updateAssociationValues: ['upstream'],
-          });
-        }
-        refresh?.();
-      } catch (err) {
-        message.error(t('Failed to add node'));
-        // eslint-disable-next-line no-console
-        console.error(err);
-        throw err;
-      } finally {
-        setCreating(null);
       }
-    },
-    [workflow?.id, ctx, t, refresh, message],
-  );
+      refresh?.();
+    } catch (err) {
+      message.error(t('Failed to add node'));
+      // eslint-disable-next-line no-console
+      console.error(err);
+      throw err;
+    } finally {
+      setCreating(null);
+    }
+  });
 
-  const onCreate = useCallback(
-    async (anchor: Anchor, type: string) => {
-      const instruction = plugin?.getInstruction(type);
-      if (!instruction || !workflow?.id) {
-        return;
-      }
-      // Does a branching node land above an existing downstream node? If so the user must pick where that downstream
-      // goes (DownstreamBranchIndex).
-      const upstreamId = anchor.upstream?.id ?? null;
-      const branchIndex = anchor.branchIndex ?? null;
-      const downstream = anchor.upstream?.id
-        ? (nodes ?? []).find((item: any) => item.upstreamId === upstreamId && item.branchIndex === branchIndex)
-        : (nodes ?? []).find((item: any) => item.upstreamId == null);
-      const defaultConfig = instruction.createDefaultConfig?.() ?? {};
-      const downstreamOptions = getDownstreamBranchOptions({
-        instruction,
-        config: defaultConfig,
-        hasDownstream: Boolean(downstream),
-        t,
-      });
+  const onCreate = useMemoizedFn(async (anchor: Anchor, type: string) => {
+    const instruction = plugin?.getInstruction(type);
+    if (!instruction || !workflow?.id) {
+      return;
+    }
+    // Does a branching node land above an existing downstream node? If so the user must pick where that downstream
+    // goes (DownstreamBranchIndex).
+    const upstreamId = anchor.upstream?.id ?? null;
+    const branchIndex = anchor.branchIndex ?? null;
+    const downstream = anchor.upstream?.id
+      ? (nodes ?? []).find((item: any) => item.upstreamId === upstreamId && item.branchIndex === branchIndex)
+      : (nodes ?? []).find((item: any) => item.upstreamId == null);
 
-      // Preset dialog when the node has an add-time preset form, or when a branching node needs the
-      // downstream-placement choice (mirrors v1).
-      if (instruction.PresetFieldsetLoader || downstreamOptions.length) {
-        ctx.viewer.dialog({
-          width: 520,
-          closable: true,
-          content: () => (
-            <PresetDialogForm
-              instruction={instruction}
-              downstreamOptions={downstreamOptions}
-              onSubmit={(values) => createNode(anchor, instruction, values)}
-            />
-          ),
-        });
-        return;
-      }
-
-      await createNode(anchor, instruction, {});
-    },
-    [plugin, workflow?.id, nodes, ctx, t, createNode],
-  );
-
-  const onMenuOpen = useCallback(
-    (anchor: Anchor) => {
-      const items = buildItems();
-      ctx.viewer.drawer({
-        width: '50%',
+    // Preset dialog when the node has an add-time preset form, or when a branching node needs the
+    // downstream-placement choice (mirrors v1).
+    if (instruction.PresetFieldsetLoader || Boolean(downstream && instruction.branching)) {
+      ctx.viewer.dialog({
+        width: 520,
         closable: true,
-        title: t('Add node'),
-        content: () => <AddNodeMenu items={items} onPick={(type) => onCreate(anchor, type)} />,
+        content: () => (
+          <PresetDialogForm
+            instruction={instruction}
+            hasDownstream={Boolean(downstream)}
+            onSubmit={(values) => createNode(anchor, instruction, values)}
+          />
+        ),
       });
-    },
-    [buildItems, ctx, t, onCreate],
-  );
+      return;
+    }
+
+    await createNode(anchor, instruction, {});
+  });
+
+  const onMenuOpen = useMemoizedFn((anchor: Anchor) => {
+    const items = buildItems();
+    ctx.viewer.drawer({
+      width: '50%',
+      closable: true,
+      title: t('Add node'),
+      content: () => <AddNodeMenu items={items} onPick={(type) => onCreate(anchor, type)} />,
+    });
+  });
 
   const value = useMemo<AddNodeContextValue>(() => ({ creating, onMenuOpen }), [creating, onMenuOpen]);
 
