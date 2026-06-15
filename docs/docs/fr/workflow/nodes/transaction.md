@@ -13,6 +13,8 @@ Le nœud de transaction de base de données permet d'exécuter un ensemble d'op�
 
 Le nœud de transaction ne prend actuellement en charge que les sources de données de type base de données. Les opérations de données de la même source à l'intérieur du nœud sont automatiquement incluses dans cette transaction ; les autres sources de données ne l'utilisent pas.
 
+Ce nœud est pris en charge depuis 2.2.0.
+
 ## Créer un nœud
 
 Dans l'interface de configuration du flux de travail, cliquez sur le bouton plus ("+") dans le flux pour ajouter un nœud "Transaction de base de données".

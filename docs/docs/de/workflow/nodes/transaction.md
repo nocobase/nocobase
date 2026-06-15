@@ -13,6 +13,8 @@ Der Datenbanktransaktions-Knoten führt eine Gruppe von Datenbankoperationen in 
 
 Der Transaktionsknoten unterstützt derzeit nur Datenbank-Datenquellen. Datenoperationen derselben Datenquelle innerhalb des Knotens werden automatisch in diese Transaktion aufgenommen; andere Datenquellen verwenden diese Transaktion nicht.
 
+Dieser Knoten wird seit 2.2.0 unterstützt.
+
 ## Knoten erstellen
 
 Klicken Sie in der Workflow-Konfigurationsoberfläche im Ablauf auf die Plus-Schaltfläche („+“), um einen Knoten „Datenbanktransaktion“ hinzuzufügen.

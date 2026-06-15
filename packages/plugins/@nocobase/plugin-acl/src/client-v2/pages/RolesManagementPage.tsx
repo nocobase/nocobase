@@ -235,7 +235,7 @@ export default function RolesManagementPage() {
   const [activeTabKey, setActiveTabKey] = useState('permissions');
   const [activePermissionTabKey, setActivePermissionTabKey] = useState('general');
   const cardClassName = css`
-    height: calc(100vh - 160px);
+    height: 100%;
     min-height: 0;
 
     > .ant-card-body {

@@ -40,7 +40,6 @@ function UsersTable() {
   const acl = useACLRoleContext();
   const refreshRef = useRef<() => Promise<unknown>>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const canCreate = acl.parseAction('users:create') !== null;
   const canUpdate = acl.parseAction('users:update') !== null;
   const canDestroy = acl.parseAction('users:destroy') !== null;
 
@@ -161,11 +160,9 @@ function UsersTable() {
             </Button>
           </Popconfirm>
         ) : null}
-        {canCreate ? (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserDrawer()}>
-            {t('Add new')}
-          </Button>
-        ) : null}
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => openUserDrawer()}>
+          {t('Add new')}
+        </Button>
       </>
     );
   });
@@ -219,7 +216,7 @@ export default function UsersManagementPage() {
   const t = useT();
   const { token } = theme.useToken();
   const tabsClassName = css`
-    height: calc(100vh - 160px);
+    height: 100%;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -259,7 +256,7 @@ export default function UsersManagementPage() {
       items={[
         {
           key: 'usersManager',
-          label: t('Users'),
+          label: t('Users manager'),
           children: (
             <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
               <UsersTable />

@@ -13,6 +13,8 @@ O nó de transação de banco de dados executa um conjunto de operações de ban
 
 Atualmente, o nó de transação oferece suporte apenas a fontes de dados de banco de dados. As operações de dados da mesma fonte dentro do nó são incluídas automaticamente nessa transação; outras fontes de dados não usam essa transação.
 
+Este nó é compatível desde a versão 2.2.0.
+
 ## Criar nó
 
 Na interface de configuração do fluxo de trabalho, clique no botão de adição ("+") no fluxo para adicionar um nó "Transação de banco de dados".

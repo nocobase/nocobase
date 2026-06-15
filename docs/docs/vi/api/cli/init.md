@@ -121,7 +121,7 @@ Có khá nhiều tham số, nên sẽ dễ hiểu hơn nếu tách ra theo từn
 | `--ui`          | boolean | `false`                                                                            | Mở trình hướng dẫn trên trình duyệt cục bộ; không thể dùng cùng `--yes` và `--resume` |
 | `--verbose`     | boolean | `false`                                                                            | Hiển thị đầu ra lệnh chi tiết                                                         |
 | `--skip-skills` | boolean | `false`                                                                            | Bỏ qua đồng bộ NocoBase AI coding skills                                              |
-| `--ui-host`     | string  | `127.0.0.1`                                                                        | Địa chỉ bind của dịch vụ cục bộ `--ui`                                                |
+| `--ui-host`     | string  | `127.0.0.1`                                                                        | Host có thể truy cập từ trình duyệt hiển thị trong URL wizard `--ui`; dịch vụ cục bộ luôn lắng nghe trên `0.0.0.0` |
 | `--ui-port`     | integer | `0`                                                                                | Cổng dịch vụ cục bộ `--ui`; `0` nghĩa là tự động cấp phát                             |
 | `--locale`      | string  | Theo `NB_LOCALE`, cấu hình CLI hoặc locale hệ thống; fallback cuối cùng là `en-US` | Ngôn ngữ của lời nhắc CLI và UI setup cục bộ: `en-US` hoặc `zh-CN`                    |
 | `--resume`      | boolean | `false`                                                                            | Tiếp tục lần khởi tạo trước đó chưa hoàn tất, tái sử dụng workspace env config đã lưu |

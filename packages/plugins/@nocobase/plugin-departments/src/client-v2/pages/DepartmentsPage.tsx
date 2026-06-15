@@ -64,7 +64,7 @@ const DEPARTMENT_TREE_PANEL_WIDTH = 280;
 const MEMBER_TABLE_PAGE_SIZE = 20;
 const ADD_MEMBERS_TABLE_PAGE_SIZE = 20;
 const SEARCH_RESULT_LIMIT = 10;
-const DEPARTMENTS_PAGE_HEIGHT = 'calc(100vh - 160px)';
+const DEPARTMENTS_PAGE_HEIGHT = '100%';
 const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { paddingInline: 0, height: 'auto' };
 
 type MembersFilter = CompiledFilter;
@@ -219,16 +219,15 @@ function buildMembersFilter(department: DepartmentRecord | null, filter?: Member
 function toTreeNodes(
   records: DepartmentRecord[],
   renderTitle: (department: DepartmentRecord) => React.ReactNode,
-  excludedKeys = new Set<DepartmentPrimaryKey>(),
+  disabledKeys = new Set<DepartmentPrimaryKey>(),
 ): DataNode[] {
-  return records
-    .filter((department) => !excludedKeys.has(department.id))
-    .map((department) => ({
-      key: department.id,
-      value: department.id,
-      title: renderTitle(department),
-      children: department.children?.length ? toTreeNodes(department.children, renderTitle, excludedKeys) : undefined,
-    }));
+  return records.map((department) => ({
+    key: department.id,
+    value: department.id,
+    title: renderTitle(department),
+    disabled: disabledKeys.has(department.id),
+    children: department.children?.length ? toTreeNodes(department.children, renderTitle, disabledKeys) : undefined,
+  }));
 }
 
 function findDepartment(records: DepartmentRecord[], id?: React.Key): DepartmentRecord | null {
@@ -1241,7 +1240,7 @@ const DepartmentsPage: React.FC = () => {
     () => css`
       flex: 1;
       min-height: 0;
-      overflow-y: scroll;
+      overflow-y: auto;
       overflow-x: hidden;
       .ant-tree-treenode {
         width: 100%;
@@ -1326,7 +1325,7 @@ const DepartmentsPage: React.FC = () => {
           >
             {t('All users')}
           </Button>
-          <Button block type="dashed" icon={<PlusOutlined />} onClick={() => openDepartmentForm('create')}>
+          <Button block icon={<PlusOutlined />} onClick={() => openDepartmentForm('create')}>
             {t('New department')}
           </Button>
           <div className={departmentTreeClassName}>

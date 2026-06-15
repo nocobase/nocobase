@@ -121,7 +121,7 @@ nb app start --env app1
 | `--ui`          | boolean | `false`                                                                               | ローカルブラウザウィザードを開く。`--yes`、`--resume` と一緒に使用できない   |
 | `--verbose`     | boolean | `false`                                                                               | 詳細なコマンド出力を表示する                                                 |
 | `--skip-skills` | boolean | `false`                                                                               | NocoBase AI coding skills の同期をスキップする                               |
-| `--ui-host`     | string  | `127.0.0.1`                                                                           | `--ui` ローカルサービスのバインドアドレス                                    |
+| `--ui-host`     | string  | `127.0.0.1`                                                                           | `--ui` ウィザード URL に表示するブラウザアクセス用 host。ローカルサービスは常に `0.0.0.0` で待ち受けます |
 | `--ui-port`     | integer | `0`                                                                                   | `--ui` ローカルサービスポート。`0` は自動割り当てを意味する                  |
 | `--locale`      | string  | `NB_LOCALE`、CLI 設定、またはシステム locale に従い、最終的なフォールバックは `en-US` | CLI プロンプトとローカル setup UI の言語: `en-US` または `zh-CN`             |
 | `--resume`      | boolean | `false`                                                                               | 前回未完了だった初期化を続行し、保存済みの workspace env config を再利用する |

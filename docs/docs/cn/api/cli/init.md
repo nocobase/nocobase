@@ -121,7 +121,7 @@ nb app start --env app1
 | `--ui` | boolean | `false` | 打开本地浏览器向导，不能和 `--yes`、`--resume` 一起使用 |
 | `--verbose` | boolean | `false` | 显示详细命令输出 |
 | `--skip-skills` | boolean | `false` | 跳过同步 NocoBase AI coding skills |
-| `--ui-host` | string | `127.0.0.1` | `--ui` 本地服务绑定地址 |
+| `--ui-host` | string | `127.0.0.1` | `--ui` 向导页面 URL 中展示给浏览器访问的 host；本地服务固定监听 `0.0.0.0` |
 | `--ui-port` | integer | `0` | `--ui` 本地服务端口，`0` 表示自动分配 |
 | `--locale` | string | 跟随 `NB_LOCALE`、CLI 配置或系统 locale；最终回退 `en-US` | CLI 提示和本地 setup UI 语言：`en-US` 或 `zh-CN` |
 | `--resume` | boolean | `false` | 继续上一次未完成的初始化，复用已保存的 workspace env config |
