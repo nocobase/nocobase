@@ -431,7 +431,8 @@ describe('flowSurfaces backend authoring localized compiler', () => {
       'status',
       'phone',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should use explicit addBlock defaultFilter without backend field selection', async () => {

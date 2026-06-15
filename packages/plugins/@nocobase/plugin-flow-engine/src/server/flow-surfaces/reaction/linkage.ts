@@ -11,7 +11,12 @@ import { createHash } from 'node:crypto';
 import _ from 'lodash';
 import { isBareFlowContextPath } from '../context';
 import { throwBadRequest } from '../errors';
-import { normalizeFlowSurfaceCompatibleFilterGroupValue } from '../filter-group';
+import {
+  FLOW_SURFACE_DATE_FILTER_OPERATORS,
+  isFlowSurfaceDateLikeFieldMeta,
+  normalizeFlowSurfaceCompatibleFilterGroupValue,
+  normalizeFlowSurfaceDateConditionValue,
+} from '../filter-group';
 import {
   FLOW_SURFACE_REACTION_INVALID_CONDITION_OPERATOR,
   FLOW_SURFACE_REACTION_INVALID_CONDITION_PATH,
@@ -72,6 +77,7 @@ const CTX_PREFIX_RE = /^ctx\./;
 type FlowSurfaceLinkageValidationCapability = {
   conditionMeta: {
     operatorsByPath: Record<string, string[]>;
+    fieldMetaByPath?: Record<string, { type?: string; interface?: string }>;
   };
 };
 
@@ -182,6 +188,9 @@ function normalizeReactionFilter(rawFilter: unknown): FlowSurfaceReactionFilter 
   const normalizedFilter = normalizeFlowSurfaceCompatibleFilterGroupValue(
     rawFilter,
     'flowSurfaces linkage rule condition',
+    {
+      allowContextPathValue: true,
+    },
   );
 
   const visit = (node: any): any => {
@@ -757,7 +766,7 @@ function validateContextBoundValue(
   }
 }
 
-function validateReactionFilterAgainstCapability(
+export function validateReactionFilterAgainstCapability(
   filter: FlowSurfaceReactionFilter | undefined,
   capability: FlowSurfaceLinkageValidationCapability,
   prefix: string,
@@ -815,6 +824,15 @@ function validateReactionFilterAgainstCapability(
     }
 
     if (hasValue) {
+      const fieldMeta = capability.conditionMeta?.fieldMetaByPath?.[operatorPath];
+      if (FLOW_SURFACE_DATE_FILTER_OPERATORS.has(operator) || isFlowSurfaceDateLikeFieldMeta(fieldMeta)) {
+        normalizeFlowSurfaceDateConditionValue(operator, node.value, `${currentPrefix}.value`, {
+          fieldPath: path,
+          fieldType: fieldMeta?.type,
+          fieldInterface: fieldMeta?.interface,
+          allowContextPathValue: true,
+        });
+      }
       validateContextBoundValue(node.value, capability, `${currentPrefix}.value`);
     }
   };

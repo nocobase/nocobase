@@ -36,6 +36,14 @@ describe('flow-surfaces reaction linkage helpers', () => {
         'formValues.nickname': ['$empty', '$notEmpty', '$eq'],
         'formValues.email': ['$empty', '$notEmpty', '$eq'],
         'formValues.roles': ['$anyOf', '$noneOf', '$empty', '$notEmpty'],
+        'formValues.lastFollowedAt': ['$dateBefore', '$empty', '$notEmpty'],
+        'formValues.workTime': ['$eq', '$neq', '$empty', '$notEmpty'],
+        'record.startAt': ['$dateBefore', '$empty', '$notEmpty'],
+      },
+      fieldMetaByPath: {
+        'formValues.lastFollowedAt': { type: 'datetime', interface: 'datetime' },
+        'formValues.workTime': { type: 'time', interface: 'time' },
+        'record.startAt': { type: 'datetime', interface: 'datetime' },
       },
     },
   };
@@ -582,5 +590,107 @@ describe('flow-surfaces reaction linkage helpers', () => {
     const b = buildReactionFingerprint({ a: 1, b: 2 });
 
     expect(a).toBe(b);
+  });
+
+  it('should reject unsafe DateTime templates in linkage conditions', () => {
+    expect(() =>
+      validateBlockLinkageRulesAgainstCapability(
+        normalizeBlockLinkageRules([
+          {
+            key: 'stale-record',
+            when: {
+              logic: '$and',
+              items: [
+                {
+                  path: 'formValues.lastFollowedAt',
+                  operator: '$dateBefore',
+                  value: '{{$now - 14 * 24 * 60 * 60 * 1000}}',
+                },
+              ],
+            },
+            then: [{ type: 'setBlockState', state: 'hidden' }],
+          },
+        ]),
+        conditionCapability,
+      ),
+    ).toThrowError(/valid Date\/DateTime condition value/);
+  });
+
+  it('should return repairable date errors for empty linkage DateTime condition values', () => {
+    const normalizedRules = normalizeFieldLinkageRules(
+      [
+        {
+          when: {
+            logic: '$and',
+            items: [
+              {
+                path: 'record.startAt',
+                operator: '$dateBefore',
+                value: '',
+              },
+            ],
+          },
+          then: [{ type: 'setFieldState', fieldPaths: ['nickname'], state: 'hidden' }],
+        },
+      ],
+      { scene: 'form' },
+    );
+
+    try {
+      validateFieldLinkageRulesAgainstCapability(normalizedRules, fieldCapability);
+      throw new Error('expected validation to fail');
+    } catch (error) {
+      expect(error).toBeInstanceOf(FlowSurfaceError);
+      expect((error as FlowSurfaceError).options.ruleId).toBe('filter-group-date-value-invalid');
+      expect(String((error as FlowSurfaceError).options.details?.repairHint || '')).toContain('Date filter values');
+    }
+  });
+
+  it('should allow DateTime condition values bound to context paths', () => {
+    expect(() =>
+      validateBlockLinkageRulesAgainstCapability(
+        normalizeBlockLinkageRules([
+          {
+            key: 'compare-record-dates',
+            when: {
+              logic: '$and',
+              items: [
+                {
+                  path: 'formValues.lastFollowedAt',
+                  operator: '$dateBefore',
+                  value: { source: 'path', path: '{{ ctx.record.startAt }}' },
+                },
+              ],
+            },
+            then: [{ type: 'setBlockState', state: 'hidden' }],
+          },
+        ]),
+        conditionCapability,
+      ),
+    ).not.toThrow();
+  });
+
+  it('should not apply DateTime condition value validation to time fields', () => {
+    expect(() =>
+      validateBlockLinkageRulesAgainstCapability(
+        normalizeBlockLinkageRules([
+          {
+            key: 'match-work-time',
+            when: {
+              logic: '$and',
+              items: [
+                {
+                  path: 'formValues.workTime',
+                  operator: '$eq',
+                  value: '09:30',
+                },
+              ],
+            },
+            then: [{ type: 'setBlockState', state: 'hidden' }],
+          },
+        ]),
+        conditionCapability,
+      ),
+    ).not.toThrow();
   });
 });

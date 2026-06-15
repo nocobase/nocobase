@@ -110,6 +110,20 @@ function buildConditionOperatorsByPath(context: FlowSurfaceContextResponse) {
   return operatorsByPath;
 }
 
+function buildConditionFieldMetaByPath(context: FlowSurfaceContextResponse) {
+  const fieldMetaByPath: Record<string, { type?: string; interface?: string }> = {};
+  for (const [path, info] of collectContextPathEntries(context)) {
+    if (!isAuthorableLinkageContextPath(path)) {
+      continue;
+    }
+    fieldMetaByPath[path] = {
+      ...(info?.type ? { type: info.type } : {}),
+      ...(info?.interface ? { interface: info.interface } : {}),
+    };
+  }
+  return fieldMetaByPath;
+}
+
 function isAuthorableLinkageContextPath(path: string) {
   const segments = String(path || '')
     .split('.')
@@ -440,6 +454,10 @@ function buildFieldValueCapability(
     canonicalRules,
     context: input.context,
     targetFields: collectFieldOptions(input.resolvedTarget.node, input.context, capability.resolvedScene),
+    conditionMeta: {
+      operatorsByPath: buildConditionOperatorsByPath(input.context),
+      fieldMetaByPath: buildConditionFieldMetaByPath(input.context),
+    },
     valueExprMeta: {
       supportedSources: ['literal', 'path', 'runjs'],
       runjsScene: 'fieldValue',
@@ -462,6 +480,7 @@ function buildLinkageCapability(
     supportedActions: buildSupportedActions(capability),
     conditionMeta: {
       operatorsByPath: buildConditionOperatorsByPath(input.context),
+      fieldMetaByPath: buildConditionFieldMetaByPath(input.context),
     },
   };
 
