@@ -35,9 +35,9 @@ type WorkflowCapabilityContext = {
   engine: {
     isWorkflowSync(workflow: any): boolean;
   };
-  workflow: any;
-  upstream: any;
-  branchIndex: number | null;
+  workflow?: any;
+  upstream?: any;
+  branchIndex?: number | null;
   syncOnly?: boolean;
   branchContext?: Pick<BranchContextValue, 'syncOnly'> | null;
 };
