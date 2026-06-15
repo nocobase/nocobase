@@ -7,6 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { useForm } from '@formily/react';
+import { observer } from '@formily/reactive-react';
+import { Alert } from 'antd';
 import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource, useCompile } from '@nocobase/client';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FieldsSelect } from '../components/FieldsSelect';
@@ -17,6 +21,7 @@ import { useWorkflowAnyExecuted } from '../hooks';
 import { Trigger } from '.';
 import { TriggerCollectionRecordSelect } from '../components/TriggerCollectionRecordSelect';
 import { SubModelItem } from '@nocobase/flow-engine';
+import { useFlowContext } from '../FlowContext';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -31,6 +36,48 @@ const collectionModeOptions = [
   { label: `{{t("After record added or updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.SAVED },
   { label: `{{t("After record deleted", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.DELETED },
 ];
+
+const SyncTransactionNotice = observer(() => {
+  const form = useForm();
+  const { workflow } = useFlowContext() ?? {};
+  const sync = workflow?.sync ?? form.values?.sync;
+
+  if (!sync) {
+    return null;
+  }
+
+  return (
+    <Alert
+      type="info"
+      showIcon
+      style={{ marginBottom: '1em' }}
+      message={lang(
+        'Synchronous collection event workflows run within the trigger transaction by default. Related data operations automatically use this transaction.',
+      )}
+    />
+  );
+});
+
+const useSyncModeVisibleReaction = (field) => {
+  const form = useForm();
+  const { workflow } = useFlowContext() ?? {};
+  const sync = workflow?.sync ?? form.values?.sync;
+
+  field.visible = Boolean(sync);
+  if (!sync && field.value) {
+    field.value = false;
+  }
+};
+
+const rollbackOnFailure = {
+  type: 'boolean',
+  'x-content': `{{t("Rollback when workflow execution fails", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Only available in synchronous mode. When enabled, if the workflow execution ends with a failed status, the data operation that triggered it will fail and be rolled back.", { ns: "${NAMESPACE}" })}}`,
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
+  default: false,
+  'x-reactions': ['{{useSyncModeVisibleReaction}}'],
+};
 
 function useVariables(config, options) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
@@ -74,6 +121,7 @@ export default class extends Trigger {
         },
       },
     },
+    rollbackOnFailure,
   };
   fieldset = {
     collection: {
@@ -195,13 +243,23 @@ export default class extends Trigger {
         },
       ],
     },
+    syncTransactionNotice: {
+      type: 'void',
+      'x-component': 'SyncTransactionNotice',
+    },
+    rollbackOnFailure: {
+      ...rollbackOnFailure,
+    },
   };
   scope = {
     useCollectionDataSource,
+    useSyncModeVisibleReaction,
     useWorkflowAnyExecuted,
   };
-  components: Record<string, any> = {
+  components: Record<string, React.ElementType> = {
+    Alert,
     FieldsSelect,
+    SyncTransactionNotice,
     TriggerCollectionRecordSelect,
   };
   triggerFieldset = {

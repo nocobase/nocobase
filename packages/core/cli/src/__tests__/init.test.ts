@@ -259,7 +259,7 @@ test('nb init uses configured default ui/api hosts', async () => {
   try {
     process.env.NB_CLI_ROOT = tempHome;
     const { setCliConfigValue } = await import('../lib/cli-config.js');
-    await setCliConfigValue('default-ui-host', '0.0.0.0');
+    await setCliConfigValue('default-ui-host', '116.62.46.238');
     await setCliConfigValue('default-api-host', '192.168.1.10');
 
     const { default: Init } = await import('../commands/init.js');
@@ -306,7 +306,7 @@ test('nb init uses configured default ui/api hosts', async () => {
     await Init.prototype.run.call(command);
 
     const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls.at(-1)?.[0];
-    expect(webUiOptions?.host).toBe('0.0.0.0');
+    expect(webUiOptions?.host).toBe('116.62.46.238');
     expect(mocks.upsertEnv.mock.calls.at(-1)?.[1]).toMatchObject({
       apiBaseUrl: 'http://192.168.1.10:13080/api',
     });

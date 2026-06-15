@@ -9,6 +9,8 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  backfillFlowSurfaceDefaultFilterSetting,
+  backfillFlowSurfaceFilterActionDefaultFilter,
   resolveFlowSurfaceDefaultFilterCandidateFieldNames,
   resolveFlowSurfaceDefaultFilterRequiredFieldCount,
 } from '../flow-surfaces/public-data-surface-default-filter';
@@ -58,5 +60,72 @@ describe('flowSurfaces public data surface default filters', () => {
 
     expect(resolveFlowSurfaceDefaultFilterCandidateFieldNames(collection)).toEqual(['nickname', 'email', 'phone']);
     expect(resolveFlowSurfaceDefaultFilterRequiredFieldCount(collection)).toBe(3);
+  });
+
+  it('backfills default filters without deriving filterable field names', () => {
+    const defaultFilter = {
+      logic: '$and',
+      items: [
+        { path: 'nickname', operator: '$includes' },
+        { path: 'email', operator: '$includes' },
+      ],
+    };
+    const actionDefaultFilter = {
+      logic: '$and',
+      items: [{ path: 'status', operator: '$eq' }],
+    };
+
+    expect(backfillFlowSurfaceDefaultFilterSetting(undefined, defaultFilter)).toEqual({
+      defaultFilter,
+    });
+    expect(
+      backfillFlowSurfaceDefaultFilterSetting(
+        {
+          filterableFieldNames: ['nickname'],
+        },
+        defaultFilter,
+      ),
+    ).toEqual({
+      filterableFieldNames: ['nickname'],
+      defaultFilter,
+    });
+    expect(
+      backfillFlowSurfaceDefaultFilterSetting(
+        {
+          defaultFilter: actionDefaultFilter,
+        },
+        defaultFilter,
+      ),
+    ).toEqual({
+      defaultFilter: actionDefaultFilter,
+    });
+    expect(
+      backfillFlowSurfaceFilterActionDefaultFilter(
+        [
+          {
+            type: 'filter',
+            settings: {},
+          },
+        ],
+        defaultFilter,
+      )[0].settings,
+    ).toEqual({
+      defaultFilter,
+    });
+    expect(
+      backfillFlowSurfaceFilterActionDefaultFilter(
+        [
+          {
+            type: 'filter',
+            settings: {
+              defaultFilter: actionDefaultFilter,
+            },
+          },
+        ],
+        defaultFilter,
+      )[0].settings,
+    ).toEqual({
+      defaultFilter: actionDefaultFilter,
+    });
   });
 });

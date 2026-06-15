@@ -8,12 +8,14 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-import { ExportActionModel } from './ExportActionModel';
 
 export class PluginActionExportClient extends Plugin {
   async load() {
-    this.app.flowEngine.registerModels({
-      ExportActionModel,
+    this.app.flowEngine.registerModelLoaders({
+      ExportActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./ExportActionModel'),
+      },
     });
   }
 }

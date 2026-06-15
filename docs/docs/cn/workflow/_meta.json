@@ -186,6 +186,11 @@
             "type": "custom-link",
             "label": "SQL 操作",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "数据库事务",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },

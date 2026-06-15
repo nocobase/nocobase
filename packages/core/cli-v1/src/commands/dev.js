@@ -10,6 +10,7 @@ const _ = require('lodash');
 const { Command } = require('commander');
 const {
   generatePlugins,
+  hasCorePackages,
   run,
   runWithPrefix,
   postCheck,
@@ -41,6 +42,14 @@ async function buildBundleStatusHtml() {
   );
 }
 
+function buildAppDevForwardArgs(argv = process.argv) {
+  return ['app-dev', ...argv.slice(3)];
+}
+
+async function forwardDevToAppDev({ argv = process.argv, runCommand = run } = {}) {
+  await runCommand('nocobase-v1', buildAppDevForwardArgs(argv));
+}
+
 /**
  *
  * @param {Command} cli
@@ -58,6 +67,11 @@ module.exports = (cli) => {
     .option('-i, --inspect [port]')
     .allowUnknownOption()
     .action(async (opts) => {
+      if (!hasCorePackages()) {
+        await forwardDevToAppDev();
+        return;
+      }
+
       checkDBDialect();
       await buildBundleStatusHtml();
 
@@ -288,4 +302,9 @@ module.exports = (cli) => {
         runDevClientV2();
       }
     });
+};
+
+module.exports._test = {
+  buildAppDevForwardArgs,
+  forwardDevToAppDev,
 };

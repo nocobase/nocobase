@@ -68,6 +68,7 @@ module.exports = (cli) => {
       if (descJson['dependencies']?.['@nocobase/app']) {
         descJson['dependencies']['@nocobase/app'] = stdout;
       }
+      descJson['scripts']['dev'] = 'nocobase app-dev';
       if (descJson['dependencies']?.['@nocobase/cli']) {
         descJson['dependencies']['@nocobase/app'] = stdout;
         console.log(

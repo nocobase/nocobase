@@ -12,6 +12,7 @@ import {
   getDownloadFileName,
   getFileName,
   getPdfPreviewResourceOptions,
+  getPdfPreviewWorkerSrc,
   getPreviewThumbnailUrl,
   isActiveContentFile,
 } from '../filePreviewTypes';
@@ -80,6 +81,9 @@ describe('getDownloadFileName', () => {
       cMapUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
     });
+    expect(getPdfPreviewWorkerSrc()).toBe(
+      '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
+    );
   });
 
   it('应兼容子路径部署下的 PDF.js 预览资源地址', () => {
@@ -91,6 +95,9 @@ describe('getDownloadFileName', () => {
       cMapUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
     });
+    expect(getPdfPreviewWorkerSrc()).toBe(
+      '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
+    );
   });
 
   it('未注入现代客户端前缀时不应猜测默认前缀', () => {
@@ -101,6 +108,9 @@ describe('getDownloadFileName', () => {
       cMapUrl: '/nocobase/v/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/nocobase/v/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
     });
+    expect(getPdfPreviewWorkerSrc()).toBe(
+      '/nocobase/v/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
+    );
   });
 
   it('应兼容自定义现代客户端前缀下的 PDF.js 预览资源地址', () => {
@@ -112,6 +122,9 @@ describe('getDownloadFileName', () => {
       cMapUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
     });
+    expect(getPdfPreviewWorkerSrc()).toBe(
+      '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
+    );
   });
 
   it('配置 CDN 地址时应优先使用 CDN 基础路径', () => {
@@ -124,5 +137,8 @@ describe('getDownloadFileName', () => {
       standardFontDataUrl:
         'https://cdn.example.com/assets/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
     });
+    expect(getPdfPreviewWorkerSrc()).toBe(
+      'https://cdn.example.com/assets/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
+    );
   });
 });

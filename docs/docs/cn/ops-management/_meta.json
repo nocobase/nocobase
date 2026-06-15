@@ -20,7 +20,7 @@
       },
       {
         "type": "custom-link",
-        "label": "版本管理",
+        "label": "版本控制",
         "link": "/ops-management/version-control/"
       },
       {

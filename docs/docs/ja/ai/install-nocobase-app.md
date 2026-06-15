@@ -24,22 +24,35 @@ nb --version
 
 ## ステップ 2：アプリを初期化
 
-デフォルトでは、ビジュアルウィザードをそのまま開く方法をおすすめします：
+UI ウィザードでインストールする方法をおすすめします：
 
 ```bash
 nb init --ui
 ```
 
+1. `Getting started` - `--env` 識別子を設定し、`Install a new app` を選ぶ
+
 ![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-選ぶ setup の経路によって、表示されるステップは少し変わります。ただし、標準の `Install a new app` ルートなら、通常は次の 6 ステップが表示されます。
-
-1. `Getting started` - `--env` 識別子を設定し、`Install a new app` を選ぶ
 2. `App environment` - アプリの基本情報、保存先、ランタイムポートを設定する
+
+![2026-06-14-10-03-06](https://static-docs.nocobase.com/2026-06-14-10-03-06.png)
+
 3. `App source and version` - アプリの取得方法と使用するソース、バージョンを選ぶ
+
+![2026-06-14-09-51-33](https://static-docs.nocobase.com/2026-06-14-09-51-33.png)
+
 4. `Configure the database` - 組み込みデータベースかカスタムデータベースを選ぶ
+
+![2026-06-14-09-52-05](https://static-docs.nocobase.com/2026-06-14-09-52-05.png)
+
 5. `Create an admin account` - 最初の管理者アカウントを設定する
+
+![2026-06-14-09-52-56](https://static-docs.nocobase.com/2026-06-14-09-52-56.png)
+
 6. `Connection & authentication` - アプリのアクセス URL を入力し、認証方式を選ぶ
+
+![2026-06-14-10-00-35](https://static-docs.nocobase.com/2026-06-14-10-00-35.png)
 
 ターミナルでの操作に慣れている場合は、次のコマンドを直接実行してもかまいません：
 

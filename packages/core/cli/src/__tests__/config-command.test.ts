@@ -179,13 +179,13 @@ test('nb config set/get/delete supports default ui/api host values', async () =>
       parse: vi.fn(async () => ({
         args: {
           key: 'default-ui-host',
-          value: '0.0.0.0',
+          value: '116.62.46.238',
         },
       })),
       log: vi.fn(),
     });
     await ConfigSet.prototype.run.call(setUiHostCommand);
-    expect(setUiHostCommand.log).toHaveBeenCalledWith('default-ui-host=0.0.0.0');
+    expect(setUiHostCommand.log).toHaveBeenCalledWith('default-ui-host=116.62.46.238');
 
     const setApiHostCommand = Object.assign(Object.create(ConfigSet.prototype), {
       parse: vi.fn(async () => ({
@@ -208,7 +208,7 @@ test('nb config set/get/delete supports default ui/api host values', async () =>
       log: vi.fn(),
     });
     await ConfigGet.prototype.run.call(getUiHostCommand);
-    expect(getUiHostCommand.log).toHaveBeenCalledWith('0.0.0.0');
+    expect(getUiHostCommand.log).toHaveBeenCalledWith('116.62.46.238');
 
     const getApiHostCommand = Object.assign(Object.create(ConfigGet.prototype), {
       parse: vi.fn(async () => ({

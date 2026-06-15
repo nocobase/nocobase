@@ -64,6 +64,10 @@ import {
   prepareFlowSurfaceApplyBlueprintDocument,
   resolveApplyBlueprintPageLocator,
 } from './blueprint';
+import {
+  exportFlowSurfaceBlueprintDocument,
+  type FlowSurfaceExportBlueprintUnsupportedPolicy,
+} from './blueprint/export-document';
 import type {
   FlowSurfaceApplyBlueprintDefaults,
   FlowSurfaceApplyBlueprintDocument,
@@ -179,6 +183,7 @@ import {
   getCollectionModelAttributes,
   getCollectionName,
   getCollectionTitle,
+  getCollectionTitleFieldName,
   getInvalidChartBuilderRelationDirectSubfieldDetails,
   getUnsupportedChartBuilderRelationSubfieldDetails,
   getFieldFilterable,
@@ -217,7 +222,11 @@ import {
   isApprovalFormContainerUse,
   normalizeApprovalSemanticUse,
 } from './approval';
-import { buildFieldValueWriteResult, normalizeFieldValueRules } from './reaction/field-value';
+import {
+  buildFieldValueWriteResult,
+  normalizeFieldValueRules,
+  validateFieldValueRulesAgainstCapability,
+} from './reaction/field-value';
 import { buildReactionFingerprint } from './reaction/fingerprint';
 import {
   compileActionLinkageCanonicalRules,
@@ -236,6 +245,7 @@ import type {
   FlowSurfaceActionLinkageRule,
   FlowSurfaceBlockLinkageRule,
   FlowSurfaceFieldLinkageRule,
+  FlowSurfaceFieldValueCapability,
   FlowSurfaceLinkageCapability,
   FlowSurfaceFieldLinkageScene,
   FlowSurfaceFieldValueRule,
@@ -259,6 +269,7 @@ import {
 } from './association-title-field';
 import {
   buildFlowSurfaceDefaultActionPopupBlocks,
+  collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths,
   getFlowSurfaceDefaultActionPopupConfigByUse,
   hasFlowSurfaceInlinePopupBlocks,
   hasFlowSurfaceInlinePopupTemplate,
@@ -268,6 +279,7 @@ import {
   pickFlowSurfaceDefaultActionPopupFieldPaths,
   resolveFlowSurfaceDefaultActionPopupTabTitle,
 } from './default-action-popup';
+import { isRelationBackingForeignKeyField } from './relation-backing-foreign-key';
 import type {
   FlowSurfaceDefaultActionPopupConfig,
   FlowSurfaceDefaultActionPopupFieldCandidate,
@@ -621,6 +633,13 @@ type FlowSurfaceDefaultActionSettings = Record<string, any>;
 type FlowSurfaceRequestRoles = readonly string[] | string;
 type FlowSurfaceModelPatchOptions = { transaction?: any };
 type FlowSurfaceReadOptions = { transaction?: any; currentRoles?: FlowSurfaceRequestRoles };
+type FlowSurfaceExportBlueprintRequest = {
+  target: FlowSurfaceReadLocator;
+  unsupportedPolicy: FlowSurfaceExportBlueprintUnsupportedPolicy;
+};
+
+const FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE = 'exportBlueprint v1 only supports root page export';
+
 type FlowSurfaceRuntimeOptions = {
   transaction?: any;
   currentRoles?: FlowSurfaceRequestRoles;
@@ -3805,6 +3824,34 @@ export class FlowSurfacesService {
     return capability;
   }
 
+  private async getLiveFieldValueCapability(
+    writeTarget: FlowSurfaceWriteTarget,
+    resolvedTarget: FlowSurfaceResolvedReactionTarget,
+    node: any,
+    options: { transaction?: any } = {},
+  ): Promise<FlowSurfaceFieldValueCapability> {
+    const context = await this.context(
+      {
+        target: writeTarget,
+      },
+      options,
+    );
+    const { capabilities } = buildReactionMetaCapabilities({
+      resolvedTarget: {
+        ...resolvedTarget,
+        node,
+      },
+      context,
+    });
+    const capability = capabilities.find((item): item is FlowSurfaceFieldValueCapability => item.kind === 'fieldValue');
+    if (!capability) {
+      throwBadRequest(
+        `flowSurfaces reaction target '${resolvedTarget.use || resolvedTarget.target.uid}' does not support fieldValue`,
+      );
+    }
+    return capability;
+  }
+
   async getReactionMeta(
     values: FlowSurfaceGetReactionMetaValues,
     options: { transaction?: any } = {},
@@ -3858,6 +3905,8 @@ export class FlowSurfacesService {
       },
       rules: Array.isArray(values?.rules) ? values.rules : [],
     });
+    const liveCapability = await this.getLiveFieldValueCapability(writeTarget, resolvedTarget, node, options);
+    validateFieldValueRulesAgainstCapability(result.normalizedRules, liveCapability);
 
     await this.persistReactionSlot(storageNode, capability.resolvedSlot, result.canonicalRules, options);
 
@@ -4110,6 +4159,47 @@ export class FlowSurfacesService {
     }
     const publicNode = this.stripInternalSurfaceMetaFromNodeTree(_.cloneDeep(rawNode));
     return this.buildSurfaceReadPayload(target, resolved, publicNode, options);
+  }
+
+  async exportBlueprint(input: Record<string, unknown>, options: FlowSurfaceReadOptions = {}) {
+    const request = this.normalizeExportBlueprintRequest(input);
+    const resolved = await this.locator.resolve(request.target, options);
+    if (resolved.kind !== 'page' || !resolved.pageRoute) {
+      throwBadRequest(FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE);
+    }
+
+    const pageSchemaUid = this.resolveExportBlueprintPageSchemaUid(request.target, resolved);
+    await this.assertExportBlueprintRootTarget(request.target, resolved, pageSchemaUid, options.transaction);
+    const rawNode = await this.decorateTemplateReadbackTree(
+      this.normalizePopupTreeShape(
+        await this.loadResolvedNode(resolved, options.transaction, {
+          persistCalendarPopupHosts: false,
+        }),
+      ),
+      options.transaction,
+    );
+    if (!rawNode?.uid) {
+      throwBadRequest(`flowSurfaces exportBlueprint target '${pageSchemaUid}' could not resolve a readable page tree`);
+    }
+
+    const pageRoute = resolved.pageRoute
+      ? ((await this.routeSync.hydrateRoute(resolved.pageRoute, options.transaction)) as Record<string, unknown>)
+      : undefined;
+    const result = exportFlowSurfaceBlueprintDocument({
+      page: rawNode,
+      pageRoute,
+      target: {
+        pageSchemaUid,
+      },
+      unsupportedPolicy: request.unsupportedPolicy,
+    });
+
+    return {
+      ...result,
+      document: prepareFlowSurfaceApplyBlueprintDocument(
+        result.document as Parameters<typeof prepareFlowSurfaceApplyBlueprintDocument>[0],
+      ),
+    };
   }
 
   private getDeclaredKeyPersistenceDeps() {
@@ -8740,11 +8830,6 @@ export class FlowSurfacesService {
           requiredFieldCount: options.requiredFieldCount,
         },
       );
-      if (!hasOwnDefined(normalizedSettings, 'filterableFieldNames')) {
-        normalizedSettings.filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(
-          normalizedSettings.defaultFilter,
-        );
-      }
     }
     return normalizedSettings;
   }
@@ -15326,17 +15411,6 @@ export class FlowSurfacesService {
       const filterValue = this.normalizeEffectivePublicDataSurfaceDefaultFilter(normalizedFilterValue, {
         requiredFieldCount: options.requiredFieldCount,
       });
-      if (!hasPropsFilterableFieldNames && !hasStepFilterableFieldNames) {
-        const filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(filterValue);
-        if (filterableFieldNames.length) {
-          nextProps.filterableFieldNames = filterableFieldNames;
-          _.set(
-            nextStepParams,
-            ['filterSettings', 'filterableFieldNames', 'filterableFieldNames'],
-            _.cloneDeep(filterableFieldNames),
-          );
-        }
-      }
       nextProps.defaultFilterValue = _.cloneDeep(filterValue);
       nextProps.filterValue = _.cloneDeep(filterValue);
       _.set(nextStepParams, ['filterSettings', 'defaultFilter', 'defaultFilter'], _.cloneDeep(filterValue));
@@ -17422,6 +17496,126 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces:get only accepts exactly one locator: uid, pageSchemaUid, tabSchemaUid or routeId`);
     }
     return target;
+  }
+
+  private normalizeExportBlueprintRequest(input: Record<string, unknown>): FlowSurfaceExportBlueprintRequest {
+    if (!_.isPlainObject(input)) {
+      throwBadRequest(`flowSurfaces exportBlueprint payload must be an object`);
+    }
+    const unsupportedKeys = Object.keys(input).filter((key) => key !== 'target' && key !== 'options');
+    if (unsupportedKeys.length) {
+      throwBadRequest(`flowSurfaces exportBlueprint only accepts target and options`);
+    }
+    if (!_.isPlainObject(input.target)) {
+      throwBadRequest(`flowSurfaces exportBlueprint requires target`);
+    }
+    const targetInput = input.target as Record<string, unknown>;
+    const target = buildDefinedPayload({
+      uid: this.normalizeExportBlueprintLocatorValue(targetInput.uid, 'uid'),
+      pageSchemaUid: this.normalizeExportBlueprintLocatorValue(targetInput.pageSchemaUid, 'pageSchemaUid'),
+      tabSchemaUid: this.normalizeExportBlueprintLocatorValue(targetInput.tabSchemaUid, 'tabSchemaUid'),
+      routeId: this.normalizeExportBlueprintLocatorValue(targetInput.routeId, 'routeId'),
+    });
+    const unsupportedTargetKeys = Object.keys(targetInput).filter(
+      (key) => !['uid', 'pageSchemaUid', 'tabSchemaUid', 'routeId'].includes(key),
+    );
+    if (unsupportedTargetKeys.length) {
+      throwBadRequest(`flowSurfaces exportBlueprint target only accepts uid, pageSchemaUid, tabSchemaUid or routeId`);
+    }
+    if (!Object.keys(target).length) {
+      throwBadRequest(
+        `flowSurfaces exportBlueprint target requires one of uid, pageSchemaUid, tabSchemaUid or routeId`,
+      );
+    }
+    if (Object.keys(target).length > 1) {
+      throwBadRequest(
+        `flowSurfaces exportBlueprint target only accepts exactly one locator: uid, pageSchemaUid, tabSchemaUid or routeId`,
+      );
+    }
+    if (target.tabSchemaUid) {
+      throwBadRequest(FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE);
+    }
+    return {
+      target,
+      unsupportedPolicy: this.normalizeExportBlueprintUnsupportedPolicy(input.options),
+    };
+  }
+
+  private normalizeExportBlueprintUnsupportedPolicy(input: unknown): FlowSurfaceExportBlueprintUnsupportedPolicy {
+    if (_.isUndefined(input)) {
+      return 'error';
+    }
+    if (!_.isPlainObject(input)) {
+      throwBadRequest(`flowSurfaces exportBlueprint options must be an object`);
+    }
+    const options = input as Record<string, unknown>;
+    const unsupportedKeys = Object.keys(options).filter((key) => key !== 'unsupported');
+    if (unsupportedKeys.length) {
+      throwBadRequest(`flowSurfaces exportBlueprint options only accepts unsupported`);
+    }
+    const policy = options.unsupported;
+    if (_.isUndefined(policy)) {
+      return 'error';
+    }
+    if (policy === 'error' || policy === 'warn') {
+      return policy;
+    }
+    throwBadRequest(`flowSurfaces exportBlueprint options.unsupported must be 'error' or 'warn'`);
+  }
+
+  private normalizeExportBlueprintLocatorValue(value: unknown, key: string) {
+    if (_.isNil(value)) {
+      return undefined;
+    }
+    if (typeof value !== 'string' && typeof value !== 'number') {
+      throwBadRequest(`flowSurfaces exportBlueprint target.${key} must be a string`);
+    }
+    const normalized = String(value).trim();
+    return normalized || undefined;
+  }
+
+  private readRouteString(route: unknown, key: string) {
+    const routeRecord = route as ({ get?: (name: string) => unknown } & Record<string, unknown>) | undefined;
+    const value = routeRecord?.get?.(key) ?? routeRecord?.[key];
+    const normalized = typeof value === 'string' ? value.trim() : '';
+    return normalized || undefined;
+  }
+
+  private resolveExportBlueprintPageSchemaUid(
+    target: FlowSurfaceReadLocator,
+    resolved: FlowSurfaceResolvedTarget,
+  ): string {
+    const pageSchemaUid =
+      this.readRouteString(resolved.pageRoute, 'schemaUid') ||
+      (target.pageSchemaUid ? String(target.pageSchemaUid).trim() : '');
+    if (!pageSchemaUid) {
+      throwBadRequest(FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE);
+    }
+    return pageSchemaUid;
+  }
+
+  private async assertExportBlueprintRootTarget(
+    target: FlowSurfaceReadLocator,
+    resolved: FlowSurfaceResolvedTarget,
+    pageSchemaUid: string,
+    transaction?: FlowSurfaceReadOptions['transaction'],
+  ) {
+    const targetUid = target.uid ? String(target.uid).trim() : '';
+    if (!targetUid) {
+      return;
+    }
+    if (targetUid === pageSchemaUid) {
+      return;
+    }
+    const rootPageModel = await this.repository.findModelByParentId(pageSchemaUid, {
+      transaction,
+      subKey: 'page',
+      includeAsyncNode: false,
+    });
+    if (rootPageModel?.uid && targetUid === String(rootPageModel.uid).trim()) {
+      return;
+    }
+    throwBadRequest(FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE);
   }
 
   private normalizeContextPath(path?: string) {
@@ -23885,6 +24079,12 @@ export class FlowSurfacesService {
     });
   }
 
+  private isCollectionTitleField(collection: any, fieldName: string) {
+    const normalizedFieldName = String(fieldName || '').trim();
+    const titleFieldName = String(getCollectionTitleFieldName(collection) || '').trim();
+    return !!normalizedFieldName && normalizedFieldName === titleFieldName;
+  }
+
   private resolveAssociationLeafDisplaySemantics(
     field: any,
     dataSourceKey: string,
@@ -23934,6 +24134,9 @@ export class FlowSurfacesService {
     generatedPopupOnly?: boolean;
   }) {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
+    const explicitDefaultFieldPaths = collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths(
+      input.defaultFieldGroups,
+    );
     return getCollectionFields(collection).flatMap((field) => {
       const fieldName = getFieldName(field);
       const fieldInterface = getFieldInterface(field);
@@ -23941,6 +24144,9 @@ export class FlowSurfacesService {
         return [];
       }
       if (input.generatedPopupOnly && !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
+        return [];
+      }
+      if (isRelationBackingForeignKeyField(collection, field) && !explicitDefaultFieldPaths.has(fieldName)) {
         return [];
       }
       if (input.mode === 'table' && field?.options?.treeChildren) {
@@ -24053,6 +24259,12 @@ export class FlowSurfacesService {
         }
         const targetFieldName = getFieldName(targetField);
         if (!targetFieldName) {
+          continue;
+        }
+        if (
+          isRelationBackingForeignKeyField(targetCollection, targetField) &&
+          !this.isCollectionTitleField(targetCollection, targetFieldName)
+        ) {
           continue;
         }
         nextCandidates.push({
@@ -24292,10 +24504,12 @@ export class FlowSurfacesService {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
     const getFields = (targetCollection: any) => getCollectionFields(targetCollection);
     const isFilterFieldVisible = (field: any) => getFieldFilterable(field) !== false && !!getFieldInterface(field);
-    const directFields = getFields(collection).filter((field) =>
-      ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
-        ? isFilterFieldVisible(field)
-        : !!getFieldInterface(field),
+    const directFields = getFields(collection).filter(
+      (field) =>
+        !isRelationBackingForeignKeyField(collection, field) &&
+        (['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
+          ? isFilterFieldVisible(field)
+          : !!getFieldInterface(field)),
     );
     if (!directFields.length && !collection) {
       return [];
@@ -24310,11 +24524,18 @@ export class FlowSurfacesService {
         return [];
       }
       return getFields(targetCollection)
-        .filter((targetField) =>
-          ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
+        .filter((targetField) => {
+          const targetFieldName = getFieldName(targetField);
+          if (
+            isRelationBackingForeignKeyField(targetCollection, targetField) &&
+            !this.isCollectionTitleField(targetCollection, targetFieldName)
+          ) {
+            return false;
+          }
+          return ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
             ? isFilterFieldVisible(targetField)
-            : !!getFieldInterface(targetField),
-        )
+            : !!getFieldInterface(targetField);
+        })
         .map((targetField) => ({
           field: targetField,
           fieldPath: `${getFieldName(field)}.${getFieldName(targetField)}`,

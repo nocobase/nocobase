@@ -2223,6 +2223,35 @@ describe('flowSurfaces resource', () => {
       );
       expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockCase.defaultFilter);
     }
+
+    const defaultFilterOnlyBlockUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'table',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+      {
+        defaultActionSettings: {
+          filter: {
+            defaultFilter: usersDefaultFilter,
+          },
+        },
+      },
+    );
+    const defaultFilterOnlyReadback = await getSurface(rootAgent, {
+      uid: defaultFilterOnlyBlockUid,
+    });
+    const defaultFilterOnlyAction = _.castArray(defaultFilterOnlyReadback.tree.subModels?.actions || []).find(
+      (item: { use?: string }) => item?.use === 'FilterActionModel',
+    );
+    expect(defaultFilterOnlyAction?.props?.defaultFilterValue).toEqual(usersDefaultFilter);
+    expect(defaultFilterOnlyAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+      usersDefaultFilter,
+    );
+    expect(defaultFilterOnlyAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(defaultFilterOnlyAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should apply addBlock block-level defaultFilter to auto-created filter actions on data blocks', async () => {
@@ -2306,14 +2335,11 @@ describe('flowSurfaces resource', () => {
       const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
         (item: any) => item?.use === 'FilterActionModel',
       );
-      const filterableFieldNames = blockCase.defaultFilter.items.map((item: any) => item.path);
       expect(filterAction?.props?.defaultFilterValue).toEqual(blockCase.defaultFilter);
       expect(filterAction?.props?.filterValue).toEqual(blockCase.defaultFilter);
       expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockCase.defaultFilter);
-      expect(filterAction?.props?.filterableFieldNames).toEqual(filterableFieldNames);
-      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual(
-        filterableFieldNames,
-      );
+      expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
     }
   });
 
@@ -2367,7 +2393,8 @@ describe('flowSurfaces resource', () => {
       'status',
       'phone',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should auto-generate defaultFilter for compose semantic resource data blocks', async () => {
@@ -2426,7 +2453,8 @@ describe('flowSurfaces resource', () => {
       'status',
       'phone',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should reject addBlock block-level empty defaultFilter groups before low-level runtime normalization', async () => {
@@ -2855,6 +2883,8 @@ describe('flowSurfaces resource', () => {
     );
     expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
+    expect(tableFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(tableFilterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
     expect(listFilterAction?.props?.filterableFieldNames).toEqual(['nickname', 'username', 'email', 'phone']);
     expect(listFilterAction?.props?.defaultFilterValue).toEqual(settingsDefaultFilter);
     expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(settingsDefaultFilter);
@@ -2862,6 +2892,8 @@ describe('flowSurfaces resource', () => {
     expect(calendarFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
       calendarBlockDefaultFilter,
     );
+    expect(calendarFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(calendarFilterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should reject addBlocks block-level empty defaultFilter before low-level runtime normalization', async () => {
@@ -3535,7 +3567,8 @@ describe('flowSurfaces resource', () => {
       'email',
       'phone',
     ]);
-    expect(generatedFilterAction?.props?.filterableFieldNames).toEqual(['nickname', 'username', 'email', 'phone']);
+    expect(generatedFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(generatedFilterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
 
     const invalidShapeRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -3844,6 +3877,29 @@ describe('flowSurfaces resource', () => {
         },
       ],
     };
+    const updateDefaultFilterOnly = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        props: {
+          defaultFilterValue: filterFromDefaultFilterValue,
+        },
+      },
+    });
+    expect(updateDefaultFilterOnly.status).toBe(200);
+
+    let filterReadback = await getSurface(rootAgent, {
+      uid: filterAction.uid,
+    });
+    expect(filterReadback.tree.props?.filterableFieldNames).toBeUndefined();
+    expect(filterReadback.tree.props?.defaultFilterValue).toEqual(filterFromDefaultFilterValue);
+    expect(filterReadback.tree.props?.filterValue).toEqual(filterFromDefaultFilterValue);
+    expect(filterReadback.tree.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
+    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+      filterFromDefaultFilterValue,
+    );
+
     const updateViaProps = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -3857,7 +3913,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(updateViaProps.status).toBe(200);
 
-    let filterReadback = await getSurface(rootAgent, {
+    filterReadback = await getSurface(rootAgent, {
       uid: filterAction.uid,
     });
     expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['username', 'email', 'nickname', 'phone']);
