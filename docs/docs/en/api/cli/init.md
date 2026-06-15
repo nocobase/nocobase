@@ -121,7 +121,7 @@ The “Default” below means the value or behavior that `nb init` usually uses 
 | `--ui`          | boolean | `false`                                                                      | Open the local browser wizard; cannot be used with `--yes` or `--resume`               |
 | `--verbose`     | boolean | `false`                                                                      | Show detailed command output                                                           |
 | `--skip-skills` | boolean | `false`                                                                      | Skip syncing NocoBase AI coding skills                                                 |
-| `--ui-host`     | string  | `127.0.0.1`                                                                  | Bind address for the `--ui` local service                                              |
+| `--ui-host`     | string  | `127.0.0.1`                                                                  | Browser-accessible host shown in the `--ui` wizard URL; the local service always listens on `0.0.0.0` |
 | `--ui-port`     | integer | `0`                                                                          | Port for the `--ui` local service; `0` means automatic assignment                      |
 | `--locale`      | string  | Follows `NB_LOCALE`, CLI config, or system locale; final fallback is `en-US` | Language for CLI prompts and the local setup UI: `en-US` or `zh-CN`                    |
 | `--resume`      | boolean | `false`                                                                      | Continue the last unfinished initialization and reuse the saved workspace env config   |

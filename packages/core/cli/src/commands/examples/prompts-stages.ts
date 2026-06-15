@@ -132,9 +132,9 @@ export default class PromptsStages extends Command {
         values: presetValues,
         pageTitle: 'nb prompts-stages — Web UI',
         documentHeading: 'nb prompts-stages — `stages` demo',
-        onServerStart: ({ host, port, url }) => {
+        onServerStart: ({ listenHost, port, url }) => {
           this.log(
-            `Local Web UI (multi-stage) ready — ${url} (listening on ${host}:${port}). Submit the form in the browser to continue.`,
+            `Local Web UI (multi-stage) ready — ${url} (listening on ${listenHost}:${port}). Submit the form in the browser to continue.`,
           );
         },
         onOpenBrowserError: (url, err) => {
