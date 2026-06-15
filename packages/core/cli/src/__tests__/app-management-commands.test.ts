@@ -4243,6 +4243,8 @@ test('destroy does not remove the saved env config when cleanup fails midway', a
 
 test('destroy reports permission fixes when storage data cannot be removed', async () => {
   const { default: Destroy } = await import('../commands/app/destroy.js');
+  const storagePath = '/home/chenos/test2/storage';
+  const resolvedStoragePath = path.resolve(storagePath);
   const storageError = new Error(
     "EACCES: permission denied, unlink '/home/chenos/test2/storage/.license/instance-id'",
   ) as Error & { code: string };
@@ -4258,7 +4260,7 @@ test('destroy reports permission fixes when storage data cannot be removed', asy
       config: {
         builtinDb: true,
         dbDialect: 'postgres',
-        storagePath: '/home/chenos/test2/storage',
+        storagePath,
       },
     },
   });
@@ -4283,11 +4285,15 @@ test('destroy reports permission fixes when storage data cannot be removed', asy
     thrown = error instanceof Error ? error : new Error(String(error));
   }
 
-  expect(thrown?.message).toContain('Failed to remove storage data for "test2" at "/home/chenos/test2/storage".');
+  expect(thrown?.message).toContain(`Failed to remove storage data for "test2" at "${resolvedStoragePath}".`);
   expect(thrown?.message).toContain(
     'The current user cannot delete one or more files under this path. Files may have been created by a Docker container running as root.',
   );
-  expect(thrown?.message).toContain('sudo chown -R "$(id -u):$(id -g)" "/home/chenos/test2/storage"');
+  if (process.platform === 'win32') {
+    expect(thrown?.message).not.toContain('sudo chown -R');
+  } else {
+    expect(thrown?.message).toContain(`sudo chown -R "$(id -u):$(id -g)" "${resolvedStoragePath}"`);
+  }
   expect(thrown?.message).toContain('nb env remove test2 --purge --force');
   expect(thrown?.message).toContain(
     "Original error: EACCES: permission denied, unlink '/home/chenos/test2/storage/.license/instance-id'",
