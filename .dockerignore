@@ -1,19 +1,98 @@
-# Ignore everything under the storage/app-dev directory
-storage/app-dev
 
-# Ignore .umi and .umi-production directories wherever they are
-**/.umi
-**/.umi-production
+# ============================================
+# Docker Build Ignore Rules
+# Optimized for production builds
+# ============================================
 
-# Ignore certain directories under packages
-packages/*/*/lib
-packages/*/*/esm
-packages/*/*/es
-packages/*/*/dist
-packages/*/*/node_modules
+# Git directories
+.git/
+.gitignore
+.gitmodules
 
-/.vscode
-/.idea
+# Node.js dependencies (will be installed in container)
+node_modules/
+package-lock.json
+yarn-error.log
 
-*.sqlite
-/uploads
+# Build artifacts
+dist/
+build/
+*.tar.gz
+
+# Documentation
+docs/
+*.md
+*.rst
+*.txt
+
+# Tests and coverage
+__tests__/
+*.test.ts
+*.spec.ts
+coverage/
+.nyc_output/
+
+# Configuration files
+.env*
+.env.*
+docker-compose*.yml
+.dockerignore
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+
+# OS specific
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Editor and IDE files
+*.iml
+*.ipr
+*.iws
+
+# Security
+secrets/
+*.pem
+*.key
+*.crt
+
+# Development tools
+.eslintrc
+.eslintignore
+.prettierrc
+.prettierignore
+commitlint.config.js
+
+# Benchmark
+benchmark/
+
+# Examples
+examples/
+
+# Locales (only include needed languages in production)
+locales/*.json
+!locales/en-US.json
+!locales/zh-CN.json
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Coverage reports
+.coverage/

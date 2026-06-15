@@ -1,0 +1,113 @@
+
+# ============================================
+# NocoBase Production Docker Image
+# Multi-stage build for optimized image size
+# ============================================
+
+# -------------------
+# Stage 1: Builder
+# -------------------
+FROM node:20-bookworm AS builder
+
+LABEL maintainer="NocoBase Team <team@nocobase.com>"
+
+# Set environment for production build
+ENV NODE_ENV=production
+ENV YARN_CACHE_FOLDER=/tmp/yarn-cache
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for layer caching
+COPY package.json yarn.lock ./
+COPY lerna.json ./
+
+# Copy workspace package files
+COPY packages/core/*/package.json ./packages/core/
+COPY packages/plugins/*/package.json ./packages/plugins/ 2>/dev/null || true
+COPY packages/client/*/package.json ./packages/client/ 2>/dev/null || true
+
+# Install dependencies
+RUN yarn install --production --frozen-lockfile && \
+    yarn cache clean
+
+# Copy all source code
+COPY . .
+
+# Build the project
+RUN yarn build
+
+# -------------------
+# Stage 2: Runtime
+# -------------------
+FROM node:20-bookworm-slim AS runtime
+
+LABEL maintainer="NocoBase Team <team@nocobase.com>"
+
+# Set environment
+ENV NODE_ENV=production
+ENV APP_DIR=/app/nocobase
+ENV STORAGE_DIR=/app/nocobase/storage
+ENV LOG_DIR=/app/nocobase/logs
+
+# Create non-root user for security
+RUN groupadd -r nocobase && \
+    useradd -r -g nocobase -d $APP_DIR nocobase
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    nginx \
+    postgresql-client-16 \
+    libaio1 \
+    libfreetype6 \
+    fontconfig \
+    libgssapi-krb5-2 \
+    fonts-liberation \
+    fonts-noto-cjk \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clean up default nginx config
+RUN rm -rf /etc/nginx/sites-enabled/default
+
+# Copy build artifacts from builder stage
+COPY --from=builder --chown=nocobase:nocobase /app $APP_DIR
+
+# Set up nginx config for docs
+COPY docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
+
+# Create necessary directories
+RUN mkdir -p $STORAGE_DIR/uploads \
+    $STORAGE_DIR/data \
+    $LOG_DIR \
+    /var/log/nginx \
+    && chown -R nocobase:nocobase $APP_DIR $STORAGE_DIR $LOG_DIR /var/log/nginx
+
+# Copy entrypoint script
+COPY docker/nocobase/docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh && \
+    chown nocobase:nocobase /app/docker-entrypoint.sh
+
+# Switch to non-root user
+USER nocobase
+
+# Set working directory
+WORKDIR $APP_DIR
+
+# Expose ports
+EXPOSE 80 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Entrypoint
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
