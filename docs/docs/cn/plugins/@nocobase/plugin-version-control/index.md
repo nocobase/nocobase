@@ -1,7 +1,7 @@
 ---
-title: "版本管理"
-keywords: "版本管理,插件,NocoBase"
-displayName: "版本管理"
+title: "版本控制"
+keywords: "版本控制,插件,NocoBase"
+displayName: "版本控制"
 packageName: '@nocobase/plugin-version-control'
 supportedVersions:
   - 2.x
@@ -13,4 +13,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# 版本管理
+# 版本控制
