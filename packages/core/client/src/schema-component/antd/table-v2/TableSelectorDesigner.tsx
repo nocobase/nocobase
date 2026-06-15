@@ -12,28 +12,28 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTableSelectorContext } from '../../../block-provider';
+import { useTableSelectorContext } from '../../../block-provider/TableSelectorProvider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { SetDataLoadingMode } from '../../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { useRecord } from '../../../record-provider';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
-  GeneralSchemaDesigner,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
-} from '../../../schema-settings';
+} from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettingsDataScope';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { RecordPickerContext } from '../../antd/record-picker';
-import { useDesignable } from '../../hooks';
-import { removeNullCondition } from '../filter';
+import { removeNullCondition } from '../filter/useFilterActionProps';
+import { useDesignable } from '../../hooks/useDesignable';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection_deprecated();

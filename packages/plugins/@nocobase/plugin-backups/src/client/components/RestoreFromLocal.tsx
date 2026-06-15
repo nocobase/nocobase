@@ -113,7 +113,7 @@ export const RestoreFromLocal = () => {
           {dialect === 'postgres' && (
             <Form.Item
               label={<strong>{t('Confirm the application database schema')}</strong>}
-              help={t('Required if application database schema is different with the backup', {currentDbSchemaTips})}
+              help={t('Required if application database schema is different with the backup', { currentDbSchemaTips })}
             >
               <Input autoComplete="new-password" value={dbSchema} onChange={(e) => setDbSchema(e.target.value)} />
             </Form.Item>

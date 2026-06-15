@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-migration-manager'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Migrations-Manager
 

@@ -1,8 +1,8 @@
 ---
-displayName: "工作流：JavaScript 节点"
-packageName: '@nocobase/plugin-workflow-javascript'
 title: "工作流：JavaScript 节点"
 keywords: "工作流：JavaScript 节点,插件,NocoBase"
+displayName: "工作流：JavaScript 节点"
+packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x

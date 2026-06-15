@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "Аутентификация пользователя",
+    "label": "Аутентификация пользователей",
     "items": [
       {
         "type": "custom-link",
@@ -113,7 +113,7 @@
           {
             "type": "custom-link",
             "label": "Расширение типов аутентификации",
-            "link": "/auth-verification/auth/dev"
+            "link": "/auth-verification/auth/dev/"
           },
           {
             "type": "custom-link",

@@ -1,4 +1,6 @@
 ---
+title: "Comments"
+keywords: "Comments,Plugin,NocoBase"
 displayName: "Comments"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:

@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Calcul
 
 Le nœud de **calcul** permet d'évaluer une expression. Le résultat de ce calcul est enregistré dans le nœud correspondant, et peut être utilisé par les nœuds suivants. C'est un outil puissant pour calculer, traiter et transformer des données. Dans une certaine mesure, il peut remplacer la fonctionnalité des langages de programmation qui consiste à appeler une fonction sur une valeur et à l'assigner à une variable.
@@ -10,11 +6,11 @@ Le nœud de **calcul** permet d'évaluer une expression. Le résultat de ce calc
 
 Dans l'interface de configuration du **flux de travail**, cliquez sur le bouton plus (« + ») dans le flux pour ajouter un nœud de « Calcul » :
 
-![计算节点_添加](https://static-docs.nocobase.com/58a465540d26945251cd143eb4b16579.png)
+![计算节点_添加](https://static-docs.nocobase.com/58a455540d26945251cd143eb4b16579.png)
 
 ## Configuration du nœud
 
-![计算节点_节点配置](https://static-docs.nocobase.com/6a155de3f6a83d8cd1881b2d9c33874.png)
+![计算节点_节点配置](https://static-docs.nocobase.com/6a155de3f6a883d8cd1881b2d9c33874.png)
 
 ### Moteur de calcul
 

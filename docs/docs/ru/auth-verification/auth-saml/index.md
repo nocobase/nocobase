@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-auth-saml'
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 
 # Аутентификация: SAML 2.0
 
@@ -28,7 +24,7 @@ pkg: '@nocobase/plugin-auth-saml'
 
 ## Конфигурация
 
-![](https://static-docs.nocobase.com/976b66e58973c322d81dcddd22c6146.png)
+![](https://static-docs.nocobase.com/976b66e589973c322d81dcddd22c6146.png)
 
 - SSO URL — предоставляется IdP, используется для единого входа (Single Sign-On).
 - Открытый ключ (Public Certificate) — предоставляется IdP.

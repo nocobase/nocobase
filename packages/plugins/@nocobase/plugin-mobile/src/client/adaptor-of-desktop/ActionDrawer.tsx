@@ -21,7 +21,7 @@ import {
 import { ConfigProvider } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
-import React, { FC, ReactNode, useCallback, useEffect, useMemo } from 'react';
+import React, { CSSProperties, FC, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMobileActionDrawerStyle } from './ActionDrawer.style';
 import { usePopupContainer } from './FilterAction';
@@ -34,6 +34,14 @@ export interface MobilePopupProps {
   onClose: () => void;
   children: ReactNode;
 }
+
+const getMobilePopupMaxHeight = () => {
+  if (typeof CSS !== 'undefined' && CSS.supports?.('height', '100dvh')) {
+    return 'calc(100dvh - var(--nb-mobile-page-header-height, 46px))';
+  }
+
+  return 'calc(100vh - var(--nb-mobile-page-header-height, 46px))';
+};
 
 export const MobilePopup: FC<MobilePopupProps> = (props) => {
   const { title, visible, onClose: closePopup, children, minHeight } = props;
@@ -51,6 +59,16 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
       minHeight,
     };
   }, [newZIndex, minHeight]);
+  const bodyStyle: CSSProperties = useMemo(() => {
+    return {
+      ...zIndexStyle,
+      maxHeight: getMobilePopupMaxHeight(),
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+    };
+  }, [zIndexStyle]);
 
   const theme = useMemo(() => {
     return {
@@ -75,9 +93,9 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
           visible={visible}
           onClose={closePopup}
           onMaskClick={closePopup}
-          getContainer={() => popupContainerRef.current}
+          getContainer={() => popupContainerRef.current || document.body}
           bodyClassName="nb-mobile-action-drawer-body"
-          bodyStyle={zIndexStyle}
+          bodyStyle={bodyStyle}
           maskStyle={zIndexStyle}
           style={zIndexStyle}
           destroyOnClose
@@ -109,7 +127,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { visible, setVisible } = useActionContext();
-  const { visiblePopup } = usePopupContainer(visible);
+  const { visiblePopup } = usePopupContainer(!!visible);
 
   // 克隆的目的是为了把底部按钮的 schema 去掉，避免重复渲染。
   // 不使用 filterProperties 的原因是防止 Iphone 中出现卡死的问题，具体原因未知。

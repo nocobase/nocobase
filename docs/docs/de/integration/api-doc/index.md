@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-api-doc"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 pkg: "@nocobase/plugin-api-doc"

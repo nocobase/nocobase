@@ -15,6 +15,7 @@ import type { ReadStream } from 'fs';
 import { randomUUID } from 'crypto';
 import fs from 'fs/promises';
 import asyncTasksResource from '../resourcers/async-tasks';
+import { Logger } from '@nocobase/logger';
 
 describe('task manager', () => {
   let taskManager: AsyncTasksManager;
@@ -267,6 +268,75 @@ describe('task manager', () => {
     } finally {
       await fs.unlink(filePath).catch(() => {});
     }
+  });
+
+  it('should run queued task with request id from the task creator context', async () => {
+    class LoggedTaskType extends TaskType {
+      static type = 'logged-test';
+
+      async execute() {
+        this.logger.info(`Logged task ${this.record.id} is running`);
+        this.reportProgress({
+          total: 1,
+          current: 1,
+        });
+        return {
+          completed: true,
+        };
+      }
+    }
+
+    const taskLogger = {
+      debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      trace: vi.fn(),
+    } as unknown as Logger;
+    const managerLogger = {
+      child: vi.fn(() => taskLogger),
+      debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      trace: vi.fn(),
+      warn: vi.fn(),
+    } as unknown as Logger;
+
+    taskManager.setLogger(managerLogger);
+    taskManager.registerTaskType(LoggedTaskType);
+
+    const task = await taskManager.createTask(
+      {
+        type: 'logged-test',
+        params: {},
+        createdById: root.id,
+      },
+      {
+        useQueue: true,
+        context: {
+          ...userContext,
+          reqId: 'creator-request-id',
+        },
+      },
+    );
+
+    const managerWithReqIds = taskManager as unknown as { taskReqIds: Map<string, string> };
+    expect(managerWithReqIds.taskReqIds.has(task.record.id)).toBe(false);
+
+    for (let i = 0; i < 20; i++) {
+      await task.record.reload();
+      if (task.record.status === TASK_STATUS.SUCCEEDED) {
+        break;
+      }
+      await sleep(50);
+    }
+
+    expect(task.record.status).toBe(TASK_STATUS.SUCCEEDED);
+    expect(managerLogger.child).toHaveBeenCalledWith({ reqId: 'creator-request-id' });
+    expect(managerLogger.child).toHaveBeenCalledTimes(2);
+    expect(taskLogger.debug).toHaveBeenCalledWith('Creating task of type: logged-test');
+    expect(taskLogger.info).toHaveBeenCalledWith(`New task of type: logged-test created as ${task.record.id}`);
+    expect(taskLogger.info).toHaveBeenCalledWith(`Logged task ${task.record.id} is running`);
+    expect(taskLogger.trace).toHaveBeenCalledWith(`Task ${task.record.id} of user(${root.id}) progress: 1 / 1`);
   });
 
   it('should cancel task correctly', async () => {

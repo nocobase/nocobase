@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # ICollectionManager
 
 L'interface `ICollectionManager` sert à gérer les instances de `collection` d'une source de données.

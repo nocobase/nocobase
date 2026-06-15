@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Visão geral",
+    "link": "/ai-dev/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Prática: desenvolvendo o plugin de marca d'água",
+    "link": "/ai-dev/watermark-plugin"
+  },
+  {
+    "type": "custom-link",
+    "label": "Recursos suportados",
+    "link": "/ai-dev/capabilities"
+  }
+]

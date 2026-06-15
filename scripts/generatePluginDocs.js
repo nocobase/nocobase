@@ -7,7 +7,7 @@
  *
  * Rules:
  * - CN: displayName.zh-CN, description.zh-CN (fallback to EN)
- * - All others (ar, cs, de, en, es, fr, he, hi, id, it, ja, ko, nl, pl, pt, ru, sv, th, tr, uk, vi): displayName, description (EN)
+ * - All others (de, en, es, fr, ja, pt, ru): displayName, description (EN)
  * - supportedVersions: ["2.x"] (default)
  * - isFree:        true for community plugins; false for pro-plugins
  * - defaultInstalled: false by default (do not guess)
@@ -22,30 +22,7 @@ const COMMUNITY_DIR = path.join(ROOT, 'packages', 'plugins', '@nocobase');
 const PRO_DIR = path.join(ROOT, 'packages', 'pro-plugins', '@nocobase');
 
 const DOCS_ROOT = path.join(ROOT, 'docs', 'docs');
-const LOCALES = [
-  'ar',
-  'cn',
-  'cs',
-  'de',
-  'en',
-  'es',
-  'fr',
-  'he',
-  'hi',
-  'id',
-  'it',
-  'ja',
-  'ko',
-  'nl',
-  'pl',
-  'pt',
-  'ru',
-  'sv',
-  'th',
-  'tr',
-  'uk',
-  'vi',
-];
+const LOCALES = ['cn', 'de', 'en', 'es', 'fr', 'ja', 'pt', 'ru', 'vi', 'id'];
 
 // Load preset deprecated list (optional)
 const PRESET_PKG = path.join(ROOT, 'packages', 'presets', 'nocobase', 'package.json');
@@ -61,10 +38,92 @@ function readJsonSafe(filePath) {
   }
 }
 
+function readFrontmatterSafe(filePath) {
+  if (!fs.existsSync(filePath)) return '';
+  const content = fs.readFileSync(filePath, 'utf8');
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  return match ? match[1] : '';
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getFrontmatterFieldLines(frontmatter, fieldName) {
+  if (!frontmatter) return null;
+  const lines = frontmatter.split(/\r?\n/);
+  const fieldRegExp = new RegExp(`^${escapeRegExp(fieldName)}:\\s*(.*)$`);
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = lines[index].match(fieldRegExp);
+    if (!match) continue;
+
+    const fieldLines = [lines[index]];
+    const value = match[1].trim();
+    if (value && value !== '|' && value !== '>') {
+      return fieldLines;
+    }
+
+    for (let nextIndex = index + 1; nextIndex < lines.length; nextIndex += 1) {
+      const line = lines[nextIndex];
+      if (/^\S[^:]*:\s*/.test(line)) break;
+      fieldLines.push(line);
+    }
+    return fieldLines;
+  }
+
+  return null;
+}
+
+function frontmatterFieldHasValue(fieldLines) {
+  if (!fieldLines) return false;
+  const firstLineValue = fieldLines[0].replace(/^[^:]+:\s*/, '').trim();
+  if (firstLineValue && firstLineValue !== '|' && firstLineValue !== '>') {
+    return true;
+  }
+  return fieldLines.slice(1).some((line) => line.trim());
+}
+
+function normalizeMetaValue(value) {
+  if (Array.isArray(value)) {
+    const keywords = value.filter(Boolean).join(',');
+    return keywords || undefined;
+  }
+  if (typeof value === 'string') {
+    return value || undefined;
+  }
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  return String(value);
+}
+
+function getLocalizedMetaValue(pkgJson, fieldName, lang) {
+  const docsMeta = pkgJson?.nocobase?.docs || {};
+  const localizedFieldName = lang === 'cn' ? `${fieldName}.zh-CN` : fieldName;
+  const packageValue = fieldName === 'keywords' && Array.isArray(pkgJson[fieldName]) ? undefined : pkgJson[fieldName];
+  const values = [docsMeta[localizedFieldName], docsMeta[fieldName], pkgJson[localizedFieldName], packageValue];
+
+  for (const value of values) {
+    const normalized = normalizeMetaValue(value);
+    if (normalized) return normalized;
+  }
+
+  return undefined;
+}
+
+function toFrontmatterFieldLines(fieldName, value, existingFrontmatter, { preserveExisting }) {
+  const existingFieldLines = preserveExisting ? getFrontmatterFieldLines(existingFrontmatter, fieldName) : null;
+  if (frontmatterFieldHasValue(existingFieldLines)) {
+    return existingFieldLines;
+  }
+  return [`${fieldName}: "${yamlEscape(value)}"`];
+}
+
 function yamlEscape(str) {
   if (typeof str !== 'string') return '';
   // Escape backslashes and double quotes for safe YAML double-quoted scalars
-  return str.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/"/g, '\\"');
+  return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 function listPluginDirs(baseDir) {
@@ -76,6 +135,8 @@ function listPluginDirs(baseDir) {
 }
 
 function toFrontmatter({
+  title,
+  keywords,
   displayName,
   packageName,
   description,
@@ -86,12 +147,19 @@ function toFrontmatter({
   supportedVersions,
   points,
   editionLevel,
+  existingFrontmatter,
+  preserveExistingTitle,
+  preserveExistingKeywords,
 }) {
   if (isFree) {
     editionLevel = 0;
   }
   const lines = [
     '---',
+    ...toFrontmatterFieldLines('title', title, existingFrontmatter, { preserveExisting: preserveExistingTitle }),
+    ...toFrontmatterFieldLines('keywords', keywords, existingFrontmatter, {
+      preserveExisting: preserveExistingKeywords,
+    }),
     `displayName: "${yamlEscape(displayName)}"`,
     `packageName: '${packageName}'`,
     ...(Array.isArray(supportedVersions) && supportedVersions.length
@@ -198,8 +266,16 @@ function generateForPlugin(dir, { isPro }) {
     const outFile = path.join(outDir, 'index.md');
 
     const useCN = lang === 'cn';
+    const existingFrontmatter = readFrontmatterSafe(outFile);
+    const displayName = useCN ? displayNameCN : displayNameEN;
+    const titleMeta = getLocalizedMetaValue(pkgJson, 'title', lang);
+    const keywordsMeta = getLocalizedMetaValue(pkgJson, 'keywords', lang);
+    const title = titleMeta || displayName;
+    const keywords = keywordsMeta || `${title},${useCN ? '插件' : 'Plugin'},NocoBase`;
     const content = toFrontmatter({
-      displayName: useCN ? displayNameCN : displayNameEN,
+      title,
+      keywords,
+      displayName,
       packageName,
       description: useCN ? descriptionCN : descriptionEN,
       isFree,
@@ -209,6 +285,9 @@ function generateForPlugin(dir, { isPro }) {
       supportedVersions,
       points,
       editionLevel,
+      existingFrontmatter,
+      preserveExistingTitle: !titleMeta,
+      preserveExistingKeywords: !keywordsMeta,
     });
     fs.writeFileSync(outFile, content, 'utf8');
     // eslint-disable-next-line no-console

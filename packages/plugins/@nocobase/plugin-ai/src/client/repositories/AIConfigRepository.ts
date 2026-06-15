@@ -8,7 +8,7 @@
  */
 
 import { define, observable } from '@formily/reactive';
-import { ToolsEntry, type ToolsManager } from '@nocobase/client';
+import { SkillsEntry, ToolsEntry, type ToolsManager } from '@nocobase/client';
 import { AIEmployee } from '../ai-employees/types';
 
 export interface LLMServiceItem {
@@ -28,13 +28,18 @@ export class AIConfigRepository {
   aiEmployeesLoading = false;
   aiTools = observable.shallow<ToolsEntry[]>([]);
   aiToolsLoading = false;
+  aiSkills = observable.shallow<SkillsEntry[]>([]);
+  aiSkillsLoading = false;
 
   private llmServicesLoaded = false;
   private aiEmployeesLoaded = false;
   private aiToolsLoaded = false;
+  private aiToolsBySessionId = null;
+  private aiSkillsLoaded = false;
   private llmServicesInFlight: Promise<LLMServiceItem[]> | null = null;
   private aiEmployeesInFlight: Promise<AIEmployee[]> | null = null;
   private aiToolsInFlight: Promise<ToolsEntry[]> | null = null;
+  private aiSkillsInFlight: Promise<SkillsEntry[]> | null = null;
 
   constructor(
     private readonly apiClient: any,
@@ -47,6 +52,8 @@ export class AIConfigRepository {
       aiEmployeesLoading: observable.ref,
       aiTools: observable.shallow,
       aiToolsLoading: observable.ref,
+      aiSkills: observable.shallow,
+      aiSkillsLoading: observable.ref,
     });
   }
 
@@ -113,11 +120,11 @@ export class AIConfigRepository {
     }, {});
   }
 
-  async getAITools(): Promise<ToolsEntry[]> {
+  async getAITools(sessionId?: string): Promise<ToolsEntry[]> {
     if (this.aiToolsInFlight) {
       return this.aiToolsInFlight;
     }
-    if (this.aiToolsLoaded) {
+    if (this.aiToolsLoaded && this.aiToolsBySessionId === sessionId) {
       return this.aiTools;
     }
     return this.startRefresh(
@@ -125,19 +132,47 @@ export class AIConfigRepository {
       (promise) => {
         this.aiToolsInFlight = promise;
       },
-      () => this.doRefreshAITools(),
+      () => this.doRefreshAITools(sessionId),
       () => this.aiTools,
     );
   }
 
-  async refreshAITools(): Promise<ToolsEntry[]> {
+  async refreshAITools(sessionId?: string): Promise<ToolsEntry[]> {
     return this.startRefresh(
       this.aiToolsInFlight,
       (promise) => {
         this.aiToolsInFlight = promise;
       },
-      () => this.doRefreshAITools(),
+      () => this.doRefreshAITools(sessionId),
       () => this.aiTools,
+    );
+  }
+
+  async getAISkills(): Promise<SkillsEntry[]> {
+    if (this.aiSkillsInFlight) {
+      return this.aiSkillsInFlight;
+    }
+    if (this.aiSkillsLoaded) {
+      return this.aiSkills;
+    }
+    return this.startRefresh(
+      this.aiSkillsInFlight,
+      (promise) => {
+        this.aiSkillsInFlight = promise;
+      },
+      () => this.doRefreshAISkills(),
+      () => this.aiSkills,
+    );
+  }
+
+  async refreshAISkills(): Promise<SkillsEntry[]> {
+    return this.startRefresh(
+      this.aiSkillsInFlight,
+      (promise) => {
+        this.aiSkillsInFlight = promise;
+      },
+      () => this.doRefreshAISkills(),
+      () => this.aiSkills,
     );
   }
 
@@ -191,23 +226,42 @@ export class AIConfigRepository {
     }
   }
 
-  private async doRefreshAITools() {
+  private async doRefreshAITools(sessionId?: string) {
     this.aiToolsLoading = true;
     try {
       let tools: ToolsEntry[] = [];
       if (this.options?.toolsManager) {
-        tools = await this.options.toolsManager.listTools();
+        tools = await this.options.toolsManager.listTools({ sessionId });
       } else {
-        const { data: res } = await this.apiClient.resource('aiTools').list({});
+        const { data: res } = await this.apiClient.resource('aiTools').list({
+          filter: { sessionId },
+        });
         tools = Array.isArray(res?.data) ? res.data : [];
       }
       this.aiTools = tools;
       this.aiToolsLoaded = true;
+      this.aiToolsBySessionId = sessionId;
     } catch {
       this.aiTools = [];
       this.aiToolsLoaded = false;
+      this.aiToolsBySessionId = null;
     } finally {
       this.aiToolsLoading = false;
+    }
+  }
+
+  private async doRefreshAISkills() {
+    this.aiSkillsLoading = true;
+    try {
+      const { data: res } = await this.apiClient.resource('aiSkills').list({});
+      const data = Array.isArray(res?.data) ? (res.data as SkillsEntry[]) : [];
+      this.aiSkills = data;
+      this.aiSkillsLoaded = true;
+    } catch {
+      this.aiSkills = [];
+      this.aiSkillsLoaded = false;
+    } finally {
+      this.aiSkillsLoading = false;
     }
   }
 }

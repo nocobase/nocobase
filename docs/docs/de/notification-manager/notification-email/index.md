@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-notification-email'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Benachrichtigung: E-Mail
 

@@ -1,4 +1,6 @@
 ---
+title: "Custom variables"
+keywords: "Custom variables"
 displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:

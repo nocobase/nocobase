@@ -8,5 +8,8 @@
  */
 
 import { ModelConstructor } from '@nocobase/flow-engine';
+import { DisplaySimpleFieldModel } from './SimpleFieldModel';
 
-export default {} as Record<string, ModelConstructor>;
+export default {
+  DisplaySimpleFieldModel,
+} as Record<string, ModelConstructor>;
