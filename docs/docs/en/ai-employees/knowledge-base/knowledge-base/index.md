@@ -39,7 +39,7 @@ The three knowledge base types have different capability boundaries:
 | --- | --- |
 | Local | Documents, segment files, and vector data are managed by NocoBase. It supports uploading documents in the UI, and also supports creating, updating, deleting, and retrieving knowledge base documents through workflow nodes |
 | Readonly | Documents and vector data are maintained by an external system. NocoBase cannot maintain this data in the UI or workflows, and only uses the knowledge base as a RAG retrieval source. Currently, PGVector is the only supported vector database |
-| External | Documents, vector data, and retrieval logic are all handled by an external system. NocoBase cannot directly maintain documents or vector data. Developers need to provide a plugin and implement the retrieval logic in that plugin, such as connecting to a vector database not yet supported by NocoBase or calling a third-party retrieval API. For development details, see [KnowledgeBase plugin](../../../plugin-development/server/knowledge-base) |
+| External | Documents, vector data, and retrieval logic are all handled by an external system. NocoBase cannot directly maintain documents or vector data. Developers need to provide a plugin and implement the retrieval logic in that plugin, such as connecting to a vector database not yet supported by NocoBase or calling a third-party retrieval API. For development details, see [External Knowledge Base plugin](../dev/external-knowledge-base) |
 
 Local knowledge bases are recommended by default. Only consider Readonly or External when documents and vector data are already maintained outside NocoBase and NocoBase only needs to read retrieval results.
 

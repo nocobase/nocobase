@@ -19,4 +19,3 @@ NocoBase のサーバーサイドプラグイン開発では、開発者がNocoB
 | **ログ出力**               | ログのフォーマットと出力方法をカスタマイズし、デバッグと監視機能を強化します。   | [logger.md](./logger.md)                        |
 | **カスタムコマンド**             | NocoBase CLIを拡張し、カスタムコマンドを追加します。               | [command.md](./command.md)                      |
 | **テストケースの記述**           | テストケースを記述・実行し、プラグインの安定性と機能の正確性を保証します。 | [test.md](./test.md)                            |
-| **KnowledgeBase ナレッジベース** | AI employees 向けに外部ナレッジベース検索を拡張します。 | [knowledge-base.md](./knowledge-base.md) |

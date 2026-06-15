@@ -1,20 +1,20 @@
 ---
-title: "Plugin KnowledgeBase"
+title: "Plugin External Knowledge Base"
 description: "Phát triển plugin cơ sở tri thức NocoBase: đăng ký Provider bên ngoài, triển khai VectorStoreService, trả về kết quả RAG và cấu hình tham số."
 keywords: "plugin cơ sở tri thức,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI employees,NocoBase"
 ---
 
-# Plugin KnowledgeBase
+# Plugin External Knowledge Base
 
-Trong NocoBase, **plugin cơ sở tri thức (KnowledgeBase Plugin)** dùng để mở rộng nguồn truy xuất RAG cho AI employees. Với phần lớn trường hợp, Local knowledge base là đủ. Chỉ khi tài liệu, dữ liệu vector hoặc logic truy xuất đã được hệ thống bên ngoài duy trì, bạn mới cần phát triển plugin cơ sở tri thức bên ngoài.
+Trong NocoBase, **plugin cơ sở tri thức (External Knowledge Base Plugin)** dùng để mở rộng nguồn truy xuất RAG cho AI employees. Với phần lớn trường hợp, Local knowledge base là đủ. Chỉ khi tài liệu, dữ liệu vector hoặc logic truy xuất đã được hệ thống bên ngoài duy trì, bạn mới cần phát triển plugin cơ sở tri thức bên ngoài.
 
 Plugin cơ sở tri thức bên ngoài không tham gia quy trình tải tài liệu, chia đoạn, vector hóa hoặc xóa tài liệu trong NocoBase. Plugin chỉ nhận yêu cầu truy xuất khi AI employee hội thoại và trả về các đoạn tài liệu phù hợp.
 
 :::tip Đọc trước
 
-- [Tổng quan cơ sở tri thức](../../ai-employees/knowledge-base/knowledge-base/) - Hiểu ranh giới của Local, Readonly và External
-- [Plugin](./plugin.md) - Hiểu lifecycle plugin server và `this.app.pm`
-- [i18n](./i18n.md) - Chuẩn bị bản dịch nếu plugin cung cấp form cấu hình
+- [Tổng quan cơ sở tri thức](../knowledge-base/) - Hiểu ranh giới của Local, Readonly và External
+- [Plugin](../../../plugin-development/server/plugin.md) - Hiểu lifecycle plugin server và `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Chuẩn bị bản dịch nếu plugin cung cấp form cấu hình
 
 :::
 
@@ -312,7 +312,7 @@ Trong đó:
 
 ## Liên kết liên quan
 
-- [Tổng quan cơ sở tri thức](../../ai-employees/knowledge-base/knowledge-base/) - Ranh giới của Local, Readonly và External
-- [Plugin](./plugin.md) - Lifecycle plugin server và `this.app.pm`
-- [i18n](./i18n.md) - Bản dịch frontend và server của plugin
-- [Tổng quan phát triển client](../client/index.md) - Entry client, component và năng lực context
+- [Tổng quan cơ sở tri thức](../knowledge-base/) - Ranh giới của Local, Readonly và External
+- [Plugin](../../../plugin-development/server/plugin.md) - Lifecycle plugin server và `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Bản dịch frontend và server của plugin
+- [Tổng quan phát triển client](../../../plugin-development/client/index.md) - Entry client, component và năng lực context

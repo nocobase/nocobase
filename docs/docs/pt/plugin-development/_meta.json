@@ -118,11 +118,6 @@
         "type": "custom-link",
         "label": "Test (Teste)",
         "link": "/plugin-development/server/test"
-      },
-      {
-        "type": "custom-link",
-        "label": "KnowledgeBase (Base de conhecimento)",
-        "link": "/plugin-development/server/knowledge-base"
       }
     ]
   },

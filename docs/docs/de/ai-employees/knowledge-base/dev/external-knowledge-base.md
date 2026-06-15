@@ -1,20 +1,20 @@
 ---
-title: "KnowledgeBase-Plugin"
+title: "External Knowledge Base Plugin"
 description: "Entwicklung eines NocoBase-Wissensdatenbank-Plugins: externen Provider registrieren, VectorStoreService implementieren, RAG-Ergebnisse zurückgeben und Parameter konfigurieren."
 keywords: "Wissensdatenbank-Plugin,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI employees,NocoBase"
 ---
 
-# KnowledgeBase-Plugin
+# External Knowledge Base Plugin
 
-In NocoBase erweitert ein **KnowledgeBase-Plugin** die RAG-Abrufquellen für AI employees. In den meisten Fällen reicht eine Local knowledge base aus. Ein externes Wissensdatenbank-Plugin wird nur benötigt, wenn Dokumente, Vektordaten oder die Abruflogik bereits in einem externen System verwaltet werden.
+In NocoBase erweitert ein **External Knowledge Base Plugin** die RAG-Abrufquellen für AI employees. In den meisten Fällen reicht eine Local knowledge base aus. Ein externes Wissensdatenbank-Plugin wird nur benötigt, wenn Dokumente, Vektordaten oder die Abruflogik bereits in einem externen System verwaltet werden.
 
 Ein externes Wissensdatenbank-Plugin nimmt nicht am Hochladen, Segmentieren, Vektorisieren oder Löschen von Dokumenten in NocoBase teil. Es empfängt nur Abrufanfragen während Gesprächen von AI employees und gibt passende Dokumentsegmente zurück.
 
 :::tip Vorab lesen
 
-- [Überblick über Wissensdatenbanken](../../ai-employees/knowledge-base/knowledge-base/) - Grenzen von Local, Readonly und External verstehen
-- [Plugin](./plugin.md) - Lebenszyklus serverseitiger Plugins und `this.app.pm`
-- [i18n](./i18n.md) - Übersetzungen vorbereiten, wenn das Plugin ein Konfigurationsformular bereitstellt
+- [Überblick über Wissensdatenbanken](../knowledge-base/) - Grenzen von Local, Readonly und External verstehen
+- [Plugin](../../../plugin-development/server/plugin.md) - Lebenszyklus serverseitiger Plugins und `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Übersetzungen vorbereiten, wenn das Plugin ein Konfigurationsformular bereitstellt
 
 :::
 
@@ -312,7 +312,7 @@ Damit kann das externe Wissensdatenbank-Plugin von AI employees aufgerufen werde
 
 ## Verwandte Links
 
-- [Überblick über Wissensdatenbanken](../../ai-employees/knowledge-base/knowledge-base/) - Grenzen von Local, Readonly und External
-- [Plugin](./plugin.md) - Serverseitiger Plugin-Lebenszyklus und `this.app.pm`
-- [i18n](./i18n.md) - Frontend- und serverseitige Übersetzungen
-- [Überblick Client-Entwicklung](../client/index.md) - Client-Einstieg, Komponenten und Context-Funktionen
+- [Überblick über Wissensdatenbanken](../knowledge-base/) - Grenzen von Local, Readonly und External
+- [Plugin](../../../plugin-development/server/plugin.md) - Serverseitiger Plugin-Lebenszyklus und `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Frontend- und serverseitige Übersetzungen
+- [Überblick Client-Entwicklung](../../../plugin-development/client/index.md) - Client-Einstieg, Komponenten und Context-Funktionen

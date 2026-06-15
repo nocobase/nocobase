@@ -1,20 +1,20 @@
 ---
-title: "Plugin KnowledgeBase"
+title: "Plugin External Knowledge Base"
 description: "Pengembangan plugin knowledge base NocoBase: mendaftarkan Provider eksternal, mengimplementasikan VectorStoreService, mengembalikan hasil retrieval RAG, dan mengonfigurasi parameter."
 keywords: "plugin knowledge base,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI employees,NocoBase"
 ---
 
-# Plugin KnowledgeBase
+# Plugin External Knowledge Base
 
-Di NocoBase, **plugin knowledge base (KnowledgeBase Plugin)** digunakan untuk memperluas sumber retrieval RAG bagi AI employees. Untuk sebagian besar kebutuhan, Local knowledge base sudah cukup. Plugin external knowledge base hanya diperlukan ketika dokumen, data vektor, atau logika retrieval sudah dikelola oleh sistem eksternal.
+Di NocoBase, **plugin knowledge base (External Knowledge Base Plugin)** digunakan untuk memperluas sumber retrieval RAG bagi AI employees. Untuk sebagian besar kebutuhan, Local knowledge base sudah cukup. Plugin external knowledge base hanya diperlukan ketika dokumen, data vektor, atau logika retrieval sudah dikelola oleh sistem eksternal.
 
 Plugin external knowledge base tidak ikut dalam proses upload dokumen, segmentasi, vektorisasi, atau penghapusan di NocoBase. Plugin ini hanya menerima request retrieval saat percakapan AI employee dan mengembalikan segmen dokumen yang cocok.
 
 :::tip Bacaan awal
 
-- [Ikhtisar knowledge base](../../ai-employees/knowledge-base/knowledge-base/) - Memahami batas kemampuan Local, Readonly, dan External
-- [Plugin](./plugin.md) - Memahami lifecycle plugin server dan `this.app.pm`
-- [i18n](./i18n.md) - Menyiapkan terjemahan jika plugin menyediakan form konfigurasi
+- [Ikhtisar knowledge base](../knowledge-base/) - Memahami batas kemampuan Local, Readonly, dan External
+- [Plugin](../../../plugin-development/server/plugin.md) - Memahami lifecycle plugin server dan `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Menyiapkan terjemahan jika plugin menyediakan form konfigurasi
 
 :::
 
@@ -312,7 +312,7 @@ Sampai di sini, plugin external knowledge base sudah dapat dipanggil oleh AI emp
 
 ## Tautan terkait
 
-- [Ikhtisar knowledge base](../../ai-employees/knowledge-base/knowledge-base/) - Batas kemampuan Local, Readonly, dan External
-- [Plugin](./plugin.md) - Lifecycle plugin server dan `this.app.pm`
-- [i18n](./i18n.md) - Terjemahan frontend dan server plugin
-- [Ikhtisar pengembangan client](../client/index.md) - Entry client, komponen, dan kemampuan context
+- [Ikhtisar knowledge base](../knowledge-base/) - Batas kemampuan Local, Readonly, dan External
+- [Plugin](../../../plugin-development/server/plugin.md) - Lifecycle plugin server dan `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Terjemahan frontend dan server plugin
+- [Ikhtisar pengembangan client](../../../plugin-development/client/index.md) - Entry client, komponen, dan kemampuan context

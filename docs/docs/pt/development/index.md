@@ -56,5 +56,8 @@ features:
       - title: Extensão de visualização de arquivos
         details: Estenda as capacidades de visualização de arquivos para suportar a pré-visualização e renderização online de mais formatos de arquivo.
         link: /file-manager/development
+      - title: Extensão de base de conhecimento
+        details: Conecte bases de conhecimento externas ou serviços de recuperação personalizados para ampliar as fontes RAG dos AI employees.
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---
 

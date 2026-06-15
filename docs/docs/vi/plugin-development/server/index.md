@@ -25,7 +25,6 @@ Plugin server của NocoBase có thể làm rất nhiều việc: định nghĩa
 | Tùy chỉnh log output | [Logger](./logger.md) |
 | Mở rộng lệnh CLI | [Command](./command.md) |
 | Viết test case | [Test](./test.md) |
-| Mở rộng truy xuất knowledge base bên ngoài cho AI employees | [KnowledgeBase](./knowledge-base.md) |
 
 ## Liên kết liên quan
 
@@ -36,4 +35,3 @@ Plugin server của NocoBase có thể làm rất nhiều việc: định nghĩa
 - [ACL](./acl.md) — Quyền role, đoạn quyền và kiểm soát truy cập
 - [Tổng quan phát triển Plugin](../index.md) — Giới thiệu tổng thể về phát triển Plugin
 - [Viết Plugin đầu tiên](../write-your-first-plugin.md) — Tạo Plugin hoàn chỉnh từ đầu
-- [KnowledgeBase](./knowledge-base.md) — Kết nối truy xuất knowledge base bên ngoài cho AI employees

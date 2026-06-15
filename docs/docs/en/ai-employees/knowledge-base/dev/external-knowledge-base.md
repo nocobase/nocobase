@@ -1,20 +1,20 @@
 ---
-title: "KnowledgeBase plugin"
+title: "External Knowledge Base plugin"
 description: "NocoBase knowledge base plugin development: register an external knowledge base provider, implement VectorStoreService, return RAG retrieval results, and configure external knowledge base parameters."
 keywords: "knowledge base plugin,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI employees,NocoBase"
 ---
 
-# KnowledgeBase plugin
+# External Knowledge Base plugin
 
-In NocoBase, a **KnowledgeBase plugin** extends the RAG retrieval sources available to AI employees. For most use cases, a Local knowledge base is enough. You only need an external knowledge base plugin when documents, vector data, or retrieval logic are already maintained by an external system.
+In NocoBase, a **External Knowledge Base plugin** extends the RAG retrieval sources available to AI employees. For most use cases, a Local knowledge base is enough. You only need an external knowledge base plugin when documents, vector data, or retrieval logic are already maintained by an external system.
 
 An external knowledge base plugin does not participate in document upload, segmentation, vectorization, or deletion in NocoBase. It only receives retrieval requests during AI employee conversations and returns matching document segments.
 
 :::tip Prereading
 
-- [Knowledge base overview](../../ai-employees/knowledge-base/knowledge-base/) - Understand the boundaries of Local, Readonly, and External knowledge bases
-- [Plugin](./plugin.md) - Understand server-side plugin lifecycle and `this.app.pm`
-- [i18n](./i18n.md) - Prepare translations if the plugin provides a configuration form
+- [Knowledge base overview](../knowledge-base/) - Understand the boundaries of Local, Readonly, and External knowledge bases
+- [Plugin](../../../plugin-development/server/plugin.md) - Understand server-side plugin lifecycle and `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Prepare translations if the plugin provides a configuration form
 
 :::
 
@@ -312,7 +312,7 @@ At this point, the external knowledge base plugin can be called by AI employees.
 
 ## Related links
 
-- [Knowledge base overview](../../ai-employees/knowledge-base/knowledge-base/) - Boundaries of Local, Readonly, and External knowledge bases
-- [Plugin](./plugin.md) - Server-side plugin lifecycle and `this.app.pm`
-- [i18n](./i18n.md) - Plugin frontend and server-side translations
-- [Client plugin development overview](../client/index.md) - Client entry, components, and context capabilities
+- [Knowledge base overview](../knowledge-base/) - Boundaries of Local, Readonly, and External knowledge bases
+- [Plugin](../../../plugin-development/server/plugin.md) - Server-side plugin lifecycle and `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Plugin frontend and server-side translations
+- [Client plugin development overview](../../../plugin-development/client/index.md) - Client entry, components, and context capabilities

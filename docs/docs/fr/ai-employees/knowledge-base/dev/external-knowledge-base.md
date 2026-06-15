@@ -1,20 +1,20 @@
 ---
-title: "Plugin KnowledgeBase"
+title: "Plugin External Knowledge Base"
 description: "Développement de plugin de base de connaissances NocoBase : enregistrer un Provider externe, implémenter VectorStoreService, retourner les résultats RAG et configurer les paramètres."
 keywords: "plugin de base de connaissances,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI employees,NocoBase"
 ---
 
-# Plugin KnowledgeBase
+# Plugin External Knowledge Base
 
-Dans NocoBase, un **plugin de base de connaissances (KnowledgeBase Plugin)** permet d'étendre les sources de récupération RAG utilisées par les AI employees. Dans la plupart des cas, une base Local suffit. Un plugin de base externe n'est nécessaire que lorsque les documents, les données vectorielles ou la logique de récupération sont déjà maintenus par un système externe.
+Dans NocoBase, un **plugin de base de connaissances (External Knowledge Base Plugin)** permet d'étendre les sources de récupération RAG utilisées par les AI employees. Dans la plupart des cas, une base Local suffit. Un plugin de base externe n'est nécessaire que lorsque les documents, les données vectorielles ou la logique de récupération sont déjà maintenus par un système externe.
 
 Un plugin de base externe ne participe pas au téléversement, à la segmentation, à la vectorisation ni à la suppression des documents dans NocoBase. Il reçoit uniquement les requêtes de récupération pendant les conversations des AI employees et retourne les segments de documents correspondants.
 
 :::tip Lecture préalable
 
-- [Vue d'ensemble de la base de connaissances](../../ai-employees/knowledge-base/knowledge-base/) - Comprendre les limites de Local, Readonly et External
-- [Plugin](./plugin.md) - Comprendre le cycle de vie du plugin serveur et `this.app.pm`
-- [i18n](./i18n.md) - Préparer les traductions si le plugin fournit un formulaire de configuration
+- [Vue d'ensemble de la base de connaissances](../knowledge-base/) - Comprendre les limites de Local, Readonly et External
+- [Plugin](../../../plugin-development/server/plugin.md) - Comprendre le cycle de vie du plugin serveur et `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Préparer les traductions si le plugin fournit un formulaire de configuration
 
 :::
 
@@ -312,7 +312,7 @@ Où :
 
 ## Liens associés
 
-- [Vue d'ensemble de la base de connaissances](../../ai-employees/knowledge-base/knowledge-base/) - Limites de Local, Readonly et External
-- [Plugin](./plugin.md) - Cycle de vie du plugin serveur et `this.app.pm`
-- [i18n](./i18n.md) - Traductions frontend et serveur du plugin
-- [Vue d'ensemble du développement client](../client/index.md) - Entrée client, composants et capacités de contexte
+- [Vue d'ensemble de la base de connaissances](../knowledge-base/) - Limites de Local, Readonly et External
+- [Plugin](../../../plugin-development/server/plugin.md) - Cycle de vie du plugin serveur et `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Traductions frontend et serveur du plugin
+- [Vue d'ensemble du développement client](../../../plugin-development/client/index.md) - Entrée client, composants et capacités de contexte

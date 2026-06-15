@@ -118,11 +118,6 @@
         "type": "custom-link",
         "label": "Test (Kiểm thử)",
         "link": "/plugin-development/server/test"
-      },
-      {
-        "type": "custom-link",
-        "label": "KnowledgeBase Plugin cơ sở tri thức",
-        "link": "/plugin-development/server/knowledge-base"
       }
     ]
   },

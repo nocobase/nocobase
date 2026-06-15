@@ -19,4 +19,3 @@ O desenvolvimento de **plugins** para o lado do servidor do NocoBase oferece div
 | **Saída de Log**                            | Personalize formatos de log e métodos de saída para aprimorar as capacidades de depuração e monitoramento. | [logger.md](./logger.md)                                    |
 | **Comandos Personalizados**                 | Estenda o CLI do NocoBase, adicionando comandos personalizados.                                       | [command.md](./command.md)                                  |
 | **Escrevendo Casos de Teste**               | Escreva e execute casos de teste para garantir a estabilidade e a precisão funcional do **plugin**.    | [test.md](./test.md)                                        |
-| **KnowledgeBase**                           | Estenda a recuperação de bases de conhecimento externas para AI employees.                            | [knowledge-base.md](./knowledge-base.md)                    |

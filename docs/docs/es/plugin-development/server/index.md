@@ -25,7 +25,6 @@ Los Server Plugins de NocoBase pueden hacer muchas cosas: definir tablas de dato
 | Salida de logs personalizados | [Logger](./logger.md) |
 | Extender comandos de la CLI | [Command](./command.md) |
 | Escribir casos de prueba | [Test](./test.md) |
-| Extender la recuperación de bases de conocimiento externas para AI employees | [KnowledgeBase](./knowledge-base.md) |
 
 ## Enlaces relacionados
 
@@ -36,4 +35,3 @@ Los Server Plugins de NocoBase pueden hacer muchas cosas: definir tablas de dato
 - [ACL](./acl.md) — permisos de roles, fragmentos de permisos y control de acceso
 - [Visión general del desarrollo de plugins](../index.md) — introducción global al desarrollo de plugins
 - [Escribir su primer plugin](../write-your-first-plugin.md) — crear un plugin completo desde cero
-- [KnowledgeBase](./knowledge-base.md) — conectar recuperación de bases de conocimiento externas para AI employees

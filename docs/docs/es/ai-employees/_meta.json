@@ -190,6 +190,17 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
+      },
+      {
+        "type": "custom-link",
+        "label": "Guía de desarrollo",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Plugin External Knowledge Base",
+            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
+          }
+        ]
       }
     ]
   },

@@ -1,20 +1,20 @@
 ---
-title: "Plugin KnowledgeBase"
+title: "Plugin External Knowledge Base"
 description: "Desarrollo de plugins de base de conocimiento en NocoBase: registrar un Provider externo, implementar VectorStoreService, devolver resultados RAG y configurar parámetros."
 keywords: "plugin de base de conocimiento,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI employees,NocoBase"
 ---
 
-# Plugin KnowledgeBase
+# Plugin External Knowledge Base
 
-En NocoBase, un **plugin de base de conocimiento (KnowledgeBase Plugin)** permite ampliar las fuentes de recuperación RAG usadas por los AI employees. En la mayoría de los casos basta con una base de conocimiento Local. Solo necesitas un plugin de base de conocimiento externa cuando los documentos, los vectores o la lógica de recuperación ya se mantienen fuera de NocoBase.
+En NocoBase, un **plugin de base de conocimiento (External Knowledge Base Plugin)** permite ampliar las fuentes de recuperación RAG usadas por los AI employees. En la mayoría de los casos basta con una base de conocimiento Local. Solo necesitas un plugin de base de conocimiento externa cuando los documentos, los vectores o la lógica de recuperación ya se mantienen fuera de NocoBase.
 
 Un plugin de base de conocimiento externa no participa en la carga, segmentación, vectorización ni eliminación de documentos en NocoBase. Solo recibe solicitudes de recuperación durante las conversaciones de los AI employees y devuelve fragmentos de documentos.
 
 :::tip Lectura previa
 
-- [Visión general de la base de conocimiento](../../ai-employees/knowledge-base/knowledge-base/) - Límites de Local, Readonly y External
-- [Plugin](./plugin.md) - Ciclo de vida del plugin de servidor y `this.app.pm`
-- [i18n](./i18n.md) - Traducciones necesarias si el plugin proporciona un formulario de configuración
+- [Visión general de la base de conocimiento](../knowledge-base/) - Límites de Local, Readonly y External
+- [Plugin](../../../plugin-development/server/plugin.md) - Ciclo de vida del plugin de servidor y `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Traducciones necesarias si el plugin proporciona un formulario de configuración
 
 :::
 
@@ -312,7 +312,7 @@ Con esto, el plugin de base externa ya puede ser llamado por los AI employees. C
 
 ## Enlaces relacionados
 
-- [Visión general de la base de conocimiento](../../ai-employees/knowledge-base/knowledge-base/) - Límites de Local, Readonly y External
-- [Plugin](./plugin.md) - Ciclo de vida del plugin de servidor y `this.app.pm`
-- [i18n](./i18n.md) - Traducciones frontend y servidor del plugin
-- [Visión general del desarrollo del cliente](../client/index.md) - Entrada cliente, componentes y capacidades de contexto
+- [Visión general de la base de conocimiento](../knowledge-base/) - Límites de Local, Readonly y External
+- [Plugin](../../../plugin-development/server/plugin.md) - Ciclo de vida del plugin de servidor y `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - Traducciones frontend y servidor del plugin
+- [Visión general del desarrollo del cliente](../../../plugin-development/client/index.md) - Entrada cliente, componentes y capacidades de contexto

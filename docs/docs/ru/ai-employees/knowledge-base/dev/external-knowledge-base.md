@@ -1,20 +1,20 @@
 ---
-title: "Плагин KnowledgeBase"
+title: "Плагин External Knowledge Base"
 description: "Разработка плагина базы знаний NocoBase: регистрация внешнего Provider, реализация VectorStoreService, возврат результатов RAG и настройка параметров."
 keywords: "плагин базы знаний,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI employees,NocoBase"
 ---
 
-# Плагин KnowledgeBase
+# Плагин External Knowledge Base
 
-В NocoBase **плагин базы знаний (KnowledgeBase Plugin)** расширяет источники RAG-поиска для AI employees. В большинстве случаев достаточно Local knowledge base. Внешний плагин нужен только тогда, когда документы, векторные данные или логика поиска уже поддерживаются внешней системой.
+В NocoBase **плагин базы знаний (External Knowledge Base Plugin)** расширяет источники RAG-поиска для AI employees. В большинстве случаев достаточно Local knowledge base. Внешний плагин нужен только тогда, когда документы, векторные данные или логика поиска уже поддерживаются внешней системой.
 
 Плагин внешней базы знаний не участвует в загрузке, сегментации, векторизации и удалении документов в NocoBase. Он только получает поисковые запросы во время диалогов AI employees и возвращает подходящие фрагменты документов.
 
 :::tip Предварительное чтение
 
-- [Обзор базы знаний](../../ai-employees/knowledge-base/knowledge-base/) - границы Local, Readonly и External
-- [Plugin](./plugin.md) - жизненный цикл серверного плагина и `this.app.pm`
-- [i18n](./i18n.md) - переводы, если плагин предоставляет форму настройки
+- [Обзор базы знаний](../knowledge-base/) - границы Local, Readonly и External
+- [Plugin](../../../plugin-development/server/plugin.md) - жизненный цикл серверного плагина и `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - переводы, если плагин предоставляет форму настройки
 
 :::
 
@@ -312,7 +312,7 @@ src/client/index.tsx
 
 ## Связанные ссылки
 
-- [Обзор базы знаний](../../ai-employees/knowledge-base/knowledge-base/) - границы Local, Readonly и External
-- [Plugin](./plugin.md) - жизненный цикл серверного плагина и `this.app.pm`
-- [i18n](./i18n.md) - переводы frontend и сервера плагина
-- [Обзор клиентской разработки](../client/index.md) - клиентский вход, компоненты и возможности context
+- [Обзор базы знаний](../knowledge-base/) - границы Local, Readonly и External
+- [Plugin](../../../plugin-development/server/plugin.md) - жизненный цикл серверного плагина и `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - переводы frontend и сервера плагина
+- [Обзор клиентской разработки](../../../plugin-development/client/index.md) - клиентский вход, компоненты и возможности context

@@ -1,20 +1,20 @@
 ---
-title: "KnowledgeBase プラグイン"
+title: "External Knowledge Base プラグイン"
 description: "NocoBase のナレッジベースプラグイン開発：外部 Provider の登録、VectorStoreService の実装、RAG 検索結果の返却、パラメータ設定。"
 keywords: "ナレッジベースプラグイン,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI employees,NocoBase"
 ---
 
-# KnowledgeBase プラグイン
+# External Knowledge Base プラグイン
 
-NocoBase では、**ナレッジベースプラグイン（KnowledgeBase Plugin）** を使って AI employees の RAG 検索ソースを拡張できます。多くの場合は Local knowledge base で十分です。ドキュメント、ベクトルデータ、検索ロジックが外部システムで管理されている場合にだけ、外部ナレッジベースプラグインが必要になります。
+NocoBase では、**ナレッジベースプラグイン（External Knowledge Base Plugin）** を使って AI employees の RAG 検索ソースを拡張できます。多くの場合は Local knowledge base で十分です。ドキュメント、ベクトルデータ、検索ロジックが外部システムで管理されている場合にだけ、外部ナレッジベースプラグインが必要になります。
 
 外部ナレッジベースプラグインは、NocoBase のドキュメントアップロード、分割、ベクトル化、削除には参加しません。AI employee の会話中に検索リクエストを受け取り、該当するドキュメントセグメントを返します。
 
 :::tip 事前に読むもの
 
-- [ナレッジベース概要](../../ai-employees/knowledge-base/knowledge-base/) - Local、Readonly、External の境界を理解する
-- [Plugin](./plugin.md) - サーバープラグインのライフサイクルと `this.app.pm`
-- [i18n](./i18n.md) - 設定フォームを提供する場合の翻訳
+- [ナレッジベース概要](../knowledge-base/) - Local、Readonly、External の境界を理解する
+- [Plugin](../../../plugin-development/server/plugin.md) - サーバープラグインのライフサイクルと `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - 設定フォームを提供する場合の翻訳
 
 :::
 
@@ -312,7 +312,7 @@ src/client/index.tsx
 
 ## 関連リンク
 
-- [ナレッジベース概要](../../ai-employees/knowledge-base/knowledge-base/) - Local、Readonly、External の境界
-- [Plugin](./plugin.md) - サーバープラグインのライフサイクルと `this.app.pm`
-- [i18n](./i18n.md) - プラグインのフロントエンドとサーバー翻訳
-- [クライアント開発概要](../client/index.md) - クライアント入口、コンポーネント、context 能力
+- [ナレッジベース概要](../knowledge-base/) - Local、Readonly、External の境界
+- [Plugin](../../../plugin-development/server/plugin.md) - サーバープラグインのライフサイクルと `this.app.pm`
+- [i18n](../../../plugin-development/server/i18n.md) - プラグインのフロントエンドとサーバー翻訳
+- [クライアント開発概要](../../../plugin-development/client/index.md) - クライアント入口、コンポーネント、context 能力
