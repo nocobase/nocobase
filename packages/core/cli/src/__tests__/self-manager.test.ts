@@ -45,7 +45,7 @@ test('compareVersions handles prerelease ordering', () => {
   expect(compareVersions('2.1.0-beta.18', '2.1.0-beta.17')).toBeGreaterThan(0);
   expect(compareVersions('2.1.0', '2.1.0-beta.99')).toBeGreaterThan(0);
   expect(compareVersions('2.1.0-alpha.1', '2.1.0-beta.1')).toBeLessThan(0);
-  expect(compareVersions('2.1.4.test.10', '2.1.4.test.2')).toBeGreaterThan(0);
+  expect(compareVersions('2.1.4-test.10', '2.1.4-test.2')).toBeGreaterThan(0);
 });
 
 test('inspectSelfStatus resolves latest version and install support for npm-global installs', async () => {
@@ -73,26 +73,26 @@ test('inspectSelfStatus resolves latest version and install support for npm-glob
   expect(status.updateBlockedReason).toBeUndefined();
 });
 
-test('inspectSelfStatus detects dotted test versions as test channel', async () => {
+test('inspectSelfStatus detects test prerelease versions as test channel', async () => {
   const commandOutputFn = vi.fn(async (name: string, args: string[]) => {
     if (name === 'npm' && args.join(' ') === 'prefix -g') {
       return '/usr/local';
     }
     if (name === 'npm' && args.join(' ') === 'view @nocobase/cli dist-tags --json') {
-      return JSON.stringify({ latest: '2.1.4', test: '2.1.4.test.10' });
+      return JSON.stringify({ latest: '2.1.4', test: '2.1.4-test.10' });
     }
     throw new Error(`unexpected command: ${name} ${args.join(' ')}`);
   });
 
   const status = await inspectSelfStatus({
     packageRoot: path.join('/usr/local', 'lib', 'node_modules', '@nocobase', 'cli'),
-    currentVersion: '2.1.4.test.2',
+    currentVersion: '2.1.4-test.2',
     channel: 'auto',
     commandOutputFn,
   });
 
   expect(status.channel).toBe('test');
-  expect(status.latestVersion).toBe('2.1.4.test.10');
+  expect(status.latestVersion).toBe('2.1.4-test.10');
   expect(status.updateAvailable).toBe(true);
 });
 
