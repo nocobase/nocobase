@@ -65,7 +65,7 @@ RUN groupadd -r nocobase && \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     nginx \
-    postgresql-client-16 \
+    postgresql-client \
     libaio1 \
     libfreetype6 \
     fontconfig \
