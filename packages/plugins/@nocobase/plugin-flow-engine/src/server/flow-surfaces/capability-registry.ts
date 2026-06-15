@@ -719,6 +719,9 @@ async function loadProviderCapabilities(
   if (result.ok === false) {
     return [];
   }
+  if (!Array.isArray(result.value)) {
+    return [];
+  }
   return result.value;
 }
 

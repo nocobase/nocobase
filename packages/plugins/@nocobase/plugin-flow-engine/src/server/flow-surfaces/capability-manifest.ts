@@ -13,12 +13,14 @@ import type {
   FlowSurfaceCapabilitiesProvider,
   FlowSurfaceAvailabilityState,
   FlowSurfaceCapabilityAvailability,
+  FlowSurfaceCapabilityConfidence,
   FlowSurfaceCapabilityIdentity,
   FlowSurfaceCapabilityKind,
   FlowSurfaceCapabilityManifestItem,
   FlowSurfaceCapabilityOriginSource,
   FlowSurfaceCapabilitySemantic,
   FlowSurfaceCapabilityWarning,
+  FlowSurfaceConfigureOptions,
   FlowSurfaceCatalogItem,
   FlowSurfaceJsonCreateRecipe,
   FlowSurfaceJsonSchema,
@@ -31,6 +33,15 @@ import type {
 // Provider catalog projection is block-only in this first read-only slice. Action and field providers need
 // target-scoped placement/filtering before they can be safely exposed through catalog/capabilities.
 const PROVIDER_CAPABILITY_KINDS = new Set<FlowSurfaceCapabilityKind>(['block']);
+const FLOW_SURFACE_SUPPORT_LEVELS = new Set<FlowSurfaceSupportLevel>([
+  'render-only',
+  'readback-only',
+  'create-only',
+  'create-with-settings',
+  'configure-only',
+  'create-and-configure',
+]);
+const FLOW_SURFACE_CAPABILITY_CONFIDENCES = new Set<FlowSurfaceCapabilityConfidence>(['high', 'medium', 'low']);
 const AVAILABILITY_REASON_CODES = new Set<FlowSurfaceReasonCode>([
   'supported',
   'plugin-disabled',
@@ -125,52 +136,62 @@ export type NormalizedFlowSurfaceProviderCapability = {
   createRecipe?: FlowSurfaceJsonCreateRecipe;
 };
 
+type FlowSurfaceSemanticExample = NonNullable<FlowSurfaceCapabilitySemantic['examples']>[number];
+
 export function normalizeFlowSurfaceCapabilityManifestItem(input: {
-  item: FlowSurfaceCapabilityManifestItem;
+  item: unknown;
   ownerPlugin: string;
   source: FlowSurfaceCapabilityOriginSource;
   provider?: FlowSurfaceCapabilitiesProvider;
 }): NormalizedFlowSurfaceProviderCapability | null {
+  if (!isPlainRecord(input.item)) {
+    return null;
+  }
+  const item = input.item as unknown as FlowSurfaceCapabilityManifestItem;
+  const implementation = isPlainRecord(input.item.implementation)
+    ? (input.item.implementation as unknown as FlowSurfaceCapabilityManifestItem['implementation'])
+    : undefined;
   const id = normalizeRequiredString(input.item.id);
   const ownerPlugin = normalizeRequiredString(input.ownerPlugin);
   const kind = input.item.kind;
-  const modelUse = normalizeRequiredString(input.item.implementation?.modelUse);
-  if (!id || !ownerPlugin || !modelUse || !PROVIDER_CAPABILITY_KINDS.has(kind)) {
+  const modelUse = normalizeRequiredString(implementation?.modelUse);
+  if (!id || !ownerPlugin || !modelUse || !PROVIDER_CAPABILITY_KINDS.has(kind as FlowSurfaceCapabilityKind)) {
     return null;
   }
+  const capabilityKind = kind as FlowSurfaceCapabilityKind;
 
-  const warnings: FlowSurfaceCapabilityWarning[] = [...(input.item.warnings || [])];
+  const warnings = normalizeCapabilityWarnings(input.item.warnings);
   const declaredPublicType = normalizePublicType(input.item.publicType);
   const publicType = declaredPublicType || buildNamespacedPublicType(ownerPlugin, id);
   const label = sanitizePublicText(input.item.label, 'label', warnings) || publicType;
   const semantic = sanitizeSemantic(input.item.semantic, warnings, label);
-  const declaredAliases = sanitizePublicAliasList(input.item.acceptedAliases || [], warnings);
+  const declaredAliases = sanitizePublicAliasList(toUnknownArray(input.item.acceptedAliases), warnings);
   const acceptedAliases = declaredAliases.filter((alias) => !isPluginQualifiedPublicTypeAlias(alias));
   const searchAliases = sanitizePublicAliasList([...declaredAliases, id, publicType], warnings);
   const initParamsSchema = sanitizePublicSchema(input.item.initParamsSchema, 'init params schema', warnings);
   const settingsSchema = sanitizePublicSchema(input.item.settingsSchema, 'settings schema', warnings);
-  const configureOptions = sanitizePublicSchema(input.item.configureOptions, 'configure options', warnings);
+  const configureOptions = sanitizePublicConfigureOptions(input.item.configureOptions, warnings);
   const placement = sanitizePlacement(input.item.placement, warnings);
   const replacedBy = sanitizeReplacedBy(input.item.replacedBy, warnings);
   const publicWarnings = sanitizeWarnings(warnings);
   const identity = buildCapabilityIdentity({
     ownerPlugin,
     id,
-    capabilityVersion: input.item.capabilityVersion,
-    kind,
+    capabilityVersion: normalizeOptionalString(input.item.capabilityVersion),
+    kind: capabilityKind,
     publicType,
-    deprecated: input.item.deprecated,
+    deprecated: input.item.deprecated === true,
     replacedBy,
   });
   const availability = normalizeAvailability(
-    input.item,
+    item,
     !!(input.provider as ({ resolveCreate?: unknown } & FlowSurfaceCapabilitiesProvider) | undefined)?.resolveCreate,
     {
       settingsSchema,
       configureOptions,
     },
   );
-  const supportLevel = input.item.supportLevel || resolveSupportLevel(availability);
+  const supportLevel = normalizeSupportLevel(input.item.supportLevel) || resolveSupportLevel(availability);
   const publicTypeMeta: FlowSurfacePublicTypeMeta = {
     value: publicType,
     source: declaredPublicType ? (input.source === 'canaryOverlay' ? 'canary' : 'manifest') : 'autoNamespaced',
@@ -178,7 +199,7 @@ export function normalizeFlowSurfaceCapabilityManifestItem(input: {
     ...(acceptedAliases.length ? { acceptedAliases } : {}),
   };
   const publicItem: FlowSurfacePublicCapabilityItem = {
-    kind,
+    kind: capabilityKind,
     publicType,
     publicTypeMeta,
     label,
@@ -187,7 +208,7 @@ export function normalizeFlowSurfaceCapabilityManifestItem(input: {
     semantic,
     availability,
     supportLevel,
-    confidence: input.item.confidence || 'high',
+    confidence: normalizeCapabilityConfidence(input.item.confidence),
     readiness: resolveFlowSurfaceCapabilityReadiness({
       origin: input.source,
       availability,
@@ -204,7 +225,7 @@ export function normalizeFlowSurfaceCapabilityManifestItem(input: {
     key: publicType,
     label,
     use: modelUse,
-    kind: toCatalogKind(kind),
+    kind: toCatalogKind(capabilityKind),
     publicType,
     ...(acceptedAliases.length ? { acceptedAliases } : {}),
     semantic,
@@ -223,13 +244,20 @@ export function normalizeFlowSurfaceCapabilityManifestItem(input: {
   return {
     publicItem,
     catalogItem,
-    implementation: input.item.implementation,
-    ...(input.item.createRecipe ? { createRecipe: input.item.createRecipe } : {}),
+    implementation,
+    ...(isPlainRecord(input.item.createRecipe)
+      ? { createRecipe: input.item.createRecipe as unknown as FlowSurfaceJsonCreateRecipe }
+      : {}),
   };
 }
 
 function normalizeRequiredString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeOptionalString(value: unknown) {
+  const normalized = normalizeRequiredString(value);
+  return normalized || undefined;
 }
 
 function normalizePublicType(value: unknown) {
@@ -306,21 +334,32 @@ function sanitizePublicText(value: unknown, label: string, warnings: FlowSurface
 }
 
 function sanitizeSemantic(
-  input: FlowSurfaceCapabilitySemantic | undefined,
+  input: unknown,
   warnings: FlowSurfaceCapabilityWarning[],
   fallbackTitle: string,
 ): FlowSurfaceCapabilitySemantic {
-  const semantic = input || { title: fallbackTitle };
+  const semantic = isPlainRecord(input) ? input : { title: fallbackTitle };
   const { aliases: rawAliases, examples: rawExamples } = semantic;
-  const aliases = sanitizePublicAliasList(rawAliases || [], warnings);
+  const aliases = sanitizePublicAliasList(toUnknownArray(rawAliases), warnings);
   const title = sanitizePublicText(semantic.title, 'semantic title', warnings) || fallbackTitle;
   const description = sanitizePublicText(semantic.description, 'semantic description', warnings);
-  const domainTags = sanitizePublicStringList(semantic.domainTags || [], 'semantic domain tag', warnings);
-  const intentTags = sanitizePublicStringList(semantic.intentTags || [], 'semantic intent tag', warnings);
-  const suitableScenes = sanitizePublicStringList(semantic.suitableScenes || [], 'semantic suitable scene', warnings);
-  const antiPatterns = sanitizePublicStringList(semantic.antiPatterns || [], 'semantic anti-pattern', warnings);
+  const domainTags = sanitizePublicStringList(toUnknownArray(semantic.domainTags), 'semantic domain tag', warnings);
+  const intentTags = sanitizePublicStringList(toUnknownArray(semantic.intentTags), 'semantic intent tag', warnings);
+  const suitableScenes = sanitizePublicStringList(
+    toUnknownArray(semantic.suitableScenes),
+    'semantic suitable scene',
+    warnings,
+  );
+  const antiPatterns = sanitizePublicStringList(
+    toUnknownArray(semantic.antiPatterns),
+    'semantic anti-pattern',
+    warnings,
+  );
   const locale = sanitizePublicText(semantic.locale, 'semantic locale', warnings);
-  const examples = (rawExamples || []).filter((example) => {
+  const examples = toUnknownArray(rawExamples).filter((example): example is FlowSurfaceSemanticExample => {
+    if (!isFlowSurfaceSemanticExample(example)) {
+      return false;
+    }
     const unsafe = containsUnsafePublicFragment(example);
     if (unsafe) {
       addWarningOnce(warnings, {
@@ -345,23 +384,29 @@ function sanitizeSemantic(
 }
 
 function sanitizePlacement(
-  placement: FlowSurfaceCapabilityManifestItem['placement'],
+  placement: unknown,
   warnings: FlowSurfaceCapabilityWarning[],
 ): FlowSurfaceCapabilityManifestItem['placement'] | undefined {
-  if (!placement) {
+  if (!isPlainRecord(placement)) {
     return undefined;
   }
-  const scenes = sanitizePublicStringList(placement.scenes || [], 'placement scene', warnings);
-  const slots = sanitizePublicStringList(placement.slots || [], 'placement slot', warnings);
+  const scenes = sanitizePublicStringList(toUnknownArray(placement.scenes), 'placement scene', warnings);
+  const slots = sanitizePublicStringList(toUnknownArray(placement.slots), 'placement slot', warnings);
   const parentPublicTypes = sanitizePublicStringList(
-    placement.parentPublicTypes || [],
+    toUnknownArray(placement.parentPublicTypes),
     'placement parent type',
     warnings,
   );
-  const containerKinds = sanitizePublicStringList(placement.containerKinds || [], 'placement container kind', warnings);
+  const containerKinds = sanitizePublicStringList(
+    toUnknownArray(placement.containerKinds),
+    'placement container kind',
+    warnings,
+  );
   const sanitized: FlowSurfaceCapabilityManifestItem['placement'] = {
-    ...(scenes.length ? { scenes: scenes as NonNullable<typeof placement.scenes> } : {}),
-    ...(slots.length ? { slots: slots as NonNullable<typeof placement.slots> } : {}),
+    ...(scenes.length
+      ? { scenes: scenes as NonNullable<FlowSurfaceCapabilityManifestItem['placement']>['scenes'] }
+      : {}),
+    ...(slots.length ? { slots: slots as NonNullable<FlowSurfaceCapabilityManifestItem['placement']>['slots'] } : {}),
     ...(parentPublicTypes.length ? { parentPublicTypes } : {}),
     ...(containerKinds.length ? { containerKinds } : {}),
     ...(typeof placement.collectionRequired === 'boolean' ? { collectionRequired: placement.collectionRequired } : {}),
@@ -371,15 +416,16 @@ function sanitizePlacement(
 }
 
 function sanitizeReplacedBy(
-  replacedBy: FlowSurfaceCapabilityManifestItem['replacedBy'],
+  replacedBy: unknown,
   warnings: FlowSurfaceCapabilityWarning[],
 ): FlowSurfaceCapabilityManifestItem['replacedBy'] | undefined {
-  if (!replacedBy) {
+  if (!isPlainRecord(replacedBy)) {
     return undefined;
   }
   const publicType = normalizePublicType(replacedBy.publicType);
   const ownerPlugin = sanitizePublicText(replacedBy.ownerPlugin, 'replacement owner plugin', warnings);
-  if (!publicType) {
+  const kind = replacedBy.kind as FlowSurfaceCapabilityKind;
+  if (!publicType || !PROVIDER_CAPABILITY_KINDS.has(kind)) {
     addWarningOnce(warnings, {
       code: 'unsafe-semantic-text',
       message: 'Capability replacement metadata was dropped because it contained internal implementation tokens.',
@@ -387,7 +433,7 @@ function sanitizeReplacedBy(
     return undefined;
   }
   return {
-    kind: replacedBy.kind,
+    kind,
     publicType,
     ...(ownerPlugin ? { ownerPlugin } : {}),
   };
@@ -408,12 +454,12 @@ function sanitizeWarningMessage(message: string) {
     : normalizeRequiredString(message);
 }
 
-function sanitizePublicSchema<T extends FlowSurfaceJsonSchema | undefined>(
-  schema: T,
+function sanitizePublicSchema(
+  schema: unknown,
   label: string,
   warnings: FlowSurfaceCapabilityWarning[],
-): T | undefined {
-  if (!schema) {
+): FlowSurfaceJsonSchema | undefined {
+  if (!isPlainRecord(schema)) {
     return undefined;
   }
   if (containsUnsafePublicFragment(schema)) {
@@ -424,6 +470,15 @@ function sanitizePublicSchema<T extends FlowSurfaceJsonSchema | undefined>(
     return undefined;
   }
   return schema;
+}
+
+function sanitizePublicConfigureOptions(
+  configureOptions: unknown,
+  warnings: FlowSurfaceCapabilityWarning[],
+): FlowSurfaceConfigureOptions | undefined {
+  return sanitizePublicSchema(configureOptions, 'configure options', warnings) as
+    | FlowSurfaceConfigureOptions
+    | undefined;
 }
 
 function containsUnsafePublicFragment(value: unknown): boolean {
@@ -577,6 +632,58 @@ function resolveSupportLevel(availability: FlowSurfaceCapabilityAvailability): F
     return 'readback-only';
   }
   return 'render-only';
+}
+
+function normalizeSupportLevel(value: unknown): FlowSurfaceSupportLevel | undefined {
+  return FLOW_SURFACE_SUPPORT_LEVELS.has(value as FlowSurfaceSupportLevel)
+    ? (value as FlowSurfaceSupportLevel)
+    : undefined;
+}
+
+function normalizeCapabilityConfidence(value: unknown): FlowSurfaceCapabilityConfidence {
+  return FLOW_SURFACE_CAPABILITY_CONFIDENCES.has(value as FlowSurfaceCapabilityConfidence)
+    ? (value as FlowSurfaceCapabilityConfidence)
+    : 'high';
+}
+
+function normalizeCapabilityWarnings(value: unknown): FlowSurfaceCapabilityWarning[] {
+  return toUnknownArray(value).flatMap((warning) => {
+    if (!isPlainRecord(warning)) {
+      return [];
+    }
+    const code = normalizeRequiredString(warning.code);
+    const message = normalizeRequiredString(warning.message);
+    if (!code || !message) {
+      return [];
+    }
+    return [
+      {
+        code: code as FlowSurfaceCapabilityWarning['code'],
+        message,
+      },
+    ];
+  });
+}
+
+function isFlowSurfaceSemanticExample(value: unknown): value is FlowSurfaceSemanticExample {
+  if (!isPlainRecord(value) || typeof value.userIntent !== 'string' || !isPlainRecord(value.publicPayloadSnippet)) {
+    return false;
+  }
+  if (typeof value.title !== 'undefined' && typeof value.title !== 'string') {
+    return false;
+  }
+  if (typeof value.safety === 'undefined') {
+    return true;
+  }
+  return isPlainRecord(value.safety) && typeof value.safety.validatedPublicPayload === 'boolean';
+}
+
+function toUnknownArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return _.isPlainObject(value);
 }
 
 function buildCapabilityIdentity(input: {

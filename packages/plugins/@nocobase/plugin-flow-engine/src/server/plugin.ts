@@ -20,6 +20,7 @@ import { loadFlowSurfaceAutoSnapshotsFromDirectory, type FlowSurfaceAutoSnapshot
 import { FLOW_SURFACE_INFERRED_AUTHORING_CONTRACT_VERSION } from './flow-surfaces/extractor/types';
 import { registerFlowSurfaceCapabilityAdmissionCommand } from './flow-surfaces/admission-report-cli';
 import { registerFlowSurfaceExtractorCommand } from './flow-surfaces/extractor/cli';
+import type { FlowSurfaceCapabilityDiagnosticWarning } from './flow-surfaces/types';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
 import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
@@ -70,6 +71,7 @@ function getFlowSurfaceAutoSnapshotInferredAuthoringContractRank(snapshot: FlowS
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   readonly flowSurfaceCapabilityProviders = new FlowSurfaceCapabilityProviderRegistry();
   flowSurfaceAutoSnapshots: readonly FlowSurfaceAutoSnapshot[] = [];
+  flowSurfaceAutoSnapshotLoadWarnings: readonly FlowSurfaceCapabilityDiagnosticWarning[] = [];
   private flowSurfaceAutoSnapshotRefreshPromise?: Promise<readonly FlowSurfaceAutoSnapshot[]>;
   private flowSurfaceAutoSnapshotRefreshCacheKey?: string;
   private flowSurfaceAutoSnapshotCacheKey?: string;
@@ -237,9 +239,11 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
       await this.flowSurfaceAutoSnapshotRefreshPromise;
       return this.refreshFlowSurfaceAutoSnapshots(snapshotDir, options);
     }
-    const refreshPromise = this.loadFlowSurfaceAutoSnapshotsFromStorage(dir)
+    const diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [];
+    const refreshPromise = this.loadFlowSurfaceAutoSnapshotsFromStorage(dir, diagnosticWarnings)
       .then((snapshots) => {
         this.flowSurfaceAutoSnapshots = snapshots;
+        this.flowSurfaceAutoSnapshotLoadWarnings = diagnosticWarnings;
         this.flowSurfaceAutoSnapshotCacheKey = cacheKey;
         return snapshots;
       })
@@ -254,17 +258,22 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     return refreshPromise;
   }
 
-  protected async loadFlowSurfaceAutoSnapshotsFromStorage(dir: string) {
-    const packagedSnapshots = await this.loadFlowSurfacePackagedAutoSnapshots();
-    const storageSnapshots = await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir });
+  protected async loadFlowSurfaceAutoSnapshotsFromStorage(
+    dir: string,
+    diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [],
+  ) {
+    const packagedSnapshots = await this.loadFlowSurfacePackagedAutoSnapshots(diagnosticWarnings);
+    const storageSnapshots = await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir, diagnosticWarnings });
     return dedupeFlowSurfaceAutoSnapshots([...packagedSnapshots, ...storageSnapshots]);
   }
 
-  protected async loadFlowSurfacePackagedAutoSnapshots() {
+  protected async loadFlowSurfacePackagedAutoSnapshots(
+    diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [],
+  ) {
     const dirs = await this.getFlowSurfacePackagedAutoSnapshotDirs();
     const snapshots: FlowSurfaceAutoSnapshot[] = [];
     for (const dir of dirs) {
-      snapshots.push(...(await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir })));
+      snapshots.push(...(await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir, diagnosticWarnings })));
     }
     return snapshots;
   }

@@ -2092,6 +2092,17 @@ describe('flowSurfaces swagger', () => {
     expect(
       schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.data.properties.admissionRecords.items.$ref,
     ).toBe('#/components/schemas/FlowSurfaceCapabilityDiagnosticsAdmissionRecord');
+    expect(schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.data.required).toContain('warnings');
+    expect(schemas.FlowSurfaceCapabilityDiagnosticsResponse.properties.data.properties.warnings.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCapabilityDiagnosticWarning',
+    );
+    expect(schemas.FlowSurfaceCapabilityDiagnosticWarning.properties.source.enum).toEqual([
+      'provider',
+      'policy',
+      'snapshot',
+      'admission',
+      'manifest',
+    ]);
     const composePath = swaggerDocument.paths['/flowSurfaces:compose'].post;
     expect(composePath.description).toContain('low-level building primitive');
     expect(composePath.description).not.toContain('preferred creation entry for AI callers');

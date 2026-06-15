@@ -12,7 +12,12 @@ import { randomUUID } from 'crypto';
 import { lstat, mkdir, open, readdir, realpath, rename, unlink, writeFile } from 'fs/promises';
 import { basename, parse, resolve, sep } from 'path';
 import { storagePathJoin } from '@nocobase/utils';
-import type { FlowSurfaceCapabilityKind, FlowSurfaceCapabilityReadiness, FlowSurfaceReasonCode } from './types';
+import type {
+  FlowSurfaceCapabilityDiagnosticWarning,
+  FlowSurfaceCapabilityKind,
+  FlowSurfaceCapabilityReadiness,
+  FlowSurfaceReasonCode,
+} from './types';
 
 export const FLOW_SURFACE_CAPABILITY_ADMISSION_REPORT_VERSION = 1;
 
@@ -113,6 +118,7 @@ type WriteFlowSurfaceCapabilityAdmissionReportInput = {
 
 type LoadFlowSurfaceCapabilityAdmissionReportsFromDirectoryInput = {
   dir: string;
+  diagnosticWarnings?: FlowSurfaceCapabilityDiagnosticWarning[];
 };
 
 type PinnedAdmissionReportDirectory = {
@@ -239,7 +245,11 @@ export async function loadFlowSurfaceCapabilityAdmissionReportsFromDirectory(
       if (!isAdmissionReportJsonFileName(fileName)) {
         continue;
       }
-      const report = await readFlowSurfaceCapabilityAdmissionReportFile(pinnedDirectory, fileName);
+      const report = await readFlowSurfaceCapabilityAdmissionReportFile(
+        pinnedDirectory,
+        fileName,
+        input.diagnosticWarnings,
+      );
       if (report) {
         reports.push(report);
       }
@@ -636,35 +646,68 @@ async function readAdmissionReportFileNames(input: PinnedAdmissionReportDirector
 async function readFlowSurfaceCapabilityAdmissionReportFile(
   pinnedDirectory: PinnedAdmissionReportDirectory,
   fileName: string,
+  diagnosticWarnings?: FlowSurfaceCapabilityDiagnosticWarning[],
 ): Promise<FlowSurfaceCapabilityAdmissionReport | undefined> {
   const reportPath = resolve(pinnedDirectory.realPath, fileName);
   let handle: Awaited<ReturnType<typeof open>> | undefined;
+  let warned = false;
+  const warn = (message: string) => {
+    warned = true;
+    addFlowSurfaceAdmissionReportLoadWarning(diagnosticWarnings, fileName, message);
+  };
   try {
     await assertPinnedAdmissionReportDirectoryStillCurrent(pinnedDirectory);
     const pathStats = await lstat(reportPath);
-    if (pathStats.isSymbolicLink() || !pathStats.isFile()) {
+    if (pathStats.isSymbolicLink()) {
+      warn('Flow surface capability admission report file was skipped because it is a symlink.');
+      return undefined;
+    }
+    if (!pathStats.isFile()) {
+      warn('Flow surface capability admission report file was skipped because it is not a regular file.');
       return undefined;
     }
     await assertPinnedAdmissionReportDirectoryStillCurrent(pinnedDirectory);
     handle = await open(reportPath, constants.O_RDONLY | constants.O_NOFOLLOW);
     const stats = await handle.stat();
     if (!stats.isFile() || !sameFileIdentity(stats, pathStats)) {
+      warn('Flow surface capability admission report file was skipped because it changed while reading.');
       return undefined;
     }
     await assertPinnedAdmissionReportDirectoryStillCurrent(pinnedDirectory);
     const content = await handle.readFile({ encoding: 'utf8' });
     const currentPathStats = await lstat(reportPath);
     if (currentPathStats.isSymbolicLink() || !currentPathStats.isFile() || !sameFileIdentity(stats, currentPathStats)) {
+      warn('Flow surface capability admission report file was skipped because it changed while reading.');
       return undefined;
     }
     await assertPinnedAdmissionReportDirectoryStillCurrent(pinnedDirectory);
     const parsed: unknown = JSON.parse(content);
-    return isFlowSurfaceCapabilityAdmissionReport(parsed) ? parsed : undefined;
+    if (!isFlowSurfaceCapabilityAdmissionReport(parsed)) {
+      warn('Flow surface capability admission report file was skipped because it is malformed or unsupported.');
+      return undefined;
+    }
+    return parsed;
   } catch {
+    if (!warned) {
+      warn('Flow surface capability admission report file was skipped because it could not be read or parsed.');
+    }
     return undefined;
   } finally {
     await handle?.close().catch(() => undefined);
   }
+}
+
+function addFlowSurfaceAdmissionReportLoadWarning(
+  diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] | undefined,
+  fileName: string,
+  message: string,
+) {
+  diagnosticWarnings?.push({
+    source: 'admission',
+    code: 'admission-report-file-skipped',
+    fileName,
+    message,
+  });
 }
 
 function isAdmissionReportJsonFileName(fileName: string) {

@@ -65,7 +65,6 @@ export async function callFlowSurfaceProvider<T>(input: {
   method: 'getCapabilities' | 'isAvailable' | 'resolveSettingsSchema' | 'validateSettings' | 'resolveCreate';
   run: (signal: AbortSignal) => Promise<T> | T;
   timeoutMs?: number;
-  capabilityId?: string;
 }): Promise<FlowSurfaceProviderCallResult<T>> {
   const controller = new AbortController();
   let timeout: ReturnType<typeof setTimeout> | undefined;

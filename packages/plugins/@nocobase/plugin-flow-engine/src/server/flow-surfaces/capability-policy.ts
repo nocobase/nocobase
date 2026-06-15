@@ -52,11 +52,18 @@ export type NormalizedFlowSurfaceCapabilityWritePolicy = {
   allowedPublicTypes?: string[];
 };
 
+export type FlowSurfaceCapabilityPolicyWarning = {
+  code: 'invalid-policy-config';
+  path: string;
+  message: string;
+};
+
 export type NormalizedFlowSurfaceCapabilityPolicyConfig = {
   writePolicy: NormalizedFlowSurfaceCapabilityWritePolicy;
   providerTimeoutMs: number;
   extractorSnapshotDir: string;
   diagnosticsEnabled: boolean;
+  warnings?: FlowSurfaceCapabilityPolicyWarning[];
 };
 
 export type FlowSurfaceVerifiedAutoAdmissionDecision = {
@@ -85,16 +92,39 @@ export function normalizeFlowSurfaceCapabilityPolicyConfig(
   input?: unknown,
 ): NormalizedFlowSurfaceCapabilityPolicyConfig {
   const config = isPlainRecord(input) ? input : {};
-  const writePolicy = normalizeFlowSurfaceCapabilityWritePolicy(config.writePolicy);
+  const warnings: FlowSurfaceCapabilityPolicyWarning[] = [];
+  const writePolicy = normalizeFlowSurfaceCapabilityWritePolicy(config.writePolicy, warnings);
+  const providerTimeoutMs = normalizePositiveInteger(config.providerTimeoutMs, DEFAULT_PROVIDER_TIMEOUT_MS);
+  const extractorSnapshotDir = normalizeStringOption(config.extractorSnapshotDir);
+  const diagnosticsEnabled =
+    typeof config.diagnosticsEnabled === 'boolean' ? config.diagnosticsEnabled : process.env.NODE_ENV !== 'production';
+  if (typeof config.providerTimeoutMs !== 'undefined' && !isPositiveInteger(config.providerTimeoutMs)) {
+    warnings.push({
+      code: 'invalid-policy-config',
+      path: 'flowSurfaceCapabilities.providerTimeoutMs',
+      message: 'Invalid providerTimeoutMs; fallback to default timeout.',
+    });
+  }
+  if (typeof config.extractorSnapshotDir !== 'undefined' && !extractorSnapshotDir) {
+    warnings.push({
+      code: 'invalid-policy-config',
+      path: 'flowSurfaceCapabilities.extractorSnapshotDir',
+      message: 'Invalid extractorSnapshotDir; fallback to default snapshot directory.',
+    });
+  }
+  if (typeof config.diagnosticsEnabled !== 'undefined' && typeof config.diagnosticsEnabled !== 'boolean') {
+    warnings.push({
+      code: 'invalid-policy-config',
+      path: 'flowSurfaceCapabilities.diagnosticsEnabled',
+      message: 'Invalid diagnosticsEnabled; fallback to environment default.',
+    });
+  }
   return {
     writePolicy,
-    providerTimeoutMs: normalizePositiveInteger(config.providerTimeoutMs, DEFAULT_PROVIDER_TIMEOUT_MS),
-    extractorSnapshotDir:
-      normalizeStringOption(config.extractorSnapshotDir) || storagePathJoin(DEFAULT_EXTRACTOR_SNAPSHOT_DIR),
-    diagnosticsEnabled:
-      typeof config.diagnosticsEnabled === 'boolean'
-        ? config.diagnosticsEnabled
-        : process.env.NODE_ENV !== 'production',
+    providerTimeoutMs,
+    extractorSnapshotDir: extractorSnapshotDir || storagePathJoin(DEFAULT_EXTRACTOR_SNAPSHOT_DIR),
+    diagnosticsEnabled,
+    ...(warnings.length ? { warnings } : {}),
   };
 }
 
@@ -244,15 +274,42 @@ function isFixtureScopedVerifiedAutoAdmissionCapability(item: FlowSurfacePublicC
   );
 }
 
-function normalizeFlowSurfaceCapabilityWritePolicy(input: unknown): NormalizedFlowSurfaceCapabilityWritePolicy {
+function normalizeFlowSurfaceCapabilityWritePolicy(
+  input: unknown,
+  warnings: FlowSurfaceCapabilityPolicyWarning[],
+): NormalizedFlowSurfaceCapabilityWritePolicy {
   const policy = isPlainRecord(input) ? input : {};
   const allowedOwners = normalizeStringList(policy.allowedOwners);
   const allowedPublicTypes = normalizeStringList(policy.allowedPublicTypes);
-  const mode =
-    typeof policy.mode === 'string' &&
-    FLOW_SURFACE_CAPABILITY_WRITE_POLICY_MODES.has(policy.mode as FlowSurfaceCapabilityWritePolicyMode)
-      ? (policy.mode as FlowSurfaceCapabilityWritePolicyMode)
-      : 'jsonInferred';
+  if (typeof policy.allowedOwners !== 'undefined' && !Array.isArray(policy.allowedOwners)) {
+    warnings.push({
+      code: 'invalid-policy-config',
+      path: 'flowSurfaceCapabilities.writePolicy.allowedOwners',
+      message: 'Invalid writePolicy.allowedOwners; ignore owner allowlist.',
+    });
+  }
+  if (typeof policy.allowedPublicTypes !== 'undefined' && !Array.isArray(policy.allowedPublicTypes)) {
+    warnings.push({
+      code: 'invalid-policy-config',
+      path: 'flowSurfaceCapabilities.writePolicy.allowedPublicTypes',
+      message: 'Invalid writePolicy.allowedPublicTypes; ignore public type allowlist.',
+    });
+  }
+  let mode: FlowSurfaceCapabilityWritePolicyMode = 'jsonInferred';
+  if (typeof policy.mode !== 'undefined') {
+    mode =
+      typeof policy.mode === 'string' &&
+      FLOW_SURFACE_CAPABILITY_WRITE_POLICY_MODES.has(policy.mode as FlowSurfaceCapabilityWritePolicyMode)
+        ? (policy.mode as FlowSurfaceCapabilityWritePolicyMode)
+        : 'discoveryOnly';
+    if (mode === 'discoveryOnly' && policy.mode !== 'discoveryOnly') {
+      warnings.push({
+        code: 'invalid-policy-config',
+        path: 'flowSurfaceCapabilities.writePolicy.mode',
+        message: 'Invalid writePolicy.mode; fallback to discoveryOnly.',
+      });
+    }
+  }
   return {
     mode,
     ...(allowedOwners.length ? { allowedOwners } : {}),
@@ -385,7 +442,11 @@ function isNormalizedPolicyConfig(value: unknown): value is NormalizedFlowSurfac
 }
 
 function normalizePositiveInteger(value: unknown, fallback: number) {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : fallback;
+  return isPositiveInteger(value) ? value : fallback;
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
 function normalizeStringList(value: unknown) {

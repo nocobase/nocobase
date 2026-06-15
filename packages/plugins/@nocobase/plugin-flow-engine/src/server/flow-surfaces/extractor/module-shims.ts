@@ -75,6 +75,7 @@ const CLIENT_V2_COMPONENT_EXPORTS = [
   'ACLRolesCheckProvider',
   'CodeEditor',
   'CollectionFilter',
+  'CollectionFilterPanel',
   'CompiledFilter',
   'DialogFormLayout',
   'DrawerFormLayout',

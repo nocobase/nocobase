@@ -16,6 +16,7 @@ import _ from 'lodash';
 import { inferFlowSurfaceAutoSnapshotAuthoring } from './inferred-authoring';
 import type {
   FlowSurfaceCapabilityConfidence,
+  FlowSurfaceCapabilityDiagnosticWarning,
   FlowSurfaceCapabilityKind,
   FlowSurfaceCapabilityWarning,
 } from '../types';
@@ -64,6 +65,7 @@ type WriteFlowSurfaceAutoSnapshotInput = {
 
 type LoadFlowSurfaceAutoSnapshotsFromDirectoryInput = {
   dir: string;
+  diagnosticWarnings?: FlowSurfaceCapabilityDiagnosticWarning[];
 };
 
 type PinnedOutputDirectory = {
@@ -292,7 +294,7 @@ export async function loadFlowSurfaceAutoSnapshotsFromDirectory(
       if (!isSnapshotJsonFileName(fileName)) {
         continue;
       }
-      const snapshot = await readFlowSurfaceAutoSnapshotFile(pinnedDirectory, fileName);
+      const snapshot = await readFlowSurfaceAutoSnapshotFile(pinnedDirectory, fileName, input.diagnosticWarnings);
       if (snapshot) {
         snapshots.push(refreshFlowSurfaceAutoSnapshotInferredAuthoring(snapshot));
       }
@@ -423,35 +425,68 @@ async function readFlowSurfaceAutoSnapshotFileNames(input: PinnedOutputDirectory
 async function readFlowSurfaceAutoSnapshotFile(
   pinnedDirectory: PinnedOutputDirectory,
   fileName: string,
+  diagnosticWarnings?: FlowSurfaceCapabilityDiagnosticWarning[],
 ): Promise<FlowSurfaceAutoSnapshot | undefined> {
   const snapshotPath = resolve(pinnedDirectory.realPath, fileName);
   let handle: Awaited<ReturnType<typeof open>> | undefined;
+  let warned = false;
+  const warn = (message: string) => {
+    warned = true;
+    addFlowSurfaceAutoSnapshotLoadWarning(diagnosticWarnings, fileName, message);
+  };
   try {
     await assertPinnedOutputDirectoryStillCurrent(pinnedDirectory);
     const pathStats = await lstat(snapshotPath);
-    if (pathStats.isSymbolicLink() || !pathStats.isFile()) {
+    if (pathStats.isSymbolicLink()) {
+      warn('Flow surface auto snapshot file was skipped because it is a symlink.');
+      return undefined;
+    }
+    if (!pathStats.isFile()) {
+      warn('Flow surface auto snapshot file was skipped because it is not a regular file.');
       return undefined;
     }
     await assertPinnedOutputDirectoryStillCurrent(pinnedDirectory);
     handle = await open(snapshotPath, constants.O_RDONLY | constants.O_NOFOLLOW);
     const stats = await handle.stat();
     if (!stats.isFile() || !sameFileIdentity(stats, pathStats)) {
+      warn('Flow surface auto snapshot file was skipped because it changed while reading.');
       return undefined;
     }
     await assertPinnedOutputDirectoryStillCurrent(pinnedDirectory);
     const content = await handle.readFile({ encoding: 'utf8' });
     const currentPathStats = await lstat(snapshotPath);
     if (currentPathStats.isSymbolicLink() || !currentPathStats.isFile() || !sameFileIdentity(stats, currentPathStats)) {
+      warn('Flow surface auto snapshot file was skipped because it changed while reading.');
       return undefined;
     }
     await assertPinnedOutputDirectoryStillCurrent(pinnedDirectory);
     const parsed: unknown = JSON.parse(content);
-    return isFlowSurfaceAutoSnapshot(parsed) ? parsed : undefined;
+    if (!isFlowSurfaceAutoSnapshot(parsed)) {
+      warn('Flow surface auto snapshot file was skipped because it is malformed or unsupported.');
+      return undefined;
+    }
+    return parsed;
   } catch {
+    if (!warned) {
+      warn('Flow surface auto snapshot file was skipped because it could not be read or parsed.');
+    }
     return undefined;
   } finally {
     await handle?.close().catch(() => undefined);
   }
+}
+
+function addFlowSurfaceAutoSnapshotLoadWarning(
+  diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] | undefined,
+  fileName: string,
+  message: string,
+) {
+  diagnosticWarnings?.push({
+    source: 'snapshot',
+    code: 'snapshot-file-skipped',
+    fileName,
+    message,
+  });
 }
 
 function isFlowSurfaceAutoSnapshot(value: unknown): value is FlowSurfaceAutoSnapshot {

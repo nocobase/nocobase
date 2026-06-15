@@ -68,6 +68,7 @@ describe('flowSurfaces capabilities projection', () => {
       ownerPlugin: ' @nocobase/plugin-dry-run ',
       getCapabilities: firstGetCapabilities,
     });
+    expect(registry.getRevision()).toBe('1');
     expect(registry.getVersion()).toBe('1');
     expect(registry.listProviders()).toEqual([
       expect.objectContaining({
@@ -80,6 +81,7 @@ describe('flowSurfaces capabilities projection', () => {
       ownerPlugin: '@nocobase/plugin-dry-run',
       getCapabilities: replacementGetCapabilities,
     });
+    expect(registry.getRevision()).toBe('2');
     expect(registry.getVersion()).toBe('2');
     expect(registry.listProviders()).toEqual([
       expect.objectContaining({
@@ -87,13 +89,48 @@ describe('flowSurfaces capabilities projection', () => {
         getCapabilities: replacementGetCapabilities,
       }),
     ]);
+    expect(registry.listWarnings()).toEqual([
+      expect.objectContaining({
+        code: 'duplicate-provider',
+        ownerPlugin: '@nocobase/plugin-dry-run',
+      }),
+    ]);
 
     registry.unregisterProvider(' @nocobase/plugin-dry-run ');
+    expect(registry.getRevision()).toBe('3');
     expect(registry.getVersion()).toBe('3');
     expect(registry.listProviders()).toEqual([]);
 
     registry.unregisterProvider('@nocobase/plugin-dry-run');
+    expect(registry.getRevision()).toBe('3');
     expect(registry.getVersion()).toBe('3');
+  });
+
+  it('should skip invalid capability providers without changing revision', () => {
+    const registry = new FlowSurfaceCapabilityProviderRegistry();
+
+    registry.registerProvider({
+      ownerPlugin: ' ',
+      getCapabilities: () => [],
+    });
+    registry.registerProvider({
+      ownerPlugin: '@nocobase/plugin-invalid-provider',
+    } as unknown as FlowSurfaceCapabilitiesProvider);
+
+    expect(registry.getRevision()).toBe('0');
+    expect(registry.getVersion()).toBe('0');
+    expect(registry.listProviders()).toEqual([]);
+    expect(registry.listWarnings()).toEqual([
+      expect.objectContaining({
+        code: 'invalid-provider',
+        message: expect.stringContaining('ownerPlugin is empty'),
+      }),
+      expect.objectContaining({
+        code: 'invalid-provider',
+        ownerPlugin: '@nocobase/plugin-invalid-provider',
+        message: expect.stringContaining('getCapabilities is missing'),
+      }),
+    ]);
   });
 
   function createGanttProvider(): FlowSurfaceCapabilitiesProvider {
@@ -777,7 +814,13 @@ describe('flowSurfaces capabilities projection', () => {
   function createDiagnosticsService(
     options: {
       autoSnapshots?: readonly ReturnType<typeof createGanttAutoSnapshot>[];
-      providerRegistry?: ReturnType<typeof createProviderRegistry>;
+      snapshotWarnings?: Array<{
+        source: 'snapshot';
+        code: string;
+        fileName: string;
+        message: string;
+      }>;
+      providerRegistry?: ReturnType<typeof createProviderRegistry> | FlowSurfaceCapabilityProviderRegistry;
       pluginOptions?: Record<string, unknown>;
     } = {},
   ) {
@@ -792,6 +835,7 @@ describe('flowSurfaces capabilities projection', () => {
       service: new DiagnosticsFlowSurfacesService({
         options: options.pluginOptions || {},
         flowSurfaceAutoSnapshots: options.autoSnapshots || [],
+        flowSurfaceAutoSnapshotLoadWarnings: options.snapshotWarnings || [],
         ...(options.providerRegistry ? { flowSurfaceCapabilityProviders: options.providerRegistry } : {}),
       } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]),
     };
@@ -1226,6 +1270,74 @@ describe('flowSurfaces capabilities projection', () => {
     expect(typeof config.diagnosticsEnabled).toBe('boolean');
   });
 
+  it('should downgrade invalid explicit capability write policy mode to discoveryOnly', async () => {
+    const config = normalizeFlowSurfaceCapabilityPolicyConfig({
+      writePolicy: {
+        mode: 'jsonInfered',
+        allowedOwners: '@nocobase/plugin-gantt',
+      },
+      providerTimeoutMs: 0,
+      extractorSnapshotDir: '',
+      diagnosticsEnabled: 'true',
+    });
+
+    expect(config.writePolicy.mode).toBe('discoveryOnly');
+    expect(config.providerTimeoutMs).toBe(3000);
+    expect(config.extractorSnapshotDir).toContain('flow-surfaces-capabilities');
+    expect(config.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'flowSurfaceCapabilities.writePolicy.mode',
+          message: expect.stringContaining('fallback to discoveryOnly'),
+        }),
+        expect.objectContaining({
+          path: 'flowSurfaceCapabilities.writePolicy.allowedOwners',
+          message: expect.stringContaining('ignore owner allowlist'),
+        }),
+        expect.objectContaining({
+          path: 'flowSurfaceCapabilities.providerTimeoutMs',
+          message: expect.stringContaining('fallback to default timeout'),
+        }),
+        expect.objectContaining({
+          path: 'flowSurfaceCapabilities.extractorSnapshotDir',
+          message: expect.stringContaining('fallback to default snapshot directory'),
+        }),
+        expect.objectContaining({
+          path: 'flowSurfaceCapabilities.diagnosticsEnabled',
+          message: expect.stringContaining('fallback to environment default'),
+        }),
+      ]),
+    );
+
+    const response = await buildFlowSurfaceCapabilitiesResponse(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+        providerRegistry: createProviderRegistry([createGanttProvider()]),
+        capabilityPolicyConfig: config,
+        catalog: createCatalogRecorder().catalog,
+        generatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    );
+
+    expect(response.data).toEqual([
+      expect.objectContaining({
+        publicType: 'gantt',
+        supportLevel: 'readback-only',
+        readiness: 'blocked',
+        availability: expect.objectContaining({
+          create: expect.objectContaining({
+            supported: false,
+            reasonCode: 'contract-not-verified',
+            reasonSource: 'registry',
+          }),
+        }),
+      }),
+    ]);
+  });
+
   it('should read capability policy config from plugin options', () => {
     const config = readFlowSurfaceCapabilityPolicyConfigFromPluginOptions({
       flowSurfaceCapabilities: {
@@ -1294,6 +1406,93 @@ describe('flowSurfaces capabilities projection', () => {
     });
 
     expect(items.map((item) => item.publicType)).toEqual(['gantt']);
+  });
+
+  it('should skip provider getCapabilities results that are not arrays', async () => {
+    const malformedProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-malformed',
+      getCapabilities: () => ({ id: 'not-an-array' }) as unknown as FlowSurfaceCapabilityManifestItem[],
+    };
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([malformedProvider, createGanttProvider()]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const accessor = service as unknown as ProviderCatalogItemsService;
+
+    const items = await accessor.buildProviderCatalogItems({
+      kind: 'block',
+      enabledPackages: new Set(['@nocobase/plugin-malformed', '@nocobase/plugin-gantt']),
+    });
+
+    expect(items.map((item) => item.publicType)).toEqual(['gantt']);
+  });
+
+  it('should skip malformed provider capability items while keeping valid items', async () => {
+    const mixedProvider: FlowSurfaceCapabilitiesProvider = {
+      ownerPlugin: '@nocobase/plugin-mixed',
+      getCapabilities: () =>
+        [
+          {
+            id: 'blocks.valid',
+            kind: 'block',
+            publicType: 'mixedValid',
+            label: 'Mixed valid',
+            semantic: {
+              title: 'Mixed valid',
+              aliases: 'not-an-array',
+            },
+            acceptedAliases: 'not-an-array',
+            implementation: {
+              modelUse: 'MixedValidBlockModel',
+            },
+            supportLevel: 'not-a-support-level',
+            confidence: 'certain',
+            warnings: [null],
+          },
+          null,
+          {
+            id: 'blocks.missingModelUse',
+            kind: 'block',
+            publicType: 'missingModelUse',
+            implementation: {},
+          },
+          {
+            id: 'fields.unsupported',
+            kind: 'fieldComponent',
+            publicType: 'unsupportedField',
+            implementation: {
+              modelUse: 'UnsupportedFieldModel',
+            },
+          },
+        ] as unknown as FlowSurfaceCapabilityManifestItem[],
+      resolveCreate: () => ({
+        use: 'MixedValidBlockModel',
+      }),
+    };
+    const service = new FlowSurfacesService({
+      flowSurfaceCapabilityProviders: createProviderRegistry([mixedProvider, createGanttProvider()]),
+    } as unknown as ConstructorParameters<typeof FlowSurfacesService>[0]);
+    const accessor = service as unknown as ProviderCatalogItemsService;
+
+    const items = await accessor.buildProviderCatalogItems({
+      kind: 'block',
+      enabledPackages: new Set(['@nocobase/plugin-mixed', '@nocobase/plugin-gantt']),
+    });
+
+    expect(items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          publicType: 'mixedValid',
+          supportLevel: 'create-only',
+          confidence: 'high',
+        }),
+        expect.objectContaining({
+          publicType: 'gantt',
+        }),
+      ]),
+    );
+    expect(items.map((item) => item.publicType)).not.toEqual(
+      expect.arrayContaining(['missingModelUse', 'unsupportedField']),
+    );
   });
 
   it('should apply provider timeout config when resolving service dynamic block capabilities', async () => {
@@ -1385,6 +1584,171 @@ describe('flowSurfaces capabilities projection', () => {
     ]);
     expect(JSON.stringify(response)).not.toContain('InternalEvidenceModel');
     expect(JSON.stringify(response)).not.toContain('TableAlternativeBlockModel');
+  });
+
+  it('should expose provider registry warnings only through diagnostics', async () => {
+    const registry = new FlowSurfaceCapabilityProviderRegistry();
+    registry.registerProvider({
+      ownerPlugin: ' ',
+      getCapabilities: () => [],
+    });
+    registry.registerProvider({
+      ownerPlugin: '@nocobase/plugin-gantt',
+      getCapabilities: () => [],
+    });
+    registry.registerProvider(createGanttProvider());
+
+    const { service } = createDiagnosticsService({
+      providerRegistry: registry,
+      pluginOptions: {
+        flowSurfaceCapabilities: {
+          diagnosticsEnabled: true,
+        },
+      },
+    });
+
+    const capabilities = await service.capabilities(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+    const diagnostics = await service.diagnoseCapabilities(
+      {},
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+
+    expect(capabilities.data[0]).not.toHaveProperty('warnings');
+    expect(diagnostics.data.warnings).toEqual([
+      expect.objectContaining({
+        source: 'provider',
+        code: 'invalid-provider',
+        message: expect.stringContaining('ownerPlugin is empty'),
+      }),
+      expect.objectContaining({
+        source: 'provider',
+        code: 'duplicate-provider',
+        ownerPlugin: '@nocobase/plugin-gantt',
+        message: expect.stringContaining('replaced by a later registration'),
+      }),
+    ]);
+    expect(JSON.stringify(diagnostics)).not.toContain('GanttBlockModel');
+  });
+
+  it('should expose invalid policy config fallbacks only through diagnostics', async () => {
+    const { service } = createDiagnosticsService({
+      providerRegistry: createProviderRegistry([createGanttProvider()]),
+      pluginOptions: {
+        flowSurfaceCapabilities: {
+          writePolicy: {
+            mode: 'jsonInfered',
+            allowedOwners: '@nocobase/plugin-gantt',
+            allowedPublicTypes: 'gantt',
+          },
+          providerTimeoutMs: 0,
+          extractorSnapshotDir: '',
+          diagnosticsEnabled: true,
+        },
+      },
+    });
+
+    const capabilities = await service.capabilities(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+    const diagnostics = await service.diagnoseCapabilities(
+      {},
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+
+    expect(capabilities.data[0]).not.toHaveProperty('warnings');
+    expect(diagnostics.data.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'policy',
+          code: 'invalid-policy-config',
+          path: 'flowSurfaceCapabilities.writePolicy.mode',
+          message: expect.stringContaining('fallback to discoveryOnly'),
+        }),
+        expect.objectContaining({
+          source: 'policy',
+          code: 'invalid-policy-config',
+          path: 'flowSurfaceCapabilities.writePolicy.allowedOwners',
+          message: expect.stringContaining('ignore owner allowlist'),
+        }),
+        expect.objectContaining({
+          source: 'policy',
+          code: 'invalid-policy-config',
+          path: 'flowSurfaceCapabilities.writePolicy.allowedPublicTypes',
+          message: expect.stringContaining('ignore public type allowlist'),
+        }),
+        expect.objectContaining({
+          source: 'policy',
+          code: 'invalid-policy-config',
+          path: 'flowSurfaceCapabilities.providerTimeoutMs',
+          message: expect.stringContaining('fallback to default timeout'),
+        }),
+        expect.objectContaining({
+          source: 'policy',
+          code: 'invalid-policy-config',
+          path: 'flowSurfaceCapabilities.extractorSnapshotDir',
+          message: expect.stringContaining('fallback to default snapshot directory'),
+        }),
+      ]),
+    );
+  });
+
+  it('should expose auto snapshot load warnings only through diagnostics', async () => {
+    const { service } = createDiagnosticsService({
+      autoSnapshots: [createGanttAutoSnapshot()],
+      snapshotWarnings: [
+        {
+          source: 'snapshot',
+          code: 'snapshot-file-skipped',
+          fileName: 'malformed.json',
+          message: 'Flow surface auto snapshot file was skipped because it is malformed or unsupported.',
+        },
+      ],
+      pluginOptions: {
+        flowSurfaceCapabilities: {
+          diagnosticsEnabled: true,
+        },
+      },
+    });
+
+    const capabilities = await service.capabilities(
+      {
+        query: 'gantt',
+      },
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+    const diagnostics = await service.diagnoseCapabilities(
+      {},
+      {
+        enabledPackages: new Set(['@nocobase/plugin-gantt']),
+      },
+    );
+
+    expect(capabilities.data[0]).not.toHaveProperty('warnings');
+    expect(diagnostics.data.warnings).toEqual([
+      expect.objectContaining({
+        source: 'snapshot',
+        code: 'snapshot-file-skipped',
+        fileName: 'malformed.json',
+      }),
+    ]);
   });
 
   it('should downgrade create-enabled admission diagnostics when integrity fields are missing', async () => {

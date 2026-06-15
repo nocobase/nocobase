@@ -469,6 +469,7 @@ import type {
   FlowSurfaceAtomicFlag,
   FlowSurfaceActionScope,
   FlowSurfaceCapabilityAvailability,
+  FlowSurfaceCapabilityDiagnosticWarning,
   FlowSurfaceCapabilityDiagnosticsAdmissionRecord,
   FlowSurfaceCapabilityDiagnosticsCapabilityRef,
   FlowSurfaceCapabilityDiagnosticsResponse,
@@ -1369,6 +1370,14 @@ type FlowSurfaceCapabilityDiagnosticsOptions = {
   admissionReports?: readonly FlowSurfaceCapabilityAdmissionReport[];
 };
 
+type FlowSurfaceCapabilityProviderWarningSource = {
+  listWarnings?: () => Array<{
+    code: string;
+    ownerPlugin?: string;
+    message: string;
+  }>;
+};
+
 type FlowSurfaceCapabilityAuditEvent =
   | 'capability.validate.failed'
   | 'capability.create.blocked'
@@ -1467,6 +1476,37 @@ function toFlowSurfaceCapabilityDiagnosticsRef(
     ...(reasonCode ? { reasonCode } : {}),
     ...(message ? { message } : {}),
   };
+}
+
+function collectFlowSurfaceCapabilityDiagnosticWarnings(input: {
+  providerRegistry?: FlowSurfaceCapabilityProviderWarningSource;
+  policyConfig?: ReturnType<typeof readFlowSurfaceCapabilityPolicyConfigFromPluginOptions>;
+  snapshotWarnings?: readonly FlowSurfaceCapabilityDiagnosticWarning[];
+  admissionWarnings?: readonly FlowSurfaceCapabilityDiagnosticWarning[];
+  filters: { ownerPlugin?: string; publicType?: string };
+}): FlowSurfaceCapabilityDiagnosticsResponse['data']['warnings'] {
+  const providerWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = (input.providerRegistry?.listWarnings?.() || [])
+    .filter((warning) => !input.filters.ownerPlugin || warning.ownerPlugin === input.filters.ownerPlugin)
+    .map((warning) => ({
+      source: 'provider',
+      code: warning.code,
+      ...(warning.ownerPlugin ? { ownerPlugin: warning.ownerPlugin } : {}),
+      message: warning.message,
+    }));
+  const policyWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = (input.policyConfig?.warnings || []).map(
+    (warning) => ({
+      source: 'policy',
+      code: warning.code,
+      path: warning.path,
+      message: warning.message,
+    }),
+  );
+  return [
+    ...providerWarnings,
+    ...policyWarnings,
+    ...(input.snapshotWarnings || []),
+    ...(input.admissionWarnings || []),
+  ];
 }
 
 function buildFlowSurfaceAdmissionDiagnostics(
@@ -1623,6 +1663,7 @@ function getFlowSurfaceAdmissionDiagnosticsIntegrityLookupKey(input: {
 
 type FlowSurfaceAutoSnapshotCachePlugin = Plugin & {
   flowSurfaceAutoSnapshots?: readonly FlowSurfaceAutoSnapshot[];
+  flowSurfaceAutoSnapshotLoadWarnings?: readonly FlowSurfaceCapabilityDiagnosticWarning[];
   refreshFlowSurfaceAutoSnapshots?: (
     snapshotDir?: string,
     options?: {
@@ -1670,6 +1711,16 @@ export class FlowSurfacesService {
     return (
       (this.plugin as Plugin & { flowSurfaceAutoSnapshots?: readonly FlowSurfaceAutoSnapshot[] })
         .flowSurfaceAutoSnapshots || []
+    );
+  }
+
+  private get autoSnapshotLoadWarnings(): readonly FlowSurfaceCapabilityDiagnosticWarning[] {
+    return (
+      (
+        this.plugin as Plugin & {
+          flowSurfaceAutoSnapshotLoadWarnings?: readonly FlowSurfaceCapabilityDiagnosticWarning[];
+        }
+      ).flowSurfaceAutoSnapshotLoadWarnings || []
     );
   }
 
@@ -2666,10 +2717,12 @@ export class FlowSurfacesService {
         enabledPackages,
       },
     );
+    const admissionWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [];
     const reports =
       options.admissionReports ||
       (await loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({
         dir: getFlowSurfaceCapabilityAdmissionReportStorageDir(),
+        diagnosticWarnings: admissionWarnings,
       }));
     const publicTypeConflicts = capabilities.data
       .filter((item) => getFlowSurfaceCapabilityAvailabilityReasonCode(item, 'public-type-conflict'))
@@ -2700,6 +2753,13 @@ export class FlowSurfacesService {
     return {
       data: {
         registrySources: capabilities.meta.registrySources,
+        warnings: collectFlowSurfaceCapabilityDiagnosticWarnings({
+          providerRegistry: this.capabilityProviderRegistry as FlowSurfaceCapabilityProviderWarningSource,
+          policyConfig: capabilityPolicyConfig,
+          snapshotWarnings: this.autoSnapshotLoadWarnings,
+          admissionWarnings,
+          filters: values,
+        }),
         publicTypeConflicts,
         providerErrors,
         staleSnapshots,

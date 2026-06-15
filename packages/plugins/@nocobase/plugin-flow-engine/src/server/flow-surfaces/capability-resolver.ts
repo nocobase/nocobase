@@ -308,7 +308,6 @@ export async function resolveDynamicCapabilityCreate(
     const validation = await callFlowSurfaceProvider({
       provider: policyProjectedProviderCapability.provider,
       method: 'validateSettings',
-      capabilityId: policyProjectedProviderCapability.publicItem.identity?.capabilityId,
       timeoutMs: input.providerTimeoutMs,
       run: () => validateSettings(runtimeCapability, publicInput, ctx),
     });
@@ -345,7 +344,6 @@ export async function resolveDynamicCapabilityCreate(
     const created = await callFlowSurfaceProvider({
       provider: policyProjectedProviderCapability.provider,
       method: 'resolveCreate',
-      capabilityId: policyProjectedProviderCapability.publicItem.identity?.capabilityId,
       timeoutMs: input.providerTimeoutMs,
       run: () => providerResolveCreate(runtimeCapability, publicInput, ctx),
     });

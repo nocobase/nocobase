@@ -68,7 +68,7 @@ export type FlowSurfaceConfigureOption = {
   type: FlowSurfaceConfigureOptionValueType;
   description?: string;
   enum?: Array<string | number | boolean>;
-  example?: any;
+  example?: unknown;
   supportsFlowContext?: boolean;
 };
 
@@ -454,9 +454,20 @@ export type FlowSurfaceCapabilityDiagnosticsAdmissionRecord = {
   }>;
 };
 
+export type FlowSurfaceCapabilityDiagnosticWarning = {
+  source: 'provider' | 'policy' | 'snapshot' | 'admission' | 'manifest';
+  code: string;
+  path?: string;
+  ownerPlugin?: string;
+  fileName?: string;
+  publicType?: string;
+  message: string;
+};
+
 export type FlowSurfaceCapabilityDiagnosticsResponse = {
   data: {
     registrySources: FlowSurfaceCapabilitiesResponse['meta']['registrySources'];
+    warnings: FlowSurfaceCapabilityDiagnosticWarning[];
     publicTypeConflicts: FlowSurfaceCapabilityDiagnosticsCapabilityRef[];
     providerErrors: FlowSurfaceCapabilityDiagnosticsCapabilityRef[];
     staleSnapshots: FlowSurfaceCapabilityDiagnosticsCapabilityRef[];

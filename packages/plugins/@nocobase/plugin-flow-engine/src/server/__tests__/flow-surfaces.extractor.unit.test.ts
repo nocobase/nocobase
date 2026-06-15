@@ -41,6 +41,7 @@ import {
 import { collectAutoSnapshotPublicCapabilities } from '../flow-surfaces/capability-registry';
 import { FlowSurfaceExtractorGuardError } from '../flow-surfaces/extractor/guards';
 import type { FlowSurfaceExtractionEvent } from '../flow-surfaces/extractor/types';
+import type { FlowSurfaceCapabilityDiagnosticWarning } from '../flow-surfaces/types';
 
 const FLOW_SURFACE_EXTRACTOR_TEST_DATE = '2026-06-04T00:00:00.000Z';
 const FLOW_SURFACE_EXTRACTOR_FIXTURES_ROOT = join(__dirname, 'flow-surfaces-extractor-fixtures');
@@ -4539,6 +4540,63 @@ describe('flowSurfaces extractor scaffold', () => {
     }
   });
 
+  it('should restore stdout suppression when all-enabled preload fails', async () => {
+    const originalWrite = process.stdout.write;
+    let stdout = '';
+    process.stdout.write = ((...args: Parameters<typeof process.stdout.write>) => {
+      const [chunk] = args;
+      if (typeof chunk === 'string' || Buffer.isBuffer(chunk)) {
+        stdout += chunk.toString();
+      }
+      const maybeCallback = args.find((arg): arg is (error?: Error | null) => void => typeof arg === 'function');
+      maybeCallback?.();
+      return true;
+    }) as typeof process.stdout.write;
+
+    try {
+      const app = {
+        loaded: false,
+        load: vi.fn(async () => {
+          process.stdout.write('bootstrap noise before failure\n');
+          throw new Error('preload failed');
+        }),
+        pm: {
+          repository: {
+            find: vi.fn(async () => [{ packageName: '@example/plugin-json-a' }]),
+          },
+        },
+      } as unknown as Parameters<typeof runFlowSurfaceExtractorCommand>[0];
+
+      const summary = await runFlowSurfaceExtractorCommand(app, {
+        allEnabled: true,
+        dryRun: true,
+        json: true,
+      });
+      process.stdout.write(formatFlowSurfaceExtractorCliSummary(summary, { json: true }));
+
+      expect(app.load).toHaveBeenCalledTimes(1);
+      expect(stdout).not.toContain('bootstrap noise before failure');
+      expect(JSON.parse(stdout)).toMatchObject({
+        ok: false,
+        dryRun: true,
+        exitCode: 1,
+        results: [
+          {
+            ok: false,
+            plugin: '--all-enabled',
+            errors: [
+              {
+                message: 'preload failed',
+              },
+            ],
+          },
+        ],
+      });
+    } finally {
+      process.stdout.write = originalWrite;
+    }
+  });
+
   it('should register the extractor CLI command without unconditional preload', () => {
     const extractCommand = {
       action: vi.fn(() => extractCommand),
@@ -5323,9 +5381,46 @@ describe('flowSurfaces extractor scaffold', () => {
         'utf8',
       );
 
-      const loaded = await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir: outDir });
+      const diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [];
+      const loaded = await loadFlowSurfaceAutoSnapshotsFromDirectory({ dir: outDir, diagnosticWarnings });
 
       expect(loaded.map((item) => item.plugin)).toEqual(['@nocobase/plugin-valid']);
+      expect(diagnosticWarnings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            source: 'snapshot',
+            code: 'snapshot-file-skipped',
+            fileName: 'invalid-json.json',
+          }),
+          expect.objectContaining({
+            source: 'snapshot',
+            code: 'snapshot-file-skipped',
+            fileName: 'directory.json',
+          }),
+          expect.objectContaining({
+            source: 'snapshot',
+            code: 'snapshot-file-skipped',
+            fileName: 'linked.json',
+          }),
+          expect.objectContaining({
+            source: 'snapshot',
+            code: 'snapshot-file-skipped',
+            fileName: 'wrong-version.json',
+          }),
+          expect.objectContaining({
+            source: 'snapshot',
+            code: 'snapshot-file-skipped',
+            fileName: 'malformed.json',
+          }),
+        ]),
+      );
+      expect(diagnosticWarnings).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            fileName: 'notes.txt',
+          }),
+        ]),
+      );
     } finally {
       await rm(outDir, { recursive: true, force: true });
     }

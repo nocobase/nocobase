@@ -24,6 +24,7 @@ import {
   type FlowSurfaceAdmissionCheck,
   type FlowSurfaceCapabilityAdmissionRecord,
 } from '../flow-surfaces/admission-report';
+import type { FlowSurfaceCapabilityDiagnosticWarning } from '../flow-surfaces/types';
 
 describe('flowSurfaces capability admission reports', () => {
   const passedCheck: FlowSurfaceAdmissionCheck = {
@@ -196,9 +197,56 @@ describe('flowSurfaces capability admission reports', () => {
         'utf8',
       );
 
-      const loaded = await loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({ dir: outDir });
+      const diagnosticWarnings: FlowSurfaceCapabilityDiagnosticWarning[] = [];
+      const loaded = await loadFlowSurfaceCapabilityAdmissionReportsFromDirectory({ dir: outDir, diagnosticWarnings });
 
       expect(loaded.map((item) => item.plugin)).toEqual(['@nocobase/plugin-valid']);
+      expect(diagnosticWarnings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            source: 'admission',
+            code: 'admission-report-file-skipped',
+            fileName: 'invalid-json.json',
+          }),
+          expect.objectContaining({
+            source: 'admission',
+            code: 'admission-report-file-skipped',
+            fileName: 'directory.json',
+          }),
+          expect.objectContaining({
+            source: 'admission',
+            code: 'admission-report-file-skipped',
+            fileName: 'linked.json',
+          }),
+          expect.objectContaining({
+            source: 'admission',
+            code: 'admission-report-file-skipped',
+            fileName: 'wrong-version.json',
+          }),
+          expect.objectContaining({
+            source: 'admission',
+            code: 'admission-report-file-skipped',
+            fileName: 'blocked-without-reason.json',
+          }),
+          expect.objectContaining({
+            source: 'admission',
+            code: 'admission-report-file-skipped',
+            fileName: 'invalid-reason.json',
+          }),
+          expect.objectContaining({
+            source: 'admission',
+            code: 'admission-report-file-skipped',
+            fileName: 'invalid-approved-at.json',
+          }),
+        ]),
+      );
+      expect(diagnosticWarnings).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            fileName: 'notes.txt',
+          }),
+        ]),
+      );
     } finally {
       await rm(outDir, { recursive: true, force: true });
     }

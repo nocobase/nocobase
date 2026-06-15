@@ -2809,13 +2809,49 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceCapabilityDiagnosticWarning: {
+    type: 'object',
+    required: ['source', 'code', 'message'],
+    properties: {
+      source: {
+        type: 'string',
+        enum: ['provider', 'policy', 'snapshot', 'admission', 'manifest'],
+      },
+      code: {
+        type: 'string',
+      },
+      path: {
+        type: 'string',
+      },
+      ownerPlugin: {
+        type: 'string',
+      },
+      fileName: {
+        type: 'string',
+      },
+      publicType: {
+        type: 'string',
+      },
+      message: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceCapabilityDiagnosticsResponse: {
     type: 'object',
     required: ['data', 'meta'],
     properties: {
       data: {
         type: 'object',
-        required: ['registrySources', 'publicTypeConflicts', 'providerErrors', 'staleSnapshots', 'admissionRecords'],
+        required: [
+          'registrySources',
+          'warnings',
+          'publicTypeConflicts',
+          'providerErrors',
+          'staleSnapshots',
+          'admissionRecords',
+        ],
         properties: {
           registrySources: {
             type: 'array',
@@ -2830,6 +2866,10 @@ const schemas = {
               },
               additionalProperties: false,
             },
+          },
+          warnings: {
+            type: 'array',
+            items: ref('FlowSurfaceCapabilityDiagnosticWarning'),
           },
           publicTypeConflicts: {
             type: 'array',
