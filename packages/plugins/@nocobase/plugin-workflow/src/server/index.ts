@@ -18,4 +18,5 @@ export type { EventOptions } from './Dispatcher';
 export { default as Processor } from './Processor';
 export type { BackgroundAbortHandle, ProcessorOptions, ScopeTransaction } from './Processor';
 export { default } from './Plugin';
+export type { RepairTaskStatsOptions, TaskStatsProvider, TaskStatsRow } from './Plugin';
 export * from './types';

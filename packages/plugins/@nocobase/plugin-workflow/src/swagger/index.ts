@@ -16,7 +16,8 @@
  *   flow_nodes        — Update / delete / move / duplicate / test nodes
  *   executions        — Execution record queries, cancellation and deletion
  *   jobs              — Node job queries and resuming paused executions
- *   userWorkflowTasks — Current-user's pending workflow tasks
+ *   userWorkflowTasks — Current-user's pending workflow tasks grouped by type
+ *   userWorkflowTaskStats — Current-user's pending workflow tasks grouped by workflow
  *
  * API conventions:
  *   Base URL  : /api
@@ -45,6 +46,7 @@ export default {
     { name: 'executions', description: 'Execution record management: list, get, cancel, delete' },
     { name: 'jobs', description: 'Node job management: list, get, resume' },
     { name: 'userWorkflowTasks', description: 'Current-user workflow task queries' },
+    { name: 'userWorkflowTaskStats', description: 'Current-user workflow task stats grouped by workflow' },
   ],
   paths: {
     // ─────────────────────────────────────────────────────────────────────────
@@ -1254,6 +1256,43 @@ export default {
                 schema: {
                   type: 'array',
                   items: { $ref: '#/components/schemas/user_job' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    '/userWorkflowTaskStats:listMine': {
+      get: {
+        tags: ['userWorkflowTaskStats'],
+        summary: 'List my workflow task stats by workflow',
+        description: [
+          'Get current-user task statistics grouped by `workflowKey`.',
+          '',
+          'The response sums all task types under the same workflow key.',
+        ].join('\n'),
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      workflowKey: { type: 'string' },
+                      stats: {
+                        type: 'object',
+                        properties: {
+                          pending: { type: 'integer' },
+                          all: { type: 'integer' },
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },
