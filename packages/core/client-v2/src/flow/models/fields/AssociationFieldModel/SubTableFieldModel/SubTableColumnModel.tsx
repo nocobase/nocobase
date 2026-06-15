@@ -39,6 +39,12 @@ import { buildDynamicNamePath } from '../../../blocks/form/dynamicNamePath';
 import { getSubTableRowIdentity } from './rowIdentity';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../../internal/utils/rebuildFieldSubModel';
 import {
+  applyRowScopedFieldOptionsToFork,
+  ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP,
+  ROW_SCOPED_FIELD_OPTIONS_PROP,
+  syncRowScopedFieldStatePropsToFork,
+} from '../../../../internal/utils/rowScopedFieldState';
+import {
   buildCurrentItemTitle,
   createAssociationItemChainContextPropertyOptions,
   createItemChainGetter,
@@ -51,59 +57,6 @@ export const SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT = 'subTableColumn';
 
 export function isSubTableColumnFieldComponentContext(ctx) {
   return (ctx?.model?.constructor as any)?.fieldComponentContext === SUB_TABLE_COLUMN_FIELD_COMPONENT_CONTEXT;
-}
-
-const ROW_SCOPED_FIELD_OPTIONS_PROP = '__rowScopedFieldOptions';
-const ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP = '__rowScopedClearValueOnHidden';
-
-const cloneOptionList = (options: any[]) =>
-  options.map((option) => (option && typeof option === 'object' ? { ...option } : option));
-
-function clearForkLocalProp(model: any, prop: string) {
-  if (!model?.isFork || !model?.localProps || !Object.prototype.hasOwnProperty.call(model.localProps, prop)) {
-    return;
-  }
-  const next = { ...model.localProps };
-  delete next[prop];
-  model.localProps = next;
-}
-
-function applyRowScopedFieldOptionsToFork(fieldFork: any, options: unknown) {
-  if (!fieldFork?.isFork) return;
-
-  if (Array.isArray(options)) {
-    fieldFork.__subTableRowScopedOptionsApplied = true;
-    fieldFork.setProps({ options: cloneOptionList(options) });
-    return;
-  }
-
-  if (!fieldFork.__subTableRowScopedOptionsApplied) return;
-  fieldFork.__subTableRowScopedOptionsApplied = false;
-  clearForkLocalProp(fieldFork, 'options');
-}
-
-const ROW_SCOPED_FIELD_STATE_PROP_KEYS = ['disabled', 'required', 'hidden', 'hiddenModel'];
-
-function syncRowScopedFieldStatePropsToFork(fieldFork: any, fieldStateProps: Record<string, any>, disabled: boolean) {
-  if (!fieldFork?.isFork) return;
-
-  const nextProps: Record<string, any> = {};
-  for (const key of ROW_SCOPED_FIELD_STATE_PROP_KEYS) {
-    if (!Object.prototype.hasOwnProperty.call(fieldStateProps, key)) continue;
-    nextProps[key] = key === 'disabled' ? disabled : fieldStateProps[key];
-  }
-
-  if (Object.keys(nextProps).length) {
-    fieldFork.__subTableRowScopedStatePropsApplied = true;
-    fieldFork.setProps(nextProps);
-    return;
-  }
-
-  if (!fieldFork.__subTableRowScopedStatePropsApplied) return;
-  fieldFork.__subTableRowScopedStatePropsApplied = false;
-  for (const key of ROW_SCOPED_FIELD_STATE_PROP_KEYS) {
-    clearForkLocalProp(fieldFork, key);
-  }
 }
 
 const SubTableRowRuleBinder: React.FC<{ model: any }> = ({ model }) => {

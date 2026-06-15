@@ -23,12 +23,10 @@ import {
   isRunJSValue,
   normalizeRunJSValue,
   runjsWithSafeGlobals,
-  type MetaTreeNode,
 } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
-import { Cascader, Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
-import type { CascaderProps } from 'antd';
+import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import {
   DeleteOutlined,
   ArrowUpOutlined,
@@ -41,14 +39,11 @@ import { uid } from '@formily/shared';
 import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
-import { ConditionBuilder } from '../components/ConditionBuilder';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
 import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
-import {
-  buildFieldAssignCascaderOptionsFromCollection,
-  collectFieldAssignCascaderOptions,
-  type FieldAssignCascaderOption,
-} from '../components/fieldAssignOptions';
+import { FieldStateRulesEditor, type FieldStateRuleItem } from '../components/FieldStateRulesEditor';
+import { parseFieldRuleTargetPath } from '../components/FieldRuleItemsEditor';
+import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import _ from 'lodash';
 import { SubFormFieldModel, SubFormListFieldModel } from '../models';
@@ -60,6 +55,10 @@ import {
   getFormItemFieldPathCandidates,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
+import {
+  ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP,
+  ROW_SCOPED_FIELD_OPTIONS_PROP,
+} from '../internal/utils/rowScopedFieldState';
 import { namePathToPathKey, parsePathString, resolveDynamicNamePath } from '../models/blocks/form/value-runtime/path';
 import { ensureFormValueDrivenLinkageRefresh } from './linkageRulesFormValueRefresh';
 
@@ -220,9 +219,6 @@ const getFieldStateProps = (state: string, selectedOptions?: any[]) => {
   }
 };
 
-const ROW_SCOPED_FIELD_OPTIONS_PROP = '__rowScopedFieldOptions';
-const ROW_SCOPED_CLEAR_VALUE_ON_HIDDEN_PROP = '__rowScopedClearValueOnHidden';
-
 const getFieldStateTargetModel = (state: string, model: any) => {
   if (state === 'limitOptions' && isRowScopedFieldStateTarget(model)) {
     return model;
@@ -255,17 +251,6 @@ type FieldStateEditorValue = {
   selectedOptions?: any[];
 };
 
-type FieldStateRuleItem = {
-  key: string;
-  enable?: boolean;
-  targetPath?: string;
-  state?: string;
-  selectedOptions?: any[];
-  condition?: FilterGroupType;
-};
-
-const createEmptyCondition = (): FilterGroupType => ({ logic: '$and', items: [] });
-
 const getFieldStateOptions = (
   t: (s: string) => string,
   includeFormStates: boolean,
@@ -282,64 +267,7 @@ const getFieldStateOptions = (
     includeFormStates && canConfigureLimitOptions && { label: t('Options'), value: 'limitOptions' },
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
-const splitTargetPath = (targetPath?: string): string[] =>
-  String(targetPath || '')
-    .split('.')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-type FieldStateCollectionFieldLike = {
-  name?: unknown;
-  title?: unknown;
-  type?: unknown;
-  interface?: unknown;
-  uiSchema?: unknown;
-  target?: unknown;
-  targetCollection?: any;
-  isAssociationField?: () => boolean;
-};
-
-const isFieldStateAssociationFieldLike = (field?: FieldStateCollectionFieldLike | null) => {
-  return !!(field?.isAssociationField?.() || field?.target || field?.targetCollection);
-};
-
-const getCascaderPathLabel = (options: FieldAssignCascaderOption[], segments: string[]) => {
-  if (!segments.length) return undefined;
-
-  const labels: string[] = [];
-  let currentOptions = options;
-  for (const segment of segments) {
-    const hit = currentOptions.find((option) => String(option.value) === segment);
-    if (!hit) return undefined;
-    labels.push(String(hit.label || segment));
-    currentOptions = hit.children || [];
-  }
-
-  return labels.length ? labels.join(' / ') : undefined;
-};
-
-const getCollectionPathLabel = (collection: any, segments: string[], t: (s: string) => string) => {
-  if (!collection?.getField || !segments.length) return undefined;
-
-  const labels: string[] = [];
-  let currentCollection = collection;
-  for (let i = 0; i < segments.length; i++) {
-    const segment = segments[i];
-    const field = currentCollection?.getField?.(segment) as FieldStateCollectionFieldLike | null;
-    if (!field) return undefined;
-
-    labels.push(t(typeof field.title === 'string' ? field.title : segment));
-
-    if (i < segments.length - 1) {
-      if (!isFieldStateAssociationFieldLike(field) || !field.targetCollection) {
-        return undefined;
-      }
-      currentCollection = field.targetCollection;
-    }
-  }
-
-  return labels.filter(Boolean).join(' / ');
-};
+const splitTargetPath = parseFieldRuleTargetPath;
 
 const FieldStateEditor = ({
   value = { fields: [] } as FieldStateEditorValue,
@@ -436,535 +364,6 @@ const FieldStateEditor = ({
           />
         </div>
       )}
-    </div>
-  );
-};
-
-const FieldStateRulesEditor = ({
-  value = [] as FieldStateRuleItem[],
-  onChange,
-  includeFormStates = true,
-}: {
-  value?: FieldStateRuleItem[];
-  onChange?: (value: FieldStateRuleItem[]) => void;
-  includeFormStates?: boolean;
-}) => {
-  const ctx = useFlowContext();
-  const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
-  const items = React.useMemo(() => (Array.isArray(value) ? value : []), [value]);
-  const rootCollection = getCollectionFromModel(ctx.model);
-  const fieldOptions = React.useMemo(
-    () =>
-      collectFieldAssignCascaderOptions({
-        formBlockModel: ctx.model,
-        t,
-        maxFormItemDepth: 1,
-      }),
-    [ctx.model, t],
-  );
-  const [cascaderOptions, setCascaderOptions] = React.useState<FieldAssignCascaderOption[]>(() =>
-    Array.isArray(fieldOptions) ? fieldOptions : [],
-  );
-
-  React.useEffect(() => {
-    setCascaderOptions(Array.isArray(fieldOptions) ? fieldOptions : []);
-  }, [fieldOptions]);
-
-  const buildCollectionMetaTreeNodes = React.useCallback(
-    (collection: any, basePaths: string[], visited: Set<any>): MetaTreeNode[] => {
-      if (!collection?.getFields) return [];
-      if (visited.has(collection)) return [];
-      const nextVisited = new Set(visited);
-      nextVisited.add(collection);
-
-      const fields = (typeof collection.getFields === 'function' ? collection.getFields() : []) || [];
-      const nodes: MetaTreeNode[] = [];
-      for (const rawField of fields) {
-        if (!rawField) continue;
-        const field = rawField as FieldStateCollectionFieldLike;
-        const fieldInterface = typeof field.interface === 'string' ? field.interface : undefined;
-        if (!fieldInterface) continue;
-        if (fieldInterface === 'formula') continue;
-
-        const name = String(field.name || '');
-        if (!name) continue;
-
-        const node: MetaTreeNode = {
-          name,
-          title: t(typeof field.title === 'string' ? field.title : name),
-          type: String(field.type || 'string'),
-          interface: fieldInterface,
-          uiSchema: field.uiSchema,
-          paths: [...basePaths, name],
-        };
-
-        const isAssociation = isFieldStateAssociationFieldLike(field);
-        const isToMany = isToManyAssociationField(field);
-        if (isAssociation && !isToMany && field.targetCollection) {
-          node.children = async () =>
-            buildCollectionMetaTreeNodes(field.targetCollection, [...basePaths, name], nextVisited);
-        }
-
-        nodes.push(node);
-      }
-
-      return nodes;
-    },
-    [t],
-  );
-
-  const buildItemMetaTree = React.useCallback(
-    (targetPath?: string): MetaTreeNode[] | undefined => {
-      if (!rootCollection?.getField) return undefined;
-      const segments = splitTargetPath(targetPath);
-      if (!segments.length) return undefined;
-
-      const levels: Array<{ collection: any; toMany: boolean; viaLabel?: string }> = [];
-      let currentCollection: any = rootCollection;
-      for (const segment of segments) {
-        const field = currentCollection?.getField?.(segment) as FieldStateCollectionFieldLike | null;
-        if (!isFieldStateAssociationFieldLike(field)) break;
-        const nextCollection = field?.targetCollection;
-        if (!nextCollection) break;
-
-        levels.push({
-          collection: nextCollection,
-          toMany: isToManyAssociationField(field),
-          viaLabel: t(typeof field.title === 'string' ? field.title : segment),
-        });
-        currentCollection = nextCollection;
-      }
-
-      if (!levels.length) return undefined;
-
-      const buildObjectNode = (
-        index: number,
-        basePaths: string[],
-        nodeName: string,
-        titleKey: string,
-      ): MetaTreeNode => {
-        const level = levels[index] || levels[0];
-        const children: MetaTreeNode[] = [];
-
-        if (level.toMany) {
-          children.push({
-            title: t('Index (starts from 0)'),
-            name: 'index',
-            type: 'number',
-            paths: [...basePaths, 'index'],
-          });
-          children.push({
-            title: t('Total count'),
-            name: 'length',
-            type: 'number',
-            paths: [...basePaths, 'length'],
-          });
-        }
-
-        children.push({
-          title: t('Attributes'),
-          name: 'value',
-          type: 'object',
-          paths: [...basePaths, 'value'],
-          children: async () => buildCollectionMetaTreeNodes(level.collection, [...basePaths, 'value'], new Set()),
-        });
-
-        if (index - 1 >= 0) {
-          children.push(buildObjectNode(index - 1, [...basePaths, 'parentItem'], 'parentItem', 'Parent item'));
-        }
-
-        const title = level?.viaLabel ? `${t(titleKey)} (${level.viaLabel})` : t(titleKey);
-        return {
-          title,
-          name: nodeName,
-          type: 'object',
-          paths: basePaths,
-          children,
-        };
-      };
-
-      return [buildObjectNode(levels.length - 1, ['item'], 'item', 'Current item')];
-    },
-    [buildCollectionMetaTreeNodes, rootCollection, t],
-  );
-
-  const resolveTargetCollectionBySegments = React.useCallback(
-    (segments: string[]): any | null => {
-      if (!rootCollection?.getField) return null;
-      let collection: any = rootCollection;
-      for (const segment of segments) {
-        const field = collection?.getField?.(segment) as FieldStateCollectionFieldLike | null;
-        if (!isFieldStateAssociationFieldLike(field) || !field?.targetCollection) {
-          return null;
-        }
-        collection = field.targetCollection;
-      }
-      return collection || null;
-    },
-    [rootCollection],
-  );
-
-  const buildChildrenFromCollection = React.useCallback(
-    (collection: any, associationDepth: number): FieldAssignCascaderOption[] => {
-      return buildFieldAssignCascaderOptionsFromCollection(collection, t, {
-        associationDepth,
-      });
-    },
-    [t],
-  );
-
-  const loadCascaderData = React.useCallback<NonNullable<CascaderProps<FieldAssignCascaderOption>['loadData']>>(
-    async (selectedOptions?: FieldAssignCascaderOption[]) => {
-      const options = selectedOptions || [];
-      const target = options[options.length - 1];
-      if (!target) return;
-      if (target.children?.length) return;
-      if (target.isLeaf) return;
-
-      const segments = options.map((option) => String(option?.value)).filter(Boolean);
-      const targetCollection = resolveTargetCollectionBySegments(segments);
-      if (!targetCollection) {
-        target.isLeaf = true;
-        setCascaderOptions((prev) => [...prev]);
-        return;
-      }
-
-      const children = buildChildrenFromCollection(targetCollection, segments.length);
-      if (children.length) {
-        target.children = children;
-      } else {
-        target.isLeaf = true;
-      }
-      setCascaderOptions((prev) => [...prev]);
-    },
-    [buildChildrenFromCollection, resolveTargetCollectionBySegments],
-  );
-
-  const preloadCascaderPath = React.useCallback(
-    async (segments: string[]) => {
-      if (!segments.length) return;
-      let options = cascaderOptions;
-      const selected: FieldAssignCascaderOption[] = [];
-      for (let i = 0; i < segments.length - 1; i++) {
-        const segment = String(segments[i]);
-        const hit = options.find((option) => String(option?.value) === segment);
-        if (!hit) return;
-        selected.push(hit);
-        if (hit.children?.length) {
-          options = hit.children;
-          continue;
-        }
-        if (hit.isLeaf) return;
-        await loadCascaderData(selected);
-        options = hit.children || [];
-      }
-    },
-    [cascaderOptions, loadCascaderData],
-  );
-
-  const selectedTargetPaths = React.useMemo(() => {
-    const out: string[] = [];
-    const seen = new Set<string>();
-    for (const item of items) {
-      const targetPath = item?.targetPath ? String(item.targetPath) : '';
-      if (!targetPath || seen.has(targetPath)) continue;
-      seen.add(targetPath);
-      out.push(targetPath);
-    }
-    return out;
-  }, [items]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      for (const targetPath of selectedTargetPaths) {
-        if (cancelled) return;
-        const segments = splitTargetPath(targetPath);
-        if (!segments.length) continue;
-        await preloadCascaderPath(segments);
-      }
-    };
-    run().catch((error) => {
-      console.warn('[FieldStateRulesEditor] Failed to preload field cascader path', error);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [preloadCascaderPath, selectedTargetPaths]);
-
-  const patchItem = React.useCallback(
-    (index: number, patch: Partial<FieldStateRuleItem>) => {
-      onChange?.(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
-    },
-    [items, onChange],
-  );
-
-  const removeItem = React.useCallback(
-    (index: number) => {
-      onChange?.(items.filter((_, i) => i !== index));
-    },
-    [items, onChange],
-  );
-
-  const moveItem = React.useCallback(
-    (index: number, direction: 'up' | 'down') => {
-      const next = [...items];
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= next.length) return;
-      const [item] = next.splice(index, 1);
-      next.splice(targetIndex, 0, item);
-      onChange?.(next);
-    },
-    [items, onChange],
-  );
-
-  const addItem = React.useCallback(() => {
-    onChange?.([
-      ...items,
-      {
-        key: uid(),
-        enable: true,
-        targetPath: undefined,
-        state: undefined,
-        selectedOptions: undefined,
-        condition: createEmptyCondition(),
-      },
-    ]);
-  }, [items, onChange]);
-
-  const getTargetFieldModel = React.useCallback(
-    (targetPath?: string) => {
-      if (!targetPath) return null;
-      return findFieldStateFormItemModelByTargetPath(ctx, targetPath);
-    },
-    [ctx],
-  );
-
-  const getTargetLabel = React.useCallback(
-    (targetPath?: string) => {
-      const segments = splitTargetPath(targetPath);
-      if (!segments.length) return undefined;
-
-      return (
-        getCollectionPathLabel(rootCollection, segments, t) ||
-        getCascaderPathLabel(cascaderOptions, segments) ||
-        segments.join(' / ')
-      );
-    },
-    [cascaderOptions, rootCollection, t],
-  );
-
-  const allStateOptions = React.useMemo(() => getFieldStateOptions(t, includeFormStates, true), [includeFormStates, t]);
-
-  const renderPanelHeader = (item: FieldStateRuleItem, index: number) => {
-    const targetLabel = getTargetLabel(item.targetPath) || t('Please select field');
-    const stateLabel = allStateOptions.find((option) => option.value === item.state)?.label;
-
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-        <div
-          style={{
-            flex: 1,
-            marginRight: 16,
-            minWidth: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }} title={targetLabel}>
-            {targetLabel}
-          </div>
-          {stateLabel ? <div style={{ opacity: 0.65, fontSize: 12, whiteSpace: 'nowrap' }}>{stateLabel}</div> : null}
-        </div>
-        <Space onClick={(e) => e.stopPropagation()}>
-          <Tooltip title={t('Delete')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<DeleteOutlined />}
-              onClick={() => removeItem(index)}
-              aria-label={t('Delete')}
-            />
-          </Tooltip>
-          <Tooltip title={t('Move up')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<ArrowUpOutlined />}
-              onClick={() => moveItem(index, 'up')}
-              disabled={index === 0}
-              aria-label={t('Move up')}
-            />
-          </Tooltip>
-          <Tooltip title={t('Move down')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<ArrowDownOutlined />}
-              onClick={() => moveItem(index, 'down')}
-              disabled={index === items.length - 1}
-              aria-label={t('Move down')}
-            />
-          </Tooltip>
-          <Switch
-            size="small"
-            checked={item.enable !== false}
-            onChange={(checked) => patchItem(index, { enable: checked })}
-            checkedChildren={t('Enable')}
-            unCheckedChildren={t('Disable')}
-          />
-        </Space>
-      </div>
-    );
-  };
-
-  const collapseItems = items.map((item, index) => {
-    const targetFieldModel = getTargetFieldModel(item.targetPath);
-    const extraMetaTree = buildItemMetaTree(item.targetPath);
-    const canConfigureLimitOptions = includeFormStates && !!targetFieldModel && supportsLimitOptions(targetFieldModel);
-    const stateOptions = getFieldStateOptions(t, includeFormStates, canConfigureLimitOptions);
-    const selectableOptions = targetFieldModel ? getFieldModelOptions(targetFieldModel, t) : [];
-
-    return {
-      key: item.key || String(index),
-      label: renderPanelHeader(item, index),
-      styles: {
-        header: {
-          display: 'flex',
-          alignItems: 'center',
-        },
-      },
-      children: (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Field')}</div>
-            <Cascader
-              value={splitTargetPath(item.targetPath)}
-              placeholder={t('Please select field')}
-              style={{ width: '100%' }}
-              options={cascaderOptions}
-              loadData={loadCascaderData}
-              changeOnSelect
-              showSearch={{
-                filter: (inputValue, path) => {
-                  const keyword = String(inputValue || '').toLowerCase();
-                  if (!keyword) return true;
-                  return (path || []).some((option) =>
-                    String(option?.label ?? '')
-                      .toLowerCase()
-                      .includes(keyword),
-                  );
-                },
-              }}
-              allowClear
-              onChange={(segments) => {
-                const arr = Array.isArray(segments) ? segments.map((segment) => String(segment)).filter(Boolean) : [];
-                const targetPath = arr.length ? arr.join('.') : undefined;
-                const nextTargetModel = getTargetFieldModel(targetPath);
-                const nextCanConfigureLimitOptions =
-                  includeFormStates && !!nextTargetModel && supportsLimitOptions(nextTargetModel);
-                const nextState =
-                  item.state === 'limitOptions' && !nextCanConfigureLimitOptions ? undefined : item.state;
-                patchItem(index, {
-                  targetPath,
-                  state: nextState,
-                  selectedOptions: nextState === 'limitOptions' ? [] : item.selectedOptions,
-                });
-              }}
-            />
-          </div>
-          <div>
-            <div style={{ marginBottom: 4, fontSize: 14 }}>{t('State')}</div>
-            <Select
-              value={item.state}
-              onChange={(selectedState) =>
-                patchItem(index, {
-                  state: selectedState,
-                  selectedOptions: selectedState === 'limitOptions' ? item.selectedOptions || [] : undefined,
-                })
-              }
-              placeholder={t('Please select state')}
-              style={{ width: '100%' }}
-              options={stateOptions}
-              allowClear
-            />
-          </div>
-          {item.state === 'limitOptions' && canConfigureLimitOptions ? (
-            <div>
-              <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Options')}</div>
-              <Select
-                mode="multiple"
-                value={(item.selectedOptions || []).map((option: any) => option.value)}
-                onChange={(selectedValues) => {
-                  patchItem(index, {
-                    selectedOptions: selectableOptions.filter((option) => selectedValues.includes(option.value)),
-                  });
-                }}
-                style={{ width: '100%' }}
-                options={selectableOptions}
-                showSearch
-                // @ts-ignore
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                allowClear
-              />
-            </div>
-          ) : null}
-          <div>
-            <div style={{ marginBottom: 4, fontSize: 14 }}>{t('Condition')}</div>
-            <ConditionBuilder
-              value={item.condition || createEmptyCondition()}
-              onChange={(condition) => patchItem(index, { condition })}
-              extraMetaTree={extraMetaTree}
-              maxAssociationFieldDepth={2}
-            />
-          </div>
-        </div>
-      ),
-    };
-  });
-
-  const defaultActiveKey = React.useMemo(() => {
-    if (!items.length) return [];
-    let enabledIndex = -1;
-    for (let i = items.length - 1; i >= 0; i--) {
-      if (items[i]?.enable !== false) {
-        enabledIndex = i;
-        break;
-      }
-    }
-    const indexToOpen = enabledIndex >= 0 ? enabledIndex : 0;
-    const item = items[indexToOpen];
-    const key = item?.key || String(indexToOpen);
-    return key ? [key] : [];
-  }, [items]);
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {items.length ? (
-        <Collapse
-          items={collapseItems}
-          size="small"
-          style={{ marginBottom: 8 }}
-          defaultActiveKey={defaultActiveKey}
-          accordion
-        />
-      ) : (
-        <div
-          style={{
-            border: '1px dashed #d9d9d9',
-            borderRadius: 6,
-            backgroundColor: '#fafafa',
-            marginBottom: 8,
-          }}
-        >
-          <Empty description={t('No data')} style={{ margin: '20px 0' }} />
-        </div>
-      )}
-
-      <Button type="dashed" icon={<PlusOutlined />} onClick={addItem} style={{ width: '100%' }}>
-        {t('Add')}
-      </Button>
     </div>
   );
 };
@@ -1776,6 +1175,65 @@ export const linkageSetDetailsFieldProps = defineAction({
   },
 });
 
+type ArrayFieldComponentProps = {
+  value?: unknown;
+  onChange?: (value: unknown) => void;
+};
+
+const FieldStateRulesActionComponent: React.FC<
+  ArrayFieldComponentProps & {
+    includeFormStates?: boolean;
+  }
+> = ({ value, onChange, includeFormStates = true }) => {
+  const ctx = useFlowContext();
+  const t = React.useCallback((key: string) => ctx.model.translate(key), [ctx.model]);
+  const fieldOptions = React.useMemo(() => {
+    return collectFieldAssignCascaderOptions({
+      formBlockModel: ctx.model,
+      t,
+      maxFormItemDepth: 1,
+    });
+  }, [ctx.model, t]);
+
+  const handleChange = React.useCallback(
+    (next: FieldStateRuleItem[]) => {
+      if (typeof onChange !== 'function') return;
+      onChange(next);
+    },
+    [onChange],
+  );
+
+  const getTargetFieldModel = React.useCallback(
+    (targetPath?: string) => {
+      if (!targetPath) return null;
+      return findFieldStateFormItemModelByTargetPath(ctx, targetPath);
+    },
+    [ctx],
+  );
+
+  const getStateOptions = React.useCallback(
+    (canConfigureLimitOptions: boolean) => getFieldStateOptions(t, includeFormStates, canConfigureLimitOptions),
+    [includeFormStates, t],
+  );
+
+  const getFieldOptions = React.useCallback((targetModel: unknown) => getFieldModelOptions(targetModel, t), [t]);
+
+  return (
+    <FieldStateRulesEditor
+      t={t}
+      fieldOptions={fieldOptions}
+      rootCollection={getCollectionFromModel(ctx.model)}
+      value={Array.isArray(value) ? (value as FieldStateRuleItem[]) : []}
+      onChange={handleChange}
+      includeFormStates={includeFormStates}
+      getTargetFieldModel={getTargetFieldModel}
+      getStateOptions={getStateOptions}
+      getFieldOptions={getFieldOptions}
+      supportsLimitOptions={supportsLimitOptions}
+    />
+  );
+};
+
 export const linkageSetFieldState = defineAction({
   name: 'linkageSetFieldState',
   title: tExpr('Set fields state'),
@@ -1784,9 +1242,7 @@ export const linkageSetFieldState = defineAction({
   uiSchema: {
     value: {
       type: 'array',
-      'x-component': (props) => {
-        return <FieldStateRulesEditor {...props} />;
-      },
+      'x-component': FieldStateRulesActionComponent,
     },
   },
   handler: (ctx, { value, setProps }) => {
@@ -1802,9 +1258,7 @@ export const subFormLinkageSetFieldState = defineAction({
   uiSchema: {
     value: {
       type: 'array',
-      'x-component': (props) => {
-        return <FieldStateRulesEditor {...props} />;
-      },
+      'x-component': FieldStateRulesActionComponent,
     },
   },
   handler: (ctx, { value, setProps }) => {
@@ -1821,7 +1275,7 @@ export const linkageSetDetailsFieldState = defineAction({
     value: {
       type: 'array',
       'x-component': (props) => {
-        return <FieldStateRulesEditor {...props} includeFormStates={false} />;
+        return <FieldStateRulesActionComponent {...props} includeFormStates={false} />;
       },
     },
   },
@@ -1829,11 +1283,6 @@ export const linkageSetDetailsFieldState = defineAction({
     runBlockFieldStateRules(ctx, 'linkageSetDetailsFieldState', value, setProps);
   },
 });
-
-type ArrayFieldComponentProps = {
-  value?: unknown;
-  onChange?: (value: unknown) => void;
-};
 
 const LEGACY_ASSIGN_RULE = { mode: 'assign', valueKey: 'assignValue' } as const;
 const LEGACY_DEFAULT_RULE = { mode: 'default', valueKey: 'initialValue' } as const;
