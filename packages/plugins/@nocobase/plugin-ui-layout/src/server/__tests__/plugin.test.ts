@@ -44,6 +44,90 @@ async function createUiLayoutMockServer() {
   });
 }
 
+async function createUiLayoutMockServerWithMultiPortalFixture() {
+  return createMockServer({
+    registerActions: true,
+    acl: true,
+    plugins: [
+      'error-handler',
+      'users',
+      'auth',
+      'client',
+      'field-sort',
+      'acl',
+      'ui-schema-storage',
+      'system-settings',
+      'data-source-main',
+      'data-source-manager',
+      'ui-layout',
+    ],
+    async beforeInstall(app) {
+      app.db.collection({
+        name: 'multiPortals',
+        autoGenId: false,
+        timestamps: false,
+        fields: [
+          {
+            name: 'uid',
+            type: 'string',
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+            allowNull: false,
+          },
+          {
+            name: 'routeName',
+            type: 'string',
+            allowNull: false,
+          },
+          {
+            name: 'routePath',
+            type: 'string',
+            allowNull: false,
+          },
+          {
+            name: 'authCheck',
+            type: 'boolean',
+            defaultValue: true,
+            allowNull: false,
+          },
+          {
+            name: 'enabled',
+            type: 'boolean',
+            defaultValue: true,
+            allowNull: false,
+          },
+          {
+            name: 'uiLayoutUid',
+            type: 'string',
+            allowNull: false,
+          },
+        ],
+        filterTargetKey: 'uid',
+      });
+      app.db.extendCollection({
+        name: 'desktopRoutes',
+        fields: [
+          {
+            type: 'belongsToMany',
+            name: 'multiPortals',
+            target: 'multiPortals',
+            through: 'desktopRoutesMultiPortals',
+            sourceKey: 'id',
+            targetKey: 'uid',
+            foreignKey: 'desktopRouteId',
+            otherKey: 'multiPortalUid',
+            onDelete: 'CASCADE',
+          },
+        ],
+      });
+    },
+  });
+}
+
 describe('plugin-ui-layout server', () => {
   let app: MockServer | undefined;
 
@@ -154,24 +238,7 @@ describe('plugin-ui-layout server', () => {
   });
 
   it('should backfill ordinary legacy desktop routes without claiming portal-only routes', async () => {
-    app = await createMockServer({
-      registerActions: true,
-      acl: true,
-      plugins: [
-        'error-handler',
-        'users',
-        'auth',
-        'client',
-        'field-sort',
-        'acl',
-        'ui-schema-storage',
-        'system-settings',
-        'data-source-main',
-        'data-source-manager',
-        'ui-layout',
-        'multi-portal',
-      ],
-    });
+    app = await createUiLayoutMockServerWithMultiPortalFixture();
 
     const portal = await app.db.getRepository('multiPortals').create({
       values: {

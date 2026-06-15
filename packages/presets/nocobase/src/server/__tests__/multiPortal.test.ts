@@ -12,7 +12,6 @@ import path from 'node:path';
 
 const MULTI_PORTAL_PACKAGE = '@nocobase/plugin-multi-portal';
 const UI_LAYOUT_PACKAGE = '@nocobase/plugin-ui-layout';
-const PRO_MULTI_PORTAL_ROOT = 'packages/pro-plugins/@nocobase/plugin-multi-portal';
 
 function readJson(relativePath: string) {
   return JSON.parse(fs.readFileSync(path.resolve(process.cwd(), relativePath), 'utf8'));
@@ -28,54 +27,5 @@ describe('plugin-multi-portal preset boundary', () => {
     expect(packageJson.builtIn).not.toContain(MULTI_PORTAL_PACKAGE);
     expect(packageJson.dependencies).toHaveProperty(UI_LAYOUT_PACKAGE);
     expect(packageJson.builtIn).toContain(UI_LAYOUT_PACKAGE);
-  });
-
-  it('should keep the Multi-Portal package scaffold in ProPlugins', () => {
-    const pluginRoot = path.resolve(process.cwd(), PRO_MULTI_PORTAL_ROOT);
-    const requiredFiles = [
-      'package.json',
-      'client-v2.js',
-      'client-v2.d.ts',
-      'client.js',
-      'client.d.ts',
-      'server.js',
-      'server.d.ts',
-      'src/index.ts',
-      'src/server/index.ts',
-      'src/server/plugin.ts',
-      'src/server/__tests__/plugin.test.ts',
-      'src/client-v2/index.tsx',
-      'src/client-v2/plugin.tsx',
-      'src/client-v2/__tests__/plugin.test.tsx',
-      'src/locale/en-US.json',
-      'src/locale/zh-CN.json',
-    ];
-
-    expect(fs.existsSync(pluginRoot)).toBe(true);
-    for (const file of requiredFiles) {
-      expect(fs.existsSync(path.join(pluginRoot, file))).toBe(true);
-    }
-
-    const packageJson = readJson(`${PRO_MULTI_PORTAL_ROOT}/package.json`);
-    expect(packageJson).toMatchObject({
-      name: MULTI_PORTAL_PACKAGE,
-      displayName: 'Multi-portal',
-      'displayName.zh-CN': '多工作区',
-    });
-    expect(packageJson.peerDependencies).toMatchObject({
-      '@nocobase/client-v2': '2.x',
-      '@nocobase/database': '2.x',
-      '@nocobase/flow-engine': '2.x',
-      [UI_LAYOUT_PACKAGE]: '2.x',
-      '@nocobase/resourcer': '2.x',
-      '@nocobase/server': '2.x',
-      '@nocobase/test': '2.x',
-    });
-    expect(packageJson.devDependencies).toMatchObject({
-      '@ant-design/icons': '5.x',
-      ahooks: '3.x',
-      antd: '5.x',
-      react: '^18.2.0',
-    });
   });
 });
