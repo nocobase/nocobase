@@ -13,6 +13,8 @@ Node giao dịch cơ sở dữ liệu dùng để chạy một nhóm thao tác c
 
 Node giao dịch hiện chỉ hỗ trợ nguồn dữ liệu cơ sở dữ liệu. Các thao tác dữ liệu thuộc cùng nguồn dữ liệu trong Node sẽ tự động được đưa vào giao dịch này; các nguồn dữ liệu khác sẽ không sử dụng giao dịch này.
 
+Node này được hỗ trợ từ phiên bản 2.2.0.
+
 ## Tạo Node
 
 Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Giao dịch cơ sở dữ liệu".

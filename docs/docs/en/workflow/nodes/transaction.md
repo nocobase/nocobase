@@ -13,6 +13,8 @@ The database transaction node runs a group of database operations in the same tr
 
 The transaction node currently supports database data sources only. Data operations from the same data source inside the node are automatically included in the transaction; other data sources do not use this transaction.
 
+This node has been supported since 2.2.0.
+
 ## Create Node
 
 In the workflow configuration interface, click the plus ("+") button in the flow to add a "Database transaction" node.
