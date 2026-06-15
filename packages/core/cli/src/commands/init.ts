@@ -557,7 +557,7 @@ Prompt modes:
       default: false,
     }),
     'ui-host': Flags.string({
-      description: 'Host for the local --ui setup server (default: 127.0.0.1)',
+      description: 'Browser-accessible host for the --ui setup page URL (default: 127.0.0.1)',
     }),
     'ui-port': Flags.integer({
       description: 'Port for the local --ui setup server; 0 lets the OS choose an available port',
