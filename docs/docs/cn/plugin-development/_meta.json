@@ -118,11 +118,6 @@
         "type": "custom-link",
         "label": "Test 测试",
         "link": "/plugin-development/server/test"
-      },
-      {
-        "type": "custom-link",
-        "label": "KnowledgeBase 知识库插件",
-        "link": "/plugin-development/server/knowledge-base"
       }
     ]
   },

@@ -190,6 +190,17 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
+      },
+      {
+        "type": "custom-link",
+        "label": "开发指南",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "External 知识库插件",
+            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
+          }
+        ]
       }
     ]
   },

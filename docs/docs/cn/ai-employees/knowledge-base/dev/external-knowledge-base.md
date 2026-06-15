@@ -1,20 +1,20 @@
 ---
-title: "KnowledgeBase 知识库插件"
-description: "NocoBase 知识库插件开发：注册外部知识库 Provider、实现 VectorStoreService、返回 RAG 检索结果、配置外部知识库参数表单。"
-keywords: "知识库插件,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI 员工,NocoBase"
+title: "External 知识库插件"
+description: "NocoBase External 知识库插件开发：注册外部知识库 Provider、实现 VectorStoreService、返回 RAG 检索结果、配置外部知识库参数表单。"
+keywords: "External 知识库插件,External Knowledge Base,VectorStoreProvider,VectorStoreService,RAG,AI 员工,NocoBase"
 ---
 
-# KnowledgeBase 知识库插件
+# External 知识库插件
 
-在 NocoBase 中，**知识库插件（KnowledgeBase Plugin）** 主要用于扩展 AI 员工的 RAG 检索来源。大部分业务直接使用 Local 知识库就够了；只有当文档、向量数据或检索逻辑已经由外部系统维护时，才需要开发外部知识库插件。
+在 NocoBase 中，**External 知识库插件（External Knowledge Base Plugin）** 主要用于扩展 AI 员工的 RAG 检索来源。大部分业务直接使用 Local 知识库就够了；只有当文档、向量数据或检索逻辑已经由外部系统维护时，才需要开发 External 知识库插件。
 
-外部知识库插件不参与 NocoBase 的文档上传、分段、向量化和删除流程。它只在 AI 员工问答时接收检索请求，然后返回召回的文档片段。
+External 知识库插件不参与 NocoBase 的文档上传、分段、向量化和删除流程。它只在 AI 员工问答时接收检索请求，然后返回召回的文档片段。
 
 :::tip 前置阅读
 
-- [知识库概述](../../ai-employees/knowledge-base/knowledge-base/) — 了解 Local、Readonly 和 External 知识库的能力边界
-- [Plugin 插件](./plugin.md) — 了解服务端插件生命周期和 `this.app.pm`
-- [i18n 国际化](./i18n.md) — 如果插件提供配置表单，需要为界面文案准备翻译
+- [知识库概述](../knowledge-base/) — 了解 Local、Readonly 和 External 知识库的能力边界
+- [Plugin 插件](../../../plugin-development/server/plugin.md) — 了解服务端插件生命周期和 `this.app.pm`
+- [i18n 国际化](../../../plugin-development/server/i18n.md) — 如果插件提供配置表单，需要为界面文案准备翻译
 
 :::
 
@@ -33,10 +33,10 @@ keywords: "知识库插件,External Knowledge Base,VectorStoreProvider,VectorSto
 
 外部知识库通过 `@nocobase/plugin-ai` 提供的 `vectorStoreProvider` 扩展点注册。服务端需要实现两个对象：
 
-| 对象 | 作用 |
-| --- | --- |
-| `VectorStoreProvider` | 声明外部知识库插件标识，并创建检索服务 |
-| `VectorStoreService` | 执行检索，返回 AI 员工可使用的文档片段 |
+| 对象                  | 作用                                   |
+| --------------------- | -------------------------------------- |
+| `VectorStoreProvider` | 声明 External 知识库插件标识，并创建检索服务 |
+| `VectorStoreService`  | 执行检索，返回 AI 员工可使用的文档片段 |
 
 其中，`providerName` 是外部知识库类型的唯一标识。用户在创建 External 知识库时选择或填写的插件标识，需要和服务端注册的 `providerName` 保持一致。
 
@@ -62,7 +62,7 @@ export default PluginMyKnowledgeBaseServer;
 
 `load()` 阶段适合注册扩展点。此时不需要连接外部向量库，也不建议在这里执行检索请求；真正的连接和查询逻辑放到 `VectorStoreService` 中按需执行。
 
-外部知识库插件一定依赖 `@nocobase/plugin-ai-knowledge-base`。建议在 `beforeEnable()` 中做启用前检查：
+External 知识库插件一定依赖 `@nocobase/plugin-ai-knowledge-base`。建议在 `beforeEnable()` 中做启用前检查：
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -206,12 +206,12 @@ type DocumentSegmentedWithScore = {
 
 简单场景默认推荐使用 `defaultVectorStorePropForm()` 生成配置表单。它接收一个字段数组，每个字段会生成一个表单项，并使用支持选择 NocoBase 变量的输入框：
 
-| 参数 | 作用 |
-| --- | --- |
-| `key` | 参数保存和传给服务端时使用的字段名 |
-| `label` | 表单项标题 |
-| `tooltip` | 表单项提示说明 |
-| `required` | 是否必填，设置后会生成必填校验 |
+| 参数       | 作用                                                  |
+| ---------- | ----------------------------------------------------- |
+| `key`      | 参数保存和传给服务端时使用的字段名                    |
+| `label`    | 表单项标题                                            |
+| `tooltip`  | 表单项提示说明                                        |
+| `required` | 是否必填，设置后会生成必填校验                        |
 | `password` | 是否按密码类字段展示，适合 API key、secret 等敏感信息 |
 
 在插件的前端入口中注册配置表单：
@@ -292,7 +292,7 @@ aiPlugin.features.vectorStoreProvider.register({
 
 ## 示例插件结构
 
-一个外部知识库插件可以按下面的结构组织：
+一个 External 知识库插件可以按下面的结构组织：
 
 ```text
 src/server/plugin.ts
@@ -308,11 +308,11 @@ src/client/index.tsx
 - `service.ts` 实现 `search()`，把外部检索结果转换成 `DocumentSegmentedWithScore[]`
 - `client/index.tsx` 注册外部知识库配置表单
 
-至此，一个外部知识库插件已经能被 AI 员工调用。用户创建 External 知识库并选择对应 Provider 后，AI 员工问答时就会通过你的 `search()` 获取召回片段。
+至此，一个 External 知识库插件已经能被 AI 员工调用。用户创建 External 知识库并选择对应 Provider 后，AI 员工问答时就会通过你的 `search()` 获取召回片段。
 
 ## 相关链接
 
-- [知识库概述](../../ai-employees/knowledge-base/knowledge-base/) — Local、Readonly 和 External 知识库的使用边界
-- [Plugin 插件](./plugin.md) — 服务端插件生命周期和 `this.app.pm`
-- [i18n 国际化](./i18n.md) — 插件前后端多语言配置
-- [客户端插件开发概述](../client/index.md) — 客户端入口、组件和上下文能力
+- [知识库概述](../knowledge-base/) — Local、Readonly 和 External 知识库的使用边界
+- [Plugin 插件](../../../plugin-development/server/plugin.md) — 服务端插件生命周期和 `this.app.pm`
+- [i18n 国际化](../../../plugin-development/server/i18n.md) — 插件前后端多语言配置
+- [客户端插件开发概述](../../../plugin-development/client/index.md) — 客户端入口、组件和上下文能力
