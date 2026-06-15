@@ -58,6 +58,68 @@
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `NODE_ENV` | Node.js环境 | production |
+
+### 2.4 架构支持
+
+| 架构 | 支持状态 | 说明 |
+|------|----------|------|
+| linux/amd64 | ✅ 支持 | Intel/AMD 处理器 |
+| linux/arm64 | ✅ 支持 | Apple Silicon (M1/M2/M3/M4 PRO) |
+
+---
+
+## 2.5 Apple Silicon (M4 PRO) 专用说明
+
+### 2.5.1 本地构建
+
+在mac M4 PRO上构建和运行Docker镜像：
+
+```bash
+# 构建arm64架构镜像
+docker build -f Dockerfile.prod \
+  --platform linux/arm64 \
+  -t nocobase:arm64 .
+
+# 运行arm64镜像
+docker run -d \
+  --platform linux/arm64 \
+  -p 80:80 \
+  -p 3000:3000 \
+  nocobase:arm64
+```
+
+### 2.5.2 拉取预构建镜像
+
+```bash
+# 从GitHub Packages拉取多平台镜像
+docker pull ghcr.io/naturegolden/nocobase:deploy/docker
+
+# Docker会自动选择适合当前架构的镜像
+docker run -d -p 80:80 -p 3000:3000 ghcr.io/naturegolden/nocobase:deploy/docker
+```
+
+### 2.5.3 Ubuntu虚拟机环境配置
+
+如果在mac M4 PRO的Ubuntu虚拟机中部署：
+
+```bash
+# 确保Docker已正确配置
+docker run --rm arm64v8/ubuntu uname -m
+# 应输出: aarch64
+
+# 验证QEMU支持（如需要）
+docker run --rm --platform linux/amd64 alpine uname -m
+# 如果输出x86_64则说明QEMU配置正确
+```
+
+### 2.5.4 性能优化建议
+
+| 优化项 | 说明 | 配置方式 |
+|--------|------|----------|
+| 内存分配 | 建议至少4GB | Docker Desktop设置 |
+| CPU核心 | 建议分配4核以上 | Docker Desktop设置 |
+| 磁盘IO | 使用SSD加速 | 使用本地磁盘 |
+| 缓存 | 启用Docker Buildx缓存 | 构建时自动启用 |
 | `APP_DIR` | 应用目录 | /app/nocobase |
 | `STORAGE_DIR` | 存储目录 | /app/nocobase/storage |
 | `LOG_DIR` | 日志目录 | /app/nocobase/logs |
