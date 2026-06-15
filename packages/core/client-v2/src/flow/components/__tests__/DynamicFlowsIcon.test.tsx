@@ -71,7 +71,6 @@ vi.mock('antd', async (importOriginal) => {
       mockState.capturedTabsProps.push(props);
       const { items, activeKey, onChange, tabBarStyle } = props;
       const currentKey = activeKey || items?.[0]?.key;
-      const activeItem = items?.find((item: any) => item.key === currentKey) || items?.[0];
       return (
         <div data-testid="dynamic-flow-source-tabs">
           <div role="tablist" style={tabBarStyle}>
@@ -87,7 +86,11 @@ vi.mock('antd', async (importOriginal) => {
               </button>
             ))}
           </div>
-          <div>{activeItem?.children}</div>
+          {items?.map((item: any) => (
+            <div key={item.key} hidden={item.key !== currentKey}>
+              {item.children}
+            </div>
+          ))}
         </div>
       );
     },
@@ -470,10 +473,11 @@ describe('DynamicFlowsIcon', () => {
     expect(target.context.message.success).toHaveBeenCalledWith('Configuration saved');
   });
 
-  it('keeps the editor open when saving the active source would discard inactive source changes', async () => {
+  it('saves all dirty sources without discard confirmation', async () => {
     const saveStepParams = vi.fn(async () => undefined);
     const model = createModel({ saveStepParams });
-    const target = createPeerModel(model, 'target-model');
+    const targetSaveStepParams = vi.fn(async () => undefined);
+    const target = createPeerModel(model, 'target-model', targetSaveStepParams);
     mockState.flowContextValue.modal.confirm.mockResolvedValue(false);
 
     model.flowEngine.flowSettings.registerDynamicFlowSourceProvider({
@@ -486,17 +490,16 @@ describe('DynamicFlowsIcon', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Referenced template' }));
     await userEvent.click(screen.getByRole('button', { name: 'Add event flow' }));
     await userEvent.click(screen.getByRole('tab', { name: 'Current block' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add event flow' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(saveStepParams).toHaveBeenCalledTimes(1);
-    expect(mockState.flowContextValue.modal.confirm).toHaveBeenCalledWith({
-      title: 'Unsaved changes',
-      content: "Are you sure you don't want to save?",
-      okText: 'Confirm',
-      cancelText: 'Cancel',
-    });
-    expect(view.destroy).not.toHaveBeenCalled();
-    expect(target.flowRegistry.getFlows().size).toBe(1);
+    expect(targetSaveStepParams).toHaveBeenCalledTimes(1);
+    expect(mockState.flowContextValue.modal.confirm).not.toHaveBeenCalled();
+    expect(view.close).toHaveBeenCalledTimes(1);
+    expect(view.destroy).toHaveBeenCalledTimes(1);
+    expect(model.flowRegistry.getFlows().size).toBe(2);
+    expect(target.flowRegistry.getFlows().size).toBe(2);
   });
 
   it('provides the active source model context inside source tabs', async () => {

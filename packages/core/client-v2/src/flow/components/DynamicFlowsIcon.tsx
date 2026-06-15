@@ -50,6 +50,10 @@ type ClosableView = {
   beforeClose?: (payload: Record<string, unknown>) => Promise<boolean | void> | boolean | void;
   destroy?: () => void;
 };
+type DynamicFlowsEditorApi = {
+  hasUnsavedChanges: () => boolean;
+  save: () => Promise<boolean>;
+};
 
 function isFlowOnObject(on: FlowDefinition['on']): on is FlowOnObject {
   return !!on && typeof on === 'object';
@@ -161,9 +165,11 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
 
 const DynamicFlowsSourceTabs = observer(({ sources }: { sources: DynamicFlowSource[] }) => {
   const [activeKey, setActiveKey] = React.useState(sources[0]?.key);
+  const [submitLoading, setSubmitLoading] = React.useState(false);
   const ctx = useFlowContext<FlowEngineContext>();
   const { token } = theme.useToken();
   const dirtySourceKeysRef = React.useRef(new Set<string>());
+  const editorApisRef = React.useRef(new Map<string, DynamicFlowsEditorApi>());
   const t = React.useMemo(
     () => sources[0]?.model.translate.bind(sources[0].model) || ((key: string) => key),
     [sources],
@@ -183,6 +189,67 @@ const DynamicFlowsSourceTabs = observer(({ sources }: { sources: DynamicFlowSour
       dirtySourceKeysRef.current.delete(sourceKey);
     }
   }, []);
+  const handleRegisterEditor = React.useCallback((sourceKey: string, api?: DynamicFlowsEditorApi) => {
+    if (api) {
+      editorApisRef.current.set(sourceKey, api);
+    } else {
+      editorApisRef.current.delete(sourceKey);
+    }
+  }, []);
+  const closeView = React.useCallback(async () => {
+    const view = ctx.view as ClosableView | undefined;
+    if (!view) {
+      return false;
+    }
+
+    if (typeof view.close === 'function') {
+      return (await view.close()) !== false;
+    }
+
+    const allowed = await view.beforeClose?.({});
+    if (allowed === false) {
+      return false;
+    }
+
+    view.destroy?.();
+    return true;
+  }, [ctx.view]);
+  const handleSaveAllSources = React.useCallback(async () => {
+    setSubmitLoading(true);
+    try {
+      const orderedSources = [
+        ...sources.filter((source) => source.key === activeKey),
+        ...sources.filter((source) => source.key !== activeKey),
+      ];
+
+      for (const source of orderedSources) {
+        const api = editorApisRef.current.get(source.key);
+        if (!api) {
+          if (dirtySourceKeysRef.current.has(source.key)) {
+            setActiveKey(source.key);
+            return;
+          }
+          continue;
+        }
+
+        const shouldSave =
+          source.key === activeKey || dirtySourceKeysRef.current.has(source.key) || api.hasUnsavedChanges();
+        if (!shouldSave) {
+          continue;
+        }
+
+        const saved = await api.save();
+        if (!saved) {
+          setActiveKey(source.key);
+          return;
+        }
+      }
+
+      await closeView();
+    } finally {
+      setSubmitLoading(false);
+    }
+  }, [activeKey, closeView, sources]);
 
   React.useEffect(() => {
     const view = ctx.view;
@@ -222,12 +289,16 @@ const DynamicFlowsSourceTabs = observer(({ sources }: { sources: DynamicFlowSour
       items={sources.map((source) => ({
         key: source.key,
         label: source.label,
+        forceRender: true,
         children: (
           <DynamicFlowsSourceEditor
             key={source.key}
             source={source}
             active={source.key === activeKey}
             onDirtyChange={(dirty) => handleDirtyChange(source.key, dirty)}
+            onRegisterEditor={(api) => handleRegisterEditor(source.key, api)}
+            onSaveRequest={handleSaveAllSources}
+            submitLoading={submitLoading}
           />
         ),
       }))}
@@ -239,39 +310,54 @@ type DynamicFlowsSourceEditorProps = {
   source: DynamicFlowSource;
   active: boolean;
   onDirtyChange: (dirty: boolean) => void;
+  onRegisterEditor: (api?: DynamicFlowsEditorApi) => void;
+  onSaveRequest: () => Promise<void>;
+  submitLoading: boolean;
 };
 
-const DynamicFlowsSourceEditor = observer(({ source, active, onDirtyChange }: DynamicFlowsSourceEditorProps) => {
-  const hostCtx = useFlowContext<FlowEngineContext>();
-  const sourceContext = React.useMemo(() => {
-    const context = new FlowContext();
-    if (hostCtx instanceof FlowContext) {
-      context.addDelegate(hostCtx);
-    }
-    if (source.model.context instanceof FlowContext) {
-      context.addDelegate(source.model.context);
-    }
-    if (hostCtx?.view) {
-      context.defineProperty('view', { value: hostCtx.view });
-    }
-    if (hostCtx?.modal) {
-      context.defineProperty('modal', { value: hostCtx.modal });
-    }
-    return context;
-  }, [hostCtx, source.model]);
+const DynamicFlowsSourceEditor = observer(
+  ({
+    source,
+    active,
+    onDirtyChange,
+    onRegisterEditor,
+    onSaveRequest,
+    submitLoading,
+  }: DynamicFlowsSourceEditorProps) => {
+    const hostCtx = useFlowContext<FlowEngineContext>();
+    const sourceContext = React.useMemo(() => {
+      const context = new FlowContext();
+      if (hostCtx instanceof FlowContext) {
+        context.addDelegate(hostCtx);
+      }
+      if (source.model.context instanceof FlowContext) {
+        context.addDelegate(source.model.context);
+      }
+      if (hostCtx?.view) {
+        context.defineProperty('view', { value: hostCtx.view });
+      }
+      if (hostCtx?.modal) {
+        context.defineProperty('modal', { value: hostCtx.modal });
+      }
+      return context;
+    }, [hostCtx, source.model]);
 
-  return (
-    <FlowContextProvider context={sourceContext}>
-      <DynamicFlowsEditor
-        key={source.model.uid}
-        model={source.model}
-        active={active}
-        guardBeforeClose={false}
-        onDirtyChange={onDirtyChange}
-      />
-    </FlowContextProvider>
-  );
-});
+    return (
+      <FlowContextProvider context={sourceContext}>
+        <DynamicFlowsEditor
+          key={source.model.uid}
+          model={source.model}
+          active={active}
+          guardBeforeClose={false}
+          onDirtyChange={onDirtyChange}
+          onRegisterEditor={onRegisterEditor}
+          onSaveRequest={onSaveRequest}
+          submitLoading={submitLoading}
+        />
+      </FlowContextProvider>
+    );
+  },
+);
 
 const dynamicFlowsSourceTabsClass = css`
   height: 100%;
@@ -636,6 +722,9 @@ type DynamicFlowsEditorProps = {
   active?: boolean;
   guardBeforeClose?: boolean;
   onDirtyChange?: (dirty: boolean) => void;
+  onRegisterEditor?: (api?: DynamicFlowsEditorApi) => void;
+  onSaveRequest?: () => Promise<void>;
+  submitLoading?: boolean;
 };
 
 const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
@@ -643,12 +732,15 @@ const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
   const active = props.active ?? true;
   const guardBeforeClose = props.guardBeforeClose ?? true;
   const onDirtyChange = props.onDirtyChange;
+  const onRegisterEditor = props.onRegisterEditor;
+  const onSaveRequest = props.onSaveRequest;
   const ctx = useFlowContext<FlowEngineContext>();
   const flowEngine = model.flowEngine;
   const latestFlows = serializeFlowRegistry(model.flowRegistry);
   const initialFlowsRef = React.useRef(latestFlows);
   const [draftFlowRegistry] = React.useState(() => new DetachedFlowRegistry(latestFlows));
-  const [submitLoading, setSubmitLoading] = React.useState(false);
+  const [internalSubmitLoading, setInternalSubmitLoading] = React.useState(false);
+  const submitLoading = props.submitLoading ?? internalSubmitLoading;
   const t = React.useMemo(() => model.translate.bind(model), [model]);
   const hasUnsavedChanges = React.useCallback(() => {
     return !_.isEqual(initialFlowsRef.current, serializeFlowRegistry(draftFlowRegistry));
@@ -885,6 +977,110 @@ const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
     view.destroy?.();
     return true;
   }, [ctx.view]);
+  const saveDraft = React.useCallback(async () => {
+    setInternalSubmitLoading(true);
+    const invalid = draftFlowRegistry
+      .mapFlows((flow) => {
+        if (!isFlowOnObject(flow.on)) return;
+        normalizeFlowOnPhase(flow.on);
+        const invalidType = validateFlowOnPhase(flow.on);
+        if (!invalidType) return;
+        return { type: invalidType };
+      })
+      .filter(Boolean)[0] as { type: 'flowKey' | 'stepKey' } | undefined;
+
+    if (invalid) {
+      const msg =
+        invalid.type === 'flowKey' ? t('Please select a built-in flow') : t('Please select a built-in flow step');
+      model.context?.message?.error?.(msg);
+      setInternalSubmitLoading(false);
+      return false;
+    }
+    const previousFlows = serializeFlowRegistry(model.flowRegistry);
+    const afterSaves: Array<() => Promise<void>> = [];
+
+    try {
+      for (const flow of draftFlowRegistry.mapFlows((it) => it)) {
+        for (const step of flow.mapSteps((it) => it)) {
+          const serialized = step.serialize();
+          const actionDef = step.use ? model.getAction(step.use) : undefined;
+
+          const beforeParamsSave = serialized.beforeParamsSave || actionDef?.beforeParamsSave;
+          const afterParamsSave = serialized.afterParamsSave || actionDef?.afterParamsSave;
+
+          if (typeof beforeParamsSave !== 'function' && typeof afterParamsSave !== 'function') {
+            continue;
+          }
+
+          const runtimeCtx = new FlowRuntimeContext(model, flow.key, 'settings');
+          setupRuntimeContextSteps(runtimeCtx, flow.steps, model, flow.key);
+          runtimeCtx.defineProperty('currentStep', { value: serialized });
+
+          const currentValues = { ...(step.defaultParams || {}) };
+          const previousParams = { ...(step.defaultParams || {}) };
+
+          if (typeof beforeParamsSave === 'function') {
+            await beforeParamsSave(runtimeCtx as any, currentValues, previousParams);
+          }
+
+          if (typeof afterParamsSave === 'function') {
+            afterSaves.push(async () => {
+              await afterParamsSave(runtimeCtx as any, currentValues, previousParams);
+            });
+          }
+
+          step.defaultParams = currentValues;
+        }
+      }
+
+      replaceFlowRegistry(model.flowRegistry, serializeFlowRegistry(draftFlowRegistry));
+      await model.flowRegistry.save();
+    } catch (error) {
+      replaceFlowRegistry(model.flowRegistry, previousFlows);
+      setInternalSubmitLoading(false);
+      model.context?.message?.error?.('Steps post-save hooks failed to run');
+      console.error(error);
+      return false;
+    }
+
+    initialFlowsRef.current = serializeFlowRegistry(model.flowRegistry);
+
+    try {
+      for (const runAfterSave of afterSaves) {
+        await runAfterSave();
+      }
+    } catch (error) {
+      model.context?.message?.error?.('Steps post-save hooks failed to run');
+      console.error(error);
+    }
+    // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
+    const beforeRenderFlows = model.flowRegistry
+      .mapFlows((flow) => {
+        if (isBeforeRenderFlow(flow)) {
+          return flow;
+        }
+      })
+      .filter(Boolean);
+    if (beforeRenderFlows.length > 0) {
+      model.rerender(); // 不阻塞，后续保存
+    }
+    setInternalSubmitLoading(false);
+    onDirtyChange?.(false);
+    model.context?.message?.success?.(t('Configuration saved'));
+    return true;
+  }, [draftFlowRegistry, model, onDirtyChange, t]);
+  React.useEffect(() => {
+    if (!onRegisterEditor) {
+      return;
+    }
+    onRegisterEditor({
+      hasUnsavedChanges,
+      save: saveDraft,
+    });
+    return () => {
+      onRegisterEditor();
+    };
+  }, [hasUnsavedChanges, onRegisterEditor, saveDraft]);
 
   const footerButtons = (
     <Space>
@@ -893,96 +1089,14 @@ const DynamicFlowsEditor = observer((props: DynamicFlowsEditorProps) => {
         type="primary"
         loading={submitLoading}
         onClick={async () => {
-          setSubmitLoading(true);
-          const invalid = draftFlowRegistry
-            .mapFlows((flow) => {
-              if (!isFlowOnObject(flow.on)) return;
-              normalizeFlowOnPhase(flow.on);
-              const invalidType = validateFlowOnPhase(flow.on);
-              if (!invalidType) return;
-              return { type: invalidType };
-            })
-            .filter(Boolean)[0] as { type: 'flowKey' | 'stepKey' } | undefined;
-
-          if (invalid) {
-            const msg =
-              invalid.type === 'flowKey' ? t('Please select a built-in flow') : t('Please select a built-in flow step');
-            model.context?.message?.error?.(msg);
-            setSubmitLoading(false);
+          if (onSaveRequest) {
+            await onSaveRequest();
             return;
           }
-          const previousFlows = serializeFlowRegistry(model.flowRegistry);
-          const afterSaves: Array<() => Promise<void>> = [];
-
-          try {
-            for (const flow of draftFlowRegistry.mapFlows((it) => it)) {
-              for (const step of flow.mapSteps((it) => it)) {
-                const serialized = step.serialize();
-                const actionDef = step.use ? model.getAction(step.use) : undefined;
-
-                const beforeParamsSave = serialized.beforeParamsSave || actionDef?.beforeParamsSave;
-                const afterParamsSave = serialized.afterParamsSave || actionDef?.afterParamsSave;
-
-                if (typeof beforeParamsSave !== 'function' && typeof afterParamsSave !== 'function') {
-                  continue;
-                }
-
-                const runtimeCtx = new FlowRuntimeContext(model, flow.key, 'settings');
-                setupRuntimeContextSteps(runtimeCtx, flow.steps, model, flow.key);
-                runtimeCtx.defineProperty('currentStep', { value: serialized });
-
-                const currentValues = { ...(step.defaultParams || {}) };
-                const previousParams = { ...(step.defaultParams || {}) };
-
-                if (typeof beforeParamsSave === 'function') {
-                  await beforeParamsSave(runtimeCtx as any, currentValues, previousParams);
-                }
-
-                if (typeof afterParamsSave === 'function') {
-                  afterSaves.push(async () => {
-                    await afterParamsSave(runtimeCtx as any, currentValues, previousParams);
-                  });
-                }
-
-                step.defaultParams = currentValues;
-              }
-            }
-
-            replaceFlowRegistry(model.flowRegistry, serializeFlowRegistry(draftFlowRegistry));
-            await model.flowRegistry.save();
-          } catch (error) {
-            replaceFlowRegistry(model.flowRegistry, previousFlows);
-            setSubmitLoading(false);
-            model.context?.message?.error?.('Steps post-save hooks failed to run');
-            console.error(error);
-            return;
+          const saved = await saveDraft();
+          if (saved) {
+            await closeView();
           }
-
-          initialFlowsRef.current = serializeFlowRegistry(model.flowRegistry);
-
-          try {
-            for (const runAfterSave of afterSaves) {
-              await runAfterSave();
-            }
-          } catch (error) {
-            model.context?.message?.error?.('Steps post-save hooks failed to run');
-            console.error(error);
-          }
-          // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
-          const beforeRenderFlows = model.flowRegistry
-            .mapFlows((flow) => {
-              if (isBeforeRenderFlow(flow)) {
-                return flow;
-              }
-            })
-            .filter(Boolean);
-          if (beforeRenderFlows.length > 0) {
-            model.rerender(); // 不阻塞，后续保存
-          }
-          setSubmitLoading(false);
-          onDirtyChange?.(false);
-          model.context?.message?.success?.(t('Configuration saved'));
-          await closeView();
         }}
       >
         {t('Save')}
