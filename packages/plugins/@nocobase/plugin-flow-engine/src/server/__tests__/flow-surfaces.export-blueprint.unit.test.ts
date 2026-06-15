@@ -750,13 +750,13 @@ describe('flowSurfaces exportBlueprint', () => {
       use: 'JSCollectionActionModel',
       props: {
         title: 'Run diagnostics',
-        onlyIcon: true,
+        iconOnly: true,
       },
       stepParams: {
         buttonSettings: {
           general: {
             title: 'Run diagnostics',
-            onlyIcon: true,
+            iconOnly: true,
           },
         },
         clickSettings: {
@@ -775,13 +775,13 @@ describe('flowSurfaces exportBlueprint', () => {
       use: 'JSItemActionModel',
       props: {
         title: 'Run row diagnostics',
-        onlyIcon: true,
+        iconOnly: true,
       },
       stepParams: {
         buttonSettings: {
           general: {
             title: 'Run row diagnostics',
-            onlyIcon: true,
+            iconOnly: true,
           },
         },
         jsSettings: {
@@ -808,7 +808,7 @@ describe('flowSurfaces exportBlueprint', () => {
       type: 'js',
       settings: {
         title: 'Run diagnostics',
-        onlyIcon: true,
+        iconOnly: true,
         version: '1.0.1',
         code: "ctx.message.info('Diagnostics ready');",
       },
@@ -818,7 +818,7 @@ describe('flowSurfaces exportBlueprint', () => {
       type: 'jsItem',
       settings: {
         title: 'Run row diagnostics',
-        onlyIcon: true,
+        iconOnly: true,
         version: '1.0.2',
         code: "ctx.render('Row diagnostics ready');",
       },

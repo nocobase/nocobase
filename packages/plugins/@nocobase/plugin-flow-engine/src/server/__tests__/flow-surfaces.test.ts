@@ -588,7 +588,7 @@ describe('flowSurfaces resource', () => {
     expect(recordPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
-      filterByTk: '{{ctx.record.id}}',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
 
     const recordScopedPopupAction = await addRecordAction(rootAgent, tableUid, 'popup');
@@ -1860,6 +1860,18 @@ describe('flowSurfaces resource', () => {
     });
     expect(invalidLegacyButtonStep.status).toBe(400);
 
+    const invalidLegacyOnlyIconAlias = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        props: {
+          onlyIcon: true,
+        },
+      },
+    });
+    expect(invalidLegacyOnlyIconAlias.status).toBe(400);
+
     const validActionSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -1869,7 +1881,7 @@ describe('flowSurfaces resource', () => {
           htmlType: 'submit',
           position: 'fixed',
           tooltip: 'Open the popup view',
-          onlyIcon: true,
+          iconOnly: true,
           danger: true,
           color: '#1677ff',
         },
@@ -1878,7 +1890,7 @@ describe('flowSurfaces resource', () => {
             general: {
               title: 'Open view',
               tooltip: 'Open the popup view',
-              onlyIcon: true,
+              iconOnly: true,
               type: 'link',
               danger: true,
               color: '#1677ff',
@@ -1970,14 +1982,14 @@ describe('flowSurfaces resource', () => {
       htmlType: 'submit',
       position: 'fixed',
       tooltip: 'Open the popup view',
-      onlyIcon: true,
+      iconOnly: true,
       danger: true,
       color: '#1677ff',
     });
     expect(actionReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       title: 'Open view',
       tooltip: 'Open the popup view',
-      onlyIcon: true,
+      iconOnly: true,
       type: 'link',
       danger: true,
       color: '#1677ff',
@@ -1998,7 +2010,7 @@ describe('flowSurfaces resource', () => {
         },
         props: {
           icon: 'QuestionCircleOutlined',
-          onlyIcon: true,
+          iconOnly: true,
           color: '#722ed1',
         },
       },
@@ -2019,7 +2031,7 @@ describe('flowSurfaces resource', () => {
           buttonSettings: {
             general: {
               icon: 'InfoCircleOutlined',
-              onlyIcon: true,
+              iconOnly: true,
               color: '#faad14',
             },
           },
@@ -2033,7 +2045,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(propsOnlyReadback.tree.props).toMatchObject({
       icon: 'QuestionCircleOutlined',
-      onlyIcon: true,
+      iconOnly: true,
       color: '#722ed1',
     });
     expect(propsOnlyReadback.tree.props?.title).toBeUndefined();
@@ -2044,12 +2056,12 @@ describe('flowSurfaces resource', () => {
     });
     expect(stepOnlyReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       icon: 'InfoCircleOutlined',
-      onlyIcon: true,
+      iconOnly: true,
       color: '#faad14',
     });
     expect(stepOnlyReadback.tree.props).toMatchObject({
       icon: 'InfoCircleOutlined',
-      onlyIcon: true,
+      iconOnly: true,
       color: '#faad14',
     });
     expect(stepOnlyReadback.tree.props?.title).toBeUndefined();
@@ -2066,7 +2078,7 @@ describe('flowSurfaces resource', () => {
             general: {
               title: 'Reload compact',
               icon: 'SyncOutlined',
-              onlyIcon: true,
+              iconOnly: true,
             },
           },
         },
@@ -2080,12 +2092,12 @@ describe('flowSurfaces resource', () => {
     expect(stepOnlyTitledReadback.tree.props).toMatchObject({
       title: 'Reload compact',
       icon: 'SyncOutlined',
-      onlyIcon: true,
+      iconOnly: true,
     });
     expect(stepOnlyTitledReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       title: 'Reload compact',
       icon: 'SyncOutlined',
-      onlyIcon: true,
+      iconOnly: true,
     });
 
     const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
@@ -2107,14 +2119,14 @@ describe('flowSurfaces resource', () => {
     const propsOnlyExported = exportedActions.find((action: any) => action?.settings?.color === '#722ed1');
     expect(propsOnlyExported?.settings).toMatchObject({
       icon: 'QuestionCircleOutlined',
-      onlyIcon: true,
+      iconOnly: true,
       color: '#722ed1',
     });
     expect(propsOnlyExported?.settings?.title).toBeUndefined();
     const stepOnlyExported = exportedActions.find((action: any) => action?.settings?.color === '#faad14');
     expect(stepOnlyExported?.settings).toMatchObject({
       icon: 'InfoCircleOutlined',
-      onlyIcon: true,
+      iconOnly: true,
       color: '#faad14',
     });
     expect(stepOnlyExported?.settings?.title).toBeUndefined();
@@ -2122,7 +2134,7 @@ describe('flowSurfaces resource', () => {
     expect(stepOnlyTitledExported?.settings).toMatchObject({
       title: 'Reload compact',
       icon: 'SyncOutlined',
-      onlyIcon: true,
+      iconOnly: true,
     });
   });
 

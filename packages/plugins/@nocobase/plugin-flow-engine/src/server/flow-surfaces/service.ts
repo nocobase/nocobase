@@ -652,7 +652,7 @@ type FlowSurfaceRuntimeOptions = {
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
 const AUTO_SUBMIT_FORM_BLOCK_USES = new Set(['CreateFormModel', 'EditFormModel']);
 const FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS = new Set(['filter']);
-const ACTION_BUTTON_GENERAL_SETTING_KEYS = ['title', 'tooltip', 'icon', 'onlyIcon', 'type', 'danger', 'color'];
+const ACTION_BUTTON_GENERAL_SETTING_KEYS = ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color'];
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
 const SIMPLE_FORM_BLOCK_USES = new Set([
   'FormBlockModel',
@@ -2864,25 +2864,14 @@ export class FlowSurfacesService {
     });
   }
 
-  private resolvePopupCurrentRecordResourceFilterByTk(
-    popupProfile: FlowSurfacePopupBlockProfile | null | undefined,
-    options: { usePopupInputArgsWhenSourceIdInferred?: boolean } = {},
-  ) {
+  private resolvePopupCurrentRecordResourceFilterByTk(popupProfile: FlowSurfacePopupBlockProfile | null | undefined) {
     if (!popupProfile?.currentCollection) {
       return popupProfile?.filterByTk;
     }
-    if (popupProfile.popupKind !== 'associationPopup') {
+    if (!popupProfile.hasCurrentRecord) {
       return popupProfile.filterByTk;
     }
-    if (
-      options.usePopupInputArgsWhenSourceIdInferred &&
-      popupProfile.sourceIdInferred &&
-      popupProfile.popupHostUse &&
-      POPUP_ACTION_USES.has(popupProfile.popupHostUse)
-    ) {
-      return '{{ctx.view.inputArgs.filterByTk}}';
-    }
-    return `{{ctx.record.${this.getCollectionFilterTargetKey(popupProfile.currentCollection)}}}`;
+    return '{{ctx.view.inputArgs.filterByTk}}';
   }
 
   private resolveLocalActionPopupOpenViewFilterByTk(popupProfile: FlowSurfacePopupBlockProfile | null | undefined) {
@@ -3223,9 +3212,7 @@ export class FlowSurfacesService {
       return buildDefinedPayload({
         dataSourceKey: input.popupProfile.dataSourceKey || 'main',
         collectionName: input.popupProfile.collectionName,
-        filterByTk: this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile, {
-          usePopupInputArgsWhenSourceIdInferred: true,
-        }),
+        filterByTk: this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile),
         ...(preserveAssociationContext
           ? {
               associationName: input.popupProfile.associationName,
@@ -3362,15 +3349,20 @@ export class FlowSurfacesService {
       if (!sameCurrentCollection || !hasConfiguredFlowContextValue(normalized.filterByTk)) {
         return false;
       }
+      const expectedFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile);
+      const matchesCurrentRecordFilterByTk = this.isSameConfiguredFlowContextValue(
+        normalized.filterByTk,
+        expectedFilterByTk,
+      );
       if (input.popupProfile.hasAssociationContext) {
         return (
-          this.isSameConfiguredFlowContextValue(normalized.filterByTk, input.popupProfile.filterByTk) &&
+          matchesCurrentRecordFilterByTk &&
           normalized.associationName === input.popupProfile.associationName &&
           this.isSameConfiguredFlowContextValue(normalized.sourceId, input.popupProfile.sourceId)
         );
       }
       return (
-        this.isSameConfiguredFlowContextValue(normalized.filterByTk, input.popupProfile.filterByTk) &&
+        matchesCurrentRecordFilterByTk &&
         !hasConfiguredFlowContextValue(normalized.associationName) &&
         !hasConfiguredFlowContextValue(normalized.sourceId)
       );
@@ -15495,7 +15487,7 @@ export class FlowSurfacesService {
       Object.prototype.hasOwnProperty.call(requestedProps, 'title') ||
       Object.prototype.hasOwnProperty.call(requestedButtonGeneral, 'title');
     const shouldStripImplicitTitle =
-      (requestedProps.onlyIcon === true || requestedButtonGeneral.onlyIcon === true) && !hasRequestedTitle;
+      (requestedProps.iconOnly === true || requestedButtonGeneral.iconOnly === true) && !hasRequestedTitle;
     const nextProps = _.cloneDeep(
       _.isPlainObject(nextPayload.props) ? nextPayload.props : _.isPlainObject(current?.props) ? current.props : {},
     );
@@ -15534,8 +15526,8 @@ export class FlowSurfacesService {
   private supportsActionButtonSettingsSync(current: any) {
     const contract = getNodeContract(current?.use);
     return (
-      contract.domains.props?.allowedKeys?.includes('onlyIcon') &&
-      contract.domains.stepParams?.groups?.buttonSettings?.allowedPaths?.includes('general.onlyIcon')
+      contract.domains.props?.allowedKeys?.includes('iconOnly') &&
+      contract.domains.stepParams?.groups?.buttonSettings?.allowedPaths?.includes('general.iconOnly')
     );
   }
 
@@ -23760,15 +23752,15 @@ export class FlowSurfacesService {
       ? this.normalizeFilterActionDefaultFilterValue(changes.defaultFilter)
       : undefined;
     const stepParams: Record<string, any> = {};
-    if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'onlyIcon', 'type', 'danger', 'color', 'linkageRules'])) {
+    if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color', 'linkageRules'])) {
       stepParams.buttonSettings = {
-        ...(hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'onlyIcon', 'type', 'danger', 'color'])
+        ...(hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color'])
           ? {
               general: buildDefinedPayload({
                 title: changes.title,
                 tooltip: changes.tooltip,
                 icon: changes.icon,
-                onlyIcon: changes.onlyIcon,
+                iconOnly: changes.iconOnly,
                 type: changes.type,
                 danger: changes.danger,
                 color: changes.color,
@@ -23992,7 +23984,7 @@ export class FlowSurfacesService {
       title: changes.title,
       tooltip: changes.tooltip,
       icon: changes.icon,
-      onlyIcon: changes.onlyIcon,
+      iconOnly: changes.iconOnly,
       type: changes.type,
       htmlType: changes.htmlType,
       position: changes.position,

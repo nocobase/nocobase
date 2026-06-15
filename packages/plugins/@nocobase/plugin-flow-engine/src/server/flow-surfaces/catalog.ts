@@ -181,7 +181,7 @@ const FILTER_FORM_ITEM_ALLOWED_PATHS = [
   'init.filterField.type',
   'initialValue.defaultValue',
 ];
-const ACTION_PROP_KEYS = ['title', 'tooltip', 'icon', 'onlyIcon', 'type', 'htmlType', 'position', 'danger', 'color'];
+const ACTION_PROP_KEYS = ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'htmlType', 'position', 'danger', 'color'];
 const FILTER_ACTION_PROP_KEYS = [...ACTION_PROP_KEYS, 'filterableFieldNames', 'defaultFilterValue', 'filterValue'];
 const FILTER_ACTION_PROP_PATH_SCHEMAS = {
   filterableFieldNames: {
@@ -196,7 +196,7 @@ const ACTION_BUTTON_SETTINGS_GROUP = {
     'general.title',
     'general.tooltip',
     'general.icon',
-    'general.onlyIcon',
+    'general.iconOnly',
     'general.type',
     'general.danger',
     'general.color',
@@ -208,7 +208,7 @@ const ACTION_BUTTON_SETTINGS_GROUP = {
     'general.title': STRING_SCHEMA,
     'general.tooltip': STRING_SCHEMA,
     'general.icon': NULLABLE_STRING_SCHEMA,
-    'general.onlyIcon': BOOLEAN_SCHEMA,
+    'general.iconOnly': BOOLEAN_SCHEMA,
     'general.type': STRING_SCHEMA,
     'general.danger': BOOLEAN_SCHEMA,
     'general.color': STRING_SCHEMA,

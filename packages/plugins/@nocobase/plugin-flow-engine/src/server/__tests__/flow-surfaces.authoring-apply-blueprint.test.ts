@@ -3884,6 +3884,27 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       flowRepo,
       persistedAction?.stepParams?.popupSettings?.openView?.popupTemplateUid,
     );
+    const userDetails = collectDescendantNodes(
+      templateSurface,
+      (item) =>
+        item?.use === 'DetailsBlockModel' &&
+        item?.stepParams?.resourceSettings?.init?.collectionName === sourceCollection,
+    )[0];
+    expect(userDetails?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: sourceCollection,
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+    const userEditForm = collectDescendantNodes(
+      templateSurface,
+      (item) =>
+        item?.use === 'EditFormModel' && item?.stepParams?.resourceSettings?.init?.collectionName === sourceCollection,
+    )[0];
+    expect(userEditForm?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: sourceCollection,
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
     const roleTable = collectDescendantNodes(
       templateSurface,
       (item) =>

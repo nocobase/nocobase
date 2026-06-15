@@ -314,7 +314,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: '',
       tooltip: expected.tooltip,
       icon: expected.icon,
-      onlyIcon: true,
+      iconOnly: true,
       position: 'right',
       ...(expected.type ? { type: expected.type } : {}),
     });
@@ -322,7 +322,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: '',
       tooltip: expected.tooltip,
       icon: expected.icon,
-      onlyIcon: true,
+      iconOnly: true,
       ...(expected.type ? { type: expected.type } : {}),
     });
     expect(action?.stepParams?.buttonSettings?.general?.position).toBeUndefined();
@@ -1131,7 +1131,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: {
         type: 'string',
       },
-      onlyIcon: {
+      iconOnly: {
         type: 'boolean',
       },
       openView: {
@@ -1150,7 +1150,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: {
         type: 'string',
       },
-      onlyIcon: {
+      iconOnly: {
         type: 'boolean',
       },
       openView: {
@@ -6282,7 +6282,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           settings: {
             type: 'primary',
             icon: 'EditOutlined',
-            onlyIcon: true,
+            iconOnly: true,
           },
         },
       }),
@@ -6311,7 +6311,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(explicitListEditReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       type: 'primary',
       icon: 'EditOutlined',
-      onlyIcon: true,
+      iconOnly: true,
     });
     expect(explicitListEditReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
   });
@@ -7271,7 +7271,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         changes: {
           title: 'Submit now',
           tooltip: 'Create the record',
-          onlyIcon: true,
+          iconOnly: true,
           confirm: {
             enable: true,
             title: 'Please confirm',
@@ -7317,9 +7317,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(actionReadback.tree.props).toMatchObject({
       title: 'Submit now',
       tooltip: 'Create the record',
-      onlyIcon: true,
+      iconOnly: true,
     });
-    expect(actionReadback.tree.stepParams?.buttonSettings?.general?.onlyIcon).toBe(true);
+    expect(actionReadback.tree.stepParams?.buttonSettings?.general?.iconOnly).toBe(true);
     expect(actionReadback.tree.stepParams?.submitSettings?.confirm).toMatchObject({
       enable: true,
       title: 'Please confirm',
@@ -7696,6 +7696,8 @@ describe('flowSurfaces catalog + compose contract', () => {
             key: 'markCurrentActive',
             type: 'updateRecord',
             settings: {
+              icon: 'StarOutlined',
+              iconOnly: true,
               assignValues: {
                 nickname: 'active',
               },
@@ -7742,6 +7744,16 @@ describe('flowSurfaces catalog + compose contract', () => {
       uid: addRecordActionsData.recordActions[4].result.uid,
     });
     expect(updateRecordReadback.tree.use).toBe('UpdateRecordActionModel');
+    expect(updateRecordReadback.tree.props).toMatchObject({
+      icon: 'StarOutlined',
+      iconOnly: true,
+    });
+    expect(updateRecordReadback.tree.props?.title).toBeUndefined();
+    expect(updateRecordReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      icon: 'StarOutlined',
+      iconOnly: true,
+    });
+    expect(updateRecordReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
     expectAssignedValuesMirrors(updateRecordReadback.tree, {
       nickname: 'active',
     });

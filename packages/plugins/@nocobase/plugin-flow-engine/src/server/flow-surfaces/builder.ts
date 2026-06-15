@@ -897,17 +897,17 @@ export function buildCanonicalTableActionsColumnNode(
 
 function pickButtonGeneralProps(props: Record<string, any>) {
   return _.pickBy(
-    _.pick(props || {}, ['title', 'tooltip', 'icon', 'onlyIcon', 'type', 'danger', 'color']),
+    _.pick(props || {}, ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color']),
     (value) => !_.isUndefined(value),
   );
 }
 
 function shouldStripImplicitIconOnlyActionTitle(props?: Record<string, any>, buttonGeneral?: Record<string, any>) {
   const hasRequestedOnlyIcon =
-    (_.isPlainObject(props) && Object.prototype.hasOwnProperty.call(props, 'onlyIcon') && props.onlyIcon === true) ||
+    (_.isPlainObject(props) && Object.prototype.hasOwnProperty.call(props, 'iconOnly') && props.iconOnly === true) ||
     (_.isPlainObject(buttonGeneral) &&
-      Object.prototype.hasOwnProperty.call(buttonGeneral, 'onlyIcon') &&
-      buttonGeneral.onlyIcon === true);
+      Object.prototype.hasOwnProperty.call(buttonGeneral, 'iconOnly') &&
+      buttonGeneral.iconOnly === true);
   const hasRequestedTitle =
     (_.isPlainObject(props) && Object.prototype.hasOwnProperty.call(props, 'title')) ||
     (_.isPlainObject(buttonGeneral) && Object.prototype.hasOwnProperty.call(buttonGeneral, 'title'));
@@ -1163,7 +1163,7 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       title: '',
       tooltip: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
-      onlyIcon: true,
+      iconOnly: true,
       position: 'right',
     },
     BulkEditActionModel: {
