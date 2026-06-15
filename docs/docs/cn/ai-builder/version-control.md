@@ -1,26 +1,26 @@
 ---
-title: "版本管理"
-description: "版本管理 Skill（nocobase-revision）用于在 AI 搭建完成阶段性成果后，创建可恢复的应用版本。"
-keywords: "AI 搭建,版本管理,Version control,nocobase-revision,nb revision create,版本恢复"
+title: "版本控制"
+description: "版本控制 Skill（nocobase-revision）用于在 AI 搭建完成阶段性成果后，创建可恢复的应用版本。"
+keywords: "AI 搭建,版本控制,Version control,nocobase-revision,nb revision create,版本恢复"
 ---
 
-# 版本管理
+# 版本控制
 
 :::tip 前置条件
 
 - 阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化
-- 需要启用「备份管理」和「版本管理」两个插件
-- 社区版和标准版不包含版本管理插件。如果只是想在关键变更前保留可回退状态，可以使用 [备份管理](../ops-management/backup-manager/index.mdx)
+- 需要启用「备份管理」和「版本控制」两个插件
+- 社区版和标准版不包含版本控制插件。如果只是想在关键变更前保留可回退状态，可以使用 [备份管理](../ops-management/backup-manager/index.mdx)
 
 :::
 
 ## 简介
 
-版本管理 Skill（`nocobase-revision`）用于在 AI 搭建完成一个有意义的阶段性成果后，创建一份可恢复的应用版本。比如搭好一个页面、创建一组数据表，或者配置完一条工作流后，AI 可以通过 `nb revision create` 保存当前状态。
+版本控制 Skill（`nocobase-revision`）用于在 AI 搭建完成一个有意义的阶段性成果后，创建一份可恢复的应用版本。比如搭好一个页面、创建一组数据表，或者配置完一条工作流后，AI 可以通过 `nb revision create` 保存当前状态。
 
 它不是每改一个字段就创建一次版本。默认只在完成并验证一个清晰节点后保存，这样版本列表更容易读，恢复时也更容易判断该回到哪里。
 
-如果你想了解版本列表、手动创建版本、恢复版本和保留策略，请参阅 [版本管理插件操作手册](../ops-management/version-control/index.md)。
+如果你想了解版本列表、手动创建版本、恢复版本和保留策略，请参阅 [版本控制插件操作手册](../ops-management/version-control/index.md)。
 
 ## 能力范围
 
@@ -33,8 +33,8 @@ keywords: "AI 搭建,版本管理,Version control,nocobase-revision,nb revision 
 不能做：
 
 - 不能替代备份管理插件的底层保存和恢复能力
-- 不能在版本管理插件未启用时创建版本
-- 不能自动恢复到某个版本，恢复操作请在 [版本管理插件](../ops-management/version-control/index.md) 中完成
+- 不能在版本控制插件未启用时创建版本
+- 不能自动恢复到某个版本，恢复操作请在 [版本控制插件](../ops-management/version-control/index.md) 中完成
 
 ## 提示词示例
 
@@ -106,15 +106,15 @@ nb revision create --env dev --yes "完成工单管理页面和 SLA 字段配置
 
 **创建版本前需要验证吗？**
 
-需要。版本管理 Skill 只适合保存已经完成并验证过的成果。如果页面还报错、工作流还没确认，建议先让 AI 修复并验证，再创建版本。
+需要。版本控制 Skill 只适合保存已经完成并验证过的成果。如果页面还报错、工作流还没确认，建议先让 AI 修复并验证，再创建版本。
 
 **创建后在哪里恢复？**
 
-在「版本管理」插件的版本列表里恢复。恢复会覆盖当前应用配置和该版本中包含的数据内容，操作前建议先阅读 [版本管理插件操作手册](../ops-management/version-control/index.md)。
+在「版本控制」插件的版本列表里恢复。恢复会覆盖当前应用配置和该版本中包含的数据内容，操作前建议先阅读 [版本控制插件操作手册](../ops-management/version-control/index.md)。
 
 ## 相关链接
 
-- [版本管理插件操作手册](../ops-management/version-control/index.md) — 手动创建、恢复版本和设置版本策略
-- [备份管理](../ops-management/backup-manager/index.mdx) — 版本管理依赖的基础能力
+- [版本控制插件操作手册](../ops-management/version-control/index.md) — 手动创建、恢复版本和设置版本策略
+- [备份管理](../ops-management/backup-manager/index.mdx) — 版本控制依赖的基础能力
 - [AI 搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
 - [发布管理](./publish.md) — 跨环境发布、备份恢复和迁移
