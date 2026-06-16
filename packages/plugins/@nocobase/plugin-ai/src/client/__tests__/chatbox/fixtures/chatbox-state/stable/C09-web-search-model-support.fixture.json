@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C09",
-  "title": "联网检索开关和模型支持状态",
+  "title": "Web search toggle and model support status",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -42,12 +42,12 @@
               "type": "text",
               "messageId": "40081693624794112",
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",
@@ -135,12 +135,12 @@
               "type": "text",
               "messageId": "40081693624794112",
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",
@@ -228,12 +228,12 @@
               "type": "text",
               "messageId": "40081693624794112",
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",
@@ -321,12 +321,12 @@
               "type": "text",
               "messageId": "40081693624794112",
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",
@@ -414,12 +414,12 @@
               "type": "text",
               "messageId": "40081693624794112",
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",
@@ -507,12 +507,12 @@
               "type": "text",
               "messageId": "40081693624794112",
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",
@@ -600,12 +600,12 @@
               "type": "text",
               "messageId": "40081693624794112",
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",

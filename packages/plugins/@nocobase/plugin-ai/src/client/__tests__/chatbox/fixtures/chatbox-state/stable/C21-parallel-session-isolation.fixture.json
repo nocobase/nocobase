@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C21",
-  "title": "并行会话状态隔离",
+  "title": "Parallel session state isolation",
   "sourceKind": "raw store snapshots compacted from window.__caseC21; long streaming content truncated but contentLength preserved",
   "snapshots": [
     {

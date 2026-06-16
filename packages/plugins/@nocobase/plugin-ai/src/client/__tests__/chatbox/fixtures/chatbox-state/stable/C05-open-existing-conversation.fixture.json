@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C05",
-  "title": "AI 员工历史会话列表点击会话，切换会话",
+  "title": "Click a conversation in the AI employee history list and switch conversations",
   "sourceKind": "real-capture",
   "snapshots": [
     {

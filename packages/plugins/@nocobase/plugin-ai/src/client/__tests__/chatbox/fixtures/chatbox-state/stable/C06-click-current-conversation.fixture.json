@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C06",
-  "title": "点击当前已打开的历史会话",
+  "title": "Click the currently open conversation from history",
   "sourceKind": "real-capture",
   "snapshots": [
     {

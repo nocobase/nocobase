@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C03",
-  "title": "打开和关闭历史会话列表",
+  "title": "Open and close the conversation history list",
   "sourceKind": "real-capture",
   "snapshots": [
     {

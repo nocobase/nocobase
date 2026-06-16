@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C15",
-  "title": "编辑某条用户消息后重发",
+  "title": "Edit a user message and resend",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -63,7 +63,7 @@
                   "invokeStatus": "confirmed",
                   "status": "success",
                   "auto": false,
-                  "selectedSuggestion": "结束本次会话",
+                  "selectedSuggestion": "End this conversation",
                   "args": {
                     "type": "object",
                     "keys": ["options"]
@@ -361,12 +361,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 18,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C15 编辑后请只回复 EDITED"
+              "content": "C15 edited: reply EDITED"
             },
             {
               "role": "dex",
@@ -454,12 +454,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 18,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C15 编辑后请只回复 EDITED"
+              "content": "C15 edited: reply EDITED"
             },
             {
               "role": "dex",
@@ -547,12 +547,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 18,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C15 编辑后请只回复 EDITED"
+              "content": "C15 edited: reply EDITED"
             },
             {
               "role": "dex",
@@ -640,12 +640,12 @@
               "type": "text",
               "messageId": "40086118707788800",
               "from": null,
-              "contentLength": 18,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C15 编辑后请只回复 EDITED"
+              "content": "C15 edited: reply EDITED"
             },
             {
               "role": "dex",
@@ -733,12 +733,12 @@
               "type": "text",
               "messageId": "40086118707788800",
               "from": null,
-              "contentLength": 18,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C15 编辑后请只回复 EDITED"
+              "content": "C15 edited: reply EDITED"
             },
             {
               "role": "dex",
@@ -826,12 +826,12 @@
               "type": "text",
               "messageId": "40086118707788800",
               "from": null,
-              "contentLength": 18,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C15 编辑后请只回复 EDITED"
+              "content": "C15 edited: reply EDITED"
             },
             {
               "role": "dex",

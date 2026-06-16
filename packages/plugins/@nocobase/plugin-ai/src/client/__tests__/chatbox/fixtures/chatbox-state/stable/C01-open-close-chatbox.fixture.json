@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C01",
-  "title": "打开和关闭对话窗口",
+  "title": "Open and close the chatbox",
   "sourceKind": "real-capture",
   "snapshots": [
     {

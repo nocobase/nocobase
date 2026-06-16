@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C13",
-  "title": "重发 AI 回复消息",
+  "title": "Resend an AI response message",
   "sourceKind": "real-capture",
   "snapshots": [
     {

@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C33",
-  "title": "草稿 session 迁移",
+  "title": "Draft session migration",
   "sourceKind": "real store mutation on draft/new synthetic session + source-constructed tool-call migration contract",
   "snapshots": [
     {

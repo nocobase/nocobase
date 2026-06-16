@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C30",
-  "title": "工具列表索引和工具弹窗状态",
+  "title": "Tool list index and tool modal state",
   "sourceKind": "real message tool calls + source-equivalent store indexing",
   "snapshots": []
 }

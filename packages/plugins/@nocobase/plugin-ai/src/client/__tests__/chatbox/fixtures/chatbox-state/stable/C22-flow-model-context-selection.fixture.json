@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C22",
-  "title": "选择区块并让 AI 使用工具填写表单",
+  "title": "Select a block and let AI use tools to fill the form",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -68,12 +68,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -81,12 +81,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",
@@ -178,12 +178,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -191,12 +191,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",
@@ -288,12 +288,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -301,12 +301,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",
@@ -398,12 +398,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -411,12 +411,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",
@@ -508,12 +508,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -521,12 +521,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",
@@ -618,12 +618,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -631,12 +631,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",
@@ -735,12 +735,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -748,12 +748,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",
@@ -852,12 +852,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -865,12 +865,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",
@@ -932,12 +932,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -945,12 +945,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",
@@ -1031,12 +1031,12 @@
             "type": "text",
             "messageId": "40090416665623552",
             "from": null,
-            "contentLength": 25,
+            "contentLength": 29,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            "content": "Dex replied:\n\n**SUBAGENT-OK**"
           },
           {
             "role": "user",
@@ -1044,12 +1044,12 @@
             "type": "text",
             "messageId": "40091302267747328",
             "from": null,
-            "contentLength": 18,
+            "contentLength": 25,
             "reasoningStatus": null,
             "toolCalls": [],
             "attachmentsCount": 0,
             "workContextCount": 0,
-            "content": "C21 会话 B 请只回复 B-OK"
+            "content": "C21 session B: reply B-OK"
           },
           {
             "role": "atlas",

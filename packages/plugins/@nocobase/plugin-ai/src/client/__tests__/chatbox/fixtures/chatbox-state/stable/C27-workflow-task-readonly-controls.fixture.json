@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C27",
-  "title": "工作流任务状态控制发送框",
+  "title": "Workflow task status controls the composer",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -357,8 +357,8 @@
           "sessionId": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
           "status": "approved",
           "readonly": true,
-          "workflowTitle": "权限测试",
-          "nodeTitle": "AI 员工",
+          "workflowTitle": "Permission Test",
+          "nodeTitle": "AI Employee",
           "config": {
             "username": "atlas",
             "model": {
@@ -378,8 +378,8 @@
           "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
           "status": "pending_approval",
           "readonly": false,
-          "workflowTitle": "权限测试",
-          "nodeTitle": "AI 员工",
+          "workflowTitle": "Permission Test",
+          "nodeTitle": "AI Employee",
           "config": {
             "username": "atlas",
             "model": {
@@ -405,8 +405,8 @@
           "sessionId": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
           "status": "approved",
           "readonly": true,
-          "workflowTitle": "权限测试",
-          "nodeTitle": "AI 员工",
+          "workflowTitle": "Permission Test",
+          "nodeTitle": "AI Employee",
           "config": {
             "username": "atlas",
             "model": {

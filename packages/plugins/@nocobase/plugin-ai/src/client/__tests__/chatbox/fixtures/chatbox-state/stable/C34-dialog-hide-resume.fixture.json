@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C34",
-  "title": "对话窗口隐藏控制",
+  "title": "Dialog visibility control",
   "sourceKind": "real UI dialogController.hide/resume through Pick block selection",
   "snapshots": [
     {

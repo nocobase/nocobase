@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C08",
-  "title": "切换 AI 员工使用的大模型",
+  "title": "Switch the model used by the AI employee",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -391,12 +391,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             }
           ],
           "messagesLoading": false,
@@ -431,12 +431,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             }
           ],
           "messagesLoading": false,
@@ -505,12 +505,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",
@@ -594,12 +594,12 @@
               "type": "text",
               "messageId": "40081693624794112",
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",

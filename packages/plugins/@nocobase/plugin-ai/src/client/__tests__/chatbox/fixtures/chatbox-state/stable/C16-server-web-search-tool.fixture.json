@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C16",
-  "title": "服务端工具：联网检索工具调用",
+  "title": "Server tool: web search tool call",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -42,12 +42,12 @@
               "type": "text",
               "messageId": "40086118707788800",
               "from": null,
-              "contentLength": 18,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C15 编辑后请只回复 EDITED"
+              "content": "C15 edited: reply EDITED"
             },
             {
               "role": "dex",
@@ -139,12 +139,12 @@
               "type": "text",
               "messageId": "40086118707788800",
               "from": null,
-              "contentLength": 18,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C15 编辑后请只回复 EDITED"
+              "content": "C15 edited: reply EDITED"
             },
             {
               "role": "dex",

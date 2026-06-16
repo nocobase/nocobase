@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C28",
-  "title": "工作流消息后台运行和刷新消息按钮",
+  "title": "Workflow message background run and refresh messages button",
   "sourceKind": "source-constructed-or-supplemented",
   "snapshots": [
     {

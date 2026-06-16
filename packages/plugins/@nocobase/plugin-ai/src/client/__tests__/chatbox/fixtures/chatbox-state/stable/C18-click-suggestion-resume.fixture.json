@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C18",
-  "title": "客户端工具：点击 suggestion 继续会话",
+  "title": "Client tool: click a suggestion to continue the conversation",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -520,7 +520,7 @@
                   "invokeStatus": "confirmed",
                   "status": "success",
                   "auto": false,
-                  "selectedSuggestion": "继续生成测试数据",
+                  "selectedSuggestion": "Continue generating test data",
                   "args": {
                     "type": "object",
                     "keys": ["options"]
@@ -641,7 +641,7 @@
                   "invokeStatus": "confirmed",
                   "status": "success",
                   "auto": false,
-                  "selectedSuggestion": "继续生成测试数据",
+                  "selectedSuggestion": "Continue generating test data",
                   "args": {
                     "type": "object",
                     "keys": ["options"]
@@ -762,7 +762,7 @@
                   "invokeStatus": "confirmed",
                   "status": "success",
                   "auto": false,
-                  "selectedSuggestion": "继续生成测试数据",
+                  "selectedSuggestion": "Continue generating test data",
                   "args": {
                     "type": "object",
                     "keys": ["options"]

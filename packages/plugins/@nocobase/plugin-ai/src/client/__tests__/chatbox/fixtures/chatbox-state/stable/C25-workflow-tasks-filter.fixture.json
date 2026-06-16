@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C25",
-  "title": "工作流任务筛选",
+  "title": "Workflow task filtering",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -29,7 +29,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -45,7 +45,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -61,7 +61,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -77,7 +77,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -93,7 +93,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -109,7 +109,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -125,7 +125,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -141,7 +141,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -157,7 +157,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -173,7 +173,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -189,7 +189,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -205,7 +205,7 @@
       },
       "conversations": {
         "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
-        "keyword": "旅游攻略",
+        "keyword": "Travel Guide",
         "conversationSegmented": "workflowTasks"
       },
       "dom": {
@@ -266,10 +266,10 @@
             "aborted": 10,
             "approved": 1
           },
-          "titles": ["旅游攻略"],
+          "titles": ["Travel Guide"],
           "first": {
             "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
-            "workflowTitle": "旅游攻略",
+            "workflowTitle": "Travel Guide",
             "status": "pending_approval",
             "jobStatus": 0,
             "executionId": 363797494104064
@@ -311,10 +311,10 @@
           "statusCounts": {
             "pending_approval": 2
           },
-          "titles": ["旅游攻略"],
+          "titles": ["Travel Guide"],
           "first": {
             "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
-            "workflowTitle": "旅游攻略",
+            "workflowTitle": "Travel Guide",
             "status": "pending_approval",
             "jobStatus": 0,
             "executionId": 363797494104064
@@ -338,10 +338,10 @@
           "statusCounts": {
             "approved": 1
           },
-          "titles": ["旅游攻略"],
+          "titles": ["Travel Guide"],
           "first": {
             "sessionId": "f8aa62fd-89dc-4913-a4fb-de107b5ebab9",
-            "workflowTitle": "旅游攻略",
+            "workflowTitle": "Travel Guide",
             "status": "approved",
             "jobStatus": 1,
             "executionId": 363795120128000
@@ -383,10 +383,10 @@
           "statusCounts": {
             "aborted": 10
           },
-          "titles": ["旅游攻略"],
+          "titles": ["Travel Guide"],
           "first": {
             "sessionId": "2d6ce526-ab39-48c4-971f-98920676e593",
-            "workflowTitle": "旅游攻略",
+            "workflowTitle": "Travel Guide",
             "status": "aborted",
             "jobStatus": -2,
             "executionId": 363796709769216
@@ -412,10 +412,10 @@
             "aborted": 10,
             "approved": 1
           },
-          "titles": ["旅游攻略"],
+          "titles": ["Travel Guide"],
           "first": {
             "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
-            "workflowTitle": "旅游攻略",
+            "workflowTitle": "Travel Guide",
             "status": "pending_approval",
             "jobStatus": 0,
             "executionId": 363797494104064
@@ -442,10 +442,10 @@
             "aborted": 5,
             "approved": 1
           },
-          "titles": ["权限测试", "旅游攻略"],
+          "titles": ["Permission Test", "Travel Guide"],
           "first": {
             "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
-            "workflowTitle": "权限测试",
+            "workflowTitle": "Permission Test",
             "status": "pending_approval",
             "jobStatus": 0,
             "executionId": 365056749273088

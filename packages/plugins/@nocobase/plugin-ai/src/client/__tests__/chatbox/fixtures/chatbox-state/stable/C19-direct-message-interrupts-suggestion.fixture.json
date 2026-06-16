@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C19",
-  "title": "客户端工具：用户输入打断 suggestion 工具调用",
+  "title": "Client tool: user input interrupts a suggestion tool call",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -63,7 +63,7 @@
                   "invokeStatus": "confirmed",
                   "status": "success",
                   "auto": false,
-                  "selectedSuggestion": "继续生成测试数据",
+                  "selectedSuggestion": "Continue generating test data",
                   "args": {
                     "type": "object",
                     "keys": ["options"]
@@ -1012,12 +1012,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 26,
+              "contentLength": 27,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C19 直接输入新消息：请只回复 INTERRUPT"
+              "content": "C19 direct: reply INTERRUPT"
             },
             {
               "role": "dex",
@@ -1159,12 +1159,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 26,
+              "contentLength": 27,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C19 直接输入新消息：请只回复 INTERRUPT"
+              "content": "C19 direct: reply INTERRUPT"
             },
             {
               "role": "dex",
@@ -1306,12 +1306,12 @@
               "type": "text",
               "messageId": "40089302713007104",
               "from": null,
-              "contentLength": 26,
+              "contentLength": 27,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C19 直接输入新消息：请只回复 INTERRUPT"
+              "content": "C19 direct: reply INTERRUPT"
             },
             {
               "role": "dex",
@@ -1440,12 +1440,12 @@
               "type": "text",
               "messageId": "40089302713007104",
               "from": null,
-              "contentLength": 26,
+              "contentLength": 27,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C19 直接输入新消息：请只回复 INTERRUPT"
+              "content": "C19 direct: reply INTERRUPT"
             },
             {
               "role": "dex",
@@ -1574,12 +1574,12 @@
               "type": "text",
               "messageId": "40089302713007104",
               "from": null,
-              "contentLength": 26,
+              "contentLength": 27,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C19 直接输入新消息：请只回复 INTERRUPT"
+              "content": "C19 direct: reply INTERRUPT"
             },
             {
               "role": "dex",
@@ -1708,12 +1708,12 @@
               "type": "text",
               "messageId": "40089302713007104",
               "from": null,
-              "contentLength": 26,
+              "contentLength": 27,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C19 直接输入新消息：请只回复 INTERRUPT"
+              "content": "C19 direct: reply INTERRUPT"
             },
             {
               "role": "dex",

@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C14",
-  "title": "重发或继续 AI 工具调用",
+  "title": "Resend or continue an AI tool call",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -1422,7 +1422,7 @@
                   "invokeStatus": "confirmed",
                   "status": "success",
                   "auto": false,
-                  "selectedSuggestion": "结束本次会话",
+                  "selectedSuggestion": "End this conversation",
                   "args": {
                     "type": "object",
                     "keys": ["options"]
@@ -1543,7 +1543,7 @@
                   "invokeStatus": "confirmed",
                   "status": "success",
                   "auto": false,
-                  "selectedSuggestion": "结束本次会话",
+                  "selectedSuggestion": "End this conversation",
                   "args": {
                     "type": "object",
                     "keys": ["options"]
@@ -1664,7 +1664,7 @@
                   "invokeStatus": "confirmed",
                   "status": "success",
                   "auto": false,
-                  "selectedSuggestion": "结束本次会话",
+                  "selectedSuggestion": "End this conversation",
                   "args": {
                     "type": "object",
                     "keys": ["options"]

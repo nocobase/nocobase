@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C12",
-  "title": "中止正在回复的会话",
+  "title": "Abort an active conversation response",
   "sourceKind": "real-capture",
   "snapshots": [
     {

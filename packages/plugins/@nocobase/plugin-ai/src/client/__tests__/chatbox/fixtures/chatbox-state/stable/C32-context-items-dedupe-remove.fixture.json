@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C32",
-  "title": "上下文项去重和删除",
+  "title": "Context item deduplication and removal",
   "sourceKind": "real store mutation on synthetic session",
   "snapshots": [
     {

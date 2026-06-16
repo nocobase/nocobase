@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C17",
-  "title": "客户端工具：suggestions 展示建议",
+  "title": "Client tool: display suggestions",
   "sourceKind": "real-capture",
   "snapshots": [
     {

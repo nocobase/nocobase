@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C02",
-  "title": "放大和缩小对话窗口",
+  "title": "Expand and collapse the chatbox",
   "sourceKind": "real-capture",
   "snapshots": [
     {

@@ -584,18 +584,23 @@ describe('AI employee chatbox P0 state regression', () => {
     workflowTasks.setLoading(true);
     expect(useWorkflowTasksStore.getState().loading).toBe(true);
     workflowTasks.setWorkflowTasks([
-      { id: 'first', workflowTitle: '权限测试', nodeTitle: 'AI 员工', ...firstRequest.summary.first },
+      { id: 'first', workflowTitle: 'Permission Test', nodeTitle: 'AI Employee', ...firstRequest.summary.first },
     ]);
     workflowTasks.setLoading(false);
     workflowTasks.setWorkflowTasks((prev) => {
       const sessionIds = new Set(prev.map((item) => item.sessionId));
-      const next = { id: 'second', workflowTitle: '旅游攻略', nodeTitle: 'AI 员工', ...secondRequest?.summary.first };
+      const next = {
+        id: 'second',
+        workflowTitle: 'Travel Guide',
+        nodeTitle: 'AI Employee',
+        ...secondRequest?.summary.first,
+      };
       return next.sessionId && !sessionIds.has(next.sessionId) ? [...prev, next] : prev;
     });
     expect(useWorkflowTasksStore.getState()).toMatchObject({ loading: false });
     expect(useWorkflowTasksStore.getState().workflowTasks).toHaveLength(2);
 
-    workflowTasks.setKeyword('旅游攻略');
+    workflowTasks.setKeyword('Travel Guide');
     workflowTasks.setSelectedJobStatus(1);
     expect(useWorkflowTasksStore.getState()).toMatchObject({
       keyword: getSnapshot(c25 as Fixture, 'after-search-settled').conversations?.keyword,
@@ -605,8 +610,8 @@ describe('AI employee chatbox P0 state regression', () => {
     const openedTask = getSnapshot(c26 as Fixture, 'after-click-task-settled');
     workflowTasks.setCurrentWorkflowTask({
       id: 'task',
-      workflowTitle: '权限测试',
-      nodeTitle: 'AI 员工',
+      workflowTitle: 'Permission Test',
+      nodeTitle: 'AI Employee',
       sessionId: openedTask.conversations?.currentConversation as string,
       status: 'pending_approval',
       readonly: false,

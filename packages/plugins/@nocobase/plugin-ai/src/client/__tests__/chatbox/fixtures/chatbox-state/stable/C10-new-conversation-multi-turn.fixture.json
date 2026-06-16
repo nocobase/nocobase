@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C10",
-  "title": "新建会话并多轮聊天",
+  "title": "Create a new conversation and run a multi-turn chat",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -42,12 +42,12 @@
               "type": "text",
               "messageId": "40081693624794112",
               "from": null,
-              "contentLength": 20,
+              "contentLength": 29,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C08 请只回复 OK，用于模型切换采集"
+              "content": "C08 reply OK for model switch"
             },
             {
               "role": "dex",
@@ -398,12 +398,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第一轮请只回复 ONE"
+              "content": "C10 reply ONE in round 1"
             },
             {
               "role": "dex",
@@ -499,12 +499,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第一轮请只回复 ONE"
+              "content": "C10 reply ONE in round 1"
             },
             {
               "role": "dex",
@@ -588,12 +588,12 @@
               "type": "text",
               "messageId": "40082764967476224",
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第一轮请只回复 ONE"
+              "content": "C10 reply ONE in round 1"
             },
             {
               "role": "dex",
@@ -677,12 +677,12 @@
               "type": "text",
               "messageId": "40082764967476224",
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第一轮请只回复 ONE"
+              "content": "C10 reply ONE in round 1"
             },
             {
               "role": "dex",
@@ -766,12 +766,12 @@
               "type": "text",
               "messageId": "40082764967476224",
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第一轮请只回复 ONE"
+              "content": "C10 reply ONE in round 1"
             },
             {
               "role": "dex",
@@ -792,12 +792,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第二轮请只回复 TWO"
+              "content": "C10 reply TWO in round 2"
             },
             {
               "role": "dex",
@@ -881,12 +881,12 @@
               "type": "text",
               "messageId": "40082764967476224",
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第一轮请只回复 ONE"
+              "content": "C10 reply ONE in round 1"
             },
             {
               "role": "dex",
@@ -907,12 +907,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第二轮请只回复 TWO"
+              "content": "C10 reply TWO in round 2"
             },
             {
               "role": "dex",
@@ -996,12 +996,12 @@
               "type": "text",
               "messageId": "40082764967476224",
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第一轮请只回复 ONE"
+              "content": "C10 reply ONE in round 1"
             },
             {
               "role": "dex",
@@ -1022,12 +1022,12 @@
               "type": "text",
               "messageId": null,
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第二轮请只回复 TWO"
+              "content": "C10 reply TWO in round 2"
             },
             {
               "role": "dex",
@@ -1111,12 +1111,12 @@
               "type": "text",
               "messageId": "40082764967476224",
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第一轮请只回复 ONE"
+              "content": "C10 reply ONE in round 1"
             },
             {
               "role": "dex",
@@ -1137,12 +1137,12 @@
               "type": "text",
               "messageId": "40082843816197120",
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第二轮请只回复 TWO"
+              "content": "C10 reply TWO in round 2"
             },
             {
               "role": "dex",

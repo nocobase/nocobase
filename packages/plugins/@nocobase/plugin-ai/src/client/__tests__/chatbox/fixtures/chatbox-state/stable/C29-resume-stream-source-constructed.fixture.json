@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C29",
-  "title": "恢复后台流或恢复失败",
+  "title": "Resume background stream or resume failure",
   "sourceKind": "source-constructed state contract",
   "snapshots": []
 }

@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C11",
-  "title": "AI 回复流式逐步更新",
+  "title": "AI streaming response updates incrementally",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -42,12 +42,12 @@
               "type": "text",
               "messageId": "40082764967476224",
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第一轮请只回复 ONE"
+              "content": "C10 reply ONE in round 1"
             },
             {
               "role": "dex",
@@ -68,12 +68,12 @@
               "type": "text",
               "messageId": "40082843816197120",
               "from": null,
-              "contentLength": 15,
+              "contentLength": 24,
               "reasoningStatus": null,
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "C10 第二轮请只回复 TWO"
+              "content": "C10 reply TWO in round 2"
             },
             {
               "role": "dex",

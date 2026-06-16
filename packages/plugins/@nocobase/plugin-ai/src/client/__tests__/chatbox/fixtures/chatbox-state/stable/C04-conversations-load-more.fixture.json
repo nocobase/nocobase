@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C04",
-  "title": "历史会话列表加载和滚动加载更多",
+  "title": "Load the conversation history list and load more on scroll",
   "sourceKind": "real-capture",
   "snapshots": [
     {

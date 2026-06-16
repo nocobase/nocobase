@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C20",
-  "title": "Atlas sub-agent 调用中的多轮、工具、中止、重发",
+  "title": "Atlas sub-agent multi-turn, tool, abort, and resend during invocation",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -1920,12 +1920,12 @@
               "type": "text",
               "messageId": null,
               "from": "main-agent",
-              "contentLength": 25,
+              "contentLength": 29,
               "reasoningStatus": "streaming",
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+              "content": "Dex replied:\n\n**SUBAGENT-OK**"
             }
           ],
           "messagesLoading": true,
@@ -2045,12 +2045,12 @@
                       "type": "text",
                       "messageId": "40090404653136896",
                       "from": "sub-agent",
-                      "contentLength": 17,
+                      "contentLength": 23,
                       "reasoningStatus": null,
                       "toolCalls": [],
                       "attachmentsCount": 0,
                       "workContextCount": 0,
-                      "content": "请只回复 SUBAGENT-OK。"
+                      "content": "Reply only SUBAGENT-OK."
                     },
                     {
                       "role": "dex",
@@ -2075,12 +2075,12 @@
               "type": "text",
               "messageId": "40090416665623552",
               "from": "main-agent",
-              "contentLength": 25,
+              "contentLength": 29,
               "reasoningStatus": "stop",
               "toolCalls": [],
               "attachmentsCount": 0,
               "workContextCount": 0,
-              "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+              "content": "Dex replied:\n\n**SUBAGENT-OK**"
             }
           ],
           "messagesLoading": false,

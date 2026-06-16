@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C07",
-  "title": "切换 AI 员工",
+  "title": "Switch AI employees",
   "sourceKind": "real-capture",
   "snapshots": [
     {

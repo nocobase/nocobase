@@ -1,7 +1,7 @@
 {
   "fixtureVersion": 1,
   "caseId": "C24",
-  "title": "工作流任务列表加载",
+  "title": "Workflow task list loading",
   "sourceKind": "real-capture",
   "snapshots": [
     {
@@ -265,8 +265,8 @@
           "unreadCount": 4,
           "first": {
             "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
-            "workflowTitle": "权限测试",
-            "nodeTitle": "AI 员工",
+            "workflowTitle": "Permission Test",
+            "nodeTitle": "AI Employee",
             "status": "pending_approval",
             "jobStatus": 0,
             "read": true,
@@ -274,8 +274,8 @@
           },
           "last": {
             "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
-            "workflowTitle": "旅游攻略",
-            "nodeTitle": "AI 员工",
+            "workflowTitle": "Travel Guide",
+            "nodeTitle": "AI Employee",
             "status": "pending_approval",
             "jobStatus": 0,
             "read": true,
@@ -309,8 +309,8 @@
           "unreadCount": 4,
           "first": {
             "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
-            "workflowTitle": "权限测试",
-            "nodeTitle": "AI 员工",
+            "workflowTitle": "Permission Test",
+            "nodeTitle": "AI Employee",
             "status": "pending_approval",
             "jobStatus": 0,
             "read": true,
@@ -318,8 +318,8 @@
           },
           "last": {
             "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
-            "workflowTitle": "旅游攻略",
-            "nodeTitle": "AI 员工",
+            "workflowTitle": "Travel Guide",
+            "nodeTitle": "AI Employee",
             "status": "pending_approval",
             "jobStatus": 0,
             "read": true,
@@ -352,8 +352,8 @@
           "unreadCount": 0,
           "first": {
             "sessionId": "a586a3e2-6664-4ef7-86f7-d6ae1628644d",
-            "workflowTitle": "旅游攻略",
-            "nodeTitle": "AI 员工",
+            "workflowTitle": "Travel Guide",
+            "nodeTitle": "AI Employee",
             "status": "pending_approval",
             "jobStatus": 0,
             "read": true,
@@ -362,7 +362,7 @@
           "last": {
             "sessionId": "85919ce8-22fa-4a4c-9043-50eacbfbf05f",
             "workflowTitle": "RecordWithSubFilesV3",
-            "nodeTitle": "AI 员工",
+            "nodeTitle": "AI Employee",
             "status": "aborted",
             "jobStatus": -2,
             "read": true,
