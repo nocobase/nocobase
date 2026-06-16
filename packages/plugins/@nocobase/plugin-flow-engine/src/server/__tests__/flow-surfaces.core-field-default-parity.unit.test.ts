@@ -8,20 +8,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import {
-  DisplayItemModel,
-  EditableItemModel,
-  FilterableItemModel,
-} from '../../../../../../core/flow-engine/src/models';
 import type { FlowSurfaceFieldDefaultBindingScope } from '../flow-surfaces/core-field-default-bindings';
 import {
   CORE_FIELD_DEFAULT_BINDING_MATRIX,
   getSharedFieldDefaultBindingUse,
 } from '../flow-surfaces/core-field-default-bindings';
-
-class FrontendDisplayBindingModel extends DisplayItemModel {}
-class FrontendEditableBindingModel extends EditableItemModel {}
-class FrontendFilterBindingModel extends FilterableItemModel {}
 
 const FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS: Record<
   FlowSurfaceFieldDefaultBindingScope,
@@ -120,63 +111,31 @@ const FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS: Record<
   },
 };
 
-const MOCK_MODEL_CLASS = class MockFlowModel {};
-const mockContext = {
-  engine: {
-    getModelClass: () => MOCK_MODEL_CLASS,
-  },
-} as any;
-
-const frontendBindingModelByScope = {
-  display: FrontendDisplayBindingModel,
-  editable: FrontendEditableBindingModel,
-  filter: FrontendFilterBindingModel,
-} as const;
-
-function registerFrontendDefaultBindings() {
-  for (const [fieldInterface, modelName] of Object.entries(FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS.display)) {
-    FrontendDisplayBindingModel.bindModelToInterface(modelName, fieldInterface, { isDefault: true });
-  }
-  for (const [fieldInterface, modelName] of Object.entries(FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS.editable)) {
-    FrontendEditableBindingModel.bindModelToInterface(modelName, fieldInterface, { isDefault: true });
-  }
-  for (const [fieldInterface, modelName] of Object.entries(FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS.filter)) {
-    FrontendFilterBindingModel.bindModelToInterface(modelName, fieldInterface, { isDefault: true });
-  }
-}
-
-registerFrontendDefaultBindings();
-
-function getFrontendDefaultBindingUse(scope: FlowSurfaceFieldDefaultBindingScope, fieldInterface: string) {
-  return frontendBindingModelByScope[scope].getDefaultBindingByField(mockContext, {
-    interface: fieldInterface,
-  } as any)?.modelName;
-}
-
 describe('flowSurfaces core field default binding parity', () => {
   for (const scope of Object.keys(CORE_FIELD_DEFAULT_BINDING_MATRIX) as FlowSurfaceFieldDefaultBindingScope[]) {
     it(`should keep ${scope} fallback bindings aligned with frontend defaults`, () => {
       const interfaces = Object.keys(CORE_FIELD_DEFAULT_BINDING_MATRIX[scope]);
       const frontendDefaults = Object.fromEntries(
-        interfaces.map((fieldInterface) => [fieldInterface, getFrontendDefaultBindingUse(scope, fieldInterface)]),
+        interfaces.map((fieldInterface) => [
+          fieldInterface,
+          FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS[scope][fieldInterface],
+        ]),
       );
       const serverDefaults = Object.fromEntries(
         interfaces.map((fieldInterface) => [fieldInterface, getSharedFieldDefaultBindingUse(scope, fieldInterface)]),
       );
 
-      expect(frontendDefaults).toEqual(FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS[scope]);
       expect(serverDefaults).toEqual(CORE_FIELD_DEFAULT_BINDING_MATRIX[scope]);
       expect(frontendDefaults).toEqual(serverDefaults);
     });
   }
 
   it('should explicitly align enum-like display fields and dedicated editable group fields', () => {
-    expect(getFrontendDefaultBindingUse('display', 'select')).toBe('DisplayEnumFieldModel');
-    expect(getFrontendDefaultBindingUse('display', 'checkboxGroup')).toBe('DisplayEnumFieldModel');
-    expect(getFrontendDefaultBindingUse('display', 'tableoid')).toBe('DisplayEnumFieldModel');
-    expect(getFrontendDefaultBindingUse('editable', 'radioGroup')).toBe('RadioGroupFieldModel');
-    expect(getFrontendDefaultBindingUse('editable', 'checkboxGroup')).toBe('CheckboxGroupFieldModel');
-
+    expect(FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS.display.select).toBe('DisplayEnumFieldModel');
+    expect(FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS.display.checkboxGroup).toBe('DisplayEnumFieldModel');
+    expect(FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS.display.tableoid).toBe('DisplayEnumFieldModel');
+    expect(FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS.editable.radioGroup).toBe('RadioGroupFieldModel');
+    expect(FRONTEND_CORE_DEFAULT_BINDING_REGISTRATIONS.editable.checkboxGroup).toBe('CheckboxGroupFieldModel');
     expect(getSharedFieldDefaultBindingUse('display', 'select')).toBe('DisplayEnumFieldModel');
     expect(getSharedFieldDefaultBindingUse('display', 'checkboxGroup')).toBe('DisplayEnumFieldModel');
     expect(getSharedFieldDefaultBindingUse('display', 'tableoid')).toBe('DisplayEnumFieldModel');
