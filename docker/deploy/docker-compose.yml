@@ -161,7 +161,7 @@ services:
       - nocobase_storage:/app/nocobase/storage
       - ./storage/uploads:/app/nocobase/storage/uploads
     ports:
-      - "${APP_PORT:-13000}:80"
+      - "${APP_PORT:-13000}:13000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -170,7 +170,7 @@ services:
       minio:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:13000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -228,7 +228,7 @@ services:
       minio:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:13000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

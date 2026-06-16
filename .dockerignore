@@ -3,8 +3,8 @@
 .gitignore
 .gitattributes
 
-# Node
-node_modules
+# Node (keep node_modules for Docker build)
+# node_modules
 .npm
 .yarn-integrity
 
