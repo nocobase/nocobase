@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { FlowModelContext } from '@nocobase/flow-engine';
+
 type DateTimeDisplayProps = {
   dateOnly?: boolean;
   dateFormat?: string;
@@ -25,13 +27,15 @@ type DateTimeCollectionField = {
   };
 };
 
+type DateTimeModelContext = FlowModelContext & {
+  collectionField?: DateTimeCollectionField;
+};
+
 type DateTimeModel = {
   props?: DateTimeDisplayProps & {
     titleField?: string;
   };
-  context?: {
-    collectionField?: DateTimeCollectionField;
-  };
+  context?: DateTimeModelContext;
   getStepParams?: (flowKey: string, stepKey: string) => DateTimeDisplayProps | undefined;
 };
 
@@ -74,8 +78,10 @@ const pickDateTimeDisplayProps = (source?: DateTimeDisplayProps) => {
 const stripUndefined = (props: DateTimeDisplayProps) =>
   Object.fromEntries(Object.entries(props).filter(([, value]) => typeof value !== 'undefined')) as DateTimeDisplayProps;
 
+const getModelCollectionField = (model?: DateTimeModel) => model?.context?.collectionField;
+
 export const getDateTimeFormatCollectionField = (options: ResolveDateTimeDisplayPropsOptions) => {
-  const collectionField = options.collectionField || options.model?.context?.collectionField;
+  const collectionField = options.collectionField || getModelCollectionField(options.model);
   const titleField = options.titleField || options.model?.props?.titleField;
   return collectionField?.targetCollection?.getField?.(titleField) || collectionField;
 };
@@ -90,7 +96,7 @@ export const getSavedDateTimeFormatParams = (model?: DateTimeModel) =>
   model?.getStepParams?.('datetimeSettings', 'dateFormat') || model?.getStepParams?.('timeSettings', 'dateFormat');
 
 export const resolveDateTimeDisplayProps = (options: ResolveDateTimeDisplayPropsOptions) => {
-  const collectionField = options.collectionField || options.model?.context?.collectionField;
+  const collectionField = options.collectionField || getModelCollectionField(options.model);
   const targetCollectionField = getDateTimeFormatCollectionField(options);
   const mergedProps = {
     ...pickDateTimeDisplayProps(collectionField?.getComponentProps?.()),

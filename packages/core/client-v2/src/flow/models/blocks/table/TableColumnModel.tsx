@@ -363,7 +363,7 @@ TableColumnModel.registerFlow({
           return;
         }
         const titleField = getSavedAssociationTitleField(ctx.model);
-        const fieldModel = ctx.model.subModels.field;
+        const fieldModel = Array.isArray(ctx.model.subModels.field) ? undefined : ctx.model.subModels.field;
         const targetCollectionField = collectionField.targetCollection?.getField?.(titleField);
         const savedDateTimeDisplayProps = getSavedDateTimeFormatParams(fieldModel)
           ? resolveDateTimeDisplayProps({
