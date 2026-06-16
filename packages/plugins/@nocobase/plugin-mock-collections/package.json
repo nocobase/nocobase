@@ -12,6 +12,14 @@
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x"
   },
+  "nocobase": {
+    "deprecated": true,
+    "internal": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
   "devDependencies": {
     "pg": "^8.11.3"
   },
