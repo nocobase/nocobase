@@ -197,7 +197,15 @@ function compileFilterGroup(group: FilterGroupType | undefined): Record<string, 
 
 function decompileConditions(value: unknown, path: string[] = []): FilterCondition[] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return path.length ? [{ path: path.join('.'), operator: '$eq', value }] : [];
+    return path.length
+      ? [
+          {
+            path: path.join('.'),
+            operator: '$eq',
+            value: toVariableFilterValue(value) as VariableFilterItemValue['value'],
+          },
+        ]
+      : [];
   }
 
   const entries = Object.entries(value as Record<string, unknown>);
