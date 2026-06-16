@@ -167,6 +167,63 @@ describe('BackupManager', async () => {
       }
     });
 
+    it('should exclude runtime tables while preserving backup option exclusions', async () => {
+      const spawnMock = vi.mocked(cp.spawn);
+      spawnMock.mockClear();
+      const runtimeCollection = {
+        name: 'runtime_records',
+        dataCategory: 'runtime',
+        getTableNameWithSchemaAsString: () => 'runtime_records',
+      };
+      const businessCollection = {
+        name: 'business_records',
+        dataCategory: 'business',
+        getTableNameWithSchemaAsString: () => 'business_records',
+      };
+      const fakeApp = {
+        name: 'main',
+        db: {
+          options: {
+            dialect: 'mysql',
+            username: 'root',
+            host: 'localhost',
+            database: 'backup_test',
+            password: '',
+          },
+          collections: new Map([
+            [runtimeCollection.name, runtimeCollection],
+            [businessCollection.name, businessCollection],
+          ]),
+          sequelize: {
+            getDialect: () => 'mysql',
+            query: vi.fn().mockResolvedValue([{ version: '8.0.0' }]),
+          },
+        },
+        pm: {
+          has: vi.fn().mockReturnValue(false),
+          getPlugins: vi.fn().mockReturnValue(new Map()),
+        },
+        version: {
+          get: vi.fn().mockResolvedValue('1.0.0'),
+        },
+        logger: {
+          error: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+        },
+      } as unknown as ConstructorParameters<typeof BackupManager>[0];
+      const backupManager = new BackupManager(fakeApp, null, defaultBackupSettings);
+
+      await backupManager.backup(backupFileBaseName, {
+        excludeTables: ['audit_logs'],
+      });
+
+      const mysqldumpArgs = spawnMock.mock.calls[0]?.[1] as string[];
+      expect(mysqldumpArgs).toContain('--ignore-table=backup_test.audit_logs');
+      expect(mysqldumpArgs).toContain('--ignore-table=backup_test.runtime_records');
+      expect(mysqldumpArgs).not.toContain('--ignore-table=backup_test.business_records');
+    });
+
     it('should warn and continue when a file collection query fails', async () => {
       const backupManager = new BackupManager(app, null, {
         ...defaultBackupSettings,
