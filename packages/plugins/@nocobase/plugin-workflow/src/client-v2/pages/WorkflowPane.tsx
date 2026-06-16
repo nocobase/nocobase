@@ -22,6 +22,7 @@ import { App, Button, Card, Flex, Form, Input, Space, Switch, Tag, Tooltip, them
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo, useState } from 'react';
 import workflowCollection from '../../common/collections/workflows';
+import { SyncModeTag } from '../components/SyncModeTag';
 import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT, useWorkflowTranslation } from '../locale';
 import PluginWorkflowClientV2 from '../plugin';
@@ -271,7 +272,7 @@ function WorkflowPaneInner() {
         title: t('Execute mode'),
         dataIndex: 'sync',
         width: 140,
-        render: (value) => <Tag>{value ? t('Synchronously') : t('Asynchronously')}</Tag>,
+        render: (value) => <SyncModeTag value={value} />,
       },
       {
         title: t('Enabled'),

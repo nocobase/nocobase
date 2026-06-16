@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Breadcrumb, Tag, Tooltip, theme } from 'antd';
+import { Breadcrumb, Tooltip, theme } from 'antd';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useT, useWorkflowTranslation } from '../locale';
@@ -16,6 +16,7 @@ import { WorkflowEnabledSwitch } from './WorkflowEnabledSwitch';
 import { WorkflowMenu } from './WorkflowMenu';
 import { WorkflowRevisionsDropdown } from './WorkflowRevisionsDropdown';
 import { ExecuteWorkflowButton } from '../triggers/ExecuteWorkflowButton';
+import { SyncModeTag } from './SyncModeTag';
 
 const WORKFLOW_HOMEPAGE = '/admin/settings/workflow';
 
@@ -62,7 +63,7 @@ export function WorkflowCanvasHeader({
             },
           ]}
         />
-        {record.sync ? <Tag color="orange">{t('Synchronously')}</Tag> : <Tag color="cyan">{t('Asynchronously')}</Tag>}
+        <SyncModeTag value={record.sync} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: token.marginXS }}>
         <ExecuteWorkflowButton record={record} refresh={refresh} />
