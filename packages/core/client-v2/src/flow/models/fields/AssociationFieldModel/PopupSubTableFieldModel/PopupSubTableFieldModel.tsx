@@ -237,7 +237,7 @@ const DisplayTable = (props) => {
         return t('Total {{count}} items', { count: total });
       },
     } as any;
-  }, [currentPage, currentPageSize, tableData]);
+  }, [currentPage, currentPageSize, tableData, t]);
 
   const columns = useMemo(() => {
     const cols = adjustColumnOrder(
@@ -374,6 +374,13 @@ export class PopupSubTableFieldModel extends AssociationFieldModel {
   get collectionField() {
     return this.context.collectionField;
   }
+
+  private resetValueAfterFormReset() {
+    const fieldPathArray = this.context.fieldPathArray ?? this.parent?.context?.fieldPathArray;
+    if (!Array.isArray(fieldPathArray) || !fieldPathArray.length) return;
+    this.context.blockModel?.setFieldValue?.(fieldPathArray, []);
+  }
+
   onInit(options: any): void {
     super.onInit(options);
     this.context.defineProperty('resourceName', {
@@ -423,7 +430,7 @@ export class PopupSubTableFieldModel extends AssociationFieldModel {
       };
       // 监听表单reset
       this.context.blockModel.emitter.on('onFieldReset', () => {
-        this.props?.onChange([]);
+        this.resetValueAfterFormReset();
       });
     }
   }

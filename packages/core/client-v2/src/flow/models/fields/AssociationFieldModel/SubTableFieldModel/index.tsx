@@ -127,6 +127,13 @@ export class SubTableFieldModel extends AssociationFieldModel {
       />
     );
   }
+
+  private resetValueAfterFormReset() {
+    const fieldPathArray = this.context.fieldPathArray ?? this.parent?.context?.fieldPathArray;
+    if (!Array.isArray(fieldPathArray) || !fieldPathArray.length) return;
+    this.context.blockModel?.setFieldValue?.(fieldPathArray, []);
+  }
+
   onInit(options: any): void {
     super.onInit(options);
     this.context.defineProperty('resourceName', {
@@ -138,7 +145,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
     });
     // 监听表单reset
     this.context.blockModel.emitter.on('onFieldReset', () => {
-      this.props.onChange([]);
+      this.resetValueAfterFormReset();
     });
     this.onSelectExitRecordClick = (setCurrentPage, currentPageSize) => {
       this.setCurrentPage = setCurrentPage;
