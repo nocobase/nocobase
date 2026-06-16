@@ -131,6 +131,12 @@ export function useMobilePageClassName() {
         height: 1px;
       }
 
+      .nb-ui-layout-mobile-root-page-tab-left-spacer {
+        display: inline-block;
+        width: ${token.marginXXS}px;
+        height: 1px;
+      }
+
       .nb-ui-layout-mobile-tabs .ant-tabs-tab {
         height: 40px;
         margin: 0;

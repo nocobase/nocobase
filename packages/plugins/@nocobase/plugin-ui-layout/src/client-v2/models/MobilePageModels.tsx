@@ -135,6 +135,10 @@ function renderMobilePageTabLeftSpacer() {
   return <span aria-hidden="true" className="nb-ui-layout-mobile-page-tab-left-spacer" />;
 }
 
+function renderMobileRootPageTabLeftSpacer() {
+  return <span aria-hidden="true" className="nb-ui-layout-mobile-root-page-tab-left-spacer" />;
+}
+
 function renderMobileAddTabButton(model: RootPageModel | ChildPageModel) {
   const label = model.context.t('Add tab');
 
@@ -180,7 +184,7 @@ export class MobileRootPageModel extends RootPageModel {
   };
 
   tabBarExtraContent = {
-    left: null,
+    left: renderMobileRootPageTabLeftSpacer(),
     right: renderMobileAddTabButton(this),
   };
 
