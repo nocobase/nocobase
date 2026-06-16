@@ -327,9 +327,9 @@ keywords: "миграции,управление версиями,резервн
 | `aiMessages` | User and assistant messages in conversations | Рабочие бизнес-данные | Только структура | Не участвует | Копируется |
 | `aiToolMessages` | Requests and responses for function or tool calls | Рабочие бизнес-данные | Только структура | Не участвует | Копируется |
 | `usersAiEmployees` | Relationship between user custom prompts and AI employees | Рабочие бизнес-данные | Только структура | Не участвует | Копируется |
-| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Временные runtime-данные | Пропустить | Не участвует | Не копируется |
-| `lcCheckpointWrites` | Incremental checkpoint write records | Временные runtime-данные | Пропустить | Не участвует | Не копируется |
-| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Временные runtime-данные | Пропустить | Не участвует | Не копируется |
+| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Временные runtime-данные | Только структура | Не участвует | Не копируется |
+| `lcCheckpointWrites` | Incremental checkpoint write records | Временные runtime-данные | Только структура | Не участвует | Не копируется |
+| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Временные runtime-данные | Только структура | Не участвует | Не копируется |
 
 ### AI knowledge base
 

@@ -327,9 +327,9 @@ La colonne « Type de données » provient de la classification intégrée. Les 
 | `aiMessages` | User and assistant messages in conversations | Données métier d’exécution | Structure seule | Ne participe pas | Sauvegardé |
 | `aiToolMessages` | Requests and responses for function or tool calls | Données métier d’exécution | Structure seule | Ne participe pas | Sauvegardé |
 | `usersAiEmployees` | Relationship between user custom prompts and AI employees | Données métier d’exécution | Structure seule | Ne participe pas | Sauvegardé |
-| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Données temporaires d’exécution | Ignorer | Ne participe pas | Non sauvegardé |
-| `lcCheckpointWrites` | Incremental checkpoint write records | Données temporaires d’exécution | Ignorer | Ne participe pas | Non sauvegardé |
-| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Données temporaires d’exécution | Ignorer | Ne participe pas | Non sauvegardé |
+| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Données temporaires d’exécution | Structure seule | Ne participe pas | Non sauvegardé |
+| `lcCheckpointWrites` | Incremental checkpoint write records | Données temporaires d’exécution | Structure seule | Ne participe pas | Non sauvegardé |
+| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Données temporaires d’exécution | Structure seule | Ne participe pas | Non sauvegardé |
 
 ### AI knowledge base
 

@@ -327,9 +327,9 @@ A coluna “Tipo de dados” vem da classificação integrada. Dados base do sis
 | `aiMessages` | User and assistant messages in conversations | Dados de execução de negócio | Somente estrutura | Não participa | Com backup |
 | `aiToolMessages` | Requests and responses for function or tool calls | Dados de execução de negócio | Somente estrutura | Não participa | Com backup |
 | `usersAiEmployees` | Relationship between user custom prompts and AI employees | Dados de execução de negócio | Somente estrutura | Não participa | Com backup |
-| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Dados temporários de execução | Ignorar | Não participa | Sem backup |
-| `lcCheckpointWrites` | Incremental checkpoint write records | Dados temporários de execução | Ignorar | Não participa | Sem backup |
-| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Dados temporários de execução | Ignorar | Não participa | Sem backup |
+| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Dados temporários de execução | Somente estrutura | Não participa | Sem backup |
+| `lcCheckpointWrites` | Incremental checkpoint write records | Dados temporários de execução | Somente estrutura | Não participa | Sem backup |
+| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Dados temporários de execução | Somente estrutura | Não participa | Sem backup |
 
 ### AI knowledge base
 

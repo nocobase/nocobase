@@ -327,9 +327,9 @@ Cột “Loại dữ liệu” đến từ phân loại tích hợp. Dữ liệu
 | `aiMessages` | User and assistant messages in conversations | Dữ liệu runtime nghiệp vụ | Chỉ cấu trúc | Không tham gia | Backup |
 | `aiToolMessages` | Requests and responses for function or tool calls | Dữ liệu runtime nghiệp vụ | Chỉ cấu trúc | Không tham gia | Backup |
 | `usersAiEmployees` | Relationship between user custom prompts and AI employees | Dữ liệu runtime nghiệp vụ | Chỉ cấu trúc | Không tham gia | Backup |
-| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Dữ liệu tạm runtime | Bỏ qua | Không tham gia | Không backup |
-| `lcCheckpointWrites` | Incremental checkpoint write records | Dữ liệu tạm runtime | Bỏ qua | Không tham gia | Không backup |
-| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Dữ liệu tạm runtime | Bỏ qua | Không tham gia | Không backup |
+| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Dữ liệu tạm runtime | Chỉ cấu trúc | Không tham gia | Không backup |
+| `lcCheckpointWrites` | Incremental checkpoint write records | Dữ liệu tạm runtime | Chỉ cấu trúc | Không tham gia | Không backup |
+| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Dữ liệu tạm runtime | Chỉ cấu trúc | Không tham gia | Không backup |
 
 ### AI knowledge base
 

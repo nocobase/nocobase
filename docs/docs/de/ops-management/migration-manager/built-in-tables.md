@@ -327,9 +327,9 @@ Die Spalte „Datentyp“ stammt aus der integrierten Klassifikation. Systembasi
 | `aiMessages` | User and assistant messages in conversations | Geschäftslaufzeitdaten | Nur Struktur | Keine Teilnahme | Gesichert |
 | `aiToolMessages` | Requests and responses for function or tool calls | Geschäftslaufzeitdaten | Nur Struktur | Keine Teilnahme | Gesichert |
 | `usersAiEmployees` | Relationship between user custom prompts and AI employees | Geschäftslaufzeitdaten | Nur Struktur | Keine Teilnahme | Gesichert |
-| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Temporäre Laufzeitdaten | Überspringen | Keine Teilnahme | Nicht gesichert |
-| `lcCheckpointWrites` | Incremental checkpoint write records | Temporäre Laufzeitdaten | Überspringen | Keine Teilnahme | Nicht gesichert |
-| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Temporäre Laufzeitdaten | Überspringen | Keine Teilnahme | Nicht gesichert |
+| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Temporäre Laufzeitdaten | Nur Struktur | Keine Teilnahme | Nicht gesichert |
+| `lcCheckpointWrites` | Incremental checkpoint write records | Temporäre Laufzeitdaten | Nur Struktur | Keine Teilnahme | Nicht gesichert |
+| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Temporäre Laufzeitdaten | Nur Struktur | Keine Teilnahme | Nicht gesichert |
 
 ### AI knowledge base
 

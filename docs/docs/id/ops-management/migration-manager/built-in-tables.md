@@ -327,9 +327,9 @@ Kolom “Tipe data” berasal dari klasifikasi bawaan. Data dasar sistem ikut ko
 | `aiMessages` | User and assistant messages in conversations | Data runtime bisnis | Schema-only | Tidak ikut | Dibackup |
 | `aiToolMessages` | Requests and responses for function or tool calls | Data runtime bisnis | Schema-only | Tidak ikut | Dibackup |
 | `usersAiEmployees` | Relationship between user custom prompts and AI employees | Data runtime bisnis | Schema-only | Tidak ikut | Dibackup |
-| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Data sementara runtime | Skip | Tidak ikut | Tidak dibackup |
-| `lcCheckpointWrites` | Incremental checkpoint write records | Data sementara runtime | Skip | Tidak ikut | Tidak dibackup |
-| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Data sementara runtime | Skip | Tidak ikut | Tidak dibackup |
+| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Data sementara runtime | Schema-only | Tidak ikut | Tidak dibackup |
+| `lcCheckpointWrites` | Incremental checkpoint write records | Data sementara runtime | Schema-only | Tidak ikut | Tidak dibackup |
+| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Data sementara runtime | Schema-only | Tidak ikut | Tidak dibackup |
 
 ### AI knowledge base
 

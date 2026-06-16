@@ -327,9 +327,9 @@ The “Data type” column comes from built-in classification. System base data 
 | `aiMessages` | User and assistant messages in conversations | Business runtime data | Schema-only | Not included | Backed up |
 | `aiToolMessages` | Requests and responses for function or tool calls | Business runtime data | Schema-only | Not included | Backed up |
 | `usersAiEmployees` | Relationship between user custom prompts and AI employees | Business runtime data | Schema-only | Not included | Backed up |
-| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Runtime temporary data | Skip | Not included | Not backed up |
-| `lcCheckpointWrites` | Incremental checkpoint write records | Runtime temporary data | Skip | Not included | Not backed up |
-| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Runtime temporary data | Skip | Not included | Not backed up |
+| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Runtime temporary data | Schema-only | Not included | Not backed up |
+| `lcCheckpointWrites` | Incremental checkpoint write records | Runtime temporary data | Schema-only | Not included | Not backed up |
+| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Runtime temporary data | Schema-only | Not included | Not backed up |
 
 ### AI knowledge base
 

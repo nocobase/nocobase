@@ -327,9 +327,9 @@ La columna “Tipo de datos” proviene de la clasificación integrada. Los dato
 | `aiMessages` | User and assistant messages in conversations | Datos de ejecución de negocio | Solo estructura | No participa | Se respalda |
 | `aiToolMessages` | Requests and responses for function or tool calls | Datos de ejecución de negocio | Solo estructura | No participa | Se respalda |
 | `usersAiEmployees` | Relationship between user custom prompts and AI employees | Datos de ejecución de negocio | Solo estructura | No participa | Se respalda |
-| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Datos temporales de ejecución | Omitir | No participa | No se respalda |
-| `lcCheckpointWrites` | Incremental checkpoint write records | Datos temporales de ejecución | Omitir | No participa | No se respalda |
-| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Datos temporales de ejecución | Omitir | No participa | No se respalda |
+| `lcCheckpointBlobs` | Binary blocks for LLM conversation checkpoints | Datos temporales de ejecución | Solo estructura | No participa | No se respalda |
+| `lcCheckpointWrites` | Incremental checkpoint write records | Datos temporales de ejecución | Solo estructura | No participa | No se respalda |
+| `lcCheckpoints` | LangGraph checkpoint metadata for recoverable conversations | Datos temporales de ejecución | Solo estructura | No participa | No se respalda |
 
 ### AI knowledge base
 
