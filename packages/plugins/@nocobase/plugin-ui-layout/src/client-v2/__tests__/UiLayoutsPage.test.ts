@@ -145,13 +145,14 @@ describe('plugin-ui-layout submit pipeline', () => {
   it('should update enabled from the row switch', async () => {
     const resource = makeResource();
     const onSubmitted = vi.fn();
+    const publicLayoutRecord = {
+      ...uiLayoutRecord,
+      authCheck: false,
+    };
 
     await updateUiLayoutEnabled({
       resource,
-      record: {
-        ...uiLayoutRecord,
-        authCheck: false,
-      },
+      record: publicLayoutRecord,
       enabled: false,
       onSubmitted,
     });
@@ -160,7 +161,7 @@ describe('plugin-ui-layout submit pipeline', () => {
     expect(resource.update).toHaveBeenCalledWith({
       filterByTk: 'desktop-layout',
       values: {
-        ...formValues,
+        ...publicLayoutRecord,
         enabled: false,
       },
     });
@@ -496,7 +497,7 @@ describe('plugin-ui-layout settings page', () => {
     createDrawer.unmount();
   });
 
-  it('should update layouts with auth check enabled without exposing the field', async () => {
+  it('should preserve auth check when updating layouts without exposing the field', async () => {
     const user = userEvent.setup();
     const request = vi.fn().mockResolvedValue({
       data: {
@@ -556,7 +557,7 @@ describe('plugin-ui-layout settings page', () => {
           layoutType: 'mobile',
           routeName: 'mobile',
           routePath: '/mobile',
-          authCheck: true,
+          authCheck: false,
           enabled: true,
         }),
       });
@@ -607,7 +608,7 @@ describe('plugin-ui-layout form values', () => {
     });
   });
 
-  it('should always complete UI-managed layouts with auth check enabled', () => {
+  it('should preserve explicit auth check values when completing form values', () => {
     expect(
       completeUiLayoutFormValues({
         title: 'Public-looking layout',
@@ -623,7 +624,7 @@ describe('plugin-ui-layout form values', () => {
       layoutType: 'desktop',
       routeName: 'public',
       routePath: '/public',
-      authCheck: true,
+      authCheck: false,
       enabled: true,
     });
   });

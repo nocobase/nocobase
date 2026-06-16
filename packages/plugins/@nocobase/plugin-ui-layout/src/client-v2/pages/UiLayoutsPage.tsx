@@ -145,7 +145,7 @@ export function completeUiLayoutFormValues(values: UiLayoutFormDraftValues): UiL
     title,
     routePath,
     routeName,
-    authCheck: true,
+    authCheck: values.authCheck ?? true,
   };
 }
 
@@ -158,7 +158,7 @@ function toUiLayoutFormValues(record: UiLayoutRecord, overrides: Partial<UiLayou
     routePath: record.routePath,
     enabled: record.enabled,
     ...overrides,
-    authCheck: true,
+    authCheck: overrides.authCheck ?? record.authCheck ?? true,
   };
 }
 
@@ -496,6 +496,7 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
             uid: record.uid,
             layoutType: record.layoutType,
             routePath: record.routePath,
+            authCheck: record.authCheck,
             enabled: record.enabled,
           }
         : {
@@ -507,7 +508,11 @@ function UiLayoutForm(props: { layoutType: UiLayoutType; record?: UiLayoutRecord
   );
 
   const handleSubmit = useCallback(async () => {
-    const values = completeUiLayoutFormValues(await form.validateFields());
+    const fieldValues = await form.validateFields();
+    const values = completeUiLayoutFormValues({
+      ...fieldValues,
+      authCheck: fieldValues.authCheck ?? record?.authCheck,
+    });
     setSubmitting(true);
     try {
       if (record) {
