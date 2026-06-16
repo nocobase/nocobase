@@ -1,12 +1,12 @@
 # ============================================================
 # NocoBase 本地源码构建 Dockerfile
-# 基于 node:22-bookworm-slim，从源码构建完整应用
+# 基于 node:24-bookworm-slim，从源码构建完整应用
 # ============================================================
 
 # ============================================================
 # 阶段 1: 打包已安装的 NocoBase 应用
 # ============================================================
-FROM node:22-bookworm-slim as builder
+FROM node:24-bookworm-slim as builder
 
 WORKDIR /build
 
@@ -34,7 +34,7 @@ RUN tar -zcf /nocobase.tar.gz \
 # ============================================================
 # 阶段 2: 运行环境
 # ============================================================
-FROM node:22-bookworm-slim as runtime
+FROM node:24-bookworm-slim as runtime
 
 ARG NODE_ENV=production
 ARG COMMIT_HASH=latest
