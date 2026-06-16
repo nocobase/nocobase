@@ -262,6 +262,71 @@ describe('TableColumnModel sorter settings', () => {
     );
   });
 
+  it('keeps saved association title datetime format when table column initializes again', async () => {
+    const engine = new FlowEngine();
+    const model = new TableColumnModel({
+      uid: 'table-column-title-field-saved-datetime-format',
+      flowEngine: engine,
+    } as any);
+    const initStep = model.getFlow('tableColumnSettings')?.steps?.init as any;
+    const setProps = vi.fn();
+    const targetCollectionField = {
+      getComponentProps: () => ({
+        dateFormat: 'YYYY-MM-DD',
+        format: 'YYYY-MM-DD HH:mm:ss',
+        showTime: true,
+        timeFormat: 'HH:mm:ss',
+      }),
+    };
+
+    await initStep.handler({
+      model: {
+        context: {
+          collectionField: {
+            title: 'Shipments',
+            name: 'shipments',
+            isAssociationField: () => true,
+            getComponentProps: () => ({
+              fieldNames: {
+                label: 'shipmentsDatetime',
+              },
+            }),
+            targetCollection: {
+              getField: () => targetCollectionField,
+            },
+          },
+        },
+        props: {
+          titleField: 'shipmentsDatetime',
+        },
+        subModels: {
+          field: {
+            getStepParams: (flowKey, stepKey) =>
+              flowKey === 'datetimeSettings' && stepKey === 'dateFormat'
+                ? {
+                    picker: 'date',
+                    dateFormat: 'YYYY-MM-DD',
+                    showTime: true,
+                    timeFormat: 'h:mm a',
+                  }
+                : undefined,
+          },
+        },
+        applySubModelsBeforeRenderFlows: vi.fn(),
+        setProps,
+      },
+    });
+
+    expect(setProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateFormat: 'YYYY-MM-DD',
+        format: 'YYYY-MM-DD h:mm a',
+        showTime: true,
+        timeFormat: 'h:mm a',
+      }),
+    );
+  });
+
   it('does not update field component setting when title field refresh fails', async () => {
     const engine = new FlowEngine();
     const model = new TableColumnModel({ uid: 'table-column-title-field-component-failed', flowEngine: engine } as any);

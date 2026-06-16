@@ -137,6 +137,39 @@ const resetDateTimeDisplayProps = {
   timeFormat: undefined,
 };
 
+const getSavedDateTimeFormatParams = (fieldModel) =>
+  fieldModel?.getStepParams?.('datetimeSettings', 'dateFormat') ||
+  fieldModel?.getStepParams?.('timeSettings', 'dateFormat');
+
+const isTimeCollectionField = (collectionField) =>
+  collectionField?.type === 'time' || collectionField?.interface === 'time';
+
+const isDateOnlyCollectionField = (collectionField) =>
+  collectionField?.type === 'dateOnly' || collectionField?.interface === 'dateOnly';
+
+const getSavedDateTimeDisplayProps = (fieldModel, collectionField) => {
+  const params = getSavedDateTimeFormatParams(fieldModel);
+  if (!params) {
+    return;
+  }
+
+  if (isTimeCollectionField(collectionField)) {
+    const timeFormat = params.timeFormat || params.format || 'HH:mm:ss';
+    return {
+      ...params,
+      timeFormat,
+      format: timeFormat,
+    };
+  }
+
+  const showTime = isDateOnlyCollectionField(collectionField) ? false : params.showTime;
+  return {
+    ...params,
+    showTime,
+    format: showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
+  };
+};
+
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
@@ -362,11 +395,15 @@ TableColumnModel.registerFlow({
           return;
         }
         const titleField = getSavedAssociationTitleField(ctx.model);
+        const fieldModel = ctx.model.subModels.field;
+        const targetCollectionField = collectionField.targetCollection?.getField?.(titleField);
+        const savedDateTimeDisplayProps = getSavedDateTimeDisplayProps(fieldModel, targetCollectionField);
         const componentProps =
           collectionField.isAssociationField() && titleField
             ? {
                 ...collectionField.getComponentProps(),
-                ...collectionField.targetCollection?.getField?.(titleField)?.getComponentProps?.(),
+                ...targetCollectionField?.getComponentProps?.(),
+                ...savedDateTimeDisplayProps,
               }
             : collectionField.getComponentProps();
         ctx.model.setProps('title', collectionField.title);
