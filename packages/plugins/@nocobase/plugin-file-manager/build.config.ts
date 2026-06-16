@@ -20,7 +20,11 @@ export default defineConfig({
       },
     );
     await fs.copyFile(
-      path.resolve(pdfjsDist, 'build/pdf.worker.min.mjs'),
+      path.resolve(pdfjsDist, 'legacy/build/pdf.min.mjs'),
+      path.resolve(__dirname, 'dist/client/pdfjs/pdf.min.mjs'),
+    );
+    await fs.copyFile(
+      path.resolve(pdfjsDist, 'legacy/build/pdf.worker.min.mjs'),
       path.resolve(__dirname, 'dist/client/pdfjs/pdf.worker.min.mjs'),
     );
   },
