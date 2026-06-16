@@ -136,7 +136,14 @@ function toRoutePayload(responseData: unknown): RouteListPayload {
 }
 
 function getRouteTitle(route: NocoBaseDesktopRoute, t: (key: string, options?: Record<string, unknown>) => string) {
-  return route.title || route.schemaUid || t('Untitled');
+  const title = typeof route.title === 'string' ? route.title.trim() : '';
+  if (title) {
+    return title;
+  }
+  if (route.type === NocoBaseDesktopRouteType.tabs) {
+    return t('Untitled');
+  }
+  return route.schemaUid || t('Untitled');
 }
 
 function getRouteOptionString(route: NocoBaseDesktopRoute, key: string) {
@@ -378,7 +385,7 @@ function normalizeRouteValues(
     ...(shouldPersistPageSchemaUid ? { enableTabs: !!values.enableTabs } : {}),
     hideInMenu: values.showInMenu === false,
     icon: values.icon,
-    title: values.title.trim(),
+    title: (values.title ?? '').trim(),
     type: values.type,
   };
 
@@ -432,6 +439,19 @@ function RouteEditorDrawer(props: {
   const routeTypeOptions = useMemo(
     () => getRouteTypeOptions(t, { mobile: props.mobile, parentRoute: props.parentRoute }),
     [props.mobile, props.parentRoute, t],
+  );
+  const titleRules = useMemo(
+    () =>
+      routeType === NocoBaseDesktopRouteType.tabs
+        ? undefined
+        : [
+            {
+              message: t('Title field is required'),
+              required: true,
+              whitespace: true,
+            },
+          ],
+    [routeType, t],
   );
 
   useEffect(() => {
@@ -495,17 +515,7 @@ function RouteEditorDrawer(props: {
             <Radio.Group options={routeTypeOptions} />
           </Form.Item>
         )}
-        <Form.Item
-          label={t('Title')}
-          name="title"
-          rules={[
-            {
-              message: t('Title field is required'),
-              required: true,
-              whitespace: true,
-            },
-          ]}
-        >
+        <Form.Item label={t('Title')} name="title" rules={titleRules}>
           <Input />
         </Form.Item>
         <Form.Item

@@ -563,6 +563,68 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(within(groupChildDialog).queryByRole('radio', { name: 'Tab' })).not.toBeInTheDocument();
   });
 
+  it('should show Untitled for tab routes without a title', async () => {
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    const desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Expand row' }));
+
+    const emptyTabRow = await screen.findByRole('row', { name: /Untitled/ });
+    expect(within(emptyTabRow).getByRole('link', { name: 'View Untitled' })).toHaveAttribute(
+      'href',
+      '/admin/desktop-dashboard/tab/desktop-empty-title-tab',
+    );
+    expect(within(emptyTabRow).getByRole('button', { name: 'Edit Untitled' })).toBeEnabled();
+    expect(within(emptyTabRow).queryByRole('button', { name: /Edit desktop-empty-title-tab/ })).not.toBeInTheDocument();
+
+    const titledTabRow = screen.getByRole('row', { name: /Desktop tab/ });
+    expect(within(titledTabRow).getByRole('link', { name: 'View Desktop tab' })).toHaveAttribute(
+      'href',
+      '/admin/desktop-dashboard/tab/desktop-tab',
+    );
+  });
+
+  it('should create an untitled child tab route from the routes table', async () => {
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    const desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
+    fireEvent.click(within(desktopRow).getByRole('button', { name: 'Add child Desktop dashboard' }));
+    const addChildDialog = await findOpenDrawer('Add child route');
+    expect(within(addChildDialog).getByRole('radio', { name: 'Tab' })).toBeChecked();
+    fireEvent.click(within(addChildDialog).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.create).toHaveBeenCalledWith({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        values: expect.objectContaining({
+          parentId: 1,
+          schemaUid: 'generated-route-schema-uid',
+          tabSchemaName: 'generated-route-schema-uid',
+          title: '',
+          type: 'tabs',
+        }),
+      });
+    });
+    expect(await screen.findByText('Untitled')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Edit generated-route-schema-uid/ })).not.toBeInTheDocument();
+  });
+
   it('should hide hidden tab routes and sync tab visibility when page tabs are toggled', async () => {
     const resource = createRoutesPageResources();
     flowContext.current = resource.context;
@@ -799,6 +861,13 @@ function createRoutesPageResources() {
               parentId: 1,
               schemaUid: 'desktop-tab',
               title: 'Desktop tab',
+              type: 'tabs',
+            },
+            {
+              id: 10,
+              parentId: 1,
+              schemaUid: 'desktop-empty-title-tab',
+              title: '',
               type: 'tabs',
             },
             {
