@@ -11,9 +11,14 @@ import { PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { ChildPageModel, RootPageModel } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowSettingsButton, type CreateModelOptions } from '@nocobase/flow-engine';
+import { ConfigProvider } from 'antd';
 import React from 'react';
 import { MobileBackButton, MobilePageSurface } from './mobileComponents';
-import { toMobileCompactThemeToken, type MobileLayoutCompactThemeToken } from './mobileThemeToken';
+import {
+  toMobileCompactThemeToken,
+  useMobileCompactTheme,
+  type MobileLayoutCompactThemeToken,
+} from './mobileThemeToken';
 
 type RouteWithTabs = {
   id?: string | number | null;
@@ -110,6 +115,12 @@ function renderMobileBody(children: React.ReactNode) {
   return <div className="nb-ui-layout-mobile-body">{children}</div>;
 }
 
+function MobilePageCompactThemeProvider(props: { children: React.ReactNode }) {
+  const mobileTheme = useMobileCompactTheme();
+
+  return <ConfigProvider theme={mobileTheme}>{props.children}</ConfigProvider>;
+}
+
 function defineMobilePageRuntimeContext(model: RootPageModel | ChildPageModel) {
   model.context.defineProperty('isMobileLayout', {
     value: true,
@@ -188,9 +199,11 @@ export class MobileRootPageModel extends RootPageModel {
     const enableTabs = resolveRootEnableTabs(this);
 
     return (
-      <MobilePageSurface title={this.props.title} displayTitle={displayTitle}>
-        {enableTabs ? renderMobileTabs(this.renderTabs()) : renderMobileBody(this.renderFirstTab())}
-      </MobilePageSurface>
+      <MobilePageCompactThemeProvider>
+        <MobilePageSurface title={this.props.title} displayTitle={displayTitle}>
+          {enableTabs ? renderMobileTabs(this.renderTabs()) : renderMobileBody(this.renderFirstTab())}
+        </MobilePageSurface>
+      </MobilePageCompactThemeProvider>
     );
   }
 }
@@ -247,20 +260,22 @@ export class MobileChildPageModel extends ChildPageModel {
     const displayTitle = !!this.props.displayTitle && !!this.props.title;
 
     return (
-      <MobilePageSurface
-        title={this.props.title}
-        displayTitle={displayTitle}
-        titlebarLeft={displayTitle ? <MobileBackButton /> : null}
-      >
-        {this.props.enableTabs ? (
-          renderMobileTabs(this.renderTabsWithTitlebarBackButton(displayTitle))
-        ) : (
-          <>
-            {displayTitle ? null : this.renderBackButtonWhenTabsDisabled()}
-            {renderMobileBody(this.renderFirstTab())}
-          </>
-        )}
-      </MobilePageSurface>
+      <MobilePageCompactThemeProvider>
+        <MobilePageSurface
+          title={this.props.title}
+          displayTitle={displayTitle}
+          titlebarLeft={displayTitle ? <MobileBackButton /> : null}
+        >
+          {this.props.enableTabs ? (
+            renderMobileTabs(this.renderTabsWithTitlebarBackButton(displayTitle))
+          ) : (
+            <>
+              {displayTitle ? null : this.renderBackButtonWhenTabsDisabled()}
+              {renderMobileBody(this.renderFirstTab())}
+            </>
+          )}
+        </MobilePageSurface>
+      </MobilePageCompactThemeProvider>
     );
   }
 }

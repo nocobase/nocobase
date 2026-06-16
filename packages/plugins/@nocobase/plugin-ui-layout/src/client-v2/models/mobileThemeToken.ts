@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ThemeConfig } from 'antd';
+import { ConfigProvider, theme, type ThemeConfig } from 'antd';
+import React from 'react';
 
 export type MobileLayoutThemeToken = {
   colorSettings?: string;
@@ -41,4 +42,67 @@ export function toMobileCompactThemeToken(
     paddingSM: 8,
     paddingXS: 8,
   } as MobileLayoutCompactThemeToken;
+}
+
+function isDarkThemeConfig(themeConfig?: ThemeConfig) {
+  const algorithm = themeConfig?.algorithm;
+
+  if (Array.isArray(algorithm)) {
+    return algorithm.includes(theme.darkAlgorithm);
+  }
+
+  return algorithm === theme.darkAlgorithm;
+}
+
+export function useMobileCompactTheme(): ThemeConfig {
+  const config = React.useContext(ConfigProvider.ConfigContext);
+  const { token } = theme.useToken();
+  const parentTheme = config?.theme;
+  const parentToken = parentTheme?.token as MobileLayoutCompactThemeToken | undefined;
+  const customToken = token as typeof token & MobileLayoutThemeToken;
+  const isDarkTheme = isDarkThemeConfig(parentTheme);
+
+  return React.useMemo<ThemeConfig>(
+    () => ({
+      cssVar: parentTheme?.cssVar,
+      hashed: parentTheme?.hashed,
+      inherit: false,
+      token: toMobileCompactThemeToken({
+        colorBgBase: parentToken?.colorBgBase ?? token.colorBgBase,
+        colorError: parentToken?.colorError ?? token.colorError,
+        colorInfo: parentToken?.colorInfo ?? token.colorInfo,
+        colorLink: parentToken?.colorLink ?? token.colorLink,
+        colorPrimary: parentToken?.colorPrimary ?? token.colorPrimary,
+        colorSettings: customToken.colorSettings,
+        colorSuccess: parentToken?.colorSuccess ?? token.colorSuccess,
+        colorTextBase: parentToken?.colorTextBase ?? token.colorTextBase,
+        colorTextHeaderMenu: customToken.colorTextHeaderMenu,
+        colorWarning: parentToken?.colorWarning ?? token.colorWarning,
+      }),
+      algorithm: isDarkTheme ? [theme.compactAlgorithm, theme.darkAlgorithm] : theme.compactAlgorithm,
+    }),
+    [
+      customToken.colorSettings,
+      customToken.colorTextHeaderMenu,
+      isDarkTheme,
+      parentTheme?.cssVar,
+      parentTheme?.hashed,
+      parentToken?.colorBgBase,
+      parentToken?.colorError,
+      parentToken?.colorInfo,
+      parentToken?.colorLink,
+      parentToken?.colorPrimary,
+      parentToken?.colorSuccess,
+      parentToken?.colorTextBase,
+      parentToken?.colorWarning,
+      token.colorBgBase,
+      token.colorError,
+      token.colorInfo,
+      token.colorLink,
+      token.colorPrimary,
+      token.colorSuccess,
+      token.colorTextBase,
+      token.colorWarning,
+    ],
+  );
 }

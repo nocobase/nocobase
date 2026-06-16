@@ -19,7 +19,7 @@ import {
   useLayoutRoutePage,
 } from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
-import { App as AntdApp, ConfigProvider, theme as antdTheme, type ThemeConfig } from 'antd';
+import { App as AntdApp, Card, ConfigProvider, theme as antdTheme, type ThemeConfig } from 'antd';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -3432,6 +3432,93 @@ describe('plugin-ui-layout mobile models', () => {
         '/v/mobile/reports-page',
       );
     });
+  });
+
+  it('should isolate mobile page antd component density from a spacious desktop theme', async () => {
+    const flowEngine = new FlowEngine();
+    flowEngine.registerModels({
+      MobileRootPageModel,
+      MobileChildPageModel,
+    });
+    flowEngine.context.defineProperty('t', {
+      value: (key: string) => key,
+    });
+    flowEngine.context.defineProperty('themeToken', {
+      value: {
+        colorPrimary: '#00b96b',
+        paddingLG: 40,
+        paddingSM: 40,
+      },
+    });
+    flowEngine.context.defineProperty('view', {
+      value: {
+        inputArgs: {},
+      },
+    });
+    flowEngine.context.defineProperty('pageActive', {
+      value: {
+        value: true,
+      },
+    });
+
+    const rootPageModel = flowEngine.createModel<MobileRootPageModel>({
+      uid: 'mobile-root-page-compact-card',
+      use: 'MobileRootPageModel',
+      props: {
+        enableTabs: false,
+        title: 'Root',
+      },
+    });
+    const childPageModel = flowEngine.createModel<MobileChildPageModel>({
+      uid: 'mobile-child-page-compact-card',
+      use: 'MobileChildPageModel',
+      props: {
+        enableTabs: false,
+        title: 'Child',
+      },
+    });
+    vi.spyOn(rootPageModel, 'renderFirstTab').mockReturnValue(
+      React.createElement(
+        Card,
+        null,
+        React.createElement('span', { 'data-testid': 'mobile-root-card-content' }, 'Root card'),
+      ),
+    );
+    vi.spyOn(childPageModel, 'renderFirstTab').mockReturnValue(
+      React.createElement(
+        Card,
+        null,
+        React.createElement('span', { 'data-testid': 'mobile-child-card-content' }, 'Child card'),
+      ),
+    );
+
+    const { container } = render(
+      React.createElement(
+        FlowEngineProvider,
+        { engine: flowEngine },
+        React.createElement(
+          ConfigProvider,
+          {
+            theme: {
+              token: {
+                colorPrimary: '#00b96b',
+                paddingLG: 40,
+                paddingSM: 40,
+              },
+            },
+          },
+          React.createElement(AntdApp, null, rootPageModel.render(), childPageModel.render()),
+        ),
+      ),
+    );
+
+    expect(screen.getByTestId('mobile-root-card-content')).toBeInTheDocument();
+    expect(screen.getByTestId('mobile-child-card-content')).toBeInTheDocument();
+
+    const cardBodies = Array.from(container.querySelectorAll<HTMLElement>('.ant-card-body'));
+
+    expect(cardBodies).toHaveLength(2);
+    expect(cardBodies.map((element) => getComputedStyle(element).padding)).toEqual(['16px', '16px']);
   });
 
   it('should keep mobile compact density in dark theme', async () => {

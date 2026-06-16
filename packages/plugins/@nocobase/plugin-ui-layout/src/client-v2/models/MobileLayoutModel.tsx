@@ -59,7 +59,6 @@ import {
   Popover,
   QRCode,
   theme,
-  type ThemeConfig,
   Tooltip,
 } from 'antd';
 import React, { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -88,7 +87,11 @@ import {
 } from './MobileMenuModels';
 import { getMobileLinkRouteHref, getMobilePagePath, mobileRouteTreeContainsTabKey } from './MobileMenuUtils';
 import { MobilePageSurface } from './mobileComponents';
-import { toMobileCompactThemeToken, type MobileLayoutCompactThemeToken } from './mobileThemeToken';
+import {
+  toMobileCompactThemeToken,
+  useMobileCompactTheme,
+  type MobileLayoutCompactThemeToken,
+} from './mobileThemeToken';
 
 type MobileHomeAddMenuKey = 'page' | 'link';
 
@@ -683,69 +686,6 @@ function useIsDesktopPreview(screenMD: number) {
   }
 
   return typeof window === 'undefined' || window.innerWidth >= screenMD;
-}
-
-function isDarkThemeConfig(themeConfig?: ThemeConfig) {
-  const algorithm = themeConfig?.algorithm;
-
-  if (Array.isArray(algorithm)) {
-    return algorithm.includes(theme.darkAlgorithm);
-  }
-
-  return algorithm === theme.darkAlgorithm;
-}
-
-function useMobileCompactTheme(): ThemeConfig {
-  const config = React.useContext(ConfigProvider.ConfigContext);
-  const { token } = theme.useToken();
-  const parentTheme = config?.theme;
-  const parentToken = parentTheme?.token as MobileLayoutCompactThemeToken | undefined;
-  const customToken = token as typeof token & MobileLayoutThemeToken;
-  const isDarkTheme = isDarkThemeConfig(parentTheme);
-
-  return useMemo<ThemeConfig>(
-    () => ({
-      cssVar: parentTheme?.cssVar,
-      hashed: parentTheme?.hashed,
-      inherit: false,
-      token: toMobileCompactThemeToken({
-        colorBgBase: parentToken?.colorBgBase ?? token.colorBgBase,
-        colorError: parentToken?.colorError ?? token.colorError,
-        colorInfo: parentToken?.colorInfo ?? token.colorInfo,
-        colorLink: parentToken?.colorLink ?? token.colorLink,
-        colorPrimary: parentToken?.colorPrimary ?? token.colorPrimary,
-        colorSettings: customToken.colorSettings,
-        colorSuccess: parentToken?.colorSuccess ?? token.colorSuccess,
-        colorTextBase: parentToken?.colorTextBase ?? token.colorTextBase,
-        colorTextHeaderMenu: customToken.colorTextHeaderMenu,
-        colorWarning: parentToken?.colorWarning ?? token.colorWarning,
-      }),
-      algorithm: isDarkTheme ? [theme.compactAlgorithm, theme.darkAlgorithm] : theme.compactAlgorithm,
-    }),
-    [
-      customToken.colorSettings,
-      customToken.colorTextHeaderMenu,
-      isDarkTheme,
-      parentTheme?.cssVar,
-      parentTheme?.hashed,
-      parentToken?.colorBgBase,
-      parentToken?.colorError,
-      parentToken?.colorInfo,
-      parentToken?.colorLink,
-      parentToken?.colorPrimary,
-      parentToken?.colorSuccess,
-      parentToken?.colorTextBase,
-      parentToken?.colorWarning,
-      token.colorBgBase,
-      token.colorError,
-      token.colorInfo,
-      token.colorLink,
-      token.colorPrimary,
-      token.colorSuccess,
-      token.colorTextBase,
-      token.colorWarning,
-    ],
-  );
 }
 
 const MobileLayoutComponentContent = observer((props: { model: MobileLayoutModel }) => {
