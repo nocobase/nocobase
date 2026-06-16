@@ -366,7 +366,9 @@ export default function WorkflowPane() {
   // The shared `workflows` collection is `schema-only`, so it isn't published to the v2 data source — register a
   // client-only copy so `CollectionFilter` can resolve its fields. Its `type` field carries the v1 Formily template
   // `enum: '{{useTriggersOptions()}}'`, which the v2 filter value renderer can't compile; replace it with the
-  // registered trigger options up front so the Trigger type condition renders as a Select (matching v1).
+  // registered trigger options up front so the Trigger type condition renders as a Select (matching v1). Keep the
+  // injected collection hidden so workflow-internal schema-only collections do not leak into trigger collection
+  // pickers that enumerate visible collections from the current data source.
   const collections = useMemo(() => {
     const triggerOptions = Array.from(plugin.triggers.getEntities() as Iterable<[string, { title?: string }]>)
       .map(([value, opt]) => ({ value, label: opt?.title ? compile(opt.title) : String(value) }))
@@ -374,6 +376,7 @@ export default function WorkflowPane() {
     return [
       {
         ...workflowCollection,
+        hidden: true,
         fields: workflowCollection.fields.map((field) =>
           field?.name === 'type' && field.uiSchema
             ? { ...field, uiSchema: { ...field.uiSchema, enum: triggerOptions } }
