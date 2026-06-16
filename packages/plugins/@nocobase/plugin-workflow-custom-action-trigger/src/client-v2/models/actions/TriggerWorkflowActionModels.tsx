@@ -78,6 +78,15 @@ const buildTriggerWorkflows = (group?: TriggerWorkflowBinding[]) => {
     : undefined;
 };
 
+function ensureTriggerWorkflowsConfigured(ctx: FlowRuntimeContext, group?: TriggerWorkflowBinding[]) {
+  if (group?.length) {
+    return true;
+  }
+  ctx.message.error(ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }));
+  ctx.exit();
+  return false;
+}
+
 function getRecordKey(record, collection) {
   if (!record || !collection) {
     return null;
@@ -293,11 +302,7 @@ FormTriggerWorkflowActionModel.registerFlow({
           },
         }),
       async handler(ctx, params) {
-        if (!params.group?.length) {
-          ctx.message.error(
-            ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
-          );
-          ctx.exit();
+        if (!ensureTriggerWorkflowsConfigured(ctx, params.group)) {
           return;
         }
 
@@ -369,11 +374,7 @@ RecordTriggerWorkflowActionModel.registerFlow({
           ctx.exit();
           return;
         }
-        if (!params.group?.length) {
-          ctx.message.error(
-            ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
-          );
-          ctx.exit();
+        if (!ensureTriggerWorkflowsConfigured(ctx, params.group)) {
           return;
         }
         try {
@@ -472,11 +473,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
         const step = ctx.model.stepParams.customCollectionTriggerWorkflowsActionSettings;
         const { type } = step.setContextType;
         const { group, contextData } = step.triggerWorkflows ?? {};
-        if (!group?.length) {
-          ctx.message.error(
-            ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
-          );
-          ctx.exit();
+        if (!ensureTriggerWorkflowsConfigured(ctx, group)) {
           return;
         }
         if (type === CONTEXT_TYPE.MULTIPLE_RECORDS) {
@@ -562,6 +559,10 @@ function globalTriggerWorkflowUiSchema() {
 }
 
 async function globalTriggerWorkflowHandler(ctx, params) {
+  if (!ensureTriggerWorkflowsConfigured(ctx, params.group)) {
+    return;
+  }
+
   let values;
   if (params.contextData) {
     try {
