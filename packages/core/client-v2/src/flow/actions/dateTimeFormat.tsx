@@ -24,6 +24,45 @@ const isTimeCollectionField = (collectionField) =>
 const isDateOnlyCollectionField = (collectionField) =>
   collectionField?.type === 'dateOnly' || collectionField?.interface === 'dateOnly';
 
+const getDateTimeFormatProps = (ctx, params) => {
+  const collectionField = getDateTimeFormatCollectionField(ctx);
+  const isTimeField = isTimeCollectionField(collectionField);
+  const isDateOnlyField = isDateOnlyCollectionField(collectionField);
+  if (isTimeField) {
+    const timeFormat = params?.timeFormat || params?.format || 'HH:mm:ss';
+    return {
+      ...params,
+      timeFormat,
+      format: timeFormat,
+    };
+  }
+
+  const showTime = isDateOnlyField ? false : params?.showTime;
+  return {
+    ...params,
+    showTime,
+    format: showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
+  };
+};
+
+const isTableColumnFieldSubModel = (model) => {
+  const parent = model?.parent;
+  return (
+    parent?.subModels?.field === model &&
+    (parent?.use === 'TableColumnModel' || parent?.constructor?.name === 'TableColumnModel')
+  );
+};
+
+const syncTableColumnDateTimeFormatProps = async (ctx, props) => {
+  const model = ctx.model;
+  if (!isTableColumnFieldSubModel(model) || !model?.parent?.collectionField?.isAssociationField?.()) {
+    return;
+  }
+
+  model.parent.setProps(props);
+  await model.parent.save?.();
+};
+
 export const dateTimeFormat = defineAction({
   title: tExpr('Date display format'),
   name: 'dateDisplayFormat',
@@ -186,24 +225,13 @@ export const dateTimeFormat = defineAction({
       showTime: isDateOnlyField ? false : showTime,
     };
   },
+  async beforeParamsSave(ctx: any, params) {
+    const props = getDateTimeFormatProps(ctx, params);
+    ctx.model.setProps(props);
+    await syncTableColumnDateTimeFormatProps(ctx, props);
+    await ctx.model.save?.();
+  },
   handler(ctx: any, params) {
-    const collectionField = getDateTimeFormatCollectionField(ctx);
-    const isTimeField = isTimeCollectionField(collectionField);
-    const isDateOnlyField = isDateOnlyCollectionField(collectionField);
-    if (isTimeField) {
-      const timeFormat = params?.timeFormat || params?.format || 'HH:mm:ss';
-      ctx.model.setProps({
-        ...params,
-        timeFormat,
-        format: timeFormat,
-      });
-    } else {
-      const showTime = isDateOnlyField ? false : params?.showTime;
-      ctx.model.setProps({
-        ...params,
-        showTime,
-        format: showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
-      });
-    }
+    ctx.model.setProps(getDateTimeFormatProps(ctx, params));
   },
 });

@@ -107,6 +107,109 @@ describe('dateTimeFormat', () => {
     });
   });
 
+  it('applies and persists date time format params when settings are saved', async () => {
+    const setProps = vi.fn();
+    const save = vi.fn();
+    const ctx = {
+      model: {
+        props: {
+          titleField: 'shipmentsDatetime',
+        },
+        context: {
+          collectionField: {
+            type: 'belongsTo',
+            targetCollection: {
+              getField: (name) =>
+                name === 'shipmentsDatetime'
+                  ? {
+                      type: 'datetime',
+                      interface: 'datetime',
+                    }
+                  : null,
+            },
+          },
+        },
+        setProps,
+        save,
+      },
+    };
+
+    await dateTimeFormat.beforeParamsSave(ctx, {
+      picker: 'date',
+      dateFormat: 'YYYY-MM-DD',
+      showTime: true,
+      timeFormat: 'hh:mm:ss a',
+    });
+
+    expect(setProps).toHaveBeenCalledWith({
+      picker: 'date',
+      dateFormat: 'YYYY-MM-DD',
+      showTime: true,
+      timeFormat: 'hh:mm:ss a',
+      format: 'YYYY-MM-DD hh:mm:ss a',
+    });
+    expect(save).toHaveBeenCalled();
+  });
+
+  it('syncs table association column props when title date time format settings are saved', async () => {
+    const setProps = vi.fn();
+    const save = vi.fn();
+    const setParentProps = vi.fn();
+    const saveParent = vi.fn();
+    const model = {
+      props: {
+        titleField: 'shipmentsDatetime',
+      },
+      context: {
+        collectionField: {
+          type: 'belongsTo',
+          targetCollection: {
+            getField: (name) =>
+              name === 'shipmentsDatetime'
+                ? {
+                    type: 'datetime',
+                    interface: 'datetime',
+                  }
+                : null,
+          },
+        },
+      },
+      setProps,
+      save,
+      parent: {
+        use: 'TableColumnModel',
+        collectionField: {
+          isAssociationField: () => true,
+        },
+        setProps: setParentProps,
+        save: saveParent,
+      },
+    };
+    model.parent['subModels'] = {
+      field: model,
+    };
+
+    await dateTimeFormat.beforeParamsSave(
+      { model },
+      {
+        picker: 'date',
+        dateFormat: 'YYYY-MM-DD',
+        showTime: true,
+        timeFormat: 'hh:mm:ss a',
+      },
+    );
+
+    expect(setParentProps).toHaveBeenCalledWith({
+      picker: 'date',
+      dateFormat: 'YYYY-MM-DD',
+      showTime: true,
+      timeFormat: 'hh:mm:ss a',
+      format: 'YYYY-MM-DD hh:mm:ss a',
+    });
+    expect(saveParent).toHaveBeenCalled();
+    expect(save).toHaveBeenCalled();
+  });
+
   it('hides time format for association title date-only fields', () => {
     const ctx = {
       model: {
