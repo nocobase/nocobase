@@ -3220,6 +3220,50 @@ describe('plugin-ui-layout mobile models', () => {
     expect(bottomAddRule).toMatch(/font-size:\s*14px/);
   });
 
+  it('should keep the mobile tab bar compact and token based', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+    });
+
+    const styleText = getDocumentStyleText();
+    const tabbarRule = (styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*\{[^}]+\}/g) || []).find((rule) =>
+      /grid-template-columns/.test(rule),
+    );
+    const itemShellRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-item-shell\s*\{[^}]+\}/)?.[0];
+    const itemRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-item\s*\{[^}]+\}/)?.[0];
+    const activeTabRule = styleText.match(
+      /\.nb-ui-layout-mobile-home-tabbar-item\[aria-current=["']page["']\]\s*\{[^}]+\}/,
+    )?.[0];
+    const addHoverRule = styleText.match(
+      /[^{}]*nb-ui-layout-mobile-home-tabbar-add:hover[^{}]*nb-ui-layout-mobile-home-tabbar-add:focus-visible\s*\{[^}]+\}/,
+    )?.[0];
+    const iconRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-icon\s*\{[^}]+\}/)?.[0];
+    const labelRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-label\s*\{[^}]+\}/)?.[0];
+
+    expect(tabbarRule).toMatch(/padding:\s*2px 8px calc\(2px \+ env\(safe-area-inset-bottom\)\)/);
+    expect(itemShellRule).toMatch(/height:\s*52px/);
+    expect(itemRule).toMatch(/height:\s*52px/);
+    expect(itemRule).toMatch(/gap:\s*2px/);
+    expect(itemRule).toMatch(/transition:\s*color/);
+    expect(activeTabRule).toMatch(/font-weight:\s*600/);
+    expect(addHoverRule).toContain('background:');
+    expect(addHoverRule).not.toMatch(/241,\s*139,\s*98/);
+    expect(iconRule).toMatch(/font-size:\s*20px/);
+    expect(iconRule).toMatch(/min-height:\s*22px/);
+    expect(labelRule).toMatch(/line-height:\s*1\.2/);
+  });
+
   it('should keep mobile tabs scrollable instead of squeezing them', async () => {
     renderMobileLayoutWithRouteRepository({
       listAccessible: () =>

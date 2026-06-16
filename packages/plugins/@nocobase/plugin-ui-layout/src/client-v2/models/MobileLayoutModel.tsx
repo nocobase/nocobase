@@ -1726,7 +1726,8 @@ const MobileHomePlaceholder = observer(
           z-index: 8;
           display: grid;
           grid-template-columns: repeat(${tabBarColumnCount}, minmax(${MOBILE_TABBAR_ITEM_MIN_WIDTH}px, 1fr));
-          padding: ${token.paddingXXS}px ${token.paddingXS}px calc(${token.paddingXXS}px + env(safe-area-inset-bottom));
+          padding: ${token.paddingXXS / 2}px ${token.paddingXS}px
+            calc(${token.paddingXXS / 2}px + env(safe-area-inset-bottom));
           background: ${token.colorBgContainer};
           border-top: 1px solid ${token.colorBorderSecondary};
           overflow-x: auto;
@@ -1743,7 +1744,7 @@ const MobileHomePlaceholder = observer(
         .nb-ui-layout-mobile-home-tabbar-item-shell {
           position: relative;
           min-width: ${MOBILE_TABBAR_ITEM_MIN_WIDTH}px;
-          height: 56px;
+          height: 52px;
           display: flex;
           align-items: stretch;
           justify-content: stretch;
@@ -1760,21 +1761,23 @@ const MobileHomePlaceholder = observer(
           position: relative;
           min-width: 0;
           width: 100%;
-          height: 56px;
+          height: 52px;
           border: 0;
           padding: 0;
           display: inline-flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: ${token.marginXXS}px;
+          gap: ${token.marginXXS / 2}px;
           color: ${token.colorTextSecondary};
           background: transparent;
           cursor: pointer;
+          transition: color ${token.motionDurationMid};
         }
 
         .nb-ui-layout-mobile-home-tabbar-item[aria-current='page'] {
           color: ${token.colorPrimary};
+          font-weight: ${token.fontWeightStrong};
         }
 
         .nb-ui-layout-mobile-home-tabbar-add {
@@ -1799,10 +1802,14 @@ const MobileHomePlaceholder = observer(
         .nb-ui-layout-mobile-home-tabbar-add:focus-visible {
           color: ${colorSettings};
           border-color: ${colorSettings};
-          background: rgba(241, 139, 98, 0.08);
+          background: ${token.colorFillTertiary};
         }
 
         .nb-ui-layout-mobile-home-tabbar-icon {
+          min-height: 22px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           font-size: ${token.fontSizeXL}px;
           line-height: 1;
         }
@@ -1813,7 +1820,7 @@ const MobileHomePlaceholder = observer(
           white-space: nowrap;
           text-overflow: ellipsis;
           font-size: ${token.fontSizeSM}px;
-          line-height: ${token.lineHeightSM};
+          line-height: 1.2;
         }
 
         .nb-ui-layout-mobile-home-tabbar[hidden] {
@@ -1826,6 +1833,7 @@ const MobileHomePlaceholder = observer(
         token.colorBgContainer,
         token.colorBgLayout,
         token.colorBorderSecondary,
+        token.colorFillTertiary,
         token.colorPrimary,
         token.colorPrimaryBg,
         token.colorText,
@@ -1838,6 +1846,7 @@ const MobileHomePlaceholder = observer(
         token.lineHeightSM,
         token.marginSM,
         token.marginXXS,
+        token.motionDurationMid,
         token.paddingSM,
         token.paddingXS,
         token.paddingXXS,
