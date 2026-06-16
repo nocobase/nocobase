@@ -352,6 +352,161 @@ describe('workflow > Plugin', () => {
       expect(e1.status).toBe(EXECUTION_STATUS.QUEUEING);
     });
 
+    it('should recover after unexpected dispatch error before cleanup', async () => {
+      type RecoveringDispatcher = {
+        dispatch(): void;
+        executing: Promise<unknown> | null;
+        pending: unknown[];
+        idle: boolean;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: RecoveringDispatcher }).dispatcher;
+      const serving = plugin.serving;
+
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w1.createNode({
+        type: 'echo',
+      });
+      await w1.createExecution({
+        key: w1.key,
+        context: { first: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      plugin.serving = (() => {
+        const stack = new Error().stack;
+        if (stack?.includes('Dispatcher.ts')) {
+          throw new Error('simulated serving check failure');
+        }
+        return serving.call(plugin);
+      }) as typeof plugin.serving;
+
+      try {
+        dispatcher.dispatch();
+        await dispatcher.executing?.catch(() => null);
+
+        for (let i = 0; i < 20; i++) {
+          if (!dispatcher.executing) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(dispatcher.executing).toBeNull();
+        expect(dispatcher.idle).toBe(true);
+
+        plugin.serving = serving;
+
+        const w2 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+        await w2.createNode({
+          type: 'echo',
+        });
+
+        plugin.trigger(w2, { second: true });
+
+        let e2: ExecutionModel | null = null;
+        for (let i = 0; i < 20; i++) {
+          [e2] = await w2.getExecutions();
+          if (e2?.status === EXECUTION_STATUS.RESOLVED) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(e2?.status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2?.dispatched).toBe(true);
+      } finally {
+        plugin.serving = serving;
+        await dispatcher.executing?.catch(() => null);
+        dispatcher.executing = null;
+        dispatcher.pending = [];
+      }
+    });
+
+    it('should stop retrying local pending after repeated unexpected dispatch errors', async () => {
+      type RecoveringDispatcher = {
+        run(pending: { execution: ExecutionModel }): Promise<void>;
+        prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+        executing: Promise<unknown> | null;
+        pending: unknown[];
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: RecoveringDispatcher }).dispatcher;
+      const prepare = dispatcher.prepare;
+      let prepareCalls = 0;
+
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w1.createNode({
+        type: 'echo',
+      });
+      const e1 = await w1.createExecution({
+        key: w1.key,
+        context: { first: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      dispatcher.prepare = (async () => {
+        prepareCalls += 1;
+        throw new Error('simulated prepare failure');
+      }) as typeof dispatcher.prepare;
+
+      try {
+        await dispatcher.run({ execution: e1 });
+
+        for (let i = 0; i < 20; i++) {
+          if (!dispatcher.executing && !dispatcher.pending.length) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        const callsAfterDrain = prepareCalls;
+        await sleep(100);
+
+        expect(callsAfterDrain).toBe(3);
+        expect(prepareCalls).toBe(callsAfterDrain);
+        expect(dispatcher.executing).toBeNull();
+        expect(dispatcher.pending).toHaveLength(0);
+
+        dispatcher.prepare = prepare;
+
+        const w2 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+        await w2.createNode({
+          type: 'echo',
+        });
+
+        plugin.trigger(w2, { second: true });
+
+        let e2: ExecutionModel | null = null;
+        for (let i = 0; i < 20; i++) {
+          [e2] = await w2.getExecutions();
+          if (e2?.status === EXECUTION_STATUS.RESOLVED) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(e2?.status).toBe(EXECUTION_STATUS.RESOLVED);
+      } finally {
+        dispatcher.prepare = prepare;
+        await dispatcher.executing?.catch(() => null);
+        dispatcher.executing = null;
+        dispatcher.pending = [];
+      }
+    });
+
     it('should treat postgres deadlock as concurrent acquire error', () => {
       type ConcurrentAcquireDispatcher = {
         isConcurrentAcquireError(error: unknown): boolean;
