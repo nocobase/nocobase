@@ -2864,14 +2864,25 @@ export class FlowSurfacesService {
     });
   }
 
-  private resolvePopupCurrentRecordResourceFilterByTk(popupProfile: FlowSurfacePopupBlockProfile | null | undefined) {
+  private resolvePopupCurrentRecordResourceFilterByTk(
+    popupProfile: FlowSurfacePopupBlockProfile | null | undefined,
+    options: { usePopupInputArgsWhenSourceIdInferred?: boolean } = {},
+  ) {
     if (!popupProfile?.currentCollection) {
       return popupProfile?.filterByTk;
     }
-    if (!popupProfile.hasCurrentRecord) {
+    if (popupProfile.popupKind !== 'associationPopup') {
       return popupProfile.filterByTk;
     }
-    return '{{ctx.view.inputArgs.filterByTk}}';
+    if (
+      options.usePopupInputArgsWhenSourceIdInferred &&
+      popupProfile.sourceIdInferred &&
+      popupProfile.popupHostUse &&
+      POPUP_ACTION_USES.has(popupProfile.popupHostUse)
+    ) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
+    return `{{ctx.record.${this.getCollectionFilterTargetKey(popupProfile.currentCollection)}}}`;
   }
 
   private resolveLocalActionPopupOpenViewFilterByTk(popupProfile: FlowSurfacePopupBlockProfile | null | undefined) {
@@ -3212,7 +3223,9 @@ export class FlowSurfacesService {
       return buildDefinedPayload({
         dataSourceKey: input.popupProfile.dataSourceKey || 'main',
         collectionName: input.popupProfile.collectionName,
-        filterByTk: this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile),
+        filterByTk: this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile, {
+          usePopupInputArgsWhenSourceIdInferred: true,
+        }),
         ...(preserveAssociationContext
           ? {
               associationName: input.popupProfile.associationName,
@@ -3349,8 +3362,11 @@ export class FlowSurfacesService {
       if (!sameCurrentCollection || !hasConfiguredFlowContextValue(normalized.filterByTk)) {
         return false;
       }
-      const expectedFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile);
-      const matchesCurrentRecordFilterByTk = this.isSameConfiguredFlowContextValue(
+      const expectedFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile, {
+        usePopupInputArgsWhenSourceIdInferred: true,
+      });
+      const matchesCurrentRecordFilterByTk = this.isPopupCurrentRecordFilterByTkMatch(
+        input.popupProfile,
         normalized.filterByTk,
         expectedFilterByTk,
       );
@@ -3433,6 +3449,20 @@ export class FlowSurfacesService {
       return false;
     }
     return _.isEqual(this.normalizeFlowContextTemplateValue(left), this.normalizeFlowContextTemplateValue(right));
+  }
+
+  private isPopupCurrentRecordFilterByTkMatch(
+    popupProfile: FlowSurfacePopupBlockProfile,
+    filterByTk: any,
+    expectedFilterByTk: any,
+  ) {
+    if (this.isSameConfiguredFlowContextValue(filterByTk, expectedFilterByTk)) {
+      return true;
+    }
+    return (
+      popupProfile.popupKind === 'associationPopup' &&
+      this.isSameConfiguredFlowContextValue(filterByTk, popupProfile.filterByTk)
+    );
   }
 
   private isPopupAssociatedRecordsSourceIdMatch(
@@ -6253,13 +6283,20 @@ export class FlowSurfacesService {
       dataSourceKey?: string;
       collectionName?: string;
       associationName?: string;
+      filterByTk?: string;
       sourceId?: string;
     },
   ) {
-    if (!this.isCollectionBlockUse(blockNode?.use) || !context.associationName || !context.sourceId) {
+    if (!this.isCollectionBlockUse(blockNode?.use)) {
       return false;
     }
     const init = _.get(blockNode, ['stepParams', 'resourceSettings', 'init']) || {};
+    if (this.resolveDetachedPopupTemplateBlockCurrentRecordFilterByTk(init, context)) {
+      return true;
+    }
+    if (!context.associationName || !context.sourceId) {
+      return false;
+    }
     const popupDataSourceKey = context.dataSourceKey || 'main';
     const blockDataSourceKey = init.dataSourceKey || 'main';
     if (
@@ -6285,12 +6322,47 @@ export class FlowSurfacesService {
     );
   }
 
+  private resolveDetachedPopupTemplateBlockCurrentRecordFilterByTk(
+    init: Record<string, any>,
+    context: {
+      dataSourceKey?: string;
+      collectionName?: string;
+      filterByTk?: string;
+    },
+  ) {
+    if (!hasConfiguredFlowContextValue(init.filterByTk)) {
+      return undefined;
+    }
+    if (this.isSameConfiguredFlowContextValue(init.filterByTk, '{{ctx.view.inputArgs.filterByTk}}')) {
+      return undefined;
+    }
+    const popupDataSourceKey = context.dataSourceKey || 'main';
+    const blockDataSourceKey = init.dataSourceKey || 'main';
+    if (
+      !context.collectionName ||
+      blockDataSourceKey !== popupDataSourceKey ||
+      init.collectionName !== context.collectionName
+    ) {
+      return undefined;
+    }
+    if (context.filterByTk && this.isSameConfiguredFlowContextValue(init.filterByTk, context.filterByTk)) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
+    const collection = this.getCollection(popupDataSourceKey, context.collectionName);
+    const filterTargetKey = this.getCollectionFilterTargetKey(collection);
+    if (this.isSameConfiguredFlowContextValue(init.filterByTk, `{{ctx.record.${filterTargetKey}}}`)) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
+    return undefined;
+  }
+
   private collectDetachedPopupTemplateBlockResourceContextPatches(
     node: any,
     context: {
       dataSourceKey?: string;
       collectionName?: string;
       associationName?: string;
+      filterByTk?: string;
       sourceId?: string;
     },
     patches: Array<{ uid: string; stepParams: Record<string, any> }> = [],
@@ -6301,6 +6373,7 @@ export class FlowSurfacesService {
     if (node.uid && this.shouldHydrateDetachedPopupTemplateBlockResourceContext(node, context)) {
       const nextStepParams = _.cloneDeep(node.stepParams || {});
       const currentInit = _.get(nextStepParams, ['resourceSettings', 'init']) || {};
+      const filterByTk = this.resolveDetachedPopupTemplateBlockCurrentRecordFilterByTk(currentInit, context);
       _.set(
         nextStepParams,
         ['resourceSettings', 'init'],
@@ -6308,8 +6381,13 @@ export class FlowSurfacesService {
           ...currentInit,
           dataSourceKey: context.dataSourceKey || currentInit.dataSourceKey || 'main',
           collectionName: context.collectionName || currentInit.collectionName,
-          associationName: context.associationName,
-          sourceId: context.sourceId,
+          ...(context.associationName && context.sourceId
+            ? {
+                associationName: context.associationName,
+                sourceId: context.sourceId,
+              }
+            : {}),
+          ...(filterByTk ? { filterByTk } : {}),
         }),
       );
       patches.push({
@@ -6331,6 +6409,7 @@ export class FlowSurfacesService {
       dataSourceKey?: string;
       collectionName?: string;
       associationName?: string;
+      filterByTk?: string;
       sourceId?: string;
     },
     transaction?: any,
