@@ -2299,6 +2299,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       }
     }
   };
+  const getRequiredMessage = () => ctx.t('The field value is required');
 
   const getModelTargetPathForPatch = (model: any): string | null => {
     if (!model || typeof model !== 'object') return null;
@@ -2439,6 +2440,21 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     return keys;
   };
+  const clearRequiredValidationFeedback = (model: any) => {
+    const form = model.context.form;
+    const targetPath = getModelTargetPathForHiddenClear(model);
+    if (!form || !targetPath) return;
+
+    const errors = form.getFieldError(targetPath);
+    const requiredMessage = getRequiredMessage();
+    const requiredErrorIndex = errors.indexOf(requiredMessage);
+    if (requiredErrorIndex < 0) return;
+
+    const nextErrors = [...errors];
+    nextErrors.splice(requiredErrorIndex, 1);
+
+    form.setFields([{ name: targetPath, errors: nextErrors }]);
+  };
   const forEachModelIncludingForks = (visitor: (model: any) => void) => {
     const engine = (ctx as any)?.engine || ctx.model?.flowEngine;
     if (!engine?.forEachModel) return;
@@ -2550,6 +2566,9 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const newProps = { ...model.__originalProps, ...patchProps };
     const prevHidden = !!model.hidden;
     const nextHidden = !!newProps.hiddenModel;
+    const wasRequired = model.props.required === true;
+    const originalHasRequiredRule = (model.__originalProps?.rules || []).some((rule) => rule.required);
+    const shouldClearLinkageRequired = wasRequired && !originalHasRequiredRule;
 
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
     syncFieldOptionsToForks(model, patchProps);
@@ -2564,14 +2583,18 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     if (newProps.required === true) {
       const rules = (model.props.rules || []).filter((rule) => !rule.required);
+      const requiredMessage = getRequiredMessage();
       rules.push({
         required: true,
-        message: ctx.t('The field value is required'),
+        message: requiredMessage,
       });
       model.setProps('rules', rules);
-    } else if (newProps.required === false) {
+    } else if (newProps.required === false || shouldClearLinkageRequired) {
       const rules = (model.props.rules || []).filter((rule) => !rule.required);
       model.setProps('rules', rules);
+      if (shouldClearLinkageRequired) {
+        clearRequiredValidationFeedback(model);
+      }
     }
 
     if (newProps.hiddenText) {
