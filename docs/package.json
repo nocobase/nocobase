@@ -14,7 +14,8 @@
     "eject": "rspress eject"
   },
   "dependencies": {
-    "@rspress/core": "2.0.7"
+    "@rspress/core": "2.0.7",
+    "body-scroll-lock": "^4.0.0-beta.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.3",

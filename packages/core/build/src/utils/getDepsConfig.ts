@@ -50,6 +50,7 @@ export function getRltExternalsFromDeps(
  * get package.json path for specific NPM package
  */
 export function getDepPkgPath(dep: string, cwd: string) {
+  try {
     const mainFile = require.resolve(dep, { paths: [cwd] });
     let currentDir = path.dirname(mainFile);
     while (currentDir !== path.parse(currentDir).root) {

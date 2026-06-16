@@ -22,6 +22,8 @@ overrides:
   antd: 5.24.2
   dayjs: 1.11.13
   eslint: 8.57.1
+  tsup>esbuild: 0.28.1
+  bundle-require>esbuild: 0.28.1
 
 importers:
 
@@ -606,7 +608,7 @@ importers:
         version: 3.7.1(@types/react@18.3.18)(antd@5.24.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       bignumber.js:
         specifier: ^9.1.2
         version: 9.1.2
@@ -811,7 +813,7 @@ importers:
         version: 3.7.1(@types/react@18.3.18)(antd@5.24.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       classnames:
         specifier: ^2.3.1
         version: 2.5.1
@@ -847,7 +849,7 @@ importers:
         version: 3.5.20
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       chalk:
         specifier: ^4.1.1
         version: 4.1.2
@@ -1139,7 +1141,7 @@ importers:
         version: 3.7.8(react@18.2.0)
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       dayjs:
         specifier: 1.11.13
         version: 1.11.13
@@ -1236,7 +1238,7 @@ importers:
     dependencies:
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       qs:
         specifier: ^6.10.1
         version: 6.14.2
@@ -1324,7 +1326,7 @@ importers:
         version: 0.5.0
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       chalk:
         specifier: ^4.1.1
         version: 4.1.2
@@ -1533,7 +1535,7 @@ importers:
         version: 1.1.0
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       dayjs:
         specifier: 1.11.13
         version: 1.11.13
@@ -1791,7 +1793,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   packages/plugins/@nocobase-example/plugin-simple-action:
     dependencies:
@@ -1821,7 +1823,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       big.js:
         specifier: 7.0.1
@@ -2591,7 +2593,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils':
         specifier: 2.x
         version: 2.0.24
@@ -3200,7 +3202,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils':
         specifier: 2.x
         version: 2.0.24
@@ -3783,7 +3785,7 @@ importers:
         version: 5.24.2(date-fns@2.30.0)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       cos-nodejs-sdk-v5:
         specifier: ^2.11.14
         version: 2.12.6
@@ -3855,7 +3857,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils':
         specifier: 2.x
         version: 2.0.24
@@ -5272,7 +5274,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils':
         specifier: 2.x
         version: 2.0.24
@@ -5707,7 +5709,7 @@ importers:
         version: 5.24.2(date-fns@2.30.0)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       joi:
         specifier: ^17.13.3
         version: 17.13.3
@@ -5737,7 +5739,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils':
         specifier: 2.x
         version: 2.0.24
@@ -6164,7 +6166,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       adm-zip:
         specifier: ^0.5.10
@@ -6195,7 +6197,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       '@types/yauzl':
         specifier: ^2.10.3
@@ -6384,7 +6386,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       jose:
         specifier: ^6.2.1
@@ -6491,7 +6493,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       '@ant-design/icons':
         specifier: ^5.6.1
@@ -6553,7 +6555,7 @@ importers:
         version: 5.24.2(date-fns@2.30.0)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       dingtalk-jsapi:
         specifier: 3.1.1
         version: 3.1.1
@@ -6708,7 +6710,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       '@ant-design/icons':
         specifier: ^5.6.1
@@ -6882,7 +6884,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       '@nocobase/license-kit':
         specifier: ^0.3.0
@@ -6907,7 +6909,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       antd-style:
         specifier: 3.x
         version: 3.7.1(@types/react@18.3.18)(antd@5.24.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -6984,7 +6986,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mariadb@3.5.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       external-db-data-source:
         specifier: 2.2.0-alpha.1
@@ -7040,7 +7042,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mysql2@3.11.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       external-db-data-source:
         specifier: 2.2.0-alpha.1
@@ -7071,11 +7073,11 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       qs:
         specifier: ^6.13.0
         version: 6.14.2
@@ -7130,7 +7132,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(tedious@18.6.2(@azure/core-client@1.10.1))(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       external-db-data-source:
         specifier: 2.2.0-alpha.1
@@ -7161,7 +7163,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(tedious@18.6.2(@azure/core-client@1.10.1))(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       external-db-data-source:
         specifier: 2.2.0-alpha.1
@@ -7192,7 +7194,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils':
         specifier: 2.x
         version: 2.0.24
@@ -7202,7 +7204,7 @@ importers:
         version: 12.0.2
       axios:
         specifier: ^1.7.0
-        version: 1.13.5
+        version: 1.13.5(debug@4.4.3)
       express:
         specifier: ^4.19.2
         version: 4.22.1
@@ -7217,7 +7219,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   packages/pro-plugins/@nocobase/plugin-demo-platform:
     dependencies:
@@ -7238,7 +7240,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(tedious@18.6.2(@azure/core-client@1.10.1))(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       '@alicloud/captcha20230305':
         specifier: ^1.1.3
@@ -7263,7 +7265,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   packages/pro-plugins/@nocobase/plugin-email-manager:
     dependencies:
@@ -7330,7 +7332,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   packages/pro-plugins/@nocobase/plugin-field-encryption:
     dependencies:
@@ -7354,7 +7356,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       fs-extra:
         specifier: ^11.1.1
@@ -7428,7 +7430,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       cidr-regex:
         specifier: ^4.0.0
@@ -7518,7 +7520,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       '@types/archiver':
         specifier: ^5.3.1
@@ -7619,7 +7621,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   packages/pro-plugins/@nocobase/plugin-pubsub-adapter-redis:
     dependencies:
@@ -7631,7 +7633,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       redis:
         specifier: ^4.6.10
@@ -7669,7 +7671,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       redis:
         specifier: ^4.6.10
@@ -7697,7 +7699,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   packages/pro-plugins/@nocobase/plugin-service-platform:
     dependencies:
@@ -7709,7 +7711,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       crypto:
         specifier: ^1.0.1
@@ -7746,7 +7748,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       '@opentelemetry/exporter-prometheus':
         specifier: ^0.208.0
@@ -7780,7 +7782,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   packages/pro-plugins/@nocobase/plugin-two-factor-authentication:
     dependencies:
@@ -7804,7 +7806,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   packages/pro-plugins/@nocobase/plugin-verdaccio:
     dependencies:
@@ -7816,7 +7818,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   packages/pro-plugins/@nocobase/plugin-verification-totp-authenticator:
     dependencies:
@@ -7837,7 +7839,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       '@types/qrcode':
         specifier: ^1.5.5
@@ -7871,7 +7873,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       react-hotkeys-hook:
         specifier: ^5.3.2
@@ -7997,7 +7999,7 @@ importers:
         version: 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/test':
         specifier: 2.x
-        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+        version: 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
     devDependencies:
       antd:
         specifier: 5.24.2
@@ -9943,12 +9945,6 @@ packages:
   '@endo/immutable-arraybuffer@1.1.2':
     resolution: {integrity: sha512-u+NaYB2aqEugQ3u7w3c5QNkPogf8q/xGgsPaqdY6pUiGWtYiTiFspKFcha6+oeZhWXWQ23rf0KrUq0kfuzqYyQ==}
 
-  '@esbuild/aix-ppc64@0.23.1':
-    resolution: {integrity: sha512-6VhYk1diRqrhBAqpJEdjASR/+WVRtfjpqKuNw11cLiaWpAT/Uu+nokB+UJnevzy/P9C/ty6AOe0dwueMrGh/iQ==}
-    engines: {node: '>=18'}
-    cpu: [ppc64]
-    os: [aix]
-
   '@esbuild/aix-ppc64@0.28.1':
     resolution: {integrity: sha512-Svl7tq8k/08+p6CXPpRjQ1fKX+1odH/BQbb48fV6fj3CWHhsoIOoY87w1oHXm0qEpkIK3ZfVgp0hed3XBXzXMQ==}
     engines: {node: '>=18'}
@@ -9970,12 +9966,6 @@ packages:
   '@esbuild/android-arm64@0.19.9':
     resolution: {integrity: sha512-q4cR+6ZD0938R19MyEW3jEsMzbb/1rulLXiNAJQADD/XYp7pT+rOS5JGxvpRW8dFDEfjW4wLgC/3FXIw4zYglQ==}
     engines: {node: '>=12'}
-    cpu: [arm64]
-    os: [android]
-
-  '@esbuild/android-arm64@0.23.1':
-    resolution: {integrity: sha512-xw50ipykXcLstLeWH7WRdQuysJqejuAGPd30vd1i5zSyKK3WE+ijzHmLKxdiCMtH1pHz78rOg0BKSYOSB/2Khw==}
-    engines: {node: '>=18'}
     cpu: [arm64]
     os: [android]
 
@@ -10003,12 +9993,6 @@ packages:
     cpu: [arm]
     os: [android]
 
-  '@esbuild/android-arm@0.23.1':
-    resolution: {integrity: sha512-uz6/tEy2IFm9RYOyvKl88zdzZfwEfKZmnX9Cj1BHjeSGNuGLuMD1kR8y5bteYmwqKm1tj8m4cb/aKEorr6fHWQ==}
-    engines: {node: '>=18'}
-    cpu: [arm]
-    os: [android]
-
   '@esbuild/android-arm@0.28.1':
     resolution: {integrity: sha512-0k2F129Xdio1TdJfzJ8sy1Q47vUD2NnwdhiAf7drUN1EBTfPf4hsFCtmMgu/6m8JSzsBrlmVjudMBQqOfG8usQ==}
     engines: {node: '>=18'}
@@ -10030,12 +10014,6 @@ packages:
   '@esbuild/android-x64@0.19.9':
     resolution: {integrity: sha512-KOqoPntWAH6ZxDwx1D6mRntIgZh9KodzgNOy5Ebt9ghzffOk9X2c1sPwtM9P+0eXbefnDhqYfkh5PLP5ULtWFA==}
     engines: {node: '>=12'}
-    cpu: [x64]
-    os: [android]
-
-  '@esbuild/android-x64@0.23.1':
-    resolution: {integrity: sha512-nlN9B69St9BwUoB+jkyU090bru8L0NA3yFvAd7k8dNsVH8bi9a8cUAUSEcEEgTp2z3dbEDGJGfP6VUnkQnlReg==}
-    engines: {node: '>=18'}
     cpu: [x64]
     os: [android]
 
@@ -10063,12 +10041,6 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@esbuild/darwin-arm64@0.23.1':
-    resolution: {integrity: sha512-YsS2e3Wtgnw7Wq53XXBLcV6JhRsEq8hkfg91ESVadIrzr9wO6jJDMZnCQbHm1Guc5t/CdDiFSSfWP58FNuvT3Q==}
-    engines: {node: '>=18'}
-    cpu: [arm64]
-    os: [darwin]
-
   '@esbuild/darwin-arm64@0.28.1':
     resolution: {integrity: sha512-TZbWkQY7kvTAXbXUT7uVACR5cMHsDiSz9z7ZKAX/RTq/WJEk3QyRr0wZpNhBDX+/0CtdqUIJlOiodQcta6tY3Q==}
     engines: {node: '>=18'}
@@ -10090,12 +10062,6 @@ packages:
   '@esbuild/darwin-x64@0.19.9':
     resolution: {integrity: sha512-vE0VotmNTQaTdX0Q9dOHmMTao6ObjyPm58CHZr1UK7qpNleQyxlFlNCaHsHx6Uqv86VgPmR4o2wdNq3dP1qyDQ==}
     engines: {node: '>=12'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@esbuild/darwin-x64@0.23.1':
-    resolution: {integrity: sha512-aClqdgTDVPSEGgoCS8QDG37Gu8yc9lTHNAQlsztQ6ENetKEO//b8y31MMu2ZaPbn4kVsIABzVLXYLhCGekGDqw==}
-    engines: {node: '>=18'}
     cpu: [x64]
     os: [darwin]
 
@@ -10123,12 +10089,6 @@ packages:
     cpu: [arm64]
     os: [freebsd]
 
-  '@esbuild/freebsd-arm64@0.23.1':
-    resolution: {integrity: sha512-h1k6yS8/pN/NHlMl5+v4XPfikhJulk4G+tKGFIOwURBSFzE8bixw1ebjluLOjfwtLqY0kewfjLSrO6tN2MgIhA==}
-    engines: {node: '>=18'}
-    cpu: [arm64]
-    os: [freebsd]
-
   '@esbuild/freebsd-arm64@0.28.1':
     resolution: {integrity: sha512-wG2EA8ENdEI0qhkSZMjfqrdY+ziCYCPMmtZjjIwOmXFjmyzEHn+UUxk5of+SYsjtfs3VpnlC7QLzSI5hY/rOAw==}
     engines: {node: '>=18'}
@@ -10150,12 +10110,6 @@ packages:
   '@esbuild/freebsd-x64@0.19.9':
     resolution: {integrity: sha512-WMLgWAtkdTbTu1AWacY7uoj/YtHthgqrqhf1OaEWnZb7PQgpt8eaA/F3LkV0E6K/Lc0cUr/uaVP/49iE4M4asA==}
     engines: {node: '>=12'}
-    cpu: [x64]
-    os: [freebsd]
-
-  '@esbuild/freebsd-x64@0.23.1':
-    resolution: {integrity: sha512-lK1eJeyk1ZX8UklqFd/3A60UuZ/6UVfGT2LuGo3Wp4/z7eRTRYY+0xOu2kpClP+vMTi9wKOfXi2vjUpO1Ro76g==}
-    engines: {node: '>=18'}
     cpu: [x64]
     os: [freebsd]
 
@@ -10183,12 +10137,6 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@esbuild/linux-arm64@0.23.1':
-    resolution: {integrity: sha512-/93bf2yxencYDnItMYV/v116zff6UyTjo4EtEQjUBeGiVpMmffDNUyD9UN2zV+V3LRV3/on4xdZ26NKzn6754g==}
-    engines: {node: '>=18'}
-    cpu: [arm64]
-    os: [linux]
-
   '@esbuild/linux-arm64@0.28.1':
     resolution: {integrity: sha512-yHs+0uc8+nvEAfAfxrWQKK5peSNzBc4PegcMO0EJ2hT71uA7vB8Ihg2e77R2P7SG5uYjPbHlLLmve4LLLRCf0g==}
     engines: {node: '>=18'}
@@ -10210,12 +10158,6 @@ packages:
   '@esbuild/linux-arm@0.19.9':
     resolution: {integrity: sha512-C/ChPohUYoyUaqn1h17m/6yt6OB14hbXvT8EgM1ZWaiiTYz7nWZR0SYmMnB5BzQA4GXl3BgBO1l8MYqL/He3qw==}
     engines: {node: '>=12'}
-    cpu: [arm]
-    os: [linux]
-
-  '@esbuild/linux-arm@0.23.1':
-    resolution: {integrity: sha512-CXXkzgn+dXAPs3WBwE+Kvnrf4WECwBdfjfeYHpMeVxWE0EceB6vhWGShs6wi0IYEqMSIzdOF1XjQ/Mkm5d7ZdQ==}
-    engines: {node: '>=18'}
     cpu: [arm]
     os: [linux]
 
@@ -10243,12 +10185,6 @@ packages:
     cpu: [ia32]
     os: [linux]
 
-  '@esbuild/linux-ia32@0.23.1':
-    resolution: {integrity: sha512-VTN4EuOHwXEkXzX5nTvVY4s7E/Krz7COC8xkftbbKRYAl96vPiUssGkeMELQMOnLOJ8k3BY1+ZY52tttZnHcXQ==}
-    engines: {node: '>=18'}
-    cpu: [ia32]
-    os: [linux]
-
   '@esbuild/linux-ia32@0.28.1':
     resolution: {integrity: sha512-d1z4ZuP0ajrfz/FhGT4vv278rX8KnPPJx8i5+AtK7TYbx9Le9F1hyzurZpkEyjkGa9dUGhQow4C1NmeGvqxN2w==}
     engines: {node: '>=18'}
@@ -10270,12 +10206,6 @@ packages:
   '@esbuild/linux-loong64@0.19.9':
     resolution: {integrity: sha512-t6mN147pUIf3t6wUt3FeumoOTPfmv9Cc6DQlsVBpB7eCpLOqQDyWBP1ymXn1lDw4fNUSb/gBcKAmvTP49oIkaA==}
     engines: {node: '>=12'}
-    cpu: [loong64]
-    os: [linux]
-
-  '@esbuild/linux-loong64@0.23.1':
-    resolution: {integrity: sha512-Vx09LzEoBa5zDnieH8LSMRToj7ir/Jeq0Gu6qJ/1GcBq9GkfoEAoXvLiW1U9J1qE/Y/Oyaq33w5p2ZWrNNHNEw==}
-    engines: {node: '>=18'}
     cpu: [loong64]
     os: [linux]
 
@@ -10303,12 +10233,6 @@ packages:
     cpu: [mips64el]
     os: [linux]
 
-  '@esbuild/linux-mips64el@0.23.1':
-    resolution: {integrity: sha512-nrFzzMQ7W4WRLNUOU5dlWAqa6yVeI0P78WKGUo7lg2HShq/yx+UYkeNSE0SSfSure0SqgnsxPvmAUu/vu0E+3Q==}
-    engines: {node: '>=18'}
-    cpu: [mips64el]
-    os: [linux]
-
   '@esbuild/linux-mips64el@0.28.1':
     resolution: {integrity: sha512-mRObBZeHh2OxcBFPWE/FjylkRgZdYuiTR3vaTozquCGOH14iP9oN4x4Ge81CoIDYQrXmIxpFumJBu5MtZpnQJQ==}
     engines: {node: '>=18'}
@@ -10330,12 +10254,6 @@ packages:
   '@esbuild/linux-ppc64@0.19.9':
     resolution: {integrity: sha512-tkV0xUX0pUUgY4ha7z5BbDS85uI7ABw3V1d0RNTii7E9lbmV8Z37Pup2tsLV46SQWzjOeyDi1Q7Wx2+QM8WaCQ==}
     engines: {node: '>=12'}
-    cpu: [ppc64]
-    os: [linux]
-
-  '@esbuild/linux-ppc64@0.23.1':
-    resolution: {integrity: sha512-dKN8fgVqd0vUIjxuJI6P/9SSSe/mB9rvA98CSH2sJnlZ/OCZWO1DJvxj8jvKTfYUdGfcq2dDxoKaC6bHuTlgcw==}
-    engines: {node: '>=18'}
     cpu: [ppc64]
     os: [linux]
 
@@ -10363,12 +10281,6 @@ packages:
     cpu: [riscv64]
     os: [linux]
 
-  '@esbuild/linux-riscv64@0.23.1':
-    resolution: {integrity: sha512-5AV4Pzp80fhHL83JM6LoA6pTQVWgB1HovMBsLQ9OZWLDqVY8MVobBXNSmAJi//Csh6tcY7e7Lny2Hg1tElMjIA==}
-    engines: {node: '>=18'}
-    cpu: [riscv64]
-    os: [linux]
-
   '@esbuild/linux-riscv64@0.28.1':
     resolution: {integrity: sha512-kw0owk1o0GFETUJyW0jc0G4Yzs0BHZn0JDZ8JRT088vjJYX777BAs1fDGxAC+q831qOs2DTC96mNsG2opdfyyQ==}
     engines: {node: '>=18'}
@@ -10393,12 +10305,6 @@ packages:
     cpu: [s390x]
     os: [linux]
 
-  '@esbuild/linux-s390x@0.23.1':
-    resolution: {integrity: sha512-9ygs73tuFCe6f6m/Tb+9LtYxWR4c9yg7zjt2cYkjDbDpV/xVn+68cQxMXCjUpYwEkze2RcU/rMnfIXNRFmSoDw==}
-    engines: {node: '>=18'}
-    cpu: [s390x]
-    os: [linux]
-
   '@esbuild/linux-s390x@0.28.1':
     resolution: {integrity: sha512-/lAIjX8aYFRByhh6L5rYtPEDRqa9de/4V/juOXcta5frjvzXO4/sqEtyytse0g3zZFuWu5cDN0MkLz2qRDD2Ag==}
     engines: {node: '>=18'}
@@ -10420,12 +10326,6 @@ packages:
   '@esbuild/linux-x64@0.19.9':
     resolution: {integrity: sha512-JUjpystGFFmNrEHQnIVG8hKwvA2DN5o7RqiO1CVX8EN/F/gkCjkUMgVn6hzScpwnJtl2mPR6I9XV1oW8k9O+0A==}
     engines: {node: '>=12'}
-    cpu: [x64]
-    os: [linux]
-
-  '@esbuild/linux-x64@0.23.1':
-    resolution: {integrity: sha512-EV6+ovTsEXCPAp58g2dD68LxoP/wK5pRvgy0J/HxPGB009omFPv3Yet0HiaqvrIrgPTBuC6wCH1LTOY91EO5hQ==}
-    engines: {node: '>=18'}
     cpu: [x64]
     os: [linux]
 
@@ -10459,23 +10359,11 @@ packages:
     cpu: [x64]
     os: [netbsd]
 
-  '@esbuild/netbsd-x64@0.23.1':
-    resolution: {integrity: sha512-aevEkCNu7KlPRpYLjwmdcuNz6bDFiE7Z8XC4CPqExjTvrHugh28QzUXVOZtiYghciKUacNktqxdpymplil1beA==}
-    engines: {node: '>=18'}
-    cpu: [x64]
-    os: [netbsd]
-
   '@esbuild/netbsd-x64@0.28.1':
     resolution: {integrity: sha512-aeL6lAnN89Hz43Mlh1G8ARasbuoYvSITDEx0tHh5b7jJnHcssqgjy9Yx430GDpmCa6OyrKoS0aNRjKundRizGg==}
     engines: {node: '>=18'}
     cpu: [x64]
     os: [netbsd]
-
-  '@esbuild/openbsd-arm64@0.23.1':
-    resolution: {integrity: sha512-3x37szhLexNA4bXhLrCC/LImN/YtWis6WXr1VESlfVtVeoFJBRINPJ3f0a/6LV8zpikqoUg4hyXw0sFBt5Cr+Q==}
-    engines: {node: '>=18'}
-    cpu: [arm64]
-    os: [openbsd]
 
   '@esbuild/openbsd-arm64@0.28.1':
     resolution: {integrity: sha512-MEFJe5C3R8pwXdZ5Y21oo6m7ePiS0d9pWucn99O/wvyJZChoIQKrQDxKrGeW8F5+T0okTHesAmDeiHDTIq0V/Q==}
@@ -10498,12 +10386,6 @@ packages:
   '@esbuild/openbsd-x64@0.19.9':
     resolution: {integrity: sha512-Ki6PlzppaFVbLnD8PtlVQfsYw4S9n3eQl87cqgeIw+O3sRr9IghpfSKY62mggdt1yCSZ8QWvTZ9jo9fjDSg9uw==}
     engines: {node: '>=12'}
-    cpu: [x64]
-    os: [openbsd]
-
-  '@esbuild/openbsd-x64@0.23.1':
-    resolution: {integrity: sha512-aY2gMmKmPhxfU+0EdnN+XNtGbjfQgwZj43k8G3fyrDM/UdZww6xrWxmDkuz2eCZchqVeABjV5BpildOrUbBTqA==}
-    engines: {node: '>=18'}
     cpu: [x64]
     os: [openbsd]
 
@@ -10537,12 +10419,6 @@ packages:
     cpu: [x64]
     os: [sunos]
 
-  '@esbuild/sunos-x64@0.23.1':
-    resolution: {integrity: sha512-RBRT2gqEl0IKQABT4XTj78tpk9v7ehp+mazn2HbUeZl1YMdaGAQqhapjGTCe7uw7y0frDi4gS0uHzhvpFuI1sA==}
-    engines: {node: '>=18'}
-    cpu: [x64]
-    os: [sunos]
-
   '@esbuild/sunos-x64@0.28.1':
     resolution: {integrity: sha512-BEjgtECkL3vY+SaSQ6nzVfiALUeFxpawyp8Jmf5PtYhf1Ug40N1h/hxlhts+f1FvSvarEigdxS3BlSMI2PJLcQ==}
     engines: {node: '>=18'}
@@ -10564,12 +10440,6 @@ packages:
   '@esbuild/win32-arm64@0.19.9':
     resolution: {integrity: sha512-GQoa6OrQ8G08guMFgeXPH7yE/8Dt0IfOGWJSfSH4uafwdC7rWwrfE6P9N8AtPGIjUzdo2+7bN8Xo3qC578olhg==}
     engines: {node: '>=12'}
-    cpu: [arm64]
-    os: [win32]
-
-  '@esbuild/win32-arm64@0.23.1':
-    resolution: {integrity: sha512-4O+gPR5rEBe2FpKOVyiJ7wNDPA8nGzDuJ6gN4okSA1gEOYZ67N8JPk58tkWtdtPeLz7lBnY6I5L3jdsr3S+A6A==}
-    engines: {node: '>=18'}
     cpu: [arm64]
     os: [win32]
 
@@ -10597,12 +10467,6 @@ packages:
     cpu: [ia32]
     os: [win32]
 
-  '@esbuild/win32-ia32@0.23.1':
-    resolution: {integrity: sha512-BcaL0Vn6QwCwre3Y717nVHZbAa4UBEigzFm6VdsVdT/MbZ38xoj1X9HPkZhbmaBGUD1W8vxAfffbDe8bA6AKnQ==}
-    engines: {node: '>=18'}
-    cpu: [ia32]
-    os: [win32]
-
   '@esbuild/win32-ia32@0.28.1':
     resolution: {integrity: sha512-zvb/mB2bSCoJOpoCBgYKKpX6YM6mJBlBUVUtVj41DlZJVEB6/0CKlRYxP5wWl1C1ILiCoAU5wZZ4q1P3qeS6Eg==}
     engines: {node: '>=18'}
@@ -10624,12 +10488,6 @@ packages:
   '@esbuild/win32-x64@0.19.9':
     resolution: {integrity: sha512-oxoQgglOP7RH6iasDrhY+R/3cHrfwIDvRlT4CGChflq6twk8iENeVvMJjmvBb94Ik1Z+93iGO27err7w6l54GQ==}
     engines: {node: '>=12'}
-    cpu: [x64]
-    os: [win32]
-
-  '@esbuild/win32-x64@0.23.1':
-    resolution: {integrity: sha512-BHpFFeslkWrXWyUPnbKm+xYYVYruCinGcftSBaa8zoF9hZO4BcSCFUvHVTtzpIY6YzUnYtuEhZ+C9iEXjxnasg==}
-    engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
 
@@ -15728,7 +15586,7 @@ packages:
     resolution: {integrity: sha512-3WrrOuZiyaaZPWiEt4G3+IffISVC9HYlWueJEBWED4ZH4aIAC2PnkdnuRrR94M+w6yGWn4AglWtJtBI8YqvgoA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
     peerDependencies:
-      esbuild: '>=0.18'
+      esbuild: 0.28.1
 
   busboy@1.6.0:
     resolution: {integrity: sha512-8SFQbg/0hQ9xy3UNTB0YEnsNBbWfhf7RtnzpL7TkBiTBRfrQ9Fxcnz7VJsleJpyp6rVLvXiuORqjlHi5q+PYuA==}
@@ -17690,11 +17548,6 @@ packages:
   esbuild@0.19.9:
     resolution: {integrity: sha512-U9CHtKSy+EpPsEBa+/A2gMs/h3ylBC0H0KSqIg7tpztHerLi6nrrcoUJAkNCEPumx8yJ+Byic4BVwHgRbN0TBg==}
     engines: {node: '>=12'}
-    hasBin: true
-
-  esbuild@0.23.1:
-    resolution: {integrity: sha512-VVNz/9Sa0bs5SELtn3f7qhJCDPCF5oMEl5cO9/SSinpE9hbPVvxbd572HH5AKiP7WD8INO53GgfDDhRjkylHEg==}
-    engines: {node: '>=18'}
     hasBin: true
 
   esbuild@0.28.1:
@@ -26646,7 +26499,7 @@ packages:
     hasBin: true
 
   xlsx@https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz:
-    resolution: {integrity: sha512-oLDq3jw7AcLqKWH2AhCpVTZl8mf6X2YReP+Neh0SJUzV/BdZYjth94tG5toiMB1PPrYtxOCfaoUCkvtuH+3AJA==, tarball: https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz}
+    resolution: {tarball: https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz}
     version: 0.20.3
     engines: {node: '>=0.8'}
     hasBin: true
@@ -29942,9 +29795,6 @@ snapshots:
 
   '@endo/immutable-arraybuffer@1.1.2': {}
 
-  '@esbuild/aix-ppc64@0.23.1':
-    optional: true
-
   '@esbuild/aix-ppc64@0.28.1':
     optional: true
 
@@ -29955,9 +29805,6 @@ snapshots:
     optional: true
 
   '@esbuild/android-arm64@0.19.9':
-    optional: true
-
-  '@esbuild/android-arm64@0.23.1':
     optional: true
 
   '@esbuild/android-arm64@0.28.1':
@@ -29972,9 +29819,6 @@ snapshots:
   '@esbuild/android-arm@0.19.9':
     optional: true
 
-  '@esbuild/android-arm@0.23.1':
-    optional: true
-
   '@esbuild/android-arm@0.28.1':
     optional: true
 
@@ -29985,9 +29829,6 @@ snapshots:
     optional: true
 
   '@esbuild/android-x64@0.19.9':
-    optional: true
-
-  '@esbuild/android-x64@0.23.1':
     optional: true
 
   '@esbuild/android-x64@0.28.1':
@@ -30002,9 +29843,6 @@ snapshots:
   '@esbuild/darwin-arm64@0.19.9':
     optional: true
 
-  '@esbuild/darwin-arm64@0.23.1':
-    optional: true
-
   '@esbuild/darwin-arm64@0.28.1':
     optional: true
 
@@ -30015,9 +29853,6 @@ snapshots:
     optional: true
 
   '@esbuild/darwin-x64@0.19.9':
-    optional: true
-
-  '@esbuild/darwin-x64@0.23.1':
     optional: true
 
   '@esbuild/darwin-x64@0.28.1':
@@ -30032,9 +29867,6 @@ snapshots:
   '@esbuild/freebsd-arm64@0.19.9':
     optional: true
 
-  '@esbuild/freebsd-arm64@0.23.1':
-    optional: true
-
   '@esbuild/freebsd-arm64@0.28.1':
     optional: true
 
@@ -30045,9 +29877,6 @@ snapshots:
     optional: true
 
   '@esbuild/freebsd-x64@0.19.9':
-    optional: true
-
-  '@esbuild/freebsd-x64@0.23.1':
     optional: true
 
   '@esbuild/freebsd-x64@0.28.1':
@@ -30062,9 +29891,6 @@ snapshots:
   '@esbuild/linux-arm64@0.19.9':
     optional: true
 
-  '@esbuild/linux-arm64@0.23.1':
-    optional: true
-
   '@esbuild/linux-arm64@0.28.1':
     optional: true
 
@@ -30075,9 +29901,6 @@ snapshots:
     optional: true
 
   '@esbuild/linux-arm@0.19.9':
-    optional: true
-
-  '@esbuild/linux-arm@0.23.1':
     optional: true
 
   '@esbuild/linux-arm@0.28.1':
@@ -30092,9 +29915,6 @@ snapshots:
   '@esbuild/linux-ia32@0.19.9':
     optional: true
 
-  '@esbuild/linux-ia32@0.23.1':
-    optional: true
-
   '@esbuild/linux-ia32@0.28.1':
     optional: true
 
@@ -30105,9 +29925,6 @@ snapshots:
     optional: true
 
   '@esbuild/linux-loong64@0.19.9':
-    optional: true
-
-  '@esbuild/linux-loong64@0.23.1':
     optional: true
 
   '@esbuild/linux-loong64@0.28.1':
@@ -30122,9 +29939,6 @@ snapshots:
   '@esbuild/linux-mips64el@0.19.9':
     optional: true
 
-  '@esbuild/linux-mips64el@0.23.1':
-    optional: true
-
   '@esbuild/linux-mips64el@0.28.1':
     optional: true
 
@@ -30135,9 +29949,6 @@ snapshots:
     optional: true
 
   '@esbuild/linux-ppc64@0.19.9':
-    optional: true
-
-  '@esbuild/linux-ppc64@0.23.1':
     optional: true
 
   '@esbuild/linux-ppc64@0.28.1':
@@ -30152,9 +29963,6 @@ snapshots:
   '@esbuild/linux-riscv64@0.19.9':
     optional: true
 
-  '@esbuild/linux-riscv64@0.23.1':
-    optional: true
-
   '@esbuild/linux-riscv64@0.28.1':
     optional: true
 
@@ -30167,9 +29975,6 @@ snapshots:
   '@esbuild/linux-s390x@0.19.9':
     optional: true
 
-  '@esbuild/linux-s390x@0.23.1':
-    optional: true
-
   '@esbuild/linux-s390x@0.28.1':
     optional: true
 
@@ -30180,9 +29985,6 @@ snapshots:
     optional: true
 
   '@esbuild/linux-x64@0.19.9':
-    optional: true
-
-  '@esbuild/linux-x64@0.23.1':
     optional: true
 
   '@esbuild/linux-x64@0.28.1':
@@ -30200,13 +30002,7 @@ snapshots:
   '@esbuild/netbsd-x64@0.19.9':
     optional: true
 
-  '@esbuild/netbsd-x64@0.23.1':
-    optional: true
-
   '@esbuild/netbsd-x64@0.28.1':
-    optional: true
-
-  '@esbuild/openbsd-arm64@0.23.1':
     optional: true
 
   '@esbuild/openbsd-arm64@0.28.1':
@@ -30219,9 +30015,6 @@ snapshots:
     optional: true
 
   '@esbuild/openbsd-x64@0.19.9':
-    optional: true
-
-  '@esbuild/openbsd-x64@0.23.1':
     optional: true
 
   '@esbuild/openbsd-x64@0.28.1':
@@ -30239,9 +30032,6 @@ snapshots:
   '@esbuild/sunos-x64@0.19.9':
     optional: true
 
-  '@esbuild/sunos-x64@0.23.1':
-    optional: true
-
   '@esbuild/sunos-x64@0.28.1':
     optional: true
 
@@ -30252,9 +30042,6 @@ snapshots:
     optional: true
 
   '@esbuild/win32-arm64@0.19.9':
-    optional: true
-
-  '@esbuild/win32-arm64@0.23.1':
     optional: true
 
   '@esbuild/win32-arm64@0.28.1':
@@ -30269,9 +30056,6 @@ snapshots:
   '@esbuild/win32-ia32@0.19.9':
     optional: true
 
-  '@esbuild/win32-ia32@0.23.1':
-    optional: true
-
   '@esbuild/win32-ia32@0.28.1':
     optional: true
 
@@ -30282,9 +30066,6 @@ snapshots:
     optional: true
 
   '@esbuild/win32-x64@0.19.9':
-    optional: true
-
-  '@esbuild/win32-x64@0.23.1':
     optional: true
 
   '@esbuild/win32-x64@0.28.1':
@@ -33678,7 +33459,7 @@ snapshots:
       antd-mobile: 5.41.1(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       antd-mobile-icons: 0.3.0
       antd-style: 3.7.1(@types/react@18.3.18)(antd@5.24.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       bignumber.js: 9.1.2
       classnames: 2.5.1
       cronstrue: 2.47.0
@@ -33766,7 +33547,7 @@ snapshots:
       antd-mobile: 5.41.1(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       antd-mobile-icons: 0.3.0
       antd-style: 3.7.1(@types/react@18.3.18)(antd@5.24.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       bignumber.js: 9.1.2
       classnames: 2.5.1
       codemirror: 6.0.2
@@ -33860,7 +33641,7 @@ snapshots:
       antd-mobile: 5.41.1(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       antd-mobile-icons: 0.3.0
       antd-style: 3.7.1(@types/react@18.3.18)(antd@5.24.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       bignumber.js: 9.1.2
       classnames: 2.5.1
       codemirror: 6.0.2
@@ -34365,7 +34146,7 @@ snapshots:
       '@nocobase/sdk': 2.0.32
       '@nocobase/shared': 2.0.32
       ahooks: 3.7.8(react@18.2.0)
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       dayjs: 1.11.13
       dompurify: 3.2.6
       lodash: 4.17.21
@@ -34393,7 +34174,7 @@ snapshots:
       '@nocobase/sdk': 2.0.32
       '@nocobase/shared': 2.0.32
       ahooks: 3.7.8(react@18.2.0)
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       dayjs: 1.11.13
       dompurify: 3.2.6
       lodash: 4.17.21
@@ -34511,7 +34292,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': 2.0.24(@types/node@25.2.3)(encoding@0.1.13)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(tedious@18.6.2(@azure/core-client@1.10.1))
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': 2.0.24
 
   '@nocobase/plugin-acl@2.0.24(@nocobase/acl@packages+core+acl)(@nocobase/actions@packages+core+actions)(@nocobase/cache@packages+core+cache)(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@packages+core+utils)':
@@ -34522,7 +34303,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': link:packages/core/database
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-acl@2.0.24(e881ed49312554c222d84f7b550a7a76)':
@@ -34542,7 +34323,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': link:packages/core/database
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-action-import@2.1.6(0378c1e027d0d6fd04b21f5e701181ff)':
@@ -34552,7 +34333,7 @@ snapshots:
       '@nocobase/client-v2': 2.0.32(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(antd@5.24.2(date-fns@2.30.0)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': link:packages/core/database
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-ai@2.0.24(0a6d5f61bc24a8775ee7250a994c91be)':
@@ -34575,7 +34356,7 @@ snapshots:
       '@nocobase/plugin-data-source-manager': link:packages/plugins/@nocobase/plugin-data-source-manager
       '@nocobase/plugin-workflow': link:packages/plugins/@nocobase/plugin-workflow
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-async-task-manager@2.0.24(41b6b026a9b1bb146dbb8745725e9a8a)':
     dependencies:
@@ -34590,7 +34371,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/plugin-error-handler': link:packages/plugins/@nocobase/plugin-error-handler
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       p-queue: 6.6.2
 
   '@nocobase/plugin-auth@2.0.24(@nocobase/actions@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/auth@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))':
@@ -34600,7 +34381,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': 2.0.24(@types/node@25.2.3)(encoding@0.1.13)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(tedious@18.6.2(@azure/core-client@1.10.1))
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-auth@2.0.24(@nocobase/actions@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/auth@packages+core+auth)(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))':
     dependencies:
@@ -34609,7 +34390,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': 2.0.24(@types/node@25.2.3)(encoding@0.1.13)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(tedious@18.6.2(@azure/core-client@1.10.1))
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-auth@2.0.24(@nocobase/actions@packages+core+actions)(@nocobase/auth@packages+core+auth)(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))':
     dependencies:
@@ -34618,7 +34399,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': link:packages/core/database
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-backups@2.1.6(c21a392fafedc73eef2f7b934f32e608)':
     dependencies:
@@ -34630,7 +34411,7 @@ snapshots:
       '@nocobase/lock-manager': link:packages/core/lock-manager
       '@nocobase/plugin-file-manager': link:packages/plugins/@nocobase/plugin-file-manager
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   ? '@nocobase/plugin-data-source-main@2.0.32(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/plugin-error-handler@packages+plugins+@nocobase+plugin-error-handler)(@nocobase/plugin-field-sort@packages+plugins+@nocobase+plugin-field-sort)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@2.0.24)'
@@ -34640,7 +34421,7 @@ snapshots:
       '@nocobase/plugin-error-handler': link:packages/plugins/@nocobase/plugin-error-handler
       '@nocobase/plugin-field-sort': link:packages/plugins/@nocobase/plugin-field-sort
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': 2.0.24
 
   '@nocobase/plugin-data-source-manager@2.0.24(8ea9c44aeb45cd5f5b3aed8bbd7eea9b)':
@@ -34648,28 +34429,28 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/plugin-acl': 2.0.24(@nocobase/acl@packages+core+acl)(@nocobase/actions@packages+core+actions)(@nocobase/cache@packages+core+cache)(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@packages+core+utils)
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-data-source-manager@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/plugin-acl@packages+plugins+@nocobase+plugin-acl)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mariadb@3.5.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))':
     dependencies:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/plugin-acl': link:packages/plugins/@nocobase/plugin-acl
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mariadb@3.5.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-data-source-manager@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/plugin-acl@packages+plugins+@nocobase+plugin-acl)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mysql2@3.11.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))':
     dependencies:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/plugin-acl': link:packages/plugins/@nocobase/plugin-acl
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mysql2@3.11.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-data-source-manager@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/plugin-acl@packages+plugins+@nocobase+plugin-acl)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))':
     dependencies:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/plugin-acl': link:packages/plugins/@nocobase/plugin-acl
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(tedious@18.6.2(@azure/core-client@1.10.1))(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-data-source-manager@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/plugin-acl@packages+plugins+@nocobase+plugin-acl)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(tedious@18.6.2(@azure/core-client@1.10.1))(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(tedious@18.6.2(@azure/core-client@1.10.1))(terser@5.46.0)(typescript@6.0.3))':
     dependencies:
@@ -34683,14 +34464,14 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/plugin-acl': link:packages/plugins/@nocobase/plugin-acl
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-error-handler@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@packages+core+utils)':
     dependencies:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': 2.0.24(@types/node@25.2.3)(encoding@0.1.13)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(tedious@18.6.2(@azure/core-client@1.10.1))
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-error-handler@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@2.0.24)':
@@ -34698,7 +34479,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': link:packages/core/database
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': 2.0.24
 
   '@nocobase/plugin-error-handler@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@packages+core+utils)':
@@ -34706,7 +34487,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': link:packages/core/database
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-error-handler@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@2.0.24)':
@@ -34714,7 +34495,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': link:packages/core/database
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': 2.0.24
 
   '@nocobase/plugin-file-manager@2.1.6(1980edac458b9a6c7dbf20b2ca3bbf9d)':
@@ -34745,7 +34526,7 @@ snapshots:
       '@nocobase/plugin-data-source-manager': link:packages/plugins/@nocobase/plugin-data-source-manager
       '@nocobase/plugin-environment-variables': link:packages/plugins/@nocobase/plugin-environment-variables
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': 2.0.24
       file-type: 21.0.0
     transitivePeerDependencies:
@@ -34757,7 +34538,7 @@ snapshots:
       '@nocobase/database': 2.0.24(@types/node@25.2.3)(encoding@0.1.13)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(tedious@18.6.2(@azure/core-client@1.10.1))
       '@nocobase/plugin-localization': link:packages/plugins/@nocobase/plugin-localization
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': 2.0.24
       ses: 1.14.0
 
@@ -34766,14 +34547,14 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/plugin-auth': 2.0.24(@nocobase/actions@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/auth@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@2.0.24(@types/node@25.2.3)(encoding@0.1.13))(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
 
   '@nocobase/plugin-multi-app-manager@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@packages+core+utils)':
     dependencies:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': link:packages/core/database
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(tedious@18.6.2(@azure/core-client@1.10.1))(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-multi-app-manager@2.0.24(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@packages+core+utils)':
@@ -34781,7 +34562,7 @@ snapshots:
       '@nocobase/client': 2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
       '@nocobase/database': link:packages/core/database
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-notification-manager@2.0.24(@nocobase/actions@packages+core+actions)(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/plugin-workflow@packages+plugins+@nocobase+plugin-workflow)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@packages+core+utils)':
@@ -34791,7 +34572,7 @@ snapshots:
       '@nocobase/database': link:packages/core/database
       '@nocobase/plugin-workflow': link:packages/plugins/@nocobase/plugin-workflow
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   ? '@nocobase/plugin-ui-schema-storage@2.1.6(@nocobase/actions@packages+core+actions)(@nocobase/cache@packages+core+cache)(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(encoding@0.1.13)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/plugin-error-handler@packages+plugins+@nocobase+plugin-error-handler)(@nocobase/resourcer@packages+core+resourcer)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@packages+core+utils)'
@@ -34803,7 +34584,7 @@ snapshots:
       '@nocobase/plugin-error-handler': link:packages/plugins/@nocobase/plugin-error-handler
       '@nocobase/resourcer': link:packages/core/resourcer
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(tedious@18.6.2(@azure/core-client@1.10.1))(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-users@2.0.24(721a4c56789e89d154eea53f6790b17e)':
@@ -34818,7 +34599,7 @@ snapshots:
       '@nocobase/plugin-user-data-sync': link:packages/plugins/@nocobase/plugin-user-data-sync
       '@nocobase/resourcer': link:packages/core/resourcer
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-users@2.0.24(8b46718fcbca560fffa91f7657ccdc02)':
@@ -34833,7 +34614,7 @@ snapshots:
       '@nocobase/plugin-user-data-sync': link:packages/plugins/@nocobase/plugin-user-data-sync
       '@nocobase/resourcer': link:packages/core/resourcer
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': 2.0.24
 
   '@nocobase/plugin-verification@2.0.24(@nocobase/actions@packages+core+actions)(@nocobase/client@2.0.24(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(acorn@8.16.0)(date-fns@2.30.0)(encoding@0.1.13)(luxon@3.4.4)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react-is@18.2.0)(react-router@6.30.1(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/database@packages+core+database)(@nocobase/resourcer@packages+core+resourcer)(@nocobase/server@2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3))(@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3))(@nocobase/utils@packages+core+utils)':
@@ -34843,7 +34624,7 @@ snapshots:
       '@nocobase/database': link:packages/core/database
       '@nocobase/resourcer': link:packages/core/resourcer
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/plugin-workflow@2.0.32(5ef86d0a5d2f59f5e757088e8025ee77)':
@@ -34860,7 +34641,7 @@ snapshots:
       '@nocobase/plugin-workflow-test': link:packages/plugins/@nocobase/plugin-workflow-test
       '@nocobase/resourcer': link:packages/core/resourcer
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': 2.0.24
 
   '@nocobase/plugin-workflow@2.0.32(988783aa02b35b0a955455bbaf27a237)':
@@ -34877,7 +34658,7 @@ snapshots:
       '@nocobase/plugin-workflow-test': link:packages/plugins/@nocobase/plugin-workflow-test
       '@nocobase/resourcer': link:packages/core/resourcer
       '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
-      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(jsonwebtoken@9.0.3)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
+      '@nocobase/test': 2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)
       '@nocobase/utils': link:packages/core/utils
 
   '@nocobase/resourcer@1.9.56':
@@ -34900,21 +34681,21 @@ snapshots:
 
   '@nocobase/sdk@1.9.56':
     dependencies:
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       qs: 6.14.2
     transitivePeerDependencies:
       - debug
 
   '@nocobase/sdk@2.0.24':
     dependencies:
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       qs: 6.14.2
     transitivePeerDependencies:
       - debug
 
   '@nocobase/sdk@2.0.32':
     dependencies:
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       qs: 6.14.2
     transitivePeerDependencies:
       - debug
@@ -34945,7 +34726,7 @@ snapshots:
       '@types/koa-send': 4.1.6
       '@types/multer': 1.4.12
       async-mutex: 0.5.0
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       chalk: 4.1.2
       commander: 9.5.0
       compression: 1.8.0
@@ -35014,7 +34795,7 @@ snapshots:
       '@types/koa-send': 4.1.6
       '@types/multer': 1.4.12
       async-mutex: 0.5.0
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       chalk: 4.1.2
       commander: 9.5.0
       compression: 1.8.0
@@ -35204,7 +34985,7 @@ snapshots:
       '@types/koa-send': 4.1.6
       '@types/multer': 1.4.12
       async-mutex: 0.5.0
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       chalk: 4.1.2
       commander: 9.5.0
       compression: 1.8.0
@@ -35394,7 +35175,7 @@ snapshots:
       '@types/koa-send': 4.1.6
       '@types/multer': 1.4.12
       async-mutex: 0.5.0
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       chalk: 4.1.2
       commander: 9.5.0
       compression: 1.8.0
@@ -35584,7 +35365,7 @@ snapshots:
       '@types/koa-send': 4.1.6
       '@types/multer': 1.4.12
       async-mutex: 0.5.0
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       chalk: 4.1.2
       commander: 9.5.0
       compression: 1.8.0
@@ -35774,7 +35555,7 @@ snapshots:
       '@types/koa-send': 4.1.6
       '@types/multer': 1.4.12
       async-mutex: 0.5.0
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       chalk: 4.1.2
       commander: 9.5.0
       compression: 1.8.0
@@ -35964,7 +35745,7 @@ snapshots:
       '@types/koa-send': 4.1.6
       '@types/multer': 1.4.12
       async-mutex: 0.5.0
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       chalk: 4.1.2
       commander: 9.5.0
       compression: 1.8.0
@@ -36154,7 +35935,7 @@ snapshots:
       '@types/koa-send': 4.1.6
       '@types/multer': 1.4.12
       async-mutex: 0.5.0
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       chalk: 4.1.2
       commander: 9.5.0
       compression: 1.8.0
@@ -36344,7 +36125,7 @@ snapshots:
       '@types/koa-send': 4.1.6
       '@types/multer': 1.4.12
       async-mutex: 0.5.0
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       chalk: 4.1.2
       commander: 9.5.0
       compression: 1.8.0
@@ -37173,6 +36954,187 @@ snapshots:
       vite: 5.0.10(@types/node@25.2.3)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0)
       vitest: 1.5.2(@types/node@25.2.3)(jsdom@25.0.1)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0)
       vitest-dom: 0.1.1(vitest@1.5.2(@types/node@24.12.0)(jsdom@25.0.1)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0))
+      ws: 8.18.0
+    transitivePeerDependencies:
+      - '@arcjet/redact'
+      - '@aws-crypto/sha256-js'
+      - '@aws-sdk/client-dynamodb'
+      - '@aws-sdk/client-lambda'
+      - '@aws-sdk/client-s3'
+      - '@aws-sdk/client-sagemaker-runtime'
+      - '@aws-sdk/client-sfn'
+      - '@aws-sdk/credential-provider-node'
+      - '@aws-sdk/dsql-signer'
+      - '@azure/search-documents'
+      - '@azure/storage-blob'
+      - '@browserbasehq/sdk'
+      - '@browserbasehq/stagehand'
+      - '@clickhouse/client'
+      - '@datastax/astra-db-ts'
+      - '@edge-runtime/vm'
+      - '@elastic/elasticsearch'
+      - '@getmetal/metal-sdk'
+      - '@getzep/zep-cloud'
+      - '@getzep/zep-js'
+      - '@gomomento/sdk-core'
+      - '@google-cloud/storage'
+      - '@gradientai/nodejs-sdk'
+      - '@huggingface/inference'
+      - '@huggingface/transformers'
+      - '@ibm-cloud/watsonx-ai'
+      - '@jest/globals'
+      - '@lancedb/lancedb'
+      - '@layerup/layerup-security'
+      - '@libsql/client'
+      - '@mendable/firecrawl-js'
+      - '@mlc-ai/web-llm'
+      - '@mozilla/readability'
+      - '@neondatabase/serverless'
+      - '@notionhq/client'
+      - '@opensearch-project/opensearch'
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - '@pinecone-database/pinecone'
+      - '@planetscale/database'
+      - '@premai/prem-sdk'
+      - '@qdrant/js-client-rest'
+      - '@raycast/api'
+      - '@rockset/client'
+      - '@smithy/eventstream-codec'
+      - '@smithy/protocol-http'
+      - '@smithy/signature-v4'
+      - '@smithy/util-utf8'
+      - '@spider-cloud/spider-client'
+      - '@supabase/supabase-js'
+      - '@tensorflow-models/universal-sentence-encoder'
+      - '@tensorflow/tfjs-core'
+      - '@testing-library/dom'
+      - '@types/bun'
+      - '@types/jest'
+      - '@types/node'
+      - '@types/react'
+      - '@upstash/ratelimit'
+      - '@upstash/redis'
+      - '@upstash/vector'
+      - '@vercel/kv'
+      - '@vercel/postgres'
+      - '@vitest/browser'
+      - '@vitest/ui'
+      - '@writerai/writer-sdk'
+      - '@xata.io/client'
+      - '@xenova/transformers'
+      - '@zilliz/milvus2-sdk-node'
+      - apify-client
+      - assemblyai
+      - axios
+      - azion
+      - better-sqlite3
+      - bufferutil
+      - canvas
+      - cassandra-driver
+      - cborg
+      - cheerio
+      - chromadb
+      - closevector-common
+      - closevector-node
+      - closevector-web
+      - cohere-ai
+      - convex
+      - couchbase
+      - crypto-js
+      - d3-dsv
+      - debug
+      - discord.js
+      - duck-duck-scrape
+      - encoding
+      - epub2
+      - faiss-node
+      - fast-xml-parser
+      - firebase-admin
+      - google-auth-library
+      - googleapis
+      - happy-dom
+      - hnswlib-node
+      - html-to-text
+      - ibm-cloud-sdk-core
+      - ibm_db
+      - ignore
+      - interface-datastore
+      - ioredis
+      - it-all
+      - jest
+      - jsonwebtoken
+      - less
+      - lightningcss
+      - lunary
+      - mem0ai
+      - mongodb
+      - neo4j-driver
+      - node-fetch
+      - node-llama-cpp
+      - notion-to-md
+      - openai
+      - oracledb
+      - peggy
+      - pg-copy-streams
+      - pg-native
+      - pickleparser
+      - playwright
+      - portkey-ai
+      - puppeteer
+      - pyodide
+      - react
+      - react-dom
+      - react-test-renderer
+      - replicate
+      - sass
+      - snowflake-sdk
+      - sonix-speech-recognition
+      - sqlite3
+      - srt-parser-2
+      - stylus
+      - sugarss
+      - supports-color
+      - tedious
+      - terser
+      - typeorm
+      - typescript
+      - typesense
+      - usearch
+      - utf-8-validate
+      - voy-search
+      - weaviate-client
+      - youtubei.js
+      - zod
+      - zod-to-json-schema
+
+  '@nocobase/test@2.0.24(@opentelemetry/api@1.9.0)(@testing-library/dom@9.3.3)(@types/node@25.2.3)(@types/react@18.3.18)(axios@1.13.5)(encoding@0.1.13)(less@4.6.4)(lightningcss@1.22.1)(node-fetch@3.3.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(sass@1.69.5)(terser@5.46.0)(typescript@6.0.3)':
+    dependencies:
+      '@faker-js/faker': 8.1.0
+      '@nocobase/server': 2.0.24(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(encoding@0.1.13)(jsdom@25.0.1)(jsonwebtoken@9.0.3)(mariadb@2.5.6)(mysql2@3.22.5(@types/node@25.2.3))(pg-hstore@2.3.4)(pg@8.18.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(typescript@6.0.3)
+      '@playwright/test': 1.45.3
+      '@testing-library/jest-dom': 6.4.2(vitest@1.5.2(@types/node@25.2.3)(jsdom@25.0.1)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0))
+      '@testing-library/react': 14.1.2(@types/react@18.3.18)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@testing-library/react-hooks': 8.0.1(@types/react@18.3.18)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@testing-library/user-event': 14.5.1(@testing-library/dom@9.3.3)
+      '@types/supertest': 2.0.16
+      '@vitejs/plugin-react': 4.2.1(vite@5.0.10(@types/node@25.2.3)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0))
+      '@vitest/coverage-istanbul': 1.5.2(vitest@1.5.2(@types/node@25.2.3)(jsdom@25.0.1)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0))
+      '@vitest/coverage-v8': 1.5.2(vitest@1.5.2(@types/node@25.2.3)(jsdom@25.0.1)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0))
+      axios-mock-adapter: 1.22.0(axios@1.13.5)
+      exceljs: 4.4.0
+      jsdom: 25.0.1
+      jsdom-worker: 0.3.0(node-fetch@3.3.2)
+      mariadb: 2.5.6
+      mockjs: 1.1.0
+      mysql2: 3.22.5(@types/node@25.2.3)
+      pg: 8.18.0
+      pg-hstore: 2.3.4
+      supertest: 6.3.3
+      vite: 5.0.10(@types/node@25.2.3)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0)
+      vitest: 1.5.2(@types/node@25.2.3)(jsdom@25.0.1)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0)
+      vitest-dom: 0.1.1(vitest@1.5.2(@types/node@25.2.3)(jsdom@25.0.1)(less@4.6.4)(lightningcss@1.22.1)(sass@1.69.5)(terser@5.46.0))
       ws: 8.18.0
     transitivePeerDependencies:
       - '@arcjet/redact'
@@ -38201,7 +38163,7 @@ snapshots:
       '@rsdoctor/sdk': 0.4.11(@rspack/core@1.7.8(@swc/helpers@0.5.19))(webpack@5.105.4(@swc/core@1.3.72(@swc/helpers@0.5.19))(esbuild@0.28.1))
       '@rsdoctor/types': 0.4.11(@rspack/core@1.7.8(@swc/helpers@0.5.19))(webpack@5.105.4(@swc/core@1.3.72(@swc/helpers@0.5.19))(esbuild@0.28.1))
       '@rsdoctor/utils': 0.4.11(@rspack/core@1.7.8(@swc/helpers@0.5.19))(webpack@5.105.4(@swc/core@1.3.72(@swc/helpers@0.5.19))(esbuild@0.28.1))
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       enhanced-resolve: 5.12.0
       filesize: 10.1.6
       fs-extra: 11.3.3
@@ -41495,7 +41457,7 @@ snapshots:
 
   axios-mock-adapter@1.22.0(axios@1.13.5):
     dependencies:
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       fast-deep-equal: 3.1.3
       is-buffer: 2.0.5
 
@@ -41506,17 +41468,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  axios@1.13.5:
-    dependencies:
-      follow-redirects: 1.15.11(debug@4.3.7)
-      form-data: 4.0.5
-      proxy-from-env: 1.1.0
-    transitivePeerDependencies:
-      - debug
-
   axios@1.13.5(debug@4.4.3):
     dependencies:
-      follow-redirects: 1.15.11(debug@4.4.3)
+      follow-redirects: 1.15.11(debug@4.3.7)
       form-data: 4.0.5
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -41972,11 +41926,6 @@ snapshots:
   bundle-name@4.1.0:
     dependencies:
       run-applescript: 7.1.0
-
-  bundle-require@5.1.0(esbuild@0.23.1):
-    dependencies:
-      esbuild: 0.23.1
-      load-tsconfig: 0.2.5
 
   bundle-require@5.1.0(esbuild@0.28.1):
     dependencies:
@@ -44398,33 +44347,6 @@ snapshots:
       '@esbuild/win32-ia32': 0.19.9
       '@esbuild/win32-x64': 0.19.9
 
-  esbuild@0.23.1:
-    optionalDependencies:
-      '@esbuild/aix-ppc64': 0.23.1
-      '@esbuild/android-arm': 0.23.1
-      '@esbuild/android-arm64': 0.23.1
-      '@esbuild/android-x64': 0.23.1
-      '@esbuild/darwin-arm64': 0.23.1
-      '@esbuild/darwin-x64': 0.23.1
-      '@esbuild/freebsd-arm64': 0.23.1
-      '@esbuild/freebsd-x64': 0.23.1
-      '@esbuild/linux-arm': 0.23.1
-      '@esbuild/linux-arm64': 0.23.1
-      '@esbuild/linux-ia32': 0.23.1
-      '@esbuild/linux-loong64': 0.23.1
-      '@esbuild/linux-mips64el': 0.23.1
-      '@esbuild/linux-ppc64': 0.23.1
-      '@esbuild/linux-riscv64': 0.23.1
-      '@esbuild/linux-s390x': 0.23.1
-      '@esbuild/linux-x64': 0.23.1
-      '@esbuild/netbsd-x64': 0.23.1
-      '@esbuild/openbsd-arm64': 0.23.1
-      '@esbuild/openbsd-x64': 0.23.1
-      '@esbuild/sunos-x64': 0.23.1
-      '@esbuild/win32-arm64': 0.23.1
-      '@esbuild/win32-ia32': 0.23.1
-      '@esbuild/win32-x64': 0.23.1
-
   esbuild@0.28.1:
     optionalDependencies:
       '@esbuild/aix-ppc64': 0.28.1
@@ -45286,10 +45208,6 @@ snapshots:
     optionalDependencies:
       debug: 4.3.7
 
-  follow-redirects@1.15.11(debug@4.4.3):
-    optionalDependencies:
-      debug: 4.4.3(supports-color@8.1.1)
-
   follow-redirects@1.5.10:
     dependencies:
       debug: 3.1.0
@@ -45634,7 +45552,7 @@ snapshots:
 
   gigachat@0.0.15:
     dependencies:
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
       uuid: 11.1.0
     transitivePeerDependencies:
       - debug
@@ -46507,7 +46425,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.3
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.13.5)
+      retry-axios: 2.6.0(axios@1.13.5(debug@4.4.3))
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -52841,9 +52759,9 @@ snapshots:
 
   retry-as-promised@7.0.4: {}
 
-  retry-axios@2.6.0(axios@1.13.5):
+  retry-axios@2.6.0(axios@1.13.5(debug@4.4.3)):
     dependencies:
-      axios: 1.13.5
+      axios: 1.13.5(debug@4.4.3)
 
   retry@0.10.1: {}
 
@@ -54674,12 +54592,12 @@ snapshots:
 
   tsup@8.2.4(@swc/core@1.3.72(@swc/helpers@0.5.19))(jiti@2.6.1)(postcss@8.4.49)(tsx@4.22.4)(typescript@5.1.3)(yaml@2.9.0):
     dependencies:
-      bundle-require: 5.1.0(esbuild@0.23.1)
+      bundle-require: 5.1.0(esbuild@0.28.1)
       cac: 6.7.14
       chokidar: 3.6.0
       consola: 3.2.3
       debug: 4.4.1(supports-color@5.5.0)
-      esbuild: 0.23.1
+      esbuild: 0.28.1
       execa: 5.1.1
       globby: 11.1.0
       joycon: 3.1.1
