@@ -1,7 +1,7 @@
 ---
 pkg: '@nocobase/plugin-backups'
 title: "Quản lý Sao lưu"
-description: "Sao lưu quản lý vận hành: sao lưu đầy đủ database và file người dùng, sao lưu định kỳ, tải xóa khôi phục, hỗ trợ MySQL/PostgreSQL, cần cài đặt database client, tính năng phiên bản chuyên nghiệp."
+description: "Sao lưu quản lý vận hành: sao lưu đầy đủ database và file người dùng, sao lưu định kỳ, tải xóa khôi phục, hỗ trợ MySQL/PostgreSQL, cần xác nhận database client khả dụng."
 keywords: "Quản lý sao lưu,Backup,sao lưu dữ liệu,sao lưu định kỳ,khôi phục sao lưu,MySQL PostgreSQL,quản lý vận hành,NocoBase"
 ---
 # Quản lý Sao lưu
@@ -10,18 +10,21 @@ keywords: "Quản lý sao lưu,Backup,sao lưu dữ liệu,sao lưu định kỳ
 
 Plugin Backup Manager của NocoBase cung cấp các tính năng sao lưu đầy đủ database NocoBase và file do người dùng upload, sao lưu định kỳ, tải xuống, xóa và khôi phục bản sao lưu.
 
-:::warning
-Plugin Backup Manager bao gồm trong phiên bản chuyên nghiệp và phiên bản doanh nghiệp. Đối với người dùng phiên bản cộng đồng và phiên bản chuẩn, có thể trực tiếp sao lưu database, chi tiết tham khảo: [`Cách sao lưu và khôi phục NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
-:::
 
 ## Cài đặt database client
 
-Backup Manager phụ thuộc vào client của database chính tương ứng, trước khi sử dụng vui lòng vào trang chủ tải client phù hợp với phiên bản database đang sử dụng:
+Backup Manager phụ thuộc vào database client của database chính. Trước khi sử dụng, hãy xác nhận runtime environment hiện tại đã có client phù hợp với phiên bản database.
+
+:::tip
+Khi cài đặt NocoBase bằng Docker, nên dùng image `full` tương ứng, ví dụ `latest-full`, `beta-full` hoặc `alpha-full`. Các image này đã tích hợp database client phổ biến, nên thông thường không cần cài đặt thủ công.
+:::
+
+Nếu môi trường hiện tại chưa có database client cần thiết, hãy tải client phù hợp với phiên bản database từ website chính thức:
 
 - MySQL: https://dev.mysql.com/downloads/
 - PostgreSQL: https://www.postgresql.org/download/
 
-Phiên bản Docker, có thể trực tiếp viết một đoạn script trong thư mục `./storage/scripts`
+Nếu cần cài đặt thủ công trong môi trường Docker, có thể viết một đoạn script trong thư mục `./storage/scripts`
 
 ```bash
 mkdir ./storage/scripts

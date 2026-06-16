@@ -1,7 +1,7 @@
 ---
 pkg: '@nocobase/plugin-backups'
 title: "Manajemen Backup"
-description: "Backup ops management: full backup database dan file user, scheduled backup, download/delete/restore, mendukung MySQL/PostgreSQL, perlu instalasi database client, fitur professional."
+description: "Backup ops management: full backup database dan file user, scheduled backup, download/delete/restore, mendukung MySQL/PostgreSQL, perlu memastikan database client tersedia."
 keywords: "manajemen backup,Backup,backup data,scheduled backup,restore backup,MySQL PostgreSQL,ops management,NocoBase"
 ---
 # Manajemen Backup
@@ -10,18 +10,21 @@ keywords: "manajemen backup,Backup,backup data,scheduled backup,restore backup,M
 
 Plugin backup manager NocoBase menyediakan fitur full backup database NocoBase dan file yang di-upload user, scheduled backup, download backup, delete, dan restore.
 
-:::warning
-Plugin backup manager termasuk dalam versi professional dan enterprise. Untuk pengguna versi community dan standard, Anda dapat backup database secara langsung. Untuk detail lihat: [`Cara backup dan restore NocoBase`](https://www.nocobase.com/en/blog/nocobase-backup-restore)
-:::
 
 ## Instalasi Database Client
 
-Backup manager bergantung pada client dari main data yang sesuai. Sebelum digunakan, silakan unduh client yang sesuai dengan versi database yang digunakan dari website resmi:
+Backup manager bergantung pada database client untuk database utama. Sebelum digunakan, pastikan runtime environment saat ini memiliki client yang sesuai dengan versi database.
+
+:::tip
+Jika menginstal NocoBase dengan Docker, disarankan menggunakan image `full` yang sesuai, seperti `latest-full`, `beta-full`, atau `alpha-full`. Image ini sudah menyertakan database client umum, sehingga biasanya tidak perlu instalasi manual.
+:::
+
+Jika environment saat ini belum memiliki database client yang diperlukan, unduh client yang sesuai dengan versi database dari website resmi:
 
 - MySQL: https://dev.mysql.com/downloads/
 - PostgreSQL: https://www.postgresql.org/download/
 
-Versi Docker, Anda dapat langsung menulis script di direktori `./storage/scripts`
+Jika perlu instalasi manual di environment Docker, Anda dapat menulis script di direktori `./storage/scripts`
 
 ```bash
 mkdir ./storage/scripts

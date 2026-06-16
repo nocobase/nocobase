@@ -1,7 +1,7 @@
 ---
 pkg: '@nocobase/plugin-backups'
 title: "备份管理"
-description: "运维管理备份：数据库及用户文件全量备份、定时备份、下载删除还原，支持 MySQL/PostgreSQL，需安装数据库客户端，专业版功能。"
+description: "运维管理备份：数据库及用户文件全量备份、定时备份、下载删除还原，支持 MySQL/PostgreSQL，需确认数据库客户端可用。"
 keywords: "备份管理,Backup,数据备份,定时备份,备份还原,MySQL PostgreSQL,运维管理,NocoBase"
 ---
 # 备份管理
@@ -10,18 +10,21 @@ keywords: "备份管理,Backup,数据备份,定时备份,备份还原,MySQL Post
 
 NocoBase 备份管理器插件，提供了 NocoBase 数据库及用户上传文件的全量备份、定时备份、备份的下载、删除及还原等功能。
 
-:::warning
-备份管理器插件包含在专业版和企业版中。对于社区版和标准版用户，可以直接备份数据库，详情参考：[`如何备份和还原 NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
-:::
 
 ## 安装数据库客户端
 
-备份管理器依赖对应主数据的客户端，使用前请前往官网下载与所使用的数据库版本匹配的客户端：
+备份管理器依赖对应主数据的数据库客户端。使用前请先确认当前运行环境中已有与数据库版本匹配的客户端。
+
+:::tip
+使用 Docker 安装 NocoBase 时，推荐使用对应版本的 `full` 镜像，例如 `latest-full`、`beta-full`、`alpha-full`。这类镜像已内置常用数据库客户端，通常无需手动安装。
+:::
+
+如果当前环境缺少数据库客户端，请前往官网下载与所使用的数据库版本匹配的客户端：
 
 - MySQL：https://dev.mysql.com/downloads/
 - PostgreSQL：https://www.postgresql.org/download/
 
-Docker 版本，可以直接在 `./storage/scripts` 目录下，编写一段脚本
+如需在 Docker 环境中手动安装，可以直接在 `./storage/scripts` 目录下，编写一段脚本
 
 ```bash
 mkdir ./storage/scripts
