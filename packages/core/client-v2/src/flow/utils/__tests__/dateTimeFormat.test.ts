@@ -155,7 +155,6 @@ describe('dateTimeFormat', () => {
     const setProps = vi.fn();
     const save = vi.fn();
     const setParentProps = vi.fn();
-    const saveParent = vi.fn();
     const model = {
       props: {
         titleField: 'shipmentsDatetime',
@@ -182,7 +181,6 @@ describe('dateTimeFormat', () => {
           isAssociationField: () => true,
         },
         setProps: setParentProps,
-        save: saveParent,
       },
     };
     model.parent['subModels'] = {
@@ -206,7 +204,6 @@ describe('dateTimeFormat', () => {
       timeFormat: 'hh:mm:ss a',
       format: 'YYYY-MM-DD hh:mm:ss a',
     });
-    expect(saveParent).toHaveBeenCalled();
     expect(save).toHaveBeenCalled();
   });
 

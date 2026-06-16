@@ -26,14 +26,13 @@ const isTableColumnFieldSubModel = (model) => {
   );
 };
 
-const syncTableColumnDateTimeFormatProps = async (ctx, props) => {
+const syncTableColumnDateTimeFormatProps = (ctx, props) => {
   const model = ctx.model;
   if (!isTableColumnFieldSubModel(model) || !model?.parent?.collectionField?.isAssociationField?.()) {
     return;
   }
 
   model.parent.setProps(props);
-  await model.parent.save?.();
 };
 
 export const dateTimeFormat = defineAction({
@@ -198,7 +197,7 @@ export const dateTimeFormat = defineAction({
   async beforeParamsSave(ctx: any, params) {
     const props = resolveDateTimeDisplayProps({ model: ctx.model, params });
     ctx.model.setProps(props);
-    await syncTableColumnDateTimeFormatProps(ctx, props);
+    syncTableColumnDateTimeFormatProps(ctx, props);
     await ctx.model.save?.();
   },
   handler(ctx: any, params) {
