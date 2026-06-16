@@ -11,6 +11,7 @@ import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 
 const ANSI_SGR_REGEX = new RegExp(String.raw`\u001B\[[0-9;]*m`, 'g');
 
@@ -259,7 +260,7 @@ test('nb init uses configured default ui/api hosts', async () => {
   try {
     process.env.NB_CLI_ROOT = tempHome;
     const { setCliConfigValue } = await import('../lib/cli-config.js');
-    await setCliConfigValue('default-ui-host', '0.0.0.0');
+    await setCliConfigValue('default-ui-host', '116.62.46.238');
     await setCliConfigValue('default-api-host', '192.168.1.10');
 
     const { default: Init } = await import('../commands/init.js');
@@ -306,7 +307,7 @@ test('nb init uses configured default ui/api hosts', async () => {
     await Init.prototype.run.call(command);
 
     const webUiOptions = mocks.runPromptCatalogWebUI.mock.calls.at(-1)?.[0];
-    expect(webUiOptions?.host).toBe('0.0.0.0');
+    expect(webUiOptions?.host).toBe('116.62.46.238');
     expect(mocks.upsertEnv.mock.calls.at(-1)?.[1]).toMatchObject({
       apiBaseUrl: 'http://192.168.1.10:13080/api',
     });
@@ -797,6 +798,7 @@ test('nb init saves env config before install starts so failures still leave the
   expect(mocks.upsertEnv.mock.calls.length).toBe(1);
   expect(mocks.upsertEnv.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(true);
   expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
     timezone: expect.any(String),
   });
   expect(String(mocks.upsertEnv.mock.calls[0]?.[1]?.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);

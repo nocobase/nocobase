@@ -10,8 +10,20 @@
       },
       {
         "type": "custom-link",
-        "label": "システム要件",
-        "link": "/get-started/system-requirements"
+        "label": "オペレーティングシステム要件",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "本番環境",
+            "link": "/get-started/system-requirements"
+          },
+          {
+            "type": "custom-link",
+            "label": "ローカル開発環境",
+            "link": "/ai/local-development-setup"
+          }
+        ],
+        "collapsed": true
       },
       {
         "type": "custom-link",
@@ -22,6 +34,16 @@
         "type": "custom-link",
         "label": "NocoBase アプリをインストール",
         "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase アプリをアップグレード",
+        "link": "/ai/upgrade-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "2.0 から 2.1 へアップグレード",
+        "link": "/ai/upgrade-from-2-0-to-2-1"
       },
       {
         "type": "custom-link",

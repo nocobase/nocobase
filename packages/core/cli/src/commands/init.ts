@@ -39,6 +39,7 @@ import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/p
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
 import { installNocoBaseSkills, isNpmRegistryUnavailable } from '../lib/skills-manager.js';
 import { omitKeys, pickKeys } from '../lib/object-utils.ts';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 import { printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
@@ -317,16 +318,12 @@ function formatBrowserOpenError(error: unknown) {
 }
 
 export default class Init extends Command {
-  static override summary = 'Set up NocoBase so coding agents can connect and work with it';
-  static override description = `Set up NocoBase for coding agents in the current workspace.
+  static override summary = 'Set up or connect a NocoBase environment in the current workspace';
+  static override description = `Set up NocoBase in the current workspace.
 
-\`nb init\` prepares a NocoBase environment that coding agents can use. It supports three setup paths:
+\`nb init\` helps you install a new NocoBase app, take over managing one that already exists on this machine, or connect a remote NocoBase app and save it as a CLI env.
 
-- Install a new NocoBase app, then save it as a CLI env.
-- Take over managing an app that already exists on this machine by reusing its database.
-- Connect a remote NocoBase app and save it as a CLI env.
-
-It can also install NocoBase AI coding skills (\`nocobase/skills\`) so agents get the project-specific workflow guidance.
+You can use the saved environment directly, or let a coding agent access it later. It can also install NocoBase AI coding skills (\`nocobase/skills\`) when you want agent-specific workflow guidance.
 
 If setup was interrupted earlier, use \`--resume\` with an existing env name to continue from the saved workspace config.
 
@@ -561,7 +558,7 @@ Prompt modes:
       default: false,
     }),
     'ui-host': Flags.string({
-      description: 'Host for the local --ui setup server (default: 127.0.0.1)',
+      description: 'Browser-accessible host for the --ui setup page URL (default: 127.0.0.1)',
     }),
     'ui-port': Flags.integer({
       description: 'Port for the local --ui setup server; 0 lets the OS choose an available port',
@@ -1331,6 +1328,7 @@ Prompt modes:
     await upsertEnv(
       envName,
       {
+        schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
         ...(source === 'docker'
           ? { kind: 'docker' }
           : source || appPath || appRootPath

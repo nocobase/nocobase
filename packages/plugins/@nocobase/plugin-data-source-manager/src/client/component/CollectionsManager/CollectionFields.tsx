@@ -75,7 +75,7 @@ export const CollectionFields = () => {
         options?.onSuccess(service.data);
         field.componentProps.dragSort = !!service.dragSort;
       }
-    }, [field.componentProps, options, service.data, service.dragSort, service.loading]);
+    }, [service.loading]);
     return service;
   };
 

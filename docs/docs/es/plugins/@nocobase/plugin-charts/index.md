@@ -1,8 +1,12 @@
 ---
-displayName: "Gráficos (obsoleto)"
+title: "Charts (deprecated)"
+keywords: "Charts (deprecated),Plugin,NocoBase"
+displayName: "Charts (deprecated)"
 packageName: '@nocobase/plugin-charts'
+supportedVersions:
+  - 1.x
 description: |
-  Plugin obsoleto, por favor utilice el plugin de visualización de datos en su lugar.
+  The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +14,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Gráficos (obsoleto)
+# Charts (deprecated)
 
-> Nota: Este plugin está obsoleto (deprecated).
+> Note: This plugin is deprecated.

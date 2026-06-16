@@ -1,15 +1,17 @@
 ---
-displayName: "WeCom (企业微信)"
+title: "WeCom"
+keywords: "Authentication,Notification,Users & permissions"
+displayName: "WeCom"
 packageName: '@nocobase/plugin-auth-wecom'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  WeCom（企业微信）との連携機能を提供します。これには、認証方式、通知チャネル、ユーザーデータの同期ソースが含まれます。
+  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# WeCom (企业微信)
+# WeCom

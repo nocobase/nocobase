@@ -14,7 +14,7 @@ import fse from 'fs-extra';
 import path from 'path';
 import Application from '../../application';
 import PluginManager from '../plugin-manager';
-import { pmListSummary } from '../utils';
+import { assertSafePluginPackageName, pmListSummary } from '../utils';
 
 import packageJson from '../../../package.json';
 
@@ -314,12 +314,19 @@ export default {
       if (!keys.length) {
         ctx.throw(400, 'plugin name invalid');
       }
+      for (const key of keys) {
+        try {
+          assertSafePluginPackageName(key);
+        } catch (error) {
+          ctx.throw(400, 'plugin name invalid');
+        }
+      }
       const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
       const argv = ['pm', 'enable', ...keys];
       if (awaitResponse) {
         await app.runAsCLI(argv, { from: 'user', throwError: true });
       } else {
-        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+        app.runAsCLI(argv, { from: 'user' }).catch((err) => {
           app.log.error(err);
         });
       }
@@ -338,7 +345,7 @@ export default {
       if (awaitResponse) {
         await app.runAsCLI(argv, { from: 'user', throwError: true });
       } else {
-        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+        app.runAsCLI(argv, { from: 'user' }).catch((err) => {
           app.log.error(err);
         });
       }

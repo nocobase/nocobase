@@ -1,15 +1,17 @@
 ---
-displayName: "Workflow : Nœud de calcul de date"
+title: "Workflow: date calculation node"
+keywords: "Workflow"
+displayName: "Workflow: date calculation node"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Peut être utilisé pour effectuer des calculs sur les dates dans un workflow, tels que l'ajout, la soustraction, la comparaison, le formatage, etc.
+  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow : Nœud de calcul de date
+# Workflow: date calculation node

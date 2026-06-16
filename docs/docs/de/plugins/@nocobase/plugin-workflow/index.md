@@ -1,8 +1,10 @@
 ---
+title: "Workflow"
+keywords: "Workflow"
 displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
-  Ein leistungsstarkes BPM-Tool, das die Grundlage für die Geschäftsautomatisierung bildet und beliebig um weitere Trigger und Nodes erweitert werden kann.
+  A powerful BPM tool that provides foundational support for business automation, with the capability to extend unlimited triggers and nodes.
 isFree: true
 builtIn: true
 defaultEnabled: false

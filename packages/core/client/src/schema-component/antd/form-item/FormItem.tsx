@@ -108,7 +108,7 @@ export const FormItem: any = withDynamicSchemaProps(
           field.description
         );
       }
-    }, [field.description]);
+    }, [field.description, t]);
     const className = useMemo(() => {
       return cx(formItemWrapCss, {
         [formItemLabelCss]: showTitle === false,
@@ -126,10 +126,10 @@ export const FormItem: any = withDynamicSchemaProps(
             className={cx(
               'nb-form-item',
               css`
-                .ant-formily-item-layout-horizontal .ant-formily-item-control {
-                  max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
-                    ? '100% !important'
-                    : null};
+                ${showTitle === false || schema['x-component'] !== 'CollectionField'
+                  ? '.ant-formily-item-layout-horizontal .ant-formily-item-control'
+                  : '.nb-grid-col & .ant-formily-item-layout-horizontal .ant-formily-item-control'} {
+                  max-width: 100% !important;
                 }
               `,
             )}

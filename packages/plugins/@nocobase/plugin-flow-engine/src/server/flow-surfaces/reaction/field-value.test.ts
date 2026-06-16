@@ -16,6 +16,7 @@ import {
   collectUpdateAssociationValuesFromFieldValueRules,
   compileFieldValueRulesToCanonical,
   normalizeFieldValueRules,
+  validateFieldValueRulesAgainstCapability,
 } from './field-value';
 
 describe('flow surfaces reaction field value helpers', () => {
@@ -105,6 +106,38 @@ describe('flow surfaces reaction field value helpers', () => {
     } catch (error) {
       expect((error as FlowSurfaceBadRequestError).code).toBe(FLOW_SURFACE_REACTION_FORM_ONLY);
     }
+  });
+
+  it('allows DateTime condition values bound to context paths', () => {
+    expect(() =>
+      validateFieldValueRulesAgainstCapability(
+        normalizeFieldValueRules([
+          {
+            targetPath: 'status',
+            when: {
+              logic: '$and',
+              items: [
+                {
+                  path: 'record.lastFollowedAt',
+                  operator: '$dateBefore',
+                  value: { source: 'path', path: 'record.startAt' },
+                },
+              ],
+            },
+            value: { source: 'literal', value: 'stale' },
+          },
+        ]),
+        {
+          conditionMeta: {
+            operatorsByPath: {},
+            fieldMetaByPath: {
+              'record.lastFollowedAt': { type: 'datetime', interface: 'datetime' },
+              'record.startAt': { type: 'datetime', interface: 'datetime' },
+            },
+          },
+        },
+      ),
+    ).not.toThrow();
   });
 
   it('builds a stable write result and reuses slot fingerprinting', () => {

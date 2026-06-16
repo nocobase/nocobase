@@ -1,25 +1,25 @@
 ---
 pkg: '@nocobase/plugin-version-control'
-title: "版本管理"
-description: "版本管理插件操作手册：配合 AI 搭建自动保存版本，手动创建版本、恢复版本、设置保留数量、配置快捷键和纳入版本的用户数据表。"
-keywords: "版本管理,Version control,运维管理,AI 搭建,nocobase-revision,nb revision create,创建版本,恢复版本,NocoBase"
+title: "版本控制"
+description: "版本控制插件操作手册：配合 AI 搭建自动保存版本，手动创建版本、恢复版本、设置保留数量、配置快捷键和纳入版本的用户数据表。"
+keywords: "版本控制,Version control,运维管理,AI 搭建,nocobase-revision,nb revision create,创建版本,恢复版本,NocoBase"
 ---
 
-# 版本管理
+# 版本控制
 
-在 NocoBase 中，**版本管理（Version control）** 用来给当前应用保存一份可回退的版本。你可以手动创建版本，在需要时恢复到某个已保存的状态；也可以让 AI 搭建在完成阶段性成果后自动保存版本。
+在 NocoBase 中，**版本控制（Version control）** 用来给当前应用保存一份可回退的版本。你可以手动创建版本，在需要时恢复到某个已保存的状态；也可以让 AI 搭建在完成阶段性成果后自动保存版本。
 
-版本管理依赖 [备份管理](../backup-manager/index.mdx) 提供保存和恢复能力。使用版本管理前，需要先启用备份管理。
+版本控制依赖 [备份管理](../backup-manager/index.mdx) 提供保存和恢复能力。使用版本控制前，需要先启用备份管理。
 
 :::warning 注意
 
-社区版和标准版不包含版本管理插件。如果需要保存可回退的应用状态，可以使用 [备份管理](../backup-manager/index.mdx)：在关键变更前手动创建备份，需要回退时再还原对应备份。
+社区版和标准版不包含版本控制插件。如果需要保存可回退的应用状态，可以使用 [备份管理](../backup-manager/index.mdx)：在关键变更前手动创建备份，需要回退时再还原对应备份。
 
 :::
 
 ## AI 自动保存版本
 
-启用版本管理插件后，AI 搭建会多一层回退保障。AI Agent 开始处理需求时，会检查当前应用可用的 NocoBase Skills；如果识别到 `nocobase-revision` skill，后续就可以把关键搭建节点保存为可恢复版本。
+启用版本控制插件后，AI 搭建会多一层回退保障。AI Agent 开始处理需求时，会检查当前应用可用的 NocoBase Skills；如果识别到 `nocobase-revision` skill，后续就可以把关键搭建节点保存为可恢复版本。
 
 ![AI 开始搭建时识别 nocobase-revision skill](https://static-docs.nocobase.com/20260611115845.png)
 
@@ -31,9 +31,9 @@ keywords: "版本管理,Version control,运维管理,AI 搭建,nocobase-revision
 
 ## 进入插件
 
-启用插件后，顶部导航栏会出现「版本管理」菜单。你可以在这里直接创建版本，也可以进入版本列表。
+启用插件后，顶部导航栏会出现「版本控制」菜单。你可以在这里直接创建版本，也可以进入版本列表。
 
-另外，你也可以从「系统设置 / 版本管理」进入插件页面。创建版本的默认快捷键是 `Ctrl + K`，可以在设置页里修改。
+另外，你也可以从「系统设置 / 版本控制」进入插件页面。创建版本的默认快捷键是 `Ctrl + K`，可以在设置页里修改。
 
 ![20260611112317](https://static-docs.nocobase.com/20260611112317.png)
 
@@ -89,7 +89,7 @@ keywords: "版本管理,Version control,运维管理,AI 搭建,nocobase-revision
 
 ## 相关链接
 
-- [备份管理](../backup-manager/index.mdx) — 版本管理依赖的基础能力
+- [备份管理](../backup-manager/index.mdx) — 版本控制依赖的基础能力
 - [迁移管理](../migration-manager/index.md) — 在多环境之间迁移应用配置
 - [发布管理](../release-management/index.md) — 结合备份、迁移和变量配置规划发布流程
 - [AI 搭建快速开始](../../ai-builder/index.md) — 用自然语言完成数据建模、页面配置和工作流编排

@@ -8,7 +8,7 @@
  */
 
 import { Context, utils } from '@nocobase/actions';
-import { MultipleRelationRepository, Op, Repository } from '@nocobase/database';
+import { MultipleRelationRepository, Op, Repository, type Transaction } from '@nocobase/database';
 import WorkflowPlugin from '..';
 import type { FlowNodeModel, WorkflowModel } from '../types';
 
@@ -42,6 +42,24 @@ function validateNode(context: Context, workflow: WorkflowModel | null, values: 
       throw new NodeValidationError(errors);
     }
   }
+}
+
+async function touchWorkflow(context: Context, workflowId: number | string, transaction: Transaction) {
+  const values: { updatedAt: Date; updatedById?: number | string } = {
+    updatedAt: new Date(),
+  };
+  const currentUserId = context.state?.currentUser?.id;
+  if (currentUserId != null) {
+    values.updatedById = currentUserId;
+  }
+
+  await context.db.getCollection('workflows').model.update(values, {
+    where: {
+      id: workflowId,
+    },
+    transaction,
+    hooks: false,
+  });
 }
 
 export async function create(context: Context, next) {
@@ -95,6 +113,7 @@ export async function create(context: Context, next) {
         await instance.setDownstream(previousHead, { transaction });
         instance.set('downstream', previousHead);
       }
+      await touchWorkflow(context, workflow.id, transaction);
       return instance;
     }
 
@@ -143,6 +162,7 @@ export async function create(context: Context, next) {
 
     instance.set('upstream', upstream);
 
+    await touchWorkflow(context, workflow.id, transaction);
     return instance;
   });
 
@@ -224,6 +244,7 @@ export async function duplicate(context: Context, next) {
         await instance.setDownstream(previousHead, { transaction });
         instance.set('downstream', previousHead);
       }
+      await touchWorkflow(context, origin.workflowId, transaction);
       return instance;
     }
 
@@ -272,6 +293,7 @@ export async function duplicate(context: Context, next) {
 
     instance.set('upstream', upstream);
 
+    await touchWorkflow(context, origin.workflowId, transaction);
     return instance;
   });
 
@@ -423,6 +445,7 @@ export async function destroy(context: Context, next) {
       filterByTk: [instance.id, ...branchNodesToDelete.map((item) => item.id)],
       transaction,
     });
+    await touchWorkflow(context, instance.workflowId, transaction);
   });
 
   context.body = instance;
@@ -459,6 +482,7 @@ export async function destroyBranch(context: Context, next) {
   let deletedBranchHead = null;
 
   await db.sequelize.transaction(async (transaction) => {
+    let shouldTouchWorkflow = false;
     const nodes = await repository.find({
       filter: {
         workflowId: instance.workflowId,
@@ -493,6 +517,7 @@ export async function destroyBranch(context: Context, next) {
           filterByTk: idsToDelete,
           transaction,
         });
+        shouldTouchWorkflow = true;
       }
     }
 
@@ -508,6 +533,12 @@ export async function destroyBranch(context: Context, next) {
           ),
         ),
       );
+      if (headsToShift.length) {
+        shouldTouchWorkflow = true;
+      }
+    }
+    if (shouldTouchWorkflow) {
+      await touchWorkflow(context, instance.workflowId, transaction);
     }
   });
 
@@ -625,6 +656,7 @@ export async function move(context: Context, next) {
         { transaction },
       );
 
+      await touchWorkflow(context, instance.workflowId, transaction);
       return instance;
     }
 
@@ -662,6 +694,7 @@ export async function move(context: Context, next) {
         { transaction },
       );
 
+      await touchWorkflow(context, instance.workflowId, transaction);
       return instance;
     }
 
@@ -693,6 +726,7 @@ export async function move(context: Context, next) {
       { transaction },
     );
 
+    await touchWorkflow(context, instance.workflowId, transaction);
     return instance;
   });
 
@@ -719,7 +753,7 @@ export async function update(context: Context, next) {
     const merged = Object.assign({}, instance.get(), values);
     validateNode(context, null, merged);
 
-    return repository.update({
+    const result = await repository.update({
       filterByTk,
       values,
       whitelist,
@@ -729,6 +763,8 @@ export async function update(context: Context, next) {
       context,
       transaction,
     });
+    await touchWorkflow(context, instance.workflowId, transaction);
+    return result;
   });
 
   await next();

@@ -70,6 +70,11 @@ const qualifyPgTablePattern = (table: string, schema?: string) => {
 
   return `${schema}.${tablePattern}`;
 };
+const assertPostgresSchemaIdentifier = (schema: string) => {
+  if (!/^[A-Za-z_][A-Za-z0-9_]{0,62}$/.test(schema)) {
+    throw new Error(`Invalid PostgreSQL schema: ${schema}`);
+  }
+};
 
 abstract class BaseDBAdapter implements DBAdapter {
   constructor(public dbOpts: DatabaseOptions) {}
@@ -85,7 +90,7 @@ abstract class BaseDBAdapter implements DBAdapter {
       execSync(`${command} --version`);
     } catch (error) {
       throw new Error(
-        `Command ${command} not found, please install it first. Check reference here: https://docs.nocobase.com/handbook/backups#installation`,
+        `Command ${command} not found, please install it first. Check reference here: https://docs.nocobase.com/ops-management/backup-manager/`,
       );
     }
   };
@@ -427,6 +432,12 @@ class PostgresAdapter extends BaseDBAdapter {
     let schemaOption = this.dbOpts.schema;
     if (schema && !schemaOption) {
       schemaOption = 'public'; // if schema is provided, but schemaOption is not, set it to public
+    }
+    if (schema) {
+      assertPostgresSchemaIdentifier(schema);
+    }
+    if (schemaOption) {
+      assertPostgresSchemaIdentifier(schemaOption);
     }
     const cpuCores = os.cpus().length; // get the number of CPU cores, so we can use it to parallelize the restore
     const j = Math.max(1, Math.floor(cpuCores / 2)); // use half of the cores

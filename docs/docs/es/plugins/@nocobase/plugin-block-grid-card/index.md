@@ -1,12 +1,14 @@
 ---
-displayName: "Bloque: Grid Card"
+title: "Block: GridCard"
+keywords: "Blocks"
+displayName: "Block: GridCard"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  Muestra datos en forma de lista de cuadrícula y admite la configuración de paginación.
+  Display data in a grid list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Bloque: Grid Card
+# Block: GridCard

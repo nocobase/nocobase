@@ -19,10 +19,12 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { Alert, Image, Modal, Space, Spin } from 'antd';
 import match from 'mime-match';
 import { Trans, useTranslation } from 'react-i18next';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFWorker, RenderTask } from 'pdfjs-dist';
+import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { NAMESPACE } from '../../common/constants';
 
 // Static placeholder icons live under the app's public folder, served by the gateway at the
@@ -399,8 +401,57 @@ const IframePreviewer = ({ file }: FilePreviewerProps) => {
 };
 
 type PdfJs = typeof import('pdfjs-dist/build/pdf.mjs');
+type PdfTextLayer = InstanceType<PdfJs['TextLayer']>;
 
 let pdfjsPromise: Promise<PdfJs> | null = null;
+
+type NocoBaseWindow = Window & {
+  __nocobase_modern_client_prefix__?: string;
+  __nocobase_public_path__?: string;
+  __webpack_public_path__?: string;
+};
+
+const ensureTrailingSlash = (path: string) => (path.endsWith('/') ? path : `${path}/`);
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getPluginStaticPublicPath = (browserWindow?: NocoBaseWindow) => {
+  const webpackPublicPath = browserWindow?.__webpack_public_path__;
+  if (webpackPublicPath) {
+    return ensureTrailingSlash(webpackPublicPath);
+  }
+
+  const publicPath = ensureTrailingSlash(browserWindow?.__nocobase_public_path__ || '/');
+  const modernClientPrefix =
+    typeof browserWindow?.__nocobase_modern_client_prefix__ === 'string'
+      ? browserWindow.__nocobase_modern_client_prefix__.replace(/^\/+|\/+$/g, '')
+      : '';
+  if (!modernClientPrefix) {
+    return publicPath;
+  }
+
+  return publicPath.replace(new RegExp(`/${escapeRegExp(modernClientPrefix)}/$`), '/');
+};
+
+const getPdfjsBaseUrl = () => {
+  const browserWindow = typeof window === 'undefined' ? undefined : (window as NocoBaseWindow);
+  const publicPath = getPluginStaticPublicPath(browserWindow);
+  return `${publicPath}static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/`;
+};
+
+export const getPdfPreviewResourceOptions = (): Pick<
+  DocumentInitParameters,
+  'cMapPacked' | 'cMapUrl' | 'standardFontDataUrl'
+> => {
+  const pdfjsBaseUrl = getPdfjsBaseUrl();
+  return {
+    cMapPacked: true,
+    cMapUrl: `${pdfjsBaseUrl}cmaps/`,
+    standardFontDataUrl: `${pdfjsBaseUrl}standard_fonts/`,
+  };
+};
+
+export const getPdfPreviewWorkerSrc = () => `${getPdfjsBaseUrl()}pdf.worker.min.mjs`;
 
 type PdfPreviewErrorCode = 'resources' | 'file' | 'document';
 
@@ -432,6 +483,68 @@ const loadPdfJs = async () => {
 
 const PDF_SCALE = 1.4;
 
+const PDF_PREVIEW_PAGE_CLASS = css`
+  position: relative;
+  width: 100%;
+  background: #fff;
+  overflow: hidden;
+  --total-scale-factor: calc(${PDF_SCALE} * var(--pdf-responsive-scale, 1));
+  --scale-round-x: 1px;
+  --scale-round-y: 1px;
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .textLayer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    line-height: 1;
+    text-align: initial;
+    text-size-adjust: none;
+    transform-origin: 0 0;
+    z-index: 1;
+    --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size, 1));
+    --min-font-size-inv: calc(1 / var(--min-font-size, 1));
+  }
+
+  .textLayer :is(span, br) {
+    position: absolute;
+    color: transparent;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+  }
+
+  .textLayer > :not(.markedContent),
+  .textLayer .markedContent span:not(.markedContent) {
+    z-index: 1;
+    --font-height: 0;
+    --scale-x: 1;
+    --rotate: 0deg;
+    font-size: calc(var(--text-scale-factor) * var(--font-height));
+    transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+  }
+
+  .textLayer .markedContent {
+    display: contents;
+  }
+
+  .textLayer span[role='img'] {
+    user-select: none;
+    cursor: default;
+  }
+
+  .textLayer ::selection {
+    background: rgba(0, 0, 255, 0.25);
+  }
+`;
+
 const PDF_PREVIEW_ERROR_MESSAGES: Record<PdfPreviewErrorCode, string> = {
   resources:
     'PDF preview resources failed to load. Please refresh the page and check whether plugin static files are deployed correctly.',
@@ -460,6 +573,7 @@ interface PdfSession {
   inFlight: Set<number>;
   loadingTasks: PDFDocumentLoadingTask[];
   renderTasks: RenderTask[];
+  textLayers: Set<PdfTextLayer>;
   observer?: IntersectionObserver;
 }
 
@@ -485,6 +599,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       inFlight: new Set(),
       loadingTasks: [],
       renderTasks: [],
+      textLayers: new Set(),
     };
     sessionRef.current = session;
     setMeta(null);
@@ -533,19 +648,16 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       }
       session.data = data;
       try {
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.min.mjs',
-          import.meta.url,
-        ).toString();
+        pdfjs.GlobalWorkerOptions.workerSrc = getPdfPreviewWorkerSrc();
         session.worker = pdfjs.PDFWorker.create({});
       } catch (error) {
         throw new PdfPreviewError('resources', 'Failed to load PDF.js worker.', error);
       }
-      // Security hardening: no eval-based font hinting, no XFA scripting
-      // (annotations are disabled per render call). getDocument detaches the
-      // buffer it receives, so hand it a copy and keep `data` for later pages.
+      // Security hardening: no eval-based font hinting and no XFA scripting.
+      // getDocument detaches the buffer it receives, so hand it a copy and keep `data` for later pages.
       const metaTask = pdfjs.getDocument({
         data: data.slice(0),
+        ...getPdfPreviewResourceOptions(),
         isEvalSupported: false,
         enableXfa: false,
         useWasm: false,
@@ -588,10 +700,37 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       session.abortController.abort();
       session.observer?.disconnect();
       session.renderTasks.forEach((task) => task.cancel?.());
+      session.textLayers.forEach((textLayer) => textLayer.cancel());
       session.loadingTasks.forEach((task) => task.destroy?.());
+      session.pdfjs?.TextLayer.cleanup();
       session.worker?.destroy?.();
     };
   }, [src]);
+
+  React.useEffect(() => {
+    if (!meta || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const updatePageScale = (el: HTMLElement, width: number) => {
+      if (width > 0) {
+        el.style.setProperty('--pdf-responsive-scale', String(width / meta.width));
+      }
+    };
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        updatePageScale(entry.target as HTMLElement, entry.contentRect.width);
+      }
+    });
+    pageElsRef.current.forEach((el) => {
+      updatePageScale(el, el.getBoundingClientRect().width);
+      resizeObserver.observe(el);
+    });
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [meta]);
 
   // Lazily render pages as their placeholders scroll into view.
   React.useEffect(() => {
@@ -617,6 +756,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
       // for the same isolation reason. getDocument detaches the buffer it is
       // given, so each document receives its own copy.
       let task: PDFDocumentLoadingTask | undefined;
+      let textLayer: PdfTextLayer | undefined;
       try {
         let pdf: PDFDocumentProxy;
         if (pageNumber === 1 || !session.data) {
@@ -624,6 +764,7 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
         } else {
           task = pdfjs.getDocument({
             data: session.data.slice(0),
+            ...getPdfPreviewResourceOptions(),
             isEvalSupported: false,
             enableXfa: false,
             useWasm: false,
@@ -644,26 +785,61 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
         const canvas = context.canvas;
         canvas.width = viewport.width;
         canvas.height = viewport.height;
-        canvas.style.display = 'block';
-        canvas.style.width = '100%';
-        canvas.style.height = 'auto';
+        canvas.setAttribute('aria-hidden', 'true');
+        const pageContainer = document.createElement('div');
+        pageContainer.className = PDF_PREVIEW_PAGE_CLASS;
+        pageContainer.style.aspectRatio = `${viewport.width} / ${viewport.height}`;
+        const textLayerContainer = document.createElement('div');
+        textLayerContainer.className = 'textLayer';
+        pageContainer.replaceChildren(canvas, textLayerContainer);
         // The real page governs the wrapper height now; drop the placeholder ratio.
         wrapper.style.aspectRatio = '';
-        wrapper.replaceChildren(canvas);
+        wrapper.replaceChildren(pageContainer);
+        textLayer = new pdfjs.TextLayer({
+          textContentSource: page.streamTextContent({
+            includeMarkedContent: true,
+            disableNormalization: true,
+          }),
+          container: textLayerContainer,
+          viewport,
+        });
+        session.textLayers.add(textLayer);
+        const textLayerRenderPromise = textLayer
+          .render()
+          .then(() => undefined)
+          .catch((textLayerError) => {
+            if (!session.cancelled) {
+              console.warn('[file-manager] PDF text layer render failed', {
+                pageNumber,
+                src,
+                error: textLayerError,
+              });
+            }
+          })
+          .finally(() => {
+            if (textLayer) {
+              session.textLayers.delete(textLayer);
+            }
+          });
         const renderTask = page.render({
           canvas,
           canvasContext: context,
           viewport,
-          annotationMode: pdfjs.AnnotationMode.DISABLE,
+          annotationMode: pdfjs.AnnotationMode.ENABLE,
         });
         session.renderTasks.push(renderTask);
         await renderTask.promise;
         if (session.cancelled) {
           return;
         }
+        await textLayerRenderPromise;
+        if (session.cancelled) {
+          return;
+        }
         session.rendered.add(pageNumber);
         session.observer?.unobserve(wrapper);
       } catch (renderError) {
+        textLayer?.cancel();
         // Leave the placeholder in place; scrolling back can retry the page.
         if (!session.cancelled) {
           console.warn('[file-manager] PDF page render failed', {

@@ -1,15 +1,17 @@
 ---
-displayName: "Менеджер резервного копирования"
+title: "Backup manager"
+keywords: "System management"
+displayName: "Backup manager"
 packageName: '@nocobase/plugin-backups'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Предоставляет функции резервного копирования и восстановления, поддерживает автоматическое резервное копирование по расписанию, обеспечивая безопасность данных и их быстрое восстановление.
-isFree: false
-builtIn: false
+  Provides backup and restore functionality, supports scheduled backups, and ensures data security and quick recovery.
+isFree: true
+builtIn: true
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 0
 ---
 
-# Менеджер резервного копирования
+# Backup manager

@@ -1,12 +1,14 @@
 ---
-displayName: "ワークフロー：抄送"
+title: "Workflow: CC"
+keywords: "Workflow"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  ワークフローで抄送機能を提供し、承認やその他の任意の情報を特定のユーザーに抄送します。
+  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# ワークフロー：抄送
+# Workflow: CC

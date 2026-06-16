@@ -5,6 +5,128 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.5](https://github.com/nocobase/nocobase/compare/v2.1.4...v2.1.5) - 2026-06-15
+
+### 🎉 New Features
+
+- **[Workflow: mailer node]** Add attachment support to the workflow mailer node. ([#9724](https://github.com/nocobase/nocobase/pull/9724)) by @mytharcher
+
+### 🚀 Improvements
+
+- **[client-v2]** Supported current item variables in the data scope of association field columns within form sub-tables. ([#9444](https://github.com/nocobase/nocobase/pull/9444)) by @gchust
+
+- **[undefined]**
+  - Updated the Chinese documentation label for the Version Control plugin. ([#9776](https://github.com/nocobase/nocobase/pull/9776)) by @cgyrock
+
+  - Added Russian translations for new UI strings. ([#9771](https://github.com/nocobase/nocobase/pull/9771)) by @sembaev-a-a
+
+- **[File manager]** Added selectable text support to the file manager PDF preview when the PDF contains embedded text. ([#9781](https://github.com/nocobase/nocobase/pull/9781)) by @mytharcher
+
+- **[Action: Batch edit]** Improved v2 action plugin loading and kept migrated action buttons in a stable order. ([#9778](https://github.com/nocobase/nocobase/pull/9778)) by @katherinehhh
+
+- **[Version control]** Updated the Chinese display name of the Version Control plugin. by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[cli-v1]** Fix the `yarn dev` error after upgrading projects created by `create-nocobase-app` from 2.0 to 2.1. ([#9775](https://github.com/nocobase/nocobase/pull/9775)) by @Molunerfinn
+
+- **[client-v2]** Fixed migration progress not showing its dedicated progress view ([#9761](https://github.com/nocobase/nocobase/pull/9761)) by @2013xile
+
+- **[flow-engine]** Fixed Vietnamese and Chinese IME input handling in v2 single-line text and textarea fields. ([#9764](https://github.com/nocobase/nocobase/pull/9764)) by @katherinehhh
+
+- **[server]** Fixed unsafe plugin name handling in `pm:enable` to prevent local file inclusion through plugin resolution. ([#9701](https://github.com/nocobase/nocobase/pull/9701)) by @mytharcher
+
+- **[File manager]** Fixed PDF preview failures caused by the pdf.js worker module not loading correctly. ([#9779](https://github.com/nocobase/nocobase/pull/9779)) by @mytharcher
+
+- **[Block: Kanban]** Fixed unexpected hidden popup action persistence and repeated destroy requests when opening calendar, gantt, and kanban blocks outside edit mode. ([#9772](https://github.com/nocobase/nocobase/pull/9772)) by @jiannx
+
+- **[Action: Export records Pro]** Improved v2 import/export pro Processing mode settings and tooltip descriptions. by @katherinehhh
+
+- **[Migration manager]** Fixed failures when importing large migration data files by @2013xile
+
+- **[Template print]** Rejected unsupported template file types before template printing starts by @2013xile
+
+## [v2.1.4](https://github.com/nocobase/nocobase/compare/v2.1.3...v2.1.4) - 2026-06-13
+
+### 🚀 Improvements
+
+- **[Workflow]** Improved workflow metadata editing by allowing descriptions to be edited from the details modal and pre-filling duplicate workflow metadata. ([#9766](https://github.com/nocobase/nocobase/pull/9766)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Action: Import records]** Store import uploads on disk to reduce memory pressure during large imports. ([#9739](https://github.com/nocobase/nocobase/pull/9739)) by @mytharcher
+
+- **[Backup manager]** Fixed a security issue where unsafe PostgreSQL schema names could be accepted during backup restore ([#9758](https://github.com/nocobase/nocobase/pull/9758)) by @2013xile
+
+- **[Workflow]**
+  - Fixed workflow timeout handling so aborted executions and their pending jobs are updated atomically. ([#9768](https://github.com/nocobase/nocobase/pull/9768)) by @mytharcher
+
+  - Fixed workflow last modifier tracking after workflow nodes are changed. ([#9769](https://github.com/nocobase/nocobase/pull/9769)) by @mytharcher
+
+- **[Action: Import records Pro]** Avoid parsing large pro import files on the request node before async task creation. by @mytharcher
+
+- **[Version control]** Adjusted the Version control topbar shortcut to appear next to the UI editor in both legacy and v2 admin layouts. by @cgyrock
+
+## [v2.1.3](https://github.com/nocobase/nocobase/compare/v2.1.2...v2.1.3) - 2026-06-12
+
+### 🚀 Improvements
+
+- **[cli]**
+  - normalize app compat build versions ([#9763](https://github.com/nocobase/nocobase/pull/9763)) by @chenos
+
+  - support updating skills to a specified version ([#9760](https://github.com/nocobase/nocobase/pull/9760)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where fields in horizontal subforms are too narrow to display data ([#9755](https://github.com/nocobase/nocobase/pull/9755)) by @zhangzhonghe
+
+- **[Data source manager]**
+  - Fixed the blank edit field drawer caused by repeated rerenders on the v1 external data source Configure fields page. ([#9759](https://github.com/nocobase/nocobase/pull/9759)) by @katherinehhh
+
+  - Fixed an issue where deleting the active collection category in the v1 data source manager could leave the All collections tab empty. ([#9757](https://github.com/nocobase/nocobase/pull/9757)) by @katherinehhh
+
+- **[Async task manager]** Fixed incorrect request IDs in async task worker logs ([#9686](https://github.com/nocobase/nocobase/pull/9686)) by @2013xile
+
+- **[Workflow: SQL node]** Fixed SQL workflow legacy template-variable migration being skipped for some beta-version users. ([#9762](https://github.com/nocobase/nocobase/pull/9762)) by @mytharcher
+
+- **[AI employees]**
+  - Fixed loss of message configuration in workflow LLM nodes. ([#9743](https://github.com/nocobase/nocobase/pull/9743)) by @cgyrock
+
+  - Fixed an issue where attachments pasted into the AI employee dialog could not be removed. ([#9753](https://github.com/nocobase/nocobase/pull/9753)) by @cgyrock
+
+- **[Block: Kanban]** Fixed URL support for calendar and related popups. ([#9751](https://github.com/nocobase/nocobase/pull/9751)) by @jiannx
+
+- **[Workflow: Approval]** Fix the issue where related data is not displayed in v2 approval forms by @zhangzhonghe
+
+## [v2.1.2](https://github.com/nocobase/nocobase/compare/v2.1.1...v2.1.2) - 2026-06-11
+
+### 🎉 New Features
+
+- **[AI employees]** Added an external vector store configuration form for AI knowledge bases. ([#9723](https://github.com/nocobase/nocobase/pull/9723)) by @cgyrock
+
+- **[AI: Knowledge base]** Added an external vector store configuration form for AI knowledge bases. by @cgyrock
+
+### 🚀 Improvements
+
+- **[undefined]**
+  - Add a version control scenario to the AI builder quick start ([#9748](https://github.com/nocobase/nocobase/pull/9748)) by @Molunerfinn
+Reference: [AI Builder Quick Start](https://docs.nocobase.com/en/ai-builder)
+  - Improved the version control documentation with AI Builder automatic revision guidance. ([#9745](https://github.com/nocobase/nocobase/pull/9745)) by @cgyrock
+
+- **[cli]** clarify init setup wording ([#9750](https://github.com/nocobase/nocobase/pull/9750)) by @chenos
+
+- **[Action: Import records]** Improved import and async task error dialogs so long error messages can be fully read without breaking the layout. ([#9746](https://github.com/nocobase/nocobase/pull/9746)) by @katherinehhh
+
+- **[Action: Import records Pro]** Improved import dialogs so long error messages remain readable and v2 processing mode can be selected directly from the settings menu. by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fix the issue where v2 pages could keep loading after signing in ([#9738](https://github.com/nocobase/nocobase/pull/9738)) by @zhangzhonghe
+
+- **[cli]** require Node.js 22 for nb ([#9749](https://github.com/nocobase/nocobase/pull/9749)) by @chenos
+
+- **[File manager]** Fix PDF previews missing CJK/CID font text after switching to pdf.js. ([#9737](https://github.com/nocobase/nocobase/pull/9737)) by @mytharcher
+
 ## [v2.1.0](https://github.com/nocobase/nocobase/compare/v2.0.62...v2.1.0) - 2026-06-10
 
 # NocoBase 2.1.0 Release Notes
@@ -1487,7 +1609,7 @@ AI capabilities are now built into the core as a first-class citizen, with exten
 
 **Reference:**
 
-- [AI Employees](https://v2.docs.nocobase.com/ai-employees)
+- [AI Employees](https://docs.nocobase.com/ai-employees)
 
 ### App Supervisor
 
@@ -1507,7 +1629,7 @@ The App Supervisor plugin provides **unified discovery, scheduling, and manageme
 
 **Reference:**
 
-- [Multi-App Management](https://v2.docs.nocobase.com/multi-app/multi-app)
+- [Multi-App Management](https://docs.nocobase.com/multi-app/multi-app)
 
 ### Workflow Canvas Enhancement
 
@@ -1536,8 +1658,8 @@ To meet different levels of complexity in related data editing, NocoBase offers 
 
 **Reference:**
 
-- [Sub-table (Inline Edit)](https://v2.docs.nocobase.com/interface-builder/fields/specific/sub-table)
-- [Sub-table (Popup Edit)](https://v2.docs.nocobase.com/interface-builder/fields/specific/sub-table-popup)
+- [Sub-table (Inline Edit)](https://docs.nocobase.com/interface-builder/fields/specific/sub-table)
+- [Sub-table (Popup Edit)](https://docs.nocobase.com/interface-builder/fields/specific/sub-table-popup)
 
 ### Field Assignment
 
@@ -1584,7 +1706,7 @@ event:
 
 **Reference:**
 
-- [Event Flow](https://v2.docs.nocobase.com/interface-builder/event-flow)
+- [Event Flow](https://docs.nocobase.com/interface-builder/event-flow)
 
 ## Features Adapted to 2.0
 
@@ -1594,7 +1716,7 @@ event:
 
 **Reference:**
 
-- [Bulk Edit](https://v2.docs.nocobase.com/interface-builder/actions/types/bulk-edit)
+- [Bulk Edit](https://docs.nocobase.com/interface-builder/actions/types/bulk-edit)
 
 ### Duplicate
 
@@ -1602,7 +1724,7 @@ event:
 
 **Reference:**
 
-- [Duplicate](https://v2.docs.nocobase.com/interface-builder/actions/types/duplicate)
+- [Duplicate](https://docs.nocobase.com/interface-builder/actions/types/duplicate)
 
 ### Block Height
 
@@ -1610,7 +1732,7 @@ event:
 
 **Reference:**
 
-- [Block Height](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/block-height)
+- [Block Height](https://docs.nocobase.com/interface-builder/blocks/block-settings/block-height)
 
 ### Table Row Drag-and-Drop Sort
 
@@ -1618,7 +1740,7 @@ event:
 
 **Reference:**
 
-- [Drag Sort](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/drag-sort)
+- [Drag Sort](https://docs.nocobase.com/interface-builder/blocks/block-settings/drag-sort)
 
 ### Data Loading Method
 
@@ -1626,7 +1748,7 @@ event:
 
 **Reference:**
 
-- [Data Loading Method](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/data-loading-method)
+- [Data Loading Method](https://docs.nocobase.com/interface-builder/blocks/block-settings/data-loading-method)
 
 ### Displaying Relation Fields in Forms
 
@@ -1634,7 +1756,7 @@ event:
 
 **Reference:**
 
-- [Form](https://v2.docs.nocobase.com/interface-builder/blocks/data-blocks/form)
+- [Form](https://docs.nocobase.com/interface-builder/blocks/data-blocks/form)
 
 ### Page (V2) Localization Support
 

@@ -9,6 +9,14 @@
 
 import type { CallArgumentSource, SourceRange } from '../internal-types';
 import { NON_METHOD_CALL_KEYWORDS } from '../runtime/constants';
+import { walkAstSimple } from './walk';
+
+type AstNodeWithBodyRange = {
+  body?: {
+    end?: unknown;
+    start?: unknown;
+  };
+};
 
 export function maskJavaScriptSource(source: string) {
   const chars = source.split('');
@@ -357,6 +365,25 @@ export function findFunctionRanges(masked: string): SourceRange[] {
   collectFunctionRanges(masked, /=>\s*\{/g, ranges);
   collectArrowExpressionRanges(masked, ranges);
   collectMethodFunctionRanges(masked, ranges);
+  return mergeRanges(ranges);
+}
+
+export function collectAstFunctionBodyRanges(ast: unknown): SourceRange[] {
+  const ranges: SourceRange[] = [];
+  const addBodyRange = (node: AstNodeWithBodyRange) => {
+    const start = node.body?.start;
+    const end = node.body?.end;
+    if (typeof start === 'number' && typeof end === 'number' && end > start) {
+      ranges.push({ start, end });
+    }
+  };
+
+  walkAstSimple(ast, {
+    FunctionDeclaration: addBodyRange,
+    FunctionExpression: addBodyRange,
+    ArrowFunctionExpression: addBodyRange,
+  });
+
   return mergeRanges(ranges);
 }
 

@@ -1,12 +1,14 @@
 ---
-displayName: "Configurações do sistema"
+title: "System settings"
+keywords: "System management"
+displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |
-  Usado para ajustar o título do sistema, logo, idioma, etc.
+  Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Configurações do sistema
+# System settings

@@ -71,7 +71,7 @@ function resolveServiceOptions(serviceOptions: Record<string, any> | undefined, 
 export abstract class LLMProvider {
   app: Application;
   serviceOptions: Record<string, any>;
-  modelOptions: Record<string, any>;
+  modelOptions: Record<string, any> | undefined;
   chatModel: any;
 
   abstract createModel(): BaseChatModel | any;
@@ -292,17 +292,18 @@ export abstract class LLMProvider {
     if (!schema) {
       return;
     }
-    const methods = {
+    const methods: Record<string, string> = {
       json_object: 'jsonMode',
       json_schema: 'jsonSchema',
     };
-    const options = {
+    const options: Record<string, any> = {
       includeRaw: true,
       name,
       method: methods[responseFormat],
     };
     if (strict) {
       options['strict'] = strict;
+      options['method'] = 'jsonSchema';
     }
     return {
       schema: {
@@ -350,7 +351,7 @@ export abstract class LLMProvider {
     return [];
   }
 
-  parseReasoningContent(chunk: AIMessageChunk): { status: string; content: string } {
+  parseReasoningContent(chunk: AIMessageChunk): { status: string; content: string } | null {
     return null;
   }
 

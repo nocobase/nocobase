@@ -21,6 +21,26 @@ import {
   isSubTableColumnReadPretty,
 } from '../SubTableColumnModel';
 
+function createMockCollection(name: string, fields: any[] = []) {
+  const collection: any = {
+    name,
+    title: name,
+    dataSourceKey: 'main',
+    filterTargetKey: 'id',
+    fields,
+    getFields: () => collection.fields,
+    getField: (fieldName: string) => collection.fields.find((field) => field.name === fieldName),
+  };
+
+  collection.fields.forEach((field) => {
+    field.collection = field.collection ?? collection;
+    field.filterable = field.filterable ?? true;
+    field.isAssociationField = field.isAssociationField ?? (() => false);
+  });
+
+  return collection;
+}
+
 describe('SubTableColumnModel row record helpers', () => {
   it('builds the row path from fieldIndex entries', () => {
     expect(buildRowPathFromFieldIndex(['roles:0'])).toEqual(['roles', 0]);
@@ -49,6 +69,171 @@ describe('SubTableColumnModel row record helpers', () => {
     const fallback = { uid: 'stale-role', __is_new__: false };
 
     expect(getLatestSubTableRowRecord(form, ['roles:0'], fallback)).toBe(fallback);
+  });
+
+  it('provides current item meta for sub-table column data scope variables', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ SubTableColumnModel });
+
+    const tagsCollection = createMockCollection('tags', [
+      { name: 'id', title: 'ID', type: 'integer', interface: 'integer' },
+      { name: 'name', title: 'Name', type: 'string', interface: 'input' },
+    ]);
+    const rolesCollection = createMockCollection('roles', [
+      { name: 'id', title: 'ID', type: 'integer', interface: 'integer' },
+      { name: 'name', title: 'Name', type: 'string', interface: 'input' },
+      {
+        name: 'tags',
+        title: 'Tags',
+        type: 'hasMany',
+        interface: 'o2m',
+        target: 'tags',
+        targetCollection: tagsCollection,
+        isAssociationField: () => true,
+      },
+    ]);
+    const usersCollection = createMockCollection('users', [
+      { name: 'id', title: 'ID', type: 'integer', interface: 'integer' },
+      { name: 'nickname', title: 'Nickname', type: 'string', interface: 'input' },
+    ]);
+    const rolesField = {
+      name: 'roles',
+      title: 'Roles',
+      type: 'hasMany',
+      interface: 'o2m',
+      collection: usersCollection,
+      target: 'roles',
+      targetCollection: rolesCollection,
+      isAssociationField: () => true,
+    };
+
+    const form = {
+      getFieldValue: vi.fn((path: any) => {
+        if (JSON.stringify(path) === JSON.stringify(['roles', 0])) {
+          return { id: 11, name: 'Admin', tags: [{ id: 7 }] };
+        }
+      }),
+    };
+    const blockModel: any = engine.createModel({ use: 'FlowModel', uid: 'form-block', structure: {} as any });
+    blockModel.context.defineProperty('form', { value: form });
+    blockModel.context.defineProperty('formValues', {
+      value: {
+        id: 1,
+        nickname: 'Alice',
+        roles: [{ id: 11, name: 'Admin' }],
+      },
+    });
+
+    const subTableFieldModel: any = engine.createModel({
+      use: 'FlowModel',
+      uid: 'users.roles',
+      structure: {} as any,
+    });
+    subTableFieldModel.collection = rolesCollection;
+    subTableFieldModel.setProps({ value: [{ id: 11, name: 'Admin' }] });
+    subTableFieldModel.context.defineProperty('collectionField', { value: rolesField });
+    subTableFieldModel.context.defineProperty('fieldPath', { value: 'roles' });
+    subTableFieldModel.context.defineProperty('blockModel', { value: blockModel });
+
+    const column: any = engine.createModel({
+      use: 'SubTableColumnModel',
+      uid: 'users.roles.tags',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            fieldPath: 'roles.tags',
+          },
+        },
+      },
+      structure: {} as any,
+    });
+    column.setParent(subTableFieldModel);
+    column.context.defineProperty('blockModel', { value: blockModel });
+    column.subModels = { field: [] };
+
+    const designTimeItemOptions = column.context.getPropertyOptions('item');
+    expect(typeof designTimeItemOptions.meta).toBe('function');
+    const designTimeMeta = await designTimeItemOptions.meta();
+    expect(designTimeMeta.properties.value.title).toBe('Attributes');
+    expect(designTimeMeta.properties.parentItem.properties.value.title).toBe('Attributes');
+
+    const renderCell = column.renderItem();
+    renderCell({
+      id: 'cell-roles-tags-0',
+      rowIdx: 0,
+      record: { id: 11, name: 'Stale admin', tags: [{ id: 7 }] },
+      parentItem: {
+        value: { id: 1, nickname: 'Alice' },
+      },
+    });
+
+    const [rowFork] = Array.from(column.forks ?? []) as any[];
+    const rowItemOptions = rowFork.context.getPropertyOptions('item');
+    expect(typeof rowItemOptions.meta).toBe('function');
+    expect(rowItemOptions.resolveOnServer('value.tags.name')).toBe(true);
+
+    const rowMeta = await rowItemOptions.meta();
+    expect(rowMeta.properties.value.title).toBe('Attributes');
+    expect(rowMeta.properties.parentItem.properties.value.title).toBe('Attributes');
+    expect(rowFork.context.item).toMatchObject({
+      index: 0,
+      length: 1,
+      value: { id: 11, name: 'Admin', tags: [{ id: 7 }] },
+      parentItem: {
+        value: { id: 1, nickname: 'Alice' },
+      },
+    });
+  });
+
+  it('detects variable data scope columns for immediate row commits', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ SubTableColumnModel });
+
+    const inputColumn: any = engine.createModel({
+      use: 'SubTableColumnModel',
+      uid: 'users.roles.name',
+      structure: {} as any,
+    });
+    const scopedColumn: any = engine.createModel({
+      use: 'SubTableColumnModel',
+      uid: 'users.roles.tags',
+      structure: {} as any,
+    });
+
+    inputColumn.subModels = {
+      field: {
+        getStepParams: vi.fn(() => undefined),
+      },
+    };
+    scopedColumn.subModels = {
+      field: {
+        getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+          if (flowKey !== 'selectSettings' || stepKey !== 'dataScope') {
+            return undefined;
+          }
+          return {
+            filter: {
+              logic: '$and',
+              items: [{ path: 'name', operator: '$eq', value: '{{ ctx.item.value.name }}' }],
+            },
+          };
+        }),
+      },
+    };
+
+    const parent: any = engine.createModel({
+      use: 'FlowModel',
+      uid: 'users.roles-table',
+      structure: {} as any,
+    });
+    parent.mapSubModels = vi.fn((key: string, iterator: (column: SubTableColumnModel) => unknown) => {
+      if (key !== 'columns') return [];
+      return [inputColumn, scopedColumn].map(iterator);
+    });
+    inputColumn.setParent(parent);
+    scopedColumn.setParent(parent);
+
+    expect(inputColumn.hasFormValueDrivenDataScopeColumn).toBe(true);
   });
 
   it('treats a display-only column pattern as read-pretty mode', () => {

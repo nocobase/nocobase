@@ -1,16 +1,16 @@
 ---
-displayName: "Поле таблицы данных: рукописная подпись"
-packageName: '@nocobase/plugin-field-signature'
 title: "Поле таблицы данных: рукописная подпись"
-keywords: "поле таблицы данных: рукописная подпись,плагин,NocoBase"
+keywords: "Collection fields"
+displayName: "Collection field: Signature"
+packageName: '@nocobase/plugin-field-signature'
 supportedVersions:
   - 2.x
 description: |
-  Поддерживает рукописную подпись с помощью мыши или сенсорного ввода. Изображение подписи сохраняется в выбранную таблицу файлов, а его загрузка и хранение выполняются через Менеджер файлов. Требуется лицензия Pro и выше.
+  Supports handwritten signature input with touch and mouse support.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Поле таблицы данных: рукописная подпись
+# Collection field: Signature

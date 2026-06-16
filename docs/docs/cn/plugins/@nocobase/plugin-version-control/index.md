@@ -1,16 +1,16 @@
 ---
-displayName: "版本管理"
+title: "版本控制"
+keywords: "版本控制,插件,NocoBase"
+displayName: "版本控制"
 packageName: '@nocobase/plugin-version-control'
-title: "版本管理"
-keywords: "版本管理,插件,NocoBase"
 supportedVersions:
   - 2.x
 description: |
-  为应用保存可回退的版本，并在需要时恢复到指定版本。
+  为 NocoBase 搭建过程保存当前版本快照，并在需要时恢复到指定版本。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# 版本管理
+# 版本控制

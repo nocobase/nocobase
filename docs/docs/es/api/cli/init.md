@@ -74,7 +74,7 @@ De forma predeterminada, la CLI organiza los archivos locales bajo `app-path` se
 
 Por lo general:
 
-- `source/` corresponde principalmente al directorio local de la app para envs npm / Git. Para envs Docker, la CLI también conserva esta derivación de ruta predeterminada, pero la mayoría de las veces no necesitas preocuparte por ello manualmente
+- `source/` corresponde principalmente al directorio local de la app para envs npm / Git. Para envs Docker, la CLI también conserva esta derivación de ruta predeterminada, pero la mayoría de las veces no necesitas preocuparte por ello manualmente. Presta especial atención durante las actualizaciones: el directorio `source/` se eliminará y se descargará de nuevo, así que no pongas aquí archivos que necesites conservar
 - `storage/` se usa para guardar datos de ejecución, como datos de la base de datos integrada, plugins, logs y otros contenidos
 - `.env` es un archivo opcional de variables de entorno de la app. Solo necesitas añadirlo en `<app-path>/.env` cuando quieras personalizar variables de entorno; si este archivo existe, los orígenes de instalación Docker, npm y Git lo leerán por defecto
 
@@ -121,7 +121,7 @@ El “Predeterminado” de abajo indica el valor o comportamiento que `nb init` 
 | `--ui`          | boolean | `false`                                                                                                      | Abrir el asistente en el navegador local; no puede usarse con `--yes` ni `--resume`                  |
 | `--verbose`     | boolean | `false`                                                                                                      | Mostrar salida detallada de los comandos                                                             |
 | `--skip-skills` | boolean | `false`                                                                                                      | Omitir la sincronización de las NocoBase AI coding skills                                            |
-| `--ui-host`     | string  | `127.0.0.1`                                                                                                  | Dirección de enlace del servicio local de `--ui`                                                     |
+| `--ui-host`     | string  | `127.0.0.1`                                                                                                  | Host accesible desde el navegador que se muestra en la URL del asistente `--ui`; el servicio local siempre escucha en `0.0.0.0` |
 | `--ui-port`     | integer | `0`                                                                                                          | Puerto del servicio local de `--ui`; `0` significa asignación automática                             |
 | `--locale`      | string  | Sigue `NB_LOCALE`, la configuración de la CLI o la locale del sistema; el valor final de fallback es `en-US` | Idioma de los prompts de la CLI y de la UI local de setup: `en-US` o `zh-CN`                         |
 | `--resume`      | boolean | `false`                                                                                                      | Continuar la última inicialización incompleta y reutilizar la workspace env config ya guardada       |

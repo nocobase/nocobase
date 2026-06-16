@@ -1,15 +1,17 @@
 ---
-displayName: "Action : Exporter les enregistrements"
+title: "Action: Export records"
+keywords: "Actions"
+displayName: "Action: Export records"
 packageName: '@nocobase/plugin-action-export'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Exporter les enregistrements filtrés vers Excel, vous pouvez configurer les champs à exporter.
+  Export filtered records to excel, you can configure which fields to export.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action : Exporter les enregistrements
+# Action: Export records

@@ -1,12 +1,14 @@
 ---
-displayName: "Gerenciador de Multi-app (descontinuado)"
+title: "Multi-app manager (deprecated)"
+keywords: "system"
+displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  O Multi-app é executado por meio de compartilhamento de processos, sendo adequado apenas para ambientes de teste e demonstração. Não o utilize em ambientes de produção.
+  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Gerenciador de Multi-app (descontinuado)
+# Multi-app manager (deprecated)
