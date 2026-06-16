@@ -90,7 +90,7 @@ abstract class BaseDBAdapter implements DBAdapter {
       execSync(`${command} --version`);
     } catch (error) {
       throw new Error(
-        `Command ${command} not found, please install it first. Check reference here: https://docs.nocobase.com/handbook/backups#installation`,
+        `Command ${command} not found, please install it first. Check reference here: https://docs.nocobase.com/ops-management/backup-manager/`,
       );
     }
   };
