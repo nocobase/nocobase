@@ -3221,6 +3221,8 @@ describe('plugin-ui-layout mobile models', () => {
   });
 
   it('should keep the mobile tab bar compact and token based', async () => {
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
     renderMobileLayoutWithRouteRepository({
       listAccessible: () => [
         {
@@ -3228,6 +3230,23 @@ describe('plugin-ui-layout mobile models', () => {
           type: NocoBaseDesktopRouteType.flowPage,
           title: 'Home',
           schemaUid: 'home-page',
+          options: {
+            badge: {
+              count: 3,
+            },
+          },
+        },
+        {
+          id: 2,
+          type: NocoBaseDesktopRouteType.link,
+          title: 'Docs',
+          schemaUid: 'docs-link',
+          options: {
+            href: '/docs',
+            badge: {
+              dot: true,
+            },
+          },
         },
       ],
     });
@@ -3235,11 +3254,12 @@ describe('plugin-ui-layout mobile models', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
     });
+    expect(screen.getByRole('button', { name: /Docs/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add mobile tab' })).toBeInTheDocument();
 
     const styleText = getDocumentStyleText();
-    const tabbarRule = (styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*\{[^}]+\}/g) || []).find((rule) =>
-      /grid-template-columns/.test(rule),
-    );
+    const tabbarRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*\{[^}]+\}/)?.[0];
+    const tabbarChildRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*>\s*div\s*\{[^}]+\}/)?.[0];
     const itemShellRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-item-shell\s*\{[^}]+\}/)?.[0];
     const itemRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-item\s*\{[^}]+\}/)?.[0];
     const activeTabRule = styleText.match(
@@ -3249,22 +3269,40 @@ describe('plugin-ui-layout mobile models', () => {
       /[^{}]*nb-ui-layout-mobile-home-tabbar-add:hover[^{}]*nb-ui-layout-mobile-home-tabbar-add:focus-visible\s*\{[^}]+\}/,
     )?.[0];
     const iconRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-icon\s*\{[^}]+\}/)?.[0];
+    const iconInnerRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-icon-inner\s*\{[^}]+\}/)?.[0];
     const labelRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-label\s*\{[^}]+\}/)?.[0];
 
-    expect(tabbarRule).toMatch(/padding:\s*2px 8px calc\(2px \+ env\(safe-area-inset-bottom\)\)/);
-    expect(itemShellRule).toMatch(/height:\s*52px/);
-    expect(itemRule).toMatch(/height:\s*52px/);
+    expect(tabbarRule).toMatch(/display:\s*flex/);
+    expect(tabbarRule).toMatch(/min-height:\s*48px/);
+    expect(tabbarRule).not.toMatch(/grid-template-columns/);
+    expect(tabbarChildRule).toMatch(/flex:\s*1 1 0%/);
+    expect(tabbarChildRule).toMatch(/min-width:\s*0/);
+    expect(itemShellRule).toMatch(/flex:\s*1 1 0%/);
+    expect(itemShellRule).toMatch(/width:\s*100%/);
+    expect(itemShellRule).toMatch(/min-height:\s*48px/);
+    expect(itemRule).toMatch(/min-height:\s*48px/);
+    expect(itemRule).toMatch(/padding:\s*4px 8px/);
     expect(itemRule).toMatch(/gap:\s*2px/);
     expect(itemRule).toMatch(/transition:\s*color/);
     expect(activeTabRule).toMatch(/font-weight:\s*600/);
     expect(addHoverRule).toContain('background:');
     expect(addHoverRule).not.toMatch(/241,\s*139,\s*98/);
-    expect(iconRule).toMatch(/font-size:\s*20px/);
-    expect(iconRule).toMatch(/min-height:\s*22px/);
-    expect(labelRule).toMatch(/line-height:\s*1\.2/);
+    expect(iconRule).toMatch(/width:\s*24px/);
+    expect(iconRule).toMatch(/height:\s*24px/);
+    expect(iconInnerRule).toMatch(/font-size:\s*24px/);
+    expect(labelRule).toMatch(/font-size:\s*10px/);
+    expect(labelRule).toMatch(/line-height:\s*15px/);
+
+    const homeButton = screen.getByRole('button', { name: /Home/ });
+    const docsButton = screen.getByRole('button', { name: /Docs/ });
+    expect(homeButton.querySelector('.nb-ui-layout-mobile-home-tabbar-badge .ant-badge-count')).toHaveTextContent('3');
+    expect(docsButton.querySelector('.nb-ui-layout-mobile-home-tabbar-badge .ant-badge-dot')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add mobile tab' }));
+    expect(await screen.findByText('Page')).toBeInTheDocument();
   });
 
-  it('should keep mobile tabs scrollable instead of squeezing them', async () => {
+  it('should let mobile tabs share the tab bar width like antd-mobile', async () => {
     renderMobileLayoutWithRouteRepository({
       listAccessible: () =>
         Array.from({ length: 10 }, (_, index) => ({
@@ -3283,14 +3321,15 @@ describe('plugin-ui-layout mobile models', () => {
     const styleText = Array.from(document.querySelectorAll('style'))
       .map((style) => style.textContent || '')
       .join('\n');
-    const tabbarRule = (styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*\{[^}]+\}/g) || []).find((rule) =>
-      /grid-template-columns:\s*repeat\(10/.test(rule),
-    );
+    const tabbarRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*\{[^}]+\}/)?.[0];
+    const tabbarChildRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar\s*>\s*div\s*\{[^}]+\}/)?.[0];
     const itemShellRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-item-shell\s*\{[^}]+\}/)?.[0];
 
-    expect(tabbarRule).toMatch(/grid-template-columns:\s*repeat\(10,\s*minmax\(72px,\s*1fr\)\)/);
-    expect(tabbarRule).toMatch(/overflow-x:\s*auto/);
-    expect(itemShellRule).toMatch(/min-width:\s*72px/);
+    expect(tabbarRule).toMatch(/display:\s*flex/);
+    expect(tabbarRule).not.toMatch(/overflow-x:\s*auto/);
+    expect(tabbarChildRule).toMatch(/flex:\s*1 1 0%/);
+    expect(itemShellRule).toMatch(/flex:\s*1 1 0%/);
+    expect(itemShellRule).toMatch(/min-width:\s*0/);
   });
 
   it('should register mobile route pages with the mobile root page model', () => {

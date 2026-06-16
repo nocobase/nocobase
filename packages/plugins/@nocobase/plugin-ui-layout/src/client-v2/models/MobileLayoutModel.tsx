@@ -47,6 +47,7 @@ import { uid } from '@nocobase/utils/client';
 import {
   Alert,
   App,
+  Badge,
   Dropdown,
   Empty,
   Form,
@@ -163,6 +164,12 @@ type MobileLayoutThemeToken = {
   colorTextHeaderMenu?: string;
 };
 type MobileRoutesLoadState = 'loading' | 'ready' | 'error';
+type MobileTabBadgeOptions = Pick<
+  React.ComponentProps<typeof Badge>,
+  'color' | 'count' | 'dot' | 'overflowCount' | 'showZero' | 'text' | 'title'
+> & {
+  textColor?: string;
+};
 
 const MOBILE_PREVIEW_SIZE: MobilePreviewSize = {
   width: 390,
@@ -174,7 +181,19 @@ const PAD_PREVIEW_SIZE: MobilePreviewSize = {
   height: 667,
 };
 
-const MOBILE_TABBAR_ITEM_MIN_WIDTH = 72;
+const MOBILE_TABBAR_COUNT_BADGE_STYLE: React.CSSProperties = {
+  fontSize: 9,
+  lineHeight: '12px',
+  minWidth: 10,
+  height: 14,
+  padding: '1px 4px',
+};
+
+const MOBILE_TABBAR_DOT_BADGE_STYLE: React.CSSProperties = {
+  width: 10,
+  minWidth: 10,
+  height: 10,
+};
 
 // Keep the desktop preview header in sync with the v2 AdminLayout UI Editor preference.
 export const FLOW_SETTINGS_PREFERENCE_STORAGE_KEY = 'NOCOBASE_V2_FLOW_SETTINGS_ENABLED';
@@ -334,6 +353,51 @@ function getAccessibleDesktopRouteIcon(route: NocoBaseDesktopRoute) {
   }
 
   return <FileTextOutlined />;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getMobileTabBadgeOptions(route?: NocoBaseDesktopRoute): MobileTabBadgeOptions | undefined {
+  const rawBadgeOptions = route?.options?.badge;
+
+  if (!isPlainRecord(rawBadgeOptions)) {
+    return;
+  }
+
+  const badgeOptions: MobileTabBadgeOptions = {};
+
+  if (rawBadgeOptions.count != null) {
+    badgeOptions.count = rawBadgeOptions.count as ReactNode;
+  }
+  if (rawBadgeOptions.text != null) {
+    badgeOptions.text = rawBadgeOptions.text as ReactNode;
+  }
+  if (typeof rawBadgeOptions.dot === 'boolean') {
+    badgeOptions.dot = rawBadgeOptions.dot;
+  }
+  if (typeof rawBadgeOptions.overflowCount === 'number') {
+    badgeOptions.overflowCount = rawBadgeOptions.overflowCount;
+  }
+  if (typeof rawBadgeOptions.showZero === 'boolean') {
+    badgeOptions.showZero = rawBadgeOptions.showZero;
+  }
+  if (typeof rawBadgeOptions.color === 'string') {
+    badgeOptions.color = rawBadgeOptions.color;
+  }
+  if (typeof rawBadgeOptions.title === 'string') {
+    badgeOptions.title = rawBadgeOptions.title;
+  }
+  if (typeof rawBadgeOptions.textColor === 'string') {
+    badgeOptions.textColor = rawBadgeOptions.textColor;
+  }
+
+  if (!badgeOptions.dot && badgeOptions.count == null && badgeOptions.text == null) {
+    return;
+  }
+
+  return badgeOptions;
 }
 
 export function normalizeAccessibleDesktopRoutesToMobileRoutes(
@@ -685,7 +749,7 @@ const MobileLayoutComponent = observer((props: { model: MobileLayoutModel }) => 
         overflow: hidden;
         background: ${token.colorBgLayout};
         --nb-header-height: 0px;
-        --nb-mobile-tabbar-height: 57px;
+        --nb-mobile-tabbar-height: 49px;
       }
 
       .nb-ui-layout-mobile-embed-container {
@@ -1246,7 +1310,6 @@ const MobileHomePlaceholder = observer(
 
       return normalizeRenderableMobileMenuItems(routes, designModeEnabled);
     }, [activeRoute?.route.children, designModeEnabled, model, routeTitleT]);
-    const tabBarColumnCount = Math.max(1, renderableTabItems.length + (designModeEnabled ? 1 : 0));
     const dropdownMenuItems = useMemo<MenuProps['items']>(
       () =>
         addMenuItems.map((item) => ({
@@ -1724,27 +1787,29 @@ const MobileHomePlaceholder = observer(
           flex: 0 0 auto;
           position: relative;
           z-index: 8;
-          display: grid;
-          grid-template-columns: repeat(${tabBarColumnCount}, minmax(${MOBILE_TABBAR_ITEM_MIN_WIDTH}px, 1fr));
-          padding: ${token.paddingXXS / 2}px ${token.paddingXS}px
-            calc(${token.paddingXXS / 2}px + env(safe-area-inset-bottom));
+          min-height: 48px;
+          display: flex;
+          align-items: stretch;
+          padding: 0 0 env(safe-area-inset-bottom);
           background: ${token.colorBgContainer};
           border-top: 1px solid ${token.colorBorderSecondary};
-          overflow-x: auto;
+          overflow-x: hidden;
           overflow-y: hidden;
-          overscroll-behavior-x: contain;
-          scrollbar-width: none;
-          -webkit-overflow-scrolling: touch;
         }
 
-        .nb-ui-layout-mobile-home-tabbar::-webkit-scrollbar {
-          display: none;
+        .nb-ui-layout-mobile-home-tabbar > div {
+          flex: 1 1 0%;
+          min-width: 0;
+          min-height: 48px;
+          display: flex;
         }
 
         .nb-ui-layout-mobile-home-tabbar-item-shell {
           position: relative;
-          min-width: ${MOBILE_TABBAR_ITEM_MIN_WIDTH}px;
-          height: 52px;
+          flex: 1 1 0%;
+          width: 100%;
+          min-width: 0;
+          min-height: 48px;
           display: flex;
           align-items: stretch;
           justify-content: stretch;
@@ -1761,14 +1826,14 @@ const MobileHomePlaceholder = observer(
           position: relative;
           min-width: 0;
           width: 100%;
-          height: 52px;
+          min-height: 48px;
           border: 0;
-          padding: 0;
-          display: inline-flex;
+          padding: 4px 8px;
+          display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: ${token.marginXXS / 2}px;
+          gap: 2px;
           color: ${token.colorTextSecondary};
           background: transparent;
           cursor: pointer;
@@ -1783,7 +1848,8 @@ const MobileHomePlaceholder = observer(
         .nb-ui-layout-mobile-home-tabbar-add {
           display: inline-flex;
           align-self: center;
-          justify-self: center;
+          flex: 0 0 32px;
+          margin: 8px;
           width: 32px;
           height: 32px;
           min-width: 32px;
@@ -1806,11 +1872,31 @@ const MobileHomePlaceholder = observer(
         }
 
         .nb-ui-layout-mobile-home-tabbar-icon {
-          min-height: 22px;
+          width: 24px;
+          height: 24px;
+          flex: 0 0 24px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          font-size: ${token.fontSizeXL}px;
+          line-height: 1;
+        }
+
+        .nb-ui-layout-mobile-home-tabbar-icon-inner {
+          width: 24px;
+          height: 24px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          line-height: 1;
+        }
+
+        .nb-ui-layout-mobile-home-tabbar-icon-inner .anticon {
+          font-size: inherit;
+          line-height: 1;
+        }
+
+        .nb-ui-layout-mobile-home-tabbar-badge {
           line-height: 1;
         }
 
@@ -1819,8 +1905,8 @@ const MobileHomePlaceholder = observer(
           overflow: hidden;
           white-space: nowrap;
           text-overflow: ellipsis;
-          font-size: ${token.fontSizeSM}px;
-          line-height: 1.2;
+          font-size: 10px;
+          line-height: 15px;
         }
 
         .nb-ui-layout-mobile-home-tabbar[hidden] {
@@ -1848,10 +1934,7 @@ const MobileHomePlaceholder = observer(
         token.marginXXS,
         token.motionDurationMid,
         token.paddingSM,
-        token.paddingXS,
-        token.paddingXXS,
         colorSettings,
-        tabBarColumnCount,
       ],
     );
 
@@ -1863,6 +1946,18 @@ const MobileHomePlaceholder = observer(
         <DndProvider onDragEnd={handleMobileMenuDragEnd}>
           <nav className="nb-ui-layout-mobile-home-tabbar" aria-label={t('Mobile tab bar')} hidden={!showMobileTabBar}>
             {renderableTabItems.map((item) => {
+              const badgeOptions = getMobileTabBadgeOptions(item.route);
+              const badgeIndicatorStyle = badgeOptions
+                ? {
+                    ...(badgeOptions.dot ? MOBILE_TABBAR_DOT_BADGE_STYLE : MOBILE_TABBAR_COUNT_BADGE_STYLE),
+                    ...(badgeOptions.textColor ? { color: badgeOptions.textColor } : {}),
+                  }
+                : undefined;
+              const icon = (
+                <span className="nb-ui-layout-mobile-home-tabbar-icon">
+                  <span className="nb-ui-layout-mobile-home-tabbar-icon-inner">{item.icon}</span>
+                </span>
+              );
               const dom = (
                 <button
                   type="button"
@@ -1870,7 +1965,24 @@ const MobileHomePlaceholder = observer(
                   aria-current={item.active ? 'page' : undefined}
                   onClick={() => handleTabClick(item)}
                 >
-                  <span className="nb-ui-layout-mobile-home-tabbar-icon">{item.icon}</span>
+                  {badgeOptions ? (
+                    <Badge
+                      className="nb-ui-layout-mobile-home-tabbar-badge nb-ui-layout-mobile-home-tabbar-icon-badge"
+                      color={badgeOptions.color}
+                      count={badgeOptions.count}
+                      dot={badgeOptions.dot}
+                      offset={[0, 6]}
+                      overflowCount={badgeOptions.overflowCount}
+                      showZero={badgeOptions.showZero}
+                      styles={{ indicator: badgeIndicatorStyle }}
+                      text={badgeOptions.text}
+                      title={badgeOptions.title}
+                    >
+                      {icon}
+                    </Badge>
+                  ) : (
+                    icon
+                  )}
                   <span className="nb-ui-layout-mobile-home-tabbar-label">{item.label}</span>
                 </button>
               );
