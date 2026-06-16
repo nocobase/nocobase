@@ -1,0 +1,376 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C24",
+  "title": "工作流任务列表加载",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "before-open-history",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": false,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "conversations",
+        "unreadCount": 0
+      },
+      "dom": {
+        "spinners": 0,
+        "visibleCardCount": 3,
+        "segmentedItems": [],
+        "searchInputs": [
+          {
+            "placeholder": "Enter your question",
+            "value": ""
+          }
+        ],
+        "workflowLikeCardCount": 0
+      }
+    },
+    {
+      "label": "after-open-history-200ms",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "conversations",
+        "unreadCount": 1
+      },
+      "dom": {
+        "spinners": 0,
+        "visibleCardCount": 3,
+        "segmentedItems": [
+          {
+            "text": "Conversations 1",
+            "selected": true
+          },
+          {
+            "text": "Workflow tasks 6",
+            "selected": false
+          }
+        ],
+        "searchInputs": [
+          {
+            "placeholder": "Search",
+            "value": ""
+          },
+          {
+            "placeholder": "Enter your question",
+            "value": ""
+          }
+        ],
+        "workflowLikeCardCount": 0
+      }
+    },
+    {
+      "label": "after-click-workflow-tasks-50ms",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks",
+        "unreadCount": 1
+      },
+      "dom": {
+        "spinners": 1,
+        "visibleCardCount": 3,
+        "segmentedItems": [
+          {
+            "text": "Conversations 1",
+            "selected": false
+          },
+          {
+            "text": "Workflow tasks 6",
+            "selected": false
+          }
+        ],
+        "searchInputs": [
+          {
+            "placeholder": "Search",
+            "value": ""
+          },
+          {
+            "placeholder": "Enter your question",
+            "value": ""
+          }
+        ],
+        "workflowLikeCardCount": 0
+      }
+    },
+    {
+      "label": "workflow-tasks-loaded-1050ms",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks",
+        "unreadCount": 1
+      },
+      "dom": {
+        "spinners": 0,
+        "visibleCardCount": 10,
+        "segmentedItems": [
+          {
+            "text": "Conversations 1",
+            "selected": false
+          },
+          {
+            "text": "Workflow tasks 6",
+            "selected": true
+          }
+        ],
+        "searchInputs": [
+          {
+            "placeholder": "Search",
+            "value": ""
+          },
+          {
+            "placeholder": "Enter your question",
+            "value": ""
+          }
+        ],
+        "workflowLikeCardCount": 7
+      }
+    },
+    {
+      "label": "after-scroll-bottom-200ms",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks",
+        "unreadCount": 1
+      },
+      "dom": {
+        "spinners": 1,
+        "visibleCardCount": 10,
+        "segmentedItems": [
+          {
+            "text": "Conversations 1",
+            "selected": false
+          },
+          {
+            "text": "Workflow tasks 6",
+            "selected": true
+          }
+        ],
+        "searchInputs": [
+          {
+            "placeholder": "Search",
+            "value": ""
+          },
+          {
+            "placeholder": "Enter your question",
+            "value": ""
+          }
+        ],
+        "workflowLikeCardCount": 7
+      }
+    },
+    {
+      "label": "after-load-more-1400ms",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks",
+        "unreadCount": 1
+      },
+      "dom": {
+        "spinners": 0,
+        "visibleCardCount": 11,
+        "segmentedItems": [
+          {
+            "text": "Conversations 1",
+            "selected": false
+          },
+          {
+            "text": "Workflow tasks 6",
+            "selected": true
+          }
+        ],
+        "searchInputs": [
+          {
+            "placeholder": "Search",
+            "value": ""
+          },
+          {
+            "placeholder": "Enter your question",
+            "value": ""
+          }
+        ],
+        "workflowLikeCardCount": 8
+      }
+    }
+  ],
+  "network": {
+    "requests": [
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 414,
+            "page": 1,
+            "pageSize": 15,
+            "totalPage": 28
+          },
+          "count": 15,
+          "statusCounts": {
+            "pending_approval": 5,
+            "pending_acceptance": 4,
+            "aborted": 5,
+            "approved": 1
+          },
+          "readCount": 11,
+          "unreadCount": 4,
+          "first": {
+            "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+            "workflowTitle": "权限测试",
+            "nodeTitle": "AI 员工",
+            "status": "pending_approval",
+            "jobStatus": 0,
+            "read": true,
+            "executionId": 365056749273088
+          },
+          "last": {
+            "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
+            "workflowTitle": "旅游攻略",
+            "nodeTitle": "AI 员工",
+            "status": "pending_approval",
+            "jobStatus": 0,
+            "read": true,
+            "executionId": 363797494104064
+          },
+          "sessionIdCount": 15
+        }
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 414,
+            "page": 1,
+            "pageSize": 15,
+            "totalPage": 28
+          },
+          "count": 15,
+          "statusCounts": {
+            "pending_approval": 5,
+            "pending_acceptance": 4,
+            "aborted": 5,
+            "approved": 1
+          },
+          "readCount": 11,
+          "unreadCount": 4,
+          "first": {
+            "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+            "workflowTitle": "权限测试",
+            "nodeTitle": "AI 员工",
+            "status": "pending_approval",
+            "jobStatus": 0,
+            "read": true,
+            "executionId": 365056749273088
+          },
+          "last": {
+            "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
+            "workflowTitle": "旅游攻略",
+            "nodeTitle": "AI 员工",
+            "status": "pending_approval",
+            "jobStatus": 0,
+            "read": true,
+            "executionId": 363797494104064
+          },
+          "sessionIdCount": 15
+        }
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 2,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 414,
+            "page": 2,
+            "pageSize": 15,
+            "totalPage": 28
+          },
+          "count": 15,
+          "statusCounts": {
+            "pending_approval": 1,
+            "aborted": 13,
+            "approved": 1
+          },
+          "readCount": 15,
+          "unreadCount": 0,
+          "first": {
+            "sessionId": "a586a3e2-6664-4ef7-86f7-d6ae1628644d",
+            "workflowTitle": "旅游攻略",
+            "nodeTitle": "AI 员工",
+            "status": "pending_approval",
+            "jobStatus": 0,
+            "read": true,
+            "executionId": 363797236154368
+          },
+          "last": {
+            "sessionId": "85919ce8-22fa-4a4c-9043-50eacbfbf05f",
+            "workflowTitle": "RecordWithSubFilesV3",
+            "nodeTitle": "AI 员工",
+            "status": "aborted",
+            "jobStatus": -2,
+            "read": true,
+            "executionId": 363368043380736
+          },
+          "sessionIdCount": 15
+        }
+      }
+    ]
+  }
+}

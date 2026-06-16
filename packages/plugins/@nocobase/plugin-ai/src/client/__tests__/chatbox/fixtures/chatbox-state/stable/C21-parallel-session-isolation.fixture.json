@@ -1,0 +1,458 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C21",
+  "title": "并行会话状态隔离",
+  "sourceKind": "raw store snapshots compacted from window.__caseC21; long streaming content truncated but contentLength preserved",
+  "snapshots": [
+    {
+      "label": "session-a-after-send-80ms",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": null,
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "session-a-loading-before-switch",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "3b651aef-d0f8-446a-b30c-5562d6bf0570",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "after-switch-to-session-b",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "session-b-after-send-80ms",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-1",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-2",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-3",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-10",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-20",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-30",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-40",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-50",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-60",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-70",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-75",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-76",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-77",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-78",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-79",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    },
+    {
+      "label": "parallel-poll-80",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50
+      },
+      "messages": {
+        "sessionKeyCount": 12,
+        "watchedSessionCount": 0
+      }
+    }
+  ],
+  "network": {
+    "requests": []
+  },
+  "sessionA": "3b651aef-d0f8-446a-b30c-5562d6bf0570",
+  "sessionB": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+  "summary": {
+    "snapshotCountOriginal": 90,
+    "snapshotCountKept": 20,
+    "finalCurrentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc"
+  }
+}

@@ -1,0 +1,659 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C09",
+  "title": "联网检索开关和模型支持状态",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "before-toggle-supported-model",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 3,
+        "currentSessionId": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081693624794112",
+              "from": null,
+              "contentLength": 20,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "C08 请只回复 OK，用于模型切换采集"
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081699165469696",
+              "from": null,
+              "contentLength": 2,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "OK"
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash",
+        "searchButton": {
+          "disabled": false,
+          "ariaLabel": "global"
+        }
+      }
+    },
+    {
+      "label": "after-toggle-web-search-immediate",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "webSearch": true,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 3,
+        "currentSessionId": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081693624794112",
+              "from": null,
+              "contentLength": 20,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "C08 请只回复 OK，用于模型切换采集"
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081699165469696",
+              "from": null,
+              "contentLength": 2,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "OK"
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash",
+        "searchButton": {
+          "disabled": false,
+          "ariaLabel": "global"
+        }
+      }
+    },
+    {
+      "label": "after-toggle-web-search-settled",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "webSearch": true,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 3,
+        "currentSessionId": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081693624794112",
+              "from": null,
+              "contentLength": 20,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "C08 请只回复 OK，用于模型切换采集"
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081699165469696",
+              "from": null,
+              "contentLength": 2,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "OK"
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash",
+        "searchButton": {
+          "disabled": false,
+          "ariaLabel": "global"
+        }
+      }
+    },
+    {
+      "label": "after-select-deepseek-v4-flash-immediate",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "webSearch": true,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 3,
+        "currentSessionId": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081693624794112",
+              "from": null,
+              "contentLength": 20,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "C08 请只回复 OK，用于模型切换采集"
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081699165469696",
+              "from": null,
+              "contentLength": 2,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "OK"
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash",
+        "searchButton": {
+          "disabled": false,
+          "ariaLabel": "global"
+        }
+      }
+    },
+    {
+      "label": "after-select-deepseek-v4-flash-settled",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 3,
+        "currentSessionId": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081693624794112",
+              "from": null,
+              "contentLength": 20,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "C08 请只回复 OK，用于模型切换采集"
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081699165469696",
+              "from": null,
+              "contentLength": 2,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "OK"
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash",
+        "searchButton": {
+          "disabled": true,
+          "ariaLabel": "global"
+        }
+      }
+    },
+    {
+      "label": "after-switch-back-qwen35-flash-immediate",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 3,
+        "currentSessionId": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081693624794112",
+              "from": null,
+              "contentLength": 20,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "C08 请只回复 OK，用于模型切换采集"
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081699165469696",
+              "from": null,
+              "contentLength": 2,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "OK"
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash",
+        "searchButton": {
+          "disabled": true,
+          "ariaLabel": "global"
+        }
+      }
+    },
+    {
+      "label": "after-switch-back-qwen35-flash-settled",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 3,
+        "currentSessionId": "76e5d489-1ee1-4d1c-a042-b624457f97de",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081693624794112",
+              "from": null,
+              "contentLength": 20,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "C08 请只回复 OK，用于模型切换采集"
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40081699165469696",
+              "from": null,
+              "contentLength": 2,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "OK"
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash",
+        "searchButton": {
+          "disabled": false,
+          "ariaLabel": "global"
+        }
+      }
+    }
+  ]
+}

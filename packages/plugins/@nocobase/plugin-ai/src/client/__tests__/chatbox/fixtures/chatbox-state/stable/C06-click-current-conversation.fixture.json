@@ -1,0 +1,64 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C06",
+  "title": "点击当前已打开的历史会话",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "C06-before-open-list",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "9e78f144-3d0c-4326-92df-3045ac131ba0"
+      }
+    },
+    {
+      "label": "C06-after-open-list",
+      "chatBox": {
+        "open": true,
+        "showConversations": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "9e78f144-3d0c-4326-92df-3045ac131ba0"
+      }
+    },
+    {
+      "label": "C06-after-click-current-conversation",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "9e78f144-3d0c-4326-92df-3045ac131ba0"
+      }
+    },
+    {
+      "label": "C06-after-click-settled",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "9e78f144-3d0c-4326-92df-3045ac131ba0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C01",
+  "title": "打开和关闭对话窗口",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "C01-before-open",
+      "chatBox": {
+        "open": false,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "minimize": false,
+        "taskVariables": {},
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": null,
+        "showDebugPanel": false,
+        "readonly": false,
+        "isShowSenderHint": false,
+        "currentEmployee": null,
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "keyword": "",
+        "webSearch": false,
+        "conversationSegmented": "conversations",
+        "unreadCount": 0,
+        "conversationCount": 0,
+        "items": []
+      },
+      "messages": {
+        "sessionKeyCount": 1,
+        "sessions": {
+          "__draft__": {
+            "messageCount": 0,
+            "messages": [],
+            "messagesLoading": false,
+            "messagesError": null,
+            "messagesMeta": {},
+            "attachmentCount": 0,
+            "contextItemCount": 0,
+            "systemMessageLength": 0,
+            "responseLoading": false,
+            "hasAbortController": false,
+            "skillSettings": null,
+            "webSearching": null,
+            "backgroundWorking": false,
+            "resumeStreamFailed": false
+          }
+        },
+        "currentEditorRefUid": null,
+        "hasFlowContext": false
+      }
+    },
+    {
+      "label": "C01-after-open",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "minimize": false,
+        "taskVariables": {},
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "showDebugPanel": false,
+        "readonly": false,
+        "isShowSenderHint": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "keyword": "",
+        "webSearch": false,
+        "conversationSegmented": "conversations",
+        "unreadCount": 0,
+        "conversationCount": 0,
+        "items": []
+      },
+      "messages": {
+        "sessionKeyCount": 1,
+        "sessions": {
+          "__draft__": {
+            "messageCount": 1,
+            "messages": [
+              {
+                "role": "atlas",
+                "loading": false,
+                "type": "greeting",
+                "messageId": null,
+                "from": null,
+                "contentLength": 109,
+                "reasoningStatus": null,
+                "toolCalls": [],
+                "attachmentsCount": 0,
+                "workContextCount": 0
+              }
+            ],
+            "messagesLoading": false,
+            "messagesError": null,
+            "messagesMeta": {},
+            "attachmentCount": 0,
+            "contextItemCount": 0,
+            "systemMessageLength": 0,
+            "responseLoading": false,
+            "hasAbortController": false,
+            "skillSettings": null,
+            "webSearching": null,
+            "backgroundWorking": false,
+            "resumeStreamFailed": false
+          }
+        },
+        "currentEditorRefUid": null,
+        "hasFlowContext": false
+      }
+    },
+    {
+      "label": "C01-after-close",
+      "chatBox": {
+        "open": false,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "minimize": false,
+        "taskVariables": {},
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "showDebugPanel": false,
+        "readonly": false,
+        "isShowSenderHint": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "keyword": "",
+        "webSearch": false,
+        "conversationSegmented": "conversations",
+        "unreadCount": 0,
+        "conversationCount": 0,
+        "items": []
+      },
+      "messages": {
+        "sessionKeyCount": 1,
+        "sessions": {
+          "__draft__": {
+            "messageCount": 1,
+            "messages": [
+              {
+                "role": "atlas",
+                "loading": false,
+                "type": "greeting",
+                "messageId": null,
+                "from": null,
+                "contentLength": 109,
+                "reasoningStatus": null,
+                "toolCalls": [],
+                "attachmentsCount": 0,
+                "workContextCount": 0
+              }
+            ],
+            "messagesLoading": false,
+            "messagesError": null,
+            "messagesMeta": {},
+            "attachmentCount": 0,
+            "contextItemCount": 0,
+            "systemMessageLength": 0,
+            "responseLoading": false,
+            "hasAbortController": false,
+            "skillSettings": null,
+            "webSearching": null,
+            "backgroundWorking": false,
+            "resumeStreamFailed": false
+          }
+        },
+        "currentEditorRefUid": null,
+        "hasFlowContext": false
+      }
+    }
+  ]
+}

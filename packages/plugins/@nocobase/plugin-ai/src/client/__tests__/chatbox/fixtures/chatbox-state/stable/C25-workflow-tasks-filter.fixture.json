@@ -1,0 +1,457 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C25",
+  "title": "工作流任务筛选",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "before-search",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-search-enter-100ms",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 1
+      }
+    },
+    {
+      "label": "after-search-settled",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "status-select-open",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "status-select-open-visible",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-select-pending-100ms",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 1
+      }
+    },
+    {
+      "label": "after-select-pending-settled",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-select-resolved-150ms",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-select-resolved-settled",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-select-rejected-150ms",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-select-rejected-settled",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-select-aborted-150ms",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-select-aborted-settled",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "旅游攻略",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-clear-filters-150ms",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    },
+    {
+      "label": "after-clear-filters-settled",
+      "chatBox": {
+        "showConversations": true,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "dom": {
+        "spinners": 0
+      }
+    }
+  ],
+  "network": {
+    "requests": [
+      {
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 13,
+            "page": 1,
+            "pageSize": 15,
+            "totalPage": 1
+          },
+          "count": 13,
+          "statusCounts": {
+            "pending_approval": 2,
+            "aborted": 10,
+            "approved": 1
+          },
+          "titles": ["旅游攻略"],
+          "first": {
+            "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
+            "workflowTitle": "旅游攻略",
+            "status": "pending_approval",
+            "jobStatus": 0,
+            "executionId": 363797494104064
+          }
+        }
+      },
+      {
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 3,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 13,
+            "page": 3,
+            "pageSize": 15,
+            "totalPage": 1
+          },
+          "count": 0,
+          "statusCounts": {},
+          "titles": []
+        }
+      },
+      {
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 2,
+            "page": 1,
+            "pageSize": 15,
+            "totalPage": 1
+          },
+          "count": 2,
+          "statusCounts": {
+            "pending_approval": 2
+          },
+          "titles": ["旅游攻略"],
+          "first": {
+            "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
+            "workflowTitle": "旅游攻略",
+            "status": "pending_approval",
+            "jobStatus": 0,
+            "executionId": 363797494104064
+          }
+        }
+      },
+      {
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 1,
+            "page": 1,
+            "pageSize": 15,
+            "totalPage": 1
+          },
+          "count": 1,
+          "statusCounts": {
+            "approved": 1
+          },
+          "titles": ["旅游攻略"],
+          "first": {
+            "sessionId": "f8aa62fd-89dc-4913-a4fb-de107b5ebab9",
+            "workflowTitle": "旅游攻略",
+            "status": "approved",
+            "jobStatus": 1,
+            "executionId": 363795120128000
+          }
+        }
+      },
+      {
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 0,
+            "page": 1,
+            "pageSize": 15,
+            "totalPage": 0
+          },
+          "count": 0,
+          "statusCounts": {},
+          "titles": []
+        }
+      },
+      {
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 10,
+            "page": 1,
+            "pageSize": 15,
+            "totalPage": 1
+          },
+          "count": 10,
+          "statusCounts": {
+            "aborted": 10
+          },
+          "titles": ["旅游攻略"],
+          "first": {
+            "sessionId": "2d6ce526-ab39-48c4-971f-98920676e593",
+            "workflowTitle": "旅游攻略",
+            "status": "aborted",
+            "jobStatus": -2,
+            "executionId": 363796709769216
+          }
+        }
+      },
+      {
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 13,
+            "page": 1,
+            "pageSize": 15,
+            "totalPage": 1
+          },
+          "count": 13,
+          "statusCounts": {
+            "pending_approval": 2,
+            "aborted": 10,
+            "approved": 1
+          },
+          "titles": ["旅游攻略"],
+          "first": {
+            "sessionId": "9809e91d-365a-464e-a238-bc09ed09df3d",
+            "workflowTitle": "旅游攻略",
+            "status": "pending_approval",
+            "jobStatus": 0,
+            "executionId": 363797494104064
+          }
+        }
+      },
+      {
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "meta": {
+            "count": 414,
+            "page": 1,
+            "pageSize": 15,
+            "totalPage": 28
+          },
+          "count": 15,
+          "statusCounts": {
+            "pending_approval": 5,
+            "pending_acceptance": 4,
+            "aborted": 5,
+            "approved": 1
+          },
+          "titles": ["权限测试", "旅游攻略"],
+          "first": {
+            "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+            "workflowTitle": "权限测试",
+            "status": "pending_approval",
+            "jobStatus": 0,
+            "executionId": 365056749273088
+          }
+        }
+      }
+    ]
+  }
+}

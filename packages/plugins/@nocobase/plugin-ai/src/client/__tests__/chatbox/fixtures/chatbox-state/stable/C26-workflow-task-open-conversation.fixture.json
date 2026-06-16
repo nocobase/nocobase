@@ -1,0 +1,881 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C26",
+  "title": "切换工作流任务并刷新聊天窗口",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "before-click-workflow-task",
+      "chatBox": {
+        "showConversations": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 8,
+        "messages": [
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090393525648384",
+            "from": "main-agent",
+            "contentLength": 139,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "dispatch-sub-agent-task",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": "main-agent",
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": "main-agent",
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": "main-agent",
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": "main-agent",
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40094057698982912",
+            "from": "main-agent",
+            "contentLength": 33,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "dom": {
+        "senderDisabled": false,
+        "taskCardCount": 7
+      }
+    },
+    {
+      "label": "after-click-task-50ms",
+      "chatBox": {
+        "showConversations": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 8,
+        "messages": [
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090393525648384",
+            "from": "main-agent",
+            "contentLength": 139,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "dispatch-sub-agent-task",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": "main-agent",
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": "main-agent",
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": "main-agent",
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": "main-agent",
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40094057698982912",
+            "from": "main-agent",
+            "contentLength": 33,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "dom": {
+        "senderDisabled": false,
+        "taskCardCount": 7
+      }
+    },
+    {
+      "label": "after-click-task-750ms",
+      "chatBox": {
+        "showConversations": false,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messages": [
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681026166979584",
+            "from": "main-agent",
+            "contentLength": 76,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681031397276672",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "getSkill",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681036984089600",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "getSkill",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681046320610304",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "getCollectionMetadata",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681057133526016",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "dataQuery",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681067623480320",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "dataSourceQuery",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681118051597312",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "aiEmployeeWorkflowTaskOutput",
+                "invokeStatus": "interrupted",
+                "status": null
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "dom": {
+        "senderDisabled": false,
+        "taskCardCount": 0
+      }
+    },
+    {
+      "label": "after-click-task-settled",
+      "chatBox": {
+        "showConversations": false,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messages": [
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681026166979584",
+            "from": "main-agent",
+            "contentLength": 76,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681031397276672",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "getSkill",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681036984089600",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "getSkill",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681046320610304",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "getCollectionMetadata",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681057133526016",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "dataQuery",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681067623480320",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "dataSourceQuery",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681118051597312",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "aiEmployeeWorkflowTaskOutput",
+                "invokeStatus": "interrupted",
+                "status": null
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "dom": {
+        "senderDisabled": false,
+        "taskCardCount": 0
+      }
+    },
+    {
+      "label": "after-click-task-final-check",
+      "chatBox": {
+        "showConversations": false,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messages": [
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681026166979584",
+            "from": "main-agent",
+            "contentLength": 76,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681031397276672",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "getSkill",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681036984089600",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "getSkill",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681046320610304",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "getCollectionMetadata",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681057133526016",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "dataQuery",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681067623480320",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "dataSourceQuery",
+                "invokeStatus": "confirmed",
+                "status": "success"
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29681118051597312",
+            "from": "main-agent",
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [
+              {
+                "name": "aiEmployeeWorkflowTaskOutput",
+                "invokeStatus": "interrupted",
+                "status": null
+              }
+            ],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "dom": {
+        "senderDisabled": false,
+        "taskCardCount": 0
+      }
+    }
+  ],
+  "network": {
+    "requests": [
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiWorkflowTasks:accept",
+        "hasFilter": false,
+        "summary": {
+          "data": {
+            "accepted": false,
+            "readUpdated": true,
+            "acceptedUserId": 1
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiWorkflowTasks:getBySession",
+        "hasFilter": false,
+        "summary": {
+          "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+          "status": "pending_approval",
+          "readonly": false,
+          "workflowTitle": "权限测试",
+          "nodeTitle": "AI 员工",
+          "config": {
+            "username": "atlas",
+            "model": {
+              "llmService": "v_uourh1sy3go",
+              "model": "qwen3.5-flash"
+            }
+          },
+          "read": true
+        }
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiConversations:getMessages",
+        "hasFilter": false,
+        "summary": {
+          "count": 7,
+          "roles": ["atlas", "atlas", "atlas", "atlas", "atlas", "atlas", "user"],
+          "first": {
+            "role": "atlas",
+            "content": "[object Object]"
+          },
+          "toolNames": []
+        }
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiTools:list",
+        "hasFilter": true,
+        "summary": {
+          "count": 30,
+          "names": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiConversations:get",
+        "hasFilter": true,
+        "summary": {
+          "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+          "options": {},
+          "title": "Current workflow task descript"
+        }
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiConversations:get",
+        "hasFilter": true,
+        "summary": {
+          "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+          "options": {},
+          "title": "Current workflow task descript"
+        }
+      }
+    ]
+  }
+}

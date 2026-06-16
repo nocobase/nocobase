@@ -1,0 +1,847 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C18",
+  "title": "客户端工具：点击 suggestion 继续会话",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "before-click-suggestion-settled",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 9,
+        "currentSessionId": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088211485129728",
+              "from": null,
+              "contentLength": 80,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088220737764352",
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": "stop",
+              "toolCalls": [
+                {
+                  "id": "call_0a2ac0f1804040d987e4a295",
+                  "name": "suggestions",
+                  "invokeStatus": "interrupted",
+                  "status": null,
+                  "auto": false,
+                  "args": {
+                    "type": "object",
+                    "keys": ["options"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 0
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "after-click-suggestion-50ms",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 9,
+        "currentSessionId": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088211485129728",
+              "from": null,
+              "contentLength": 80,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088220737764352",
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": "stop",
+              "toolCalls": [
+                {
+                  "id": "call_0a2ac0f1804040d987e4a295",
+                  "name": "suggestions",
+                  "invokeStatus": "done",
+                  "status": "success",
+                  "auto": false,
+                  "args": {
+                    "type": "object",
+                    "keys": ["options"]
+                  },
+                  "content": {
+                    "type": "string",
+                    "length": 8
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "after-click-suggestion-550ms",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 9,
+        "currentSessionId": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088211485129728",
+              "from": null,
+              "contentLength": 80,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088220737764352",
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": "stop",
+              "toolCalls": [
+                {
+                  "id": "call_0a2ac0f1804040d987e4a295",
+                  "name": "suggestions",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": false,
+                  "args": {
+                    "type": "object",
+                    "keys": ["options"]
+                  },
+                  "content": {
+                    "type": "string",
+                    "length": 8
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            },
+            {
+              "role": "dex",
+              "loading": true,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "suggestion-resume-poll-1",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 9,
+        "currentSessionId": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088211485129728",
+              "from": null,
+              "contentLength": 80,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088220737764352",
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": "stop",
+              "toolCalls": [
+                {
+                  "id": "call_0a2ac0f1804040d987e4a295",
+                  "name": "suggestions",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": false,
+                  "args": {
+                    "type": "object",
+                    "keys": ["options"]
+                  },
+                  "content": {
+                    "type": "string",
+                    "length": 8
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 122,
+              "reasoningStatus": "streaming",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "suggestion-resume-poll-2",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 9,
+        "currentSessionId": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088211485129728",
+              "from": null,
+              "contentLength": 80,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088220737764352",
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": "stop",
+              "toolCalls": [
+                {
+                  "id": "call_0a2ac0f1804040d987e4a295",
+                  "name": "suggestions",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": false,
+                  "selectedSuggestion": "继续生成测试数据",
+                  "args": {
+                    "type": "object",
+                    "keys": ["options"]
+                  },
+                  "content": {
+                    "type": "string",
+                    "length": 8
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088682547411968",
+              "from": null,
+              "contentLength": 122,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "suggestion-resume-poll-3",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 9,
+        "currentSessionId": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088211485129728",
+              "from": null,
+              "contentLength": 80,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088220737764352",
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": "stop",
+              "toolCalls": [
+                {
+                  "id": "call_0a2ac0f1804040d987e4a295",
+                  "name": "suggestions",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": false,
+                  "selectedSuggestion": "继续生成测试数据",
+                  "args": {
+                    "type": "object",
+                    "keys": ["options"]
+                  },
+                  "content": {
+                    "type": "string",
+                    "length": 8
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088682547411968",
+              "from": null,
+              "contentLength": 122,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "suggestion-resume-poll-4",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "dex",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "qwen3.5-flash",
+          "llmService": "v_uourh1sy3go"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 9,
+        "currentSessionId": "be914656-1e39-451e-8869-f44fb82d86fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088211485129728",
+              "from": null,
+              "contentLength": 80,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088220737764352",
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": "stop",
+              "toolCalls": [
+                {
+                  "id": "call_0a2ac0f1804040d987e4a295",
+                  "name": "suggestions",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": false,
+                  "selectedSuggestion": "继续生成测试数据",
+                  "args": {
+                    "type": "object",
+                    "keys": ["options"]
+                  },
+                  "content": {
+                    "type": "string",
+                    "length": 8
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            },
+            {
+              "role": "dex",
+              "loading": false,
+              "type": "text",
+              "messageId": "40088682547411968",
+              "from": null,
+              "contentLength": 122,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Qwen3.5 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    }
+  ],
+  "network": {
+    "requests": [
+      {
+        "method": "POST",
+        "status": 200,
+        "hasFilter": false
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "hasFilter": false
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "hasFilter": false
+      }
+    ]
+  }
+}

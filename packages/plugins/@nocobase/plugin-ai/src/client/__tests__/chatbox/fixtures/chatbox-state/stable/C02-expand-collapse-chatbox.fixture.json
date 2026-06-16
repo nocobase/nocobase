@@ -1,0 +1,82 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C02",
+  "title": "放大和缩小对话窗口",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "C02-after-open",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "minimize": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "showDebugPanel": false,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    },
+    {
+      "label": "C02-after-debug-open",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "showDebugPanel": true,
+        "currentEmployee": "atlas"
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    },
+    {
+      "label": "C02-after-expand",
+      "chatBox": {
+        "open": true,
+        "expanded": true,
+        "collapsed": false,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "showDebugPanel": false,
+        "currentEmployee": "atlas"
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    },
+    {
+      "label": "C02-after-collapse-from-expanded",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "showDebugPanel": false,
+        "currentEmployee": "atlas"
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    }
+  ]
+}

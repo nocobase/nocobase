@@ -1,0 +1,1136 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C23",
+  "title": "发送文件给 AI 员工",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "before-upload",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": null,
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 0,
+        "contextItemCount": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-upload-100ms",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": null,
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 0,
+        "contextItemCount": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-upload-1100ms",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": null,
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 0,
+        "contextItemCount": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-dom-file-change-50ms",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": null,
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 1,
+        "attachments": [
+          {
+            "uid": "rc-upload-1781539821890-9",
+            "name": "nocobase-ai-c23-upload.txt",
+            "status": "uploading",
+            "percent": 0,
+            "size": 44
+          }
+        ],
+        "contextItemCount": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-dom-file-change-1550ms",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": null,
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 1,
+        "attachments": [
+          {
+            "filename": "nocobase-ai-c23-upload-30cq9i.txt",
+            "status": "done",
+            "size": 44
+          }
+        ],
+        "contextItemCount": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-fill-message-with-attachment",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": null,
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 1,
+        "attachments": [
+          {
+            "filename": "nocobase-ai-c23-upload-30cq9i.txt",
+            "status": "done",
+            "size": 44
+          }
+        ],
+        "contextItemCount": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-send-attachment-200ms",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": null,
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 1,
+        "attachments": [
+          {
+            "filename": "nocobase-ai-c23-upload-30cq9i.txt",
+            "status": "done",
+            "size": 44
+          }
+        ],
+        "contextItemCount": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-store-set-sender-with-attachment",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 33
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090401910062080",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40090416665623552",
+            "from": null,
+            "contentLength": 25,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 1,
+        "attachments": [
+          {
+            "filename": "nocobase-ai-c23-upload-30cq9i.txt",
+            "status": "done",
+            "size": 44
+          }
+        ],
+        "contextItemCount": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-send-attachment-with-store-value-200ms",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": null,
+            "from": null,
+            "contentLength": 33,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 1,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": true,
+            "type": "text",
+            "messageId": null,
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 0,
+        "contextItemCount": 0,
+        "responseLoading": true,
+        "hasAbortController": true,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "attachment-send-poll-1",
+      "chatBox": {
+        "open": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false
+      },
+      "currentSession": {
+        "messageCount": 6,
+        "messages": [
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091302267747328",
+            "from": null,
+            "contentLength": 18,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "C21 会话 B 请只回复 B-OK"
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40091308227853312",
+            "from": null,
+            "contentLength": 4,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "B-OK"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093210114030592",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 1,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40093219484105728",
+            "from": null,
+            "contentLength": 146,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": "40094057698982912",
+            "from": null,
+            "contentLength": 33,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 1,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "40094064359537664",
+            "from": null,
+            "contentLength": 7,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "FILE-OK"
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "attachmentCount": 0,
+        "contextItemCount": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    }
+  ],
+  "network": {
+    "requests": []
+  }
+}

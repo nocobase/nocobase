@@ -1,0 +1,233 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C33",
+  "title": "草稿 session 迁移",
+  "sourceKind": "real store mutation on draft/new synthetic session + source-constructed tool-call migration contract",
+  "snapshots": [
+    {
+      "label": "before-migrate-draft",
+      "draft": {
+        "messageCount": 2,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "greeting",
+            "messageId": null,
+            "from": null,
+            "contentLength": 11,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "hello draft"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": null,
+            "from": null,
+            "contentLength": 12,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 1,
+            "workContextCount": 1,
+            "content": "first prompt"
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "messagesMeta": {
+          "cursor": "cursor-draft",
+          "hasMore": true
+        },
+        "attachmentCount": 1,
+        "attachments": [
+          {
+            "filename": "draft.txt",
+            "status": "done",
+            "size": 12
+          }
+        ],
+        "contextItemCount": 1,
+        "contextItems": [
+          {
+            "type": "flow-model",
+            "uid": "block-1",
+            "title": "Block 1"
+          }
+        ],
+        "systemMessageLength": 20,
+        "responseLoading": true,
+        "hasAbortController": false,
+        "skillSettings": {
+          "skills": ["skill-a"],
+          "tools": ["tool-a"]
+        },
+        "webSearching": null,
+        "backgroundWorking": true,
+        "resumeStreamFailed": true
+      },
+      "newSession": {
+        "messageCount": 0,
+        "messages": [],
+        "messagesLoading": false,
+        "messagesError": null,
+        "messagesMeta": {},
+        "attachmentCount": 0,
+        "contextItemCount": 0,
+        "systemMessageLength": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-migrate-draft-to-new-session",
+      "draft": {
+        "messageCount": 0,
+        "messages": [],
+        "messagesLoading": false,
+        "messagesError": null,
+        "messagesMeta": {},
+        "attachmentCount": 0,
+        "contextItemCount": 0,
+        "systemMessageLength": 0,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "newSession": {
+        "messageCount": 2,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "greeting",
+            "messageId": null,
+            "from": null,
+            "contentLength": 11,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": "hello draft"
+          },
+          {
+            "role": "user",
+            "loading": false,
+            "type": "text",
+            "messageId": null,
+            "from": null,
+            "contentLength": 12,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 1,
+            "workContextCount": 1,
+            "content": "first prompt"
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "messagesMeta": {
+          "cursor": "cursor-draft",
+          "hasMore": true
+        },
+        "attachmentCount": 1,
+        "attachments": [
+          {
+            "filename": "draft.txt",
+            "status": "done",
+            "size": 12
+          }
+        ],
+        "contextItemCount": 1,
+        "contextItems": [
+          {
+            "type": "flow-model",
+            "uid": "block-1",
+            "title": "Block 1"
+          }
+        ],
+        "systemMessageLength": 20,
+        "responseLoading": true,
+        "hasAbortController": false,
+        "skillSettings": {
+          "skills": ["skill-a"],
+          "tools": ["tool-a"]
+        },
+        "webSearching": null,
+        "backgroundWorking": true,
+        "resumeStreamFailed": true
+      }
+    }
+  ],
+  "draftSessionId": "__draft__",
+  "newSessionId": "__case_c33_new_session__",
+  "cleanup": {
+    "draft": {
+      "sessionId": "__draft__",
+      "messages": [],
+      "messagesLoading": false,
+      "messagesMeta": {},
+      "attachments": [],
+      "contextItems": [],
+      "systemMessage": "",
+      "responseLoading": false,
+      "skillSettings": null,
+      "backgroundWorking": false,
+      "resumeStreamFailed": false
+    },
+    "newSession": {
+      "sessionId": "__case_c33_new_session__",
+      "messages": [],
+      "messagesLoading": false,
+      "messagesMeta": {},
+      "attachments": [],
+      "contextItems": [],
+      "systemMessage": "",
+      "responseLoading": false,
+      "skillSettings": null,
+      "backgroundWorking": false,
+      "resumeStreamFailed": false
+    }
+  },
+  "toolCallMigrationContract": {
+    "before": {
+      "sessions": {
+        "__draft__": {
+          "toolCalls": {
+            "draftMessageId": [
+              {
+                "id": "tool-1",
+                "invokeStatus": "waiting"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "after": {
+      "sessions": {
+        "__case_c33_new_session__": {
+          "toolCalls": {
+            "draftMessageId": [
+              {
+                "id": "tool-1",
+                "invokeStatus": "waiting"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "sourceDraftDeleted": true
+  }
+}

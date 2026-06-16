@@ -1,0 +1,87 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C07",
+  "title": "切换 AI 员工",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "C07-before-prepare",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "9e78f144-3d0c-4326-92df-3045ac131ba0"
+      }
+    },
+    {
+      "label": "C07-after-draft-input",
+      "chatBox": {
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas",
+        "senderValueLength": 42
+      },
+      "conversations": {
+        "currentConversation": "9e78f144-3d0c-4326-92df-3045ac131ba0"
+      }
+    },
+    {
+      "label": "C07-after-click-dex",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": null,
+        "currentEmployee": "dex",
+        "senderValueLength": 42
+      },
+      "conversations": {
+        "currentConversation": null
+      },
+      "draft": {
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "C07-after-switch-settled",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3-max-2026-01-23"
+        },
+        "currentEmployee": "dex",
+        "senderValueLength": 42
+      },
+      "conversations": {
+        "currentConversation": null
+      },
+      "draft": {
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    }
+  ]
+}

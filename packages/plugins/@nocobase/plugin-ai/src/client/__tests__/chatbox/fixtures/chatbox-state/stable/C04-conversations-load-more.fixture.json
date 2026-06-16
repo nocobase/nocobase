@@ -1,0 +1,49 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C04",
+  "title": "历史会话列表加载和滚动加载更多",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "C04-before-open-list",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "keyword": "",
+        "conversationSegmented": "conversations"
+      }
+    },
+    {
+      "label": "C04-before-scroll-bottom",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "keyword": "",
+        "conversationSegmented": "conversations"
+      }
+    },
+    {
+      "label": "C04-after-scroll-summary",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": true
+      },
+      "conversations": {
+        "keyword": "",
+        "conversationSegmented": "conversations"
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    }
+  ]
+}

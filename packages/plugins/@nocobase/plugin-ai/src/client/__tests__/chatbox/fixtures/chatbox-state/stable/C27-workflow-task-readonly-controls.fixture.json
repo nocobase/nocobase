@@ -1,0 +1,434 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C27",
+  "title": "工作流任务状态控制发送框",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "readonly-false-task-open",
+      "chatBox": {
+        "showConversations": false,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "dom": {
+        "senderDisabled": false,
+        "selects": ["20 / page"],
+        "buttons": [
+          {
+            "text": "Add new",
+            "icon": "plus",
+            "disabled": false
+          },
+          {
+            "text": "Reject",
+            "disabled": false
+          },
+          {
+            "text": "Revise",
+            "disabled": false
+          },
+          {
+            "text": "Approve",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "appstore-add",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "paper-clip",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "global",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "arrow-up",
+            "disabled": false
+          }
+        ],
+        "taskCardCount": 0
+      }
+    },
+    {
+      "label": "after-open-task-list-for-readonly-check",
+      "chatBox": {
+        "showConversations": true,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "dom": {
+        "senderDisabled": false,
+        "selects": ["20 / page", "Filter by status"],
+        "buttons": [
+          {
+            "text": "Add new",
+            "icon": "plus",
+            "disabled": false
+          },
+          {
+            "text": "Reject",
+            "disabled": false
+          },
+          {
+            "text": "Revise",
+            "disabled": false
+          },
+          {
+            "text": "Approve",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "appstore-add",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "paper-clip",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "global",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "arrow-up",
+            "disabled": false
+          }
+        ],
+        "taskCardCount": 7
+      }
+    },
+    {
+      "label": "resolved-list-loaded",
+      "chatBox": {
+        "showConversations": true,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "dom": {
+        "senderDisabled": false,
+        "selects": ["20 / page", "Resolved"],
+        "buttons": [
+          {
+            "text": "Add new",
+            "icon": "plus",
+            "disabled": false
+          },
+          {
+            "text": "Reject",
+            "disabled": false
+          },
+          {
+            "text": "Revise",
+            "disabled": false
+          },
+          {
+            "text": "Approve",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "appstore-add",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "paper-clip",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "global",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "icon": "arrow-up",
+            "disabled": false
+          }
+        ],
+        "taskCardCount": 7
+      }
+    },
+    {
+      "label": "after-open-resolved-task",
+      "chatBox": {
+        "showConversations": false,
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "keyword": "",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      },
+      "dom": {
+        "senderDisabled": true,
+        "selects": ["20 / page"],
+        "buttons": [
+          {
+            "text": "Add new",
+            "icon": "plus",
+            "disabled": false
+          },
+          {
+            "text": "Reject",
+            "disabled": true
+          },
+          {
+            "text": "Revise",
+            "disabled": true
+          },
+          {
+            "text": "Approve",
+            "disabled": true
+          },
+          {
+            "text": "",
+            "icon": "appstore-add",
+            "disabled": true
+          },
+          {
+            "text": "",
+            "icon": "paper-clip",
+            "disabled": true
+          },
+          {
+            "text": "",
+            "icon": "global",
+            "disabled": true
+          },
+          {
+            "text": "",
+            "icon": "arrow-up",
+            "disabled": false
+          }
+        ],
+        "taskCardCount": 0
+      }
+    }
+  ],
+  "network": {
+    "requests": [
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiConversations:unreadCounts",
+        "hasFilter": false
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "count": 15,
+          "meta": {
+            "count": 414,
+            "page": 1,
+            "totalPage": 28
+          },
+          "statusCounts": {
+            "pending_approval": 5,
+            "pending_acceptance": 4,
+            "aborted": 5,
+            "approved": 1
+          }
+        }
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiWorkflowTasks:list",
+        "page": 1,
+        "pageSize": 15,
+        "hasFilter": true,
+        "summary": {
+          "count": 15,
+          "meta": {
+            "count": 168,
+            "page": 1,
+            "totalPage": 12
+          },
+          "statusCounts": {
+            "approved": 15
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiWorkflowTasks:accept",
+        "hasFilter": false
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiWorkflowTasks:getBySession",
+        "hasFilter": false,
+        "summary": {
+          "sessionId": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+          "status": "approved",
+          "readonly": true,
+          "workflowTitle": "权限测试",
+          "nodeTitle": "AI 员工",
+          "config": {
+            "username": "atlas",
+            "model": {
+              "llmService": "v_uourh1sy3go",
+              "model": "qwen3.5-flash"
+            }
+          },
+          "read": true
+        }
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiWorkflowTasks:getBySession",
+        "hasFilter": false,
+        "summary": {
+          "sessionId": "573d3fd3-0d1e-4130-a40f-6a3ecb7cf6dd",
+          "status": "pending_approval",
+          "readonly": false,
+          "workflowTitle": "权限测试",
+          "nodeTitle": "AI 员工",
+          "config": {
+            "username": "atlas",
+            "model": {
+              "llmService": "v_uourh1sy3go",
+              "model": "qwen3.5-flash"
+            }
+          },
+          "read": true
+        }
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiConversations:getMessages",
+        "hasFilter": false
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiWorkflowTasks:getBySession",
+        "hasFilter": false,
+        "summary": {
+          "sessionId": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+          "status": "approved",
+          "readonly": true,
+          "workflowTitle": "权限测试",
+          "nodeTitle": "AI 员工",
+          "config": {
+            "username": "atlas",
+            "model": {
+              "llmService": "v_uourh1sy3go",
+              "model": "qwen3.5-flash"
+            }
+          },
+          "read": true
+        }
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiConversations:get",
+        "hasFilter": true
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiConversations:get",
+        "hasFilter": true
+      }
+    ]
+  }
+}

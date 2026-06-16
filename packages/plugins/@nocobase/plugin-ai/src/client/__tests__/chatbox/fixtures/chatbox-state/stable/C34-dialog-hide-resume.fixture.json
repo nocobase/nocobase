@@ -1,0 +1,133 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C34",
+  "title": "对话窗口隐藏控制",
+  "sourceKind": "real UI dialogController.hide/resume through Pick block selection",
+  "snapshots": [
+    {
+      "label": "before-expand",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": false,
+        "readonly": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-expand-and-readonly-off",
+      "chatBox": {
+        "open": true,
+        "expanded": true,
+        "showConversations": false,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "context-menu-open-before-hide",
+      "chatBox": {
+        "open": true,
+        "expanded": true,
+        "showConversations": false,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-pick-block-hide",
+      "chatBox": {
+        "open": true,
+        "expanded": true,
+        "showConversations": false,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-select-block-resume",
+      "chatBox": {
+        "open": true,
+        "expanded": true,
+        "showConversations": false,
+        "readonly": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 7,
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    }
+  ]
+}

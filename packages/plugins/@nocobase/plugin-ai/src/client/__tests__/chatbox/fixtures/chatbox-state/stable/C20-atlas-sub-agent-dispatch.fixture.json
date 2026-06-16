@@ -1,0 +1,2138 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C20",
+  "title": "Atlas sub-agent 调用中的多轮、工具、中止、重发",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "before-send-atlas-dispatch",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": null,
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": null
+      },
+      "messages": {
+        "sessionKeyCount": 10,
+        "currentSessionId": "__draft__",
+        "currentSession": {
+          "messageCount": 1,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 1,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "after-fill-dispatch-prompt",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 139
+      },
+      "conversations": {
+        "currentConversation": null,
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": null
+      },
+      "messages": {
+        "sessionKeyCount": 10,
+        "currentSessionId": "__draft__",
+        "currentSession": {
+          "messageCount": 1,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 1,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "after-send-50ms",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": null,
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": null
+      },
+      "messages": {
+        "sessionKeyCount": 10,
+        "currentSessionId": "__draft__",
+        "currentSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 2,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-1",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": true,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-2",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": true,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-3",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": true,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 0,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-4",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-5",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "args": {
+                    "type": "string",
+                    "length": 33
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-6",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "invokeStatus": "pending",
+                  "status": null,
+                  "auto": true,
+                  "args": {
+                    "type": "object",
+                    "keys": ["question", "username"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 0
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-7",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "invokeStatus": "pending",
+                  "status": null,
+                  "auto": true,
+                  "args": {
+                    "type": "object",
+                    "keys": ["question", "username"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 0
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-8",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "invokeStatus": "pending",
+                  "status": null,
+                  "auto": true,
+                  "args": {
+                    "type": "object",
+                    "keys": ["question", "username"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 0
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "",
+              "subAgentConversations": [
+                {
+                  "sessionId": "e6ac56c4-7be0-4f3e-a159-caede9e8a3e6",
+                  "status": null,
+                  "messages": [
+                    {
+                      "role": "dex",
+                      "loading": false,
+                      "type": "text",
+                      "messageId": null,
+                      "from": "sub-agent",
+                      "contentLength": 0,
+                      "reasoningStatus": "streaming",
+                      "toolCalls": [],
+                      "attachmentsCount": 0,
+                      "workContextCount": 0,
+                      "content": ""
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-9",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "invokeStatus": "pending",
+                  "status": null,
+                  "auto": true,
+                  "args": {
+                    "type": "object",
+                    "keys": ["question", "username"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 0
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "",
+              "subAgentConversations": [
+                {
+                  "sessionId": "e6ac56c4-7be0-4f3e-a159-caede9e8a3e6",
+                  "status": null,
+                  "messages": [
+                    {
+                      "role": "dex",
+                      "loading": false,
+                      "type": "text",
+                      "messageId": null,
+                      "from": "sub-agent",
+                      "contentLength": 11,
+                      "reasoningStatus": "streaming",
+                      "toolCalls": [],
+                      "attachmentsCount": 0,
+                      "workContextCount": 0,
+                      "content": "SUBAGENT-OK"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-10",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 4,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": true,
+                  "args": {
+                    "type": "object",
+                    "keys": ["question", "username"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 75
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "",
+              "subAgentConversations": [
+                {
+                  "sessionId": "e6ac56c4-7be0-4f3e-a159-caede9e8a3e6",
+                  "status": "completed",
+                  "messages": [
+                    {
+                      "role": "dex",
+                      "loading": false,
+                      "type": "text",
+                      "messageId": null,
+                      "from": "sub-agent",
+                      "contentLength": 11,
+                      "reasoningStatus": "streaming",
+                      "toolCalls": [],
+                      "attachmentsCount": 0,
+                      "workContextCount": 0,
+                      "content": "SUBAGENT-OK"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "atlas",
+              "loading": true,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-11",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 4,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": true,
+                  "args": {
+                    "type": "object",
+                    "keys": ["question", "username"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 75
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "",
+              "subAgentConversations": [
+                {
+                  "sessionId": "e6ac56c4-7be0-4f3e-a159-caede9e8a3e6",
+                  "status": "completed",
+                  "messages": [
+                    {
+                      "role": "dex",
+                      "loading": false,
+                      "type": "text",
+                      "messageId": null,
+                      "from": "sub-agent",
+                      "contentLength": 11,
+                      "reasoningStatus": "streaming",
+                      "toolCalls": [],
+                      "attachmentsCount": 0,
+                      "workContextCount": 0,
+                      "content": "SUBAGENT-OK"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "atlas",
+              "loading": true,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-12",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 4,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": true,
+                  "args": {
+                    "type": "object",
+                    "keys": ["question", "username"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 75
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "",
+              "subAgentConversations": [
+                {
+                  "sessionId": "e6ac56c4-7be0-4f3e-a159-caede9e8a3e6",
+                  "status": "completed",
+                  "messages": [
+                    {
+                      "role": "dex",
+                      "loading": false,
+                      "type": "text",
+                      "messageId": null,
+                      "from": "sub-agent",
+                      "contentLength": 11,
+                      "reasoningStatus": "streaming",
+                      "toolCalls": [],
+                      "attachmentsCount": 0,
+                      "workContextCount": 0,
+                      "content": "SUBAGENT-OK"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": ""
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": true,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-13",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 4,
+          "messages": [
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "greeting",
+              "messageId": null,
+              "from": null,
+              "contentLength": 109,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": null,
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "streaming",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": true,
+                  "args": {
+                    "type": "object",
+                    "keys": ["question", "username"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 75
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "",
+              "subAgentConversations": [
+                {
+                  "sessionId": "e6ac56c4-7be0-4f3e-a159-caede9e8a3e6",
+                  "status": "completed",
+                  "messages": [
+                    {
+                      "role": "dex",
+                      "loading": false,
+                      "type": "text",
+                      "messageId": null,
+                      "from": "sub-agent",
+                      "contentLength": 11,
+                      "reasoningStatus": "streaming",
+                      "toolCalls": [],
+                      "attachmentsCount": 0,
+                      "workContextCount": 0,
+                      "content": "SUBAGENT-OK"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": null,
+              "from": "main-agent",
+              "contentLength": 25,
+              "reasoningStatus": "streaming",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            }
+          ],
+          "messagesLoading": true,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": true,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    },
+    {
+      "label": "sub-agent-poll-14",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "collapsed": false,
+        "showConversations": false,
+        "isEditingMessage": false,
+        "editingMessageId": null,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "readonly": false,
+        "currentEmployee": "atlas",
+        "senderValueLength": 0
+      },
+      "conversations": {
+        "currentConversation": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "webSearch": false,
+        "conversationCount": 50,
+        "currentConversationModelSettings": {
+          "model": "deepseek-v4-flash",
+          "llmService": "v_4myldxq4tlz"
+        }
+      },
+      "messages": {
+        "sessionKeyCount": 11,
+        "currentSessionId": "640bfd40-b656-4c9a-9c25-c7071738c7fc",
+        "currentSession": {
+          "messageCount": 3,
+          "messages": [
+            {
+              "role": "user",
+              "loading": false,
+              "type": "text",
+              "messageId": "40090393525648384",
+              "from": "main-agent",
+              "contentLength": 139,
+              "reasoningStatus": null,
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": "40090401910062080",
+              "from": "main-agent",
+              "contentLength": 0,
+              "reasoningStatus": "stop",
+              "toolCalls": [
+                {
+                  "id": "call_00_8F1wtlRafgsE3k0bSHmP8738",
+                  "name": "dispatch-sub-agent-task",
+                  "invokeStatus": "confirmed",
+                  "status": "success",
+                  "auto": true,
+                  "args": {
+                    "type": "object",
+                    "keys": ["question", "username"]
+                  },
+                  "content": {
+                    "type": "object",
+                    "length": 75
+                  }
+                }
+              ],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "",
+              "subAgentConversations": [
+                {
+                  "sessionId": "e6ac56c4-7be0-4f3e-a159-caede9e8a3e6",
+                  "status": "completed",
+                  "messages": [
+                    {
+                      "role": "user",
+                      "loading": false,
+                      "type": "text",
+                      "messageId": "40090404653136896",
+                      "from": "sub-agent",
+                      "contentLength": 17,
+                      "reasoningStatus": null,
+                      "toolCalls": [],
+                      "attachmentsCount": 0,
+                      "workContextCount": 0,
+                      "content": "请只回复 SUBAGENT-OK。"
+                    },
+                    {
+                      "role": "dex",
+                      "loading": false,
+                      "type": "text",
+                      "messageId": "40090408595782656",
+                      "from": "sub-agent",
+                      "contentLength": 11,
+                      "reasoningStatus": "stop",
+                      "toolCalls": [],
+                      "attachmentsCount": 0,
+                      "workContextCount": 0,
+                      "content": "SUBAGENT-OK"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "role": "atlas",
+              "loading": false,
+              "type": "text",
+              "messageId": "40090416665623552",
+              "from": "main-agent",
+              "contentLength": 25,
+              "reasoningStatus": "stop",
+              "toolCalls": [],
+              "attachmentsCount": 0,
+              "workContextCount": 0,
+              "content": "Dex 已回复：\n\n**SUBAGENT-OK**"
+            }
+          ],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        },
+        "draftSession": {
+          "messageCount": 0,
+          "messages": [],
+          "messagesLoading": false,
+          "messagesError": null,
+          "attachmentCount": 0,
+          "contextItemCount": 0,
+          "responseLoading": false,
+          "hasAbortController": false,
+          "skillSettings": null,
+          "webSearching": null,
+          "backgroundWorking": false,
+          "resumeStreamFailed": false
+        }
+      },
+      "ui": {
+        "visibleModelLabel": "Deepseek V4 Flash"
+      },
+      "toolCallStore": {
+        "session": null,
+        "sessionKeys": []
+      }
+    }
+  ],
+  "network": {
+    "requests": [
+      {
+        "method": "POST",
+        "status": 200,
+        "hasFilter": false
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "hasFilter": false
+      },
+      {
+        "hasFilter": false
+      }
+    ]
+  }
+}

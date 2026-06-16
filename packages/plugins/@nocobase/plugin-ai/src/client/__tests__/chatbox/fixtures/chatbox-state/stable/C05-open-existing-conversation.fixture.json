@@ -1,0 +1,57 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C05",
+  "title": "AI 员工历史会话列表点击会话，切换会话",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "C05-before-click-conversation",
+      "chatBox": {
+        "open": true,
+        "showConversations": true,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": null
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    },
+    {
+      "label": "C05-after-click-conversation",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "9e78f144-3d0c-4326-92df-3045ac131ba0"
+      }
+    },
+    {
+      "label": "C05-after-messages-settled",
+      "chatBox": {
+        "open": true,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "9e78f144-3d0c-4326-92df-3045ac131ba0"
+      }
+    }
+  ]
+}

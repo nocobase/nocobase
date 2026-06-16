@@ -1,0 +1,344 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C28",
+  "title": "工作流消息后台运行和刷新消息按钮",
+  "sourceKind": "source-constructed-or-supplemented",
+  "snapshots": [
+    {
+      "label": "before-source-construct-background",
+      "chatBox": {
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 4,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672312412339200",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672325385321472",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672346512030720",
+            "from": null,
+            "contentLength": 291,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672476732587008",
+            "from": null,
+            "contentLength": 71,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": false,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-source-construct-background",
+      "chatBox": {
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 4,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672312412339200",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672325385321472",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672346512030720",
+            "from": null,
+            "contentLength": 291,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672476732587008",
+            "from": null,
+            "contentLength": 71,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": true,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": true,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-click-refresh-50ms",
+      "chatBox": {
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 4,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672312412339200",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672325385321472",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672346512030720",
+            "from": null,
+            "contentLength": 291,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672476732587008",
+            "from": null,
+            "contentLength": 71,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": true,
+        "messagesError": null,
+        "responseLoading": true,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": true,
+        "resumeStreamFailed": false
+      }
+    },
+    {
+      "label": "after-click-refresh-settled",
+      "chatBox": {
+        "model": {
+          "llmService": "v_uourh1sy3go",
+          "model": "qwen3.5-flash"
+        },
+        "readonly": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "currentConversation": "6845d115-cd9f-43c4-a1c0-c9b88ebaeb9e",
+        "conversationSegmented": "workflowTasks"
+      },
+      "currentSession": {
+        "messageCount": 4,
+        "messages": [
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672312412339200",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672325385321472",
+            "from": null,
+            "contentLength": 0,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0,
+            "content": ""
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672346512030720",
+            "from": null,
+            "contentLength": 291,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          },
+          {
+            "role": "atlas",
+            "loading": false,
+            "type": "text",
+            "messageId": "29672476732587008",
+            "from": null,
+            "contentLength": 71,
+            "reasoningStatus": null,
+            "toolCalls": [],
+            "attachmentsCount": 0,
+            "workContextCount": 0
+          }
+        ],
+        "messagesLoading": false,
+        "messagesError": null,
+        "responseLoading": true,
+        "hasAbortController": false,
+        "skillSettings": null,
+        "webSearching": null,
+        "backgroundWorking": false,
+        "resumeStreamFailed": false
+      }
+    }
+  ],
+  "network": {
+    "requests": [
+      {
+        "method": "POST",
+        "status": 200,
+        "action": "aiConversations:getMessages",
+        "hasFilter": false,
+        "summary": {
+          "count": 7,
+          "roles": ["atlas", "atlas", "atlas", "atlas", "atlas", "atlas", "user"],
+          "first": {
+            "role": "atlas",
+            "content": "[object Object]"
+          }
+        }
+      },
+      {
+        "method": "GET",
+        "status": 200,
+        "action": "aiConversations:get",
+        "hasFilter": true
+      }
+    ]
+  }
+}

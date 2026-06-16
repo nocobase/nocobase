@@ -1,0 +1,82 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C03",
+  "title": "打开和关闭历史会话列表",
+  "sourceKind": "real-capture",
+  "snapshots": [
+    {
+      "label": "C03-before-open-list",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": false,
+        "model": {
+          "llmService": "v_4myldxq4tlz",
+          "model": "deepseek-v4-flash"
+        },
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "keyword": "",
+        "webSearch": false,
+        "conversationSegmented": "conversations",
+        "unreadCount": 0
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    },
+    {
+      "label": "C03-after-click-open-list",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "keyword": "",
+        "conversationSegmented": "conversations"
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    },
+    {
+      "label": "C03-after-list-settled",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": true,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "keyword": "",
+        "webSearch": false,
+        "conversationSegmented": "conversations",
+        "unreadCount": 0
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    },
+    {
+      "label": "C03-after-click-close-list",
+      "chatBox": {
+        "open": true,
+        "expanded": false,
+        "showConversations": false,
+        "currentEmployee": "atlas"
+      },
+      "conversations": {
+        "keyword": "",
+        "webSearch": false,
+        "conversationSegmented": "conversations",
+        "unreadCount": 0
+      },
+      "messages": {
+        "sessionKeyCount": 1
+      }
+    }
+  ]
+}
