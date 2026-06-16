@@ -18,6 +18,8 @@ export default class extends Instruction {
   type = 'end';
   title = t('End process');
   group = 'control';
+  description = t('End the process immediately, with set status.');
   icon = (<StopOutlined />);
+  FieldsetLoader = () => import('./components/end').then((m) => ({ default: m.EndFieldset }));
   end = true;
 }
