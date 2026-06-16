@@ -11,13 +11,36 @@ import { css } from '@emotion/css';
 import { defineAction, tExpr } from '@nocobase/flow-engine';
 import { getPickerFormat } from '@nocobase/utils/client';
 import { DateFormatCom, ExpiresRadio } from '../components';
+import {
+  getDateTimeFormatCollectionField,
+  isDateOnlyCollectionField,
+  isTimeCollectionField,
+  resolveDateTimeDisplayProps,
+} from '../utils/dateTimeDisplayProps';
+
+const isTableColumnFieldSubModel = (model) => {
+  const parent = model?.parent;
+  return (
+    parent?.subModels?.field === model &&
+    (parent?.use === 'TableColumnModel' || parent?.constructor?.name === 'TableColumnModel')
+  );
+};
+
+const syncTableColumnDateTimeFormatProps = (ctx, props) => {
+  const model = ctx.model;
+  if (!isTableColumnFieldSubModel(model) || !model?.parent?.collectionField?.isAssociationField?.()) {
+    return;
+  }
+
+  model.parent.setProps(props);
+};
 
 export const dateTimeFormat = defineAction({
   title: tExpr('Date display format'),
   name: 'dateDisplayFormat',
   uiSchema: (ctx) => {
-    const { collectionField } = ctx.model.context as any;
-    const isTimeField = collectionField.type === 'time' || collectionField.interface === 'time';
+    const collectionField = getDateTimeFormatCollectionField({ model: ctx.model });
+    const isTimeField = isTimeCollectionField(collectionField);
     const timeFormatField = {
       type: 'string',
       title: '{{t("Time format")}}',
@@ -43,7 +66,7 @@ export const dateTimeFormat = defineAction({
         (field) => {
           if (!isTimeField) {
             const { showTime, picker } = field.form.values || {};
-            field.hidden = !showTime || picker !== 'date';
+            field.hidden = isDateOnlyCollectionField(collectionField) || !showTime || picker !== 'date';
           }
         },
       ],
@@ -146,10 +169,11 @@ export const dateTimeFormat = defineAction({
             },
           },
           (field) => {
-            const { collectionField } = ctx.model.context as any;
+            const collectionField = getDateTimeFormatCollectionField({ model: ctx.model });
             const { picker } = field.form.values || {};
-            field.hidden = collectionField.type === 'dateOnly' || picker !== 'date';
-            if (picker !== 'date') {
+            const isDateOnlyField = isDateOnlyCollectionField(collectionField);
+            field.hidden = isDateOnlyField || picker !== 'date';
+            if (isDateOnlyField || picker !== 'date') {
               field.value = false;
             }
           },
@@ -159,34 +183,24 @@ export const dateTimeFormat = defineAction({
     };
   },
   defaultParams: (ctx: any) => {
-    const { showTime, dateFormat, format, timeFormat, picker }: any = {
-      ...ctx.model.context.collectionField.getComponentProps(),
-      ...ctx.model.props,
-    };
-    const collectionField = ctx.model.context.collectionField;
-    const isTimeField = collectionField.type === 'time' || collectionField.interface === 'time';
+    const { showTime, dateFormat, timeFormat, picker } = resolveDateTimeDisplayProps({
+      model: ctx.model,
+      withDefaults: true,
+    });
     return {
       picker: picker || 'date',
       dateFormat: dateFormat || 'YYYY-MM-DD',
-      timeFormat: timeFormat || (isTimeField ? format : undefined) || 'HH:mm:ss',
+      timeFormat: timeFormat || 'HH:mm:ss',
       showTime,
     };
   },
+  async beforeParamsSave(ctx: any, params) {
+    const props = resolveDateTimeDisplayProps({ model: ctx.model, params });
+    ctx.model.setProps(props);
+    syncTableColumnDateTimeFormatProps(ctx, props);
+    await ctx.model.save?.();
+  },
   handler(ctx: any, params) {
-    const { collectionField } = ctx.model.context as any;
-    const isTimeField = collectionField.type === 'time' || collectionField.interface === 'time';
-    if (isTimeField) {
-      const timeFormat = params?.timeFormat || params?.format || 'HH:mm:ss';
-      ctx.model.setProps({
-        ...params,
-        timeFormat,
-        format: timeFormat,
-      });
-    } else {
-      ctx.model.setProps({
-        ...params,
-        format: params?.showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
-      });
-    }
+    ctx.model.setProps(resolveDateTimeDisplayProps({ model: ctx.model, params }));
   },
 });
