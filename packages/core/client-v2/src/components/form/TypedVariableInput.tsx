@@ -398,7 +398,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     extraNodes,
     metaTree: metaTreeProp,
     nullable = true,
-    defaultToFirstConstantTypeWhenUndefined = false,
+    defaultToFirstConstantTypeWhenUndefined = true,
     delimiters,
     disabled,
     placeholder,

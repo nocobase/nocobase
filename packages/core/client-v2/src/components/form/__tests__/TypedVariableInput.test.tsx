@@ -79,7 +79,7 @@ describe('TypedVariableInput - constant rendering', () => {
     expect(nullInput.getAttribute('readonly')).not.toBeNull();
   });
 
-  it('can default undefined to the first constant type when explicitly enabled', async () => {
+  it('defaults undefined to the first constant type', async () => {
     const ctx = createContextWithEnv();
     const handleChange = vi.fn();
     renderWithCtx(
@@ -89,7 +89,6 @@ describe('TypedVariableInput - constant rendering', () => {
         types={['string', 'number']}
         namespaces={['$env']}
         nullable
-        defaultToFirstConstantTypeWhenUndefined
         onChange={handleChange}
       />,
     );
@@ -101,6 +100,24 @@ describe('TypedVariableInput - constant rendering', () => {
     });
   });
 
+  it('can still opt out to keep the null placeholder for undefined', async () => {
+    const ctx = createContextWithEnv();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={undefined}
+        types={['string', 'number']}
+        namespaces={['$env']}
+        nullable
+        defaultToFirstConstantTypeWhenUndefined={false}
+        onChange={() => undefined}
+      />,
+    );
+
+    const nullInput = await screen.findByPlaceholderText('<Null>');
+    expect(nullInput).toBeInTheDocument();
+  });
+
   it('highlights the defaulted first constant type when the switcher opens', async () => {
     const ctx = createContextWithEnv();
     renderWithCtx(
@@ -110,7 +127,6 @@ describe('TypedVariableInput - constant rendering', () => {
         types={['string', 'number']}
         namespaces={['$env']}
         nullable
-        defaultToFirstConstantTypeWhenUndefined
         onChange={() => undefined}
       />,
     );
