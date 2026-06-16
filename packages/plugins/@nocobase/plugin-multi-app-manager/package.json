@@ -24,6 +24,13 @@
     "react-i18next": "^11.15.1",
     "react-router-dom": "^6.11.2"
   },
+  "nocobase": {
+    "deprecated": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",

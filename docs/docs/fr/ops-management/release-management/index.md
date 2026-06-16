@@ -1,52 +1,103 @@
-# Gestion des versions
+---
+title: "Gestion des publications"
+description: "Bonnes pratiques de publication : utiliser la gestion des versions, le multi-app, les sauvegardes et la migration pour publier entre développement, préproduction et production."
+keywords: "Gestion des publications,Release,déploiement multi-environnement,gestion des versions,multi-app,sauvegarde,migration,NocoBase"
+---
+
+# Gestion des publications
 
 ## Introduction
 
-Dans les applications concrètes, pour garantir la sécurité des données et la stabilité de l'application, il est courant de déployer plusieurs environnements, tels qu'un environnement de développement, un environnement de pré-production et un environnement de production. Ce document présente deux exemples de flux de travail de développement sans code courants et explique en détail comment implémenter la gestion des versions dans NocoBase.
+La gestion des publications encadre le passage d’une application du développement à la production. Ce n’est pas une action unique, mais un processus répétable, vérifiable et récupérable.
 
-## Installation
+Gardez la production stable. Terminez les changements en développement, validez-les en préproduction, puis publiez en production. Conservez fichiers de migration, sauvegardes, journaux d’exécution et résultats de validation.
 
-Trois plugins sont essentiels pour la gestion des versions. Veuillez vous assurer que les plugins suivants sont activés.
+~~~text
+Développement -> Préproduction -> Production
+~~~
 
-### Variables d'environnement et clés
+Le développement sert à configurer. La préproduction reproduit les contraintes de production. La production porte l’activité réelle.
 
-- Plugin intégré, installé et activé par défaut.
-- Il permet la configuration et la gestion centralisées des variables d'environnement et des clés, utilisées pour le stockage de données sensibles, la réutilisation de données de configuration, l'isolation des configurations par environnement, etc. ([Consulter la documentation](#)).
+## Modèle de publication
 
-### Gestionnaire de sauvegardes
+| Capacité | Problème résolu | Étape |
+| --- | --- | --- |
+| Gestion des versions | Conserve les jalons et points de retour | Développement |
+| Variables et secrets | Isole configuration et informations sensibles | Toutes les étapes |
+| Multi-app | Sépare les limites par module métier | Architecture et collaboration |
+| Sauvegarde | Conserve un état de production restaurable | Avant publication et exploitation |
+| Migration | Publie configuration et structure vers la cible | Préproduction et production |
 
-- Ce plugin est disponible uniquement dans l'édition Professionnelle ou supérieure ([En savoir plus](https://www.nocobase.com/en/commercial)).
-- Il prend en charge la sauvegarde et la restauration, y compris les sauvegardes planifiées, garantissant la sécurité des données et une récupération rapide. ([Consulter la documentation](../backup-manager/index.mdx)).
+## Configuration d’environnement : utiliser les variables et secrets
 
-### Gestionnaire de migrations
+Chaque environnement doit utiliser ses propres variables et secrets. Connexions de base de données, services tiers, comptes de test, tokens, API Keys et Webhooks ne doivent pas être codés en dur. Lors de la migration, complétez uniquement les valeurs manquantes de l’environnement cible.
 
-- Ce plugin est disponible uniquement dans l'édition Professionnelle ou supérieure ([En savoir plus](https://www.nocobase.com/en/commercial)).
-- Il est utilisé pour migrer les configurations d'application d'un environnement d'application à un autre. ([Consulter la documentation](../migration-manager/index.md)).
+Documentation associée : [Variables et secrets](../variables-and-secrets/index.md).
 
-## Flux de travail de développement sans code courants
+## Phase de développement : enregistrer des points récupérables
 
-### Environnement de développement unique, déploiement unidirectionnel
+Utilisez la gestion des versions pour les étapes importantes. Créez une version avant une modification majeure, puis une autre après les changements de modèles, pages, droits, workflows ou plugins. Donnez une description métier claire.
 
-Cette approche convient aux flux de travail de développement simples. Il y a un seul environnement de développement, un seul environnement de pré-production et un seul environnement de production. Les modifications passent de l'environnement de développement à l'environnement de pré-production, puis sont finalement déployées dans l'environnement de production. Dans ce flux de travail, seul l'environnement de développement peut modifier les configurations ; ni l'environnement de pré-production ni l'environnement de production n'autorisent les modifications.
+La gestion des versions sert surtout au développement. La publication passe par la migration. La restauration de production passe par la sauvegarde.
+
+Documentation associée : [Gestion des versions](../version-control/index.md).
+
+## Découpage en modules : contrôler les limites
+
+Une petite application peut rester monolithique. Quand pages, tables, droits et workflows augmentent, une publication peut toucher plusieurs équipes. Le multi-app permet de séparer CRM, tickets, actifs, RH, rapports ou back-office.
+
+Planifiez utilisateurs, organisations, authentification, permissions et données partagées avant de découper. Des limites nettes réduisent l’impact des publications.
+
+~~~text
+CRM : Développement -> Préproduction -> Production
+Tickets : Développement -> Préproduction -> Production
+Actifs : Développement -> Préproduction -> Production
+~~~
+
+Documentation associée : [Gestion multi-app](../../multi-app/multi-app/index.md).
+
+## Préparation : confirmer la restauration
+
+Avant une publication en production, créez une sauvegarde. Pour une publication importante, testez la restauration dans un environnement indépendant. La sauvegarde doit couvrir base de données, fichiers téléversés et stockage nécessaire à l’exécution.
+
+Documentation associée : [Gestion des sauvegardes](../backup-manager/index.mdx).
+
+## Exécution : migrer vers l’environnement cible
+
+La migration publie configuration applicative, structures de tables, configuration de plugins et certaines données. Publiez d’abord en préproduction ; après validation, utilisez le même fichier pour la production.
 
 ![20250106234710](https://static-docs.nocobase.com/20250106234710.png)
 
-Lors de la configuration des règles de migration, sélectionnez la règle **« Priorité à l'écrasement »** pour les tables intégrées du noyau et des plugins si nécessaire ; pour toutes les autres, vous pouvez conserver les paramètres par défaut si vous n'avez pas d'exigences particulières.
+### Publier en préproduction
+
+Exécutez le fichier généré depuis le développement. La préproduction doit être proche de la production : version du noyau, plugins, variables, secrets, permissions et connexions externes. Validez pages clés, droits, workflows et intégrations.
+
+### Publier en production
+
+Planifiez une fenêtre de maintenance, informez les utilisateurs et stoppez les accès ou affichez une page de maintenance. En multi-nœud, réduisez à un nœud avant migration. Après migration, validez les flux métier puis réactivez l’accès.
+
+### Règles de migration
+
+Les stratégies courantes sont écraser, structure seule et ignorer. Les tables intégrées suivent généralement la stratégie par défaut et utilisent écraser. Les tables utilisateur contenant des données métier utilisent généralement structure seule. Les tables de métadonnées peuvent être écrasées selon le scénario.
+
+Consultez : [Tables intégrées des applications et principaux plugins](../migration-manager/built-in-tables.md).
 
 ![20250105194845](https://static-docs.nocobase.com/20250105194845.png)
 
-### Plusieurs environnements de développement, déploiement fusionné
+La migration traite surtout la base principale. Sources externes, données de sous-applications et certains dossiers de stockage doivent être gérés séparément.
 
-Cette approche convient aux scénarios de collaboration multi-personnes ou aux projets complexes. Plusieurs environnements de développement parallèles peuvent être utilisés indépendamment, et toutes les modifications sont fusionnées dans un environnement de pré-production unique pour les tests et la validation avant d'être déployées en production. Dans ce flux de travail, seul l'environnement de développement peut modifier les configurations ; ni l'environnement de pré-production ni l'environnement de production n'autorisent les modifications.
+Documentation associée : [Gestion des migrations](../migration-manager/index.md).
 
-![20250107103829](https://static-docs.nocobase.com/20250107103829.png)
+## Retour arrière et restauration
 
-Lors de la configuration des règles de migration, sélectionnez la règle **« Priorité à l'insertion ou à la mise à jour »** pour les tables intégrées du noyau et des plugins si nécessaire ; pour toutes les autres, vous pouvez conserver les paramètres par défaut si vous n'avez pas d'exigences particulières.
-
-![20250105194942](https://static-docs.nocobase.com/20250105194942.png)
-
-## Annulation
-
-Avant d'exécuter une migration, le système crée automatiquement une sauvegarde de l'application actuelle. Si la migration échoue ou si les résultats ne correspondent pas à vos attentes, vous pouvez annuler et restaurer via le [Gestionnaire de sauvegardes](../backup-manager/index.mdx).
+En cas d’échec, utilisez d’abord la sauvegarde prépublication via Backup Manager. Si l’environnement courant reste accessible et seule la migration a échoué, restaurez sur place. Sinon, restaurez dans un environnement indépendant, validez les flux clés et basculez le trafic.
 
 ![20250105195029](https://static-docs.nocobase.com/20250105195029.png)
+
+## Documentation associée
+
+- [Variables et secrets](../variables-and-secrets/index.md)
+- [Gestion des versions](../version-control/index.md)
+- [Gestion multi-app](../../multi-app/multi-app/index.md)
+- [Gestion des sauvegardes](../backup-manager/index.mdx)
+- [Gestion des migrations](../migration-manager/index.md)

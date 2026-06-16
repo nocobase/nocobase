@@ -13,6 +13,14 @@
   "homepage": "https://docs.nocobase.com/handbook/field-snapshot",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/field-snapshot",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/field-snapshot",
+  "nocobase": {
+    "deprecated": true,
+    "internal": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/core": "2.x",

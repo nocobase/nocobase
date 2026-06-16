@@ -1,8 +1,8 @@
 ---
 pkg: '@nocobase/plugin-migration-manager'
 title: "Manajemen Migrasi"
-description: "Migrasi ops management: migrasi konfigurasi aplikasi dari satu environment ke environment lain, mendukung rule migrasi only structure, overwrite, Upsert, insert ignore duplicate, skip, bergantung pada plugin backup management."
-keywords: "manajemen migrasi,Migration,migrasi konfigurasi aplikasi,rule migrasi,Upsert,migrasi database,ops management,NocoBase"
+description: "Migrasi operasional: memigrasikan konfigurasi aplikasi dari satu environment ke environment lain, dengan aturan schema-only, overwrite, dan skip. Bergantung pada Backup Manager."
+keywords: "Manajemen Migrasi,Migration,konfigurasi aplikasi,aturan migrasi,schema-only,overwrite,skip,NocoBase"
 ---
 # Manajemen Migrasi
 
@@ -27,19 +27,17 @@ Memigrasi tabel data dan data dari main database, berdasarkan rule migrasi, dari
 
 ## Rule Migrasi
 
-### Rule Built-in
+### Aturan bawaan
 
-Mendukung lima rule migrasi berikut:
+Migration Manager mendukung tiga aturan berikut:
 
-- **Only structure:** Hanya menyinkronkan struktur tabel data, tidak melibatkan insert atau update data.
-- **Overwrite (Truncate dan re-insert):** Mengosongkan record tabel yang ada, kemudian insert data baru.
-- **Insert or update (Upsert):** Berdasarkan primary key, jika record ada di-update, jika tidak ada di-insert.
-- **Insert ignore duplicates:** Insert record baru, jika primary key konflik diabaikan (tidak update record yang ada).
-- **Skip:** Tidak melakukan apa pun pada tabel ini.
+- **Schema-only:** Hanya menyinkronkan struktur tabel. Tidak ada data yang diinsert atau diupdate.
+- **Overwrite:** Menghapus record tabel yang ada, lalu menginsert data baru.
+- **Skip:** Tidak melakukan pemrosesan apa pun pada tabel.
 
 **Catatan:**
-- Overwrite, insert or update, insert ignore duplicates juga akan menyinkronkan perubahan struktur tabel.
-- Tabel dengan auto-increment ID sebagai primary key atau tanpa primary key tidak mendukung "Insert or update" dan "Insert ignore duplicates".
+- Overwrite juga menyinkronkan perubahan struktur tabel.
+- Tabel data bisnis buatan pengguna biasanya menggunakan schema-only agar data production tidak tertimpa.
 
 ### Desain Detail
 
