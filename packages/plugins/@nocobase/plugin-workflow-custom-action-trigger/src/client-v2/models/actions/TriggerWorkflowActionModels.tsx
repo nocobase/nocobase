@@ -580,9 +580,9 @@ async function globalTriggerWorkflowHandler(ctx, params) {
       },
       data: { values },
     });
-    ctx.message.success(ctx.t('Operation succeeded'));
   } catch (error) {
     console.error('Error triggering workflows:', error);
+    ctx.exit();
   }
 }
 

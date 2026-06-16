@@ -172,4 +172,70 @@ describe('WorkbenchTriggerWorkflowActionModel', () => {
     expect(ctx.message.success).not.toHaveBeenCalled();
     expect(ctx.exit).toHaveBeenCalled();
   });
+
+  it('sends trigger request without showing duplicate success message when workflow is bound', async () => {
+    const flowEngine = createEngine();
+    const model = flowEngine.createModel<WorkbenchTriggerWorkflowActionModel>({
+      use: 'WorkbenchTriggerWorkflowActionModel',
+      uid: 'workbench-trigger-workflow-action-bound',
+    });
+    const request = vi.fn().mockResolvedValue({});
+    const ctx = {
+      api: {
+        request,
+      },
+      message: {
+        error: vi.fn(),
+        success: vi.fn(),
+      },
+      t: (value: string) => value,
+      exit: vi.fn(),
+    };
+
+    const handler = getWorkbenchTriggerWorkflowHandler(model);
+
+    await handler(ctx, { group: [{ workflowKey: 'workflow-1' }] });
+
+    expect(request).toHaveBeenCalledWith({
+      url: 'workflows:trigger',
+      method: 'post',
+      params: {
+        triggerWorkflows: 'workflow-1',
+      },
+      data: { values: undefined },
+    });
+    expect(ctx.message.error).not.toHaveBeenCalled();
+    expect(ctx.message.success).not.toHaveBeenCalled();
+    expect(ctx.exit).not.toHaveBeenCalled();
+  });
+
+  it('exits flow when trigger request fails', async () => {
+    const flowEngine = createEngine();
+    const model = flowEngine.createModel<WorkbenchTriggerWorkflowActionModel>({
+      use: 'WorkbenchTriggerWorkflowActionModel',
+      uid: 'workbench-trigger-workflow-action-failed',
+    });
+    const request = vi.fn().mockRejectedValue(new Error('trigger failed'));
+    const ctx = {
+      api: {
+        request,
+      },
+      message: {
+        error: vi.fn(),
+        success: vi.fn(),
+      },
+      t: (value: string) => value,
+      exit: vi.fn(),
+    };
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const handler = getWorkbenchTriggerWorkflowHandler(model);
+
+    await handler(ctx, { group: [{ workflowKey: 'workflow-1' }] });
+
+    expect(request).toHaveBeenCalled();
+    expect(ctx.message.success).not.toHaveBeenCalled();
+    expect(ctx.exit).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
 });
