@@ -9,6 +9,7 @@
 
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
+import { registerReferenceBlockDynamicFlowSourceProvider } from './dynamicFlowSources';
 import { NAMESPACE } from './locale';
 import { registerMenuExtensions } from './menuExtensions';
 import { registerOpenViewPopupTemplateAction } from './openViewActionExtensions';
@@ -33,6 +34,7 @@ export class PluginUiTemplatesClientV2 extends Plugin<Record<string, never>, App
     });
     registerOpenViewPopupTemplateAction(this.flowEngine);
     registerMenuExtensions();
+    registerReferenceBlockDynamicFlowSourceProvider(this.flowEngine);
 
     this.pluginSettingsManager.addMenuItem({
       key: SETTINGS_MENU_KEY,

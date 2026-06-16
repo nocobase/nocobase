@@ -612,6 +612,20 @@ export interface ToolbarItemConfig {
   sort?: number;
 }
 
+export interface DynamicFlowSource {
+  key: string;
+  label: React.ReactNode;
+  model: FlowModel;
+  sort?: number;
+}
+
+export interface DynamicFlowSourceProvider {
+  key: string;
+  sort?: number;
+  visible?: (model: FlowModel) => boolean;
+  getSources: (model: FlowModel) => DynamicFlowSource[] | Promise<DynamicFlowSource[]>;
+}
+
 export interface ApplyFlowCacheEntry {
   status: 'pending' | 'resolved' | 'rejected';
   promise: Promise<any>;

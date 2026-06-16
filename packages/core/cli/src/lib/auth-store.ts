@@ -19,6 +19,7 @@ import {
   resolveConfiguredSourcePath,
   resolveConfiguredStoragePath,
 } from './env-paths.js';
+import { ENV_CONFIG_SCHEMA_VERSION, normalizeEnvConfigSchemaVersion } from './env-config.js';
 import {
   cleanupCurrentSessionAfterEnvRemoval,
   resolveEffectiveCurrentEnv,
@@ -44,6 +45,8 @@ export interface OauthAuthConfig {
 export type EnvKind = 'local' | 'http' | 'docker' | 'ssh';
 
 export interface EnvConfigEntry {
+  /** Schema version of the persisted env config shape. */
+  schemaVersion?: number;
   autostart?: {
     enabled?: boolean;
   };
@@ -256,12 +259,15 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
     apiBaseUrl: _apiBaseUrl,
     baseUrl: _baseUrl,
     apibaseUrl: _legacyApiBaseUrl,
+    schemaVersion: _schemaVersion,
     ...rest
   } = entry as EnvConfigEntry & { kind?: unknown };
   const normalizedKind = resolveEnvKind(entry);
   const apiBaseUrl = readEnvApiBaseUrl(entry);
+  const schemaVersion = normalizeEnvConfigSchemaVersion(entry.schemaVersion);
   return {
     ...rest,
+    ...(schemaVersion ? { schemaVersion } : {}),
     ...(normalizedKind ? { kind: normalizedKind } : {}),
     ...(apiBaseUrl !== undefined ? { apiBaseUrl } : {}),
     ...(normalizeOptionalString(entry.appPublicPath) ? { appPublicPath: resolveAppPublicPath(entry.appPublicPath) } : {}),
@@ -588,7 +594,14 @@ async function writeEnv(
 ) {
   const config = await loadExactAuthConfig(options);
   const previous = config.envs[envName];
-  config.envs[envName] = updater(previous);
+  const next = updater(previous);
+  config.envs[envName] = {
+    ...next,
+    schemaVersion:
+      normalizeEnvConfigSchemaVersion(next.schemaVersion) ??
+      normalizeEnvConfigSchemaVersion(previous?.schemaVersion) ??
+      ENV_CONFIG_SCHEMA_VERSION,
+  };
   await saveAuthConfig(config, options);
 }
 
@@ -602,7 +615,17 @@ export function resolveConfiguredAuthType(
   return normalizeConfiguredAuthType(config?.authType) ?? normalizeConfiguredAuthType(config?.auth?.type);
 }
 
-export async function upsertEnv(envName: string, config: Record<string, any>, options: AuthStoreOptions = {}) {
+type UpsertEnvConfig = Record<string, unknown> & {
+  apiBaseUrl?: unknown;
+  baseUrl?: unknown;
+  apibaseUrl?: unknown;
+  accessToken?: unknown;
+  authType?: unknown;
+  authUsername?: unknown;
+  schemaVersion?: unknown;
+};
+
+export async function upsertEnv(envName: string, config: UpsertEnvConfig, options: AuthStoreOptions = {}) {
   await writeEnv(
     envName,
     (previous) => {
@@ -613,20 +636,22 @@ export async function upsertEnv(envName: string, config: Record<string, any>, op
         accessToken,
         authType,
         authUsername,
+        schemaVersion,
         ...rest
       } = config;
-      const nextApiBaseUrl = readEnvApiBaseUrl(config);
+      const nextApiBaseUrl = readEnvApiBaseUrl(config as Partial<EnvConfigEntry>);
       const previousApiBaseUrl = readEnvApiBaseUrl(previous);
       const baseUrlChanged = previousApiBaseUrl !== nextApiBaseUrl;
       const previousAuthType = resolveConfiguredAuthType(previous);
       const requestedAuthType = normalizeConfiguredAuthType(authType);
-      const nextAuthType = requestedAuthType ?? (accessToken ? 'token' : previousAuthType);
+      const nextAccessToken = normalizeOptionalString(accessToken);
+      const nextAuthType = requestedAuthType ?? (nextAccessToken ? 'token' : previousAuthType);
       const nextAuthUsername =
         nextAuthType === 'basic' ? normalizeOptionalString(authUsername) ?? previous?.authUsername : undefined;
-      const nextAuth = accessToken
+      const nextAuth = nextAccessToken
         ? ({
             type: 'token',
-            accessToken,
+            accessToken: nextAccessToken,
           } satisfies TokenAuthConfig)
         : nextAuthType === 'oauth' && !baseUrlChanged && previous?.auth?.type === 'oauth'
           ? previous.auth
@@ -634,6 +659,10 @@ export async function upsertEnv(envName: string, config: Record<string, any>, op
       const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
       const authTypeChanged = previousAuthType !== nextAuthType;
       const authUsernameChanged = previous?.authUsername !== nextAuthUsername;
+      const nextSchemaVersion =
+        normalizeEnvConfigSchemaVersion(schemaVersion) ??
+        normalizeEnvConfigSchemaVersion(previous?.schemaVersion) ??
+        ENV_CONFIG_SCHEMA_VERSION;
 
       return {
         ...previous,
@@ -641,7 +670,8 @@ export async function upsertEnv(envName: string, config: Record<string, any>, op
         authType: nextAuthType,
         authUsername: nextAuthUsername,
         auth: nextAuth,
-        ...rest,
+        ...(rest as Partial<EnvConfigEntry>),
+        schemaVersion: nextSchemaVersion,
         runtime:
           baseUrlChanged || authChanged || authTypeChanged || authUsernameChanged ? undefined : previous?.runtime,
       };
