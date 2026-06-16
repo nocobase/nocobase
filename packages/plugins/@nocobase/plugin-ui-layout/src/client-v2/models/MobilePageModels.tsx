@@ -180,7 +180,7 @@ export class MobileRootPageModel extends RootPageModel {
   };
 
   tabBarExtraContent = {
-    left: renderMobilePageTabLeftSpacer(),
+    left: null,
     right: renderMobileAddTabButton(this),
   };
 

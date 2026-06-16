@@ -2930,6 +2930,7 @@ describe('plugin-ui-layout mobile models', () => {
     expect(inkBarRule).toMatch(/background:\s*transparent/);
     expect(inkBarAfterRule).toMatch(/inset-inline:\s*8px/);
     expect(leftSpacerRule).toMatch(/width:\s*12px/);
+    expect(document.querySelector('.nb-ui-layout-mobile-tabs .nb-ui-layout-mobile-page-tab-left-spacer')).toBeNull();
   });
 
   it('should stretch flow settings wrappers inside the mobile page content slot', async () => {
@@ -4779,14 +4780,13 @@ describe('plugin-ui-layout mobile models', () => {
     const childTabsElement = (childPageModel.renderTabs() as React.ReactElement).props.children;
     const rootAddTabWrapper = rootPageModel.tabBarExtraContent.right as React.ReactElement;
     const childAddTabWrapper = childPageModel.tabBarExtraContent.right as React.ReactElement;
-    const rootLeftSpacer = rootPageModel.tabBarExtraContent.left as React.ReactElement;
     const rootAddTabButton = (rootAddTabWrapper.props.children as React.ReactElement).props
       .children as React.ReactElement;
     const childAddTabButton = (childAddTabWrapper.props.children as React.ReactElement).props
       .children as React.ReactElement;
 
+    expect(rootPageModel.tabBarExtraContent.left).toBeNull();
     expect(childPageModel.tabBarExtraContent.left).toBeTruthy();
-    expect(rootLeftSpacer.props.className).toBe('nb-ui-layout-mobile-page-tab-left-spacer');
     expect(rootAddTabWrapper.props.className).toBe('nb-ui-layout-mobile-page-tab-add-wrapper');
     expect(childAddTabWrapper.props.className).toBe('nb-ui-layout-mobile-page-tab-add-wrapper');
     expect(rootAddTabButton.props.className).toBe('nb-ui-layout-mobile-page-tab-add');
