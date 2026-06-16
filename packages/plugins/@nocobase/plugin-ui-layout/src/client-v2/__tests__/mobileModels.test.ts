@@ -3194,6 +3194,32 @@ describe('plugin-ui-layout mobile models', () => {
     expect(activeTabRule).not.toContain('background:');
   });
 
+  it('should align the bottom tab add button size with page tab add buttons', async () => {
+    renderMobileLayoutWithRouteRepository({
+      listAccessible: () => [
+        {
+          id: 1,
+          type: NocoBaseDesktopRouteType.flowPage,
+          title: 'Home',
+          schemaUid: 'home-page',
+        },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    const styleText = getDocumentStyleText();
+    const bottomAddRule = styleText.match(/\.nb-ui-layout-mobile-home-tabbar-add\s*\{[^}]+\}/)?.[0];
+
+    expect(bottomAddRule).toMatch(/width:\s*32px/);
+    expect(bottomAddRule).toMatch(/height:\s*32px/);
+    expect(bottomAddRule).toMatch(/min-width:\s*32px/);
+    expect(bottomAddRule).toMatch(/padding:\s*0/);
+    expect(bottomAddRule).toMatch(/font-size:\s*14px/);
+  });
+
   it('should keep mobile tabs scrollable instead of squeezing them', async () => {
     renderMobileLayoutWithRouteRepository({
       listAccessible: () =>

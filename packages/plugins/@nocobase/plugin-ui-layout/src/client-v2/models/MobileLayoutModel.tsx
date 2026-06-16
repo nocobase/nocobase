@@ -1781,9 +1781,9 @@ const MobileHomePlaceholder = observer(
           display: inline-flex;
           align-self: center;
           justify-self: center;
-          width: 36px;
-          height: 36px;
-          min-width: 36px;
+          width: 32px;
+          height: 32px;
+          min-width: 32px;
           border: 1px dashed ${colorSettings};
           border-radius: ${token.borderRadiusSM}px;
           padding: 0;
@@ -1792,7 +1792,7 @@ const MobileHomePlaceholder = observer(
           color: ${colorSettings};
           background: transparent;
           cursor: pointer;
-          font-size: ${token.fontSizeXL}px;
+          font-size: ${token.fontSize}px;
         }
 
         .nb-ui-layout-mobile-home-tabbar-add:hover,
