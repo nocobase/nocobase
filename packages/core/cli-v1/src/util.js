@@ -548,10 +548,11 @@ function generatePm2Home() {
 exports.initEnv = function initEnv() {
   const preserveSymlinksFlag = '--preserve-symlinks';
   const currentNodeOptions = String(process.env.NODE_OPTIONS || '').trim();
+  const isPnpmRun = String(process.env.npm_config_user_agent || '').includes('pnpm');
   const hasPreserveSymlinksFlag = currentNodeOptions
     ? currentNodeOptions.split(/\s+/).includes(preserveSymlinksFlag)
     : false;
-  if (!hasPreserveSymlinksFlag) {
+  if (!process.env.UNSET_NODE_OPTIONS && !isPnpmRun && !hasPreserveSymlinksFlag) {
     process.env.NODE_OPTIONS = currentNodeOptions
       ? `${currentNodeOptions} ${preserveSymlinksFlag}`
       : preserveSymlinksFlag;
