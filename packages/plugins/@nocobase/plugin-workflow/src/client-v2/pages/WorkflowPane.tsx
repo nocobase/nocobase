@@ -16,9 +16,10 @@ import {
   ExtendCollectionsProvider,
   Table,
 } from '@nocobase/client-v2';
+import { css } from '@emotion/css';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Card, Flex, Form, Input, Space, Switch, Tag, Tooltip, theme } from 'antd';
+import { App, Button, Flex, Form, Input, Space, Switch, Tag, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo, useState } from 'react';
 import workflowCollection from '../../common/collections/workflows';
@@ -128,6 +129,32 @@ function WorkflowPaneInner() {
   const { modal, message } = App.useApp();
   const resource = ctx.api.resource('workflows');
   const plugin = ctx.app.pm.get(PluginWorkflowClientV2);
+  const workflowContainerClassName = css`
+    background: ${token.colorBgLayout};
+    padding: 0;
+  `;
+  const workflowTabsClassName = css`
+    padding: ${token.padding}px ${token.padding}px 0 calc(${token.padding}px - ${token.lineWidth}px);
+    background: ${token.colorBgLayout};
+
+    .ant-tabs {
+      margin-bottom: 0;
+    }
+
+    .ant-tabs-nav {
+      margin-bottom: 0;
+    }
+
+    .ant-tabs-content-holder {
+      display: none;
+    }
+  `;
+  const workflowContentClassName = css`
+    margin: 0 ${token.padding}px ${token.padding}px;
+    padding: ${token.paddingLG}px;
+    background: ${token.colorBgContainer};
+    border-radius: 0 ${token.borderRadiusLG}px ${token.borderRadiusLG}px ${token.borderRadiusLG}px;
+  `;
   const filterCollection = useMemo(
     () => ctx.dataSourceManager?.getDataSource?.('main')?.getCollection?.('workflows'),
     [ctx],
@@ -308,8 +335,9 @@ function WorkflowPaneInner() {
   );
 
   return (
-    <Card variant="borderless">
+    <div className={workflowContainerClassName}>
       <WorkflowCategoryTabs
+        className={workflowTabsClassName}
         activeKey={activeCategory}
         onChange={(key) => {
           setActiveCategory(key);
@@ -318,45 +346,47 @@ function WorkflowPaneInner() {
         categories={categories}
         refreshCategories={refreshCategories}
       />
-      <Flex justify="space-between" align="center" style={{ marginBottom: token.margin }}>
-        <CollectionFilter
-          collection={filterCollection}
-          nonfilterableFieldNames={WORKFLOWS_NONFILTERABLE_FIELD_NAMES}
-          onChange={handleFilterChange}
-          t={compile}
+      <div className={workflowContentClassName}>
+        <Flex justify="space-between" align="center" style={{ marginBottom: token.margin }}>
+          <CollectionFilter
+            collection={filterCollection}
+            nonfilterableFieldNames={WORKFLOWS_NONFILTERABLE_FIELD_NAMES}
+            onChange={handleFilterChange}
+            t={compile}
+          />
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
+              {t('Refresh')}
+            </Button>
+            {showSync ? (
+              <Tooltip title={t('Sync enabled status of all workflows from database')}>
+                <Button icon={<SyncOutlined />} onClick={handleSync}>
+                  {t('Sync')}
+                </Button>
+              </Tooltip>
+            ) : null}
+            <Button
+              icon={<DeleteOutlined />}
+              disabled={!selectedRowKeys.length}
+              onClick={() => handleDelete(selectedRowKeys)}
+            >
+              {t('Delete')}
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm('create')}>
+              {t('Add new')}
+            </Button>
+          </Space>
+        </Flex>
+        <Table<WorkflowRecord>
+          rowKey="id"
+          loading={loading}
+          columns={columns}
+          dataSource={data?.records || []}
+          rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
+          pagination={{ current: page, pageSize, total: data?.total || 0, onChange: handlePaginationChange }}
         />
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
-            {t('Refresh')}
-          </Button>
-          {showSync ? (
-            <Tooltip title={t('Sync enabled status of all workflows from database')}>
-              <Button icon={<SyncOutlined />} onClick={handleSync}>
-                {t('Sync')}
-              </Button>
-            </Tooltip>
-          ) : null}
-          <Button
-            icon={<DeleteOutlined />}
-            disabled={!selectedRowKeys.length}
-            onClick={() => handleDelete(selectedRowKeys)}
-          >
-            {t('Delete')}
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm('create')}>
-            {t('Add new')}
-          </Button>
-        </Space>
-      </Flex>
-      <Table<WorkflowRecord>
-        rowKey="id"
-        loading={loading}
-        columns={columns}
-        dataSource={data?.records || []}
-        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
-        pagination={{ current: page, pageSize, total: data?.total || 0, onChange: handlePaginationChange }}
-      />
-    </Card>
+      </div>
+    </div>
   );
 }
 
