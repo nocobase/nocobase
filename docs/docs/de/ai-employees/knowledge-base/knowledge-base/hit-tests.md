@@ -11,7 +11,7 @@ keywords: "knowledge base hit tests,Hit tests,Top K,Score,RAG,NocoBase"
 
 After opening the knowledge base detail page, click Hit tests in the left sidebar. This page tests which document segments can be matched by a user input. It does not directly call AI employees and does not generate final answers.
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-results.png)
+![](https://static-docs.nocobase.com/20260617005130.png)
 
 ## Run a test
 
@@ -27,17 +27,17 @@ Each result card shows:
 
 Click a result card to view fuller segment content, similarity score, and related questions matched in this test.
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-detail.png)
+![](https://static-docs.nocobase.com/20260617005408.png)
 
 If the current input does not match any segment, the page shows No matching documents found.
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-empty.png)
+![](https://static-docs.nocobase.com/20260617005636.png)
 
 ## Adjust test parameters
 
 Click Settings in the upper-right corner to adjust parameters for this hit test.
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-settings.png)
+![](https://static-docs.nocobase.com/20260617005519.png)
 
 The settings are:
 

@@ -11,7 +11,7 @@ keywords: "knowledge base settings,segmentation settings,Chunk size,Chunk overla
 
 After opening the knowledge base detail page, click Settings in the left sidebar. This page modifies basic information, file storage, vector store, and default segmentation settings of the current knowledge base.
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-settings.png)
+![](https://static-docs.nocobase.com/20260617005832.png)
 
 ## Basic information
 
@@ -32,7 +32,7 @@ After you modify Vector store, NocoBase asks for confirmation when saving. After
 
 :::
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-settings-vector-store-confirm.png)
+![](https://static-docs.nocobase.com/20260617005951.png)
 
 ## Default segmentation parameters
 

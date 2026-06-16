@@ -13,7 +13,7 @@ After a document is uploaded, NocoBase first splits the body into segments accor
 
 Open the knowledge base Documents page, then click Segments on the right side of a document. The Segment management dialog shows all segments generated for the current document.
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/segments-list.png)
+![](https://static-docs.nocobase.com/20260617004439.png)
 
 ## View the segment list
 
@@ -42,7 +42,7 @@ This does not affect knowledge base retrieval. You only need to run vectorizatio
 
 Click Edit on the right side of a segment to open its detail view.
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/segment-edit.png)
+![](https://static-docs.nocobase.com/20260617004531.png)
 
 You can edit:
 
@@ -76,7 +76,7 @@ Disabling or deleting a segment triggers vectorization again. Before processing 
 
 Click Segment settings in the upper-right corner to reset segmentation parameters for the current document.
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/segments-settings-popover.png)
+![](https://static-docs.nocobase.com/20260617004702.png)
 
 The settings are:
 

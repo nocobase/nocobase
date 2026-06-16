@@ -11,7 +11,7 @@ keywords: "knowledge base documents,document upload,vectorization,ZIP import,Noc
 
 After opening the knowledge base detail page, click Documents in the left sidebar. This page manages documents in the current knowledge base and is also the entry point for segment management.
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/documents.png)
+![](https://static-docs.nocobase.com/20260617004144.png)
 
 ## Upload documents
 
