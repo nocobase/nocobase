@@ -1,0 +1,178 @@
+version: "3.8"
+
+# ============================================================
+# NocoBase VM 部署 docker-compose.yml
+# 使用 GitHub Container Registry (ghcr.io) 的预构建镜像
+# 而非本地构建，适用于 Ubuntu VM 部署
+# ============================================================
+
+networks:
+  nocobase:
+    driver: bridge
+    name: nocobase-network
+
+volumes:
+  postgres_data:
+    name: nocobase_postgres_data
+    driver: local
+  minio_data:
+    name: nocobase_minio_data
+    driver: local
+  redis_data:
+    name: nocobase_redis_data
+    driver: local
+  nocobase_storage:
+    name: nocobase_app_storage
+    driver: local
+
+services:
+  # ============================================================
+  # PostgreSQL 数据库
+  # ============================================================
+  postgres:
+    image: postgres:17
+    container_name: nocobase-postgres
+    restart: unless-stopped
+    networks:
+      - nocobase
+    environment:
+      POSTGRES_USER: ${DB_USER:-nocobase}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nocobase}
+      POSTGRES_DB: ${DB_DATABASE:-nocobase}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups/postgres:/backups
+    ports:
+      - "${DB_POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nocobase} -d ${DB_DATABASE:-nocobase}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  # ============================================================
+  # Redis 缓存
+  # ============================================================
+  redis:
+    image: redis:7.4.0-alpine
+    container_name: nocobase-redis
+    restart: unless-stopped
+    networks:
+      - nocobase
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-nocobase}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-nocobase}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+
+  # ============================================================
+  # MinIO 对象存储
+  # ============================================================
+  minio:
+    image: minio/minio:RELEASE.2025-09-08T02-42-37Z
+    container_name: nocobase-minio
+    restart: unless-stopped
+    networks:
+      - nocobase
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+      - ./storage/minio:/export
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  # ============================================================
+  # NocoBase 应用（使用 GHCR 预构建镜像）
+  # ============================================================
+  app:
+    image: ${NOCOBASE_IMAGE:-ghcr.io/naturegolden/nocobase:feature/docker-deploy}
+    container_name: nocobase-app
+    restart: unless-stopped
+    networks:
+      - nocobase
+    env_file: .env
+    environment:
+      - APP_ENV=production
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-nocobase}
+      - DB_USER=${DB_USER:-nocobase}
+      - DB_PASSWORD=${DB_PASSWORD:-nocobase}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-nocobase}
+      - STORAGE_TYPE=minio
+      - STORAGE_MINIO_ENDPOINT=minio:9000
+      - STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - STORAGE_MINIO_BUCKET=nocobase
+      - STORAGE_MINIO_USE_SSL=false
+    volumes:
+      - nocobase_storage:/app/nocobase/storage
+      - ./storage/uploads:/app/nocobase/storage/uploads
+    ports:
+      - "${APP_PORT:-13000}:13000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:13000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
