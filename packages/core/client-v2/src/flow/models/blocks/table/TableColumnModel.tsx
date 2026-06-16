@@ -35,6 +35,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
 import { getSavedAssociationTitleField, getTableColumnSortField } from './sortUtils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
+import { getSavedDateTimeFormatParams, resolveDateTimeDisplayProps } from '../../../utils/dateTimeDisplayProps';
 
 export function FieldDeletePlaceholder(props: any) {
   const { t } = useTranslation();
@@ -135,39 +136,6 @@ const resetDateTimeDisplayProps = {
   picker: undefined,
   showTime: undefined,
   timeFormat: undefined,
-};
-
-const getSavedDateTimeFormatParams = (fieldModel) =>
-  fieldModel?.getStepParams?.('datetimeSettings', 'dateFormat') ||
-  fieldModel?.getStepParams?.('timeSettings', 'dateFormat');
-
-const isTimeCollectionField = (collectionField) =>
-  collectionField?.type === 'time' || collectionField?.interface === 'time';
-
-const isDateOnlyCollectionField = (collectionField) =>
-  collectionField?.type === 'dateOnly' || collectionField?.interface === 'dateOnly';
-
-const getSavedDateTimeDisplayProps = (fieldModel, collectionField) => {
-  const params = getSavedDateTimeFormatParams(fieldModel);
-  if (!params) {
-    return;
-  }
-
-  if (isTimeCollectionField(collectionField)) {
-    const timeFormat = params.timeFormat || params.format || 'HH:mm:ss';
-    return {
-      ...params,
-      timeFormat,
-      format: timeFormat,
-    };
-  }
-
-  const showTime = isDateOnlyCollectionField(collectionField) ? false : params.showTime;
-  return {
-    ...params,
-    showTime,
-    format: showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
-  };
 };
 
 export class TableColumnModel extends DisplayItemModel {
@@ -397,7 +365,14 @@ TableColumnModel.registerFlow({
         const titleField = getSavedAssociationTitleField(ctx.model);
         const fieldModel = ctx.model.subModels.field;
         const targetCollectionField = collectionField.targetCollection?.getField?.(titleField);
-        const savedDateTimeDisplayProps = getSavedDateTimeDisplayProps(fieldModel, targetCollectionField);
+        const savedDateTimeDisplayProps = getSavedDateTimeFormatParams(fieldModel)
+          ? resolveDateTimeDisplayProps({
+              model: fieldModel,
+              collectionField,
+              titleField,
+              currentProps: ctx.model.props,
+            })
+          : undefined;
         const componentProps =
           collectionField.isAssociationField() && titleField
             ? {
