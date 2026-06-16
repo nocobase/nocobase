@@ -294,6 +294,22 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(within(mobileAddDialog).getByRole('radio', { name: 'Link' })).toBeInTheDocument();
   });
 
+  it('should filter legacy v1 page routes from the v2 routes management table', async () => {
+    const resource = createRoutesPageResources();
+    flowContext.current = resource.context;
+
+    render(
+      <AntdApp>
+        <RoutesPage />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Desktop group')).toBeInTheDocument();
+    expect(screen.getByText('Desktop link')).toBeInTheDocument();
+    expect(screen.queryByText('Legacy v1 page')).not.toBeInTheDocument();
+  });
+
   it('should refresh desktop menu after desktop route mutations', async () => {
     const resource = createRoutesPageResources();
     flowContext.current = resource.context;
@@ -808,6 +824,12 @@ function createRoutesPageResources() {
           id: 5,
           title: 'Desktop group',
           type: 'group',
+        },
+        {
+          id: 9,
+          schemaUid: 'legacy-v1-page',
+          title: 'Legacy v1 page',
+          type: 'page',
         },
         {
           id: 7,

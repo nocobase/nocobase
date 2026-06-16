@@ -290,19 +290,21 @@ function findRouteById(routes: NocoBaseDesktopRoute[], id: number | undefined): 
   return undefined;
 }
 
-function filterHiddenRoutes(routes: NocoBaseDesktopRoute[]): NocoBaseDesktopRoute[] {
-  return routes
-    .filter((route) => route.hidden !== true)
-    .map((route) => {
-      const { children, ...routeWithoutChildren } = route;
-      const visibleChildren = children ? filterHiddenRoutes(children) : [];
-      return visibleChildren.length
-        ? {
-            ...routeWithoutChildren,
-            children: visibleChildren,
-          }
-        : routeWithoutChildren;
-    });
+function isManagedV2Route(route: NocoBaseDesktopRoute) {
+  return route.hidden !== true && route.type !== NocoBaseDesktopRouteType.page;
+}
+
+function filterManagedRoutes(routes: NocoBaseDesktopRoute[]): NocoBaseDesktopRoute[] {
+  return routes.filter(isManagedV2Route).map((route) => {
+    const { children, ...routeWithoutChildren } = route;
+    const visibleChildren = children ? filterManagedRoutes(children) : [];
+    return visibleChildren.length
+      ? {
+          ...routeWithoutChildren,
+          children: visibleChildren,
+        }
+      : routeWithoutChildren;
+  });
 }
 
 function getDirectTabRouteChildren(route: NocoBaseDesktopRoute) {
@@ -788,7 +790,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
   );
   const hasSelectedRoutes = selectedRouteIds.length > 0;
 
-  const visibleRoutes = useMemo(() => filterHiddenRoutes(routes), [routes]);
+  const visibleRoutes = useMemo(() => filterManagedRoutes(routes), [routes]);
 
   const filteredRoutes = useMemo(
     () => filterRoutesByKeyword(visibleRoutes, filterValues.keyword || '', t),
