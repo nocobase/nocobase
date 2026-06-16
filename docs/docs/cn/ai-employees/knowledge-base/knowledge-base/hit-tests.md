@@ -11,7 +11,7 @@ keywords: "知识库命中测试,Hit tests,Top K,Score,RAG,NocoBase"
 
 进入知识库详情页后，点击左侧「Hit tests」。这个页面用于测试一段用户输入能命中哪些文档分段，不会直接调用 AI 员工，也不会生成最终回答。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-results.png)
+![20260617005130](https://static-docs.nocobase.com/20260617005130.png)
 
 ## 执行一次测试
 
@@ -27,17 +27,17 @@ keywords: "知识库命中测试,Hit tests,Top K,Score,RAG,NocoBase"
 
 点击结果卡片可以查看更完整的分段内容、相似度分数，以及本次命中的关联问题。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-detail.png)
+![20260617005408](https://static-docs.nocobase.com/20260617005408.png)
 
 如果当前输入没有命中任何分段，页面会显示「No matching documents found」。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-empty.png)
+![20260617005636](https://static-docs.nocobase.com/20260617005636.png)
 
 ## 调整测试参数
 
 点击右上角「Settings」可以调整本次命中测试的参数。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/hit-tests-settings.png)
+![20260617005519](https://static-docs.nocobase.com/20260617005519.png)
 
 其中：
 

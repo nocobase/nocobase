@@ -13,20 +13,20 @@ keywords: "知识库分段,Segments,Chunk size,Chunk overlap,关联问题,NocoBa
 
 进入知识库的「Documents」页面，在某篇文档右侧点击「Segments」，会打开「Segment management」弹窗。这里展示当前文档生成的所有分段。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/segments-list.png)
+![20260617004439](https://static-docs.nocobase.com/20260617004439.png)
 
 ## 查看分段列表
 
 分段列表包含这些信息：
 
-| 字段 | 含义 |
-| --- | --- |
-| 「No.」 | 分段序号，从 1 开始显示 |
-| 「Preview」 | 分段内容预览 |
-| 「Characters」 | 当前分段字符数 |
+| 字段                  | 含义                       |
+| --------------------- | -------------------------- |
+| 「No.」               | 分段序号，从 1 开始显示    |
+| 「Preview」           | 分段内容预览               |
+| 「Characters」        | 当前分段字符数             |
 | 「Related questions」 | 当前分段配置的关联问题数量 |
-| 「Enabled」 | 是否参与向量化和检索 |
-| 「Updated at」 | 分段最近更新时间 |
+| 「Enabled」           | 是否参与向量化和检索       |
+| 「Updated at」        | 分段最近更新时间           |
 
 打开「Enabled only」后，列表只显示启用中的分段。这个开关只影响列表显示，不会修改分段数据。
 
@@ -42,7 +42,7 @@ keywords: "知识库分段,Segments,Chunk size,Chunk overlap,关联问题,NocoBa
 
 点击某个分段右侧的「Edit」可以打开分段详情。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/segment-edit.png)
+![20260617004531](https://static-docs.nocobase.com/20260617004531.png)
 
 在详情里可以修改：
 
@@ -76,7 +76,8 @@ keywords: "知识库分段,Segments,Chunk size,Chunk overlap,关联问题,NocoBa
 
 点击右上角「Segment settings」，可以为当前文档重新设置分段参数。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/segments-settings-popover.png)
+![20260617004702](https://static-docs.nocobase.com/20260617004702.png)
+
 
 其中：
 

@@ -11,20 +11,20 @@ keywords: "知识库设置,分段参数,Chunk size,Chunk overlap,向量存储,No
 
 进入知识库详情页后，点击左侧「Settings」。这里用于修改当前知识库的基本信息、文件存储、向量存储和默认分段参数。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-settings.png)
+![20260617005832](https://static-docs.nocobase.com/20260617005832.png)
 
 ## 基本信息
 
 Local 知识库的设置项包括：
 
-| 设置项 | 说明 |
-| --- | --- |
-| 「Key」 | 知识库唯一标识，创建后不可修改 |
-| 「Name」 | 知识库名称 |
+| 设置项           | 说明                                             |
+| ---------------- | ------------------------------------------------ |
+| 「Key」          | 知识库唯一标识，创建后不可修改                   |
+| 「Name」         | 知识库名称                                       |
 | 「File storage」 | 文档和分段文件保存到哪个文件存储，创建后不可修改 |
-| 「Vector store」 | 当前知识库使用的向量存储 |
-| 「Description」 | 知识库说明 |
-| 「Enabled」 | 是否启用当前知识库 |
+| 「Vector store」 | 当前知识库使用的向量存储                         |
+| 「Description」  | 知识库说明                                       |
+| 「Enabled」      | 是否启用当前知识库                               |
 
 :::tip 向量存储变更
 
@@ -32,17 +32,17 @@ Local 知识库的设置项包括：
 
 :::
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-settings-vector-store-confirm.png)
+![20260617005951](https://static-docs.nocobase.com/20260617005951.png)
 
 ## 默认分段参数
 
 Settings 页面新增了三个分段参数：
 
-| 设置项 | 默认值 | 说明 |
-| --- | --- | --- |
-| 「Split document」 | 开启 | 上传文档后是否自动拆成多个分段 |
-| 「Chunk size」 | `6000` | 每个分段的最大字符数 |
-| 「Chunk overlap」 | `1200` | 相邻分段之间重叠的字符数 |
+| 设置项             | 默认值 | 说明                           |
+| ------------------ | ------ | ------------------------------ |
+| 「Split document」 | 开启   | 上传文档后是否自动拆成多个分段 |
+| 「Chunk size」     | `6000` | 每个分段的最大字符数           |
+| 「Chunk overlap」  | `1200` | 相邻分段之间重叠的字符数       |
 
 「Chunk overlap」不能大于等于「Chunk size」。如果输入值不合法，后端会按规则归一化，保证重叠字符数小于单个分段长度。
 

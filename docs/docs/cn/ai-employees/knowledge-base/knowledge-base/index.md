@@ -13,7 +13,7 @@ keywords: "知识库,AI 知识库,RAG,文档管理,向量索引,NocoBase"
 
 大部分场景只需要维护 Local 知识库。只有当文档和向量数据已经由外部系统维护时，才需要考虑 Readonly 或 External 知识库。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-list.png)
+![20260617003643](https://static-docs.nocobase.com/20260617003643.png)
 
 ## 进入知识库管理
 
@@ -25,13 +25,13 @@ keywords: "知识库,AI 知识库,RAG,文档管理,向量索引,NocoBase"
 - 「Hit tests」用于测试检索词能命中哪些分段
 - 「Settings」用于调整知识库基本信息、向量存储和默认分段参数
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-detail.png)
+![20260617004104](https://static-docs.nocobase.com/20260617004104.png)
 
 ## 新建知识库
 
 点击右上角「Add new」可以新建知识库。下拉菜单里会显示三种类型：Local、Readonly 和 External。
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-add-types.png)
+![20260617003505](https://static-docs.nocobase.com/20260617003505.png)
 
 三种知识库的能力边界不同：
 
@@ -45,7 +45,7 @@ keywords: "知识库,AI 知识库,RAG,文档管理,向量索引,NocoBase"
 
 Local 知识库通常需要填写这些信息：
 
-![](https://static-docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/2026-06-12/kb-local-form.png)
+![20260617003603](https://static-docs.nocobase.com/20260617003603.png)
 
 - 「Key」：知识库唯一标识，创建后不可修改
 - 「Name」：知识库名称
