@@ -222,7 +222,7 @@ const DETAILS_OPTIONS: FlowSurfaceConfigureOptions = {
   sorting: SORTING,
   dataScope: FILTER_GROUP,
   linkageRules: arrayOption(
-    'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setFieldLinkageRules` instead of guessing this configure key directly.',
+    'Raw canonical linkage-rules payload. The API normalizes condition-only rules to include `actions: []`; for AI/CLI authoring, prefer `getReactionMeta` + `setFieldLinkageRules` instead of guessing this configure key directly.',
     { example: [] },
   ),
 };
@@ -261,7 +261,7 @@ const CALENDAR_OPTIONS: FlowSurfaceConfigureOptions = {
   weekStart: numberOption('Week start day. Use 1 for Monday or 0 for Sunday.', { example: 1 }),
   dataScope: FILTER_GROUP,
   linkageRules: arrayOption(
-    'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setBlockLinkageRules` instead of guessing this configure key directly.',
+    'Raw canonical linkage-rules payload. The API normalizes condition-only rules to include `actions: []`; for AI/CLI authoring, prefer `getReactionMeta` + `setBlockLinkageRules` instead of guessing this configure key directly.',
     { example: [] },
   ),
   quickCreatePopup: OPEN_VIEW,
@@ -642,7 +642,7 @@ const APPROVAL_ASSIGN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
 
 const ACTION_LINKAGE_OPTIONS: FlowSurfaceConfigureOptions = {
   linkageRules: arrayOption(
-    'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setActionLinkageRules` instead of guessing this configure key directly.',
+    'Raw canonical linkage-rules payload. The API normalizes condition-only rules to include `actions: []`; for AI/CLI authoring, prefer `getReactionMeta` + `setActionLinkageRules` instead of guessing this configure key directly.',
     { example: [] },
   ),
 };
