@@ -11264,9 +11264,12 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(invalidConfigureFilter.status).toBe(400);
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('stepParams.tableSettings.dataScope.filter');
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('FilterGroup');
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('does not support: foo');
+    expectFlowSurfaceError(invalidConfigureFilter, 'dataScope-filter-group-invalid-shape', '$.changes.dataScope');
+    const invalidConfigureFilterMessage = readErrorMessage(invalidConfigureFilter);
+    expect(invalidConfigureFilterMessage).toContain('$.changes.dataScope');
+    expect(invalidConfigureFilterMessage).toContain('FilterGroup');
+    expect(invalidConfigureFilterMessage).toContain('{"logic":"$and","items":[]}');
+    expect(invalidConfigureFilterMessage).toContain('does not support: foo');
 
     const invalidFilters = [
       { case: 'missing-logic-items', filter: { foo: 'bar' }, reason: 'does not support: foo' },

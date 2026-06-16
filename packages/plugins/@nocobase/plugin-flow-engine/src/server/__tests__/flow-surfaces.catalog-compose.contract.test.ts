@@ -7951,10 +7951,20 @@ describe('flowSurfaces catalog + compose contract', () => {
       status: 400,
       type: 'bad_request',
     });
-    expect(addBlocksData.blocks[1].error.message).toContain('settings invalid');
-    expect(addBlocksData.blocks[1].error.message).toContain('stepParams.tableSettings.dataScope.filter');
-    expect(addBlocksData.blocks[1].error.message).toContain('FilterGroup');
-    expect(addBlocksData.blocks[1].error.message).toContain('{"logic":"$and","items":[]}');
+    const invalidFilterError = addBlocksData.blocks[1].error;
+    expect(invalidFilterError.message).toContain('settings invalid');
+    expect(invalidFilterError.message).toContain('authoring validation failed');
+    expect(invalidFilterError.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.dataScope',
+          ruleId: 'dataScope-filter-group-invalid-shape',
+          message: expect.stringContaining('FilterGroup'),
+        }),
+      ]),
+    );
+    expect(invalidFilterError.errors[0].message).toContain('{"logic":"$and","items":[]}');
+    expect(invalidFilterError.errors[0].message).toContain('does not support: foo');
 
     const validTableReadback = await getSurface(rootAgent, {
       uid: addBlocksData.blocks[0].result.uid,
