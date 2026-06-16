@@ -35,6 +35,36 @@ describe('transformRowsToSingleColumn', () => {
     expect(all).toEqual([['a'], ['b', 'c'], ['d'], ['e']]);
   });
 
+  it('should preserve row ids for ordinary single-column mobile rows', () => {
+    const rows = {
+      row_a: [['a']],
+      row_b: [['b']],
+    };
+
+    expect(transformRowsToSingleColumn(rows)).toEqual(rows);
+  });
+
+  it('should avoid adding another mobile prefix to ordinary single-column projected rows', () => {
+    const rows = {
+      'mobile:row_a:0': [['a']],
+    };
+
+    expect(Object.keys(transformRowsToSingleColumn(rows))).toEqual(['mobile:row_a:0']);
+  });
+
+  it('should keep split multi-column row keys stable and unique', () => {
+    const rows = {
+      row_a: [['a'], ['b']],
+    };
+    const result = transformRowsToSingleColumn(rows);
+    const keys = Object.keys(result);
+
+    expect(keys).toHaveLength(2);
+    expect(new Set(keys).size).toBe(2);
+    expect(keys.every((key) => key.startsWith('mobile:'))).toBe(true);
+    expect(Object.values(result).map((row) => row[0])).toEqual([['a'], ['b']]);
+  });
+
   it('should skip columns that only contain EMPTY_COLUMN_UID', () => {
     const rows = buildRows([[[EMPTY_COLUMN_UID], ['a']]]);
     const result = transformRowsToSingleColumn(rows);

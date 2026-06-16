@@ -1151,13 +1151,38 @@ export function transformRowsToSingleColumn(
 ): Record<string, string[][]> {
   const emptyColumnUid = options?.emptyColumnUid ?? EMPTY_COLUMN_UID;
   const singleColumnRows: Record<string, string[][]> = {};
+
+  const getAvailableRowId = (baseRowId: string) => {
+    if (!singleColumnRows[baseRowId]) {
+      return baseRowId;
+    }
+
+    let duplicateIndex = 1;
+    let rowId = `${baseRowId}:duplicate:${duplicateIndex}`;
+    while (singleColumnRows[rowId]) {
+      duplicateIndex += 1;
+      rowId = `${baseRowId}:duplicate:${duplicateIndex}`;
+    }
+    return rowId;
+  };
+
   Object.keys(rows).forEach((rowId) => {
     const columns = rows[rowId];
-    columns.forEach((column, columnIndex) => {
-      const filtered = column.filter((id) => id !== emptyColumnUid);
-      if (filtered.length > 0) {
-        singleColumnRows[`mobile:${encodeURIComponent(rowId)}:${columnIndex}`] = [filtered];
-      }
+    const effectiveColumns = columns
+      .map((column, columnIndex) => ({
+        columnIndex,
+        items: column.filter((id) => id !== emptyColumnUid),
+      }))
+      .filter((column) => column.items.length > 0);
+
+    if (effectiveColumns.length === 1 && effectiveColumns[0].columnIndex === 0) {
+      singleColumnRows[getAvailableRowId(rowId)] = [effectiveColumns[0].items];
+      return;
+    }
+
+    effectiveColumns.forEach((column) => {
+      const generatedRowId = `mobile:${encodeURIComponent(rowId)}:${column.columnIndex}`;
+      singleColumnRows[getAvailableRowId(generatedRowId)] = [column.items];
     });
   });
   return singleColumnRows;
