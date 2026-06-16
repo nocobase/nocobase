@@ -66,6 +66,38 @@ const createGridContainer = () => {
   return container;
 };
 
+const createGridContainerWithEmptyColumn = () => {
+  const container = document.createElement('div');
+  container.setAttribute('data-grid-root', '');
+  const row = document.createElement('div');
+  row.setAttribute('data-grid-row-id', 'row-1');
+  container.appendChild(row);
+
+  const firstColumn = document.createElement('div');
+  firstColumn.setAttribute('data-grid-column-row-id', 'row-1');
+  firstColumn.setAttribute('data-grid-column-index', '0');
+  row.appendChild(firstColumn);
+
+  const item = document.createElement('div');
+  item.setAttribute('data-grid-item-row-id', 'row-1');
+  item.setAttribute('data-grid-column-index', '0');
+  item.setAttribute('data-grid-item-index', '0');
+  item.setAttribute('data-grid-item-uid', 'item-1');
+  firstColumn.appendChild(item);
+
+  const secondColumn = document.createElement('div');
+  secondColumn.setAttribute('data-grid-column-row-id', 'row-1');
+  secondColumn.setAttribute('data-grid-column-index', '1');
+  row.appendChild(secondColumn);
+
+  mockRect(container, { top: 0, left: 0, width: 480, height: 280 });
+  mockRect(row, { top: 20, left: 20, width: 440, height: 120 });
+  mockRect(firstColumn, { top: 20, left: 20, width: 220, height: 120 });
+  mockRect(item, { top: 30, left: 30, width: 200, height: 100 });
+  mockRect(secondColumn, { top: 20, left: 260, width: 200, height: 120 });
+  return container;
+};
+
 describe('GridModel drag snapshot container', () => {
   let engine: FlowEngine;
 
@@ -103,6 +135,93 @@ describe('GridModel drag snapshot container', () => {
     (model as any).updateLayoutSnapshot();
 
     expect((model as any).dragState?.slots?.length).toBeGreaterThan(0);
+    model.handleDragCancel({} as any);
+  });
+
+  it('filters multi-column drop slots from mobile drag snapshots', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-mobile-drag-slots',
+      props: {
+        rows: {
+          'row-1': [['item-1'], []],
+        },
+        sizes: {
+          'row-1': [12, 12],
+        },
+      },
+      structure: {} as any,
+    });
+    model.context.defineProperty('isMobileLayout', { value: true });
+
+    const container = createGridContainerWithEmptyColumn();
+    (model.gridContainerRef as any).current = container;
+
+    model.handleDragStart({
+      active: { id: 'item-1' },
+      activatorEvent: { clientX: 80, clientY: 80 },
+    } as any);
+
+    const slotTypes = ((model as any).dragState?.slots || []).map((slot) => slot.type);
+    expect(slotTypes).toContain('column');
+    expect(slotTypes).toContain('row-gap');
+    expect(slotTypes).not.toContain('column-edge');
+    expect(slotTypes).not.toContain('item-edge');
+    expect(slotTypes).not.toContain('empty-column');
+    model.handleDragCancel({} as any);
+  });
+
+  it('keeps empty-row slot available for the first mobile grid item', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-mobile-empty-drag-slots',
+      props: {},
+      structure: {} as any,
+    });
+    model.context.defineProperty('isMobileLayout', { value: true });
+
+    const container = document.createElement('div');
+    mockRect(container, { top: 0, left: 0, width: 480, height: 280 });
+    (model.gridContainerRef as any).current = container;
+
+    model.handleDragStart({
+      active: { id: 'item-1' },
+      activatorEvent: { clientX: 80, clientY: 80 },
+    } as any);
+
+    expect(((model as any).dragState?.slots || []).map((slot) => slot.type)).toEqual(['empty-row']);
+    model.handleDragCancel({} as any);
+  });
+
+  it('does not filter multi-column drop slots from desktop drag snapshots', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-desktop-drag-slots',
+      props: {
+        rows: {
+          'row-1': [['item-1'], []],
+        },
+        sizes: {
+          'row-1': [12, 12],
+        },
+      },
+      structure: {} as any,
+    });
+
+    const container = createGridContainerWithEmptyColumn();
+    (model.gridContainerRef as any).current = container;
+
+    model.handleDragStart({
+      active: { id: 'item-1' },
+      activatorEvent: { clientX: 80, clientY: 80 },
+    } as any);
+
+    const slotTypes = ((model as any).dragState?.slots || []).map((slot) => slot.type);
+    expect(slotTypes).toContain('column');
+    expect(slotTypes).toContain('row-gap');
+    expect(slotTypes).toContain('column-edge');
+    expect(slotTypes).toContain('item-edge');
+    expect(slotTypes).toContain('empty-column');
     model.handleDragCancel({} as any);
   });
 

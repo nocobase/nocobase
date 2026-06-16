@@ -75,6 +75,12 @@ interface DragState {
   generatedIds: Map<string, string>;
 }
 
+const MOBILE_GRID_DISABLED_DROP_SLOT_TYPES = new Set<LayoutSlot['type']>(['column-edge', 'item-edge', 'empty-column']);
+
+const filterMobileGridDragSlots = (slots: LayoutSlot[]) => {
+  return slots.filter((slot) => !MOBILE_GRID_DISABLED_DROP_SLOT_TYPES.has(slot.type));
+};
+
 const getClientPoint = (event: any): { x: number; y: number } | null => {
   if (!event) {
     return null;
@@ -625,7 +631,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       return;
     }
     const snapshot = buildLayoutSnapshot({ container: this.getDragContainer() });
-    this.dragState.slots = snapshot.slots;
+    this.dragState.slots = this.context.isMobileLayout ? filterMobileGridDragSlots(snapshot.slots) : snapshot.slots;
     this.dragState.containerRect = snapshot.containerRect;
   }
 
