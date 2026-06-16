@@ -18,11 +18,15 @@ const t = (key: string) => key;
 describe('PluginUiTemplatesClientV2', () => {
   it('registers v2 models and settings pages', async () => {
     const registerModelLoaders = vi.fn();
+    const registerDynamicFlowSourceProvider = vi.fn();
     const addMenuItem = vi.fn();
     const addPageTabItem = vi.fn();
     const app = {
       flowEngine: {
         registerModelLoaders,
+        flowSettings: {
+          registerDynamicFlowSourceProvider,
+        },
         getAction: vi.fn(() => undefined),
         registerActions: vi.fn(),
       },
@@ -44,6 +48,13 @@ describe('PluginUiTemplatesClientV2', () => {
           ReferenceBlockModel: expect.objectContaining({ loader: expect.any(Function) }),
           ReferenceFormGridModel: expect.objectContaining({ loader: expect.any(Function) }),
           SubModelTemplateImporterModel: expect.objectContaining({ loader: expect.any(Function) }),
+        }),
+      );
+      expect(registerDynamicFlowSourceProvider).toHaveBeenCalledWith(
+        expect.objectContaining({
+          key: 'ui-templates-reference-block',
+          visible: expect.any(Function),
+          getSources: expect.any(Function),
         }),
       );
       expect(addMenuItem).toHaveBeenCalledWith(
