@@ -32,7 +32,11 @@ type FormBlockModelLike = FormBlockModel & {
   };
 };
 
-type FlowModelLike = {
+type FlowModelTreeLike = {
+  subModels?: Record<string, unknown> | unknown[];
+};
+
+type FlowModelLike = FlowModelTreeLike & {
   use?: string;
   fieldPath?: string;
   props?: {
@@ -44,7 +48,6 @@ type FlowModelLike = {
       name?: string;
     };
   };
-  subModels?: Record<string, unknown> | unknown[];
   constructor?: {
     name?: string;
   };
@@ -61,7 +64,7 @@ function compactFieldPath(path: unknown): string {
   return typeof path === 'string' ? path : '';
 }
 
-function getSubModels(model?: FlowModelLike): FlowModelLike[] {
+function getSubModels(model?: FlowModelTreeLike): FlowModelLike[] {
   const subModels = model?.subModels;
   if (!subModels) {
     return [];
@@ -78,7 +81,7 @@ function isSubTableModel(model?: FlowModelLike): boolean {
   return modelName === 'SubTableFieldModel' || modelName === 'PopupSubTableFieldModel';
 }
 
-function collectSubTablePaths(model?: FlowModelLike): Set<string> {
+function collectSubTablePaths(model?: FlowModelTreeLike): Set<string> {
   const paths = new Set<string>();
   const queue = getSubModels(model);
 
