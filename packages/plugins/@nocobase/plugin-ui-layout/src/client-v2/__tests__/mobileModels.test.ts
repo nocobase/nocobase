@@ -19,7 +19,7 @@ import {
   useLayoutRoutePage,
 } from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
-import { App as AntdApp } from 'antd';
+import { App as AntdApp, ConfigProvider, theme as antdTheme, type ThemeConfig } from 'antd';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -125,6 +125,7 @@ describe('plugin-ui-layout mobile models', () => {
       memoryRouterBasename?: string;
       outletElement?: React.ReactNode;
       routerBasename?: string;
+      theme?: ThemeConfig;
     } = {},
   ) {
     const engine = new FlowEngine();
@@ -184,35 +185,41 @@ describe('plugin-ui-layout mobile models', () => {
         FlowEngineProvider,
         { engine },
         React.createElement(
-          AntdApp,
-          null,
+          ConfigProvider,
+          {
+            theme: options.theme,
+          },
           React.createElement(
-            MemoryRouter,
-            {
-              initialEntries: options.initialEntries || [
-                options.memoryRouterBasename ? `${options.memoryRouterBasename}/mobile` : '/v/mobile',
-              ],
-              basename: options.memoryRouterBasename,
-            },
+            AntdApp,
+            null,
             React.createElement(
-              Routes,
-              null,
-              options.outletElement
-                ? React.createElement(
-                    Route,
-                    {
-                      path: routerRoutePath,
+              MemoryRouter,
+              {
+                initialEntries: options.initialEntries || [
+                  options.memoryRouterBasename ? `${options.memoryRouterBasename}/mobile` : '/v/mobile',
+                ],
+                basename: options.memoryRouterBasename,
+              },
+              React.createElement(
+                Routes,
+                null,
+                options.outletElement
+                  ? React.createElement(
+                      Route,
+                      {
+                        path: routerRoutePath,
+                        element: model.render(),
+                      },
+                      React.createElement(Route, {
+                        path: ':name',
+                        element: options.outletElement,
+                      }),
+                    )
+                  : React.createElement(Route, {
+                      path: `${routerRoutePath}/*`,
                       element: model.render(),
-                    },
-                    React.createElement(Route, {
-                      path: ':name',
-                      element: options.outletElement,
                     }),
-                  )
-                : React.createElement(Route, {
-                    path: `${routerRoutePath}/*`,
-                    element: model.render(),
-                  }),
+              ),
             ),
           ),
         ),
@@ -243,6 +250,13 @@ describe('plugin-ui-layout mobile models', () => {
     return Array.from(document.querySelectorAll('style'))
       .map((style) => style.textContent || '')
       .join('\n');
+  }
+
+  function getLastStyleRule(pattern: RegExp) {
+    const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+    const matches = getDocumentStyleText().match(new RegExp(pattern.source, flags)) ?? [];
+
+    return matches[matches.length - 1];
   }
 
   function queryMobileSurfaceTitle() {
@@ -3300,6 +3314,108 @@ describe('plugin-ui-layout mobile models', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add mobile tab' }));
     expect(await screen.findByText('Page')).toBeInTheDocument();
+  });
+
+  it('should isolate mobile compact density from a spacious desktop theme', async () => {
+    renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => [
+          {
+            id: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Home',
+            schemaUid: 'home-page',
+            sort: 1,
+          },
+          {
+            id: 2,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Reports',
+            schemaUid: 'reports-page',
+            sort: 2,
+          },
+        ],
+      },
+      {
+        outletElement: React.createElement(MobileCurrentPathProbe),
+        theme: {
+          token: {
+            borderRadius: 30,
+            borderRadiusSM: 24,
+            colorPrimary: '#00b96b',
+            marginSM: 44,
+            paddingSM: 40,
+          },
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+    });
+
+    const contentRule = getLastStyleRule(/\.nb-ui-layout-mobile-home-content\s*\{[^}]+\}/);
+    const menuRule = getLastStyleRule(/\.nb-ui-layout-mobile-home-menu\s*\{[^}]+\}/);
+    const menuItemRule = getLastStyleRule(/\.nb-ui-layout-mobile-home-menu-item\s*\{[^}]+\}/);
+    const menuItemHoverRule = getLastStyleRule(
+      /[^{}]*nb-ui-layout-mobile-home-menu-item:focus-visible[^{}]*nb-ui-layout-mobile-home-menu-item:hover\s*\{[^}]+\}/,
+    );
+
+    expect(contentRule).toMatch(/gap:\s*8px/);
+    expect(contentRule).not.toMatch(/gap:\s*44px/);
+    expect(menuRule).toMatch(/gap:\s*8px/);
+    expect(menuItemRule).toMatch(/border-radius:\s*6px/);
+    expect(menuItemRule).toMatch(/padding:\s*8px/);
+    expect(menuItemRule).not.toMatch(/border-radius:\s*30px/);
+    expect(menuItemRule).not.toMatch(/padding:\s*40px/);
+    expect(menuItemHoverRule).toContain('#00b96b');
+
+    fireEvent.click(screen.getByRole('button', { name: /Reports/ }));
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('mobile-current-path').map((element) => element.textContent)).toContain(
+        '/v/mobile/reports-page',
+      );
+    });
+  });
+
+  it('should keep mobile compact density in dark theme', async () => {
+    renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => [
+          {
+            id: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Home',
+            schemaUid: 'home-page',
+          },
+        ],
+      },
+      {
+        theme: {
+          algorithm: antdTheme.darkAlgorithm,
+          token: {
+            colorPrimary: '#722ed1',
+            marginSM: 44,
+            paddingSM: 40,
+          },
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toHaveAttribute('aria-current', 'page');
+    });
+
+    const rootRule = getLastStyleRule(/\.nb-ui-layout-mobile-home-content\s*\{[^}]+\}/);
+    const tabbarRule = getLastStyleRule(/\.nb-ui-layout-mobile-home-tabbar\s*\{[^}]+\}/);
+    const activeTabRule = getLastStyleRule(
+      /\.nb-ui-layout-mobile-home-tabbar-item\[aria-current=["']page["']\]\s*\{[^}]+\}/,
+    );
+
+    expect(rootRule).toMatch(/gap:\s*8px/);
+    expect(tabbarRule).toMatch(/background:\s*#141414/);
+    expect(activeTabRule).toContain('#642ab5');
   });
 
   it('should let mobile tabs share the tab bar width like antd-mobile', async () => {
