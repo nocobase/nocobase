@@ -88,6 +88,7 @@ import {
 } from './MobileMenuModels';
 import { getMobileLinkRouteHref, getMobilePagePath, mobileRouteTreeContainsTabKey } from './MobileMenuUtils';
 import { MobilePageSurface } from './mobileComponents';
+import { toMobileCompactThemeToken, type MobileLayoutCompactThemeToken } from './mobileThemeToken';
 
 type MobileHomeAddMenuKey = 'page' | 'link';
 
@@ -161,17 +162,6 @@ type MobilePreviewSize = {
   width: number;
   height: number;
 };
-type MobileLayoutThemeToken = {
-  colorSettings?: string;
-  colorTextHeaderMenu?: string;
-};
-type MobileLayoutCompactThemeToken = NonNullable<ThemeConfig['token']> &
-  MobileLayoutThemeToken & {
-    borderRadiusBlock?: number;
-    marginBlock?: number;
-    paddingPageHorizontal?: number;
-    paddingPageVertical?: number;
-  };
 type MobileRoutesLoadState = 'loading' | 'ready' | 'error';
 type MobileTabBadgeOptions = Pick<
   React.ComponentProps<typeof Badge>,
@@ -233,6 +223,10 @@ function setMobileRootPageModel(routeModel: RouteModel, rootPageModelClass?: str
 function defineMobileRouteRuntimeContext(routeModel: RouteModel, getLayout?: () => LayoutDefinition | undefined) {
   routeModel.context.defineProperty('isMobileLayout', {
     value: true,
+  });
+  routeModel.context.defineProperty('themeToken', {
+    get: () => toMobileCompactThemeToken(routeModel.flowEngine.context.themeToken as MobileLayoutCompactThemeToken),
+    cache: false,
   });
   routeModel.context.defineProperty('layout', {
     get: getLayout,
@@ -714,7 +708,7 @@ function useMobileCompactTheme(): ThemeConfig {
       cssVar: parentTheme?.cssVar,
       hashed: parentTheme?.hashed,
       inherit: false,
-      token: {
+      token: toMobileCompactThemeToken({
         colorBgBase: parentToken?.colorBgBase ?? token.colorBgBase,
         colorError: parentToken?.colorError ?? token.colorError,
         colorInfo: parentToken?.colorInfo ?? token.colorInfo,
@@ -725,13 +719,7 @@ function useMobileCompactTheme(): ThemeConfig {
         colorTextBase: parentToken?.colorTextBase ?? token.colorTextBase,
         colorTextHeaderMenu: customToken.colorTextHeaderMenu,
         colorWarning: parentToken?.colorWarning ?? token.colorWarning,
-        fontSize: 16,
-        paddingXS: 8,
-        paddingPageHorizontal: 8,
-        paddingPageVertical: 8,
-        marginBlock: 12,
-        borderRadiusBlock: 8,
-      } as MobileLayoutCompactThemeToken,
+      }),
       algorithm: isDarkTheme ? [theme.compactAlgorithm, theme.darkAlgorithm] : theme.compactAlgorithm,
     }),
     [
@@ -2168,6 +2156,10 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
     this.context.defineProperty('isMobileLayout', {
       get: () => this.isMobileLayout,
       observable: true,
+      cache: false,
+    });
+    this.context.defineProperty('themeToken', {
+      get: () => toMobileCompactThemeToken(this.flowEngine.context.themeToken as MobileLayoutCompactThemeToken),
       cache: false,
     });
     define(this, {

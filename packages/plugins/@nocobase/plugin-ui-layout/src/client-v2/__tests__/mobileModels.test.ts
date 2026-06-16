@@ -603,6 +603,19 @@ describe('plugin-ui-layout mobile models', () => {
       MobileChildPageModel,
       RouteModel,
     });
+    engine.context.defineProperty('themeToken', {
+      value: {
+        borderRadiusBlock: 30,
+        colorPrimary: '#00b96b',
+        marginBlock: 44,
+        marginSM: 44,
+        paddingLG: 40,
+        paddingPageHorizontal: 40,
+        paddingPageVertical: 40,
+        paddingSM: 40,
+        paddingXS: 24,
+      },
+    });
     const routeModel = engine.createModel<RouteModel>({
       uid: 'mobile-detached-route-parent',
       use: 'RouteModel',
@@ -647,6 +660,36 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childPage.context.isMobileLayout).toBe(true);
     expect(rootSubModel.context.isMobileLayout).toBe(true);
     expect(childSubModel.context.isMobileLayout).toBe(true);
+    expect(rootPage.context.themeToken).toMatchObject({
+      borderRadiusBlock: 8,
+      colorPrimary: '#00b96b',
+      marginBlock: 12,
+      marginSM: 8,
+      paddingLG: 16,
+      paddingPageHorizontal: 8,
+      paddingPageVertical: 8,
+      paddingSM: 8,
+      paddingXS: 8,
+    });
+    expect(childPage.context.themeToken).toMatchObject({
+      borderRadiusBlock: 8,
+      colorPrimary: '#00b96b',
+      marginBlock: 12,
+      marginSM: 8,
+      paddingLG: 16,
+      paddingPageHorizontal: 8,
+      paddingPageVertical: 8,
+      paddingSM: 8,
+      paddingXS: 8,
+    });
+    expect(rootSubModel.context.themeToken).toMatchObject({
+      marginBlock: 12,
+      paddingSM: 8,
+    });
+    expect(childSubModel.context.themeToken).toMatchObject({
+      marginBlock: 12,
+      paddingSM: 8,
+    });
   });
 
   it('should provide temporary mobile home menu data', () => {
@@ -3343,8 +3386,11 @@ describe('plugin-ui-layout mobile models', () => {
             borderRadius: 30,
             borderRadiusSM: 24,
             colorPrimary: '#00b96b',
+            marginXXS: 20,
             marginSM: 44,
+            paddingLG: 40,
             paddingSM: 40,
+            paddingXS: 40,
           },
         },
       },
@@ -3360,6 +3406,11 @@ describe('plugin-ui-layout mobile models', () => {
     const menuItemHoverRule = getLastStyleRule(
       /[^{}]*nb-ui-layout-mobile-home-menu-item:focus-visible[^{}]*nb-ui-layout-mobile-home-menu-item:hover\s*\{[^}]+\}/,
     );
+    const pageTabRule = getLastStyleRule(/\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-tab\s*\{[^}]+\}/);
+    const pageTabInkBarAfterRule = getLastStyleRule(
+      /\.nb-ui-layout-mobile-tabs\s+\.ant-tabs-ink-bar::after\s*\{[^}]+\}/,
+    );
+    const pageTabLeftSpacerRule = getLastStyleRule(/\.nb-ui-layout-mobile-page-tab-left-spacer\s*\{[^}]+\}/);
 
     expect(contentRule).toMatch(/gap:\s*8px/);
     expect(contentRule).not.toMatch(/gap:\s*44px/);
@@ -3369,6 +3420,10 @@ describe('plugin-ui-layout mobile models', () => {
     expect(menuItemRule).not.toMatch(/border-radius:\s*30px/);
     expect(menuItemRule).not.toMatch(/padding:\s*40px/);
     expect(menuItemHoverRule).toContain('#00b96b');
+    expect(pageTabRule).toMatch(/padding:\s*0 8px/);
+    expect(pageTabRule).not.toMatch(/padding:\s*0 40px/);
+    expect(pageTabInkBarAfterRule).toMatch(/inset-inline:\s*8px/);
+    expect(pageTabLeftSpacerRule).toMatch(/width:\s*12px/);
 
     fireEvent.click(screen.getByRole('button', { name: /Reports/ }));
 

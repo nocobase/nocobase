@@ -13,6 +13,7 @@ import { ChildPageModel, RootPageModel } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowSettingsButton, type CreateModelOptions } from '@nocobase/flow-engine';
 import React from 'react';
 import { MobileBackButton, MobilePageSurface } from './mobileComponents';
+import { toMobileCompactThemeToken, type MobileLayoutCompactThemeToken } from './mobileThemeToken';
 
 type RouteWithTabs = {
   id?: string | number | null;
@@ -112,6 +113,10 @@ function renderMobileBody(children: React.ReactNode) {
 function defineMobilePageRuntimeContext(model: RootPageModel | ChildPageModel) {
   model.context.defineProperty('isMobileLayout', {
     value: true,
+  });
+  model.context.defineProperty('themeToken', {
+    get: () => toMobileCompactThemeToken(model.flowEngine.context.themeToken as MobileLayoutCompactThemeToken),
+    cache: false,
   });
 }
 
