@@ -233,6 +233,18 @@ export const isPdfFile = (file: any, url?: string) => {
   return getFileExt(file, url) === 'pdf';
 };
 
+export const isSameOriginUrl = (url?: string) => {
+  if (!url || typeof window === 'undefined') {
+    return true;
+  }
+
+  try {
+    return new URL(url, window.location.href).origin === window.location.origin;
+  } catch (error) {
+    return true;
+  }
+};
+
 export const getFileName = (file: any, url?: string) => {
   const nameFromUrl = getNameFromUrl(url || getFileUrl(file));
   if (!file || typeof file === 'string') {
@@ -400,7 +412,7 @@ const IframePreviewer = ({ file }: FilePreviewerProps) => {
   return <iframe src={src} width="100%" height="100%" style={{ border: 'none' }} />;
 };
 
-type PdfJs = typeof import('pdfjs-dist/build/pdf.mjs');
+type PdfJs = typeof import('pdfjs-dist/legacy/build/pdf.mjs');
 type PdfTextLayer = InstanceType<PdfJs['TextLayer']>;
 
 let pdfjsPromise: Promise<PdfJs> | null = null;
@@ -451,6 +463,8 @@ export const getPdfPreviewResourceOptions = (): Pick<
   };
 };
 
+export const getPdfPreviewApiSrc = () => `${getPdfjsBaseUrl()}pdf.min.mjs`;
+
 export const getPdfPreviewWorkerSrc = () => `${getPdfjsBaseUrl()}pdf.worker.min.mjs`;
 
 type PdfPreviewErrorCode = 'resources' | 'file' | 'document';
@@ -476,7 +490,7 @@ export const getPdfPreviewErrorCode = (error: unknown): PdfPreviewErrorCode => {
 
 const loadPdfJs = async () => {
   if (!pdfjsPromise) {
-    pdfjsPromise = import('pdfjs-dist/build/pdf.mjs');
+    pdfjsPromise = import(/* @vite-ignore */ /* webpackIgnore: true */ getPdfPreviewApiSrc()) as Promise<PdfJs>;
   }
   return pdfjsPromise;
 };
@@ -914,6 +928,11 @@ const PdfPreviewer = ({ file }: FilePreviewerProps) => {
   );
 };
 
+const PdfHybridPreviewer = (props: FilePreviewerProps) => {
+  const src = getFileUrl(props.file);
+  return isSameOriginUrl(src) ? <PdfPreviewer {...props} /> : <IframePreviewer {...props} />;
+};
+
 const AudioPreviewer = ({ file }: FilePreviewerProps) => {
   const { t } = useTranslation();
   const src = getFileUrl(file);
@@ -1013,7 +1032,7 @@ filePreviewTypes.add({
   match(file) {
     return isPdfFile(file, getFileUrl(file));
   },
-  Previewer: wrapWithModalPreviewer(PdfPreviewer),
+  Previewer: wrapWithModalPreviewer(PdfHybridPreviewer),
 });
 
 export const FilePreviewRenderer = (props: FilePreviewerProps) => {
