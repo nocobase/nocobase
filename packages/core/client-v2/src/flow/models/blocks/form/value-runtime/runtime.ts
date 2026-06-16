@@ -762,6 +762,9 @@ export class FormValueRuntime {
             seen,
           );
         }
+        if (prevValue.length !== nextValue.length) {
+          return nestedCount + (this.pushExplicitPath(basePath, explicitPaths, seen) ? 1 : 0);
+        }
         return nestedCount;
       }
 

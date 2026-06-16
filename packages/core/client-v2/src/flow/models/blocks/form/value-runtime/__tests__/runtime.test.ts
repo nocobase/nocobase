@@ -969,6 +969,92 @@ describe('FormValueRuntime (form assign rules)', () => {
     ]);
   });
 
+  it('stops mode=override after a user clears a multiple value array', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'ready', tags: ['Existing'] });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-multiple-clear',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'tags',
+        mode: 'override',
+        condition: { logic: '$and', items: [{ path: '{{ ctx.formValues.b }}', operator: '$notEmpty', value: '' }] },
+        value: ['A', 'B'],
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['tags'])).toEqual(['A', 'B']));
+    expect(runtime.canApplyOverrideValuePatch(['tags'])).toBe(true);
+
+    lodashSet((formStub as any).__store, ['tags'], []);
+    runtime.handleFormValuesChange({ tags: [] }, formStub.getFieldsValue());
+    expect(runtime.canApplyOverrideValuePatch(['tags'])).toBe(false);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'changed' }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(formStub.getFieldValue(['tags'])).toEqual([]);
+  });
+
+  it('stops mode=override after a user removes an item from a multiple value array', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'ready', tags: ['Existing'] });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-multiple-remove-item',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'tags',
+        mode: 'override',
+        condition: { logic: '$and', items: [{ path: '{{ ctx.formValues.b }}', operator: '$notEmpty', value: '' }] },
+        value: ['A', 'B'],
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['tags'])).toEqual(['A', 'B']));
+    expect(runtime.canApplyOverrideValuePatch(['tags'])).toBe(true);
+
+    lodashSet((formStub as any).__store, ['tags'], ['A']);
+    runtime.handleFormValuesChange({ tags: ['A'] }, formStub.getFieldsValue());
+    expect(runtime.canApplyOverrideValuePatch(['tags'])).toBe(false);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'changed' }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(formStub.getFieldValue(['tags'])).toEqual(['A']);
+  });
+
   it('reapplies mode=override after user edited state is reset', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
@@ -2621,6 +2707,10 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     lodashSet((formStub as any).__store, ['users'], [{ __is_new__: true, name: '' }]);
     runtime.handleFormValuesChange({ users: formStub.getFieldValue(['users']) }, formStub.getFieldsValue());
+    expect((runtime as any).findExplicitHit('users')).toBe('users');
+    expect((runtime as any).findExplicitHit('users[0].name')).toBeNull();
+    expect((runtime as any).findUserEditedHit('users')).toBe('users');
+    expect((runtime as any).findUserEditedHit('users[0].name')).toBeNull();
 
     const row0: any = {
       uid: 'users.name',
