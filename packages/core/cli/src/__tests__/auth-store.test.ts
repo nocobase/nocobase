@@ -31,6 +31,7 @@ import {
   setCliConfigValue,
 } from '../lib/cli-config.js';
 import { resolveCliHomeDir, resolveCliHomeRoot } from '../lib/cli-home.js';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NB_CLI_ROOT;
@@ -1041,6 +1042,7 @@ test('write operations only affect global config and ignore legacy project envs'
       const globalConfig = await loadAuthConfig({ scope: 'global' });
       expect(globalConfig.lastEnv).toBe('legacy');
       expect(globalConfig.envs.legacy).toEqual({
+        schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
         authType: 'token',
         auth: {
           type: 'token',
