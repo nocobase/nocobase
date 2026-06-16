@@ -196,6 +196,10 @@ export default class extends Instruction {
     if (!node.config.collection || node.config.multiple) {
       return null;
     }
+    const [dataSourceKey, collectionName] = parseCollectionName(node.config.collection);
+    if (!dataSourceKey || !collectionName) {
+      return null;
+    }
 
     return {
       key: node.title ?? `#${node.id}`,
@@ -206,8 +210,8 @@ export default class extends Instruction {
         stepParams: {
           resourceSettings: {
             init: {
-              dataSourceKey: 'main',
-              collectionName: node.config.collection,
+              dataSourceKey,
+              collectionName,
               dataPath: `$jobsMapByNodeKey.${node.key}`,
             },
           },

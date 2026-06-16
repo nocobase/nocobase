@@ -33,4 +33,26 @@ describe('temp association source hook', () => {
     expect(fieldsetText).not.toContain('FOR SHARE');
     expect(fieldsetText).not.toContain('"lock"');
   });
+
+  it('uses the parsed data source and collection for query-result block menu item', () => {
+    const instruction = new QueryInstruction();
+
+    expect(
+      instruction.getCreateModelMenuItem({
+        node: {
+          id: 1,
+          key: 'n1',
+          title: 'Query post',
+          config: {
+            collection: 'external:posts',
+            multiple: false,
+          },
+        },
+      })?.createModelOptions.stepParams.resourceSettings.init,
+    ).toEqual({
+      dataSourceKey: 'external',
+      collectionName: 'posts',
+      dataPath: '$jobsMapByNodeKey.n1',
+    });
+  });
 });
