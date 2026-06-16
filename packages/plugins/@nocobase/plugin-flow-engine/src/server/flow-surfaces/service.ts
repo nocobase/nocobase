@@ -2871,6 +2871,13 @@ export class FlowSurfacesService {
     if (!popupProfile?.currentCollection) {
       return popupProfile?.filterByTk;
     }
+    if (
+      popupProfile.popupKind === 'recordPopup' &&
+      popupProfile.popupHostUse &&
+      POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES.has(popupProfile.popupHostUse)
+    ) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
     if (popupProfile.popupKind !== 'associationPopup') {
       return popupProfile.filterByTk;
     }
