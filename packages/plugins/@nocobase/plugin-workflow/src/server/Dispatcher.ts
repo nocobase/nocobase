@@ -21,6 +21,7 @@ import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
 import { getExecutionLockKey, isLockAcquireError } from './utils';
 
 const EXECUTION_ACQUIRE_MAX_ATTEMPTS = 5;
+const PENDING_DISPATCH_MAX_ATTEMPTS = 3;
 
 type AcquireRetryLogger = Pick<ReturnType<PluginWorkflowServer['getLogger']>, 'warn'>;
 
@@ -31,6 +32,7 @@ type Pending = {
   job?: JobModel;
   immediate?: boolean;
   rerun?: ProcessorRerunOptions;
+  dispatchAttempts?: number;
 };
 
 type CachedEvent = [WorkflowModel, any, EventOptions];
@@ -273,8 +275,18 @@ export default class Dispatcher {
         }
       } catch (error) {
         this.plugin.getLogger('dispatcher').error(`workflow dispatch failed`, { error });
-        if (pending && !next) {
-          this.pending.unshift(pending);
+        if (pending) {
+          const dispatchAttempts = (pending.dispatchAttempts ?? 0) + 1;
+          if (dispatchAttempts < PENDING_DISPATCH_MAX_ATTEMPTS) {
+            this.pending.push({ ...pending, dispatchAttempts });
+          } else {
+            this.plugin
+              .getLogger(pending.execution.workflowId)
+              .error(`pending execution (${pending.execution.id}) dispatch failed, local retry limit reached`, {
+                error,
+                dispatchAttempts,
+              });
+          }
         }
       } finally {
         setImmediate(() => {

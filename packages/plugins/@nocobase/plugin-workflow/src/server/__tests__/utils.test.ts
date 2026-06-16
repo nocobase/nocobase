@@ -152,6 +152,13 @@ describe('workflow > utils', () => {
     );
 
     expect(plugin.db.sequelize.transaction).toHaveBeenCalledTimes(1);
+    expect(executionRepo.find).toHaveBeenCalledWith({
+      filter: {
+        parentExecutionId: parent.id,
+        status: [EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED],
+      },
+      transaction,
+    });
     expect(executionRepo.model.update).toHaveBeenCalledWith(
       {
         status: EXECUTION_STATUS.ABORTED,

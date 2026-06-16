@@ -124,7 +124,7 @@ export async function abortExecution(
     const [affected] = await ExecutionRepo.model.update(abortValues, {
       where: {
         id: execution.id,
-        status: expectedStatus ?? null,
+        status: expectedStatus,
       },
       individualHooks: true,
       transaction,
@@ -149,6 +149,7 @@ export async function abortExecution(
     const childExecutions = await plugin.db.getRepository('executions').find({
       filter: {
         parentExecutionId: execution.id,
+        status: [EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED],
       },
       transaction,
     });
