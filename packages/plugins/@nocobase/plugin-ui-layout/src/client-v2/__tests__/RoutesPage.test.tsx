@@ -82,6 +82,16 @@ async function selectFirstIcon(container: HTMLElement) {
   });
 }
 
+async function clickDeleteConfirmDialog(title: 'Delete route' | 'Delete routes') {
+  const deleteTitle = await screen.findByText(title);
+  const deleteDialog = deleteTitle.closest('.ant-modal-confirm') as HTMLElement | null;
+  expect(deleteDialog).toBeTruthy();
+  fireEvent.click(within(deleteDialog as HTMLElement).getByRole('button', { name: 'Delete' }));
+  await waitFor(() => {
+    expect(document.body.querySelector('.ant-modal-confirm')).not.toBeInTheDocument();
+  });
+}
+
 describe('plugin-ui-layout RoutesPage', () => {
   it('should list and mutate desktopRoutes with the selected layout parameter', async () => {
     const resource = createRoutesPageResources();
@@ -373,9 +383,7 @@ describe('plugin-ui-layout RoutesPage', () => {
 
     const linkRow = screen.getByRole('row', { name: /Desktop link/ });
     fireEvent.click(within(linkRow).getByRole('button', { name: 'Delete Desktop link' }));
-    fireEvent.click(
-      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
-    );
+    await clickDeleteConfirmDialog('Delete route');
     await waitFor(() => {
       expect(resource.refreshAccessible).toHaveBeenCalledTimes(6);
     });
@@ -384,9 +392,7 @@ describe('plugin-ui-layout RoutesPage', () => {
     const groupRow = screen.getByRole('row', { name: /Desktop group/ });
     fireEvent.click(within(groupRow).getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    fireEvent.click(
-      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
-    );
+    await clickDeleteConfirmDialog('Delete routes');
     await waitFor(() => {
       expect(resource.refreshAccessible).toHaveBeenCalledTimes(7);
     });
@@ -451,9 +457,7 @@ describe('plugin-ui-layout RoutesPage', () => {
 
     const approvalsRow = screen.getByRole('row', { name: /Mobile approvals/ });
     fireEvent.click(within(approvalsRow).getByRole('button', { name: 'Delete Mobile approvals' }));
-    fireEvent.click(
-      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
-    );
+    await clickDeleteConfirmDialog('Delete route');
     await waitFor(() => {
       expect(resource.destroy).toHaveBeenCalledWith({
         filterByTk: 11,
@@ -464,9 +468,7 @@ describe('plugin-ui-layout RoutesPage', () => {
 
     fireEvent.click(within(screen.getByRole('row', { name: /Mobile home/ })).getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    fireEvent.click(
-      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
-    );
+    await clickDeleteConfirmDialog('Delete routes');
     await waitFor(() => {
       expect(resource.destroy).toHaveBeenCalledWith({
         filterByTk: [2],
@@ -805,11 +807,14 @@ describe('plugin-ui-layout RoutesPage', () => {
     expect(await screen.findByText('Desktop dashboard')).toBeInTheDocument();
     const desktopRow = screen.getByRole('row', { name: /Desktop dashboard/ });
     fireEvent.click(within(desktopRow).getByRole('button', { name: 'Delete Desktop dashboard' }));
-    expect(await screen.findByText('Delete route')).toBeInTheDocument();
-    expect(screen.getByText('Are you sure you want to delete it?')).toBeInTheDocument();
-    fireEvent.click(
-      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
-    );
+    const singleDeleteTitle = await screen.findByText('Delete route');
+    const singleDeleteDialog = singleDeleteTitle.closest('.ant-modal-confirm') as HTMLElement | null;
+    expect(singleDeleteDialog).toBeTruthy();
+    expect(document.body.querySelector('.ant-popover')).not.toBeInTheDocument();
+    expect(
+      within(singleDeleteDialog as HTMLElement).getByText('Are you sure you want to delete it?'),
+    ).toBeInTheDocument();
+    await clickDeleteConfirmDialog('Delete route');
 
     await waitFor(() => {
       expect(resource.destroy).toHaveBeenCalledWith({
@@ -822,11 +827,14 @@ describe('plugin-ui-layout RoutesPage', () => {
     const groupRow = await screen.findByRole('row', { name: /Desktop group/ });
     fireEvent.click(within(groupRow).getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(await screen.findByText('Delete routes')).toBeInTheDocument();
-    expect(screen.getByText('Are you sure you want to delete it?')).toBeInTheDocument();
-    fireEvent.click(
-      within(document.querySelector('.ant-popover') as HTMLElement).getByRole('button', { name: 'Delete' }),
-    );
+    const batchDeleteTitle = await screen.findByText('Delete routes');
+    const batchDeleteDialog = batchDeleteTitle.closest('.ant-modal-confirm') as HTMLElement | null;
+    expect(batchDeleteDialog).toBeTruthy();
+    expect(document.body.querySelector('.ant-popover')).not.toBeInTheDocument();
+    expect(
+      within(batchDeleteDialog as HTMLElement).getByText('Are you sure you want to delete it?'),
+    ).toBeInTheDocument();
+    await clickDeleteConfirmDialog('Delete routes');
 
     await waitFor(() => {
       expect(resource.destroy).toHaveBeenCalledWith({

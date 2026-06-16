@@ -26,7 +26,7 @@ import {
   Drawer,
   Form,
   Input,
-  Popconfirm,
+  App as AntdApp,
   Popover,
   Radio,
   Space,
@@ -643,6 +643,7 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
   const ctx = useFlowContext<RoutesPageFlowContext>();
   const t = useT();
   const tRef = useRef(t);
+  const { modal } = AntdApp.useApp();
   const { token } = theme.useToken();
   const [routes, setRoutes] = useState<NocoBaseDesktopRoute[]>([]);
   const [loading, setLoading] = useState(false);
@@ -834,6 +835,36 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
     await refreshRoutesAfterMutation();
   }, [ctx.message, desktopRoutesResource, layout.uid, refreshRoutesAfterMutation, selectedRouteIds, t]);
 
+  const openDeleteRouteConfirm = useCallback(
+    (route: NocoBaseDesktopRoute) => {
+      modal.confirm({
+        cancelText: t('Cancel'),
+        content: t('Are you sure you want to delete it?'),
+        okText: t('Delete'),
+        async onOk() {
+          await handleDelete(route);
+        },
+        title: t('Delete route'),
+      });
+    },
+    [handleDelete, modal, t],
+  );
+
+  const openDeleteSelectedRoutesConfirm = useCallback(() => {
+    if (!hasSelectedRoutes) {
+      return;
+    }
+    modal.confirm({
+      cancelText: t('Cancel'),
+      content: t('Are you sure you want to delete it?'),
+      okText: t('Delete'),
+      async onOk() {
+        await deleteSelectedRoutes();
+      },
+      title: t('Delete routes'),
+    });
+  }, [deleteSelectedRoutes, hasSelectedRoutes, modal, t]);
+
   const columns = useMemo<ColumnsType<NocoBaseDesktopRoute>>(
     () => [
       {
@@ -916,28 +947,31 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
               >
                 {t('View')}
               </Button>
-              <Popconfirm
-                cancelText={t('Cancel')}
-                description={t('Are you sure you want to delete it?')}
-                okText={t('Delete')}
-                onConfirm={() => handleDelete(route)}
-                title={t('Delete route')}
+              <Button
+                aria-label={t('Delete {{route}}', { route: routeTitle })}
+                onClick={() => openDeleteRouteConfirm(route)}
+                size="small"
+                style={actionLinkButtonStyle}
+                type="link"
               >
-                <Button
-                  aria-label={t('Delete {{route}}', { route: routeTitle })}
-                  size="small"
-                  style={actionLinkButtonStyle}
-                  type="link"
-                >
-                  {t('Delete')}
-                </Button>
-              </Popconfirm>
+                {t('Delete')}
+              </Button>
             </Space>
           );
         },
       },
     ],
-    [handleDelete, ctx.app, layout, openAddChildModal, openEditModal, routes, t, token.colorError, token.colorSuccess],
+    [
+      ctx.app,
+      layout,
+      openAddChildModal,
+      openDeleteRouteConfirm,
+      openEditModal,
+      routes,
+      t,
+      token.colorError,
+      token.colorSuccess,
+    ],
   );
 
   return (
@@ -948,18 +982,14 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
           <Button icon={<ReloadOutlined />} loading={loading} onClick={loadRoutes}>
             {t('Refresh')}
           </Button>
-          <Popconfirm
-            cancelText={t('Cancel')}
-            description={t('Are you sure you want to delete it?')}
+          <Button
+            aria-label={t('Delete')}
             disabled={!hasSelectedRoutes}
-            okText={t('Delete')}
-            onConfirm={deleteSelectedRoutes}
-            title={t('Delete routes')}
+            icon={<DeleteOutlined />}
+            onClick={openDeleteSelectedRoutesConfirm}
           >
-            <Button aria-label={t('Delete')} disabled={!hasSelectedRoutes} icon={<DeleteOutlined />}>
-              {t('Delete')}
-            </Button>
-          </Popconfirm>
+            {t('Delete')}
+          </Button>
           <Button
             aria-label={t('Hide in menu')}
             disabled={!hasSelectedRoutes}
