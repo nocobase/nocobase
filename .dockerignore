@@ -3,10 +3,11 @@
 .gitignore
 .gitattributes
 
-# Node (keep node_modules for Docker build)
-# node_modules
+# Node (node_modules 由 GitHub Actions 预先安装，需要包含在构建上下文中)
+# 注意：不要排除 node_modules，Dockerfile 需要复制它
 .npm
 .yarn-integrity
+.yarnrc.yml
 
 # Build
 dist
@@ -22,10 +23,12 @@ dist
 .DS_Store
 Thumbs.db
 
-# Docker
-docker
-Dockerfile*
-docker-compose*
+# 仅排除其他 docker 配置目录（保留 docker/deploy）
+docker/app-mariadb
+docker/app-mysql
+docker/app-postgres
+docker/app-sqlite
+docker/nocobase
 
 # Docs
 docs
@@ -50,3 +53,7 @@ logs
 # Storage
 storage/uploads
 storage/backups
+
+# 其他
+tmp
+*.tmp
