@@ -10,12 +10,18 @@ Das NocoBase Sicherungsmanager-Plugin bietet Funktionen für die vollständige S
 
 ## Datenbank-Client installieren
 
-Der Sicherungsmanager benötigt den Client für die entsprechende Datenbank. Bevor Sie ihn verwenden, laden Sie bitte den Client, der Ihrer Datenbankversion entspricht, von der offiziellen Website herunter:
+Die Sicherungsverwaltung benötigt den Datenbank-Client der primären Datenbank. Prüfen Sie vor der Verwendung, ob die aktuelle Laufzeitumgebung einen zur Datenbankversion passenden Client enthält.
+
+:::tip
+Wenn Sie NocoBase mit Docker installieren, verwenden Sie nach Möglichkeit das entsprechende `full`-Image, zum Beispiel `latest-full`, `beta-full` oder `alpha-full`. Diese Images enthalten gängige Datenbank-Clients, sodass normalerweise keine manuelle Installation erforderlich ist.
+:::
+
+Wenn in der aktuellen Umgebung kein passender Datenbank-Client vorhanden ist, laden Sie den Client passend zur Datenbankversion von der offiziellen Website herunter:
 
 - MySQL: https://dev.mysql.com/downloads/
 - PostgreSQL: https://www.postgresql.org/download/
 
-Für Docker-Versionen können Sie direkt im Verzeichnis `./storage/scripts` ein Skript erstellen:
+Wenn Sie ihn in einer Docker-Umgebung manuell installieren müssen, können Sie im Verzeichnis `./storage/scripts` ein Skript erstellen:
 
 ```bash
 mkdir ./storage/scripts
