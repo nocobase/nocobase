@@ -78,6 +78,52 @@ describe('TypedVariableInput - constant rendering', () => {
     expect(nullInput).toBeInTheDocument();
     expect(nullInput.getAttribute('readonly')).not.toBeNull();
   });
+
+  it('can default undefined to the first constant type when explicitly enabled', async () => {
+    const ctx = createContextWithEnv();
+    const handleChange = vi.fn();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={undefined}
+        types={['string', 'number']}
+        namespaces={['$env']}
+        nullable
+        defaultToFirstConstantTypeWhenUndefined
+        onChange={handleChange}
+      />,
+    );
+
+    expect(screen.queryByPlaceholderText('<Null>')).toBeNull();
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(handleChange).toHaveBeenCalledWith('');
+    });
+  });
+
+  it('highlights the defaulted first constant type when the switcher opens', async () => {
+    const ctx = createContextWithEnv();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={undefined}
+        types={['string', 'number']}
+        namespaces={['$env']}
+        nullable
+        defaultToFirstConstantTypeWhenUndefined
+        onChange={() => undefined}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'variable-switcher' }));
+
+    await waitFor(() => {
+      const constant = screen.getAllByText('Constant')[0];
+      const string = screen.getAllByText('String')[0];
+      expect(constant.closest('.ant-cascader-menu-item-active')).not.toBeNull();
+      expect(string.closest('.ant-cascader-menu-item-active')).not.toBeNull();
+    });
+  });
 });
 
 describe('TypedVariableInput - variable rendering', () => {
