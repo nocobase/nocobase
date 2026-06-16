@@ -429,20 +429,50 @@ function normalizeLinkageRulesValue(
     }
 
     const normalizedRule = _.cloneDeep(rule);
-    const domainPath = context.groupKey
-      ? `${context.domain}.${context.groupKey}.${path}[${index}].condition`
-      : `${context.domain}.${path}[${index}].condition`;
+    const conditionPath = getLinkageRuleDomainPath(context, path, index, 'condition');
     _.set(
       normalizedRule,
       'condition',
       normalizeFlowSurfaceCompatibleFilterGroupValue(
         _.get(normalizedRule, 'condition'),
-        `flowSurfaces updateSettings domain '${domainPath}' on '${context.use}' expects FilterGroup or backend query filter like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+        `flowSurfaces updateSettings domain '${conditionPath}' on '${context.use}' expects FilterGroup or backend query filter like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
         { strictDateValues: true },
       ),
     );
+    if (!_.has(normalizedRule, 'actions')) {
+      _.set(normalizedRule, 'actions', []);
+    } else if (!Array.isArray(_.get(normalizedRule, 'actions'))) {
+      throwBadRequest(
+        `flowSurfaces updateSettings domain '${getLinkageRuleDomainPath(context, path, index, 'actions')}' on '${
+          context.use
+        }' expects actions to be an array`,
+      );
+    }
+    if (!_.has(normalizedRule, 'key')) {
+      _.set(normalizedRule, 'key', `linkage-rule-${index + 1}`);
+    }
+    if (!_.has(normalizedRule, 'title')) {
+      _.set(normalizedRule, 'title', `Linkage rule ${index + 1}`);
+    }
+    if (!_.has(normalizedRule, 'enable')) {
+      const enabled = _.get(normalizedRule, 'enabled');
+      _.set(normalizedRule, 'enable', typeof enabled === 'boolean' ? enabled : true);
+    }
+    _.unset(normalizedRule, 'enabled');
     return normalizedRule;
   });
+}
+
+function getLinkageRuleDomainPath(
+  context: { domain: FlowSurfaceNodeDomain; groupKey?: string; use: string },
+  path: string,
+  index: number,
+  leaf: string,
+) {
+  const basePath = context.groupKey
+    ? `${context.domain}.${context.groupKey}.${path}[${index}]`
+    : `${context.domain}.${path}[${index}]`;
+  return `${basePath}.${leaf}`;
 }
 
 function isContractDefinedFlowGroup(groupContract: FlowSurfaceDomainGroupContract | undefined) {

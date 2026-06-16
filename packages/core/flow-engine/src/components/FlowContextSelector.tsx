@@ -92,6 +92,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   open,
   onlyLeafSelectable = false,
   ignoreFieldNames,
+  dropdownFooter,
   ...cascaderProps
 }) => {
   const { token } = theme.useToken();
@@ -360,12 +361,41 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     [cascaderOnDropdownVisibleChange, open],
   );
 
+  // Footer hint at the bottom of the dropdown. Defaults to the "double click to choose entire object" hint whenever
+  // non-leaf selection is allowed (double-clicking a non-leaf selects the whole object). Callers can override with
+  // their own node, or pass `null` to hide it.
+  const footerNode = useMemo(() => {
+    if (dropdownFooter !== undefined) {
+      return dropdownFooter;
+    }
+    if (onlyLeafSelectable) {
+      return null;
+    }
+    return (
+      <div
+        className={css`
+          padding: 6px 12px;
+          color: ${token.colorTextDescription};
+          border-top: 1px solid ${token.colorSplit};
+          font-size: ${token.fontSizeSM}px;
+        `}
+      >
+        {flowCtx.t('Double click to choose entire object')}
+      </div>
+    );
+  }, [dropdownFooter, onlyLeafSelectable, token, flowCtx]);
+
   const renderDropdown = useCallback(
     (menu: React.ReactElement) => {
       const cascaderMenuNode = cascaderDropdownRender ? cascaderDropdownRender(menu) : menu;
       const cascaderMenu = React.isValidElement(cascaderMenuNode) ? cascaderMenuNode : <>{cascaderMenuNode}</>;
       if (!isSearchEnabled || children === null) {
-        return cascaderMenu;
+        return (
+          <>
+            {cascaderMenu}
+            {footerNode}
+          </>
+        );
       }
 
       return (
@@ -381,10 +411,11 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
             />
           </div>
           {cascaderMenu}
+          {footerNode}
         </>
       );
     },
-    [cascaderDropdownRender, cascaderSearchInputClassName, children, flowCtx, isSearchEnabled, searchText],
+    [cascaderDropdownRender, cascaderSearchInputClassName, children, flowCtx, isSearchEnabled, searchText, footerNode],
   );
 
   const inlinePlaceholder =

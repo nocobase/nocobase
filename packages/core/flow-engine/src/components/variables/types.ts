@@ -22,6 +22,14 @@ export interface FlowContextSelectorProps
   open?: boolean;
   onlyLeafSelectable?: boolean;
   ignoreFieldNames?: string[];
+  /**
+   * Footer rendered at the bottom of the dropdown. Defaults to a muted
+   * "Double click to choose entire object" hint when non-leaf selection is
+   * allowed (`onlyLeafSelectable` is false) — since double-clicking a non-leaf
+   * node selects the whole object. Pass an explicit node to override, or `null`
+   * to hide it.
+   */
+  dropdownFooter?: React.ReactNode;
 }
 
 export interface ContextSelectorItem {

@@ -9,6 +9,7 @@
 
 import React, { type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import { DateFilterDynamicComponent } from '../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent';
+import { translateOptions } from './enumOptionsUtils';
 
 type OperatorMeta = {
   value?: string;
@@ -26,6 +27,7 @@ type OperatorComponentFieldModel = {
   props?: Record<string, unknown>;
   render?: () => ReactNode;
   __originalRender?: () => ReactNode;
+  translate?: (text: string) => string;
 };
 
 type OperatorComponentRenderOptions = {
@@ -93,6 +95,17 @@ export function restoreOperatorComponentRender(fieldModel?: unknown) {
   return true;
 }
 
+function translateComponentOptions(props: Record<string, unknown>, translate: ((text: string) => string) | undefined) {
+  if (!Array.isArray(props.options) || typeof translate !== 'function') {
+    return props;
+  }
+
+  return {
+    ...props,
+    options: translateOptions(props.options, translate),
+  };
+}
+
 export function applyOperatorComponentRender({
   app,
   fieldModel,
@@ -118,8 +131,9 @@ export function applyOperatorComponentRender({
   mutableFieldModel.render = () => {
     const fieldProps = mutableFieldModel.props || {};
     const fieldStyle = pickOperatorStyle(fieldProps.style);
-    const componentProps =
+    const mergedProps =
       propsPriority === 'operator' ? { ...fieldProps, ...operatorProps } : { ...operatorProps, ...fieldProps };
+    const componentProps = translateComponentOptions(mergedProps, mutableFieldModel.translate);
     const componentStyle =
       propsPriority === 'operator' ? { ...fieldStyle, ...operatorStyle } : { ...operatorStyle, ...fieldStyle };
     const mergedStyle = { ...(style || {}), ...componentStyle };

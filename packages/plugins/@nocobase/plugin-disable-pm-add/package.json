@@ -12,5 +12,13 @@
   "keywords": [
     "system"
   ],
+  "nocobase": {
+    "deprecated": true,
+    "internal": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
   "license": "Apache-2.0"
 }

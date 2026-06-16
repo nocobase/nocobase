@@ -296,7 +296,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     };
 
     if (packageName.startsWith('@nocobase/plugin-')) {
-      packageJson.homepage = `https://v2.docs.nocobase.com/${langMap[locale] || ''}plugins/${packageName}`;
+      packageJson.homepage = `https://docs.nocobase.com/${langMap[locale] || ''}plugins/${packageName}`;
     }
 
     const results = {

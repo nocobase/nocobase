@@ -37,6 +37,7 @@
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
     "@nocobase/database": "workspace:*",
     "@nocobase/evaluators": "workspace:*",
     "@nocobase/logger": "workspace:*",

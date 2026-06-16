@@ -27,6 +27,11 @@
         "type": "custom-link",
         "label": "Gestión de migraciones",
         "link": "/ops-management/migration-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tablas integradas de aplicaciones y plugins principales",
+        "link": "/ops-management/migration-manager/built-in-tables/"
       }
     ]
   }
