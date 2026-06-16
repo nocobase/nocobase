@@ -39,6 +39,7 @@ import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/p
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
 import { installNocoBaseSkills, isNpmRegistryUnavailable } from '../lib/skills-manager.js';
 import { omitKeys, pickKeys } from '../lib/object-utils.ts';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 import { printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
@@ -1327,6 +1328,7 @@ Prompt modes:
     await upsertEnv(
       envName,
       {
+        schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
         ...(source === 'docker'
           ? { kind: 'docker' }
           : source || appPath || appRootPath
