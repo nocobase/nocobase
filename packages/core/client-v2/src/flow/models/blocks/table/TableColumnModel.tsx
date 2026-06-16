@@ -36,6 +36,26 @@ import { getRowKey } from './utils';
 import { getSavedAssociationTitleField, getTableColumnSortField } from './sortUtils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 
+const dateLikeInterfaces = new Set(['date', 'datetime', 'datetimeNoTz', 'createdAt', 'updatedAt', 'unixTimestamp']);
+
+function getTitleFieldComponentProps(collectionField?: CollectionField) {
+  const props = collectionField?.getComponentProps?.() || {};
+  const isDateLike = dateLikeInterfaces.has(collectionField?.interface) || collectionField?.type === 'dateOnly';
+
+  if (!isDateLike) {
+    return props;
+  }
+
+  const dateFormat = props.dateFormat;
+  const timeFormat = props.timeFormat;
+  const showTime = props.dateOnly ? false : props.showTime;
+  return {
+    ...props,
+    showTime,
+    format: props.format || (showTime ? `${dateFormat} ${timeFormat}` : dateFormat),
+  };
+}
+
 export function FieldDeletePlaceholder(props: any) {
   const { t } = useTranslation();
   const model: any = useFlowModel();
@@ -357,7 +377,7 @@ TableColumnModel.registerFlow({
           collectionField.isAssociationField() && titleField
             ? {
                 ...collectionField.getComponentProps(),
-                ...collectionField.targetCollection?.getField?.(titleField)?.getComponentProps?.(),
+                ...getTitleFieldComponentProps(collectionField.targetCollection?.getField?.(titleField)),
               }
             : collectionField.getComponentProps();
         ctx.model.setProps('title', collectionField.title);
@@ -553,7 +573,7 @@ TableColumnModel.registerFlow({
         if (targetUse) {
           ctx.model.setStepParams('tableColumnSettings', 'model', { use: targetUse });
         }
-        ctx.model.setProps(targetCollectionField.getComponentProps());
+        ctx.model.setProps(getTitleFieldComponentProps(targetCollectionField));
       },
       defaultParams: (ctx: any) => {
         const titleField = ctx.model?.context?.collectionField?.targetCollectionTitleFieldName;
