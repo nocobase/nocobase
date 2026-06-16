@@ -102,6 +102,9 @@
   "Executed at": "Executed at",
   "Executed workflow cannot be modified. Could be copied to a new version to modify.": "Executed workflow cannot be modified. Could be copied to a new version to modify.",
   "Execution history": "Execution history",
+  "Version ID": "Version ID",
+  "Parent execution ID": "Parent execution ID",
+  "Triggered manually": "Triggered manually",
   "Timeout settings": "逾時設定",
   "0 means unlimited. If you set any other value and the execution is still not completed when the timeout is reached, the execution plan will be terminated and the remaining nodes will not be executed. Time spent in queue is not counted; timing starts only after it first enters a processor.": "0 表示不限制，設定其他任意值在到期仍未執行完成時，執行計畫將被終止，剩餘節點不再執行。處於佇列中的執行計畫不計時，僅在首次進入處理器後開始計時。",
   "Exit when query result is null": "Exit when query result is null",
@@ -266,5 +269,14 @@
   "Impacted dependent node variables": "引用目前節點變數的節點",
   "Keep variable references": "保留變數引用",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "已保留變數引用，請手動調整，否則工作流執行可能出錯。",
-  "Failed to update node variables": "更新節點變數失敗"
+  "Failed to update node variables": "更新節點變數失敗",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

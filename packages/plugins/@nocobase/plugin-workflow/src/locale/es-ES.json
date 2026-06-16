@@ -102,6 +102,9 @@
   "Executed at": "Ejecutado en",
   "Executed workflow cannot be modified. Could be copied to a new version to modify.": "Executed workflow cannot be modified. Could be copied to a new version to modify.",
   "Execution history": "Historial de ejecución",
+  "Version ID": "ID de versión",
+  "Parent execution ID": "ID de ejecución superior",
+  "Triggered manually": "Activado manualmente",
   "Timeout settings": "Configuración del tiempo de espera",
   "0 means unlimited. If you set any other value and the execution is still not completed when the timeout is reached, the execution plan will be terminated and the remaining nodes will not be executed. Time spent in queue is not counted; timing starts only after it first enters a processor.": "0 significa sin límite. Si establece cualquier otro valor y la ejecución aún no ha finalizado cuando se alcanza el tiempo límite, el plan de ejecución se terminará y los nodos restantes no se ejecutarán. El tiempo en cola no se contabiliza; el conteo comienza solo después de que entra por primera vez en un procesador.",
   "Exit when query result is null": "Exit when query result is null",
@@ -266,5 +269,14 @@
   "Impacted dependent node variables": "Nodos que referencian las variables del nodo actual",
   "Keep variable references": "Mantener referencias de variables",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "Mantener las referencias de variables requiere un ajuste manual; de lo contrario, el flujo de trabajo puede fallar.",
-  "Failed to update node variables": "No se pudieron actualizar las variables del nodo"
+  "Failed to update node variables": "No se pudieron actualizar las variables del nodo",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

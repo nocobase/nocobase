@@ -112,6 +112,9 @@
   "Executed workflow cannot be modified": "실행된 워크플로우는 수정할 수 없습니다.",
   "Executed workflow cannot be modified. Could be copied to a new version to modify.": "실행된 워크플로우는 수정할 수 없습니다. 새 버전으로 복사하여 수정할 수 있습니다.",
   "Execution history": "실행 기록",
+  "Version ID": "버전 ID",
+  "Parent execution ID": "상위 실행 ID",
+  "Triggered manually": "수동으로 트리거됨",
   "Timeout settings": "시간 제한 설정",
   "0 means unlimited. If you set any other value and the execution is still not completed when the timeout is reached, the execution plan will be terminated and the remaining nodes will not be executed. Time spent in queue is not counted; timing starts only after it first enters a processor.": "0은 제한 없음을 의미합니다. 다른 값을 설정한 경우 제한 시간에 도달했을 때 실행이 아직 완료되지 않았다면 실행 계획이 종료되고 나머지 노드는 더 이상 실행되지 않습니다. 대기열 시간은 계산되지 않으며, 처음으로 프로세서에 들어간 후부터 시간이 계산됩니다.",
   "Exit when query result is null": "쿼리 결과가 null이면 종료",
@@ -287,5 +290,14 @@
   "Impacted dependent node variables": "현재 노드 변수를 참조하는 노드",
   "Keep variable references": "변수 참조 유지",
   "Keeping variable references requires manual adjustment, otherwise workflow may fail.": "변수 참조를 유지하려면 수동으로 조정해야 하며, 그렇지 않으면 워크플로가 실패할 수 있습니다.",
-  "Failed to update node variables": "노드 변수 업데이트에 실패했습니다"
+  "Failed to update node variables": "노드 변수 업데이트에 실패했습니다",
+  "Unsupported node": "Unsupported node",
+  "This node type is not available in the new canvas yet.": "This node type is not available in the new canvas yet.",
+  "This node's configuration has not been migrated to the new canvas yet.": "This node's configuration has not been migrated to the new canvas yet.",
+  "Node title": "Node title",
+  "Failed to add node": "Failed to add node",
+  "Failed to delete node": "Failed to delete node",
+  "Failed to save node": "Failed to save node",
+  "Failed to run": "Failed to run",
+  "Copied node": "Copied node"
 }

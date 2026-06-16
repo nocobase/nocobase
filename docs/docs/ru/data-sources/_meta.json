@@ -68,7 +68,7 @@
         "type": "custom-link",
         "label": "Внешний NocoBase",
         "link": "/data-sources/data-source-external-nocobase/"
-      },      
+      },
       {
         "type": "custom-link",
         "label": "Источник данных KingbaseES",
