@@ -27,6 +27,7 @@ nb skills update [flags]
 ```bash
 nb skills update
 nb skills update --yes
+nb skills update --verbose
 nb skills update --json
 ```
 

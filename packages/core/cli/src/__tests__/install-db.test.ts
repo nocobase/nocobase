@@ -16,6 +16,7 @@ import Install from '../commands/install.js';
 import EnvAdd from '../commands/env/add.js';
 import { deleteCliConfigValue } from '../lib/cli-config.js';
 import { resolveCliHomeRoot, resolveEnvRelativePath } from '../lib/cli-home.js';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 
 const originalNbLocale = process.env.NB_LOCALE;
 const originalExtractClientAssets = process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
@@ -847,6 +848,7 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
   });
 
   expect(envConfig).toEqual({
+    schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
     kind: 'local',
     apiBaseUrl: 'http://127.0.0.1:13080/api',
     authType: 'token',

@@ -55,6 +55,11 @@
           },
           {
             "type": "custom-link",
+            "label": "地图",
+            "link": "/interface-builder/blocks/data-blocks/map"
+          },
+          {
+            "type": "custom-link",
             "label": "看板",
             "link": "/interface-builder/blocks/data-blocks/kanban"
           }

@@ -9,7 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import { confirm } from '../../lib/inquirer.ts';
-import { setVerboseMode, startTask, stopTask } from '../../lib/ui.js';
+import { setVerboseMode, startTask, stopTask, updateTask } from '../../lib/ui.js';
 import { updateNocoBaseSkills } from '../../lib/skills-manager.js';
 
 export default class SkillsUpdate extends Command {
@@ -20,6 +20,7 @@ export default class SkillsUpdate extends Command {
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
     '<%= config.bin %> <%= command.id %> --version 1.0.4',
+    '<%= config.bin %> <%= command.id %> --verbose',
     '<%= config.bin %> <%= command.id %> --json',
   ];
 
@@ -73,6 +74,7 @@ export default class SkillsUpdate extends Command {
     const result = await updateNocoBaseSkills({
       targetVersion: flags.version,
       verbose: flags.verbose,
+      onProgress: shouldShowLoading ? updateTask : undefined,
     }).finally(() => {
       if (shouldShowLoading) {
         stopTask();
