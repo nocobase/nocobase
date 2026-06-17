@@ -7,6 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import V2NotificationInstruction from '../client-v2/NotificationInstruction';
-
-export default class NotificationInstruction extends V2NotificationInstruction {}
+export { PluginWorkflowNotificationClientV2 } from './plugin';
+export { default } from './plugin';

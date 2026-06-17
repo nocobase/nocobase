@@ -16,6 +16,8 @@ export { Instruction } from './canvas/Instruction';
 export type { LoaderOf, NodeAvailableContext, TempAssociationSource } from './canvas/Instruction';
 export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';
 export type { WorkflowVariableInputProps } from './canvas/WorkflowVariableInput';
+export { WorkflowVariableTextArea } from './canvas/WorkflowVariableTextArea';
+export type { WorkflowVariableTextAreaProps } from './canvas/WorkflowVariableTextArea';
 export { useWorkflowVariableOptions } from './canvas/useWorkflowVariableOptions';
 export { Trigger } from './triggers';
 export type { LoaderOf as TriggerLoaderOf, TriggerTempAssociationSource } from './triggers';

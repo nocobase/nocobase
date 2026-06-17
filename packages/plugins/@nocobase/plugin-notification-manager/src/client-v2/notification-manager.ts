@@ -8,12 +8,18 @@
  */
 
 import { Registry } from '@nocobase/utils/client';
+import type { MetaTreeNode } from '@nocobase/flow-engine';
 import type { ComponentType } from 'react';
 
 export type LoaderOf<P = Record<string, never>> = () => Promise<{ default: ComponentType<P> }>;
 
-export type MessageConfigFormProps = { variableOptions?: any };
-export type ContentConfigFormProps = { variableOptions?: any };
+export type FormNamePrefix = Array<string | number>;
+export type MessageConfigFormProps = { variableOptions?: MetaTreeNode[]; namePrefix?: FormNamePrefix };
+export type ContentConfigFormProps = {
+  variableOptions?: MetaTreeNode[];
+  channelType?: string;
+  namePrefix?: FormNamePrefix;
+};
 
 export type RegisterChannelOptions = {
   title: string;
@@ -22,6 +28,9 @@ export type RegisterChannelOptions = {
     ChannelConfigFormLoader?: LoaderOf;
     MessageConfigFormLoader?: LoaderOf<MessageConfigFormProps>;
     ContentConfigFormLoader?: LoaderOf<ContentConfigFormProps>;
+    ChannelConfigForm?: ComponentType;
+    MessageConfigForm?: ComponentType<MessageConfigFormProps>;
+    ContentConfigForm?: ComponentType<ContentConfigFormProps>;
   };
   meta?: {
     creatable?: boolean;

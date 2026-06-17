@@ -7,6 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import V2NotificationInstruction from '../client-v2/NotificationInstruction';
+import { describe, expect, it } from 'vitest';
+import { WorkflowVariableTextArea } from '../../index';
 
-export default class NotificationInstruction extends V2NotificationInstruction {}
+describe('workflow client-v2 public exports', () => {
+  it('exports WorkflowVariableTextArea', () => {
+    expect(typeof WorkflowVariableTextArea).toBe('function');
+  });
+});
