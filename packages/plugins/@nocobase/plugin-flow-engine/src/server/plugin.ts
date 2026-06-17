@@ -78,7 +78,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
               template: JSONValue;
               contextParams?: Record<string, unknown>;
             }>;
-            const results = await resolveVariablesBatch(ctx as ResourcerContext, batchItems);
+            const results = await resolveVariablesBatch(ctx as unknown as ResourcerContext, batchItems);
             ctx.body = { results };
             await next();
             return;
@@ -93,7 +93,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           }
           const template = values.template as JSONValue;
           const contextParams = values?.contextParams || {};
-          ctx.body = await resolveVariablesTemplate(ctx as ResourcerContext, template, contextParams);
+          ctx.body = await resolveVariablesTemplate(ctx as unknown as ResourcerContext, template, contextParams);
           await next();
         },
       },
