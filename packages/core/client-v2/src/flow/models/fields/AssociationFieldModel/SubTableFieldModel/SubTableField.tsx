@@ -137,7 +137,7 @@ export function SubTableField(props) {
         return t('Total {{count}} items', { count: total });
       },
     } as any;
-  }, [currentPage, currentPageSize, currentValue.length]);
+  }, [currentPage, currentPageSize, currentValue.length, t]);
 
   // 新增一行
   const handleAdd = () => {

@@ -163,6 +163,7 @@ describe('SubTable field reset', () => {
     const onChange = vi.fn();
     const { blockModel, model, setFieldValue } = await createPopupSubTableFieldModel({
       onChange,
+      pageSize: 10,
       value: [{ id: 1 }],
     });
 
