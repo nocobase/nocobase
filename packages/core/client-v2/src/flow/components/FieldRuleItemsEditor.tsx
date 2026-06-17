@@ -94,7 +94,7 @@ function getCascaderPathLabel(options: FieldAssignCascaderOption[], segments: st
   for (const segment of segments) {
     const hit = currentOptions.find((option) => String(option.value) === segment);
     if (!hit) return undefined;
-    labels.push(String(option.label || segment));
+    labels.push(String(hit.label || segment));
     currentOptions = hit.children || [];
   }
 
@@ -558,7 +558,7 @@ export const FieldRuleItemsEditor = <T extends FieldRuleItemBase>(props: FieldRu
                 value={item.condition || { logic: '$and', items: [] }}
                 onChange={(condition) => patchItem(index, { condition } as Partial<T>)}
                 extraMetaTree={extraMetaTree}
-                maxAssociationFieldDepth={2}
+                maxAssociationFieldDepth={maxAssociationFieldDepth}
               />
             </div>
           ) : null}

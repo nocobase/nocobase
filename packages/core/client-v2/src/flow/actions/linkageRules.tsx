@@ -757,11 +757,37 @@ function findNearestFieldStateFormItemModelByTargetPath(ctx: FlowContext, target
   return null;
 }
 
+function getFieldStateRootCollection(ctx: FlowContext) {
+  return (ctx.model as any)?.context?.blockModel?.collection || getCollectionFromModel(ctx.model);
+}
+
+function isKnownInvalidFieldStateTargetPath(ctx: FlowContext, targetPath: string) {
+  const segments = splitTargetPath(targetPath);
+  if (!segments.length) return false;
+  if (segments[0]?.startsWith('__custom__:')) return false;
+
+  let collection = getFieldStateRootCollection(ctx) as any;
+  if (!collection?.getField) return false;
+
+  for (let index = 0; index < segments.length; index++) {
+    const field = collection?.getField?.(segments[index]) as any;
+    if (!field) return true;
+    if (index === segments.length - 1) return false;
+
+    const isAssociation = !!(field?.isAssociationField?.() || field?.target || field?.targetCollection);
+    if (!isAssociation) return true;
+    if (!field?.targetCollection?.getField) return false;
+    collection = field.targetCollection;
+  }
+
+  return false;
+}
+
 function findFieldStateFormItemModelByTargetPath(ctx: FlowContext, targetPath: string) {
-  return (
-    findExactFieldStateFormItemModelByTargetPath(ctx, targetPath) ||
-    findNearestFieldStateFormItemModelByTargetPath(ctx, targetPath)
-  );
+  const exact = findExactFieldStateFormItemModelByTargetPath(ctx, targetPath);
+  if (exact) return exact;
+  if (isKnownInvalidFieldStateTargetPath(ctx, targetPath)) return null;
+  return findNearestFieldStateFormItemModelByTargetPath(ctx, targetPath);
 }
 
 function resolveRowFormItemFork(ctx: FlowContext, formItemModel: FlowModel | null): FlowModel | null {
@@ -2824,9 +2850,14 @@ export const fieldLinkageRules = defineAction({
     }
 
     const rootLinkageScopeDepth = 0;
-    const defineSharedRuntimeMeta = (targetCtx: any) => {
+    const inputArgs = (ctx as any)?.inputArgs;
+    const sharedRuntimeMeta = {
+      inputArgs: inputArgs && typeof inputArgs === 'object' ? { ...inputArgs } : inputArgs,
+      linkageScopeDepth: rootLinkageScopeDepth,
+    };
+    const defineSharedRuntimeMeta = (targetCtx: any, runtimeMeta = sharedRuntimeMeta) => {
       if (!targetCtx || typeof targetCtx.defineProperty !== 'function') return;
-      const inputArgs = (ctx as any)?.inputArgs;
+      const inputArgs = runtimeMeta.inputArgs;
       if (inputArgs && typeof inputArgs === 'object') {
         targetCtx.defineProperty('inputArgs', {
           value: {
@@ -2835,7 +2866,7 @@ export const fieldLinkageRules = defineAction({
         });
       }
       targetCtx.defineProperty('linkageScopeDepth', {
-        value: rootLinkageScopeDepth,
+        value: runtimeMeta.linkageScopeDepth,
       });
     };
 
@@ -3077,7 +3108,44 @@ export const fieldLinkageRules = defineAction({
       return { blockParams, rowParamsByKey };
     };
 
+    const pickRowParamsByActionNames = (source: Map<string, any>, actionNames: Set<string>): Map<string, any> => {
+      const out = new Map<string, any>();
+      source.forEach((rowParams, rowScopeKey) => {
+        const rules = Array.isArray(rowParams?.value) ? rowParams.value : [];
+        const filteredRules = rules
+          .map((rule: any) => {
+            const actions = Array.isArray(rule?.actions)
+              ? rule.actions.filter((action: any) => actionNames.has(String(action?.name || '')))
+              : [];
+            return actions.length ? { ...rule, actions } : null;
+          })
+          .filter(Boolean);
+        if (filteredRules.length) {
+          out.set(rowScopeKey, { ...rowParams, value: filteredRules });
+        }
+      });
+      return out;
+    };
+
+    const refreshPendingRowScopedRetry = (targetRowParamsByKey: Map<string, any>, cleanupKey: string) => {
+      const model = ctx.model as any;
+      const cleanup = model?.[cleanupKey];
+      if (!targetRowParamsByKey.size) {
+        cleanup?.();
+        return;
+      }
+
+      if (cleanup) {
+        model[`${cleanupKey}Params`] = targetRowParamsByKey;
+        model[`${cleanupKey}RuntimeMeta`] = sharedRuntimeMeta;
+      }
+    };
+
     const { blockParams, rowParamsByKey } = splitParams();
+    const rowFieldStateParamsByKey = pickRowParamsByActionNames(rowParamsByKey, new Set(['linkageSetFieldState']));
+
+    refreshPendingRowScopedRetry(rowParamsByKey, '__pendingLinkageRowScopedRetryCleanup__');
+    refreshPendingRowScopedRetry(rowFieldStateParamsByKey, '__pendingLinkageRowScopedFieldStateRetryCleanup__');
 
     const resolvedBlock = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, blockParams);
     await commonLinkageRulesHandler(ctx, resolvedBlock);
@@ -3224,28 +3292,10 @@ export const fieldLinkageRules = defineAction({
       return out;
     };
 
-    const pickRowParamsByActionNames = (source: Map<string, any>, actionNames: Set<string>): Map<string, any> => {
-      const out = new Map<string, any>();
-      source.forEach((rowParams, rowScopeKey) => {
-        const rules = Array.isArray(rowParams?.value) ? rowParams.value : [];
-        const filteredRules = rules
-          .map((rule: any) => {
-            const actions = Array.isArray(rule?.actions)
-              ? rule.actions.filter((action: any) => actionNames.has(String(action?.name || '')))
-              : [];
-            return actions.length ? { ...rule, actions } : null;
-          })
-          .filter(Boolean);
-        if (filteredRules.length) {
-          out.set(rowScopeKey, { ...rowParams, value: filteredRules });
-        }
-      });
-      return out;
-    };
-
-    const rowFieldStateParamsByKey = pickRowParamsByActionNames(rowParamsByKey, new Set(['linkageSetFieldState']));
-
-    const runRowScoped = async (targetRowParamsByKey = rowParamsByKey): Promise<boolean> => {
+    const runRowScoped = async (
+      targetRowParamsByKey = rowParamsByKey,
+      runtimeMeta = sharedRuntimeMeta,
+    ): Promise<boolean> => {
       const forksByKey = collectRowScopedForksByKey();
       let hasAnyRowFork = false;
       for (const [rowScopeKey, rowParams] of targetRowParamsByKey.entries()) {
@@ -3254,7 +3304,7 @@ export const fieldLinkageRules = defineAction({
         if (!forks.length) continue;
         for (const forkModel of forks) {
           const rowCtx = new FlowRuntimeContext(forkModel, ctx.flowKey);
-          defineSharedRuntimeMeta(rowCtx as any);
+          defineSharedRuntimeMeta(rowCtx as any, runtimeMeta);
           try {
             const resolvedRow = await resolveLinkageRulesParamsPreservingRunJsScripts(rowCtx, rowParams);
             await commonLinkageRulesHandler(rowCtx, resolvedRow);
@@ -3281,9 +3331,17 @@ export const fieldLinkageRules = defineAction({
         warn?: boolean;
       },
     ) => {
-      if (!targetRowParamsByKey.size) return;
-      const anyModel = ctx.model as any;
-      if (!anyModel || anyModel[options.flagKey]) return;
+      const model = ctx.model as any;
+      const latestParamsKey = `${options.cleanupKey}Params`;
+      const latestMetaKey = `${options.cleanupKey}RuntimeMeta`;
+      if (!targetRowParamsByKey.size) {
+        model[options.cleanupKey]?.();
+        return;
+      }
+
+      model[latestParamsKey] = targetRowParamsByKey;
+      model[latestMetaKey] = sharedRuntimeMeta;
+      if (model[options.flagKey]) return;
 
       if (options.warn) {
         console.warn('[linkageRules] Row-scoped linkage assignment deferred (row forks not ready), will retry', {
@@ -3293,7 +3351,7 @@ export const fieldLinkageRules = defineAction({
         });
       }
 
-      anyModel[options.flagKey] = true;
+      model[options.flagKey] = true;
       let cleaned = false;
       let retrying = false;
       const timers: ReturnType<typeof setTimeout>[] = [];
@@ -3302,8 +3360,10 @@ export const fieldLinkageRules = defineAction({
       const cleanup = () => {
         if (cleaned) return;
         cleaned = true;
-        anyModel[options.flagKey] = false;
-        anyModel[options.cleanupKey] = undefined;
+        model[options.flagKey] = false;
+        model[options.cleanupKey] = undefined;
+        model[latestParamsKey] = undefined;
+        model[latestMetaKey] = undefined;
         if (emitter && typeof emitter.off === 'function') {
           emitter.off('model:mounted', retry);
         }
@@ -3320,7 +3380,9 @@ export const fieldLinkageRules = defineAction({
           return;
         }
         retrying = true;
-        return runRowScoped(targetRowParamsByKey)
+        const latestParams = model[latestParamsKey] || targetRowParamsByKey;
+        const latestRuntimeMeta = model[latestMetaKey] || sharedRuntimeMeta;
+        return runRowScoped(latestParams, latestRuntimeMeta)
           .then((found) => {
             if (found && options.cleanupOnFound) {
               cleanup();
@@ -3334,7 +3396,7 @@ export const fieldLinkageRules = defineAction({
           });
       };
 
-      anyModel[options.cleanupKey] = cleanup;
+      model[options.cleanupKey] = cleanup;
       if (emitter && typeof emitter.on === 'function') {
         emitter.on('model:mounted', retry);
       }
@@ -3362,6 +3424,8 @@ export const fieldLinkageRules = defineAction({
         cleanupOnFound: true,
         warn: true,
       });
+    } else {
+      (ctx.model as any).__pendingLinkageRowScopedRetryCleanup__?.();
     }
   },
 });

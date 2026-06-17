@@ -671,6 +671,283 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
     );
   });
 
+  it('keeps the latest row-scoped retry params while a retry is pending', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const linkageAssignHandler = vi.fn((actionCtx: any, { addFormValuePatch, value }: any) => {
+      const item = Array.isArray(value) ? value[0] : null;
+      addFormValuePatch({ path: 'users.name', value: item?.value });
+      expect(actionCtx.linkageScopeDepth).toBe(0);
+    });
+
+    const engine = new FlowEngine() as any;
+    const rowFork = new FlowModel({ uid: 'row-fork-latest-retry', flowEngine: engine }) as any;
+    rowFork.context.defineProperty('fieldIndex', {
+      value: ['users:0'],
+    });
+    rowFork.context.defineProperty('setFormValues', {
+      value: setFormValues,
+    });
+    rowFork.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+    });
+    rowFork.subModels = { items: [] };
+    rowFork.getAction = vi.fn((name: string) => {
+      if (name === 'linkageAssignField') {
+        return {
+          handler: linkageAssignHandler,
+        };
+      }
+    });
+
+    const masterModel: any = {
+      uid: 'master-grid-latest-retry',
+      forks: new Set([rowFork]),
+    };
+    let mounted = false;
+    engine.forEachModel = vi.fn((cb: (m: any) => void) => {
+      if (mounted) {
+        cb(masterModel);
+      }
+    });
+
+    const gridModel: any = {
+      uid: 'grid-model-latest-retry',
+      context: {
+        blockModel: {
+          collection: {
+            getField: (name: string) => (name === 'users' ? usersField : null),
+          },
+        },
+      },
+      getAction: vi.fn((name: string) => {
+        if (name === 'linkageAssignField') {
+          return {
+            handler: linkageAssignHandler,
+          };
+        }
+      }),
+      __allModels: [],
+    };
+
+    const makeCtx = (txId: string): any => ({
+      model: gridModel,
+      engine,
+      flowKey: 'eventSettings',
+      inputArgs: {
+        source: 'user',
+        txId,
+        changedPaths: [['users', 0, 'name']],
+      },
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      resolveJsonTemplate: async (v: any) => v,
+    });
+
+    const makeParams = (value: string) => ({
+      value: [
+        {
+          key: `rule-${value}`,
+          title: `rule-${value}`,
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageAssignField',
+              params: {
+                value: [
+                  {
+                    key: `r-${value}`,
+                    enable: true,
+                    targetPath: 'users.name',
+                    mode: 'assign',
+                    value,
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    await fieldLinkageRules.handler(makeCtx('tx-row-old'), makeParams('old-row-value'));
+    await fieldLinkageRules.handler(makeCtx('tx-row-new'), makeParams('new-row-value'));
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(linkageAssignHandler).toHaveBeenCalledTimes(0);
+
+    mounted = true;
+    engine.emitter.emit('model:mounted', { model: rowFork });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(linkageAssignHandler).toHaveBeenCalledTimes(1);
+    expect(setFormValues).toHaveBeenCalledTimes(1);
+    expect(setFormValues).toHaveBeenCalledWith(
+      [
+        {
+          path: ['users', 0, 'name'],
+          value: 'new-row-value',
+        },
+      ],
+      expect.objectContaining({
+        source: 'linkage',
+        linkageTxId: 'tx-row-new',
+        linkageScopeDepth: 0,
+      }),
+    );
+  });
+
+  it('cancels pending row-scoped retries before awaited block handling in the next run', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const linkageAssignHandler = vi.fn((actionCtx: any, { addFormValuePatch, value }: any) => {
+      const item = Array.isArray(value) ? value[0] : null;
+      addFormValuePatch({ path: 'users.name', value: item?.value });
+    });
+
+    const engine = new FlowEngine() as any;
+    const rowFork = new FlowModel({ uid: 'row-fork-cancel-retry-before-await', flowEngine: engine }) as any;
+    rowFork.context.defineProperty('fieldIndex', {
+      value: ['users:0'],
+    });
+    rowFork.context.defineProperty('setFormValues', {
+      value: setFormValues,
+    });
+    rowFork.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+    });
+    rowFork.subModels = { items: [] };
+    rowFork.getAction = vi.fn((name: string) => {
+      if (name === 'linkageAssignField') {
+        return {
+          handler: linkageAssignHandler,
+        };
+      }
+    });
+
+    const masterModel: any = {
+      uid: 'master-grid-cancel-retry-before-await',
+      forks: new Set([rowFork]),
+    };
+    let mounted = false;
+    engine.forEachModel = vi.fn((cb: (m: any) => void) => {
+      if (mounted) {
+        cb(masterModel);
+      }
+    });
+
+    let releaseSecondResolve!: () => void;
+    const releaseSecond = new Promise<void>((resolve) => {
+      releaseSecondResolve = resolve;
+    });
+    let markSecondStarted!: () => void;
+    const secondStarted = new Promise<void>((resolve) => {
+      markSecondStarted = resolve;
+    });
+    let resolveCount = 0;
+    const resolveJsonTemplate = vi.fn(async (value: any) => {
+      resolveCount += 1;
+      if (resolveCount === 2) {
+        markSecondStarted();
+        await releaseSecond;
+      }
+      return value;
+    });
+
+    const gridModel: any = {
+      uid: 'grid-model-cancel-retry-before-await',
+      context: {
+        blockModel: {
+          collection: {
+            getField: (name: string) => (name === 'users' ? usersField : null),
+          },
+        },
+      },
+      getAction: vi.fn((name: string) => {
+        if (name === 'linkageAssignField') {
+          return {
+            handler: linkageAssignHandler,
+          };
+        }
+      }),
+      __allModels: [],
+    };
+
+    const ctx: any = {
+      model: gridModel,
+      engine,
+      flowKey: 'eventSettings',
+      inputArgs: {
+        source: 'user',
+        txId: 'tx-row-cancel-retry-before-await',
+        changedPaths: [['users', 0, 'name']],
+      },
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      resolveJsonTemplate,
+    };
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      await fieldLinkageRules.handler(ctx, {
+        value: [
+          {
+            key: 'rule-cancel-retry-before-await',
+            title: 'rule-cancel-retry-before-await',
+            enable: true,
+            condition: { logic: '$and', items: [] },
+            actions: [
+              {
+                name: 'linkageAssignField',
+                params: {
+                  value: [
+                    {
+                      key: 'r-cancel-retry-before-await',
+                      enable: true,
+                      targetPath: 'users.name',
+                      mode: 'assign',
+                      value: 'stale-row-value',
+                      condition: { logic: '$and', items: [] },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      });
+
+      const secondRun = fieldLinkageRules.handler(ctx, { value: [] });
+      await secondStarted;
+
+      mounted = true;
+      engine.emitter.emit('model:mounted', { model: rowFork });
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      releaseSecondResolve();
+      await secondRun;
+    } finally {
+      warnSpy.mockRestore();
+    }
+
+    expect(linkageAssignHandler).not.toHaveBeenCalled();
+    expect(setFormValues).not.toHaveBeenCalled();
+  });
+
   it('runs row-scoped linkage rules for subtable row forks without subModels.items and deduplicates the same row', async () => {
     const setFormValues = vi.fn(async () => undefined);
     const linkageAssignHandler = vi.fn((actionCtx: any, { value, addFormValuePatch }: any) => {
@@ -1733,6 +2010,110 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
     });
 
     expect(rolesFieldModel.props.disabled).toBe(true);
+  });
+
+  it('skips invalid relation subfield state target instead of falling back to the parent association field', async () => {
+    const roleNameField: any = {
+      name: 'roleName',
+      isAssociationField: () => false,
+    };
+    const rolesField: any = {
+      type: 'belongsToMany',
+      interface: 'm2m',
+      isAssociationField: () => true,
+      targetCollection: {
+        getField: (name: string) => (name === 'roleName' ? roleNameField : null),
+      },
+    };
+    const rolesFieldModel: any = {
+      uid: 'roles-field-invalid-state',
+      hidden: false,
+      props: { label: 'Roles' },
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'roles' };
+        }
+      },
+      setProps(key: any, value?: any) {
+        if (typeof key === 'string') {
+          this.props[key] = value;
+        } else {
+          this.props = { ...this.props, ...key };
+        }
+      },
+    };
+    const blockModel: any = {
+      collection: {
+        getField: (name: string) => (name === 'roles' ? rolesField : null),
+      },
+    };
+    const gridModel: any = {
+      uid: 'grid-model-invalid-relation-field-state',
+      context: {
+        blockModel,
+      },
+      subModels: {
+        grid: {
+          subModels: {
+            items: [rolesFieldModel],
+          },
+        },
+      },
+      getAction: vi.fn((name: string) => {
+        if (name === 'linkageSetFieldState') {
+          return linkageSetFieldState;
+        }
+      }),
+      __allModels: [],
+    };
+    const ctx: any = {
+      model: gridModel,
+      engine: {
+        forEachModel: vi.fn(),
+      },
+      flowKey: 'eventSettings',
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      getAction: gridModel.getAction,
+      resolveJsonTemplate: async (value: any) => value,
+    };
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    try {
+      await fieldLinkageRules.handler(ctx, {
+        value: [
+          {
+            key: 'rule-invalid-relation-field-state',
+            title: 'rule-invalid-relation-field-state',
+            enable: true,
+            condition: { logic: '$and', items: [] },
+            actions: [
+              {
+                name: 'linkageSetFieldState',
+                params: {
+                  value: [
+                    {
+                      key: 'state-invalid-relation-field',
+                      enable: true,
+                      targetPath: 'roles.roleNameOld',
+                      state: 'disabled',
+                      condition: { logic: '$and', items: [] },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      });
+    } finally {
+      warnSpy.mockRestore();
+    }
+
+    expect(rolesFieldModel.props.disabled).toBeUndefined();
   });
 
   it('keeps row-scoped default patches following while current value is still the last default', async () => {
