@@ -970,7 +970,7 @@ export default class SourceDownload extends Command {
 
     const envName = flags['hook-env-name']?.trim() || '';
     const env = envName ? await getEnv(envName, { scope: resolveDefaultConfigScope() }) : undefined;
-    const appPath = flags['hook-app-path']?.trim() || path.dirname(projectRoot);
+    const appPath = flags['hook-app-path']?.trim() || projectRoot;
     const storagePath = flags['hook-storage-path']?.trim() || path.join(appPath, 'storage');
     const context = buildBeforeDependencyInstallHookContext({
       phase: flags['hook-phase'] ?? 'init',

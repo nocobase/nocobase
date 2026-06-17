@@ -15,6 +15,7 @@ import {
   ENV_HOOK_SCRIPT_CONFIG_PATH,
   persistHookScript,
   resolveHookScriptPath,
+  runBeforeDependencyInstallHook,
 } from '../lib/hook-script.js';
 
 const tempDirs: string[] = [];
@@ -48,4 +49,26 @@ test('persistHookScript copies hooks into the app metadata directory', async () 
       hookScript,
     }),
   ).toBe(path.join(appPath, '.nb', 'hooks.mjs'));
+});
+
+test('runBeforeDependencyInstallHook rejects array exports', async () => {
+  const dir = await useTempDir();
+  const hookPath = path.join(dir, 'hooks.mjs');
+  await fsp.writeFile(hookPath, 'export default [];');
+
+  await expect(
+    runBeforeDependencyInstallHook({
+      hookScriptPath: hookPath,
+      context: {
+        phase: 'init',
+        envName: '',
+        source: 'git',
+        appPath: path.join(dir, 'app'),
+        sourcePath: path.join(dir, 'repo'),
+        storagePath: path.join(dir, 'app', 'storage'),
+        hookScript: hookPath,
+        envConfig: {},
+      },
+    }),
+  ).rejects.toThrow(/Hook script must export an object/);
 });

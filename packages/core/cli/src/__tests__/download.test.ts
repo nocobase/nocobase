@@ -210,9 +210,7 @@ test('downloadFromGit maps alpha to develop and builds with --no-dts by default'
       },
     ],
   ]);
-  expect(runCommand.mock.calls).toEqual([
-    ['source:build', ['--cwd', path.join(cwd, 'repo'), '--no-dts']],
-  ]);
+  expect(runCommand.mock.calls).toEqual([['source:build', ['--cwd', path.join(cwd, 'repo'), '--no-dts']]]);
 });
 
 test('downloadFromGit runs hook before dependency install', async () => {
@@ -278,6 +276,57 @@ export default {
     appPath: path.join(cwd, 'local'),
     sourcePath: path.join(cwd, 'repo'),
     storagePath: path.join(cwd, 'local', 'storage'),
+  });
+});
+
+test('downloadFromGit defaults hook app path to project root', async () => {
+  const cwd = await useTempCwd();
+  const hookPath = path.join(cwd, 'hook.mjs');
+  const markerPath = path.join(cwd, 'hook-marker-defaults.json');
+  await fsp.writeFile(
+    hookPath,
+    `
+export default {
+  beforeDependencyInstall: async (context) => {
+    const fs = await import('node:fs/promises');
+    await fs.writeFile(${JSON.stringify(markerPath)}, JSON.stringify({
+      appPath: context.appPath,
+      sourcePath: context.sourcePath,
+      storagePath: context.storagePath
+    }));
+  }
+};
+`,
+  );
+  mocks.run.mockImplementation(async (name: string) => {
+    if (name === 'yarn') {
+      expect(await pathExists(markerPath)).toBe(true);
+    }
+  });
+  const { command } = createCommand();
+  const flags: DownloadResolvedFlags = {
+    source: 'git',
+    version: 'alpha',
+    replace: false,
+    build: false,
+    'build-dts': false,
+    'output-dir': './repo',
+    'git-url': 'https://github.com/nocobase/nocobase.git',
+    'hook-script': hookPath,
+  };
+
+  await command.downloadFromGit(flags);
+
+  const projectRoot = path.join(cwd, 'repo');
+  const marker = JSON.parse(await fsp.readFile(markerPath, 'utf8')) as {
+    appPath: string;
+    sourcePath: string;
+    storagePath: string;
+  };
+  expect(marker).toEqual({
+    appPath: projectRoot,
+    sourcePath: projectRoot,
+    storagePath: path.join(projectRoot, 'storage'),
   });
 });
 
@@ -352,9 +401,7 @@ test('download forwards raw command output only in verbose mode', async () => {
       },
     ],
   ]);
-  expect(runCommand.mock.calls).toEqual([
-    ['source:build', ['--cwd', path.join(cwd, 'repo'), '--no-dts', '--verbose']],
-  ]);
+  expect(runCommand.mock.calls).toEqual([['source:build', ['--cwd', path.join(cwd, 'repo'), '--no-dts', '--verbose']]]);
 });
 
 test('download shows a delayed loading indicator for long-running commands in non-verbose mode', async () => {
@@ -386,9 +433,7 @@ test('download shows a delayed loading indicator for long-running commands in no
   expect(mocks.startTask.mock.calls.length).toBe(0);
 
   await vi.advanceTimersByTimeAsync(1);
-  expect(mocks.startTask.mock.calls).toEqual([
-    ['Pulling the Docker image. Please wait...'],
-  ]);
+  expect(mocks.startTask.mock.calls).toEqual([['Pulling the Docker image. Please wait...']]);
 
   resolveRun?.();
   await promise;
@@ -416,14 +461,13 @@ test('download shows a preparation loading state before entering the source-spec
     'output-dir': './app',
   };
 
-  (command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }).resolveDownloadFlags =
-    vi.fn(async () => resolved) as never;
+  (
+    command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }
+  ).resolveDownloadFlags = vi.fn(async () => resolved) as never;
   (command as Download & { downloadFromNpm: (flags: DownloadResolvedFlags) => Promise<string> }).downloadFromNpm =
     vi.fn(async (flags: DownloadResolvedFlags) => {
       expect(flags).toEqual(resolved);
-      expect(mocks.startTask.mock.calls).toEqual([
-        ['Preparing download from npm package'],
-      ]);
+      expect(mocks.startTask.mock.calls).toEqual([['Preparing download from npm package']]);
       expect(mocks.stopTask.mock.calls.length).toBe(0);
       return path.join(process.cwd(), 'app');
     }) as never;
@@ -445,16 +489,17 @@ test('download formats dependency install failures in non-verbose mode', async (
     },
   })) as never;
 
-  (command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }).resolveDownloadFlags =
-    vi.fn(async () => ({
-      source: 'git',
-      version: 'alpha',
-      replace: false,
-      build: true,
-      'build-dts': false,
-      'output-dir': './repo',
-      'git-url': 'https://github.com/nocobase/nocobase.git',
-    })) as never;
+  (
+    command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }
+  ).resolveDownloadFlags = vi.fn(async () => ({
+    source: 'git',
+    version: 'alpha',
+    replace: false,
+    build: true,
+    'build-dts': false,
+    'output-dir': './repo',
+    'git-url': 'https://github.com/nocobase/nocobase.git',
+  })) as never;
   (command as Download & { downloadFromGit: (flags: DownloadResolvedFlags) => Promise<string> }).downloadFromGit =
     vi.fn(async () => {
       throw new Error('yarn install exited with code 1');
@@ -480,15 +525,16 @@ test('download formats build failures in non-verbose mode', async () => {
     },
   })) as never;
 
-  (command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }).resolveDownloadFlags =
-    vi.fn(async () => ({
-      source: 'npm',
-      version: 'alpha',
-      replace: false,
-      build: true,
-      'build-dts': false,
-      'output-dir': './app',
-    })) as never;
+  (
+    command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }
+  ).resolveDownloadFlags = vi.fn(async () => ({
+    source: 'npm',
+    version: 'alpha',
+    replace: false,
+    build: true,
+    'build-dts': false,
+    'output-dir': './app',
+  })) as never;
   (command as Download & { downloadFromNpm: (flags: DownloadResolvedFlags) => Promise<string> }).downloadFromNpm =
     vi.fn(async () => {
       throw new Error('nocobase command exited with code 1');
@@ -514,16 +560,17 @@ test('download formats unexpected subprocess failures in non-verbose mode', asyn
     },
   })) as never;
 
-  (command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }).resolveDownloadFlags =
-    vi.fn(async () => ({
-      source: 'docker',
-      version: 'alpha',
-      replace: false,
-      build: true,
-      'build-dts': false,
-      'docker-registry': 'nocobase/nocobase',
-      'docker-save': false,
-    })) as never;
+  (
+    command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }
+  ).resolveDownloadFlags = vi.fn(async () => ({
+    source: 'docker',
+    version: 'alpha',
+    replace: false,
+    build: true,
+    'build-dts': false,
+    'docker-registry': 'nocobase/nocobase',
+    'docker-save': false,
+  })) as never;
   (command as Download & { downloadFromDocker: (flags: DownloadResolvedFlags) => Promise<void> }).downloadFromDocker =
     vi.fn(async () => {
       throw new Error('some command exited with code 1');
@@ -549,16 +596,17 @@ test('download preserves raw failures in verbose mode', async () => {
     },
   })) as never;
 
-  (command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }).resolveDownloadFlags =
-    vi.fn(async () => ({
-      source: 'git',
-      version: 'alpha',
-      replace: false,
-      build: true,
-      'build-dts': false,
-      'output-dir': './repo',
-      'git-url': 'https://github.com/nocobase/nocobase.git',
-    })) as never;
+  (
+    command as Download & { resolveDownloadFlags: (flags: unknown) => Promise<DownloadResolvedFlags> }
+  ).resolveDownloadFlags = vi.fn(async () => ({
+    source: 'git',
+    version: 'alpha',
+    replace: false,
+    build: true,
+    'build-dts': false,
+    'output-dir': './repo',
+    'git-url': 'https://github.com/nocobase/nocobase.git',
+  })) as never;
   (command as Download & { downloadFromGit: (flags: DownloadResolvedFlags) => Promise<string> }).downloadFromGit =
     vi.fn(async () => {
       throw new Error('yarn install exited with code 1');
