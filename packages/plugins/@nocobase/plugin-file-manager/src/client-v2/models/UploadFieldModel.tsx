@@ -365,7 +365,7 @@ UploadFieldModel.registerFlow({
           // 上传前检查存储策略
           const { data: checkData } = await ctx.api.resource('storages').check({
             fileCollectionName: fileCollection,
-            uploadDataSourceKey: dataSourceKey,
+            ...(dataSourceKey && dataSourceKey !== 'main' ? { uploadDataSourceKey: dataSourceKey } : {}),
             storageName: collectionField.options.storage,
           });
 
