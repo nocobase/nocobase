@@ -9,9 +9,9 @@
     "nocobase-v1": "./bin/index.js"
   },
   "dependencies": {
-    "@nocobase/cli": "2.2.0-alpha.1",
+    "@nocobase/cli": "workspace:*",
     "@nocobase/license-kit": "^0.3.8",
-    "@nocobase/utils": "2.2.0-alpha.1",
+    "@nocobase/utils": "workspace:*",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
     "deepmerge": "^4.3.1",

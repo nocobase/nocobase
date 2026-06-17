@@ -8,8 +8,8 @@
   "dependencies": {
     "@formily/antd-v5": "1.x",
     "@formily/reactive": "2.x",
-    "@nocobase/sdk": "2.2.0-alpha.1",
-    "@nocobase/shared": "2.2.0-alpha.1",
+    "@nocobase/sdk": "workspace:*",
+    "@nocobase/shared": "workspace:*",
     "ahooks": "^3.7.2",
     "axios": "^1.7.0",
     "dayjs": "^1.11.9",

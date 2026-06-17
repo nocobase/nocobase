@@ -125,13 +125,13 @@ importers:
   packages/core/actions:
     dependencies:
       '@nocobase/cache':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../cache
       '@nocobase/database':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../database
       '@nocobase/resourcer':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../resourcer
 
   packages/core/ai:
@@ -170,16 +170,16 @@ importers:
         specifier: ^1.2.7
         version: 1.2.7(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.42.0(ws@8.18.0)(zod@4.3.6)))(ws@8.18.0)
       '@nocobase/data-source-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../data-source-manager
       '@nocobase/logger':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../logger
       '@nocobase/resourcer':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../resourcer
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       d3-dsv:
         specifier: '2'
@@ -215,38 +215,38 @@ importers:
   packages/core/app:
     dependencies:
       '@nocobase/cli-v1':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../cli-v1
       '@nocobase/database':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../database
       '@nocobase/preset-nocobase':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../presets/nocobase
       '@nocobase/server':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../server
     devDependencies:
       '@nocobase/client':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../client
 
   packages/core/auth:
     dependencies:
       '@nocobase/actions':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../actions
       '@nocobase/cache':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../cache
       '@nocobase/database':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../database
       '@nocobase/resourcer':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../resourcer
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       '@types/jsonwebtoken':
         specifier: ^9.0.9
@@ -375,7 +375,7 @@ importers:
   packages/core/cache:
     dependencies:
       '@nocobase/lock-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../lock-manager
       bloom-filters:
         specifier: ^3.0.1
@@ -452,13 +452,13 @@ importers:
   packages/core/cli-v1:
     dependencies:
       '@nocobase/cli':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../cli
       '@nocobase/license-kit':
         specifier: ^0.3.8
         version: 0.3.8
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       chalk:
         specifier: ^4.1.1
@@ -570,19 +570,19 @@ importers:
         specifier: ^2.2.27
         version: 2.3.7
       '@nocobase/client-v2':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../client-v2
       '@nocobase/evaluators':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../evaluators
       '@nocobase/flow-engine':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../flow-engine
       '@nocobase/sdk':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../sdk
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       '@tanstack/react-table':
         specifier: ^8.21.3
@@ -790,19 +790,19 @@ importers:
         specifier: ^2.2.27
         version: 2.3.7
       '@nocobase/evaluators':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../evaluators
       '@nocobase/flow-engine':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../flow-engine
       '@nocobase/sdk':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../sdk
       '@nocobase/shared':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../shared
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       ahooks:
         specifier: ^3.7.2
@@ -868,19 +868,19 @@ importers:
   packages/core/data-source-manager:
     dependencies:
       '@nocobase/actions':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../actions
       '@nocobase/cache':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../cache
       '@nocobase/database':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../database
       '@nocobase/resourcer':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../resourcer
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       '@types/jsonwebtoken':
         specifier: ^8.5.8
@@ -892,10 +892,10 @@ importers:
   packages/core/database:
     dependencies:
       '@nocobase/logger':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../logger
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       async-mutex:
         specifier: ^0.3.2
@@ -968,19 +968,19 @@ importers:
   packages/core/devtools:
     dependencies:
       '@nocobase/app':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../app
       '@nocobase/build':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../build
       '@nocobase/client':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../client
       '@nocobase/test':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../test
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       '@rsbuild/core':
         specifier: 1.7.3
@@ -1115,7 +1115,7 @@ importers:
         specifier: 4.4.9
         version: 4.4.9
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       mathjs:
         specifier: ^15.1.0
@@ -1133,10 +1133,10 @@ importers:
         specifier: 2.x
         version: 2.3.7
       '@nocobase/sdk':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../sdk
       '@nocobase/shared':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../shared
       ahooks:
         specifier: ^3.7.2
@@ -1185,7 +1185,7 @@ importers:
   packages/core/lock-manager:
     devDependencies:
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       async-mutex:
         specifier: ^0.5.0
@@ -1194,7 +1194,7 @@ importers:
   packages/core/logger:
     dependencies:
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       chalk:
         specifier: ^4
@@ -1218,7 +1218,7 @@ importers:
   packages/core/resourcer:
     dependencies:
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       deepmerge:
         specifier: ^4.2.2
@@ -1267,49 +1267,49 @@ importers:
         specifier: ^13.1.0
         version: 13.1.0
       '@nocobase/acl':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../acl
       '@nocobase/actions':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../actions
       '@nocobase/ai':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../ai
       '@nocobase/auth':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../auth
       '@nocobase/cache':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../cache
       '@nocobase/data-source-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../data-source-manager
       '@nocobase/database':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../database
       '@nocobase/evaluators':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../evaluators
       '@nocobase/lock-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../lock-manager
       '@nocobase/logger':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../logger
       '@nocobase/resourcer':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../resourcer
       '@nocobase/sdk':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../sdk
       '@nocobase/snowflake-id':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../snowflake-id
       '@nocobase/telemetry':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../telemetry
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       '@types/decompress':
         specifier: 4.2.7
@@ -1419,7 +1419,7 @@ importers:
   packages/core/telemetry:
     dependencies:
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       '@opentelemetry/api':
         specifier: ^1.9.0
@@ -1449,10 +1449,10 @@ importers:
         specifier: 8.1.0
         version: 8.1.0
       '@nocobase/server':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../server
       '@nocobase/utils':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../utils
       '@playwright/test':
         specifier: ^1.45.3
@@ -5773,301 +5773,301 @@ importers:
         specifier: 2.x
         version: 2.3.7(typescript@6.0.3)
       '@nocobase/plugin-acl':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-acl
       '@nocobase/plugin-action-bulk-edit':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-action-bulk-edit
       '@nocobase/plugin-action-bulk-update':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-action-bulk-update
       '@nocobase/plugin-action-custom-request':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-action-custom-request
       '@nocobase/plugin-action-duplicate':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-action-duplicate
       '@nocobase/plugin-action-export':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-action-export
       '@nocobase/plugin-action-import':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-action-import
       '@nocobase/plugin-action-print':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-action-print
       '@nocobase/plugin-ai':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-ai
       '@nocobase/plugin-ai-gigachat':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-ai-gigachat
       '@nocobase/plugin-api-doc':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-api-doc
       '@nocobase/plugin-api-keys':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-api-keys
       '@nocobase/plugin-async-task-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-async-task-manager
       '@nocobase/plugin-auth':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-auth
       '@nocobase/plugin-auth-sms':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-auth-sms
       '@nocobase/plugin-backup-restore':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-backup-restore
       '@nocobase/plugin-backups':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-backups
       '@nocobase/plugin-block-grid-card':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-block-grid-card
       '@nocobase/plugin-block-iframe':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-block-iframe
       '@nocobase/plugin-block-list':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-block-list
       '@nocobase/plugin-block-markdown':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-block-markdown
       '@nocobase/plugin-block-multi-step-form':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-block-multi-step-form
       '@nocobase/plugin-block-template':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-block-template
       '@nocobase/plugin-block-tree':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-block-tree
       '@nocobase/plugin-block-workbench':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-block-workbench
       '@nocobase/plugin-calendar':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-calendar
       '@nocobase/plugin-client':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-client
       '@nocobase/plugin-collection-fdw':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-collection-fdw
       '@nocobase/plugin-collection-sql':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-collection-sql
       '@nocobase/plugin-collection-tree':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-collection-tree
       '@nocobase/plugin-comments':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-comments
       '@nocobase/plugin-custom-variables':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-custom-variables
       '@nocobase/plugin-data-source-main':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-data-source-main
       '@nocobase/plugin-data-source-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-data-source-manager
       '@nocobase/plugin-data-visualization':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-data-visualization
       '@nocobase/plugin-data-visualization-echarts':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-data-visualization-echarts
       '@nocobase/plugin-departments':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-departments
       '@nocobase/plugin-embed':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-embed
       '@nocobase/plugin-environment-variables':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-environment-variables
       '@nocobase/plugin-error-handler':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-error-handler
       '@nocobase/plugin-field-attachment-url':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-field-attachment-url
       '@nocobase/plugin-field-china-region':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-field-china-region
       '@nocobase/plugin-field-code':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-field-code
       '@nocobase/plugin-field-formula':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-field-formula
       '@nocobase/plugin-field-m2m-array':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-field-m2m-array
       '@nocobase/plugin-field-markdown-vditor':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-field-markdown-vditor
       '@nocobase/plugin-field-sequence':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-field-sequence
       '@nocobase/plugin-field-sort':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-field-sort
       '@nocobase/plugin-file-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-file-manager
       '@nocobase/plugin-file-previewer-office':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-file-previewer-office
       '@nocobase/plugin-flow-engine':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-flow-engine
       '@nocobase/plugin-form-drafts':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-form-drafts
       '@nocobase/plugin-gantt':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-gantt
       '@nocobase/plugin-graph-collection-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-graph-collection-manager
       '@nocobase/plugin-idp-oauth':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-idp-oauth
       '@nocobase/plugin-kanban':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-kanban
       '@nocobase/plugin-license':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-license
       '@nocobase/plugin-locale-tester':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-locale-tester
       '@nocobase/plugin-localization':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-localization
       '@nocobase/plugin-logger':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-logger
       '@nocobase/plugin-map':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-map
       '@nocobase/plugin-mcp-server':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-mcp-server
       '@nocobase/plugin-mobile':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-mobile
       '@nocobase/plugin-multi-app-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-multi-app-manager
       '@nocobase/plugin-multi-keyword-filter':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-multi-keyword-filter
       '@nocobase/plugin-notification-email':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-notification-email
       '@nocobase/plugin-notification-in-app-message':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-notification-in-app-message
       '@nocobase/plugin-notification-manager':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-notification-manager
       '@nocobase/plugin-public-forms':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-public-forms
       '@nocobase/plugin-system-settings':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-system-settings
       '@nocobase/plugin-text-copy':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-text-copy
       '@nocobase/plugin-theme-editor':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-theme-editor
       '@nocobase/plugin-ui-schema-storage':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-ui-schema-storage
       '@nocobase/plugin-ui-templates':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-ui-templates
       '@nocobase/plugin-user-data-sync':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-user-data-sync
       '@nocobase/plugin-users':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-users
       '@nocobase/plugin-verification':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-verification
       '@nocobase/plugin-workflow':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow
       '@nocobase/plugin-workflow-action-trigger':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-action-trigger
       '@nocobase/plugin-workflow-aggregate':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-aggregate
       '@nocobase/plugin-workflow-cc':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-cc
       '@nocobase/plugin-workflow-custom-action-trigger':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-custom-action-trigger
       '@nocobase/plugin-workflow-date-calculation':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-date-calculation
       '@nocobase/plugin-workflow-delay':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-delay
       '@nocobase/plugin-workflow-dynamic-calculation':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-dynamic-calculation
       '@nocobase/plugin-workflow-javascript':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-javascript
       '@nocobase/plugin-workflow-json-query':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-json-query
       '@nocobase/plugin-workflow-json-variable-mapping':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-json-variable-mapping
       '@nocobase/plugin-workflow-loop':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-loop
       '@nocobase/plugin-workflow-mailer':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-mailer
       '@nocobase/plugin-workflow-manual':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-manual
       '@nocobase/plugin-workflow-notification':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-notification
       '@nocobase/plugin-workflow-parallel':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-parallel
       '@nocobase/plugin-workflow-request':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-request
       '@nocobase/plugin-workflow-request-interceptor':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-request-interceptor
       '@nocobase/plugin-workflow-response-message':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-response-message
       '@nocobase/plugin-workflow-sql':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-sql
       '@nocobase/plugin-workflow-variable':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-workflow-variable
       '@nocobase/server':
-        specifier: 2.2.0-alpha.1
+        specifier: workspace:*
         version: link:../../core/server
       cronstrue:
         specifier: ^2.11.0

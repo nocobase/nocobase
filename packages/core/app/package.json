@@ -6,13 +6,13 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/cli-v1": "2.2.0-alpha.1",
-    "@nocobase/database": "2.2.0-alpha.1",
-    "@nocobase/preset-nocobase": "2.2.0-alpha.1",
-    "@nocobase/server": "2.2.0-alpha.1"
+    "@nocobase/cli-v1": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/preset-nocobase": "workspace:*",
+    "@nocobase/server": "workspace:*"
   },
   "devDependencies": {
-    "@nocobase/client": "2.2.0-alpha.1"
+    "@nocobase/client": "workspace:*"
   },
   "repository": {
     "type": "git",
