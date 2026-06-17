@@ -313,7 +313,7 @@
 
 #### B2. 迁移 chatbox stores 完整状态
 
-- 状态：未开始
+- 状态：V2 代码验收通过
 - 依赖：B1
 - 范围：
   - `chat-box`
@@ -332,6 +332,19 @@
   - 不单独需要。
 - V1 替换门禁：
   - 暂不替换 v1，先完成 B3-B5。
+- 验收记录：
+  - 已在 `src/client-v2/ai-employees/chatbox/stores/` 新增 `chat-tool-call.ts`、`chat-tools.ts`、`workflow-tasks.ts`，补齐 B2 范围内完整 ChatBox store surface。
+  - 三个新增 store 均使用 B1 `createObservableStore` facade 和 `getOrCreateGlobalStore` singleton，不引入 zustand、Formily runtime、v1 client 或 v1 相对路径。
+  - `workflow-tasks.ts` 在 v2 内定义 `WorkflowTask` / `WorkflowTaskDetail` 类型，避免从 v1 `conversations/common` 反向导入；索引签名使用 `unknown`。
+  - 新增 `src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts` 覆盖 tool-call session 隔离与迁移、chat-tools 索引版本、workflow task direct/functional setter。
+  - `rg -n "zustand|@formily/reactive" packages/plugins/@nocobase/plugin-ai/src/client-v2` 无命中。
+  - `rg -n "\bany\b|zustand|@formily/reactive|@nocobase/client|@nocobase/plugin-.*/client|src/client" packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/chat-tool-call.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/chat-tools.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/workflow-tasks.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts` 无命中。
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/chat-tool-call.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/chat-tools.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/workflow-tasks.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts --run --reporter=verbose` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/observable-store.test.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/chatbox-stores.test.ts --run --reporter=verbose` 中 `observable-store.test.tsx` 通过；`chatbox-stores.test.ts` 已单独通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/state-regression.test.ts --run --reporter=verbose` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/hooks-contract.test.ts --run --reporter=verbose` 通过。
+  - 按本小块门禁暂不替换 v1，继续 B3-B5。
 
 #### B3. 迁移 chatbox hooks 完整契约
 
