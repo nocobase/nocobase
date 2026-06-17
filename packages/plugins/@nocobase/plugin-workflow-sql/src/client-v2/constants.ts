@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import SQLInstruction from '../client-v2/SQLInstruction';
+export const NAMESPACE = '@nocobase/plugin-workflow-sql';
 
-export default class SQLInstructionCompat extends SQLInstruction {}
+export const SQL_INSTRUCTION_TYPE = 'sql';
