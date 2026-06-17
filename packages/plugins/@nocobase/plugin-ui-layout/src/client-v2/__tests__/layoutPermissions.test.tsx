@@ -79,6 +79,7 @@ describe('plugin-ui-layout route permissions', () => {
   it('should create an AdminLayout route permission filter with explicit layout ownership', () => {
     expect(createDesktopRouteLayoutPermissionFilter(DEFAULT_ADMIN_UI_LAYOUT.uid)).toEqual({
       hidden: { $ne: true },
+      type: { $ne: 'page' },
       'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid,
     });
   });
@@ -86,6 +87,7 @@ describe('plugin-ui-layout route permissions', () => {
   it('should create a layout-scoped route permission filter for non-admin layouts', () => {
     expect(createDesktopRouteLayoutPermissionFilter(MOBILE_LAYOUT_UID)).toEqual({
       hidden: { $ne: true },
+      type: { $ne: 'page' },
       'uiLayouts.uid': MOBILE_LAYOUT_UID,
     });
   });
@@ -191,7 +193,7 @@ describe('plugin-ui-layout route permissions', () => {
 
   it('should render desktop route permissions without layout access controls', async () => {
     const resource = createRoutePermissionResources({
-      selectedRouteIds: [1],
+      selectedRouteIds: [1, 9],
     });
     const user = userEvent.setup();
     flowMocks.context = resource.context;
@@ -208,6 +210,10 @@ describe('plugin-ui-layout route permissions', () => {
     expect(await screen.findByText('Desktop routes')).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Allow access to Admin route' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Allow access to Reports' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Allow access to Route group' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Allow access to Docs link' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Allow access to Page tabs' })).not.toBeChecked();
+    expect(screen.queryByText('Legacy page')).not.toBeInTheDocument();
     expect(screen.queryByText('Layout access')).not.toBeInTheDocument();
     expect(screen.queryByText('New layouts are allowed to be accessed by default')).not.toBeInTheDocument();
     expect(screen.queryByText('Allow access to this layout')).not.toBeInTheDocument();
@@ -227,6 +233,7 @@ describe('plugin-ui-layout route permissions', () => {
     expect(resource.request).not.toHaveBeenCalled();
     expect(resource.resource).not.toHaveBeenCalledWith('rolesUiLayouts');
     expect(resource.resource).not.toHaveBeenCalledWith('rolesUiLayoutDesktopRoutes');
+    expect(screen.getByRole('checkbox', { name: 'Allow access to Admin route' })).toBeChecked();
 
     await act(async () => {
       await user.click(screen.getByRole('checkbox', { name: 'Allow access to Reports' }));
@@ -368,20 +375,61 @@ function createRoutePermissionResources(options: RoutePermissionResourceOptions)
     {
       id: 1,
       title: 'Admin route',
+      type: 'flowPage',
     },
     {
       id: 2,
       title: 'Reports',
+      type: 'flowPage',
+    },
+    {
+      id: 4,
+      title: 'Route group',
+      type: 'group',
+    },
+    {
+      id: 5,
+      title: 'Docs link',
+      type: 'link',
+    },
+    {
+      id: 6,
+      title: 'Page tabs',
+      type: 'tabs',
+    },
+    {
+      id: 9,
+      title: 'Legacy page',
+      type: 'page',
     },
   ];
   const mobileRoutes = [
     {
       id: 3,
       title: 'Mobile route',
+      type: 'flowPage',
+    },
+    {
+      id: 10,
+      title: 'Legacy mobile page',
+      type: 'page',
     },
   ];
-  const getRouteRecords = (filter?: Record<string, unknown>) =>
-    filter?.['uiLayouts.uid'] === MOBILE_LAYOUT_UID ? mobileRoutes : desktopRoutes;
+  const getRouteRecords = (filter?: Record<string, unknown>) => {
+    const records = filter?.['uiLayouts.uid'] === MOBILE_LAYOUT_UID ? mobileRoutes : desktopRoutes;
+    const typeFilter = filter?.type;
+
+    if (
+      typeFilter &&
+      typeof typeFilter === 'object' &&
+      '$ne' in typeFilter &&
+      (typeFilter as { $ne?: unknown }).$ne === 'page'
+    ) {
+      return records.filter((route) => route.type !== 'page');
+    }
+
+    return records;
+  };
   const desktopRoutesList = vi.fn(async (params?: Record<string, unknown>) => ({
     data: {
       data: getRouteRecords(params?.filter as Record<string, unknown> | undefined),
