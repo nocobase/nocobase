@@ -1,0 +1,265 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import { ContextItem, SkillSettings, TaskMessage, Message } from '../types';
+
+dayjs.extend(duration);
+
+type VariableParser = {
+  parseVariable?: (template: string, localVariables?: Record<string, unknown>) => Promise<{ value?: unknown }>;
+};
+
+async function replaceVariables(
+  template: string,
+  variables?: VariableParser,
+  localVariables: Record<string, unknown> = {},
+) {
+  const regex = /\{\{\s*(.*?)\s*\}\}/g;
+  let result = template;
+
+  const matches = [...template.matchAll(regex)];
+
+  if (matches.length === 0) {
+    return template;
+  }
+
+  for (const match of matches) {
+    const fullMatch = match[0];
+
+    if (fullMatch.includes('$UISchema')) {
+      continue;
+    }
+
+    try {
+      let value = await variables?.parseVariable?.(fullMatch, localVariables).then(({ value }) => value);
+
+      if (typeof value !== 'string') {
+        try {
+          value = JSON.stringify(value);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      if (value) {
+        if (value === 'null' || value === 'undefined') {
+          value = '';
+        }
+        result = result.replace(fullMatch, String(value));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  return result;
+}
+
+export const parseTask = async (task: {
+  message?: TaskMessage;
+  webSearch?: boolean;
+  model?: { llmService: string; model: string } | null;
+  skillSettings?: SkillSettings;
+}) => {
+  let userMessage: { type: 'text'; content: string } | undefined;
+  const { message } = task;
+  if (message?.user) {
+    userMessage = {
+      type: 'text',
+      content: message.user,
+    };
+  }
+  let systemMessage: string;
+  if (message?.system) {
+    systemMessage = message.system;
+  }
+  const attachments = [];
+  if (message?.attachments?.length) {
+    for (const attachment of message.attachments) {
+      const obj = attachment;
+      if (!obj) {
+        continue;
+      }
+      if (Array.isArray(obj)) {
+        for (const item of obj) {
+          if (item.filename) {
+            attachments.push(item);
+          }
+        }
+      } else {
+        if (obj.filename) {
+          attachments.push(obj);
+        }
+      }
+    }
+  }
+  return {
+    userMessage,
+    systemMessage,
+    attachments,
+    workContext: message.workContext,
+    skillSettings: task.skillSettings,
+    webSearch: task.webSearch,
+    model: task.model,
+  };
+};
+
+type WorkContextApplication = {
+  pm: {
+    get: (name: string) => unknown;
+  };
+};
+
+export const parseWorkContext = async (app: WorkContextApplication, workContext: ContextItem[]) => {
+  const parsed: ContextItem[] = [];
+  const plugin = app.pm.get('ai') as {
+    aiManager?: {
+      getWorkContext?: (type: string) => {
+        getContent?: (app: WorkContextApplication, item: ContextItem) => Promise<unknown>;
+      };
+    };
+  };
+  for (const context of workContext) {
+    if (context.content) {
+      parsed.push(context);
+      continue;
+    }
+    const contextOptions = plugin.aiManager?.getWorkContext?.(context.type);
+    if (!(contextOptions && contextOptions.getContent)) {
+      parsed.push(context);
+      continue;
+    }
+    const content = await contextOptions.getContent(app, context);
+    parsed.push({
+      ...context,
+      content,
+    });
+  }
+  return parsed;
+};
+
+const publicPath =
+  (window as unknown as { __nocobase_dev_public_path__?: string }).__nocobase_dev_public_path__ ||
+  (window as unknown as { __nocobase_public_path__?: string }).__nocobase_public_path__ ||
+  '/';
+const PLACEHOLDER_MAP = [
+  { ext: /\.docx?$/i, icon: 'docx-200-200.png' },
+  { ext: /\.pptx?$/i, icon: 'pptx-200-200.png' },
+  { ext: /\.jpe?g$/i, icon: 'jpeg-200-200.png' },
+  { ext: /\.pdf$/i, icon: 'pdf-200-200.png' },
+  { ext: /\.png$/i, icon: 'png-200-200.png' },
+  { ext: /\.eps$/i, icon: 'eps-200-200.png' },
+  { ext: /\.ai$/i, icon: 'ai-200-200.png' },
+  { ext: /\.gif$/i, icon: 'gif-200-200.png' },
+  { ext: /\.svg$/i, icon: 'svg-200-200.png' },
+  { ext: /\.xlsx?$/i, icon: 'xlsx-200-200.png' },
+  { ext: /\.psd?$/i, icon: 'psd-200-200.png' },
+  { ext: /\.(wav|aif|aiff|au|mp1|mp2|mp3|ra|rm|ram|mid|rmi)$/i, icon: 'audio-200-200.png' },
+  { ext: /\.(avi|wmv|mpg|mpeg|vob|dat|3gp|mp4|mkv|rm|rmvb|mov|flv)$/i, icon: 'video-200-200.png' },
+  { ext: /\.(zip|rar|arj|z|gz|iso|jar|ace|tar|uue|dmg|pkg|lzh|cab)$/i, icon: 'zip-200-200.png' },
+];
+export const UNKNOWN_FILE_ICON = publicPath + 'file-placeholder/unknown-200-200.png';
+
+export function getFileIconByExt(fileName: string): string {
+  for (const item of PLACEHOLDER_MAP) {
+    if (item.ext.test(fileName)) {
+      return publicPath + 'file-placeholder/' + item.icon;
+    }
+  }
+  return UNKNOWN_FILE_ICON;
+}
+
+export const formatConversationDuration = (durationMs?: number) => {
+  if (durationMs === undefined) {
+    return '--';
+  }
+
+  const value = dayjs.duration(Math.max(0, durationMs));
+
+  if (value.asDays() >= 1) {
+    return `${Math.floor(value.asDays())}d`;
+  }
+  if (value.asHours() >= 1) {
+    return `${Math.floor(value.asHours())}h`;
+  }
+  if (value.asMinutes() >= 1) {
+    return `${Math.floor(value.asMinutes())}min`;
+  }
+  return `${Math.round(value.asSeconds())}s`;
+};
+
+export type RenderedItem =
+  | {
+      type: 'message';
+      message: Message;
+      isRoot: boolean;
+    }
+  | {
+      type: 'conversation-group';
+      key: string;
+      roleName?: string;
+      status?: 'pending' | 'completed';
+      durationMs?: number;
+      items: RenderedItem[];
+    };
+
+const toTimestamp = (value?: string | Date) => {
+  if (!value) {
+    return null;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const getConversationDurationMs = (messages: Message[] = []) => {
+  const firstTimestamp = toTimestamp(messages[0]?.createdAt);
+  const lastTimestamp = toTimestamp(messages[messages.length - 1]?.createdAt);
+
+  if (firstTimestamp === null || lastTimestamp === null) {
+    return undefined;
+  }
+
+  return Math.max(0, lastTimestamp - firstTimestamp);
+};
+
+export const flattenMessages = (messages: Message[] = [], isRoot = true): RenderedItem[] => {
+  return messages.flatMap((msg) => {
+    const subAgentItems =
+      msg.content?.subAgentConversations?.flatMap((conversation) => {
+        const [first, ...rest] = conversation.messages;
+        const conversationMessages = flattenMessages(first?.role === 'user' ? rest : conversation.messages, false);
+
+        if (!conversationMessages.length) {
+          return [];
+        }
+
+        return [
+          {
+            type: 'conversation-group' as const,
+            key: conversation.sessionId,
+            roleName: conversation.messages.find((subMessage) => subMessage.role !== 'user')?.role,
+            status: conversation.status,
+            durationMs: getConversationDurationMs(conversation.messages),
+            items: conversationMessages,
+          },
+        ];
+      }) ?? [];
+
+    return [
+      {
+        type: 'message' as const,
+        message: msg,
+        isRoot,
+      },
+      ...subAgentItems,
+    ];
+  });
+};

@@ -43,6 +43,12 @@ type WithSelectors<S> = S extends { getState: () => infer T extends object }
   ? S & { use: { [K in keyof T]: () => T[K] } }
   : never;
 
+type SelectableStore<TState extends object> = {
+  <TSelected>(selector: (state: TState) => TSelected): TSelected;
+  getState: () => TState;
+  use?: Record<string, () => unknown>;
+};
+
 export const createObservableStore = <TState extends object>(
   initializer: ObservableStoreInitializer<TState>,
 ): ObservableStore<TState> => {
@@ -139,11 +145,9 @@ export const createObservableStore = <TState extends object>(
   return createSelectors(store);
 };
 
-export const createSelectors = <S extends { getState: () => object; use?: Record<string, () => unknown> }>(
-  _store: S,
-) => {
+export const createSelectors = <TState extends object, S extends SelectableStore<TState>>(_store: S) => {
   const store = _store as WithSelectors<typeof _store>;
-  store.use = {};
+  store.use = {} as WithSelectors<typeof _store>['use'];
   for (const k of Object.keys(store.getState())) {
     (store.use as Record<string, () => unknown>)[k] = () => store((s) => s[k as keyof typeof s]);
   }

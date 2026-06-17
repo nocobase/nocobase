@@ -63,7 +63,7 @@ export type Conversation = {
       llmService?: string;
       model?: string;
     };
-    [key: string]: any;
+    [key: string]: unknown;
   };
 };
 
@@ -82,10 +82,22 @@ export type ToolCall<T = unknown> = {
   invokeStatus: 'init' | 'interrupted' | 'waiting' | 'pending' | 'done' | 'confirmed';
   auto: boolean;
   args: T;
-  [key: string]: any;
+  willInterrupt?: boolean;
+  messageId?: string;
+  content?: unknown;
+  invokeStartTime?: unknown;
+  invokeEndTime?: unknown;
+  [key: string]: unknown;
 };
 
-export type Attachment = any;
+export type Attachment = {
+  filename?: string;
+  status?: string;
+  response?: {
+    data?: Attachment;
+  };
+  [key: string]: unknown;
+};
 
 export type MessageType = 'text' | 'greeting';
 
@@ -94,8 +106,8 @@ export type Message = Omit<BubbleProps, 'content'> & {
   role?: string;
   createdAt?: string | Date;
   content: {
-    content: any;
-    ref?: React.MutableRefObject<any>;
+    content: unknown;
+    ref?: React.MutableRefObject<unknown>;
     type?: MessageType;
     messageId?: string;
     attachments?: Attachment[];
@@ -130,7 +142,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
 export type TaskMessage = {
   user?: string;
   system?: string;
-  attachments?: Attachment[];
+  attachments?: (Attachment | Attachment[])[];
   workContext?: ContextItem[];
 };
 
@@ -152,6 +164,32 @@ export type TriggerTaskOptions = {
   auto?: boolean;
 };
 
+export type SendOptions = {
+  sessionId?: string;
+  aiEmployee?: AIEmployee;
+  systemMessage?: string;
+  messages: {
+    type: MessageType;
+    content: string;
+  }[];
+  attachments?: Attachment[];
+  workContext: ContextItem[];
+  editingMessageId?: string;
+  skillSettings?: SkillSettings;
+  webSearch?: boolean;
+  model?: {
+    llmService: string;
+    model: string;
+  } | null;
+};
+
+export type ResendOptions = {
+  sessionId: string;
+  messageId?: string;
+  aiEmployee: AIEmployee;
+  important?: string;
+};
+
 export type ClearOptions = {
   sender?: boolean;
   systemMessage?: boolean;
@@ -167,6 +205,15 @@ export type ClearOptions = {
 export type WebSearching = {
   type: string;
   query: string;
+};
+
+export type UserDecision = {
+  type: 'approve' | 'edit' | 'reject';
+  message?: string;
+  editedAction?: {
+    name: string;
+    args: unknown;
+  };
 };
 
 export interface ChatEditorRef {

@@ -348,7 +348,7 @@
 
 #### B3. 迁移 chatbox hooks 完整契约
 
-- 状态：未开始
+- 状态：待确认 V1 替换
 - 依赖：B2
 - 范围：
   - `useChat`
@@ -374,6 +374,18 @@
   - 仅当 hooks 影响已可打开的 v2 ChatBox 时执行。
 - V1 替换门禁：
   - 两份测试通过后，更新状态为“待确认 V1 替换”。
+- 验收记录：
+  - 已在 `src/client-v2/ai-employees/chatbox/hooks/` 补齐 `useChat`、`useChatConversationActions`、`useChatMessageActions`、`useToolCallActions`、`useWorkflowTasks`、`useUploadFiles`、`useLoadMoreObserver`，并将 `useChatBoxActions` 从精简版替换为完整契约版本。
+  - 已新增 v2 辅助文件 `chatbox/model.ts`、`chatbox/utils.ts`、`chatbox/roles.ts`、`ai-employees/flow/index.ts`、`debug-logger.ts`，避免 v2 反向引用 v1 实现。
+  - `uid()` 已替换为 `randomId()`；`useAPIClient` / v1 `useApp` 已改为 `@nocobase/client-v2` `useApp()` + `app.apiClient`。
+  - `UploadFieldModel` 已改用 `@nocobase/plugin-file-manager/client-v2`；workflow `JOB_STATUS` 已在本插件 hook 内定义必要映射，不再从 `@nocobase/plugin-workflow/client` 引入。
+  - `src/client-v2/ai-employees/chatbox`、`src/client-v2/debug-logger.ts`、`src/client-v2/ai-employees/types.ts` 定向 grep 无 `zustand`、`@formily`、v1 client、workflow v1 client、file-manager v1 client、`uid()`、`any` / `as any` 命中。
+  - `yarn eslint --fix` 覆盖 B3 触达的 v2 hook、types、utils、debug、flow、selector 文件，通过且无 warnings。
+  - 使用临时 tsconfig 继承仓库 `tsconfig.json`，include B3 触达的 `src/client-v2/ai-employees/chatbox/**/*`、`types.ts`、`debug-logger.ts`、`flow/index.ts`，`tsc --noEmit` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/state-regression.test.ts --run --reporter=verbose` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/hooks-contract.test.ts --run --reporter=verbose` 通过。
+  - 按门禁等待用户确认后，才能执行 B5 v1 chatbox stores/hooks 替换。
 
 #### B4. v2 ChatBox hook 对外兼容验收
 
