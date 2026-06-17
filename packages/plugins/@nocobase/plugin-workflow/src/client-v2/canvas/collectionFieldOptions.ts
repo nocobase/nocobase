@@ -36,6 +36,7 @@ import type React from 'react';
 // importing the concrete `CollectionManager` from `@nocobase/client` (iron rule).
 export type FieldTreeCollectionManager = {
   getCollectionAllFields(collection: string): any[];
+  getCollection?(collection: string): { template?: string } | undefined;
 };
 
 export type VariableOption = {
