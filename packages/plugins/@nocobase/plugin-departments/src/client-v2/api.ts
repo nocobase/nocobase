@@ -16,9 +16,13 @@ export interface DepartmentFormValues {
   ownerIds?: DepartmentPrimaryKey[];
 }
 
+interface DepartmentParentValue {
+  id: DepartmentPrimaryKey;
+}
+
 export interface DepartmentPayload {
   title: string;
-  parentId: DepartmentPrimaryKey | null;
+  parent: DepartmentParentValue | null;
   roles?: Array<{ name: string }>;
   owners?: Array<{ id: DepartmentPrimaryKey }>;
 }
@@ -30,9 +34,11 @@ export interface DepartmentResource {
 }
 
 export function buildDepartmentPayload(values: DepartmentFormValues, includeOwners = false): DepartmentPayload {
+  const parentId = values.parentId ?? null;
+
   return {
     title: values.title,
-    parentId: values.parentId ?? null,
+    parent: parentId != null ? { id: parentId } : null,
     roles: (values.roleNames || []).map((name) => ({ name })),
     ...(includeOwners ? { owners: (values.ownerIds || []).map((id) => ({ id })) } : {}),
   };

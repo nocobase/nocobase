@@ -19,8 +19,9 @@ vi.mock('../../../locale', () => ({
   useT: () => (key: string) => key,
 }));
 
-vi.mock('../CollectionCascader', () => ({
+vi.mock('../../../components/collection', () => ({
   CollectionCascader: () => <div data-testid="collection-cascader" />,
+  AppendsSelect: () => <div data-testid="appends-select" />,
 }));
 
 vi.mock('../OnField', () => ({
@@ -33,10 +34,6 @@ vi.mock('../RepeatField', () => ({
 
 vi.mock('../EndsByField', () => ({
   EndsByField: () => <div data-testid="ends-by-field" />,
-}));
-
-vi.mock('../AppendsSelect', () => ({
-  AppendsSelect: () => <div data-testid="appends-select" />,
 }));
 
 describe('ScheduleConfig', () => {

@@ -14,3 +14,4 @@ export * from './AppendsSelect';
 export * from './SortFieldsInput';
 export * from './PaginationFields';
 export * from './TriggerCollectionRecordSelect';
+export * from './AssignedFieldsEditor';

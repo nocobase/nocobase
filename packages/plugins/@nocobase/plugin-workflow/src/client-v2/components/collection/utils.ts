@@ -113,6 +113,10 @@ export function isAssociationField(field: CollectionTriggerField) {
   return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type || '');
 }
 
+export function isDateField(field: CollectionTriggerField) {
+  return !field.hidden && Boolean(field.uiSchema) && ['date', 'datetimeTz', 'datetimeNoTz'].includes(field.type);
+}
+
 export function hasFieldName(field: CollectionTriggerField): field is CollectionTriggerField & { name: string } {
   return typeof field.name === 'string' && field.name.length > 0;
 }

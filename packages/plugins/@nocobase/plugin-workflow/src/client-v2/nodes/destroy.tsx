@@ -18,5 +18,15 @@ export default class extends Instruction {
   type = 'destroy';
   title = t('Delete record');
   group = 'collection';
+  description = t(
+    'Delete records of a collection. Could use variables in workflow context as filter. All records match the filter will be deleted.',
+  );
   icon = (<DeleteOutlined />);
+
+  FieldsetLoader = () => import('./components/destroy').then((m) => ({ default: m.DestroyFieldset }));
+  PresetFieldsetLoader = () => import('./components/destroy').then((m) => ({ default: m.DestroyPresetFieldset }));
+
+  useTempAssociationSource() {
+    return null;
+  }
 }
