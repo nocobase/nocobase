@@ -10,7 +10,7 @@
 import { useChat } from '../hooks/useChat';
 import { useCallback } from 'react';
 import { useAPIClient, useApp } from '@nocobase/client';
-import { AIEmployee, Message, ResendOptions, SendOptions } from '../../types';
+import { AIEmployee, Attachment, ContextItem, Message, ResendOptions, SendOptions } from '../../types';
 import { uid } from '@formily/shared';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useT } from '../../../locale';
@@ -21,7 +21,6 @@ import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 import { useChatToolCallStore } from '../stores/chat-tool-call';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { ensureModel, getAllModels, isSameModel, isValidModel } from '../model';
-import { ContextItem } from '../../types';
 import { FlowUtils } from '../../flow';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 
@@ -105,9 +104,9 @@ export const useChatMessageActions = () => {
     [api, aiConfigRepository, setModel],
   );
 
-  const syncContextAttachments = useCallback(
-    (items: ContextItem | ContextItem[]) => {
-      const sessionChat = getSessionChat(useChatConversationsStore.getState().currentConversation);
+  const extractContextAttachments = useCallback(
+    (items: ContextItem | ContextItem[]): Attachment[] => {
+      const attachments: Attachment[] = [];
       const contextItems = Array.isArray(items) ? items : [items];
       for (const item of contextItems.filter((it) => it.type?.startsWith('flow-model'))) {
         const model = app.flowEngine.getModel(item.uid, true);
@@ -120,12 +119,25 @@ export const useChatMessageActions = () => {
             subModel.props?.value?.length &&
             typeof subModel.props.value !== 'string'
           ) {
-            sessionChat.addAttachments(subModel.props.value.map((it) => ({ ...it, status: 'done' })));
+            attachments.push(...subModel.props.value.map((it) => ({ ...it, status: 'done' })));
           }
         });
       }
+      return attachments;
     },
-    [app, getSessionChat],
+    [app],
+  );
+
+  const syncContextAttachments = useCallback(
+    (items: ContextItem | ContextItem[]) => {
+      const attachments = extractContextAttachments(items);
+      if (attachments.length) {
+        const sessionChat = getSessionChat(useChatConversationsStore.getState().currentConversation);
+        sessionChat.addAttachments(attachments);
+      }
+      return attachments;
+    },
+    [extractContextAttachments, getSessionChat],
   );
 
   const loadMessages = useCallback(
