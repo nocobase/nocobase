@@ -7,29 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client-v2';
-import { AIConfigRepository } from './repositories/AIConfigRepository';
-import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
-
-type AIFlowContext = {
-  aiConfigRepository?: AIConfigRepository;
-  defineProperty: (name: string, descriptor: { value: unknown }) => void;
-};
-
-export class PluginAIClientV2 extends Plugin {
-  features = new AIPluginFeatureManagerImpl();
-
-  async load() {
-    const context = this.app.flowEngine.context as AIFlowContext;
-    if (!context.aiConfigRepository) {
-      context.defineProperty('aiConfigRepository', {
-        value: new AIConfigRepository(this.app.apiClient),
-      });
-    }
-  }
-}
-
-export default PluginAIClientV2;
+export { default, PluginAIClientV2 } from './plugin';
 
 export { AIEmployeeProfileCard } from './ai-employees/ProfileCard';
 export { AIEmployeeShortcut } from './ai-employees/AIEmployeeShortcut';
