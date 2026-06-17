@@ -372,7 +372,14 @@ export default {
       const pm = ctx.app.pm as PluginManager;
       // ctx.body = await pm.list({ locale, isPreset: false });
       const plugin = pm.get('nocobase') as any;
-      ctx.body = await plugin.getAllPlugins(locale);
+      const plugins = await plugin.getAllPlugins(locale);
+      ctx.body = plugins.filter((item: any) => {
+        if (process.env.NOCOBASE_SHOW_DEPRECATED_PLUGINS === 'true') {
+          return true;
+        }
+        const nocobaseConfig = item?.packageJson?.nocobase || {};
+        return nocobaseConfig.internal !== true && nocobaseConfig.deprecated !== true;
+      });
       await next();
     },
     async listEnabled(ctx, next) {
