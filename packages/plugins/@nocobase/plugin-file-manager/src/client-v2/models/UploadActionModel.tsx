@@ -20,12 +20,17 @@ import { useTranslation } from 'react-i18next';
 
 const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
 
-function getDataSourceHeaders(dataSourceKey?: string) {
-  return dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {};
-}
-
 function getModelDataSourceKey(model) {
   return model.context.collection?.dataSourceKey || model.context.blockModel.collection?.dataSourceKey;
+}
+
+function appendUploadDataSourceKey(url: string, dataSourceKey?: string) {
+  if (!dataSourceKey || dataSourceKey === 'main') {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}uploadDataSourceKey=${encodeURIComponent(dataSourceKey)}`;
 }
 
 function useSizeHint(size: number) {
@@ -130,13 +135,12 @@ const useUploadFiles = (model) => {
 
 export function useStorage(storage, dataSourceKey?: string) {
   const name = storage ?? '';
-  const url = `storages:getBasicInfo/${name}`;
+  const url = appendUploadDataSourceKey(`storages:getBasicInfo/${name}`, dataSourceKey);
   const ctx = useFlowContext();
   const { loading, data, run } = useRequest(
     async () => {
       const response = await ctx.api.request({
         url,
-        headers: getDataSourceHeaders(dataSourceKey),
         skipNotify: true,
       });
       return response?.data;
@@ -174,11 +178,11 @@ export function useStorageUploadProps(props, model) {
   const useStorageTypeUploadProps = storageType?.useUploadProps;
   const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
   const headers = {
-    ...getDataSourceHeaders(dataSourceKey),
     ...storageTypeUploadProps.headers,
   };
 
   return {
+    action: appendUploadDataSourceKey(props.action, dataSourceKey),
     rules: storage?.rules,
     ...storageTypeUploadProps,
     headers,
