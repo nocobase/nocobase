@@ -102,6 +102,15 @@ const mockRuntime = vi.hoisted(() => {
     uid: {
       value: 0,
     },
+    UploadFieldModel: class UploadFieldModel {
+      props: { value?: unknown };
+      subModels: Record<string, unknown>;
+
+      constructor(props: { value?: unknown }) {
+        this.props = props;
+        this.subModels = {};
+      }
+    },
   };
 });
 
@@ -151,6 +160,38 @@ vi.mock('@nocobase/client', async () => {
   };
 });
 
+vi.mock('@nocobase/client-v2', () => ({
+  DecisionActions: {},
+  ToolCall: {},
+  useApp: () => ({
+    ...mockRuntime.app,
+    apiClient: {
+      storage: mockRuntime.storage,
+      request: mockRuntime.request,
+      resource: (name: keyof typeof mockRuntime.resources) => mockRuntime.resources[name],
+    },
+  }),
+}));
+
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+  return {
+    ...actual,
+    randomId: () => {
+      mockRuntime.uid.value += 1;
+      return `uid-${mockRuntime.uid.value}`;
+    },
+    useFlowEngine: () => ({
+      context: {
+        t: mockRuntime.app.i18n.t,
+        aiConfigRepository: {
+          getLLMServices: vi.fn(() => Promise.resolve(mockRuntime.services)),
+        },
+      },
+    }),
+  };
+});
+
 vi.mock('@nocobase/plugin-workflow/client', () => ({
   JOB_STATUS: {
     PENDING: 0,
@@ -161,15 +202,11 @@ vi.mock('@nocobase/plugin-workflow/client', () => ({
 }));
 
 vi.mock('@nocobase/plugin-file-manager/client', () => ({
-  UploadFieldModel: class UploadFieldModel {
-    props: { value?: unknown };
-    subModels: Record<string, unknown>;
+  UploadFieldModel: mockRuntime.UploadFieldModel,
+}));
 
-    constructor(props: { value?: unknown }) {
-      this.props = props;
-      this.subModels = {};
-    }
-  },
+vi.mock('@nocobase/plugin-file-manager/client-v2', () => ({
+  UploadFieldModel: mockRuntime.UploadFieldModel,
 }));
 
 vi.mock('@formily/shared', async (importOriginal) => {
@@ -262,6 +299,8 @@ const workflowTaskDetail = (sessionId: string, readonly = false): WorkflowTaskDe
     },
   },
 });
+
+type UploadFieldModelConstructor = new (props: { value?: unknown }) => UploadFieldModel;
 
 const resetStores = () => {
   useChatBoxStore.setState({
@@ -528,7 +567,7 @@ describe('useChatBoxActions contract', () => {
     useChatBoxStore.setState({
       currentEmployee: atlas,
       model: { llmService: 'openai', model: 'gpt-4o' },
-      senderRef: { current: { focus: vi.fn() } },
+      senderRef: { current: { focus: vi.fn(), blur: vi.fn(), nativeElement: document.createElement('div') } },
     });
     useChatConversationsStore.getState().setCurrentConversation('session-a');
     useWorkflowTasksStore.getState().setCurrentWorkflowTask(workflowTaskDetail('session-a'));
@@ -561,7 +600,7 @@ describe('useChatBoxActions contract', () => {
     useChatBoxStore.setState({
       currentEmployee: atlas,
       model: { llmService: 'openai', model: 'gpt-4o' },
-      senderRef: { current: { focus: vi.fn() } },
+      senderRef: { current: { focus: vi.fn(), blur: vi.fn(), nativeElement: document.createElement('div') } },
     });
     useChatConversationsStore.getState().setCurrentConversation('session-a');
     useWorkflowTasksStore.getState().setCurrentWorkflowTask(workflowTaskDetail('session-a'));
@@ -705,7 +744,7 @@ describe('useChatMessageActions contract', () => {
 
   it('syncs upload field values from flow-model context into done attachments', () => {
     useChatConversationsStore.getState().setCurrentConversation('session-a');
-    const uploadField = new UploadFieldModel({
+    const uploadField = new (UploadFieldModel as unknown as UploadFieldModelConstructor)({
       value: [
         {
           filename: 'from-context.txt',

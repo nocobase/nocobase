@@ -276,7 +276,7 @@
 
 ### B. ChatBox 状态与 hooks v2 迁移
 
-状态：进行中
+状态：完成
 
 目标：先在 v2 中实现完整 ChatBox 状态和 hooks 契约，替换当前 v2 下的 zustand 精简实现，并通过两份指定测试。
 
@@ -348,7 +348,7 @@
 
 #### B3. 迁移 chatbox hooks 完整契约
 
-- 状态：待确认 V1 替换
+- 状态：完成
 - 依赖：B2
 - 范围：
   - `useChat`
@@ -385,11 +385,11 @@
   - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
   - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/state-regression.test.ts --run --reporter=verbose` 通过。
   - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/hooks-contract.test.ts --run --reporter=verbose` 通过。
-  - 按门禁等待用户确认后，才能执行 B5 v1 chatbox stores/hooks 替换。
+  - B5 已完成 v1 chatbox stores/hooks 替换并通过验收，本小块完成。
 
 #### B4. v2 ChatBox hook 对外兼容验收
 
-- 状态：待确认 V1 替换
+- 状态：完成
 - 依赖：B3
 - 范围：
   - `src/client-v2/index.tsx` exports
@@ -410,11 +410,11 @@
   - `plugin-localization` 当前消费 `AIEmployeeShortcut`、`formatModelLabel`、`AIEmployee`、`Task`，均可从 `client-v2` 解析。
   - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
   - 使用最小临时 tsconfig 继承 `tsconfig.paths.json`，并定向 include `src/client-v2/index.tsx`、公开契约测试、`plugin-localization` 消费文件、`plugin-data-visualization` 两个消费文件，`tsc --noEmit` 通过。
-  - 本小块不涉及浏览器验收；按门禁等待用户确认后，才能执行 B5 v1 chatbox stores/hooks 替换。
+  - 本小块不涉及浏览器验收；B5 已完成 v1 chatbox stores/hooks 替换并通过验收，本小块完成。
 
 #### B5. v1 chatbox 替换
 
-- 状态：未开始
+- 状态：V1 替换验收通过
 - 依赖：B4 且用户确认
 - 范围：
   - `src/client/ai-employees/chatbox/stores/*`
@@ -426,6 +426,15 @@
   - 两份 chatbox 测试继续通过。
   - `src/client/ai-employees/chatbox/stores` 不再有 zustand 实现。
   - 无重复 store 逻辑。
+- V1 替换验收记录：
+  - `src/client/ai-employees/chatbox/stores/chat-tool-call.ts`、`chat-tools.ts`、`create-selectors.ts`、`workflow-tasks.ts` 已改为从 `src/client-v2/ai-employees/chatbox/stores/*` re-export。
+  - `src/client/ai-employees/chatbox/hooks/useChat.ts`、`useChatBoxActions.ts`、`useChatConversationActions.ts`、`useChatMessageActions.ts`、`useLoadMoreObserver.ts`、`useToolCallActions.ts`、`useUploadFiles.ts`、`useWorkflowTasks.ts` 已改为从 `src/client-v2/ai-employees/chatbox/hooks/*` re-export。
+  - `useChatBoxEffect.tsx` 没有对应 v2 hook，保留 v1-only effect；其依赖的 stores 已切到 v2 singleton。
+  - `src/client/ai-employees/chatbox/stores` 定向 grep 无 `zustand`、`@formily/shared`、v1 client、workflow v1 client、file-manager v1 client、`any` / `as any` 命中。
+  - `yarn eslint --fix` 覆盖 B5 触达的 v1 shim 文件和两份 chatbox 测试，通过且无 warnings。
+  - 使用最小临时 tsconfig 继承 `tsconfig.paths.json`，include B5 v1 shim 文件和两份 chatbox 测试，`tsc --noEmit` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/state-regression.test.ts --run --reporter=verbose` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/hooks-contract.test.ts --run --reporter=verbose` 通过。
 
 ### C. ChatBox UI 与 AI 员工入口
 

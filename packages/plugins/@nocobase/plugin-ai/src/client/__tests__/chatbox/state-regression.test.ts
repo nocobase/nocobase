@@ -119,6 +119,7 @@ type FixtureSnapshot = {
 
 type Fixture = {
   caseId: string;
+  sourceKind?: string;
   snapshots: FixtureSnapshot[];
 };
 
@@ -787,7 +788,7 @@ describe('AI employee chatbox P1/P2 state regression', () => {
     const webSearchMessages = getMessages(c16 as Fixture, 'web-search-poll-2').map(toMessage);
     const webSearchSessionId = getSnapshot(c16 as Fixture, 'web-search-poll-2').messages?.currentSessionId as string;
     messages.setSessionMessages(webSearchSessionId, webSearchMessages);
-    messages.setSessionWebSearching(webSearchSessionId, { query: 'latest NocoBase release' });
+    messages.setSessionWebSearching(webSearchSessionId, { type: 'search', query: 'latest NocoBase release' });
     tools.updateTools(webSearchMessages);
     expect(useChatToolsStore.getState().toolsByName.subAgentWebSearch).toHaveLength(1);
     messages.setSessionWebSearching(webSearchSessionId, null);
