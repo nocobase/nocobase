@@ -50,6 +50,7 @@ import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import { buildInitAppEnvVarsFromConfig } from '../lib/managed-init-env.js';
+import { persistHookScript, resolveHookScriptPath } from '../lib/hook-script.js';
 import {
   areConfiguredPathsEquivalent,
   deriveConfiguredSourcePath,
@@ -432,6 +433,7 @@ type InstallParsedFlags = {
   'db-table-prefix'?: string;
   'db-underscored'?: boolean;
   'no-intro'?: boolean;
+  'hook-script'?: string;
 };
 
 /** Flags from `nb install` that influence `nocobase-v1 install` argv (subset for typing). */
@@ -680,7 +682,10 @@ export default class Install extends Command {
       description: 'Skip the download step and reuse an existing local app directory or Docker image',
       default: false,
     }),
-    ...omitKeys(Download.flags, ['yes']),
+    'hook-script': Flags.string({
+      description: 'Hook module copied to <appPath>/.nb/hooks.mjs and run before npm/git dependency installation.',
+    }),
+    ...omitKeys(Download.flags, ['yes', 'hook-script']),
   };
 
   /** Environment name only: run before {@link Install.prompts} (see `run`). */
@@ -1415,6 +1420,7 @@ export default class Install extends Command {
     const appPort = Install.toOptionalPromptString(config.appPort);
     const storagePath = Install.toOptionalPromptString(config.storagePath);
     const appPublicPath = Install.toOptionalPromptString(config.appPublicPath);
+    const hookScript = Install.toOptionalPromptString(config.hookScript);
     const apiBaseUrl = Install.toOptionalPromptString(config.apiBaseUrl);
     const downloadVersion = Install.toOptionalPromptString(config.downloadVersion);
     const dockerRegistry = Install.toOptionalPromptString(config.dockerRegistry);
@@ -1446,6 +1452,7 @@ export default class Install extends Command {
       ...(appPort ? { appPort } : {}),
       ...(storagePath ? { storagePath } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
+      ...(hookScript ? { hookScript } : {}),
     };
 
     const downloadPreset: PromptInitialValues = {
@@ -2507,6 +2514,11 @@ export default class Install extends Command {
     if (results.buildDts) {
       argv.push('--build-dts');
     }
+    Install.pushDownloadArgIfValue(argv, '--hook-script', results.hookScript);
+    Install.pushDownloadArgIfValue(argv, '--hook-phase', results.hookPhase);
+    Install.pushDownloadArgIfValue(argv, '--hook-env-name', results.hookEnvName);
+    Install.pushDownloadArgIfValue(argv, '--hook-app-path', results.hookAppPath);
+    Install.pushDownloadArgIfValue(argv, '--hook-storage-path', results.hookStoragePath);
 
     return argv;
   }
@@ -2552,6 +2564,50 @@ export default class Install extends Command {
       build: false,
       buildDts: false,
     };
+  }
+
+  private static resolveAbsoluteAppPath(envName: string, appResults: Record<string, PromptValue>): string {
+    const configuredAppPath = resolveConfiguredAppPathValue(appResults) ?? defaultInstallAppPath(envName);
+    return resolveConfiguredEnvPath(configuredAppPath) ?? resolveEnvRelativePath(defaultInstallAppPath(envName));
+  }
+
+  private static resolveAbsoluteStoragePath(envName: string, appResults: Record<string, PromptValue>): string {
+    const configuredStoragePath = resolveConfiguredStoragePathValue(appResults, envName);
+    return resolveConfiguredEnvPath(configuredStoragePath) ?? resolveEnvRelativePath(defaultInstallStoragePath(envName));
+  }
+
+  private async prepareHookScriptForInstall(params: {
+    envName: string;
+    appResults: Record<string, PromptValue>;
+    downloadResults: Record<string, PromptValue>;
+    hookScript?: string;
+  }): Promise<void> {
+    const appPath = Install.resolveAbsoluteAppPath(params.envName, params.appResults);
+    const storagePath = Install.resolveAbsoluteStoragePath(params.envName, params.appResults);
+    const inputHookScript = Install.toOptionalPromptString(params.hookScript);
+
+    if (inputHookScript) {
+      params.appResults.hookScript = await persistHookScript({
+        sourcePath: inputHookScript,
+        appPath,
+      });
+      printInfo(`Saved hook script to ${path.join(appPath, String(params.appResults.hookScript))}.`);
+    }
+
+    const savedHookScript = Install.toOptionalPromptString(params.appResults.hookScript);
+    const hookScriptPath = resolveHookScriptPath({
+      appPath,
+      hookScript: savedHookScript,
+    });
+    if (!hookScriptPath) {
+      return;
+    }
+
+    params.downloadResults.hookScript = hookScriptPath;
+    params.downloadResults.hookPhase = 'init';
+    params.downloadResults.hookEnvName = params.envName;
+    params.downloadResults.hookAppPath = appPath;
+    params.downloadResults.hookStoragePath = storagePath;
   }
 
   private commandStdio(verbose?: boolean): 'inherit' | 'ignore' {
@@ -2974,6 +3030,7 @@ export default class Install extends Command {
       devDependencies: downloadResultsValue(params.downloadResults, 'devDependencies'),
       build: downloadResultsValue(params.downloadResults, 'build'),
       buildDts: downloadResultsValue(params.downloadResults, 'buildDts'),
+      hookScript: params.appResults.hookScript,
       ...(appPath ? { appPath } : {}),
       ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
       appPort,
@@ -3044,6 +3101,9 @@ export default class Install extends Command {
       yesInitialValues: { resume: parsed.resume },
       yes,
     });
+    if (resumePreset?.appPreset.hookScript !== undefined && appResults.hookScript === undefined) {
+      appResults.hookScript = resumePreset.appPreset.hookScript;
+    }
 
     const downloadOpts = Install.buildDownloadPromptOptionsForInstall(appResults, envName);
     downloadOpts.values = {
@@ -3186,6 +3246,12 @@ export default class Install extends Command {
       appResults,
     });
     appResults.setupState = 'prepared';
+    await this.prepareHookScriptForInstall({
+      envName,
+      appResults,
+      downloadResults,
+      hookScript: parsed['hook-script'],
+    });
 
     const source = String(downloadResultsValue(downloadResults, 'source') ?? '').trim();
     const usesDockerResources = Boolean(dbResults.builtinDb) || source === 'docker';

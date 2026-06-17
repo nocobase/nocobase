@@ -24,6 +24,7 @@ import {
   DEFAULT_DOCKER_VERSION,
   resolveDockerImageRef,
 } from './docker-image.ts';
+import { resolveHookScriptPath } from './hook-script.js';
 import { commandSucceeds, ensureDockerDaemonRunning, run } from './run-npm.js';
 import Install from '../commands/install.js';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
@@ -407,6 +408,24 @@ export function buildSavedLocalDownloadArgv(
   }
   if (config.buildDts === true) {
     argv.push('--build-dts');
+  }
+  const hookScriptPath = resolveHookScriptPath({
+    appPath: runtime.env.appPath,
+    hookScript: config.hookScript,
+  });
+  if (hookScriptPath) {
+    argv.push(
+      '--hook-script',
+      hookScriptPath,
+      '--hook-phase',
+      'restore',
+      '--hook-env-name',
+      runtime.envName,
+      '--hook-app-path',
+      runtime.env.appPath,
+      '--hook-storage-path',
+      runtime.env.storagePath,
+    );
   }
 
   return argv;

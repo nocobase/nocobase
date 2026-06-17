@@ -78,6 +78,8 @@ export interface EnvConfigEntry {
   build?: boolean;
   /** Whether download emitted declaration files during build. */
   buildDts?: boolean;
+  /** Hook module copied into the app root and reused before dependency installs. */
+  hookScript?: string;
   appPath?: string;
   appRootPath?: string;
   storagePath?: string;

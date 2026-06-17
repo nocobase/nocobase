@@ -66,6 +66,15 @@ async function useTempCwd(): Promise<string> {
   return dir;
 }
 
+async function pathExists(target: string): Promise<boolean> {
+  try {
+    await fsp.access(target);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function createCommand() {
   const runCommand = vi.fn(async () => undefined);
   const command = Object.assign(Object.create(Download.prototype), {
@@ -203,6 +212,108 @@ test('downloadFromGit maps alpha to develop and builds with --no-dts by default'
   ]);
   expect(runCommand.mock.calls).toEqual([
     ['source:build', ['--cwd', path.join(cwd, 'repo'), '--no-dts']],
+  ]);
+});
+
+test('downloadFromGit runs hook before dependency install', async () => {
+  const cwd = await useTempCwd();
+  const hookPath = path.join(cwd, 'hook.mjs');
+  const markerPath = path.join(cwd, 'hook-marker.json');
+  await fsp.writeFile(
+    hookPath,
+    `
+export default {
+  beforeDependencyInstall: async (context) => {
+    const fs = await import('node:fs/promises');
+    await fs.writeFile(${JSON.stringify(markerPath)}, JSON.stringify({
+      phase: context.phase,
+      envName: context.envName,
+      source: context.source,
+      version: context.version,
+      appPath: context.appPath,
+      sourcePath: context.sourcePath,
+      storagePath: context.storagePath
+    }));
+  }
+};
+`,
+  );
+  mocks.run.mockImplementation(async (name: string) => {
+    if (name === 'yarn') {
+      expect(await pathExists(markerPath)).toBe(true);
+    }
+  });
+  const { command } = createCommand();
+  const flags: DownloadResolvedFlags = {
+    source: 'git',
+    version: 'alpha',
+    replace: false,
+    build: false,
+    'build-dts': false,
+    'output-dir': './repo',
+    'git-url': 'https://github.com/nocobase/nocobase.git',
+    'hook-script': hookPath,
+    'hook-phase': 'upgrade',
+    'hook-env-name': 'local',
+    'hook-app-path': path.join(cwd, 'local'),
+    'hook-storage-path': path.join(cwd, 'local', 'storage'),
+  };
+
+  await command.downloadFromGit(flags);
+
+  const marker = JSON.parse(await fsp.readFile(markerPath, 'utf8')) as {
+    phase: string;
+    envName: string;
+    source: string;
+    version: string;
+    appPath: string;
+    sourcePath: string;
+    storagePath: string;
+  };
+  expect(marker).toEqual({
+    phase: 'upgrade',
+    envName: 'local',
+    source: 'git',
+    version: 'alpha',
+    appPath: path.join(cwd, 'local'),
+    sourcePath: path.join(cwd, 'repo'),
+    storagePath: path.join(cwd, 'local', 'storage'),
+  });
+});
+
+test('downloadFromGit stops before dependency install when hook fails', async () => {
+  const cwd = await useTempCwd();
+  const hookPath = path.join(cwd, 'hook.mjs');
+  await fsp.writeFile(
+    hookPath,
+    `
+export default {
+  beforeDependencyInstall: async () => {
+    throw new Error('prepare failed');
+  }
+};
+`,
+  );
+  mocks.run.mockResolvedValue(undefined);
+  const { command } = createCommand();
+  const flags: DownloadResolvedFlags = {
+    source: 'git',
+    version: 'alpha',
+    replace: false,
+    build: false,
+    'build-dts': false,
+    'output-dir': './repo',
+    'git-url': 'https://github.com/nocobase/nocobase.git',
+    'hook-script': hookPath,
+  };
+
+  await expect(command.downloadFromGit(flags)).rejects.toThrow(/Hook script failed/);
+  expect(mocks.run.mock.calls).toEqual([
+    [
+      'git',
+      ['clone', '--branch', 'develop', '--depth', '1', 'https://github.com/nocobase/nocobase.git', './repo'],
+      { errorName: 'git clone', loadingMessage: 'Cloning the repository', stdio: 'ignore' },
+    ],
   ]);
 });
 

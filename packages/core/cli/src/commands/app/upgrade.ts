@@ -17,6 +17,7 @@ import {
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { DEFAULT_DOCKER_REGISTRY } from '../../lib/docker-image.ts';
 import { confirm } from '../../lib/inquirer.ts';
+import { resolveHookScriptPath } from '../../lib/hook-script.js';
 import { announceTargetEnv, isInteractiveTerminal, printInfo, printWarning, succeedTask } from '../../lib/ui.js';
 import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 
@@ -456,6 +457,24 @@ export default class AppUpgrade extends Command {
     }
     if (runtime.env.config.buildDts === true) {
       argv.push('--build-dts');
+    }
+    const hookScriptPath = resolveHookScriptPath({
+      appPath: runtime.env.appPath,
+      hookScript: runtime.env.config.hookScript,
+    });
+    if (hookScriptPath) {
+      argv.push(
+        '--hook-script',
+        hookScriptPath,
+        '--hook-phase',
+        'upgrade',
+        '--hook-env-name',
+        runtime.envName,
+        '--hook-app-path',
+        runtime.env.appPath,
+        '--hook-storage-path',
+        runtime.env.storagePath,
+      );
     }
 
     return argv;
