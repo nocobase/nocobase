@@ -7101,6 +7101,9 @@ function collectTableSettingsErrors(
   });
   const hasSettings = _.isPlainObject(block?.settings);
   if (!hasSettings) {
+    if (options.directSettings === true && !shouldDeferPublicDataScopeErrorsToBatchItem(blockPath, errors, options)) {
+      collectPublicDataScopeErrors(block.dataScope, `${blockPath}.dataScope`, errors, block, context);
+    }
     return;
   }
   const settings = block.settings;
@@ -7162,7 +7165,77 @@ function collectPublicDataScopeErrors(
     });
     return;
   }
+  collectPublicDataScopeFieldPathErrors(validationValue, path, errors, block, context);
   collectFilterGroupDateConditionErrors(validationValue, path, errors, block, context);
+}
+
+function collectPublicDataScopeFieldPathErrors(
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (!_.isPlainObject(value)) {
+    return;
+  }
+  if (hasOwn(value, 'operator')) {
+    collectPublicDataScopeFieldPathError(value.path, `${path}.path`, block, context, errors);
+  }
+  if (Array.isArray(value.items)) {
+    value.items.forEach((item, index) =>
+      collectPublicDataScopeFieldPathErrors(item, `${path}.items[${index}]`, errors, block, context),
+    );
+  }
+}
+
+function collectPublicDataScopeFieldPathError(
+  rawFieldPath: any,
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  const fieldPath = String(rawFieldPath || '').trim();
+  if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+    return;
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return;
+  }
+  const resolved = resolveDefaultFilterFieldPath(
+    collection,
+    normalizeFieldPath(fieldPath),
+    getBlockDataSourceKey(block, context),
+    context,
+  );
+  if (!resolved.field) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'field-path-unknown',
+      message: `flowSurfaces authoring ${path} references unknown field '${fieldPath}'`,
+      details: {
+        fieldPath,
+        collection: getCollectionName(resolved.collection || collection),
+        availableFields: getCollectionFields(resolved.collection || collection)
+          .map((field) => String(getFieldName(field) || '').trim())
+          .filter(Boolean),
+      },
+    });
+    return;
+  }
+  if (isAssociationField(resolved.field)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaultFilter-relation-field-unsupported',
+      message: `flowSurfaces authoring ${path} cannot use relation field '${fieldPath}' itself; use a scalar subfield instead`,
+      details: {
+        fieldPath,
+        fieldName: getFieldName(resolved.field),
+      },
+    });
+  }
 }
 
 function shouldDeferPublicDataScopeErrorsToBatchItem(

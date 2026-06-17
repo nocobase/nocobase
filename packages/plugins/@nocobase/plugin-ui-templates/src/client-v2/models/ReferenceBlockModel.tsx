@@ -350,6 +350,22 @@ export class ReferenceBlockModel extends BlockModel {
     targetContext[TARGET_CONTEXT_BRIDGE_MARKER] = true;
   }
 
+  private _attachRuntimeTarget(target: FlowModel) {
+    target.parent = this as any;
+  }
+
+  private _setRuntimeTargetSubModel(target: FlowModel) {
+    this._attachRuntimeTarget(target);
+    (this.subModels as any)['target'] = target;
+    (this as any).emitter?.emit?.('onSubModelAdded', target);
+    this.flowEngine?.emitter?.emit?.('model:subModel:added', {
+      parentUid: this.uid,
+      parent: this,
+      subKey: 'target',
+      model: target,
+    });
+  }
+
   get title() {
     return this._targetModel?.title || super.title;
   }
@@ -557,12 +573,10 @@ export class ReferenceBlockModel extends BlockModel {
       if (this._localProps) {
         this.props = this._localProps as any;
       }
-      this.rerender();
       return;
     }
 
     const scopedEngine = this._ensureScopedEngine();
-    target.setParent(this);
     this._bridgeTargetContext(target, scopedEngine);
     this._applyTargetEventBridge(target);
     const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
@@ -572,7 +586,7 @@ export class ReferenceBlockModel extends BlockModel {
         this._restoreTemplateFallbackPatch(oldTarget);
       }
       this._applyTemplateFallbackPatchState(target);
-      this.setSubModel('target', target);
+      this._setRuntimeTargetSubModel(target);
       if (oldTarget) {
         this._scopedEngine?.removeModel(oldTarget.uid);
       }
@@ -588,7 +602,6 @@ export class ReferenceBlockModel extends BlockModel {
     // 关键：让 ctx.model.props.xxx 的写法在引用区块中也能作用到目标区块
     // - beforeRender 的 flows 会在 onDispatchEventStart 之后执行，因此这里同步可以保证事件流拿到的是目标 props
     this.props = target.props;
-    this.rerender();
   }
 
   async destroy(): Promise<boolean> {
@@ -607,16 +620,25 @@ export class ReferenceBlockModel extends BlockModel {
    * 这样在保存引用区块时不会连带保存目标区块，避免破坏目标区块的父子关系
    */
   serialize(): Record<string, any> {
-    const data = super.serialize();
-    // 从序列化结果中移除 target 子模型
-    if (data.subModels && 'target' in data.subModels) {
-      delete data.subModels.target;
-      // 如果 subModels 为空对象，也删除它
-      if (Object.keys(data.subModels).length === 0) {
+    const subModels = this.subModels as Record<string, FlowModel | FlowModel[] | undefined>;
+    const hadTarget = Object.prototype.hasOwnProperty.call(subModels, 'target');
+    const target = subModels.target;
+
+    if (hadTarget) {
+      delete subModels.target;
+    }
+
+    try {
+      const data = super.serialize();
+      if (data.subModels && Object.keys(data.subModels).length === 0) {
         delete data.subModels;
       }
+      return data;
+    } finally {
+      if (hadTarget) {
+        subModels.target = target;
+      }
     }
-    return data;
   }
 
   renderComponent() {

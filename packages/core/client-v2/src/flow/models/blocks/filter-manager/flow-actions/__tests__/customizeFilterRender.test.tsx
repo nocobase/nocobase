@@ -18,11 +18,22 @@ type TestFieldModel = {
   setupReactiveRender: ReturnType<typeof vi.fn>;
   _reactiveWrapperCache?: unknown;
   __originalRender?: () => React.ReactNode;
+  translate?: (text: string) => string;
 };
 
 const MultipleKeywordsInput = (props: Record<string, unknown>) => {
   return <div data-testid="multiple-keywords-input" {...props} />;
 };
+
+const Select = (props: Record<string, unknown>) => {
+  return <div data-testid="select" {...props} />;
+};
+
+function mockT(text: string) {
+  if (text === '{{t("Yes")}}') return '是';
+  if (text === '{{t("No")}}') return '否';
+  return text;
+}
 
 function createFieldModel() {
   return {
@@ -52,7 +63,10 @@ function createFilterItemModel({
     collectionField,
     context: {
       app: {
-        getComponent: (name: string) => (name === 'MultipleKeywordsInput' ? MultipleKeywordsInput : undefined),
+        getComponent: (name: string) => {
+          if (name === 'MultipleKeywordsInput') return MultipleKeywordsInput;
+          if (name === 'Select') return Select;
+        },
       },
       collectionField,
     },
@@ -110,6 +124,47 @@ describe('customizeFilterRender action', () => {
     const rerenderedElement = fieldModel.render();
     expect((rerenderedElement as React.ReactElement).props.value).toEqual(['3']);
     expect((rerenderedElement as React.ReactElement).props.placeholder).toBe('updated runtime placeholder');
+  });
+
+  it('translates operator schema select options', () => {
+    const fieldModel = {
+      ...createFieldModel(),
+      translate: mockT,
+    };
+    const model = createFilterItemModel({
+      fieldModel,
+      operator: '$isTruly',
+      collectionField: {
+        interface: 'checkbox',
+        type: 'boolean',
+        filterable: {
+          operators: [
+            {
+              label: '{{t("Yes")}}',
+              value: '$isTruly',
+              schema: {
+                'x-component': 'Select',
+                'x-component-props': {
+                  options: [
+                    { label: '{{t("Yes")}}', value: true },
+                    { label: '{{t("No")}}', value: false },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    customizeFilterRender.handler?.({ model } as any);
+
+    const element = fieldModel.render();
+    expect((element as React.ReactElement).type).toBe(Select);
+    expect((element as React.ReactElement).props.options).toEqual([
+      { label: '是', value: true },
+      { label: '否', value: false },
+    ]);
   });
 
   it('restores original render when switching to an operator without a schema component', () => {

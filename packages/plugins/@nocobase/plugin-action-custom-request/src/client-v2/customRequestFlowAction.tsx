@@ -22,12 +22,17 @@ import { customRequestUiSchema } from './customRequestUiSchema';
 const buildSanitizedParams = (key: string, params: CustomRequestStepParams): CustomRequestStepParams => {
   return {
     key,
+    configured: true,
     variablePaths: extractVariablePaths(params),
     responseType: params?.responseType || 'json',
   };
 };
 
 export const CUSTOM_REQUEST_ACTION_NAME = 'customRequest';
+
+const isCustomRequestConfigured = (params: CustomRequestStepParams) => {
+  return params?.configured === true || Array.isArray(params?.variablePaths);
+};
 
 export const customRequestFlowAction = defineAction({
   name: CUSTOM_REQUEST_ACTION_NAME,
@@ -36,22 +41,22 @@ export const customRequestFlowAction = defineAction({
   sort: 1000,
   paramsRequired: true,
   uiSchema: customRequestUiSchema,
-  defaultParams(ctx: any) {
+  defaultParams() {
     return {
       key: makeRequestKey(),
       ...DEFAULT_CUSTOM_REQUEST_SETTINGS,
     };
   },
-  async beforeParamsSave(ctx: any, params: CustomRequestStepParams) {
+  async beforeParamsSave(ctx, params: CustomRequestStepParams) {
     const key = params?.key || makeRequestKey();
     await saveCustomRequestConfig(ctx, key, params);
 
     const sanitizedParams = buildSanitizedParams(key, params);
 
     Object.keys(params || {}).forEach((fieldKey) => {
-      delete (params as Record<string, any>)[fieldKey];
+      delete (params as Record<string, unknown>)[fieldKey];
     });
-    Object.assign(params as Record<string, any>, sanitizedParams);
+    Object.assign(params as Record<string, unknown>, sanitizedParams);
 
     if (ctx.model.stepParams?.customRequestClickSettings) {
       ctx.model.stepParams.customRequestClickSettings = {
@@ -65,14 +70,16 @@ export const customRequestFlowAction = defineAction({
     const runtimeParams = params?.key ? params : { ...savedParams, key: savedParams?.key };
     const requestKey = runtimeParams?.key;
 
-    if (!requestKey) {
+    if (!requestKey || !isCustomRequestConfigured(runtimeParams)) {
       ctx.message.error(ctx.t('Please configure the request settings first', { ns: NAMESPACE }));
       ctx.exit();
       return;
     }
 
     try {
-      return await executeCustomRequest(ctx, { ...runtimeParams, key: requestKey }, { throwOnError: true });
+      const response = await executeCustomRequest(ctx, { ...runtimeParams, key: requestKey }, { throwOnError: true });
+      ctx.message.success(ctx.t('Request success'));
+      return response;
     } catch (error) {
       ctx.exit();
       throw error;

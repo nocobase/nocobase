@@ -21,6 +21,7 @@ import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
 import { getExecutionLockKey, isLockAcquireError } from './utils';
 
 const EXECUTION_ACQUIRE_MAX_ATTEMPTS = 5;
+const PENDING_DISPATCH_MAX_ATTEMPTS = 3;
 
 type AcquireRetryLogger = Pick<ReturnType<PluginWorkflowServer['getLogger']>, 'warn'>;
 
@@ -31,6 +32,7 @@ type Pending = {
   job?: JobModel;
   immediate?: boolean;
   rerun?: ProcessorRerunOptions;
+  dispatchAttempts?: number;
 };
 
 type CachedEvent = [WorkflowModel, any, EventOptions];
@@ -241,42 +243,61 @@ export default class Dispatcher {
 
     this.executing = (async () => {
       let next: ExecutionPlan | null = null;
-      const pending: Pending | null = this.pending.shift() ?? null;
-      if (pending || (this.ready && this.plugin.serving())) {
-        const execution: ExecutionModel | null = await this.prepare(pending?.execution ?? null, {
-          immediate: pending?.immediate,
-        });
-        if (execution) {
-          next = [execution, pending?.job, pending?.rerun];
+      let pending: Pending | null = null;
+      try {
+        pending = this.pending.shift() ?? null;
+        if (pending || (this.ready && this.plugin.serving())) {
+          const execution: ExecutionModel | null = await this.prepare(pending?.execution ?? null, {
+            immediate: pending?.immediate,
+          });
+          if (execution) {
+            next = [execution, pending?.job, pending?.rerun];
+          }
+          if (pending && next) {
+            this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
+          }
+        } else {
+          this.plugin
+            .getLogger('dispatcher')
+            .warn(
+              `${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance or app not ready, new dispatching will be ignored`,
+            );
         }
-        if (pending && next) {
-          this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
-        }
-      } else {
-        this.plugin
-          .getLogger('dispatcher')
-          .warn(
-            `${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance or app not ready, new dispatching will be ignored`,
-          );
-      }
-      if (next) {
-        try {
-          await this.process(next[0], next[1], { rerun: next[2] });
-        } catch (error) {
-          this.plugin.getLogger(next[0].workflowId).error(`execution (${next[0].id}) process failed`, { error });
-          if (pending && isLockAcquireError(error)) {
-            this.pending.unshift({ ...pending, execution: next[0], immediate: true });
+        if (next) {
+          try {
+            await this.process(next[0], next[1], { rerun: next[2] });
+          } catch (error) {
+            this.plugin.getLogger(next[0].workflowId).error(`execution (${next[0].id}) process failed`, { error });
+            if (pending && isLockAcquireError(error)) {
+              this.pending.unshift({ ...pending, execution: next[0], immediate: true });
+            }
           }
         }
-      }
-      setImmediate(() => {
-        this.executing = null;
-
-        if (next || this.pending.length) {
-          this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
-          this.dispatch();
+      } catch (error) {
+        this.plugin.getLogger('dispatcher').error(`workflow dispatch failed`, { error });
+        if (pending) {
+          const dispatchAttempts = (pending.dispatchAttempts ?? 0) + 1;
+          if (dispatchAttempts < PENDING_DISPATCH_MAX_ATTEMPTS) {
+            this.pending.push({ ...pending, dispatchAttempts });
+          } else {
+            this.plugin
+              .getLogger(pending.execution.workflowId)
+              .error(`pending execution (${pending.execution.id}) dispatch failed, local retry limit reached`, {
+                error,
+                dispatchAttempts,
+              });
+          }
         }
-      });
+      } finally {
+        setImmediate(() => {
+          this.executing = null;
+
+          if (next || this.pending.length) {
+            this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
+            this.dispatch();
+          }
+        });
+      }
     })();
   }
 

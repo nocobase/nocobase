@@ -162,6 +162,7 @@ const BASIC_ACTION_PROP_KEYS = new Set([
   'title',
   'tooltip',
   'icon',
+  'iconOnly',
   'type',
   'danger',
   'color',
@@ -170,7 +171,7 @@ const BASIC_ACTION_PROP_KEYS = new Set([
   'filterableFieldNames',
   'position',
 ]);
-const BASIC_ACTION_BUTTON_GENERAL_KEYS = new Set(['title', 'tooltip', 'icon', 'type', 'danger', 'color']);
+const BASIC_ACTION_BUTTON_GENERAL_KEYS = new Set(['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color']);
 const BASIC_DELETE_ACTION_TYPES = new Set(['delete', 'bulkDelete']);
 const RECORD_HISTORY_GENERATED_ACTION_USES = new Set([
   'RecordHistoryExpandActionModel',
@@ -2048,6 +2049,7 @@ function exportActionButtonSettings(action: FlowSurfaceExportNode) {
     title: readValue('title'),
     tooltip: readValue('tooltip'),
     icon: readValue('icon'),
+    iconOnly: readValue('iconOnly'),
     type: readValue('type'),
     danger: readValue('danger'),
     color: readValue('color'),
