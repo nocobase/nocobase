@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   setVerboseMode: vi.fn(),
   startTask: vi.fn(),
   stopTask: vi.fn(),
+  updateTask: vi.fn(),
   updateNocoBaseSkills: vi.fn(),
 }));
 
@@ -28,6 +29,7 @@ vi.mock('../lib/ui.js', () => ({
   setVerboseMode: mocks.setVerboseMode,
   startTask: mocks.startTask,
   stopTask: mocks.stopTask,
+  updateTask: mocks.updateTask,
 }));
 
 beforeEach(() => {
@@ -58,10 +60,15 @@ test('skills install passes version flag to the skills manager', async () => {
 
   await SkillsInstallCommand.prototype.run.call(command);
 
-  expect(mocks.installNocoBaseSkills).toHaveBeenCalledWith({
-    targetVersion: '1.0.4',
-    verbose: false,
-  });
+  expect(mocks.installNocoBaseSkills).toHaveBeenCalledWith(
+    expect.objectContaining({
+      targetVersion: '1.0.4',
+      verbose: false,
+      onProgress: mocks.updateTask,
+    }),
+  );
+  expect(mocks.startTask).toHaveBeenCalledWith('Installing NocoBase AI coding skills 1.0.4...');
+  expect(mocks.stopTask).toHaveBeenCalledTimes(1);
 });
 
 test('skills update passes version flag to the skills manager', async () => {
@@ -88,10 +95,13 @@ test('skills update passes version flag to the skills manager', async () => {
 
   await SkillsUpdateCommand.prototype.run.call(command);
 
-  expect(mocks.updateNocoBaseSkills).toHaveBeenCalledWith({
-    targetVersion: '1.0.4',
-    verbose: false,
-  });
+  expect(mocks.updateNocoBaseSkills).toHaveBeenCalledWith(
+    expect.objectContaining({
+      targetVersion: '1.0.4',
+      verbose: false,
+      onProgress: mocks.updateTask,
+    }),
+  );
   expect(mocks.startTask).toHaveBeenCalledWith('Syncing NocoBase AI coding skills to 1.0.4...');
   expect(mocks.stopTask).toHaveBeenCalledTimes(1);
 });

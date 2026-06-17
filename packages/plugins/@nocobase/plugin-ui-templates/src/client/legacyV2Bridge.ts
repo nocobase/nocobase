@@ -8,6 +8,7 @@
  */
 
 import type { FlowEngine } from '@nocobase/flow-engine';
+import { registerReferenceBlockDynamicFlowSourceProvider } from '../client-v2/dynamicFlowSources';
 import { registerMenuExtensions } from '../client-v2/menuExtensions';
 import { registerOpenViewPopupTemplateAction } from '../client-v2/openViewActionExtensions';
 
@@ -32,4 +33,5 @@ export function registerLegacyUiTemplateModelLoaders(flowEngine: FlowEngine) {
 export function registerLegacyUiTemplateExtensions(flowEngine: FlowEngine) {
   registerOpenViewPopupTemplateAction(flowEngine);
   registerMenuExtensions();
+  registerReferenceBlockDynamicFlowSourceProvider(flowEngine);
 }

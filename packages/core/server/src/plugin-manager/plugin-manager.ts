@@ -27,6 +27,7 @@ import { PluginData } from './types';
 import { getPluginPackagePrefixes, parsePluginName } from '../../../utils/plugin-package';
 import {
   checkAndGetCompatible,
+  assertSafePluginPackageName,
   copyTempPackageToStorageAndLinkToNodeModules,
   downloadAndUnzipToTempDir,
   getNpmInfo,
@@ -248,6 +249,7 @@ export class PluginManager {
   static parsedNames = {};
 
   static async parseName(nameOrPkg: string) {
+    assertSafePluginPackageName(nameOrPkg);
     if (this.parsedNames[nameOrPkg]) {
       return this.parsedNames[nameOrPkg];
     }

@@ -15,17 +15,20 @@ import { MobileSelect } from './mobile-components/MobileSelect';
 import { enumToOptions, getSelectedEnumLabels, translateOptionLabel } from '../../internal/utils/enumOptionsUtils';
 
 const getOriginalEnumOptions = (model: SelectFieldModel) => {
-  const fromEnum = enumToOptions(model.context.collectionField?.uiSchema?.enum, (text) => text) || [];
+  const fromEnum = enumToOptions(model.context.collectionField?.uiSchema?.enum, model.translate) || [];
   if (fromEnum.length > 0) {
     return fromEnum.map((option) => ({ ...option }));
   }
   const current = Array.isArray(model.props.options) ? model.props.options : [];
-  return current.map((option) => ({ ...option }));
+  return current.map((option) => ({
+    ...option,
+    label: translateOptionLabel(option.label, model.translate),
+  }));
 };
-
 export class SelectFieldModel extends FieldModel {
   render() {
     const fallbackOptions = getOriginalEnumOptions(this);
+
     const options = this.props.options?.map((v) => {
       return {
         ...v,
@@ -46,7 +49,6 @@ export class SelectFieldModel extends FieldModel {
     if (this.context.isMobileLayout) {
       return <MobileSelect {...this.props} options={options} displayValue={value} />;
     }
-
     return (
       <Select
         {...this.props}

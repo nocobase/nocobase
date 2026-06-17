@@ -910,13 +910,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       '$includes',
     ]);
     expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(generatedFilter);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
-    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual([
-      'nickname',
-      'email',
-      'status',
-      'phone',
-    ]);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should cap auto-generated defaultFilter fields at four candidates', async () => {
@@ -960,7 +955,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'capField3',
       'capField4',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should require three defaultFilter fields for collections with four or more candidates', async () => {
@@ -1084,7 +1080,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const generatedFilter = filterAction?.props?.defaultFilterValue;
     expect(generatedFilter?.items).toHaveLength(2);
     expect(generatedFilter.items.map((item: any) => item.path)).toEqual(['name', 'title']);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['name', 'title']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should require all available defaultFilter candidates for narrow direct-interface collections', async () => {
@@ -1232,7 +1229,8 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       'capField3',
       'capField4',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['capField1', 'capField2', 'capField3', 'capField4']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should reject rich data blocks with too few visible business fields before applyBlueprint writes', async () => {
@@ -3801,6 +3799,106 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     });
   });
 
+  it('should compile auto-saved record action popup currentRecord from popup input args', async () => {
+    const { sourceCollection, targetCollection, sourceAssociationName } = await createAuthoringRelationFixture();
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring auto-saved record action popup current record',
+          },
+        },
+        page: {
+          title: 'Authoring auto-saved record action popup current record',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'usersTable',
+                type: 'table',
+                collection: sourceCollection,
+                fields: USER_VISIBLE_FIELDS,
+                recordActions: [
+                  {
+                    key: 'maintainUser',
+                    type: 'view',
+                    title: 'Maintain user',
+                    popup: {
+                      blocks: [
+                        {
+                          key: 'userDetails',
+                          type: 'details',
+                          resource: {
+                            binding: 'currentRecord',
+                          },
+                          fields: USER_VISIBLE_FIELDS,
+                        },
+                        {
+                          key: 'userRoles',
+                          type: 'table',
+                          resource: {
+                            binding: 'associatedRecords',
+                            associationField: 'roles',
+                          },
+                          fields: ROLE_VISIBLE_FIELDS,
+                          recordActions: ['view'],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const viewAction = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.use === 'ViewActionModel' &&
+        (item?.props?.title === 'Maintain user' ||
+          item?.stepParams?.buttonSettings?.general?.title === 'Maintain user'),
+    )[0];
+    const persistedAction = await flowRepo.findModelById(viewAction.uid, { includeAsyncNode: true });
+    expect(readPopupOpenView(persistedAction)).toMatchObject({
+      collectionName: sourceCollection,
+    });
+    expect(readPopupTemplateUid(persistedAction)).toBeTruthy();
+
+    const popupSurface = await readPopupSurfaceForHost(rootAgent, flowRepo, persistedAction);
+    const userDetails = collectDescendantNodes(
+      popupSurface,
+      (item) =>
+        item?.use === 'DetailsBlockModel' &&
+        item?.stepParams?.resourceSettings?.init?.collectionName === sourceCollection,
+    )[0];
+    expect(userDetails?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: sourceCollection,
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+
+    const roleTable = collectDescendantNodes(
+      popupSurface,
+      (item) =>
+        item?.use === 'TableBlockModel' &&
+        item?.stepParams?.resourceSettings?.init?.collectionName === targetCollection,
+    )[0];
+    expect(roleTable?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: targetCollection,
+      associationName: sourceAssociationName,
+      sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+  });
+
   it('should validate nested associatedRecords blocks against the current popup collection', async () => {
     const { sourceCollection, targetCollection, sourceAssociationName } = await createAuthoringRelationFixture();
     const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
@@ -3886,6 +3984,27 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
       flowRepo,
       persistedAction?.stepParams?.popupSettings?.openView?.popupTemplateUid,
     );
+    const userDetails = collectDescendantNodes(
+      templateSurface,
+      (item) =>
+        item?.use === 'DetailsBlockModel' &&
+        item?.stepParams?.resourceSettings?.init?.collectionName === sourceCollection,
+    )[0];
+    expect(userDetails?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: sourceCollection,
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+    const userEditForm = collectDescendantNodes(
+      templateSurface,
+      (item) =>
+        item?.use === 'EditFormModel' && item?.stepParams?.resourceSettings?.init?.collectionName === sourceCollection,
+    )[0];
+    expect(userEditForm?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: sourceCollection,
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
     const roleTable = collectDescendantNodes(
       templateSurface,
       (item) =>

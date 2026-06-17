@@ -241,6 +241,20 @@ export function getLatestSubTableRowRecord(form: any, fieldIndex: unknown, fallb
   return typeof latestRecord === 'undefined' ? fallbackRecord : latestRecord;
 }
 
+export function buildSubTableColumnNamePath(
+  fieldPath: Array<string | number>,
+  rowIdx: number,
+  namePath: string | number,
+  rowFieldIndex: unknown,
+): Array<string | number> {
+  const currentRowPath = buildRowPathFromFieldIndex(rowFieldIndex);
+  if (currentRowPath?.length) {
+    return [...currentRowPath, namePath];
+  }
+
+  return [...fieldPath, rowIdx, namePath];
+}
+
 function shouldCommitImmediately(value: any) {
   if (Array.isArray(value)) {
     return true;
@@ -393,9 +407,23 @@ const MemoCell: React.FC<CellProps> = observer(
           {parent.mapSubModels('field', (action: FieldModel) => {
             const fieldPath = action.context.fieldPath.split('.');
             const namePath = fieldPath.pop();
+            if (typeof namePath === 'undefined') {
+              return null;
+            }
+            const fieldNamePath = buildSubTableColumnNamePath(
+              fieldPath,
+              rowIdx,
+              namePath,
+              rowFork?.context?.fieldIndex,
+            );
+            const formItemName = buildDynamicNamePath([...fieldPath, rowIdx, namePath], parentFieldIndex);
 
             const fork: any = action.createFork({}, `${id}`);
             fork.context.defineProperty('currentObject', { get: () => record });
+            fork.context.defineProperty('fieldPathArray', {
+              get: () => fieldNamePath,
+              cache: false,
+            });
             if (rowFork) {
               const itemOptions = rowFork.context.getPropertyOptions?.('item');
               const { value: _value, ...itemOptionsWithoutValue } = (itemOptions || {}) as any;
@@ -438,7 +466,7 @@ const MemoCell: React.FC<CellProps> = observer(
               <FormItem
                 {...fieldStateProps}
                 key={id}
-                name={buildDynamicNamePath([...fieldPath, rowIdx, namePath], parentFieldIndex)}
+                name={formItemName}
                 style={{ marginBottom: 0 }}
                 showLabel={false}
                 disabled={disabled}

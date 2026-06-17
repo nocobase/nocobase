@@ -28,7 +28,7 @@ export default class SelfCheck extends Command {
   static override flags = {
     channel: Flags.string({
       description: 'Release channel to compare against. Defaults to the current CLI channel.',
-      options: ['auto', 'latest', 'beta', 'alpha'],
+      options: ['auto', 'latest', 'test', 'beta', 'alpha'],
       default: 'auto',
     }),
     json: Flags.boolean({

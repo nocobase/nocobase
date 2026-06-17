@@ -8,18 +8,20 @@ pkg: '@nocobase/plugin-backups'
 
 The NocoBase backup manager plugin provides features for fully backing up of the NocoBase database and user uploaded files, including backup's scheduling, downloading, deleting, and restoring operation.
 
-:::warning
-The Backup Manager plugin is included in the Professional and Enterprise editions. For Community and Standard edition users, you can directly back up the database; see details at: [`How to Backup and Restore NocoBase`](https://www.nocobase.com/en/blog/nocobase-backup-restore)
-:::
-
 ## Install Database Client
 
-The Backup Manager depends on the client for the corresponding database. Before use, please visit the official website to download the client that matches your database version:
+Backup Manager depends on the database client for the primary database. Before use, confirm that the current runtime environment has a client that matches your database version.
+
+:::tip
+When installing NocoBase with Docker, use the corresponding `full` image when possible, such as `latest-full`, `beta-full`, or `alpha-full`. These images already include common database clients, so manual installation is usually not required.
+:::
+
+If the current environment does not have the required database client, download the client that matches your database version from the official website:
 
 - MySQL: https://dev.mysql.com/downloads/
 - PostgreSQL: https://www.postgresql.org/download/
 
-For Docker versions, you can directly write a script in the `./storage/scripts` directory
+If you need to install it manually in a Docker environment, you can write a script in the `./storage/scripts` directory:
 
 ```bash
 mkdir ./storage/scripts

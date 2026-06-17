@@ -24,22 +24,35 @@ Wenn Sie häufig mehrere Terminals gleichzeitig verwenden oder parallel mit AI A
 
 ## Schritt 2: Anwendung initialisieren
 
-Als Standard empfehlen wir, den visuellen Assistenten direkt zu öffnen:
+Wir empfehlen die Installation über den UI-Assistenten:
 
 ```bash
 nb init --ui
 ```
 
+1. `Getting started` - die `--env` Kennung festlegen und `Install a new app` auswählen
+
 ![2026-06-11-20-14-32](https://static-docs.nocobase.com/2026-06-11-20-14-32.png)
 
-Je nach Setup-Pfad sehen Sie leicht unterschiedliche Schritte. Wenn Sie dem Standardpfad `Install a new app` folgen, sehen Sie in der Regel diese sechs Schritte:
-
-1. `Getting started` - die `--env` Kennung festlegen und `Install a new app` auswählen
 2. `App environment` - Basisdaten der App, Speicherort und Laufzeit-Port festlegen
+
+![2026-06-14-10-03-06](https://static-docs.nocobase.com/2026-06-14-10-03-06.png)
+
 3. `App source and version` - auswählen, wie Sie die App beziehen und welche Quelle und Version Sie verwenden möchten
+
+![2026-06-14-09-51-33](https://static-docs.nocobase.com/2026-06-14-09-51-33.png)
+
 4. `Configure the database` - die integrierte Datenbank oder eine benutzerdefinierte Datenbank wählen
+
+![2026-06-14-09-52-05](https://static-docs.nocobase.com/2026-06-14-09-52-05.png)
+
 5. `Create an admin account` - das erste Administratorkonto einrichten
+
+![2026-06-14-09-52-56](https://static-docs.nocobase.com/2026-06-14-09-52-56.png)
+
 6. `Connection & authentication` - die Zugriffs-URL der App eingeben und eine Authentifizierungsmethode wählen
+
+![2026-06-14-10-00-35](https://static-docs.nocobase.com/2026-06-14-10-00-35.png)
 
 Wenn Sie lieber rein im Terminal arbeiten, können Sie auch direkt Folgendes ausführen:
 

@@ -48,7 +48,7 @@ Ganti `<server-ip>` dengan IP sebenarnya dari server saat ini yang dapat Anda ak
 
 Secara umum:
 
-- `default-ui-host` digunakan untuk alamat mendengarkan default `nb init --ui` saat memulai halaman wizard
+- `default-ui-host` digunakan untuk membuat URL wizard `nb init --ui` yang dapat diakses dari browser; layanan wizard selalu mendengarkan pada `0.0.0.0`
 - `default-api-host` untuk alamat API yang dihasilkan secara default pada instalasi baru
 
 Jika diterapkan di server, kedua nilai tersebut biasanya harus diubah ke IP yang dapat diakses oleh server saat ini, daripada terus menggunakan alamat lokal default.

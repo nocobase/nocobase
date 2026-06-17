@@ -54,7 +54,7 @@ nb config set default-api-host <server-ip>
 
 通常来说：
 
-- `default-ui-host` 用于 `nb init --ui` 启动向导页面时的默认监听地址
+- `default-ui-host` 用于 `nb init --ui` 启动向导页面时生成浏览器访问 URL；向导服务本身固定监听 `0.0.0.0`
 - `default-api-host` 用于新安装时默认生成的 API 地址
 
 如果是在服务器上部署，这两个值通常都应该改成当前服务器可访问的 IP，而不是继续使用默认的本机地址。

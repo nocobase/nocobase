@@ -19,6 +19,7 @@ import {
   SubTableColumnModel,
   getLatestSubTableRowRecord,
   buildRowPathFromFieldIndex,
+  buildSubTableColumnNamePath,
   isSubTableColumnConfiguredReadPretty,
   getSubTableColumnTitleField,
   getSubTableColumnReadPrettyFieldProps,
@@ -66,6 +67,17 @@ describe('SubTableColumnModel row record helpers', () => {
   it('builds the row path from fieldIndex entries', () => {
     expect(buildRowPathFromFieldIndex(['roles:0'])).toEqual(['roles', 0]);
     expect(buildRowPathFromFieldIndex(['users:1', 'roles:2'])).toEqual(['users', 1, 'roles', 2]);
+  });
+
+  it('builds absolute form item paths for nested sub-table columns', () => {
+    expect(buildSubTableColumnNamePath(['roles'], 0, 'name', ['roles:0'])).toEqual(['roles', 0, 'name']);
+    expect(buildSubTableColumnNamePath(['orders', 'lines'], 1, 'product', ['orders:0', 'lines:1'])).toEqual([
+      'orders',
+      0,
+      'lines',
+      1,
+      'product',
+    ]);
   });
 
   it('prefers the latest row value from form over the fallback record', () => {

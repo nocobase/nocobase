@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.5](https://github.com/nocobase/nocobase/compare/v2.1.4...v2.1.5) - 2026-06-15
+
+### 🎉 New Features
+
+- **[Workflow: mailer node]** Add attachment support to the workflow mailer node. ([#9724](https://github.com/nocobase/nocobase/pull/9724)) by @mytharcher
+
+### 🚀 Improvements
+
+- **[client-v2]** Supported current item variables in the data scope of association field columns within form sub-tables. ([#9444](https://github.com/nocobase/nocobase/pull/9444)) by @gchust
+
+- **[undefined]**
+  - Updated the Chinese documentation label for the Version Control plugin. ([#9776](https://github.com/nocobase/nocobase/pull/9776)) by @cgyrock
+
+  - Added Russian translations for new UI strings. ([#9771](https://github.com/nocobase/nocobase/pull/9771)) by @sembaev-a-a
+
+- **[File manager]** Added selectable text support to the file manager PDF preview when the PDF contains embedded text. ([#9781](https://github.com/nocobase/nocobase/pull/9781)) by @mytharcher
+
+- **[Action: Batch edit]** Improved v2 action plugin loading and kept migrated action buttons in a stable order. ([#9778](https://github.com/nocobase/nocobase/pull/9778)) by @katherinehhh
+
+- **[Version control]** Updated the Chinese display name of the Version Control plugin. by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[cli-v1]** Fix the `yarn dev` error after upgrading projects created by `create-nocobase-app` from 2.0 to 2.1. ([#9775](https://github.com/nocobase/nocobase/pull/9775)) by @Molunerfinn
+
+- **[client-v2]** Fixed migration progress not showing its dedicated progress view ([#9761](https://github.com/nocobase/nocobase/pull/9761)) by @2013xile
+
+- **[flow-engine]** Fixed Vietnamese and Chinese IME input handling in v2 single-line text and textarea fields. ([#9764](https://github.com/nocobase/nocobase/pull/9764)) by @katherinehhh
+
+- **[server]** Fixed unsafe plugin name handling in `pm:enable` to prevent local file inclusion through plugin resolution. ([#9701](https://github.com/nocobase/nocobase/pull/9701)) by @mytharcher
+
+- **[File manager]** Fixed PDF preview failures caused by the pdf.js worker module not loading correctly. ([#9779](https://github.com/nocobase/nocobase/pull/9779)) by @mytharcher
+
+- **[Block: Kanban]** Fixed unexpected hidden popup action persistence and repeated destroy requests when opening calendar, gantt, and kanban blocks outside edit mode. ([#9772](https://github.com/nocobase/nocobase/pull/9772)) by @jiannx
+
+- **[Action: Export records Pro]** Improved v2 import/export pro Processing mode settings and tooltip descriptions. by @katherinehhh
+
+- **[Migration manager]** Fixed failures when importing large migration data files by @2013xile
+
+- **[Template print]** Rejected unsupported template file types before template printing starts by @2013xile
+
 ## [v2.1.4](https://github.com/nocobase/nocobase/compare/v2.1.3...v2.1.4) - 2026-06-13
 
 ### 🚀 Improvements
@@ -1568,7 +1609,7 @@ AI capabilities are now built into the core as a first-class citizen, with exten
 
 **Reference:**
 
-- [AI Employees](https://v2.docs.nocobase.com/ai-employees)
+- [AI Employees](https://docs.nocobase.com/ai-employees)
 
 ### App Supervisor
 
@@ -1588,7 +1629,7 @@ The App Supervisor plugin provides **unified discovery, scheduling, and manageme
 
 **Reference:**
 
-- [Multi-App Management](https://v2.docs.nocobase.com/multi-app/multi-app)
+- [Multi-App Management](https://docs.nocobase.com/multi-app/multi-app)
 
 ### Workflow Canvas Enhancement
 
@@ -1617,8 +1658,8 @@ To meet different levels of complexity in related data editing, NocoBase offers 
 
 **Reference:**
 
-- [Sub-table (Inline Edit)](https://v2.docs.nocobase.com/interface-builder/fields/specific/sub-table)
-- [Sub-table (Popup Edit)](https://v2.docs.nocobase.com/interface-builder/fields/specific/sub-table-popup)
+- [Sub-table (Inline Edit)](https://docs.nocobase.com/interface-builder/fields/specific/sub-table)
+- [Sub-table (Popup Edit)](https://docs.nocobase.com/interface-builder/fields/specific/sub-table-popup)
 
 ### Field Assignment
 
@@ -1665,7 +1706,7 @@ event:
 
 **Reference:**
 
-- [Event Flow](https://v2.docs.nocobase.com/interface-builder/event-flow)
+- [Event Flow](https://docs.nocobase.com/interface-builder/event-flow)
 
 ## Features Adapted to 2.0
 
@@ -1675,7 +1716,7 @@ event:
 
 **Reference:**
 
-- [Bulk Edit](https://v2.docs.nocobase.com/interface-builder/actions/types/bulk-edit)
+- [Bulk Edit](https://docs.nocobase.com/interface-builder/actions/types/bulk-edit)
 
 ### Duplicate
 
@@ -1683,7 +1724,7 @@ event:
 
 **Reference:**
 
-- [Duplicate](https://v2.docs.nocobase.com/interface-builder/actions/types/duplicate)
+- [Duplicate](https://docs.nocobase.com/interface-builder/actions/types/duplicate)
 
 ### Block Height
 
@@ -1691,7 +1732,7 @@ event:
 
 **Reference:**
 
-- [Block Height](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/block-height)
+- [Block Height](https://docs.nocobase.com/interface-builder/blocks/block-settings/block-height)
 
 ### Table Row Drag-and-Drop Sort
 
@@ -1699,7 +1740,7 @@ event:
 
 **Reference:**
 
-- [Drag Sort](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/drag-sort)
+- [Drag Sort](https://docs.nocobase.com/interface-builder/blocks/block-settings/drag-sort)
 
 ### Data Loading Method
 
@@ -1707,7 +1748,7 @@ event:
 
 **Reference:**
 
-- [Data Loading Method](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/data-loading-method)
+- [Data Loading Method](https://docs.nocobase.com/interface-builder/blocks/block-settings/data-loading-method)
 
 ### Displaying Relation Fields in Forms
 
@@ -1715,7 +1756,7 @@ event:
 
 **Reference:**
 
-- [Form](https://v2.docs.nocobase.com/interface-builder/blocks/data-blocks/form)
+- [Form](https://docs.nocobase.com/interface-builder/blocks/data-blocks/form)
 
 ### Page (V2) Localization Support
 
