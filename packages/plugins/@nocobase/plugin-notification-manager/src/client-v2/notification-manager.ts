@@ -28,9 +28,6 @@ export type RegisterChannelOptions = {
     ChannelConfigFormLoader?: LoaderOf;
     MessageConfigFormLoader?: LoaderOf<MessageConfigFormProps>;
     ContentConfigFormLoader?: LoaderOf<ContentConfigFormProps>;
-    ChannelConfigForm?: ComponentType;
-    MessageConfigForm?: ComponentType<MessageConfigFormProps>;
-    ContentConfigForm?: ComponentType<ContentConfigFormProps>;
   };
   meta?: {
     creatable?: boolean;

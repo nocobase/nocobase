@@ -99,14 +99,13 @@ export function MessageConfigForm({ variableOptions, namePrefix }: MessageConfig
     [notificationType, plugin],
   );
   const MessageConfigFormLoader = registration?.components?.MessageConfigFormLoader;
-  const LegacyBody = registration?.components?.MessageConfigForm;
 
   const Body = useMemo(() => {
     if (MessageConfigFormLoader) {
       return lazy(MessageConfigFormLoader as LoaderOf<MessageConfigFormProps>);
     }
-    return LegacyBody ?? null;
-  }, [LegacyBody, MessageConfigFormLoader]);
+    return null;
+  }, [MessageConfigFormLoader]);
 
   return (
     <>

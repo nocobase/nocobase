@@ -30,14 +30,13 @@ export function ContentConfigForm(props: ContentConfigFormProps & { channelType?
     [channelType, plugin],
   );
   const ContentConfigFormLoader = registration?.components?.ContentConfigFormLoader;
-  const LegacyBody = registration?.components?.ContentConfigForm;
 
   const Body = useMemo(() => {
     if (ContentConfigFormLoader) {
       return lazy(ContentConfigFormLoader as LoaderOf<ContentConfigFormProps>);
     }
-    return LegacyBody ?? null;
-  }, [ContentConfigFormLoader, LegacyBody]);
+    return null;
+  }, [ContentConfigFormLoader]);
 
   if (!Body) return null;
 

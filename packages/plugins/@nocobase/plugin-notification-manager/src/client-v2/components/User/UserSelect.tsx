@@ -11,7 +11,7 @@ import { RemoteSelect } from '@nocobase/client-v2';
 import { VariableInput, type MetaTreeNode, useFlowContext } from '@nocobase/flow-engine';
 import { theme } from 'antd';
 import React, { useMemo } from 'react';
-import { FilterDynamicComponent } from '@nocobase/plugin-workflow/client-v2';
+import { FilterDynamicComponent, useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client-v2';
 import { useNotificationTranslation } from '../../locale';
 
 type UserOption = { id: number | string; nickname?: string };
@@ -26,6 +26,20 @@ export type UserSelectProps = {
 };
 
 const WORKFLOW_VARIABLE_REGEXP = /\{\{\s*([^{}]+?)\s*\}\}/g;
+
+type WorkflowFieldLike = {
+  collectionName?: string;
+  isForeignKey?: boolean;
+  name?: string;
+  target?: string;
+};
+
+function isUserKeyField(field: WorkflowFieldLike) {
+  if (field.isForeignKey) {
+    return field.target === 'users';
+  }
+  return field.collectionName === 'users' && field.name === 'id';
+}
 
 function formatWorkflowPathToValue(item?: MetaTreeNode) {
   const path = item?.paths ?? [];
@@ -62,13 +76,10 @@ function UserPickerInput(props: { value?: string; onChange?: (next: string) => v
   );
 }
 
-function WorkflowUserSelectInput(props: {
-  value?: string | null;
-  onChange?: (next: string) => void;
-  variableOptions?: MetaTreeNode[];
-}) {
-  const { value, onChange, variableOptions } = props;
+function WorkflowUserSelectInput(props: { value?: string | null; onChange?: (next: string) => void }) {
+  const { value, onChange } = props;
   const { t } = useNotificationTranslation();
+  const workflowVariableOptions = useWorkflowVariableOptions({ types: [isUserKeyField] });
   const metaTree = useMemo<MetaTreeNode[]>(
     () => [
       {
@@ -77,9 +88,9 @@ function WorkflowUserSelectInput(props: {
         type: 'string',
         paths: ['constant'],
       },
-      ...(Array.isArray(variableOptions) ? variableOptions : []),
+      ...workflowVariableOptions,
     ],
-    [t, variableOptions],
+    [t, workflowVariableOptions],
   );
 
   const converters = useMemo(
@@ -148,11 +159,7 @@ export function UserSelect(props: UserSelectProps) {
   }
 
   return (
-    <WorkflowUserSelectInput
-      value={typeof props.value === 'string' ? props.value : ''}
-      onChange={props.onChange}
-      variableOptions={props.variableOptions}
-    />
+    <WorkflowUserSelectInput value={typeof props.value === 'string' ? props.value : ''} onChange={props.onChange} />
   );
 }
 
