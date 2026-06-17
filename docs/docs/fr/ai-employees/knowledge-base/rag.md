@@ -17,7 +17,7 @@ Sélectionnez l'employé IA pour lequel vous souhaitez activer le RAG, puis cliq
 Dans l'onglet `Knowledge base`, activez l'interrupteur `Enable`.
 
 - Dans le champ `Knowledge Base Prompt`, saisissez l'invite pour référencer la base de connaissances. `{knowledgeBaseData}` est un espace réservé fixe et ne doit pas être modifié.
-- Dans le champ `Knowledge Base`, sélectionnez la base de connaissances configurée. Référencez : [Base de connaissances](/ai-employees/knowledge-base/knowledge-base).
+- Dans le champ `Knowledge Base`, sélectionnez la base de connaissances configurée. Référencez : [Base de connaissances](./knowledge-base/).
 - Dans le champ `Top K`, saisissez le nombre de documents à récupérer. La valeur par défaut est de 3.
 - Dans le champ `Score`, saisissez le seuil de pertinence des documents pour la récupération.
 

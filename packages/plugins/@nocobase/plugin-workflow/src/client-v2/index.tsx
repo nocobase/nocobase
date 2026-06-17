@@ -17,6 +17,12 @@ export type { LoaderOf, NodeAvailableContext, TempAssociationSource } from './ca
 export { useCurrentWorkflowContext } from './canvas/contexts';
 export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';
 export type { WorkflowVariableInputProps } from './canvas/WorkflowVariableInput';
+export { WorkflowVariableTextArea } from './canvas/WorkflowVariableTextArea';
+export type { WorkflowVariableTextAreaProps } from './canvas/WorkflowVariableTextArea';
+export { WorkflowVariableJsonTextArea } from './canvas/WorkflowVariableJsonTextArea';
+export type { WorkflowVariableJsonTextAreaProps } from './canvas/WorkflowVariableJsonTextArea';
+export { WorkflowTypedVariableInput, WORKFLOW_TYPED_CONSTANT_TYPES } from './canvas/WorkflowTypedVariableInput';
+export type { WorkflowTypedVariableInputProps } from './canvas/WorkflowTypedVariableInput';
 export { useWorkflowVariableOptions } from './canvas/useWorkflowVariableOptions';
 export { BaseTypeSets, defaultFieldNames } from './canvas/collectionFieldOptions';
 export type { UseVariableOptions, VariableOption } from './canvas/collectionFieldOptions';

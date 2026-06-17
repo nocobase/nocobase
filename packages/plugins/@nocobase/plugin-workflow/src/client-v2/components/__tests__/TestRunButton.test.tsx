@@ -97,6 +97,7 @@ describe('TestRunButton', () => {
 
     expect(screen.getByTestId('workflow-variable-pill')).toHaveTextContent('resolved-pill');
     expect(screen.getByTestId('typed-variable-input')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('');
     expect(holder.typedVariableInputProps).toEqual([
       {
         value: undefined,

@@ -158,12 +158,49 @@
       {
         "type": "custom-link",
         "label": "База знаний",
-        "link": "/ai-employees/knowledge-base/knowledge-base"
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Обзор",
+            "link": "/ai-employees/knowledge-base/knowledge-base/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Управление документами",
+            "link": "/ai-employees/knowledge-base/knowledge-base/documents"
+          },
+          {
+            "type": "custom-link",
+            "label": "Управление сегментами",
+            "link": "/ai-employees/knowledge-base/knowledge-base/segments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Тесты совпадений",
+            "link": "/ai-employees/knowledge-base/knowledge-base/hit-tests"
+          },
+          {
+            "type": "custom-link",
+            "label": "Настройки",
+            "link": "/ai-employees/knowledge-base/knowledge-base/settings"
+          }
+        ]
       },
       {
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
+      },
+      {
+        "type": "custom-link",
+        "label": "Руководство разработчика",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Плагин External Knowledge Base",
+            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
+          }
+        ]
       }
     ]
   },
@@ -205,6 +242,37 @@
             "type": "custom-link",
             "label": "Узлел согласоввания",
             "link": "/ai-employees/workflow/nodes/employee/approval"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "База знаний AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Обзор",
+            "link": "/ai-employees/workflow/nodes/knowledge/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Создать документ",
+            "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Обновить документ",
+            "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Удалить документ",
+            "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Поиск документов",
+            "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
           }
         ]
       }

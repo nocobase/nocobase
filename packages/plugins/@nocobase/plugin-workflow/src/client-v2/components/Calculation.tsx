@@ -31,10 +31,9 @@ import React, { createContext, useCallback, useContext } from 'react';
 import { Trans } from 'react-i18next';
 import { useT, useWorkflowTranslation, NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../canvas/useWorkflowVariableOptions';
+import { WORKFLOW_TYPED_CONSTANT_TYPES } from '../canvas/WorkflowTypedVariableInput';
 
-// Constant types a calculation operand accepts. v1 uses bare `useTypedConstant` (= all types), whose constant submenu
-// includes JSON — so include `object`.
-const OPERAND_TYPES: TypedConstantSpec[] = ['string', 'number', 'boolean', 'date', 'object'];
+const OPERAND_TYPES: TypedConstantSpec[] = WORKFLOW_TYPED_CONSTANT_TYPES;
 
 // v1 relied on a global FormItem `.auto-width` rule to shrink the operator Select to its content; v2 has no such global
 // rule, so scope it locally (same pattern as the core `FileSizeInput`). Without this the antd Select defaults to
