@@ -44,6 +44,9 @@ export function getCollectionManagerAdapter(
   dataSourceKey = 'main',
 ): FieldTreeCollectionManager {
   return {
+    getCollection(collectionName: string) {
+      return dataSourceManager?.getDataSource?.(dataSourceKey)?.collectionManager?.getCollection?.(collectionName);
+    },
     getCollectionAllFields(collectionName: string) {
       return (
         dataSourceManager

@@ -53,6 +53,7 @@ function KeyValueListField({
   name,
   label,
   addLabel,
+  addButtonFullWidth = false,
   extra,
   valueName = 'value',
   renderValueInput,
@@ -60,6 +61,7 @@ function KeyValueListField({
   name: NamePath;
   label: React.ReactNode;
   addLabel: React.ReactNode;
+  addButtonFullWidth?: boolean;
   extra?: React.ReactNode;
   valueName?: string;
   renderValueInput?: (field: FormListFieldData) => React.ReactNode;
@@ -84,7 +86,11 @@ function KeyValueListField({
                 </Form.Item>
               </Flex>
             ))}
-            <Button icon={<PlusOutlined />} onClick={() => add()} style={{ alignSelf: 'flex-start' }}>
+            <Button
+              icon={<PlusOutlined />}
+              onClick={() => add()}
+              style={addButtonFullWidth ? { width: '100%' } : { alignSelf: 'flex-start' }}
+            >
               {addLabel}
             </Button>
           </Space>
@@ -245,10 +251,16 @@ export function RequestFieldset() {
         name={['config', 'headers']}
         label={t('Headers')}
         addLabel={t('Add request header')}
+        addButtonFullWidth
         extra={t('"Content-Type" will be ignored from headers.')}
       />
 
-      <KeyValueListField name={['config', 'params']} label={t('Parameters')} addLabel={t('Add parameter')} />
+      <KeyValueListField
+        name={['config', 'params']}
+        label={t('Parameters')}
+        addLabel={t('Add parameter')}
+        addButtonFullWidth
+      />
 
       <RequestBodyField />
 

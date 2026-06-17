@@ -47,7 +47,20 @@ export const REQUEST_BODY_EDITOR_KIND: Record<RequestContentType, RequestBodyEdi
   'text/plain': 'text',
 };
 
-export function isRequestFileVariableMatch(field: any, { collectionManager }: { collectionManager?: any }) {
+type RequestFileMatchField = {
+  target?: string;
+};
+
+type RequestFileMatchOptions = {
+  collectionManager?: {
+    getCollection?: (collection: string) => { template?: string } | undefined;
+  };
+};
+
+export function isRequestFileVariableMatch(
+  field: RequestFileMatchField,
+  { collectionManager }: RequestFileMatchOptions,
+) {
   if (!field?.target) {
     return false;
   }
