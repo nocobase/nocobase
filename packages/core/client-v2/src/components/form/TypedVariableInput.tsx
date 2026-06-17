@@ -80,6 +80,13 @@ export interface TypedVariableInputProps {
    * allowed types or a variable reference.
    */
   nullable?: boolean;
+  /**
+   * Opt-in: when the incoming `value` is `undefined`, initialize the editor to
+   * the first allowed constant type instead of rendering the null-mode
+   * placeholder. `null` still keeps its explicit null semantics; only
+   * `undefined` triggers this path.
+   */
+  defaultToFirstConstantTypeWhenUndefined?: boolean;
   /** Variable-token delimiters. Default `['{{', '}}']` — see `VariableInput`. */
   delimiters?: VariableDelimiters;
   disabled?: boolean;
@@ -391,6 +398,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     extraNodes,
     metaTree: metaTreeProp,
     nullable = true,
+    defaultToFirstConstantTypeWhenUndefined = true,
     delimiters,
     disabled,
     placeholder,
@@ -410,7 +418,21 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
   const formatVariablePath = useMemo(() => makeFormatVariablePath(delimiters), [delimiters]);
 
   const normalizedTypes = useMemo(() => normalizeTypes(types), [types]);
-  const detected = useMemo(() => detectMode(value, parseVariablePath), [value, parseVariablePath]);
+  const defaultedValue = useMemo(() => {
+    if (!defaultToFirstConstantTypeWhenUndefined || value !== undefined) {
+      return undefined;
+    }
+    const firstType = normalizedTypes[0];
+    return firstType ? defaultValueFor(firstType.type) : undefined;
+  }, [defaultToFirstConstantTypeWhenUndefined, normalizedTypes, value]);
+  const effectiveValue = value === undefined && defaultedValue !== undefined ? defaultedValue : value;
+  const detected = useMemo(() => detectMode(effectiveValue, parseVariablePath), [effectiveValue, parseVariablePath]);
+
+  useEffect(() => {
+    if (value === undefined && defaultedValue !== undefined) {
+      onChange?.(defaultedValue);
+    }
+  }, [defaultedValue, onChange, value]);
 
   // rc-cascader caches its options by *reference* (useEntities), so lazily filling a node's children in place is
   // invisible to it. We mirror `FlowContextSelector`: lazy `loadData` mutates the **meta tree** in place, bumps
@@ -537,6 +559,16 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
     return isVariable && detected.variablePath ? resolveVariableLabels(detected.variablePath, metaTree) : [];
   }, [isVariable, detected.variablePath, metaTree, updateFlag]);
 
+  const switcherValue = useMemo(() => {
+    if (isVariable && detected.variablePath?.length) {
+      return detected.variablePath;
+    }
+    if (isNull) {
+      return [NULL_KEY];
+    }
+    return [CONST_KEY, constantTypeForRendering];
+  }, [constantTypeForRendering, detected.variablePath, isNull, isVariable]);
+
   // Preload a saved variable's label path across lazy levels. `resolveVariableLabels` can only read already-loaded
   // `children`; when a saved reference points below a node whose children are still a lazy thunk (e.g. a relation field
   // that hasn't been expanded), the deep segments render as raw names. Walk the saved path on mount / value change,
@@ -645,7 +677,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
             // field looking visibly empty/inactive rather than holding a real text value.
             <Input placeholder={`<${t('Null')}>`} readOnly disabled={disabled} style={{ width: '100%' }} />
           ) : (
-            renderConstantEditor(constantTypeForRendering, value, onChange, {
+            renderConstantEditor(constantTypeForRendering, effectiveValue, onChange, {
               typedProps,
               disabled,
               placeholder,
@@ -656,6 +688,7 @@ export function TypedVariableInput(props: TypedVariableInputProps) {
         </div>
         <Cascader<SwitcherOption>
           options={switcherOptions}
+          value={switcherValue}
           onChange={onSwitcherChange}
           loadData={loadData}
           disabled={disabled}

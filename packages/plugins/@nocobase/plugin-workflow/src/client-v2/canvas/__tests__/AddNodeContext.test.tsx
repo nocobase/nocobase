@@ -13,6 +13,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { App } from 'antd';
 import { PresetDialogForm } from '../AddNodeContext';
 import ConditionInstruction from '../../nodes/condition';
+import MultiConditionsInstruction from '../../nodes/multi-conditions';
 
 vi.mock('../../locale', () => ({
   NAMESPACE: 'workflow',
@@ -49,6 +50,23 @@ describe('PresetDialogForm', () => {
       expect(screen.getByText('After end of branches')).toBeInTheDocument();
       expect(screen.getByText('Inside of "Yes" branch')).toBeInTheDocument();
       expect(screen.getByText('Inside of "No" branch')).toBeInTheDocument();
+    });
+  });
+
+  it('shows downstream-branch placement options immediately for multi-conditions when inserted before downstream nodes', async () => {
+    const instruction = new MultiConditionsInstruction();
+
+    render(
+      <App>
+        <PresetDialogForm instruction={instruction} hasDownstream onSubmit={vi.fn()} />
+      </App>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Move all downstream nodes to')).toBeInTheDocument();
+      expect(screen.getByText('After end of branches')).toBeInTheDocument();
+      expect(screen.getByText('Inside of "First condition" branch')).toBeInTheDocument();
+      expect(screen.getByText('Inside of "Otherwise" branch')).toBeInTheDocument();
     });
   });
 });

@@ -55,10 +55,11 @@ export type WorkflowCategoryTabsProps = {
   onChange: (key: string) => void;
   categories: WorkflowCategory[];
   refreshCategories: () => void;
+  className?: string;
 };
 
 export function WorkflowCategoryTabs(props: WorkflowCategoryTabsProps) {
-  const { activeKey, onChange, categories, refreshCategories } = props;
+  const { activeKey, onChange, categories, refreshCategories, className } = props;
   const { t } = useWorkflowTranslation();
   const compile = useT();
   const ctx = useFlowContext();
@@ -140,6 +141,7 @@ export function WorkflowCategoryTabs(props: WorkflowCategoryTabsProps) {
   return (
     <>
       <SortableCategoryTabs
+        className={className}
         activeKey={activeKey}
         onChange={onChange}
         allTab={{ key: ALL_CATEGORY_KEY, label: t('All') }}

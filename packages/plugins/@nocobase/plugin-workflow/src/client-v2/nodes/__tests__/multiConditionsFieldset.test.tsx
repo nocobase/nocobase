@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Form } from 'antd';
 import { MultiConditionsFieldset } from '../components/multi-conditions';
 
@@ -29,5 +29,39 @@ describe('MultiConditionsFieldset', () => {
     expect(screen.getByText('When no condition matches')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'End as failed' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Continue the workflow' })).toBeInTheDocument();
+  });
+
+  it('keeps existing conditions in form values when only continueOnNoMatch changes', () => {
+    let formInstance: ReturnType<typeof Form.useForm>[0] | null = null;
+
+    function Wrapper() {
+      const [form] = Form.useForm();
+      formInstance = form;
+
+      return (
+        <Form
+          form={form}
+          initialValues={{
+            config: {
+              continueOnNoMatch: false,
+              conditions: [{ uid: 'c1', title: 'Condition 1' }],
+            },
+          }}
+        >
+          <MultiConditionsFieldset />
+        </Form>
+      );
+    }
+
+    render(<Wrapper />);
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Continue the workflow' }));
+
+    expect(formInstance?.getFieldsValue(true)).toEqual({
+      config: {
+        continueOnNoMatch: true,
+        conditions: [{ uid: 'c1', title: 'Condition 1' }],
+      },
+    });
   });
 });

@@ -15,6 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Mock the FlowContext so `useFlowContext()` returns our controlled ctx ---
 const holder = vi.hoisted(() => ({ ctx: null as any }));
+const providerHolder = vi.hoisted(() => ({ collections: null as any, workflowTabsClassName: null as string | null }));
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return { ...actual, useFlowContext: () => holder.ctx };
@@ -34,7 +35,10 @@ vi.mock('@nocobase/client-v2', () => ({
   Plugin: class Plugin {},
   SortableCategoryTabs: () => null,
   CollectionFilter: () => null,
-  ExtendCollectionsProvider: ({ children }: any) => <>{children}</>,
+  ExtendCollectionsProvider: ({ children, collections }: any) => {
+    providerHolder.collections = collections;
+    return <>{children}</>;
+  },
   DrawerFormLayout: ({ children, onSubmit }: any) => (
     <div>
       {children}
@@ -72,6 +76,14 @@ vi.mock('@nocobase/client-v2', () => ({
   ),
 }));
 
+vi.mock('../WorkflowCategoryTabs', () => ({
+  ALL_CATEGORY_KEY: 'all',
+  WorkflowCategoryTabs: ({ className }: any) => {
+    providerHolder.workflowTabsClassName = className ?? null;
+    return <div data-testid="workflow-category-tabs" />;
+  },
+}));
+
 import { WorkflowFormDrawer } from '../WorkflowFormDrawer';
 import WorkflowPane from '../WorkflowPane';
 
@@ -95,6 +107,8 @@ function renderWithApp(node: React.ReactNode) {
 describe('WorkflowPane (request layer)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    providerHolder.collections = null;
+    providerHolder.workflowTabsClassName = null;
   });
 
   it('fires resource.create on submit in create mode', async () => {
@@ -255,5 +269,51 @@ describe('WorkflowPane (request layer)', () => {
     expect(label).toBeInTheDocument();
     expect(label).toHaveStyle({ fontWeight: '600' });
     expect(await screen.findByText('preset-field')).toBeInTheDocument();
+  });
+
+  it('injects the client-only workflows collection as hidden so it does not leak into visible collection pickers', async () => {
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [],
+          meta: { count: 0 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    await waitFor(() => {
+      expect(providerHolder.collections).toBeTruthy();
+    });
+
+    expect(providerHolder.collections).toHaveLength(1);
+    expect(providerHolder.collections[0]).toMatchObject({
+      name: 'workflows',
+      hidden: true,
+    });
+  });
+
+  it('passes a dedicated tabs container class to WorkflowCategoryTabs so the page can match the legacy top strip layout', async () => {
+    const workflows = {
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [],
+          meta: { count: 0 },
+        },
+      }),
+    };
+    const workflowCategories = { list: vi.fn().mockResolvedValue({ data: { data: [] } }) };
+    holder.ctx = makeCtx({ workflows, workflowCategories });
+
+    renderWithApp(<WorkflowPane />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('workflow-category-tabs')).toBeInTheDocument();
+    });
+
+    expect(providerHolder.workflowTabsClassName).toBeTruthy();
   });
 });

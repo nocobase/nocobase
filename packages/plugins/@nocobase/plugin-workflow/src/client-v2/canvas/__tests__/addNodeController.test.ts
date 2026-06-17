@@ -70,6 +70,31 @@ describe('resolveAddNodeDecision', () => {
     });
   });
 
+  it('keeps branch-fallback for multi-conditions so the UI can open the downstream-placement dialog first', () => {
+    const instruction = {
+      type: 'multi-conditions',
+      title: 'Multi conditions',
+      createDefaultConfig: () => ({ conditions: [{ uid: '1' }], continueOnNoMatch: false }),
+      branching: [
+        { label: 'First condition', value: 1 },
+        { label: 'Otherwise', value: 0 },
+      ],
+    } as any;
+
+    const decision = resolveAddNodeDecision({
+      type: 'multi-conditions',
+      anchor: { upstream: { id: 10 }, branchIndex: null },
+      runtime: {
+        workflow: { id: 1 },
+        nodes: [{ id: 11, upstreamId: 10, branchIndex: null }],
+        getInstruction: () => instruction,
+        translateTitle,
+      },
+    });
+
+    expect(decision.kind).toBe('branch-fallback');
+  });
+
   it('returns blocked when runtime availability says no', () => {
     const instruction = {
       type: 'async-node',

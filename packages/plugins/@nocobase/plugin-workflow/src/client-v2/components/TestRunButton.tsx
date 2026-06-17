@@ -32,7 +32,7 @@ import { TypedVariableInput, type TypedConstantSpec } from '@nocobase/client-v2'
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import { parse } from '@nocobase/utils/client';
 import { useT } from '../locale';
-import { NodeContext } from '../canvas/contexts';
+import { CurrentWorkflowContext, NodeContext, useCurrentWorkflowContext } from '../canvas/contexts';
 import { WorkflowVariableInput } from '../canvas/WorkflowVariableInput';
 
 // Replacement values accept any literal, matching v1's
@@ -59,7 +59,13 @@ function VariableReplacer({
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* metaTree={[]} → no variable branch, pure constant (mirrors v1). */}
-        <TypedVariableInput metaTree={[]} types={REPLACE_TYPES} value={value} onChange={onChange} />
+        <TypedVariableInput
+          metaTree={[]}
+          types={REPLACE_TYPES}
+          value={value}
+          onChange={onChange}
+          defaultToFirstConstantTypeWhenUndefined
+        />
       </div>
     </div>
   );
@@ -105,14 +111,14 @@ type TestResult = { status: number; result?: unknown; log?: string };
 function TestRunDialog({ data }: { data: any }) {
   const ctx = useFlowEngineContext();
   const t = useT();
-  const [replaceValues, setReplaceValues] = useState<Record<string, unknown>>({});
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<TestResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   // Variable keys referenced by the node config (e.g. `$jobsMapByNodeKey.x.y`).
   const template = useMemo(() => parse(data.config ?? {}), [data.config]);
   const keys = useMemo(() => template.parameters.map((p: { key: string }) => p.key), [template]);
+  const [replaceValues, setReplaceValues] = useState<Record<string, unknown>>({});
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<TestResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const onRun = async () => {
     setLoading(true);
@@ -194,23 +200,33 @@ function TestRunDialog({ data }: { data: any }) {
  * nodes. `form` is the drawer's antd form — its live `config` value is snapshot
  * into the dialog when opened.
  */
-export function TestRunButton({ data, form }: { data: any; form: any }) {
+export function TestRunButton({ data, form, workflow: workflowProp }: { data: any; form: any; workflow?: any }) {
   const ctx = useFlowEngineContext();
   const t = useT();
+  // Footer actions are rendered through the detached `view.Footer` slot, so they
+  // cannot rely on inheriting the drawer body's React contexts. Prefer the
+  // explicitly-threaded workflow prop; fall back to the local context only when
+  // the button is rendered inside the body tree.
+  const workflowFromContext = useCurrentWorkflowContext();
+  const workflow = workflowProp ?? workflowFromContext;
 
   const onOpen = () => {
     const config = form.getFieldsValue()?.config ?? data.config ?? {};
     // The dialog renders in a detached portal, so React contexts from the drawer (NodeContext) don't cross into it.
-    // Re-provide it from the same `data` node object — its live `.upstream` linked-list lets the variable pills resolve
-    // labels (Node result / field names), exactly as the config drawer does.
+    // Re-provide both workflow + node contexts from the config drawer tree:
+    //   - `CurrentWorkflowContext` keeps trigger-scope variable pills resolving to their labelled path instead of
+    //     falling back to the raw `{{...}}` template;
+    //   - `NodeContext` keeps node-result variables resolving through the live upstream linked-list.
     ctx.viewer.dialog({
       width: 800,
       closable: true,
       title: t('Test run'),
       content: () => (
-        <NodeContext.Provider value={{ ...data, config }}>
-          <TestRunDialog data={{ ...data, config }} />
-        </NodeContext.Provider>
+        <CurrentWorkflowContext.Provider value={workflow}>
+          <NodeContext.Provider value={{ ...data, config }}>
+            <TestRunDialog data={{ ...data, config }} />
+          </NodeContext.Provider>
+        </CurrentWorkflowContext.Provider>
       ),
     });
   };

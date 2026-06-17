@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Descriptions, Modal } from 'antd';
-import React from 'react';
+import { useMemoizedFn } from 'ahooks';
+import { Descriptions, Input, Modal } from 'antd';
+import React, { useEffect, useState } from 'react';
+import useStyles from '../canvas/style';
 import { useWorkflowTranslation } from '../locale';
 import { formatTime, formatUser, type WorkflowCanvasRecord } from './workflowCanvas';
 
@@ -16,12 +18,43 @@ export function WorkflowDetailsModal({
   record,
   open,
   onClose,
+  resource,
+  refresh,
 }: {
   record: WorkflowCanvasRecord;
   open: boolean;
   onClose: () => void;
+  resource: { update: (options: { filterByTk: string | number; values: { description: string } }) => Promise<unknown> };
+  refresh: () => void;
 }) {
   const { t } = useWorkflowTranslation();
+  const { styles } = useStyles();
+  const [editingDescription, setEditingDescription] = useState(record.description ?? '');
+
+  useEffect(() => {
+    if (open) {
+      setEditingDescription(record.description ?? '');
+    }
+  }, [open, record.description]);
+
+  const onChangeDescription = useMemoizedFn((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditingDescription(event.target.value);
+  });
+
+  const onBlurDescription = useMemoizedFn(async (event: React.FocusEvent<HTMLTextAreaElement>) => {
+    const description = event.target.value;
+    if (description === (record.description ?? '')) {
+      return;
+    }
+    await resource.update({
+      filterByTk: record.id,
+      values: {
+        description,
+      },
+    });
+    refresh();
+  });
+
   return (
     <Modal open={open} title={t('Details')} width={640} footer={null} onCancel={onClose}>
       <Descriptions bordered column={2} size="small">
@@ -33,7 +66,15 @@ export function WorkflowDetailsModal({
         <Descriptions.Item label={t('Last updated by')}>{formatUser(record.updatedBy)}</Descriptions.Item>
         <Descriptions.Item label={t('Last updated at')}>{formatTime(record.updatedAt)}</Descriptions.Item>
         <Descriptions.Item label={t('Description')} span={2}>
-          <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{record.description || '-'}</div>
+          <Input.TextArea
+            aria-label={t('Description')}
+            value={editingDescription}
+            onChange={onChangeDescription}
+            onBlur={onBlurDescription}
+            placeholder="-"
+            className={styles.workflowDetailsDescriptionClass}
+            autoSize={{ minRows: 3, maxRows: 8 }}
+          />
         </Descriptions.Item>
       </Descriptions>
     </Modal>

@@ -12,6 +12,7 @@ import { useMemoizedFn } from 'ahooks';
 import { InputNumber, Select } from 'antd';
 import React from 'react';
 import { Cron, type Locale } from 'react-js-cron';
+import 'react-js-cron/dist/styles.css';
 import { useWorkflowTranslation } from '../../locale';
 
 declare global {
@@ -121,14 +122,21 @@ export function RepeatField({
           border: 1px dashed #ccc;
 
           .react-js-cron-field {
+            flex-shrink: 0;
             margin-bottom: 0.5em;
 
             > span {
+              flex-shrink: 0;
               margin: 0 0.5em 0 0;
             }
 
             > .react-js-cron-select {
               margin: 0 0.5em 0 0;
+
+              .ant-select-selection-overflow {
+                align-items: center;
+                flex: initial;
+              }
             }
           }
 

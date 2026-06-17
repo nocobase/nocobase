@@ -179,7 +179,7 @@ function NodeConfigForm({
     <span />
   ) : (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-      <div>{instruction?.testable ? <TestRunButton data={data} form={form} /> : null}</div>
+      <div>{instruction?.testable ? <TestRunButton data={data} form={form} workflow={workflow} /> : null}</div>
       <Space>
         <Button onClick={() => view.close()}>{t('Cancel')}</Button>
         <Button
