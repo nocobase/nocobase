@@ -13,7 +13,12 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-response-message",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-response-message",
   "devDependencies": {
-    "joi": "^17.13.3"
+    "joi": "^17.13.3",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

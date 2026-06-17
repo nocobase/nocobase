@@ -290,7 +290,7 @@ function UploadContent({ model }) {
 }
 
 export class UploadActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
   declare props: any;
 
   defaultProps: any = {

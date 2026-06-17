@@ -35,7 +35,7 @@ class GanttPopupActionModel extends PopupActionModel {
 }
 
 export class GanttEventViewActionModel extends GanttPopupActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene: typeof ActionSceneEnum.record = ActionSceneEnum.record;
 
   defaultPopupTitle = tExpr('Details');
 

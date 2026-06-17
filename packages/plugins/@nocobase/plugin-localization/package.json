@@ -7,7 +7,17 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/localization-management",
   "license": "Apache-2.0",
   "devDependencies": {
-    "deepmerge": "^4.3.1"
+    "deepmerge": "^4.3.1",
+    "@nocobase/ai": "workspace:*",
+    "@nocobase/cache": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-ai": "workspace:*",
+    "@nocobase/plugin-async-task-manager": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/ai": "workspace:*",

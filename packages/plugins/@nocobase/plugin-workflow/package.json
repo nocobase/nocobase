@@ -32,7 +32,22 @@
     "react-js-cron": "^3.1.0",
     "react-router-dom": "^6.11.2",
     "sequelize": "^6.26.0",
-    "tinybench": "4.x"
+    "tinybench": "4.x",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/evaluators": "workspace:*",
+    "@nocobase/logger": "workspace:*",
+    "@nocobase/plugin-data-source-main": "workspace:*",
+    "@nocobase/plugin-error-handler": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
+    "@nocobase/plugin-users": "workspace:*",
+    "@nocobase/plugin-workflow-test": "workspace:*",
+    "@nocobase/resourcer": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",

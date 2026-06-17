@@ -18,7 +18,14 @@
     "immer": "^10.1.1"
   },
   "devDependencies": {
-    "antd-mobile": "^5.38"
+    "antd-mobile": "^5.38",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
+    "@nocobase/plugin-notification-manager": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "peerDependencies": {
     "@formily/reactive": "2.x",

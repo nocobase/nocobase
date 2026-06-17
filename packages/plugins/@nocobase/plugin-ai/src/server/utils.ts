@@ -14,6 +14,7 @@ import { getDateVars, parse, serverRequest } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
 import { ToolsEntry } from '@nocobase/ai';
 import { tool } from 'langchain';
+import type { StructuredToolInterface } from '@langchain/core/tools';
 
 export function sendSSEError(ctx: Context, error: Error | string, errorName?: string) {
   const body = typeof error === 'string' ? error : error.message || 'Unknown error';
@@ -131,7 +132,7 @@ export async function parseVariables(ctx: Context, value: string) {
 }
 
 const noWriter = (chunk: any) => console.warn(`No writer in tools runtime, chunk:[${chunk}]`);
-export const buildTool = (toolsEntry: ToolsEntry) => {
+export const buildTool = (toolsEntry: ToolsEntry): StructuredToolInterface => {
   const {
     invoke,
     definition: { name, description, schema },

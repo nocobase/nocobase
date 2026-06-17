@@ -15,7 +15,13 @@
   "devDependencies": {
     "jmespath": "^0.16.0",
     "jsonata": "^2.0.3",
-    "jsonpath-plus": "^10.3.0"
+    "jsonpath-plus": "^10.3.0",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/plugin-workflow-test": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

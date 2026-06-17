@@ -8,6 +8,7 @@
  */
 
 import type { VoidField } from '@formily/core';
+import type { ISchema } from '@formily/react';
 import { Cascader, css, useCollection_deprecated, useCompile } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from './constants';
@@ -19,7 +20,25 @@ const INCLUDE_FILE_TYPE = [
   'application/wps-office.xlsx',
 ];
 
-export const useShared = () => {
+type UploadFileLike = {
+  type?: string;
+};
+
+type UploadValidationResult =
+  | ''
+  | {
+      type: 'error';
+      message: string;
+    };
+
+interface ImportSharedOptions {
+  importSettingsSchema: ISchema;
+  beforeUploadHandler: () => boolean;
+  uploadValidator: (value: UploadFileLike[], rule?: unknown) => UploadValidationResult;
+  validateUpload: (form: { errors?: unknown[] }, submitField: VoidField, deps: [unknown[]?]) => void;
+}
+
+export const useShared = (): ImportSharedOptions => {
   const { t } = useTranslation(NAMESPACE);
   const { name } = useCollection_deprecated();
   const fields = useFields(name);

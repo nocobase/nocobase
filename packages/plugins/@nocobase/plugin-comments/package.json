@@ -22,7 +22,13 @@
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
     "antd": "5.x",
-    "dayjs": "^1.11.8"
+    "dayjs": "^1.11.8",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

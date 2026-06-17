@@ -23,7 +23,16 @@
     "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1",
-    "tencentcloud-sdk-nodejs-sms": "^4.1.171"
+    "tencentcloud-sdk-nodejs-sms": "^4.1.171",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/resourcer": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",

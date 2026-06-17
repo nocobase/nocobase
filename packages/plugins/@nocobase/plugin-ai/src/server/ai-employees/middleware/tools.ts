@@ -13,7 +13,10 @@ import z from 'zod';
 import _ from 'lodash';
 import { ToolsEntry } from '@nocobase/ai';
 
-export const toolInteractionMiddleware = (aiEmployee: AIEmployee, tools: ToolsEntry[]) => {
+export const toolInteractionMiddleware = (
+  aiEmployee: AIEmployee,
+  tools: ToolsEntry[],
+): ReturnType<typeof humanInTheLoopMiddleware> => {
   const interruptOn = {};
   for (const tool of tools) {
     interruptOn[tool.definition.name] = aiEmployee.shouldInterruptToolCall(tool)

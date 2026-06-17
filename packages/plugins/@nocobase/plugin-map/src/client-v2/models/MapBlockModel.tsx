@@ -70,7 +70,7 @@ export const getMapBlockRuntimeProps = (model: MapBlockModel) => {
 };
 
 export class MapBlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.many;
+  static scene: typeof BlockSceneEnum.many = BlockSceneEnum.many;
   selectedRecordKeys = [];
   get resource() {
     return super.resource as MultiRecordResource;

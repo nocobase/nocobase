@@ -20,7 +20,12 @@
     "@nocobase/test": "workspace:*"
   },
   "devDependencies": {
-    "langchain-gigachat": "^0.0.14"
+    "langchain-gigachat": "^0.0.14",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-ai": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "AI"

@@ -12,7 +12,7 @@ import { CreateFormModel, BlockSceneEnum } from '@nocobase/client-v2';
 import { tExpr } from '@nocobase/flow-engine';
 
 export class BulkEditFormModel extends CreateFormModel {
-  static scene = BlockSceneEnum.bulkEditForm;
+  static scene: typeof BlockSceneEnum.bulkEditForm = BlockSceneEnum.bulkEditForm;
 
   getAclActionName() {
     return 'update';

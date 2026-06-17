@@ -20,13 +20,13 @@ export const loadByWorker = async (extname: string, blob: Blob): Promise<Documen
   });
   return new Promise<Document[]>((resolve, reject) => {
     let settled = false;
-    const close = (error?: Error, result?: Document[]) => {
+    const close = (error?: unknown, result?: Document[]) => {
       if (settled) {
         return;
       }
       settled = true;
       if (error) {
-        reject(error);
+        reject(error instanceof Error ? error : new Error(String(error)));
         return;
       }
       resolve(result || []);

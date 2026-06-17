@@ -15,7 +15,14 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@hapi/topo": "^6.0.0",
-    "toposort": "^2.0.2"
+    "toposort": "^2.0.2",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-error-handler": "workspace:*",
+    "@nocobase/plugin-field-sort": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

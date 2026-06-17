@@ -464,7 +464,9 @@ const TreeTitleFieldDeletedPlaceholder = ({ model }: { model: TreeBlockModel }) 
   );
 };
 
-export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => {
+type TreeBlockViewProps = { model: TreeBlockModel };
+
+export const TreeBlockView: React.FC<TreeBlockViewProps> = observer(({ model }) => {
   const resource = model.resource;
   const treeData = resource.getData();
   const collection = model.collection;

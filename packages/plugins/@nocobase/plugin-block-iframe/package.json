@@ -19,7 +19,13 @@
     "antd": "5.x",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1",
-    "react-iframe": "~1.8.5"
+    "react-iframe": "~1.8.5",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",

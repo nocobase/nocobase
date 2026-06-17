@@ -17,5 +17,11 @@
   },
   "keywords": [
     "Blocks"
-  ]
+  ],
+  "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
+  }
 }

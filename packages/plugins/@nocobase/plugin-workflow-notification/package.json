@@ -15,7 +15,13 @@
   "devDependencies": {
     "antd": "5.x",
     "joi": "^17.13.3",
-    "react": "18.x"
+    "react": "18.x",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-notification-manager": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

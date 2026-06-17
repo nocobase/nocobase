@@ -8,12 +8,17 @@
  */
 
 import { useFieldSchema } from '@formily/react';
+import type { SchemaSettingItemComponentType } from '@nocobase/client';
 import _ from 'lodash';
 import { RevertSetting } from '../components/RevertSetting';
 import { tStr } from '../locale';
 import { useIsInTemplate } from '../hooks/useIsInTemplate';
 
-export const revertSettingItem = {
+type BlockTemplateSettingItem = SchemaSettingItemComponentType & {
+  title?: string;
+};
+
+export const revertSettingItem: BlockTemplateSettingItem = {
   name: 'template-revertSettingItem',
   title: tStr('Revert to template'),
   Component: RevertSetting,

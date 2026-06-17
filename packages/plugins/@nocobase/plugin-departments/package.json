@@ -23,5 +23,16 @@
     "Users & permissions"
   ],
   "gitHead": "ce89d10eec858c413f60e001e83c7c8cf2645f5e",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-acl": "workspace:*",
+    "@nocobase/plugin-error-handler": "workspace:*",
+    "@nocobase/plugin-user-data-sync": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*"
+  }
 }

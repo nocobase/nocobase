@@ -40,6 +40,20 @@ type GroupFieldOption = {
 
 type DialogMode = 'create' | 'update' | null;
 
+type KanbanCreateSortFieldSelectProps = {
+  value?: string | null;
+  onChange?: (value: string | null) => void;
+  sortFields?: SortFieldOption[];
+  collectionFields?: CollectionFieldMetadata[];
+  groupField?: GroupFieldOption;
+  collectionName?: string;
+  dataSource?: string;
+  useGroupingFormValues?: boolean;
+  allowClear?: boolean;
+  disabled?: boolean;
+  [key: string]: any;
+};
+
 export const upsertKanbanCollectionFieldOptions = (
   fields: Record<string, any>[] = [],
   fieldData?: Record<string, any>,
@@ -87,20 +101,8 @@ const compileLabel = (flowSettingsContext: any, value?: string) => {
   return flowSettingsContext?.t?.(value) || value;
 };
 
-export const KanbanCreateSortFieldSelect = observer(
-  (props: {
-    value?: string | null;
-    onChange?: (value: string | null) => void;
-    sortFields?: SortFieldOption[];
-    collectionFields?: CollectionFieldMetadata[];
-    groupField?: GroupFieldOption;
-    collectionName?: string;
-    dataSource?: string;
-    useGroupingFormValues?: boolean;
-    allowClear?: boolean;
-    disabled?: boolean;
-    [key: string]: any;
-  }) => {
+export const KanbanCreateSortFieldSelect: React.FC<KanbanCreateSortFieldSelectProps> = observer(
+  (props: KanbanCreateSortFieldSelectProps) => {
     const {
       value,
       onChange,

@@ -60,7 +60,18 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "use-context-selector": "^2.0.0",
-    "zustand": "^5.0.6"
+    "zustand": "^5.0.6",
+    "@nocobase/acl": "workspace:*",
+    "@nocobase/ai": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-acl": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*",
+    "@nocobase/plugin-file-manager": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "keywords": [
     "AI"

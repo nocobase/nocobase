@@ -27,7 +27,11 @@
     "codemirror": "^6.0.2",
     "joi": "^17.13.3",
     "jshint": "^2.13.6",
-    "quickjs-emscripten": "^0.32.0"
+    "quickjs-emscripten": "^0.32.0",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Workflow"

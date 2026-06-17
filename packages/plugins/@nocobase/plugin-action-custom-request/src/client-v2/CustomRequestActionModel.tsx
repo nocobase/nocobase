@@ -14,7 +14,7 @@ import { NAMESPACE } from './locale';
 import { CUSTOM_REQUEST_ACTION_NAME } from './customRequestFlowAction';
 
 export class CustomRequestActionModel extends ActionModel {
-  static scene = ActionSceneEnum.all;
+  static scene: typeof ActionSceneEnum.all = ActionSceneEnum.all;
 
   defaultProps: ButtonProps = {
     title: tExpr('Custom request', { ns: NAMESPACE }),

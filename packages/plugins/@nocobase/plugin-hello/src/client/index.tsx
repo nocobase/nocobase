@@ -47,7 +47,7 @@ class Hello2BlockModel extends DataBlockModel {
 }
 
 class Hello3BlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.many;
+  static scene: typeof BlockSceneEnum.many = BlockSceneEnum.many;
   createResource() {
     return this.context.createResource(MultiRecordResource);
   }
@@ -63,7 +63,7 @@ class Hello3BlockModel extends CollectionBlockModel {
 }
 
 class Hello4BlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.oam;
+  static scene: typeof BlockSceneEnum.oam = BlockSceneEnum.oam;
   createResource() {
     return this.context.createResource(MultiRecordResource);
   }
@@ -78,7 +78,7 @@ class Hello4BlockModel extends CollectionBlockModel {
 }
 
 class Hello5BlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.new;
+  static scene: typeof BlockSceneEnum.new = BlockSceneEnum.new;
   createResource() {
     return this.context.createResource(MultiRecordResource);
   }
@@ -93,7 +93,7 @@ class Hello5BlockModel extends CollectionBlockModel {
 }
 
 class Hello6BlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.select;
+  static scene: typeof BlockSceneEnum.select = BlockSceneEnum.select;
   createResource() {
     return this.context.createResource(MultiRecordResource);
   }
@@ -108,7 +108,7 @@ class Hello6BlockModel extends CollectionBlockModel {
 }
 
 class Hello7BlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.one;
+  static scene: typeof BlockSceneEnum.one = BlockSceneEnum.one;
   createResource() {
     return this.context.createResource(MultiRecordResource);
   }
@@ -134,7 +134,7 @@ class Hello8BlockModel extends FilterBlockModel {
 }
 
 class Hello1ActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
 
   defaultProps: ButtonProps = {
     title: 'Hello1 Action',
@@ -142,7 +142,7 @@ class Hello1ActionModel extends ActionModel {
 }
 
 class Hello2ActionModel extends ActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene: typeof ActionSceneEnum.record = ActionSceneEnum.record;
 
   defaultProps: ButtonProps = {
     title: 'Hello2 Action',
@@ -150,7 +150,7 @@ class Hello2ActionModel extends ActionModel {
 }
 
 class Hello3ActionModel extends ActionModel {
-  static scene = ActionSceneEnum.all;
+  static scene: typeof ActionSceneEnum.all = ActionSceneEnum.all;
 
   defaultProps: ButtonProps = {
     title: 'Hello3 Action',
@@ -158,7 +158,7 @@ class Hello3ActionModel extends ActionModel {
 }
 
 class Hello4ActionModel extends PopupActionModel {
-  static scene = ActionSceneEnum.all;
+  static scene: typeof ActionSceneEnum.all = ActionSceneEnum.all;
 
   defaultProps: ButtonProps = {
     title: 'Hello4 Popup Action',

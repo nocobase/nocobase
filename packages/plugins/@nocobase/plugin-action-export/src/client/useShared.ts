@@ -6,10 +6,15 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import type { ISchema } from '@formily/react';
 import { useCompile, css, useCollection_deprecated } from '@nocobase/client';
 import { useFields } from './useFields';
 
-export const useShared = () => {
+interface ExportSharedOptions {
+  schema: ISchema;
+}
+
+export const useShared = (): ExportSharedOptions => {
   const { name } = useCollection_deprecated();
   const compile = useCompile();
   const fields = useFields(name);

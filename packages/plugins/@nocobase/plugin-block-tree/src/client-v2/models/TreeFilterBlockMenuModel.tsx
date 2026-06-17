@@ -13,7 +13,7 @@ import { tExpr } from '../locale';
 import { TreeBlockModel } from './TreeBlockModel';
 
 export class TreeFilterBlockMenuModel extends FilterBlockModel {
-  static scene = BlockSceneEnum.filter;
+  static scene: typeof BlockSceneEnum.filter = BlockSceneEnum.filter;
 
   static async defineChildren(ctx) {
     return await TreeBlockModel.defineChildren(ctx);

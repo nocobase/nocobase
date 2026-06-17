@@ -14,7 +14,16 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/ui-schema-storage",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/ui-schema-storage",
   "devDependencies": {
-    "@formily/json-schema": "2.x"
+    "@formily/json-schema": "2.x",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/cache": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-error-handler": "workspace:*",
+    "@nocobase/resourcer": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",

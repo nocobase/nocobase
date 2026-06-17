@@ -24,6 +24,16 @@
     "editionLevel": 0
   },
   "devDependencies": {
+    "@nocobase/acl": "workspace:*",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/cache": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*",
     "@types/jsonwebtoken": "^9.0.9",
     "jsonwebtoken": "^9.0.2",
     "react": "^18.2.0",

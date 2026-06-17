@@ -13,7 +13,7 @@ import React from 'react';
 import { tExpr } from '../locale';
 
 export class CustomBlockAndFilterCollection extends CollectionBlockModel {
-  static scene = BlockSceneEnum.many;
+  static scene: typeof BlockSceneEnum.many = BlockSceneEnum.many;
 
   static filterCollection(collection) {
     return collection.name === 'users';

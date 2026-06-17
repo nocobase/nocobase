@@ -25,5 +25,12 @@
   "keywords": [
     "Block",
     "Template"
-  ]
+  ],
+  "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
+    "@nocobase/plugin-ui-schema-storage": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
+  }
 }

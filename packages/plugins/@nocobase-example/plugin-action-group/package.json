@@ -9,5 +9,10 @@
     "@nocobase/client": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*"
+  },
+  "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   }
 }

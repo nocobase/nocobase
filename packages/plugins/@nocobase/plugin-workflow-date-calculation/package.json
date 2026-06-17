@@ -9,7 +9,11 @@
   "types": "./dist/server/index.d.ts",
   "devDependencies": {
     "joi": "^17.13.3",
-    "moment-timezone": "0.5.48"
+    "moment-timezone": "0.5.48",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "nocobase": {
     "supportedVersions": [

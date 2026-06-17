@@ -41,9 +41,10 @@ import { createGanttBlockClassNames } from './GanttBlock.styles';
 import { GANTT_TREE_CHILDREN_COLUMN, useGanttTree } from './GanttBlock.tree';
 
 type ScrollToDatePayload = Date | { date: Date; behavior?: ScrollBehavior };
+type GanttBlockProps = { model: GanttBlockModel };
 
-export const GanttBlock = observer(
-  ({ model }: { model: GanttBlockModel }) => {
+export const GanttBlock: React.FC<GanttBlockProps> = observer(
+  ({ model }) => {
     const { token } = theme.useToken();
     const {
       ganttHeight = 0,

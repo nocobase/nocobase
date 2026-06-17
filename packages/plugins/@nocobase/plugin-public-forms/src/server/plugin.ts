@@ -13,6 +13,10 @@ import { fillParentFields, parseAssociationNames } from './hook';
 
 class PasswordError extends Error {}
 
+interface PublicFormTokenPayload extends Record<string, unknown> {
+  formKey: string;
+}
+
 export class PluginPublicFormsServer extends Plugin {
   protected associationFieldTypes = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'];
 
@@ -67,12 +71,12 @@ export class PluginPublicFormsServer extends Plugin {
     return !!node;
   }
 
-  async validatePublicFormToken(filterByTk: string, token?: string) {
+  async validatePublicFormToken(filterByTk: string, token?: string): Promise<PublicFormTokenPayload> {
     if (!token) {
       throw new Error('Public form token is required');
     }
 
-    const tokenData = await this.app.authManager.jwt.decode(token);
+    const tokenData = (await this.app.authManager.jwt.decode(token)) as PublicFormTokenPayload;
     if (tokenData?.formKey !== filterByTk) {
       throw new Error('Invalid public form token');
     }

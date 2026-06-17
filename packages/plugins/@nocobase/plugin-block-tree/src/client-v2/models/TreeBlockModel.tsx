@@ -116,7 +116,7 @@ const buildTreeNodeActionItems = (ctx: FlowModelContext) =>
   buildTreeActionItems(ctx, TREE_NODE_ACTION_MODEL_NAMES, RecordActionGroupModel, 'record');
 
 export class TreeBlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.filter;
+  static scene: typeof BlockSceneEnum.filter = BlockSceneEnum.filter;
 
   static getSupportedAssociatedFields(ctx: FlowModelContext) {
     const { dataSourceKey, collectionName } = ctx.view.inputArgs || {};

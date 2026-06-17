@@ -23,5 +23,15 @@
   },
   "keywords": [
     "Collection fields"
-  ]
+  ],
+  "devDependencies": {
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/lock-manager": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
+  }
 }

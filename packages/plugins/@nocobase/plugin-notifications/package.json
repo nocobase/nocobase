@@ -10,7 +10,12 @@
   "devDependencies": {
     "@types/nodemailer": "6.4.4",
     "nodemailer": "^6.6.1",
-    "nodemailer-mock": "^1.5.11"
+    "nodemailer-mock": "^1.5.11",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

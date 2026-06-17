@@ -37,7 +37,12 @@
     "antd": "5.x",
     "dagre": "^0.8.5",
     "react": "^18.2.0",
-    "react-i18next": "^11.15.1"
+    "react-i18next": "^11.15.1",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

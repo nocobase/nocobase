@@ -16,7 +16,11 @@
     "@formily/react": "2.x",
     "antd": "5.x",
     "react": "^18.2.0",
-    "react-i18next": "^11.15.1"
+    "react-i18next": "^11.15.1",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

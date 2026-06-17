@@ -8,7 +8,10 @@
   "description": "Allow users to save form drafts and continue editing later.",
   "description.zh-CN": "支持在填写表单时保存草稿，稍后可继续编辑与提交。",
   "devDependencies": {
-    "idb": "^7.1.1"
+    "idb": "^7.1.1",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "nocobase": {
     "supportedVersions": [

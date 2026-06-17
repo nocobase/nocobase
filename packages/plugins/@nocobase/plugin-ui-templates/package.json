@@ -11,7 +11,13 @@
   "devDependencies": {
     "@formily/shared": "2.x",
     "antd": "5.x",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-flow-engine": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

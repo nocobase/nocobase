@@ -26,7 +26,7 @@ export class CommentItemModel extends FlowModel {
 }
 
 export class CommentsBlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.oam;
+  static scene: typeof BlockSceneEnum.oam = BlockSceneEnum.oam;
   static filterCollection(collection) {
     return collection.template === 'comment';
   }

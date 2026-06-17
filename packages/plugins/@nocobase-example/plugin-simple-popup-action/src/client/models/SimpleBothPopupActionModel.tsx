@@ -12,7 +12,7 @@ import { ButtonProps } from 'antd';
 import { tExpr } from '../locale';
 
 export class SimpleBothPopupActionModel extends PopupActionModel {
-  static scene = ActionSceneEnum.both;
+  static scene: typeof ActionSceneEnum.both = ActionSceneEnum.both;
 
   defaultProps: ButtonProps = {
     children: tExpr('Simple both popup'),

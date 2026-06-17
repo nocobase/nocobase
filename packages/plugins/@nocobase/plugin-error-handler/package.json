@@ -15,7 +15,12 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/error-handler",
   "devDependencies": {
     "@formily/json-schema": "2.x",
-    "supertest": "^6.1.6"
+    "supertest": "^6.1.6",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

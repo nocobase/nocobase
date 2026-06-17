@@ -15,7 +15,11 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/logger",
   "devDependencies": {
     "@types/tar-fs": "^2.0.2",
-    "tar-fs": "^3.0.4"
+    "tar-fs": "^3.0.4",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",

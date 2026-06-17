@@ -208,7 +208,7 @@ export default class extends Instruction {
       );
     },
   };
-  components = {
+  components: Record<string, React.ElementType | object> = {
     SQLTextArea,
     UnsafeInjectionWarning,
     WorkflowVariableInput,

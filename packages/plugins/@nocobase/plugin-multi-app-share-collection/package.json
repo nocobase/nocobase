@@ -14,7 +14,16 @@
     "@formily/react": "2.x",
     "antd": "5.x",
     "react": "18.x",
-    "react-i18next": "^11.15.1"
+    "react-i18next": "^11.15.1",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-data-source-main": "workspace:*",
+    "@nocobase/plugin-error-handler": "workspace:*",
+    "@nocobase/plugin-multi-app-manager": "workspace:*",
+    "@nocobase/plugin-users": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "nocobase": {
     "deprecated": true,

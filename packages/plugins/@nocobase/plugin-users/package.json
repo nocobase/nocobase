@@ -14,7 +14,20 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/users",
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.9",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-acl": "workspace:*",
+    "@nocobase/plugin-auth": "workspace:*",
+    "@nocobase/plugin-system-settings": "workspace:*",
+    "@nocobase/plugin-ui-schema-storage": "workspace:*",
+    "@nocobase/plugin-user-data-sync": "workspace:*",
+    "@nocobase/resourcer": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",

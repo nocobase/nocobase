@@ -340,7 +340,7 @@ FormTriggerWorkflowActionModel.registerFlow({
 });
 
 export class RecordTriggerWorkflowActionModel extends ActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene: typeof ActionSceneEnum.record = ActionSceneEnum.record;
   defaultProps: ButtonProps = {
     title: tExpr('Trigger workflow'),
   };
@@ -401,7 +401,7 @@ RecordTriggerWorkflowActionModel.registerFlow({
 });
 
 export class CollectionTriggerWorkflowActionModel extends CollectionActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
   defaultProps: ButtonProps = {
     title: null,
   };

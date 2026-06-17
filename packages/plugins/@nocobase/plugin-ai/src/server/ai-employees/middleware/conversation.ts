@@ -29,7 +29,7 @@ export const conversationMiddleware = (
     messageId?: string;
     agentThread?: { sessionId: string; thread: number };
   },
-) => {
+): ReturnType<typeof createMiddleware> => {
   const { providerName, llmService, model, messageId, agentThread } = options;
 
   const convertAIMessage = (aiMessage: AIMessage): AIMessageInput =>

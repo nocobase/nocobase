@@ -130,7 +130,7 @@ const initExportSettings = (fields) => {
 };
 
 export class ExportActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
 
   defaultProps: ButtonProps = {
     title: escapeT('Export'),

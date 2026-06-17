@@ -22,7 +22,18 @@
     "lodash": "4.x",
     "react": "18.x",
     "react-i18next": "^11.15.1",
-    "react-router-dom": "^6.11.2"
+    "react-router-dom": "^6.11.2",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/evaluators": "workspace:*",
+    "@nocobase/plugin-data-source-main": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

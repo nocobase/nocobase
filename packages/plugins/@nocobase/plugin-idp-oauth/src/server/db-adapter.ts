@@ -8,12 +8,44 @@
  */
 
 import Application from '@nocobase/server';
+import type { TargetKey } from '@nocobase/database';
+import type { AdapterConstructor, AdapterPayload } from 'oidc-provider';
+
+interface OidcStateRecord {
+  id?: TargetKey;
+  expiresAt?: Date | string | number | null;
+  get(key: string): unknown;
+}
+
+function getPayload(record: OidcStateRecord): AdapterPayload | undefined {
+  const payload = record.get('payload');
+
+  if (!payload || typeof payload !== 'object') {
+    return undefined;
+  }
+
+  return payload as AdapterPayload;
+}
+
+function getRecordId(record: OidcStateRecord): TargetKey | undefined {
+  const id = record.id ?? record.get('id');
+
+  if (typeof id === 'string' || typeof id === 'number') {
+    return id;
+  }
+
+  if (id && typeof id === 'object') {
+    return id as TargetKey;
+  }
+
+  return undefined;
+}
 
 function epochTime(date = Date.now()) {
   return Math.floor(date / 1000);
 }
 
-export function createDbAdapter(app: Application, collectionName = 'oidcStates') {
+export function createDbAdapter(app: Application, collectionName = 'oidcStates'): AdapterConstructor {
   return class DbAdapter {
     model: string;
 
@@ -25,7 +57,7 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
       return app.db.getRepository(collectionName);
     }
 
-    isExpired(record?: any) {
+    isExpired(record?: OidcStateRecord) {
       if (!record?.expiresAt) {
         return false;
       }
@@ -34,7 +66,7 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
       return value <= Date.now();
     }
 
-    async destroyExpired(record?: any) {
+    async destroyExpired(record?: OidcStateRecord) {
       if (!record?.id) {
         return;
       }
@@ -43,7 +75,7 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
       });
     }
 
-    async findRecord(filter: Record<string, any>) {
+    async findRecord(filter: Record<string, unknown>): Promise<OidcStateRecord | undefined> {
       const record = await this.repo.findOne({
         filter,
       });
@@ -57,7 +89,7 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
         return undefined;
       }
 
-      return record;
+      return record as OidcStateRecord;
     }
 
     async destroy(id: string) {
@@ -72,9 +104,12 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
         return;
       }
 
-      await this.repo.destroy({
-        filterByTk: record.get('id'),
-      });
+      const targetKey = getRecordId(record as OidcStateRecord);
+      if (targetKey) {
+        await this.repo.destroy({
+          filterByTk: targetKey,
+        });
+      }
     }
 
     async consume(id: string) {
@@ -88,12 +123,17 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
       }
 
       const payload = {
-        ...(record.get('payload') || {}),
+        ...(getPayload(record) || {}),
         consumed: epochTime(),
       };
 
+      const targetKey = getRecordId(record);
+      if (!targetKey) {
+        return;
+      }
+
       await this.repo.update({
-        filterByTk: record.get('id'),
+        filterByTk: targetKey,
         values: {
           payload,
           consumedAt: Math.floor(Date.now() / 1000),
@@ -107,7 +147,7 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
         oidcId: id,
       });
 
-      return record?.get('payload');
+      return record ? getPayload(record) : undefined;
     }
 
     async findByUid(uid: string) {
@@ -116,7 +156,7 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
         uid,
       });
 
-      return record?.get('payload');
+      return record ? getPayload(record) : undefined;
     }
 
     async findByUserCode(userCode: string) {
@@ -125,10 +165,10 @@ export function createDbAdapter(app: Application, collectionName = 'oidcStates')
         userCode,
       });
 
-      return record?.get('payload');
+      return record ? getPayload(record) : undefined;
     }
 
-    async upsert(id: string, payload: Record<string, any>, expiresIn?: number) {
+    async upsert(id: string, payload: AdapterPayload, expiresIn?: number) {
       await this.repo.updateOrCreate({
         filterKeys: ['model', 'oidcId'],
         values: {

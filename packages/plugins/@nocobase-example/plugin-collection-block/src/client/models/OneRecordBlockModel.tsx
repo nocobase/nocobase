@@ -13,7 +13,7 @@ import React from 'react';
 import { tExpr } from '../locale';
 
 export class OneRecordBlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.one;
+  static scene: typeof BlockSceneEnum.one = BlockSceneEnum.one;
 
   createResource() {
     return this.context.createResource(SingleRecordResource);

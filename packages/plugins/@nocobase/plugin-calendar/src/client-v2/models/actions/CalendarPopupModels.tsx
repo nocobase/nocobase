@@ -158,7 +158,7 @@ class CalendarPopupActionModel extends PopupActionModel {
 }
 
 export class CalendarQuickCreateActionModel extends CalendarPopupActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
 
   defaultPopupTitle = tExpr('Add new');
 
@@ -175,7 +175,7 @@ CalendarQuickCreateActionModel.define({
 });
 
 export class CalendarEventViewActionModel extends CalendarPopupActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene: typeof ActionSceneEnum.record = ActionSceneEnum.record;
 
   defaultPopupTitle = tExpr('Details');
 

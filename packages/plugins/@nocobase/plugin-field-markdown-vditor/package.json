@@ -26,7 +26,11 @@
     "@formily/shared": "2.x",
     "antd": "5.x",
     "koa-send": "^5.0.1",
-    "vditor": "^3.10.3"
+    "vditor": "^3.10.3",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Collection fields"

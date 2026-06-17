@@ -40,7 +40,13 @@
     "object-path": "^0.11.8",
     "react": "^18.2.0",
     "semver": "^7.7.1",
-    "tar": "^7.5.15"
+    "tar": "^7.5.15",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",

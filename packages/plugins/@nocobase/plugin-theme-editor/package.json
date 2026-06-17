@@ -24,7 +24,14 @@
     "react-colorful": "^5.5.1",
     "tinycolor2": "^1.6.0",
     "use-debouncy": "^4.3.0",
-    "vanilla-jsoneditor": "^0.17.8"
+    "vanilla-jsoneditor": "^0.17.8",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/actions": "workspace:*",

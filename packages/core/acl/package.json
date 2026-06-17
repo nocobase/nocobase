@@ -18,5 +18,10 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/acl"
   },
-  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
+  "devDependencies": {
+    "@nocobase/database": "workspace:*",
+    "@nocobase/resourcer": "workspace:*",
+    "@nocobase/utils": "workspace:*"
+  }
 }

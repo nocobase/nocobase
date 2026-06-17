@@ -17,7 +17,12 @@
     "@formily/react": "2.x",
     "@types/cross-spawn": "^6.0.2",
     "china-division": "^2.4.0",
-    "cross-spawn": "^7.0.3"
+    "cross-spawn": "^7.0.3",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

@@ -12,7 +12,7 @@ import { ButtonProps } from 'antd';
 import { tExpr } from '../locale';
 
 export class SimpleRecordActionModel extends ActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene: typeof ActionSceneEnum.record = ActionSceneEnum.record;
 
   defaultProps: ButtonProps = {
     children: tExpr('Simple record action'),

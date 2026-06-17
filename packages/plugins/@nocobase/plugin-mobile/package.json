@@ -39,6 +39,10 @@
     "lodash": "4.x",
     "re-resizable": "6.6.0",
     "react-device-detect": "2.2.3",
-    "react-i18next": "11.x"
+    "react-i18next": "11.x",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-acl": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   }
 }

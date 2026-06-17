@@ -20,7 +20,11 @@
     "editionLevel": 0
   },
   "devDependencies": {
-    "lru-cache": "^11.3.5"
+    "lru-cache": "^11.3.5",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

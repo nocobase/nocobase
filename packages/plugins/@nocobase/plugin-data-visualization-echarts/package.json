@@ -18,7 +18,12 @@
   "devDependencies": {
     "echarts": "^5.5.0",
     "echarts-for-react": "3.0.2",
-    "echarts-wordcloud": "^2.1.0"
+    "echarts-wordcloud": "^2.1.0",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/plugin-data-visualization": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
     "@nocobase/client": "workspace:*",

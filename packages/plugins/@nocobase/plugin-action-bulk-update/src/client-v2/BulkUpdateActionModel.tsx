@@ -27,7 +27,7 @@ export class BulkUpdateActionModel extends ActionModel<{
     assignForm: AssignFormModel;
   };
 }> {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
   static capabilityActionName = 'updateMany';
   assignFormUid?: string;
   defaultProps: ButtonProps = {

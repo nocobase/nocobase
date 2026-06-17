@@ -19,7 +19,12 @@
     "@ant-design/icons": "^5.x",
     "antd": "^5.x",
     "html5-qrcode": "^2.3.8",
-    "react-router-dom": "^6.x"
+    "react-router-dom": "^6.x",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Blocks"

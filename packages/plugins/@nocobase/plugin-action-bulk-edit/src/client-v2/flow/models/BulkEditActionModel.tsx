@@ -16,7 +16,7 @@ import { createTagPageOptions } from '../utils';
 const SETTINGS_FLOW_KEY = 'bulkEditSettings';
 
 export class BulkEditActionModel extends PopupActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
   static capabilityActionName = 'updateMany';
 
   defaultPopupTitle = tExpr('Bulk edit');

@@ -38,7 +38,18 @@
     "react-i18next": "^11.15.1",
     "supertest": "^6.1.6",
     "url-join": "4.0.1",
-    "pdfjs-dist": "^5.3.31"
+    "pdfjs-dist": "^5.3.31",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-data-source-main": "workspace:*",
+    "@nocobase/plugin-environment-variables": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*"
   },
   "dependencies": {
     "file-type": "^21.0.0"
