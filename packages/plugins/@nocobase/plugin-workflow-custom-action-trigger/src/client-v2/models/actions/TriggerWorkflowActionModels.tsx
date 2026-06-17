@@ -13,10 +13,10 @@ import {
   ActionSceneEnum,
   CollectionActionModel,
   FormActionModel,
-  TextAreaWithContextSelector,
+  JsonTextArea,
 } from '@nocobase/client-v2';
 import { css } from '@emotion/css';
-import { MultiRecordResource, resolveExpressions, useFlowContext } from '@nocobase/flow-engine';
+import { MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import type { FlowEngine, FlowRuntimeContext, ModelConstructor } from '@nocobase/flow-engine';
 import { Alert, Select, Space } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
@@ -77,6 +77,13 @@ const buildTriggerWorkflows = (group?: TriggerWorkflowBinding[]) => {
     ? group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
     : undefined;
 };
+
+function parseContextData(contextData: unknown) {
+  if (typeof contextData !== 'string') {
+    return contextData;
+  }
+  return JSON.parse(contextData);
+}
 
 function ensureTriggerWorkflowsConfigured(ctx: FlowRuntimeContext, group?: TriggerWorkflowBinding[]) {
   if (group?.length) {
@@ -245,13 +252,13 @@ function createTriggerWorkflowsSchema({
     ...(withContextData
       ? {
           contextData: {
-            type: 'string',
+            type: 'object',
             title: tExpr('Context data'),
             description: tExpr(
               'Input JSON as context data passed into the workflow. Frontend variables are supported.',
             ),
             'x-decorator': 'FormItem',
-            'x-component': TextAreaWithContextSelector,
+            'x-component': JsonTextArea,
             'x-component-props': {
               rows: 5,
             },
@@ -504,7 +511,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           let values;
           if (contextData) {
             try {
-              values = await resolveExpressions(contextData, ctx);
+              values = parseContextData(contextData);
             } catch (e) {
               // resolution error, ignore
             }
@@ -516,7 +523,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
               params: {
                 triggerWorkflows: buildTriggerWorkflows(group),
               },
-              data: { values },
+              data: values,
             });
           } catch (error) {
             console.error('Error triggering workflows:', error);
@@ -566,7 +573,7 @@ async function globalTriggerWorkflowHandler(ctx, params) {
   let values;
   if (params.contextData) {
     try {
-      values = await resolveExpressions(params.contextData, ctx);
+      values = parseContextData(params.contextData);
     } catch (e) {
       // resolution error, ignore
     }
@@ -578,7 +585,7 @@ async function globalTriggerWorkflowHandler(ctx, params) {
       params: {
         triggerWorkflows: buildTriggerWorkflows(params.group),
       },
-      data: { values },
+      data: values,
     });
   } catch (error) {
     console.error('Error triggering workflows:', error);
