@@ -210,7 +210,7 @@
 
 #### A2. `AIConfigRepository` 和 FlowEngine context
 
-- 状态：未开始
+- 状态：待确认 V1 替换
 - 依赖：A1
 - 范围：
   - `src/client-v2/repositories/AIConfigRepository.ts`
@@ -228,6 +228,15 @@
   - 不单独需要；后续页面/ChatBox 间接验收。
 - V1 替换门禁：
   - v2 验收后，经用户确认，将 `src/client/repositories/*` 改为相对路径 re-export v2。
+- 验收记录：
+  - `AIConfigRepository` 保持 v1 缓存与 in-flight 复用流程，`define` / `observable` 从 `@nocobase/flow-engine` 导入。
+  - API resource 响应统一以 `unknown` 接收，并通过类型守卫收窄为 `LLMServiceItem`、`AIEmployee`、`ToolsEntry`、`SkillsEntry`。
+  - `plugin.load()` 通过 `flowEngine.context.defineProperty('aiConfigRepository', { value })` 注册 repository，并传入 v2 `toolsManager.listTools`，保留前端工具注册合并路径。
+  - 新增 `src/client-v2/repositories/__tests__/AIConfigRepository.test.ts` 覆盖 get 缓存、refresh 重新请求、并发 in-flight 复用、toolsManager 优先路径。
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/plugin.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/repositories/AIConfigRepository.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/repositories/hooks/useAIConfigRepository.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/repositories/__tests__/AIConfigRepository.test.ts` 通过。
+  - `tsc --noEmit` 定向检查 `plugin.tsx`、repository、hook 和 repository test 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/repositories/__tests__/AIConfigRepository.test.ts --run --reporter=verbose` 通过。
+
 #### A3. 公开 API 合同冻结
 
 - 状态：未开始

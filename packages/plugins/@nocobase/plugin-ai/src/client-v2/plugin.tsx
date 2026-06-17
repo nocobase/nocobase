@@ -23,7 +23,9 @@ export class PluginAIClientV2 extends Plugin<any, Application> {
     const context = this.app.flowEngine.context as AIFlowContext;
     if (!context.aiConfigRepository) {
       context.defineProperty('aiConfigRepository', {
-        value: new AIConfigRepository(this.app.apiClient),
+        value: new AIConfigRepository(this.app.apiClient, {
+          toolsManager: this.ai.toolsManager,
+        }),
       });
     }
   }
