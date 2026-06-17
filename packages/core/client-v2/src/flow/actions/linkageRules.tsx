@@ -1948,6 +1948,21 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     >;
     return normalized.length ? normalized : null;
   };
+  const pathKeysEqual = (
+    a: Array<string | number> | null | undefined,
+    b: Array<string | number> | null | undefined,
+  ) => {
+    if (!a || !b) return false;
+    return namePathToPathKey(a) === namePathToPathKey(b);
+  };
+  const namePathEndsWith = (
+    namePath: Array<string | number> | null | undefined,
+    suffix: Array<string | number> | null | undefined,
+  ) => {
+    if (!namePath || !suffix || suffix.length > namePath.length) return false;
+    const offset = namePath.length - suffix.length;
+    return suffix.every((seg, index) => namePath[offset + index] === seg);
+  };
   const getFieldIndexEntries = (fieldIndex: any): Array<{ name: string; index: number }> => {
     if (!Array.isArray(fieldIndex)) return [];
     return fieldIndex
@@ -1996,17 +2011,35 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     return out;
   };
+  const getTrustedFieldPathArray = (
+    fieldPathArray: Array<string | number> | null,
+    targetPath: string | null,
+    fieldIndex: unknown,
+  ): Array<string | number> | null => {
+    if (!fieldPathArray || !targetPath) return null;
+
+    const targetNamePath = normalizeNamePathForKey(
+      parsePathString(targetPath).filter((seg) => typeof seg === 'string' || typeof seg === 'number'),
+    );
+    const resolvedTargetPath = normalizeNamePathForKey(resolveDynamicNamePath(targetPath, fieldIndex));
+    const indexedRelativePath = resolveIndexedRelativePath(targetPath, fieldIndex);
+
+    if (
+      pathKeysEqual(fieldPathArray, resolvedTargetPath) ||
+      pathKeysEqual(fieldPathArray, indexedRelativePath) ||
+      namePathEndsWith(fieldPathArray, targetNamePath)
+    ) {
+      return fieldPathArray;
+    }
+
+    return null;
+  };
   const getModelTargetPathForHiddenClear = (model: any): string | Array<string | number> | null => {
     const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
     const targetPath = getModelTargetPathForPatch(model);
-    if (fieldPathArray) {
-      const targetPathLastString = targetPath
-        ? ([...parsePathString(targetPath)].reverse().find((seg) => typeof seg === 'string') as string | undefined)
-        : undefined;
-      const fieldPathArrayLastString = [...fieldPathArray].reverse().find((seg) => typeof seg === 'string');
-      if (!targetPathLastString || targetPathLastString === fieldPathArrayLastString) {
-        return fieldPathArray;
-      }
+    const trustedFieldPathArray = getTrustedFieldPathArray(fieldPathArray, targetPath, model?.context?.fieldIndex);
+    if (trustedFieldPathArray) {
+      return trustedFieldPathArray;
     }
 
     if (!targetPath) return null;
@@ -2017,10 +2050,9 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const keys = new Set<string>();
     const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
     const targetPath = getModelTargetPathForPatch(model);
-    const targetLeaf = targetPath && [...parsePathString(targetPath)].reverse().find((seg) => typeof seg === 'string');
-    const fieldPathLeaf = fieldPathArray && [...fieldPathArray].reverse().find((seg) => typeof seg === 'string');
-    if (fieldPathArray && (!targetLeaf || targetLeaf === fieldPathLeaf)) {
-      keys.add(namePathToPathKey(fieldPathArray));
+    const trustedFieldPathArray = getTrustedFieldPathArray(fieldPathArray, targetPath, model?.context?.fieldIndex);
+    if (trustedFieldPathArray) {
+      keys.add(namePathToPathKey(trustedFieldPathArray));
       return keys;
     }
 

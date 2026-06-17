@@ -27,12 +27,12 @@ describe('linkageRules hidden state propagation', () => {
     const hostModel: any = {
       uid: 'host',
       hidden: false,
-      context: { blockModel, fieldPathArray: ['org_o2m'] },
+      context: { blockModel, fieldPathArray: ['children'] },
       __allModels: [],
       setProps: vi.fn(),
       getFlow: vi.fn(() => ({})),
       getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
-        if (stepKey === 'init') return { fieldPath: 'org_o2m' };
+        if (stepKey === 'init') return { fieldPath: 'children' };
         return undefined;
       }),
       translate: (s: string) => s,
@@ -41,10 +41,10 @@ describe('linkageRules hidden state propagation', () => {
     const sameTargetModel: any = {
       uid: 'same-target',
       hidden: false,
-      context: { blockModel, fieldPathArray: ['org_o2m'] },
+      context: { blockModel, fieldPathArray: ['children'] },
       setProps: vi.fn(),
       getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
-        if (stepKey === 'init') return { fieldPath: 'org_o2m' };
+        if (stepKey === 'init') return { fieldPath: 'children' };
         return undefined;
       }),
       translate: (s: string) => s,
@@ -53,10 +53,10 @@ describe('linkageRules hidden state propagation', () => {
     const nestedColumnModel: any = {
       uid: 'nested-column',
       hidden: true,
-      context: { blockModel, fieldPathArray: ['org_o2m'] },
+      context: { blockModel, fieldPathArray: ['children'] },
       setProps: vi.fn(),
       getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
-        if (stepKey === 'init') return { fieldPath: 'org_o2m.companyName' };
+        if (stepKey === 'init') return { fieldPath: 'children.children' };
         return undefined;
       }),
       translate: (s: string) => s,
