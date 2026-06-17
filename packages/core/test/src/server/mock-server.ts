@@ -212,11 +212,11 @@ export class MockServer extends Application {
     return proxy as any;
   }
 
-  protected createDatabase(options: ApplicationOptions) {
+  protected createDatabase(options: ApplicationOptions): Application['db'] {
     const oldDatabase = this.db;
 
     const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
-    const database = mockDatabase(databaseOptions);
+    const database = mockDatabase(databaseOptions) as Application['db'];
     database.setContext({ app: this });
 
     return database;

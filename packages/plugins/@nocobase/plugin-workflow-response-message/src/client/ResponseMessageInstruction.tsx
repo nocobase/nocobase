@@ -72,7 +72,7 @@ export default class extends Instruction {
     },
   };
   scope = {};
-  components = {
+  components: Record<string, React.ElementType> = {
     RadioWithTooltip,
     WorkflowVariableTextArea,
     WorkflowVariableInput,
