@@ -3101,7 +3101,7 @@ export default class Install extends Command {
       yesInitialValues: { resume: parsed.resume },
       yes,
     });
-    if (resumePreset?.appPreset.hookScript !== undefined && appResults.hookScript === undefined) {
+    if (resumePreset?.appPreset?.hookScript !== undefined && appResults.hookScript === undefined) {
       appResults.hookScript = resumePreset.appPreset.hookScript;
     }
 
