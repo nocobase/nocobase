@@ -247,7 +247,7 @@
 
 #### A3. 公开 API 合同冻结
 
-- 状态：未开始
+- 状态：完成
 - 依赖：A1
 - 范围：
   - `src/client-v2/index.tsx`
@@ -262,6 +262,17 @@
   - 不单独需要。
 - V1 替换门禁：
   - 不涉及 v1 替换。
+- 验收记录：
+  - 外部消费方审计确认当前仅有 `plugin-localization` 和 `plugin-data-visualization` 从 `@nocobase/plugin-ai/client-v2` 导入。
+  - `plugin-localization` 当前导入：`AIEmployeeShortcut`、`formatModelLabel`、`AIEmployee`、`Task`。
+  - `plugin-data-visualization` 当前导入：`useChatMessagesStore`、`useAIConfigRepository`、`useChatBoxStore`、`useChatBoxActions`、`AIEmployeeProfileCard`、`avatars`、`ChatEditorRef`、`Task`。
+  - `src/client-v2/index.tsx` 已保留以上导出，并继续导出 `AIConfigRepository`、features、chatbox stores/hooks、AI employee profile/shortcut、avatar、model label 和 AI 类型；新增公开导出 `LLMServiceItem`，避免 repository 相关类型依赖内部路径。
+  - `client-v2.d.ts` 已补齐 `export { default } from './dist/client-v2'`，与其他 v2 插件声明 shim 保持一致。
+  - 新增 `src/client-v2/__tests__/public-api-contract.test.ts` 覆盖当前公开 API value/type surface。
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/index.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
+  - 使用临时 tsconfig 继承仓库 `tsconfig.json` 并 include A3 契约测试、`plugin-localization` 消费文件、`plugin-data-visualization` 两个消费文件，`tsc -p <temp>` 通过。
+  - `nocobase-code-review` 审查 A 大块当前变更，无 Must Fix / Should Fix 问题。
 
 ### B. ChatBox 状态与 hooks v2 迁移
 
