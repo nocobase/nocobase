@@ -246,6 +246,7 @@ export class BackupManager {
       createdBy: opts.createdBy,
       database: {
         dialect,
+        toolchain: this.#dbAdapter.backupToolchain,
         underscored,
         tablePrefix,
         schema,
