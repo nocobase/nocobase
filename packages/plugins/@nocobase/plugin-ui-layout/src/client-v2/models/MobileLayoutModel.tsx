@@ -91,6 +91,7 @@ import {
   toMobileCompactThemeToken,
   useMobileCompactTheme,
   type MobileLayoutCompactThemeToken,
+  type MobileLayoutThemeToken,
 } from './mobileThemeToken';
 
 type MobileHomeAddMenuKey = 'page' | 'link';
