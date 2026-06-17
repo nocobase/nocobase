@@ -173,7 +173,7 @@ function MultipartListField({ name, label }: { name: NamePath; label: React.Reac
             <Button
               icon={<PlusOutlined />}
               onClick={() => add({ valueType: DEFAULT_MULTIPART_VALUE_TYPE })}
-              style={{ alignSelf: 'flex-start' }}
+              style={{ width: '100%' }}
             >
               {t('Add key-value pairs')}
             </Button>
