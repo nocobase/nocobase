@@ -363,7 +363,7 @@ export default {
       await next();
     },
     async list(ctx, next) {
-      const { mode } = ctx.action.params;
+      const { mode, v2 } = ctx.action.params;
       if (mode === 'summary') {
         ctx.body = await pmListSummary(ctx.app);
         return next();
@@ -375,6 +375,9 @@ export default {
       const plugins = await plugin.getAllPlugins(locale);
       ctx.body = plugins.filter((item: any) => {
         if (process.env.NOCOBASE_SHOW_DEPRECATED_PLUGINS === 'true') {
+          return true;
+        }
+        if (!v2) {
           return true;
         }
         const nocobaseConfig = item?.packageJson?.nocobase || {};
