@@ -7,6 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import V2RequestInstruction from '../client-v2/RequestInstruction';
-
-export default class extends V2RequestInstruction {}
+export { default } from './plugin';
+export * from './plugin';
