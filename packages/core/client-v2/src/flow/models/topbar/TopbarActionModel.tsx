@@ -16,6 +16,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import { useACLRoleContext } from '../../../acl';
+import type { BaseApplication } from '../../../BaseApplication';
 import type { PluginSettingsPageType } from '../../../PluginSettingsManager';
 import { useApp } from '../../../hooks/useApp';
 import {
@@ -64,13 +65,7 @@ const topbarActionTriggerClassName = css`
   height: 100%;
 `;
 
-type TopbarSettingsAppLike = {
-  router?: {
-    basename?: string;
-    getBasename?: () => string | undefined;
-  };
-  getPublicPath?: () => string;
-};
+type TopbarSettingsAppLike = Pick<BaseApplication<any>, 'router' | 'getPublicPath'>;
 
 const normalizeTopbarPath = (pathname?: string) => {
   const trimmed = pathname?.trim();
@@ -136,7 +131,7 @@ function TopbarExternalSettingsLabel(props: { title: React.ReactNode; link: stri
 }
 
 function TopbarInternalSettingsLabel(props: { title: React.ReactNode; path?: string }) {
-  const app = useApp<TopbarSettingsAppLike>();
+  const app = useApp();
   const location = useLocation();
   const targetPath = props.path || '/admin/settings';
   const basename = getTopbarRouterBasePath(app);
