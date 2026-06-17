@@ -49,6 +49,20 @@ describe('collection trigger progressive migration', () => {
     });
   });
 
+  it('uses the parsed data source and collection for trigger data block menu item', () => {
+    const trigger = new V2CollectionTrigger();
+
+    expect(
+      trigger.getCreateModelMenuItem({
+        config: { collection: 'external:posts' },
+      })?.createModelOptions.stepParams.resourceSettings.init,
+    ).toEqual({
+      dataSourceKey: 'external',
+      collectionName: 'posts',
+      dataPath: '$context.data',
+    });
+  });
+
   it('exports the migrated v2 collection trigger surfaces', () => {
     expect(typeof CollectionTriggerConfig).toBe('function');
     expect(typeof TriggerCollectionConfig).toBe('function');

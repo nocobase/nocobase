@@ -36,6 +36,10 @@ export default class CollectionTrigger extends Trigger {
     if (!config?.collection) {
       return null;
     }
+    const [dataSourceKey, collectionName] = parseCollectionName(config.collection) as [string, string];
+    if (!dataSourceKey || !collectionName) {
+      return null;
+    }
 
     return {
       key: 'triggerData',
@@ -46,8 +50,8 @@ export default class CollectionTrigger extends Trigger {
         stepParams: {
           resourceSettings: {
             init: {
-              dataSourceKey: 'main',
-              collectionName: config.collection,
+              dataSourceKey,
+              collectionName,
               dataPath: '$context.data',
             },
           },
