@@ -19,7 +19,7 @@ Select the AI employee for which you want to enable RAG, click the `Edit` button
 In the `Knowledge base` tab, turn on the `Enable` switch.
 
 - In `Knowledge Base Prompt`, enter the prompt for referencing the knowledge base. `{knowledgeBaseData}` is a fixed placeholder and should not be modified.
-- In `Knowledge Base`, select the configured knowledge base. See: [Knowledge Base](/ai-employees/knowledge-base/knowledge-base).
+- In `Knowledge Base`, select the configured knowledge base. See: [Knowledge Base](./knowledge-base/).
 - In the `Top K` input box, enter the number of documents to retrieve, the default is 3.
 - In the `Score` input box, enter the document relevance threshold for retrieval.
 
