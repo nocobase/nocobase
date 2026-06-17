@@ -297,14 +297,23 @@ export function MultiConditionsFieldset() {
   const t = useT();
 
   return (
-    <Form.Item name={['config', 'continueOnNoMatch']} label={t('When no condition matches')} initialValue={false}>
-      <RadioWithTooltip
-        options={[
-          { label: t('End as failed'), value: false },
-          { label: t('Continue the workflow'), value: true },
-        ]}
-      />
-    </Form.Item>
+    <>
+      {/* Keep the configured condition branches in the submitted `config`
+          payload. The shared node drawer submits `values.config` wholesale; if
+          the form omits `config.conditions`, toggling only
+          `continueOnNoMatch` would overwrite the branch list away. */}
+      <Form.Item name={['config', 'conditions']} hidden>
+        <Input />
+      </Form.Item>
+      <Form.Item name={['config', 'continueOnNoMatch']} label={t('When no condition matches')} initialValue={false}>
+        <RadioWithTooltip
+          options={[
+            { label: t('End as failed'), value: false },
+            { label: t('Continue the workflow'), value: true },
+          ]}
+        />
+      </Form.Item>
+    </>
   );
 }
 

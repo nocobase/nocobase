@@ -7,10 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import {
+  CheckOutlined,
+  CloseOutlined,
+  ExclamationOutlined,
+  HourglassOutlined,
+  LoadingOutlined,
+  MinusOutlined,
+  RedoOutlined,
+} from '@ant-design/icons';
 import { Tag } from 'antd';
 import React from 'react';
-import { EXECUTION_STATUS_OPTIONS_MAP } from '../../common/executionStatus';
+import { EXECUTION_STATUS, EXECUTION_STATUS_OPTIONS_MAP } from '../../common/executionStatus';
 import { useT } from '../locale';
+
+const STATUS_ICON: Record<string, React.ReactNode> = {
+  [EXECUTION_STATUS.QUEUEING as number]: <HourglassOutlined />,
+  [EXECUTION_STATUS.STARTED]: <LoadingOutlined />,
+  [EXECUTION_STATUS.RESOLVED]: <CheckOutlined />,
+  [EXECUTION_STATUS.FAILED]: <ExclamationOutlined />,
+  [EXECUTION_STATUS.ERROR]: <CloseOutlined />,
+  [EXECUTION_STATUS.ABORTED]: <MinusOutlined rotate={90} />,
+  [EXECUTION_STATUS.CANCELED]: <MinusOutlined rotate={45} />,
+  [EXECUTION_STATUS.REJECTED]: <MinusOutlined />,
+  [EXECUTION_STATUS.RETRY_NEEDED]: <RedoOutlined />,
+};
 
 export function ExecutionStatusTag({ value }: { value: number | null }) {
   const compile = useT();
@@ -18,7 +39,12 @@ export function ExecutionStatusTag({ value }: { value: number | null }) {
   if (!option) {
     return null;
   }
-  return <Tag color={option.color}>{compile(option.label)}</Tag>;
+  const icon = STATUS_ICON[value as number];
+  return (
+    <Tag color={option.color} icon={icon}>
+      {compile(option.label)}
+    </Tag>
+  );
 }
 
 export default ExecutionStatusTag;

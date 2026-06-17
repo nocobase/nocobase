@@ -28,6 +28,7 @@ import {
   normalizeRecordPickerValue,
   shouldClearRecordPickerValueOnMultipleChange,
 } from '../RecordPickerFieldModel';
+import { getAssociationHydrationNamePath, getAssociationHydrationSetterContext } from '../RecordSelectFieldModel';
 
 function createMockCollection() {
   return {
@@ -91,6 +92,28 @@ describe('RecordPickerFieldModel item context', () => {
     expect(shouldClearRecordPickerValueOnMultipleChange({ type: 'belongsToMany' }, false, true)).toBe(true);
     expect(shouldClearRecordPickerValueOnMultipleChange({ type: 'belongsToMany' }, true, true)).toBe(false);
     expect(shouldClearRecordPickerValueOnMultipleChange({ type: 'belongsTo' }, true, false)).toBe(false);
+  });
+
+  it('uses the current field context for association hydration writes', () => {
+    const setFormValue = vi.fn();
+    const blockSetFormValue = vi.fn();
+    const model = {
+      props: {
+        name: 'orders',
+      },
+      context: {
+        fieldPathArray: ['orders', 0, 'lines', 1, 'product'],
+        setFormValue,
+        blockModel: {
+          context: {
+            setFormValue: blockSetFormValue,
+          },
+        },
+      },
+    };
+
+    expect(getAssociationHydrationNamePath(model)).toEqual(['orders', 0, 'lines', 1, 'product']);
+    expect(getAssociationHydrationSetterContext(model)).toBe(model.context);
   });
 
   it('itemChain helpers: createParentItemAccessorsFromInputArgs works', () => {

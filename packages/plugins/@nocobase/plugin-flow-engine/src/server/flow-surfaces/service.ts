@@ -652,6 +652,7 @@ type FlowSurfaceRuntimeOptions = {
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel', ...APPROVAL_FORM_BLOCK_USES]);
 const AUTO_SUBMIT_FORM_BLOCK_USES = new Set(['CreateFormModel', 'EditFormModel']);
 const FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS = new Set(['filter']);
+const ACTION_BUTTON_GENERAL_SETTING_KEYS = ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color'];
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
 const SIMPLE_FORM_BLOCK_USES = new Set([
   'FormBlockModel',
@@ -2870,6 +2871,13 @@ export class FlowSurfacesService {
     if (!popupProfile?.currentCollection) {
       return popupProfile?.filterByTk;
     }
+    if (
+      popupProfile.popupKind === 'recordPopup' &&
+      popupProfile.popupHostUse &&
+      POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES.has(popupProfile.popupHostUse)
+    ) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
     if (popupProfile.popupKind !== 'associationPopup') {
       return popupProfile.filterByTk;
     }
@@ -3361,15 +3369,23 @@ export class FlowSurfacesService {
       if (!sameCurrentCollection || !hasConfiguredFlowContextValue(normalized.filterByTk)) {
         return false;
       }
+      const expectedFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile, {
+        usePopupInputArgsWhenSourceIdInferred: true,
+      });
+      const matchesCurrentRecordFilterByTk = this.isPopupCurrentRecordFilterByTkMatch(
+        input.popupProfile,
+        normalized.filterByTk,
+        expectedFilterByTk,
+      );
       if (input.popupProfile.hasAssociationContext) {
         return (
-          this.isSameConfiguredFlowContextValue(normalized.filterByTk, input.popupProfile.filterByTk) &&
+          matchesCurrentRecordFilterByTk &&
           normalized.associationName === input.popupProfile.associationName &&
           this.isSameConfiguredFlowContextValue(normalized.sourceId, input.popupProfile.sourceId)
         );
       }
       return (
-        this.isSameConfiguredFlowContextValue(normalized.filterByTk, input.popupProfile.filterByTk) &&
+        matchesCurrentRecordFilterByTk &&
         !hasConfiguredFlowContextValue(normalized.associationName) &&
         !hasConfiguredFlowContextValue(normalized.sourceId)
       );
@@ -3440,6 +3456,20 @@ export class FlowSurfacesService {
       return false;
     }
     return _.isEqual(this.normalizeFlowContextTemplateValue(left), this.normalizeFlowContextTemplateValue(right));
+  }
+
+  private isPopupCurrentRecordFilterByTkMatch(
+    popupProfile: FlowSurfacePopupBlockProfile,
+    filterByTk: any,
+    expectedFilterByTk: any,
+  ) {
+    if (this.isSameConfiguredFlowContextValue(filterByTk, expectedFilterByTk)) {
+      return true;
+    }
+    return (
+      popupProfile.popupKind === 'associationPopup' &&
+      this.isSameConfiguredFlowContextValue(filterByTk, popupProfile.filterByTk)
+    );
   }
 
   private isPopupAssociatedRecordsSourceIdMatch(
@@ -6260,13 +6290,20 @@ export class FlowSurfacesService {
       dataSourceKey?: string;
       collectionName?: string;
       associationName?: string;
+      filterByTk?: string;
       sourceId?: string;
     },
   ) {
-    if (!this.isCollectionBlockUse(blockNode?.use) || !context.associationName || !context.sourceId) {
+    if (!this.isCollectionBlockUse(blockNode?.use)) {
       return false;
     }
     const init = _.get(blockNode, ['stepParams', 'resourceSettings', 'init']) || {};
+    if (this.resolveDetachedPopupTemplateBlockCurrentRecordFilterByTk(init, context)) {
+      return true;
+    }
+    if (!context.associationName || !context.sourceId) {
+      return false;
+    }
     const popupDataSourceKey = context.dataSourceKey || 'main';
     const blockDataSourceKey = init.dataSourceKey || 'main';
     if (
@@ -6292,12 +6329,47 @@ export class FlowSurfacesService {
     );
   }
 
+  private resolveDetachedPopupTemplateBlockCurrentRecordFilterByTk(
+    init: Record<string, any>,
+    context: {
+      dataSourceKey?: string;
+      collectionName?: string;
+      filterByTk?: string;
+    },
+  ) {
+    if (!hasConfiguredFlowContextValue(init.filterByTk)) {
+      return undefined;
+    }
+    if (this.isSameConfiguredFlowContextValue(init.filterByTk, '{{ctx.view.inputArgs.filterByTk}}')) {
+      return undefined;
+    }
+    const popupDataSourceKey = context.dataSourceKey || 'main';
+    const blockDataSourceKey = init.dataSourceKey || 'main';
+    if (
+      !context.collectionName ||
+      blockDataSourceKey !== popupDataSourceKey ||
+      init.collectionName !== context.collectionName
+    ) {
+      return undefined;
+    }
+    if (context.filterByTk && this.isSameConfiguredFlowContextValue(init.filterByTk, context.filterByTk)) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
+    const collection = this.getCollection(popupDataSourceKey, context.collectionName);
+    const filterTargetKey = this.getCollectionFilterTargetKey(collection);
+    if (this.isSameConfiguredFlowContextValue(init.filterByTk, `{{ctx.record.${filterTargetKey}}}`)) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
+    return undefined;
+  }
+
   private collectDetachedPopupTemplateBlockResourceContextPatches(
     node: any,
     context: {
       dataSourceKey?: string;
       collectionName?: string;
       associationName?: string;
+      filterByTk?: string;
       sourceId?: string;
     },
     patches: Array<{ uid: string; stepParams: Record<string, any> }> = [],
@@ -6308,6 +6380,7 @@ export class FlowSurfacesService {
     if (node.uid && this.shouldHydrateDetachedPopupTemplateBlockResourceContext(node, context)) {
       const nextStepParams = _.cloneDeep(node.stepParams || {});
       const currentInit = _.get(nextStepParams, ['resourceSettings', 'init']) || {};
+      const filterByTk = this.resolveDetachedPopupTemplateBlockCurrentRecordFilterByTk(currentInit, context);
       _.set(
         nextStepParams,
         ['resourceSettings', 'init'],
@@ -6315,8 +6388,13 @@ export class FlowSurfacesService {
           ...currentInit,
           dataSourceKey: context.dataSourceKey || currentInit.dataSourceKey || 'main',
           collectionName: context.collectionName || currentInit.collectionName,
-          associationName: context.associationName,
-          sourceId: context.sourceId,
+          ...(context.associationName && context.sourceId
+            ? {
+                associationName: context.associationName,
+                sourceId: context.sourceId,
+              }
+            : {}),
+          ...(filterByTk ? { filterByTk } : {}),
         }),
       );
       patches.push({
@@ -6338,6 +6416,7 @@ export class FlowSurfacesService {
       dataSourceKey?: string;
       collectionName?: string;
       associationName?: string;
+      filterByTk?: string;
       sourceId?: string;
     },
     transaction?: any,
@@ -14823,6 +14902,7 @@ export class FlowSurfacesService {
       normalizedValues,
       nextPayload,
     );
+    this.syncActionButtonSettingsForUpdateSettings(current, normalizedValues, nextPayload);
     this.syncActionTriggerWorkflowsForUpdateSettings(current, normalizedValues, nextPayload);
     const popupActionContext =
       options.popupActionContext ||
@@ -15470,6 +15550,84 @@ export class FlowSurfacesService {
     if (nextStepParams) {
       nextPayload.stepParams = nextStepParams;
     }
+  }
+
+  private syncActionButtonSettingsForUpdateSettings(
+    current: any,
+    normalizedValues: Record<string, any>,
+    nextPayload: Record<string, any>,
+  ) {
+    if (!this.supportsActionButtonSettingsSync(current)) {
+      return;
+    }
+    const requestedProps = this.pickRequestedActionButtonSettings(normalizedValues.props);
+    const requestedButtonGeneral = this.pickRequestedActionButtonSettings(
+      _.get(normalizedValues, ['stepParams', 'buttonSettings', 'general']),
+    );
+    const hasRequestedProps = Object.keys(requestedProps).length > 0;
+    const hasRequestedButtonGeneral = Object.keys(requestedButtonGeneral).length > 0;
+    if (!hasRequestedProps && !hasRequestedButtonGeneral) {
+      return;
+    }
+    const hasRequestedTitle =
+      Object.prototype.hasOwnProperty.call(requestedProps, 'title') ||
+      Object.prototype.hasOwnProperty.call(requestedButtonGeneral, 'title');
+    const shouldStripImplicitTitle =
+      (requestedProps.iconOnly === true || requestedButtonGeneral.iconOnly === true) && !hasRequestedTitle;
+    const nextProps = _.cloneDeep(
+      _.isPlainObject(nextPayload.props) ? nextPayload.props : _.isPlainObject(current?.props) ? current.props : {},
+    );
+    const nextStepParams = _.cloneDeep(
+      _.isPlainObject(nextPayload.stepParams)
+        ? nextPayload.stepParams
+        : _.isPlainObject(current?.stepParams)
+          ? current.stepParams
+          : {},
+    );
+
+    Object.entries(requestedProps).forEach(([key, value]) => {
+      if (Object.prototype.hasOwnProperty.call(requestedButtonGeneral, key)) {
+        return;
+      }
+      _.set(nextStepParams, ['buttonSettings', 'general', key], _.cloneDeep(value));
+    });
+    Object.entries(requestedButtonGeneral).forEach(([key, value]) => {
+      if (Object.prototype.hasOwnProperty.call(requestedProps, key)) {
+        return;
+      }
+      nextProps[key] = _.cloneDeep(value);
+    });
+
+    if (shouldStripImplicitTitle) {
+      delete nextProps.title;
+      if (_.isPlainObject(_.get(nextStepParams, ['buttonSettings', 'general']))) {
+        delete nextStepParams.buttonSettings.general.title;
+      }
+    }
+
+    nextPayload.props = nextProps;
+    nextPayload.stepParams = nextStepParams;
+  }
+
+  private supportsActionButtonSettingsSync(current: any) {
+    const contract = getNodeContract(current?.use);
+    return (
+      contract.domains.props?.allowedKeys?.includes('iconOnly') &&
+      contract.domains.stepParams?.groups?.buttonSettings?.allowedPaths?.includes('general.iconOnly')
+    );
+  }
+
+  private pickRequestedActionButtonSettings(input: Record<string, any>) {
+    const picked: Record<string, any> = {};
+    if (!_.isPlainObject(input)) {
+      return picked;
+    }
+    ACTION_BUTTON_GENERAL_SETTING_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(input, key) && !_.isUndefined(input[key])) {
+        picked[key] = _.cloneDeep(input[key]);
+      }
+    });
+    return picked;
   }
 
   private syncCreatedFieldWrapperTitleFieldStepParams(node: any) {
@@ -23680,14 +23838,15 @@ export class FlowSurfacesService {
       ? this.normalizeFilterActionDefaultFilterValue(changes.defaultFilter)
       : undefined;
     const stepParams: Record<string, any> = {};
-    if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'type', 'danger', 'color', 'linkageRules'])) {
+    if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color', 'linkageRules'])) {
       stepParams.buttonSettings = {
-        ...(hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'type', 'danger', 'color'])
+        ...(hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color'])
           ? {
               general: buildDefinedPayload({
                 title: changes.title,
                 tooltip: changes.tooltip,
                 icon: changes.icon,
+                iconOnly: changes.iconOnly,
                 type: changes.type,
                 danger: changes.danger,
                 color: changes.color,
@@ -23911,6 +24070,7 @@ export class FlowSurfacesService {
       title: changes.title,
       tooltip: changes.tooltip,
       icon: changes.icon,
+      iconOnly: changes.iconOnly,
       type: changes.type,
       htmlType: changes.htmlType,
       position: changes.position,

@@ -221,6 +221,21 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
       return;
     }
 
+    if (decision.kind === 'branch-fallback') {
+      ctx.viewer.dialog({
+        width: 520,
+        closable: true,
+        content: () => (
+          <PresetDialogForm
+            instruction={decision.instruction}
+            hasDownstream
+            onSubmit={(values) => createNode(anchor, decision.instruction, values)}
+          />
+        ),
+      });
+      return;
+    }
+
     await createNode(anchor, decision.instruction, {});
   });
 

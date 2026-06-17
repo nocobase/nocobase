@@ -11,12 +11,18 @@ El plugin de gestión de copias de seguridad de NocoBase ofrece funcionalidades 
 
 ## Instalar Cliente de Base de Datos
 
-El gestor de copias de seguridad depende del cliente de la base de datos correspondiente. Antes de usarlo, por favor, visite el sitio web oficial para descargar el cliente que coincida con la versión de su base de datos:
+La gestión de copias de seguridad depende del cliente de base de datos de la base principal. Antes de usarla, confirme que el entorno de ejecución actual tenga un cliente compatible con la versión de su base de datos.
+
+:::tip
+Si instala NocoBase con Docker, use preferentemente la imagen `full` correspondiente, por ejemplo `latest-full`, `beta-full` o `alpha-full`. Estas imágenes ya incluyen clientes de base de datos habituales, por lo que normalmente no requieren instalación manual.
+:::
+
+Si el entorno actual no tiene el cliente de base de datos necesario, descargue desde el sitio oficial el cliente que coincida con su versión de base de datos:
 
 - MySQL: https://dev.mysql.com/downloads/
 - PostgreSQL: https://www.postgresql.org/download/
 
-Para las versiones de Docker, puede escribir un script directamente en el directorio `./storage/scripts`:
+Si necesita instalarlo manualmente en un entorno Docker, puede escribir un script en el directorio `./storage/scripts`:
 
 ```bash
 mkdir ./storage/scripts

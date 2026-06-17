@@ -99,6 +99,18 @@ export function collectAssociationHydrationCandidates(options: {
   return candidates;
 }
 
+export function getAssociationHydrationNamePath(model: any) {
+  return model?.context?.fieldPathArray ?? model?.context?.fieldPath ?? model?.props?.name;
+}
+
+export function getAssociationHydrationSetterContext(model: any) {
+  if (typeof model?.context?.setFormValue === 'function') {
+    return model.context;
+  }
+
+  return model?.context?.blockModel?.context;
+}
+
 function markAssociationHydrationDone(statusMap: Map<string, HydrateStatus>, tkKey: string | null | undefined) {
   if (!tkKey) return;
   statusMap.set(tkKey, 'done');
@@ -245,8 +257,8 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     });
     if (!candidates.length) return;
 
-    const namePath = model?.props?.name ?? model?.context?.fieldPathArray;
-    const blockCtx: any = model?.context?.blockModel?.context;
+    const namePath = getAssociationHydrationNamePath(model);
+    const setterCtx: any = getAssociationHydrationSetterContext(model);
 
     candidates.forEach(({ item, tk, tkKey }) => {
       void (async () => {
@@ -268,8 +280,8 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
               })
             : merge;
 
-          if (blockCtx && typeof blockCtx.setFormValue === 'function' && namePath != null) {
-            await blockCtx.setFormValue(namePath, nextValue, {
+          if (setterCtx && typeof setterCtx.setFormValue === 'function' && namePath != null) {
+            await setterCtx.setFormValue(namePath, nextValue, {
               source: 'default',
               markExplicit: false,
               triggerEvent: false,

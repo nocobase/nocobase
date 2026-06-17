@@ -115,13 +115,22 @@ const Shortcut: React.FC<ShortcutProps> = ({
     return nextWorkContext;
   }, [ctx, context.workContext]);
 
+  const syncShortcutContext = useCallback(() => {
+    const shortcutContext = getShortcutContext();
+    if (!shortcutContext.length) {
+      return;
+    }
+    addContextItems(shortcutContext);
+    syncContextAttachments(shortcutContext);
+  }, [addContextItems, getShortcutContext, syncContextAttachments]);
+
   if (!aiEmployee) {
     return null;
   }
 
   return (
     <Spin spinning={loading}>
-      <Popover content={<ProfileCard aiEmployee={aiEmployee} tasks={tasks} />}>
+      <Popover content={<ProfileCard aiEmployee={aiEmployee} tasks={tasks} onTaskTriggered={syncShortcutContext} />}>
         <Avatar
           src={currentAvatar}
           size={size || 52}
@@ -136,11 +145,7 @@ const Shortcut: React.FC<ShortcutProps> = ({
           onMouseLeave={() => setFocus(false)}
           onClick={() => {
             triggerTask({ aiEmployee, tasks, auto });
-            if (context?.workContext?.length) {
-              const shortcutContext = getShortcutContext();
-              addContextItems(shortcutContext);
-              syncContextAttachments(shortcutContext);
-            }
+            syncShortcutContext();
           }}
         />
       </Popover>
