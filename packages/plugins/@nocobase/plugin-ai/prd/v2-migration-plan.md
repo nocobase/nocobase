@@ -210,7 +210,7 @@
 
 #### A2. `AIConfigRepository` 和 FlowEngine context
 
-- 状态：待确认 V1 替换
+- 状态：V1 替换验收通过
 - 依赖：A1
 - 范围：
   - `src/client-v2/repositories/AIConfigRepository.ts`
@@ -236,6 +236,14 @@
   - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/plugin.tsx packages/plugins/@nocobase/plugin-ai/src/client-v2/repositories/AIConfigRepository.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/repositories/hooks/useAIConfigRepository.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/repositories/__tests__/AIConfigRepository.test.ts` 通过。
   - `tsc --noEmit` 定向检查 `plugin.tsx`、repository、hook 和 repository test 通过。
   - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/repositories/__tests__/AIConfigRepository.test.ts --run --reporter=verbose` 通过。
+- V1 替换验收记录：
+  - `src/client/repositories/AIConfigRepository.ts` 已改为从 `src/client-v2/repositories/AIConfigRepository.ts` re-export。
+  - `src/client/repositories/hooks/useAIConfigRepository.ts` 已改为从 `src/client-v2/repositories/hooks/useAIConfigRepository.ts` re-export。
+  - `src/client/repositories` 中不再包含 `@formily/reactive`、`@nocobase/client`、`AIConfigRepository` 重复实现。
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client/repositories/AIConfigRepository.ts packages/plugins/@nocobase/plugin-ai/src/client/repositories/hooks/useAIConfigRepository.ts` 通过。
+  - `tsc --noEmit` 定向检查 v1/v2 repository 与 hook 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/repositories/__tests__/AIConfigRepository.test.ts --run --reporter=verbose` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/model.test.ts --run --reporter=verbose` 通过。
 
 #### A3. 公开 API 合同冻结
 

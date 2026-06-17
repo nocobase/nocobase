@@ -7,9 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFlowEngine } from '@nocobase/flow-engine';
-import { AIConfigRepository } from '../AIConfigRepository';
-
-export const useAIConfigRepository = (): AIConfigRepository => {
-  return useFlowEngine().context.aiConfigRepository;
-};
+export { useAIConfigRepository } from '../../../client-v2/repositories/hooks/useAIConfigRepository';
