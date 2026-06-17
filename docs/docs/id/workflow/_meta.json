@@ -76,8 +76,71 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Large Language Model",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
+            "label": "Node LLM",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Dialog Teks",
+                "link": "/ai-employees/workflow/nodes/llm/chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Dialog Multimodal",
+                "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Output Terstruktur",
+                "link": "/ai-employees/workflow/nodes/llm/structured-output"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Node Karyawan AI",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Konfigurasi Node",
+                "link": "/ai-employees/workflow/nodes/employee/configuration"
+              },
+              {
+                "type": "custom-link",
+                "label": "Persetujuan Node",
+                "link": "/ai-employees/workflow/nodes/employee/approval"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Knowledge Base AI",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Ikhtisar",
+                "link": "/ai-employees/workflow/nodes/knowledge/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Buat dokumen",
+                "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Perbarui dokumen",
+                "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Hapus dokumen",
+                "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Ambil dokumen",
+                "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+              }
+            ]
           }
         ]
       },
