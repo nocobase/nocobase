@@ -9,6 +9,7 @@
 
 import { isObservable, reaction, toJS } from '@formily/reactive';
 import { FlowContext, FlowModel, isRunJSValue, normalizeRunJSValue, runjsWithSafeGlobals } from '@nocobase/flow-engine';
+import { getValuesByPath } from '@nocobase/shared';
 import _ from 'lodash';
 import { dayjs } from '@nocobase/utils/client';
 import { evaluateCondition } from './conditions';
@@ -1200,11 +1201,33 @@ export class RuleEngine {
 
     this.commitRuleDeps(rule, state, collector);
 
+    if (
+      this.shouldSkipUnresolvedToManyAggregateForScalarTarget(baseCtx, ensuredTargetNamePath, resolved, rule.getValue())
+    ) {
+      return;
+    }
+
     const normalizedResolved = this.normalizeResolvedValueForTarget(baseCtx, resolved);
-    const normalizedResolvedForTarget = this.normalizeResolvedValueForAssociationTarget(
+    const normalizedResolvedForAssociationTarget = this.normalizeResolvedValueForAssociationTarget(
       baseCtx,
       ensuredTargetNamePath,
       normalizedResolved,
+    );
+
+    if (
+      this.shouldSkipEmptyArrayAggregateForScalarTarget(
+        baseCtx,
+        ensuredTargetNamePath,
+        normalizedResolvedForAssociationTarget,
+      )
+    ) {
+      return;
+    }
+
+    const normalizedResolvedForTarget = this.normalizeAggregateArrayForScalarTarget(
+      baseCtx,
+      ensuredTargetNamePath,
+      normalizedResolvedForAssociationTarget,
     );
 
     if (rule.source === 'default') {
@@ -1685,6 +1708,82 @@ export class RuleEngine {
     this.updateRuleDeps(rule, state, nextDeps);
   }
 
+  private isScalarValueTarget(baseCtx: any, targetNamePath: NamePath): boolean {
+    const targetField = this.resolveCollectionFieldByNamePath(baseCtx, targetNamePath);
+    if (targetField?.isAssociationField?.() && isToManyAssociationField(targetField)) {
+      return false;
+    }
+    if (this.isArrayValueCollectionField(targetField)) {
+      return false;
+    }
+    if (targetField) {
+      return true;
+    }
+
+    const current = this.options.getFormValueAtPath(targetNamePath);
+    return !Array.isArray(current);
+  }
+
+  private shouldSkipEmptyArrayAggregateForScalarTarget(baseCtx: any, targetNamePath: NamePath, resolved: any): boolean {
+    if (!Array.isArray(resolved) || resolved.length > 0) return false;
+    return this.isScalarValueTarget(baseCtx, targetNamePath);
+  }
+
+  private shouldSkipUnresolvedToManyAggregateForScalarTarget(
+    baseCtx: any,
+    targetNamePath: NamePath,
+    resolved: any,
+    rawValue: unknown,
+  ): boolean {
+    if (typeof resolved !== 'undefined') return false;
+    if (!this.isScalarValueTarget(baseCtx, targetNamePath)) return false;
+
+    const subPath = this.extractSingleLocalFormValuesPath(rawValue);
+    if (!subPath) return false;
+
+    return this.hasNonEmptyToManyAssociationValue(baseCtx, subPath);
+  }
+
+  private isArrayValueCollectionField(field: unknown): boolean {
+    if (!field || typeof field !== 'object') return false;
+    const collectionField = field as {
+      interface?: unknown;
+      multiple?: unknown;
+      schema?: { type?: unknown };
+      type?: unknown;
+      uiSchema?: { type?: unknown };
+    };
+    if (collectionField.multiple === true) return true;
+    if (collectionField.type === 'array') return true;
+
+    const uiSchemaType = collectionField.uiSchema?.type ?? collectionField.schema?.type;
+    if (uiSchemaType === 'array') return true;
+
+    const fieldInterface = typeof collectionField.interface === 'string' ? collectionField.interface : '';
+    return ['multipleSelect', 'checkboxGroup', 'json'].includes(fieldInterface);
+  }
+
+  private stringifyAggregateItem(value: unknown): string {
+    if (value && typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+    }
+    return String(value);
+  }
+
+  private normalizeAggregateArrayForScalarTarget(baseCtx: any, targetNamePath: NamePath, resolved: any): any {
+    if (!Array.isArray(resolved)) return resolved;
+    if (!this.isScalarValueTarget(baseCtx, targetNamePath)) return resolved;
+
+    const values = resolved.filter((item) => item !== null && typeof item !== 'undefined');
+    if (!values.length) return resolved;
+    if (values.length === 1) return values[0];
+    return values.map((item) => this.stringifyAggregateItem(item)).join(', ');
+  }
+
   /**
    * Check if default rule value can be applied.
    * Default value can overwrite when:
@@ -1741,6 +1840,17 @@ export class RuleEngine {
       ctx.defineProperty('formValues', { get: () => trackingFormValues, cache: false });
     }
 
+    const delegatedResolveJsonTemplate =
+      typeof ctx.resolveJsonTemplate === 'function' ? ctx.resolveJsonTemplate.bind(ctx) : undefined;
+    ctx.defineMethod('resolveJsonTemplate', async (template: unknown) => {
+      const localResolved = this.resolveLocalFormValuesTemplates(baseCtx, template);
+      const nextTemplate = localResolved.matched ? localResolved.value : template;
+      if (delegatedResolveJsonTemplate) {
+        return delegatedResolveJsonTemplate(nextTemplate);
+      }
+      return nextTemplate;
+    });
+
     // “当前项”链：用于多层级关系字段条件
     // 语义：ctx.item -> { index?, length?, __is_new__?, __is_stored__?, value, parentItem? }，其中：
     // - index：仅当当前对象位于对多关联行内时存在（0-based）
@@ -1763,6 +1873,115 @@ export class RuleEngine {
     };
     ctx.defineProperty('item', { get: getItem, cache: false });
     return ctx;
+  }
+
+  private getLocalFormValuesSnapshot(baseCtx: unknown): unknown {
+    try {
+      const snapshot = (baseCtx as { getFormValues?: () => unknown } | undefined)?.getFormValues?.();
+      if (snapshot && typeof snapshot === 'object') {
+        return snapshot;
+      }
+    } catch {
+      // ignore
+    }
+
+    const mirror = this.options.valuesMirror;
+    return isObservable(mirror) ? toJS(mirror) : mirror;
+  }
+
+  private resolveLocalFormValuesPath(baseCtx: unknown, subPath: string): unknown {
+    const snapshot = this.getLocalFormValuesSnapshot(baseCtx);
+    if (!snapshot || typeof snapshot !== 'object') return undefined;
+    return getValuesByPath(snapshot as object, subPath);
+  }
+
+  private extractSingleLocalFormValuesPath(template: unknown): string | null {
+    if (typeof template !== 'string') return null;
+    const single = template.match(
+      /^\s*\{\{\s*ctx\.formValues\.([a-zA-Z_$][a-zA-Z0-9_$-]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$-]*)*)\s*\}\}\s*$/,
+    );
+    return single?.[1] ?? null;
+  }
+
+  private hasNonEmptyToManyAssociationValue(baseCtx: unknown, subPath: string): boolean {
+    const segs = subPath.split('.').filter(Boolean);
+    if (segs.length < 2) return false;
+
+    let collection = this.getRootCollection() || this.getCollectionFromContext(baseCtx);
+    if (!collection?.getField) return false;
+
+    const prefix: string[] = [];
+    for (let i = 0; i < segs.length - 1; i++) {
+      const seg = segs[i];
+      const field = collection?.getField?.(seg);
+      if (!field?.isAssociationField?.()) return false;
+
+      prefix.push(seg);
+      if (isToManyAssociationField(field)) {
+        const snapshot = this.getLocalFormValuesSnapshot(baseCtx);
+        const value = snapshot && typeof snapshot === 'object' ? _.get(snapshot, prefix) : undefined;
+        return Array.isArray(value) && value.length > 0;
+      }
+
+      collection = field.targetCollection;
+      if (!collection?.getField) return false;
+    }
+
+    return false;
+  }
+
+  private stringifyTemplateReplacement(value: unknown): string | undefined {
+    if (typeof value === 'undefined') return undefined;
+    return value && typeof value === 'object' ? JSON.stringify(value) : String(value);
+  }
+
+  private resolveLocalFormValuesTemplates(baseCtx: unknown, template: unknown): { matched: boolean; value: unknown } {
+    if (typeof template === 'string') {
+      const single = this.extractSingleLocalFormValuesPath(template);
+      if (single) {
+        const resolved = this.resolveLocalFormValuesPath(baseCtx, single);
+        if (typeof resolved !== 'undefined') {
+          return { matched: true, value: resolved };
+        }
+        return { matched: false, value: template };
+      }
+
+      let matched = false;
+      const value = template.replace(
+        /\{\{\s*ctx\.formValues\.([a-zA-Z_$][a-zA-Z0-9_$-]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$-]*)*)\s*\}\}/g,
+        (fullMatch, subPath) => {
+          const resolved = this.resolveLocalFormValuesPath(baseCtx, subPath);
+          const replacement = this.stringifyTemplateReplacement(resolved);
+          if (typeof replacement === 'undefined') return fullMatch;
+          matched = true;
+          return replacement;
+        },
+      );
+      return { matched, value };
+    }
+
+    if (Array.isArray(template)) {
+      let matched = false;
+      const value = template.map((item) => {
+        const resolved = this.resolveLocalFormValuesTemplates(baseCtx, item);
+        if (resolved.matched) matched = true;
+        return resolved.value;
+      });
+      return matched ? { matched, value } : { matched: false, value: template };
+    }
+
+    if (_.isPlainObject(template)) {
+      let matched = false;
+      const value: Record<string, unknown> = {};
+      for (const [key, item] of Object.entries(template as Record<string, unknown>)) {
+        const resolved = this.resolveLocalFormValuesTemplates(baseCtx, item);
+        if (resolved.matched) matched = true;
+        value[key] = resolved.value;
+      }
+      return matched ? { matched, value } : { matched: false, value: template };
+    }
+
+    return { matched: false, value: template };
   }
 
   private buildItemChainValue(baseCtx: any, trackingFormValues: any, targetNamePath: NamePath | null) {

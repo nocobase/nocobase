@@ -871,6 +871,7 @@ export class FormValueRuntime {
               form.setFieldsValue?.({ [pathKey]: value });
             }
             _.set(this.valuesMirror, [pathKey], value);
+            this.syncMountedFieldModelValue([pathKey], value);
           }
           this.bumpChangeTick();
         } finally {
@@ -970,6 +971,7 @@ export class FormValueRuntime {
         for (const { namePath, value } of filteredToWrite) {
           form.setFieldValue?.(namePath, value);
           _.set(this.valuesMirror, namePath, value);
+          this.syncMountedFieldModelValue(namePath, value);
           changedPaths.push(namePath);
         }
         this.bumpChangeTick();
@@ -1063,6 +1065,7 @@ export class FormValueRuntime {
     try {
       form.setFieldValue?.(namePath, nextValue);
       _.set(this.valuesMirror, namePath, nextValue);
+      this.syncMountedFieldModelValue(namePath, nextValue);
       this.bumpChangeTick();
     } finally {
       this.suppressFormCallbackDepth--;
@@ -1131,6 +1134,83 @@ export class FormValueRuntime {
   private emitFormValuesChange(payload: FormValuesChangePayload) {
     this.model.dispatchEvent?.('formValuesChange', payload, { debounce: true });
     this.model.emitter?.emit?.('formValuesChange', payload);
+  }
+
+  private syncMountedFieldModelValue(namePath: NamePath, value: unknown) {
+    const targetKey = namePathToPathKey(namePath);
+    if (!targetKey) return;
+
+    const engine = this.model?.context?.engine;
+    if (!engine || typeof engine.forEachModel !== 'function') return;
+
+    const visited = new Set<FlowModel>();
+    const visit = (model: FlowModel | null | undefined) => {
+      if (!model || visited.has(model)) return;
+      visited.add(model);
+
+      if (this.isMountedModelInThisForm(model) && this.modelMatchesNamePath(model, targetKey)) {
+        const nextProps = { value };
+        model.setProps?.(nextProps);
+        const fieldModel = (model as FlowModel & { subModels?: { field?: FlowModel } }).subModels?.field;
+        fieldModel?.setProps?.(nextProps);
+      }
+
+      const forks = (model as FlowModel & { forks?: { forEach?: (cb: (fork: FlowModel) => void) => void } }).forks;
+      forks?.forEach?.((fork) => visit(fork));
+    };
+
+    engine.forEachModel((model: FlowModel) => visit(model));
+  }
+
+  private isMountedModelInThisForm(model: FlowModel) {
+    const blockModel = (model.context as { blockModel?: FlowModel } | undefined)?.blockModel;
+    return !!blockModel && String(blockModel.uid) === String(this.model.uid);
+  }
+
+  private modelMatchesNamePath(model: FlowModel, targetKey: string) {
+    return this.getMountedModelNamePaths(model).some((path) => namePathToPathKey(path) === targetKey);
+  }
+
+  private getMountedModelNamePaths(model: FlowModel): NamePath[] {
+    const paths: NamePath[] = [];
+    const push = (value: unknown) => {
+      const path = this.normalizeNamePathValue(value);
+      if (path?.length) paths.push(path);
+    };
+
+    push((model.context as { fieldPathArray?: unknown } | undefined)?.fieldPathArray);
+
+    const props = typeof model.getProps === 'function' ? model.getProps() : (model as { props?: unknown }).props;
+    if (props && typeof props === 'object') {
+      push((props as { name?: unknown }).name);
+    }
+
+    try {
+      const init = model.getStepParams?.('fieldSettings', 'init');
+      if (init && typeof init === 'object') {
+        push((init as { fieldPath?: unknown }).fieldPath);
+      }
+    } catch {
+      // ignore models without field settings
+    }
+
+    const seen = new Set<string>();
+    return paths.filter((path) => {
+      const key = namePathToPathKey(path);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private normalizeNamePathValue(value: unknown): NamePath | null {
+    if (Array.isArray(value)) {
+      const path = value.filter((seg): seg is string | number => typeof seg === 'string' || typeof seg === 'number');
+      return path.length === value.length ? path : null;
+    }
+    if (typeof value === 'number') return [value];
+    if (typeof value === 'string' && value) return pathKeyToNamePath(value);
+    return null;
   }
 
   private markExplicit(pathKey: string) {

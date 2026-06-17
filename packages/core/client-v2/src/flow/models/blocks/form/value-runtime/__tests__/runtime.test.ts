@@ -14,6 +14,7 @@ import dayjs from 'dayjs';
 import { observable } from '@formily/reactive';
 import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash';
 import { FlowContext, JSRunner } from '@nocobase/flow-engine';
+import { getValuesByPath } from '@nocobase/shared';
 import { FormValueRuntime } from '..';
 import type { FormInstance } from 'antd';
 
@@ -95,6 +96,10 @@ function createFieldContext(runtime: FormValueRuntime) {
         if (match) {
           const pathString = match[1];
           if (!pathString) return this;
+          if (pathString === 'formValues') return this.formValues;
+          if (pathString.startsWith('formValues.')) {
+            return getValuesByPath(runtime.getFormValuesSnapshot(), pathString.slice('formValues.'.length));
+          }
           const segs = pathString.split('.').filter(Boolean);
           return lodashGet(this, segs);
         }
@@ -747,6 +752,76 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
   });
 
+  it('mode=assign follows to-many association title changes without clearing on transient empty arrays', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ roles: [] });
+
+    const blockModel: any = {
+      uid: 'form-assign-to-many-source-title',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const usernameField: any = { isAssociationField: () => false, interface: 'input' };
+    const rolesCollection: any = { getField: () => null, filterTargetKey: 'name' };
+    const rolesField: any = {
+      isAssociationField: () => true,
+      type: 'belongsToMany',
+      targetCollection: rolesCollection,
+    };
+    const collection: any = {
+      getField: (name: string) => {
+        if (name === 'username') return usernameField;
+        if (name === 'roles') return rolesField;
+        return null;
+      },
+    };
+    blockCtx.defineProperty('collection', { value: collection });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'username-from-role-title',
+        enable: true,
+        targetPath: 'username',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.formValues.roles.title }}',
+      },
+    ]);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['username'])).toBeUndefined();
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roles'], value: [{ title: '经理' }] }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['username'])).toBe('经理'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roles'], value: [{ title: '经理' }, { title: 'Admin' }] }], {
+      source: 'user',
+    });
+    await waitFor(() => expect(formStub.getFieldValue(['username'])).toBe('经理, Admin'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roles'], value: [{ title: null }] }], { source: 'system' });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(formStub.getFieldValue(['username'])).toBe('经理, Admin');
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roles'], value: [{ __index__: 'row-1', __is_new__: true }] }], {
+      source: 'system',
+    });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(formStub.getFieldValue(['username'])).toBe('经理, Admin');
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roles'], value: [{ title: '销售' }] }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['username'])).toBe('销售'));
+  });
+
   it('mode=default follows explicit semantics and stops after user change', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
@@ -795,6 +870,72 @@ describe('FormValueRuntime (form assign rules)', () => {
     await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(formStub.getFieldValue(['a'])).toBe('user');
+  });
+
+  it('mode=default follows to-many association subpath changes without clearing on transient empty arrays', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ roles: [] });
+
+    const blockModel: any = {
+      uid: 'form-assign-default-to-many-source',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const usernameField: any = { isAssociationField: () => false, interface: 'input' };
+    const rolesCollection: any = { getField: () => null, filterTargetKey: 'name' };
+    const rolesField: any = {
+      isAssociationField: () => true,
+      type: 'belongsToMany',
+      targetCollection: rolesCollection,
+    };
+    const collection: any = {
+      getField: (name: string) => {
+        if (name === 'username') return usernameField;
+        if (name === 'roles') return rolesField;
+        return null;
+      },
+    };
+    blockCtx.defineProperty('collection', { value: collection });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'username-from-role-name',
+        enable: true,
+        targetPath: 'username',
+        mode: 'default',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.formValues.roles.name }}',
+      },
+    ]);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['username'])).toBeUndefined();
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roles'], value: [{ name: 'manager' }] }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['username'])).toBe('manager'));
+
+    // Association selects can briefly carry an incomplete display record while option data is refreshing.
+    // For scalar targets, default mode should not treat that empty aggregate as a real default value.
+    await runtime.setFormValues(blockCtx, [{ path: ['roles'], value: [{ name: null }] }], { source: 'system' });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(formStub.getFieldValue(['username'])).toBe('manager');
+
+    await runtime.setFormValues(blockCtx, [{ path: ['roles'], value: [{ name: 'member' }] }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['username'])).toBe('member'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['username'], value: 'manual' }], { source: 'user' });
+    await runtime.setFormValues(blockCtx, [{ path: ['roles'], value: [{ name: 'admin' }] }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['username'])).toBe('manual');
   });
 
   it('reapplies mode=default value after form reset starts a new create session', async () => {
@@ -1012,6 +1153,59 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     await waitFor(() => expect(formStub.getFieldValue(['color'])).toBe('#1677FF'));
     expect(colorFieldModel.setProps).toHaveBeenCalledWith({ value: '#1677FF' });
+  });
+
+  it('syncs mounted field UI props after programmatic form writes', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub();
+
+    const blockModel: any = {
+      uid: 'form-runtime-mounted-field-ui-sync',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+    fieldCtx.defineProperty('fieldPathArray', { value: ['username'] });
+
+    const inputFieldModel: any = {
+      setProps: vi.fn(),
+    };
+    const formItemModel: any = {
+      uid: 'form-item-username-runtime-ui-sync',
+      context: fieldCtx,
+      subModels: { field: inputFieldModel },
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'username' };
+        }
+        return undefined;
+      },
+      setProps: vi.fn(),
+    };
+
+    blockCtx.defineProperty('engine', {
+      value: {
+        forEachModel: (visit: (model: any) => void) => visit(formItemModel),
+      },
+    });
+
+    runtime.mount({ sync: true });
+
+    await runtime.setFormValues(blockCtx, [{ path: ['username'], value: 'Admin' }], { source: 'system' });
+
+    expect(formStub.getFieldValue(['username'])).toBe('Admin');
+    expect(formItemModel.setProps).toHaveBeenCalledWith({ value: 'Admin' });
+    expect(inputFieldModel.setProps).toHaveBeenCalledWith({ value: 'Admin' });
   });
 
   it('linkage assignment takes precedence over mode=assign form assignment', async () => {
