@@ -23,8 +23,13 @@ import {
   shouldShowUploadActionSlot,
 } from './uploadFieldUtils';
 
-function getDataSourceHeaders(dataSourceKey?: string) {
-  return dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {};
+function appendUploadDataSourceKey(url: string, dataSourceKey?: string) {
+  if (!dataSourceKey || dataSourceKey === 'main') {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}uploadDataSourceKey=${encodeURIComponent(dataSourceKey)}`;
 }
 
 export const CardUpload = (props) => {
@@ -358,12 +363,11 @@ UploadFieldModel.registerFlow({
         }
         try {
           // 上传前检查存储策略
-          const { data: checkData } = await ctx.api
-            .resource('storages', null, getDataSourceHeaders(dataSourceKey))
-            .check({
-              fileCollectionName: fileCollection,
-              storageName: collectionField.options.storage,
-            });
+          const { data: checkData } = await ctx.api.resource('storages').check({
+            fileCollectionName: fileCollection,
+            ...(dataSourceKey && dataSourceKey !== 'main' ? { uploadDataSourceKey: dataSourceKey } : {}),
+            storageName: collectionField.options.storage,
+          });
 
           if (!checkData?.data?.isSupportToUploadFiles) {
             const messageValue = ctx
@@ -382,7 +386,10 @@ UploadFieldModel.registerFlow({
             const customRequest = storageType.createUploadCustomRequest({
               ...ctx.model.props,
               api: ctx.api,
-              action: `${fileCollection}:create?attachmentField=${collectionField.collectionName}.${collectionField.name}`,
+              action: appendUploadDataSourceKey(
+                `${fileCollection}:create?attachmentField=${collectionField.collectionName}.${collectionField.name}`,
+                dataSourceKey,
+              ),
               storage,
             });
 
