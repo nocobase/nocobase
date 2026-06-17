@@ -12,11 +12,14 @@ export * from './models';
 
 // Workflow node extension contract (shared base class + canvas building blocks) for downstream node plugins migrating
 // their config UI to the modern canvas.
-export { Instruction } from './canvas/Instruction';
+export { Instruction, useAvailableUpstreams, useNodeContext } from './canvas/Instruction';
 export type { LoaderOf, NodeAvailableContext, TempAssociationSource } from './canvas/Instruction';
+export { useCurrentWorkflowContext } from './canvas/contexts';
 export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';
 export type { WorkflowVariableInputProps } from './canvas/WorkflowVariableInput';
 export { useWorkflowVariableOptions } from './canvas/useWorkflowVariableOptions';
+export { BaseTypeSets, defaultFieldNames } from './canvas/collectionFieldOptions';
+export type { UseVariableOptions, VariableOption } from './canvas/collectionFieldOptions';
 export { Trigger } from './triggers';
 export type { LoaderOf as TriggerLoaderOf, TriggerTempAssociationSource } from './triggers';
 export * from './components/collection';
