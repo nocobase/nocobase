@@ -11,6 +11,7 @@ import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import Plugin from '../../Plugin';
+import { EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > actions > workflows', () => {
   let app: MockServer;
@@ -168,10 +169,12 @@ describe('workflow > actions > workflows', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
-      const c1 = await workflow.countExecutions();
-      expect(c1).toBe(1);
+      await vi.waitFor(async () => {
+        const executions = await workflow.getExecutions();
+        expect(executions.length).toBe(1);
+        expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(await PostRepo.count()).toBe(2);
+      });
 
       const { status, body } = await agent.resource('workflows').update({
         filterByTk: workflow.id,
@@ -190,13 +193,12 @@ describe('workflow > actions > workflows', () => {
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
 
-      await sleep(500);
-
-      const c2 = await workflow.countExecutions();
-      expect(c2).toBe(4);
-
-      const p2s = await PostRepo.find();
-      expect(p2s.length).toBe(6);
+      await vi.waitFor(async () => {
+        const executions = await workflow.getExecutions();
+        expect(executions.length).toBe(4);
+        expect(executions.map((item) => item.status)).toEqual(Array(4).fill(EXECUTION_STATUS.RESOLVED));
+        expect(await PostRepo.count()).toBe(6);
+      });
     });
   });
 
