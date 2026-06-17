@@ -452,6 +452,12 @@ const stripTransientTemplateParams = (params: any) => {
 const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>) => {
   const baseInputArgs = ctx.inputArgs || {};
   const nextInputArgs: Record<string, any> = { ...(baseInputArgs as any) };
+  const hasParam = (key: string) => Object.prototype.hasOwnProperty.call(params || {}, key);
+  const hasTemplateRuntimeContext =
+    normalizeStr(params?.popupTemplateUid) !== '' ||
+    !!params?.popupTemplateContext ||
+    hasParam('popupTemplateHasFilterByTk') ||
+    hasParam('popupTemplateHasSourceId');
 
   // 资源三元组（dataSourceKey/collectionName/associationName）以模板为准：通过覆盖 ctx.inputArgs，让 base openView 按原规则生效。
   if (typeof params?.dataSourceKey !== 'undefined') {
@@ -495,7 +501,7 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
 
   let didOverrideFilterByTk = false;
   let didOverrideSourceId = false;
-  if (!hasTemplateFilterByTk) {
+  if (!hasTemplateFilterByTk && (hasTemplateRuntimeContext || hasParam('filterByTk'))) {
     // 防止 openView 回落到 actionDefaults.filterByTk（如 Record action 默认 {{ctx.record.id}}）
     nextInputArgs.filterByTk = null;
     didOverrideFilterByTk = true;
