@@ -76,8 +76,71 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Большая языковая модель",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
+            "label": "Узел LLM",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Текстовый чат",
+                "link": "/ai-employees/workflow/nodes/llm/chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Мультимодальный чат",
+                "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Структурированный вывод",
+                "link": "/ai-employees/workflow/nodes/llm/structured-output"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Узел AI-сотрудника",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Настройка узла",
+                "link": "/ai-employees/workflow/nodes/employee/configuration"
+              },
+              {
+                "type": "custom-link",
+                "label": "Согласование узла",
+                "link": "/ai-employees/workflow/nodes/employee/approval"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "База знаний AI",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Обзор",
+                "link": "/ai-employees/workflow/nodes/knowledge/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Создать документ",
+                "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Обновить документ",
+                "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Удалить документ",
+                "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Поиск документов",
+                "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+              }
+            ]
           }
         ]
       },
