@@ -37,7 +37,6 @@ const getInterfaceOptions = (data, type) => {
 const isValueInOptions = (value, options) => {
   return options?.some((option) => option.children?.some?.((child) => child.name === value));
 };
-
 const getInterfaceTitle = (value, record, getInterface) => {
   if (value === 'tableoid' || record?.name === '__collection') {
     return '{{t("Table OID")}}';
@@ -45,7 +44,7 @@ const getInterfaceTitle = (value, record, getInterface) => {
   return getInterface(value)?.title || value;
 };
 
-export const CollectionFieldInterfaceSelect = observer(
+export const CollectionFieldInterfaceSelect: any = observer(
   (props: any) => {
     const { value, handleFieldChange, disabled } = props;
     const { data: record } = useCollectionRecord() as any;

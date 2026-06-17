@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Table, TableProps } from 'antd';
-import { SchemaComponent, UseDataBlockProps, useDataBlockRequest, withDynamicSchemaProps } from '@nocobase/client';
+import { SchemaComponent, UseDataBlockProps, useDataBlockRequest, withDynamicSchemaProps } from '../../../../index';
 import { ISchema } from '@formily/json-schema';
 import { createApp } from './createApp';
 

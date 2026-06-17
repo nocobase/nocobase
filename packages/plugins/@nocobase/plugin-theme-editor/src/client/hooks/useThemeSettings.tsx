@@ -16,7 +16,7 @@ import { useThemeListContext } from '../components/ThemeListProvider';
 import { useTranslation } from '../locale';
 import { useUpdateThemeSettings } from './useUpdateThemeSettings';
 
-export const useThemeSettings = () => {
+export const useThemeSettings = (): any => {
   return useMemo<MenuProps['items'][0]>(() => {
     return {
       key: 'theme',

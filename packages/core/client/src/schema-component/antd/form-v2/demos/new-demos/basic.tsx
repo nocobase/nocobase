@@ -7,7 +7,7 @@ import {
   SchemaComponent,
   ISchema,
   Plugin
-} from '@nocobase/client';
+} from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 function useSubmitActionProps(): ActionProps {

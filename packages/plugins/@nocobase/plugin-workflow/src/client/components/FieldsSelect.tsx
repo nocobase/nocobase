@@ -26,7 +26,7 @@ function FieldOption({ label, value }) {
   );
 }
 
-export const FieldsSelect = observer(
+export const FieldsSelect: any = observer(
   (props: any) => {
     const { filter = defaultFilter, ...others } = props;
     const compile = useCompile();

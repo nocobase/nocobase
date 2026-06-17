@@ -14,7 +14,7 @@ import { AutoRefreshItem } from './AutoRefreshItem';
 import { useField, useFieldSchema } from '@formily/react';
 import { ChartRendererContext } from '../renderer';
 
-export const chartActionRefreshSettings = new SchemaSettings({
+export const chartActionRefreshSettings: any = new SchemaSettings({
   name: 'chartActionSettings:refresh',
   items: [
     {

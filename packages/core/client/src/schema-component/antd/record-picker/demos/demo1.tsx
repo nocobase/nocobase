@@ -19,7 +19,7 @@ import {
   SchemaComponentProvider,
   TableSelectorProvider,
   TableV2,
-} from '@nocobase/client';
+} from '../../../../index';
 import React from 'react';
 import { mockAPIClient } from '../../../../testUtils';
 import data from './mockData';

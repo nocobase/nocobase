@@ -15,15 +15,21 @@
   "devDependencies": {
     "antd": "5.x",
     "joi": "^17.13.3",
-    "react": "18.x"
+    "react": "18.x",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-notification-manager": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/database": "2.x",
-    "@nocobase/plugin-notification-manager": "2.x",
-    "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-notification-manager": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Workflow"

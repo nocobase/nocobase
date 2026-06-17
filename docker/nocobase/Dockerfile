@@ -5,12 +5,13 @@ ARG VERDACCIO_URL=https://registry.npmjs.org/
 
 WORKDIR /app
 
-RUN npm config set registry "$VERDACCIO_URL" \
-  && yarn config set registry "$VERDACCIO_URL" \
-  && yarn config set network-timeout 600000 -g \
+RUN corepack enable pnpm \
+  && npm config set registry "$VERDACCIO_URL" \
+  && pnpm config set registry "$VERDACCIO_URL" \
+  && cd /app \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --empty-key --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
-  && yarn install --production
+  && pnpm install --prod
 
 COPY cleanup-node-modules.sh /usr/local/bin/cleanup-node-modules.sh
 

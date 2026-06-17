@@ -1,7 +1,7 @@
 
 
 import React, { FC } from 'react';
-import { Application, Plugin, SchemaSettings, SchemaSettingsItem, useSchemaSettingsRender } from '@nocobase/client';
+import { Application, Plugin, SchemaSettings, SchemaSettingsItem, useSchemaSettingsRender } from '../../index';
 
 const mySchemaSetting = new SchemaSettings({
   name: 'MySchemaSetting',

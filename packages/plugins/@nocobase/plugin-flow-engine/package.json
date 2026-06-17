@@ -8,6 +8,11 @@
   "main": "./dist/server/index.js",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*",
     "antd": "5.x",
     "cronstrue": "^2.11.0",
     "koa-send": "^5.0.1",

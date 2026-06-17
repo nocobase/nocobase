@@ -9,16 +9,23 @@
   "main": "./dist/server/index.js",
   "types": "./dist/index.d.ts",
   "devDependencies": {
+    "@formily/shared": "2.x",
     "antd": "5.x",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-flow-engine": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/client-v2": "2.x",
-    "@nocobase/flow-engine": "2.x",
-    "@nocobase/plugin-flow-engine": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
+    "@nocobase/plugin-flow-engine": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "nocobase": {
     "supportedVersions": [

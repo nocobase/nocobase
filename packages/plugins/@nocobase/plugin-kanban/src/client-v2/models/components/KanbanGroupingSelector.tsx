@@ -38,21 +38,17 @@ const buildSelectedGroupOptions = (availableOptions: KanbanGroupOption[], nextVa
     .filter((option): option is KanbanGroupOption => Boolean(option));
 };
 
-export const KanbanGroupingSelector = observer(
-  ({
-    value,
-    onChange,
-    model,
-    collection,
-    disabled,
-  }: {
-    value?: KanbanGroupOption[] | KanbanGroupingValue;
-    onChange?: (value: KanbanGroupOption[]) => void;
-    model?: KanbanBlockModel;
-    collection?: any;
-    dataSourceKey?: string;
-    disabled?: boolean;
-  }) => {
+type KanbanGroupingSelectorProps = {
+  value?: KanbanGroupOption[] | KanbanGroupingValue;
+  onChange?: (value: KanbanGroupOption[]) => void;
+  model?: KanbanBlockModel;
+  collection?: any;
+  dataSourceKey?: string;
+  disabled?: boolean;
+};
+
+export const KanbanGroupingSelector: React.FC<KanbanGroupingSelectorProps> = observer(
+  ({ value, onChange, model, collection, disabled }: KanbanGroupingSelectorProps) => {
     const flowStep = useFlowStep();
     let settingsContext: any;
     try {

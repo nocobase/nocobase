@@ -13,7 +13,7 @@ import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';
 import { useDesignable } from '@nocobase/client';
 
-export const ViewSelect = observer(
+export const ViewSelect: any = observer(
   (props) => {
     const { DesignableBar } = useDesignable();
     const {

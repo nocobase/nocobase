@@ -43,7 +43,7 @@ export const useAdminSettingsForm = (authType: string) => {
   return auth?.components?.AdminSettingsForm;
 };
 
-export const Options = observer(
+export const Options: any = observer(
   () => {
     const form = useForm();
     const record = useRecord();

@@ -38,5 +38,5 @@ const InnerFilterTab = () => {
   return <Tabs activeKey={channelStatusFilterObs.value} items={items} onChange={onChange} />;
 };
 
-export const FilterTab = observer(InnerFilterTab, { displayName: 'FilterTab' });
+export const FilterTab: React.FC = observer(InnerFilterTab, { displayName: 'FilterTab' });
 export default FilterTab;

@@ -361,12 +361,12 @@ const commonOptions: any = {
 /**
  * @deprecated
  */
-export const iframeBlockSchemaSettings_deprecated = new SchemaSettings({
+export const iframeBlockSchemaSettings_deprecated: any = new SchemaSettings({
   name: 'iframeBlockSchemaSettings',
   ...commonOptions,
 });
 
-export const iframeBlockSchemaSettings = new SchemaSettings({
+export const iframeBlockSchemaSettings: any = new SchemaSettings({
   name: 'blockSettings:iframe',
   ...commonOptions,
 });

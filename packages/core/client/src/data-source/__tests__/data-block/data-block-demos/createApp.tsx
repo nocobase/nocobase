@@ -17,7 +17,7 @@ import {
   LocalDataSource,
   DEFAULT_DATA_SOURCE_KEY,
   DEFAULT_DATA_SOURCE_TITLE,
-} from '@nocobase/client';
+} from '../../../../index';
 import MockAdapter from 'axios-mock-adapter';
 import { ComponentType } from 'react';
 import collections from '../../collections.json';

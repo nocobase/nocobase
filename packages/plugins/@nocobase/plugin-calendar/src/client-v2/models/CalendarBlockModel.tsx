@@ -151,7 +151,7 @@ const applyCalendarPresetFieldNames = (model: CalendarBlockModel, params: Record
 };
 
 export class CalendarBlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.many;
+  static scene: typeof BlockSceneEnum.many = BlockSceneEnum.many;
 
   customModelClasses = {
     CollectionActionGroupModel: 'CalendarCollectionActionGroupModel',

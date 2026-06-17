@@ -5,9 +5,15 @@
   "description": "This plugin demonstrates how to use the custom field for table block feature to create a custom field for a table block.",
   "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
+  },
+  "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   }
 }

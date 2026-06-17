@@ -18,19 +18,26 @@
     "immer": "^10.1.1"
   },
   "devDependencies": {
-    "antd-mobile": "^5.38"
+    "antd-mobile": "^5.38",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
+    "@nocobase/plugin-notification-manager": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "peerDependencies": {
     "@formily/reactive": "2.x",
     "@formily/reactive-react": "^2",
-    "@nocobase/client": "2.x",
-    "@nocobase/client-v2": "2.x",
-    "@nocobase/plugin-mobile": "2.x",
-    "@nocobase/plugin-notification-manager": "2.x",
-    "@nocobase/plugin-workflow": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x",
-    "react-router-dom": "^6.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
+    "@nocobase/plugin-notification-manager": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "react-router-dom": "^6.x",
+    "@nocobase/client-v2": "workspace:*"
   },
   "license": "Apache-2.0"
 }

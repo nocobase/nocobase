@@ -1,5 +1,5 @@
 import { App as AntdApp } from 'antd';
-import { useAPIClient, useActionContext, Plugin, SchemaComponent } from '@nocobase/client';
+import { useAPIClient, useActionContext, Plugin, SchemaComponent } from '../../../../../index';
 import { ISchema, useForm } from '@formily/react';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';

@@ -1,6 +1,6 @@
 
 
-import { APIClientProvider, AssociationSelect, FormProvider, SchemaComponent } from '@nocobase/client';
+import { APIClientProvider, AssociationSelect, FormProvider, SchemaComponent } from '../../../../index';
 import React from 'react';
 import { mockAPIClient } from '../../../../testUtils';
 import { sleep } from '@nocobase/test/web';

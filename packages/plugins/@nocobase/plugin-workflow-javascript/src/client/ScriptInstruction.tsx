@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { CodeOutlined } from '@ant-design/icons';
 import { SchemaInitializerItemType } from '@nocobase/client';
@@ -124,7 +133,7 @@ export default class extends Instruction {
   scope = {
     useScriptDescription,
   };
-  components = {
+  components: Record<string, React.ElementType | object> = {
     ArrayItems,
     CodeEditor,
     WorkflowVariableInput,

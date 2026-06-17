@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, CollectionFieldInterface, CollectionFieldInterfaceManager } from '@nocobase/client';
+import { Application, CollectionFieldInterface, CollectionFieldInterfaceManager } from '../../../index';
 
 describe('CollectionFieldInterfaceManager', () => {
   let collectionFieldInterfaceManager: CollectionFieldInterfaceManager;

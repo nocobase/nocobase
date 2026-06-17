@@ -12,7 +12,7 @@ import { ButtonProps } from 'antd';
 import { tExpr } from '../locale';
 
 export class SimpleCollectionActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
 
   defaultProps: ButtonProps = {
     children: tExpr('Simple collection action'),

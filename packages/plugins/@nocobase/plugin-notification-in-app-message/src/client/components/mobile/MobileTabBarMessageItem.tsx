@@ -34,6 +34,6 @@ const InnerMobileTabBarMessageItem = (props) => {
   );
 };
 
-export const MobileTabBarMessageItem = observer(InnerMobileTabBarMessageItem, {
+export const MobileTabBarMessageItem: any = observer(InnerMobileTabBarMessageItem, {
   displayName: 'MobileTabBarMessageItem',
 });

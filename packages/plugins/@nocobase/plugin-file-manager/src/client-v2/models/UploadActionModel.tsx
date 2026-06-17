@@ -13,7 +13,7 @@ import { escapeT, useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Button, Upload } from 'antd';
 import { UploadFile } from 'antd/es/upload/interface';
-import { filesize } from 'filesize';
+import filesize from 'filesize';
 import match from 'mime-match';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -290,7 +290,7 @@ function UploadContent({ model }) {
 }
 
 export class UploadActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
   declare props: any;
 
   defaultProps: any = {

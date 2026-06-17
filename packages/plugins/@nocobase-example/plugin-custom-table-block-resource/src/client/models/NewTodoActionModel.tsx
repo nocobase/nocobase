@@ -69,7 +69,7 @@ const NewTodoForm = observer(function NewTodoForm({
 });
 
 export class NewTodoActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
 
   defaultProps: ButtonProps = {
     type: 'primary',

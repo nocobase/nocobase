@@ -6,24 +6,30 @@
   "description.ru-RU": "Пакет плагинов для отправки и тестирования уведомлений.",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
+  "devDependencies": {
+    "@types/nodemailer": "6.4.4",
+    "nodemailer": "^6.6.1",
+    "nodemailer-mock": "^1.5.11",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "nocobase": {
     "deprecated": true,
     "supportedVersions": [
       "1.x"
     ],
     "editionLevel": 0
-  },
-  "devDependencies": {
-    "@types/nodemailer": "6.4.4",
-    "nodemailer": "^6.6.1",
-    "nodemailer-mock": "^1.5.11"
-  },
-  "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/database": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x",
-    "@nocobase/utils": "2.x"
-  },
-  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+  }
 }

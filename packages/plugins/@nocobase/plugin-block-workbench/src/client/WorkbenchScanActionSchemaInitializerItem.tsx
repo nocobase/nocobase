@@ -21,7 +21,7 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const workbenchActionSettingsScanQrCode = new SchemaSettings({
+export const workbenchActionSettingsScanQrCode: any = new SchemaSettings({
   name: 'workbench:actionSettings:scanQrCode',
   items: [
     {

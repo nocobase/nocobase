@@ -11,7 +11,7 @@ import { SchemaSettings } from '@nocobase/client';
 import { editTabItemSettingsItem, removeTabItemSettingsItem } from '../../MobileTabBar.Item';
 import { SchemaSettingsActionLinkItem } from './SchemaSettingsActionLinkItem';
 
-export const mobileTabBarLinkSettings = new SchemaSettings({
+export const mobileTabBarLinkSettings: any = new SchemaSettings({
   name: 'mobile:tab-bar:link',
   items: [
     editTabItemSettingsItem(),

@@ -83,7 +83,7 @@ const openPrintWindow = async (contentEl: HTMLElement) => {
 };
 
 export class PrintActionModel extends ActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene: typeof ActionSceneEnum.record = ActionSceneEnum.record;
 
   defaultProps: ButtonProps = {
     type: 'link',

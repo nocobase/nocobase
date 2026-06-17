@@ -1,6 +1,6 @@
 
 
-import { SchemaComponentProvider, useSchemaComponentContext } from '@nocobase/client';
+import { SchemaComponentProvider, useSchemaComponentContext } from '../../index';
 import { Button } from 'antd';
 import React from 'react';
 

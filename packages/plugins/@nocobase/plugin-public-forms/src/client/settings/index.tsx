@@ -18,7 +18,7 @@ import {
 import { useField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 
-export const publicFormBlockSettings = new SchemaSettings({
+export const publicFormBlockSettings: any = new SchemaSettings({
   name: 'blockSettings:publicForm',
   items: [
     {
@@ -42,7 +42,7 @@ export const publicFormBlockSettings = new SchemaSettings({
   ],
 });
 
-export const publicMarkdownBlockSettings = new SchemaSettings({
+export const publicMarkdownBlockSettings: any = new SchemaSettings({
   name: 'blockSettings:publicMarkdown',
   items: [
     {

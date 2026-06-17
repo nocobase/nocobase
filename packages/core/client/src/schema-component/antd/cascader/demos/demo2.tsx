@@ -11,7 +11,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   useAPIClient,
-} from '@nocobase/client';
+} from '../../../../index';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
 

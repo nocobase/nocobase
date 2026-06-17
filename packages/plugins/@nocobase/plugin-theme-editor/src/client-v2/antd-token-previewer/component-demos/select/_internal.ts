@@ -8,5 +8,8 @@
  */
 
 import { Select } from 'antd';
+import type { ComponentType } from 'react';
 
-export default Select._InternalPanelDoNotUseOrYouWillBeFired;
+const InternalSelectPanel = Select._InternalPanelDoNotUseOrYouWillBeFired as ComponentType<Record<string, unknown>>;
+
+export default InternalSelectPanel;

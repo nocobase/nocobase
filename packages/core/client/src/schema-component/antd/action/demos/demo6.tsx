@@ -11,7 +11,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
-} from '@nocobase/client';
+} from '../../../../index';
 import React from 'react';
 
 const addActionButton = new SchemaInitializer({

@@ -19,7 +19,7 @@
 import { SchemaSettings } from '@nocobase/client';
 import { enableLink, fieldComponent, titleField } from './fieldSettings';
 
-export const DepartmentOwnersFieldSettings = new SchemaSettings({
+export const DepartmentOwnersFieldSettings: any = new SchemaSettings({
   name: 'fieldSettings:component:DepartmentOwnersField',
   items: [
     // {

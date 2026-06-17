@@ -10,7 +10,7 @@
 import { SchemaSettings } from '@nocobase/client';
 import { defaultZoomLevel } from '../block/MapBlock.Settings';
 
-export const fieldSettingsComponentMap = new SchemaSettings({
+export const fieldSettingsComponentMap: any = new SchemaSettings({
   name: 'fieldSettings:component:Map',
   items: [defaultZoomLevel],
 });

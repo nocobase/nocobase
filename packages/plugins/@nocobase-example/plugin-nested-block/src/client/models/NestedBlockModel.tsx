@@ -48,7 +48,7 @@ NestedSub2BlockModel.define({
 });
 
 export class NestedBlockModel extends BlockModel {
-  static defineChildren(ctx) {
+  static defineChildren(ctx): Promise<any[]> {
     return this.buildChildrenFromModels(ctx, [NestedSub1BlockModel, NestedSub2BlockModel]);
   }
 }

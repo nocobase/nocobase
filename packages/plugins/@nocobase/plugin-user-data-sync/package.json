@@ -8,13 +8,19 @@
   "description.zh-CN": "注册和管理可扩展的用户数据同步来源，默认提供 HTTP API。支持向用户和部门等资源同步数据。",
   "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Users & permissions"
   ],
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
+  }
 }

@@ -9,13 +9,7 @@
   "description.zh-CN": "已废弃插件，请使用数据可视化插件代替。",
   "version": "2.2.0-alpha.1",
   "main": "./dist/server/index.js",
-  "nocobase": {
-    "deprecated": true,
-    "supportedVersions": [
-      "1.x"
-    ],
-    "editionLevel": 0
-  },
+  "types": "./dist/server/index.d.ts",
   "license": "Apache-2.0",
   "devDependencies": {
     "@ant-design/icons": "5.x",
@@ -27,14 +21,26 @@
     "json5": "^2.2.3",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1",
-    "react-router-dom": "^6.11.2"
+    "react-router-dom": "^6.11.2",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/database": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x",
-    "@nocobase/utils": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
-  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
+  "nocobase": {
+    "deprecated": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  }
 }

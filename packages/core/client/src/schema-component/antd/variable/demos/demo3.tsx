@@ -1,7 +1,7 @@
 
 
 import { FormItem } from '@formily/antd-v5';
-import { SchemaComponent, SchemaComponentProvider, Variable } from '@nocobase/client';
+import { SchemaComponent, SchemaComponentProvider, Variable } from '../../../../index';
 import React from 'react';
 
 const scope = [

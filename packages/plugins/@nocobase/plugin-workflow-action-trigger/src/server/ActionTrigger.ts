@@ -27,7 +27,9 @@ import WorkflowPlugin, {
 } from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
-interface Context extends ActionContext, DefaultContext {}
+interface Context extends ActionContext {
+  [key: string]: any;
+}
 
 const ASYNC_WORKFLOW_TRIGGER_DELAY_MS = 200;
 

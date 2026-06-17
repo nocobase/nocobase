@@ -141,7 +141,7 @@ function EditFormContent({ model, scene = 'create' }) {
 
 export class DuplicateActionModel extends ActionModel {
   declare props: any;
-  static scene = ActionSceneEnum.record;
+  static scene: typeof ActionSceneEnum.record = ActionSceneEnum.record;
   duplicateLoading = false;
 
   defaultProps: any = {

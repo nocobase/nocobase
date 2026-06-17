@@ -2,6 +2,7 @@
   "name": "@nocobase/plugin-data-source-manager",
   "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "displayName": "Data source manager",
   "displayName.ru-RU": "Менеджер управления источниками данных",
   "displayName.zh-CN": "数据源管理",
@@ -12,16 +13,24 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/data-source-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-manager",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/client-v2": "2.x",
-    "@nocobase/flow-engine": "2.x",
-    "@nocobase/plugin-acl": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-acl": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*"
   },
   "keywords": [
     "Data model tools"
   ],
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-acl": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*"
+  }
 }

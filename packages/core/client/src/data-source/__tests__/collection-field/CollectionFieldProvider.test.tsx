@@ -16,7 +16,7 @@ import {
   Application,
   SchemaComponentProvider,
   DataSourceApplicationProvider,
-} from '@nocobase/client';
+} from '../../../index';
 import collections from '../collections.json';
 
 function renderAppOptions(Demo: ComponentType, name?: string) {

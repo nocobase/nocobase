@@ -16,7 +16,7 @@ import {
   useDataBlockResource,
   useCollectionRecordData,
   withDynamicSchemaProps,
-} from '@nocobase/client';
+} from '../../../../index';
 import { ISchema } from '@formily/json-schema';
 import { createApp } from './createApp';
 

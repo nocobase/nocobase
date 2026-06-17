@@ -1,6 +1,6 @@
 
 
-import { Application, NocoBaseBuildInPlugin } from '@nocobase/client';
+import { Application, NocoBaseBuildInPlugin } from '../../index';
 
 export const app = new Application({
   apiClient: {

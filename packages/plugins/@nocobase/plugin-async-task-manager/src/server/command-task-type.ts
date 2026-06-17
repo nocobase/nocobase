@@ -158,7 +158,7 @@ export class CommandTaskType extends TaskType {
 
         worker.on('error', (error) => {
           this.logger?.error(`Worker error for task ${this.record.id}`, error);
-          settleOnce(error);
+          settleOnce(error instanceof Error ? error : new Error(String(error)));
         });
 
         worker.on('exit', (code) => {

@@ -109,9 +109,6 @@ lerna version "$new_version" --preid alpha --force-publish=* --no-git-tag-versio
 VERSION=$(jq -r '.version' lerna.json)
 
 commit_and_tag_if_changed() {
-  # `git commit` exits 1 when there is nothing to commit; with `set -e` that would abort release.
-  # Also, if there are no changes, we should NOT create a new version tag pointing at an old commit.
-  # So we only commit+tag when there are staged changes.
   local version="$1"
   local msg="chore(versions): 😊 publish v${version}"
   local tag="v${version}"

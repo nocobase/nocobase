@@ -14,7 +14,7 @@ import {
   DataSourceOptions,
   LocalDataSource,
   Plugin,
-} from '@nocobase/client';
+} from '../../../index';
 import collections from '../collections.json';
 
 describe('DataSourceManager', () => {

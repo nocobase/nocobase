@@ -9,12 +9,8 @@
 
 const testCommandModule = require('../commands/test');
 
-const {
-  buildVitestNodeArgs,
-  requiresNoNodeSnapshot,
-  stripDelegatedWorkspaceArgs,
-  resolveWorkspaceTestDelegation,
-} = testCommandModule._test;
+const { buildVitestNodeArgs, requiresNoNodeSnapshot, stripDelegatedWorkspaceArgs, resolveWorkspaceTestDelegation } =
+  testCommandModule._test;
 
 describe('cli-v1 test command helpers', () => {
   test('requiresNoNodeSnapshot enables the Node 20+ compatibility flag', () => {

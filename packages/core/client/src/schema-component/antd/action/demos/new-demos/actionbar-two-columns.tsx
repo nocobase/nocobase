@@ -1,4 +1,4 @@
-import { ISchema, Plugin, SchemaComponent, SchemaInitializer } from '@nocobase/client';
+import { ISchema, Plugin, SchemaComponent, SchemaInitializer } from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 

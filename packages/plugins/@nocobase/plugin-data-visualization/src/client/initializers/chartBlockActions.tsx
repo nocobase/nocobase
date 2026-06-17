@@ -11,7 +11,7 @@ import { SchemaInitializer } from '@nocobase/client';
 import { lang } from '../locale';
 import { BlockRefreshActionInitializer } from './BlockRefreshAction';
 
-export const chartBlockActionsInitializer = new SchemaInitializer({
+export const chartBlockActionsInitializer: any = new SchemaInitializer({
   name: 'chartBlock:configureActions',
   title: lang('Configure actions'),
   icon: 'SettingOutlined',

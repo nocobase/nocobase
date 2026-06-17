@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, CollectionOptions, DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
+import { Application, CollectionOptions, DEFAULT_DATA_SOURCE_KEY } from '../../../index';
 import collections from '../collections.json';
 
 function getCollection(collection: CollectionOptions) {

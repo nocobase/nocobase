@@ -36,7 +36,7 @@ export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
 }
 
 export class AIEmployeeActionModel extends ActionModel {
-  static scene = ActionSceneEnum.all;
+  static scene: typeof ActionSceneEnum.all = ActionSceneEnum.all;
 
   static async defineChildren(ctx: FlowModelContext) {
     const aiEmployees = await ctx.aiConfigRepository.getAIEmployees();

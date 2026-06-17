@@ -8,7 +8,7 @@
  */
 
 import { renderHook } from '@testing-library/react-hooks';
-import { useAriaAttributeOfMenuItem, SchemaInitializerMenuProvider } from '@nocobase/client';
+import { useAriaAttributeOfMenuItem, SchemaInitializerMenuProvider } from '../../../../index';
 
 describe('useAriaAttributeOfMenuItem', () => {
   test('should return attribute with role "menuitem" when not in menu', () => {

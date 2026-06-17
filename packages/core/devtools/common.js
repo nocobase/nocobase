@@ -161,9 +161,10 @@ export default function devDynamicImport(packageName: string): Promise<any> {
         const pluginPackageJson = require(pluginPackageJsonPath);
         const pluginPathArr = pluginPackageJsonPath.replaceAll(sep, '/').split('/');
         const hasNamespace = pluginPathArr[pluginPathArr.length - 3].startsWith('@');
-        const pluginFileName = (hasNamespace
-          ? `${pluginPathArr[pluginPathArr.length - 3].replace('@', '')}_${pluginPathArr[pluginPathArr.length - 2]}`
-          : pluginPathArr[pluginPathArr.length - 2]
+        const pluginFileName = (
+          hasNamespace
+            ? `${pluginPathArr[pluginPathArr.length - 3].replace('@', '')}_${pluginPathArr[pluginPathArr.length - 2]}`
+            : pluginPathArr[pluginPathArr.length - 2]
         ).replaceAll('-', '_');
 
         let exportStatement = '';

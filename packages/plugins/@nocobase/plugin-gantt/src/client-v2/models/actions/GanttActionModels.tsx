@@ -124,7 +124,7 @@ GanttCollectionActionGroupModel.define({
 });
 
 export class GanttTodayActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
 
   defaultProps = {
     type: 'default' as const,
@@ -143,7 +143,7 @@ GanttTodayActionModel.define({
 });
 
 export class GanttExpandCollapseActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
 
   expandFlag = false;
 

@@ -9,14 +9,21 @@
   "description.ru-RU": "Поддержка вложений в формате URL.",
   "description.zh-CN": "支持 URL 格式的附件。",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/client-v2": "2.x",
-    "@nocobase/plugin-file-manager": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/plugin-file-manager": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Collection fields"
   ],
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/plugin-file-manager": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
+  }
 }

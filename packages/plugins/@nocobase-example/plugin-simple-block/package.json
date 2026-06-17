@@ -6,6 +6,10 @@
   "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
   "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
     "big.js": "7.0.1"
   },
   "peerDependencies": {

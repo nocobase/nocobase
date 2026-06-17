@@ -216,5 +216,5 @@ const InnerMessageList = () => {
   );
 };
 
-export const MessageList = observer(InnerMessageList, { displayName: 'MessageList' });
+export const MessageList: React.FC = observer(InnerMessageList, { displayName: 'MessageList' });
 export default MessageList;

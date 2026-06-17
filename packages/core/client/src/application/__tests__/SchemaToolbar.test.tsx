@@ -12,7 +12,7 @@ import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import { SchemaToolbarProvider, useSchemaToolbar, useSchemaToolbarRender } from '../schema-toolbar';
 import { SchemaComponent, SchemaComponentProvider, SortableContext, SortableProvider } from '../../schema-component';
 import { useFieldSchema } from '@formily/react';
-import { Application, ApplicationContext } from '@nocobase/client';
+import { Application, ApplicationContext } from '../../index';
 
 describe('SchemaToolbar', () => {
   test('SchemaToolbarProvider & useSchemaToolbar', () => {

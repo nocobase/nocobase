@@ -1,4 +1,4 @@
-import { BlockSchemaComponentPlugin, VariablesProvider } from '@nocobase/client';
+import { BlockSchemaComponentPlugin, VariablesProvider } from '../../../../index';
 import { renderAppOptions } from '@nocobase/test/client';
 
 export const renderDemo9 = () =>

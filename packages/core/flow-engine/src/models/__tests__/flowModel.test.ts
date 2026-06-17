@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { reaction } from '@nocobase/flow-engine';
+import { reaction } from '../../index';
 import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { vi } from 'vitest';

@@ -6,9 +6,14 @@
   "description.zh-CN": "可用于在工作流中对日期进行操作求值，如加减、比较操作，格式化等。",
   "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "devDependencies": {
     "joi": "^17.13.3",
-    "moment-timezone": "0.5.48"
+    "moment-timezone": "0.5.48",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "nocobase": {
     "supportedVersions": [
@@ -18,10 +23,10 @@
     "editionLevel": 0
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/plugin-workflow": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Workflow"

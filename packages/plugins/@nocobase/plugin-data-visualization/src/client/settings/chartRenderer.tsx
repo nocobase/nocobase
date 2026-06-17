@@ -24,7 +24,7 @@ import { useChartsTranslation } from '../locale';
 import { createRendererSchema } from '../utils';
 import { ChartRendererContext } from '../renderer/ChartRendererProvider';
 
-export const chartRendererSettings = new SchemaSettings({
+export const chartRendererSettings: any = new SchemaSettings({
   name: 'chart:renderer',
   items: [
     {

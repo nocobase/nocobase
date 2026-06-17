@@ -1,6 +1,6 @@
 # CollectionTemplateManager
 
-用于管理 [CollectionTemplate](./collection-template)，其被 [DataSourceManager](./data-source-manager) 管理。
+用于管理 [CollectionTemplate](./collection-template.md)，其被 [DataSourceManager](./data-source-manager.md) 管理。
 
 ## 实例方法
 

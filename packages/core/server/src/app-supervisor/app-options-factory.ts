@@ -8,7 +8,7 @@
  */
 
 import { Database, IDatabaseOptions } from '@nocobase/database';
-import Application from '../application';
+import Application, { ApplicationOptions } from '../application';
 import lodash from 'lodash';
 import path from 'path';
 import { AppModelOptions } from './types';
@@ -27,7 +27,7 @@ function getDatabaseConfig(app: Application): IDatabaseOptions {
   return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
 }
 
-export const appOptionsFactory = (appName: string, mainApp: Application, options: AppModelOptions) => {
+export const appOptionsFactory = (appName: string, mainApp: Application, options: AppModelOptions): ApplicationOptions => {
   const rawDatabaseOptions = getDatabaseConfig(mainApp);
   let dbConnType = 'new_database';
 

@@ -13,7 +13,7 @@ import { observer, useField } from '@formily/react';
 import { useRecord, useCompile } from '@nocobase/client';
 import { useMBMFields } from './hooks';
 
-export const TargetKey = observer(
+export const TargetKey: any = observer(
   (props: any) => {
     const { value, disabled } = props;
     const { targetKey } = useRecord();

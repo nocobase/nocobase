@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaSettings } from '@nocobase/client';
+import { SchemaSettings } from '../../../index';
 
 describe('SchemaSettings', () => {
   let schemaSettings: SchemaSettings;

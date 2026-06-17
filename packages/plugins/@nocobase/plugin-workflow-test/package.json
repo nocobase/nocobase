@@ -8,12 +8,17 @@
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "peerDependencies": {
-    "@nocobase/database": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "nocobase": {
     "internal": true
   },
-  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
+  "devDependencies": {
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
+  }
 }

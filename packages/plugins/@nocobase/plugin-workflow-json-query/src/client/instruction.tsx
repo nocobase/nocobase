@@ -215,7 +215,7 @@ export default class extends Instruction {
     renderEngineReference,
     getEngineOptions,
   };
-  components = {
+  components: any = {
     ArrayTable,
     WorkflowVariableInput,
     WorkflowVariableTextArea,

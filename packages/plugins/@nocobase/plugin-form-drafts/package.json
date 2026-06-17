@@ -2,12 +2,16 @@
   "name": "@nocobase/plugin-form-drafts",
   "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "displayName": "Form drafts",
   "displayName.zh-CN": "表单草稿",
   "description": "Allow users to save form drafts and continue editing later.",
   "description.zh-CN": "支持在填写表单时保存草稿，稍后可继续编辑与提交。",
   "devDependencies": {
-    "idb": "^7.1.1"
+    "idb": "^7.1.1",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "nocobase": {
     "supportedVersions": [
@@ -16,9 +20,9 @@
     "editionLevel": 0
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "license": "Apache-2.0"
 }

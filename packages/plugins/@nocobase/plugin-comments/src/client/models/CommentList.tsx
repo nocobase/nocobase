@@ -15,7 +15,7 @@ import { observer } from '@formily/reactive-react';
 import useStyles from './style';
 import { CommentSubmit } from './CommentSubmit';
 
-export const CommentList = observer((props: any) => {
+export const CommentList: any = observer((props: any) => {
   const { resource, handlePageChange, dataSource } = props;
   const { wrapSSR, hashId, componentCls } = useStyles();
   const [quoteContent, setQuoteContent] = useState('');

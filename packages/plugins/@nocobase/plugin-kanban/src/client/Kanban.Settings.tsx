@@ -27,7 +27,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
 import { SchemaSettingsColumnWidthItem } from './SchemaSettingsColumnWidthItem';
-export const kanbanSettings = new SchemaSettings({
+export const kanbanSettings: any = new SchemaSettings({
   name: 'blockSettings:kanban',
   items: [
     {

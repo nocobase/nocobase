@@ -8,16 +8,24 @@
   "description.zh-CN": "基于微软在线服务预览 Office 文件的插件。",
   "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/client-v2": "2.x",
-    "@nocobase/plugin-file-manager": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-file-manager": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
   },
   "keywords": [
     "File manager",
     "Collection fields"
   ],
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-file-manager": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/client-v2": "workspace:*"
+  }
 }

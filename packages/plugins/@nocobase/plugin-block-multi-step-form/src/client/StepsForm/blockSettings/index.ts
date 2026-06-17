@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   SchemaSettings,
   SchemaSettingsBlockTitleItem,
@@ -10,7 +19,7 @@ import {
 } from '@nocobase/client';
 import { StepsFormName, ComponentType } from '../../constants';
 
-export const blockSettings = new SchemaSettings({
+export const blockSettings: any = new SchemaSettings({
   name: `blockSettings:${StepsFormName}`,
   items: [
     {

@@ -8,7 +8,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   Select,
-} from '@nocobase/client';
+} from '../../../../index';
 import { Space } from 'antd';
 import React, { useState } from 'react';
 

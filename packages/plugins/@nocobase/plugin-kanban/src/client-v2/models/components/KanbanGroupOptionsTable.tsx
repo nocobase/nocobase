@@ -35,6 +35,15 @@ type RelationOptionRecord = {
   [key: string]: any;
 };
 
+type KanbanGroupOptionsTableProps = {
+  value?: GroupOptionsValue;
+  onChange?: (value: GroupOptionsValue) => void;
+  groupFieldName?: string;
+  model?: KanbanBlockModel;
+  collection?: any;
+  dataSourceKey?: string;
+};
+
 type SortableRowProps = React.HTMLAttributes<HTMLTableRowElement> & {
   'data-row-key': string;
 };
@@ -132,22 +141,8 @@ const loadRelationGroupOptions = async (
   return normalizeRelationGroupOptions(Array.isArray(rows) ? rows : [], targetCollection, savedOptions);
 };
 
-export const KanbanGroupOptionsTable = observer(
-  ({
-    value,
-    onChange,
-    groupFieldName,
-    model,
-    collection,
-    dataSourceKey,
-  }: {
-    value?: GroupOptionsValue;
-    onChange?: (value: GroupOptionsValue) => void;
-    groupFieldName?: string;
-    model?: KanbanBlockModel;
-    collection?: any;
-    dataSourceKey?: string;
-  }) => {
+export const KanbanGroupOptionsTable: React.FC<KanbanGroupOptionsTableProps> = observer(
+  ({ value, onChange, groupFieldName, model, collection, dataSourceKey }: KanbanGroupOptionsTableProps) => {
     let settingsContext: any;
     try {
       settingsContext = useFlowSettingsContext<KanbanBlockModel>();

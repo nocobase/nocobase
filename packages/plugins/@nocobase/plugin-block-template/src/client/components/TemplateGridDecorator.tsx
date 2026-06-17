@@ -16,7 +16,7 @@ import { useBlockTemplateInfo } from './BlockTemplateInfoContext';
 import { Schema } from '@nocobase/utils';
 import { findBlockRootSchema } from '../utils/schema';
 
-export const TemplateGridDecorator = observer((props: any) => {
+export const TemplateGridDecorator: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const update = useUpdate();

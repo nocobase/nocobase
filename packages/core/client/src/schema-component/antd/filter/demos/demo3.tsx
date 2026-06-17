@@ -9,7 +9,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   useActionContext,
-} from '@nocobase/client';
+} from '../../../../index';
 import React from 'react';
 
 const dataSource = [

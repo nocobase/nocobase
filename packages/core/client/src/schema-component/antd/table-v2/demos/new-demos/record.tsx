@@ -12,7 +12,7 @@ import {
   useFormBlockContext,
   useFormBlockProps,
   useTableBlockProps,
-} from '@nocobase/client';
+} from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 import { App as AntdApp } from 'antd';
 import React from 'react';

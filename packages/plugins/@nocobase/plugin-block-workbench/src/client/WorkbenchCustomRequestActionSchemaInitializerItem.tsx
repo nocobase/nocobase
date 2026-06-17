@@ -19,7 +19,7 @@ import {
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-export const workbenchActionSettingsCustomRequest = new SchemaSettings({
+export const workbenchActionSettingsCustomRequest: any = new SchemaSettings({
   name: 'workbench:actionSettings:customRequest',
   items: [
     {

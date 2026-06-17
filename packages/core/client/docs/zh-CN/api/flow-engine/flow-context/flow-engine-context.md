@@ -1,6 +1,6 @@
 # FlowEngineContext
 
-> FlowEngineContext 继承自 FlowContext，详见 [FlowContext](./flow-context)
+> FlowEngineContext 继承自 FlowContext，详见 [FlowContext](./flow-context.md)
 
 `FlowEngineContext` 是 FlowEngine 的全局上下文对象，继承自 `FlowContext`。用于在所有流和模型中共享应用级别的服务、配置和工具。通过 `engine.context.defineProps()` 和 `engine.context.defineMethods()` 进行注册和扩展，所有流执行时都可通过 `engine.context` 访问这些全局能力。
 

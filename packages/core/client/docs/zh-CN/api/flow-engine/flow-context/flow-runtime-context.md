@@ -1,6 +1,6 @@
 # FlowRuntimeContext
 
-> FlowRuntimeContext 继承自 FlowContext，详见 [FlowContext](./flow-context)
+> FlowRuntimeContext 继承自 FlowContext，详见 [FlowContext](./flow-context.md)
 
 `FlowRuntimeContext` 是流引擎在每次执行流（Flow）时创建的运行时上下文对象，贯穿整个流执行周期，负责管理流程级别的数据、状态、步骤结果和日志等。通过 `ctx`，可以在各个步骤中访问和操作本次流程实例的上下文，实现流程控制、数据传递和复杂业务编排。
 

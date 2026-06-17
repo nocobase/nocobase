@@ -7,6 +7,14 @@
   "description.zh-CN": "在点击绑定了自定义事件的按钮后触发。适用于对数据行的自定义操作编排。",
   "main": "./dist/server/index.js",
   "devDependencies": {
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/plugin-error-handler": "workspace:*",
+    "@nocobase/plugin-users": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*",
     "joi": "^17.13.3"
   },
   "homepage": "https://docs.nocobase.com/handbook/workflow-custom-action-trigger",

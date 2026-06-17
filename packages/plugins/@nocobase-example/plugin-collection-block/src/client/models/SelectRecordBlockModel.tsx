@@ -13,7 +13,7 @@ import React from 'react';
 import { tExpr } from '../locale';
 
 export class SelectRecordBlockModel extends CollectionBlockModel {
-  static scene = BlockSceneEnum.select;
+  static scene: typeof BlockSceneEnum.select = BlockSceneEnum.select;
 
   createResource() {
     return this.context.createResource(MultiRecordResource);

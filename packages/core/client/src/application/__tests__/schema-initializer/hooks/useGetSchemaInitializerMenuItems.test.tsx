@@ -8,7 +8,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react-hooks';
-import { useGetSchemaInitializerMenuItems, useSchemaInitializerMenuItems } from '@nocobase/client'; // Adjust the import according to the file structure
+import { useGetSchemaInitializerMenuItems, useSchemaInitializerMenuItems } from '../../../../index'; // Adjust the import according to the file structure
 import React from 'react';
 
 describe('useGetSchemaInitializerMenuItems', () => {

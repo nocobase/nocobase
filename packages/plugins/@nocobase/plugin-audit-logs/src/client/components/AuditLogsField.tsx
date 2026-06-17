@@ -11,7 +11,7 @@ import { EllipsisWithTooltip, useCompile } from '@nocobase/client';
 import React from 'react';
 import { observer, useField } from '@formily/react';
 
-export const AuditLogsField = observer(
+export const AuditLogsField: any = observer(
   () => {
     const field = useField<any>();
     const compile = useCompile();

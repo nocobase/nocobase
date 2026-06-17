@@ -14,7 +14,7 @@ import { getErrorMessage } from '../utils';
 import { CommentActionModel } from './CommentActionGroupModel';
 
 export class DeleteCommentActionModel extends CommentActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene: typeof ActionSceneEnum.record = ActionSceneEnum.record;
 
   defaultProps: ButtonProps = {
     type: 'link',

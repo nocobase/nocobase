@@ -10,15 +10,20 @@
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
     "light-my-request": "^6.6.0",
-    "openapi-mcp-generator": "^3.3.0"
+    "openapi-mcp-generator": "^3.3.0",
+    "@nocobase/ai": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-idp-oauth": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
-    "@nocobase/ai": "2.x",
-    "@nocobase/client": "2.x",
-    "@nocobase/plugin-idp-oauth": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/ai": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-idp-oauth": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "AI"

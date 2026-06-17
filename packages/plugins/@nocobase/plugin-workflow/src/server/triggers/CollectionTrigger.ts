@@ -173,7 +173,9 @@ export default class CollectionTrigger extends Trigger {
     const { condition, changed, mode, appends } = workflow.config;
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
-    const collection: Collection = (collectionManager as SequelizeCollectionManager).getCollection(collectionName);
+    const collection: Collection = (collectionManager as SequelizeCollectionManager).getCollection(
+      collectionName,
+    ) as any;
     const { transaction, context, eventType } = options;
     const { repository, filterTargetKey } = collection;
 

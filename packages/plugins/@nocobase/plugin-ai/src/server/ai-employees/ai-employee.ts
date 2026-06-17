@@ -34,6 +34,7 @@ import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
 import { Command } from '@langchain/langgraph';
 import { concat } from '@langchain/core/utils/stream';
+import type { IterableReadableStream } from '@langchain/core/utils/stream';
 import { convertAIMessage } from './utils';
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { LLMResult } from '@langchain/core/outputs';
@@ -434,7 +435,12 @@ export class AIEmployee {
     return null;
   }
 
-  async agentStream(provider: LLMProvider, context: AIChatContext, config?: any, state?: any) {
+  async agentStream(
+    provider: LLMProvider,
+    context: AIChatContext,
+    config?: any,
+    state?: any,
+  ): Promise<IterableReadableStream<unknown>> {
     const { systemPrompt, tools, middleware } = context;
     const agent = await this.createAgent({ provider, systemPrompt, tools, middleware });
     const input = this.getAgentInput(context, state);
@@ -464,7 +470,11 @@ export class AIEmployee {
     provider: LLMProvider;
     config?: { configurable?: any };
     state?: any;
-  }) {
+  }): Promise<{
+    stream: IterableReadableStream<unknown>;
+    controller: AbortController;
+    signal: AbortSignal;
+  }> {
     const controller = new AbortController();
     const { signal } = controller;
 

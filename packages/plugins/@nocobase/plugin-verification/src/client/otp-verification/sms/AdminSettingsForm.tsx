@@ -20,7 +20,7 @@ export const useAdminSettingsForm = (providerType: string) => {
   return provider?.components?.AdminSettingsForm;
 };
 
-export const Settings = observer(
+export const Settings: any = observer(
   () => {
     const form = useForm();
     const Component = useAdminSettingsForm(form.values.options?.provider);

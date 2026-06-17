@@ -15,7 +15,7 @@ import { useDesignable } from '@nocobase/client';
 import { useTranslation } from '../../locale';
 import { Navigate } from 'react-big-calendar';
 
-export const Today = observer(
+export const Today: any = observer(
   (props) => {
     const { DesignableBar } = useDesignable();
     const { onNavigate } = useContext(CalendarToolbarContext);

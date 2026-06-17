@@ -3,15 +3,15 @@
 The Nocobase front-end data source system includes the following:
 
 - [DataSourceManager](./data-source-manager.md)
-  - [DataSource](./data-source)
-    - [CollectionManager](./collection-manager)
-      - [Collection](./collection)
-        - [Field](./collection-field)
-  - [CollectionTemplateManager](./collection-template-manager)
-    - [CollectionTemplate](./collection-template)
-  - [CollectionFieldInterfaceManager](./collection-field-interface-manager)
-    - [CollectionFieldInterface](./collection-field-interface)
-  - [CollectionMixins](./collection-mixins)
+  - [DataSource](./data-source.md)
+    - [CollectionManager](./collection-manager.md)
+      - [Collection](./collection.md)
+        - [Field](./collection-field.md)
+  - [CollectionTemplateManager](./collection-template-manager.md)
+    - [CollectionTemplate](./collection-template.md)
+  - [CollectionFieldInterfaceManager](./collection-field-interface-manager.md)
+    - [CollectionFieldInterface](./collection-field-interface.md)
+  - [CollectionMixins](./collection-mixins.md)
 
 
 ## Instance Properties
@@ -34,7 +34,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Please refer to: [CollectionTemplateManager](./collection-template-manager)
+Please refer to: [CollectionTemplateManager](./collection-template-manager.md)
 
 - collectionFieldInterfaceManager
 
@@ -54,7 +54,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Please refer to: [CollectionTemplateManager](./collection-template-manager)
+Please refer to: [CollectionTemplateManager](./collection-template-manager.md)
 
 ## Instance Methods
 
@@ -86,7 +86,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Please refer to: [CollectionTemplateManager](./collection-template-manager)
+Please refer to: [CollectionTemplateManager](./collection-template-manager.md)
 
 ### addFieldInterfaces()
 
@@ -115,7 +115,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Please refer to: [CollectionFieldInterfaceManager](./collection-field-interface-manager)
+Please refer to: [CollectionFieldInterfaceManager](./collection-field-interface-manager.md)
 
 ### addCollectionMixins()
 
@@ -152,7 +152,7 @@ const MyComponent = () => {
 }
 ```
 
-Please refer to: [CollectionMixins](./collection-mixins)
+Please refer to: [CollectionMixins](./collection-mixins.md)
 
 ### addDataSource()
 
@@ -190,7 +190,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Please refer to: [DataSource](./data-source)
+Please refer to: [DataSource](./data-source.md)
 
 ### removeDataSources()
 

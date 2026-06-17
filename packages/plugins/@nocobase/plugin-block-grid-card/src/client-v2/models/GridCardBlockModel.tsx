@@ -67,7 +67,7 @@ const filterSelectedRecordActionItems = (ctx: FlowModelContext, items: SubModelI
 };
 
 export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStructure> {
-  static scene = BlockSceneEnum.many;
+  static scene: typeof BlockSceneEnum.many = BlockSceneEnum.many;
   _screens;
   _defaultCustomModelClasses = {
     CollectionActionGroupModel: 'CollectionActionGroupModel',

@@ -1,6 +1,6 @@
 # FlowModelContext
 
-> FlowModelContext 继承自 FlowContext，详见 [FlowContext](./flow-context)
+> FlowModelContext 继承自 FlowContext，详见 [FlowContext](./flow-context.md)
 
 `FlowModelContext` 是每个模型实例的专属上下文对象，基于 `FlowContext` 实现。它用于在模型树结构中，通过代理（delegate）机制共享与模型强相关的服务、配置和临时数据，实现模型间的解耦与复用。
 

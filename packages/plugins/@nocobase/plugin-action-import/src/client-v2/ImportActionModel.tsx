@@ -59,7 +59,7 @@ const getImportErrorMessage = (error: any): string => {
 };
 
 export class ImportActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
 
   defaultProps: ButtonProps = {
     title: escapeT('Import'),

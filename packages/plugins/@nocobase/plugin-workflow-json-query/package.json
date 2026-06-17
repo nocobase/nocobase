@@ -6,6 +6,7 @@
   "description": "Used for transforming or calculating values from complex JSON data (result of HTTP request or SQL etc.).",
   "description.zh-CN": "用于转换或计算复杂 JSON 对象的值（例如 HTTP 请求节点和 SQL 节点的结果）。",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/workflow-json-query",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-json-query",
   "keywords": [
@@ -14,15 +15,21 @@
   "devDependencies": {
     "jmespath": "^0.16.0",
     "jsonata": "^2.0.3",
-    "jsonpath-plus": "^10.3.0"
+    "jsonpath-plus": "^10.3.0",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/plugin-workflow-test": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/plugin-workflow": "2.x",
-    "@nocobase/plugin-workflow-test": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x",
-    "@nocobase/utils": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/plugin-workflow-test": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
   "nocobase": {

@@ -21,7 +21,7 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const workbenchActionSettingsPopup = new SchemaSettings({
+export const workbenchActionSettingsPopup: any = new SchemaSettings({
   name: 'workbench:actionSettings:popup',
   items: [
     {

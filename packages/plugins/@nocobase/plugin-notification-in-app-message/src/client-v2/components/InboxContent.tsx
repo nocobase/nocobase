@@ -170,5 +170,5 @@ const InnerInboxContent = () => {
   );
 };
 
-export const InboxContent = observer(InnerInboxContent, { displayName: 'InboxContent' });
+export const InboxContent: React.FC = observer(InnerInboxContent, { displayName: 'InboxContent' });
 export default InboxContent;

@@ -4,7 +4,7 @@
  * title: Menu
  */
 import { ISchema } from '@formily/react';
-import { Application, Menu, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Application, Menu, SchemaComponent, SchemaComponentProvider } from '../../../../index';
 import { Layout } from 'antd';
 import React, { useRef } from 'react';
 

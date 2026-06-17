@@ -9,18 +9,23 @@
   "version": "2.2.0-alpha.1",
   "license": "Apache-2.0",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/logger",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/logger",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/logger",
   "devDependencies": {
     "@types/tar-fs": "^2.0.2",
-    "tar-fs": "^3.0.4"
+    "tar-fs": "^3.0.4",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
-    "@nocobase/actions": "2.x",
-    "@nocobase/client": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

@@ -8,15 +8,20 @@
  */
 
 import { useFieldSchema } from '@formily/react';
+import type { SchemaSettingItemComponentType } from '@nocobase/client';
 import { ConvertToNormalBlockSetting } from '../components/ConvertToNormalBlockSetting';
 import { tStr } from '../locale';
 
-export const convertToNormalBlockSettingItem = {
+type BlockTemplateSettingItem = SchemaSettingItemComponentType & {
+  title?: string;
+};
+
+export const convertToNormalBlockSettingItem: BlockTemplateSettingItem = {
   name: 'template-convertToNormalBlockSettingItem',
   title: tStr('Convert to normal block'),
   Component: ConvertToNormalBlockSetting,
   useVisible: () => {
     const fieldSchema = useFieldSchema();
-    return fieldSchema?.['x-template-root-uid'];
+    return Boolean(fieldSchema?.['x-template-root-uid']);
   },
 };

@@ -9,7 +9,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { render, sleep, userEvent, waitFor, screen, act } from '@nocobase/test/client';
-import { EllipsisWithTooltip } from '@nocobase/client';
+import { EllipsisWithTooltip } from '../../../../index';
 
 describe('EllipsisWithTooltip Component', () => {
   const text = 'Text';

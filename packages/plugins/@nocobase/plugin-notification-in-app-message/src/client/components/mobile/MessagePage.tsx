@@ -171,4 +171,4 @@ const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
   );
 };
 
-export const MobileMessagePage = observer(MobileMessagePageInner, { displayName: 'MobileMessagePage' });
+export const MobileMessagePage: any = observer(MobileMessagePageInner, { displayName: 'MobileMessagePage' });

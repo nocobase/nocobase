@@ -128,7 +128,7 @@ export function ActionPanelItemsPerRow() {
   );
 }
 
-export const workbenchBlockSettings = new SchemaSettings({
+export const workbenchBlockSettings: any = new SchemaSettings({
   name: 'blockSettings:workbench',
   items: [
     {

@@ -51,7 +51,7 @@ const isProd = () => {
   if (!existsSync(resolve(process.cwd(), file))) {
     console.log('For production environment, please build the code first.');
     console.log();
-    console.log(chalk.yellow('$ yarn build'));
+    console.log(chalk.yellow('$ pnpm build'));
     console.log();
     process.exit(1);
   }
@@ -63,7 +63,7 @@ exports.isProd = isProd;
 exports.nodeCheck = () => {
   if (!exports.hasTsNode()) {
     console.log('Please install all dependencies');
-    console.log(chalk.yellow('$ yarn install'));
+    console.log(chalk.yellow('$ pnpm install'));
     process.exit(1);
   }
 };
@@ -212,7 +212,7 @@ exports.downloadPro = async () => {
   // if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
   //   return;
   // }
-  await exports.run('yarn', ['nocobase', 'pkg', 'download-pro']);
+  await exports.run('pnpm', ['nocobase', 'pkg', 'download-pro']);
 };
 
 exports.updateJsonFile = async (target, fn) => {
@@ -548,10 +548,11 @@ function generatePm2Home() {
 exports.initEnv = function initEnv() {
   const preserveSymlinksFlag = '--preserve-symlinks';
   const currentNodeOptions = String(process.env.NODE_OPTIONS || '').trim();
+  const isPnpmRun = String(process.env.npm_config_user_agent || '').includes('pnpm');
   const hasPreserveSymlinksFlag = currentNodeOptions
     ? currentNodeOptions.split(/\s+/).includes(preserveSymlinksFlag)
     : false;
-  if (!hasPreserveSymlinksFlag) {
+  if (!process.env.UNSET_NODE_OPTIONS && !isPnpmRun && !hasPreserveSymlinksFlag) {
     process.env.NODE_OPTIONS = currentNodeOptions
       ? `${currentNodeOptions} ${preserveSymlinksFlag}`
       : preserveSymlinksFlag;

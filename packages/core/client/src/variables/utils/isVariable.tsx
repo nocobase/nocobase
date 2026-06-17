@@ -24,6 +24,9 @@ export const isVariable = (str: unknown) => {
 };
 
 export const getVariablesFromExpression = (str: string) => {
+  if (typeof str !== 'string') {
+    return [];
+  }
   const matches = str.match(REGEX_OF_VARIABLE_IN_EXPRESSION);
   if (!matches) {
     return [];

@@ -8,7 +8,7 @@
  */
 
 import { CollectionManager, DataSource } from '@nocobase/data-source-manager';
-import { waitSecond } from '@nocobase/test';
+import { waitSecond } from '.';
 
 export class MockDataSource extends DataSource {
   static testConnection(options?: any): Promise<boolean> {

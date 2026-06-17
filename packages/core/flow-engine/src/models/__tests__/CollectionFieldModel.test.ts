@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFieldModel } from '@nocobase/flow-engine';
+import { CollectionFieldModel } from '../../index';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('CollectionFieldModel', () => {

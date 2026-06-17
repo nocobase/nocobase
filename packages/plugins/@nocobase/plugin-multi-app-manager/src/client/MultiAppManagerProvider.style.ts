@@ -9,7 +9,7 @@
 
 import { createStyles } from 'antd-style';
 
-export const useStyles = createStyles(({ token }) => {
+export const useStyles: any = createStyles(({ token }) => {
   return {
     button: {
       // @ts-ignore

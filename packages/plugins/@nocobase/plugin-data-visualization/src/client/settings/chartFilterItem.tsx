@@ -392,7 +392,7 @@ const EditDataScope: React.FC = () => {
   );
 };
 
-export const chartFilterItemSettings = new SchemaSettings({
+export const chartFilterItemSettings: any = new SchemaSettings({
   name: 'chart:filterForm:item',
   items: [
     {

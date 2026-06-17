@@ -175,7 +175,7 @@ export function AfterSuccess() {
   );
 }
 
-export const customizeCustomRequestActionSettings = new SchemaSettings({
+export const customizeCustomRequestActionSettings: any = new SchemaSettings({
   name: 'actionSettings:customRequest',
   items: [
     {

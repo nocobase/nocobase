@@ -19,7 +19,7 @@ export class TestActionModel extends ActionModel {
 }
 
 export class NestedActionModel extends ActionModel {
-  static scene = ActionSceneEnum.collection;
+  static scene: typeof ActionSceneEnum.collection = ActionSceneEnum.collection;
 
   static async defineChildren(ctx: FlowModelContext) {
     return [

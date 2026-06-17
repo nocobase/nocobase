@@ -14,7 +14,7 @@ import { CalendarToolbarContext } from './context';
 import { getLunarDay } from './utils';
 import { useDesignable } from '@nocobase/client';
 
-export const Title = observer(
+export const Title: any = observer(
   () => {
     const { DesignableBar } = useDesignable();
     const { date, view, label, showLunar } = useContext(CalendarToolbarContext);

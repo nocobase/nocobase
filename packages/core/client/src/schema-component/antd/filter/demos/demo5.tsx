@@ -6,7 +6,7 @@ import {
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-} from '@nocobase/client';
+} from '../../../../index';
 import { createMemoryHistory } from 'history';
 import React from 'react';
 import { Router } from 'react-router-dom';

@@ -22,18 +22,27 @@
     "lodash": "4.x",
     "react": "18.x",
     "react-i18next": "^11.15.1",
-    "react-router-dom": "^6.11.2"
+    "react-router-dom": "^6.11.2",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-data-source-main": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
+    "@nocobase/plugin-users": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/database": "2.x",
-    "@nocobase/plugin-data-source-main": "2.x",
-    "@nocobase/plugin-mobile": "2.x",
-    "@nocobase/plugin-users": "2.x",
-    "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x",
-    "@nocobase/utils": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-data-source-main": "workspace:*",
+    "@nocobase/plugin-mobile": "workspace:*",
+    "@nocobase/plugin-users": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

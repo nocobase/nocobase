@@ -35,14 +35,16 @@ expect {
 }
 EOD
 
-RUN yarn config set registry $VERDACCIO_URL && \
+RUN corepack enable pnpm && \
+  corepack prepare pnpm@10.29.1 --activate && \
+  pnpm config set registry $VERDACCIO_URL && \
   mkdir /app && \
   cd /app && \
-  yarn config set network-timeout 600000 -g && \
-  yarn create nocobase-app my-nocobase-app -a --skip-dev-dependencies -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
+  pnpm config set fetch-timeout 600000 -g && \
+  pnpm create nocobase-app my-nocobase-app -a --skip-dev-dependencies -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
   cd /app/my-nocobase-app && \
-  yarn install --production && \
-  yarn add newrelic --production -W && \
+  pnpm install --prod && \
+  pnpm add newrelic --prod -w --config.strict-peer-dependencies=false && \
   $BEFORE_PACK_NOCOBASE && \
   rm -rf /app/my-nocobase-app/packages/app/client/src/.umi
 

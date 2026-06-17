@@ -15,7 +15,7 @@ export const skillToolBindingMiddleware = (
   options: {
     baseToolNames: string[];
   },
-) => {
+): ReturnType<typeof createMiddleware> => {
   const baseToolNames = new Set(options.baseToolNames ?? []);
 
   const getAllowedToolNames = async () => {

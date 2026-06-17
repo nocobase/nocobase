@@ -5,14 +5,8 @@ const { getPackagePaths, IndexGenerator, generatePlugins, generateAllPlugins } =
 console.log('VERSION: ', packageJson.version);
 
 function getUmiConfig() {
-  const {
-    APP_PORT,
-    APP_V2_PORT,
-    API_BASE_URL,
-    API_CLIENT_STORAGE_TYPE,
-    API_CLIENT_STORAGE_PREFIX,
-    APP_PUBLIC_PATH,
-  } = process.env;
+  const { APP_PORT, APP_V2_PORT, API_BASE_URL, API_CLIENT_STORAGE_TYPE, API_CLIENT_STORAGE_PREFIX, APP_PUBLIC_PATH } =
+    process.env;
   const API_BASE_PATH = process.env.API_BASE_PATH || '/api/';
   const normalizedAppPublicPath = resolvePublicPath(APP_PUBLIC_PATH || '/');
   const V2_PUBLIC_PATH = resolveV2PublicPath(APP_PUBLIC_PATH || '/');

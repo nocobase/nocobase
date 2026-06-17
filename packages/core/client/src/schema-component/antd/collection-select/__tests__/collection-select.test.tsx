@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionSelect, FormItem } from '@nocobase/client';
+import { CollectionSelect, FormItem } from '../../../../index';
 import { renderAppOptions, renderReadPrettyApp, screen, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('CollectionSelect', () => {

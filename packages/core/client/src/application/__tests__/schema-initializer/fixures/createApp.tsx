@@ -16,7 +16,7 @@ import {
   useSchemaInitializerItem,
   SchemaInitializerItem,
   useSchemaInitializerRender,
-} from '@nocobase/client';
+} from '../../../../index';
 import { observer } from '@nocobase/flow-engine';
 
 export async function createApp(options = {}, appOptions = {}) {

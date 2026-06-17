@@ -7,11 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { SchemaSettingItemComponentType } from '@nocobase/client';
 import { useIsInTemplate } from '../hooks/useIsInTemplate';
 import { DisabledDeleteItem } from '../components/DisabledDeleteItem';
 import { tStr } from '../locale';
 
-export const disabledDeleteSettingItem = {
+type BlockTemplateSettingItem = SchemaSettingItemComponentType & {
+  title?: string;
+};
+
+export const disabledDeleteSettingItem: BlockTemplateSettingItem = {
   name: 'template-disabledDeleteItem',
   title: tStr('Delete'),
   Component: DisabledDeleteItem,

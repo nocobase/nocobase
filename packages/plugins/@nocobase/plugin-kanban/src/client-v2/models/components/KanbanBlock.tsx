@@ -44,6 +44,10 @@ const DEFAULT_KANBAN_BLOCK_MIN_HEIGHT = '60vh';
 
 type DeferredRefreshHandle = { type: 'idle'; id: number } | { type: 'timeout'; id: number } | null;
 
+type KanbanBlockViewProps = {
+  model: KanbanBlockModel;
+};
+
 const scheduleDeferredRefresh = (callback: () => void): DeferredRefreshHandle => {
   if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
     return {
@@ -76,7 +80,7 @@ const cancelDeferredRefresh = (handle: DeferredRefreshHandle) => {
   window.clearTimeout(handle.id);
 };
 
-export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel }) => {
+export const KanbanBlockView: React.FC<KanbanBlockViewProps> = observer(({ model }: KanbanBlockViewProps) => {
   const [groupOptions, setGroupOptions] = useState<KanbanGroupOption[]>(() => model.getConfiguredGroupOptions());
   const [groupOptionsLoading, setGroupOptionsLoading] = useState(false);
   const [groupOptionsError, setGroupOptionsError] = useState<string>();

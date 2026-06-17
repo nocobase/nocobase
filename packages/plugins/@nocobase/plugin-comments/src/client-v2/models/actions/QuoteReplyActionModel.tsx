@@ -13,7 +13,7 @@ import { tExpr } from '../../locale';
 import { CommentActionModel } from './CommentActionGroupModel';
 
 export class QuoteReplyActionModel extends CommentActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene: typeof ActionSceneEnum.record = ActionSceneEnum.record;
 
   defaultProps: ButtonProps = {
     type: 'link',

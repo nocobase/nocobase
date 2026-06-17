@@ -1,7 +1,7 @@
 
 import { App as AntdApp } from 'antd';
-import { ISchema, useAPIClient } from '@nocobase/client';
-import { SchemaComponent, Plugin, ActionProps } from '@nocobase/client';
+import { ISchema, useAPIClient } from '../../../../../index';
+import { SchemaComponent, Plugin, ActionProps } from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 

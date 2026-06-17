@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useChartsTranslation } from '../locale';
 import { useField, useFieldSchema } from '@formily/react';
 
-export const chartBlockSettings = new SchemaSettings({
+export const chartBlockSettings: any = new SchemaSettings({
   name: 'chart:block',
   items: [
     {

@@ -21,7 +21,7 @@ import {
   LinkageRuleCategory,
 } from '@nocobase/client';
 
-export const bulkEditFormBlockSettings = new SchemaSettings({
+export const bulkEditFormBlockSettings: any = new SchemaSettings({
   name: 'blockSettings:bulkEditForm',
   items: [
     {

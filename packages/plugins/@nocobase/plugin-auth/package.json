@@ -14,16 +14,23 @@
     "cron": "^2.3.1",
     "ms": "^2.1.3",
     "react": "^18.2.0",
-    "react-i18next": "^11.15.1"
+    "react-i18next": "^11.15.1",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/auth": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "peerDependencies": {
-    "@nocobase/actions": "2.x",
-    "@nocobase/auth": "2.x",
-    "@nocobase/client": "2.x",
-    "@nocobase/client-v2": "2.x",
-    "@nocobase/database": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/auth": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "displayName": "Authentication",
   "displayName.ru-RU": "Аутентификация пользователей",

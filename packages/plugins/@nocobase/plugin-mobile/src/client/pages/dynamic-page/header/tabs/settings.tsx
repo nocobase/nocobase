@@ -102,7 +102,7 @@ const editTitle: SchemaSettingsItemType = {
   },
 };
 
-export const mobilePageTabsSettings = new SchemaSettings({
+export const mobilePageTabsSettings: any = new SchemaSettings({
   name: 'mobile:tabs',
   items: [editTitle, remove],
 });
