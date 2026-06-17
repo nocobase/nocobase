@@ -23,28 +23,9 @@
  */
 
 import React, { useMemo } from 'react';
-import { VariableHybridInput, type MetaTreeNode, type VariableHybridInputConverters } from '@nocobase/flow-engine';
+import { VariableHybridInput } from '@nocobase/flow-engine';
 import { useWorkflowVariableOptions, type UseWorkflowVariableOptions } from './useWorkflowVariableOptions';
-
-const VARIABLE_REGEXP = /\{\{\s*([^{}]+?)\s*\}\}/g;
-
-const workflowConverters: VariableHybridInputConverters = {
-  formatPathToValue: (item?: MetaTreeNode) => {
-    const path = item?.paths ?? [];
-    return path.length ? `{{${path.join('.')}}}` : '';
-  },
-  parseValueToPath: (value?: string) => {
-    if (typeof value !== 'string') {
-      return undefined;
-    }
-    const match = value.trim().match(/^\{\{\s*(.+?)\s*\}\}$/);
-    if (!match) {
-      return undefined;
-    }
-    return match[1].split('.');
-  },
-  variableRegExp: VARIABLE_REGEXP,
-};
+import { workflowVariableConverters } from './workflowVariableConverters';
 
 export type WorkflowVariableInputProps = {
   value?: string;
@@ -65,5 +46,5 @@ export function WorkflowVariableInput(props: WorkflowVariableInputProps) {
   const { variableOptions, ...rest } = props;
   const metaTree = useWorkflowVariableOptions(variableOptions);
   const tree = useMemo(() => metaTree, [metaTree]);
-  return <VariableHybridInput {...rest} metaTree={tree} converters={workflowConverters} />;
+  return <VariableHybridInput {...rest} metaTree={tree} converters={workflowVariableConverters} />;
 }
