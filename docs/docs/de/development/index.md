@@ -56,5 +56,8 @@ features:
       - title: Dateivorschau-Erweiterung
         details: Erweitern Sie die Dateivorschau-Funktionen, um die Online-Vorschau und das Rendering weiterer Dateiformate zu unterstützen.
         link: /file-manager/development
+      - title: Knowledge-Base-Erweiterung
+        details: Binden Sie externe Wissensdatenbanken oder eigene Retrieval-Dienste an, um die RAG-Quellen für AI employees zu erweitern.
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---
 

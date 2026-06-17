@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, HolderOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
 import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Button, Form, Radio, Select, Space } from 'antd';
+import { Button, Form, Radio, Select, Space, theme } from 'antd';
 import React, { useMemo } from 'react';
 import { useT } from '../../locale';
 import { getCollectionFields, type CollectionTriggerField } from './utils';
@@ -68,6 +68,7 @@ function SortRow({
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const { token } = theme.useToken();
 
   return (
     <Space
@@ -77,9 +78,20 @@ function SortRow({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      align="start"
+      align="center"
     >
-      <Button type="text" icon={<HolderOutlined />} {...attributes} {...listeners} />
+      <MenuOutlined
+        {...attributes}
+        {...listeners}
+        style={{
+          alignItems: 'center',
+          color: token.colorTextTertiary,
+          cursor: 'move',
+          display: 'inline-flex',
+          fontSize: token.fontSizeLG,
+          height: token.controlHeight,
+        }}
+      />
       <Select
         value={item.field}
         options={options}
@@ -96,7 +108,19 @@ function SortRow({
         ]}
         onChange={(event) => onChange({ ...item, direction: event.target.value })}
       />
-      <Button type="text" danger icon={<DeleteOutlined />} onClick={onRemove} />
+      <Button
+        type="text"
+        icon={<DeleteOutlined />}
+        onClick={onRemove}
+        style={{
+          color: token.colorText,
+          fontSize: token.fontSizeLG,
+          height: 'auto',
+          paddingInlineEnd: 0,
+          paddingInlineStart: token.paddingXXS,
+          width: 'auto',
+        }}
+      />
     </Space>
   );
 }
@@ -171,7 +195,7 @@ export function SortFieldsInput({
           </SortableContext>
         </DndContext>
       ) : null}
-      <Button icon={<PlusOutlined />} onClick={handleAdd}>
+      <Button type="dashed" block icon={<PlusOutlined />} onClick={handleAdd}>
         {t('Add sort field')}
       </Button>
     </Space>

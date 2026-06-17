@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@emotion/css';
 import { MoreOutlined, PlusOutlined, TagOutlined } from '@ant-design/icons';
 import { useACLRoleContext } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
@@ -234,93 +233,6 @@ export default function RolesManagementPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [activeTabKey, setActiveTabKey] = useState('permissions');
   const [activePermissionTabKey, setActivePermissionTabKey] = useState('general');
-  const cardClassName = css`
-    height: 100%;
-    min-height: 0;
-
-    > .ant-card-body {
-      height: 100%;
-      min-height: 0;
-      overflow: hidden;
-    }
-  `;
-  const layoutClassName = css`
-    &.acl-role-tabs > .ant-tabs-nav {
-      margin-bottom: ${token.marginLG}px;
-    }
-
-    &.acl-role-tabs,
-    &.acl-role-tabs > .ant-tabs-content-holder,
-    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content,
-    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
-      min-height: 0;
-    }
-
-    &.acl-role-tabs {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-
-    &.acl-role-tabs > .ant-tabs-nav {
-      flex: none;
-    }
-
-    &.acl-role-tabs > .ant-tabs-content-holder {
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content,
-    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
-      height: 100%;
-      min-height: 0;
-    }
-
-    &.acl-role-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
-      overflow: hidden;
-      padding: 0;
-    }
-  `;
-  const scrollPaneStyle: React.CSSProperties = {
-    height: '100%',
-    minHeight: 0,
-    overflow: 'hidden',
-  };
-  const permissionPaneStyle: React.CSSProperties = {
-    height: '100%',
-    minHeight: 0,
-    overflow: 'auto',
-    paddingRight: token.paddingXS,
-  };
-  const nestedTabsClassName = css`
-    height: 100%;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-
-    > .ant-tabs-nav {
-      flex: none;
-    }
-
-    > .ant-tabs-content-holder {
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    > .ant-tabs-content-holder > .ant-tabs-content,
-    > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
-      height: 100%;
-      min-height: 0;
-    }
-
-    > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
-      overflow: hidden;
-      padding: 0;
-    }
-  `;
 
   const service = useRequest(async () => {
     const response = await ctx.api.resource('roles').list({
@@ -490,11 +402,9 @@ export default function RolesManagementPage() {
       key,
       label,
       children: (
-        <div style={scrollPaneStyle}>
-          <Suspense fallback={null}>
-            <Component active={activeTabKey === key} role={selectedRole} onRoleChange={handleRoleChange} />
-          </Suspense>
-        </div>
+        <Suspense fallback={null}>
+          <Component active={activeTabKey === key} role={selectedRole} onRoleChange={handleRoleChange} />
+        </Suspense>
       ),
     };
   });
@@ -510,7 +420,7 @@ export default function RolesManagementPage() {
       key,
       label,
       children: (
-        <div style={permissionPaneStyle}>
+        <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: token.paddingXS }}>
           <Suspense fallback={null}>
             <Component {...props} />
           </Suspense>
@@ -526,8 +436,6 @@ export default function RolesManagementPage() {
       children: permissionTabs.length ? (
         <Tabs
           type="card"
-          className={nestedTabsClassName}
-          style={{ height: '100%', minHeight: 0 }}
           activeKey={activePermissionTabKey}
           onChange={setActivePermissionTabKey}
           items={permissionTabs}
@@ -540,11 +448,9 @@ export default function RolesManagementPage() {
   ];
 
   return (
-    <Card className={cardClassName}>
+    <Card>
       <div
         style={{
-          height: '100%',
-          minHeight: 0,
           display: 'flex',
           gap: token.marginLG,
           alignItems: 'stretch',
@@ -560,7 +466,6 @@ export default function RolesManagementPage() {
             borderRight: `1px solid ${token.colorBorderSecondary}`,
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
           }}
         >
           <div
@@ -578,7 +483,7 @@ export default function RolesManagementPage() {
             <RoleModeSelect />
           </div>
           <Divider style={{ flex: '0 0 auto', marginBlock: token.marginSM }} />
-          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          <div style={{ maxHeight: '65vh', overflowY: 'auto' }}>
             {roles.length ? (
               <List<Role>
                 loading={service.loading}
@@ -663,32 +568,21 @@ export default function RolesManagementPage() {
           style={{
             flex: '1 1 auto',
             minWidth: 0,
-            height: '100%',
-            minHeight: 320,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
           }}
         >
           {selectedRoleName && selectedRoleService.loading && selectedRole?.name !== selectedRoleName ? (
             <div
               style={{
-                height: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                minHeight: 160,
               }}
             >
               <Spin />
             </div>
           ) : selectedRole ? (
-            <Tabs
-              className={`acl-role-tabs ${layoutClassName}`}
-              style={{ flex: 1, minHeight: 0 }}
-              activeKey={activeTabKey}
-              onChange={setActiveTabKey}
-              items={tabs}
-            />
+            <Tabs activeKey={activeTabKey} onChange={setActiveTabKey} items={tabs} />
           ) : (
             <Typography.Text type="secondary">{t('Select a role to configure permissions')}</Typography.Text>
           )}

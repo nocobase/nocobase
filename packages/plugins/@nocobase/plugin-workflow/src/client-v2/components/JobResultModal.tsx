@@ -17,6 +17,7 @@ import { useFlowContext } from '../canvas/contexts';
 import { formatTime } from './workflowCanvas';
 import { JobStatusTag } from './jobStatus';
 import useStyles from '../canvas/style';
+import { formatResultForDisplay } from './formatResultForDisplay';
 
 function JobResult({ jobId }: { jobId: string | number }) {
   const ctx = useFlowEngineContext();
@@ -43,7 +44,7 @@ function JobResult({ jobId }: { jobId: string | number }) {
       </div>
       <div style={{ fontWeight: 500, marginBottom: 8 }}>{t('Node result')}:</div>
       <Input.TextArea
-        value={JSON.stringify(data?.result ?? null, null, 2)}
+        value={formatResultForDisplay(data?.result)}
         disabled
         autoSize={{ minRows: 4, maxRows: 20 }}
         className={styles.nodeJobResultClass}

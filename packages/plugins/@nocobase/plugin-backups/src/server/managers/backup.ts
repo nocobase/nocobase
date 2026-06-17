@@ -122,7 +122,12 @@ export class BackupManager {
 
   async backup(fileBaseName: string, opts?: Partial<BackupSettings>) {
     const contentPath = path.join(this.#tempDir, fileBaseName);
-    return this.#runBackupTask({ ...this.#settings, ...(opts ?? {}) }, fileBaseName, contentPath);
+    const runtimeTables = [...this.app.db.collections.values()]
+      .filter((collection) => collection.dataCategory === 'runtime')
+      .map((collection) => collection.getTableNameWithSchemaAsString());
+    const backupOptions = { ...this.#settings, ...(opts ?? {}) };
+    backupOptions.excludeTables = [...new Set([...(backupOptions.excludeTables ?? []), ...runtimeTables])];
+    return this.#runBackupTask(backupOptions, fileBaseName, contentPath);
   }
 
   async destroy(fileName: string) {

@@ -13,6 +13,28 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { FilterDynamicComponent } from '../FilterDynamicComponent';
 
+const testState = vi.hoisted(() => ({
+  variableFilterItems: [] as any[],
+}));
+
+vi.mock('@nocobase/client-v2', async () => {
+  const actual = await vi.importActual<any>('@nocobase/client-v2');
+  const ReactModule = await vi.importActual<any>('react');
+  return {
+    ...actual,
+    VariableFilterItem: (props: any) => {
+      testState.variableFilterItems.push(props);
+      return ReactModule.default.createElement('input', {
+        'data-testid': 'variable-filter-item',
+        value: props.value.value ?? '',
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+          props.value.value = event.target.value;
+        },
+      });
+    },
+  };
+});
+
 class TestCollectionFieldInterface {
   name = '';
   group = '';
@@ -57,6 +79,26 @@ vi.mock('../../locale', () => ({
   useT: () => (key: string) => key,
 }));
 
+vi.mock('../../canvas/useWorkflowVariableOptions', () => ({
+  useWorkflowVariableOptions: () => [
+    {
+      name: '$jobsMapByNodeKey',
+      title: 'Node result',
+      type: '',
+      paths: ['$jobsMapByNodeKey'],
+      children: [
+        {
+          name: 'n1',
+          title: 'Create post',
+          type: 'object',
+          paths: ['$jobsMapByNodeKey', 'n1'],
+          children: [{ name: 'title', title: 'Title', type: 'string', paths: ['$jobsMapByNodeKey', 'n1', 'title'] }],
+        },
+      ],
+    },
+  ],
+}));
+
 function setupEngine() {
   const engine = new FlowEngine();
   const app = createMockFlowApp();
@@ -87,6 +129,7 @@ function setupEngine() {
 describe('FilterDynamicComponent', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
+    testState.variableFilterItems = [];
   });
 
   it('renders as a React component instead of throwing from the resource FilterGroup class', () => {
@@ -136,8 +179,8 @@ describe('FilterDynamicComponent', () => {
 
     fireEvent.click(screen.getByText('Add condition'));
 
-    expect(screen.getByText('Select field')).toBeInTheDocument();
-    expect(screen.getByText('Comparision')).toBeInTheDocument();
+    expect(screen.getByTestId('variable-filter-item')).toBeInTheDocument();
+    expect(testState.variableFilterItems).toHaveLength(1);
   });
 
   it('keeps an empty draft condition group visible after clicking Add condition group', async () => {
@@ -157,6 +200,31 @@ describe('FilterDynamicComponent', () => {
 
     await waitFor(() => {
       expect(screen.getAllByTestId('filter-select-all-or-any').length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it('round-trips workflow variable expressions through the variable-aware filter item', async () => {
+    const { engine } = setupEngine();
+    const onChange = vi.fn();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent
+          collection="posts"
+          value={{ $and: [{ title: { $eq: '{{$jobsMapByNodeKey.n1.title}}' } }] }}
+          onChange={onChange}
+        />
+      </FlowEngineProvider>,
+    );
+
+    expect(screen.getByDisplayValue('{{ ctx.$jobsMapByNodeKey.n1.title }}')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId('variable-filter-item'), {
+      target: { value: '{{ ctx.$jobsMapByNodeKey.n1.body }}' },
+    });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith({ $and: [{ title: { $eq: '{{$jobsMapByNodeKey.n1.body}}' } }] });
     });
   });
 });
