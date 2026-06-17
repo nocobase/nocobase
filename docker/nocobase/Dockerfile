@@ -11,7 +11,7 @@ RUN corepack enable pnpm \
   && cd /app \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --empty-key --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
-  && pnpm install --prod
+  && pnpm install --prod --ignore-scripts
 
 COPY cleanup-node-modules.sh /usr/local/bin/cleanup-node-modules.sh
 

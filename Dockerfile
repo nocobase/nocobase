@@ -43,8 +43,8 @@ RUN corepack enable pnpm && \
   pnpm config set fetch-timeout 600000 -g && \
   pnpm create nocobase-app my-nocobase-app -a --skip-dev-dependencies -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
   cd /app/my-nocobase-app && \
-  pnpm install --prod && \
-  pnpm add newrelic --prod -w --config.strict-peer-dependencies=false && \
+  pnpm install --prod --ignore-scripts && \
+  pnpm add newrelic --prod -w --config.strict-peer-dependencies=false --ignore-scripts && \
   $BEFORE_PACK_NOCOBASE && \
   rm -rf /app/my-nocobase-app/packages/app/client/src/.umi
 
