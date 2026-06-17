@@ -112,6 +112,7 @@ describe('plugin-ui-layout RoutesPage', () => {
         params: {
           filter: {
             hidden: { $ne: true },
+            type: { $ne: 'page' },
             'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid,
           },
           paginate: false,
@@ -137,6 +138,7 @@ describe('plugin-ui-layout RoutesPage', () => {
         params: {
           filter: {
             hidden: { $ne: true },
+            type: { $ne: 'page' },
             'uiLayouts.uid': DEFAULT_MOBILE_UI_LAYOUT.uid,
           },
           paginate: false,
