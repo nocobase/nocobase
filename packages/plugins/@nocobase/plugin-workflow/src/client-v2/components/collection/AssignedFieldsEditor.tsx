@@ -82,6 +82,7 @@ function useAssignFormModel({
         },
       },
     });
+    model.context?.defineProperty?.('flowSettingsEnabled', { value: true });
     const getMetaTree = () => workflowMetaTree;
     defineAssignFormMetaTreeGetters(model, getMetaTree);
     model.setInitialAssignedValues(normalizeAssignedValues(initialValueRef.current));
