@@ -125,7 +125,7 @@ export function ResourceTablePage<RecordType extends object = Record<string, unk
           ? (count) => {
               return t('Total {{count}} items', { count });
             }
-          : false,
+          : undefined,
       onChange: (nextPage, nextPageSize) => {
         setPage(nextPage);
         setPageSize(nextPageSize);
