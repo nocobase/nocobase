@@ -16,12 +16,14 @@ import {
   ExtendCollectionsProvider,
   Table,
 } from '@nocobase/client-v2';
+import { css } from '@emotion/css';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Card, Flex, Form, Input, Space, Switch, Tag, Tooltip, theme } from 'antd';
+import { App, Button, Flex, Form, Input, Space, Switch, Tag, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo, useState } from 'react';
 import workflowCollection from '../../common/collections/workflows';
+import { SyncModeTag } from '../components/SyncModeTag';
 import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT, useWorkflowTranslation } from '../locale';
 import PluginWorkflowClientV2 from '../plugin';
@@ -127,6 +129,32 @@ function WorkflowPaneInner() {
   const { modal, message } = App.useApp();
   const resource = ctx.api.resource('workflows');
   const plugin = ctx.app.pm.get(PluginWorkflowClientV2);
+  const workflowContainerClassName = css`
+    background: ${token.colorBgLayout};
+    padding: 0;
+  `;
+  const workflowTabsClassName = css`
+    padding: ${token.padding}px ${token.padding}px 0 calc(${token.padding}px - ${token.lineWidth}px);
+    background: ${token.colorBgLayout};
+
+    .ant-tabs {
+      margin-bottom: 0;
+    }
+
+    .ant-tabs-nav {
+      margin-bottom: 0;
+    }
+
+    .ant-tabs-content-holder {
+      display: none;
+    }
+  `;
+  const workflowContentClassName = css`
+    margin: 0 ${token.padding}px ${token.padding}px;
+    padding: ${token.paddingLG}px;
+    background: ${token.colorBgContainer};
+    border-radius: 0 ${token.borderRadiusLG}px ${token.borderRadiusLG}px ${token.borderRadiusLG}px;
+  `;
   const filterCollection = useMemo(
     () => ctx.dataSourceManager?.getDataSource?.('main')?.getCollection?.('workflows'),
     [ctx],
@@ -271,7 +299,7 @@ function WorkflowPaneInner() {
         title: t('Execute mode'),
         dataIndex: 'sync',
         width: 140,
-        render: (value) => <Tag>{value ? t('Synchronously') : t('Asynchronously')}</Tag>,
+        render: (value) => <SyncModeTag value={value} />,
       },
       {
         title: t('Enabled'),
@@ -307,8 +335,9 @@ function WorkflowPaneInner() {
   );
 
   return (
-    <Card variant="borderless">
+    <div className={workflowContainerClassName}>
       <WorkflowCategoryTabs
+        className={workflowTabsClassName}
         activeKey={activeCategory}
         onChange={(key) => {
           setActiveCategory(key);
@@ -317,45 +346,47 @@ function WorkflowPaneInner() {
         categories={categories}
         refreshCategories={refreshCategories}
       />
-      <Flex justify="space-between" align="center" style={{ marginBottom: token.margin }}>
-        <CollectionFilter
-          collection={filterCollection}
-          nonfilterableFieldNames={WORKFLOWS_NONFILTERABLE_FIELD_NAMES}
-          onChange={handleFilterChange}
-          t={compile}
+      <div className={workflowContentClassName}>
+        <Flex justify="space-between" align="center" style={{ marginBottom: token.margin }}>
+          <CollectionFilter
+            collection={filterCollection}
+            nonfilterableFieldNames={WORKFLOWS_NONFILTERABLE_FIELD_NAMES}
+            onChange={handleFilterChange}
+            t={compile}
+          />
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
+              {t('Refresh')}
+            </Button>
+            {showSync ? (
+              <Tooltip title={t('Sync enabled status of all workflows from database')}>
+                <Button icon={<SyncOutlined />} onClick={handleSync}>
+                  {t('Sync')}
+                </Button>
+              </Tooltip>
+            ) : null}
+            <Button
+              icon={<DeleteOutlined />}
+              disabled={!selectedRowKeys.length}
+              onClick={() => handleDelete(selectedRowKeys)}
+            >
+              {t('Delete')}
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm('create')}>
+              {t('Add new')}
+            </Button>
+          </Space>
+        </Flex>
+        <Table<WorkflowRecord>
+          rowKey="id"
+          loading={loading}
+          columns={columns}
+          dataSource={data?.records || []}
+          rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
+          pagination={{ current: page, pageSize, total: data?.total || 0, onChange: handlePaginationChange }}
         />
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
-            {t('Refresh')}
-          </Button>
-          {showSync ? (
-            <Tooltip title={t('Sync enabled status of all workflows from database')}>
-              <Button icon={<SyncOutlined />} onClick={handleSync}>
-                {t('Sync')}
-              </Button>
-            </Tooltip>
-          ) : null}
-          <Button
-            icon={<DeleteOutlined />}
-            disabled={!selectedRowKeys.length}
-            onClick={() => handleDelete(selectedRowKeys)}
-          >
-            {t('Delete')}
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => openForm('create')}>
-            {t('Add new')}
-          </Button>
-        </Space>
-      </Flex>
-      <Table<WorkflowRecord>
-        rowKey="id"
-        loading={loading}
-        columns={columns}
-        dataSource={data?.records || []}
-        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
-        pagination={{ current: page, pageSize, total: data?.total || 0, onChange: handlePaginationChange }}
-      />
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -366,7 +397,9 @@ export default function WorkflowPane() {
   // The shared `workflows` collection is `schema-only`, so it isn't published to the v2 data source — register a
   // client-only copy so `CollectionFilter` can resolve its fields. Its `type` field carries the v1 Formily template
   // `enum: '{{useTriggersOptions()}}'`, which the v2 filter value renderer can't compile; replace it with the
-  // registered trigger options up front so the Trigger type condition renders as a Select (matching v1).
+  // registered trigger options up front so the Trigger type condition renders as a Select (matching v1). Keep the
+  // injected collection hidden so workflow-internal schema-only collections do not leak into trigger collection
+  // pickers that enumerate visible collections from the current data source.
   const collections = useMemo(() => {
     const triggerOptions = Array.from(plugin.triggers.getEntities() as Iterable<[string, { title?: string }]>)
       .map(([value, opt]) => ({ value, label: opt?.title ? compile(opt.title) : String(value) }))
@@ -374,6 +407,7 @@ export default function WorkflowPane() {
     return [
       {
         ...workflowCollection,
+        hidden: true,
         fields: workflowCollection.fields.map((field) =>
           field?.name === 'type' && field.uiSchema
             ? { ...field, uiSchema: { ...field.uiSchema, enum: triggerOptions } }

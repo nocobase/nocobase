@@ -117,7 +117,13 @@ export function WorkflowMenu({
       >
         <Button aria-label="more" type="text" icon={<EllipsisOutlined />} />
       </Dropdown>
-      <WorkflowDetailsModal record={record} open={detailsVisible} onClose={() => setDetailsVisible(false)} />
+      <WorkflowDetailsModal
+        record={record}
+        open={detailsVisible}
+        onClose={() => setDetailsVisible(false)}
+        resource={resource}
+        refresh={refresh}
+      />
     </>
   );
 }

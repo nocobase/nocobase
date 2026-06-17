@@ -78,6 +78,68 @@ describe('TypedVariableInput - constant rendering', () => {
     expect(nullInput).toBeInTheDocument();
     expect(nullInput.getAttribute('readonly')).not.toBeNull();
   });
+
+  it('defaults undefined to the first constant type', async () => {
+    const ctx = createContextWithEnv();
+    const handleChange = vi.fn();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={undefined}
+        types={['string', 'number']}
+        namespaces={['$env']}
+        nullable
+        onChange={handleChange}
+      />,
+    );
+
+    expect(screen.queryByPlaceholderText('<Null>')).toBeNull();
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(handleChange).toHaveBeenCalledWith('');
+    });
+  });
+
+  it('can still opt out to keep the null placeholder for undefined', async () => {
+    const ctx = createContextWithEnv();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={undefined}
+        types={['string', 'number']}
+        namespaces={['$env']}
+        nullable
+        defaultToFirstConstantTypeWhenUndefined={false}
+        onChange={() => undefined}
+      />,
+    );
+
+    const nullInput = await screen.findByPlaceholderText('<Null>');
+    expect(nullInput).toBeInTheDocument();
+  });
+
+  it('highlights the defaulted first constant type when the switcher opens', async () => {
+    const ctx = createContextWithEnv();
+    renderWithCtx(
+      ctx,
+      <TypedVariableInput
+        value={undefined}
+        types={['string', 'number']}
+        namespaces={['$env']}
+        nullable
+        onChange={() => undefined}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'variable-switcher' }));
+
+    await waitFor(() => {
+      const constant = screen.getAllByText('Constant')[0];
+      const string = screen.getAllByText('String')[0];
+      expect(constant.closest('.ant-cascader-menu-item-active')).not.toBeNull();
+      expect(string.closest('.ant-cascader-menu-item-active')).not.toBeNull();
+    });
+  });
 });
 
 describe('TypedVariableInput - variable rendering', () => {

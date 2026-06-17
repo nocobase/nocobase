@@ -25,6 +25,7 @@ describe('flowSurfaces authoring validation unit', () => {
       { name: 'nickname', interface: 'input' },
       { name: 'status', interface: 'select' },
       { name: 'email', interface: 'email' },
+      { name: 'manager', type: 'belongsTo', interface: 'm2o', target: 'users' },
     ];
     const fieldsByName = new Map(fields.map((field) => [field.name, field]));
     const collection = {
@@ -942,6 +943,79 @@ describe('flowSurfaces authoring validation unit', () => {
     expect([...composeErrors, ...configureErrors].map((error: any) => error.ruleId)).not.toContain(
       'filter-group-date-value-invalid',
     );
+  });
+
+  it('should reject dataScope relation fields while allowing scalar relation subfields', async () => {
+    const dataScope = {
+      logic: '$and',
+      items: [
+        {
+          path: 'manager',
+          operator: '$eq',
+          value: 1,
+          items: [],
+        },
+        {
+          path: 'manager.nickname',
+          operator: '$eq',
+          value: 'Grace',
+        },
+      ],
+    };
+    const expectRelationDataScopeErrors = (errors: any[], path: string) => {
+      const relationFieldErrors = errors.filter(
+        (error: any) => error.ruleId === 'defaultFilter-relation-field-unsupported',
+      );
+      expect(relationFieldErrors).toEqual([
+        expect.objectContaining({
+          path,
+          details: expect.objectContaining({
+            fieldPath: 'manager',
+          }),
+        }),
+      ]);
+      expect(errors.some((error: any) => error.details?.fieldPath === 'manager.nickname')).toBe(false);
+    };
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeTableWithRelationDataScope',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  dataScope,
+                },
+                fields: ['nickname', 'status', 'email'],
+              },
+            ],
+          },
+        ],
+      },
+      createDefaultFilterValidationContext(),
+    );
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'employee-table-target' },
+        changes: {
+          dataScope,
+        },
+      },
+      createDefaultFilterValidationContext({
+        hostBlockType: 'table',
+        hostCollectionName: 'employees',
+        hostDataSourceKey: 'main',
+      }),
+    );
+
+    expectRelationDataScopeErrors(applyBlueprintErrors, '$.tabs[0].blocks[0].settings.dataScope.items[0].path');
+    expectRelationDataScopeErrors(configureErrors, '$.changes.dataScope.items[0].path');
   });
 
   it('should reject DateTime comparison template arithmetic across authoring condition surfaces', async () => {

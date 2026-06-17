@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleFilled, ReloadOutlined, StopOutlined } from '@ant-design/icons';
 import { CollectionFilter, ExtendCollectionsProvider, Table } from '@nocobase/client-v2';
 import { useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Flex, Space, theme } from 'antd';
+import { App, Button, Flex, Space, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
@@ -129,6 +129,7 @@ function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | nu
   const handleCancel = useMemoizedFn((record: ExecutionRecord) => {
     modal.confirm({
       title: t('Cancel the execution'),
+      icon: <ExclamationCircleFilled />,
       content: t('Are you sure you want to cancel the execution?'),
       async onOk() {
         await resource.cancel({ filterByTk: record.id });
@@ -165,10 +166,17 @@ function ExecutionHistoryDrawerInner({ workflowKey }: { workflowKey: string | nu
         render: (value, record) => (
           <Space>
             <ExecutionStatusTag value={value} />
-            {value === EXECUTION_STATUS.STARTED || value === EXECUTION_STATUS.QUEUEING ? (
-              <Button type="link" danger size="small" onClick={() => handleCancel(record)}>
-                {t('Cancel the execution')}
-              </Button>
+            {record.status === EXECUTION_STATUS.STARTED || record.status === EXECUTION_STATUS.QUEUEING ? (
+              <Tooltip title={t('Cancel the execution')}>
+                <Button
+                  type="link"
+                  danger
+                  onClick={() => handleCancel(record)}
+                  shape="circle"
+                  size="small"
+                  icon={<StopOutlined />}
+                />
+              </Tooltip>
             ) : null}
           </Space>
         ),

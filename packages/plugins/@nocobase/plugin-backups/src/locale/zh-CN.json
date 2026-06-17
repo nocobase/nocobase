@@ -36,7 +36,7 @@
   "New backup": "新建备份",
   "New backup operation started": "新建备份操作已开始",
   "Not a valid backup file": "无效的备份文件",
-  "PG_DUMP_SERVER_VERSION_MISMATCH": "pg_dump 版本低于 postgres 服务器版本，请安装正确版本的pg_dump。请参考: https://docs-cn.nocobase.com/handbook/backups#installation",
+  "PG_DUMP_SERVER_VERSION_MISMATCH": "pg_dump 版本低于 postgres 服务器版本，请安装正确版本的pg_dump。请参考: https://docs.nocobase.com/cn/ops-management/backup-manager/",
   "Please select a backup file": "请选择一个备份文件",
   "Required if application database schema is different with the backup": "仅应用数据库 Schema{{currentDbSchemaTips}} 与备份不一致时需要填写",
   "Restore": "还原",
