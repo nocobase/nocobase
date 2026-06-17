@@ -389,7 +389,7 @@
 
 #### B4. v2 ChatBox hook 对外兼容验收
 
-- 状态：未开始
+- 状态：待确认 V1 替换
 - 依赖：B3
 - 范围：
   - `src/client-v2/index.tsx` exports
@@ -403,6 +403,14 @@
   - 不单独需要。
 - V1 替换门禁：
   - 经用户确认后，将 v1 chatbox stores/hooks 改为相对路径 re-export v2。
+- 验收记录：
+  - 已审计当前 `@nocobase/plugin-ai/client-v2` 外部消费方，仍仅有 `plugin-localization` 和 `plugin-data-visualization`。
+  - `src/client-v2/index.tsx` 保留 `useChatBoxStore`、`useChatMessagesStore`、`useChatConversationsStore`、`useChatBoxActions` 导出。
+  - `plugin-data-visualization` 当前消费 `useChatMessagesStore`、`useAIConfigRepository`、`useChatBoxStore`、`useChatBoxActions`、`AIEmployeeProfileCard`、`avatars`、`ChatEditorRef`、`Task`，均可从 `client-v2` 解析。
+  - `plugin-localization` 当前消费 `AIEmployeeShortcut`、`formatModelLabel`、`AIEmployee`、`Task`，均可从 `client-v2` 解析。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/__tests__/public-api-contract.test.ts --run --reporter=verbose` 通过。
+  - 使用最小临时 tsconfig 继承 `tsconfig.paths.json`，并定向 include `src/client-v2/index.tsx`、公开契约测试、`plugin-localization` 消费文件、`plugin-data-visualization` 两个消费文件，`tsc --noEmit` 通过。
+  - 本小块不涉及浏览器验收；按门禁等待用户确认后，才能执行 B5 v1 chatbox stores/hooks 替换。
 
 #### B5. v1 chatbox 替换
 
