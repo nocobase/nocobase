@@ -7,42 +7,119 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
-import { TextAreaWithContextSelector, makeFormatVariablePath, type VariableDelimiters } from '@nocobase/client-v2';
+import { css, cx } from '@emotion/css';
+import { Button, Input } from 'antd';
+import type { TextAreaProps } from 'antd/es/input';
+import type { TextAreaRef } from 'antd/es/input/TextArea';
+import { FlowContextSelector } from '@nocobase/flow-engine';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { insertTextAtSelection } from './textAreaInsertion';
+import { formatWorkflowPathToValue } from './workflowVariableConverters';
 import { useWorkflowVariableOptions, type UseWorkflowVariableOptions } from './useWorkflowVariableOptions';
 
-type AutoSize = boolean | { minRows?: number; maxRows?: number };
-
-export type WorkflowVariableTextAreaProps = {
+export interface WorkflowVariableTextAreaProps extends Omit<TextAreaProps, 'value' | 'onChange'> {
   value?: string;
   onChange?: (value: string) => void;
-  disabled?: boolean;
-  placeholder?: string;
-  style?: React.CSSProperties;
-  rows?: number;
-  maxRows?: number;
-  autoSize?: AutoSize;
-  delimiters?: VariableDelimiters;
   variableOptions?: UseWorkflowVariableOptions;
-};
+  delimiters?: readonly [string, string];
+}
+
+const selectorButtonClassName = css`
+  &:not(:hover) {
+    border-right-color: transparent;
+    border-top-color: transparent;
+    background-color: transparent;
+  }
+`;
+
+const codeTextAreaClassName = css`
+  font-size: 80%;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+`;
 
 export function WorkflowVariableTextArea(props: WorkflowVariableTextAreaProps) {
-  const { variableOptions, rows, maxRows, autoSize, delimiters = ['{{', '}}'], ...rest } = props;
+  const { value = '', onChange, variableOptions, className, style, delimiters = ['{{', '}}'], ...rest } = props;
+  const [innerValue, setInnerValue] = useState(value);
+  const inputRef = useRef<TextAreaRef>(null);
   const metaTree = useWorkflowVariableOptions(variableOptions);
-  const treeGetter = useMemo(() => () => metaTree, [metaTree]);
-  const formatPathToValue = useMemo(() => makeFormatVariablePath(delimiters), [delimiters]);
+  const metaTreeGetter = useMemo(() => () => metaTree, [metaTree]);
 
-  const resolvedRows = typeof autoSize === 'object' ? autoSize.minRows ?? rows : rows;
-  const resolvedMaxRows = typeof autoSize === 'object' ? autoSize.maxRows ?? maxRows : maxRows;
+  useEffect(() => {
+    setInnerValue(value);
+  }, [value]);
+
+  const handleTextChange = useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const nextValue = event.target.value;
+      setInnerValue(nextValue);
+      onChange?.(nextValue);
+    },
+    [onChange],
+  );
+
+  const handleVariableSelected = useCallback(
+    (selectedValue: string) => {
+      if (!selectedValue) {
+        return;
+      }
+
+      const input = inputRef.current?.resizableTextArea?.textArea;
+      if (!input) {
+        const nextValue = `${innerValue}${selectedValue}`;
+        setInnerValue(nextValue);
+        onChange?.(nextValue);
+        return;
+      }
+
+      const { nextValue, nextSelectionStart, nextSelectionEnd } = insertTextAtSelection(
+        innerValue,
+        selectedValue,
+        input.selectionStart ?? innerValue.length,
+        input.selectionEnd ?? input.selectionStart ?? innerValue.length,
+      );
+      setInnerValue(nextValue);
+      onChange?.(nextValue);
+
+      requestAnimationFrame(() => {
+        input.setSelectionRange(nextSelectionStart, nextSelectionEnd);
+        input.focus();
+      });
+    },
+    [innerValue, onChange],
+  );
 
   return (
-    <TextAreaWithContextSelector
-      {...rest}
-      rows={resolvedRows}
-      maxRows={resolvedMaxRows}
-      metaTree={treeGetter}
-      formatPathToValue={(meta) => formatPathToValue(meta) ?? ''}
-    />
+    <div style={{ position: 'relative', width: '100%', ...style }}>
+      <Input.TextArea
+        {...rest}
+        ref={inputRef}
+        value={innerValue}
+        onChange={handleTextChange}
+        className={cx(codeTextAreaClassName, className)}
+      />
+      <div style={{ position: 'absolute', insetInlineEnd: 0, insetBlockStart: 0, lineHeight: 0 }}>
+        <FlowContextSelector
+          metaTree={metaTreeGetter}
+          disabled={rest.disabled}
+          formatPathToValue={(item) => {
+            const raw = formatWorkflowPathToValue(item);
+            if (!raw) {
+              return '';
+            }
+            return raw.replace('{{', delimiters[0]).replace('}}', delimiters[1]);
+          }}
+          onChange={handleVariableSelected}
+        >
+          <Button
+            type="default"
+            style={{ fontStyle: 'italic', fontFamily: 'New York, Times New Roman, Times, serif' }}
+            className={selectorButtonClassName}
+          >
+            x
+          </Button>
+        </FlowContextSelector>
+      </div>
+    </div>
   );
 }
 
