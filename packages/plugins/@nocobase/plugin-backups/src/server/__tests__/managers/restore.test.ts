@@ -392,6 +392,67 @@ describe('RestoreManager', () => {
     expect(app.runCommand).toHaveBeenCalledWith('upgrade');
   });
 
+  it('allows Kingbase schema mismatch with force schema restore', async () => {
+    vi.spyOn(app, 'runCommand').mockReturnValue({} as any);
+    await createBackupArchive(
+      schemaMismatchBackupFilePath,
+      createMetadata({
+        dialect: 'kingbase',
+        toolchain: 'kingbase',
+        version: 'KingbaseES V009R001C010',
+        backupClientVersion: 'sys_dump (KingbaseES) V009R001C010',
+      }),
+    );
+    const restoreManager = new RestoreManager(createCtx(), {
+      dialect: 'kingbase',
+      username: 'test',
+      password: 'test',
+      database: 'test',
+      host: 'localhost',
+      port: 54321,
+      schema: 'target_schema',
+    });
+
+    await expect(
+      restoreManager.restore(schemaMismatchBackupFilePath, 'task_id', undefined, true, true, {
+        forceSchemaRestore: true,
+      }),
+    ).resolves.toBeUndefined();
+    await sleep(3000);
+    expect(app.runCommand).toHaveBeenCalledWith('upgrade');
+  });
+
+  it('infers PostgreSQL toolchain for legacy Kingbase backups created by pg_dump', async () => {
+    const { backupFilePath } = createBackupFile('kingbase-pg-toolchain');
+    await createBackupArchive(
+      backupFilePath,
+      createMetadata({
+        dialect: 'kingbase',
+        schema: 'source_schema',
+        version: 'KingbaseES V009R001C010',
+        backupClientVersion: 'pg_dump (PostgreSQL) 17.2',
+      }),
+    );
+    const mockedExec = cp.exec as unknown as Mock;
+    mockedExec.mockClear();
+    const restoreManager = new RestoreManager(createCtx(), {
+      dialect: 'kingbase',
+      username: 'test',
+      password: 'test',
+      database: 'test',
+      host: 'localhost',
+      port: 54321,
+      schema: 'source_schema',
+    });
+
+    await restoreManager.restore(backupFilePath, 'task_id', undefined, true, true);
+
+    await vi.waitFor(() => {
+      expect(mockedExec.mock.calls.some(([command]) => command.includes('pg_restore'))).toBe(true);
+    });
+    expect(mockedExec.mock.calls.some(([, options]) => options.env?.PGPASSWORD === 'test')).toBe(true);
+  });
+
   it('does not ignore dialect mismatch with force schema restore', async () => {
     await createBackupArchive(schemaMismatchBackupFilePath, createMetadata({ dialect: 'mysql' }));
     const restoreManager = new RestoreManager(createCtx(), {
