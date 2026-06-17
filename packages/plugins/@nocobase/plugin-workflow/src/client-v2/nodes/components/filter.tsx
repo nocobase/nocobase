@@ -17,10 +17,12 @@ export function NodeFilterField({
   collection,
   label,
   name = ['config', 'params', 'filter'],
+  required = true,
 }: {
   collection?: string;
   label?: string;
   name?: Array<string | number>;
+  required?: boolean;
 }) {
   const t = useT();
 
@@ -29,15 +31,19 @@ export function NodeFilterField({
       name={name}
       label={label ?? t('Filter')}
       validateTrigger={['onChange', 'onBlur']}
-      rules={[
-        {
-          validator: async (_rule, value) => {
-            if (!isValidFilter(value)) {
-              throw new Error(t('Please add at least one condition'));
-            }
-          },
-        },
-      ]}
+      rules={
+        required
+          ? [
+              {
+                validator: async (_rule, value) => {
+                  if (!isValidFilter(value)) {
+                    throw new Error(t('Please add at least one condition'));
+                  }
+                },
+              },
+            ]
+          : undefined
+      }
     >
       <FilterDynamicComponent collection={collection} />
     </Form.Item>

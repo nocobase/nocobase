@@ -9,55 +9,16 @@
 
 import React from 'react';
 import { FileAddOutlined } from '@ant-design/icons';
-import { useFlowEngine, type SubModelItem } from '@nocobase/flow-engine';
-import { getCollectionFieldOptions, type UseVariableOptions } from '../canvas/collectionFieldOptions';
 import { Instruction } from '../canvas/Instruction';
-import { getCollectionManagerAdapter, parseCollectionName } from '../components/collection';
 import { NAMESPACE } from '../locale';
-import { useT } from '../locale';
+import {
+  getSingleRecordCreateModelMenuItem,
+  getSingleRecordTempAssociationSource,
+  type CollectionResultNodeLike,
+  useCollectionNodeVariables,
+} from './collectionNode';
 
 const t = (key: string) => `{{t("${key}", { ns: "${NAMESPACE}" })}}`;
-
-type CreateNodeLike = {
-  id?: string | number;
-  key: string;
-  title?: string;
-  config: {
-    collection?: string;
-    params?: {
-      appends?: string[];
-    };
-  };
-};
-
-function useVariables({ key: name, title, config }: CreateNodeLike, options?: UseVariableOptions) {
-  const flowEngine = useFlowEngine();
-  const compile = useT();
-  if (!config.collection) {
-    return null;
-  }
-  const [dataSourceName, collection] = parseCollectionName(config.collection) as [string, string];
-  const collectionManager = getCollectionManagerAdapter(flowEngine.context.dataSourceManager, dataSourceName);
-  const [result] = getCollectionFieldOptions({
-    appends: [name, ...(config.params?.appends?.map((item) => `${name}.${item}`) || [])],
-    ...options,
-    fields: [
-      {
-        collectionName: collection,
-        name,
-        type: 'hasOne',
-        target: collection,
-        uiSchema: {
-          title,
-        },
-      },
-    ],
-    compile,
-    collectionManager,
-  });
-
-  return result;
-}
 
 export default class extends Instruction {
   type = 'create';
@@ -78,56 +39,13 @@ export default class extends Instruction {
     };
   }
 
-  useVariables = useVariables;
+  useVariables = useCollectionNodeVariables;
 
-  getCreateModelMenuItem({ node }: { node: CreateNodeLike }): SubModelItem | null {
-    if (!node.config.collection) {
-      return null;
-    }
-    const [dataSourceKey, collectionName] = parseCollectionName(node.config.collection) as [string, string];
-    if (!dataSourceKey || !collectionName) {
-      return null;
-    }
-
-    return {
-      key: node.title ?? `#${node.id}`,
-      label: node.title ?? `#${node.id}`,
-      useModel: 'NodeDetailsModel',
-      createModelOptions: {
-        use: 'NodeDetailsModel',
-        stepParams: {
-          resourceSettings: {
-            init: {
-              dataSourceKey,
-              collectionName,
-              dataPath: `$jobsMapByNodeKey.${node.key}`,
-            },
-          },
-          cardSettings: {
-            titleDescription: {
-              title: t('Create record'),
-            },
-          },
-        },
-        subModels: {
-          grid: {
-            use: 'NodeDetailsGridModel',
-            subType: 'object',
-          },
-        },
-      },
-    };
+  getCreateModelMenuItem({ node }: { node: CollectionResultNodeLike }) {
+    return getSingleRecordCreateModelMenuItem({ node, title: t('Create record') });
   }
 
-  useTempAssociationSource(node: CreateNodeLike) {
-    if (!node?.config?.collection || node.id == null) {
-      return null;
-    }
-    return {
-      collection: node.config.collection,
-      nodeId: node.id,
-      nodeKey: node.key,
-      nodeType: 'node' as const,
-    };
+  useTempAssociationSource(node: CollectionResultNodeLike) {
+    return getSingleRecordTempAssociationSource(node);
   }
 }
