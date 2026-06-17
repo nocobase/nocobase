@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import type { Database } from '@nocobase/database';
 import { UserDataResourceManager } from './user-data-resource-manager';
 import { UserDataSyncService } from './user-data-sync-service';
 import userDataActions from './actions/user-data';
@@ -40,7 +41,7 @@ export class PluginUserDataSyncServer extends Plugin {
 
   async load() {
     const logger = this.getLogger();
-    this.resourceManager.db = this.app.db;
+    this.resourceManager.db = this.app.db as unknown as Database;
     this.resourceManager.logger = this.app.logger;
     this.syncService = new UserDataSyncService(this.resourceManager, this.sourceManager, logger);
     this.app.resourceManager.define({
