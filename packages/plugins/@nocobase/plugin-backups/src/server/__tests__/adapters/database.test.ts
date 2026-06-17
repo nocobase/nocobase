@@ -166,6 +166,27 @@ describe('DatabaseAdapter', () => {
       expect(command).toContain(`--schema=test_version_control`);
     });
 
+    it('backup function should exclude owned sequences for excluded tables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((command, _options, callback) => {
+        if (command.includes('pg_depend')) {
+          callback(null, 'public.logs_id_seq\n', '');
+          return;
+        }
+        callback(null, 'done', '');
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const dir = os.tmpdir();
+      await adapter.backup({
+        dir,
+        excludeTables: ['logs'],
+      });
+      const command = mockedExec.mock.lastCall[0];
+      expect(command).toContain(`-T '"logs"'`);
+      expect(command).toContain(`-T '"public"."logs_id_seq"'`);
+    });
+
     it('restore function', async () => {
       const mockedExec = cp.exec as unknown as Mock;
       mockedExec.mockImplementation((_command, _options, callback) => {
@@ -193,6 +214,26 @@ describe('DatabaseAdapter', () => {
       expect(commands.some((command) => command.includes('DROP TABLE IF EXISTS'))).toBe(false);
       expect(commands.some((command) => command.includes('DROP VIEW IF EXISTS'))).toBe(false);
       expect(commands.some((command) => command.includes('DROP TRIGGER IF EXISTS'))).toBe(false);
+    });
+
+    it('restore function should preserve tables and drop views when restoreMode is preserveTables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const filePath = os.tmpdir();
+      await adapter.restore({ filePath, restoreMode: 'preserveTables' });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands).toHaveLength(2);
+      expect(commands[0]).toContain('DROP VIEW IF EXISTS');
+      expect(commands[0]).toContain('DROP MATERIALIZED VIEW IF EXISTS');
+      expect(commands[0]).not.toContain('DROP TABLE IF EXISTS');
+      expect(commands[0]).not.toContain('DROP SEQUENCE IF EXISTS');
+      expect(commands[0]).not.toContain('DROP TRIGGER IF EXISTS');
+      expect(commands[1]).toContain('pg_restore');
     });
 
     it('restore function should sync collection schema metadata when schema is renamed', async () => {
@@ -456,6 +497,25 @@ describe('DatabaseAdapter', () => {
       expect(commands[0]).toContain(` < ${filePath}`);
       expect(commands.some((command) => command.includes('drop_all_tables_and_triggers'))).toBe(false);
     });
+
+    it('restore function should preserve tables and drop views when restoreMode is preserveTables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const filePath = os.tmpdir();
+      await adapter.restore({ filePath, restoreMode: 'preserveTables' });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands).toHaveLength(2);
+      expect(commands[0]).toContain('drop_all_views');
+      expect(commands[0]).toContain('DROP VIEW IF EXISTS');
+      expect(commands[0]).not.toContain('drop_all_tables_and_triggers');
+      expect(commands[1]).toContain('mysql');
+      expect(commands[1]).toContain(` < ${filePath}`);
+    });
   });
 
   describe('MariaDBAdapter', () => {
@@ -558,6 +618,25 @@ describe('DatabaseAdapter', () => {
       expect(commands[0]).toContain('mysql');
       expect(commands[0]).toContain(` < ${filePath}`);
       expect(commands.some((command) => command.includes('drop_all_tables_and_triggers'))).toBe(false);
+    });
+
+    it('restore function should preserve tables and drop views when restoreMode is preserveTables', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const filePath = os.tmpdir();
+      await adapter.restore({ filePath, restoreMode: 'preserveTables' });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands).toHaveLength(2);
+      expect(commands[0]).toContain('drop_all_views');
+      expect(commands[0]).toContain('DROP VIEW IF EXISTS');
+      expect(commands[0]).not.toContain('drop_all_tables_and_triggers');
+      expect(commands[1]).toContain('mysql');
+      expect(commands[1]).toContain(` < ${filePath}`);
     });
   });
 
