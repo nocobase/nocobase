@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { KnowledgeBase, KnowledgeBaseGroup } from '../types';
+import { DocumentSegmentedWithScore, KnowledgeBase, KnowledgeBaseGroup, SearchOptions } from '../types';
 
 export interface KnowledgeBaseFeature {
   getKnowledgeBase(knowledgeBaseKeys: string[]): Promise<KnowledgeBase[]>;
   getKnowledgeBaseGroup(knowledgeBaseKeys: string[]): Promise<KnowledgeBaseGroup[]>;
+  search(options: SearchOptions): Promise<DocumentSegmentedWithScore[]>;
 }

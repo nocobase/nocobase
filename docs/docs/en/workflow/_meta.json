@@ -76,8 +76,71 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Large Language Model",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
+            "label": "LLM Nodes",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Text Chat",
+                "link": "/ai-employees/workflow/nodes/llm/chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Multimodal Chat",
+                "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Structured Output",
+                "link": "/ai-employees/workflow/nodes/llm/structured-output"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "AI Employee Nodes",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Node Configuration",
+                "link": "/ai-employees/workflow/nodes/employee/configuration"
+              },
+              {
+                "type": "custom-link",
+                "label": "Node Approval",
+                "link": "/ai-employees/workflow/nodes/employee/approval"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "AI Knowledge Base",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Overview",
+                "link": "/ai-employees/workflow/nodes/knowledge/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Create document",
+                "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Update document",
+                "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Delete document",
+                "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Retrieve document",
+                "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+              }
+            ]
           }
         ]
       },

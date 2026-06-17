@@ -24,7 +24,7 @@ Chọn Nhân viên AI cần kích hoạt RAG, nhấp nút `Edit` để vào tran
 Trong tab `Knowledge base`, bật công tắc `Enable`.
 
 - Trong `Knowledge Base Prompt` nhập câu Prompt trích dẫn Knowledge Base, `{knowledgeBaseData}` là placeholder cố định, không sửa đổi;
-- Trong `Knowledge Base` chọn Knowledge Base đã cấu hình, tham khảo: [Knowledge Base](/ai-employees/knowledge-base/knowledge-base);
+- Trong `Knowledge Base` chọn Knowledge Base đã cấu hình, tham khảo: [Knowledge Base](./knowledge-base/);
 - Trong ô nhập `Top K` nhập số lượng tài liệu cần truy xuất, mặc định là 3;
 - Trong ô nhập `Score` ngưỡng độ liên quan tài liệu khi truy xuất;
 
