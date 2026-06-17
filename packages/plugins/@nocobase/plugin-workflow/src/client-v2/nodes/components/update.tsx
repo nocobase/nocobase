@@ -9,13 +9,12 @@
 
 import React, { useEffect } from 'react';
 import { Form } from 'antd';
-import { isValidFilter } from '@nocobase/utils/client';
 import { useNodeContext } from '../../canvas/contexts';
-import { FilterDynamicComponent } from '../../components/FilterDynamicComponent';
 import { AssignedFieldsEditor } from '../../components/collection';
 import { RadioWithTooltip, type RadioWithTooltipOption } from '../../components/RadioWithTooltip';
 import { useT } from '../../locale';
 import { NodeCollectionField } from './collection';
+import { NodeFilterField } from './filter';
 
 function useUpdateModeOptions(): RadioWithTooltipOption[] {
   const t = useT();
@@ -67,22 +66,7 @@ function UpdateFields() {
         <RadioWithTooltip options={updateModeOptions} />
       </Form.Item>
 
-      <Form.Item
-        name={['config', 'params', 'filter']}
-        label={t('Only update records matching conditions')}
-        validateTrigger={['onChange', 'onBlur']}
-        rules={[
-          {
-            validator: async (_rule, value) => {
-              if (!isValidFilter(value)) {
-                throw new Error(t('Please add at least one condition'));
-              }
-            },
-          },
-        ]}
-      >
-        <FilterDynamicComponent collection={collection} />
-      </Form.Item>
+      <NodeFilterField collection={collection} label={t('Only update records matching conditions')} />
 
       <Form.Item name={['config', 'params', 'values']} label={t('Fields values')}>
         <AssignedFieldsEditor collection={collection} />
