@@ -2016,12 +2016,14 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   const getModelTargetPathKeys = (model: any): Set<string> => {
     const keys = new Set<string>();
     const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
-    if (fieldPathArray) {
+    const targetPath = getModelTargetPathForPatch(model);
+    const targetLeaf = targetPath && [...parsePathString(targetPath)].reverse().find((seg) => typeof seg === 'string');
+    const fieldPathLeaf = fieldPathArray && [...fieldPathArray].reverse().find((seg) => typeof seg === 'string');
+    if (fieldPathArray && (!targetLeaf || targetLeaf === fieldPathLeaf)) {
       keys.add(namePathToPathKey(fieldPathArray));
       return keys;
     }
 
-    const targetPath = getModelTargetPathForPatch(model);
     if (targetPath) {
       const fieldIndexEntries = getFieldIndexEntries(model?.context?.fieldIndex);
       if (!fieldIndexEntries.length) {
