@@ -407,7 +407,10 @@ class PostgresAdapter extends BaseDBAdapter {
     return formatPathInEnv(process.env.PSQL_PATH) || 'psql';
   }
 
-  protected getPasswordEnvVars(password: string, _toolchain: DBBackupToolchain = this.backupToolchain) {
+  protected getPasswordEnvVars(
+    password: string,
+    _toolchain: DBBackupToolchain = this.backupToolchain,
+  ): NodeJS.ProcessEnv {
     return { PGPASSWORD: password };
   }
 
@@ -668,7 +671,10 @@ class KingbaseAdapter extends PostgresAdapter {
     return toolchain === 'kingbase' ? this.getKingbaseSqlCommandName() : super.getSqlCommandName(toolchain);
   }
 
-  protected getPasswordEnvVars(password: string, toolchain: DBBackupToolchain = this.backupToolchain) {
+  protected getPasswordEnvVars(
+    password: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ): NodeJS.ProcessEnv {
     if (toolchain === 'postgres') {
       return super.getPasswordEnvVars(password, toolchain);
     }
