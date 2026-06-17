@@ -120,12 +120,18 @@ export function ResourceTablePage<RecordType extends object = Record<string, unk
       current: data?.page ?? page,
       pageSize: data?.pageSize ?? pageSize,
       total: data?.total,
+      showTotal:
+        typeof data?.total === 'number'
+          ? (count) => {
+              return t('Total {{count}} items', { count });
+            }
+          : false,
       onChange: (nextPage, nextPageSize) => {
         setPage(nextPage);
         setPageSize(nextPageSize);
       },
     }),
-    [data?.page, data?.pageSize, data?.total, page, pageSize],
+    [data?.page, data?.pageSize, data?.total, page, pageSize, t],
   );
 
   const handleFilterChange = useMemoizedFn((nextFilter: CompiledFilter) => {
