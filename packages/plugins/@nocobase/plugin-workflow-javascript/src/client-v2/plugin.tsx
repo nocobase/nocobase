@@ -17,7 +17,7 @@ export class PluginWorkflowJavaScriptClientV2 extends Plugin<Record<string, neve
     const workflow = this.app.pm.get('workflow') as PluginWorkflowClientV2 | undefined;
     workflow?.registerInstruction?.(
       'script',
-      new ScriptInstruction().bindTranslate((key) => this.t(key)),
+      new ScriptInstruction().bindTranslate((key) => String(this.t(key))),
     );
   }
 }
