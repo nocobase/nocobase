@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, Model } from '@nocobase/database';
+import { Model } from '@nocobase/database';
+import type { Application } from '@nocobase/server';
 
-export function beforeDestroyForeignKey(db: Database) {
+export function beforeDestroyForeignKey(db: Application['db']) {
   return async (model: Model, { transaction }) => {
     const { isForeignKey, collectionName, name: fkName, type } = model.get();
 

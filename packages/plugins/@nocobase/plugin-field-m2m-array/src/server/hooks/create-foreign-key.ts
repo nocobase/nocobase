@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, Model } from '@nocobase/database';
+import { Model } from '@nocobase/database';
+import type { Application } from '@nocobase/server';
 import { elementTypeMap } from '../belongs-to-array-field';
 
-export const createForeignKey = (db: Database) => {
+export const createForeignKey = (db: Application['db']) => {
   return async (model: Model, { transaction }) => {
     const { type, collectionName, target, targetKey, foreignKey, name } = model.get();
     if (type !== 'belongsToArray') {
