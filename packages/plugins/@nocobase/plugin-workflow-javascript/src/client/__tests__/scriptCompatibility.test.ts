@@ -9,9 +9,9 @@
 
 import { describe, expect, it } from 'vitest';
 
-import V1ScriptInstruction from '../../../client/ScriptInstruction';
-import { lang } from '../../../locale';
-import V2ScriptInstruction from '../script';
+import V1ScriptInstruction from '../ScriptInstruction';
+import { lang } from '../../locale';
+import V2ScriptInstruction from '../../client-v2/nodes/script';
 
 describe('ScriptInstruction compatibility', () => {
   it('keeps the v1 instruction as a thin compatibility layer over the v2 implementation', () => {
