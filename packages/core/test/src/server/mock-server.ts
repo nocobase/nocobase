@@ -216,7 +216,7 @@ export class MockServer extends Application {
     const oldDatabase = this.db;
 
     const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
-    const database = mockDatabase(databaseOptions) as Application['db'];
+    const database = mockDatabase(databaseOptions) as unknown as Application['db'];
     database.setContext({ app: this });
 
     return database;
