@@ -276,13 +276,13 @@
 
 ### B. ChatBox 状态与 hooks v2 迁移
 
-状态：未开始
+状态：进行中
 
 目标：先在 v2 中实现完整 ChatBox 状态和 hooks 契约，替换当前 v2 下的 zustand 精简实现，并通过两份指定测试。
 
 #### B1. 设计 observable store facade
 
-- 状态：未开始
+- 状态：V2 代码验收通过
 - 依赖：A2
 - 范围：
   - `src/client-v2/ai-employees/chatbox/stores/*`
@@ -298,6 +298,18 @@
   - 不单独需要。
 - V1 替换门禁：
   - 暂不替换 v1，先完成 B2-B5。
+- 验收记录：
+  - 已新增 `createObservableStore` facade，内部使用 `observable.shallow` / `observe` 和 `useSyncExternalStore`，保留 zustand 兼容调用形态：store callable hook、`use.field()`、`getState()`、`setState()`、`subscribe()`、action 方法。
+  - `chat-box`、`chat-conversations`、`chat-messages` 已切换为 v2 observable store，业务 action 逻辑保持不变。
+  - `getState()` 旧快照不会被后续 `setState()` 原地污染，支持 `setState(previousState, true)` restore 场景；普通状态更新后 action 引用保持稳定。
+  - 新增 `src/client-v2/ai-employees/chatbox/stores/__tests__/observable-store.test.tsx` 覆盖 action 引用稳定、React hook 重渲染、replace restore 兼容。
+  - `rg -n "zustand|@formily/reactive" packages/plugins/@nocobase/plugin-ai/src/client-v2` 无命中。
+  - `yarn eslint --fix packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/create-selectors.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/chat-box.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/chat-conversations.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/chat-messages.ts packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/observable-store.test.tsx` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client-v2/ai-employees/chatbox/stores/__tests__/observable-store.test.tsx --run --reporter=verbose` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/state-regression.test.ts --run --reporter=verbose` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/chatbox/hooks-contract.test.ts --run --reporter=verbose` 通过。
+  - `yarn test packages/plugins/@nocobase/plugin-ai/src/client/__tests__/ai-coding/context-tools.test.ts --run --reporter=verbose` 通过。
+  - 按本小块门禁暂不替换 v1，继续 B2-B5。
 
 #### B2. 迁移 chatbox stores 完整状态
 

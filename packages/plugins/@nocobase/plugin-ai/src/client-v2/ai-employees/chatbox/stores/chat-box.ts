@@ -9,9 +9,8 @@
 
 import type { Bubble, Sender } from '@ant-design/x';
 import type { GetProp, GetRef } from 'antd';
-import { create } from 'zustand';
 import type { AIEmployee } from '../../types';
-import { createSelectors } from './create-selectors';
+import { createObservableStore, createSelectors } from './create-selectors';
 import { getOrCreateGlobalStore } from './global-store';
 
 type RolesType = GetProp<typeof Bubble.List, 'roles'>;
@@ -80,7 +79,7 @@ interface ChatBoxActions {
 }
 
 const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-box-store', () =>
-  create<ChatBoxState & ChatBoxActions>()((set) => ({
+  createObservableStore<ChatBoxState & ChatBoxActions>((set) => ({
     open: false,
     expanded: false,
     collapsed: false,

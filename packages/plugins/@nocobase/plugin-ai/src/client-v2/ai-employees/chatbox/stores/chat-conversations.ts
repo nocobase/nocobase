@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { create } from 'zustand';
 import type { Conversation } from '../../types';
-import { createSelectors } from './create-selectors';
+import { createObservableStore, createSelectors } from './create-selectors';
 import { getOrCreateGlobalStore } from './global-store';
 
 interface ChatConversationsState {
@@ -31,7 +30,7 @@ interface ChatConversationsActions {
 }
 
 const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-conversations-store', () =>
-  create<ChatConversationsState & ChatConversationsActions>((set) => ({
+  createObservableStore<ChatConversationsState & ChatConversationsActions>((set) => ({
     currentConversation: undefined,
     conversations: [],
     keyword: '',
