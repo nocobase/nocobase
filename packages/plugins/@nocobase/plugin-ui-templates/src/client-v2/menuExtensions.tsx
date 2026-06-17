@@ -898,7 +898,7 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
 
     const nextOpenView: any = { ...(openViewParams || {}), uid: newUid };
     delete (nextOpenView as any).popupTemplateUid;
-    delete (nextOpenView as any).popupTemplateContext;
+    nextOpenView.popupTemplateContext = true;
     delete (nextOpenView as any).popupTemplateHasFilterByTk;
     delete (nextOpenView as any).popupTemplateHasSourceId;
     // 同步清理 params 侧的 filterByTk/sourceId，避免 record action 复用 collection 弹窗时泄漏 filterByTk

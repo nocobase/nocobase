@@ -969,7 +969,7 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.defaultInputKeys).toBeUndefined();
   });
 
-  it('keeps action default filterByTk for manually configured popup without template params', async () => {
+  it('keeps original openView context for manually configured popup without template params', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
     let capturedParams: any;
@@ -1025,8 +1025,11 @@ describe('openViewActionExtensions (popup template)', () => {
     });
 
     expect(baseHandler).toHaveBeenCalledTimes(1);
+    expect(Object.is(capturedCtx, ctx)).toBe(true);
     expect(capturedParams?.filterByTk).toBeUndefined();
-    expect(capturedCtx?.inputArgs?.collectionName).toBe('users');
+    expect(capturedParams?.dataSourceKey).toBe('main');
+    expect(capturedParams?.collectionName).toBe('users');
+    expect(capturedCtx?.inputArgs?.collectionName).toBeUndefined();
     expect(capturedCtx?.inputArgs?.filterByTk).toBeUndefined();
     expect(result?.filterByTk).toBe(2);
   });
@@ -1337,7 +1340,7 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.sourceId).toBe('source-1');
   });
 
-  it('runtime overrides resource keys via shadow ctx in copy mode without persisted internal flags', async () => {
+  it('runtime overrides resource keys via shadow ctx in copy mode with popupTemplateContext', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
     let capturedParams: any;
@@ -1377,6 +1380,7 @@ describe('openViewActionExtensions (popup template)', () => {
     ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
+      popupTemplateContext: true,
       uid: 'popup-1',
       dataSourceKey: 'main',
       collectionName: 'roles',
