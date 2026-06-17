@@ -24,7 +24,7 @@ Pilih Karyawan AI yang akan diaktifkan RAG, klik tombol `Edit`, masuk ke halaman
 Pada tab `Knowledge base`, buka switch `Enable`.
 
 - Pada `Knowledge Base Prompt` masukkan prompt referensi Basis Pengetahuan, `{knowledgeBaseData}` adalah placeholder tetap, jangan dimodifikasi;
-- Pada `Knowledge Base` pilih Basis Pengetahuan yang sudah dikonfigurasi, rujuk: [Basis Pengetahuan](/ai-employees/knowledge-base/knowledge-base);
+- Pada `Knowledge Base` pilih Basis Pengetahuan yang sudah dikonfigurasi, rujuk: [Basis Pengetahuan](./knowledge-base/);
 - Pada kotak input `Top K` masukkan jumlah dokumen yang akan di-retrieve, default 3;
 - Pada kotak input `Score` threshold relevansi dokumen saat retrieval;
 

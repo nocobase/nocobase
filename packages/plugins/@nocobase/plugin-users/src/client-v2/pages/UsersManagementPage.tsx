@@ -169,7 +169,6 @@ function UsersTable() {
 
   return (
     <ResourceTablePage<User>
-      fillHeight
       collection={collection}
       rowKey="id"
       columns={columns}
@@ -216,35 +215,18 @@ export default function UsersManagementPage() {
   const t = useT();
   const { token } = theme.useToken();
   const tabsClassName = css`
-    height: 100%;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-
     .ant-tabs-nav {
       flex: 0 0 auto;
       margin-bottom: 0;
     }
 
-    .ant-tabs-content {
-      height: 100%;
-      min-height: 0;
-    }
-
     .ant-tabs-content-holder,
     .ant-tabs-tabpane {
       background: ${token.colorBgContainer};
-      min-height: 0;
     }
 
     .ant-tabs-content-holder {
-      flex: 1;
       border-radius: ${token.borderRadiusLG}px;
-      overflow: hidden;
-    }
-
-    .ant-tabs-tabpane {
-      height: 100%;
       overflow: hidden;
     }
   `;
@@ -257,17 +239,13 @@ export default function UsersManagementPage() {
         {
           key: 'usersManager',
           label: t('Users manager'),
-          children: (
-            <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
-              <UsersTable />
-            </div>
-          ),
+          children: <UsersTable />,
         },
         {
           key: 'usersSettings',
           label: t('Settings'),
           children: (
-            <div style={{ height: '100%', minHeight: 0, overflow: 'auto', padding: token.paddingLG }}>
+            <div style={{ padding: token.paddingLG }}>
               <UsersSettingsForm />
             </div>
           ),

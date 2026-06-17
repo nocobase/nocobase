@@ -56,5 +56,8 @@ features:
       - title: Extension de prévisualisation de fichiers
         details: Étendez les capacités de prévisualisation de fichiers pour prendre en charge la prévisualisation et le rendu en ligne de davantage de formats de fichiers.
         link: /file-manager/development
+      - title: Extension de base de connaissances
+        details: Connectez des bases de connaissances externes ou des services de récupération personnalisés pour étendre les sources RAG des AI employees.
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---
 

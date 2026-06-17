@@ -46,4 +46,7 @@ features:
       - title: Mở rộng xem trước file
         details: Mở rộng khả năng xem trước file, hỗ trợ thêm nhiều định dạng file để xem trước và render trực tuyến.
         link: /file-manager/development
+      - title: Mở rộng knowledge base
+        details: Kết nối knowledge base bên ngoài hoặc dịch vụ retrieval tùy chỉnh để mở rộng nguồn RAG cho AI employees.
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---
