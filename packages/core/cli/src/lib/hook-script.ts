@@ -100,7 +100,13 @@ export async function persistHookScript(params: { sourcePath: string; appPath: s
 async function loadHookScript(hookScriptPath: string): Promise<NocoBaseHooks> {
   const url = pathToFileURL(hookScriptPath);
   url.searchParams.set('t', String(Date.now()));
-  const imported = (await import(url.href)) as { default?: unknown };
+  const moduleUrl = url.href;
+  const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ moduleUrl);
+  const evalImport = () => {
+    const importer = (0, eval)('u => import(u)') as (specifier: string) => Promise<{ default?: unknown }>;
+    return importer(moduleUrl);
+  };
+  const imported = (await nativeImport().catch(() => evalImport())) as { default?: unknown };
   const hooks = imported.default ?? imported;
 
   if (!isRecord(hooks)) {
