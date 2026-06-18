@@ -17,6 +17,7 @@ import { DatasourceContext } from './ai-employees/context/datasource';
 import { AIManager } from './manager/ai-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
+import { builtinLLMProviderOptions } from './llm-providers';
 
 type AIFlowContext = {
   aiConfigRepository?: AIConfigRepository;
@@ -36,6 +37,9 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
         }),
       });
     }
+    builtinLLMProviderOptions.forEach(([name, options]) => {
+      this.aiManager.registerLLMProvider(name, options);
+    });
     registerPluginAIClientV2BuiltinTools(this.ai.toolsManager);
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
