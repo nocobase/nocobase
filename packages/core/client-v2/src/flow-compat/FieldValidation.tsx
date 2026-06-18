@@ -617,9 +617,9 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
     <div className={noCascadeCls} style={{ marginBottom: token.marginLG }}>
       {inheritedRules.length > 0 && (
         <>
-          {renderSectionTitle(t('Field config'))}
+          {renderSectionTitle(t('Server-side field validation rules'))}
           {renderRuleList(inheritedRules, true, 'field')}
-          {renderSectionTitle(t('UI config'), { marginTop: token.margin })}
+          {renderSectionTitle(t('Client-side validation rules'), { marginTop: token.margin })}
         </>
       )}
       {renderRuleList(rules, false, 'ui')}
