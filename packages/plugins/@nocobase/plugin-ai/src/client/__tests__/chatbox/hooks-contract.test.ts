@@ -226,16 +226,6 @@ vi.mock('../../repositories/hooks/useAIConfigRepository', () => ({
   }),
 }));
 
-vi.mock('../../ai-employees/chatbox/roles', () => ({
-  aiEmployeeRole: (employee: AIEmployee) => ({
-    nickname: employee.nickname || employee.username,
-  }),
-}));
-
-vi.mock('../../ai-employees/chatbox/hooks/useLoadMoreObserver', () => ({
-  useLoadMoreObserver: () => ({ ref: vi.fn() }),
-}));
-
 vi.mock('../../debug-logger', () => ({
   aiDebugLogger: {
     log: vi.fn(),
