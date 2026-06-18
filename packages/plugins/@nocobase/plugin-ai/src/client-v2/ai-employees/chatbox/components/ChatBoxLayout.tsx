@@ -115,7 +115,7 @@ const ChatBoxWrapper: React.FC<{
           background: token.colorBgContainer,
         }}
       >
-        <ChatBox />
+        <ChatBox onClose={onClose} />
       </div>
     );
   }
@@ -141,7 +141,7 @@ const ChatBoxWrapper: React.FC<{
           },
         }}
       >
-        <ChatBox />
+        <ChatBox onClose={onClose} />
       </Card>
     );
   }
@@ -167,7 +167,7 @@ const ChatBoxWrapper: React.FC<{
         }
       }}
     >
-      <ChatBox />
+      <ChatBox onClose={onClose} />
     </div>
   );
 };

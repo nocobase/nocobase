@@ -29,7 +29,9 @@ import { useChatBoxStore } from '../stores/chat-box';
 
 const { Header, Footer, Sider } = Layout;
 
-export const ChatBox: React.FC = () => {
+export const ChatBox: React.FC<{
+  onClose?: () => void;
+}> = ({ onClose }) => {
   const t = useT();
   const { token } = theme.useToken();
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
@@ -179,6 +181,10 @@ export const ChatBox: React.FC = () => {
                 icon={<CloseOutlined />}
                 type="text"
                 onClick={() => {
+                  if (onClose) {
+                    onClose();
+                    return;
+                  }
                   setOpen(false);
                 }}
               />

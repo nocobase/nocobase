@@ -228,7 +228,7 @@ export const useChatBoxActions = () => {
       updateRole(aiEmployee);
       setReadonly(false);
       draftChat.setResponseLoading(false);
-      if (!open) {
+      if (options.open !== false && !open) {
         setOpen(true);
       }
       if (currentConversation) {

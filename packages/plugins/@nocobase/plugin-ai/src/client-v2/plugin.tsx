@@ -41,6 +41,18 @@ export class PluginAIClientV2 extends Plugin<any, Application> {
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
+    this.flowEngine.registerModelLoaders({
+      AIEmployeeShortcutModel: {
+        loader: () => import('./models/ai-employees'),
+      },
+      AIEmployeeButtonModel: {
+        loader: () => import('./models/ai-employees'),
+      },
+      AIEmployeeActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./models/ai-employees'),
+      },
+    });
     this.app.use(ChatBoxLayout);
   }
 }

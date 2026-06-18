@@ -211,6 +211,7 @@ export type TriggerTaskOptions = {
   aiEmployee?: AIEmployee;
   tasks?: Task[];
   auto?: boolean;
+  open?: boolean;
 };
 
 export type SendOptions = {
