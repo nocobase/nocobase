@@ -7,34 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { WorkContextOptions } from '../types';
-import { CodeOutlined } from '@ant-design/icons';
-import { useT } from '../../locale';
-// @ts-ignore
-import _ from 'lodash';
-import { Space } from 'antd';
+import type { WorkContextOptions } from '../types';
+import { CodeEditorContext as V2CodeEditorContext } from '../../../client-v2/ai-employees/context/code-editor';
 
-type Content = {
-  scene: string;
-  language: string;
-  code: string;
-};
-
-export const CodeEditorContext: WorkContextOptions = {
-  name: 'code-editor',
-  tag: {
-    Component: ({ item }) => {
-      const t = useT();
-      return (
-        <Space>
-          <CodeOutlined />
-          <span>{item.title}</span>
-        </Space>
-      );
-    },
-  },
-  getContent: async (_app, { content }) => {
-    return (content as Content)?.code;
-  },
-};
-import React from 'react';
+export const CodeEditorContext = V2CodeEditorContext as unknown as WorkContextOptions;
