@@ -27,7 +27,7 @@ function formatWorkflowPathToValue(item: MetaTreeNode) {
 }
 
 export function SqlEditor(props: SqlEditorProps) {
-  const { unsafeInjection, ...rest } = props;
+  const { unsafeInjection, value, onChange, disabled, placeholder } = props;
   const { token } = theme.useToken();
   const variableOptions = useWorkflowVariableOptions();
   const metaTree = useMemo(() => () => variableOptions, [variableOptions]);
@@ -36,7 +36,10 @@ export function SqlEditor(props: SqlEditorProps) {
   if (unsafeInjection) {
     return (
       <TextAreaWithContextSelector
-        {...rest}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        placeholder={placeholder}
         rows={20}
         maxRows={20}
         style={style}
@@ -46,5 +49,14 @@ export function SqlEditor(props: SqlEditorProps) {
     );
   }
 
-  return <Input.TextArea {...rest} rows={20} style={style} />;
+  return (
+    <Input.TextArea
+      value={value}
+      disabled={disabled}
+      placeholder={placeholder}
+      rows={20}
+      style={style}
+      onChange={(event) => onChange?.(event.target.value)}
+    />
+  );
 }
