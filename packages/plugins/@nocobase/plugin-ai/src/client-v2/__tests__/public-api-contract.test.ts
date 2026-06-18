@@ -10,9 +10,14 @@
 import { describe, expect, it } from 'vitest';
 import PluginAIClientV2, {
   AIConfigRepository,
+  AIEmployeeSwitcher,
   AIEmployeeProfileCard,
   AIEmployeeShortcut,
+  ChatBox,
+  ChatBoxLayout,
+  ChatButton,
   AIPluginFeatureManagerImpl,
+  ModelSwitcher,
   avatars,
   avatarsMap,
   defaultVectorStorePropForm,
@@ -42,6 +47,11 @@ describe('plugin-ai client-v2 public API contract', () => {
     expect(PluginAIClientV2).toBeDefined();
     expect(AIEmployeeShortcut).toBeDefined();
     expect(AIEmployeeProfileCard).toBeDefined();
+    expect(ChatBox).toBeDefined();
+    expect(ChatBoxLayout).toBeDefined();
+    expect(ChatButton).toBeDefined();
+    expect(AIEmployeeSwitcher).toBeDefined();
+    expect(ModelSwitcher).toBeDefined();
     expect(avatars).toBeDefined();
     expect(avatarsMap).toBeDefined();
     expect(formatModelLabel).toBeDefined();

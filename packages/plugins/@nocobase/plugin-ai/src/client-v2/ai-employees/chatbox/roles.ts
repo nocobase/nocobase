@@ -8,9 +8,9 @@
  */
 
 import type { AIEmployee } from '../types';
+import { createAIEmployeeRole, defaultMessageRoles } from './components/MessageRenderers';
 
-export const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
-  nickname: aiEmployee.nickname || aiEmployee.username,
-  placement: 'start' as const,
-  variant: 'borderless' as const,
-});
+export const defaultRoles = defaultMessageRoles;
+
+export const aiEmployeeRole = (aiEmployee: AIEmployee) =>
+  createAIEmployeeRole(aiEmployee.nickname || aiEmployee.username);

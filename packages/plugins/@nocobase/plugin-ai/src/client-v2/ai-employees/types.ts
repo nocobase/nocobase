@@ -8,6 +8,13 @@
  */
 
 import type { BubbleProps } from '@ant-design/x';
+import type { ComponentType } from 'react';
+import type { Application } from '@nocobase/client-v2';
+import type { FlowEngineContext } from '@nocobase/flow-engine';
+
+export type Selector = {
+  onSelect: (options: { uid: string }) => void;
+};
 
 export type AIEmployee = {
   username: string;
@@ -72,6 +79,48 @@ export type ContextItem = {
   uid: string;
   title?: string;
   content?: unknown;
+};
+
+type ActionParams = {
+  item: ContextItem;
+  message: Message;
+  value?: string;
+};
+
+export type ActionOptions = {
+  icon?: React.ReactNode;
+  title?: React.ReactNode;
+  Component?: ComponentType<ActionParams>;
+  onClick?: (params: ActionParams) => void;
+  responseType: 'text' | string;
+};
+
+export type WorkContextOptions = {
+  name?: string;
+  menu?: {
+    icon?: React.ReactNode;
+    label?: React.ReactNode;
+    Component?: ComponentType<{ onAdd?: (item: Omit<ContextItem, 'type'>) => void }>;
+    onClick?: (props: {
+      ctx: FlowEngineContext;
+      contextItems?: ContextItem[];
+      onAdd: (item: Omit<ContextItem, 'type'>) => void;
+      onRemove: (uid: string) => void;
+    }) => void;
+  };
+  tag?: {
+    Component: ComponentType<{
+      item: ContextItem;
+    }>;
+  };
+  chatbox?: {
+    Component: ComponentType<{
+      item: ContextItem;
+    }>;
+  };
+  actions?: ActionOptions[];
+  children?: Record<string, Omit<WorkContextOptions, 'children'>>;
+  getContent?: (app: Application, item: ContextItem) => Promise<unknown>;
 };
 
 export type ToolCall<T = unknown> = {

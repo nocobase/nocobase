@@ -700,7 +700,7 @@ export const useChatMessageActions = () => {
       },
       { employeeId: aiEmployee?.username, employeeName: aiEmployee?.nickname },
     );
-    const sessionMessages = sessionChat.messages;
+    const sessionMessages = Array.isArray(sessionChat.messages) ? sessionChat.messages : [];
     const renderedSessionMessages = flattenMessages(sessionMessages);
     const last = sessionMessages[sessionMessages.length - 1];
     if (last?.role === 'error') {
@@ -708,7 +708,7 @@ export const useChatMessageActions = () => {
     }
     const lastRenderedMessage = renderedSessionMessages.at(-1);
 
-    const parsedWorkContext = await parseWorkContext(app, workContext);
+    const parsedWorkContext = await parseWorkContext(app, Array.isArray(workContext) ? workContext : []);
     const msgs = sendMsgs.map((msg, index) => ({
       key: randomId(),
       role: 'user',

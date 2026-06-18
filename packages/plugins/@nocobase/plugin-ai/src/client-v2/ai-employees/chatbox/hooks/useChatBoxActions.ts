@@ -189,7 +189,7 @@ export const useChatBoxActions = () => {
     setCurrentWorkflowTask(undefined);
     clear(undefined, undefined);
     draftChat.setMessages([greetingMsg]);
-    senderRef.current?.focus();
+    senderRef?.current?.focus();
   }, [clear, currentEmployee, draftChat, senderRef, setCurrentConversation, setCurrentWorkflowTask, t]);
 
   const switchAIEmployee = useCallback(
@@ -208,7 +208,7 @@ export const useChatBoxActions = () => {
             content: aiEmployee.greeting || t('Default greeting message', { nickname: aiEmployee.nickname }),
           },
         };
-        senderRef.current?.focus();
+        senderRef?.current?.focus();
         draftChat.setMessages([greetingMsg]);
       } else {
         draftChat.setMessages([]);
@@ -239,7 +239,7 @@ export const useChatBoxActions = () => {
       }
       setCurrentEmployee(aiEmployee);
       await ensureModel(aiEmployee);
-      senderRef.current?.focus();
+      senderRef?.current?.focus();
       const msgs: Message[] = [
         {
           key: randomId(),
