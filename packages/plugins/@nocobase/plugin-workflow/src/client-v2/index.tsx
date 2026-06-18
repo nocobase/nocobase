@@ -23,6 +23,10 @@ export type { WorkflowVariableJsonTextAreaProps } from './canvas/WorkflowVariabl
 export { WorkflowTypedVariableInput, WORKFLOW_TYPED_CONSTANT_TYPES } from './canvas/WorkflowTypedVariableInput';
 export type { WorkflowTypedVariableInputProps } from './canvas/WorkflowTypedVariableInput';
 export { useWorkflowVariableOptions } from './canvas/useWorkflowVariableOptions';
+export type { UseWorkflowVariableOptions } from './canvas/useWorkflowVariableOptions';
+export { CurrentWorkflowContext, useCurrentWorkflowContext } from './canvas/contexts';
+export { getCollectionFieldOptions } from './canvas/collectionFieldOptions';
+export type { UseVariableOptions, VariableOption } from './canvas/collectionFieldOptions';
 export { Trigger } from './triggers';
 export type { LoaderOf as TriggerLoaderOf, TriggerTempAssociationSource } from './triggers';
 export * from './components/collection';
