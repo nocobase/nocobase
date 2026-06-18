@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProviderOptions } from '../../manager/ai-manager';
-import { formatModelLabel } from '../../llm-services/component/EnabledModelsSelect';
+import type { LLMProviderOptions } from '../../manager/ai-manager';
+import { formatModelLabel } from '../../../client-v2/llm-services/model-label';
 import { ModelSettingsForm } from './ModelSettings';
 import { ProviderSettingsForm } from './ProviderSettings';
 

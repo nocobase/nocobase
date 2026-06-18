@@ -8,24 +8,11 @@
  */
 
 import { Registry } from '@nocobase/utils/client';
-import { ComponentType } from 'react';
-import { WorkContextOptions } from '../ai-employees/types';
-import { ToolsOptions } from '@nocobase/client';
-import { ToolModalProps } from '@nocobase/client-v2';
+import type { ComponentType } from 'react';
+import type { LLMProviderOptions, ToolModalProps, ToolOptions } from '../../client-v2/manager/ai-manager';
+import type { WorkContextOptions } from '../ai-employees/types';
 
-export type LLMProviderOptions = {
-  components: {
-    ProviderSettingsForm?: ComponentType;
-    ModelSettingsForm?: ComponentType;
-    MessageRenderer?: ComponentType<{
-      msg: any;
-    }>;
-  };
-  formatModelLabel?: (id: string) => string;
-};
-
-export type ToolOptions = ToolsOptions;
-export type { ToolModalProps };
+export type { LLMProviderOptions, ToolModalProps, ToolOptions };
 
 export class AIManager {
   llmProviders = new Registry<LLMProviderOptions>();

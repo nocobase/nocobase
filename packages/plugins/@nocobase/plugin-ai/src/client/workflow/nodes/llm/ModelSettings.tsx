@@ -37,6 +37,8 @@ export const Settings = observer(
     if (loading) {
       return null;
     }
+    // v1 workflow still renders provider settings inside a Formily form.
+    // Keep these v1 ModelSettingsForm components until workflow node configuration is migrated.
     return Component ? <Component /> : null;
   },
   { displayName: 'WorkflowLLMModelSettingsForm' },
