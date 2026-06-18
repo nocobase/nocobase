@@ -7,6 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import SQLInstruction from '../client-v2/SQLInstruction';
+export type SQLVariable = {
+  name?: string;
+  value?: unknown;
+};
 
-export default class SQLInstructionCompat extends SQLInstruction {}
+export type SQLInstructionConfig = {
+  dataSource?: string;
+  sql?: string;
+  withMeta?: boolean;
+  unsafeInjection?: boolean;
+  variables?: SQLVariable[];
+};

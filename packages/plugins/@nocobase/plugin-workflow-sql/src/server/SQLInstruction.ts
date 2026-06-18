@@ -9,6 +9,7 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+import type WorkflowPlugin from '@nocobase/plugin-workflow';
 import Joi from 'joi';
 
 export type SQLInstructionConfig = {
@@ -16,10 +17,12 @@ export type SQLInstructionConfig = {
   sql?: string;
   withMeta?: boolean;
   unsafeInjection?: boolean;
-  variables?: Array<{ name: string; value: any }>;
+  variables?: Array<{ name: string; value: unknown }>;
 };
 
-export default class extends Instruction {
+export default class SQLInstruction extends Instruction {
+  declare workflow: WorkflowPlugin;
+
   configSchema = Joi.object({
     dataSource: Joi.string(),
     sql: Joi.string(),
@@ -49,7 +52,7 @@ export default class extends Instruction {
     } else {
       sql = (node.config.sql || '').trim();
       const parameters = processor.getParsedValue(variables, node.id);
-      replacements = {};
+      replacements = {} as Record<string, unknown>;
       for (const { name, value } of parameters) {
         if (name) {
           replacements[name] = value;
@@ -107,7 +110,7 @@ export default class extends Instruction {
         sql = sqlConfig.trim();
       } else {
         sql = sqlConfig.trim();
-        replacements = {};
+        replacements = {} as Record<string, unknown>;
         for (const { name, value } of variables) {
           if (name) {
             replacements[name] = value;
@@ -123,7 +126,7 @@ export default class extends Instruction {
       };
     } catch (error) {
       return {
-        result: error.message,
+        result: error instanceof Error ? error.message : String(error),
         status: JOB_STATUS.ERROR,
       };
     }
