@@ -1150,6 +1150,317 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['username'])).toBe('manual');
   });
 
+  it('mode=override overwrites existing update values until the user changes the target', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ a: 'Existing', b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-update',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-override-update',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-override-update' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+    expect(runtime.canApplyOverrideValuePatch(['a'])).toBe(true);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Y' }], { source: 'user' });
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['a'], value: 'Manual' }], { source: 'user' });
+    expect(formStub.getFieldValue(['a'])).toBe('Manual');
+    expect(runtime.canApplyOverrideValuePatch(['a'])).toBe(false);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'Z' }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['a'])).toBe('Manual');
+  });
+
+  it('stops mode=override for an association root when the user edits descendant fields', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({
+      b: { id: 2, name: 'Auto' },
+      user: { id: 1, name: 'Existing' },
+    });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-association-root',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'user',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['user'])).toEqual({ id: 2, name: 'Auto' }));
+    expect(runtime.canApplyOverrideValuePatch(['user'])).toBe(true);
+
+    lodashSet((formStub as any).__store, ['user'], { id: 3, name: 'Manual' });
+    runtime.handleFormValuesChange({ user: formStub.getFieldValue(['user']) }, formStub.getFieldsValue());
+    expect(runtime.canApplyOverrideValuePatch(['user'])).toBe(false);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: { id: 4, name: 'Next' } }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(formStub.getFieldValue(['user'])).toEqual({ id: 3, name: 'Manual' });
+  });
+
+  it('stops mode=override for a subtable relation array after a user edits a row cell', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({
+      roles: [
+        { id: 1, name: 'Existing A' },
+        { id: 2, name: 'Existing B' },
+      ],
+    });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-subtable-array',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'roles',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: [
+          { id: 1, name: 'Auto A' },
+          { id: 2, name: 'Auto B' },
+        ],
+      },
+    ]);
+
+    await waitFor(() =>
+      expect(formStub.getFieldValue(['roles'])).toEqual([
+        { id: 1, name: 'Auto A' },
+        { id: 2, name: 'Auto B' },
+      ]),
+    );
+
+    lodashSet((formStub as any).__store, ['roles', 0, 'name'], 'Manual A');
+    runtime.handleFormFieldsChange([{ name: ['roles', 0, 'name'], touched: true } as any]);
+    runtime.handleFormValuesChange({ roles: formStub.getFieldValue(['roles']) }, formStub.getFieldsValue());
+    expect(runtime.canApplyOverrideValuePatch(['roles'])).toBe(false);
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'roles',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: [
+          { id: 1, name: 'Next A' },
+          { id: 2, name: 'Next B' },
+          { id: 3, name: 'Unexpected extra row' },
+        ],
+      },
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(formStub.getFieldValue(['roles'])).toEqual([
+      { id: 1, name: 'Manual A' },
+      { id: 2, name: 'Auto B' },
+    ]);
+  });
+
+  it('stops mode=override after a user clears a multiple value array', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'ready', tags: ['Existing'] });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-multiple-clear',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'tags',
+        mode: 'override',
+        condition: { logic: '$and', items: [{ path: '{{ ctx.formValues.b }}', operator: '$notEmpty', value: '' }] },
+        value: ['A', 'B'],
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['tags'])).toEqual(['A', 'B']));
+    expect(runtime.canApplyOverrideValuePatch(['tags'])).toBe(true);
+
+    lodashSet((formStub as any).__store, ['tags'], []);
+    runtime.handleFormValuesChange({ tags: [] }, formStub.getFieldsValue());
+    expect(runtime.canApplyOverrideValuePatch(['tags'])).toBe(false);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'changed' }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(formStub.getFieldValue(['tags'])).toEqual([]);
+  });
+
+  it('stops mode=override after a user removes an item from a multiple value array', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'ready', tags: ['Existing'] });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-multiple-remove-item',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'tags',
+        mode: 'override',
+        condition: { logic: '$and', items: [{ path: '{{ ctx.formValues.b }}', operator: '$notEmpty', value: '' }] },
+        value: ['A', 'B'],
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['tags'])).toEqual(['A', 'B']));
+    expect(runtime.canApplyOverrideValuePatch(['tags'])).toBe(true);
+
+    lodashSet((formStub as any).__store, ['tags'], ['A']);
+    runtime.handleFormValuesChange({ tags: ['A'] }, formStub.getFieldsValue());
+    expect(runtime.canApplyOverrideValuePatch(['tags'])).toBe(false);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['b'], value: 'changed' }], { source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(formStub.getFieldValue(['tags'])).toEqual(['A']);
+  });
+
+  it('reapplies mode=override after user edited state is reset', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({ a: 'Existing', b: 'X' });
+
+    const blockModel: any = {
+      uid: 'form-assign-override-reset-user-edited',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'update',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const fieldModel: any = {
+      uid: 'field-a-override-reset-user-edited',
+      context: { fieldPathArray: ['a'] },
+    };
+    blockCtx.defineProperty('engine', {
+      value: {
+        getModel: (id: string) => (id === 'field-a-override-reset-user-edited' ? fieldModel : null),
+      },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'a',
+        mode: 'override',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('X'));
+
+    await runtime.setFormValues(blockCtx, [{ path: ['a'], value: 'Manual' }], { source: 'user' });
+    expect(formStub.getFieldValue(['a'])).toBe('Manual');
+
+    formStub.__store.a = 'Next record';
+    formStub.__store.b = 'Y';
+    runtime.handleFormValuesChange({ a: 'Next record', b: 'Y' }, formStub.getFieldsValue());
+    runtime.resetUserEditedState();
+    expect(runtime.canApplyOverrideValuePatch(['a'])).toBe(true);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Y'));
+  });
+
   it('reapplies mode=default value after form reset starts a new create session', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
@@ -2859,6 +3170,10 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     lodashSet((formStub as any).__store, ['users'], [{ __is_new__: true, name: '' }]);
     runtime.handleFormValuesChange({ users: formStub.getFieldValue(['users']) }, formStub.getFieldsValue());
+    expect((runtime as any).findExplicitHit('users')).toBe('users');
+    expect((runtime as any).findExplicitHit('users[0].name')).toBeNull();
+    expect((runtime as any).findUserEditedHit('users')).toBe('users');
+    expect((runtime as any).findUserEditedHit('users[0].name')).toBeNull();
 
     const row0: any = {
       uid: 'users.name',
