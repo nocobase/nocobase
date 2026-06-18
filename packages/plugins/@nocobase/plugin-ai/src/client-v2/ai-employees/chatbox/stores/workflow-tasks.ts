@@ -67,6 +67,41 @@ type WorkflowTasksActions = {
   setSelectedJobStatus: (selectedJobStatus: number | undefined) => void;
 };
 
+const JOB_STATUS = {
+  PENDING: 0,
+  RESOLVED: 1,
+  FAILED: -1,
+  ERROR: -2,
+  ABORTED: -3,
+  CANCELED: -4,
+  REJECTED: -5,
+  RETRY_NEEDED: -6,
+} as const;
+
+const aiWorkflowTaskJobStatusMap: Record<string, number> = {
+  processing: JOB_STATUS.PENDING,
+  pending_acceptance: JOB_STATUS.PENDING,
+  pending_approval: JOB_STATUS.PENDING,
+  approved: JOB_STATUS.RESOLVED,
+  failed: JOB_STATUS.FAILED,
+  error: JOB_STATUS.ERROR,
+  canceled: JOB_STATUS.CANCELED,
+  rejected: JOB_STATUS.REJECTED,
+  aborted: JOB_STATUS.ABORTED,
+  retry_needed: JOB_STATUS.RETRY_NEEDED,
+};
+
+const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask => {
+  if (typeof workflowTask.jobStatus === 'number') {
+    return workflowTask;
+  }
+
+  return {
+    ...workflowTask,
+    jobStatus: aiWorkflowTaskJobStatusMap[workflowTask.status] ?? JOB_STATUS.PENDING,
+  };
+};
+
 const store = getOrCreateGlobalStore('@nocobase/plugin-ai/workflow-tasks-store', () =>
   createObservableStore<WorkflowTasksState & WorkflowTasksActions>((set) => ({
     workflowTasks: [],
@@ -77,9 +112,13 @@ const store = getOrCreateGlobalStore('@nocobase/plugin-ai/workflow-tasks-store',
     selectedJobStatus: undefined,
 
     setWorkflowTasks: (workflowTasks) =>
-      set((state) => ({
-        workflowTasks: typeof workflowTasks === 'function' ? workflowTasks(state.workflowTasks) : workflowTasks,
-      })),
+      set((state) => {
+        const nextWorkflowTasks =
+          typeof workflowTasks === 'function' ? workflowTasks(state.workflowTasks) : workflowTasks;
+        return {
+          workflowTasks: nextWorkflowTasks.map(normalizeWorkflowTask),
+        };
+      }),
 
     setCurrentWorkflowTask: (currentWorkflowTask) =>
       set((state) => ({

@@ -481,8 +481,12 @@ function getConversationModel(conversation: Conversation): ModelRef | null {
 const JOB_STATUS = {
   PENDING: 0,
   RESOLVED: 1,
+  FAILED: -1,
+  ERROR: -2,
   ABORTED: -3,
+  CANCELED: -4,
   REJECTED: -5,
+  RETRY_NEEDED: -6,
 } as const;
 
 const JOB_STATUS_OPTIONS = [
@@ -497,15 +501,42 @@ const JOB_STATUS_OPTIONS = [
     color: 'green',
   },
   {
-    value: JOB_STATUS.REJECTED,
-    label: 'Rejected',
-    color: 'volcano',
+    value: JOB_STATUS.FAILED,
+    label: 'Failed',
+    color: 'red',
+  },
+  {
+    value: JOB_STATUS.ERROR,
+    label: 'Error',
+    color: 'red',
   },
   {
     value: JOB_STATUS.ABORTED,
     label: 'Aborted',
     color: 'red',
   },
+  {
+    value: JOB_STATUS.CANCELED,
+    label: 'Canceled',
+    color: 'volcano',
+  },
+  {
+    value: JOB_STATUS.REJECTED,
+    label: 'Rejected',
+    color: 'volcano',
+  },
+  {
+    value: JOB_STATUS.RETRY_NEEDED,
+    label: 'Retry needed',
+    color: 'volcano',
+  },
+];
+
+const WORKFLOW_TASK_FILTER_STATUS_OPTIONS = [
+  JOB_STATUS.PENDING,
+  JOB_STATUS.RESOLVED,
+  JOB_STATUS.REJECTED,
+  JOB_STATUS.ABORTED,
 ];
 
 const JOB_STATUS_OPTIONS_MAP = JOB_STATUS_OPTIONS.reduce<Record<number, (typeof JOB_STATUS_OPTIONS)[number]>>(
@@ -589,11 +620,13 @@ const WorkflowTasksList: React.FC<{
         onChange={onJobStatusFilter}
         style={{ width: '100%', marginBottom: token.marginXS }}
         placeholder={t('Filter by status')}
-        options={JOB_STATUS_OPTIONS.map((option) => ({
-          value: option.value,
-          label: t(option.label),
-          color: option.color,
-        }))}
+        options={WORKFLOW_TASK_FILTER_STATUS_OPTIONS.map((status) => JOB_STATUS_OPTIONS_MAP[status])
+          .filter(Boolean)
+          .map((option) => ({
+            value: option.value,
+            label: t(option.label),
+            color: option.color,
+          }))}
         optionRender={(option) => <Tag color={option.data.color}>{option.label}</Tag>}
         labelRender={(props) => {
           const option = JOB_STATUS_OPTIONS_MAP[props.value as number];

@@ -44,12 +44,12 @@ const messageWithToolCalls = (messageId: string, toolCalls: Message['content']['
   },
 });
 
-const workflowTask = (sessionId: string): WorkflowTask => ({
+const workflowTask = (sessionId: string, status = 'pending'): WorkflowTask => ({
   id: sessionId,
   sessionId,
   workflowTitle: 'Approval',
   nodeTitle: 'Review',
-  status: 'pending',
+  status,
 });
 
 afterEach(() => {
@@ -138,6 +138,42 @@ describe('client-v2 chatbox stores', () => {
         readonly: true,
       },
     });
+  });
+
+  it('normalizes workflow task job status when the list response omits it', () => {
+    useWorkflowTasksStore.getState().setWorkflowTasks([
+      workflowTask('session-pending', 'pending_approval'),
+      workflowTask('session-resolved', 'approved'),
+      workflowTask('session-failed', 'failed'),
+      workflowTask('session-error', 'error'),
+      workflowTask('session-rejected', 'rejected'),
+      workflowTask('session-aborted', 'aborted'),
+      workflowTask('session-canceled', 'canceled'),
+      workflowTask('session-retry-needed', 'retry_needed'),
+      workflowTask('session-unknown', 'unknown'),
+      {
+        ...workflowTask('session-explicit', 'approved'),
+        jobStatus: 0,
+      },
+    ]);
+
+    expect(
+      useWorkflowTasksStore.getState().workflowTasks.map((item) => ({
+        sessionId: item.sessionId,
+        jobStatus: item.jobStatus,
+      })),
+    ).toEqual([
+      { sessionId: 'session-pending', jobStatus: 0 },
+      { sessionId: 'session-resolved', jobStatus: 1 },
+      { sessionId: 'session-failed', jobStatus: -1 },
+      { sessionId: 'session-error', jobStatus: -2 },
+      { sessionId: 'session-rejected', jobStatus: -5 },
+      { sessionId: 'session-aborted', jobStatus: -3 },
+      { sessionId: 'session-canceled', jobStatus: -4 },
+      { sessionId: 'session-retry-needed', jobStatus: -6 },
+      { sessionId: 'session-unknown', jobStatus: 0 },
+      { sessionId: 'session-explicit', jobStatus: 0 },
+    ]);
   });
 
   it('marks workflow tasks as read and decrements unread count once', () => {
