@@ -43,13 +43,13 @@ import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { mimoProviderOptions } from './llm-providers/mimo';
 import { registerPluginAIClientV2BuiltinTools } from '../client-v2/ai-employees/tools';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
-const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
-const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
-const { MCPSettings } = lazy(() => import('./ai-employees/admin/mcp/MCPSettings'), 'MCPSettings');
+const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
+const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
+const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
 const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
-const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
-const { DatasourceSettingPage } = lazy(() => import('./ai-employees/admin/datasource'), 'DatasourceSettingPage');
+const AdminSettings = lazy(() => import('../client-v2/pages/AdminSettingsPage'));
+const DatasourceSettingPage = lazy(() => import('../client-v2/pages/DatasourceSettingsPage'));
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
 const { AIResourceContextCollector } = lazy(
