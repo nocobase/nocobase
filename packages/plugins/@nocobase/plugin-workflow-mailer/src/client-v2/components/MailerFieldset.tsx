@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
+import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent, DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   WorkflowTypedVariableInput,
   WorkflowVariableInput,
@@ -30,14 +34,68 @@ import {
 } from '../constants';
 import { useT } from '../locale';
 
+const SortableRowContext = React.createContext<{
+  attributes?: DraggableAttributes;
+  listeners?: DraggableSyntheticListeners;
+  setActivatorNodeRef?: (node: HTMLElement | null) => void;
+} | null>(null);
+
+function SortHandle({ disabled }: { disabled?: boolean }) {
+  const t = useT();
+  const dragContext = React.useContext(SortableRowContext);
+
+  return (
+    <Button
+      ref={disabled ? undefined : dragContext?.setActivatorNodeRef}
+      aria-label={t('Drag sort')}
+      disabled={disabled}
+      icon={<MenuOutlined />}
+      type="text"
+      {...(disabled ? {} : dragContext?.attributes)}
+      {...(disabled ? {} : dragContext?.listeners)}
+      style={{
+        color: 'var(--ant-color-text-tertiary)',
+        cursor: disabled ? 'not-allowed' : 'grab',
+      }}
+    />
+  );
+}
+
+function SortableRow({ children, disabled, id }: { children: React.ReactNode; disabled?: boolean; id: string }) {
+  const { attributes, isDragging, listeners, setActivatorNodeRef, setNodeRef, transform, transition } = useSortable({
+    disabled,
+    id,
+  });
+  const { token } = theme.useToken();
+
+  return (
+    <SortableRowContext.Provider value={{ attributes, listeners, setActivatorNodeRef }}>
+      <Row
+        ref={setNodeRef}
+        gutter={token.marginXS}
+        align="middle"
+        style={{
+          position: isDragging ? 'relative' : undefined,
+          zIndex: isDragging ? 1 : undefined,
+          transform: CSS.Transform.toString(transform),
+          transition,
+        }}
+      >
+        {children}
+      </Row>
+    </SortableRowContext.Provider>
+  );
+}
+
 function AddressListField({ name, label, required }: { name: NamePath; label: React.ReactNode; required?: boolean }) {
   const t = useT();
-  const { token } = theme.useToken();
+  const sensors = useSensors(useSensor(PointerSensor));
 
   return (
     <Form.Item label={label} required={required}>
       <Form.List
         name={name}
+        validateTrigger={false}
         rules={[
           {
             validator: async (_, value: unknown[]) => {
@@ -49,26 +107,55 @@ function AddressListField({ name, label, required }: { name: NamePath; label: Re
           },
         ]}
       >
-        {(fields, { add, remove }, { errors }) => (
-          <Space direction="vertical" style={{ width: '100%' }}>
-            {fields.map((field) => (
-              <Row key={field.key} gutter={token.marginXS} align="middle">
-                <Col flex="auto">
-                  <Form.Item name={field.name}>
-                    <WorkflowTypedVariableInput types={EMAIL_VALUE_TYPES} placeholder={t('Email address')} />
-                  </Form.Item>
-                </Col>
-                <Col>
-                  <Button aria-label={t('Delete')} icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
-                </Col>
-              </Row>
-            ))}
-            <Button block icon={<PlusOutlined />} onClick={() => add('')}>
-              {t('Add email address')}
-            </Button>
-            <Form.ErrorList errors={errors} />
-          </Space>
-        )}
+        {(fields, { add, move, remove }, { errors }) => {
+          const items = fields.map((field) => String(field.key));
+          const handleDragEnd = (event: DragEndEvent) => {
+            const { active, over } = event;
+            if (!over || active.id === over.id) {
+              return;
+            }
+            const oldIndex = items.indexOf(String(active.id));
+            const newIndex = items.indexOf(String(over.id));
+            if (oldIndex < 0 || newIndex < 0) {
+              return;
+            }
+            move(oldIndex, newIndex);
+          };
+
+          return (
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={items} strategy={verticalListSortingStrategy}>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {fields.map((field) => (
+                      <SortableRow key={field.key} id={String(field.key)} disabled={fields.length < 2}>
+                        <Col>
+                          <SortHandle disabled={fields.length < 2} />
+                        </Col>
+                        <Col flex="auto">
+                          <Form.Item name={field.name} noStyle>
+                            <WorkflowTypedVariableInput types={EMAIL_VALUE_TYPES} placeholder={t('Email address')} />
+                          </Form.Item>
+                        </Col>
+                        <Col>
+                          <Button
+                            aria-label={t('Delete')}
+                            icon={<DeleteOutlined />}
+                            onClick={() => remove(field.name)}
+                          />
+                        </Col>
+                      </SortableRow>
+                    ))}
+                  </Space>
+                </SortableContext>
+              </DndContext>
+              <Button block icon={<PlusOutlined />} onClick={() => add('')}>
+                {t('Add email address')}
+              </Button>
+              <Form.ErrorList errors={errors} />
+            </Space>
+          );
+        }}
       </Form.List>
     </Form.Item>
   );
@@ -76,7 +163,7 @@ function AddressListField({ name, label, required }: { name: NamePath; label: Re
 
 function AttachmentListField() {
   const t = useT();
-  const { token } = theme.useToken();
+  const sensors = useSensors(useSensor(PointerSensor));
   const variableOptions = {
     types: [isFileRecordVariableMatch],
   };
@@ -87,25 +174,54 @@ function AttachmentListField() {
       extra={t('Only variables that resolve to file collection records are supported.')}
     >
       <Form.List name={['config', 'attachments']}>
-        {(fields, { add, remove }) => (
-          <Space direction="vertical" style={{ width: '100%' }}>
-            {fields.map((field) => (
-              <Row key={field.key} gutter={token.marginXS} align="middle">
-                <Col flex="auto">
-                  <Form.Item name={field.name}>
-                    <WorkflowVariableInput variableOptions={variableOptions} placeholder={t('File record')} />
-                  </Form.Item>
-                </Col>
-                <Col>
-                  <Button aria-label={t('Delete')} icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
-                </Col>
-              </Row>
-            ))}
-            <Button block icon={<PlusOutlined />} onClick={() => add(null)}>
-              {t('Add attachment')}
-            </Button>
-          </Space>
-        )}
+        {(fields, { add, move, remove }) => {
+          const items = fields.map((field) => String(field.key));
+          const handleDragEnd = (event: DragEndEvent) => {
+            const { active, over } = event;
+            if (!over || active.id === over.id) {
+              return;
+            }
+            const oldIndex = items.indexOf(String(active.id));
+            const newIndex = items.indexOf(String(over.id));
+            if (oldIndex < 0 || newIndex < 0) {
+              return;
+            }
+            move(oldIndex, newIndex);
+          };
+
+          return (
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={items} strategy={verticalListSortingStrategy}>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {fields.map((field) => (
+                      <SortableRow key={field.key} id={String(field.key)} disabled={fields.length < 2}>
+                        <Col>
+                          <SortHandle disabled={fields.length < 2} />
+                        </Col>
+                        <Col flex="auto">
+                          <Form.Item name={field.name} noStyle>
+                            <WorkflowVariableInput variableOptions={variableOptions} placeholder={t('File record')} />
+                          </Form.Item>
+                        </Col>
+                        <Col>
+                          <Button
+                            aria-label={t('Delete')}
+                            icon={<DeleteOutlined />}
+                            onClick={() => remove(field.name)}
+                          />
+                        </Col>
+                      </SortableRow>
+                    ))}
+                  </Space>
+                </SortableContext>
+              </DndContext>
+              <Button block icon={<PlusOutlined />} onClick={() => add(null)}>
+                {t('Add attachment')}
+              </Button>
+            </Space>
+          );
+        }}
       </Form.List>
     </Form.Item>
   );

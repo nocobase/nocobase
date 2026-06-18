@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import type { FormInstance } from 'antd';
 import React, { useEffect } from 'react';
@@ -19,8 +19,63 @@ const mockState = vi.hoisted(() => ({
   defaultedTypedInputs: [] as string[],
 }));
 
+const dndState = vi.hoisted(() => ({
+  contexts: [] as Array<{
+    items: string[];
+    onDragEnd?: (event: { active: { id: string }; over?: { id: string } | null }) => void;
+  }>,
+  pendingDragEndHandlers: [] as Array<
+    ((event: { active: { id: string }; over?: { id: string } | null }) => void) | undefined
+  >,
+}));
+
 vi.mock('../locale', () => ({
   useT: () => (key: string) => key,
+}));
+
+vi.mock('@dnd-kit/core', () => ({
+  closestCenter: vi.fn(),
+  DndContext: ({
+    children,
+    onDragEnd,
+  }: {
+    children: React.ReactNode;
+    onDragEnd?: (event: { active: { id: string }; over?: { id: string } | null }) => void;
+  }) => {
+    dndState.pendingDragEndHandlers.push(onDragEnd);
+    return <>{children}</>;
+  },
+  PointerSensor: vi.fn(),
+  useSensor: vi.fn(() => ({})),
+  useSensors: vi.fn((...sensors: unknown[]) => sensors),
+}));
+
+vi.mock('@dnd-kit/sortable', () => ({
+  SortableContext: ({ children, items }: { children: React.ReactNode; items: string[] }) => {
+    dndState.contexts.push({
+      items,
+      onDragEnd: dndState.pendingDragEndHandlers.shift(),
+    });
+    return <>{children}</>;
+  },
+  useSortable: vi.fn(({ id }: { id: string }) => ({
+    attributes: { 'data-sortable-id': id },
+    isDragging: false,
+    listeners: {},
+    setActivatorNodeRef: vi.fn(),
+    setNodeRef: vi.fn(),
+    transform: null,
+    transition: undefined,
+  })),
+  verticalListSortingStrategy: vi.fn(),
+}));
+
+vi.mock('@dnd-kit/utilities', () => ({
+  CSS: {
+    Transform: {
+      toString: vi.fn(() => undefined),
+    },
+  },
 }));
 
 vi.mock('@nocobase/plugin-workflow/client-v2', () => {
@@ -109,5 +164,94 @@ describe('MailerFieldset', () => {
     expect(mockState.defaultedTypedInputs).not.toContain('example@domain.com');
     expect(mockState.defaultedTypedInputs).not.toContain('noreply <example@domain.com>');
     expect(mockState.defaultedTypedInputs).not.toContain('[["string",{"type":"password"}]]');
+  });
+
+  it('does not show the recipient required error immediately after adding a blank row', async () => {
+    const getForm = renderWithForm();
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Add email address/ })[0]);
+
+    await waitFor(() => {
+      expect(getForm()?.getFieldValue(['config', 'to'])).toEqual(['']);
+    });
+
+    expect(screen.queryByText('Please enter at least one email address')).toBeNull();
+
+    let validationError: unknown;
+    await act(async () => {
+      try {
+        await getForm()?.validateFields([['config', 'to']]);
+      } catch (error) {
+        validationError = error;
+      }
+    });
+
+    expect(validationError).toMatchObject({
+      errorFields: [
+        {
+          errors: ['Please enter at least one email address'],
+        },
+      ],
+    });
+  });
+
+  it('supports drag sorting recipient and attachment rows', async () => {
+    dndState.contexts = [];
+    dndState.pendingDragEndHandlers = [];
+    const getForm = renderWithForm();
+    const getCurrentForm = () => {
+      const form = getForm();
+      expect(form).toBeDefined();
+      return form as FormInstance;
+    };
+
+    act(() => {
+      getCurrentForm().setFieldsValue({
+        config: {
+          to: ['first@example.com', 'second@example.com'],
+          attachments: ['{{$jobsMapByNodeKey.query.files.0}}', '{{$jobsMapByNodeKey.query.files.1}}'],
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: 'Drag sort' })).toHaveLength(4);
+    });
+
+    const getActiveContexts = () => dndState.contexts.filter((context) => context.items.length === 2).slice(-2);
+    const [recipientContext, initialAttachmentContext] = getActiveContexts();
+    const initialAttachmentItems = initialAttachmentContext.items;
+
+    act(() => {
+      recipientContext.onDragEnd?.({
+        active: { id: recipientContext.items[0] },
+        over: { id: recipientContext.items[1] },
+      });
+    });
+
+    await waitFor(() => {
+      expect(getCurrentForm().getFieldValue(['config', 'to'])).toEqual(['second@example.com', 'first@example.com']);
+    });
+
+    const attachmentContext = dndState.contexts
+      .filter((context) => context.items.join('\n') === initialAttachmentItems.join('\n'))
+      .at(-1);
+    if (!attachmentContext) {
+      throw new Error('Attachment sortable context was not rendered');
+    }
+
+    act(() => {
+      attachmentContext.onDragEnd?.({
+        active: { id: attachmentContext.items[0] },
+        over: { id: attachmentContext.items[1] },
+      });
+    });
+
+    await waitFor(() => {
+      expect(getCurrentForm().getFieldValue(['config', 'attachments'])).toEqual([
+        '{{$jobsMapByNodeKey.query.files.1}}',
+        '{{$jobsMapByNodeKey.query.files.0}}',
+      ]);
+    });
   });
 });
