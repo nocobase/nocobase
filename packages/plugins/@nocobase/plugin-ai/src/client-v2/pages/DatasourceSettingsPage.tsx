@@ -56,7 +56,7 @@ export type AIContextDatasourceRecord = {
   enabled: boolean;
   createdAt?: string;
 };
-type DatasourceFormValues = Omit<AIContextDatasourceRecord, 'id' | 'datasource' | 'collectionName'> & {
+export type DatasourceFormValues = Omit<AIContextDatasourceRecord, 'id' | 'datasource' | 'collectionName'> & {
   id?: number | string;
   collection?: string[];
   filterText?: string;
@@ -68,7 +68,7 @@ type DatasourceListResult = {
   data: AIContextDatasourceRecord[];
   total?: number;
 };
-type PreviewResult = {
+export type PreviewResult = {
   options?: {
     datasource?: string;
     collectionName?: string;

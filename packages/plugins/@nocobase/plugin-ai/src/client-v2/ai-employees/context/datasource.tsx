@@ -12,6 +12,9 @@ import { DatabaseOutlined } from '@ant-design/icons';
 import { Space } from 'antd';
 import { transformFilter } from '@nocobase/utils/client';
 import type { WorkContextOptions } from '../types';
+import { useT } from '../../locale';
+import { DatasourceSelector } from '../datasource/DatasourceSelector';
+import { dialogController } from '../stores/dialog-controller';
 
 type DatasourceResponse = {
   datasource?: string;
@@ -27,6 +30,34 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 export const DatasourceContext: WorkContextOptions = {
   name: 'datasource',
+  menu: {
+    icon: <DatabaseOutlined />,
+    Component: () => {
+      const t = useT();
+      return <div>{t('Datasource')}</div>;
+    },
+    onClick: ({ ctx, contextItems, onAdd, onRemove }) => {
+      ctx.viewer.dialog({
+        width: '80%',
+        content: (view) => (
+          <DatasourceSelector
+            contextItems={contextItems}
+            onAdd={onAdd}
+            onRemove={onRemove}
+            onClose={() => {
+              Promise.resolve(view.close()).catch(console.error);
+            }}
+          />
+        ),
+        onOpen: () => {
+          dialogController.hide();
+        },
+        onClose: () => {
+          dialogController.resume();
+        },
+      });
+    },
+  },
   tag: {
     Component: ({ item }) => (
       <Space>
