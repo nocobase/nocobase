@@ -8,12 +8,21 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest';
-import type { Message } from '../../../types';
+import type { Conversation, Message } from '../../../types';
+import { useChatConversationsStore } from '../chat-conversations';
 import { useChatToolCallStore } from '../chat-tool-call';
 import { useChatToolsStore } from '../chat-tools';
 import { useWorkflowTasksStore, type WorkflowTask } from '../workflow-tasks';
 
 const resetStores = () => {
+  useChatConversationsStore.setState({
+    currentConversation: undefined,
+    conversations: [],
+    keyword: '',
+    webSearch: false,
+    conversationSegmented: 'conversations',
+    unreadCount: 0,
+  });
   useChatToolCallStore.setState({ sessions: {} });
   useChatToolsStore.setState({
     toolsByName: {},
@@ -52,11 +61,50 @@ const workflowTask = (sessionId: string, status = 'pending'): WorkflowTask => ({
   status,
 });
 
+const conversation = (sessionId: string): Conversation => ({
+  sessionId,
+  title: sessionId,
+  aiEmployee: {
+    username: 'atlas',
+    nickname: 'Atlas',
+  },
+  read: false,
+  updatedAt: new Date().toISOString(),
+});
+
 afterEach(() => {
   resetStores();
 });
 
 describe('client-v2 chatbox stores', () => {
+  it('marks conversations as read and decrements unread count once', () => {
+    useChatConversationsStore.getState().setConversations([
+      conversation('session-a'),
+      {
+        ...conversation('session-b'),
+        read: true,
+      },
+    ]);
+    useChatConversationsStore.getState().setUnreadCount(1);
+
+    useChatConversationsStore.getState().markConversationRead('session-a');
+    expect(useChatConversationsStore.getState().conversations).toMatchObject([
+      {
+        sessionId: 'session-a',
+        read: true,
+      },
+      {
+        sessionId: 'session-b',
+        read: true,
+      },
+    ]);
+    expect(useChatConversationsStore.getState().unreadCount).toBe(0);
+
+    useChatConversationsStore.getState().markConversationRead('session-a');
+    useChatConversationsStore.getState().markConversationRead('missing-session');
+    expect(useChatConversationsStore.getState().unreadCount).toBe(0);
+  });
+
   it('tracks interrupted tool calls per session and migrates session state', () => {
     const draftSnapshot = useChatToolCallStore.getState().getSessionState('draft-session');
 
