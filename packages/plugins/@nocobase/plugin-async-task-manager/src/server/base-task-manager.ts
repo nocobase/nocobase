@@ -326,7 +326,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     });
 
     const DBTaskModel = this.app.db.getModel('asyncTasks');
-    const record = (await DBTaskModel.create(values, options)) as TaskModel;
+    const record = (await DBTaskModel.create(values, options)) as unknown as TaskModel;
 
     logger.debug(`Creating task of type: ${data.type}`);
     logger.debug(`Task data: ${JSON.stringify(data)}`);
@@ -375,7 +375,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     const TaskRepo = this.app.db.getRepository('asyncTasks');
     const record = (await TaskRepo.findOne({
       filterByTk: id,
-    })) as TaskModel;
+    })) as unknown as TaskModel;
     const taskType = this.taskTypes.get(record.type) as unknown as typeof TaskType;
     if (!taskType) {
       this.logger.error(`Task type not found: ${record.type} (#${id})`);
