@@ -22,7 +22,7 @@ import { aiEmployeeRole } from '../roles';
 import { useChatToolsStore } from '../stores/chat-tools';
 import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { getAIEmployeeModels, getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
+import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
 
 export const useChatBoxActions = () => {
   const app = useApp();
@@ -144,15 +144,14 @@ export const useChatBoxActions = () => {
   const resolveTaskModel = useCallback(
     async (aiEmployee: AIEmployee, taskModel?: { llmService: string; model: string } | null) => {
       const allModels = getAllModels(await aiConfigRepository.getLLMServices());
-      const scopedModels = getAIEmployeeModels(aiEmployee, allModels);
-      if (!scopedModels.length) {
+      if (!allModels.length) {
         const currentModel = useChatBoxStore.getState().model;
         if (currentModel) {
           setModel(null);
         }
         return null;
       }
-      if (!aiEmployee?.modelSettings?.enabled && isValidModel(taskModel, scopedModels)) {
+      if (isValidModel(taskModel, allModels)) {
         const currentModel = useChatBoxStore.getState().model;
         if (!isSameModel(currentModel, taskModel)) {
           setModel(taskModel);

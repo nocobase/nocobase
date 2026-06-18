@@ -75,15 +75,11 @@ export const resolveModel = (
   allModels: ModelRef[],
   currentOverride?: ModelRef | null,
 ) => {
-  const scopedModels = getAIEmployeeModels(aiEmployee, allModels);
-  if (!scopedModels.length) {
+  if (!allModels.length) {
     return null;
   }
-  if (isValidModel(currentOverride, scopedModels)) {
+  if (isValidModel(currentOverride, allModels)) {
     return currentOverride;
-  }
-  if (aiEmployee?.modelSettings?.enabled) {
-    return scopedModels[0] || null;
   }
   let cachedId: string | null = null;
   try {
@@ -94,18 +90,18 @@ export const resolveModel = (
   if (cachedId) {
     if (cachedId.includes(':')) {
       const [cachedService, cachedModelId] = cachedId.split(':');
-      const cached = scopedModels.find((item) => item.llmService === cachedService && item.model === cachedModelId);
+      const cached = allModels.find((item) => item.llmService === cachedService && item.model === cachedModelId);
       if (cached) {
         return cached;
       }
     } else {
-      const cached = scopedModels.find((item) => item.model === cachedId);
+      const cached = allModels.find((item) => item.model === cachedId);
       if (cached) {
         return cached;
       }
     }
   }
-  return scopedModels[0] || null;
+  return allModels[0] || null;
 };
 
 export const ensureModel = async ({

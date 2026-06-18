@@ -15,14 +15,7 @@ import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import type { LLMServiceItem } from '../../../repositories/AIConfigRepository';
-import {
-  getAIEmployeeModels,
-  getAllModels,
-  isSameModel,
-  isValidModel,
-  MODEL_PREFERENCE_STORAGE_KEY,
-  resolveModel,
-} from '../model';
+import { getAllModels, isSameModel, isValidModel, MODEL_PREFERENCE_STORAGE_KEY, resolveModel } from '../model';
 import { useChatBoxStore, type ModelRef } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { AddLLMModal } from './AddLLMModal';
@@ -55,22 +48,9 @@ export const ModelSwitcher: React.FC<{
   }, [repository]);
 
   const allModels = useMemo(() => getAllModels(llmServices), [llmServices]);
-  const scopedModels = useMemo(() => getAIEmployeeModels(currentEmployee, allModels), [allModels, currentEmployee]);
-  const scopedModelKeys = useMemo(
-    () => new Set(scopedModels.map((item) => `${item.llmService}:${item.model}`)),
-    [scopedModels],
-  );
   const servicesWithModels = useMemo(
-    () =>
-      llmServices
-        .map((service) => ({
-          ...service,
-          enabledModels: service.enabledModels.filter((item) =>
-            scopedModelKeys.has(`${service.llmService}:${item.value}`),
-          ),
-        }))
-        .filter((service) => service.enabledModels.length > 0),
-    [llmServices, scopedModelKeys],
+    () => llmServices.filter((service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0),
+    [llmServices],
   );
 
   useEffect(() => {
@@ -84,14 +64,14 @@ export const ModelSwitcher: React.FC<{
   }, [allModels, app.apiClient, currentConversation, currentEmployee, currentEmployeeUsername, model, setModel]);
 
   const selectedModel = useMemo(() => {
-    if (isValidModel(model, scopedModels)) {
+    if (isValidModel(model, allModels)) {
       return model;
     }
-    if (scopedModels.length) {
-      return scopedModels[0];
+    if (allModels.length) {
+      return allModels[0];
     }
     return undefined;
-  }, [model, scopedModels]);
+  }, [allModels, model]);
 
   const selectedLabel = useMemo(() => getModelLabel(llmServices, selectedModel), [llmServices, selectedModel]);
 

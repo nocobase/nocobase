@@ -71,7 +71,7 @@ describe('chatbox model recovery', () => {
     expect(onResolved).not.toHaveBeenCalled();
   });
 
-  it('uses employee dedicated model before current model', async () => {
+  it('keeps current model even when employee has a dedicated model', async () => {
     const aiConfigRepository = {
       getLLMServices: vi.fn(() => [
         {
@@ -108,8 +108,8 @@ describe('chatbox model recovery', () => {
       onResolved,
     });
 
-    expect(result).toEqual({ llmService: 'svc-anthropic', model: 'claude' });
-    expect(onResolved).toHaveBeenCalledWith({ llmService: 'svc-anthropic', model: 'claude' });
+    expect(result).toEqual({ llmService: 'svc-openai', model: 'gpt-4o' });
+    expect(onResolved).not.toHaveBeenCalled();
   });
 
   it('keeps current model when it is inside employee dedicated model list', async () => {
