@@ -51,4 +51,14 @@ describe('plugin-ai client-v2 tools registration', () => {
     expect(registered).toEqual(V1_REGISTERED_TOOL_NAMES);
     expect(new Set(registered).size).toBe(pluginAIClientV2BuiltinTools.length);
   });
+
+  it('registers v2 UI for tools with v1 custom cards or modals', () => {
+    const tools = new Map(pluginAIClientV2BuiltinTools);
+
+    expect(tools.get('defineCollections')?.ui?.card).toBeTruthy();
+    expect(tools.get('defineCollections')?.ui?.modal?.Component).toBeTruthy();
+    expect(tools.get('aiEmployeeWorkflowTaskOutput')?.ui?.card).toBeTruthy();
+    expect(tools.get('writeJSCode')?.ui?.card).toBeTruthy();
+    expect(tools.get('patchJSCode')?.ui?.card).toBeTruthy();
+  });
 });

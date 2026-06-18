@@ -24,14 +24,22 @@ import { vizRunQueryTool, vizSwitchModesTool } from './data-visualization';
 import { BusinessReportCard } from './BusinessReportCard';
 import { BusinessReportModal, BusinessReportModalFooter } from './BusinessReportModal';
 import { ChartGeneratorCard } from './ChartGeneratorCard';
+import { CodeToolCard } from './CodeToolCard';
+import { DataModelingCard } from './DataModelingCard';
+import { DataModelingModal, useDataModelingOnOk } from './DataModelingModal';
 import { SubAgentDispatchCard } from './SubAgentDispatchCard';
 import { SuggestionsOptionsCard } from './SuggestionsOptionsCard';
+import { WorkflowTaskOutputCard } from './WorkflowTaskOutputCard';
 
 export { ChartGeneratorCard } from './ChartGeneratorCard';
 export { SubAgentDispatchCard } from './SubAgentDispatchCard';
 export { SuggestionsOptionsCard } from './SuggestionsOptionsCard';
 export { BusinessReportCard } from './BusinessReportCard';
 export { BusinessReportModal, BusinessReportModalFooter } from './BusinessReportModal';
+export { CodeToolCard } from './CodeToolCard';
+export { DataModelingCard } from './DataModelingCard';
+export { DataModelingModal, useDataModelingOnOk } from './DataModelingModal';
+export { WorkflowTaskOutputCard } from './WorkflowTaskOutputCard';
 
 export const chartGeneratorTool: [string, ToolsOptions] = [
   'chartGenerator',
@@ -85,9 +93,42 @@ export const dispatchSubAgentTaskTool: [string, ToolsOptions] = [
   },
 ];
 
-export const defineCollectionsTool: [string, ToolsOptions] = ['defineCollections', {}];
+export const defineCollectionsTool: [string, ToolsOptions] = [
+  'defineCollections',
+  {
+    ui: {
+      card: DataModelingCard,
+      modal: {
+        title: 'Data modeling',
+        okText: 'Submit',
+        props: {
+          width: '90%',
+        },
+        useOnOk: useDataModelingOnOk,
+        Component: DataModelingModal,
+      },
+    },
+  },
+];
 
-export const aiEmployeeWorkflowTaskOutputTool: [string, ToolsOptions] = ['aiEmployeeWorkflowTaskOutput', {}];
+export const aiEmployeeWorkflowTaskOutputTool: [string, ToolsOptions] = [
+  'aiEmployeeWorkflowTaskOutput',
+  {
+    ui: {
+      card: WorkflowTaskOutputCard,
+    },
+  },
+];
+
+writeJSCodeTool[1].ui = {
+  ...writeJSCodeTool[1].ui,
+  card: CodeToolCard,
+};
+
+patchJSCodeTool[1].ui = {
+  ...patchJSCodeTool[1].ui,
+  card: CodeToolCard,
+};
 
 export const pluginAIClientV2BuiltinTools: Array<[string, ToolsOptions]> = [
   vizSwitchModesTool,
