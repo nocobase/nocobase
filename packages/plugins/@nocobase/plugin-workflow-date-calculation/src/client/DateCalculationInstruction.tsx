@@ -267,7 +267,7 @@ export default class extends Instruction {
       },
     },
   };
-  components = {
+  components: Record<string, unknown> = {
     WorkflowVariableInput,
     RadioWithTooltip,
     ArrayItems,
