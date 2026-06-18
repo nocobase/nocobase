@@ -844,7 +844,7 @@ describe('FieldAssignRulesEditor', () => {
 
     await userEvent.hover(questionIcons[1] as Element);
     await waitFor(() => {
-      expect(screen.getByText('Always override, editable.')).toBeInTheDocument();
+      expect(screen.getByText('Overrides existing values until the user edits it.')).toBeInTheDocument();
     });
 
     await userEvent.unhover(questionIcons[1] as Element);

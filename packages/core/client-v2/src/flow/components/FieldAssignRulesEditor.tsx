@@ -419,7 +419,7 @@ export const FieldAssignRulesEditor: React.FC<FieldAssignRulesEditorProps> = (pr
               'A pre-filled value. Editable, for new entries only, and won’t affect existing data (including empty values).',
             )
           : mode === 'override'
-            ? t('Always override, editable.')
+            ? t('Overrides existing values until the user edits it.')
             : t('A system-set value. Read-only.');
 
       const preventModeToggle = (e: React.MouseEvent<HTMLElement>) => {
