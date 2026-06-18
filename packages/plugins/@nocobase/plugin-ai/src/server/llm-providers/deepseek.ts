@@ -13,7 +13,6 @@ import { LLMProvider, ParsedAttachmentResult } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { Model } from '@nocobase/database';
 import _ from 'lodash';
-import type OpenAI from 'openai';
 import {
   collectReasoningMap,
   MODEL_KWARGS_KEY,
@@ -25,6 +24,8 @@ import { Context } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import path from 'node:path';
 import { AttachmentModel } from '@nocobase/plugin-file-manager';
+
+type DeepSeekCompletionWithRetry = ChatDeepSeek['completionWithRetry'];
 
 class ReasoningDeepSeek extends ChatDeepSeek {
   async _generate(messages: BaseMessage[], options: any, runManager?: any) {
@@ -48,27 +49,13 @@ class ReasoningDeepSeek extends ChatDeepSeek {
     yield* super._streamResponseChunks(messages, nextOptions, runManager);
   }
 
-  completionWithRetry(
-    request: OpenAI.Chat.ChatCompletionCreateParamsStreaming,
-    requestOptions?: OpenAI.RequestOptions,
-  ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>>;
-  completionWithRetry(
-    request: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
-    requestOptions?: OpenAI.RequestOptions,
-  ): Promise<OpenAI.Chat.Completions.ChatCompletion>;
-  async completionWithRetry(
-    request: OpenAI.Chat.ChatCompletionCreateParamsStreaming | OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
-    requestOptions?: OpenAI.RequestOptions,
-  ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | OpenAI.Chat.Completions.ChatCompletion> {
+  completionWithRetry = (async (request: unknown, requestOptions?: unknown) => {
     const reasoningMap = requestOptions?.[REASONING_MAP_KEY] as Map<string, string> | undefined;
-    const modelKwargs = requestOptions?.[MODEL_KWARGS_KEY] as Record<string, any> | undefined;
+    const modelKwargs = requestOptions?.[MODEL_KWARGS_KEY] as Record<string, unknown> | undefined;
     patchRequestMessagesReasoning(request, reasoningMap);
     patchRequestModelKwargs(request, modelKwargs);
-    if (request.stream) {
-      return super.completionWithRetry(request as OpenAI.Chat.ChatCompletionCreateParamsStreaming, requestOptions);
-    }
-    return super.completionWithRetry(request as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming, requestOptions);
-  }
+    return super.completionWithRetry(request as never, requestOptions as never);
+  }) as DeepSeekCompletionWithRetry;
 }
 
 export class DeepSeekProvider extends LLMProvider {
