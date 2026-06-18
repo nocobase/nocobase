@@ -12,7 +12,7 @@ import { Alert, Tabs, theme } from 'antd';
 import { DatabaseOutlined, FileTextOutlined, NodeIndexOutlined } from '@ant-design/icons';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { useApp, useGlobalTheme, type ToolCall, type ToolsUIProperties } from '@nocobase/client-v2';
+import { useApp, useGlobalTheme, type ToolCall } from '@nocobase/client-v2';
 import { useT } from '../../locale';
 import { useChatToolsStore } from '../chatbox/stores/chat-tools';
 import { Diagram } from './data-modeling/Diagram';
@@ -113,28 +113,6 @@ const useUpdateTool = (tool: ToolCall<DataModelingArgs>, saveToolArgs?: (args: u
   );
 
   return { updateCollectionRecord, updateFieldRecord };
-};
-
-type RefreshHandler = () => void | Promise<void>;
-
-const dataModelingRefreshHandlers = new Set<RefreshHandler>();
-
-export function registerDataModelingRefreshHandler(handler: RefreshHandler) {
-  dataModelingRefreshHandlers.add(handler);
-  return () => {
-    dataModelingRefreshHandlers.delete(handler);
-  };
-}
-
-export const useDataModelingOnOk = (decisions: ToolsUIProperties['decisions'], adjustArgs: Record<string, unknown>) => {
-  const app = useApp();
-  return {
-    onOk: async () => {
-      await decisions.edit(adjustArgs);
-      await app.dataSourceManager.getDataSource?.('main')?.reload?.();
-      await Promise.all([...dataModelingRefreshHandlers].map((refresh) => refresh()));
-    },
-  };
 };
 
 export const DataModelingModal: React.FC<{

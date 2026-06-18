@@ -8,6 +8,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
   pluginAIClientV2BuiltinToolNames,
   pluginAIClientV2BuiltinTools,
@@ -60,5 +62,26 @@ describe('plugin-ai client-v2 tools registration', () => {
     expect(tools.get('aiEmployeeWorkflowTaskOutput')?.ui?.card).toBeTruthy();
     expect(tools.get('writeJSCode')?.ui?.card).toBeTruthy();
     expect(tools.get('patchJSCode')?.ui?.card).toBeTruthy();
+  });
+
+  it('does not statically import heavy modal UI from the tools registry', () => {
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        'packages',
+        'plugins',
+        '@nocobase',
+        'plugin-ai',
+        'src',
+        'client-v2',
+        'ai-employees',
+        'tools',
+        'index.ts',
+      ),
+      'utf8',
+    );
+
+    expect(source).not.toMatch(/from ['"]\.\/BusinessReportModal['"]/);
+    expect(source).not.toMatch(/from ['"]\.\/DataModelingModal['"]/);
   });
 });

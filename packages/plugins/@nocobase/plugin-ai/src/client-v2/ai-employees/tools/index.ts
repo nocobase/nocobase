@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { Spin } from 'antd';
 import type { ToolsOptions, ToolsRegistration } from '@nocobase/client-v2';
 import { formFillerTool } from '../form-filler/tools';
 import {
@@ -22,11 +24,10 @@ import {
 } from './ai-coding';
 import { vizRunQueryTool, vizSwitchModesTool } from './data-visualization';
 import { BusinessReportCard } from './BusinessReportCard';
-import { BusinessReportModal, BusinessReportModalFooter } from './BusinessReportModal';
 import { ChartGeneratorCard } from './ChartGeneratorCard';
 import { CodeToolCard } from './CodeToolCard';
 import { DataModelingCard } from './DataModelingCard';
-import { DataModelingModal, registerDataModelingRefreshHandler, useDataModelingOnOk } from './DataModelingModal';
+import { registerDataModelingRefreshHandler, useDataModelingOnOk } from './data-modeling/runtime';
 import { SubAgentDispatchCard } from './SubAgentDispatchCard';
 import { SuggestionsOptionsCard } from './SuggestionsOptionsCard';
 import { WorkflowTaskOutputCard } from './WorkflowTaskOutputCard';
@@ -35,11 +36,50 @@ export { ChartGeneratorCard } from './ChartGeneratorCard';
 export { SubAgentDispatchCard } from './SubAgentDispatchCard';
 export { SuggestionsOptionsCard } from './SuggestionsOptionsCard';
 export { BusinessReportCard } from './BusinessReportCard';
-export { BusinessReportModal, BusinessReportModalFooter } from './BusinessReportModal';
 export { CodeToolCard } from './CodeToolCard';
 export { DataModelingCard } from './DataModelingCard';
-export { DataModelingModal, registerDataModelingRefreshHandler, useDataModelingOnOk } from './DataModelingModal';
+export { registerDataModelingRefreshHandler, useDataModelingOnOk } from './data-modeling/runtime';
 export { WorkflowTaskOutputCard } from './WorkflowTaskOutputCard';
+
+type ToolModalOptions = NonNullable<NonNullable<ToolsOptions['ui']>['modal']>;
+type ToolModalComponent = NonNullable<ToolModalOptions['Component']>;
+type ToolModalComponentProps = React.ComponentProps<ToolModalComponent>;
+type ToolModalFooter = NonNullable<ToolModalOptions['footer']>;
+type ToolModalFooterProps = React.ComponentProps<ToolModalFooter>;
+
+const lazyFallback = React.createElement(Spin, { size: 'small' });
+
+const LazyBusinessReportModal = React.lazy(async () => {
+  const { BusinessReportModal } = await import('./BusinessReportModal');
+  return { default: BusinessReportModal as React.ComponentType<ToolModalComponentProps> };
+});
+
+const LazyBusinessReportModalFooter = React.lazy(async () => {
+  const { BusinessReportModalFooter } = await import('./BusinessReportModal');
+  return { default: BusinessReportModalFooter as React.ComponentType<ToolModalFooterProps> };
+});
+
+const LazyDataModelingModal = React.lazy(async () => {
+  const { DataModelingModal } = await import('./DataModelingModal');
+  return { default: DataModelingModal as React.ComponentType<ToolModalComponentProps> };
+});
+
+export const BusinessReportModal: ToolModalComponent = (props) =>
+  React.createElement(React.Suspense, { fallback: lazyFallback }, React.createElement(LazyBusinessReportModal, props));
+
+export const BusinessReportModalFooter: ToolModalFooter = (props) =>
+  React.createElement(
+    React.Suspense,
+    { fallback: lazyFallback },
+    React.createElement(LazyBusinessReportModalFooter, props),
+  );
+
+export const DataModelingModal: ToolModalComponent = (props) =>
+  React.createElement(React.Suspense, { fallback: lazyFallback }, React.createElement(LazyDataModelingModal, props));
+
+BusinessReportModal.displayName = 'LazyBusinessReportModal';
+BusinessReportModalFooter.displayName = 'LazyBusinessReportModalFooter';
+DataModelingModal.displayName = 'LazyDataModelingModal';
 
 export const chartGeneratorTool: [string, ToolsOptions] = [
   'chartGenerator',
