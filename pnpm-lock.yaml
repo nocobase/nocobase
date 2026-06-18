@@ -6859,10 +6859,10 @@ importers:
       '@nocobase/test':
         specifier: workspace:*
         version: link:../../../core/test
+    devDependencies:
       external-db-data-source:
         specifier: 2.x
         version: link:../../external-db-data-source
-    devDependencies:
       mysql2:
         specifier: ^3.11.0
         version: 3.11.0
@@ -6887,10 +6887,10 @@ importers:
       '@nocobase/test':
         specifier: workspace:*
         version: link:../../../core/test
+    devDependencies:
       external-db-data-source:
         specifier: 2.x
         version: link:../../external-db-data-source
-    devDependencies:
       mysql2:
         specifier: ^3.11.0
         version: 3.11.0
@@ -7026,9 +7026,6 @@ importers:
       '@nocobase/test':
         specifier: workspace:*
         version: link:../../../core/test
-      external-db-data-source:
-        specifier: 2.x
-        version: link:../../external-db-data-source
     devDependencies:
       '@nocobase/data-source-manager':
         specifier: workspace:*
@@ -7036,6 +7033,9 @@ importers:
       adm-zip:
         specifier: 0.5.16
         version: 0.5.16
+      external-db-data-source:
+        specifier: 2.x
+        version: link:../../external-db-data-source
       oracledb:
         specifier: 6.10.0
         version: 6.10.0
