@@ -50,7 +50,13 @@ import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import { buildInitAppEnvVarsFromConfig } from '../lib/managed-init-env.js';
-import { persistHookScript, resolveHookScriptPath } from '../lib/hook-script.js';
+import {
+  buildHookContext,
+  persistHookScript,
+  resolveHookScriptPath,
+  runHookScriptHook,
+  type HookName,
+} from '../lib/hook-script.js';
 import {
   areConfiguredPathsEquivalent,
   deriveConfiguredSourcePath,
@@ -2516,6 +2522,7 @@ export default class Install extends Command {
     }
     Install.pushDownloadArgIfValue(argv, '--hook-script', results.hookScript);
     Install.pushDownloadArgIfValue(argv, '--hook-phase', results.hookPhase);
+    Install.pushDownloadArgIfValue(argv, '--hook-command', results.hookCommand);
     Install.pushDownloadArgIfValue(argv, '--hook-env-name', results.hookEnvName);
     Install.pushDownloadArgIfValue(argv, '--hook-app-path', results.hookAppPath);
     Install.pushDownloadArgIfValue(argv, '--hook-storage-path', results.hookStoragePath);
@@ -2605,6 +2612,7 @@ export default class Install extends Command {
 
     params.downloadResults.hookScript = hookScriptPath;
     params.downloadResults.hookPhase = 'init';
+    params.downloadResults.hookCommand = 'init';
     params.downloadResults.hookEnvName = params.envName;
     params.downloadResults.hookAppPath = appPath;
     params.downloadResults.hookStoragePath = storagePath;
@@ -2986,6 +2994,59 @@ export default class Install extends Command {
     await this.config.runCommand('env:update', [params.envName]);
   }
 
+  private async runInstallHookIfNeeded(params: {
+    hookName: HookName;
+    envName: string;
+    source: string;
+    appResults: Record<string, PromptValue>;
+    downloadResults: Record<string, PromptValue>;
+    dbResults: Record<string, PromptValue>;
+    rootResults: Record<string, PromptValue>;
+    envAddResults: Record<string, PromptValue>;
+    projectRoot?: string;
+    defaultApiHost?: string;
+  }): Promise<void> {
+    const appPath = Install.resolveAbsoluteAppPath(params.envName, params.appResults);
+    const savedHookScript = Install.toOptionalPromptString(params.appResults.hookScript);
+    const hookScriptPath = resolveHookScriptPath({
+      appPath,
+      hookScript: savedHookScript,
+    });
+    if (!hookScriptPath) {
+      return;
+    }
+
+    const storagePath = Install.resolveAbsoluteStoragePath(params.envName, params.appResults);
+    const sourcePath =
+      params.projectRoot ??
+      resolveConfiguredEnvPath(resolveConfiguredSourcePathValue(params.appResults, params.envName)) ??
+      path.join(appPath, 'source');
+    const context = buildHookContext({
+      phase: 'init',
+      command: 'init',
+      envName: params.envName,
+      source: params.source,
+      version: downloadResultsValue(params.downloadResults, 'version'),
+      appPath,
+      sourcePath,
+      storagePath,
+      hookScript: savedHookScript,
+      envConfig: Install.buildSavedEnvConfig(params, {
+        defaultApiHost: params.defaultApiHost,
+      }),
+    });
+    if (!context) {
+      return;
+    }
+
+    this.log(`Running hook ${params.hookName}: ${hookScriptPath}`);
+    await runHookScriptHook({
+      hookScriptPath,
+      hookName: params.hookName,
+      context,
+    });
+  }
+
   private static buildSavedEnvConfig(
     params: {
       envName: string;
@@ -3323,6 +3384,17 @@ export default class Install extends Command {
           printInfo('Application image ready.');
         }
         if (!parsed['prepare-only']) {
+          await this.runInstallHookIfNeeded({
+            hookName: 'beforeAppInstall',
+            envName,
+            source,
+            appResults,
+            downloadResults,
+            dbResults,
+            rootResults,
+            envAddResults,
+            defaultApiHost,
+          });
           dockerAppPlan = await this.installDockerApp({
             envName,
             dockerNetworkName,
@@ -3340,22 +3412,35 @@ export default class Install extends Command {
         }
       } else if (source === 'npm' || source === 'git') {
         const localSource: 'npm' | 'git' = source === 'npm' ? 'npm' : 'git';
-        const projectRoot = parsed['skip-download']
-          ? Install.resolveLocalProjectRoot({
-              envName,
-              appResults,
-              downloadResults,
-            })
-          : await this.downloadLocalApp({
-              envName,
-              appResults,
-              downloadResults,
-              verbose: parsed.verbose,
-            });
-        if (!parsed['skip-download']) {
+        const projectRoot =
+          parsed['skip-download'] || parsed['prepare-only']
+            ? Install.resolveLocalProjectRoot({
+                envName,
+                appResults,
+                downloadResults,
+              })
+            : await this.downloadLocalApp({
+                envName,
+                appResults,
+                downloadResults,
+                verbose: parsed.verbose,
+              });
+        if (!parsed['skip-download'] && !parsed['prepare-only']) {
           printInfo('Application files ready.');
         }
         if (!parsed['prepare-only']) {
+          await this.runInstallHookIfNeeded({
+            hookName: 'beforeAppInstall',
+            envName,
+            source,
+            appResults,
+            downloadResults,
+            dbResults,
+            rootResults,
+            envAddResults,
+            projectRoot,
+            defaultApiHost,
+          });
           localAppPlan = await this.startLocalApp({
             envName,
             source: localSource,
@@ -3393,6 +3478,18 @@ export default class Install extends Command {
       });
       printInfo(`NocoBase is ready at ${formatInstallDisplayUrl(displayApiBaseUrl)}`);
       appResults.setupState = 'installed';
+      await this.runInstallHookIfNeeded({
+        hookName: 'afterAppStart',
+        envName,
+        source,
+        appResults,
+        downloadResults,
+        dbResults,
+        rootResults,
+        envAddResults,
+        projectRoot: localAppPlan?.projectRoot,
+        defaultApiHost,
+      });
     }
 
     if (dockerAppPlan || localAppPlan || builtinDbPlan) {

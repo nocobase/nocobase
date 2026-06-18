@@ -36,6 +36,7 @@ import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import {
   buildBeforeDependencyInstallHookContext,
   runBeforeDependencyInstallHook,
+  type HookCommand,
   type HookPhase,
 } from '../../lib/hook-script.js';
 import { run } from '../../lib/run-npm.ts';
@@ -201,6 +202,7 @@ export type DownloadResolvedFlags = Record<string, unknown> & {
   /** npm/git: optional hook module run after scaffold/clone and before dependency installation */
   'hook-script'?: string;
   'hook-phase'?: HookPhase;
+  'hook-command'?: HookCommand;
   'hook-env-name'?: string;
   'hook-app-path'?: string;
   'hook-storage-path'?: string;
@@ -232,6 +234,7 @@ export type DownloadParsedFlags = {
   'npm-registry'?: string;
   'hook-script'?: string;
   'hook-phase'?: string;
+  'hook-command'?: string;
   'hook-env-name'?: string;
   'hook-app-path'?: string;
   'hook-storage-path'?: string;
@@ -358,7 +361,11 @@ export default class SourceDownload extends Command {
     }),
     'hook-phase': Flags.string({
       hidden: true,
-      options: ['init', 'upgrade', 'restore'],
+      options: ['init', 'upgrade', 'restore', 'source-download', 'app-start'],
+    }),
+    'hook-command': Flags.string({
+      hidden: true,
+      options: ['init', 'source:download', 'app:start', 'app:restart', 'app:upgrade'],
     }),
     'hook-env-name': Flags.string({
       hidden: true,
@@ -787,6 +794,7 @@ export default class SourceDownload extends Command {
       ...(npmRegistry ? { 'npm-registry': npmRegistry } : {}),
       ...(hookScript ? { 'hook-script': hookScript } : {}),
       ...(flags['hook-phase'] ? { 'hook-phase': flags['hook-phase'] as HookPhase } : {}),
+      ...(flags['hook-command'] ? { 'hook-command': flags['hook-command'] as HookCommand } : {}),
       ...(flags['hook-env-name'] ? { 'hook-env-name': flags['hook-env-name'].trim() } : {}),
       ...(flags['hook-app-path'] ? { 'hook-app-path': path.resolve(process.cwd(), flags['hook-app-path']) } : {}),
       ...(flags['hook-storage-path']
@@ -973,7 +981,8 @@ export default class SourceDownload extends Command {
     const appPath = flags['hook-app-path']?.trim() || projectRoot;
     const storagePath = flags['hook-storage-path']?.trim() || path.join(appPath, 'storage');
     const context = buildBeforeDependencyInstallHookContext({
-      phase: flags['hook-phase'] ?? 'init',
+      phase: flags['hook-phase'] ?? 'source-download',
+      command: flags['hook-command'] ?? 'source:download',
       envName,
       source: flags.source,
       version: flags.version,

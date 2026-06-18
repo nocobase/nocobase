@@ -14,11 +14,14 @@ import type { EnvConfigEntry } from './auth-store.js';
 
 export const ENV_HOOK_SCRIPT_CONFIG_PATH = '.nb/hooks.mjs';
 
-export type HookPhase = 'init' | 'upgrade' | 'restore';
-export type HookSource = 'npm' | 'git';
+export type HookName = 'beforeDependencyInstall' | 'beforeAppInstall' | 'afterAppStart';
+export type HookPhase = 'init' | 'upgrade' | 'restore' | 'source-download' | 'app-start';
+export type HookCommand = 'init' | 'source:download' | 'app:start' | 'app:restart' | 'app:upgrade';
+export type HookSource = 'npm' | 'git' | 'docker';
 
-export type BeforeDependencyInstallHookContext = {
+export type NocoBaseHookContext = {
   phase: HookPhase;
+  command: HookCommand;
   envName: string;
   source: HookSource;
   version?: string;
@@ -29,8 +32,12 @@ export type BeforeDependencyInstallHookContext = {
   envConfig: Record<string, unknown>;
 };
 
+export type BeforeDependencyInstallHookContext = NocoBaseHookContext & {
+  source: 'npm' | 'git';
+};
+
 type NocoBaseHooks = {
-  beforeDependencyInstall?: (context: BeforeDependencyInstallHookContext) => unknown | Promise<unknown>;
+  [key in HookName]?: (context: NocoBaseHookContext) => unknown | Promise<unknown>;
 };
 
 function trimValue(value: unknown): string {
@@ -39,7 +46,15 @@ function trimValue(value: unknown): string {
 
 function normalizeHookPhase(value: unknown): HookPhase {
   const text = trimValue(value);
-  if (text === 'upgrade' || text === 'restore') {
+  if (text === 'init' || text === 'upgrade' || text === 'restore' || text === 'source-download' || text === 'app-start') {
+    return text;
+  }
+  return 'init';
+}
+
+function normalizeHookCommand(value: unknown): HookCommand {
+  const text = trimValue(value);
+  if (text === 'source:download' || text === 'app:start' || text === 'app:restart' || text === 'app:upgrade') {
     return text;
   }
   return 'init';
@@ -47,10 +62,14 @@ function normalizeHookPhase(value: unknown): HookPhase {
 
 function normalizeHookSource(value: unknown): HookSource | undefined {
   const text = trimValue(value);
-  if (text === 'npm' || text === 'git') {
+  if (text === 'npm' || text === 'git' || text === 'docker') {
     return text;
   }
   return undefined;
+}
+
+function isDependencyHookSource(source: HookSource): source is 'npm' | 'git' {
+  return source === 'npm' || source === 'git';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -88,18 +107,18 @@ async function loadHookScript(hookScriptPath: string): Promise<NocoBaseHooks> {
     throw new Error('Hook script must export an object.');
   }
 
-  if (
-    Object.prototype.hasOwnProperty.call(hooks, 'beforeDependencyInstall') &&
-    typeof hooks.beforeDependencyInstall !== 'function'
-  ) {
-    throw new Error('Hook "beforeDependencyInstall" must be a function.');
+  for (const hookName of ['beforeDependencyInstall', 'beforeAppInstall', 'afterAppStart'] satisfies HookName[]) {
+    if (Object.prototype.hasOwnProperty.call(hooks, hookName) && typeof hooks[hookName] !== 'function') {
+      throw new Error(`Hook "${hookName}" must be a function.`);
+    }
   }
 
   return hooks as NocoBaseHooks;
 }
 
-export function buildBeforeDependencyInstallHookContext(params: {
+export function buildHookContext(params: {
   phase?: unknown;
+  command?: unknown;
   envName?: unknown;
   source: unknown;
   version?: unknown;
@@ -108,7 +127,7 @@ export function buildBeforeDependencyInstallHookContext(params: {
   storagePath: string;
   hookScript: string;
   envConfig?: EnvConfigEntry | Record<string, unknown>;
-}): BeforeDependencyInstallHookContext | undefined {
+}): NocoBaseHookContext | undefined {
   const source = normalizeHookSource(params.source);
   if (!source) {
     return undefined;
@@ -117,6 +136,7 @@ export function buildBeforeDependencyInstallHookContext(params: {
   const version = trimValue(params.version);
   return {
     phase: normalizeHookPhase(params.phase),
+    command: normalizeHookCommand(params.command),
     envName: trimValue(params.envName),
     source,
     ...(version ? { version } : {}),
@@ -128,23 +148,55 @@ export function buildBeforeDependencyInstallHookContext(params: {
   };
 }
 
-export async function runBeforeDependencyInstallHook(params: {
+export function buildBeforeDependencyInstallHookContext(params: {
+  phase?: unknown;
+  command?: unknown;
+  envName?: unknown;
+  source: unknown;
+  version?: unknown;
+  appPath: string;
+  sourcePath: string;
+  storagePath: string;
+  hookScript: string;
+  envConfig?: EnvConfigEntry | Record<string, unknown>;
+}): BeforeDependencyInstallHookContext | undefined {
+  const context = buildHookContext(params);
+  if (!context || !isDependencyHookSource(context.source)) {
+    return undefined;
+  }
+  return context as BeforeDependencyInstallHookContext;
+}
+
+export async function runHookScriptHook(params: {
   hookScriptPath: string;
-  context: BeforeDependencyInstallHookContext;
+  hookName: HookName;
+  context: NocoBaseHookContext;
 }): Promise<void> {
   try {
     const hooks = await loadHookScript(params.hookScriptPath);
-    if (!hooks.beforeDependencyInstall) {
+    const hook = hooks[params.hookName];
+    if (!hook) {
       return;
     }
 
-    await hooks.beforeDependencyInstall(params.context);
+    await hook(params.context);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
-      [`Hook script failed: ${params.hookScriptPath}`, 'Hook stage: beforeDependencyInstall', `Details: ${message}`].join(
+      [`Hook script failed: ${params.hookScriptPath}`, `Hook stage: ${params.hookName}`, `Details: ${message}`].join(
         '\n',
       ),
     );
   }
+}
+
+export async function runBeforeDependencyInstallHook(params: {
+  hookScriptPath: string;
+  context: BeforeDependencyInstallHookContext;
+}): Promise<void> {
+  await runHookScriptHook({
+    hookScriptPath: params.hookScriptPath,
+    hookName: 'beforeDependencyInstall',
+    context: params.context,
+  });
 }

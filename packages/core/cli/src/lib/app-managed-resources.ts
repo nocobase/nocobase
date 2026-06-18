@@ -24,7 +24,7 @@ import {
   DEFAULT_DOCKER_VERSION,
   resolveDockerImageRef,
 } from './docker-image.ts';
-import { resolveHookScriptPath } from './hook-script.js';
+import { resolveHookScriptPath, type HookCommand, type HookPhase } from './hook-script.js';
 import { commandSucceeds, ensureDockerDaemonRunning, run } from './run-npm.js';
 import Install from '../commands/install.js';
 const DOCKER_APP_STORAGE_DESTINATION = '/app/nocobase/storage';
@@ -378,7 +378,7 @@ export async function ensureBuiltinDbReady(
 
 export function buildSavedLocalDownloadArgv(
   runtime: ManagedDownloadableLocalRuntime,
-  options?: { verbose?: boolean },
+  options?: { verbose?: boolean; hookPhase?: HookPhase; hookCommand?: HookCommand },
 ): string[] {
   const config = runtime.env.config ?? {};
   const argv = ['-y', '--no-intro'];
@@ -418,7 +418,9 @@ export function buildSavedLocalDownloadArgv(
       '--hook-script',
       hookScriptPath,
       '--hook-phase',
-      'restore',
+      options?.hookPhase ?? 'restore',
+      '--hook-command',
+      options?.hookCommand ?? 'app:start',
       '--hook-env-name',
       runtime.envName,
       '--hook-app-path',
@@ -436,6 +438,8 @@ export async function ensureSavedLocalSource(
   runCommand: (id: string, argv?: string[]) => Promise<unknown>,
   options?: {
     verbose?: boolean;
+    hookPhase?: HookPhase;
+    hookCommand?: HookCommand;
     onStartTask?: (message: string) => void;
     onSucceedTask?: (message: string) => void;
     onFailTask?: (message: string) => void;
@@ -450,6 +454,8 @@ export async function ensureSavedLocalSource(
   try {
     await runCommand('source:download', buildSavedLocalDownloadArgv(runtime, {
       verbose: options?.verbose,
+      hookPhase: options?.hookPhase,
+      hookCommand: options?.hookCommand,
     }));
     options?.onSucceedTask?.(`NocoBase files are ready for "${runtime.envName}".`);
   } catch (error: unknown) {

@@ -225,6 +225,7 @@ export default {
     const fs = await import('node:fs/promises');
     await fs.writeFile(${JSON.stringify(markerPath)}, JSON.stringify({
       phase: context.phase,
+      command: context.command,
       envName: context.envName,
       source: context.source,
       version: context.version,
@@ -261,6 +262,7 @@ export default {
 
   const marker = JSON.parse(await fsp.readFile(markerPath, 'utf8')) as {
     phase: string;
+    command: string;
     envName: string;
     source: string;
     version: string;
@@ -270,6 +272,7 @@ export default {
   };
   expect(marker).toEqual({
     phase: 'upgrade',
+    command: 'source:download',
     envName: 'local',
     source: 'git',
     version: 'alpha',

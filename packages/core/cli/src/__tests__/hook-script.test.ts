@@ -15,6 +15,7 @@ import {
   ENV_HOOK_SCRIPT_CONFIG_PATH,
   persistHookScript,
   resolveHookScriptPath,
+  runHookScriptHook,
   runBeforeDependencyInstallHook,
 } from '../lib/hook-script.js';
 
@@ -61,6 +62,7 @@ test('runBeforeDependencyInstallHook rejects array exports', async () => {
       hookScriptPath: hookPath,
       context: {
         phase: 'init',
+        command: 'init',
         envName: '',
         source: 'git',
         appPath: path.join(dir, 'app'),
@@ -71,4 +73,58 @@ test('runBeforeDependencyInstallHook rejects array exports', async () => {
       },
     }),
   ).rejects.toThrow(/Hook script must export an object/);
+});
+
+test('runHookScriptHook runs beforeAppInstall and afterAppStart hooks', async () => {
+  const dir = await useTempDir();
+  const hookPath = path.join(dir, 'hooks.mjs');
+  const markerPath = path.join(dir, 'marker.json');
+  await fsp.writeFile(
+    hookPath,
+    `
+export default {
+  beforeAppInstall: async (context) => {
+    const fs = await import('node:fs/promises');
+    const current = JSON.parse(await fs.readFile(${JSON.stringify(markerPath)}, 'utf8').catch(() => '[]'));
+    current.push({ hook: 'beforeAppInstall', phase: context.phase, command: context.command, source: context.source });
+    await fs.writeFile(${JSON.stringify(markerPath)}, JSON.stringify(current));
+  },
+  afterAppStart: async (context) => {
+    const fs = await import('node:fs/promises');
+    const current = JSON.parse(await fs.readFile(${JSON.stringify(markerPath)}, 'utf8').catch(() => '[]'));
+    current.push({ hook: 'afterAppStart', phase: context.phase, command: context.command, source: context.source });
+    await fs.writeFile(${JSON.stringify(markerPath)}, JSON.stringify(current));
+  }
+};
+`,
+  );
+  const context = {
+    phase: 'upgrade' as const,
+    command: 'app:upgrade' as const,
+    envName: 'local',
+    source: 'docker' as const,
+    appPath: path.join(dir, 'app'),
+    sourcePath: path.join(dir, 'app', 'source'),
+    storagePath: path.join(dir, 'app', 'storage'),
+    hookScript: hookPath,
+    envConfig: {},
+  };
+
+  await runHookScriptHook({
+    hookScriptPath: hookPath,
+    hookName: 'beforeAppInstall',
+    context,
+  });
+  await runHookScriptHook({
+    hookScriptPath: hookPath,
+    hookName: 'afterAppStart',
+    context,
+  });
+
+  await expect(fsp.readFile(markerPath, 'utf8')).resolves.toBe(
+    JSON.stringify([
+      { hook: 'beforeAppInstall', phase: 'upgrade', command: 'app:upgrade', source: 'docker' },
+      { hook: 'afterAppStart', phase: 'upgrade', command: 'app:upgrade', source: 'docker' },
+    ]),
+  );
 });

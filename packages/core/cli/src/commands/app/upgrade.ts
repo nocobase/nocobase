@@ -468,6 +468,8 @@ export default class AppUpgrade extends Command {
         hookScriptPath,
         '--hook-phase',
         'upgrade',
+        '--hook-command',
+        'app:upgrade',
         '--hook-env-name',
         runtime.envName,
         '--hook-app-path',
@@ -672,6 +674,9 @@ export default class AppUpgrade extends Command {
       await runWithSuppressedTargetEnvLog(async () => {
         const startArgv = buildManagedActionArgv(runtime.envName, parsed, { quickstart: true });
         startArgv.push('--no-sync-licensed-plugins');
+        if (runtime.env.config.hookScript) {
+          startArgv.push('--hook-command', 'app:upgrade');
+        }
         await runWithSuppressedStartSuccessLog(async () => {
           await runCommand('app:start', startArgv);
         });
