@@ -8,6 +8,7 @@
  */
 
 import { Application, Plugin } from '@nocobase/client-v2';
+import PluginACLClientV2 from '@nocobase/plugin-acl/client-v2';
 import { ChatBoxLayout } from './ai-employees/chatbox/components';
 import { registerPluginAIClientV2BuiltinTools } from './ai-employees/tools';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
@@ -27,6 +28,26 @@ type AIFlowContext = {
 type PluginSettingsManagerLike = {
   addMenuItem: (options: Record<string, unknown>) => void;
   addPageTabItem: (options: Record<string, unknown>) => void;
+};
+
+type ACLPluginLike = {
+  settingsUI: {
+    addPermissionsTab: (options: Record<string, unknown>) => void;
+  };
+};
+
+type PluginManagerLike = {
+  get: (plugin: typeof PluginACLClientV2) => ACLPluginLike | undefined;
+};
+
+export const registerPluginAIPermissionsTab = (pluginManager: PluginManagerLike, t: (key: string) => string) => {
+  const aclPlugin = pluginManager.get(PluginACLClientV2);
+  aclPlugin?.settingsUI.addPermissionsTab({
+    key: 'ai-employees',
+    label: t('AI employees'),
+    sort: 30,
+    componentLoader: () => import('./pages/permissions/PermissionsTab'),
+  });
 };
 
 export const registerPluginAISettingsPages = (
@@ -103,6 +124,7 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
       });
     }
     registerPluginAISettingsPages(this.pluginSettingsManager, this.t.bind(this));
+    registerPluginAIPermissionsTab(this.app.pm, this.t.bind(this));
     builtinLLMProviderOptions.forEach(([name, options]) => {
       this.aiManager.registerLLMProvider(name, options);
     });
