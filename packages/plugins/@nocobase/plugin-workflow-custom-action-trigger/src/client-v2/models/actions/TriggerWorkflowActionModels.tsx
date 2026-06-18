@@ -13,7 +13,7 @@ import {
   ActionSceneEnum,
   CollectionActionModel,
   FormActionModel,
-  JsonTextArea,
+  VariableJsonTextArea,
 } from '@nocobase/client-v2';
 import { css } from '@emotion/css';
 import { MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
@@ -258,7 +258,7 @@ function createTriggerWorkflowsSchema({
               'Input JSON as context data passed into the workflow. Frontend variables are supported.',
             ),
             'x-decorator': 'FormItem',
-            'x-component': JsonTextArea,
+            'x-component': VariableJsonTextArea,
             'x-component-props': {
               rows: 5,
             },
