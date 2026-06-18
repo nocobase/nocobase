@@ -3130,12 +3130,27 @@ importers:
 
   packages/plugins/@nocobase/plugin-data-source-manager:
     devDependencies:
+      '@nocobase/acl':
+        specifier: workspace:*
+        version: link:../../../core/acl
+      '@nocobase/actions':
+        specifier: workspace:*
+        version: link:../../../core/actions
+      '@nocobase/ai':
+        specifier: workspace:*
+        version: link:../../../core/ai
       '@nocobase/client':
         specifier: workspace:*
         version: link:../../../core/client
       '@nocobase/client-v2':
         specifier: workspace:*
         version: link:../../../core/client-v2
+      '@nocobase/data-source-manager':
+        specifier: workspace:*
+        version: link:../../../core/data-source-manager
+      '@nocobase/database':
+        specifier: workspace:*
+        version: link:../../../core/database
       '@nocobase/flow-engine':
         specifier: workspace:*
         version: link:../../../core/flow-engine
@@ -3148,6 +3163,9 @@ importers:
       '@nocobase/test':
         specifier: workspace:*
         version: link:../../../core/test
+      '@nocobase/utils':
+        specifier: workspace:*
+        version: link:../../../core/utils
 
   packages/plugins/@nocobase/plugin-data-visualization:
     devDependencies:

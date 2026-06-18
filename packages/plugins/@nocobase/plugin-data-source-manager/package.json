@@ -13,12 +13,18 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/data-source-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-manager",
   "peerDependencies": {
+    "@nocobase/acl": "workspace:*",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/ai": "workspace:*",
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/data-source-manager": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
     "@nocobase/plugin-acl": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*",
-    "@nocobase/client-v2": "workspace:*",
-    "@nocobase/flow-engine": "workspace:*"
+    "@nocobase/utils": "workspace:*"
   },
   "keywords": [
     "Data model tools"
@@ -26,11 +32,17 @@
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@nocobase/acl": "workspace:*",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/ai": "workspace:*",
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/data-source-manager": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/flow-engine": "workspace:*",
     "@nocobase/plugin-acl": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*",
-    "@nocobase/client-v2": "workspace:*",
-    "@nocobase/flow-engine": "workspace:*"
+    "@nocobase/utils": "workspace:*"
   }
 }
