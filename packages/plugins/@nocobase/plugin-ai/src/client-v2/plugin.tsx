@@ -24,6 +24,71 @@ type AIFlowContext = {
   defineProperty: (name: string, descriptor: { value: unknown }) => void;
 };
 
+type PluginSettingsManagerLike = {
+  addMenuItem: (options: Record<string, unknown>) => void;
+  addPageTabItem: (options: Record<string, unknown>) => void;
+};
+
+export const registerPluginAISettingsPages = (
+  pluginSettingsManager: PluginSettingsManagerLike,
+  t: (key: string) => string,
+) => {
+  pluginSettingsManager.addMenuItem({
+    key: 'ai',
+    icon: 'TeamOutlined',
+    title: t('AI employees'),
+    aclSnippet: 'pm.ai',
+    isPinned: true,
+    sort: 400,
+    showTabs: true,
+  });
+  pluginSettingsManager.addPageTabItem({
+    menuKey: 'ai',
+    key: 'employees',
+    icon: 'TeamOutlined',
+    title: t('AI employees'),
+    aclSnippet: 'pm.ai.employees',
+    componentLoader: () => import('./pages/EmployeesPage'),
+    sort: 10,
+  });
+  pluginSettingsManager.addPageTabItem({
+    menuKey: 'ai',
+    key: 'llm-services',
+    icon: 'LinkOutlined',
+    title: t('LLM services'),
+    aclSnippet: 'pm.ai.llm-services',
+    componentLoader: () => import('./pages/LLMServicesPage'),
+    sort: 20,
+  });
+  pluginSettingsManager.addPageTabItem({
+    menuKey: 'ai',
+    key: 'mcp-settings',
+    icon: 'ApiOutlined',
+    title: t('MCP settings'),
+    aclSnippet: 'pm.ai.mcp-settings',
+    componentLoader: () => import('./pages/MCPSettingsPage'),
+    sort: 30,
+  });
+  pluginSettingsManager.addPageTabItem({
+    menuKey: 'ai',
+    key: 'datasource',
+    icon: 'CloudServerOutlined',
+    title: t('Datasource'),
+    aclSnippet: 'pm.ai.datasource',
+    componentLoader: () => import('./pages/DatasourceSettingsPage'),
+    sort: 40,
+  });
+  pluginSettingsManager.addPageTabItem({
+    menuKey: 'ai',
+    key: 'settings',
+    icon: 'SettingOutlined',
+    title: t('Settings'),
+    aclSnippet: 'pm.ai.settings',
+    componentLoader: () => import('./pages/AdminSettingsPage'),
+    sort: 100,
+  });
+};
+
 export class PluginAIClientV2 extends Plugin<object, Application> {
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager();
@@ -37,6 +102,7 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
         }),
       });
     }
+    registerPluginAISettingsPages(this.pluginSettingsManager, this.t.bind(this));
     builtinLLMProviderOptions.forEach(([name, options]) => {
       this.aiManager.registerLLMProvider(name, options);
     });
