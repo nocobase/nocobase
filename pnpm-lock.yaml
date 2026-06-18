@@ -7610,15 +7610,39 @@ importers:
 
   packages/pro-plugins/@nocobase/plugin-record-history:
     dependencies:
+      '@nocobase/actions':
+        specifier: workspace:*
+        version: link:../../../core/actions
+      '@nocobase/cache':
+        specifier: workspace:*
+        version: link:../../../core/cache
       '@nocobase/client':
         specifier: workspace:*
         version: link:../../../core/client
+      '@nocobase/client-v2':
+        specifier: workspace:*
+        version: link:../../../core/client-v2
+      '@nocobase/data-source-manager':
+        specifier: workspace:*
+        version: link:../../../core/data-source-manager
+      '@nocobase/database':
+        specifier: workspace:*
+        version: link:../../../core/database
+      '@nocobase/flow-engine':
+        specifier: workspace:*
+        version: link:../../../core/flow-engine
+      '@nocobase/resourcer':
+        specifier: workspace:*
+        version: link:../../../core/resourcer
       '@nocobase/server':
         specifier: workspace:*
         version: link:../../../core/server
       '@nocobase/test':
         specifier: workspace:*
         version: link:../../../core/test
+      '@nocobase/utils':
+        specifier: workspace:*
+        version: link:../../../core/utils
 
   packages/pro-plugins/@nocobase/plugin-request-encryption:
     devDependencies:
@@ -7986,6 +8010,22 @@ importers:
       '@nocobase/utils':
         specifier: 2.2.0-alpha.1
         version: link:../../core/utils
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+    devDependencies:
+      '@nocobase/actions':
+        specifier: workspace:*
+        version: link:../../core/actions
+      '@nocobase/cache':
+        specifier: workspace:*
+        version: link:../../core/cache
+      '@nocobase/data-source-manager':
+        specifier: workspace:*
+        version: link:../../core/data-source-manager
+      '@nocobase/database':
+        specifier: workspace:*
+        version: link:../../core/database
 
 packages:
 
