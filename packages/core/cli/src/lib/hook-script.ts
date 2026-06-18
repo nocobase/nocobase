@@ -8,11 +8,13 @@
  */
 
 import { copyFile, mkdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import type { EnvConfigEntry } from './auth-store.js';
 
 export const ENV_HOOK_SCRIPT_CONFIG_PATH = '.nb/hooks.mjs';
+const require = createRequire(import.meta.url);
+const { spawn } = require('node:child_process') as typeof import('node:child_process');
 
 export type HookName = 'beforeDependencyInstall' | 'beforeAppInstall' | 'afterAppStart';
 export type HookPhase = 'init' | 'upgrade' | 'restore' | 'source-download' | 'app-start';
@@ -97,29 +99,67 @@ export async function persistHookScript(params: { sourcePath: string; appPath: s
   return ENV_HOOK_SCRIPT_CONFIG_PATH;
 }
 
-async function loadHookScript(hookScriptPath: string): Promise<NocoBaseHooks> {
-  const url = pathToFileURL(hookScriptPath);
-  url.searchParams.set('t', String(Date.now()));
-  const moduleUrl = url.href;
-  const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ moduleUrl);
-  const evalImport = () => {
-    const importer = (0, eval)('u => import(u)') as (specifier: string) => Promise<{ default?: unknown }>;
-    return importer(moduleUrl);
-  };
-  const imported = (await nativeImport().catch(() => evalImport())) as { default?: unknown };
-  const hooks = imported.default ?? imported;
+const hookRunnerScript = `
+import { pathToFileURL } from 'node:url';
 
-  if (!isRecord(hooks)) {
-    throw new Error('Hook script must export an object.');
+const knownHookNames = ['beforeDependencyInstall', 'beforeAppInstall', 'afterAppStart'];
+const [, hookScriptPath, hookName, contextJson] = process.argv;
+const url = pathToFileURL(hookScriptPath);
+url.searchParams.set('t', String(Date.now()));
+
+const imported = await import(url.href);
+const hooks = imported.default ?? imported;
+
+if (!hooks || typeof hooks !== 'object' || Array.isArray(hooks)) {
+  throw new Error('Hook script must export an object.');
+}
+
+for (const knownHookName of knownHookNames) {
+  if (Object.prototype.hasOwnProperty.call(hooks, knownHookName) && typeof hooks[knownHookName] !== 'function') {
+    throw new Error(\`Hook "\${knownHookName}" must be a function.\`);
   }
+}
 
-  for (const hookName of ['beforeDependencyInstall', 'beforeAppInstall', 'afterAppStart'] satisfies HookName[]) {
-    if (Object.prototype.hasOwnProperty.call(hooks, hookName) && typeof hooks[hookName] !== 'function') {
-      throw new Error(`Hook "${hookName}" must be a function.`);
-    }
-  }
+const hook = hooks[hookName];
+if (typeof hook === 'function') {
+  await hook(JSON.parse(contextJson));
+}
+`;
 
-  return hooks as NocoBaseHooks;
+async function runHookInSubprocess(params: {
+  hookScriptPath: string;
+  hookName: HookName;
+  context: NocoBaseHookContext;
+}): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      ['--input-type=module', '--eval', hookRunnerScript, params.hookScriptPath, params.hookName, JSON.stringify(params.context)],
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout?.on?.('data', (chunk: Buffer | string) => {
+      stdout += String(chunk);
+    });
+    child.stderr?.on?.('data', (chunk: Buffer | string) => {
+      stderr += String(chunk);
+    });
+    child.once('error', reject);
+    child.once('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      const output = stderr.trim() || stdout.trim();
+      reject(new Error(output || `Hook process exited with code ${code ?? 'unknown'}.`));
+    });
+  });
 }
 
 export function buildHookContext(params: {
@@ -179,13 +219,7 @@ export async function runHookScriptHook(params: {
   context: NocoBaseHookContext;
 }): Promise<void> {
   try {
-    const hooks = await loadHookScript(params.hookScriptPath);
-    const hook = hooks[params.hookName];
-    if (!hook) {
-      return;
-    }
-
-    await hook(params.context);
+    await runHookInSubprocess(params);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
