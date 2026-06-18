@@ -8,72 +8,12 @@
  */
 
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import { css } from '@emotion/css';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import { Message } from '../../types';
-import { lazy } from '@nocobase/client';
-import { Code } from './Code';
-import { Form } from './Form';
+import { Markdown as V2Markdown } from '../../../../client-v2/ai-employees/chatbox/components/Markdown';
+import type { Message } from '../../types';
 
-const { Echarts } = lazy(() => import('./ECharts'), 'Echarts');
-
-const MarkdownComponent: React.FC<{
+export const Markdown: React.FC<{
   message: Message['content'];
-}> = ({ message }) => {
-  const tagIndexes: Record<string, number> = {};
-  const getIndex = (tagName: string): number => {
-    if (!(tagName in tagIndexes)) {
-      tagIndexes[tagName] = -1;
-    }
-    return ++tagIndexes[tagName];
-  };
-
-  return (
-    <div
-      className={css`
-        margin-bottom: -1em;
-      `}
-    >
-      <ReactMarkdown
-        components={{
-          code: (props) => <Code {...props} message={message} />,
-          form: (props) => <Form {...props} message={message} />,
-          // @ts-ignore
-          echarts: (props) => {
-            return <Echarts {...props} index={getIndex('echarts')} message={message} />;
-          },
-          // collections: (props) => {
-          //   return <Collections {...props} message={message} />;
-          // },
-        }}
-        rehypePlugins={[
-          rehypeRaw,
-          [
-            rehypeSanitize,
-            {
-              ...defaultSchema,
-              tagNames: [...defaultSchema.tagNames, 'echarts', 'form', 'collections'],
-              attributes: {
-                ...defaultSchema.attributes,
-                form: ['uid', 'datasource', 'collection'],
-              },
-            },
-          ],
-        ]}
-        remarkPlugins={[remarkGfm]}
-      >
-        {message.content as unknown as string}
-      </ReactMarkdown>
-    </div>
-  );
-};
-
-export const Markdown = React.memo(MarkdownComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.message?.messageId === nextProps.message?.messageId &&
-    prevProps.message?.content === nextProps.message?.content
-  );
+}> = React.memo(({ message }) => {
+  const content = typeof message?.content === 'string' ? message.content : '';
+  return <V2Markdown message={message}>{content}</V2Markdown>;
 });
