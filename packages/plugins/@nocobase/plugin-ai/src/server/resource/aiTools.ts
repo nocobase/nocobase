@@ -17,7 +17,10 @@ export const aiTools: ResourceOptions = {
     list: async (ctx, next) => {
       const { toolsManager } = ctx.app.aiManager as AIManager;
       const { filter } = ctx.action.params;
-      const tools = await toolsManager.listTools(filter);
+      const tools = await toolsManager.listTools({
+        ...filter,
+        ctx,
+      });
       ctx.body = tools.map((t) => ({
         ...t,
         definition: {
@@ -43,7 +46,7 @@ export const aiTools: ResourceOptions = {
       const bindingToolNames = aiEmployee.skillSettings?.tools?.map((tool) => tool.name) ?? [];
 
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const tools = await plugin.ai.toolsManager.listTools();
+      const tools = await plugin.ai.toolsManager.listTools({ ctx });
       const result = tools.filter(
         (tool) =>
           (tool.scope === 'GENERAL' && tool.from === 'loader') || bindingToolNames.includes(tool.definition.name),

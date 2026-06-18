@@ -15,6 +15,8 @@ import { StructuredToolInterface } from '@langchain/core/tools';
 import { MCPEntry, MCPFilter, MCPManager, MCPOptions, MCPTestResult, MCPToolEntry } from './types';
 import type { DynamicToolsProvider, Permission, ToolsRegistration, ToolsOptions } from '../tools-manager/types';
 import type { Context } from '@nocobase/actions';
+import { normalizeMCPOptions, renderMCPOptions } from './options-renderer';
+import { UserContextMCPClientManager } from './user-context-client-manager';
 
 export class DefaultMCPManager implements MCPManager {
   private readonly mcpRegistry = new Registry<MCPEntry>();
@@ -23,9 +25,15 @@ export class DefaultMCPManager implements MCPManager {
   private client: MultiServerMCPClient | null = null;
   private toolsMap: Record<string, StructuredToolInterface[]> = {};
   private toolsPermissionMap: Record<string, Permission> = {};
+  private readonly userContextClientManager: UserContextMCPClientManager;
 
   constructor(private readonly app: any) {
     this.provideCollectionManager = () => app.mainDataSource;
+    this.userContextClientManager = new UserContextMCPClientManager({
+      app,
+      listEntries: () => this.listMCP({ enabled: true, useUserContext: true }),
+      buildConnection: (options) => this.buildMCPConnection(options),
+    });
   }
 
   async init() {
@@ -72,6 +80,14 @@ export class DefaultMCPManager implements MCPManager {
     if (filter.transport) {
       where['transport'] = filter.transport;
     }
+    if (filter.useUserContext != null) {
+      where['useUserContext'] =
+        filter.useUserContext === true
+          ? true
+          : {
+              [Op.or]: [false, null],
+            };
+    }
     return (await this.aiMcpClientsModel?.findAll({ where }))?.map((item) => item.toJSON() as MCPEntry) ?? [];
   }
 
@@ -88,7 +104,7 @@ export class DefaultMCPManager implements MCPManager {
     }
 
     // Get all enabled MCP entries
-    const entries = await this.listMCP({ enabled: true });
+    const entries = await this.listMCP({ enabled: true, useUserContext: false });
 
     if (entries.length === 0) {
       return;
@@ -97,7 +113,7 @@ export class DefaultMCPManager implements MCPManager {
     // Build connections object
     const connections: Record<string, StdioConnection | StreamableHTTPConnection> = {};
     for (const entry of entries) {
-      connections[entry.name] = this.buildMCPConnection(entry);
+      connections[entry.name] = this.buildMCPConnection(await renderMCPOptions(entry, this.app));
     }
 
     // Create new client and initialize connections
@@ -121,48 +137,82 @@ export class DefaultMCPManager implements MCPManager {
   }
 
   getMCPToolsProvider(): DynamicToolsProvider {
-    return async (register: ToolsRegistration): Promise<void> => {
+    return async (register: ToolsRegistration, filter): Promise<void> => {
       // Use cached tools from rebuildClient
       for (const [serverName, tools] of Object.entries(this.toolsMap)) {
-        for (const tool of tools) {
-          const toolName = `mcp-${serverName}-${tool.name}`;
-          const toolOptions: ToolsOptions = {
-            scope: 'GENERAL',
-            from: 'mcp',
-            defaultPermission: this.toolsPermissionMap[toolName],
-            introduction: {
-              title: tool.name,
-              about: tool.description,
-            },
-            definition: {
-              name: toolName,
-              description: tool.description || `MCP tool: ${tool.name} from ${serverName}`,
-              schema: tool.schema,
-            },
-            invoke: async (_ctx: Context, args: any) => {
-              try {
-                const result = await tool.invoke(args);
-                return result;
-              } catch (error: any) {
-                return {
-                  status: 'error' as const,
-                  content: error?.message || 'Tool invocation failed',
-                };
-              }
-            },
-          };
-          register.registerTools(toolOptions);
-        }
+        this.registerToolsFromMap(register, serverName, tools);
+      }
+
+      if (!filter?.ctx) {
+        return;
+      }
+
+      const userToolsMap = await this.userContextClientManager.getToolsMap(filter.ctx);
+      for (const [serverName, tools] of Object.entries(userToolsMap)) {
+        this.registerToolsFromMap(register, serverName, tools);
       }
     };
   }
 
-  async listMCPTools(): Promise<Record<string, MCPToolEntry[]>> {
+  private registerToolsFromMap(
+    register: ToolsRegistration,
+    serverName: string,
+    tools: StructuredToolInterface[],
+  ): void {
+    for (const tool of tools) {
+      const toolName = `mcp-${serverName}-${tool.name}`;
+      this.ensureToolPermission(toolName, tool.name);
+      const toolOptions: ToolsOptions = {
+        scope: 'GENERAL',
+        from: 'mcp',
+        defaultPermission: this.toolsPermissionMap[toolName],
+        introduction: {
+          title: tool.name,
+          about: tool.description,
+        },
+        definition: {
+          name: toolName,
+          description: tool.description || `MCP tool: ${tool.name} from ${serverName}`,
+          schema: tool.schema,
+        },
+        invoke: async (_ctx: Context, args: any) => {
+          try {
+            const result = await tool.invoke(args);
+            return result;
+          } catch (error: any) {
+            return {
+              status: 'error' as const,
+              content: error?.message || 'Tool invocation failed',
+            };
+          }
+        },
+      };
+      register.registerTools(toolOptions);
+    }
+  }
+
+  private ensureToolPermission(toolName: string, rawToolName: string) {
+    if (!(toolName in this.toolsPermissionMap)) {
+      this.toolsPermissionMap[toolName] = rawToolName.startsWith('get') ? 'ALLOW' : 'ASK';
+    }
+  }
+
+  async listMCPTools(ctx?: Context): Promise<Record<string, MCPToolEntry[]>> {
+    const toolsMap = {
+      ...this.toolsMap,
+      ...(ctx ? await this.userContextClientManager.getToolsMap(ctx) : {}),
+    };
+
+    return this.formatMCPTools(toolsMap);
+  }
+
+  private formatMCPTools(toolsMap: Record<string, StructuredToolInterface[]>): Record<string, MCPToolEntry[]> {
     return Object.fromEntries(
-      Object.entries(this.toolsMap).map(([serverName, tools]) => [
+      Object.entries(toolsMap).map(([serverName, tools]) => [
         serverName,
         tools.map((tool) => {
           const toolName = `mcp-${serverName}-${tool.name}`;
+          this.ensureToolPermission(toolName, tool.name);
           return {
             name: toolName,
             title: tool.name,
@@ -179,8 +229,13 @@ export class DefaultMCPManager implements MCPManager {
     this.toolsPermissionMap[toolName] = permission;
   }
 
-  async testConnection(options: MCPOptions): Promise<MCPTestResult> {
-    const { transport } = options;
+  async clearUserContextCache(): Promise<void> {
+    await this.userContextClientManager.clear();
+  }
+
+  async testConnection(options: MCPOptions, ctx?: Context): Promise<MCPTestResult> {
+    const renderedOptions = await renderMCPOptions(normalizeMCPOptions(options), this.app, ctx);
+    const { transport } = renderedOptions;
 
     // Validate required fields
     if (!transport) {
@@ -190,14 +245,14 @@ export class DefaultMCPManager implements MCPManager {
       };
     }
 
-    if (transport === 'stdio' && !options.command) {
+    if (transport === 'stdio' && !renderedOptions.command) {
       return {
         success: false,
         error: 'Command is required for stdio transport',
       };
     }
 
-    if ((transport === 'http' || transport === 'sse') && !options.url) {
+    if ((transport === 'http' || transport === 'sse') && !renderedOptions.url) {
       return {
         success: false,
         error: 'URL is required for HTTP/SSE transport',
@@ -207,7 +262,7 @@ export class DefaultMCPManager implements MCPManager {
     let client: MultiServerMCPClient | null = null;
 
     try {
-      const connection = this.buildMCPConnection(options);
+      const connection = this.buildMCPConnection(renderedOptions);
       const serverName = 'test-server';
 
       client = new MultiServerMCPClient({
@@ -303,18 +358,20 @@ export class DefaultMCPManager implements MCPManager {
   }
 
   private async persistenceEntry(entry: MCPEntry): Promise<void> {
+    const normalizedEntry = normalizeMCPOptions(entry) as MCPEntry;
     await this.sequelize.transaction(async (transaction) => {
-      const existed = await this.aiMcpClientsModel.findOne({ where: { name: entry.name }, transaction });
+      const existed = await this.aiMcpClientsModel.findOne({ where: { name: normalizedEntry.name }, transaction });
       if (existed) {
         await existed.update(
           {
-            transport: entry.transport,
-            command: entry.command,
-            args: entry.args,
-            env: entry.env,
-            url: entry.url,
-            headers: entry.headers,
-            restart: entry.restart,
+            transport: normalizedEntry.transport,
+            command: normalizedEntry.command,
+            args: normalizedEntry.args,
+            env: normalizedEntry.env,
+            url: normalizedEntry.url,
+            headers: normalizedEntry.headers,
+            restart: normalizedEntry.restart,
+            useUserContext: normalizedEntry.useUserContext,
           },
           { transaction },
         );
@@ -323,7 +380,7 @@ export class DefaultMCPManager implements MCPManager {
 
       await this.aiMcpClientsModel.create(
         {
-          ...entry,
+          ...normalizedEntry,
         },
         { transaction },
       );
@@ -331,13 +388,14 @@ export class DefaultMCPManager implements MCPManager {
   }
 
   private normalizeEntry(name: string, options: MCPOptions): MCPEntry {
-    return {
+    return normalizeMCPOptions({
       name,
       enabled: true,
       ...options,
       args: options.args ?? [],
       env: options.env ?? {},
-    };
+      useUserContext: options.useUserContext === true,
+    }) as MCPEntry;
   }
 
   private get aiMcpClientsCollection() {
