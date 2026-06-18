@@ -81,6 +81,6 @@ describe('VariableJsonTextArea', () => {
       fireEvent.click(screen.getByText('API Key'));
     });
 
-    expect(await screen.findByRole('textbox')).toHaveValue('{{$env.API_KEY}}');
+    expect(await screen.findByRole('textbox')).toHaveValue('{{ ctx.$env.API_KEY }}');
   });
 });

@@ -8,18 +8,22 @@
  */
 
 import { css, cx } from '@emotion/css';
-import { FlowContextSelector, useFlowContext, type MetaTreeNode } from '@nocobase/flow-engine';
+import {
+  FlowContextSelector,
+  formatPathToValue as formatFlowPathToValue,
+  useFlowContext,
+  type MetaTreeNode,
+} from '@nocobase/flow-engine';
 import { Button, theme } from 'antd';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
 import React, { useCallback, useMemo, useRef } from 'react';
 import { JsonTextArea, type JsonTextAreaProps } from './JsonTextArea';
-import { makeFormatVariablePath, useFilteredMetaTree, type VariableDelimiters } from './VariableInput';
+import { useFilteredMetaTree } from './VariableInput';
 
 export interface VariableJsonTextAreaProps extends JsonTextAreaProps {
   namespaces?: string[];
   extraNodes?: MetaTreeNode[];
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
-  delimiters?: VariableDelimiters;
   formatPathToValue?: (meta: MetaTreeNode) => string | undefined;
 }
 
@@ -36,7 +40,6 @@ export const VariableJsonTextArea = React.memo((props: VariableJsonTextAreaProps
     namespaces,
     extraNodes,
     metaTree,
-    delimiters,
     formatPathToValue: customFormatPathToValue,
     ...textAreaProps
   } = props;
@@ -79,11 +82,11 @@ export const VariableJsonTextArea = React.memo((props: VariableJsonTextAreaProps
   );
 
   const formatPathToValue = useMemo(() => {
-    if (customFormatPathToValue) {
-      return customFormatPathToValue;
+    if (!customFormatPathToValue) {
+      return;
     }
-    return makeFormatVariablePath(delimiters);
-  }, [customFormatPathToValue, delimiters]);
+    return (meta: MetaTreeNode) => customFormatPathToValue(meta) ?? formatFlowPathToValue(meta);
+  }, [customFormatPathToValue]);
 
   const wrapperClassName = useMemo(
     () => css`
@@ -150,7 +153,7 @@ export const VariableJsonTextArea = React.memo((props: VariableJsonTextAreaProps
         <FlowContextSelector
           metaTree={selectorMetaTree}
           disabled={textAreaProps.disabled}
-          formatPathToValue={(meta) => formatPathToValue(meta) ?? ''}
+          formatPathToValue={formatPathToValue}
           onChange={handleVariableSelected}
         >
           <Button
