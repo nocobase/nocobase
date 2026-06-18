@@ -100,7 +100,62 @@ type CodeProps = React.ComponentProps<'code'> & {
 
 const isSupportLanguage = (language: string) => ['js', 'javascript', 'sql'].includes(language?.toLowerCase());
 
-const Code: React.FC<CodeProps> = ({ children, className, node, message: chatMessage, ...rest }) => {
+export const CodeInternal: React.FC<{
+  language: string;
+  value: string;
+}> = ({ language, value }) => {
+  const { isDarkTheme } = useGlobalTheme();
+
+  return (
+    <SyntaxHighlighter PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
+      {value}
+    </SyntaxHighlighter>
+  );
+};
+
+export const CodeBasic: React.FC<CodeProps> = ({ children, className, node, ...rest }) => {
+  const { token } = theme.useToken();
+  const { message } = App.useApp();
+  const t = useT();
+  const match = /language-(\w+)/.exec(className || '');
+  const language = match ? match[1] : '';
+  const value = String(children).replace(/\n$/, '');
+
+  if (!match) {
+    return (
+      <Typography.Text code {...rest} className={className}>
+        {children}
+      </Typography.Text>
+    );
+  }
+
+  const copy = () => {
+    navigator.clipboard.writeText(value);
+    message.success(t('Copied'));
+  };
+
+  return (
+    <Card
+      size="small"
+      title={language}
+      styles={{
+        title: {
+          fontSize: token.fontSize,
+          fontWeight: 400,
+        },
+        body: {
+          width: '100%',
+          fontSize: token.fontSizeSM,
+        },
+      }}
+      extra={<Button variant="link" color="default" size="small" onClick={copy} icon={<CopyOutlined />} />}
+    >
+      <CodeInternal language={language} value={value} />
+    </Card>
+  );
+};
+
+export const Code: React.FC<CodeProps> = ({ children, className, node, message: chatMessage, ...rest }) => {
   const { token } = theme.useToken();
   const { message } = App.useApp();
   const { isDarkTheme } = useGlobalTheme();
@@ -119,9 +174,9 @@ const Code: React.FC<CodeProps> = ({ children, className, node, message: chatMes
 
   if (!match) {
     return (
-      <Typography.Text code {...rest} className={className}>
+      <CodeBasic {...rest} className={className} node={node} message={chatMessage}>
         {children}
-      </Typography.Text>
+      </CodeBasic>
     );
   }
 
