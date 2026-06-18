@@ -33,10 +33,14 @@ export type DBRestoreOptions = {
   filePath: string;
   schema?: string;
   skipDropAllTables?: boolean;
+  toolchain?: DBBackupToolchain;
 };
+
+export type DBBackupToolchain = 'postgres' | 'kingbase';
 
 export interface DBAdapter {
   dbOpts: DatabaseOptions;
+  backupToolchain?: DBBackupToolchain;
   backup(options: DBBackupOptions): Promise<void>;
   restore(options: DBRestoreOptions): Promise<void>;
   check(op: 'backup' | 'restore'): Promise<void>;
@@ -94,6 +98,15 @@ abstract class BaseDBAdapter implements DBAdapter {
       );
     }
   };
+
+  protected hasCommand(command: string) {
+    try {
+      execSync(`${command} --version`);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  }
 }
 
 class MySQLAdapter extends BaseDBAdapter {
@@ -378,25 +391,46 @@ class MySQLAdapter extends BaseDBAdapter {
 }
 
 class PostgresAdapter extends BaseDBAdapter {
-  get #backupCmd() {
+  get backupToolchain(): DBBackupToolchain {
+    return 'postgres';
+  }
+
+  protected getBackupCommandName(_toolchain: DBBackupToolchain = this.backupToolchain) {
     return formatPathInEnv(process.env.PG_DUMP_PATH) || 'pg_dump';
   }
-  get #restoreCmd() {
+
+  protected getRestoreCommandName(_toolchain: DBBackupToolchain = this.backupToolchain) {
     return formatPathInEnv(process.env.PG_RESTORE_PATH) || 'pg_restore';
   }
+
+  protected getSqlCommandName(_toolchain: DBBackupToolchain = this.backupToolchain) {
+    return formatPathInEnv(process.env.PSQL_PATH) || 'psql';
+  }
+
+  protected getPasswordEnvVars(
+    password: string,
+    _toolchain: DBBackupToolchain = this.backupToolchain,
+  ): NodeJS.ProcessEnv {
+    return { PGPASSWORD: password };
+  }
+
+  protected getBackupSchema() {
+    return this.dbOpts.schema;
+  }
+
   async check(op: 'backup' | 'restore') {
     switch (op) {
       case 'backup':
-        this.assertCommand(this.#backupCmd);
+        this.assertCommand(this.getBackupCommandName());
         break;
       case 'restore':
-        this.assertCommand(this.#restoreCmd);
+        this.assertCommand(this.getRestoreCommandName());
         break;
     }
   }
 
   async clientVersion(op: 'backup' | 'restore'): Promise<string | void> {
-    const cmd = op === 'backup' ? this.#backupCmd : this.#restoreCmd;
+    const cmd = op === 'backup' ? this.getBackupCommandName() : this.getRestoreCommandName();
     try {
       return execSync(`${cmd} --version`).toString();
     } catch (_error) {
@@ -405,8 +439,9 @@ class PostgresAdapter extends BaseDBAdapter {
   }
 
   async backup({ dir, includeTables, excludeTables }: DBBackupOptions): Promise<void> {
-    const { username, host, port, database, password, schema: backupSchema } = this.dbOpts;
+    const { username, host, port, database, password } = this.dbOpts;
     const filePath = `${dir}/data`;
+    const backupSchema = this.getBackupSchema();
     const schemaOption = backupSchema ? `--schema=${backupSchema}` : '';
     const includeOption =
       Array.isArray(includeTables) && includeTables.length
@@ -421,13 +456,18 @@ class PostgresAdapter extends BaseDBAdapter {
             .join(' ')
         : '';
     // set the password in the environment variable, so we don't need to pass it in the command
-    const command = `${this.#backupCmd} ${includeOption} ${excludeOption} -U ${username} -h ${host} ${
+    const command = `${this.getBackupCommandName()} ${includeOption} ${excludeOption} -U ${username} -h ${host} ${
       port ? `-p ${port}` : ''
     } -F c -b --quote-all-identifiers ${schemaOption} -f ${filePath} ${database}`;
-    await run(command, { PGPASSWORD: password });
+    await run(command, this.getPasswordEnvVars(password));
   }
 
-  async restore({ filePath, schema, skipDropAllTables = false }: DBRestoreOptions): Promise<void> {
+  async restore({
+    filePath,
+    schema,
+    skipDropAllTables = false,
+    toolchain = this.backupToolchain,
+  }: DBRestoreOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
     let schemaOption = this.dbOpts.schema;
     if (schema && !schemaOption) {
@@ -448,7 +488,9 @@ class PostgresAdapter extends BaseDBAdapter {
       ? `WHERE relnamespace = '${schemaOption}'::regnamespace`
       : `WHERE tgrelid IN (SELECT oid FROM pg_class WHERE relnamespace NOT IN (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname IN ('pg_catalog', 'information_schema')))`;
     if (!skipDropAllTables) {
-      const dropDataCommand = `psql -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
+      const dropDataCommand = `${this.getSqlCommandName(toolchain)} -U ${username} -h ${host} ${
+        port ? `-p ${port}` : ''
+      } -d ${database} -c "
     DO ${D$$} DECLARE r RECORD;
     BEGIN
     FOR r IN (SELECT viewname,schemaname FROM pg_views ${schemaNameCondition}) LOOP
@@ -490,29 +532,46 @@ class PostgresAdapter extends BaseDBAdapter {
     END ${D$$};"`.replace(/\n/g, ' ');
 
       // Run the command to drop all existing data
-      await run(dropDataCommand, { PGPASSWORD: password });
+      await run(dropDataCommand, this.getPasswordEnvVars(password, toolchain));
     }
 
     if (schema === schemaOption || !schemaOption) {
       // current schema is the same as the backup schema
-      const pgRestoreCommand = `${this.#restoreCmd} -U ${username} -h ${host} ${
+      const pgRestoreCommand = `${this.getRestoreCommandName(toolchain)} -U ${username} -h ${host} ${
         port ? `-p ${port}` : ''
       } -d ${database} --clean --if-exists --no-owner -j ${j} ${filePath}`;
-      await run(pgRestoreCommand, { PGPASSWORD: password });
+      await run(pgRestoreCommand, this.getPasswordEnvVars(password, toolchain));
     } else {
       const srcSchema = schema || 'public';
-      const pgRestoreCommand = `${this.#restoreCmd} -U ${username} -h ${host} ${
-        port ? `-p ${port}` : ''
-      } -n ${srcSchema} -d ${database} --clean --if-exists --no-owner -j ${j} ${filePath}`;
-      await this.#restoreSchema(srcSchema, schemaOption, pgRestoreCommand);
+      const pgRestoreCommand = this.buildSchemaRestoreCommand(srcSchema, schemaOption, filePath, j, toolchain);
+      await this.restoreSchema(srcSchema, schemaOption, pgRestoreCommand, toolchain);
     }
   }
 
-  async #restoreSchema(srcSchema: string, targetSchema: string, pgRestoreCommand: string) {
+  protected buildSchemaRestoreCommand(
+    srcSchema: string,
+    _targetSchema: string,
+    filePath: string,
+    jobs: number,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
+    const { username, host, port, database } = this.dbOpts;
+    return `${this.getRestoreCommandName(toolchain)} -U ${username} -h ${host} ${
+      port ? `-p ${port}` : ''
+    } -n ${srcSchema} -d ${database} --clean --if-exists --no-owner -j ${jobs} ${filePath}`;
+  }
+
+  protected async restoreSchema(
+    srcSchema: string,
+    targetSchema: string,
+    pgRestoreCommand: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
     const { username, host, port, database, password } = this.dbOpts;
     const ts = Date.now();
     // 1. backup current schema to srcSchema_ts if exists and create new schema (same name as srcSchema)
-    const preCommand = `psql -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
+    const sqlCommandName = this.getSqlCommandName(toolchain);
+    const preCommand = `${sqlCommandName} -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
     DO ${D$$}
     BEGIN
         IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = '${srcSchema}') THEN
@@ -520,7 +579,7 @@ class PostgresAdapter extends BaseDBAdapter {
         END IF;
         EXECUTE 'CREATE SCHEMA ${srcSchema}';
     END ${D$$};"`.replace(/\n/g, ' ');
-    const postCommand = `psql -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
+    const postCommand = `${sqlCommandName} -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
     DO ${D$$}
     BEGIN
         EXECUTE 'DROP SCHEMA ${targetSchema} CASCADE';
@@ -530,22 +589,26 @@ class PostgresAdapter extends BaseDBAdapter {
         END IF;
     END ${D$$};"`.replace(/\n/g, ' ');
 
-    await run(preCommand, { PGPASSWORD: password });
+    await run(preCommand, this.getPasswordEnvVars(password, toolchain));
     try {
-      await run(pgRestoreCommand, { PGPASSWORD: password });
+      await run(pgRestoreCommand, this.getPasswordEnvVars(password, toolchain));
     } finally {
-      await run(postCommand, { PGPASSWORD: password });
+      await run(postCommand, this.getPasswordEnvVars(password, toolchain));
     }
-    await this.#syncCollectionSchemaMetadata(srcSchema, targetSchema);
+    await this.syncCollectionSchemaMetadata(srcSchema, targetSchema, toolchain);
   }
 
-  async #syncCollectionSchemaMetadata(srcSchema: string, targetSchema: string) {
+  protected async syncCollectionSchemaMetadata(
+    srcSchema: string,
+    targetSchema: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
     const { username, host, port, database, password, tablePrefix } = this.dbOpts;
     const collectionsTable = `${tablePrefix || ''}collections`;
     const targetSchemaLiteral = escapeStringLiteral(targetSchema);
     const srcSchemaLiteral = escapeStringLiteral(srcSchema);
     const collectionsTableLiteral = escapeStringLiteral(collectionsTable);
-    const updateCollectionSchemaCommand = `psql -U ${username} -h ${host} ${
+    const updateCollectionSchemaCommand = `${this.getSqlCommandName(toolchain)} -U ${username} -h ${host} ${
       port ? `-p ${port}` : ''
     } -d ${database} -c "
     DO ${D$$}
@@ -567,7 +630,97 @@ class PostgresAdapter extends BaseDBAdapter {
             );
         END IF;
     END ${D$$};"`.replace(/\n/g, ' ');
-    await run(updateCollectionSchemaCommand, { PGPASSWORD: password });
+    await run(updateCollectionSchemaCommand, this.getPasswordEnvVars(password, toolchain));
+  }
+}
+
+class KingbaseAdapter extends PostgresAdapter {
+  get backupToolchain(): DBBackupToolchain {
+    return this.hasKingbaseToolchain() ? 'kingbase' : 'postgres';
+  }
+
+  private getKingbaseBackupCommandName() {
+    return formatPathInEnv(process.env.KINGBASE_DUMP_PATH) || 'sys_dump';
+  }
+
+  private getKingbaseRestoreCommandName() {
+    return formatPathInEnv(process.env.KINGBASE_RESTORE_PATH) || 'sys_restore';
+  }
+
+  private getKingbaseSqlCommandName() {
+    return formatPathInEnv(process.env.KINGBASE_PSQL_PATH) || 'ksql';
+  }
+
+  private hasKingbaseToolchain() {
+    return (
+      this.hasCommand(this.getKingbaseBackupCommandName()) &&
+      this.hasCommand(this.getKingbaseRestoreCommandName()) &&
+      this.hasCommand(this.getKingbaseSqlCommandName())
+    );
+  }
+
+  protected getBackupCommandName(toolchain: DBBackupToolchain = this.backupToolchain) {
+    return toolchain === 'kingbase' ? this.getKingbaseBackupCommandName() : super.getBackupCommandName(toolchain);
+  }
+
+  protected getRestoreCommandName(toolchain: DBBackupToolchain = this.backupToolchain) {
+    return toolchain === 'kingbase' ? this.getKingbaseRestoreCommandName() : super.getRestoreCommandName(toolchain);
+  }
+
+  protected getSqlCommandName(toolchain: DBBackupToolchain = this.backupToolchain) {
+    return toolchain === 'kingbase' ? this.getKingbaseSqlCommandName() : super.getSqlCommandName(toolchain);
+  }
+
+  protected getPasswordEnvVars(
+    password: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ): NodeJS.ProcessEnv {
+    if (toolchain === 'postgres') {
+      return super.getPasswordEnvVars(password, toolchain);
+    }
+    return { KINGBASE_PASSWORD: password };
+  }
+
+  protected getBackupSchema() {
+    return this.dbOpts.schema || 'public';
+  }
+
+  protected buildSchemaRestoreCommand(
+    srcSchema: string,
+    targetSchema: string,
+    filePath: string,
+    jobs: number,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
+    if (toolchain === 'postgres') {
+      return super.buildSchemaRestoreCommand(srcSchema, targetSchema, filePath, jobs, toolchain);
+    }
+    const { username, host, port, database } = this.dbOpts;
+    return `${this.getRestoreCommandName(toolchain)} -U ${username} -h ${host} ${
+      port ? `-p ${port}` : ''
+    } -g ${srcSchema} -G ${targetSchema} -d ${database} --clean --if-exists --no-owner -j ${jobs} ${filePath}`;
+  }
+
+  protected async restoreSchema(
+    srcSchema: string,
+    targetSchema: string,
+    restoreCommand: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
+    if (toolchain === 'postgres') {
+      await super.restoreSchema(srcSchema, targetSchema, restoreCommand, toolchain);
+      return;
+    }
+
+    const { username, host, port, database, password } = this.dbOpts;
+    const targetSchemaIdentifier = quotePgIdentifier(targetSchema).replace(/"/g, '\\"');
+    const createSchemaCommand = `${this.getSqlCommandName(toolchain)} -U ${username} -h ${host} ${
+      port ? `-p ${port}` : ''
+    } -d ${database} -c "CREATE SCHEMA IF NOT EXISTS ${targetSchemaIdentifier};"`;
+
+    await run(createSchemaCommand, this.getPasswordEnvVars(password, toolchain));
+    await run(restoreCommand, this.getPasswordEnvVars(password, toolchain));
+    await this.syncCollectionSchemaMetadata(srcSchema, targetSchema, toolchain);
   }
 }
 
@@ -592,6 +745,7 @@ class MariaDBAdapter extends MySQLAdapter {}
 const adapterMap = {
   mysql: MySQLAdapter,
   postgres: PostgresAdapter,
+  kingbase: KingbaseAdapter,
   sqlite: SQLiteAdapter,
   mariadb: MariaDBAdapter,
 };
