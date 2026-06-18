@@ -8,10 +8,28 @@
  */
 
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { App as AntdApp, Badge, Empty, Form, Input, Modal, Segmented, Space, Spin } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import {
+  App as AntdApp,
+  Badge,
+  Card,
+  Empty,
+  Flex,
+  Form,
+  Input,
+  List,
+  Modal,
+  Segmented,
+  Select,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+  theme,
+} from 'antd';
+import { DeleteOutlined, EditOutlined, FilterOutlined } from '@ant-design/icons';
 import { Conversations as AntConversations, type ConversationsProps } from '@ant-design/x';
 import { useApp } from '@nocobase/client-v2';
+import { dayjs } from '@nocobase/utils/client';
 import { useT } from '../../../locale';
 import type { Conversation } from '../../types';
 import { useChat } from '../hooks/useChat';
@@ -37,6 +55,7 @@ export const Conversations: React.FC = memo(() => {
   const [form] = Form.useForm<{ title: string }>();
   const listRef = useRef<HTMLDivElement>(null);
   const [renameTarget, setRenameTarget] = useState<RenameTarget>(null);
+  const [pendingWorkflowTask, setPendingWorkflowTask] = useState<string>();
   const aiConfigRepository = useAIConfigRepository();
   const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
   const conversations = useChatConversationsStore.use.conversations();
@@ -62,8 +81,13 @@ export const Conversations: React.FC = memo(() => {
   const {
     refresh: refreshWorkflowTasks,
     runSearch: runSearchWorkflowTasks,
+    runJobStatusFilter,
     workflowTasks,
     loading: workflowTasksLoading,
+    selectedJobStatus,
+    hasMore,
+    loadMoreWorkflowTasks,
+    lastWorkflowTaskRef,
     unreadCount: unreadWorkflowTaskCount,
     acceptWorkflowTask,
     getWorkflowTaskBySession,
@@ -142,6 +166,12 @@ export const Conversations: React.FC = memo(() => {
     }
   }, [form, renameTarget]);
 
+  useEffect(() => {
+    if (pendingWorkflowTask && pendingWorkflowTask === currentConversation) {
+      setPendingWorkflowTask(undefined);
+    }
+  }, [currentConversation, pendingWorkflowTask]);
+
   const openConversation = useCallback(
     (sessionId: string, username?: string, model?: ModelRef) => {
       if (sessionId === currentConversation) {
@@ -200,12 +230,18 @@ export const Conversations: React.FC = memo(() => {
 
   const openWorkflowTask = useCallback(
     async (sessionId: string) => {
-      await acceptWorkflowTask(sessionId);
-      const task = await getWorkflowTaskBySession(sessionId);
-      setReadonly(task?.readonly === true);
-      chat.for(sessionId).setResponseLoading(task?.status === 'processing');
-      setShowConversations(false);
-      openConversation(sessionId, task?.config?.username, task?.config?.model ?? undefined);
+      setPendingWorkflowTask(sessionId);
+      try {
+        await acceptWorkflowTask(sessionId);
+        const task = await getWorkflowTaskBySession(sessionId);
+        setReadonly(task?.readonly === true);
+        chat.for(sessionId).setResponseLoading(task?.status === 'processing');
+        setShowConversations(false);
+        openConversation(sessionId, task?.config?.username, task?.config?.model ?? undefined);
+      } catch (error) {
+        setPendingWorkflowTask(undefined);
+        throw error;
+      }
     },
     [acceptWorkflowTask, chat, getWorkflowTaskBySession, openConversation, setReadonly, setShowConversations],
   );
@@ -246,22 +282,6 @@ export const Conversations: React.FC = memo(() => {
         };
       }),
     [conversations, t],
-  );
-
-  const workflowItems = useMemo<ConversationsProps['items']>(
-    () =>
-      workflowTasks.map((item) => {
-        const title = item.workflowTitle || item.nodeTitle || item.sessionId;
-        return {
-          key: item.sessionId,
-          title,
-          label: item.nodeTitle ? `${title} / ${item.nodeTitle}` : title,
-          icon: !item.read ? <Badge dot offset={[-3, 0]} /> : undefined,
-          timestamp:
-            item.updatedAt || item.createdAt ? new Date(item.updatedAt || item.createdAt).getTime() : undefined,
-        };
-      }),
-    [workflowTasks],
   );
 
   const submitRename = async () => {
@@ -370,7 +390,6 @@ export const Conversations: React.FC = memo(() => {
         }}
       >
         {conversationSegmented === 'conversations' && conversationsService.loading ? <Spin /> : null}
-        {conversationSegmented === 'workflowTasks' && workflowTasksLoading ? <Spin /> : null}
         {conversationSegmented === 'conversations' && items.length ? (
           <AntConversations
             className="ai-chatbox-conversations-list"
@@ -410,18 +429,21 @@ export const Conversations: React.FC = memo(() => {
             })}
           />
         ) : null}
-        {conversationSegmented === 'workflowTasks' && workflowItems.length ? (
-          <WorkflowTasksConversationsList
-            activeKey={currentConversation}
-            items={workflowItems}
+        {conversationSegmented === 'workflowTasks' ? (
+          <WorkflowTasksList
+            currentConversation={currentConversation}
+            pendingConversation={pendingWorkflowTask}
             workflowTasks={workflowTasks}
+            loading={workflowTasksLoading}
+            selectedJobStatus={selectedJobStatus}
+            hasMore={hasMore}
+            onJobStatusFilter={runJobStatusFilter}
+            onLoadMore={loadMoreWorkflowTasks}
+            lastWorkflowTaskRef={lastWorkflowTaskRef}
             onOpen={openWorkflowTask}
           />
         ) : null}
         {conversationSegmented === 'conversations' && !items.length ? (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        ) : null}
-        {conversationSegmented === 'workflowTasks' && !workflowItems.length ? (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : null}
       </div>
@@ -456,22 +478,193 @@ function getConversationModel(conversation: Conversation): ModelRef | null {
   };
 }
 
-const WorkflowTasksConversationsList: React.FC<{
-  activeKey?: string;
-  items: ConversationsProps['items'];
+const JOB_STATUS = {
+  PENDING: 0,
+  RESOLVED: 1,
+  ABORTED: -3,
+  REJECTED: -5,
+} as const;
+
+const JOB_STATUS_OPTIONS = [
+  {
+    value: JOB_STATUS.PENDING,
+    label: 'Pending',
+    color: 'gold',
+  },
+  {
+    value: JOB_STATUS.RESOLVED,
+    label: 'Resolved',
+    color: 'green',
+  },
+  {
+    value: JOB_STATUS.REJECTED,
+    label: 'Rejected',
+    color: 'volcano',
+  },
+  {
+    value: JOB_STATUS.ABORTED,
+    label: 'Aborted',
+    color: 'red',
+  },
+];
+
+const JOB_STATUS_OPTIONS_MAP = JOB_STATUS_OPTIONS.reduce<Record<number, (typeof JOB_STATUS_OPTIONS)[number]>>(
+  (map, option) => ({
+    ...map,
+    [option.value]: option,
+  }),
+  {},
+);
+
+const WorkflowTasksList: React.FC<{
+  currentConversation?: string;
+  pendingConversation?: string;
   workflowTasks: WorkflowTask[];
+  loading: boolean;
+  selectedJobStatus?: number;
+  hasMore: boolean;
+  onJobStatusFilter: (jobStatus?: number) => void;
+  onLoadMore: () => Promise<void>;
+  lastWorkflowTaskRef: (node?: Element | null) => void;
   onOpen: (sessionId: string) => Promise<void>;
-}> = ({ activeKey, items, workflowTasks, onOpen }) => {
-  const sessionIds = useMemo(() => new Set(workflowTasks.map((item) => item.sessionId)), [workflowTasks]);
+}> = ({
+  currentConversation,
+  pendingConversation,
+  workflowTasks,
+  loading,
+  selectedJobStatus,
+  hasMore,
+  onJobStatusFilter,
+  onLoadMore,
+  lastWorkflowTaskRef,
+  onOpen,
+}) => {
+  const t = useT();
+  const { token } = theme.useToken();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const scrollContainer = containerRef.current?.parentElement;
+    if (!scrollContainer) {
+      return;
+    }
+
+    const onScroll = () => {
+      if (loading || !hasMore) {
+        return;
+      }
+
+      const threshold = token.controlHeight;
+      const distanceToBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
+
+      if (distanceToBottom <= threshold) {
+        onLoadMore().catch(console.error);
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', onScroll);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', onScroll);
+    };
+  }, [hasMore, loading, onLoadMore, token.controlHeight]);
+
+  if (loading && !workflowTasks.length) {
+    return (
+      <Spin
+        style={{
+          display: 'block',
+          margin: `${token.margin}px auto`,
+        }}
+      />
+    );
+  }
+
   return (
-    <AntConversations
-      activeKey={activeKey}
-      items={items}
-      onActiveChange={(sessionId) => {
-        if (sessionIds.has(sessionId)) {
-          onOpen(sessionId).catch(console.error);
-        }
-      }}
-    />
+    <div ref={containerRef} style={{ padding: `${token.paddingXS}px ${token.paddingSM}px ${token.paddingSM}px` }}>
+      <Select
+        prefix={<FilterOutlined />}
+        allowClear
+        value={selectedJobStatus}
+        onChange={onJobStatusFilter}
+        style={{ width: '100%', marginBottom: token.marginXS }}
+        placeholder={t('Filter by status')}
+        options={JOB_STATUS_OPTIONS.map((option) => ({
+          value: option.value,
+          label: t(option.label),
+          color: option.color,
+        }))}
+        optionRender={(option) => <Tag color={option.data.color}>{option.label}</Tag>}
+        labelRender={(props) => {
+          const option = JOB_STATUS_OPTIONS_MAP[props.value as number];
+          return <Tag color={option?.color}>{props.label}</Tag>;
+        }}
+      />
+      {!workflowTasks.length ? (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      ) : (
+        <List
+          dataSource={workflowTasks}
+          split={false}
+          footer={
+            loading && workflowTasks.length ? (
+              <div style={{ textAlign: 'center', padding: `${token.paddingXS}px 0 ${token.paddingXXS}px` }}>
+                <Spin size="small" />
+              </div>
+            ) : null
+          }
+          renderItem={(item) => {
+            const selected = item.sessionId === (pendingConversation ?? currentConversation);
+            const isLastItem = workflowTasks[workflowTasks.length - 1]?.sessionId === item.sessionId;
+            const jobStatusOption =
+              typeof item.jobStatus !== 'undefined' ? JOB_STATUS_OPTIONS_MAP[item.jobStatus] : null;
+            const createdAtText = item.createdAt ? dayjs(item.createdAt).format('YYYY-MM-DD HH:mm:ss') : null;
+            const executionIdText =
+              item.executionId !== null && typeof item.executionId !== 'undefined' ? `#${item.executionId}` : null;
+
+            return (
+              <List.Item key={item.sessionId} style={{ padding: `0 0 ${token.paddingXS}px` }}>
+                <div ref={isLastItem ? lastWorkflowTaskRef : undefined} style={{ width: '100%' }}>
+                  <Card
+                    type="inner"
+                    title={
+                      <Space>
+                        {!item.read ? <Badge status="error" /> : null}
+                        <Typography.Text strong ellipsis style={{ flex: 1, minWidth: 0 }}>
+                          {item.workflowTitle}
+                        </Typography.Text>
+                      </Space>
+                    }
+                    extra={
+                      <Tag color={jobStatusOption?.color ?? 'default'}>
+                        {jobStatusOption?.label ? t(jobStatusOption.label) : '-'}
+                      </Tag>
+                    }
+                    size="small"
+                    hoverable
+                    onClick={() => onOpen(item.sessionId).catch(console.error)}
+                    style={{
+                      width: '100%',
+                      backgroundColor: selected ? token.colorPrimaryBg : token.colorBgContainer,
+                      borderColor: selected ? token.colorPrimary : token.colorBorderSecondary,
+                      boxShadow: selected ? `0 0 0 ${token.lineWidth}px ${token.colorPrimaryBorder}` : undefined,
+                    }}
+                    styles={{ body: { padding: `${token.paddingXS}px ${token.paddingSM}px` } }}
+                  >
+                    <Flex vertical gap={token.marginXXS}>
+                      <Typography.Text ellipsis>{item.nodeTitle}</Typography.Text>
+                      <Space direction="vertical" size={token.marginXXS}>
+                        {createdAtText ? <Typography.Text type="secondary">{createdAtText}</Typography.Text> : null}
+                        {executionIdText ? <Typography.Text type="secondary">{executionIdText}</Typography.Text> : null}
+                      </Space>
+                    </Flex>
+                  </Card>
+                </div>
+              </List.Item>
+            );
+          }}
+        />
+      )}
+    </div>
   );
 };

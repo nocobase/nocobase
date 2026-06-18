@@ -61,6 +61,7 @@ type WorkflowTasksActions = {
     workflowTask: WorkflowTaskDetail | undefined | ((prev?: WorkflowTaskDetail) => WorkflowTaskDetail | undefined),
   ) => void;
   setUnreadCount: (unreadCount: number | ((prev: number) => number)) => void;
+  markWorkflowTaskRead: (sessionId: string) => void;
   setLoading: (loading: boolean) => void;
   setKeyword: (keyword: string) => void;
   setSelectedJobStatus: (selectedJobStatus: number | undefined) => void;
@@ -92,6 +93,28 @@ const store = getOrCreateGlobalStore('@nocobase/plugin-ai/workflow-tasks-store',
       set((state) => ({
         unreadCount: typeof unreadCount === 'function' ? unreadCount(state.unreadCount) : unreadCount,
       })),
+
+    markWorkflowTaskRead: (sessionId) =>
+      set((state) => {
+        const target = state.workflowTasks.find((item) => item.sessionId === sessionId);
+        if (!target || target.read) {
+          return {
+            workflowTasks: state.workflowTasks,
+            unreadCount: state.unreadCount,
+          };
+        }
+        return {
+          workflowTasks: state.workflowTasks.map((item) =>
+            item.sessionId === sessionId
+              ? {
+                  ...item,
+                  read: true,
+                }
+              : item,
+          ),
+          unreadCount: Math.max(0, state.unreadCount - 1),
+        };
+      }),
 
     setLoading: (loading) => set({ loading }),
 

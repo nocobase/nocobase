@@ -45,6 +45,7 @@ export const useWorkflowTasks = () => {
   const setLoading = useWorkflowTasksStore.use.setLoading();
   const setKeyword = useWorkflowTasksStore.use.setKeyword();
   const setSelectedJobStatus = useWorkflowTasksStore.use.setSelectedJobStatus();
+  const markWorkflowTaskRead = useWorkflowTasksStore.use.markWorkflowTaskRead();
   const keywordRef = useRef(keyword);
   keywordRef.current = keyword;
   const selectedJobStatusRef = useRef(selectedJobStatus);
@@ -157,8 +158,9 @@ export const useWorkflowTasks = () => {
           },
         })
         .catch(() => undefined);
+      markWorkflowTaskRead(sessionId);
     },
-    [workflowTasksResource],
+    [markWorkflowTaskRead, workflowTasksResource],
   );
 
   const getWorkflowTaskBySession = useCallback(

@@ -139,4 +139,35 @@ describe('client-v2 chatbox stores', () => {
       },
     });
   });
+
+  it('marks workflow tasks as read and decrements unread count once', () => {
+    useWorkflowTasksStore.getState().setWorkflowTasks([
+      {
+        ...workflowTask('session-a'),
+        read: false,
+      },
+      {
+        ...workflowTask('session-b'),
+        read: true,
+      },
+    ]);
+    useWorkflowTasksStore.getState().setUnreadCount(1);
+
+    useWorkflowTasksStore.getState().markWorkflowTaskRead('session-a');
+    expect(useWorkflowTasksStore.getState().workflowTasks).toMatchObject([
+      {
+        sessionId: 'session-a',
+        read: true,
+      },
+      {
+        sessionId: 'session-b',
+        read: true,
+      },
+    ]);
+    expect(useWorkflowTasksStore.getState().unreadCount).toBe(0);
+
+    useWorkflowTasksStore.getState().markWorkflowTaskRead('session-a');
+    useWorkflowTasksStore.getState().markWorkflowTaskRead('missing-session');
+    expect(useWorkflowTasksStore.getState().unreadCount).toBe(0);
+  });
 });
