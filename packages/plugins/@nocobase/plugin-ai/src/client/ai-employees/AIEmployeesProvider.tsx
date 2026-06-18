@@ -7,30 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
-import { AISelectionProvider } from './1.x/selector/AISelectorProvider';
-import { AISettingsProvider } from './AISettingsProvider';
-import { ChatBoxLayout } from './chatbox/ChatBoxLayout';
-import { AISelection } from './AISelection';
-import { AISelectionControl } from './AISelectionControl';
-import { CurrentUserContext } from '@nocobase/client';
+import React from 'react';
+import { ChatBoxLayout } from '../../client-v2/ai-employees/chatbox/components/ChatBoxLayout';
 
 export const AIEmployeesProvider: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
-  const currentUserCtx = useContext(CurrentUserContext);
-  if (!currentUserCtx?.data?.data) {
-    return <>{props.children}</>;
-  }
-
-  return (
-    <AISelectionProvider>
-      <AISettingsProvider>
-        <ChatBoxLayout>{props.children}</ChatBoxLayout>
-        {/* <ContextAwareTooltip /> */}
-        <AISelection />
-        <AISelectionControl />
-      </AISettingsProvider>
-    </AISelectionProvider>
-  );
+  return <ChatBoxLayout>{props.children}</ChatBoxLayout>;
 };
