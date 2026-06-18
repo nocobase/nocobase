@@ -10,7 +10,7 @@
 import { FlowModel, useFlowEngine } from '@nocobase/flow-engine';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { AIEmployeeShortcutListModel } from '../flow/models';
+import { AIEmployeeShortcutListModel } from '../../../client-v2/models/ai-employees';
 import { contextAware } from '../stores/context-aware';
 
 export const useShortcuts = () => {
@@ -45,7 +45,7 @@ export const useShortcuts = () => {
       });
       return model;
     },
-    [flowEngine, name],
+    [flowEngine],
   );
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export const useShortcuts = () => {
       builtIn: true,
       model: null,
     });
-  }, [name, pathname, flowEngine]);
+  }, [name, pathname, flowEngine, loadModel]);
 
   return result;
 };

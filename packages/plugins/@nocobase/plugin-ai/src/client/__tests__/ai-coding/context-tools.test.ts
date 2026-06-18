@@ -19,7 +19,7 @@ import {
   buildToolCodeBlock,
   compactPatchForDisplay,
   shouldSkipCodeToolCardRender,
-} from '../../ai-employees/ai-coding/ui/CodeToolCard';
+} from '../../../client-v2/ai-employees/tools/CodeToolCard';
 import { useChatMessagesStore } from '../../ai-employees/chatbox/stores/chat-messages';
 
 describe('ai coding context tools', () => {

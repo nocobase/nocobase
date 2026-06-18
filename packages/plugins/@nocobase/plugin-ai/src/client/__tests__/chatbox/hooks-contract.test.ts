@@ -11,7 +11,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 import type { AIEmployee, Conversation, Message } from '../../ai-employees/types';
-import type { WorkflowTask, WorkflowTaskDetail } from '../../ai-employees/chatbox/conversations/common';
+import type { WorkflowTask, WorkflowTaskDetail } from '../../../client-v2/ai-employees/chatbox/stores/workflow-tasks';
 import { useChat } from '../../ai-employees/chatbox/hooks/useChat';
 import { useChatBoxActions } from '../../ai-employees/chatbox/hooks/useChatBoxActions';
 import { useChatConversationActions } from '../../ai-employees/chatbox/hooks/useChatConversationActions';

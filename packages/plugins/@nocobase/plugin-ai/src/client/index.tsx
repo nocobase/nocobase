@@ -30,7 +30,7 @@ import {
   AIEmployeeShortcutListModel,
   AIEmployeeShortcutModel,
   AIEmployeeButtonModel,
-} from './ai-employees/flow/models';
+} from '../client-v2/models/ai-employees';
 import './ai-employees/flow/events';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
 import { FlowModelsContext } from './ai-employees/context/flow-models';

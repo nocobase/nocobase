@@ -10,7 +10,7 @@
 import { BlockModel, CollectionBlockModel } from '@nocobase/client';
 import { aiSelection } from '../../stores/ai-selection';
 import classNames from 'classnames';
-import { AIEmployeeShortcutListModel } from '../models';
+import { AIEmployeeShortcutListModel } from '../../../../client-v2/models/ai-employees';
 import { contextAware } from '../../stores/context-aware';
 import { FlowRuntimeContext } from '@nocobase/flow-engine';
 import { dialogController } from '../../stores/dialog-controller';
