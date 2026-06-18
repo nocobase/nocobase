@@ -58,6 +58,8 @@ vi.mock('fs/promises', async (importOriginal) => {
   return {
     ...actual,
     copyFile: vi.fn(),
+    writeFile: vi.fn().mockResolvedValue(undefined),
+    unlink: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -218,8 +220,24 @@ describe('DatabaseAdapter', () => {
 
     it('restore function should preserve tables and drop views when restoreMode is preserveTables', async () => {
       const mockedExec = cp.exec as unknown as Mock;
+      const mockedWriteFile = fsPromises.writeFile as Mock;
+      const mockedUnlink = fsPromises.unlink as Mock;
       mockedExec.mockClear();
-      mockedExec.mockImplementation((_command, _options, callback) => {
+      mockedWriteFile.mockClear();
+      mockedUnlink.mockClear();
+      mockedExec.mockImplementation((command, _options, callback) => {
+        if (String(command).includes('--list')) {
+          callback(null, {
+            stdout: [
+              '; Archive created at 2026-06-18 00:00:00',
+              '123; 2615 2200 SCHEMA - public test',
+              '124; 0 0 COMMENT - SCHEMA public test',
+              '125; 0 0 ACL - SCHEMA public test',
+              '126; 1259 2201 TABLE public users test',
+            ].join('\n'),
+          });
+          return;
+        }
         callback(null, { stdout: 'done' });
       });
       const adapter = getDBAdapter(dbOpts);
@@ -227,13 +245,22 @@ describe('DatabaseAdapter', () => {
       await adapter.restore({ filePath, restoreMode: 'preserveTables' });
 
       const commands = mockedExec.mock.calls.map(([command]) => command);
-      expect(commands).toHaveLength(2);
+      expect(commands).toHaveLength(3);
       expect(commands[0]).toContain('DROP VIEW IF EXISTS');
       expect(commands[0]).toContain('DROP MATERIALIZED VIEW IF EXISTS');
       expect(commands[0]).not.toContain('DROP TABLE IF EXISTS');
       expect(commands[0]).not.toContain('DROP SEQUENCE IF EXISTS');
       expect(commands[0]).not.toContain('DROP TRIGGER IF EXISTS');
       expect(commands[1]).toContain('pg_restore');
+      expect(commands[1]).toContain('--list');
+      expect(commands[2]).toContain('pg_restore');
+      expect(commands[2]).toContain('-L');
+      expect(mockedWriteFile).toHaveBeenCalledTimes(1);
+      expect(mockedWriteFile.mock.calls[0][1]).not.toContain('SCHEMA - public');
+      expect(mockedWriteFile.mock.calls[0][1]).toContain('COMMENT - SCHEMA public');
+      expect(mockedWriteFile.mock.calls[0][1]).toContain('ACL - SCHEMA public');
+      expect(mockedWriteFile.mock.calls[0][1]).toContain('TABLE public users');
+      expect(mockedUnlink).toHaveBeenCalledTimes(1);
     });
 
     it('restore function should sync collection schema metadata when schema is renamed', async () => {

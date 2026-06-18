@@ -79,6 +79,7 @@ const escapeStringLiteral = (value: string) => String(value).replace(/'/g, "''")
 const quotePgIdentifier = (value: string) => `"${String(value).replace(/"/g, '""')}"`;
 const quoteShellArg = (value: string) => `'${String(value).replace(/'/g, "'\\''")}'`;
 const quotePgTablePattern = (table: string) => quoteShellArg(String(table).split('.').map(quotePgIdentifier).join('.'));
+const isPgRestoreSchemaTocEntry = (line: string) => /^\d+;\s+\d+\s+\d+\s+SCHEMA\s+-\s+/.test(line);
 const parsePgTableReference = (table: string, defaultSchema?: string) => {
   const parts = String(table).split('.');
   if (parts.length > 1) {
@@ -678,15 +679,52 @@ class PostgresAdapter extends BaseDBAdapter {
 
     if (schema === schemaOption || !schemaOption) {
       // current schema is the same as the backup schema
+      // In preserveTables mode, excluded tables must stay in the target schema.
+      // pg_restore --clean would otherwise try to drop/create the schema itself
+      // because the schema object is part of the archive TOC, and that fails as
+      // long as preserved tables still depend on the schema. Use a filtered TOC
+      // list to skip only the SCHEMA entry while keeping --clean for tables,
+      // views, sequences, indexes, constraints, and other archived objects.
+      // Risk: the target schema must already exist, and the filter must stay
+      // narrow enough to avoid removing COMMENT/ACL/TABLE entries that mention
+      // SCHEMA.
+      const restoreList =
+        restoreMode === 'preserveTables' ? await this.createRestoreListWithoutSchema(filePath, toolchain) : undefined;
       const pgRestoreCommand = `${this.getRestoreCommandName(toolchain)} -U ${username} -h ${host} ${
         port ? `-p ${port}` : ''
-      } -d ${database} --clean --if-exists --no-owner -j ${j} ${filePath}`;
-      await run(pgRestoreCommand, this.getPasswordEnvVars(password, toolchain));
+      } -d ${database} --clean --if-exists --no-owner -j ${j} ${restoreList?.option ?? ''} ${filePath}`;
+      try {
+        await run(pgRestoreCommand, this.getPasswordEnvVars(password, toolchain));
+      } finally {
+        if (restoreList) {
+          await fsPromises.unlink(restoreList.filePath).catch(() => {});
+        }
+      }
     } else {
       const srcSchema = schema || 'public';
       const pgRestoreCommand = this.buildSchemaRestoreCommand(srcSchema, schemaOption, filePath, j, toolchain);
       await this.restoreSchema(srcSchema, schemaOption, pgRestoreCommand, toolchain);
     }
+  }
+
+  protected async createRestoreListWithoutSchema(
+    filePath: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ): Promise<{ option: string; filePath: string }> {
+    const listOutput = String(await run(`${this.getRestoreCommandName(toolchain)} --list ${quoteShellArg(filePath)}`));
+    const filteredList = listOutput
+      .split('\n')
+      .filter((line) => !isPgRestoreSchemaTocEntry(line))
+      .join('\n');
+    const listFilePath = path.join(
+      os.tmpdir(),
+      `nocobase-pg-restore-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}.list`,
+    );
+    await fsPromises.writeFile(listFilePath, filteredList);
+    return {
+      option: `-L ${quoteShellArg(listFilePath)}`,
+      filePath: listFilePath,
+    };
   }
 
   protected buildSchemaRestoreCommand(
