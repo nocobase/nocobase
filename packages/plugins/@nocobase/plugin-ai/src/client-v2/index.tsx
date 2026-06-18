@@ -31,6 +31,7 @@ export { formatModelLabel } from './llm-services/model-label';
 export { AIConfigRepository, type LLMServiceItem } from './repositories/AIConfigRepository';
 export { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 export { AIManager } from './manager/ai-manager';
+export type { LLMProviderOptions, ToolModalProps, ToolOptions } from './manager/ai-manager';
 export * from './features';
 export { defaultVectorStorePropForm } from './features/components';
 export { useAIConfigRepository } from './repositories/hooks/useAIConfigRepository';

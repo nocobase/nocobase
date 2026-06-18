@@ -8,10 +8,40 @@
  */
 
 import { Registry } from '@nocobase/utils/client';
+import type { ToolsOptions, ToolModalProps } from '@nocobase/client-v2';
+import type { ComponentType } from 'react';
 import type { WorkContextOptions } from '../ai-employees/types';
 
+export type LLMProviderOptions = {
+  components: {
+    ProviderSettingsForm?: ComponentType;
+    ModelSettingsForm?: ComponentType;
+    MessageRenderer?: ComponentType<{
+      msg: unknown;
+    }>;
+  };
+  formatModelLabel?: (id: string) => string;
+};
+
+export type ToolOptions = ToolsOptions;
+export type { ToolModalProps };
+
 export class AIManager {
+  llmProviders = new Registry<LLMProviderOptions>();
+
+  chatSettings = new Map<
+    string,
+    {
+      title: string;
+      Component: ComponentType;
+    }
+  >();
+
   workContext = new Registry<WorkContextOptions>();
+
+  registerLLMProvider(name: string, options: LLMProviderOptions) {
+    this.llmProviders.register(name, options);
+  }
 
   registerWorkContext(name: string, options: WorkContextOptions) {
     const [rootKey, childKey] = name.split('.');
