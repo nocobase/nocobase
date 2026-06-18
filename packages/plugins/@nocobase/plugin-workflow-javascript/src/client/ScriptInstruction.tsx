@@ -14,6 +14,11 @@ import { ValueBlock } from '@nocobase/plugin-workflow/client';
 import { lang } from '../locale';
 
 export default class extends V2ScriptInstruction {
+  constructor() {
+    super();
+    this.bindTranslate(lang);
+  }
+
   useInitializers(node: { id: string | number; title?: string }): SchemaInitializerItemType {
     return {
       name: node.title ?? `#${node.id}`,
