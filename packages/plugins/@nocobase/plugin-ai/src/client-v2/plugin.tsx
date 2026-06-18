@@ -9,19 +9,11 @@
 
 import { Application, Plugin } from '@nocobase/client-v2';
 import { ChatBoxLayout } from './ai-employees/chatbox/components';
-import {
-  BusinessReportCard,
-  BusinessReportModal,
-  BusinessReportModalFooter,
-  ChartGeneratorCard,
-  SubAgentDispatchCard,
-  SuggestionsOptionsCard,
-} from './ai-employees/tools';
+import { registerPluginAIClientV2BuiltinTools } from './ai-employees/tools';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { chartConfigWorkContext } from './ai-employees/context/chart-config';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
 import { DatasourceContext } from './ai-employees/context/datasource';
-import { formFillerTool } from './ai-employees/form-filler/tools';
 import { AIManager } from './manager/ai-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
@@ -44,43 +36,7 @@ export class PluginAIClientV2 extends Plugin<any, Application> {
         }),
       });
     }
-    this.ai.toolsManager.registerTools('chartGenerator', {
-      ui: {
-        card: ChartGeneratorCard,
-      },
-    });
-    this.ai.toolsManager.registerTools('dispatch-sub-agent-task', {
-      ui: {
-        card: SubAgentDispatchCard,
-      },
-    });
-    this.ai.toolsManager.registerTools('suggestions', {
-      ui: {
-        card: SuggestionsOptionsCard,
-      },
-    });
-    this.ai.toolsManager.registerTools('businessReportGenerator', {
-      ui: {
-        card: BusinessReportCard,
-        modal: {
-          title: 'Business analysis report',
-          hideOkButton: true,
-          props: {
-            width: '92%',
-            styles: {
-              body: {
-                height: 'calc(100vh - 240px)',
-                maxHeight: 'calc(100vh - 240px)',
-                overflow: 'hidden',
-              },
-            },
-          },
-          footer: BusinessReportModalFooter,
-          Component: BusinessReportModal,
-        },
-      },
-    });
-    this.ai.toolsManager.registerTools(...formFillerTool);
+    registerPluginAIClientV2BuiltinTools(this.ai.toolsManager);
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
