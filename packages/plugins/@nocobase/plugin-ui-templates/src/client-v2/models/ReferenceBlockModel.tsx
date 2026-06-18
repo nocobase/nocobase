@@ -44,6 +44,32 @@ const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
 );
 const TARGET_OWN_CONTEXT_MISSING = Symbol.for('nocobase.referenceBlockTargetOwnContextMissing');
 
+function isMissingFilterByTk(value: unknown) {
+  return value === undefined || value === null || value === '';
+}
+
+function hasDataSourceKey(value: unknown) {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
+function shouldTemplateTargetFallbackToList(
+  targetInit: Record<string, unknown>,
+  viewArgs: Record<string, unknown>,
+  referenceInit: Record<string, unknown> = {},
+) {
+  if (isMissingFilterByTk(viewArgs?.filterByTk)) {
+    return true;
+  }
+
+  const collectionName = viewArgs?.collectionName ?? referenceInit?.collectionName;
+  if (collectionName !== targetInit?.collectionName) {
+    return true;
+  }
+
+  const dataSourceKey = viewArgs?.dataSourceKey ?? referenceInit?.dataSourceKey;
+  return hasDataSourceKey(dataSourceKey) && dataSourceKey !== targetInit?.dataSourceKey;
+}
+
 /**
  * ReferenceBlockModel（插件版）
  * - 通过配置 targetUid（实例 model.uid）引用并渲染另一个区块；
@@ -253,20 +279,8 @@ export class ReferenceBlockModel extends BlockModel {
 
   private _shouldTemplateFallbackToList(init: Record<string, any>): boolean {
     const viewArgs = (this as any)?.context?.view?.inputArgs || {};
-    const filterByTk = viewArgs?.filterByTk;
-    const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
-    if (missingFilterByTk) {
-      return true;
-    }
-    const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
-    if (collectionMismatch) {
-      return true;
-    }
-    const viewDataSourceKey = viewArgs?.dataSourceKey;
-    const hasViewDataSourceKey =
-      viewDataSourceKey !== undefined && viewDataSourceKey !== null && String(viewDataSourceKey).trim() !== '';
-    const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
-    return !!dataSourceMismatch;
+    const referenceInit = (this.getStepParams?.('resourceSettings', 'init') || {}) as Record<string, any>;
+    return shouldTemplateTargetFallbackToList(init, viewArgs, referenceInit);
   }
 
   private _refreshTargetResourceState(target?: FlowModel) {
@@ -1033,17 +1047,12 @@ ReferenceBlockModel.registerFlow({
           if (isSupported) {
             const init = (duplicated as any)?.stepParams?.resourceSettings?.init;
             if (init && typeof init === 'object' && Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
-              const viewArgs = ((ctx.model as any)?.context?.view?.inputArgs || {}) as any;
-              const filterByTk = viewArgs?.filterByTk;
-              const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
-              const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
-              const viewDataSourceKey = viewArgs?.dataSourceKey;
-              const hasViewDataSourceKey =
-                viewDataSourceKey !== undefined &&
-                viewDataSourceKey !== null &&
-                String(viewDataSourceKey).trim() !== '';
-              const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
-              if (missingFilterByTk || collectionMismatch || dataSourceMismatch) {
+              const viewArgs = ((ctx.model as any)?.context?.view?.inputArgs || {}) as Record<string, unknown>;
+              const referenceInit = ((ctx.model as any)?.getStepParams?.('resourceSettings', 'init') || {}) as Record<
+                string,
+                unknown
+              >;
+              if (shouldTemplateTargetFallbackToList(init as Record<string, unknown>, viewArgs, referenceInit)) {
                 delete (init as any).filterByTk;
               }
             }
