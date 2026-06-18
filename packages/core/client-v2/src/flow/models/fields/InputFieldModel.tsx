@@ -9,31 +9,18 @@
 
 import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Input } from 'antd';
-import type { InputProps, InputRef } from 'antd';
-import React, { useEffect, useRef } from 'react';
+import type { InputProps } from 'antd';
+import React, { useEffect, useState } from 'react';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FieldModel } from '../base/FieldModel';
 import { ScanInput } from '../../../components/form/ScanInput';
 
 function IMESafeInput(props: InputProps) {
   const { value, onChange, onCompositionStart, onCompositionEnd, ...rest } = props;
-  const inputRef = useRef<InputRef>(null);
-  const previousValueRef = useRef(value);
-  const defaultValue = typeof value === 'bigint' ? String(value) : value;
+  const [inputValue, setInputValue] = useState<InputProps['value']>(() => normalizeInputValue(value));
 
   useEffect(() => {
-    if (Object.is(previousValueRef.current, value)) {
-      return;
-    }
-    previousValueRef.current = value;
-
-    const input = inputRef.current?.input;
-    if (input) {
-      const nextValue = value == null ? '' : String(value);
-      if (input.value !== nextValue) {
-        input.value = nextValue;
-      }
-    }
+    setInputValue(normalizeInputValue(value));
   }, [value]);
 
   const getEventValue = (event: React.ChangeEvent<HTMLInputElement> | React.CompositionEvent<HTMLInputElement>) =>
@@ -42,22 +29,27 @@ function IMESafeInput(props: InputProps) {
   return (
     <Input
       {...rest}
-      ref={inputRef}
-      defaultValue={defaultValue}
+      value={inputValue}
       onChange={(event) => {
-        previousValueRef.current = getEventValue(event);
+        setInputValue(getEventValue(event));
         onChange?.(event);
       }}
       onCompositionStart={(event) => {
-        previousValueRef.current = getEventValue(event);
+        setInputValue(getEventValue(event));
         onCompositionStart?.(event);
       }}
       onCompositionEnd={(event) => {
-        previousValueRef.current = getEventValue(event);
+        setInputValue(getEventValue(event));
         onCompositionEnd?.(event);
       }}
     />
   );
+}
+
+function normalizeInputValue(nextValue: unknown): InputProps['value'] {
+  if (typeof nextValue === 'bigint') return String(nextValue);
+  if (nextValue == null) return '';
+  return nextValue as InputProps['value'];
 }
 
 export class InputFieldModel extends FieldModel {
