@@ -41,7 +41,7 @@ describe('RouteRepository', () => {
     await expect(repository.refreshAccessible()).resolves.toEqual([{ id: 1, schemaUid: 'schema-1' }]);
     expect(api.request).toHaveBeenCalledWith({
       url: '/desktopRoutes:listAccessible',
-      params: { tree: true, sort: 'sort' },
+      params: { tree: true, sort: 'sort', layout: 'admin-layout-model' },
     });
     expect(repository.listAccessible()).toEqual([{ id: 1, schemaUid: 'schema-1' }]);
     expect(subscriber).toHaveBeenCalledTimes(1);
@@ -59,6 +59,7 @@ describe('RouteRepository', () => {
 
     expect(resource.create).toHaveBeenCalledWith({
       values: { title: 'Menu 1' },
+      layout: 'admin-layout-model',
     });
     expect(refreshSpy).toHaveBeenCalledTimes(1);
   });
