@@ -93,7 +93,7 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
         ]}
       >
         <Form layout="vertical" autoComplete="off">
-          {dialect === 'postgres' && (
+          {['postgres', 'kingbase'].includes(dialect) && (
             <Form.Item
               label={<strong>{t('Confirm the application database schema')}</strong>}
               help={t('Required if application database schema is different with the backup', { currentDbSchemaTips })}

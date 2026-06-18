@@ -45,10 +45,18 @@ export function replaceFlowSurfacePlanStepLinks(
   path: string,
   knownStepIds?: Set<string>,
   knownRuntimeKeys?: Set<string>,
+  blockedRuntimeKeys?: Set<string>,
 ): any {
   if (Array.isArray(input)) {
     return input.map((item, index) =>
-      replaceFlowSurfacePlanStepLinks(actionName, item, `${path}[${index}]`, knownStepIds, knownRuntimeKeys),
+      replaceFlowSurfacePlanStepLinks(
+        actionName,
+        item,
+        `${path}[${index}]`,
+        knownStepIds,
+        knownRuntimeKeys,
+        blockedRuntimeKeys,
+      ),
     );
   }
   if (!_.isPlainObject(input)) {
@@ -70,6 +78,11 @@ export function replaceFlowSurfacePlanStepLinks(
     if (!runtimeKey) {
       throwBadRequest(`flowSurfaces ${actionName} ${path}.key cannot be empty`);
     }
+    if (blockedRuntimeKeys?.has(runtimeKey)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} ${path}.key '${runtimeKey}' belongs to the current replace scope; replace-step key links cannot resolve to old replace subtree nodes`,
+      );
+    }
     if (!knownRuntimeKeys?.has(runtimeKey)) {
       throwBadRequest(`flowSurfaces ${actionName} ${path}.key '${runtimeKey}' is not defined`);
     }
@@ -80,7 +93,14 @@ export function replaceFlowSurfacePlanStepLinks(
   return Object.fromEntries(
     Object.entries(input).map(([key, value]) => [
       key,
-      replaceFlowSurfacePlanStepLinks(actionName, value, `${path}.${key}`, knownStepIds, knownRuntimeKeys),
+      replaceFlowSurfacePlanStepLinks(
+        actionName,
+        value,
+        `${path}.${key}`,
+        knownStepIds,
+        knownRuntimeKeys,
+        blockedRuntimeKeys,
+      ),
     ]),
   );
 }

@@ -1,4 +1,10 @@
 {
+  "entry": {
+    "windowsAdministratorRequired": {
+      "message": "NocoBase CLI must be run as Administrator on Windows.",
+      "hint": "Open your terminal as Administrator, then run the command again."
+    }
+  },
   "promptCatalog": {
     "common": {
       "cancelled": "Cancelled.",

@@ -60,6 +60,8 @@ export class FormValueRuntime {
   private lastObservedToken = 0;
 
   private readonly formValuesProxy: any;
+  private readonly mountedFieldModelsByPathKey = new Map<string, Set<FlowModel>>();
+  private readonly mountedFieldModelPathKeys = new WeakMap<FlowModel, Set<string>>();
 
   private mountedListener?: (payload: { model: FlowModel }) => void;
   private unmountedListener?: (payload: { model: FlowModel }) => void;
@@ -212,15 +214,19 @@ export class FormValueRuntime {
 
     if (!this.mountedListener && !this.unmountedListener) {
       this.mountedListener = ({ model }: { model: FlowModel }) => {
+        this.indexMountedFieldModelTree(model);
         this.ruleEngine.onModelMounted(model);
       };
       this.unmountedListener = ({ model }: { model: FlowModel }) => {
+        this.unindexMountedFieldModelTree(model);
         this.ruleEngine.onModelUnmounted(model);
       };
 
       engineEmitter.on('model:mounted', this.mountedListener);
       engineEmitter.on('model:unmounted', this.unmountedListener);
     }
+
+    this.rebuildMountedFieldModelIndex();
 
     if (options?.sync) {
       const snapshot = this.getFormValuesSnapshot();
@@ -245,6 +251,7 @@ export class FormValueRuntime {
     }
 
     this.ruleEngine.dispose();
+    this.mountedFieldModelsByPathKey.clear();
 
     for (const binding of this.observableBindings.values()) {
       binding.dispose();
@@ -910,6 +917,7 @@ export class FormValueRuntime {
               form.setFieldsValue?.({ [pathKey]: value });
             }
             _.set(this.valuesMirror, [pathKey], this.toMirrorSnapshot(value));
+            this.syncMountedFieldModelValue([pathKey], value);
           }
           this.bumpChangeTick();
         } finally {
@@ -1012,6 +1020,7 @@ export class FormValueRuntime {
         for (const { namePath, value } of filteredToWrite) {
           form.setFieldValue?.(namePath, value);
           _.set(this.valuesMirror, namePath, this.toMirrorSnapshot(value));
+          this.syncMountedFieldModelValue(namePath, value);
           changedPaths.push(namePath);
         }
         this.bumpChangeTick();
@@ -1109,6 +1118,7 @@ export class FormValueRuntime {
     try {
       form.setFieldValue?.(namePath, nextValue);
       _.set(this.valuesMirror, namePath, this.toMirrorSnapshot(nextValue));
+      this.syncMountedFieldModelValue(namePath, nextValue);
       this.bumpChangeTick();
     } finally {
       this.suppressFormCallbackDepth--;
@@ -1180,6 +1190,148 @@ export class FormValueRuntime {
   private emitFormValuesChange(payload: FormValuesChangePayload) {
     this.model.dispatchEvent?.('formValuesChange', payload, { debounce: true });
     this.model.emitter?.emit?.('formValuesChange', payload);
+  }
+
+  private syncMountedFieldModelValue(namePath: NamePath, value: unknown) {
+    const targetKey = namePathToPathKey(namePath);
+    if (!targetKey) return;
+
+    const models = this.mountedFieldModelsByPathKey.get(targetKey);
+    if (!models?.size) return;
+
+    const visited = new Set<FlowModel>();
+    for (const model of Array.from(models)) {
+      this.syncMountedFieldModelValueForModel(model, value, visited);
+    }
+  }
+
+  private syncMountedFieldModelValueForModel(
+    model: FlowModel | null | undefined,
+    value: unknown,
+    visited: Set<FlowModel>,
+  ) {
+    if (!model || visited.has(model)) return;
+    visited.add(model);
+    if (!this.isMountedModelInThisForm(model)) return;
+
+    const nextProps = { value };
+    model.setProps?.(nextProps);
+    const fieldModel = (model as FlowModel & { subModels?: { field?: FlowModel } }).subModels?.field;
+    fieldModel?.setProps?.(nextProps);
+  }
+
+  private rebuildMountedFieldModelIndex() {
+    this.mountedFieldModelsByPathKey.clear();
+    const engine = this.model?.context?.engine;
+    if (!engine || typeof engine.forEachModel !== 'function') return;
+
+    engine.forEachModel((model: FlowModel) => {
+      this.indexMountedFieldModelTree(model);
+    });
+  }
+
+  private indexMountedFieldModelTree(model: FlowModel | null | undefined) {
+    this.visitModelAndForks(model, (item) => this.indexMountedFieldModel(item));
+  }
+
+  private unindexMountedFieldModelTree(model: FlowModel | null | undefined) {
+    this.visitModelAndForks(model, (item) => this.unindexMountedFieldModel(item));
+  }
+
+  private visitModelAndForks(model: FlowModel | null | undefined, visit: (model: FlowModel) => void) {
+    if (!model) return;
+    const visited = new Set<FlowModel>();
+    const walk = (item: FlowModel | null | undefined) => {
+      if (!item || visited.has(item)) return;
+      visited.add(item);
+      visit(item);
+      const forks = (item as FlowModel & { forks?: { forEach?: (cb: (fork: FlowModel) => void) => void } }).forks;
+      forks?.forEach?.((fork) => walk(fork));
+    };
+    walk(model);
+  }
+
+  private indexMountedFieldModel(model: FlowModel) {
+    if (!this.isMountedModelInThisForm(model)) return;
+
+    const pathKeys = new Set<string>();
+    for (const path of this.getMountedModelNamePaths(model)) {
+      const key = namePathToPathKey(path);
+      if (key) pathKeys.add(key);
+    }
+    if (!pathKeys.size) return;
+
+    this.unindexMountedFieldModel(model);
+    this.mountedFieldModelPathKeys.set(model, pathKeys);
+
+    for (const key of pathKeys) {
+      const models = this.mountedFieldModelsByPathKey.get(key) || new Set<FlowModel>();
+      models.add(model);
+      this.mountedFieldModelsByPathKey.set(key, models);
+    }
+  }
+
+  private unindexMountedFieldModel(model: FlowModel) {
+    const pathKeys = this.mountedFieldModelPathKeys.get(model);
+    if (!pathKeys) return;
+
+    for (const key of pathKeys) {
+      const models = this.mountedFieldModelsByPathKey.get(key);
+      if (!models) continue;
+      models.delete(model);
+      if (!models.size) {
+        this.mountedFieldModelsByPathKey.delete(key);
+      }
+    }
+
+    this.mountedFieldModelPathKeys.delete(model);
+  }
+
+  private isMountedModelInThisForm(model: FlowModel) {
+    const blockModel = (model.context as { blockModel?: FlowModel } | undefined)?.blockModel;
+    return !!blockModel && String(blockModel.uid) === String(this.model.uid);
+  }
+
+  private getMountedModelNamePaths(model: FlowModel): NamePath[] {
+    const paths: NamePath[] = [];
+    const push = (value: unknown) => {
+      const path = this.normalizeNamePathValue(value);
+      if (path?.length) paths.push(path);
+    };
+
+    push((model.context as { fieldPathArray?: unknown } | undefined)?.fieldPathArray);
+
+    const props = typeof model.getProps === 'function' ? model.getProps() : (model as { props?: unknown }).props;
+    if (props && typeof props === 'object') {
+      push((props as { name?: unknown }).name);
+    }
+
+    try {
+      const init = model.getStepParams?.('fieldSettings', 'init');
+      if (init && typeof init === 'object') {
+        push((init as { fieldPath?: unknown }).fieldPath);
+      }
+    } catch {
+      // ignore models without field settings
+    }
+
+    const seen = new Set<string>();
+    return paths.filter((path) => {
+      const key = namePathToPathKey(path);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private normalizeNamePathValue(value: unknown): NamePath | null {
+    if (Array.isArray(value)) {
+      const path = value.filter((seg): seg is string | number => typeof seg === 'string' || typeof seg === 'number');
+      return path.length === value.length ? path : null;
+    }
+    if (typeof value === 'number') return [value];
+    if (typeof value === 'string' && value) return pathKeyToNamePath(value);
+    return null;
   }
 
   private markExplicit(pathKey: string) {

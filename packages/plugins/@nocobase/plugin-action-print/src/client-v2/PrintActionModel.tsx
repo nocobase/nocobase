@@ -94,6 +94,7 @@ export class PrintActionModel extends ActionModel {
 
 PrintActionModel.define({
   label: tExpr('Print'),
+  sort: 4000,
   hide(ctx) {
     // 仅支持“详情区块（DetailsBlockModel）”配置该动作，避免出现在表格行操作/其他区块里。
     const blockModel: any = (ctx as any)?.blockModel;

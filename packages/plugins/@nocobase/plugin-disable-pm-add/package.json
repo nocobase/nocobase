@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-disable-pm-add",
-  "version": "2.1.4",
+  "version": "2.1.8",
   "main": "./dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
@@ -11,5 +11,13 @@
   "keywords": [
     "system"
   ],
+  "nocobase": {
+    "deprecated": true,
+    "internal": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
+  },
   "license": "Apache-2.0"
 }

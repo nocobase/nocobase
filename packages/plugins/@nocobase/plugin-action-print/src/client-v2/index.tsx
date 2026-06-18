@@ -8,12 +8,14 @@
  */
 
 import { Application, Plugin } from '@nocobase/client-v2';
-import { PrintActionModel } from './PrintActionModel';
 
 export class PluginActionPrintClient extends Plugin<any, Application> {
   async load() {
-    this.flowEngine.registerModels({
-      PrintActionModel,
+    this.flowEngine.registerModelLoaders({
+      PrintActionModel: {
+        extends: 'ActionModel',
+        loader: () => import('./PrintActionModel'),
+      },
     });
   }
 }

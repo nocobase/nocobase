@@ -588,7 +588,7 @@ describe('flowSurfaces resource', () => {
     expect(recordPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
-      filterByTk: '{{ctx.record.id}}',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
 
     const recordScopedPopupAction = await addRecordAction(rootAgent, tableUid, 'popup');
@@ -1860,6 +1860,18 @@ describe('flowSurfaces resource', () => {
     });
     expect(invalidLegacyButtonStep.status).toBe(400);
 
+    const invalidLegacyOnlyIconAlias = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        props: {
+          onlyIcon: true,
+        },
+      },
+    });
+    expect(invalidLegacyOnlyIconAlias.status).toBe(400);
+
     const validActionSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -1869,6 +1881,7 @@ describe('flowSurfaces resource', () => {
           htmlType: 'submit',
           position: 'fixed',
           tooltip: 'Open the popup view',
+          iconOnly: true,
           danger: true,
           color: '#1677ff',
         },
@@ -1877,6 +1890,7 @@ describe('flowSurfaces resource', () => {
             general: {
               title: 'Open view',
               tooltip: 'Open the popup view',
+              iconOnly: true,
               type: 'link',
               danger: true,
               color: '#1677ff',
@@ -1968,12 +1982,14 @@ describe('flowSurfaces resource', () => {
       htmlType: 'submit',
       position: 'fixed',
       tooltip: 'Open the popup view',
+      iconOnly: true,
       danger: true,
       color: '#1677ff',
     });
     expect(actionReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       title: 'Open view',
       tooltip: 'Open the popup view',
+      iconOnly: true,
       type: 'link',
       danger: true,
       color: '#1677ff',
@@ -1981,6 +1997,145 @@ describe('flowSurfaces resource', () => {
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.htmlType).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.position).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules?.value).toEqual([]);
+
+    const propsOnlyTableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const propsOnlyRefreshAction = await addAction(rootAgent, propsOnlyTableBlockUid, 'refresh');
+    const propsOnlyIconSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: propsOnlyRefreshAction.uid,
+        },
+        props: {
+          icon: 'QuestionCircleOutlined',
+          iconOnly: true,
+          color: '#722ed1',
+        },
+      },
+    });
+    expect(propsOnlyIconSettings.status).toBe(200);
+
+    const stepOnlyTableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const stepOnlyRefreshAction = await addAction(rootAgent, stepOnlyTableBlockUid, 'refresh');
+    const stepOnlyIconSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: stepOnlyRefreshAction.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            general: {
+              icon: 'InfoCircleOutlined',
+              iconOnly: true,
+              color: '#faad14',
+            },
+          },
+        },
+      },
+    });
+    expect(stepOnlyIconSettings.status).toBe(200);
+
+    const propsOnlyReadback = await getSurface(rootAgent, {
+      uid: propsOnlyRefreshAction.uid,
+    });
+    expect(propsOnlyReadback.tree.props).toMatchObject({
+      icon: 'QuestionCircleOutlined',
+      iconOnly: true,
+      color: '#722ed1',
+    });
+    expect(propsOnlyReadback.tree.props?.title).toBeUndefined();
+    expect(propsOnlyReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
+
+    const stepOnlyReadback = await getSurface(rootAgent, {
+      uid: stepOnlyRefreshAction.uid,
+    });
+    expect(stepOnlyReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      icon: 'InfoCircleOutlined',
+      iconOnly: true,
+      color: '#faad14',
+    });
+    expect(stepOnlyReadback.tree.props).toMatchObject({
+      icon: 'InfoCircleOutlined',
+      iconOnly: true,
+      color: '#faad14',
+    });
+    expect(stepOnlyReadback.tree.props?.title).toBeUndefined();
+    expect(stepOnlyReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
+
+    const stepOnlyTitledRefreshAction = await addAction(rootAgent, stepOnlyTableBlockUid, 'refresh');
+    const stepOnlyTitledSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: stepOnlyTitledRefreshAction.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            general: {
+              title: 'Reload compact',
+              icon: 'SyncOutlined',
+              iconOnly: true,
+            },
+          },
+        },
+      },
+    });
+    expect(stepOnlyTitledSettings.status).toBe(200);
+
+    const stepOnlyTitledReadback = await getSurface(rootAgent, {
+      uid: stepOnlyTitledRefreshAction.uid,
+    });
+    expect(stepOnlyTitledReadback.tree.props).toMatchObject({
+      title: 'Reload compact',
+      icon: 'SyncOutlined',
+      iconOnly: true,
+    });
+    expect(stepOnlyTitledReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      title: 'Reload compact',
+      icon: 'SyncOutlined',
+      iconOnly: true,
+    });
+
+    const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        options: {
+          unsupported: 'warn',
+        },
+      },
+    });
+    expect(exportRes.status, readErrorMessage(exportRes)).toBe(200);
+    const exported = getData(exportRes);
+    const exportedActions = _.castArray(exported.document?.tabs?.[0]?.blocks || []).flatMap((block: any) => [
+      ..._.castArray(block?.actions || []),
+      ..._.castArray(block?.recordActions || []),
+    ]);
+    const propsOnlyExported = exportedActions.find((action: any) => action?.settings?.color === '#722ed1');
+    expect(propsOnlyExported?.settings).toMatchObject({
+      icon: 'QuestionCircleOutlined',
+      iconOnly: true,
+      color: '#722ed1',
+    });
+    expect(propsOnlyExported?.settings?.title).toBeUndefined();
+    const stepOnlyExported = exportedActions.find((action: any) => action?.settings?.color === '#faad14');
+    expect(stepOnlyExported?.settings).toMatchObject({
+      icon: 'InfoCircleOutlined',
+      iconOnly: true,
+      color: '#faad14',
+    });
+    expect(stepOnlyExported?.settings?.title).toBeUndefined();
+    const stepOnlyTitledExported = exportedActions.find((action: any) => action?.settings?.title === 'Reload compact');
+    expect(stepOnlyTitledExported?.settings).toMatchObject({
+      title: 'Reload compact',
+      icon: 'SyncOutlined',
+      iconOnly: true,
+    });
   });
 
   it('should expose and configure filter action built-in filter settings via flowSurfaces', async () => {
@@ -2223,6 +2378,35 @@ describe('flowSurfaces resource', () => {
       );
       expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockCase.defaultFilter);
     }
+
+    const defaultFilterOnlyBlockUid = await addBlock(
+      rootAgent,
+      page.tabSchemaUid,
+      'table',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+      {
+        defaultActionSettings: {
+          filter: {
+            defaultFilter: usersDefaultFilter,
+          },
+        },
+      },
+    );
+    const defaultFilterOnlyReadback = await getSurface(rootAgent, {
+      uid: defaultFilterOnlyBlockUid,
+    });
+    const defaultFilterOnlyAction = _.castArray(defaultFilterOnlyReadback.tree.subModels?.actions || []).find(
+      (item: { use?: string }) => item?.use === 'FilterActionModel',
+    );
+    expect(defaultFilterOnlyAction?.props?.defaultFilterValue).toEqual(usersDefaultFilter);
+    expect(defaultFilterOnlyAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+      usersDefaultFilter,
+    );
+    expect(defaultFilterOnlyAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(defaultFilterOnlyAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should apply addBlock block-level defaultFilter to auto-created filter actions on data blocks', async () => {
@@ -2306,14 +2490,11 @@ describe('flowSurfaces resource', () => {
       const filterAction = _.castArray(readback.tree.subModels?.actions || []).find(
         (item: any) => item?.use === 'FilterActionModel',
       );
-      const filterableFieldNames = blockCase.defaultFilter.items.map((item: any) => item.path);
       expect(filterAction?.props?.defaultFilterValue).toEqual(blockCase.defaultFilter);
       expect(filterAction?.props?.filterValue).toEqual(blockCase.defaultFilter);
       expect(filterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockCase.defaultFilter);
-      expect(filterAction?.props?.filterableFieldNames).toEqual(filterableFieldNames);
-      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames?.filterableFieldNames).toEqual(
-        filterableFieldNames,
-      );
+      expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+      expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
     }
   });
 
@@ -2367,7 +2548,8 @@ describe('flowSurfaces resource', () => {
       'status',
       'phone',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should auto-generate defaultFilter for compose semantic resource data blocks', async () => {
@@ -2426,7 +2608,8 @@ describe('flowSurfaces resource', () => {
       'status',
       'phone',
     ]);
-    expect(filterAction?.props?.filterableFieldNames).toEqual(['nickname', 'email', 'status', 'phone']);
+    expect(filterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(filterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should reject addBlock block-level empty defaultFilter groups before low-level runtime normalization', async () => {
@@ -2855,6 +3038,8 @@ describe('flowSurfaces resource', () => {
     );
     expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
+    expect(tableFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(tableFilterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
     expect(listFilterAction?.props?.filterableFieldNames).toEqual(['nickname', 'username', 'email', 'phone']);
     expect(listFilterAction?.props?.defaultFilterValue).toEqual(settingsDefaultFilter);
     expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(settingsDefaultFilter);
@@ -2862,6 +3047,8 @@ describe('flowSurfaces resource', () => {
     expect(calendarFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
       calendarBlockDefaultFilter,
     );
+    expect(calendarFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(calendarFilterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
   });
 
   it('should reject addBlocks block-level empty defaultFilter before low-level runtime normalization', async () => {
@@ -3535,7 +3722,8 @@ describe('flowSurfaces resource', () => {
       'email',
       'phone',
     ]);
-    expect(generatedFilterAction?.props?.filterableFieldNames).toEqual(['nickname', 'username', 'email', 'phone']);
+    expect(generatedFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(generatedFilterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
 
     const invalidShapeRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -3844,6 +4032,29 @@ describe('flowSurfaces resource', () => {
         },
       ],
     };
+    const updateDefaultFilterOnly = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterAction.uid,
+        },
+        props: {
+          defaultFilterValue: filterFromDefaultFilterValue,
+        },
+      },
+    });
+    expect(updateDefaultFilterOnly.status).toBe(200);
+
+    let filterReadback = await getSurface(rootAgent, {
+      uid: filterAction.uid,
+    });
+    expect(filterReadback.tree.props?.filterableFieldNames).toBeUndefined();
+    expect(filterReadback.tree.props?.defaultFilterValue).toEqual(filterFromDefaultFilterValue);
+    expect(filterReadback.tree.props?.filterValue).toEqual(filterFromDefaultFilterValue);
+    expect(filterReadback.tree.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
+    expect(filterReadback.tree.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(
+      filterFromDefaultFilterValue,
+    );
+
     const updateViaProps = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -3857,7 +4068,7 @@ describe('flowSurfaces resource', () => {
     });
     expect(updateViaProps.status).toBe(200);
 
-    let filterReadback = await getSurface(rootAgent, {
+    filterReadback = await getSurface(rootAgent, {
       uid: filterAction.uid,
     });
     expect(filterReadback.tree.props?.filterableFieldNames).toEqual(['username', 'email', 'nickname', 'phone']);
@@ -11053,9 +11264,12 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(invalidConfigureFilter.status).toBe(400);
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('stepParams.tableSettings.dataScope.filter');
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('FilterGroup');
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('does not support: foo');
+    expectFlowSurfaceError(invalidConfigureFilter, 'dataScope-filter-group-invalid-shape', '$.changes.dataScope');
+    const invalidConfigureFilterMessage = readErrorMessage(invalidConfigureFilter);
+    expect(invalidConfigureFilterMessage).toContain('$.changes.dataScope');
+    expect(invalidConfigureFilterMessage).toContain('FilterGroup');
+    expect(invalidConfigureFilterMessage).toContain('{"logic":"$and","items":[]}');
+    expect(invalidConfigureFilterMessage).toContain('does not support: foo');
 
     const invalidFilters = [
       { case: 'missing-logic-items', filter: { foo: 'bar' }, reason: 'does not support: foo' },

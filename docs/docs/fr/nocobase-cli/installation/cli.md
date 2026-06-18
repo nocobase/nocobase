@@ -48,7 +48,7 @@ Remplacez `<server-ip>` par l'adresse IP réelle du serveur actuel qui vous est 
 
 En général:
 
-- `default-ui-host` est utilisé pour l'adresse d'écoute par défaut de `nb init --ui` lors du démarrage de la page de l'assistant
+- `default-ui-host` sert à générer l'URL accessible depuis le navigateur pour l'assistant `nb init --ui`; le service de l'assistant écoute toujours sur `0.0.0.0`
 - `default-api-host` pour l'adresse API générée par défaut sur les nouvelles installations
 
 Si elles sont déployées sur un serveur, les deux valeurs doivent généralement être remplacées par des adresses IP accessibles au serveur actuel, plutôt que de continuer à utiliser l'adresse locale par défaut.

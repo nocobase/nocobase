@@ -39,6 +39,7 @@ import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/p
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
 import { installNocoBaseSkills, isNpmRegistryUnavailable } from '../lib/skills-manager.js';
 import { omitKeys, pickKeys } from '../lib/object-utils.ts';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 import { printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
@@ -557,7 +558,7 @@ Prompt modes:
       default: false,
     }),
     'ui-host': Flags.string({
-      description: 'Host for the local --ui setup server (default: 127.0.0.1)',
+      description: 'Browser-accessible host for the --ui setup page URL (default: 127.0.0.1)',
     }),
     'ui-port': Flags.integer({
       description: 'Port for the local --ui setup server; 0 lets the OS choose an available port',
@@ -1327,6 +1328,7 @@ Prompt modes:
     await upsertEnv(
       envName,
       {
+        schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
         ...(source === 'docker'
           ? { kind: 'docker' }
           : source || appPath || appRootPath

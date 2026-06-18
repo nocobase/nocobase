@@ -35,7 +35,6 @@ describe('flowSurfaces linkage rule condition normalization', () => {
                   },
                 ],
               },
-              actions: [],
             },
           ],
         },
@@ -53,6 +52,93 @@ describe('flowSurfaces linkage rule condition normalization', () => {
       ],
     });
     expect(result.cardSettings.linkageRules.value[0].actions).toEqual([]);
+  });
+
+  it('fills canonical runtime defaults for condition-only linkage rules', () => {
+    const result = mergeStepParams('RefreshActionModel', {
+      buttonSettings: {
+        linkageRules: {
+          value: [
+            {
+              condition: {
+                logic: '$and',
+                items: [{ path: 'is_key', operator: '$isFalse' }],
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result.buttonSettings.linkageRules.value[0]).toEqual({
+      key: 'linkage-rule-1',
+      title: 'Linkage rule 1',
+      enable: true,
+      condition: {
+        logic: '$and',
+        items: [{ path: 'is_key', operator: '$isFalse' }],
+      },
+      actions: [],
+    });
+  });
+
+  it('normalizes enabled alias without rewriting existing raw actions', () => {
+    const actions = [
+      {
+        key: 'hide',
+        name: 'linkageSetActionProps',
+        params: {
+          value: 'hidden',
+        },
+      },
+    ];
+    const result = mergeStepParams('RefreshActionModel', {
+      buttonSettings: {
+        linkageRules: {
+          value: [
+            {
+              enabled: false,
+              condition: {
+                logic: '$and',
+                items: [{ path: 'is_key', operator: '$isFalse' }],
+              },
+              actions,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result.buttonSettings.linkageRules.value[0]).toEqual({
+      key: 'linkage-rule-1',
+      title: 'Linkage rule 1',
+      enable: false,
+      condition: {
+        logic: '$and',
+        items: [{ path: 'is_key', operator: '$isFalse' }],
+      },
+      actions,
+    });
+  });
+
+  it('rejects linkage rules whose actions are not arrays', () => {
+    expect(() =>
+      mergeStepParams('RefreshActionModel', {
+        buttonSettings: {
+          linkageRules: {
+            value: [
+              {
+                condition: {
+                  logic: '$and',
+                  items: [{ path: 'is_key', operator: '$isFalse' }],
+                },
+                actions: {},
+              },
+            ],
+          },
+        },
+      }),
+    ).toThrow(/actions.*array/);
   });
 
   it('normalizes backend field-root and nested relation linkage conditions', () => {

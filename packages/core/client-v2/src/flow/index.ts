@@ -49,7 +49,7 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       key: 'dynamic-flows-editor',
       component: DynamicFlowsIcon,
       visible(model) {
-        return model.getEvents().size > 0;
+        return model.getEvents().size > 0 || model.flowEngine.flowSettings.hasDynamicFlowSourceProvider(model);
       },
       sort: 0,
     });

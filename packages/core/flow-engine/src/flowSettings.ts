@@ -20,7 +20,13 @@ import { FlowRuntimeContext } from './flowContext';
 import { FlowEngine, untracked } from '.';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
-import { ParamObject, StepSettingsDialogProps, ToolbarItemConfig } from './types';
+import {
+  DynamicFlowSource,
+  DynamicFlowSourceProvider,
+  ParamObject,
+  StepSettingsDialogProps,
+  ToolbarItemConfig,
+} from './types';
 import {
   compileUiSchema,
   FlowCancelSaveException,
@@ -128,6 +134,7 @@ export class FlowSettings {
   private engine: FlowEngine;
   #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
+  private dynamicFlowSourceProviders: DynamicFlowSourceProvider[] = [];
   #emitter: Emitter = new Emitter();
 
   constructor(engine: FlowEngine) {
@@ -461,6 +468,83 @@ export class FlowSettings {
    */
   public getToolbarItems(): ToolbarItemConfig[] {
     return [...this.toolbarItems];
+  }
+
+  public registerDynamicFlowSourceProvider(provider: DynamicFlowSourceProvider): () => void {
+    const existingIndex = this.dynamicFlowSourceProviders.findIndex((item) => item.key === provider.key);
+    if (existingIndex !== -1) {
+      console.warn(
+        `FlowSettings: Dynamic flow source provider with key '${provider.key}' already exists and will be replaced.`,
+      );
+      this.dynamicFlowSourceProviders[existingIndex] = provider;
+    } else {
+      this.dynamicFlowSourceProviders.push(provider);
+    }
+
+    this.dynamicFlowSourceProviders.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+
+    return () => {
+      const index = this.dynamicFlowSourceProviders.indexOf(provider);
+      if (index !== -1) {
+        this.dynamicFlowSourceProviders.splice(index, 1);
+      }
+    };
+  }
+
+  public hasDynamicFlowSourceProvider(model: FlowModel): boolean {
+    return this.dynamicFlowSourceProviders.some((provider) => {
+      try {
+        return provider.visible ? provider.visible(model) : true;
+      } catch (error) {
+        console.warn(`FlowSettings: Dynamic flow source provider '${provider.key}' visibility check failed.`, error);
+        return false;
+      }
+    });
+  }
+
+  public async getDynamicFlowSources(model: FlowModel): Promise<DynamicFlowSource[]> {
+    const t = getT(model);
+    const selfSource: DynamicFlowSource = {
+      key: 'self',
+      label: t('Current block'),
+      model,
+      sort: -1000,
+    };
+    const sources: DynamicFlowSource[] = [];
+    const seenKeys = new Set<string>(['self']);
+    const seenModelUids = new Set<string>([model.uid]);
+
+    for (const provider of this.dynamicFlowSourceProviders) {
+      try {
+        if (provider.visible && !provider.visible(model)) {
+          continue;
+        }
+
+        const providerSources = await provider.getSources(model);
+        for (const source of providerSources || []) {
+          if (!source?.key || !source.model) {
+            continue;
+          }
+          const key = String(source.key);
+          const uid = source.model.uid;
+          if (seenKeys.has(key) || seenModelUids.has(uid)) {
+            continue;
+          }
+          seenKeys.add(key);
+          seenModelUids.add(uid);
+          sources.push({
+            ...source,
+            key,
+            label: source.label || key,
+            sort: source.sort || 0,
+          });
+        }
+      } catch (error) {
+        console.warn(`FlowSettings: Dynamic flow source provider '${provider.key}' failed.`, error);
+      }
+    }
+
+    return [selfSource, ...sources.sort((a, b) => (a.sort || 0) - (b.sort || 0))];
   }
 
   /**

@@ -46,4 +46,7 @@ features:
       - title: Ekstensi Preview File
         details: Perluas kemampuan preview file, mendukung preview dan rendering online untuk lebih banyak format file.
         link: /file-manager/development
+      - title: Ekstensi Knowledge Base
+        details: Hubungkan knowledge base eksternal atau layanan retrieval kustom untuk memperluas sumber retrieval RAG bagi AI employees.
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---

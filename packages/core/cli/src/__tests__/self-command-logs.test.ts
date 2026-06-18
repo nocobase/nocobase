@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   setVerboseMode: vi.fn(),
   startTask: vi.fn(),
   stopTask: vi.fn(),
+  updateTask: vi.fn(),
   installNocoBaseSkills: vi.fn(),
   removeNocoBaseSkills: vi.fn(),
   updateNocoBaseSkills: vi.fn(),
@@ -39,6 +40,7 @@ vi.mock('../lib/ui.js', () => ({
   setVerboseMode: mocks.setVerboseMode,
   startTask: mocks.startTask,
   stopTask: mocks.stopTask,
+  updateTask: mocks.updateTask,
 }));
 
 beforeEach(() => {
@@ -334,6 +336,7 @@ test('skills install, remove, and update use compact logs by default and detaile
   expect(mocks.setVerboseMode).toHaveBeenCalledWith(false);
   expect(mocks.installNocoBaseSkills).toHaveBeenCalledWith({
     verbose: false,
+    onProgress: mocks.updateTask,
   });
   expect(installCommand.log).toHaveBeenLastCalledWith('Installed NocoBase AI coding skills globally.');
 
@@ -426,6 +429,7 @@ test('skills install, remove, and update use compact logs by default and detaile
 
   expect(mocks.updateNocoBaseSkills).toHaveBeenCalledWith({
     verbose: false,
+    onProgress: mocks.updateTask,
   });
   expect(updateCommand.log).toHaveBeenLastCalledWith(
     'Skipped skills update because NocoBase AI coding skills are not installed.',
@@ -441,6 +445,7 @@ test('skills install, remove, and update use compact logs by default and detaile
 
   expect(mocks.updateNocoBaseSkills).toHaveBeenLastCalledWith({
     verbose: false,
+    onProgress: mocks.updateTask,
   });
   expect(updateCommand.log).toHaveBeenLastCalledWith('NocoBase AI coding skills are up to date.');
 
