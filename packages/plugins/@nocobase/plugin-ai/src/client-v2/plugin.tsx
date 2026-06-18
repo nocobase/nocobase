@@ -21,6 +21,7 @@ import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { chartConfigWorkContext } from './ai-employees/context/chart-config';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
 import { DatasourceContext } from './ai-employees/context/datasource';
+import { formFillerTool } from './ai-employees/form-filler/tools';
 import { AIManager } from './manager/ai-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
@@ -79,6 +80,7 @@ export class PluginAIClientV2 extends Plugin<any, Application> {
         },
       },
     });
+    this.ai.toolsManager.registerTools(...formFillerTool);
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
