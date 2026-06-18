@@ -9,6 +9,8 @@
 
 import React, { useMemo } from 'react';
 import { Attachments } from '@ant-design/x';
+import type { AttachmentsProps } from '@ant-design/x';
+import type { Attachment as AntAttachment } from '@ant-design/x/es/attachments';
 import { PaperClipOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import { useT } from '../../locale';
@@ -17,9 +19,13 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChat } from './hooks/useChat';
 import { useChatConversationsStore } from './stores/chat-conversations';
 
+const readString = (value: unknown, fallback = '') => (typeof value === 'string' ? value : fallback);
+const readNumber = (value: unknown) => (typeof value === 'number' ? value : undefined);
+
 export const Upload: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
   const t = useT();
   const uploadProps = useUploadFiles();
+  const attachmentUploadProps = uploadProps as unknown as Partial<AttachmentsProps>;
 
   const chatBoxRef = useChatBoxStore.use.chatBoxRef();
   const currentConversation = useChatConversationsStore.use.currentConversation();
@@ -28,15 +34,17 @@ export const Upload: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
   const attachments = chat.use.attachments();
 
   const items = useMemo(() => {
-    return attachments?.map((item, index) => ({
-      uid: index.toString(),
-      name: item.filename,
-      status: item.status ?? 'done',
-      url: item.url,
-      size: item.size,
-      thumbUrl: item.preview,
-      ...item,
-    }));
+    return attachments?.map(
+      (item, index): AntAttachment => ({
+        ...item,
+        uid: readString(item.uid, String(index)),
+        name: readString(item.filename, readString(item.name)),
+        status: readString(item.status, 'done') as AntAttachment['status'],
+        url: readString(item.url),
+        size: readNumber(item.size),
+        thumbUrl: readString(item.preview),
+      }),
+    );
   }, [attachments]);
 
   if (disabled) {
@@ -55,7 +63,7 @@ export const Upload: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
         title: t('Drag & Drop files here'),
       }}
       items={items}
-      {...uploadProps}
+      {...attachmentUploadProps}
     >
       <Tooltip title={t('Upload files')} arrow={false}>
         <Button type="text" icon={<PaperClipOutlined />} />

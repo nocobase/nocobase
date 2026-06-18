@@ -99,9 +99,10 @@ const CodeHistoryList: React.FC = () => {
     const agentMessages = messages
       .filter((msg) => msg.role === currentEmployee.username)
       .filter((msg) => msg.content?.type === 'text')
-      .filter((msg) => pattern.test(msg.content.content))
+      .filter((msg) => typeof msg.content.content === 'string' && pattern.test(msg.content.content))
       .map((msg) => {
-        const match = pattern.exec(msg.content.content);
+        const content = typeof msg.content.content === 'string' ? msg.content.content : '';
+        const match = pattern.exec(content);
         return {
           message: msg,
           workContext: {
@@ -109,7 +110,7 @@ const CodeHistoryList: React.FC = () => {
             uid: msg.key,
             content: {
               language,
-              code: match[1],
+              code: match?.[1] || '',
             },
           } as ContextItem,
         };

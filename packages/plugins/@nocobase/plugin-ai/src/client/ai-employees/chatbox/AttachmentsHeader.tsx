@@ -9,9 +9,13 @@
 
 import React, { useMemo } from 'react';
 import { Attachments } from '@ant-design/x';
+import type { Attachment as AntAttachment } from '@ant-design/x/es/attachments';
 import { css } from '@emotion/css';
 import { useChat } from './hooks/useChat';
 import { useChatConversationsStore } from './stores/chat-conversations';
+
+const readString = (value: unknown, fallback = '') => (typeof value === 'string' ? value : fallback);
+const readNumber = (value: unknown) => (typeof value === 'number' ? value : undefined);
 
 export const AttachmentsHeader: React.FC = () => {
   const currentConversation = useChatConversationsStore.use.currentConversation();
@@ -20,15 +24,17 @@ export const AttachmentsHeader: React.FC = () => {
   const removeAttachment = chat.removeAttachment;
 
   const items = useMemo(() => {
-    return attachments?.map((item) => ({
-      uid: item.uid || item.filename,
-      name: item.filename || item.name,
-      status: item.status ?? ('done' as const),
-      url: item.url,
-      size: item.size,
-      thumbUrl: item.preview,
-      ...item,
-    }));
+    return attachments?.map(
+      (item, index): AntAttachment => ({
+        ...item,
+        uid: readString(item.uid, readString(item.filename, String(index))),
+        name: readString(item.filename, readString(item.name)),
+        status: readString(item.status, 'done') as AntAttachment['status'],
+        url: readString(item.url),
+        size: readNumber(item.size),
+        thumbUrl: readString(item.preview),
+      }),
+    );
   }, [attachments]);
 
   if (!items?.length) {

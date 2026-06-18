@@ -310,8 +310,14 @@ export const UserMessage: React.FC<{
                 <EditOutlined
                   style={footerIconStyle}
                   onClick={() => {
-                    startEditingMessage(msg);
-                    setSenderValue(msg.content);
+                    if (!msg.messageId) {
+                      return;
+                    }
+                    startEditingMessage({
+                      ...msg,
+                      messageId: msg.messageId,
+                    });
+                    setSenderValue(typeof msg.content === 'string' ? msg.content : '');
                     senderRef.current?.focus();
                   }}
                 />
@@ -389,7 +395,7 @@ export const ErrorMessage: React.FC<{
         important: msg.content,
       });
     }
-  }, [msg]);
+  }, [currentConversation, currentEmployee, msg.content, resendMessages]);
 
   return (
     showAlert && (

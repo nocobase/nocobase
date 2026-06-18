@@ -22,6 +22,31 @@ import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useUploadFiles } from './hooks/useUploadFiles';
 import _ from 'lodash';
 
+type UploadRequestOptions = {
+  file: Blob;
+  filename: string;
+  data?: Record<string, string | Blob>;
+  headers?: Record<string, string>;
+  action: string;
+  onProgress?: (event: { percent?: number }) => void;
+  onSuccess: (response: unknown, file?: Blob) => void;
+  onError: (error: Error) => void;
+};
+
+type UploadPropsWithRequest = ReturnType<typeof useUploadFiles> & {
+  data?: Record<string, string | Blob>;
+  headers?: Record<string, string>;
+  customRequest?: (options: UploadRequestOptions) => void | Promise<unknown>;
+};
+
+const readUploadedFileData = (response: unknown) => {
+  if (!response || typeof response !== 'object' || Array.isArray(response)) {
+    return null;
+  }
+  const data = (response as { data?: unknown }).data;
+  return data && typeof data === 'object' && !Array.isArray(data) ? data : null;
+};
+
 const useSendMessage = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const isEditingMessage = useChatBoxStore.use.isEditingMessage();
@@ -97,13 +122,13 @@ export const Sender: React.FC = () => {
 
   useEffect(() => {
     setSenderRef(senderRef);
-  }, []);
+  }, [setSenderRef]);
 
   useEffect(() => {
     if (value !== senderValue) {
       setSenderValue(value);
     }
-  }, [value]);
+  }, [senderValue, setSenderValue, value]);
 
   useEffect(() => {
     setValue(senderValue);
@@ -137,7 +162,7 @@ export const Sender: React.FC = () => {
     };
 
     setAttachments((prev) => [...prev, uploadFile]);
-    const { customRequest, data, headers, action } = uploadProps;
+    const { customRequest, data, headers, action } = uploadProps as UploadPropsWithRequest;
 
     if (customRequest) {
       customRequest({
@@ -156,8 +181,8 @@ export const Sender: React.FC = () => {
             }),
           );
         },
-        onSuccess: (response, xhr) => {
-          const fileData = response?.data;
+        onSuccess: (response) => {
+          const fileData = readUploadedFileData(response);
           setAttachments((prev) =>
             prev.map((item) => {
               if (item.uid === uid) {
