@@ -57,7 +57,19 @@ type ObservableBinding = {
   dispose: () => void;
 };
 
-type AssignMode = 'default' | 'assign';
+type AssignMode = 'default' | 'assign' | 'override';
+
+function normalizeAssignMode(mode: unknown): AssignMode {
+  if (mode === 'default') return 'default';
+  if (mode === 'override') return 'override';
+  return 'assign';
+}
+
+function getSourceByAssignMode(mode: AssignMode): ValueSource {
+  if (mode === 'default') return 'default';
+  if (mode === 'override') return 'override';
+  return 'system';
+}
 
 type LocalTemplateTokenStore = {
   values: Map<string, unknown>;
@@ -87,6 +99,7 @@ export type RuleEngineOptions = {
   getFormValueAtPath: (namePath: NamePath) => any;
   setFormValues: (callerCtx: any, patch: Patch, options?: SetOptions) => Promise<void>;
   findExplicitHit: (pathKey: string) => string | null;
+  findUserEditedHit: (pathKey: string) => string | null;
   lastDefaultValueByPathKey: Map<string, any>;
   lastWriteMetaByPathKey: Map<string, FormValueWriteMeta>;
   observableBindings: Map<string, ObservableBinding>;
@@ -179,8 +192,8 @@ export class RuleEngine {
       if (!templateKey) continue;
       if (this.hasAnyNonBlockAssignRuleInstance(templateKey)) continue;
 
-      const mode: AssignMode = template?.mode === 'default' ? 'default' : 'assign';
-      const source: ValueSource = mode === 'default' ? 'default' : 'system';
+      const mode = normalizeAssignMode(template?.mode);
+      const source = getSourceByAssignMode(mode);
       const enabled = template?.enable !== false;
       const id = this.getAssignRuleBlockId(templateKey);
       if (this.rules.has(id)) continue;
@@ -516,8 +529,8 @@ export class RuleEngine {
       if (matchedTargetPaths.has(targetPath)) continue;
       if (!this.shouldCreateBlockLevelAssignRule(targetPath)) continue;
       for (const template of templates) {
-        const mode: AssignMode = template?.mode === 'default' ? 'default' : 'assign';
-        const source: ValueSource = mode === 'default' ? 'default' : 'system';
+        const mode = normalizeAssignMode(template?.mode);
+        const source = getSourceByAssignMode(mode);
         const enabled = template?.enable !== false;
         const id = `${prefix}${template.__key}:block`;
         if (this.rules.has(id)) this.removeRule(id);
@@ -880,8 +893,8 @@ export class RuleEngine {
           this.removeRowGridAssignRuleInstances(template.__key);
         }
 
-        const mode: AssignMode = template?.mode === 'default' ? 'default' : 'assign';
-        const source: ValueSource = mode === 'default' ? 'default' : 'system';
+        const mode = normalizeAssignMode(template?.mode);
+        const source = getSourceByAssignMode(mode);
         const enabled = template?.enable !== false;
         const id = this.getAssignRuleInstanceId(template.__key, model);
 
@@ -1270,6 +1283,10 @@ export class RuleEngine {
       );
       if (!shouldApply) return;
     }
+    if (rule.source === 'override' && this.options.findUserEditedHit(ensuredTargetKey)) {
+      disposeBinding();
+      return;
+    }
 
     if (rule.source === 'default') {
       const lastWrite = this.lastRuleWriteByTargetKey.get(ensuredTargetKey);
@@ -1283,7 +1300,7 @@ export class RuleEngine {
       }
     }
 
-    if (rule.source === 'system') {
+    if (rule.source === 'system' || rule.source === 'override') {
       const lastWrite = this.options.lastWriteMetaByPathKey.get(ensuredTargetKey);
       if (lastWrite?.source === 'linkage' && lastWrite.writeSeq >= scheduledAtWriteSeq) {
         disposeBinding();
@@ -1307,7 +1324,7 @@ export class RuleEngine {
     const initPatches = this.collectUpdateAssociationInitPatches(baseCtx, ensuredTargetNamePath);
     if (initPatches == null) return;
 
-    if (rule.source === 'system' || rule.source === 'default') {
+    if (rule.source === 'system' || rule.source === 'default' || rule.source === 'override') {
       const modelForUi = baseCtx?.model;
       const fieldModelForUi = modelForUi?.subModels?.field;
       if (fieldModelForUi) {
@@ -1613,6 +1630,9 @@ export class RuleEngine {
     if (rule.source === 'default') {
       if (!this.shouldApplyDefaultRuleInCurrentState(baseCtx)) return false;
       if (this.options.findExplicitHit(targetKey)) return false;
+    }
+    if (rule.source === 'override') {
+      if (this.options.findUserEditedHit(targetKey)) return false;
     }
     return true;
   }
