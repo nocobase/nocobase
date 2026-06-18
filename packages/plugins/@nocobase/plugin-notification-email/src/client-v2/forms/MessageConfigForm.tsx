@@ -7,10 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
 import type { MessageConfigFormProps } from '@nocobase/plugin-notification-manager/client-v2';
 import { WorkflowVariableInput, WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client-v2';
-import { Button, Flex, Form, Radio } from 'antd';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { Button, Flex, Form, Radio, theme } from 'antd';
 import React from 'react';
 import { useNotificationEmailTranslation } from '../locale';
 
@@ -27,8 +30,65 @@ type AddressListProps = {
   required?: boolean;
 };
 
+type SortableAddressRowContextValue = {
+  attributes?: DraggableAttributes;
+  listeners?: DraggableSyntheticListeners;
+  setActivatorNodeRef?: (node: HTMLElement | null) => void;
+};
+
+const SortableAddressRowContext = React.createContext<SortableAddressRowContextValue | null>(null);
+
+function SortableAddressRow(props: React.PropsWithChildren<{ id: string }>) {
+  const { attributes, isDragging, listeners, setActivatorNodeRef, setNodeRef, transform, transition } = useSortable({
+    id: props.id,
+  });
+
+  return (
+    <SortableAddressRowContext.Provider value={{ attributes, listeners, setActivatorNodeRef }}>
+      <div
+        ref={setNodeRef}
+        style={{
+          transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+          transition,
+          ...(isDragging ? { position: 'relative' as const, zIndex: 1 } : null),
+        }}
+      >
+        {props.children}
+      </div>
+    </SortableAddressRowContext.Provider>
+  );
+}
+
+function AddressSortHandle() {
+  const ctx = React.useContext(SortableAddressRowContext);
+  const { token } = theme.useToken();
+
+  return (
+    <span
+      ref={ctx?.setActivatorNodeRef}
+      {...ctx?.attributes}
+      {...ctx?.listeners}
+      style={{
+        alignItems: 'center',
+        color: token.colorTextTertiary,
+        cursor: 'grab',
+        display: 'inline-flex',
+      }}
+    >
+      <MenuOutlined />
+    </span>
+  );
+}
+
 function AddressList(props: AddressListProps) {
   const { formPath, title, addLabel, placeholder, required, requiredMessage } = props;
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 1,
+      },
+    }),
+  );
 
   return (
     <Form.List
@@ -48,7 +108,7 @@ function AddressList(props: AddressListProps) {
           : undefined
       }
     >
-      {(fields, { add, remove }, { errors }) => (
+      {(fields, { add, remove, move }, { errors }) => (
         <Form.Item
           label={title}
           required={required}
@@ -56,14 +116,44 @@ function AddressList(props: AddressListProps) {
           help={errors[0]}
         >
           <Flex vertical gap="small">
-            {fields.map((field) => (
-              <Flex key={field.key} gap="small" align="flex-start">
-                <Form.Item name={field.name} noStyle>
-                  <WorkflowVariableInput placeholder={placeholder} variableOptions={{ types: ['string'] }} />
-                </Form.Item>
-                <Button type="text" aria-label={title} icon={<DeleteOutlined />} onClick={() => remove(field.name)} />
-              </Flex>
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event: DragEndEvent) => {
+                const { active, over } = event;
+                if (!over || active.id === over.id) {
+                  return;
+                }
+                const currentIds = fields.map((field) => String(field.key));
+                const fromIndex = currentIds.indexOf(String(active.id));
+                const toIndex = currentIds.indexOf(String(over.id));
+                if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
+                  return;
+                }
+                move(fromIndex, toIndex);
+              }}
+            >
+              <SortableContext items={fields.map((field) => String(field.key))} strategy={verticalListSortingStrategy}>
+                <Flex vertical gap="small">
+                  {fields.map((field) => (
+                    <SortableAddressRow key={field.key} id={String(field.key)}>
+                      <Flex gap="small" align="center">
+                        <AddressSortHandle />
+                        <Form.Item name={field.name} noStyle>
+                          <WorkflowVariableInput placeholder={placeholder} variableOptions={{ types: ['string'] }} />
+                        </Form.Item>
+                        <Button
+                          type="text"
+                          aria-label={title}
+                          icon={<DeleteOutlined />}
+                          onClick={() => remove(field.name)}
+                        />
+                      </Flex>
+                    </SortableAddressRow>
+                  ))}
+                </Flex>
+              </SortableContext>
+            </DndContext>
             <Button icon={<PlusOutlined />} onClick={() => add('')}>
               {addLabel}
             </Button>
