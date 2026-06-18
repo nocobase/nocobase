@@ -11,7 +11,13 @@ import { createMockClient } from '@nocobase/client-v2';
 import { FlowEngine, type FlowModelContext } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import PluginAIClientV2 from '@nocobase/plugin-ai/client-v2';
-import { AIEmployeeActionModel, AIEmployeeButtonModel, AIEmployeeShortcutModel } from '../models/ai-employees';
+import {
+  AIEmployeeActionModel,
+  AIEmployeeButtonModel,
+  AIEmployeeShortcutListModel,
+  AIEmployeeShortcutModel,
+  normalizeShortcutTasksSkillSettings,
+} from '../models/ai-employees';
 
 describe('AI employee v2 action models', () => {
   it('registers shortcut and action model loaders from the plugin entry', async () => {
@@ -26,14 +32,76 @@ describe('AI employee v2 action models', () => {
       ...registerModelLoaders.mock.calls.map(([loaders]) => loaders as Record<string, unknown>),
     );
     expect(registeredLoaders).toHaveProperty('AIEmployeeShortcutModel');
+    expect(registeredLoaders).toHaveProperty('AIEmployeeShortcutListModel');
     expect(registeredLoaders).toHaveProperty('AIEmployeeButtonModel');
     expect(registeredLoaders).toHaveProperty('AIEmployeeActionModel');
   });
 
   it('keeps the public model classes exported', () => {
     expect(AIEmployeeShortcutModel).toBeDefined();
+    expect(AIEmployeeShortcutListModel).toBeDefined();
     expect(AIEmployeeButtonModel).toBeDefined();
     expect(AIEmployeeActionModel).toBeDefined();
+  });
+
+  it('registers the shortcut task settings flow', () => {
+    const flow = AIEmployeeShortcutModel.globalFlowRegistry.getFlow('shortcutSettings');
+
+    expect(flow).toBeDefined();
+    expect(flow?.getStep('migration')).toBeDefined();
+    expect(flow?.getStep('editTasks')).toBeDefined();
+  });
+
+  it('normalizes legacy shortcut skill settings versions during migration', () => {
+    const tasks = [
+      {
+        skillSettings: {
+          skills: [],
+          tools: [],
+        },
+      },
+      {
+        skillSettings: {
+          skillsVersion: 2,
+          toolsVersion: 2,
+          skills: ['summary'],
+          tools: ['suggestions'],
+        },
+      },
+    ];
+
+    normalizeShortcutTasksSkillSettings(tasks, { dropEmptyLegacyArrays: true });
+
+    expect(tasks[0].skillSettings).toEqual({
+      skillsVersion: 2,
+      toolsVersion: 2,
+    });
+    expect(tasks[1].skillSettings).toEqual({
+      skillsVersion: 2,
+      toolsVersion: 2,
+      skills: ['summary'],
+      tools: ['suggestions'],
+    });
+  });
+
+  it('keeps tasks without skill settings untouched on save', () => {
+    const tasks = [
+      {},
+      {
+        skillSettings: {
+          skills: ['summary'],
+        },
+      },
+    ];
+
+    normalizeShortcutTasksSkillSettings(tasks, { onlyExistingSettings: true });
+
+    expect(tasks[0]).toEqual({});
+    expect(tasks[1].skillSettings).toEqual({
+      skills: ['summary'],
+      skillsVersion: 2,
+      toolsVersion: 2,
+    });
   });
 
   it('builds v2 shortcut action children with current flow-model work context', async () => {

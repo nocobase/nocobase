@@ -23,7 +23,7 @@ type AIFlowContext = {
   defineProperty: (name: string, descriptor: { value: unknown }) => void;
 };
 
-export class PluginAIClientV2 extends Plugin<any, Application> {
+export class PluginAIClientV2 extends Plugin<object, Application> {
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager();
 
@@ -43,6 +43,9 @@ export class PluginAIClientV2 extends Plugin<any, Application> {
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
     this.flowEngine.registerModelLoaders({
       AIEmployeeShortcutModel: {
+        loader: () => import('./models/ai-employees'),
+      },
+      AIEmployeeShortcutListModel: {
         loader: () => import('./models/ai-employees'),
       },
       AIEmployeeButtonModel: {
