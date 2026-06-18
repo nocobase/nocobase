@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.1.8](https://github.com/nocobase/nocobase/compare/v2.1.7...v2.1.8) - 2026-06-18
+
+### 🐛 修复
+
+- **[ai]**
+  - 将 AI 相关包中的 `@langchain/openai` 锁定为仅允许补丁版本更新。 ([#9829](https://github.com/nocobase/nocobase/pull/9829)) by @cgyrock
+
+  - 修复 AI 插件中 LangChain 依赖版本解析不兼容的问题。 ([#9831](https://github.com/nocobase/nocobase/pull/9831)) by @cgyrock
+
+- **[AI: 知识库]**
+  - 修复未启用 AI 插件时启用 AI 知识库插件报错不明确的问题。 by @cgyrock
+
+  - 修复 AI 知识库插件中 LangChain 依赖版本解析不兼容的问题。 by @cgyrock
+
 ## [v2.1.7](https://github.com/nocobase/nocobase/compare/v2.1.6...v2.1.7) - 2026-06-17
 
 ### 🎉 新特性
