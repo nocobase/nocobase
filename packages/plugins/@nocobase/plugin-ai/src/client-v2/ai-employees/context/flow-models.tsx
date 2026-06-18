@@ -45,6 +45,27 @@ type CollectionBlockLike = FlowModel & {
   resource?: unknown;
 };
 
+type FormBlockLike = FlowModel & {
+  form?: {
+    getFieldsValue?: (
+      all?: boolean,
+      filter?: (meta: { name?: unknown }) => boolean,
+    ) => Record<string, unknown> | undefined;
+  };
+};
+
+type CollectionFieldLike = {
+  name?: string;
+  type?: string;
+  dataType?: string;
+  title?: string;
+  enum?: unknown;
+  readonly?: boolean;
+  defaultValue?: unknown;
+  targetCollection?: { name?: string };
+  targetKey?: string;
+};
+
 const collectionQueryPrompt = `Before querying, first call getSkill with skillName="data-query" to load the data-query skill and make dataSourceQuery and dataSourceCounting available.
 After the skill is loaded, use dataSourceQuery to query data from a data source and dataSourceCounting to get record counts.
 When analyzing user messages, if any words or phrases are related or similar to a known collectionName, prioritize retrieving relevant data before responding.
@@ -57,11 +78,19 @@ const hasCollectionResource = (model: FlowModel): model is CollectionBlockLike =
   return !!Reflect.get(model, 'collection') || !!Reflect.get(model, 'resource');
 };
 
+const isFormBlockLike = (model: FlowModel): model is FormBlockLike => {
+  if (model instanceof FormBlockModel) {
+    return true;
+  }
+  const form = Reflect.get(model, 'form');
+  return !!form && typeof form === 'object' && typeof (form as FormBlockLike['form'])?.getFieldsValue === 'function';
+};
+
 const parseFlowModel = async (model: FlowModel) => {
   if (!model) {
     return {};
   }
-  if (model instanceof FormBlockModel) {
+  if (isFormBlockLike(model)) {
     return toSimplifyForm(model);
   }
   if (model instanceof CollectionBlockModel || hasCollectionResource(model)) {
@@ -70,7 +99,30 @@ const parseFlowModel = async (model: FlowModel) => {
   return toSimplifyComponentTree(model);
 };
 
-const toSimplifyForm = (model: FormBlockModel) => {
+const getRelationFieldPrompt = (collectionField: CollectionFieldLike) => {
+  if (!collectionField.targetCollection) {
+    return undefined;
+  }
+
+  const isToMany = ['hasMany', 'belongsToMany', 'belongsToArray'].includes(collectionField.type ?? '');
+  const requiredPropertyNames = Array.from(new Set([collectionField.targetKey].filter(Boolean)));
+  const exampleObject = `{ ${requiredPropertyNames.map((name) => `"${name}": <${name}>`).join(', ')} }`;
+  const exampleValue = isToMany ? `[${exampleObject}]` : exampleObject;
+
+  return `This field must be filled with ${
+    isToMany ? 'an array of related record objects' : 'a related record object'
+  } from collection [${collectionField.targetCollection.name}]. Use [${
+    collectionField.targetKey
+  }] as the identity field. The value for [${collectionField.name}] must be ${
+    isToMany ? 'an array' : 'an object'
+  }. Each item must contain only [${requiredPropertyNames.join(', ')}]. Example: "${
+    collectionField.name
+  }": ${exampleValue}. Never output indexed or path-style keys such as "${collectionField.name}[0]" or "${
+    collectionField.name
+  }[1]", and never return only a primitive id.`;
+};
+
+const toSimplifyForm = (model: FormBlockLike) => {
   const result: {
     uid: string;
     fields: unknown[];
@@ -84,8 +136,8 @@ const toSimplifyForm = (model: FormBlockModel) => {
   const excludeFieldValues = new Set<string>();
 
   FlowUtils.walkthrough(model, (subModel) => {
-    if (subModel instanceof FormItemModel && subModel.collectionField?.name) {
-      const collectionField = subModel.collectionField;
+    const collectionField = getCollectionField(subModel);
+    if (collectionField?.name) {
       if (!duplicateFields.has(collectionField.name)) {
         result.fields.push({
           name: collectionField.name,
@@ -93,6 +145,7 @@ const toSimplifyForm = (model: FormBlockModel) => {
           enum: collectionField.enum,
           readonly: collectionField.readonly,
           defaultValue: collectionField.defaultValue,
+          prompt: getRelationFieldPrompt(collectionField),
         });
         duplicateFields.add(collectionField.name);
       }
@@ -109,18 +162,30 @@ const toSimplifyForm = (model: FormBlockModel) => {
     }
   });
 
-  if (model.form) {
+  if (model.form?.getFieldsValue) {
     result.value = model.form.getFieldsValue(true, (meta) => {
-      const firstName = Array.isArray(meta.name) ? meta.name[0] : undefined;
+      const name = meta.name;
+      const firstName = Array.isArray(name) ? name[0] : undefined;
       return typeof firstName === 'string' ? !excludeFieldValues.has(firstName) : true;
     });
   }
   return result;
 };
 
+const getCollectionField = (model: FlowModel): CollectionFieldLike | undefined => {
+  if (model instanceof FormItemModel) {
+    return model.collectionField;
+  }
+  const collectionField = Reflect.get(model, 'collectionField');
+  if (!collectionField || typeof collectionField !== 'object') {
+    return undefined;
+  }
+  return collectionField as CollectionFieldLike;
+};
+
 const toCollection = async (model: CollectionBlockLike) => {
-  const collection = readCollection(model);
   const resource = Reflect.get(model, 'resource');
+  const collection = readCollection(model) ?? getFallbackCollection(model, resource);
   if (isMultiRecordResource(resource)) {
     return {
       dataScope: {
@@ -143,8 +208,8 @@ const toSimplifyComponentTree = async (model: FlowModel): Promise<SimplifyCompon
     component: model.use,
   };
 
-  if (model instanceof FormItemModel && model.collectionField) {
-    const collectionField = model.collectionField;
+  const collectionField = getCollectionField(model);
+  if (collectionField) {
     result.props = {
       readonly: collectionField.readonly,
       name: collectionField.name,
@@ -388,24 +453,6 @@ export const FlowModelsContext: WorkContextOptions = {
     const model = app.flowEngine.getModel(uid, true);
     if (!model) {
       return '';
-    }
-    const collectionModel = model as unknown as CollectionBlockLike;
-    const collection = readCollection(collectionModel);
-    const resource = Reflect.get(collectionModel, 'resource');
-    if (collection || resource) {
-      if (isMultiRecordResource(resource)) {
-        return stringifyFlowModelContent({
-          dataScope: {
-            filter: resource.getFilter?.(),
-          },
-          collection: collection ?? getFallbackCollection(model, resource),
-          prompt: collectionQueryPrompt,
-        });
-      }
-      return stringifyFlowModelContent({
-        collection: collection ?? getFallbackCollection(model, resource),
-        data: await readResourceData(collectionModel),
-      });
     }
     const parsed = await parseFlowModel(model);
     const parsedContent = stringifyFlowModelContent(parsed);
