@@ -777,21 +777,162 @@ describe('GanttBlockModel settings', () => {
 
   test('persists popup actions only from popup settings save hooks', async () => {
     const step = (GanttBlockModel as any).globalFlowRegistry.getFlow('ganttSettings')?.steps?.eventPopupSettings;
+    const action = { uid: 'u_event_popup' };
     const model = {
-      setPopupSettings: vi.fn(),
-      ensurePopupAction: vi.fn().mockResolvedValue({ uid: 'u_event_popup' }),
+      getEventViewAction: vi.fn(() => null),
+      getPopupSettingsDefaults: vi.fn(() => ({
+        mode: 'drawer',
+        size: 'medium',
+        pageModelClass: 'ChildPageModel',
+        uid: 'u_event_popup',
+        collectionName: 'calendar',
+        dataSourceKey: 'main',
+      })),
+      getPopupActionSettings: vi.fn(() => ({})),
+      setPopupActionSettings: vi.fn(),
+      clearStoredPopupSettings: vi.fn(),
+      ensurePopupAction: vi.fn().mockResolvedValue(action),
     };
 
     await step?.handler?.({ model } as any, { mode: 'drawer' });
 
     expect(model.ensurePopupAction).not.toHaveBeenCalled();
+    expect(model.setPopupActionSettings).not.toHaveBeenCalled();
 
     await step?.beforeParamsSave?.({ model } as any, { mode: 'dialog' });
 
-    expect(model.ensurePopupAction).toHaveBeenCalledWith('eventViewAction', { persist: true });
+    expect(model.ensurePopupAction).toHaveBeenCalledWith('eventViewAction');
+    expect(model.setPopupActionSettings).toHaveBeenCalledWith(
+      action,
+      {
+        mode: 'dialog',
+        uid: 'u_event_popup',
+        collectionName: 'calendar',
+        dataSourceKey: 'main',
+      },
+      { persist: true },
+    );
+    expect(model.clearStoredPopupSettings).toHaveBeenCalled();
   });
 
-  test('opens the configured event popup with the clicked task record', async () => {
+  test('runs openView beforeParamsSave when saving gantt popup template settings', async () => {
+    const step = (GanttBlockModel as any).globalFlowRegistry.getFlow('ganttSettings')?.steps?.eventPopupSettings;
+    const openViewBeforeParamsSave = vi.fn(async (_ctx, params) => {
+      params.uid = 'u_template_popup';
+    });
+    const action = { uid: 'u_event_popup' };
+    const model = {
+      getAction: vi.fn(() => ({
+        beforeParamsSave: openViewBeforeParamsSave,
+      })),
+      getPopupActionSettings: vi.fn(() => ({ uid: 'u_old_popup' })),
+      setPopupActionSettings: vi.fn(),
+      clearStoredPopupSettings: vi.fn(),
+      ensurePopupAction: vi.fn().mockResolvedValue(action),
+    };
+    const params = { popupTemplateUid: 'tpl-popup', uid: 'u_old_popup' };
+
+    await step?.beforeParamsSave?.({ model } as any, params);
+
+    expect(openViewBeforeParamsSave).toHaveBeenCalledWith({ model }, params, { uid: 'u_old_popup' });
+    expect(model.setPopupActionSettings).toHaveBeenCalledWith(
+      action,
+      {
+        popupTemplateUid: 'tpl-popup',
+        uid: 'u_template_popup',
+      },
+      { persist: true },
+    );
+    expect(model.clearStoredPopupSettings).toHaveBeenCalled();
+  });
+
+  test('clears stale popup template params when the gantt popup template setting is removed', async () => {
+    const step = (GanttBlockModel as any).globalFlowRegistry.getFlow('ganttSettings')?.steps?.eventPopupSettings;
+    const previousParams = {
+      mode: 'drawer',
+      size: 'medium',
+      popupTemplateUid: 'tpl-popup',
+      uid: 'u_template_popup',
+      dataSourceKey: 'main',
+      collectionName: 'templateTasks',
+      filterByTk: '{{ ctx.record.id }}',
+    };
+    const openViewBeforeParamsSave = vi.fn(async (_ctx, params) => {
+      expect(params).toEqual({
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'u_event_popup',
+        dataSourceKey: 'main',
+        collectionName: 'calendar',
+      });
+    });
+    const action = { uid: 'u_event_popup' };
+    const model = Object.create(GanttBlockModel.prototype) as GanttBlockModel;
+    Object.defineProperties(model, {
+      getAction: {
+        value: vi.fn(() => ({
+          beforeParamsSave: openViewBeforeParamsSave,
+        })),
+      },
+      getStepParams: {
+        value: vi.fn(() => previousParams),
+      },
+      getPopupActionSettings: {
+        value: vi.fn(() => previousParams),
+      },
+      setPopupActionSettings: {
+        value: vi.fn(),
+      },
+      clearStoredPopupSettings: {
+        value: vi.fn(),
+      },
+      ensurePopupAction: {
+        value: vi.fn().mockResolvedValue(action),
+      },
+      collection: {
+        value: {
+          name: 'calendar',
+          dataSourceKey: 'main',
+        },
+      },
+      props: {
+        value: {},
+      },
+    });
+    const params = {
+      mode: 'drawer',
+      size: 'medium',
+      uid: 'u_template_popup',
+      dataSourceKey: 'main',
+      collectionName: 'templateTasks',
+      filterByTk: '{{ ctx.record.id }}',
+    };
+
+    await step?.beforeParamsSave?.({ model } as any, params);
+
+    expect(openViewBeforeParamsSave).toHaveBeenCalledWith({ model }, params, previousParams);
+    expect(params).toEqual({
+      mode: 'drawer',
+      size: 'medium',
+      uid: 'u_event_popup',
+      dataSourceKey: 'main',
+      collectionName: 'calendar',
+    });
+    expect(model.setPopupActionSettings).toHaveBeenCalledWith(
+      action,
+      {
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'u_event_popup',
+        dataSourceKey: 'main',
+        collectionName: 'calendar',
+      },
+      { persist: true },
+    );
+    expect(model.clearStoredPopupSettings).toHaveBeenCalled();
+  });
+
+  test('dispatches the hidden popup action so openView template handling can run', async () => {
     const flowEngine = new FlowEngine();
     flowEngine.registerModels({ GanttBlockModel, GanttEventViewActionModel });
     flowEngine.dataSourceManager.getDataSource('main').addCollection({
@@ -820,13 +961,19 @@ describe('GanttBlockModel settings', () => {
     await model.openEvent({ id: 12 });
 
     expect(action.uid).not.toContain('eventViewAction');
-    expect(openView).toHaveBeenCalledWith(action.uid, {
-      dataSourceKey: 'main',
-      collectionName: 'calendar',
-      filterByTk: 12,
-      target: model.context.layoutContentElement,
-    });
-    expect(action.dispatchEvent).not.toHaveBeenCalled();
+    expect(action.dispatchEvent).toHaveBeenCalledWith(
+      'click',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'calendar',
+        filterByTk: 12,
+        target: model.context.layoutContentElement,
+      },
+      {
+        debounce: true,
+      },
+    );
+    expect(openView).not.toHaveBeenCalled();
   });
 
   test('does not persist hidden popup actions while opening gantt popups', async () => {
@@ -870,6 +1017,144 @@ describe('GanttBlockModel settings', () => {
     expect(save).not.toHaveBeenCalled();
     expect(saveStepParams).not.toHaveBeenCalled();
     expect(action.setStepParams).toHaveBeenCalled();
+  });
+
+  test('uses popup template settings stored on the hidden popup action while opening gantt popups', async () => {
+    const action = {
+      uid: 'u_event_popup',
+      getStepParams: vi.fn(() => ({
+        uid: 'u_template_popup',
+        popupTemplateUid: 'tpl-popup',
+        collectionName: 'templateTasks',
+        dataSourceKey: 'main',
+        filterByTk: '{{ ctx.record.id }}',
+      })),
+      setStepParams: vi.fn(),
+      save: vi.fn(),
+      saveStepParams: vi.fn(),
+    };
+    const model = Object.create(GanttBlockModel.prototype) as GanttBlockModel;
+    Object.defineProperty(model, 'subModels', {
+      value: {
+        eventViewAction: action,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'calendar',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {
+        eventPopupSettings: {
+          mode: 'dialog',
+          size: 'large',
+        },
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    await model.ensurePopupAction('eventViewAction');
+
+    expect(action.setStepParams).toHaveBeenCalledWith('popupSettings', {
+      openView: expect.objectContaining({
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'u_template_popup',
+        popupTemplateUid: 'tpl-popup',
+        collectionName: 'templateTasks',
+        dataSourceKey: 'main',
+        filterByTk: '{{ ctx.record.id }}',
+      }),
+    });
+  });
+
+  test('replaces hidden popup openView params when gantt popup settings are saved without a template', async () => {
+    let currentOpenViewParams = {
+      uid: 'u_template_popup',
+      popupTemplateUid: 'tpl-popup',
+      collectionName: 'templateTasks',
+      dataSourceKey: 'main',
+    };
+    const action = {
+      uid: 'u_event_popup',
+      getStepParams: vi.fn(() => currentOpenViewParams),
+      setStepParams: vi.fn((_flowKey, stepParams) => {
+        currentOpenViewParams = stepParams.openView;
+      }),
+      save: vi.fn(),
+      saveStepParams: vi.fn(),
+    };
+    const model = Object.create(GanttBlockModel.prototype) as GanttBlockModel;
+    Object.defineProperty(model, 'subModels', {
+      value: {
+        eventViewAction: action,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'calendar',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(model, '_options', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+
+    await model.setPopupActionSettings(
+      action,
+      {
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'u_event_popup',
+        collectionName: 'calendar',
+        dataSourceKey: 'main',
+      },
+      { persist: true },
+    );
+
+    expect(action.setStepParams).toHaveBeenCalledWith('popupSettings', {
+      openView: {
+        mode: 'drawer',
+        size: 'medium',
+        uid: 'u_event_popup',
+        collectionName: 'calendar',
+        dataSourceKey: 'main',
+      },
+    });
+    expect(currentOpenViewParams).toMatchObject({
+      mode: 'drawer',
+      size: 'medium',
+      uid: 'u_event_popup',
+      collectionName: 'calendar',
+      dataSourceKey: 'main',
+    });
+    expect(currentOpenViewParams).not.toHaveProperty('popupTemplateUid');
   });
 
   test('persists hidden popup actions only when gantt popup settings are saved', async () => {
