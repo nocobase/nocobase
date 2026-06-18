@@ -37,28 +37,11 @@ import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { DatasourceContext } from './ai-employees/context/datasource';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
 import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
-import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
-import { formFillerTool } from './ai-employees/form-filler/tools';
-import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
-import { businessReportGeneratorTool } from './ai-employees/business-report/tools';
-import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
-import {
-  getContextApisTool,
-  getContextEnvsTool,
-  getContextVarsTool,
-  lintAndTestJSTool,
-  patchJSCodeTool,
-  readJSCodeTool,
-  writeJSCodeTool,
-} from './ai-employees/ai-coding/tools/context-tools';
-import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
-import { suggestionsTool } from './ai-employees/suggestions/tools';
-import { dispatchSubAgentTaskTool } from './ai-employees/sub-agents/tools';
-import { aiEmployeeWorkflowTaskOutputTool } from './ai-employees/workflow-tasks/tools';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { mimoProviderOptions } from './llm-providers/mimo';
+import { registerPluginAIClientV2BuiltinTools } from '../client-v2/ai-employees/tools';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -183,24 +166,7 @@ export class PluginAIClient extends Plugin {
     // 使用可视化员工的工作上下文参数
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
 
-    this.ai.toolsManager.registerTools(...vizSwitchModesTool);
-    this.ai.toolsManager.registerTools(...vizRunQueryTool);
-    this.ai.toolsManager.registerTools(...defineCollectionsTool);
-    this.ai.toolsManager.registerTools(...formFillerTool);
-    this.ai.toolsManager.registerTools(...chartGeneratorTool);
-    this.ai.toolsManager.registerTools(...businessReportGeneratorTool);
-    this.ai.toolsManager.registerTools(...listCodeSnippetTool);
-    this.ai.toolsManager.registerTools(...getCodeSnippetTool);
-    this.ai.toolsManager.registerTools(...suggestionsTool);
-    this.ai.toolsManager.registerTools(...dispatchSubAgentTaskTool);
-    this.ai.toolsManager.registerTools(...aiEmployeeWorkflowTaskOutputTool);
-    this.ai.toolsManager.registerTools(...getContextApisTool);
-    this.ai.toolsManager.registerTools(...getContextEnvsTool);
-    this.ai.toolsManager.registerTools(...getContextVarsTool);
-    this.ai.toolsManager.registerTools(...readJSCodeTool);
-    this.ai.toolsManager.registerTools(...writeJSCodeTool);
-    this.ai.toolsManager.registerTools(...patchJSCodeTool);
-    this.ai.toolsManager.registerTools(...lintAndTestJSTool);
+    registerPluginAIClientV2BuiltinTools(this.ai.toolsManager);
   }
 
   setupWorkflow() {

@@ -115,12 +115,24 @@ const useUpdateTool = (tool: ToolCall<DataModelingArgs>, saveToolArgs?: (args: u
   return { updateCollectionRecord, updateFieldRecord };
 };
 
+type RefreshHandler = () => void | Promise<void>;
+
+const dataModelingRefreshHandlers = new Set<RefreshHandler>();
+
+export function registerDataModelingRefreshHandler(handler: RefreshHandler) {
+  dataModelingRefreshHandlers.add(handler);
+  return () => {
+    dataModelingRefreshHandlers.delete(handler);
+  };
+}
+
 export const useDataModelingOnOk = (decisions: ToolsUIProperties['decisions'], adjustArgs: Record<string, unknown>) => {
   const app = useApp();
   return {
     onOk: async () => {
       await decisions.edit(adjustArgs);
-      app.dataSourceManager.getDataSource?.('main')?.reload?.();
+      await app.dataSourceManager.getDataSource?.('main')?.reload?.();
+      await Promise.all([...dataModelingRefreshHandlers].map((refresh) => refresh()));
     },
   };
 };

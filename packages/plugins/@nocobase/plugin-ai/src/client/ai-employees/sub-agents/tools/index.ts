@@ -7,15 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolsOptions, lazy } from '@nocobase/client';
-
-const { SubAgentDispatchCard } = lazy(() => import('../ui/SubAgentDispatchCard'), 'SubAgentDispatchCard');
-
-export const dispatchSubAgentTaskTool: [string, ToolsOptions] = [
-  'dispatch-sub-agent-task',
-  {
-    ui: {
-      card: SubAgentDispatchCard,
-    },
-  },
-];
+export { dispatchSubAgentTaskTool } from '../../../../client-v2/ai-employees/tools';

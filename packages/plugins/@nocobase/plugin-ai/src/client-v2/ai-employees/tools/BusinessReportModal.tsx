@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Result, Space, Spin, Tabs, theme, Typography } from 'antd';
 import { FileMarkdownOutlined, FilePdfOutlined, FileTextOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { ToolCall } from '@nocobase/client-v2';
@@ -90,36 +90,69 @@ function useBusinessReportState(tool: ToolCall<BusinessReport>): BusinessReportM
   );
   const isGenerating = !['done', 'confirmed'].includes(tool.invokeStatus);
   const hasRenderableContent = !!(report?.title || report?.summary || report?.markdown);
-  const title = report?.title || t('Business analysis report');
-  const markdown = useMemo(
-    () => buildReportMarkdown(report, { locale: typeof locale === 'string' ? locale : undefined, t }),
-    [locale, report, t],
+  const [snapshot, setSnapshot] = useState<Partial<BusinessReportRenderState> | null>(null);
+  const [snapshotSignature, setSnapshotSignature] = useState<string | null>(null);
+  const reportSignature = useMemo(
+    () =>
+      JSON.stringify({
+        title: report?.title || '',
+        summary: report?.summary || '',
+        markdown: report?.markdown || '',
+        charts: report?.charts || [],
+        generatedAt: report?.generatedAt || null,
+      }),
+    [report],
   );
-  const fileName = useMemo(() => getReportFileName(report), [report]);
+
+  useEffect(() => {
+    setSnapshot(null);
+    setSnapshotSignature(null);
+  }, [tool.id]);
+
+  useEffect(() => {
+    if (
+      tool.status === 'success' &&
+      tool.invokeStatus === 'done' &&
+      hasRenderableContent &&
+      reportSignature !== snapshotSignature
+    ) {
+      setSnapshot(report);
+      setSnapshotSignature(reportSignature);
+    }
+  }, [hasRenderableContent, report, reportSignature, snapshotSignature, tool.invokeStatus, tool.status]);
+
+  const displayReport = snapshot || report;
+  const displayReportSignature = snapshot ? snapshotSignature || reportSignature : reportSignature;
+  const title = displayReport?.title || t('Business analysis report');
+  const markdown = useMemo(
+    () => buildReportMarkdown(displayReport, { locale: typeof locale === 'string' ? locale : undefined, t }),
+    [displayReport, locale, t],
+  );
+  const fileName = useMemo(() => getReportFileName(displayReport), [displayReport]);
   const stableReport = useMemo(
     () =>
       isGenerating
         ? {
-            ...report,
+            ...displayReport,
             charts: [],
           }
-        : report,
-    [isGenerating, report],
+        : displayReport,
+    [displayReport, isGenerating],
   );
   const previewMessage = useMemo(
     () => ({
       content: stableReport?.markdown
         ? buildReportMarkdown(stableReport, { locale: typeof locale === 'string' ? locale : undefined, t })
-        : `# ${title}\n\n${report?.summary || t('Generating business analysis report...')}`,
+        : `# ${title}\n\n${displayReport?.summary || t('Generating business analysis report...')}`,
       type: 'text' as const,
       messageId: tool.id,
     }),
-    [locale, report?.summary, stableReport, t, title, tool.id],
+    [displayReport?.summary, locale, stableReport, t, title, tool.id],
   );
 
   if (!hasRenderableContent && isGenerating) {
     return {
-      displayReport: report,
+      displayReport,
       isGenerating,
       markdown,
       fileName,
@@ -132,14 +165,14 @@ function useBusinessReportState(tool: ToolCall<BusinessReport>): BusinessReportM
   }
 
   return {
-    displayReport: report,
+    displayReport,
     isGenerating,
     markdown,
     fileName,
     previewMessage,
     title,
     locale: typeof locale === 'string' ? locale : undefined,
-    invalid: !report?.title && !report?.markdown && !isGenerating,
+    invalid: !displayReport?.title && !displayReport?.markdown && !isGenerating,
     loading: false,
   };
 }
@@ -150,10 +183,48 @@ const BusinessReportModalContent: React.FC<{ tool: ToolCall<BusinessReport> }> =
   const state = useBusinessReportState(tool);
   const { previewMessage, displayReport, isGenerating, title, invalid, loading, markdown } = state;
   const reportPanelHeight = getReportPanelHeight(token);
-  const htmlPreview = useMemo(
-    () => buildReportHtml(displayReport, { locale: state.locale, t }),
-    [displayReport, state.locale, t],
+  const [htmlPreview, setHtmlPreview] = useState('');
+  const displayReportSignature = useMemo(
+    () =>
+      JSON.stringify({
+        title: displayReport?.title || '',
+        summary: displayReport?.summary || '',
+        markdown: displayReport?.markdown || '',
+        charts: displayReport?.charts || [],
+        generatedAt: displayReport?.generatedAt || null,
+      }),
+    [displayReport],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      if (!displayReport?.markdown || isGenerating) {
+        setHtmlPreview('');
+        return;
+      }
+
+      try {
+        const previewHtml = await buildReportHtml(displayReport, { locale: state.locale, t });
+        if (cancelled) {
+          return;
+        }
+        setHtmlPreview((prev) => (prev === previewHtml ? prev : previewHtml));
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to build business report HTML:', error);
+          setHtmlPreview('');
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [displayReport, displayReportSignature, isGenerating, state.locale, t]);
 
   if (loading) {
     return (
@@ -293,10 +364,14 @@ export const BusinessReportModalFooter: React.FC<{ tool: ToolCall<BusinessReport
       <Button
         icon={<FileTextOutlined />}
         disabled={isGenerating || !hasMarkdown || exporting}
-        onClick={() => {
+        onClick={async () => {
           setExporting(true);
           try {
-            const html = buildReportHtml(report, { locale: typeof locale === 'string' ? locale : undefined, t });
+            const html = await buildReportHtml(report, {
+              printMode: true,
+              locale: typeof locale === 'string' ? locale : undefined,
+              t,
+            });
             downloadTextFile(`${fileName}.html`, html, 'text/html;charset=utf-8');
           } finally {
             setExporting(false);

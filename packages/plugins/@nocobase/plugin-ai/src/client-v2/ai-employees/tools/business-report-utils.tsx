@@ -7,8 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import * as echarts from 'echarts';
 import { jsonrepair } from 'jsonrepair';
+import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 export type ReportChartOptions = Record<string, unknown>;
 
@@ -241,14 +247,70 @@ function buildChartMarkdownBlock(chart: BusinessReportChart, index: number) {
   return parts.join('\n\n');
 }
 
-export function buildReportHtml(
+function buildReportBodyHtml(markdown: string) {
+  const charts: Array<{ id: string; options: ReportChartOptions }> = [];
+  let chartIndex = 0;
+  const components = {
+    echarts: ({ children }: { children?: React.ReactNode }) => {
+      const raw = Array.isArray(children) ? children.join('') : String(children ?? '');
+      const id = `report-chart-${chartIndex++}`;
+      const options = safeParseChartOptions(raw);
+      if (options) {
+        charts.push({
+          id,
+          options,
+        });
+      }
+      return <div id={id} className="report-chart" />;
+    },
+  } as unknown as Components;
+
+  const body = renderToStaticMarkup(
+    <ReactMarkdown
+      components={components}
+      rehypePlugins={[
+        rehypeRaw,
+        [
+          rehypeSanitize,
+          {
+            ...defaultSchema,
+            tagNames: [...(defaultSchema.tagNames ?? []), 'echarts'],
+          },
+        ],
+      ]}
+      remarkPlugins={[remarkGfm]}
+    >
+      {markdown}
+    </ReactMarkdown>,
+  );
+
+  return { body, charts };
+}
+
+export async function buildReportHtml(
   report: Partial<BusinessReportRenderState>,
-  options?: ReportRenderOptions & { autoPrint?: boolean },
+  options?: ReportRenderOptions & { autoPrint?: boolean; printMode?: boolean },
 ) {
   const markdown = buildReportMarkdown(report, options);
+  const { body, charts } = buildReportBodyHtml(markdown);
+  const printMode = options?.printMode === true;
+  const htmlLang = getReportHtmlLang(options?.locale);
+  const fontFamily = getReportFontFamily(htmlLang);
+  const bodyBackground = printMode ? '#ffffff' : '#f5f7fb';
+  const shellStyles = printMode
+    ? 'max-width: 190mm; margin: 0 auto; padding: 0;'
+    : 'max-width: 960px; margin: 0 auto; padding: 32px 24px 64px;';
+  const paperStyles = printMode
+    ? 'background: #fff; border: 0; border-radius: 0; padding: 0; box-shadow: none; width: 100%;'
+    : 'background: #fff; border: 1px solid #d0d5dd; border-radius: 20px; padding: 40px 48px; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);';
+  const chartHeight = printMode ? 320 : 360;
+  const chartImages = await renderChartsToImages(charts, {
+    chartHeight,
+    fontFamily,
+    printMode,
+  });
+  const bodyWithCharts = replaceChartPlaceholders(body, chartImages);
   const title = report.title || options?.t?.('Business analysis report') || 'Business analysis report';
-  const htmlLang = normalizeLanguageTag(options?.locale) || 'en-US';
-  const escapedMarkdown = escapeHtml(markdown);
 
   return `<!DOCTYPE html>
 <html lang="${escapeHtml(htmlLang)}">
@@ -257,26 +319,58 @@ export function buildReportHtml(
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(title)}</title>
     <style>
-      body { margin: 0; color: #1f2937; background: #f5f7fb; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-      .report-shell { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
-      .report-paper { background: #fff; border: 1px solid #d0d5dd; border-radius: 20px; padding: 40px 48px; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08); }
-      pre { white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
+      * { box-sizing: border-box; }
+      html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { font-family: ${fontFamily}; }
+      body { margin: 0; color: #1f2937; background: ${bodyBackground}; }
+      .report-shell { ${shellStyles} }
+      .report-paper { ${paperStyles} }
+      h1, h2, h3 { color: #101828; }
+      h1 { margin-top: 0; font-size: 32px; }
+      h2, h3 { break-after: avoid-page; }
+      p, li { line-height: 1.7; }
+      blockquote { margin: 16px 0; padding: 12px 16px; border-left: 4px solid #0f766e; background: #f0fdfa; color: #667085; }
+      pre, blockquote, table, .report-chart { break-inside: avoid; page-break-inside: avoid; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #d0d5dd; padding: 10px 12px; text-align: left; }
+      .report-chart { width: 100%; min-height: ${chartHeight}px; height: ${chartHeight}px; margin: 24px 0 32px; border: 1px solid #d0d5dd; border-radius: ${
+        printMode ? 0 : 16
+      }px; overflow: hidden; background: #fff; }
+      .report-chart-image { display: block; width: 100%; height: auto; border: 1px solid #d0d5dd; background: #fff; margin: 24px 0 32px; break-inside: avoid; page-break-inside: avoid; }
+      .report-paper > *:first-child { margin-top: 0; }
+      .report-paper > *:last-child { margin-bottom: 0; }
+      img, svg, canvas { max-width: 100%; }
+      svg, svg text, svg tspan, canvas { font-family: ${fontFamily}; }
+      @page { size: A4; margin: 12mm; }
       @media print {
         body { background: #fff; }
         .report-shell { max-width: 100%; padding: 0; margin: 0; }
-        .report-paper { border: 0; border-radius: 0; box-shadow: none; padding: 0; }
+        .report-paper { border: 0; border-radius: 0; box-shadow: none; padding: 0; width: 100%; }
+        .report-chart { margin: 16px 0 24px; height: 320px; min-height: 320px; }
+        .report-chart-image { margin: 16px 0 24px; }
       }
     </style>
   </head>
   <body>
     <div class="report-shell">
-      <article class="report-paper"><pre>${escapedMarkdown}</pre></article>
+      <article class="report-paper">${bodyWithCharts}</article>
     </div>
     ${
       options?.autoPrint
         ? `<script>
-      window.addEventListener('load', () => {
-        requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+      window.addEventListener('load', async () => {
+        if (document.fonts?.ready) {
+          try {
+            await document.fonts.ready;
+          } catch (error) {
+            console.error('Failed to wait for fonts before printing:', error);
+          }
+        }
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            window.print();
+          });
+        });
       });
     </script>`
         : ''
@@ -300,7 +394,7 @@ export async function printReport(report: Partial<BusinessReportRenderState>, op
     return false;
   }
 
-  const html = buildReportHtml(report, { ...options, autoPrint: true });
+  const html = await buildReportHtml(report, { ...options, autoPrint: true, printMode: true });
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const opened = window.open(url, '_blank', 'noopener,noreferrer');
@@ -329,6 +423,126 @@ export function normalizeChartOptionsForExport(options: ReportChartOptions) {
   }
 
   return normalized as echarts.EChartsOption;
+}
+
+async function renderChartsToImages(
+  charts: Array<{ id: string; options: ReportChartOptions }>,
+  options: { chartHeight: number; fontFamily: string; printMode: boolean },
+) {
+  if (typeof document === 'undefined' || !charts.length) {
+    return new Map<string, string>();
+  }
+
+  const result = new Map<string, string>();
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.left = '-100000px';
+  host.style.top = '0';
+  host.style.width = `${options.printMode ? 718 : 960}px`;
+  host.style.pointerEvents = 'none';
+  host.style.opacity = '0';
+  host.style.zIndex = '-1';
+  document.body.appendChild(host);
+
+  try {
+    for (const chartItem of charts) {
+      const container = document.createElement('div');
+      container.style.width = host.style.width;
+      container.style.height = `${options.chartHeight}px`;
+      host.appendChild(container);
+
+      try {
+        const chart = echarts.init(container, 'default', { renderer: 'canvas' });
+        chart.setOption(
+          {
+            ...normalizeChartOptionsForExport(chartItem.options),
+            textStyle: {
+              ...(isRecord(chartItem.options.textStyle) ? chartItem.options.textStyle : {}),
+              fontFamily: options.fontFamily,
+            },
+          },
+          true,
+        );
+        chart.resize({
+          width: container.clientWidth || parseInt(host.style.width, 10),
+          height: options.chartHeight,
+          silent: true,
+        });
+        await waitForNextFrame();
+        await waitForNextFrame();
+        await waitForChartFinished(chart);
+        result.set(
+          chartItem.id,
+          chart.getDataURL({
+            type: 'png',
+            pixelRatio: 3,
+            backgroundColor: '#ffffff',
+            excludeComponents: ['toolbox'],
+          }),
+        );
+        chart.dispose();
+      } catch (error) {
+        console.error('Failed to render business report chart image:', error);
+      } finally {
+        container.remove();
+      }
+    }
+  } finally {
+    host.remove();
+  }
+
+  return result;
+}
+
+function replaceChartPlaceholders(body: string, chartImages: Map<string, string>) {
+  return body.replace(/<div id="([^"]+)" class="report-chart"><\/div>/g, (match, id) => {
+    const src = chartImages.get(id);
+    if (!src) {
+      return match;
+    }
+    return `<img class="report-chart-image" src="${src}" alt="" />`;
+  });
+}
+
+function waitForChartFinished(chart: echarts.ECharts) {
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      chart.off('finished', finish);
+      resolve();
+    };
+
+    chart.on('finished', finish);
+    window.setTimeout(finish, 400);
+  });
+}
+
+function waitForNextFrame() {
+  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+function safeParseChartOptions(raw: string) {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (isRecord(parsed)) {
+      return parsed;
+    }
+  } catch (error) {
+    console.error('Failed to parse business report chart options:', error);
+  }
+  return null;
+}
+
+function getReportHtmlLang(locale: string | undefined) {
+  const currentLanguage = normalizeLanguageTag(locale);
+  if (currentLanguage) {
+    return currentLanguage;
+  }
+  return 'en-US';
 }
 
 function formatReportGeneratedAt(value: string | number | Date | undefined, locale?: string) {
@@ -377,7 +591,11 @@ function parseReportGeneratedAt(value?: string | number | Date) {
   }
 
   const parsed = new Date(trimmed);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  return null;
 }
 
 function parseTimestampNumber(value: number) {
@@ -390,6 +608,19 @@ function parseTimestampNumber(value: number) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function getReportFontFamily(lang: string) {
+  if (lang.startsWith('zh')) {
+    return '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  }
+  if (lang.startsWith('ja')) {
+    return '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Noto Sans CJK JP", "Source Han Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  }
+  if (lang.startsWith('ko')) {
+    return '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", "Source Han Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  }
+  return '"Inter", "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", -apple-system, BlinkMacSystemFont, sans-serif';
+}
+
 function normalizeLanguageTag(input?: string) {
   if (!input) {
     return null;
@@ -398,7 +629,16 @@ function normalizeLanguageTag(input?: string) {
   if (!value) {
     return null;
   }
-  return value;
+
+  if (!/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(value)) {
+    return null;
+  }
+
+  try {
+    return Intl.DateTimeFormat.supportedLocalesOf([value])[0] || value;
+  } catch (error) {
+    return value;
+  }
 }
 
 function escapeHtml(value: string) {

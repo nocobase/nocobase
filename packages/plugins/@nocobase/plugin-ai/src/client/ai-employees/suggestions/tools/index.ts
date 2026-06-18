@@ -7,14 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolsOptions } from '@nocobase/client';
-import { SuggestionsOptions } from '../ui/SuggestionsOptions';
-
-export const suggestionsTool: [string, ToolsOptions] = [
-  'suggestions',
-  {
-    ui: {
-      card: SuggestionsOptions,
-    },
-  },
-];
+export { suggestionsTool } from '../../../../client-v2/ai-employees/tools';

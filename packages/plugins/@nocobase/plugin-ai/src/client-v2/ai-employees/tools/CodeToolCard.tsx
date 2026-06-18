@@ -9,11 +9,9 @@
 
 import React from 'react';
 import { theme } from 'antd';
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import type { ToolsUIProperties } from '@nocobase/client-v2';
-import { useGlobalTheme } from '@nocobase/client-v2';
 import { jsonrepair } from 'jsonrepair';
+import { CodeBasic } from '../chatbox/components/Markdown';
 
 const MIN_STREAMING_UPDATE_RATIO = 0.8;
 
@@ -178,7 +176,6 @@ export function buildToolCodeBlock(toolCall: ToolsUIProperties['toolCall']) {
 
 const CodeToolCardBase: React.FC<ToolsUIProperties> = ({ toolCall }) => {
   const { token } = theme.useToken();
-  const { isDarkTheme } = useGlobalTheme();
   const codeBlock = buildToolCodeBlock(toolCall);
   if (!codeBlock) {
     return null;
@@ -186,9 +183,7 @@ const CodeToolCardBase: React.FC<ToolsUIProperties> = ({ toolCall }) => {
 
   return (
     <div style={{ padding: `${token.paddingXXS}px ${token.paddingSM}px` }}>
-      <SyntaxHighlighter PreTag="div" language={codeBlock.language} style={isDarkTheme ? dark : defaultStyle}>
-        {codeBlock.value}
-      </SyntaxHighlighter>
+      <CodeBasic className={`language-${codeBlock.language}`}>{codeBlock.value}</CodeBasic>
     </div>
   );
 };

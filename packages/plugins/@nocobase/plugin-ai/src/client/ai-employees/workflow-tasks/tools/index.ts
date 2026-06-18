@@ -7,15 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolsOptions, lazy } from '@nocobase/client';
-
-const { WorkflowTaskOutputCard } = lazy(() => import('../ui/WorkflowTaskOutputCard'), 'WorkflowTaskOutputCard');
-
-export const aiEmployeeWorkflowTaskOutputTool: [string, ToolsOptions] = [
-  'aiEmployeeWorkflowTaskOutput',
-  {
-    ui: {
-      card: WorkflowTaskOutputCard,
-    },
-  },
-];
+export { aiEmployeeWorkflowTaskOutputTool } from '../../../../client-v2/ai-employees/tools';

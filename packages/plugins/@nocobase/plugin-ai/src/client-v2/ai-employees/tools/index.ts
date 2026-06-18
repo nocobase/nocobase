@@ -26,7 +26,7 @@ import { BusinessReportModal, BusinessReportModalFooter } from './BusinessReport
 import { ChartGeneratorCard } from './ChartGeneratorCard';
 import { CodeToolCard } from './CodeToolCard';
 import { DataModelingCard } from './DataModelingCard';
-import { DataModelingModal, useDataModelingOnOk } from './DataModelingModal';
+import { DataModelingModal, registerDataModelingRefreshHandler, useDataModelingOnOk } from './DataModelingModal';
 import { SubAgentDispatchCard } from './SubAgentDispatchCard';
 import { SuggestionsOptionsCard } from './SuggestionsOptionsCard';
 import { WorkflowTaskOutputCard } from './WorkflowTaskOutputCard';
@@ -38,7 +38,7 @@ export { BusinessReportCard } from './BusinessReportCard';
 export { BusinessReportModal, BusinessReportModalFooter } from './BusinessReportModal';
 export { CodeToolCard } from './CodeToolCard';
 export { DataModelingCard } from './DataModelingCard';
-export { DataModelingModal, useDataModelingOnOk } from './DataModelingModal';
+export { DataModelingModal, registerDataModelingRefreshHandler, useDataModelingOnOk } from './DataModelingModal';
 export { WorkflowTaskOutputCard } from './WorkflowTaskOutputCard';
 
 export const chartGeneratorTool: [string, ToolsOptions] = [
@@ -65,6 +65,8 @@ export const businessReportGeneratorTool: [string, ToolsOptions] = [
               height: 'calc(100vh - 240px)',
               maxHeight: 'calc(100vh - 240px)',
               overflow: 'hidden',
+              paddingTop: 16,
+              paddingBottom: 0,
             },
           },
         },
@@ -100,7 +102,7 @@ export const defineCollectionsTool: [string, ToolsOptions] = [
       card: DataModelingCard,
       modal: {
         title: 'Data modeling',
-        okText: 'Submit',
+        okText: 'Finish review and apply',
         props: {
           width: '90%',
         },

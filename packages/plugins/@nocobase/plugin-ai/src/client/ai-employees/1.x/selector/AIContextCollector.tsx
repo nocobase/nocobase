@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { useAISelectionContext } from './AISelectorProvider';
 import { useForm } from '@formily/react';
 import { useResourceActionContext } from '@nocobase/client';
+import { registerDataModelingRefreshHandler } from '../../../../client-v2/ai-employees/tools';
 
 export const AIFormContextCollector: React.FC<{
   uid: string;
@@ -35,6 +36,10 @@ export const AIResourceContextCollector: React.FC<{
 
   useEffect(() => {
     collect(uid, 'service', service);
+    if (uid !== 'collections:list' || typeof service?.refresh !== 'function') {
+      return;
+    }
+    return registerDataModelingRefreshHandler(() => service.refresh());
   }, [uid, service, collect]);
 
   return null;

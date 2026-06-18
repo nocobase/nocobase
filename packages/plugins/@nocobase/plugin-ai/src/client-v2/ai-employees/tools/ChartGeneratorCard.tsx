@@ -8,9 +8,10 @@
  */
 
 import React from 'react';
-import { Alert, Spin, theme } from 'antd';
+import { Alert, Button, message, theme } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
+import { CopyOutlined } from '@ant-design/icons';
 import type { ToolsUIProperties } from '@nocobase/client-v2';
 import { useGlobalTheme } from '@nocobase/client-v2';
 import { useT } from '../../locale';
@@ -70,14 +71,6 @@ export const ChartGeneratorCard: React.FC<ToolsUIProperties<ChartGeneratorArgs>>
   const responseLoading = chat.use.responseLoading();
   const options = toolCall.args?.options;
 
-  if (toolCall.status !== 'success') {
-    return <Spin size="small" tip={t('Generating')} />;
-  }
-
-  if (!options || typeof options !== 'object' || Array.isArray(options)) {
-    return <Alert showIcon type="error" message={t('Invalid chart options')} />;
-  }
-
   const iconStyle = {
     fontSize: token.fontSizeSM,
     color: token.colorText,
@@ -89,7 +82,25 @@ export const ChartGeneratorCard: React.FC<ToolsUIProperties<ChartGeneratorArgs>>
       resetKey={options}
       fallback={(error) =>
         responseLoading ? null : (
-          <Alert showIcon type="error" message={t('Invalid chart options')} description={error.message} />
+          <Alert
+            showIcon
+            type="error"
+            message={t('Invalid chart options')}
+            description={
+              <>
+                {error.message}{' '}
+                <Button
+                  icon={<CopyOutlined />}
+                  variant="link"
+                  color="primary"
+                  onClick={() => {
+                    navigator.clipboard.writeText(error.message);
+                    message.success(t('Copied'));
+                  }}
+                />
+              </>
+            }
+          />
         )
       }
     >
@@ -115,7 +126,7 @@ export const ChartGeneratorCard: React.FC<ToolsUIProperties<ChartGeneratorArgs>>
             },
           },
         }}
-        theme={isDarkTheme ? 'dark' : 'default'}
+        theme={!isDarkTheme ? 'light' : 'defaultDark'}
       />
     </ChartErrorBoundary>
   );
