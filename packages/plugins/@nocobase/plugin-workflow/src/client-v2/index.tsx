@@ -14,6 +14,11 @@ export * from './models';
 // their config UI to the modern canvas.
 export { Instruction } from './canvas/Instruction';
 export type { LoaderOf, NodeAvailableContext, TempAssociationSource } from './canvas/Instruction';
+export { Branch } from './canvas/Branch';
+export { NodeDefaultView } from './canvas/Node';
+export { useFlowContext } from './canvas/contexts';
+export type { CanvasNode, WorkflowCanvasFlowContextValue } from './canvas/contexts';
+export { default as useStyles } from './canvas/style';
 export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';
 export type { WorkflowVariableInputProps } from './canvas/WorkflowVariableInput';
 export { WorkflowVariableTextArea } from './canvas/WorkflowVariableTextArea';
