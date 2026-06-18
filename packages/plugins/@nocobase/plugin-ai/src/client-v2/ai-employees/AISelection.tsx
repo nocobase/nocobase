@@ -10,11 +10,9 @@
 import React from 'react';
 import { observer } from '@nocobase/flow-engine';
 import { Global, css } from '@emotion/react';
-import { theme } from 'antd';
 import { aiSelection } from './stores/ai-selection';
 
 export const AISelection: React.FC = observer(() => {
-  const { token } = theme.useToken();
   const selectable = aiSelection.selectable;
 
   if (!selectable) {
@@ -26,7 +24,7 @@ export const AISelection: React.FC = observer(() => {
       styles={css`
         .ai-selectable {
           position: relative;
-          transition: all ${token.motionDurationMid} ${token.motionEaseInOut};
+          transition: all 0.3s ease;
         }
 
         .ai-selectable:hover {
@@ -40,9 +38,9 @@ export const AISelection: React.FC = observer(() => {
           left: 0;
           width: 100%;
           height: 100%;
-          background: ${token.colorPrimaryBgHover};
+          background: rgba(0, 210, 255, 0.2);
           opacity: 0;
-          transition: opacity ${token.motionDurationMid} ${token.motionEaseInOut};
+          transition: opacity 0.3s ease;
           z-index: 100;
         }
 

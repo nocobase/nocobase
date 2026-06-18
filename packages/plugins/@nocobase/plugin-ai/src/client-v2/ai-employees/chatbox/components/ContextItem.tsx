@@ -113,8 +113,79 @@ function stringifyContent(content: unknown) {
     return '';
   }
   try {
-    return JSON.stringify(content, null, 2);
+    const serializable = toSerializable(content, new WeakSet<object>());
+    return JSON.stringify(serializable, null, 2);
   } catch {
-    return String(content);
+    return typeof content === 'object' ? '{}' : String(content);
   }
+}
+
+function toSerializable(value: unknown, seen: WeakSet<object>): unknown {
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  if (typeof value === 'function' || typeof value === 'symbol' || typeof value === 'undefined') {
+    return undefined;
+  }
+  if (value == null || typeof value !== 'object') {
+    return value;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (seen.has(value)) {
+    return undefined;
+  }
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return value.map((item) => {
+      try {
+        return toSerializable(item, seen);
+      } catch {
+        return undefined;
+      }
+    });
+  }
+  if (value instanceof Map) {
+    try {
+      return Object.fromEntries(
+        Array.from(value.entries()).map(([key, mapValue]) => [String(key), toSerializable(mapValue, seen)]),
+      );
+    } catch {
+      return {};
+    }
+  }
+  if (value instanceof Set) {
+    try {
+      return Array.from(value.values()).map((item) => toSerializable(item, seen));
+    } catch {
+      return [];
+    }
+  }
+
+  const result: Record<string, unknown> = {};
+  let keys: string[];
+  try {
+    keys = Object.keys(value);
+  } catch {
+    return result;
+  }
+  keys.forEach((key) => {
+    let child: unknown;
+    try {
+      child = (value as Record<string, unknown>)[key];
+    } catch {
+      return;
+    }
+    let serializableChild: unknown;
+    try {
+      serializableChild = toSerializable(child, seen);
+    } catch {
+      return;
+    }
+    if (typeof serializableChild !== 'undefined') {
+      result[key] = serializableChild;
+    }
+  });
+  return result;
 }

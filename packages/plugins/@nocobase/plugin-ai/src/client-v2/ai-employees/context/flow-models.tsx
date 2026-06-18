@@ -36,8 +36,26 @@ type CollectionLike = {
   [key: string]: unknown;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === 'object' && !Array.isArray(value);
+type CollectionBlockLike = FlowModel & {
+  collection?: {
+    name?: string;
+    title?: string;
+    getFields?: () => unknown;
+  };
+  resource?: unknown;
+};
+
+const collectionQueryPrompt = `Before querying, first call getSkill with skillName="data-query" to load the data-query skill and make dataSourceQuery and dataSourceCounting available.
+After the skill is loaded, use dataSourceQuery to query data from a data source and dataSourceCounting to get record counts.
+When analyzing user messages, if any words or phrases are related or similar to a known collectionName, prioritize retrieving relevant data before responding.
+When the user asks about quantities, totals, or record counts, you must first call dataSourceCounting to obtain accurate numbers before answering.
+Always apply dataScope.filter when calling dataSourceQuery or dataSourceCounting. Ensure that the filter structure is properly transformed to match the tools’ input format.
+Do not mention or reveal any details about tools, data sources, or internal processes in your reply.
+Unless the user explicitly requests it, do not directly output large amounts of raw data—summarize, filter, or aggregate the results naturally in your response.`;
+
+const hasCollectionResource = (model: FlowModel): model is CollectionBlockLike => {
+  return !!Reflect.get(model, 'collection') || !!Reflect.get(model, 'resource');
+};
 
 const parseFlowModel = async (model: FlowModel) => {
   if (!model) {
@@ -46,8 +64,8 @@ const parseFlowModel = async (model: FlowModel) => {
   if (model instanceof FormBlockModel) {
     return toSimplifyForm(model);
   }
-  if (model instanceof CollectionBlockModel) {
-    return toCollection(model);
+  if (model instanceof CollectionBlockModel || hasCollectionResource(model)) {
+    return toCollection(model as unknown as CollectionBlockLike);
   }
   return toSimplifyComponentTree(model);
 };
@@ -100,17 +118,16 @@ const toSimplifyForm = (model: FormBlockModel) => {
   return result;
 };
 
-const toCollection = async (model: CollectionBlockModel) => {
+const toCollection = async (model: CollectionBlockLike) => {
   const collection = readCollection(model);
-  const resource = (model as unknown as { resource?: unknown }).resource;
-  if (resource instanceof MultiRecordResource) {
+  const resource = Reflect.get(model, 'resource');
+  if (isMultiRecordResource(resource)) {
     return {
       dataScope: {
-        filter: resource.getFilter(),
+        filter: resource.getFilter?.(),
       },
       collection,
-      prompt: `Before querying, first call getSkill with skillName="data-query" to load the data-query skill and make dataSourceQuery and dataSourceCounting available.
-Always apply dataScope.filter when calling dataSourceQuery or dataSourceCounting.`,
+      prompt: collectionQueryPrompt,
     };
   }
   return {
@@ -156,21 +173,80 @@ const toSimplifyComponentTree = async (model: FlowModel): Promise<SimplifyCompon
   return result;
 };
 
-const readCollection = (model: CollectionBlockModel): CollectionLike | undefined => {
-  const collection = model.collection;
+const readCollection = (model: CollectionBlockLike): CollectionLike | undefined => {
+  const collection = Reflect.get(model, 'collection') as CollectionBlockLike['collection'];
   if (!collection) {
     return undefined;
   }
+  const fields =
+    typeof collection.getFields === 'function' ? simplifyCollectionFields(collection.getFields()) : undefined;
   return {
     name: collection.name,
     title: collection.title,
-    fields: typeof collection.getFields === 'function' ? collection.getFields() : undefined,
+    fields,
+  };
+};
+
+const simplifyCollectionFields = (fields: unknown): unknown[] | undefined => {
+  const values = fields instanceof Map ? Array.from(fields.values()) : Array.isArray(fields) ? fields : undefined;
+  if (!values) {
+    return undefined;
+  }
+  return values.map((field) => {
+    if (!field || typeof field !== 'object') {
+      return field;
+    }
+    const record = field as Record<string, unknown>;
+    const targetCollection = safeGet<{ name?: string }>(record, 'targetCollection');
+    return {
+      name: safeGet(record, 'name'),
+      type: safeGet(record, 'type'),
+      title: safeGet(record, 'title'),
+      interface: safeGet(record, 'interface'),
+      dataType: safeGet(record, 'dataType'),
+      target: safeGet(record, 'target'),
+      targetKey: safeGet(record, 'targetKey'),
+      targetCollection: targetCollection?.name,
+      enum: safeGet(record, 'enum'),
+      readonly: safeGet(record, 'readonly'),
+      defaultValue: safeGet(record, 'defaultValue'),
+    };
+  });
+};
+
+const safeGet = <T = unknown,>(record: Record<string, unknown>, key: string): T | undefined => {
+  try {
+    return record[key] as T;
+  } catch {
+    return undefined;
+  }
+};
+
+const isMultiRecordResource = (resource: unknown): resource is MultiRecordResource & { getFilter?: () => unknown } => {
+  if (resource instanceof MultiRecordResource) {
+    return true;
+  }
+  return (
+    !!resource &&
+    typeof resource === 'object' &&
+    ((resource as { constructor?: { name?: string } }).constructor?.name === 'MultiRecordResource' ||
+      typeof (resource as { getFilter?: unknown }).getFilter === 'function')
+  );
+};
+
+const getFallbackCollection = (model: FlowModel, resource: unknown): CollectionLike => {
+  const resourceName =
+    resource && typeof resource === 'object' ? (resource as { resourceName?: string }).resourceName : undefined;
+  return {
+    name: resourceName,
+    title: model.title,
   };
 };
 
 const readResourceData = async (model: FlowModel) => {
-  const resource = (model as unknown as { resource?: { getData?: () => unknown; refresh?: () => Promise<unknown> } })
-    .resource;
+  const resource = Reflect.get(model, 'resource') as
+    | { getData?: () => unknown; refresh?: () => Promise<unknown> }
+    | undefined;
   if (!resource) {
     return undefined;
   }
@@ -180,6 +256,88 @@ const readResourceData = async (model: FlowModel) => {
   }
   await resource.refresh?.();
   return resource.getData?.();
+};
+
+const stringifyFlowModelContent = (content: unknown) => {
+  if (typeof content === 'string') {
+    return content;
+  }
+  try {
+    const serializable = toSerializable(content, new WeakSet<object>());
+    return JSON.stringify(serializable, null, 2);
+  } catch {
+    return content && typeof content === 'object' ? '{}' : String(content ?? '');
+  }
+};
+
+const toSerializable = (value: unknown, seen: WeakSet<object>): unknown => {
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  if (typeof value === 'function' || typeof value === 'symbol' || typeof value === 'undefined') {
+    return undefined;
+  }
+  if (value == null || typeof value !== 'object') {
+    return value;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (seen.has(value)) {
+    return undefined;
+  }
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return value.map((item) => {
+      try {
+        return toSerializable(item, seen);
+      } catch {
+        return undefined;
+      }
+    });
+  }
+  if (value instanceof Map) {
+    try {
+      return Object.fromEntries(
+        Array.from(value.entries()).map(([key, mapValue]) => [String(key), toSerializable(mapValue, seen)]),
+      );
+    } catch {
+      return {};
+    }
+  }
+  if (value instanceof Set) {
+    try {
+      return Array.from(value.values()).map((item) => toSerializable(item, seen));
+    } catch {
+      return [];
+    }
+  }
+
+  const result: Record<string, unknown> = {};
+  let keys: string[];
+  try {
+    keys = Object.keys(value);
+  } catch {
+    return result;
+  }
+  keys.forEach((key) => {
+    let child: unknown;
+    try {
+      child = (value as Record<string, unknown>)[key];
+    } catch {
+      return;
+    }
+    let serializableChild: unknown;
+    try {
+      serializableChild = toSerializable(child, seen);
+    } catch {
+      return;
+    }
+    if (typeof serializableChild !== 'undefined') {
+      result[key] = serializableChild;
+    }
+  });
+  return result;
 };
 
 const handleSelect = (ctx: FlowEngineContext, onAdd: (item: Omit<ContextItem, 'type'>) => void) => {
@@ -225,13 +383,41 @@ export const FlowModelsContext: WorkContextOptions = {
   },
   getContent: async (app, { uid, content }) => {
     if (content) {
-      return content;
+      return stringifyFlowModelContent(content);
     }
     const model = app.flowEngine.getModel(uid, true);
     if (!model) {
       return '';
     }
-    return parseFlowModel(model);
+    const collectionModel = model as unknown as CollectionBlockLike;
+    const collection = readCollection(collectionModel);
+    const resource = Reflect.get(collectionModel, 'resource');
+    if (collection || resource) {
+      if (isMultiRecordResource(resource)) {
+        return stringifyFlowModelContent({
+          dataScope: {
+            filter: resource.getFilter?.(),
+          },
+          collection: collection ?? getFallbackCollection(model, resource),
+          prompt: collectionQueryPrompt,
+        });
+      }
+      return stringifyFlowModelContent({
+        collection: collection ?? getFallbackCollection(model, resource),
+        data: await readResourceData(collectionModel),
+      });
+    }
+    const parsed = await parseFlowModel(model);
+    const parsedContent = stringifyFlowModelContent(parsed);
+    if (parsedContent === '{}') {
+      return stringifyFlowModelContent({
+        uid: model.uid,
+        title: model.title,
+        component: model.use,
+        props: model.props,
+      });
+    }
+    return parsedContent;
   },
 };
 

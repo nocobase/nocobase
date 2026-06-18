@@ -123,7 +123,15 @@ export const AddContextButton: React.FC<{
   }, [contextItems, ctx, ignore, onAdd, onRemove, syncContextAttachments, t, workContext]);
 
   return (
-    <Dropdown menu={{ items, onClick }} placement="topLeft" disabled={disabled || !items.length}>
+    <Dropdown
+      menu={{ items, onClick }}
+      placement="topLeft"
+      disabled={disabled || !items.length}
+      trigger={['hover', 'click']}
+      overlayStyle={{
+        zIndex: 2000,
+      }}
+    >
       <Button type="text" icon={<AppstoreAddOutlined />} disabled={disabled || !items.length} />
     </Dropdown>
   );
