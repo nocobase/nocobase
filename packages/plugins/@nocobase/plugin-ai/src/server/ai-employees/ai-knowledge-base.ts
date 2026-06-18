@@ -9,107 +9,52 @@
 
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { AIEmployee } from '../../collections/ai-employees';
-import { DocumentSegmentedWithScore } from '../features';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import type PluginAIServer from '../plugin';
-import { KnowledgeBaseGroup } from '../types';
 import _ from 'lodash';
 
 export type KnowledgeBaseRetrieveOptions = { username?: string; employee?: AIEmployee; query: string };
+
+const normalizeMatchedQuestions = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '');
+};
+
+const buildKnowledgeBaseContent = (content: string, metadata?: Record<string, unknown>) => {
+  const matchedQuestions = normalizeMatchedQuestions(metadata?.matchedQuestions);
+  if (!matchedQuestions.length) {
+    return content;
+  }
+  return `Related questions:\n${matchedQuestions.join('\n')}\n\n${content}`;
+};
 
 export class KnowledgeBaseManager {
   constructor(private readonly plugin: PluginAIServer) {}
 
   async retrievePrompt({ username, employee, query }: KnowledgeBaseRetrieveOptions): Promise<string> {
-    employee = employee ?? (await this.getEmployee(username));
+    employee = employee ?? (username ? await this.getEmployee(username) : null);
     if (!employee) {
       return 'Specified knowledge base not existed';
     }
+    const { knowledgeBaseKeys, topK, score } = employee.knowledgeBase ?? {};
+    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
+      return 'Specified knowledge base not existed';
+    }
 
-    const promptTemplate = ChatPromptTemplate.fromTemplate(employee.knowledgeBasePrompt);
-    const docs = await this.retrieve({
-      employee,
-      query,
-    });
+    const promptTemplate = ChatPromptTemplate.fromTemplate(employee.knowledgeBasePrompt ?? '{knowledgeBaseData}');
+    const docs = await this.plugin.features.knowledgeBase.search({ knowledgeBaseKeys, query, topK, score });
     if (!docs?.length) {
       return 'No document match in knowledge base';
     }
 
-    const knowledgeBaseData = docs.map((x) => x.content).join('\n');
+    const knowledgeBaseData = docs.map((doc) => buildKnowledgeBaseContent(doc.content, doc.metadata)).join('\n');
     return _.isEmpty(knowledgeBaseData)
-      ? undefined
+      ? 'No document match in knowledge base'
       : await promptTemplate.format({
           knowledgeBaseData,
         });
-  }
-
-  async retrieve({ username, employee, query }: KnowledgeBaseRetrieveOptions): Promise<DocumentSegmentedWithScore[]> {
-    const vectorStoreProvider = this.plugin.features.vectorStoreProvider;
-    let queryResult: DocumentSegmentedWithScore[] = [];
-    if (!query || _.isEmpty(query)) {
-      return queryResult;
-    }
-    employee = employee ?? (await this.getEmployee(username));
-    if (!employee) {
-      return queryResult;
-    }
-    const { topK, score } = this.getAIEmployeeKnowledgeBaseConfig(employee);
-    const knowledgeBaseGroup = await this.getKnowledgeBaseGroup(employee);
-    for (const entry of knowledgeBaseGroup) {
-      const { vectorStoreConfig, knowledgeBaseType, knowledgeBaseList } = entry;
-      if (!knowledgeBaseList || _.isEmpty(knowledgeBaseList)) {
-        continue;
-      }
-
-      if (knowledgeBaseType === 'LOCAL') {
-        const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-          vectorStoreConfig.vectorStoreProvider,
-          [
-            {
-              key: 'vectorStoreConfigKey',
-              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
-            },
-          ],
-        );
-        const knowledgeBaseOuterIds = knowledgeBaseList.map((x) => x.knowledgeBaseOuterId);
-        const result = await vectorStoreService.search(query, {
-          topK,
-          score,
-          filter: {
-            knowledgeBaseOuterId: { in: knowledgeBaseOuterIds },
-          },
-        });
-        queryResult = [...queryResult, ...result];
-      } else if (knowledgeBaseType === 'READONLY') {
-        const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-          vectorStoreConfig.vectorStoreProvider,
-          [
-            {
-              key: 'vectorStoreConfigKey',
-              value: vectorStoreConfig.vectorStoreConfigKey ?? '',
-            },
-          ],
-        );
-        const result = await vectorStoreService.search(query, {
-          topK,
-          score,
-        });
-        queryResult = [...queryResult, ...result];
-      } else if (knowledgeBaseType === 'EXTERNAL') {
-        for (const knowledgeBase of knowledgeBaseList) {
-          const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
-            vectorStoreConfig.vectorStoreProvider,
-            this.plugin.app.environment.renderJsonTemplate(knowledgeBase.vectorStoreProps ?? []),
-          );
-          const result = await vectorStoreService.search(query, {
-            topK,
-            score,
-          });
-          queryResult = [...queryResult, ...result];
-        }
-      }
-    }
-    return queryResult;
   }
 
   async isEnabledKnowledgeBase(username: string): Promise<boolean>;
@@ -120,22 +65,6 @@ export class KnowledgeBaseManager {
       typeof usernameOrEmployee === 'string' ? await this.getEmployee(usernameOrEmployee) : usernameOrEmployee;
     const knowledgeBaseEnabled = employee?.enableKnowledgeBase;
     return featureEnabled && knowledgeBaseEnabled;
-  }
-
-  private getAIEmployeeKnowledgeBaseConfig(employee: AIEmployee) {
-    const { topK, score } = employee?.knowledgeBase ?? {};
-    return {
-      topK,
-      score,
-    };
-  }
-
-  private async getKnowledgeBaseGroup(employee: AIEmployee): Promise<KnowledgeBaseGroup[]> {
-    const { knowledgeBaseKeys } = employee?.knowledgeBase ?? {};
-    if (!knowledgeBaseKeys || _.isEmpty(knowledgeBaseKeys)) {
-      return [];
-    }
-    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseKeys);
   }
 
   private async getEmployee(username: string) {
