@@ -94,7 +94,7 @@ const syncTemplateMetaToReferenceBlocks = async (
   const modelUids = _.uniq(usages.map((u: any) => u?.modelUid).filter(Boolean));
   if (!modelUids.length) return;
 
-  const flowRepo = ctx.db.getRepository('flowModels') as any as FlowModelRepository;
+  const flowRepo = ctx.db.getRepository('flowModels') as unknown as FlowModelRepository;
 
   for (const modelUid of modelUids) {
     const record = await flowRepo.findOne({
@@ -190,7 +190,7 @@ export default {
           usageCount: 0,
         };
         if (detachParent && ctx.body.targetUid) {
-          const flowRepo = ctx.db.getRepository('flowModels') as any as FlowModelRepository;
+          const flowRepo = ctx.db.getRepository('flowModels') as unknown as FlowModelRepository;
           await flowRepo.clearAncestor(ctx.body.targetUid, { transaction: ctx.transaction });
         }
       }
@@ -254,7 +254,7 @@ export default {
         context: ctx,
       });
       if (targetUid) {
-        const flowRepo = ctx.db.getRepository('flowModels') as FlowModelRepository;
+        const flowRepo = ctx.db.getRepository('flowModels') as unknown as FlowModelRepository;
         await flowRepo.remove(targetUid, { transaction: ctx.transaction });
       }
     },

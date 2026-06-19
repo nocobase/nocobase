@@ -203,7 +203,7 @@ export class PluginBlockReferenceServer extends Plugin {
             message: 'filterByTk is required',
           });
         }
-        const flowRepo = ctx.db.getRepository('flowModels') as FlowModelRepository;
+        const flowRepo = ctx.db.getRepository('flowModels') as unknown as FlowModelRepository;
         const nodes = (await flowRepo.findNodesById(rootUid, {
           includeAsyncNode: true,
           transaction: ctx.transaction,
