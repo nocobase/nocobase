@@ -7,71 +7,174 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EventEmitter } from 'events';
+import React from 'react';
+import { act, render } from '@nocobase/test/client';
 import { FlowEngine, type FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
-import { PopupSubTableFieldModel } from '../../PopupSubTableFieldModel/PopupSubTableFieldModel';
-import { SubTableFieldModel } from '../index';
+import { PopupSubTableFieldModel } from '../../PopupSubTableFieldModel';
+import { SubTableFieldModel } from '..';
 
-type NamePath = Array<string | number>;
+vi.mock('react-i18next', async (importOriginal) => ({
+  ...(await importOriginal<any>()),
+  useTranslation: () => ({
+    t: (value: string) => value,
+  }),
+}));
 
-function createResetContext(fieldPathArray: NamePath) {
+vi.mock('antd', async () => {
+  const actual = await vi.importActual<any>('antd');
+  return {
+    ...actual,
+    Table: ({ dataSource = [], columns = [] }: any) =>
+      React.createElement(
+        'div',
+        { 'data-testid': 'subtable' },
+        dataSource.map((record: any, rowIdx: number) =>
+          React.createElement(
+            'div',
+            { 'data-testid': `row-${rowIdx}`, key: record.__index__ || rowIdx },
+            columns.map((column: any) =>
+              React.createElement(
+                'div',
+                { 'data-testid': `cell-${rowIdx}-${String(column.dataIndex || column.key)}`, key: column.key },
+                column.render?.(record[column.dataIndex], record, rowIdx),
+              ),
+            ),
+          ),
+        ),
+      ),
+  };
+});
+
+function createSubTableFieldModel(props: Record<string, unknown> = {}) {
   const engine = new FlowEngine();
-  const emitter = new EventEmitter();
+  engine.registerModels({ SubTableFieldModel });
   const setFieldValue = vi.fn();
 
-  engine.registerModels({ PopupSubTableFieldModel, SubTableFieldModel });
-  engine.context.defineProperty('blockModel', {
+  const blockModel = engine.createModel<FlowModel>({
+    use: 'FlowModel',
+    uid: 'form-block',
+  });
+  (blockModel as FlowModel & { setFieldValue: typeof setFieldValue }).setFieldValue = setFieldValue;
+  const parent = engine.createModel<FlowModel>({
+    use: 'FlowModel',
+    uid: 'form-item',
+  });
+
+  parent.context.defineProperty('blockModel', { value: blockModel });
+  parent.context.defineProperty('collectionField', {
     value: {
-      emitter,
-      setFieldValue,
+      target: 'roles',
+      targetCollection: {
+        filterTargetKey: 'id',
+      },
     },
   });
-  engine.context.defineProperty('fieldPathArray', {
-    value: fieldPathArray,
+  parent.context.defineProperty('fieldPathArray', { value: ['roles'] });
+
+  const model = engine.createModel<SubTableFieldModel>({
+    use: 'SubTableFieldModel',
+    uid: 'roles-subtable',
+    parentId: parent.uid,
+    props,
   });
 
-  return { emitter, engine, setFieldValue };
+  return { blockModel, model, setFieldValue };
 }
 
-describe('SubTableFieldModel reset', () => {
-  it('clears value through system field write instead of field onChange', () => {
-    const onChange = vi.fn();
-    const { emitter, engine, setFieldValue } = createResetContext(['roles']);
+async function createPopupSubTableFieldModel(props: Record<string, unknown> = {}) {
+  const engine = new FlowEngine();
+  engine.registerModels({ PopupSubTableFieldModel });
+  const setFieldValue = vi.fn();
 
-    engine.createModel<SubTableFieldModel>({
-      uid: 'subtable-field-reset-test',
-      use: 'SubTableFieldModel',
-      props: { onChange },
+  const blockModel = engine.createModel<FlowModel>({
+    use: 'FlowModel',
+    uid: 'popup-form-block',
+  });
+  (blockModel as FlowModel & { setFieldValue: typeof setFieldValue }).setFieldValue = setFieldValue;
+  const parent = engine.createModel<FlowModel>({
+    use: 'FlowModel',
+    uid: 'popup-form-item',
+  });
+
+  parent.context.defineProperty('blockModel', { value: blockModel });
+  parent.context.defineProperty('collectionField', {
+    value: {
+      target: 'roles',
+      targetCollection: {
+        filterTargetKey: 'id',
+      },
+    },
+  });
+  parent.context.defineProperty('fieldPathArray', { value: ['roles'] });
+
+  const model = engine.createModel<PopupSubTableFieldModel>({
+    use: 'PopupSubTableFieldModel',
+    uid: 'roles-popup-subtable',
+    parentId: parent.uid,
+    props,
+  });
+  (model.subModels as Record<string, unknown>).subTableColumns = [];
+  await model.onDispatchEventStart('beforeRender');
+
+  return { blockModel, model, setFieldValue };
+}
+
+describe('SubTable field reset', () => {
+  it('resets the rendered fork through its own form field path', () => {
+    const onChange = vi.fn();
+    const { blockModel, model, setFieldValue } = createSubTableFieldModel({
+      onChange,
+      value: [{ id: 1 }],
+    });
+    const fork = model.createFork({ value: [{ id: 1 }] }, 'orders.0.lines');
+    fork.context.defineProperty('fieldPathArray', { value: ['orders', 0, 'lines'] });
+
+    render(React.createElement(React.Fragment, null, fork.render()));
+
+    act(() => {
+      blockModel.emitter.emit('onFieldReset');
     });
 
-    emitter.emit('onFieldReset');
+    expect(fork.props.value).toEqual([]);
+    expect(setFieldValue).toHaveBeenCalledWith(['orders', 0, 'lines'], []);
+    expect(onChange).not.toHaveBeenCalled();
+  });
 
+  it('resets the non-forked model through the parent form field path', () => {
+    const onChange = vi.fn();
+    const { blockModel, model, setFieldValue } = createSubTableFieldModel({
+      onChange,
+      value: [{ id: 1 }],
+    });
+
+    render(React.createElement(React.Fragment, null, model.render()));
+
+    act(() => {
+      blockModel.emitter.emit('onFieldReset');
+    });
+
+    expect(model.props.value).toEqual([]);
     expect(setFieldValue).toHaveBeenCalledWith(['roles'], []);
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('clears popup subtable value through system field write instead of field onChange', async () => {
+  it('resets popup sub-table form values without relying on onChange', async () => {
     const onChange = vi.fn();
-    const { emitter, engine, setFieldValue } = createResetContext(['users', 0, 'roles']);
-    const parent = engine.createModel<FlowModel>({
-      uid: 'popup-subtable-parent-reset-test',
-      use: 'FlowModel',
-    });
-    parent.context.defineProperty('actionName', {
-      value: 'create',
-    });
-    const model = engine.createModel<PopupSubTableFieldModel>({
-      uid: 'popup-subtable-field-reset-test',
-      use: 'PopupSubTableFieldModel',
-      parentId: parent.uid,
-      props: { onChange },
+    const { blockModel, model, setFieldValue } = await createPopupSubTableFieldModel({
+      onChange,
+      pageSize: 10,
+      value: [{ id: 1 }],
     });
 
-    await model.onDispatchEventStart('beforeRender');
-    emitter.emit('onFieldReset');
+    render(React.createElement(React.Fragment, null, model.render()));
 
-    expect(setFieldValue).toHaveBeenCalledWith(['users', 0, 'roles'], []);
+    act(() => {
+      blockModel.emitter.emit('onFieldReset');
+    });
+
+    expect(model.props.value).toEqual([]);
+    expect(setFieldValue).toHaveBeenCalledWith(['roles'], []);
     expect(onChange).not.toHaveBeenCalled();
   });
 });

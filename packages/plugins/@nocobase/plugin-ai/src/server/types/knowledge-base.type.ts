@@ -37,3 +37,15 @@ export type KnowledgeBaseGroup = {
   knowledgeBaseType: KnowledgeBaseType;
   knowledgeBaseList: KnowledgeBase[];
 };
+
+export type DocumentSegmented = {
+  content: string;
+  metadata: Record<string, any>;
+  id?: string;
+};
+
+export type DocumentSegmentedWithScore = DocumentSegmented & {
+  score: number;
+};
+
+export type SearchOptions = { knowledgeBaseKeys: string[]; query: string; topK?: number; score?: string };

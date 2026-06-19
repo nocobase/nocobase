@@ -112,6 +112,11 @@ export class SubTableFieldModel extends AssociationFieldModel {
     };
     const isConfigMode = !!this.context.flowSettingsEnabled;
     const fieldPathArray = this.context.fieldPathArray ?? this.parent?.context?.fieldPathArray;
+    const onResetFieldValue = () => {
+      const value = [];
+      this.setProps({ value });
+      this.context.blockModel?.setFieldValue?.(fieldPathArray, value);
+    };
     return (
       <SubTableField
         {...this.props}
@@ -124,16 +129,10 @@ export class SubTableFieldModel extends AssociationFieldModel {
         formValuesChangeEmitter={this.context.blockModel?.emitter}
         fieldPathArray={fieldPathArray}
         getCurrentValue={() => this.getCurrentValue()}
+        onResetFieldValue={onResetFieldValue}
       />
     );
   }
-
-  private resetValueAfterFormReset() {
-    const fieldPathArray = this.context.fieldPathArray ?? this.parent?.context?.fieldPathArray;
-    if (!Array.isArray(fieldPathArray) || !fieldPathArray.length) return;
-    this.context.blockModel?.setFieldValue?.(fieldPathArray, []);
-  }
-
   onInit(options: any): void {
     super.onInit(options);
     this.context.defineProperty('resourceName', {
@@ -142,10 +141,6 @@ export class SubTableFieldModel extends AssociationFieldModel {
     });
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField.targetCollection,
-    });
-    // 监听表单reset
-    this.context.blockModel.emitter.on('onFieldReset', () => {
-      this.resetValueAfterFormReset();
     });
     this.onSelectExitRecordClick = (setCurrentPage, currentPageSize) => {
       this.setCurrentPage = setCurrentPage;

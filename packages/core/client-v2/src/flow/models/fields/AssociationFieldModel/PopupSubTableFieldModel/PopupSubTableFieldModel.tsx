@@ -203,6 +203,8 @@ const DisplayTable = (props) => {
     onSelectExitRecordClick,
     resetPage,
     allowCreate,
+    formValuesChangeEmitter,
+    onResetFieldValue,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -222,6 +224,18 @@ const DisplayTable = (props) => {
   useEffect(() => {
     resetPage && setCurrentPage(1);
   }, [resetPage]);
+
+  useEffect(() => {
+    if (!formValuesChangeEmitter?.on || !formValuesChangeEmitter?.off || !onResetFieldValue) return;
+    const listener = () => {
+      onResetFieldValue();
+      setTableData([]);
+    };
+    formValuesChangeEmitter.on('onFieldReset', listener);
+    return () => {
+      formValuesChangeEmitter.off('onFieldReset', listener);
+    };
+  }, [formValuesChangeEmitter, onResetFieldValue]);
 
   const pagination = useMemo(() => {
     return {
@@ -374,13 +388,6 @@ export class PopupSubTableFieldModel extends AssociationFieldModel {
   get collectionField() {
     return this.context.collectionField;
   }
-
-  private resetValueAfterFormReset() {
-    const fieldPathArray = this.context.fieldPathArray ?? this.parent?.context?.fieldPathArray;
-    if (!Array.isArray(fieldPathArray) || !fieldPathArray.length) return;
-    this.context.blockModel?.setFieldValue?.(fieldPathArray, []);
-  }
-
   onInit(options: any): void {
     super.onInit(options);
     this.context.defineProperty('resourceName', {
@@ -428,10 +435,6 @@ export class PopupSubTableFieldModel extends AssociationFieldModel {
           currentPageSize,
         });
       };
-      // 监听表单reset
-      this.context.blockModel.emitter.on('onFieldReset', () => {
-        this.resetValueAfterFormReset();
-      });
     }
   }
 
@@ -464,8 +467,21 @@ export class PopupSubTableFieldModel extends AssociationFieldModel {
   }
 
   public render() {
+    const fieldPathArray = this.context.fieldPathArray ?? this.parent?.context?.fieldPathArray;
+    const onResetFieldValue = () => {
+      const value = [];
+      this.setProps({ value });
+      this.context.blockModel?.setFieldValue?.(fieldPathArray, value);
+    };
     return (
-      <DisplayTable {...this.props} collection={this.collection} baseColumns={this.getBaseColumns(this)} model={this} />
+      <DisplayTable
+        {...this.props}
+        collection={this.collection}
+        baseColumns={this.getBaseColumns(this)}
+        model={this}
+        formValuesChangeEmitter={this.context.blockModel?.emitter}
+        onResetFieldValue={onResetFieldValue}
+      />
     );
   }
 }

@@ -420,6 +420,23 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(savedUids).toContain('grid-1');
   });
 
+  it('keeps dirty reset separate from runtime user-edited reset', async () => {
+    const model = await setupFormModel();
+    const resetUserEditedState = vi.fn();
+    model.formValueRuntime = { resetUserEditedState } as any;
+
+    model.markUserModifiedFields({ status: 'draft' });
+    expect(model.getUserModifiedFields().has('status')).toBe(true);
+
+    model.resetUserModifiedFields();
+
+    expect(model.getUserModifiedFields().size).toBe(0);
+    expect(resetUserEditedState).not.toHaveBeenCalled();
+
+    model.resetRuntimeUserEditedState();
+    expect(resetUserEditedState).toHaveBeenCalledTimes(1);
+  });
+
   it('re-syncs delegated assignRules when grid submodel is added after block init', async () => {
     const model = await setupFormModel();
     const syncAssignRules = vi.fn();
