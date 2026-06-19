@@ -1038,7 +1038,7 @@ chart.on('click', 'series', function(params) {
     });
   });
 
-  it('should reject blocked globals in custom visual raw and events raw before persisting', async () => {
+  it('should reject unsupported bare globals in custom visual raw and events raw before persisting', async () => {
     const page = await createPage(rootAgent, {
       title: 'Chart invalid raw page',
       tabTitle: 'Chart invalid raw tab',
@@ -1086,14 +1086,14 @@ chart.on('click', 'series', function(params) {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.changes.visual.raw',
-          ruleId: 'runjs-global-blocked',
+          ruleId: 'runjs-global-unknown',
           details: expect.objectContaining({
             global: 'fetch',
           }),
         }),
         expect.objectContaining({
           path: '$.changes.events.raw',
-          ruleId: 'runjs-global-blocked',
+          ruleId: 'runjs-global-unknown',
           details: expect.objectContaining({
             global: 'process',
           }),
@@ -1102,7 +1102,7 @@ chart.on('click', 'series', function(params) {
     );
   });
 
-  it('should reject optional-chained browser globals in custom visual raw and events raw before persisting', async () => {
+  it('should allow optional-chained browser globals in custom visual raw and events raw before persisting', async () => {
     const page = await createPage(rootAgent, {
       title: 'Chart optional global raw page',
       tabTitle: 'Chart optional global raw tab',
@@ -1145,38 +1145,22 @@ chart.on('click', 'series', function(params) {
       },
     });
 
-    expect(response.status).toBe(400);
-    expect(response.body?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.changes.visual.raw',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({
-            global: 'window',
-            member: 'localStorage',
-          }),
-        }),
-        expect.objectContaining({
-          path: '$.changes.events.raw',
-          ruleId: 'runjs-navigator-property-blocked',
-          details: expect.objectContaining({
-            global: 'navigator',
-            member: 'clipboard',
-          }),
-        }),
-      ]),
-    );
+    expect(response.status, readErrorMessage(response)).toBe(200);
 
     const surface = getData(
       await rootAgent.resource('flowSurfaces').get({
         uid: chartBlock.uid,
       }),
     );
-    expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.option?.raw).toBeUndefined();
-    expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.events?.raw).toBeUndefined();
+    expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.option?.raw).toBe(
+      'window?.localStorage.getItem("chart");\nreturn {};',
+    );
+    expect(surface.tree.stepParams?.chartSettings?.configure?.chart?.events?.raw).toBe(
+      'navigator?.clipboard.writeText("chart");',
+    );
   });
 
-  it('should reject blocked globals in inline chart settings on create write paths', async () => {
+  it('should reject unsupported bare globals in inline chart settings on create write paths', async () => {
     const page = await createPage(rootAgent, {
       title: 'Chart invalid inline raw page',
       tabTitle: 'Chart invalid inline raw tab',
@@ -2300,14 +2284,14 @@ function expectInlineChartRawErrors(response: any, pathPrefix: string) {
     expect.arrayContaining([
       expect.objectContaining({
         path: `${pathPrefix}.visual.raw`,
-        ruleId: 'runjs-global-blocked',
+        ruleId: 'runjs-global-unknown',
         details: expect.objectContaining({
           global: 'fetch',
         }),
       }),
       expect.objectContaining({
         path: `${pathPrefix}.events.raw`,
-        ruleId: 'runjs-global-blocked',
+        ruleId: 'runjs-global-unknown',
         details: expect.objectContaining({
           global: 'process',
         }),

@@ -307,25 +307,24 @@ describe('buildRunJSCompletions', () => {
     engineDoc.properties.popup.hidden = prev;
   });
 
-  it('adds safe browser/runtime global completions and excludes blocked globals', async () => {
+  it('adds browser/runtime global completions', async () => {
     const { completions } = await buildRunJSCompletions({}, 'v1', 'block');
     const labels = new Set(completions.map((c: any) => c.label));
 
     expect(labels.has('window.location.reload()')).toBe(true);
+    expect(labels.has('window.location.href')).toBe(true);
+    expect(labels.has('window.location.href =')).toBe(true);
     expect(labels.has('document.createElement()')).toBe(true);
+    expect(labels.has('document.body')).toBe(true);
+    expect(labels.has('document.getElementById()')).toBe(true);
+    expect(labels.has('document.cookie')).toBe(true);
     expect(labels.has('navigator.clipboard.writeText()')).toBe(true);
+    expect(labels.has('navigator.userAgent')).toBe(true);
+    expect(labels.has('navigator.geolocation')).toBe(true);
     expect(labels.has('console.log()')).toBe(true);
     expect(labels.has('setTimeout()')).toBe(true);
     expect(labels.has('Blob')).toBe(true);
     expect(labels.has('URL')).toBe(true);
-
-    expect(labels.has('navigator.userAgent')).toBe(false);
-    expect(labels.has('navigator.geolocation')).toBe(false);
-    expect(labels.has('document.cookie')).toBe(false);
-    expect(labels.has('document.body')).toBe(false);
-    expect(labels.has('document.getElementById()')).toBe(false);
-    expect(labels.has('window.location.href')).toBe(false);
-    expect(labels.has('window.location.href =')).toBe(true);
   });
 
   it('adds stable ctx runtime namespace completions', async () => {

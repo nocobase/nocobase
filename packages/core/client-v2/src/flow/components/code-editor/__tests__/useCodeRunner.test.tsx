@@ -20,8 +20,6 @@ import {
   FlowEngineProvider,
   FlowModelRenderer,
   ElementProxy,
-  createSafeWindow,
-  createSafeDocument,
   createViewScopedEngine,
 } from '@nocobase/flow-engine';
 import { JSEditableFieldModel } from '../../../models/fields/JSEditableFieldModel';
@@ -167,11 +165,7 @@ describe('useCodeRunner (beforeRender)', () => {
             const code = ctx?.inputArgs?.preview?.code || '';
             ctx.onRefReady(ctx.ref, async (el) => {
               ctx.defineProperty('element', { get: () => new ElementProxy(el as any) });
-              await ctx.runjs(
-                code,
-                { window: createSafeWindow(), document: createSafeDocument() },
-                { preprocessTemplates: true },
-              );
+              await ctx.runjs(code, undefined, { preprocessTemplates: true });
             });
           },
         },
@@ -273,6 +267,35 @@ return currentUsername;
     expect(result.current.logs.some((l) => l.level === 'log' && l.msg.includes('alice'))).toBe(true);
   });
 
+  it('runs direct event-flow previews with real browser globals', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DummyJsAutoModel });
+    const model = engine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'direct-browser-globals' });
+
+    const settingsCtx = new FlowContext();
+    settingsCtx.defineProperty('engine', { value: engine });
+    settingsCtx.addDelegate(model.context);
+    const { result } = renderHook(() => useCodeRunner(settingsCtx as any, 'v1'));
+
+    let runResult: any;
+    await act(async () => {
+      runResult = await result.current.run(`
+return {
+  hasBody: document.body === window.document.body,
+  hasGetElementById: typeof document.getElementById === 'function',
+  href: window.location.href,
+  userAgent: navigator.userAgent,
+};
+`);
+    });
+
+    expect(runResult?.success).toBe(true);
+    expect(runResult?.value?.hasBody).toBe(true);
+    expect(runResult?.value?.hasGetElementById).toBe(true);
+    expect(runResult?.value?.href).toBe(window.location.href);
+    expect(runResult?.value?.userAgent).toBe(navigator.userAgent);
+  });
+
   it('compiles JSX in preview and renders antd Input without syntax error', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ DummyJsAutoModel });
@@ -286,16 +309,7 @@ return currentUsername;
             const code = ctx?.inputArgs?.preview?.code || '';
             ctx.onRefReady(ctx.ref, async (el) => {
               ctx.defineProperty('element', { get: () => new ElementProxy(el as any) });
-              const navigator = { userAgent: 'test' } as any;
-              await ctx.runjs(
-                code,
-                {
-                  window: createSafeWindow({ navigator }),
-                  document: createSafeDocument(),
-                  navigator,
-                },
-                { preprocessTemplates: true },
-              );
+              await ctx.runjs(code, undefined, { preprocessTemplates: true });
             });
           },
         },

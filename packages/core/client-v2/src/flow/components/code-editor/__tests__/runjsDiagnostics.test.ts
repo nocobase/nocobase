@@ -235,6 +235,25 @@ ctx.render(<div />);
     expect(res.success).toBe(true);
   });
 
+  it('diagnoseRunJS preview can access real browser globals', async () => {
+    const ctx = createTestCtx();
+    const res = await diagnoseRunJS(
+      `
+console.log(document.body === window.document.body);
+console.log(typeof document.getElementById);
+console.log(window.location.href);
+console.log(navigator.userAgent);
+`,
+      ctx,
+    );
+
+    expect(res.issues.some((i) => i.type === 'runtime')).toBe(false);
+    expect(res.logs.some((log) => log.message === 'true')).toBe(true);
+    expect(res.logs.some((log) => log.message === 'function')).toBe(true);
+    expect(res.logs.some((log) => log.message === window.location.href)).toBe(true);
+    expect(res.logs.some((log) => log.message === navigator.userAgent)).toBe(true);
+  });
+
   it('diagnoseRunJS should follow version policy for template preprocessing', async () => {
     const code = `return "{{ctx.user.id}}";`;
     const ctx = createTestCtx();

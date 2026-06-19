@@ -34,7 +34,6 @@ import {
   collectDirectDomAliases,
   collectDirectDomWrites,
   collectFlowResourceAliases,
-  collectForbiddenBareGlobals,
   collectInvalidApiResourceCalls,
   collectInvalidFlowResourceListCalls,
   collectInvalidResourceTypeCalls,
@@ -44,8 +43,6 @@ import {
   collectReactHookCalls,
   collectResourceCallsInReactHooks,
   collectUnboundReactCreateElementCalls,
-  collectWindowDocumentNavigatorAliases,
-  collectWindowDocumentNavigatorUses,
   isTopLevelFunctionWrapper,
 } from './source-patterns';
 import {
@@ -101,7 +98,6 @@ import {
 import { collectAstInvalidResourceFilterCalls } from './filter';
 import {
   ALLOWED_CTX_ROOTS,
-  FORBIDDEN_BARE_GLOBALS,
   RUNJS_ALLOWED_BARE_GLOBALS,
   RUNJS_ALLOWED_BARE_GLOBALS_BY_MODEL_USE,
 } from '../runtime/constants';
@@ -138,10 +134,7 @@ export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAu
   const flowResourceAliases = collectFlowResourceAliases(masked, sourceBindings);
   const directDomWrites = collectDirectDomWrites(source, masked, sourceBindings);
   const directDomAliases = collectDirectDomAliases(masked, sourceBindings);
-  const windowDocumentNavigatorUses = collectWindowDocumentNavigatorUses(source, masked, sourceBindings);
-  const windowDocumentNavigatorAliases = collectWindowDocumentNavigatorAliases(masked, sourceBindings);
   const ctxAliases = collectCtxAliases(masked, sourceBindings);
-  const forbiddenBareGlobals = collectForbiddenBareGlobals(masked, sourceBindings);
   return {
     source,
     masked,
@@ -197,14 +190,11 @@ export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAu
     ),
     directDomWrites,
     directDomAliases,
-    windowDocumentNavigatorUses,
-    windowDocumentNavigatorAliases,
     ctxAliases,
     ctxLibMemberCaseMismatches: collectCtxLibMemberCaseMismatches(source, masked, sourceBindings),
     invalidCtxApiMemberAccesses: astInspection?.invalidCtxApiMemberAccesses || [],
     invalidCtxNonFunctionCalls: astInspection?.invalidCtxNonFunctionCalls || [],
     invalidCtxLibMemberAccesses: astInspection?.invalidCtxLibMemberAccesses || [],
-    forbiddenBareGlobals,
     ctxMemberAccesses: collectCtxMemberAccesses(masked, sourceBindings),
     dynamicCtxAccesses: findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g, sourceBindings),
     isTopLevelFunctionWrapper: isTopLevelFunctionWrapper(masked, functionRanges, topLevelReachableCtxRenderCalls),
@@ -229,6 +219,7 @@ function collectAstUnknownBareGlobalsFromAst(
   RUNJS_ALLOWED_BARE_GLOBALS_BY_MODEL_USE[modelUse]?.forEach((name) => allowedGlobals.add(name));
 
   const entries: RunJsAstInspection['unknownBareGlobals'] = [];
+  const bindingIndex = createAstIdentifierBindingIndex(identifierBindings);
   const reported = new Set<string>();
 
   walkAstAncestor(ast, {
@@ -237,14 +228,14 @@ function collectAstUnknownBareGlobalsFromAst(
       if (!name) {
         return;
       }
-      if (allowedGlobals.has(name) || FORBIDDEN_BARE_GLOBALS.has(name)) {
+      if (allowedGlobals.has(name)) {
         return;
       }
       const index = typeof node.start === 'number' ? node.start : 0;
-      if (hasAstDeclaredBindingAtIndex(name, index, identifierBindings)) {
+      if (!isIdentifierReadReference(node, ancestors)) {
         return;
       }
-      if (!isIdentifierReadReference(node, ancestors)) {
+      if (hasAstDeclaredBindingAtIndex(name, index, bindingIndex)) {
         return;
       }
       const key = `${name}@${index}`;
@@ -263,8 +254,8 @@ function collectAstUnknownBareGlobalsFromAst(
   return entries.sort((left, right) => left.index - right.index);
 }
 
-function hasAstDeclaredBindingAtIndex(name: string, index: number, identifierBindings: AstIdentifierBinding[]) {
-  const binding = resolveAstActiveIdentifierBinding(name, index, identifierBindings);
+function hasAstDeclaredBindingAtIndex(name: string, index: number, bindingIndex: Map<string, AstIdentifierBinding[]>) {
+  const binding = resolveAstActiveIdentifierBindingFromIndex(name, index, bindingIndex);
   if (!binding) {
     return false;
   }
@@ -272,6 +263,47 @@ function hasAstDeclaredBindingAtIndex(name: string, index: number, identifierBin
     return false;
   }
   return index >= (binding.declarationStart ?? binding.start);
+}
+
+function createAstIdentifierBindingIndex(identifierBindings: AstIdentifierBinding[]) {
+  const bindingIndex = new Map<string, AstIdentifierBinding[]>();
+  identifierBindings.forEach((binding) => {
+    const bindings = bindingIndex.get(binding.name);
+    if (bindings) {
+      bindings.push(binding);
+    } else {
+      bindingIndex.set(binding.name, [binding]);
+    }
+  });
+  return bindingIndex;
+}
+
+function resolveAstActiveIdentifierBindingFromIndex(
+  name: string,
+  index: number,
+  bindingIndex: Map<string, AstIdentifierBinding[]>,
+) {
+  const bindings = bindingIndex.get(name);
+  if (!bindings?.length) {
+    return undefined;
+  }
+  let match: AstIdentifierBinding | undefined;
+  bindings.forEach((binding) => {
+    if (index < binding.start || index >= binding.end) {
+      return;
+    }
+    if (
+      !match ||
+      binding.end - binding.start < match.end - match.start ||
+      (binding.end - binding.start === match.end - match.start && binding.start > match.start) ||
+      (binding.end - binding.start === match.end - match.start &&
+        binding.start === match.start &&
+        binding.end > match.end)
+    ) {
+      match = binding;
+    }
+  });
+  return match;
 }
 
 function isIdentifierReadReference(node: any, ancestors: any[]) {

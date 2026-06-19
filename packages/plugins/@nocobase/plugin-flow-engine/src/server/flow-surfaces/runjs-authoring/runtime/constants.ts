@@ -152,30 +152,6 @@ export const CHART_CTX_ROOTS = new Set(['data']);
 
 export const BLOCKED_CTX_CAPABILITIES: Record<string, { capability: string; reroute: string }> = {};
 
-export const FORBIDDEN_BARE_GLOBALS = new Set([
-  'fetch',
-  'localStorage',
-  'sessionStorage',
-  'XMLHttpRequest',
-  'WebSocket',
-  'Worker',
-  'SharedWorker',
-  'ServiceWorker',
-  'BroadcastChannel',
-  'EventSource',
-  'indexedDB',
-  'caches',
-  'Function',
-  'eval',
-  'globalThis',
-  'Intl',
-  'process',
-  'require',
-  'module',
-  'exports',
-  'location',
-]);
-
 export const RUNJS_ALLOWED_BARE_GLOBALS = new Set([
   'ctx',
   'console',
@@ -225,6 +201,7 @@ export const RUNJS_ALLOWED_BARE_GLOBALS = new Set([
   'WeakMap',
   'WeakRef',
   'WeakSet',
+  'Intl',
   'JSON',
   'Blob',
   'URL',

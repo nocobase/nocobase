@@ -100,7 +100,7 @@ export class JSRunner {
     const providedGlobals = options.globals || {};
     const liftedGlobals: Record<string, any> = {};
 
-    // Auto-lift selected globals from safe window into top-level sandbox globals
+    // Auto-lift selected globals from injected window into top-level sandbox globals
     // so user code can access them directly (e.g. `new Blob(...)`).
     if (!Object.prototype.hasOwnProperty.call(providedGlobals, 'Blob')) {
       try {
@@ -109,7 +109,7 @@ export class JSRunner {
           liftedGlobals.Blob = blobCtor;
         }
       } catch {
-        // ignore when window proxy blocks property access
+        // ignore when window property access fails
       }
     }
 
@@ -120,7 +120,7 @@ export class JSRunner {
           liftedGlobals.URL = urlCtor;
         }
       } catch {
-        // ignore when window proxy blocks property access
+        // ignore when window property access fails
       }
     }
 

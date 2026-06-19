@@ -511,7 +511,7 @@ describe('flowSurfaces event flow', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.flowRegistry.unsafeRegistry.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-global-blocked',
+          ruleId: 'runjs-global-unknown',
           details: expect.objectContaining({
             global: 'fetch',
           }),
@@ -534,7 +534,7 @@ describe('flowSurfaces event flow', () => {
             runUnsafe: {
               use: 'runjs',
               params: {
-                code: 'window["localStorage"].getItem("blocked");',
+                code: 'localStorage.getItem("blocked");',
               },
             },
           },
@@ -546,10 +546,9 @@ describe('flowSurfaces event flow', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.flowRegistry.unsafeSet.steps.runUnsafe.params.code',
-          ruleId: 'runjs-window-property-blocked',
+          ruleId: 'runjs-global-unknown',
           details: expect.objectContaining({
-            global: 'window',
-            member: 'localStorage',
+            global: 'localStorage',
           }),
         }),
       ]),

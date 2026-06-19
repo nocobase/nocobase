@@ -2366,7 +2366,7 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
                 runUnsafe: {
                   use: 'runjs',
                   params: {
-                    code: 'window["localStorage"].getItem("blocked");',
+                    code: 'localStorage.getItem("blocked");',
                   },
                 },
                 ignoredRequest: {
@@ -2386,11 +2386,12 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.blocks[0].settings.code',
-          ruleId: 'runjs-global-blocked',
+          ruleId: 'runjs-global-unknown',
         }),
         expect.objectContaining({
           path: '$.blocks[0].flowRegistry.unsafeBeforeRender.steps.runUnsafe.params.code',
-          ruleId: 'runjs-window-property-blocked',
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({ global: 'localStorage' }),
         }),
       ]),
     );
@@ -2418,7 +2419,7 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
               type: 'runjs',
               params: {
                 value: {
-                  script: 'window["localStorage"].getItem("blocked");',
+                  script: 'process.exit(1);',
                 },
               },
             },
@@ -2432,11 +2433,12 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.customFlowRegistry.submitFlow.steps.defaultRun.defaultParams.code',
-          ruleId: 'runjs-global-blocked',
+          ruleId: 'runjs-global-unknown',
         }),
         expect.objectContaining({
           path: '$.customFlowRegistry.submitFlow.steps.scriptRun.params.value.script',
-          ruleId: 'runjs-window-property-blocked',
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({ global: 'process' }),
         }),
       ]),
     );

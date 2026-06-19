@@ -16,13 +16,9 @@ import {
   FlowRuntimeContext,
   useFlowContext,
   useFlowEngine,
-  createSafeWindow,
-  createSafeDocument,
-  createSafeNavigator,
   observer,
   isRunJSValue,
   normalizeRunJSValue,
-  runjsWithSafeGlobals,
 } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
@@ -492,7 +488,7 @@ async function resolveLinkageAssignRuntimeValue(ctx: FlowContext, rawValue: any)
 
   try {
     const { code, version } = normalizeRunJSValue(rawValue);
-    const ret = await runjsWithSafeGlobals(ctx, code, { version });
+    const ret = await ctx.runjs(code, undefined, { version });
     if (!ret?.success) {
       return SKIP_RUNJS_ASSIGN_VALUE;
     }
@@ -1397,8 +1393,7 @@ export const linkageRunjs = defineAction({
     }
 
     try {
-      const navigator = createSafeNavigator();
-      await ctx.runjs(script, { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator });
+      await ctx.runjs(script);
     } catch (error) {
       console.error('Script execution error:', error);
       // 可以选择显示错误信息给用户

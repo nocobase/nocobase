@@ -627,7 +627,10 @@ export function collectAstStaticObjectAliasCopiesFromAst(
   identifierBindings: AstIdentifierBinding[],
 ): AstStaticObjectAliasCopy[] {
   const aliases: AstStaticObjectAliasCopy[] = [];
-  const resolveSourceName = (node: any) => resolveAstStaticAliasCopySourceName(node, aliases, identifierBindings);
+  const aliasesByName = new Map<string, AstStaticObjectAliasCopy[]>();
+  const identifierBindingsByName = createAstIdentifierBindingsByName(identifierBindings);
+  const resolveSourceName = (node: any) =>
+    resolveAstStaticAliasCopySourceNameFromIndex(node, aliasesByName, identifierBindingsByName);
 
   walkAstAncestor(ast, {
     VariableDeclarator(node: any, ancestors: any[]) {
@@ -657,6 +660,12 @@ export function collectAstStaticObjectAliasCopiesFromAst(
                 : scope.start,
           end: scope.end,
         });
+        const nameAliases = aliasesByName.get(name);
+        if (nameAliases) {
+          nameAliases.push(aliases[aliases.length - 1]);
+        } else {
+          aliasesByName.set(name, [aliases[aliases.length - 1]]);
+        }
       };
       if (node.id?.type === 'Identifier') {
         addAlias(node.id.name, resolveSourceName(node.init), node);
@@ -676,6 +685,93 @@ export function collectAstStaticObjectAliasCopiesFromAst(
   });
 
   return aliases;
+}
+
+function createAstIdentifierBindingsByName(identifierBindings: AstIdentifierBinding[]) {
+  const bindingsByName = new Map<string, AstIdentifierBinding[]>();
+  identifierBindings.forEach((binding) => {
+    const bindings = bindingsByName.get(binding.name);
+    if (bindings) {
+      bindings.push(binding);
+    } else {
+      bindingsByName.set(binding.name, [binding]);
+    }
+  });
+  return bindingsByName;
+}
+
+function resolveAstStaticAliasCopySourceNameFromIndex(
+  node: any,
+  aliasesByName: Map<string, AstStaticObjectAliasCopy[]>,
+  identifierBindingsByName: Map<string, AstIdentifierBinding[]>,
+): string | undefined {
+  const unwrapped = unwrapAstChainExpression(node);
+  if (!unwrapped) {
+    return undefined;
+  }
+  if (unwrapped.type === 'Identifier') {
+    const alias = resolveAstAliasBindingFromIndex(
+      unwrapped.name,
+      unwrapped.start || 0,
+      aliasesByName,
+      identifierBindingsByName,
+    );
+    return alias?.sourceName || unwrapped.name;
+  }
+  if (unwrapped.type !== 'MemberExpression') {
+    return undefined;
+  }
+  const lookup = getAstMemberAliasLookup(unwrapped);
+  if (!lookup) {
+    return undefined;
+  }
+  const rootAlias = resolveAstAliasBindingFromIndex(
+    lookup.rootName,
+    lookup.index,
+    aliasesByName,
+    identifierBindingsByName,
+  );
+  if (!rootAlias) {
+    return lookup.aliasName;
+  }
+  const suffix = lookup.aliasName.slice(lookup.rootName.length);
+  return `${rootAlias.sourceName}${suffix}`;
+}
+
+function resolveAstAliasBindingFromIndex<T extends SourceRange & { name: string }>(
+  name: string,
+  index: number,
+  aliasesByName: Map<string, T[]>,
+  identifierBindingsByName: Map<string, AstIdentifierBinding[]>,
+): T | undefined {
+  const aliases = aliasesByName.get(name);
+  if (!aliases?.length) {
+    return undefined;
+  }
+  let match: T | undefined;
+  aliases.forEach((entry) => {
+    if (index < entry.start || index >= entry.end) {
+      return;
+    }
+    if (hasAstShadowBindingFromIndex(name, index, entry, identifierBindingsByName)) {
+      return;
+    }
+    if (!match || entry.start > match.start) {
+      match = entry;
+    }
+  });
+  return match;
+}
+
+function hasAstShadowBindingFromIndex(
+  name: string,
+  index: number,
+  alias: SourceRange,
+  identifierBindingsByName: Map<string, AstIdentifierBinding[]>,
+) {
+  return (identifierBindingsByName.get(name) || []).some(
+    (binding) => binding.start > alias.start && index >= binding.start && index < binding.end,
+  );
 }
 
 export function resolveAstStaticAliasCopySourceName(
@@ -714,6 +810,8 @@ export function collectAstStaticAliasCopyWrites(
   const mirroredWrites: AstIdentifierWrite[] = [];
   const seen = new Set(writes.map((write) => getAstIdentifierWriteKey(write)));
   const queue = [...writes];
+  const aliasIndex = createAstStaticObjectAliasCopyIndex(aliases);
+  const identifierBindingsByName = createAstIdentifierBindingsByName(identifierBindings);
   const addMirroredWrite = (write: AstIdentifierWrite, name: string) => {
     if (!name || name === write.name) {
       return;
@@ -730,8 +828,9 @@ export function collectAstStaticAliasCopyWrites(
 
   for (let index = 0; index < queue.length; index += 1) {
     const write = queue[index];
-    for (const alias of aliases) {
-      if (!isAstStaticObjectAliasCopyActiveAtIndex(alias, write.index, identifierBindings)) {
+    const candidates = collectAstStaticAliasCopyWriteCandidates(write.name, aliasIndex);
+    for (const alias of candidates) {
+      if (!isAstStaticObjectAliasCopyActiveAtIndexFromIndex(alias, write.index, identifierBindingsByName)) {
         continue;
       }
       if (write.name.startsWith(`${alias.name}.`)) {
@@ -739,13 +838,55 @@ export function collectAstStaticAliasCopyWrites(
       }
       if (
         (write.name === alias.sourceName || write.name.startsWith(`${alias.sourceName}.`)) &&
-        isAstStaticObjectAliasCopySourceActiveAtIndex(alias, write.index, identifierBindings)
+        isAstStaticObjectAliasCopySourceActiveAtIndexFromIndex(alias, write.index, identifierBindingsByName)
       ) {
         addMirroredWrite(write, `${alias.name}${write.name.slice(alias.sourceName.length)}`);
       }
     }
   }
   return mirroredWrites;
+}
+
+function createAstStaticObjectAliasCopyIndex(aliases: AstStaticObjectAliasCopy[]) {
+  const byName = new Map<string, AstStaticObjectAliasCopy[]>();
+  const bySourceName = new Map<string, AstStaticObjectAliasCopy[]>();
+  aliases.forEach((alias) => {
+    addAstStaticObjectAliasCopyToIndex(byName, alias.name, alias);
+    addAstStaticObjectAliasCopyToIndex(bySourceName, alias.sourceName, alias);
+  });
+  return { byName, bySourceName };
+}
+
+function addAstStaticObjectAliasCopyToIndex(
+  index: Map<string, AstStaticObjectAliasCopy[]>,
+  key: string,
+  alias: AstStaticObjectAliasCopy,
+) {
+  const aliases = index.get(key);
+  if (aliases) {
+    aliases.push(alias);
+  } else {
+    index.set(key, [alias]);
+  }
+}
+
+function collectAstStaticAliasCopyWriteCandidates(
+  name: string,
+  aliasIndex: {
+    byName: Map<string, AstStaticObjectAliasCopy[]>;
+    bySourceName: Map<string, AstStaticObjectAliasCopy[]>;
+  },
+) {
+  const candidates = new Set<AstStaticObjectAliasCopy>();
+  const parts = name.split('.');
+  for (let index = 1; index <= parts.length; index += 1) {
+    const prefix = parts.slice(0, index).join('.');
+    aliasIndex.bySourceName.get(prefix)?.forEach((alias) => candidates.add(alias));
+    if (index < parts.length) {
+      aliasIndex.byName.get(prefix)?.forEach((alias) => candidates.add(alias));
+    }
+  }
+  return candidates;
 }
 
 export function getAstIdentifierWriteKey(write: AstIdentifierWrite) {
@@ -776,4 +917,24 @@ export function isAstStaticObjectAliasCopySourceActiveAtIndex(
   identifierBindings: AstIdentifierBinding[],
 ) {
   return !hasAstShadowBinding(getAstAliasRootName(alias.sourceName), index, alias, identifierBindings);
+}
+
+function isAstStaticObjectAliasCopyActiveAtIndexFromIndex(
+  alias: AstStaticObjectAliasCopy,
+  index: number,
+  identifierBindingsByName: Map<string, AstIdentifierBinding[]>,
+) {
+  return (
+    index >= alias.start &&
+    index < alias.end &&
+    !hasAstShadowBindingFromIndex(getAstAliasRootName(alias.name), index, alias, identifierBindingsByName)
+  );
+}
+
+function isAstStaticObjectAliasCopySourceActiveAtIndexFromIndex(
+  alias: AstStaticObjectAliasCopy,
+  index: number,
+  identifierBindingsByName: Map<string, AstIdentifierBinding[]>,
+) {
+  return !hasAstShadowBindingFromIndex(getAstAliasRootName(alias.sourceName), index, alias, identifierBindingsByName);
 }

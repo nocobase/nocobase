@@ -17,15 +17,7 @@ import jsx from 'acorn-jsx';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import * as acornWalk from 'acorn-walk';
-import {
-  JSRunner,
-  FlowContext,
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
-  prepareRunJsCode,
-  shouldPreprocessRunJSTemplates,
-} from '@nocobase/flow-engine';
+import { JSRunner, FlowContext, prepareRunJsCode, shouldPreprocessRunJSTemplates } from '@nocobase/flow-engine';
 
 const acornWalkBase = {
   ...(acornWalk as any).base,
@@ -1036,15 +1028,14 @@ export async function diagnoseRunJS(
     const { consoleCapture, loggerCapture } = createLogCollectors(logs);
 
     const baseGlobals: Record<string, any> = { console: consoleCapture };
-    try {
-      if (typeof window !== 'undefined') {
-        const navigator = createSafeNavigator();
-        baseGlobals.navigator = navigator;
-        baseGlobals.window = createSafeWindow({ navigator });
-        baseGlobals.document = createSafeDocument();
-      }
-    } catch (_) {
-      // ignore safe globals failures
+    if (typeof window !== 'undefined') {
+      baseGlobals.window = window;
+    }
+    if (typeof document !== 'undefined') {
+      baseGlobals.document = document;
+    }
+    if (typeof navigator !== 'undefined') {
+      baseGlobals.navigator = navigator;
     }
 
     let prepared = src;
