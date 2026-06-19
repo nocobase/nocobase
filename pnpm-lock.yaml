@@ -7453,15 +7453,30 @@ importers:
 
   packages/pro-plugins/@nocobase/plugin-multi-app:
     devDependencies:
+      '@nocobase/actions':
+        specifier: workspace:*
+        version: link:../../../core/actions
       '@nocobase/client':
         specifier: workspace:*
         version: link:../../../core/client
+      '@nocobase/database':
+        specifier: workspace:*
+        version: link:../../../core/database
+      '@nocobase/logger':
+        specifier: workspace:*
+        version: link:../../../core/logger
+      '@nocobase/resourcer':
+        specifier: workspace:*
+        version: link:../../../core/resourcer
       '@nocobase/server':
         specifier: workspace:*
         version: link:../../../core/server
       '@nocobase/test':
         specifier: workspace:*
         version: link:../../../core/test
+      '@nocobase/utils':
+        specifier: workspace:*
+        version: link:../../../core/utils
       '@types/archiver':
         specifier: ^5.3.1
         version: 5.3.4
