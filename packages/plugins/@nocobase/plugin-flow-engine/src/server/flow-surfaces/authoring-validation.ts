@@ -7452,13 +7452,14 @@ function buildAuthoringAIEmployeeActionIdentity(settings: any) {
 }
 
 function normalizeAuthoringAIEmployeePublicSettingsForIdentity(settings: Record<string, any>) {
+  const workContext = Object.prototype.hasOwnProperty.call(settings, 'workContext')
+    ? normalizeAuthoringAIEmployeeWorkContextForIdentity(settings.workContext)
+    : [{ type: 'flow-model', target: 'self' }];
   return {
     username: String(settings.username || '').trim(),
     auto: typeof settings.auto === 'boolean' ? settings.auto : false,
-    workContext: Object.prototype.hasOwnProperty.call(settings, 'workContext')
-      ? normalizeAuthoringAIEmployeeWorkContextForIdentity(settings.workContext)
-      : [{ type: 'flow-model', target: 'self' }],
-    tasks: normalizeAuthoringAIEmployeeTasksForIdentity(settings.tasks),
+    workContext,
+    tasks: normalizeAuthoringAIEmployeeTasksForIdentity(settings.tasks, workContext),
     style: {
       ...AUTHORING_AI_EMPLOYEE_DEFAULT_STYLE,
       ...(_.isPlainObject(settings.style) ? _.pick(settings.style, AUTHORING_AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {}),
@@ -7479,7 +7480,15 @@ function normalizeAuthoringAIEmployeeWorkContextForIdentity(value: any) {
   });
 }
 
-function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
+function normalizeAuthoringAIEmployeeTaskWorkContextForIdentity(value: any, defaultWorkContext?: any[]) {
+  const normalized = normalizeAuthoringAIEmployeeWorkContextForIdentity(value);
+  if (Array.isArray(defaultWorkContext) && !normalized.length) {
+    return _.cloneDeep(defaultWorkContext);
+  }
+  return normalized;
+}
+
+function normalizeAuthoringAIEmployeeTasksForIdentity(value: any, defaultWorkContext?: any[]) {
   return _.castArray(value || []).map((task: any) => {
     if (!_.isPlainObject(task)) {
       return task;
@@ -7487,10 +7496,11 @@ function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
     const output = _.pick(task, AUTHORING_AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS);
     if (_.isPlainObject(output.message)) {
       output.message = _.pick(output.message, AUTHORING_AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS);
-      if (_.isPlainObject(output.message.workContext)) {
-        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
-      } else if (Array.isArray(output.message.workContext)) {
-        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
+      if (Object.prototype.hasOwnProperty.call(output.message, 'workContext')) {
+        output.message.workContext = normalizeAuthoringAIEmployeeTaskWorkContextForIdentity(
+          output.message.workContext,
+          defaultWorkContext,
+        );
       }
     }
     if (
@@ -7501,6 +7511,16 @@ function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
         ...(_.isPlainObject(output.message) ? output.message : {}),
         user: task.prompt,
       };
+    }
+    if (!_.isPlainObject(output.message) && Array.isArray(defaultWorkContext)) {
+      output.message = {
+        workContext: _.cloneDeep(defaultWorkContext),
+      };
+    } else if (
+      _.isPlainObject(output.message) &&
+      !Object.prototype.hasOwnProperty.call(output.message, 'workContext')
+    ) {
+      output.message.workContext = _.cloneDeep(defaultWorkContext || []);
     }
     if (_.isPlainObject(output.model)) {
       output.model = _.pick(output.model, AUTHORING_AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS);
