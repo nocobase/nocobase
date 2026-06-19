@@ -185,13 +185,15 @@ http://your-kkfileview-server:8012/onlinePreview?url=<encoded-url>
 
 ## 更新日志
 
-### v2.1.0-beta.9
-- 插件从 `plugin-file-previewer-office` 重命名为 `plugin-file-previewer-pro`
-- 新增 BaseMetas 预览模式支持
-- 新增自定义扩展名配置
-- 新增混合内容检测及警告
-- 新增文件大小限制（30MB）及下载提示
-- 修复 i18n 命名空间，正确加载中文翻译
+### v2.1.8
+- **Fork**：从 `@nocobase/plugin-file-previewer-office` 独立为 `@onetwosmall` 下的独立插件
+- **重命名**：插件从 `plugin-file-previewer-office` 更名为 `plugin-file-previewer-pro`
+- **修复** i18n 命名空间，正确加载各语言翻译，菜单在中文环境下正常显示
+- **重命名**：所有用户界面文案从 "Office File Previewer" 改为 "File Previewer Pro"，覆盖 13 种语言
+- **新增** BaseMetas 预览模式支持
+- **新增** kkFileView 和 BaseMetas 的自定义扩展名配置
+- **新增** 混合内容检测及警告（HTTPS 站点加载 HTTP 预览内容）
+- **新增** 文件大小限制（30MB）及下载提示，避免浏览器性能问题
 
 ### v2.1.0-beta.5
 - 修复了在某些预览模式下下载按钮失效的问题，改为使用本地实现的 `saveAs` 下载。

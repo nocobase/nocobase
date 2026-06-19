@@ -185,13 +185,15 @@ http://your-kkfileview-server:8012/onlinePreview?url=<encoded-url>
 
 ## Changelog
 
-### v2.1.0-beta.9
-- Renamed plugin from `plugin-file-previewer-office` to `plugin-file-previewer-pro`
-- Added BaseMetas preview mode support
-- Added custom extensions configuration
-- Added mixed content detection and warning
-- Added file size limit (30MB) with download suggestion
-- Fixed i18n namespace to correctly load translations
+### v2.1.8
+- **Forked** from `@nocobase/plugin-file-previewer-office` as standalone plugin under `@onetwosmall` scope
+- **Renamed** plugin from `plugin-file-previewer-office` to `plugin-file-previewer-pro`
+- **Fixed** i18n namespace to correctly load locale translations — menu now displays properly in all languages including Chinese
+- **Renamed** all user-facing strings from "Office File Previewer" to "File Previewer Pro" across 13 locale files
+- **Added** BaseMetas preview mode support
+- **Added** custom extensions configuration for kkFileView and BaseMetas
+- **Added** mixed content detection and warning (HTTPS site loading HTTP preview)
+- **Added** file size limit (30MB) with download suggestion to prevent browser performance issues
 
 ### v2.1.0-beta.5
 - Fixed an issue where the download button failed to work under certain preview modes by implementing a local `saveAs` function.
