@@ -81,7 +81,9 @@ export const mainDepartmentIdField = {
   },
 };
 
-export default extendCollection({
+const usersCollection: ReturnType<typeof extendCollection> = extendCollection({
   name: 'users',
   fields: [departmentsField, mainDepartmentField, mainDepartmentIdField],
 });
+
+export default usersCollection;

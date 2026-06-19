@@ -18,7 +18,7 @@
 
 import { extendCollection } from '@nocobase/database';
 
-export default extendCollection({
+const rolesCollection: ReturnType<typeof extendCollection> = extendCollection({
   name: 'roles',
   fields: [
     {
@@ -34,3 +34,5 @@ export default extendCollection({
     },
   ],
 });
+
+export default rolesCollection;
