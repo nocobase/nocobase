@@ -7773,12 +7773,18 @@ importers:
 
   packages/pro-plugins/@nocobase/plugin-two-factor-authentication:
     devDependencies:
+      '@nocobase/actions':
+        specifier: workspace:*
+        version: link:../../../core/actions
       '@nocobase/client':
         specifier: workspace:*
         version: link:../../../core/client
       '@nocobase/client-v2':
         specifier: workspace:*
         version: link:../../../core/client-v2
+      '@nocobase/database':
+        specifier: workspace:*
+        version: link:../../../core/database
       '@nocobase/flow-engine':
         specifier: workspace:*
         version: link:../../../core/flow-engine
