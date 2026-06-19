@@ -12,8 +12,7 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 - [What is NocoBase](#what-is-nocobase)
 - [Release Notes](#release-notes)
 - [Distinctive Features](#distinctive-features)
-- [AI Agent Access](#ai-agent-access)
-- [Installation](#installation)
+- [Quick Install and Connect an AI Agent](#quick-install-and-connect-an-ai-agent)
 
 ## What is NocoBase
 
@@ -142,43 +141,16 @@ With a microkernel design, everything is a plugin and the system can grow withou
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
 
-## AI Agent Access
-
-The simplest way to let an AI agent operate NocoBase is to install the NocoBase CLI, finish initialization, and then start or restart your AI agent session inside the initialized working directory.
-
-- NocoBase CLI is responsible for installing, connecting, and managing NocoBase applications
-- During initialization, CLI automatically installs NocoBase Skills so the agent understands data models, pages, workflows, permissions, and plugins
-- Once initialization is done, the AI agent can start working as long as its workspace points to that directory
-
-Minimal flow:
+## Quick Install and Connect an AI Agent
 
 ```bash
-npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
+npm install -g @nocobase/cli
+nb --version
 nb init --ui
+codex # claude, opencode
 ```
 
-Then restart your AI agent session in that directory, for example:
+Detailed steps:
 
-```bash
-cd my-nocobase && codex
-```
-
-Learn more:  
-https://docs.nocobase.com/ai/quick-start
-
-## Installation
-
-NocoBase supports three installation methods:
-
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/docker-compose">Install with Docker (recommended)</a>
-
-  Best for no-code scenarios and requires no code writing. To upgrade, pull the latest image and restart.
-
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/create-nocobase-app">Install with create-nocobase-app</a>
-
-  The business code of your project stays independent and supports low-code development.
-
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Install from Git source code</a>
-
-  If you want the latest unreleased version or plan to contribute by modifying and debugging source code directly, this method is recommended. It requires stronger development skills, and you can pull updates through Git when the code changes.
+- <a target="_blank" href="https://docs.nocobase.com/ai/install-nocobase-app">Install a NocoBase app</a>
+- <a target="_blank" href="https://docs.nocobase.com/ai/quick-start">AI Agent Quick Start</a>

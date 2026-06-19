@@ -12,8 +12,7 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 - [NocoBase la gi](#nocobase-la-gi)
 - [Ghi chu phat hanh](#ghi-chu-phat-hanh)
 - [Tinh nang noi bat](#tinh-nang-noi-bat)
-- [Ket noi AI Agent](#ket-noi-ai-agent)
-- [Cai dat](#cai-dat)
+- [Cai dat nhanh va ket noi AI Agent](#cai-dat-nhanh-va-ket-noi-ai-agent)
 
 ## NocoBase la gi
 
@@ -142,36 +141,16 @@ Voi thiet ke microkernel, moi kha nang deu co the mo rong qua plugin ma van giu 
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
 
-## Ket noi AI Agent
-
-Neu ban muon AI Agent tham gia truc tiep vao viec xay dung va van hanh NocoBase, cach don gian nhat la cai dat NocoBase CLI, hoan tat khoi tao, roi khoi dong hoac khoi dong lai phien agent ngay trong thu muc do.
-
-- NocoBase CLI dung de cai dat, ket noi va quan ly ung dung NocoBase
-- Trong qua trinh khoi tao, CLI tu dong cai NocoBase Skills de agent hieu mo hinh du lieu, trang, workflow, quyen han va plugin
-- Sau khi khoi tao xong, AI Agent co the bat dau lam viec ngay neu workspace tro den thu muc nay
+## Cai dat nhanh va ket noi AI Agent
 
 ```bash
-npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
+npm install -g @nocobase/cli
+nb --version
 nb init --ui
-cd my-nocobase && codex
+codex # claude, opencode
 ```
 
-Chi tiet:  
-https://docs.nocobase.com/cn/ai/quick-start
+Chi tiet xem:
 
-## Cai dat
-
-NocoBase ho tro ba cach cai dat:
-
-- <a target="_blank" href="https://docs.nocobase.com/vi/welcome/getting-started/installation/docker-compose">Cai dat bang Docker (khuyen dung)</a>
-
-  Phu hop nhat cho cac tinh huong no-code va khong can viet ma. Khi nang cap, ban chi can tai image moi nhat va khoi dong lai.
-
-- <a target="_blank" href="https://docs.nocobase.com/vi/welcome/getting-started/installation/create-nocobase-app">Cai dat bang create-nocobase-app</a>
-
-  Ma nghiep vu cua du an duoc giu tach biet hoan toan, phu hop voi phat trien low-code.
-
-- <a target="_blank" href="https://docs.nocobase.com/vi/welcome/getting-started/installation/git-clone">Cai dat tu ma nguon Git</a>
-
-  Neu ban muon trai nghiem phien ban moi nhat chua phat hanh, hoac muon dong gop bang cach sua doi va debug truc tiep tren ma nguon, day la cach duoc de xuat. Cach nay doi hoi ky nang phat trien cao hon, va ban co the keo cac cap nhat moi nhat bang Git khi ma nguon thay doi.
+- <a target="_blank" href="https://docs.nocobase.com/vi/ai/install-nocobase-app">Cai dat ung dung NocoBase</a>
+- <a target="_blank" href="https://docs.nocobase.com/vi/ai/quick-start">Huong dan ket noi AI Agent</a>
