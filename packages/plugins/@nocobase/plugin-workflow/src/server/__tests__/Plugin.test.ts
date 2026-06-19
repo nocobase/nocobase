@@ -431,7 +431,7 @@ describe('workflow > Plugin', () => {
 
     it('should stop retrying local pending after repeated unexpected dispatch errors', async () => {
       type RecoveringDispatcher = {
-        run(pending: { execution: ExecutionModel }): Promise<void>;
+        start(executionId: number | string): void;
         prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
         executing: Promise<unknown> | null;
         pending: unknown[];
@@ -460,7 +460,7 @@ describe('workflow > Plugin', () => {
       }) as typeof dispatcher.prepare;
 
       try {
-        await dispatcher.run({ execution: e1 });
+        dispatcher.start(e1.id);
 
         for (let i = 0; i < 20; i++) {
           if (!dispatcher.executing && !dispatcher.pending.length) {

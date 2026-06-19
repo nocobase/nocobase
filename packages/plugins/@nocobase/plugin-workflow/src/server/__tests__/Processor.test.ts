@@ -228,6 +228,7 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
+      await execution.reload();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
 
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
@@ -264,6 +265,7 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
+      await execution.reload();
       expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();
@@ -454,6 +456,7 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
+      await execution.reload();
       expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();

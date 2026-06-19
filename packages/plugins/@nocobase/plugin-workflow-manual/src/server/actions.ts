@@ -12,6 +12,13 @@ import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/pl
 
 import ManualInstruction from './ManualInstruction';
 
+function updateJobByManualTask(task) {
+  task.job.set({
+    status: task.status,
+    result: task.result ?? task.job.result,
+  });
+}
+
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, values } = context.action.params;
@@ -107,8 +114,8 @@ export async function submit(context: Context, next) {
   }
 
   await task.save();
-
-  await processor.exit();
+  updateJobByManualTask(task);
+  await task.job.save();
 
   context.body = task;
   context.status = 202;
@@ -118,9 +125,6 @@ export async function submit(context: Context, next) {
   if (task.execution.status !== EXECUTION_STATUS.STARTED) {
     return;
   }
-
-  task.job.execution = task.execution;
-  task.job.latestTask = task;
 
   // NOTE: resume the process and no `await` for quick returning
   processor.logger.info(`manual node (${task.nodeId}) action trigger execution (${task.execution.id}) to resume`);

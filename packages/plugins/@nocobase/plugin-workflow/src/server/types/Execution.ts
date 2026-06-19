@@ -15,6 +15,7 @@ export default class ExecutionModel extends Model {
   declare static readonly database: Database;
 
   declare id: number;
+  declare workflowId: number;
   declare title: string;
   declare context: any;
   declare status: number;

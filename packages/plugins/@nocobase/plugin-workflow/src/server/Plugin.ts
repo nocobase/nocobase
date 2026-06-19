@@ -21,7 +21,7 @@ import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 
 import Dispatcher, { EventOptions } from './Dispatcher';
-import Processor from './Processor';
+import Processor, { ProcessorRerunOptions } from './Processor';
 import ExecutionTimeoutManager from './ExecutionTimeoutManager';
 import RunningExecutionRegistry from './RunningExecutionRegistry';
 import initActions from './actions';
@@ -42,7 +42,7 @@ import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 import MultiConditionsInstruction from './instructions/MultiConditionsInstruction';
 
-import type { ExecutionModel, WorkflowModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
 import type { Transaction } from '@nocobase/database';
 
@@ -510,28 +510,46 @@ export default class PluginWorkflowServer extends Plugin {
     return this.dispatcher.trigger(workflow, context, options);
   }
 
-  public async run(pending: Parameters<Dispatcher['run']>[0]): Promise<void> {
-    return this.dispatcher.run(pending);
+  public async rerun(execution: ExecutionModel | ID, rerun?: ProcessorRerunOptions): Promise<void> {
+    return this.dispatcher.rerun(this.getModelId(execution), rerun);
   }
 
   public dispatch() {
     return this.dispatcher.dispatch();
   }
 
-  public async resume(job) {
-    return this.dispatcher.resume(job);
+  public async resume(job: JobModel): Promise<void> {
+    if (job.changed()) {
+      await job.save();
+    }
+
+    const executionId = job.executionId ?? job.execution?.id;
+    if (executionId == null) {
+      this.getLogger('dispatcher').warn(`execution id of job (${job.id}) not found, resume ignored`);
+      return;
+    }
+
+    this.getLogger('dispatcher').info(`execution (${executionId}) resuming from job (${job.id}) added to pending list`);
+    this.dispatcher.start(executionId, job.id);
   }
 
   /**
    * Start a deferred execution
    * @experimental
    */
-  public async start(execution: ExecutionModel) {
-    return this.dispatcher.start(execution);
+  public start(execution: ExecutionModel | ID, jobId?: ID) {
+    if (typeof execution !== 'string' && typeof execution !== 'number' && execution.status) {
+      return;
+    }
+    return this.dispatcher.start(this.getModelId(execution), jobId);
   }
 
   public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
+  }
+
+  private getModelId(input: ExecutionModel | ID): ID {
+    return typeof input === 'string' || typeof input === 'number' ? input : input.id;
   }
 
   async execute(workflow: WorkflowModel, values, options: EventOptions = {}) {
