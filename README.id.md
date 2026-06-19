@@ -12,8 +12,7 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 - [Apa itu NocoBase](#apa-itu-nocobase)
 - [Catatan rilis](#catatan-rilis)
 - [Fitur utama](#fitur-utama)
-- [Akses AI Agent](#akses-ai-agent)
-- [Instalasi](#instalasi)
+- [Instalasi cepat dan koneksi AI Agent](#instalasi-cepat-dan-koneksi-ai-agent)
 
 ## Apa itu NocoBase
 
@@ -142,36 +141,16 @@ Dengan desain microkernel, semuanya dapat berkembang lewat plugin tanpa kehilang
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
 
-## Akses AI Agent
-
-Cara paling sederhana agar AI Agent bisa langsung ikut membangun dan mengoperasikan NocoBase adalah memasang NocoBase CLI, menyelesaikan inisialisasi, lalu memulai atau me-restart sesi agent di direktori kerja tersebut.
-
-- NocoBase CLI bertanggung jawab untuk menginstal, menghubungkan, dan mengelola aplikasi NocoBase
-- Saat inisialisasi, CLI akan otomatis memasang NocoBase Skills agar agent memahami model data, halaman, workflow, permission, dan plugin
-- Setelah inisialisasi selesai, AI Agent bisa langsung bekerja selama workspace-nya menunjuk ke direktori itu
+## Instalasi cepat dan koneksi AI Agent
 
 ```bash
-npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
+npm install -g @nocobase/cli
+nb --version
 nb init --ui
-cd my-nocobase && codex
+codex # claude, opencode
 ```
 
-Detail:  
-https://docs.nocobase.com/cn/ai/quick-start
+Langkah detail:
 
-## Instalasi
-
-NocoBase mendukung tiga metode instalasi:
-
-- <a target="_blank" href="https://docs.nocobase.com/id/welcome/getting-started/installation/docker-compose">Instal dengan Docker (disarankan)</a>
-
-  Metode ini paling cocok untuk skenario no-code dan tidak memerlukan penulisan kode. Untuk upgrade, cukup ambil image terbaru lalu restart.
-
-- <a target="_blank" href="https://docs.nocobase.com/id/welcome/getting-started/installation/create-nocobase-app">Instal dengan create-nocobase-app</a>
-
-  Kode bisnis proyek Anda tetap sepenuhnya terpisah dan cocok untuk pengembangan low-code.
-
-- <a target="_blank" href="https://docs.nocobase.com/id/welcome/getting-started/installation/git-clone">Instal dari source code Git</a>
-
-  Jika Anda ingin mencoba versi terbaru yang belum dirilis, atau berkontribusi dengan memodifikasi dan melakukan debug langsung pada source code, metode ini paling disarankan. Cara ini membutuhkan kemampuan pengembangan yang lebih tinggi, dan Anda dapat menarik update terbaru melalui Git saat kodenya berubah.
+- <a target="_blank" href="https://docs.nocobase.com/id/ai/install-nocobase-app">Instal aplikasi NocoBase</a>
+- <a target="_blank" href="https://docs.nocobase.com/id/ai/quick-start">Panduan koneksi AI Agent</a>
