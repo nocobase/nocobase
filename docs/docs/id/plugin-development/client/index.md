@@ -29,6 +29,7 @@ Di mana:
 1. **[Plugin](./plugin)**: Class entry plugin, mendaftarkan route, model, dan resource lainnya dalam siklus hidup `load()`, dll.
 2. **[Router](./router)**: Mendaftarkan route halaman melalui `router.add()`, mendaftarkan halaman pengaturan plugin melalui `pluginSettingsManager`.
 3. **[Component](./component/index.md)**: Yang di-mount oleh route adalah Component React. Default menggunakan React + Antd, sama dengan pengembangan front-end biasa.
+| Menemukan komponen formulir, filter, dan tabel yang bisa digunakan ulang | [Komponen bersama](/shared-components/) |
 4. **[Context](./ctx/index.md)**: Dalam plugin dapat mengakses konteks melalui `this.context`, dalam Component melalui `useFlowContext()`, kemudian dapat menggunakan kapabilitas yang disediakan NocoBase — membuat request (`ctx.api`), internasionalisasi (`ctx.t`), log (`ctx.logger`), dll.
 5. **[FlowEngine](./flow-engine/index.md)**: Jika Component Anda perlu muncul di menu "Tambah Block / Field / Action", mendukung konfigurasi visual oleh pengguna, perlu menggunakan FlowModel untuk membungkusnya.
 

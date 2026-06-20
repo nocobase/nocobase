@@ -250,6 +250,12 @@
         "items": [
           {
             "type": "custom-link",
+            "label": "公共组件",
+            "link": "/shared-components/",
+            "proxy": false
+          },
+          {
+            "type": "custom-link",
             "label": "常见问题 & 排错指南",
             "link": "/plugin-development/client/appendix/faq"
           },
