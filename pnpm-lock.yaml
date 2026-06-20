@@ -3000,12 +3000,18 @@ importers:
 
   packages/plugins/@nocobase/plugin-collection-sql:
     devDependencies:
+      '@nocobase/actions':
+        specifier: workspace:*
+        version: link:../../../core/actions
       '@nocobase/client':
         specifier: workspace:*
         version: link:../../../core/client
       '@nocobase/client-v2':
         specifier: workspace:*
         version: link:../../../core/client-v2
+      '@nocobase/database':
+        specifier: workspace:*
+        version: link:../../../core/database
       '@nocobase/flow-engine':
         specifier: workspace:*
         version: link:../../../core/flow-engine
@@ -3018,6 +3024,9 @@ importers:
       '@nocobase/test':
         specifier: workspace:*
         version: link:../../../core/test
+      '@nocobase/utils':
+        specifier: workspace:*
+        version: link:../../../core/utils
 
   packages/plugins/@nocobase/plugin-collection-tree:
     devDependencies:
