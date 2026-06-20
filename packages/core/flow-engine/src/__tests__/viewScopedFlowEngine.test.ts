@@ -46,61 +46,6 @@ class DirtyPageRepository implements IFlowModelRepository<FlowModel> {
   }
 }
 
-const setupStaleGridScenario = () => {
-  const root = new FlowEngine();
-  const repository = new DirtyPageRepository();
-  root.setModelRepository(repository);
-  const api = new SDKApiClient({ storageType: 'memory' });
-  api.auth.role = 'guest';
-  api.auth.locale = 'en-US';
-  api.auth.token = 't';
-  root.context.defineProperty('api', { value: api });
-
-  class TableModel extends FlowModel {}
-  class TabModel extends FlowModel {}
-  class GridModel extends FlowModel {}
-  root.registerModels({ TabModel, GridModel, TableModel });
-
-  const oldScoped = createViewScopedEngine(root);
-  const staleTab = oldScoped.createModel<TabModel>({ use: 'TabModel', uid: 'stale-tab' });
-  const staleGrid = oldScoped.createModel<GridModel>({
-    use: 'GridModel',
-    uid: 'stale-grid',
-    parentId: staleTab.uid,
-    subKey: 'grid',
-    subType: 'object',
-    subModels: {
-      blocks: [{ use: 'TableModel', uid: 'stale-table' }],
-    },
-  });
-  const staleTable = oldScoped.getModel<TableModel>('stale-table');
-  if (!staleTable) {
-    throw new Error('Failed to create stale table model.');
-  }
-  staleTab.setSubModel('grid', staleGrid);
-  staleTab.context.flowSettingsEnabled = true;
-
-  repository.data = {
-    use: 'GridModel',
-    uid: staleGrid.uid,
-    parentId: staleTab.uid,
-    subKey: 'grid',
-    subType: 'object',
-    subModels: {
-      blocks: [{ use: 'TableModel', uid: staleTable.uid }],
-    },
-  };
-
-  return {
-    root,
-    repository,
-    oldScoped,
-    staleTab,
-    staleGrid,
-    staleTable,
-  };
-};
-
 describe('ViewScopedFlowEngine', () => {
   it('shares global actions/events and model classes with parent', async () => {
     const parent = new FlowEngine();
@@ -388,52 +333,6 @@ describe('ViewScopedFlowEngine', () => {
     // hydrateModelFromPreviousEngines should return a hydrated model (not null)
     expect(result).not.toBeNull();
     expect(result?.uid).toBe('child-normal');
-  });
-
-  it('replaces stale parent slot after loadOrCreateModel rebuilds a config-mode sub model from repository', async () => {
-    const { root, repository, oldScoped, staleTab, staleGrid, staleTable } = setupStaleGridScenario();
-
-    const runtimeScoped = createViewScopedEngine(root);
-    const loaded = await runtimeScoped.loadOrCreateModel<FlowModel>({
-      async: true,
-      parentId: staleTab.uid,
-      subKey: 'grid',
-      subType: 'object',
-      use: 'GridModel',
-    });
-    const loadedTable = runtimeScoped.getModel(staleTable.uid);
-
-    expect(repository.findOneCalls).toBe(1);
-    expect(loaded).toBeDefined();
-    expect(loaded === staleGrid).toBe(false);
-    expect((staleTab.subModels as Record<string, FlowModel>).grid === loaded).toBe(true);
-    expect(oldScoped.getModel(staleGrid.uid)).toBeUndefined();
-    expect(oldScoped.getModel(staleTable.uid)).toBeUndefined();
-    expect(runtimeScoped.getModel(staleGrid.uid) === loaded).toBe(true);
-    expect(loadedTable?.parent === loaded).toBe(true);
-  });
-
-  it('replaces stale parent slot after loadModel rebuilds a config-mode sub model from repository', async () => {
-    const { root, repository, oldScoped, staleTab, staleGrid, staleTable } = setupStaleGridScenario();
-
-    const runtimeScoped = createViewScopedEngine(root);
-    const loaded = await runtimeScoped.loadModel<FlowModel>({
-      async: true,
-      parentId: staleTab.uid,
-      subKey: 'grid',
-      subType: 'object',
-      use: 'GridModel',
-    });
-    const loadedTable = runtimeScoped.getModel(staleTable.uid);
-
-    expect(repository.findOneCalls).toBe(1);
-    expect(loaded).toBeDefined();
-    expect(loaded === staleGrid).toBe(false);
-    expect((staleTab.subModels as Record<string, FlowModel>).grid === loaded).toBe(true);
-    expect(oldScoped.getModel(staleGrid.uid)).toBeUndefined();
-    expect(oldScoped.getModel(staleTable.uid)).toBeUndefined();
-    expect(runtimeScoped.getModel(staleGrid.uid) === loaded).toBe(true);
-    expect(loadedTable?.parent === loaded).toBe(true);
   });
 
   it('reloads a dirty loaded page from repository and replaces stale parent reference', async () => {

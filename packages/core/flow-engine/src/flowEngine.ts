@@ -1367,8 +1367,8 @@ export class FlowEngine {
       }
     }
     const model = await this.createModelAsync<T>(data as any);
-    this._loadedPageCache.mountModelToParent(model, true);
     if (bypassLoadedPageCache) {
+      this._loadedPageCache.mountModelToParent(model, true);
       this._loadedPageCache.clear(options);
     }
     return model;
@@ -1443,7 +1443,7 @@ export class FlowEngine {
         await model.save();
       }
     }
-    this._loadedPageCache.mountModelToParent(model, bypassLoadedPageCache || !!data?.uid);
+    this._loadedPageCache.mountModelToParent(model, bypassLoadedPageCache);
     if (bypassLoadedPageCache) {
       this._loadedPageCache.clear(options);
     }
