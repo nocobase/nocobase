@@ -79,12 +79,12 @@ const staticEntry = ({ label, type, detail, info, insertText, boost = 85 }: Stat
     apply: insertText ? createApply(insertText) : undefined,
   }) as Completion;
 
-const BROWSER_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
+const SAFE_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
   {
     label: 'window.open()',
     type: 'function',
     detail: '(url: string, target?: string, features?: string) => Window | null',
-    info: 'Open a URL in a new tab or window.',
+    info: 'Open a safe http/https/about:blank URL in a new tab.',
     insertText: "window.open('https://example.com')",
     boost: 105,
   },
@@ -92,7 +92,7 @@ const BROWSER_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
     label: 'window.addEventListener()',
     type: 'function',
     detail: '(type: string, listener: EventListener) => void',
-    info: 'Attach a listener to the browser window.',
+    info: 'Attach a listener to the safe window proxy.',
     insertText: "window.addEventListener('resize', () => {})",
     boost: 105,
   },
@@ -139,7 +139,6 @@ const BROWSER_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
   { label: 'window.location.hostname', type: 'property', detail: 'string', boost: 100 },
   { label: 'window.location.port', type: 'property', detail: 'string', boost: 100 },
   { label: 'window.location.pathname', type: 'property', detail: 'string', boost: 100 },
-  { label: 'window.location.href', type: 'property', detail: 'string', boost: 100 },
   {
     label: 'window.location.assign()',
     type: 'function',
@@ -164,13 +163,11 @@ const BROWSER_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
   {
     label: 'window.location.href =',
     type: 'snippet',
-    detail: 'string assignment',
-    info: 'Assign a new browser location.',
+    detail: 'safe assignment only',
+    info: 'RunJS allows assigning window.location.href, but reading href is blocked.',
     insertText: "window.location.href = '/path'",
     boost: 95,
   },
-  { label: 'document.body', type: 'property', detail: 'HTMLElement | null', boost: 100 },
-  { label: 'document.cookie', type: 'property', detail: 'string', boost: 100 },
   {
     label: 'document.createElement()',
     type: 'function',
@@ -193,13 +190,6 @@ const BROWSER_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
     boost: 105,
   },
   {
-    label: 'document.getElementById()',
-    type: 'function',
-    detail: '(elementId: string) => HTMLElement | null',
-    insertText: "document.getElementById('id')",
-    boost: 105,
-  },
-  {
     label: 'navigator.clipboard.writeText()',
     type: 'function',
     detail: '(text: string) => Promise<void>',
@@ -209,8 +199,6 @@ const BROWSER_GLOBAL_COMPLETIONS: StaticCompletionEntry[] = [
   { label: 'navigator.onLine', type: 'property', detail: 'boolean', boost: 100 },
   { label: 'navigator.language', type: 'property', detail: 'string', boost: 100 },
   { label: 'navigator.languages', type: 'property', detail: 'string[]', boost: 100 },
-  { label: 'navigator.userAgent', type: 'property', detail: 'string', boost: 100 },
-  { label: 'navigator.geolocation', type: 'property', detail: 'Geolocation', boost: 100 },
   {
     label: 'console.log()',
     type: 'function',
@@ -511,7 +499,7 @@ const RUNJS_RUNTIME_COMPLETIONS: StaticCompletionEntry[] = [
 ];
 
 function buildStaticRuntimeCompletions(capabilities: { element: boolean }): Completion[] {
-  return [...BROWSER_GLOBAL_COMPLETIONS, ...RUNJS_RUNTIME_COMPLETIONS]
+  return [...SAFE_GLOBAL_COMPLETIONS, ...RUNJS_RUNTIME_COMPLETIONS]
     .filter((entry) => satisfiesCompletionRequirements(entry, capabilities))
     .filter((entry) => capabilities.element || !usesCtxElement(entry.insertText))
     .map(staticEntry);

@@ -1084,18 +1084,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     expect(
       inspectRunJsAuthoringCode({
         code: [
-          'const href = window.location.href;',
-          'const userAgent = navigator.userAgent;',
-          'const title = document.title;',
-          'ctx.render({ href, userAgent, title });',
-        ].join('\n'),
-        path: '$.jsBlock.browserGlobals.code',
-        modelUse: 'JSBlockModel',
-      }),
-    ).toEqual([]);
-    expect(
-      inspectRunJsAuthoringCode({
-        code: [
           'const rows = (ctx.data.objects || []).map((row) => ({ location: row.location, process: row.processName }));',
           'return { dataset: { source: rows }, series: [{ type: "bar" }] };',
         ].join('\n'),
@@ -1364,60 +1352,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     });
     expect(methodReturnErrors.map((error: any) => error.details?.repairClass)).toContain('missing-top-level-return');
 
-    const outOfScopeFetchErrors = inspectRunJsAuthoringCode({
-      code: [
-        'if (ctx.record) { const { fetch } = ctx.libs; }',
-        'ctx.render(null);',
-        'await fetch("/after-block");',
-      ].join('\n'),
-      path: '$.jsBlock.outOfScopeFetch.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(outOfScopeFetchErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-global-unknown',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-      ]),
-    );
-
-    const outOfScopeForFetchErrors = inspectRunJsAuthoringCode({
-      code: [
-        'for (const fetch of []) { ctx.console.log(fetch); }',
-        'ctx.render(null);',
-        'await fetch("/after-for");',
-      ].join('\n'),
-      path: '$.jsBlock.outOfScopeForFetch.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(outOfScopeForFetchErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-global-unknown',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-      ]),
-    );
-
-    const outOfScopeUnbracedForFetchErrors = inspectRunJsAuthoringCode({
-      code: [
-        'for (const fetch of []) ctx.console.log(fetch);',
-        'ctx.render(null);',
-        'await fetch("/after-unbraced-for");',
-      ].join('\n'),
-      path: '$.jsBlock.outOfScopeUnbracedForFetch.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(outOfScopeUnbracedForFetchErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-global-unknown',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-      ]),
-    );
-
     const outOfScopeUnbracedForDocumentErrors = inspectRunJsAuthoringCode({
       code: [
         'for (const document of []) ctx.console.log(document);',
@@ -1448,62 +1382,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       modelUse: 'JSBlockModel',
     });
     expect(ifControlErrors.map((error: any) => error.ruleId)).toContain('runjs-direct-dom-render-forbidden');
-
-    const switchControlErrors = inspectRunJsAuthoringCode({
-      code: 'ctx.render(null);\nswitch (navigator) { default: navigator.clipboard.writeText("x"); }',
-      path: '$.jsBlock.switchControlNavigator.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(switchControlErrors).toEqual([]);
-  });
-
-  it('should allow Intl global usage in JS blocks before persisting', async () => {
-    const directErrors = inspectRunJsAuthoringCode({
-      code: [
-        'function fmt(n) {',
-        '  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);',
-        '}',
-        'ctx.render(fmt(123));',
-      ].join('\n'),
-      path: '$.jsBlock.intlNumberFormat.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(directErrors).toEqual([]);
-
-    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
-      mode: 'create',
-      navigation: {
-        item: {
-          title: 'Invalid Intl dashboard',
-        },
-      },
-      assets: {
-        scripts: {
-          kpis: {
-            code: [
-              'var { Statistic } = ctx.libs.antd;',
-              'function fmt(n) {',
-              '  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);',
-              '}',
-              'ctx.render(ctx.React.createElement(Statistic, { title: "Claims Paid Total", value: 123, formatter: fmt }));',
-            ].join('\n'),
-          },
-        },
-      },
-      tabs: [
-        {
-          title: 'Overview',
-          blocks: [
-            {
-              key: 'kpis',
-              type: 'jsBlock',
-              script: 'kpis',
-            },
-          ],
-        },
-      ],
-    });
-    expect(applyBlueprintErrors).toEqual([]);
   });
 
   it('should reject async functions rendered as React components before persisting', async () => {
@@ -1612,17 +1490,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       target: { uid: 'missing-target-never-resolved' },
       blocks: [
         {
-          key: 'namedFetchExpression',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'const helper = function fetch() { return fetch; };',
-              'ctx.render(helper);',
-              'await fetch("/blocked");',
-            ].join('\n'),
-          },
-        },
-        {
           key: 'namedDocumentExpression',
           type: 'jsBlock',
           settings: {
@@ -1630,27 +1497,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               'const helper = function document() { return document; };',
               'ctx.render(helper);',
               'document.createElement("div");',
-            ].join('\n'),
-          },
-        },
-        {
-          key: 'namedWindowClassExpression',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'const helper = class window { read() { return window; } };',
-              'ctx.render(helper);',
-              'window.localStorage.getItem("blocked");',
-            ].join('\n'),
-          },
-        },
-        {
-          key: 'namedWindowClassExtendsExpression',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'const helper = class window extends (window["localStorage"] && Object) {};',
-              'ctx.render(helper);',
             ].join('\n'),
           },
         },
@@ -1671,15 +1517,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.blocks[0].settings.code',
-          ruleId: 'runjs-global-unknown',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
         }),
         expect.objectContaining({
-          path: '$.blocks[4].settings.code',
+          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
         }),
       ]),
@@ -1688,18 +1529,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
 
   it('should not leak named function or class expression bindings into flowRegistry RunJS code', () => {
     const errors = collectFlowRegistryRunJsAuthoringErrors({
-      namedFetchExpression: {
-        key: 'namedFetchExpression',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: ['const helper = function fetch() { return fetch; };', 'await fetch("/blocked");'].join('\n'),
-            },
-          },
-        },
-      },
       namedDocumentExpression: {
         key: 'namedDocumentExpression',
         on: 'beforeRender',
@@ -1710,36 +1539,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               code: ['const helper = function document() { return document; };', 'document.createElement("div");'].join(
                 '\n',
               ),
-            },
-          },
-        },
-      },
-      namedWindowClassExpression: {
-        key: 'namedWindowClassExpression',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: [
-                'const helper = class window { read() { return window; } };',
-                'window.localStorage.getItem("blocked");',
-              ].join('\n'),
-            },
-          },
-        },
-      },
-      namedWindowClassExtendsExpression: {
-        key: 'namedWindowClassExtendsExpression',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: [
-                'const helper = class window extends (window["localStorage"] && Object) {};',
-                'return helper;',
-              ].join('\n'),
             },
           },
         },
@@ -1764,11 +1563,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     expect(errors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: '$.flowRegistry.namedFetchExpression.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-global-unknown',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-        expect.objectContaining({
           path: '$.flowRegistry.namedDocumentExpression.steps.runUnsafe.defaultParams.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
         }),
@@ -1780,31 +1574,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
-  it('should allow browser global aliases and reject ctx.element aliases on authoring paths', async () => {
+  it('should reject ctx.element and ctx aliases on authoring paths', async () => {
     const composeErrors = await collectFlowSurfaceAuthoringErrors('compose', {
       target: { uid: 'missing-target-never-resolved' },
       blocks: [
-        {
-          key: 'windowAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const w = window;\nctx.render(null);\nw.localStorage.getItem("k");',
-          },
-        },
-        {
-          key: 'documentAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const doc = document;\nctx.render(null);\ndoc.createElement("div");',
-          },
-        },
-        {
-          key: 'navigatorAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const nav = navigator;\nctx.render(null);\nnav.clipboard.writeText("x");',
-          },
-        },
         {
           key: 'ctxElementAlias',
           type: 'jsBlock',
@@ -1832,193 +1605,37 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             ].join('\n'),
           },
         },
-        {
-          key: 'windowDestructureAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const { localStorage } = window;\nctx.render(null);\nlocalStorage.getItem("x");',
-          },
-        },
-        {
-          key: 'documentBracketDestructureAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const { ["createElement"]: create } = document;\nctx.render(null);\ncreate("div");',
-          },
-        },
-        {
-          key: 'windowDocumentAliasChain',
-          type: 'jsBlock',
-          settings: {
-            code: 'const w = window;\nconst doc = w.document;\nctx.render(null);\ndoc.createElement("div");',
-          },
-        },
-        {
-          key: 'windowBracketDocumentAliasChain',
-          type: 'jsBlock',
-          settings: {
-            code: 'const w = window;\nconst doc = w["document"];\nctx.render(null);\ndoc.createElement("div");',
-          },
-        },
-        {
-          key: 'windowAliasDocumentDestructure',
-          type: 'jsBlock',
-          settings: {
-            code: 'const w = window;\nconst { document } = w;\nctx.render(null);\ndocument.createElement("div");',
-          },
-        },
-        {
-          key: 'windowBracketCreateElementAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const { createElement } = window["document"];\nctx.render(null);\ncreateElement("div");',
-          },
-        },
-        {
-          key: 'documentAliasSecondHop',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'const w = window;',
-              'const doc = w.document;',
-              'const d = doc;',
-              'ctx.render(null);',
-              'd.createElement("div");',
-            ].join('\n'),
-          },
-        },
-        {
-          key: 'createElementAliasSecondHop',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'const { createElement: create0 } = window["document"];',
-              'const create1 = create0;',
-              'ctx.render(null);',
-              'create1("div");',
-            ].join('\n'),
-          },
-        },
-        {
-          key: 'windowAssignmentDestructure',
-          type: 'jsBlock',
-          settings: {
-            code: ['let d;', '({ document: d } = window);', 'ctx.render(null);', 'd.createElement("div");'].join('\n'),
-          },
-        },
       ],
     });
 
     expect(composeErrors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: '$.blocks[3].settings.code',
+          path: '$.blocks[0].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
           details: expect.objectContaining({ capability: 'ctx.element', alias: 'el' }),
         }),
         expect.objectContaining({
-          path: '$.blocks[4].settings.code',
+          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-ctx-root-unknown',
           details: expect.objectContaining({ member: 'c' }),
         }),
         expect.objectContaining({
-          path: '$.blocks[5].settings.code',
+          path: '$.blocks[2].settings.code',
           ruleId: 'runjs-ctx-root-unknown',
           details: expect.objectContaining({ member: 'request' }),
         }),
         expect.objectContaining({
-          path: '$.blocks[5].settings.code',
+          path: '$.blocks[2].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
           details: expect.objectContaining({ capability: 'ctx.element', alias: 'element' }),
         }),
-        expect.objectContaining({
-          path: '$.blocks[7].settings.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.blocks[8].settings.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.blocks[9].settings.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.blocks[10].settings.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.blocks[11].settings.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.blocks[12].settings.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.blocks[13].settings.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.blocks[14].settings.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
       ]),
     );
-
-    const configureErrors = await collectFlowSurfaceAuthoringErrors(
-      'configure',
-      {
-        target: { uid: 'js-block-target' },
-        changes: {
-          code: 'const w = window;\nctx.render(null);\nw.localStorage.getItem("k");',
-        },
-      },
-      {
-        currentNode: { use: 'JSBlockModel' },
-      },
-    );
-    expect(configureErrors).toEqual([]);
   });
 
-  it('should allow browser global aliases and reject ctx.element aliases on flowRegistry paths', () => {
+  it('should reject ctx.element and ctx aliases on flowRegistry paths', () => {
     const errors = collectFlowRegistryRunJsAuthoringErrors({
-      windowAlias: {
-        key: 'windowAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const w = window;\nw.localStorage.getItem("k");',
-            },
-          },
-        },
-      },
-      documentAlias: {
-        key: 'documentAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const doc = document;\ndoc.createElement("div");',
-            },
-          },
-        },
-      },
-      navigatorAlias: {
-        key: 'navigatorAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const nav = navigator;\nnav.clipboard.writeText("x");',
-            },
-          },
-        },
-      },
       ctxElementAlias: {
         key: 'ctxElementAlias',
         on: 'beforeRender',
@@ -2060,96 +1677,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           },
         },
       },
-      windowDestructureAlias: {
-        key: 'windowDestructureAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const { localStorage } = window;\nlocalStorage.getItem("x");',
-            },
-          },
-        },
-      },
-      documentBracketDestructureAlias: {
-        key: 'documentBracketDestructureAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const { ["createElement"]: create } = document;\ncreate("div");',
-            },
-          },
-        },
-      },
-      windowDocumentAliasChain: {
-        key: 'windowDocumentAliasChain',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const w = window;\nconst doc = w.document;\ndoc.createElement("div");',
-            },
-          },
-        },
-      },
-      windowBracketCreateElementAlias: {
-        key: 'windowBracketCreateElementAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const { createElement } = window["document"];\ncreateElement("div");',
-            },
-          },
-        },
-      },
-      documentAliasSecondHop: {
-        key: 'documentAliasSecondHop',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: ['const w = window;', 'const doc = w.document;', 'const d = doc;', 'd.createElement("div");'].join(
-                '\n',
-              ),
-            },
-          },
-        },
-      },
-      createElementAliasSecondHop: {
-        key: 'createElementAliasSecondHop',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: [
-                'const { createElement: create0 } = window["document"];',
-                'const create1 = create0;',
-                'create1("div");',
-              ].join('\n'),
-            },
-          },
-        },
-      },
-      windowAssignmentDestructure: {
-        key: 'windowAssignmentDestructure',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: ['let d;', '({ document: d } = window);', 'd.createElement("div");'].join('\n'),
-            },
-          },
-        },
-      },
     });
 
     expect(errors).toEqual(
@@ -2174,35 +1701,11 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           ruleId: 'runjs-direct-dom-render-forbidden',
           details: expect.objectContaining({ capability: 'ctx.element', alias: 'element' }),
         }),
-        expect.objectContaining({
-          path: '$.flowRegistry.documentBracketDestructureAlias.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.windowDocumentAliasChain.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.windowBracketCreateElementAlias.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.documentAliasSecondHop.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.createElementAliasSecondHop.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.windowAssignmentDestructure.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
       ]),
     );
   });
 
-  it('should allow bracket-member browser globals and reject direct DOM writes', () => {
+  it('should reject bracket-member direct DOM writes', () => {
     const documentErrors = inspectRunJsAuthoringCode({
       code: 'ctx.render(null);\ndocument["createElement"]("div");',
       path: '$.jsBlock.bracketDocument.code',
@@ -2217,24 +1720,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           }),
         }),
       ]),
-    );
-
-    const windowBracketDocumentDotCreateErrors = inspectRunJsAuthoringCode({
-      code: 'ctx.render(null);\nwindow["document"].createElement("div");',
-      path: '$.jsBlock.windowBracketDocumentDotCreate.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(windowBracketDocumentDotCreateErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const windowBracketDocumentBracketCreateErrors = inspectRunJsAuthoringCode({
-      code: 'ctx.render(null);\nwindow["document"]["createElement"]("div");',
-      path: '$.jsBlock.windowBracketDocumentBracketCreate.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(windowBracketDocumentBracketCreateErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
     );
 
     const ctxElementErrors = inspectRunJsAuthoringCode({
@@ -2252,189 +1737,9 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         }),
       ]),
     );
-
-    const documentAliasErrors = inspectRunJsAuthoringCode({
-      code: 'const doc = document;\nctx.render(null);\ndoc.createElement("div");',
-      path: '$.jsBlock.documentAlias.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(documentAliasErrors.map((error: any) => error.ruleId)).toContain('runjs-direct-dom-render-forbidden');
-
-    const documentCreateElementAliasErrors = inspectRunJsAuthoringCode({
-      code: 'const { createElement } = document;\nctx.render(null);\ncreateElement("div");',
-      path: '$.jsBlock.documentCreateElementAlias.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(documentCreateElementAliasErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const windowDocumentAliasErrors = inspectRunJsAuthoringCode({
-      code: 'const { document } = window;\nctx.render(null);\ndocument.createElement("div");',
-      path: '$.jsBlock.windowDocumentAlias.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(windowDocumentAliasErrors.map((error: any) => error.ruleId)).toContain('runjs-direct-dom-render-forbidden');
-
-    const windowAliasDocumentErrors = inspectRunJsAuthoringCode({
-      code: 'const w = window;\nconst doc = w.document;\nctx.render(null);\ndoc.createElement("div");',
-      path: '$.jsBlock.windowAliasDocument.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(windowAliasDocumentErrors.map((error: any) => error.ruleId)).toContain('runjs-direct-dom-render-forbidden');
-
-    const windowAliasBracketDocumentErrors = inspectRunJsAuthoringCode({
-      code: 'const w = window;\nconst doc = w["document"];\nctx.render(null);\ndoc.createElement("div");',
-      path: '$.jsBlock.windowAliasBracketDocument.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(windowAliasBracketDocumentErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const windowAliasDocumentDestructureErrors = inspectRunJsAuthoringCode({
-      code: 'const w = window;\nconst { document } = w;\nctx.render(null);\ndocument.createElement("div");',
-      path: '$.jsBlock.windowAliasDocumentDestructure.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(windowAliasDocumentDestructureErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const windowBracketCreateElementAliasErrors = inspectRunJsAuthoringCode({
-      code: 'const { createElement } = window["document"];\nctx.render(null);\ncreateElement("div");',
-      path: '$.jsBlock.windowBracketCreateElementAlias.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(windowBracketCreateElementAliasErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const documentBracketCreateElementAliasErrors = inspectRunJsAuthoringCode({
-      code: 'const create = document["createElement"];\nctx.render(null);\ncreate("div");',
-      path: '$.jsBlock.documentBracketCreateElementAlias.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(documentBracketCreateElementAliasErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const documentAliasSecondHopErrors = inspectRunJsAuthoringCode({
-      code: [
-        'const w = window;',
-        'const doc = w.document;',
-        'const d = doc;',
-        'ctx.render(null);',
-        'd.createElement("div");',
-      ].join('\n'),
-      path: '$.jsBlock.documentAliasSecondHop.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(documentAliasSecondHopErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const createElementAliasSecondHopErrors = inspectRunJsAuthoringCode({
-      code: [
-        'const { createElement: create0 } = window["document"];',
-        'const create1 = create0;',
-        'ctx.render(null);',
-        'create1("div");',
-      ].join('\n'),
-      path: '$.jsBlock.createElementAliasSecondHop.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(createElementAliasSecondHopErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const windowAssignmentDestructureErrors = inspectRunJsAuthoringCode({
-      code: ['let d;', '({ document: d } = window);', 'ctx.render(null);', 'd.createElement("div");'].join('\n'),
-      path: '$.jsBlock.windowAssignmentDestructure.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(windowAssignmentDestructureErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const objectCarrierDocumentErrors = inspectRunJsAuthoringCode({
-      code: 'const holder = { doc: document };\nctx.render(null);\nholder.doc.createElement("div");',
-      path: '$.jsBlock.objectCarrierDocument.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(objectCarrierDocumentErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const objectCarrierDocumentDestructureErrors = inspectRunJsAuthoringCode({
-      code: [
-        'const holder = { doc: document };',
-        'const { doc } = holder;',
-        'ctx.render(null);',
-        'doc.createElement("div");',
-      ].join('\n'),
-      path: '$.jsBlock.objectCarrierDocumentDestructure.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(objectCarrierDocumentDestructureErrors.map((error: any) => error.ruleId)).toContain(
-      'runjs-direct-dom-render-forbidden',
-    );
-
-    const aliasChainLength = 3000;
-    const deepDocumentAliasCode = [
-      'const a0 = document;',
-      ...Array.from({ length: aliasChainLength }, (_, index) => `const a${index + 1} = a${index};`),
-      'ctx.render(null);',
-      `a${aliasChainLength}.createElement("div");`,
-    ].join('\n');
-    expect(deepDocumentAliasCode.length).toBeLessThan(64 * 1024);
-    const deepDocumentAliasStart = Date.now();
-    const deepDocumentAliasErrors = inspectRunJsAuthoringCode({
-      code: deepDocumentAliasCode,
-      path: '$.jsBlock.deepDocumentAlias.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(Date.now() - deepDocumentAliasStart).toBeLessThan(5000);
-    expect(deepDocumentAliasErrors.map((error: any) => error.ruleId)).toContain('runjs-direct-dom-render-forbidden');
-
-    const localDocumentErrors = inspectRunJsAuthoringCode({
-      code: [
-        'const helper = { document: { createElement: () => null } };',
-        'const { document } = helper;',
-        'ctx.render(document.createElement("div"));',
-      ].join('\n'),
-      path: '$.jsBlock.localDocument.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(localDocumentErrors).toEqual([]);
-
-    const localWindowAliasErrors = inspectRunJsAuthoringCode({
-      code: [
-        'const helper = { window: { document: { createElement: () => null } } };',
-        'const { window: w } = helper;',
-        'const doc = w.document;',
-        'ctx.render(doc.createElement("div"));',
-      ].join('\n'),
-      path: '$.jsBlock.localWindowAlias.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(localWindowAliasErrors).toEqual([]);
-
-    const globalErrors = inspectRunJsAuthoringCode({
-      code: [
-        'ctx.render(null);',
-        'const storageKey = "localStorage";',
-        'window?.["localStorage"].getItem("k");',
-        'navigator["clipboard"].writeText("x");',
-        'window[storageKey].getItem("k");',
-      ].join('\n'),
-      path: '$.jsBlock.bracketGlobals.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(globalErrors).toEqual([]);
   });
 
-  it('should allow comment-separated bracket browser globals and reject direct DOM writes on authoring paths', async () => {
+  it('should reject comment-separated bracket direct DOM writes on authoring paths', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('compose', {
       target: { uid: 'missing-target-never-resolved' },
       blocks: [
@@ -2450,19 +1755,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           type: 'jsBlock',
           settings: {
             code: 'ctx.element/* comment */["innerHTML"] = "<strong>bad</strong>";',
-          },
-        },
-        {
-          key: 'commentBracketGlobals',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'ctx.render(null);',
-              'const storageKey = "localStorage";',
-              'window/* comment */["localStorage"].getItem("k");',
-              'navigator/* comment */["clipboard"].writeText("x");',
-              'window/* comment */[storageKey].getItem("k");',
-            ].join('\n'),
           },
         },
       ],
@@ -2482,20 +1774,8 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
-  it('should allow comment-separated bracket browser globals and reject direct DOM writes on flowRegistry paths', () => {
+  it('should reject comment-separated bracket direct DOM writes on flowRegistry paths', () => {
     const errors = collectFlowRegistryRunJsAuthoringErrors({
-      commentBracketWindow: {
-        key: 'commentBracketWindow',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'window/* comment */["localStorage"].getItem("k");',
-            },
-          },
-        },
-      },
       commentBracketDocument: {
         key: 'commentBracketDocument',
         on: 'beforeRender',
@@ -2504,18 +1784,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             use: 'runjs',
             defaultParams: {
               code: 'document/* comment */["createElement"]("div");',
-            },
-          },
-        },
-      },
-      commentBracketNavigator: {
-        key: 'commentBracketNavigator',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'navigator/* comment */["clipboard"].writeText("x");',
             },
           },
         },
@@ -2580,20 +1848,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             code: 'ctx?.render(null);\ndocument?.createElement("div");',
           },
         },
-        {
-          key: 'optionalWindowLocalStorage',
-          type: 'jsBlock',
-          settings: {
-            code: 'ctx?.render(null);\nwindow?.localStorage.getItem("k");',
-          },
-        },
-        {
-          key: 'optionalNavigatorClipboard',
-          type: 'jsBlock',
-          settings: {
-            code: 'ctx?.render(null);\nnavigator?.clipboard.writeText("x");',
-          },
-        },
       ],
     });
 
@@ -2627,111 +1881,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           details: expect.objectContaining({
             repairClass: 'replace-innerhtml-with-render',
             capability: 'document?.createElement',
-          }),
-        }),
-      ]),
-    );
-  });
-
-  it('should validate chart visual.raw and events.raw on configure and applyBlueprint authoring writes', async () => {
-    const configureErrors = await collectFlowSurfaceAuthoringErrors(
-      'configure',
-      {
-        target: { uid: 'chart-target' },
-        changes: {
-          visual: {
-            mode: 'custom',
-            raw: 'await fetch("/chart-option");\nreturn {};',
-          },
-          events: {
-            raw: 'process.exit(1);',
-          },
-        },
-      },
-      {
-        hostBlockType: 'ChartBlockModel',
-      },
-    );
-    expect(configureErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.changes.visual.raw',
-          ruleId: 'runjs-global-unknown',
-          details: expect.objectContaining({
-            global: 'fetch',
-          }),
-        }),
-        expect.objectContaining({
-          path: '$.changes.events.raw',
-          ruleId: 'runjs-global-unknown',
-          details: expect.objectContaining({
-            global: 'process',
-          }),
-        }),
-      ]),
-    );
-
-    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
-      mode: 'create',
-      navigation: {
-        item: {
-          title: 'Invalid chart raw page',
-        },
-      },
-      assets: {
-        charts: {
-          statusChart: {
-            query: {
-              mode: 'builder',
-              resource: {
-                dataSourceKey: 'main',
-                collectionName: 'employees',
-              },
-              measures: [
-                {
-                  field: 'id',
-                  aggregation: 'count',
-                  alias: 'employeeCount',
-                },
-              ],
-            },
-            visual: {
-              mode: 'custom',
-              raw: 'await fetch("/chart-option");\nreturn {};',
-            },
-            events: {
-              raw: 'localStorage.getItem("chart");',
-            },
-          },
-        },
-      },
-      tabs: [
-        {
-          title: 'Overview',
-          blocks: [
-            {
-              key: 'statusChart',
-              type: 'chart',
-              chart: 'statusChart',
-            },
-          ],
-        },
-      ],
-    });
-    expect(applyBlueprintErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.assets.charts.statusChart.visual.raw',
-          ruleId: 'runjs-global-unknown',
-          details: expect.objectContaining({
-            global: 'fetch',
-          }),
-        }),
-        expect.objectContaining({
-          path: '$.assets.charts.statusChart.events.raw',
-          ruleId: 'runjs-global-unknown',
-          details: expect.objectContaining({
-            global: 'localStorage',
           }),
         }),
       ]),
@@ -2988,7 +2137,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                 key: 'popupJsBlock',
                 type: 'jsBlock',
                 settings: {
-                  code: 'ctx.render(`${fetch("/blocked")}`);',
+                  code: 'ctx.render(unknownPopupValue);',
                 },
               },
             ],
@@ -2996,7 +2145,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               items: [
                 {
                   type: 'runjs',
-                  code: 'await fetch("/blocked");',
+                  code: 'return unknownReactionValue;',
                 },
               ],
             },

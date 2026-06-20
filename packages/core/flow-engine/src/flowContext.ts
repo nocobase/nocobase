@@ -3595,12 +3595,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const browserGlobals: Record<string, any> = {};
       if (typeof window !== 'undefined') {
         browserGlobals.window = window;
+        if (typeof navigator !== 'undefined') {
+          browserGlobals.navigator = navigator;
+        }
       }
       if (typeof document !== 'undefined') {
         browserGlobals.document = document;
-      }
-      if (typeof navigator !== 'undefined') {
-        browserGlobals.navigator = navigator;
       }
       const globals: Record<string, any> = { ctx: deprecatedCtx, ...browserGlobals, ...(options?.globals || {}) };
       const { timeoutMs } = options || {};

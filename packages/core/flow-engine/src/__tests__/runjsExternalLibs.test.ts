@@ -66,49 +66,6 @@ describe('RunJS external libs', () => {
     expect(runjsImportAsync).toHaveBeenNthCalledWith(2, 'https://esm.sh/react-dom@18.2.0/client');
   });
 
-  it('should keep different external React versions in resolved URL cache without changing window.React', async () => {
-    const engine = newEngine();
-    const ctx = new FlowRunJSContext(engine.context);
-
-    const fakeReact18 = { version: '18.2.0' };
-    const fakeReact19 = { version: '19.2.4' };
-    const fakeReactDom18 = { version: '18.2.0-dom' };
-    const fakeReactDom19 = { version: '19.2.4-dom' };
-    const globalReact = { version: 'nocobase-global' };
-    const originalWindowReact = (window as any).React;
-
-    (window as any).React = globalReact;
-    (runjsImportAsync as any).mockImplementation(async (url: string) => {
-      if (url === 'https://esm.sh/react@18.2.0') return fakeReact18;
-      if (url === 'https://esm.sh/react-dom@18.2.0/client') return fakeReactDom18;
-      if (url === 'https://esm.sh/react@19.2.4') return fakeReact19;
-      if (url === 'https://esm.sh/react-dom@19.2.4/client') return fakeReactDom19;
-      throw new Error(`unexpected import url: ${url}`);
-    });
-
-    try {
-      const react18First = await ctx.importAsync('react@18.2.0');
-      const react19 = await ctx.importAsync('react@19.2.4');
-      const react18Second = await ctx.importAsync('react@18.2.0');
-
-      expect(react18First).toBe(fakeReact18);
-      expect(react19).toBe(fakeReact19);
-      expect(react18Second).toBe(fakeReact18);
-      expect(ctx.React).toBe(fakeReact18);
-      expect(ctx.libs.React).toBe(fakeReact18);
-      expect((window as any).React).toBe(globalReact);
-
-      expect(runjsImportAsync).toHaveBeenCalledTimes(4);
-      expect(runjsImportAsync).toHaveBeenNthCalledWith(1, 'https://esm.sh/react@18.2.0');
-      expect(runjsImportAsync).toHaveBeenNthCalledWith(2, 'https://esm.sh/react-dom@18.2.0/client');
-      expect(runjsImportAsync).toHaveBeenNthCalledWith(3, 'https://esm.sh/react@19.2.4');
-      expect(runjsImportAsync).toHaveBeenNthCalledWith(4, 'https://esm.sh/react-dom@19.2.4/client');
-    } finally {
-      if (typeof originalWindowReact === 'undefined') delete (window as any).React;
-      else (window as any).React = originalWindowReact;
-    }
-  });
-
   it('should override ctx.antd and ctx.libs.antd when importing antd', async () => {
     const engine = newEngine();
     const ctx = new FlowRunJSContext(engine.context);

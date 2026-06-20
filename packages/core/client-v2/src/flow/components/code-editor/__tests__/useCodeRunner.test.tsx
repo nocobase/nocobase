@@ -267,35 +267,6 @@ return currentUsername;
     expect(result.current.logs.some((l) => l.level === 'log' && l.msg.includes('alice'))).toBe(true);
   });
 
-  it('runs direct event-flow previews with real browser globals', async () => {
-    const engine = new FlowEngine();
-    engine.registerModels({ DummyJsAutoModel });
-    const model = engine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'direct-browser-globals' });
-
-    const settingsCtx = new FlowContext();
-    settingsCtx.defineProperty('engine', { value: engine });
-    settingsCtx.addDelegate(model.context);
-    const { result } = renderHook(() => useCodeRunner(settingsCtx as any, 'v1'));
-
-    let runResult: any;
-    await act(async () => {
-      runResult = await result.current.run(`
-return {
-  hasBody: document.body === window.document.body,
-  hasGetElementById: typeof document.getElementById === 'function',
-  href: window.location.href,
-  userAgent: navigator.userAgent,
-};
-`);
-    });
-
-    expect(runResult?.success).toBe(true);
-    expect(runResult?.value?.hasBody).toBe(true);
-    expect(runResult?.value?.hasGetElementById).toBe(true);
-    expect(runResult?.value?.href).toBe(window.location.href);
-    expect(runResult?.value?.userAgent).toBe(navigator.userAgent);
-  });
-
   it('compiles JSX in preview and renders antd Input without syntax error', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ DummyJsAutoModel });

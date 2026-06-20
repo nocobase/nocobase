@@ -17,7 +17,13 @@ import jsx from 'acorn-jsx';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import * as acornWalk from 'acorn-walk';
-import { JSRunner, FlowContext, prepareRunJsCode, shouldPreprocessRunJSTemplates } from '@nocobase/flow-engine';
+import {
+  JSRunner,
+  FlowContext,
+  prepareRunJsCode,
+  RUNJS_ALLOWED_BARE_GLOBAL_NAMES,
+  shouldPreprocessRunJSTemplates,
+} from '@nocobase/flow-engine';
 
 const acornWalkBase = {
   ...(acornWalk as any).base,
@@ -596,41 +602,7 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
     return issues;
   }
 
-  const declared = new Set<string>([
-    // Common globals / allowed runtime context roots
-    'ctx',
-    'console',
-    'window',
-    'document',
-    'navigator',
-    'Math',
-    'Date',
-    'Array',
-    'Object',
-    'Number',
-    'String',
-    'Boolean',
-    'Promise',
-    'RegExp',
-    'Set',
-    'Map',
-    'WeakSet',
-    'WeakMap',
-    'JSON',
-    'Intl',
-    'URL',
-    'Error',
-    'TypeError',
-    'encodeURIComponent',
-    'decodeURIComponent',
-    'parseInt',
-    'parseFloat',
-    'isNaN',
-    'isFinite',
-    'undefined',
-    'NaN',
-    'Infinity',
-  ]);
+  const declared = new Set<string>(RUNJS_ALLOWED_BARE_GLOBAL_NAMES);
 
   const addId = (id: any) => {
     if (id && typeof id.name === 'string') declared.add(id.name);
@@ -1030,12 +1002,12 @@ export async function diagnoseRunJS(
     const baseGlobals: Record<string, any> = { console: consoleCapture };
     if (typeof window !== 'undefined') {
       baseGlobals.window = window;
+      if (typeof navigator !== 'undefined') {
+        baseGlobals.navigator = navigator;
+      }
     }
     if (typeof document !== 'undefined') {
       baseGlobals.document = document;
-    }
-    if (typeof navigator !== 'undefined') {
-      baseGlobals.navigator = navigator;
     }
 
     let prepared = src;

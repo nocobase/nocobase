@@ -39,6 +39,121 @@ export function shouldPreprocessRunJSTemplates(
   return options?.version !== 'v2';
 }
 
+const RUNJS_BROWSER_GLOBAL_NAMES = [
+  'fetch',
+  'localStorage',
+  'sessionStorage',
+  'XMLHttpRequest',
+  'WebSocket',
+  'Worker',
+  'SharedWorker',
+  'ServiceWorker',
+  'BroadcastChannel',
+  'EventSource',
+  'indexedDB',
+  'caches',
+  'Function',
+  'eval',
+  'globalThis',
+  'Intl',
+  'Blob',
+  'URL',
+  'location',
+] as const;
+
+export const RUNJS_ALLOWED_BARE_GLOBAL_NAMES = [
+  'ctx',
+  'console',
+  'window',
+  'document',
+  'navigator',
+  'setTimeout',
+  'clearTimeout',
+  'setInterval',
+  'clearInterval',
+  'Array',
+  'ArrayBuffer',
+  'BigInt',
+  'BigInt64Array',
+  'BigUint64Array',
+  'Boolean',
+  'DataView',
+  'Date',
+  'Error',
+  'EvalError',
+  'FinalizationRegistry',
+  'Float32Array',
+  'Float64Array',
+  'Int8Array',
+  'Int16Array',
+  'Int32Array',
+  'Map',
+  'Math',
+  'Number',
+  'Object',
+  'Promise',
+  'Proxy',
+  'RangeError',
+  'ReferenceError',
+  'Reflect',
+  'RegExp',
+  'Set',
+  'String',
+  'Symbol',
+  'SyntaxError',
+  'TypeError',
+  'URIError',
+  'Uint8Array',
+  'Uint8ClampedArray',
+  'Uint16Array',
+  'Uint32Array',
+  'WeakMap',
+  'WeakRef',
+  'WeakSet',
+  'JSON',
+  'decodeURI',
+  'decodeURIComponent',
+  'encodeURI',
+  'encodeURIComponent',
+  'isFinite',
+  'isNaN',
+  'parseFloat',
+  'parseInt',
+  'undefined',
+  'NaN',
+  'Infinity',
+  'process',
+  'require',
+  'module',
+  'exports',
+  ...RUNJS_BROWSER_GLOBAL_NAMES,
+] as const;
+
+function collectRunJSBrowserGlobals(providedGlobals: Record<string, unknown> = {}) {
+  const windowGlobal = providedGlobals.window;
+  if (!windowGlobal || typeof windowGlobal !== 'object') {
+    return {};
+  }
+
+  const windowRecord = windowGlobal as Record<string, unknown>;
+  const globals: Record<string, unknown> = {};
+  RUNJS_BROWSER_GLOBAL_NAMES.forEach((name) => {
+    if (Object.prototype.hasOwnProperty.call(providedGlobals, name)) {
+      return;
+    }
+    try {
+      const value = windowRecord[name];
+      if (typeof value === 'undefined') {
+        return;
+      }
+      globals[name] = name === 'fetch' && typeof value === 'function' ? value.bind(windowGlobal) : value;
+    } catch {
+      // Ignore browser globals that cannot be read in the current environment.
+    }
+  });
+  return globals;
+}
+
 // Heuristic: detect likely bare `{{ctx.xxx}}` usage in executable positions (not quoted string literals).
 const BARE_CTX_TEMPLATE_RE = /(^|[=(:,[\s)])(\{\{\s*(ctx(?:\.|\[|\?\.)[^}]*)\s*\}\})/m;
 
@@ -98,31 +213,7 @@ export class JSRunner {
     };
 
     const providedGlobals = options.globals || {};
-    const liftedGlobals: Record<string, any> = {};
-
-    // Auto-lift selected globals from injected window into top-level sandbox globals
-    // so user code can access them directly (e.g. `new Blob(...)`).
-    if (!Object.prototype.hasOwnProperty.call(providedGlobals, 'Blob')) {
-      try {
-        const blobCtor = (providedGlobals as any).window?.Blob;
-        if (typeof blobCtor !== 'undefined') {
-          liftedGlobals.Blob = blobCtor;
-        }
-      } catch {
-        // ignore when window property access fails
-      }
-    }
-
-    if (!Object.prototype.hasOwnProperty.call(providedGlobals, 'URL')) {
-      try {
-        const urlCtor = (providedGlobals as any).window?.URL;
-        if (typeof urlCtor !== 'undefined') {
-          liftedGlobals.URL = urlCtor;
-        }
-      } catch {
-        // ignore when window property access fails
-      }
-    }
+    const liftedGlobals = collectRunJSBrowserGlobals(providedGlobals);
 
     this.globals = {
       console,

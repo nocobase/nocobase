@@ -219,7 +219,6 @@ function collectAstUnknownBareGlobalsFromAst(
   RUNJS_ALLOWED_BARE_GLOBALS_BY_MODEL_USE[modelUse]?.forEach((name) => allowedGlobals.add(name));
 
   const entries: RunJsAstInspection['unknownBareGlobals'] = [];
-  const bindingIndex = createAstIdentifierBindingIndex(identifierBindings);
   const reported = new Set<string>();
 
   walkAstAncestor(ast, {
@@ -232,10 +231,10 @@ function collectAstUnknownBareGlobalsFromAst(
         return;
       }
       const index = typeof node.start === 'number' ? node.start : 0;
-      if (!isIdentifierReadReference(node, ancestors)) {
+      if (hasAstDeclaredBindingAtIndex(name, index, identifierBindings)) {
         return;
       }
-      if (hasAstDeclaredBindingAtIndex(name, index, bindingIndex)) {
+      if (!isIdentifierReadReference(node, ancestors)) {
         return;
       }
       const key = `${name}@${index}`;
@@ -254,8 +253,8 @@ function collectAstUnknownBareGlobalsFromAst(
   return entries.sort((left, right) => left.index - right.index);
 }
 
-function hasAstDeclaredBindingAtIndex(name: string, index: number, bindingIndex: Map<string, AstIdentifierBinding[]>) {
-  const binding = resolveAstActiveIdentifierBindingFromIndex(name, index, bindingIndex);
+function hasAstDeclaredBindingAtIndex(name: string, index: number, identifierBindings: AstIdentifierBinding[]) {
+  const binding = resolveAstActiveIdentifierBinding(name, index, identifierBindings);
   if (!binding) {
     return false;
   }
@@ -263,47 +262,6 @@ function hasAstDeclaredBindingAtIndex(name: string, index: number, bindingIndex:
     return false;
   }
   return index >= (binding.declarationStart ?? binding.start);
-}
-
-function createAstIdentifierBindingIndex(identifierBindings: AstIdentifierBinding[]) {
-  const bindingIndex = new Map<string, AstIdentifierBinding[]>();
-  identifierBindings.forEach((binding) => {
-    const bindings = bindingIndex.get(binding.name);
-    if (bindings) {
-      bindings.push(binding);
-    } else {
-      bindingIndex.set(binding.name, [binding]);
-    }
-  });
-  return bindingIndex;
-}
-
-function resolveAstActiveIdentifierBindingFromIndex(
-  name: string,
-  index: number,
-  bindingIndex: Map<string, AstIdentifierBinding[]>,
-) {
-  const bindings = bindingIndex.get(name);
-  if (!bindings?.length) {
-    return undefined;
-  }
-  let match: AstIdentifierBinding | undefined;
-  bindings.forEach((binding) => {
-    if (index < binding.start || index >= binding.end) {
-      return;
-    }
-    if (
-      !match ||
-      binding.end - binding.start < match.end - match.start ||
-      (binding.end - binding.start === match.end - match.start && binding.start > match.start) ||
-      (binding.end - binding.start === match.end - match.start &&
-        binding.start === match.start &&
-        binding.end > match.end)
-    ) {
-      match = binding;
-    }
-  });
-  return match;
 }
 
 function isIdentifierReadReference(node: any, ancestors: any[]) {

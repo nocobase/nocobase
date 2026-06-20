@@ -49,12 +49,12 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
   const browserGlobals: Record<string, any> = {};
   if (typeof window !== 'undefined') {
     browserGlobals.window = window;
+    if (typeof navigator !== 'undefined') {
+      browserGlobals.navigator = navigator;
+    }
   }
   if (typeof document !== 'undefined') {
     browserGlobals.document = document;
-  }
-  if (typeof navigator !== 'undefined') {
-    browserGlobals.navigator = navigator;
   }
   const globals: Record<string, any> = { ctx: deprecatedCtx, ...browserGlobals, ...(options?.globals || {}) };
   // 透传 JSRunnerOptions 其余配置（如 timeoutMs）
