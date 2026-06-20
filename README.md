@@ -50,7 +50,7 @@ codex # claude, opencode
 Detailed steps:
 
 - <a target="_blank" href="https://docs.nocobase.com/ai/install-nocobase-app">Install a NocoBase app</a>
-- <a target="_blank" href="https://docs.nocobase.com/ai/quick-start">AI Agent Quick Start</a>
+- <a target="_blank" href="https://docs.nocobase.com/ai/quick-start">AI Agent Integration Guide</a>
 
 ## Release Notes
 
