@@ -10,9 +10,9 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 ## Inhalt
 
 - [Was ist NocoBase](#was-ist-nocobase)
+- [Schnellstart](#schnellstart)
 - [Release Notes](#release-notes)
 - [Besondere Merkmale](#besondere-merkmale)
-- [Schnell installieren und einen AI Agent anbinden](#schnell-installieren-und-einen-ai-agent-anbinden)
 
 ## Was ist NocoBase
 
@@ -32,6 +32,25 @@ https://forum.nocobase.com/
 
 Kundengeschichten:  
 https://www.nocobase.com/de/blog/tags/customer-stories
+
+## Schnellstart
+
+```bash
+# NocoBase CLI installieren
+npm install -g @nocobase/cli
+nb --version
+
+# NocoBase-App installieren
+nb init --ui
+
+# Optional: gemeinsam mit einem AI Agent bauen
+codex # claude, opencode
+```
+
+Detaillierte Schritte:
+
+- <a target="_blank" href="https://docs.nocobase.com/de/ai/install-nocobase-app">Eine NocoBase-App installieren</a>
+- <a target="_blank" href="https://docs.nocobase.com/de/ai/quick-start">Anleitung zur AI-Agent-Anbindung</a>
 
 ## Release Notes
 
@@ -140,17 +159,3 @@ Mit einem Microkernel-Design laesst sich das System ueber Plugins erweitern, ohn
 - The same architecture applies to both AI-built and manually built plugins
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
-
-## Schnell installieren und einen AI Agent anbinden
-
-```bash
-npm install -g @nocobase/cli
-nb --version
-nb init --ui
-codex # claude, opencode
-```
-
-Detaillierte Schritte:
-
-- <a target="_blank" href="https://docs.nocobase.com/de/ai/install-nocobase-app">Eine NocoBase-App installieren</a>
-- <a target="_blank" href="https://docs.nocobase.com/de/ai/quick-start">Anleitung zur AI-Agent-Anbindung</a>
