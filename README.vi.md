@@ -10,9 +10,9 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 ## Muc luc
 
 - [NocoBase la gi](#nocobase-la-gi)
+- [Bat dau nhanh](#bat-dau-nhanh)
 - [Ghi chu phat hanh](#ghi-chu-phat-hanh)
 - [Tinh nang noi bat](#tinh-nang-noi-bat)
-- [Cai dat nhanh va ket noi AI Agent](#cai-dat-nhanh-va-ket-noi-ai-agent)
 
 ## NocoBase la gi
 
@@ -32,6 +32,25 @@ https://forum.nocobase.com/
 
 Cau chuyen khach hang:  
 https://www.nocobase.com/vi/blog/tags/customer-stories
+
+## Bat dau nhanh
+
+```bash
+# Cai dat NocoBase CLI
+npm install -g @nocobase/cli
+nb --version
+
+# Cai dat ung dung NocoBase
+nb init --ui
+
+# Tuy chon: xay dung cung AI Agent
+codex # claude, opencode
+```
+
+Chi tiet xem:
+
+- <a target="_blank" href="https://docs.nocobase.com/vi/ai/install-nocobase-app">Cai dat ung dung NocoBase</a>
+- <a target="_blank" href="https://docs.nocobase.com/vi/ai/quick-start">Huong dan ket noi AI Agent</a>
 
 ## Ghi chu phat hanh
 
@@ -140,17 +159,3 @@ Voi thiet ke microkernel, moi kha nang deu co the mo rong qua plugin ma van giu 
 - The same architecture applies to both AI-built and manually built plugins
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
-
-## Cai dat nhanh va ket noi AI Agent
-
-```bash
-npm install -g @nocobase/cli
-nb --version
-nb init --ui
-codex # claude, opencode
-```
-
-Chi tiet xem:
-
-- <a target="_blank" href="https://docs.nocobase.com/vi/ai/install-nocobase-app">Cai dat ung dung NocoBase</a>
-- <a target="_blank" href="https://docs.nocobase.com/vi/ai/quick-start">Huong dan ket noi AI Agent</a>

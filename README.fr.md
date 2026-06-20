@@ -10,9 +10,9 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 ## Sommaire
 
 - [Qu'est-ce que NocoBase](#quest-ce-que-nocobase)
+- [Démarrage rapide](#démarrage-rapide)
 - [Notes de version](#notes-de-version)
 - [Points distinctifs](#points-distinctifs)
-- [Installation rapide et connexion d'un agent IA](#installation-rapide-et-connexion-dun-agent-ia)
 
 ## Qu'est-ce que NocoBase
 
@@ -32,6 +32,25 @@ https://forum.nocobase.com/
 
 Retours d'expérience :  
 https://www.nocobase.com/fr/blog/tags/customer-stories
+
+## Démarrage rapide
+
+```bash
+# Installer NocoBase CLI
+npm install -g @nocobase/cli
+nb --version
+
+# Installer une application NocoBase
+nb init --ui
+
+# Optionnel : construire avec un agent IA
+codex # claude, opencode
+```
+
+Étapes détaillées :
+
+- <a target="_blank" href="https://docs.nocobase.com/fr/ai/install-nocobase-app">Installer une application NocoBase</a>
+- <a target="_blank" href="https://docs.nocobase.com/fr/ai/quick-start">Guide de connexion d'un agent IA</a>
 
 ## Notes de version
 
@@ -140,17 +159,3 @@ Avec une conception en micro-noyau, chaque fonction est un plugin et le système
 - La même architecture s'applique aux plugins générés par l'IA comme à ceux développés à la main
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
-
-## Installation rapide et connexion d'un agent IA
-
-```bash
-npm install -g @nocobase/cli
-nb --version
-nb init --ui
-codex # claude, opencode
-```
-
-Étapes détaillées :
-
-- <a target="_blank" href="https://docs.nocobase.com/fr/ai/install-nocobase-app">Installer une application NocoBase</a>
-- <a target="_blank" href="https://docs.nocobase.com/fr/ai/quick-start">Guide de connexion d'un agent IA</a>
