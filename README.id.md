@@ -10,9 +10,9 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 ## Daftar Isi
 
 - [Apa itu NocoBase](#apa-itu-nocobase)
+- [Mulai cepat](#mulai-cepat)
 - [Catatan rilis](#catatan-rilis)
 - [Fitur utama](#fitur-utama)
-- [Instalasi cepat dan koneksi AI Agent](#instalasi-cepat-dan-koneksi-ai-agent)
 
 ## Apa itu NocoBase
 
@@ -32,6 +32,25 @@ https://forum.nocobase.com/
 
 Cerita pelanggan:  
 https://www.nocobase.com/id/blog/tags/customer-stories
+
+## Mulai cepat
+
+```bash
+# Instal NocoBase CLI
+npm install -g @nocobase/cli
+nb --version
+
+# Instal aplikasi NocoBase
+nb init --ui
+
+# Opsional: bangun bersama AI Agent
+codex # claude, opencode
+```
+
+Langkah detail:
+
+- <a target="_blank" href="https://docs.nocobase.com/id/ai/install-nocobase-app">Instal aplikasi NocoBase</a>
+- <a target="_blank" href="https://docs.nocobase.com/id/ai/quick-start">Panduan koneksi AI Agent</a>
 
 ## Catatan rilis
 
@@ -140,17 +159,3 @@ Dengan desain microkernel, semuanya dapat berkembang lewat plugin tanpa kehilang
 - The same architecture applies to both AI-built and manually built plugins
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
-
-## Instalasi cepat dan koneksi AI Agent
-
-```bash
-npm install -g @nocobase/cli
-nb --version
-nb init --ui
-codex # claude, opencode
-```
-
-Langkah detail:
-
-- <a target="_blank" href="https://docs.nocobase.com/id/ai/install-nocobase-app">Instal aplikasi NocoBase</a>
-- <a target="_blank" href="https://docs.nocobase.com/id/ai/quick-start">Panduan koneksi AI Agent</a>
