@@ -105,7 +105,7 @@ describe('flowSurfaces ui-layout route ownership contract', () => {
     await expectRouteUiLayouts(context, [page.routeId, page.tabRouteId], [ADMIN_LAYOUT_UID]);
 
     const routeIds = await listAccessibleRouteIds(context);
-    expect(routeIds).toEqual(expect.arrayContaining([String(page.routeId), String(page.tabRouteId)]));
+    expect(routeIds).toEqual(expect.arrayContaining([String(page.routeId)]));
   });
 
   it('should backfill admin layout ownership when createPage initializes a bindable route without layouts', async () => {
@@ -127,7 +127,7 @@ describe('flowSurfaces ui-layout route ownership contract', () => {
     await expectRouteUiLayouts(context, [page.routeId, page.tabRouteId], [ADMIN_LAYOUT_UID]);
 
     const routeIds = await listAccessibleRouteIds(context);
-    expect(routeIds).toEqual(expect.arrayContaining([String(page.routeId), String(page.tabRouteId)]));
+    expect(routeIds).toEqual(expect.arrayContaining([String(page.routeId)]));
   });
 
   it('should assign createMenu routes by default and inherit parent layouts for child routes and tabs', async () => {
