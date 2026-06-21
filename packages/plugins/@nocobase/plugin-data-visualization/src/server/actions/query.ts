@@ -21,13 +21,6 @@ const getQueryDatabase = (ctx: Context, dataSource: string) => {
   return ds?.collectionManager?.db || ctx.db;
 };
 
-const getErrorStatus = (error: unknown) => {
-  if (!error || typeof error !== 'object') return undefined;
-  const { status, statusCode } = error as { status?: unknown; statusCode?: unknown };
-  const value = typeof status === 'number' ? status : typeof statusCode === 'number' ? statusCode : undefined;
-  return value && value >= 400 && value < 600 ? value : undefined;
-};
-
 const getTimezone = (ctx: Context) =>
   ctx?.request?.get?.('x-timezone') ?? ctx?.request?.header?.['x-timezone'] ?? ctx?.req?.headers?.['x-timezone'];
 
@@ -78,10 +71,7 @@ export const queryData = async (ctx: Context, next: Next) => {
 export const parseVariables = async (ctx: Context, next: Next) => {
   const { mode, contextParams, ...values } = ctx.action.params.values as QueryParams;
   if (mode !== 'sql') {
-    const resolvedValues = await resolveVariablesTemplate(ctx as any, values as any, contextParams || {}, {
-      rd: values.rd,
-      requireFlowModelUid: true,
-    });
+    const resolvedValues = await resolveVariablesTemplate(ctx as any, values as any, contextParams || {});
     ctx.action.params.values = {
       ...ctx.action.params.values,
       ...(resolvedValues as Record<string, any>),
@@ -97,10 +87,9 @@ export const parseVariables = async (ctx: Context, next: Next) => {
 };
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
-  const { uid, cache: cacheConfig, refresh, rd, contextParams } = ctx.action.params.values as QueryParams;
+  const { uid, cache: cacheConfig, refresh } = ctx.action.params.values as QueryParams;
   const cache = ctx.app.cacheManager.getCache('data-visualization') as Cache;
-  const hasVariableContext = !!rd || !!contextParams;
-  const useCache = cacheConfig?.enabled && uid && !hasVariableContext;
+  const useCache = cacheConfig?.enabled && uid;
 
   if (useCache && !refresh) {
     const data = await cache.get(uid);
@@ -119,6 +108,6 @@ export const queryDataAction = async (ctx: Context, next: Next) => {
   try {
     await compose([checkPermission, cacheMiddleware, parseVariables, queryData])(ctx, next);
   } catch (err) {
-    ctx.throw(getErrorStatus(err) || 500, err);
+    ctx.throw(500, err);
   }
 };

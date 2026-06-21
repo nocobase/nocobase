@@ -126,25 +126,6 @@ function stableStringifyOrdered(obj: unknown): string {
   }
 }
 
-function getErrorStatus(error: unknown) {
-  if (!error || typeof error !== 'object') return undefined;
-  const candidate = error as { response?: { status?: unknown }; status?: unknown; statusCode?: unknown };
-  const value =
-    typeof candidate.response?.status === 'number'
-      ? candidate.response.status
-      : typeof candidate.status === 'number'
-        ? candidate.status
-        : typeof candidate.statusCode === 'number'
-          ? candidate.statusCode
-          : undefined;
-  return value && value >= 400 && value < 600 ? value : undefined;
-}
-
-function isClientError(error: unknown) {
-  const status = getErrorStatus(error);
-  return typeof status === 'number' && status >= 400 && status < 500;
-}
-
 export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchPayload): Promise<unknown> {
   const agg = VAR_AGGREGATOR;
   const runId = ctx.runId || 'GLOBAL';
@@ -224,10 +205,6 @@ export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchP
     } catch (e) {
       for (const it of items) {
         try {
-          if (isClientError(e)) {
-            it.reject(e);
-            continue;
-          }
           ctx?.logger?.warn?.({ err: e }, 'variables:resolve(batch) failed, fallback');
           it.resolve(it.payload.template);
         } catch (err) {

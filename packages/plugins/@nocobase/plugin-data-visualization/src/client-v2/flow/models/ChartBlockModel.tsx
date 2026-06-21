@@ -14,7 +14,6 @@ import {
   SQLResource,
   useFlowContext,
 } from '@nocobase/flow-engine';
-import { generateFlowModelRdFromToken } from '@nocobase/utils/client';
 import React, { createRef } from 'react';
 import _ from 'lodash';
 import { Button, Space } from 'antd';
@@ -141,14 +140,12 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       return query;
     }
     const contextParams = await collectContextParamsForTemplate(this.context, query);
-    const rd = generateFlowModelRdFromToken(this.uid, this.context?.api?.auth?.token);
-    if (!rd && !contextParams) {
+    if (!contextParams) {
       return query;
     }
     return {
       ...query,
-      ...(rd ? { rd } : {}),
-      ...(contextParams ? { contextParams } : {}),
+      contextParams,
     };
   }
 

@@ -14,14 +14,6 @@ import {
   createAssociationAwareObjectMetaFactory,
   createAssociationSubpathResolver,
 } from '../utils/associationObjectVariable';
-import { FlowModel } from '../models/flowModel';
-
-const createTestToken = () => {
-  const payload = Buffer.from(JSON.stringify({ userId: 1, signInTime: 'object-variable-test-sign-in' })).toString(
-    'base64url',
-  );
-  return `test.${payload}.token`;
-};
 
 function setupEngineWithCollections() {
   const engine = new FlowEngine();
@@ -130,8 +122,7 @@ describe('objectVariable utilities', () => {
 
     // Provide API stub to intercept variables:resolve
     const calls: any[] = [];
-    const api = {
-      auth: { token: createTestToken() },
+    (ctx as any).api = {
       request: vi.fn(async ({ url, data, method }) => {
         calls.push({ url, data, method });
         const batch = (data?.values?.batch as any[]) || [];
@@ -139,7 +130,6 @@ describe('objectVariable utilities', () => {
         return { data: { data: { results } } };
       }),
     };
-    ctx.defineProperty('api', { value: api });
 
     // Define object-like variable
     const metaFactory = createAssociationAwareObjectMetaFactory(
@@ -155,20 +145,14 @@ describe('objectVariable utilities', () => {
       serverOnlyWhenContextParams: true,
     });
 
-    const M = class extends FlowModel {};
-    engine.registerModels({ M });
-    const model = engine.createModel({ uid: 'object-variable-model', use: 'M' });
-
     const template = { x: '{{ ctx.obj.author.name }}' } as any;
-    await (model.context as any).resolveJsonTemplate(template);
+    await (ctx as any).resolveJsonTemplate(template);
 
     // Assert variables:resolve was called with proper flattened contextParams
-    expect(api.request).toHaveBeenCalled();
+    expect((ctx as any).api.request).toHaveBeenCalled();
     const call = calls.find((c) => c.url === 'variables:resolve');
     expect(call).toBeTruthy();
     const batch0 = call.data?.values?.batch?.[0];
-    expect(batch0?.flowModelUid).toBeUndefined();
-    expect(batch0?.rd).toMatch(/^v1\./);
     expect(batch0?.contextParams).toBeTruthy();
     // Flattened key should be 'obj.author'
     const cp = batch0.contextParams as Record<string, any>;
@@ -344,8 +328,7 @@ describe('objectVariable utilities', () => {
     const obj = { author: 1, tags: [11, 12] };
     const ctx = engine.context as any;
     const calls: any[] = [];
-    const api = {
-      auth: { token: createTestToken() },
+    (ctx as any).api = {
       request: vi.fn(async ({ url, data, method }) => {
         calls.push({ url, data, method });
         const batch = (data?.values?.batch as any[]) || [];
@@ -353,7 +336,6 @@ describe('objectVariable utilities', () => {
         return { data: { data: { results } } };
       }),
     };
-    ctx.defineProperty('api', { value: api });
 
     const metaFactory = createAssociationAwareObjectMetaFactory(
       () => collection,
@@ -368,20 +350,13 @@ describe('objectVariable utilities', () => {
       serverOnlyWhenContextParams: true,
     });
 
-    const M = class extends FlowModel {};
-    engine.registerModels({ M });
-    const model = engine.createModel({ uid: 'object-variable-filter-model', use: 'M' });
-
     // 仅引用 author 子属性，不使用 tags
     const template = { a: '{{ ctx.obj.author.name }}' } as any;
-    await (model.context as any).resolveJsonTemplate(template);
+    await (ctx as any).resolveJsonTemplate(template);
 
     const call = calls.find((c) => c.url === 'variables:resolve');
     expect(call).toBeTruthy();
-    const batch0 = call.data?.values?.batch?.[0];
-    expect(batch0?.flowModelUid).toBeUndefined();
-    expect(batch0?.rd).toMatch(/^v1\./);
-    const cp = batch0?.contextParams as Record<string, any>;
+    const cp = call.data?.values?.batch?.[0]?.contextParams as Record<string, any>;
     const keys = Object.keys(cp || {});
     expect(keys).toContain('obj.author');
     expect(keys).not.toContain('obj.tags');

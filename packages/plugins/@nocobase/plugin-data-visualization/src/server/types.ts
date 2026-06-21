@@ -32,7 +32,6 @@ export type OrderProps = {
 
 export type QueryParams = Partial<{
   uid: string;
-  rd: string;
   mode: 'builder' | 'sql';
   dataSource: string;
   collection: string;

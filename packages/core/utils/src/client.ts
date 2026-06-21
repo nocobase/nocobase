@@ -14,7 +14,7 @@ export * from './collections-graph';
 export * from './common';
 export * from './date';
 export * from './forEach';
-export * from './flow-model-rd';
+export { generateFlowModelRdFromToken } from './flow-model-rd';
 export * from './getValuesByPath';
 export * from './handlebars';
 export * from './isValidFilter';

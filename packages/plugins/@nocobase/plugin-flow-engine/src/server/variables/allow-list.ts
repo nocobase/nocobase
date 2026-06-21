@@ -8,13 +8,7 @@
  */
 
 import type { ResourcerContext } from '@nocobase/resourcer';
-import {
-  decodeJwtSessionPayload,
-  extractUsedVariablePaths,
-  getFlowModelRdSessionId,
-  hasUnsupportedDynamicVariablePath,
-  resolveFlowModelUidFromRd,
-} from '@nocobase/utils';
+import { decodeJwtSessionPayload, getFlowModelRdSessionId, resolveFlowModelUidFromRd } from '@nocobase/utils';
 import FlowModelRepository from '../repository';
 import type { JSONValue } from '../template/resolver';
 
@@ -34,6 +28,14 @@ type VariableAllowList = {
 type SourceRef = {
   collection: string;
   dataSourceKey: string;
+};
+
+type CtxReference = {
+  direct: boolean;
+  methodCall: boolean;
+  path?: string;
+  unsupportedDynamicPath: boolean;
+  varName: string;
 };
 
 const unsupportedVariableKey = '__unsupported_dynamic_variable_path__';
@@ -72,6 +74,274 @@ function isRecordParams(value: unknown): value is RecordParams {
   );
 }
 
+function isIdentifierStart(char: string | undefined) {
+  return !!char && /[a-zA-Z_$]/.test(char);
+}
+
+function isIdentifierPart(char: string | undefined) {
+  return !!char && /[a-zA-Z0-9_$]/.test(char);
+}
+
+function skipSpaces(input: string, index: number) {
+  let next = index;
+  while (/\s/.test(input[next] || '')) next += 1;
+  return next;
+}
+
+function skipPostfix(input: string, index: number) {
+  let next = skipSpaces(input, index);
+  while (input[next] === '!') {
+    next = skipSpaces(input, next + 1);
+  }
+  return next;
+}
+
+function previousNonSpaceIndex(input: string, index: number) {
+  let next = index;
+  while (next >= 0 && /\s/.test(input[next] || '')) next -= 1;
+  return next;
+}
+
+function isGroupedCtxReference(input: string, start: number) {
+  const openParenIndex = previousNonSpaceIndex(input, start - 1);
+  if (input[openParenIndex] !== '(') return false;
+
+  const beforeOpenParenIndex = previousNonSpaceIndex(input, openParenIndex - 1);
+  if (beforeOpenParenIndex < 0) return true;
+
+  const beforeOpenParen = input[beforeOpenParenIndex];
+  return !isIdentifierPart(beforeOpenParen) && beforeOpenParen !== ')' && beforeOpenParen !== ']';
+}
+
+function hasGroupedContinuation(input: string, index: number) {
+  const closeParenIndex = skipSpaces(input, index);
+  if (input[closeParenIndex] !== ')') return false;
+
+  const continuationIndex = skipSpaces(input, closeParenIndex + 1);
+  return (
+    input[continuationIndex] === '.' || input[continuationIndex] === '[' || input.startsWith('?.', continuationIndex)
+  );
+}
+
+function readIdentifier(input: string, index: number): { next: number; value: string } | null {
+  if (!isIdentifierStart(input[index])) return null;
+  let next = index + 1;
+  while (isIdentifierPart(input[next])) next += 1;
+  return { value: input.slice(index, next), next };
+}
+
+function readNumber(input: string, index: number): { next: number; value: string } | null {
+  const match = input.slice(index).match(/^\d+/);
+  return match ? { value: match[0], next: index + match[0].length } : null;
+}
+
+function readQuotedProperty(input: string, index: number): { next: number; value: string } | null {
+  const quote = input[index];
+  if (quote !== '"' && quote !== "'") return null;
+  let next = index + 1;
+  let value = '';
+  while (next < input.length) {
+    const char = input[next];
+    if (char === '\\') {
+      value += input.slice(next, next + 2);
+      next += 2;
+      continue;
+    }
+    if (char === quote) {
+      return { value, next: next + 1 };
+    }
+    value += char;
+    next += 1;
+  }
+  return null;
+}
+
+function readBracketAccess(input: string, index: number) {
+  let next = skipSpaces(input, index + 1);
+  const quoted = readQuotedProperty(input, next);
+  if (quoted) {
+    next = skipSpaces(input, quoted.next);
+    if (input[next] !== ']') return { dynamic: true as const };
+    return { dynamic: false as const, kind: 'property' as const, next: next + 1, value: quoted.value };
+  }
+
+  const number = readNumber(input, next);
+  if (number) {
+    next = skipSpaces(input, number.next);
+    if (input[next] !== ']') return { dynamic: true as const };
+    return { dynamic: false as const, kind: 'index' as const, next: next + 1, value: number.value };
+  }
+
+  return { dynamic: true as const };
+}
+
+function appendPathSegment(segments: string[], kind: 'property' | 'index', value: string) {
+  if (kind === 'property') {
+    segments.push(value);
+    return;
+  }
+  if (segments.length) {
+    segments[segments.length - 1] = `${segments[segments.length - 1]}[${value}]`;
+    return;
+  }
+  segments.push(`[${value}]`);
+}
+
+function readAccess(input: string, index: number) {
+  const next = skipPostfix(input, index);
+  if (input[next] === '[') {
+    return readBracketAccess(input, next);
+  }
+  if (input.startsWith('?.', next)) {
+    const propertyStart = skipSpaces(input, next + 2);
+    if (input[propertyStart] === '[') {
+      return readBracketAccess(input, propertyStart);
+    }
+    const identifier = readIdentifier(input, propertyStart) || readNumber(input, propertyStart);
+    return identifier
+      ? { dynamic: false as const, kind: 'property' as const, next: identifier.next, value: identifier.value }
+      : null;
+  }
+  if (input[next] === '.') {
+    const propertyStart = skipSpaces(input, next + 1);
+    const identifier = readIdentifier(input, propertyStart) || readNumber(input, propertyStart);
+    return identifier
+      ? { dynamic: false as const, kind: 'property' as const, next: identifier.next, value: identifier.value }
+      : null;
+  }
+  return null;
+}
+
+function parseCtxReference(input: string, start: number): { next: number; reference: CtxReference } | null {
+  if (input.slice(start, start + 3) !== 'ctx') return null;
+  if (isIdentifierPart(input[start - 1]) || isIdentifierPart(input[start + 3])) return null;
+
+  if (isGroupedCtxReference(input, start)) {
+    return {
+      next: start + 3,
+      reference: {
+        direct: false,
+        methodCall: false,
+        unsupportedDynamicPath: true,
+        varName: '',
+      },
+    };
+  }
+
+  const rootAccess = readAccess(input, start + 3);
+  if (!rootAccess) return null;
+  if (rootAccess.dynamic) {
+    return {
+      next: start + 3,
+      reference: {
+        direct: false,
+        methodCall: false,
+        unsupportedDynamicPath: true,
+        varName: '',
+      },
+    };
+  }
+  if (rootAccess.kind !== 'property') {
+    return null;
+  }
+
+  const segments: string[] = [];
+  let next = rootAccess.next;
+  let methodCall = false;
+  let unsupportedDynamicPath = false;
+
+  while (next < input.length) {
+    const accessStart = skipPostfix(input, next);
+    if ((input[accessStart] === '(' || input.startsWith('?.(', accessStart)) && !segments.length) {
+      methodCall = true;
+      next = accessStart;
+      break;
+    }
+
+    const access = readAccess(input, next);
+    if (!access) {
+      next = accessStart;
+      break;
+    }
+    if (access.dynamic) {
+      unsupportedDynamicPath = true;
+      next = accessStart;
+      break;
+    }
+    appendPathSegment(segments, access.kind, access.value);
+    next = access.next;
+  }
+
+  const path = segments.join('.');
+  return {
+    next: Math.max(next, rootAccess.next),
+    reference: {
+      direct: !path && !methodCall,
+      methodCall,
+      path: path || undefined,
+      unsupportedDynamicPath: unsupportedDynamicPath || hasGroupedContinuation(input, next),
+      varName: rootAccess.value,
+    },
+  };
+}
+
+function collectCtxReferences(expr: string): CtxReference[] {
+  const references: CtxReference[] = [];
+  for (let index = 0; index < expr.length; index += 1) {
+    if (expr.slice(index, index + 3) !== 'ctx') continue;
+    const parsed = parseCtxReference(expr, index);
+    if (!parsed) continue;
+    references.push(parsed.reference);
+    index = Math.max(index, parsed.next - 1);
+  }
+  return references;
+}
+
+function extractUsedVariablePathsForAllowList(template: JSONValue): {
+  unsupportedDynamicPath: boolean;
+  usage: Record<string, string[]>;
+} {
+  const usage: Record<string, string[]> = {};
+  let unsupportedDynamicPath = false;
+
+  const visitExpression = (expr: string) => {
+    for (const reference of collectCtxReferences(expr)) {
+      if (reference.unsupportedDynamicPath) {
+        unsupportedDynamicPath = true;
+        continue;
+      }
+      if (!reference.varName) continue;
+      usage[reference.varName] = usage[reference.varName] || [];
+      if (reference.path) {
+        usage[reference.varName].push(reference.path);
+      } else if ((reference.direct || reference.methodCall) && !usage[reference.varName].includes('')) {
+        usage[reference.varName].push('');
+      }
+    }
+  };
+
+  const visit = (value: JSONValue) => {
+    if (typeof value === 'string') {
+      const regex = /\{\{\s*([^}]+?)\s*\}\}/g;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(value)) !== null) {
+        visitExpression(match[1]);
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (isObject(value)) {
+      Object.values(value).forEach((child) => visit(child as JSONValue));
+    }
+  };
+
+  visit(template);
+  return { unsupportedDynamicPath, usage };
+}
+
 export function hasRecordContextParams(value: unknown): boolean {
   if (isRecordParams(value)) return true;
   if (Array.isArray(value)) return value.some((item) => hasRecordContextParams(item));
@@ -80,10 +350,23 @@ export function hasRecordContextParams(value: unknown): boolean {
 }
 
 export function sanitizeContextParams(value: Record<string, unknown> = {}): Record<string, unknown> {
+  const sanitizeStringArray = (input: unknown) =>
+    Array.isArray(input) && input.every((item) => typeof item === 'string') ? input : undefined;
+
   const sanitize = (input: unknown): unknown => {
     if (isRecordParams(input)) {
       const { associationName, collection, filterByTk, dataSourceKey, sourceId } = input;
-      return { associationName, collection, filterByTk, dataSourceKey, sourceId };
+      const fields = sanitizeStringArray((input as Record<string, unknown>).fields);
+      const appends = sanitizeStringArray((input as Record<string, unknown>).appends);
+      return {
+        associationName,
+        collection,
+        filterByTk,
+        dataSourceKey,
+        sourceId,
+        ...(fields ? { fields } : {}),
+        ...(appends ? { appends } : {}),
+      };
     }
     if (Array.isArray(input)) return input.map((item) => sanitize(item));
     if (!isObject(input)) return input;
@@ -114,11 +397,11 @@ function toVariableKey(varName: string, path?: string): string {
 
 export function extractVariableKeys(template: JSONValue): Set<string> {
   const keys = new Set<string>();
-  if (hasUnsupportedDynamicVariablePath(template)) {
+  const { unsupportedDynamicPath, usage } = extractUsedVariablePathsForAllowList(template);
+  if (unsupportedDynamicPath) {
     keys.add(unsupportedVariableKey);
   }
 
-  const usage = extractUsedVariablePaths(template) || {};
   for (const [varName, paths] of Object.entries(usage)) {
     if (!paths.length) {
       keys.add(toVariableKey(varName));
@@ -406,28 +689,24 @@ export async function authorizeVariablesResolve(
   options: {
     contextParams?: Record<string, unknown>;
     rd?: string | number;
-    requireFlowModelUid?: boolean;
     template: JSONValue;
   },
 ): Promise<AuthorizationResult> {
   const contextParams = options.contextParams || {};
   const sanitizedContextParams = sanitizeContextParams(contextParams);
-  const flowModelUid = resolveFlowModelUidFromRequestRd(ctx, options.rd);
-  const requestedKeys = extractVariableKeys(options.template);
-
-  if (requestedKeys.has(unsupportedVariableKey)) {
-    ctx.throw(403, {
-      code: 'VARIABLE_NOT_ALLOWED',
-      message: 'Dynamic variable paths are not allowed in public variable resolution',
-    });
-  }
 
   if (await currentRoleAllowsConfigure(ctx)) {
-    return { allowed: true, contextParams: sanitizedContextParams, flowModelUid };
+    return { allowed: true, contextParams };
   }
 
+  const flowModelUid = resolveFlowModelUidFromRequestRd(ctx, options.rd);
   if (!flowModelUid) {
-    return { allowed: options.requireFlowModelUid === false, contextParams: sanitizedContextParams };
+    return { allowed: false, contextParams: sanitizedContextParams };
+  }
+
+  const requestedKeys = extractVariableKeys(options.template);
+  if (requestedKeys.has(unsupportedVariableKey)) {
+    return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
   }
 
   const allowList = await getVariableAllowList(ctx, flowModelUid);
@@ -454,7 +733,7 @@ export async function authorizeVariablesResolve(
         makeContextVariableKey(normalizedContextKey, key),
       );
       if (!allowedSources) {
-        continue;
+        return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
       }
       if (!allowedSources.has(sourceKey)) {
         return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };

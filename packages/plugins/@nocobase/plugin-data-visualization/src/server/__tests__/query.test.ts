@@ -11,16 +11,7 @@ import { createMockServer, MockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
-import { generateFlowModelRd } from '@nocobase/utils';
 import { cacheMiddleware, checkPermission, parseVariables } from '../actions/query';
-import { FlowModelRepository } from '@nocobase/plugin-flow-engine';
-
-const testSessionKey = 'chart-query-test-sign-in';
-
-const createTestToken = (userId: number) => {
-  const payload = Buffer.from(JSON.stringify({ userId, signInTime: testSessionKey })).toString('base64url');
-  return `test.${payload}.token`;
-};
 
 describe('query', () => {
   describe('action helpers', () => {
@@ -29,7 +20,7 @@ describe('query', () => {
     let db: Database;
     beforeAll(async () => {
       app = await createMockServer({
-        plugins: ['field-sort', 'data-source-manager', 'users', 'acl', 'flow-engine'],
+        plugins: ['field-sort', 'data-source-manager', 'users', 'acl'],
       });
       db = app.db;
       db.options.underscored = true;
@@ -126,23 +117,8 @@ describe('query', () => {
 
     it('should reuse flow-engine variable resolver for filter values', async () => {
       const user = await db.getRepository('users').findOne();
-      const flowModelUid = 'chart-query-user-filter-flow-model';
-      const flowModels = db.getCollection('flowModels').repository as FlowModelRepository;
-      await flowModels.insertModel({
-        uid: flowModelUid,
-        use: 'ChartQueryUserFilterTestModel',
-        stepParams: {
-          filter: {
-            userId: { $eq: '{{ ctx.user.id }}' },
-          },
-        },
-      });
-      const token = createTestToken(user.id);
       const context = {
         ...ctx,
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
         auth: {
           user,
         },
@@ -152,14 +128,12 @@ describe('query', () => {
         get: (key: string) => {
           return {
             'x-timezone': '',
-            authorization: `Bearer ${token}`,
           }[key];
         },
         getCurrentLocale: () => 'en-US',
         action: {
           params: {
             values: {
-              rd: generateFlowModelRd(flowModelUid, `${user.id}:${testSessionKey}`),
               filter: {
                 userId: { $eq: '{{ ctx.user.id }}' },
               },
@@ -171,43 +145,6 @@ describe('query', () => {
       await parseVariables(context, async () => {});
 
       expect(context.action.params.values.filter.userId.$eq).toBe(user.id);
-    });
-  });
-
-  describe('parseVariables authorization', () => {
-    it('should keep original query when rd is missing for record variable context', async () => {
-      const context = {
-        state: {},
-        get: (key: string) => {
-          return {
-            'x-timezone': '',
-          }[key];
-        },
-        throw(status: number, body: any) {
-          throw { status, body };
-        },
-        action: {
-          params: {
-            values: {
-              uid: 'chart-uid-is-not-a-flow-model',
-              filter: {
-                id: { $eq: '{{ ctx.record.id }}' },
-              },
-              contextParams: {
-                record: {
-                  dataSourceKey: 'main',
-                  collection: 'users',
-                  filterByTk: 1,
-                },
-              },
-            },
-          },
-        },
-      };
-
-      await parseVariables(context as any, async () => {});
-
-      expect(context.action.params.values.filter.id.$eq).toBe('{{ ctx.record.id }}');
     });
   });
 
@@ -310,36 +247,6 @@ describe('query', () => {
       await compose([cacheMiddleware, query])(context, async () => {});
       expect(query).toBeCalled();
       expect(context.body).toEqual(value);
-    });
-    it('should bypass cache when variable context is present', async () => {
-      const context = {
-        ...ctx,
-        action: {
-          params: {
-            values: {
-              cache: {
-                enabled: true,
-              },
-              refresh: false,
-              uid: key,
-              rd: 'rd',
-              contextParams: {
-                record: {
-                  dataSourceKey: 'main',
-                  collection: 'users',
-                  filterByTk: 1,
-                },
-              },
-            },
-          },
-        },
-      };
-      const cache = context.app.cacheManager.getCache();
-      cache.set(key, 'cached-value');
-      await compose([cacheMiddleware, query])(context, async () => {});
-      expect(query).toBeCalled();
-      expect(context.body).toEqual(value);
-      expect(cache.get(key)).toEqual('cached-value');
     });
   });
 });

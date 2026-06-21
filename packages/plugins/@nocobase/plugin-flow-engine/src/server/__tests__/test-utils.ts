@@ -16,18 +16,27 @@ import { createMockServer, type MockServerOptions } from '@nocobase/test';
 import type { HttpRequestContext } from '../template/contexts';
 import { variables, inferSelectsFromUsage } from '../variables/registry';
 
+function shouldUseEnvDatabase() {
+  return ['postgres', 'mysql', 'mariadb'].includes(String(process.env.DB_DIALECT || '').toLowerCase());
+}
+
 export function createFlowEngineMockServer(options: MockServerOptions = {}) {
   const { database, ...restOptions } = options;
   const databaseOptions = isRecord(database) ? database : {};
+  const defaultDatabaseOptions = shouldUseEnvDatabase()
+    ? {}
+    : {
+        dialect: 'sqlite',
+        storage: ':memory:',
+        // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
+        schema: undefined,
+      };
 
   return createMockServer({
     skipSupervisor: true,
     ...restOptions,
     database: {
-      dialect: 'sqlite',
-      storage: ':memory:',
-      // CI postgres jobs set DB_SCHEMA; SQLite cannot create schemas.
-      schema: undefined,
+      ...defaultDatabaseOptions,
       ...databaseOptions,
     },
   });

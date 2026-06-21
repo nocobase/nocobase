@@ -8,9 +8,7 @@
  */
 
 import { MockServer } from '@nocobase/test';
-import { generateFlowModelRd } from '@nocobase/utils';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
-import FlowModelRepository from '../repository';
 
 describe('variables:resolve batch prefetch merges selects (integration)', () => {
   let app: MockServer;
@@ -18,22 +16,15 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     resetVariablesRegistryForTest();
   });
 
-  const testSessionKey = 'variables-resolve-batch-prefetch-sign-in';
-  const createTestToken = (userId = 1) => {
-    const payload = Buffer.from(JSON.stringify({ userId, signInTime: testSessionKey })).toString('base64url');
-    return `test.${payload}.token`;
-  };
-
   const execResolve = async (values: any, userId?: number) => {
-    const token = createTestToken(userId || 1);
     const action = app.resourceManager.getAction('variables', 'resolve');
     const ctx: any = {
       app,
       db: app.db,
-      headers: { authorization: `Bearer ${token}` },
+      headers: {},
       request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
       auth: userId ? { user: { id: userId }, role: 'root' } : {},
-      state: {},
+      state: userId ? { currentRole: 'root', currentRoles: ['root'] } : {},
       getCurrentLocale: () => 'en-US',
     };
     ctx.get = (name: string) => ctx.headers?.[name] || ctx.headers?.[name?.toLowerCase?.()] || undefined;
@@ -85,35 +76,14 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     };
 
     try {
-      const flowModelUid = 'batch-prefetch-flow-model';
-      const rd = generateFlowModelRd(flowModelUid, `1:${testSessionKey}`);
-      const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
-      await repository.insertModel({
-        uid: flowModelUid,
-        use: 'VariablesResolveBatchPrefetchModel',
-        stepParams: {
-          resourceSettings: {
-            init: {
-              dataSourceKey: 'main',
-              collectionName: 'users',
-            },
-          },
-          variablesResolveTest: {
-            templates: [{ a: '{{ ctx.view.record.id }}' }, { b: '{{ ctx.view.record.roles[0].name }}' }],
-          },
-        },
-      });
-
       const payload = {
         batch: [
           {
-            rd,
             id: 't1',
             template: { a: '{{ ctx.view.record.id }}' },
             contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
           },
           {
-            rd,
             id: 't2',
             template: { b: '{{ ctx.view.record.roles[0].name }}' },
             contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
