@@ -3030,12 +3030,21 @@ importers:
 
   packages/plugins/@nocobase/plugin-collection-tree:
     devDependencies:
+      '@nocobase/actions':
+        specifier: workspace:*
+        version: link:../../../core/actions
       '@nocobase/client':
         specifier: workspace:*
         version: link:../../../core/client
       '@nocobase/client-v2':
         specifier: workspace:*
         version: link:../../../core/client-v2
+      '@nocobase/data-source-manager':
+        specifier: workspace:*
+        version: link:../../../core/data-source-manager
+      '@nocobase/database':
+        specifier: workspace:*
+        version: link:../../../core/database
       '@nocobase/plugin-data-source-manager':
         specifier: workspace:*
         version: link:../plugin-data-source-manager
@@ -3045,6 +3054,9 @@ importers:
       '@nocobase/test':
         specifier: workspace:*
         version: link:../../../core/test
+      '@nocobase/utils':
+        specifier: workspace:*
+        version: link:../../../core/utils
 
   packages/plugins/@nocobase/plugin-comments:
     devDependencies:

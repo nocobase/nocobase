@@ -14,17 +14,24 @@
   "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/data-source-manager": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*",
-    "@nocobase/client-v2": "workspace:*",
-    "@nocobase/plugin-data-source-manager": "workspace:*"
+    "@nocobase/utils": "workspace:*"
   },
   "license": "Apache-2.0",
   "devDependencies": {
+    "@nocobase/actions": "workspace:*",
     "@nocobase/client": "workspace:*",
+    "@nocobase/client-v2": "workspace:*",
+    "@nocobase/data-source-manager": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-data-source-manager": "workspace:*",
     "@nocobase/server": "workspace:*",
     "@nocobase/test": "workspace:*",
-    "@nocobase/client-v2": "workspace:*",
-    "@nocobase/plugin-data-source-manager": "workspace:*"
+    "@nocobase/utils": "workspace:*"
   }
 }
