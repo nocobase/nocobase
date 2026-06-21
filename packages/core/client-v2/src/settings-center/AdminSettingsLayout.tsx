@@ -209,6 +209,9 @@ export const InternalAdminSettingsLayout = () => {
         style={{
           background: token.colorBgContainer,
           borderInlineEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
         <Menu

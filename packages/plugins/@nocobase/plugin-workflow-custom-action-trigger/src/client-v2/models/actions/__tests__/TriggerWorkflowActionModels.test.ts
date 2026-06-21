@@ -93,7 +93,7 @@ async function getTriggerWorkflowItemNames(ModelClass: any, ctx: any) {
 
 function getWorkbenchTriggerWorkflowHandler(model: WorkbenchTriggerWorkflowActionModel) {
   const step = model.getFlow('workbenchTriggerWorkflowsActionSettings')?.getStep('triggerWorkflows')?.serialize() as
-    | { handler?: (ctx: any, params: { group?: unknown[] }) => Promise<void> }
+    | { handler?: (ctx: any, params: { group?: unknown[]; contextData?: unknown }) => Promise<void> }
     | undefined;
   expect(step?.handler).toBeTypeOf('function');
   return step.handler;
@@ -202,7 +202,58 @@ describe('WorkbenchTriggerWorkflowActionModel', () => {
       params: {
         triggerWorkflows: 'workflow-1',
       },
-      data: { values: undefined },
+      data: undefined,
+    });
+    expect(ctx.message.error).not.toHaveBeenCalled();
+    expect(ctx.message.success).not.toHaveBeenCalled();
+    expect(ctx.exit).not.toHaveBeenCalled();
+  });
+
+  it('sends custom context data as trigger request body', async () => {
+    const flowEngine = createEngine();
+    const model = flowEngine.createModel<WorkbenchTriggerWorkflowActionModel>({
+      use: 'WorkbenchTriggerWorkflowActionModel',
+      uid: 'workbench-trigger-workflow-action-context-data',
+    });
+    const request = vi.fn().mockResolvedValue({});
+    const ctx = {
+      api: {
+        request,
+      },
+      message: {
+        error: vi.fn(),
+        success: vi.fn(),
+      },
+      t: (value: string) => value,
+      exit: vi.fn(),
+    };
+
+    const handler = getWorkbenchTriggerWorkflowHandler(model);
+
+    await handler(ctx, {
+      group: [{ workflowKey: 'workflow-1' }],
+      contextData: {
+        a: '1',
+        userId: '{{$user.id}}',
+        nested: {
+          b: '2',
+        },
+      },
+    });
+
+    expect(request).toHaveBeenCalledWith({
+      url: 'workflows:trigger',
+      method: 'post',
+      params: {
+        triggerWorkflows: 'workflow-1',
+      },
+      data: {
+        a: '1',
+        userId: '{{$user.id}}',
+        nested: {
+          b: '2',
+        },
+      },
     });
     expect(ctx.message.error).not.toHaveBeenCalled();
     expect(ctx.message.success).not.toHaveBeenCalled();

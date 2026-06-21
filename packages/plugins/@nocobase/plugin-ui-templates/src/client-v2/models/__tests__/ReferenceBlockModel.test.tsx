@@ -617,6 +617,68 @@ describe('ReferenceBlockModel', () => {
     );
 
     it(
+      'reference + template + route replay: keeps filterByTk when collection is restored from reference init',
+      async () => {
+        store['details-block-uid'] = {
+          uid: 'details-block-uid',
+          use: 'DetailsBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              },
+            },
+          },
+        };
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              },
+            },
+            referenceSettings: {
+              useTemplate: {
+                templateUid: 'tpl-1',
+                mode: 'reference',
+              },
+              target: {
+                targetUid: 'details-block-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        referenceBlockModel.context.defineProperty('view', {
+          value: { inputArgs: { filterByTk: 1 } },
+        });
+
+        await referenceBlockModel.onDispatchEventStart('beforeRender');
+
+        const targetModel = (referenceBlockModel as any)._targetModel as FlowModel;
+        expect(targetModel).toBeDefined();
+        const init = targetModel.getStepParams('resourceSettings', 'init') as any;
+        expect(Object.prototype.hasOwnProperty.call(init, 'filterByTk')).toBe(true);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
       'reference + non-template: does not patch init (filterByTk stays)',
       async () => {
         store['details-block-uid'] = {
@@ -701,6 +763,68 @@ describe('ReferenceBlockModel', () => {
           const init = options?.stepParams?.resourceSettings?.init;
           expect(init).toBeDefined();
           expect(Object.prototype.hasOwnProperty.call(init, 'filterByTk')).toBe(false);
+          throw new Error('STOP');
+        }) as any);
+
+        const flow: any = (ReferenceBlockModel as any).globalFlowRegistry.getFlow('referenceSettings');
+        const step: any = flow?.steps?.target;
+        expect(typeof step?.beforeParamsSave).toBe('function');
+
+        await expect(
+          step.beforeParamsSave({ engine, model: referenceBlockModel, exit: vi.fn() } as any, {
+            targetUid: 'details-origin-uid',
+            mode: 'copy',
+            templateUid: 'tpl-1',
+          }),
+        ).rejects.toThrow('STOP');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'copy + template + route replay: keeps duplicated filterByTk when collection is restored from reference init',
+      async () => {
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        referenceBlockModel.context.defineProperty('view', {
+          value: { inputArgs: { filterByTk: 1 } },
+        });
+
+        const duplicated = {
+          uid: 'details-copy-uid',
+          use: 'DetailsBlockModel',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              },
+            },
+          },
+        } as any;
+
+        vi.spyOn(engine, 'duplicateModel').mockResolvedValue(duplicated);
+        vi.spyOn(engine, 'createModel').mockImplementation(((options: any) => {
+          const init = options?.stepParams?.resourceSettings?.init;
+          expect(init).toBeDefined();
+          expect(Object.prototype.hasOwnProperty.call(init, 'filterByTk')).toBe(true);
           throw new Error('STOP');
         }) as any);
 

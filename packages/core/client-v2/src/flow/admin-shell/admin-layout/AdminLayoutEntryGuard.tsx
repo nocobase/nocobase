@@ -13,13 +13,23 @@ import { useLocation, useMatches, useNavigate } from 'react-router-dom';
 import { NocoBaseDesktopRouteType } from '../../../flow-compat';
 import { useApp } from '../../../hooks/useApp';
 import { isLayoutContentRouteName } from '../../../layout-manager/utils';
+import type { LayoutDefinition } from '../../../layout-manager/types';
 import {
   findFirstV2LandingRoute,
+  getAdminLayoutRoutePath,
   resolveAdminRouteRuntimeTarget,
+  type AdminLayoutRoutePathLike,
   toRouterNavigationPath,
 } from './resolveAdminRouteRuntimeTarget';
+import type { AdminLayoutModel } from './AdminLayoutModel';
 
-export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ children }) => {
+type StableAdminEntryLayout = AdminLayoutRoutePathLike &
+  Partial<Pick<LayoutDefinition, 'authCheck' | 'routeName' | 'uid'>>;
+
+export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode; model?: AdminLayoutModel }> = ({
+  children,
+  model,
+}) => {
   const flowEngine = useFlowEngine();
   const app = useApp();
   const navigate = useNavigate();
@@ -28,24 +38,44 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
   const [ready, setReady] = useState(false);
   const replaceTriggeredRef = useRef(false);
   const routeRepository = flowEngine.context.routeRepository;
+  const rawLayout = model?.layout;
+  const layoutUid = rawLayout?.uid;
+  const layoutRouteNameValue = rawLayout?.routeName;
+  const layoutRoutePathValue = rawLayout?.routePath;
+  const layoutAuthCheck = rawLayout?.authCheck;
+  const layout = useMemo<StableAdminEntryLayout | undefined>(() => {
+    if (!layoutUid && !layoutRouteNameValue && !layoutRoutePathValue && typeof layoutAuthCheck === 'undefined') {
+      return undefined;
+    }
+
+    return {
+      authCheck: layoutAuthCheck,
+      routeName: layoutRouteNameValue,
+      routePath: layoutRoutePathValue || '',
+      uid: layoutUid,
+    };
+  }, [layoutAuthCheck, layoutRouteNameValue, layoutRoutePathValue, layoutUid]);
+  const layoutRoutePath = getAdminLayoutRoutePath(layout);
+  const layoutRouteName = layout?.routeName || 'admin';
+  const layoutRuntime = useMemo(() => ({ routePath: layoutRoutePath }), [layoutRoutePath]);
   const isAdminRoot = useMemo(() => {
     const pathname = toRouterNavigationPath(location.pathname, app.router.getBasename());
-    return pathname === '/admin';
-  }, [app, location.pathname]);
+    return pathname === layoutRoutePath;
+  }, [app, layoutRoutePath, location.pathname]);
   const pageUid = useMemo(() => {
     const lastMatch = matches[matches.length - 1];
-    if (!isLayoutContentRouteName('admin', lastMatch?.id)) {
+    if (!isLayoutContentRouteName(layoutRouteName, lastMatch?.id)) {
       return '';
     }
-    const adminMatch = matches.find((match) => match.id === 'admin');
+    const adminMatch = matches.find((match) => match.id === layoutRouteName);
     return (
       (lastMatch.params?.name as string) ||
       parsePathnameToViewParams(location.pathname, {
-        basePath: adminMatch?.pathname || '/admin',
+        basePath: adminMatch?.pathname || layoutRoutePath,
       })[0]?.viewUid ||
       ''
     );
-  }, [location.pathname, matches]);
+  }, [layoutRouteName, layoutRoutePath, location.pathname, matches]);
 
   useEffect(() => {
     replaceTriggeredRef.current = false;
@@ -53,6 +83,7 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
 
   useEffect(() => {
     let active = true;
+    const deactivateLayout = routeRepository?.activateLayout?.(layout);
 
     const run = async () => {
       setReady(false);
@@ -85,6 +116,7 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
           const target = resolveAdminRouteRuntimeTarget({
             app,
             route: currentRoute,
+            layout: layoutRuntime,
             location: {
               pathname: window.location.pathname,
               search: window.location.search,
@@ -117,6 +149,7 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
       const target = resolveAdminRouteRuntimeTarget({
         app,
         route: firstAccessibleRoute,
+        layout: layoutRuntime,
       });
 
       if (!target.runtimePath) {
@@ -135,15 +168,18 @@ export const AdminLayoutEntryGuard: FC<{ children: React.ReactNode }> = ({ child
       navigate(toRouterNavigationPath(target.runtimePath, app.router.getBasename()), { replace: true });
     };
 
-    void run();
+    run();
 
     return () => {
       active = false;
+      deactivateLayout?.();
     };
   }, [
     app,
     flowEngine,
     isAdminRoot,
+    layout,
+    layoutRuntime,
     location.hash,
     location.pathname,
     location.search,
