@@ -448,6 +448,34 @@ describe('PageModel', () => {
         marginInlineEnd: 24,
       });
     });
+
+    it('should deactivate the previous tab when navigation updates active tab synchronously', () => {
+      pageModel.props = { tabActiveKey: 'tab-old' } as any;
+      const invokeSpy = vi.spyOn(pageModel as any, 'invokeTabModelLifecycleMethod').mockImplementation(() => undefined);
+      const changeTo = vi.fn((params: { tabUid: string }) => {
+        pageModel.props.tabActiveKey = params.tabUid;
+      });
+
+      pageModel.context.view = {
+        navigation: {
+          viewParams: {
+            tabUid: 'tab-old',
+          },
+          changeTo,
+        },
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      tabsElement.props.onChange('tab-new');
+
+      expect(changeTo).toHaveBeenCalledWith({ tabUid: 'tab-new' });
+      expect(invokeSpy).toHaveBeenNthCalledWith(1, 'tab-new', 'onActive');
+      expect(invokeSpy).toHaveBeenNthCalledWith(2, 'tab-old', 'onInactive');
+      expect(invokeSpy).not.toHaveBeenCalledWith('tab-new', 'onInactive');
+      expect(pageModel.props.tabActiveKey).toBe('tab-new');
+    });
   });
 
   describe('render header spacing with tabs', () => {

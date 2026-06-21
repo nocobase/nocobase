@@ -12,11 +12,14 @@ function createPluginClientPublicPathDataUri(packageName: string, clientDistDir:
 var publicPath = '';
 var currentScript = typeof document !== 'undefined' ? document.currentScript : null;
 if (currentScript && currentScript.src) {
-  publicPath = currentScript.src
+  var currentScriptSrc = currentScript.src
     .replace(/^blob:/, '')
     .replace(/#.*$/, '')
-    .replace(/\\?.*$/, '')
-    .replace(/\\/[^\\/]+$/, '/');
+    .replace(/\\?.*$/, '');
+  var expectedPluginPath = '/static/plugins/${packageName}/dist/${clientDistDir}/';
+  if (currentScriptSrc.indexOf(expectedPluginPath) >= 0) {
+    publicPath = currentScriptSrc.replace(/\\/[^\\/]+$/, '/');
+  }
 }
 if (!publicPath) {
   var runtimeAssetBase = window['__webpack_public_path__'] || '';
