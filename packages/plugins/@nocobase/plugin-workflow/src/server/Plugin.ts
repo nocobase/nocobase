@@ -27,6 +27,7 @@ import RunningExecutionRegistry from './RunningExecutionRegistry';
 import initActions from './actions';
 import { NodeValidationError } from './actions/nodes';
 import { WorkflowValidationError } from './actions/workflows';
+import { EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
@@ -174,21 +175,21 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     this.checker = setInterval(() => {
-      this.dispatcher.dispatch();
+      this.dispatcher.recover();
     }, 300_000);
 
     await this.timeoutManager.load();
 
-    this.app.on('workflow:dispatch', () => {
-      this.app.logger.info('workflow:dispatch');
-      this.dispatcher.dispatch();
+    this.app.on('workflow:recover', () => {
+      this.app.logger.info('workflow:recover');
+      this.dispatcher.recover();
     });
 
     this.dispatcher.setReady(true);
 
     // check for queueing executions
     this.getLogger('dispatcher').info('(starting) check for queueing executions');
-    this.dispatcher.dispatch();
+    this.dispatcher.recover();
   };
 
   private onBeforeStop = async () => {
@@ -203,8 +204,6 @@ export default class PluginWorkflowServer extends Plugin {
     for (const workflow of this.enabledCache.values()) {
       this.toggle(workflow, false, { silent: true });
     }
-
-    this.app.eventQueue.unsubscribe(this.channelPendingExecution);
 
     this.loggerCache.clear();
   };
@@ -449,7 +448,7 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.eventQueue.subscribe(this.channelPendingExecution, {
       idle: () => this.serving() && this.dispatcher.idle,
-      process: this.dispatcher.onQueueExecution,
+      process: this.dispatcher.onQueueTask,
     });
   }
 
@@ -511,11 +510,11 @@ export default class PluginWorkflowServer extends Plugin {
   }
 
   public async rerun(execution: ExecutionModel | ID, rerun?: ProcessorRerunOptions): Promise<void> {
-    return this.dispatcher.rerun(this.getModelId(execution), rerun);
+    return this.dispatcher.enqueue({ executionId: this.getModelId(execution), rerun: rerun ?? {} });
   }
 
-  public dispatch() {
-    return this.dispatcher.dispatch();
+  public recover() {
+    return this.dispatcher.recover();
   }
 
   public async resume(job: JobModel): Promise<void> {
@@ -529,19 +528,28 @@ export default class PluginWorkflowServer extends Plugin {
       return;
     }
 
-    this.getLogger('dispatcher').info(`execution (${executionId}) resuming from job (${job.id}) added to pending list`);
-    this.dispatcher.start(executionId, job.id);
+    this.getLogger('dispatcher').info(`execution (${executionId}) resuming from job (${job.id}) published to queue`);
+    await this.dispatcher.enqueue({ executionId, jobId: job.id });
   }
 
   /**
    * Start a deferred execution
    * @experimental
    */
-  public start(execution: ExecutionModel | ID, jobId?: ID) {
-    if (typeof execution !== 'string' && typeof execution !== 'number' && execution.status) {
-      return;
+  public async start(execution: ExecutionModel | ID): Promise<void> {
+    if (typeof execution !== 'string' && typeof execution !== 'number') {
+      if (
+        execution.status !== EXECUTION_STATUS.QUEUEING &&
+        execution.status !== EXECUTION_STATUS.STARTED &&
+        execution.status != null
+      ) {
+        return;
+      }
+      if (execution.status === EXECUTION_STATUS.STARTED && execution.startedAt) {
+        return;
+      }
     }
-    return this.dispatcher.start(this.getModelId(execution), jobId);
+    return this.dispatcher.enqueue({ executionId: this.getModelId(execution) });
   }
 
   public createProcessor(execution: ExecutionModel, options = {}): Processor {

@@ -18,10 +18,10 @@ import { EXECUTION_STATUS } from './constants';
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import type PluginWorkflowServer from './Plugin';
 import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
-import { getExecutionLockKey, isLockAcquireError } from './utils';
+import { getExecutionLockKey } from './utils';
 
 const EXECUTION_ACQUIRE_MAX_ATTEMPTS = 5;
-const PENDING_DISPATCH_MAX_ATTEMPTS = 3;
+const QUEUE_TASK_MAX_ATTEMPTS = 3;
 
 type AcquireRetryLogger = Pick<ReturnType<PluginWorkflowServer['getLogger']>, 'warn'>;
 
@@ -29,13 +29,22 @@ type ExecutionPlan = [ExecutionModel, JobModel?, ProcessorRerunOptions?];
 
 type ID = number | string;
 
-type Pending = {
-  executionId: ID;
-  jobId?: ID;
-  immediate?: boolean;
-  rerun?: ProcessorRerunOptions;
-  dispatchAttempts?: number;
-};
+type WorkflowQueueTask =
+  | {
+      executionId: ID;
+      jobId?: never;
+      rerun?: never;
+    }
+  | {
+      executionId: ID;
+      jobId: ID;
+      rerun?: never;
+    }
+  | {
+      executionId: ID;
+      jobId?: never;
+      rerun: ProcessorRerunOptions;
+    };
 
 type CachedEvent = [WorkflowModel, any, EventOptions];
 
@@ -55,28 +64,46 @@ export default class Dispatcher {
   private ready = false;
   private executing: Promise<any> | null = null;
   private saving: Promise<any> | null = null;
-  private pending: Pending[] = [];
   private events: CachedEvent[] = [];
   private eventsCount = 0;
 
   get idle() {
-    return this.ready && !this.executing && !this.saving && !this.pending.length && !this.events.length;
+    return this.ready && !this.executing && !this.saving && !this.events.length;
   }
 
   constructor(private readonly plugin: PluginWorkflowServer) {}
 
-  public readonly onQueueExecution: QueueEventOptions['process'] = async (event) => {
-    const ExecutionRepo = this.plugin.db.getRepository('executions');
-    const execution: ExecutionModel = await ExecutionRepo.findOne({
-      filterByTk: event.executionId,
-    });
-    if (!execution || execution.dispatched) {
-      return;
-    }
+  public readonly onQueueTask: QueueEventOptions['process'] = async (event) => {
+    const task = event as WorkflowQueueTask;
+    let next: ExecutionPlan | null = null;
+
     this.plugin
-      .getLogger(execution.workflowId)
-      .info(`execution (${execution.id}) received from queue, adding to pending list`);
-    this.enqueue({ executionId: execution.id });
+      .getLogger('dispatcher')
+      .info(`workflow queue task for execution (${task.executionId}) received from queue`);
+
+    this.executing = (async () => {
+      next = await this.resolveTask(task);
+      if (!next) {
+        return;
+      }
+
+      this.plugin.getLogger(next[0].workflowId).info(`queued execution (${next[0].id}) ready to process`);
+      await this.process(next[0], next[1], { rerun: next[2] });
+    })();
+
+    try {
+      await this.executing;
+    } catch (error) {
+      const workflowId = next?.[0]?.workflowId ?? task.executionId;
+      this.plugin.getLogger(workflowId).error(`workflow queue task failed`, { error });
+      throw error;
+    } finally {
+      this.executing = null;
+
+      if (this.events.length) {
+        this.saveEvent();
+      }
+    }
   };
 
   public setReady(ready: boolean) {
@@ -153,20 +180,12 @@ export default class Dispatcher {
             const execution = await this.createExecution(...event);
             // NOTE: cache first execution for most cases
             if (!execution.dispatched) {
-              if (this.plugin.serving() && !this.executing && !this.pending.length) {
-                logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
-                this.pending.push({ executionId: execution.id });
-              } else {
-                logger.info(
-                  `instance is not serving as worker or local pending list is not empty, sending execution (${execution.id}) to queue`,
-                );
-                try {
-                  await this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, {
-                    executionId: execution.id,
-                  });
-                } catch (qErr) {
-                  logger.error(`publishing execution (${execution.id}) to queue failed:`, { error: qErr });
-                }
+              try {
+                await this.enqueue({
+                  executionId: execution.id,
+                });
+              } catch (qErr) {
+                logger.error(`publishing execution (${execution.id}) to queue failed:`, { error: qErr });
               }
             }
           } catch (error) {
@@ -177,26 +196,16 @@ export default class Dispatcher {
         this.saving = null;
         if (this.events.length) {
           this.saveEvent();
-        } else {
-          this.dispatch();
         }
       }
     })();
-  }
-
-  public start(executionId: ID, jobId?: ID) {
-    this.enqueue({ executionId, jobId });
-  }
-
-  public rerun(executionId: ID, rerun: ProcessorRerunOptions = {}) {
-    this.enqueue({ executionId, rerun });
   }
 
   public async beforeStop() {
     this.ready = false;
     this.plugin.getLogger('dispatcher').info('app is stopping, draining local queues...');
 
-    while (this.saving || this.executing || this.events.length || this.pending.length) {
+    while (this.saving || this.executing || this.events.length) {
       if (this.saving) {
         await this.saving;
       }
@@ -206,97 +215,43 @@ export default class Dispatcher {
       if (this.events.length && !this.saving) {
         this.saveEvent();
       }
-      if (this.pending.length && !this.executing) {
-        this.dispatch();
-      }
       await new Promise((resolve) => setImmediate(resolve));
     }
 
     this.plugin.getLogger('dispatcher').info('local queues drained');
   }
 
-  public dispatch() {
-    if (!this.ready && !this.pending.length && !this.events.length) {
+  public async recover() {
+    if (!this.ready) {
       return;
     }
 
-    if (this.executing) {
-      this.plugin.getLogger('dispatcher').warn(`workflow executing is not finished, new dispatching will be ignored`);
-      return;
-    }
-
-    if (this.events.length) {
-      this.saveEvent();
-      return;
-    }
-
-    this.executing = (async () => {
-      let next: ExecutionPlan | null = null;
-      let pending: Pending | null = null;
-      try {
-        pending = this.pending.shift() ?? null;
-        if (pending) {
-          next = await this.resolvePending(pending);
-          if (next) {
-            this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
-          }
-        } else if (this.ready && this.plugin.serving()) {
-          const execution: ExecutionModel | null = await this.prepare(null);
-          if (execution) {
-            next = [execution];
-          }
-        } else {
-          this.plugin
-            .getLogger('dispatcher')
-            .warn(
-              `${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance or app not ready, new dispatching will be ignored`,
-            );
-        }
-        if (next) {
-          try {
-            await this.process(next[0], next[1], { rerun: next[2] });
-          } catch (error) {
-            this.plugin.getLogger(next[0].workflowId).error(`execution (${next[0].id}) process failed`, { error });
-            if (pending && isLockAcquireError(error)) {
-              this.pending.unshift({ ...pending, immediate: true });
-            }
-          }
-        }
-      } catch (error) {
-        this.plugin.getLogger('dispatcher').error(`workflow dispatch failed`, { error });
-        if (pending) {
-          const dispatchAttempts = (pending.dispatchAttempts ?? 0) + 1;
-          if (dispatchAttempts < PENDING_DISPATCH_MAX_ATTEMPTS) {
-            this.pending.push({ ...pending, dispatchAttempts });
-          } else {
-            this.plugin
-              .getLogger(pending.executionId)
-              .error(`pending execution (${pending.executionId}) dispatch failed, local retry limit reached`, {
-                error,
-                dispatchAttempts,
-              });
-          }
-        }
-      } finally {
-        setImmediate(() => {
-          this.executing = null;
-
-          if (next || this.pending.length) {
-            this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
-            this.dispatch();
-          }
-        });
+    try {
+      if (!this.plugin.serving()) {
+        this.plugin
+          .getLogger('dispatcher')
+          .warn(
+            `${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance, queueing execution recovery will be ignored`,
+          );
+        return;
       }
-    })();
+
+      const execution = await this.findQueueingExecution();
+      if (!this.ready) {
+        return;
+      }
+      if (execution) {
+        await this.enqueue({ executionId: execution.id });
+      }
+    } catch (error) {
+      this.plugin.getLogger('dispatcher').error(`workflow queueing execution recovery failed`, { error });
+    }
   }
 
-  private enqueue(pending: Pending): void {
-    this.pending.push({
-      ...pending,
-      immediate: !this.executing && !this.pending.length && !this.saving && !this.events.length,
+  public async enqueue(task: WorkflowQueueTask): Promise<void> {
+    await this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, task, {
+      maxRetries: QUEUE_TASK_MAX_ATTEMPTS - 1,
     });
-
-    this.dispatch();
   }
 
   private async loadJob(jobId: ID | undefined): Promise<JobModel | null> {
@@ -308,26 +263,52 @@ export default class Dispatcher {
     }) as Promise<JobModel | null>;
   }
 
-  private async resolvePending(pending: Pending): Promise<ExecutionPlan | null> {
+  private async findQueueingExecution(): Promise<ExecutionModel | null> {
+    const execution = (await this.plugin.db.getRepository('executions').findOne({
+      filter: {
+        dispatched: false,
+        'workflow.enabled': true,
+      },
+      sort: 'id',
+    })) as ExecutionModel | null;
+    if (execution) {
+      this.plugin.getLogger(execution.workflowId).info(`queueing execution (${execution.id}) found, publishing task`);
+    } else {
+      this.plugin.getLogger('dispatcher').debug(`no execution in db queued to process`);
+    }
+    return execution;
+  }
+
+  private async resolveTask(task: WorkflowQueueTask): Promise<ExecutionPlan | null> {
     const executionInput = (await this.plugin.db.getRepository('executions').findOne({
-      filterByTk: pending.executionId,
+      filterByTk: task.executionId,
     })) as ExecutionModel;
     if (!executionInput) {
-      this.plugin.getLogger('dispatcher').warn(`execution (${pending.executionId}) not found, pending task ignored`);
+      this.plugin.getLogger('dispatcher').warn(`execution (${task.executionId}) not found, queue task ignored`);
       return null;
     }
 
-    const execution = await this.prepare(executionInput, {
-      immediate: pending.immediate,
-    });
+    if (
+      task.jobId == null &&
+      task.rerun == null &&
+      executionInput.status === EXECUTION_STATUS.STARTED &&
+      executionInput.startedAt
+    ) {
+      this.plugin
+        .getLogger(executionInput.workflowId)
+        .warn(`execution (${executionInput.id}) has already started, start task ignored`);
+      return null;
+    }
+
+    const execution = await this.prepare(executionInput);
     if (!execution) {
       return null;
     }
 
-    if (pending.jobId != null) {
-      const job = await this.loadJob(pending.jobId);
+    if (task.jobId != null) {
+      const job = await this.loadJob(task.jobId);
       if (!job) {
-        this.plugin.getLogger(execution.workflowId).warn(`job (${pending.jobId}) not found, resume ignored`);
+        this.plugin.getLogger(execution.workflowId).warn(`job (${task.jobId}) not found, resume ignored`);
         return null;
       }
       if (String(job.executionId) !== String(execution.id)) {
@@ -340,7 +321,7 @@ export default class Dispatcher {
       return [execution, job];
     }
 
-    return [execution, undefined, pending.rerun];
+    return [execution, undefined, task.rerun];
   }
 
   private async triggerSync(
@@ -481,7 +462,7 @@ export default class Dispatcher {
     let result: ExecutionModel | null = null;
     // NOTE: acquireWithRetry rethrows non-concurrent errors (e.g. failing to open the
     // transaction itself). Catch them here and return null so a failed acquire neither
-    // throws to the dispatch loop (which would leave `executing` stuck) nor mutates the
+    // throws to the queue worker (which would leave `executing` stuck) nor mutates the
     // execution state.
     try {
       await this.acquireWithRetry(
@@ -510,11 +491,11 @@ export default class Dispatcher {
         {
           logger,
           conflictMessage: input
-            ? `acquiring pending execution (${input.id}) conflicted with another worker, retrying`
+            ? `acquiring queue task execution (${input.id}) conflicted with another worker, retrying`
             : `acquiring execution conflicted with another worker, retrying`,
           maxAttemptsMessage: input
-            ? `acquiring pending execution (${input.id}) reached max retry attempts`
-            : `acquiring execution reached max retry attempts, will retry on next dispatch`,
+            ? `acquiring queue task execution (${input.id}) reached max retry attempts`
+            : `acquiring execution reached max retry attempts, will retry on next recovery`,
         },
       );
     } catch (error) {
@@ -675,7 +656,7 @@ export default class Dispatcher {
     const run = async () => {
       if (!execution.dispatched) {
         await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED });
-        logger.info(`execution (${execution.id}) from pending list updated to started`);
+        logger.info(`execution (${execution.id}) from workflow queue updated to started`);
       }
       this.plugin.timeoutManager.scheduleExecutionTimeout(execution);
       const processor = this.plugin.createProcessor(execution, processorOptions);
