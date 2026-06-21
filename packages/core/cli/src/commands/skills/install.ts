@@ -9,7 +9,7 @@
 
 import { Command, Flags } from '@oclif/core';
 import { confirm } from '../../lib/inquirer.ts';
-import { setVerboseMode } from '../../lib/ui.js';
+import { setVerboseMode, startTask, stopTask, updateTask } from '../../lib/ui.js';
 import { installNocoBaseSkills } from '../../lib/skills-manager.js';
 
 export default class SkillsInstall extends Command {
@@ -20,6 +20,7 @@ export default class SkillsInstall extends Command {
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
     '<%= config.bin %> <%= command.id %> --version 1.0.4',
+    '<%= config.bin %> <%= command.id %> --verbose',
     '<%= config.bin %> <%= command.id %> --json',
   ];
 
@@ -61,9 +62,23 @@ export default class SkillsInstall extends Command {
       }
     }
 
+    const shouldShowLoading = !flags.json && !flags.verbose;
+    if (shouldShowLoading) {
+      startTask(
+        flags.version
+          ? `Installing NocoBase AI coding skills ${flags.version}...`
+          : 'Installing NocoBase AI coding skills...',
+      );
+    }
+
     const result = await installNocoBaseSkills({
       targetVersion: flags.version,
       verbose: flags.verbose,
+      onProgress: shouldShowLoading ? updateTask : undefined,
+    }).finally(() => {
+      if (shouldShowLoading) {
+        stopTask();
+      }
     });
 
     if (flags.json) {

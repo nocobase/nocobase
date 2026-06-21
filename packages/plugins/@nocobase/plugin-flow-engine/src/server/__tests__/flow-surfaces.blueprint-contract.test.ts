@@ -1831,7 +1831,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
     expect(tableFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(tableFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
-    expect(tableFilterAction?.props?.filterableFieldNames).toEqual(['nickname', 'status', 'email']);
+    expect(tableFilterAction?.props?.filterableFieldNames).toBeUndefined();
+    expect(tableFilterAction?.stepParams?.filterSettings?.filterableFieldNames).toBeUndefined();
     expect(listFilterAction?.props?.defaultFilterValue).toEqual(blockDefaultFilter);
     expect(listFilterAction?.stepParams?.filterSettings?.defaultFilter?.defaultFilter).toEqual(blockDefaultFilter);
     expect(gridCardFilterAction?.props?.defaultFilterValue).toEqual(explicitActionFilter);
@@ -6483,7 +6484,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(mainViewActionReadback.tree?.stepParams?.popupSettings?.openView).not.toHaveProperty('filterByTk');
     expect(userDetailsBlock?.stepParams?.resourceSettings?.init).toMatchObject({
       collectionName: sourceCollection,
-      filterByTk: '{{ctx.record.id}}',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
     const userDetailsReadback = await getSurface(rootAgent, {
       uid: userDetailsBlock.uid,
@@ -6498,7 +6499,7 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(userEditForm?.use).toBe('EditFormModel');
     expect(userEditForm?.stepParams?.resourceSettings?.init).toMatchObject({
       collectionName: sourceCollection,
-      filterByTk: '{{ctx.record.id}}',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
     expect(collectFieldPaths(userEditForm)).toEqual(expect.arrayContaining(['username', 'roles']));
     expect(_.castArray(userEditForm?.subModels?.actions || []).map((item: any) => item?.use)).toContain(

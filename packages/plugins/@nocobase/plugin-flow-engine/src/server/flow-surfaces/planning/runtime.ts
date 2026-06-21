@@ -200,6 +200,7 @@ async function compilePlanStep(
     {
       normalizeGetTarget: deps.normalizeGetTarget,
       resolveLocator: deps.resolveLocator,
+      loadResolvedSurfaceTree: deps.loadResolvedSurfaceTree,
       buildPlanKeyKind: buildPlanningKeyKind,
     },
     priorStepIds,

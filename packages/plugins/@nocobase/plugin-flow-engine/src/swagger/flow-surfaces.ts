@@ -130,7 +130,11 @@ const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
   'jsBlock',
   'tree',
 ];
-const APPROVAL_BLUEPRINT_BLOCK_TYPE_ENUM = [...APPROVAL_BLOCK_PUBLIC_KEYS];
+const APPROVAL_BLUEPRINT_GENERIC_BLOCK_TYPE_ENUM = ['markdown', 'jsBlock'];
+const APPROVAL_BLUEPRINT_BLOCK_TYPE_ENUM = [
+  ...APPROVAL_BLOCK_PUBLIC_KEYS,
+  ...APPROVAL_BLUEPRINT_GENERIC_BLOCK_TYPE_ENUM,
+];
 const COMPOSE_BLOCK_TYPE_ENUM = [...APPLY_BLUEPRINT_BLOCK_TYPE_ENUM, ...APPROVAL_BLOCK_PUBLIC_KEYS];
 const RELATION_FIELD_TYPE_ENUM = [
   'text',
@@ -522,7 +526,7 @@ function buildReactionCapabilitySchema(
 }
 
 const FLOW_SURFACES_READ_ACL_NOTE =
-  'Read actions (`get` / `describeSurface` / `capabilities` / `describeCapability` / `validateCapabilityCreate` / `diagnoseCapabilities` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
+  'Read actions (`get` / `describeSurface` / `exportBlueprint` / `capabilities` / `describeCapability` / `validateCapabilityCreate` / `diagnoseCapabilities` / `catalog` / `context` / `getReactionMeta` / `getEventFlowMeta` / `listTemplates` / `getTemplate`) are open to `loggedIn` by default. Write actions still require the `ui.flowSurfaces` snippet.';
 
 const templateActionDocs = createFlowSurfaceTemplateActionDocs({
   tag: FLOW_SURFACES_TAG,
@@ -671,6 +675,15 @@ const actionDocs: Record<string, any> = {
     requestBody: requestBody('FlowSurfaceDescribeSurfaceRequest', examples.describeSurface),
     responses: responses('FlowSurfaceDescribeSurfaceResponse'),
   },
+  exportBlueprint: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Export one root Modern page as an applyBlueprint replace document',
+    description: valuesCompatibilityNote(
+      `Exports an existing root flow page into a v1 \`FlowSurfaceApplyBlueprintDocument\` that can be sent back to \`flowSurfaces:applyBlueprint\` for same-instance \`replace\`. The request body uses \`{ target, options }\` and does not change the \`flowSurfaces:get\` GET query-locator contract. v1 only supports root page export; block, field, action, tab, and \`tabSchemaUid\` subtree targets return HTTP 400. The exported document intentionally omits \`navigation\` and does not expose raw \`tree\`, \`nodeMap\`, node uid, internal refs, or internal metadata. \`document.target.pageSchemaUid\` is retained for same-instance replace. ${FLOW_SURFACES_READ_ACL_NOTE}`,
+    ),
+    requestBody: requestBody('FlowSurfaceExportBlueprintRequest', examples.exportBlueprint),
+    responses: responses('FlowSurfaceExportBlueprintResponse'),
+  },
   applyBlueprint: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply a page blueprint to create or replace one Modern page',
@@ -707,7 +720,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply an approval blueprint to initiator, approver, or task-card surfaces',
     description: valuesCompatibilityNote(
-      "Builds workflow-approval configuration surfaces through the existing flowSurfaces orchestration layer instead of a separate approval resource. This is the preferred whole-surface bootstrap / replace entry for approval initiator, approver, and task-card UIs. Unlike route-backed `applyBlueprint`, this action targets approval-bound FlowModel roots stored on approval workflow trigger config (`workflow.config.approvalUid` / `workflow.config.taskCardUid`) or approval node config (`node.config.approvalUid` / `node.config.taskCardUid`). The backend creates or reuses the correct approval root automatically, rewrites the binding uid, applies a `replace` blueprint to that root, and reconciles approval runtime config derived from approval actions such as withdraw / approve / reject / return / delegate / add-assignee. `surface='initiator'` requires `workflowId` and writes page-like `blocks + layout` into `TriggerChildPageModel -> TriggerChildPageTabModel -> TriggerBlockGridModel`. `surface='approver'` requires `nodeId` and writes page-like `blocks + layout` into `ApprovalChildPageModel -> ApprovalChildPageTabModel -> ApprovalBlockGridModel`. Page-like `blocks[]` may either declare a concrete `type` or reuse a saved block template through `template: { uid, mode }`. `surface='taskCard'` requires exactly one of `workflowId` or `nodeId` and writes `fields + layout` into `ApplyTaskCardDetailsModel` or `ApprovalTaskCardDetailsModel`. This v1 action does not cover legacy schema-config wiring; it focuses on approval FlowModel construction, binding persistence, and approval runtime-config synchronization. When `layout` is omitted, the backend generates a simple top-to-bottom layout for the resulting blocks or fields.",
+      "Builds workflow-approval configuration surfaces through the existing flowSurfaces orchestration layer instead of a separate approval resource. This is the preferred whole-surface bootstrap / replace entry for approval initiator, approver, and task-card UIs. Unlike route-backed `applyBlueprint`, this action targets approval-bound FlowModel roots stored on approval workflow trigger config (`workflow.config.approvalUid` / `workflow.config.taskCardUid`) or approval node config (`node.config.approvalUid` / `node.config.taskCardUid`). The backend creates or reuses the correct approval root automatically, rewrites the binding uid, applies a `replace` blueprint to that root, and reconciles approval runtime config derived from approval actions such as withdraw / approve / reject / return / delegate / add-assignee. `surface='initiator'` requires `workflowId` and writes page-like `blocks + layout` into `TriggerChildPageModel -> TriggerChildPageTabModel -> TriggerBlockGridModel`. `approvalInitiator` creates `approvalSubmit` by default; do not include `approvalSubmit` in `blocks[].actions`, otherwise authoring validation returns aggregate `errors[]` and the same write must be retried after removing it. `surface='approver'` requires `nodeId` and writes page-like `blocks + layout` into `ApprovalChildPageModel -> ApprovalChildPageTabModel -> ApprovalBlockGridModel`. Page-like `blocks[]` may declare approval-specific block types, fixed generic block types (`markdown`, `jsBlock`), or reuse a saved block template through `template: { uid, mode }`. `surface='taskCard'` requires exactly one of `workflowId` or `nodeId` and writes `fields + layout` into `ApplyTaskCardDetailsModel` or `ApprovalTaskCardDetailsModel`. This v1 action does not cover legacy schema-config wiring; it focuses on approval FlowModel construction, binding persistence, and approval runtime-config synchronization. When `layout` is omitted, the backend generates a simple top-to-bottom layout for the resulting blocks or fields.",
     ),
     requestBody: {
       required: true,
@@ -1415,6 +1428,152 @@ const schemas = {
       },
       routeId: {
         type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintUnsupportedPolicy: {
+    type: 'string',
+    enum: ['error', 'warn'],
+    description:
+      '`error` rejects visible nodes the v1 mapper cannot express. `warn` skips them and reports warnings/unsupported items.',
+  },
+  FlowSurfaceExportBlueprintUnsupportedItem: {
+    type: 'object',
+    required: ['kind', 'path', 'reasonCode', 'manualAction'],
+    properties: {
+      kind: {
+        type: 'string',
+        enum: ['page', 'tab', 'block', 'field', 'action', 'recordAction', 'reaction', 'layout', 'popup'],
+      },
+      use: {
+        type: 'string',
+        example: 'UnknownModel',
+      },
+      type: {
+        type: 'string',
+        example: 'unknown',
+      },
+      path: {
+        type: 'string',
+        example: '$.tabs[0].blocks[2]',
+      },
+      reasonCode: {
+        type: 'string',
+        example: 'unsupported-node',
+      },
+      manualAction: {
+        type: 'string',
+        example: 'Recreate this block manually or add mapper support.',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintTarget: {
+    oneOf: [
+      {
+        type: 'object',
+        required: ['uid'],
+        properties: {
+          uid: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: ['pageSchemaUid'],
+        properties: {
+          pageSchemaUid: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: ['tabSchemaUid'],
+        properties: {
+          tabSchemaUid: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: 'object',
+        required: ['routeId'],
+        properties: {
+          routeId: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+    ],
+    description:
+      'Exactly one root locator. v1 accepts pageSchemaUid, routeId, or a uid that resolves to the root page. tabSchemaUid and non-root uid targets return HTTP 400.',
+  },
+  FlowSurfaceExportBlueprintRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceExportBlueprintTarget'),
+      options: {
+        type: 'object',
+        properties: {
+          unsupported: ref('FlowSurfaceExportBlueprintUnsupportedPolicy'),
+        },
+        additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintSource: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceApplyBlueprintTarget'),
+      pageTitle: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintDocument: {
+    type: 'object',
+    required: ['version', 'mode', 'target', 'tabs', 'assets'],
+    description:
+      'Prepared v1 applyBlueprint document in replace mode. It intentionally omits navigation and retains target.pageSchemaUid for same-instance replace.',
+    properties: {
+      version: {
+        type: 'string',
+        enum: ['1'],
+      },
+      mode: {
+        type: 'string',
+        enum: ['replace'],
+      },
+      target: ref('FlowSurfaceApplyBlueprintTarget'),
+      page: ref('FlowSurfaceApplyBlueprintPage'),
+      tabs: {
+        type: 'array',
+        minItems: 1,
+        items: ref('FlowSurfaceApplyBlueprintTab'),
+      },
+      assets: ref('FlowSurfaceApplyBlueprintAssets'),
+      reaction: ref('FlowSurfaceApplyBlueprintReaction'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceExportBlueprintResponse: {
+    type: 'object',
+    required: ['document', 'source', 'warnings', 'unsupported'],
+    properties: {
+      document: ref('FlowSurfaceExportBlueprintDocument'),
+      source: ref('FlowSurfaceExportBlueprintSource'),
+      warnings: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      unsupported: {
+        type: 'array',
+        items: ref('FlowSurfaceExportBlueprintUnsupportedItem'),
       },
     },
     additionalProperties: false,
@@ -5186,7 +5345,7 @@ const schemas = {
     type: 'object',
     required: ['surface'],
     description:
-      "Simplified approval-surface blueprint request for workflow approval UIs. This is the preferred bootstrap / replace route for approval initiator, approver, and task-card surfaces. `version` may be omitted and defaults to '1'. `mode` may be omitted and defaults to `replace`; v1 only supports `replace`. Runtime validation enforces binding rules: `initiator` requires `workflowId`, `approver` requires `nodeId`, and `taskCard` requires exactly one of `workflowId` or `nodeId`. Page-like surfaces (`initiator`, `approver`) accept `blocks + layout`; each block may declare `type` directly or reuse `template: { uid, mode }`. `taskCard` accepts `fields + layout`. This route does not perform schema wiring, but it does persist binding fields and reconcile approval runtime config from approval actions.",
+      "Simplified approval-surface blueprint request for workflow approval UIs. This is the preferred bootstrap / replace route for approval initiator, approver, and task-card surfaces. `version` may be omitted and defaults to '1'. `mode` may be omitted and defaults to `replace`; v1 only supports `replace`. Runtime validation enforces binding rules: `initiator` requires `workflowId`, `approver` requires `nodeId`, and `taskCard` requires exactly one of `workflowId` or `nodeId`. Page-like surfaces (`initiator`, `approver`) accept `blocks + layout`; each block may declare approval-specific types, fixed generic types (`markdown`, `jsBlock`), or reuse `template: { uid, mode }`. `approvalInitiator` creates `approvalSubmit` by default, so callers should only add optional initiator actions such as `approvalSaveDraft` or `approvalWithdraw`. `taskCard` accepts `fields + layout`. This route does not perform schema wiring, but it does persist binding fields and reconcile approval runtime config from approval actions. Authoring validation failures use the same aggregate `errors[]` retry contract as `applyBlueprint`.",
     properties: {
       version: {
         type: 'string',

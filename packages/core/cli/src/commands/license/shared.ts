@@ -11,15 +11,8 @@ import { Flags } from '@oclif/core';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getEnvAsync, getInstanceIdAsync, keyDecrypt } from '@nocobase/license-kit';
-import {
-  checkExternalDbConnection,
-  readExternalDbConnectionConfig,
-} from '../../lib/db-connection-check.ts';
-import {
-  DEFAULT_DOCKER_REGISTRY,
-  DEFAULT_DOCKER_VERSION,
-  resolveDockerImageRef,
-} from '../../lib/docker-image.ts';
+import { checkExternalDbConnection, readExternalDbConnectionConfig } from '../../lib/db-connection-check.ts';
+import { DEFAULT_DOCKER_REGISTRY, DEFAULT_DOCKER_VERSION, resolveDockerImageRef } from '../../lib/docker-image.ts';
 import type { ManagedAppRuntime } from '../../lib/app-runtime.js';
 import { formatMissingManagedAppEnvMessage, resolveManagedAppRuntime } from '../../lib/app-runtime.js';
 import { buildRuntimeEnvVars } from '../../lib/runtime-env-vars.js';
@@ -169,23 +162,12 @@ async function runDockerLicenseJsonCommand(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
   commandArgs: string[],
 ): Promise<any> {
-  const args = [
-    'run',
-    '--rm',
-    '--network',
-    runtime.dockerNetworkName || runtime.workspaceName,
-  ];
+  const args = ['run', '--rm', '--network', runtime.dockerNetworkName || runtime.workspaceName];
   const dockerPlatform = normalizeDockerPlatform(runtime.env.config?.dockerPlatform);
   if (dockerPlatform) {
     args.push('--platform', dockerPlatform);
   }
-  args.push(
-    '--entrypoint',
-    'nb',
-    resolveDockerLicenseImageRef(runtime),
-    ...commandArgs,
-    '--json',
-  );
+  args.push('--entrypoint', 'nb', resolveDockerLicenseImageRef(runtime), ...commandArgs, '--json');
 
   const output = await commandOutput('docker', args, {
     errorName: 'docker run',
@@ -222,10 +204,7 @@ export async function validateLicenseDbConnectionFromEnvVars(envVars: Record<str
   }
 }
 
-export async function withLicenseEnvVars<T>(
-  nextEnv: Record<string, string>,
-  task: () => Promise<T>,
-): Promise<T> {
+export async function withLicenseEnvVars<T>(nextEnv: Record<string, string>, task: () => Promise<T>): Promise<T> {
   const previous: Record<string, string | undefined> = {};
 
   for (const [key, value] of Object.entries(nextEnv)) {
@@ -282,11 +261,11 @@ async function generateInstanceIdForDockerRuntime(
   runtime: Extract<ManagedAppRuntime, { kind: 'docker' }>,
 ): Promise<string> {
   const envVars = await buildRuntimeEnvVars(runtime);
-  const payload = await runDockerLicenseJsonCommand(runtime, [
+  const payload = (await runDockerLicenseJsonCommand(runtime, [
     'license',
     'generate-id',
     ...buildDockerLicenseDbFlagArgs(envVars),
-  ]) as { instanceId?: unknown };
+  ])) as { instanceId?: unknown };
 
   const instanceId = trimValue(payload.instanceId);
   if (!instanceId) {
@@ -452,7 +431,7 @@ export async function getLicenseStatus(keyData?: LicenseKeyData): Promise<Licens
       }),
       signal: controller.signal,
     });
-    const payload = await response.json() as { data?: { status?: string } };
+    const payload = (await response.json()) as { data?: { status?: string } };
     return payload?.data?.status === 'active' ? 'active' : 'invalid';
   } catch {
     return 'active';
@@ -469,6 +448,23 @@ export async function validateLicenseKey(runtime: ManagedAppRuntime, key: string
     keyData = parseLicenseKey(key);
   } catch {
     keyStatus = 'invalid';
+  }
+
+  if (keyStatus) {
+    const currentDomain = appUrl(runtime);
+    return {
+      current: {
+        env: undefined,
+        domain: currentDomain ? new URL(currentDomain).host : '',
+      },
+      keyData,
+      keyStatus,
+      dbMatch: false,
+      sysMatch: false,
+      envMatch: false,
+      domainMatch: false,
+      licenseStatus: 'invalid',
+    };
   }
 
   const currentEnv = await getCurrentLicenseEnv(runtime);
@@ -510,7 +506,7 @@ export async function resolveLicenseServiceUrl(value?: string): Promise<string> 
 }
 
 export async function resolveLicensePkgUrl(value?: string): Promise<string> {
-  const normalized = String(value ?? '').trim() || await resolveLicensePkgUrlFromConfig();
+  const normalized = String(value ?? '').trim() || (await resolveLicensePkgUrlFromConfig());
   return normalized.replace(/\/+$/, '') + '/';
 }
 
@@ -538,9 +534,7 @@ export function sanitizeLicenseOutput<T>(value: T): T {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>).map(([key, nestedValue]) => [
         key,
-        shouldRedactOutputKey(key)
-          ? redactOutputValue(String(nestedValue ?? ''))
-          : sanitizeLicenseOutput(nestedValue),
+        shouldRedactOutputKey(key) ? redactOutputValue(String(nestedValue ?? '')) : sanitizeLicenseOutput(nestedValue),
       ]),
     ) as T;
   }

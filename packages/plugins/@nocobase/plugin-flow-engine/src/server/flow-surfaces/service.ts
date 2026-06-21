@@ -93,6 +93,10 @@ import {
   prepareFlowSurfaceApplyBlueprintDocument,
   resolveApplyBlueprintPageLocator,
 } from './blueprint';
+import {
+  exportFlowSurfaceBlueprintDocument,
+  type FlowSurfaceExportBlueprintUnsupportedPolicy,
+} from './blueprint/export-document';
 import type {
   FlowSurfaceApplyBlueprintDefaults,
   FlowSurfaceApplyBlueprintDocument,
@@ -215,6 +219,7 @@ import {
   getCollectionModelAttributes,
   getCollectionName,
   getCollectionTitle,
+  getCollectionTitleFieldName,
   getInvalidChartBuilderRelationDirectSubfieldDetails,
   getUnsupportedChartBuilderRelationSubfieldDetails,
   getFieldFilterable,
@@ -253,7 +258,11 @@ import {
   isApprovalFormContainerUse,
   normalizeApprovalSemanticUse,
 } from './approval';
-import { buildFieldValueWriteResult, normalizeFieldValueRules } from './reaction/field-value';
+import {
+  buildFieldValueWriteResult,
+  normalizeFieldValueRules,
+  validateFieldValueRulesAgainstCapability,
+} from './reaction/field-value';
 import { buildReactionFingerprint } from './reaction/fingerprint';
 import {
   compileActionLinkageCanonicalRules,
@@ -272,6 +281,7 @@ import type {
   FlowSurfaceActionLinkageRule,
   FlowSurfaceBlockLinkageRule,
   FlowSurfaceFieldLinkageRule,
+  FlowSurfaceFieldValueCapability,
   FlowSurfaceLinkageCapability,
   FlowSurfaceFieldLinkageScene,
   FlowSurfaceFieldValueRule,
@@ -295,6 +305,7 @@ import {
 } from './association-title-field';
 import {
   buildFlowSurfaceDefaultActionPopupBlocks,
+  collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths,
   getFlowSurfaceDefaultActionPopupConfigByUse,
   hasFlowSurfaceInlinePopupBlocks,
   hasFlowSurfaceInlinePopupTemplate,
@@ -304,6 +315,7 @@ import {
   pickFlowSurfaceDefaultActionPopupFieldPaths,
   resolveFlowSurfaceDefaultActionPopupTabTitle,
 } from './default-action-popup';
+import { isRelationBackingForeignKeyField } from './relation-backing-foreign-key';
 import type {
   FlowSurfaceDefaultActionPopupConfig,
   FlowSurfaceDefaultActionPopupFieldCandidate,
@@ -684,6 +696,13 @@ type FlowSurfaceDefaultActionSettings = Record<string, any>;
 type FlowSurfaceRequestRoles = readonly string[] | string;
 type FlowSurfaceModelPatchOptions = { transaction?: any };
 type FlowSurfaceReadOptions = { transaction?: any; currentRoles?: FlowSurfaceRequestRoles };
+type FlowSurfaceExportBlueprintRequest = {
+  target: FlowSurfaceReadLocator;
+  unsupportedPolicy: FlowSurfaceExportBlueprintUnsupportedPolicy;
+};
+
+const FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE = 'exportBlueprint v1 only supports root page export';
+
 type FlowSurfaceRuntimeOptions = {
   transaction?: any;
   currentRoles?: FlowSurfaceRequestRoles;
@@ -700,6 +719,7 @@ const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormM
 const STATIC_BLOCK_PUBLIC_TYPES = new Set(BLOCK_KEY_BY_USE.values());
 const AUTO_SUBMIT_FORM_BLOCK_USES = new Set(['CreateFormModel', 'EditFormModel']);
 const FLOW_SURFACE_DEFAULT_ACTION_SETTINGS_KEYS = new Set(['filter']);
+const ACTION_BUTTON_GENERAL_SETTING_KEYS = ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color'];
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel', ...APPROVAL_DETAILS_BLOCK_USES]);
 const SIMPLE_FORM_BLOCK_USES = new Set([
   'FormBlockModel',
@@ -4598,6 +4618,13 @@ export class FlowSurfacesService {
     if (!popupProfile?.currentCollection) {
       return popupProfile?.filterByTk;
     }
+    if (
+      popupProfile.popupKind === 'recordPopup' &&
+      popupProfile.popupHostUse &&
+      POPUP_HOST_DEFAULT_RECORD_CONTEXT_ACTION_USES.has(popupProfile.popupHostUse)
+    ) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
     if (popupProfile.popupKind !== 'associationPopup') {
       return popupProfile.filterByTk;
     }
@@ -5100,15 +5127,23 @@ export class FlowSurfacesService {
       if (!sameCurrentCollection || !hasConfiguredFlowContextValue(normalized.filterByTk)) {
         return false;
       }
+      const expectedFilterByTk = this.resolvePopupCurrentRecordResourceFilterByTk(input.popupProfile, {
+        usePopupInputArgsWhenSourceIdInferred: true,
+      });
+      const matchesCurrentRecordFilterByTk = this.isPopupCurrentRecordFilterByTkMatch(
+        input.popupProfile,
+        normalized.filterByTk,
+        expectedFilterByTk,
+      );
       if (input.popupProfile.hasAssociationContext) {
         return (
-          this.isSameConfiguredFlowContextValue(normalized.filterByTk, input.popupProfile.filterByTk) &&
+          matchesCurrentRecordFilterByTk &&
           normalized.associationName === input.popupProfile.associationName &&
           this.isSameConfiguredFlowContextValue(normalized.sourceId, input.popupProfile.sourceId)
         );
       }
       return (
-        this.isSameConfiguredFlowContextValue(normalized.filterByTk, input.popupProfile.filterByTk) &&
+        matchesCurrentRecordFilterByTk &&
         !hasConfiguredFlowContextValue(normalized.associationName) &&
         !hasConfiguredFlowContextValue(normalized.sourceId)
       );
@@ -5179,6 +5214,20 @@ export class FlowSurfacesService {
       return false;
     }
     return _.isEqual(this.normalizeFlowContextTemplateValue(left), this.normalizeFlowContextTemplateValue(right));
+  }
+
+  private isPopupCurrentRecordFilterByTkMatch(
+    popupProfile: FlowSurfacePopupBlockProfile,
+    filterByTk: any,
+    expectedFilterByTk: any,
+  ) {
+    if (this.isSameConfiguredFlowContextValue(filterByTk, expectedFilterByTk)) {
+      return true;
+    }
+    return (
+      popupProfile.popupKind === 'associationPopup' &&
+      this.isSameConfiguredFlowContextValue(filterByTk, popupProfile.filterByTk)
+    );
   }
 
   private isPopupAssociatedRecordsSourceIdMatch(
@@ -5563,6 +5612,34 @@ export class FlowSurfacesService {
     return capability;
   }
 
+  private async getLiveFieldValueCapability(
+    writeTarget: FlowSurfaceWriteTarget,
+    resolvedTarget: FlowSurfaceResolvedReactionTarget,
+    node: any,
+    options: { transaction?: any } = {},
+  ): Promise<FlowSurfaceFieldValueCapability> {
+    const context = await this.context(
+      {
+        target: writeTarget,
+      },
+      options,
+    );
+    const { capabilities } = buildReactionMetaCapabilities({
+      resolvedTarget: {
+        ...resolvedTarget,
+        node,
+      },
+      context,
+    });
+    const capability = capabilities.find((item): item is FlowSurfaceFieldValueCapability => item.kind === 'fieldValue');
+    if (!capability) {
+      throwBadRequest(
+        `flowSurfaces reaction target '${resolvedTarget.use || resolvedTarget.target.uid}' does not support fieldValue`,
+      );
+    }
+    return capability;
+  }
+
   async getReactionMeta(
     values: FlowSurfaceGetReactionMetaValues,
     options: { transaction?: any } = {},
@@ -5616,6 +5693,8 @@ export class FlowSurfacesService {
       },
       rules: Array.isArray(values?.rules) ? values.rules : [],
     });
+    const liveCapability = await this.getLiveFieldValueCapability(writeTarget, resolvedTarget, node, options);
+    validateFieldValueRulesAgainstCapability(result.normalizedRules, liveCapability);
 
     await this.persistReactionSlot(storageNode, capability.resolvedSlot, result.canonicalRules, options);
 
@@ -6067,6 +6146,47 @@ export class FlowSurfacesService {
       },
     );
     return this.buildSurfaceReadPayload(target, resolved, publicNode, options);
+  }
+
+  async exportBlueprint(input: Record<string, unknown>, options: FlowSurfaceReadOptions = {}) {
+    const request = this.normalizeExportBlueprintRequest(input);
+    const resolved = await this.locator.resolve(request.target, options);
+    if (resolved.kind !== 'page' || !resolved.pageRoute) {
+      throwBadRequest(FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE);
+    }
+
+    const pageSchemaUid = this.resolveExportBlueprintPageSchemaUid(request.target, resolved);
+    await this.assertExportBlueprintRootTarget(request.target, resolved, pageSchemaUid, options.transaction);
+    const rawNode = await this.decorateTemplateReadbackTree(
+      this.normalizePopupTreeShape(
+        await this.loadResolvedNode(resolved, options.transaction, {
+          persistCalendarPopupHosts: false,
+        }),
+      ),
+      options.transaction,
+    );
+    if (!rawNode?.uid) {
+      throwBadRequest(`flowSurfaces exportBlueprint target '${pageSchemaUid}' could not resolve a readable page tree`);
+    }
+
+    const pageRoute = resolved.pageRoute
+      ? ((await this.routeSync.hydrateRoute(resolved.pageRoute, options.transaction)) as Record<string, unknown>)
+      : undefined;
+    const result = exportFlowSurfaceBlueprintDocument({
+      page: rawNode,
+      pageRoute,
+      target: {
+        pageSchemaUid,
+      },
+      unsupportedPolicy: request.unsupportedPolicy,
+    });
+
+    return {
+      ...result,
+      document: prepareFlowSurfaceApplyBlueprintDocument(
+        result.document as Parameters<typeof prepareFlowSurfaceApplyBlueprintDocument>[0],
+      ),
+    };
   }
 
   private getDeclaredKeyPersistenceDeps() {
@@ -8165,13 +8285,20 @@ export class FlowSurfacesService {
       dataSourceKey?: string;
       collectionName?: string;
       associationName?: string;
+      filterByTk?: string;
       sourceId?: string;
     },
   ) {
-    if (!this.isCollectionBlockUse(blockNode?.use) || !context.associationName || !context.sourceId) {
+    if (!this.isCollectionBlockUse(blockNode?.use)) {
       return false;
     }
     const init = _.get(blockNode, ['stepParams', 'resourceSettings', 'init']) || {};
+    if (this.resolveDetachedPopupTemplateBlockCurrentRecordFilterByTk(init, context)) {
+      return true;
+    }
+    if (!context.associationName || !context.sourceId) {
+      return false;
+    }
     const popupDataSourceKey = context.dataSourceKey || 'main';
     const blockDataSourceKey = init.dataSourceKey || 'main';
     if (
@@ -8197,12 +8324,47 @@ export class FlowSurfacesService {
     );
   }
 
+  private resolveDetachedPopupTemplateBlockCurrentRecordFilterByTk(
+    init: Record<string, any>,
+    context: {
+      dataSourceKey?: string;
+      collectionName?: string;
+      filterByTk?: string;
+    },
+  ) {
+    if (!hasConfiguredFlowContextValue(init.filterByTk)) {
+      return undefined;
+    }
+    if (this.isSameConfiguredFlowContextValue(init.filterByTk, '{{ctx.view.inputArgs.filterByTk}}')) {
+      return undefined;
+    }
+    const popupDataSourceKey = context.dataSourceKey || 'main';
+    const blockDataSourceKey = init.dataSourceKey || 'main';
+    if (
+      !context.collectionName ||
+      blockDataSourceKey !== popupDataSourceKey ||
+      init.collectionName !== context.collectionName
+    ) {
+      return undefined;
+    }
+    if (context.filterByTk && this.isSameConfiguredFlowContextValue(init.filterByTk, context.filterByTk)) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
+    const collection = this.getCollection(popupDataSourceKey, context.collectionName);
+    const filterTargetKey = this.getCollectionFilterTargetKey(collection);
+    if (this.isSameConfiguredFlowContextValue(init.filterByTk, `{{ctx.record.${filterTargetKey}}}`)) {
+      return '{{ctx.view.inputArgs.filterByTk}}';
+    }
+    return undefined;
+  }
+
   private collectDetachedPopupTemplateBlockResourceContextPatches(
     node: any,
     context: {
       dataSourceKey?: string;
       collectionName?: string;
       associationName?: string;
+      filterByTk?: string;
       sourceId?: string;
     },
     patches: Array<{ uid: string; stepParams: Record<string, any> }> = [],
@@ -8213,6 +8375,7 @@ export class FlowSurfacesService {
     if (node.uid && this.shouldHydrateDetachedPopupTemplateBlockResourceContext(node, context)) {
       const nextStepParams = _.cloneDeep(node.stepParams || {});
       const currentInit = _.get(nextStepParams, ['resourceSettings', 'init']) || {};
+      const filterByTk = this.resolveDetachedPopupTemplateBlockCurrentRecordFilterByTk(currentInit, context);
       _.set(
         nextStepParams,
         ['resourceSettings', 'init'],
@@ -8220,8 +8383,13 @@ export class FlowSurfacesService {
           ...currentInit,
           dataSourceKey: context.dataSourceKey || currentInit.dataSourceKey || 'main',
           collectionName: context.collectionName || currentInit.collectionName,
-          associationName: context.associationName,
-          sourceId: context.sourceId,
+          ...(context.associationName && context.sourceId
+            ? {
+                associationName: context.associationName,
+                sourceId: context.sourceId,
+              }
+            : {}),
+          ...(filterByTk ? { filterByTk } : {}),
         }),
       );
       patches.push({
@@ -8243,6 +8411,7 @@ export class FlowSurfacesService {
       dataSourceKey?: string;
       collectionName?: string;
       associationName?: string;
+      filterByTk?: string;
       sourceId?: string;
     },
     transaction?: any,
@@ -10760,11 +10929,6 @@ export class FlowSurfacesService {
           requiredFieldCount: options.requiredFieldCount,
         },
       );
-      if (!hasOwnDefined(normalizedSettings, 'filterableFieldNames')) {
-        normalizedSettings.filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(
-          normalizedSettings.defaultFilter,
-        );
-      }
     }
     return normalizedSettings;
   }
@@ -17846,6 +18010,7 @@ export class FlowSurfacesService {
     }
     if (this.isAIEmployeeActionUse(current?.use) && this.hasAIEmployeePublicSettings(normalizedValues)) {
       const enabledPackages = await this.resolveEnabledPluginPackages(options);
+      const hasRawAIEmployeeStepTasks = _.has(normalizedValues, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
       const aiEmployeeSettingsPayload = await this.normalizeAIEmployeeActionPublicSettings(
         'updateSettings',
         _.pick(normalizedValues, AI_EMPLOYEE_PUBLIC_SETTING_KEYS),
@@ -17859,6 +18024,7 @@ export class FlowSurfacesService {
             kind: 'target',
             targetUid: current?.uid || writeTarget.uid,
           },
+          skipExistingTaskWorkContextRebase: hasRawAIEmployeeStepTasks,
         },
       );
       AI_EMPLOYEE_PUBLIC_SETTING_KEYS.forEach((key) => {
@@ -17942,6 +18108,7 @@ export class FlowSurfacesService {
       normalizedValues,
       nextPayload,
     );
+    this.syncActionButtonSettingsForUpdateSettings(current, normalizedValues, nextPayload);
     this.syncActionTriggerWorkflowsForUpdateSettings(current, normalizedValues, nextPayload);
     const popupActionContext =
       options.popupActionContext ||
@@ -18005,6 +18172,13 @@ export class FlowSurfacesService {
     if (Object.keys(nextPayload).length === 1) {
       return { uid: current.uid };
     }
+
+    await this.assertNoDuplicateAIEmployeeActionForUpdateSettings(
+      options.openViewActionName || 'updateSettings',
+      current,
+      effectiveNode,
+      options.transaction,
+    );
 
     if (target.kind === 'tab' && target.tabRoute) {
       await this.routeSync.persistTabSettings(target, current, nextPayload, options.transaction);
@@ -18531,17 +18705,6 @@ export class FlowSurfacesService {
       const filterValue = this.normalizeEffectivePublicDataSurfaceDefaultFilter(normalizedFilterValue, {
         requiredFieldCount: options.requiredFieldCount,
       });
-      if (!hasPropsFilterableFieldNames && !hasStepFilterableFieldNames) {
-        const filterableFieldNames = resolveFlowSurfaceDefaultFilterFieldNames(filterValue);
-        if (filterableFieldNames.length) {
-          nextProps.filterableFieldNames = filterableFieldNames;
-          _.set(
-            nextStepParams,
-            ['filterSettings', 'filterableFieldNames', 'filterableFieldNames'],
-            _.cloneDeep(filterableFieldNames),
-          );
-        }
-      }
       nextProps.defaultFilterValue = _.cloneDeep(filterValue);
       nextProps.filterValue = _.cloneDeep(filterValue);
       _.set(nextStepParams, ['filterSettings', 'defaultFilter', 'defaultFilter'], _.cloneDeep(filterValue));
@@ -18601,6 +18764,84 @@ export class FlowSurfacesService {
     if (nextStepParams) {
       nextPayload.stepParams = nextStepParams;
     }
+  }
+
+  private syncActionButtonSettingsForUpdateSettings(
+    current: any,
+    normalizedValues: Record<string, any>,
+    nextPayload: Record<string, any>,
+  ) {
+    if (!this.supportsActionButtonSettingsSync(current)) {
+      return;
+    }
+    const requestedProps = this.pickRequestedActionButtonSettings(normalizedValues.props);
+    const requestedButtonGeneral = this.pickRequestedActionButtonSettings(
+      _.get(normalizedValues, ['stepParams', 'buttonSettings', 'general']),
+    );
+    const hasRequestedProps = Object.keys(requestedProps).length > 0;
+    const hasRequestedButtonGeneral = Object.keys(requestedButtonGeneral).length > 0;
+    if (!hasRequestedProps && !hasRequestedButtonGeneral) {
+      return;
+    }
+    const hasRequestedTitle =
+      Object.prototype.hasOwnProperty.call(requestedProps, 'title') ||
+      Object.prototype.hasOwnProperty.call(requestedButtonGeneral, 'title');
+    const shouldStripImplicitTitle =
+      (requestedProps.iconOnly === true || requestedButtonGeneral.iconOnly === true) && !hasRequestedTitle;
+    const nextProps = _.cloneDeep(
+      _.isPlainObject(nextPayload.props) ? nextPayload.props : _.isPlainObject(current?.props) ? current.props : {},
+    );
+    const nextStepParams = _.cloneDeep(
+      _.isPlainObject(nextPayload.stepParams)
+        ? nextPayload.stepParams
+        : _.isPlainObject(current?.stepParams)
+          ? current.stepParams
+          : {},
+    );
+
+    Object.entries(requestedProps).forEach(([key, value]) => {
+      if (Object.prototype.hasOwnProperty.call(requestedButtonGeneral, key)) {
+        return;
+      }
+      _.set(nextStepParams, ['buttonSettings', 'general', key], _.cloneDeep(value));
+    });
+    Object.entries(requestedButtonGeneral).forEach(([key, value]) => {
+      if (Object.prototype.hasOwnProperty.call(requestedProps, key)) {
+        return;
+      }
+      nextProps[key] = _.cloneDeep(value);
+    });
+
+    if (shouldStripImplicitTitle) {
+      delete nextProps.title;
+      if (_.isPlainObject(_.get(nextStepParams, ['buttonSettings', 'general']))) {
+        delete nextStepParams.buttonSettings.general.title;
+      }
+    }
+
+    nextPayload.props = nextProps;
+    nextPayload.stepParams = nextStepParams;
+  }
+
+  private supportsActionButtonSettingsSync(current: any) {
+    const contract = getNodeContract(current?.use);
+    return (
+      contract.domains.props?.allowedKeys?.includes('iconOnly') &&
+      contract.domains.stepParams?.groups?.buttonSettings?.allowedPaths?.includes('general.iconOnly')
+    );
+  }
+
+  private pickRequestedActionButtonSettings(input: Record<string, any>) {
+    const picked: Record<string, any> = {};
+    if (!_.isPlainObject(input)) {
+      return picked;
+    }
+    ACTION_BUTTON_GENERAL_SETTING_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(input, key) && !_.isUndefined(input[key])) {
+        picked[key] = _.cloneDeep(input[key]);
+      }
+    });
+    return picked;
   }
 
   private syncCreatedFieldWrapperTitleFieldStepParams(node: any) {
@@ -20636,6 +20877,126 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces:get only accepts exactly one locator: uid, pageSchemaUid, tabSchemaUid or routeId`);
     }
     return target;
+  }
+
+  private normalizeExportBlueprintRequest(input: Record<string, unknown>): FlowSurfaceExportBlueprintRequest {
+    if (!_.isPlainObject(input)) {
+      throwBadRequest(`flowSurfaces exportBlueprint payload must be an object`);
+    }
+    const unsupportedKeys = Object.keys(input).filter((key) => key !== 'target' && key !== 'options');
+    if (unsupportedKeys.length) {
+      throwBadRequest(`flowSurfaces exportBlueprint only accepts target and options`);
+    }
+    if (!_.isPlainObject(input.target)) {
+      throwBadRequest(`flowSurfaces exportBlueprint requires target`);
+    }
+    const targetInput = input.target as Record<string, unknown>;
+    const target = buildDefinedPayload({
+      uid: this.normalizeExportBlueprintLocatorValue(targetInput.uid, 'uid'),
+      pageSchemaUid: this.normalizeExportBlueprintLocatorValue(targetInput.pageSchemaUid, 'pageSchemaUid'),
+      tabSchemaUid: this.normalizeExportBlueprintLocatorValue(targetInput.tabSchemaUid, 'tabSchemaUid'),
+      routeId: this.normalizeExportBlueprintLocatorValue(targetInput.routeId, 'routeId'),
+    });
+    const unsupportedTargetKeys = Object.keys(targetInput).filter(
+      (key) => !['uid', 'pageSchemaUid', 'tabSchemaUid', 'routeId'].includes(key),
+    );
+    if (unsupportedTargetKeys.length) {
+      throwBadRequest(`flowSurfaces exportBlueprint target only accepts uid, pageSchemaUid, tabSchemaUid or routeId`);
+    }
+    if (!Object.keys(target).length) {
+      throwBadRequest(
+        `flowSurfaces exportBlueprint target requires one of uid, pageSchemaUid, tabSchemaUid or routeId`,
+      );
+    }
+    if (Object.keys(target).length > 1) {
+      throwBadRequest(
+        `flowSurfaces exportBlueprint target only accepts exactly one locator: uid, pageSchemaUid, tabSchemaUid or routeId`,
+      );
+    }
+    if (target.tabSchemaUid) {
+      throwBadRequest(FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE);
+    }
+    return {
+      target,
+      unsupportedPolicy: this.normalizeExportBlueprintUnsupportedPolicy(input.options),
+    };
+  }
+
+  private normalizeExportBlueprintUnsupportedPolicy(input: unknown): FlowSurfaceExportBlueprintUnsupportedPolicy {
+    if (_.isUndefined(input)) {
+      return 'error';
+    }
+    if (!_.isPlainObject(input)) {
+      throwBadRequest(`flowSurfaces exportBlueprint options must be an object`);
+    }
+    const options = input as Record<string, unknown>;
+    const unsupportedKeys = Object.keys(options).filter((key) => key !== 'unsupported');
+    if (unsupportedKeys.length) {
+      throwBadRequest(`flowSurfaces exportBlueprint options only accepts unsupported`);
+    }
+    const policy = options.unsupported;
+    if (_.isUndefined(policy)) {
+      return 'error';
+    }
+    if (policy === 'error' || policy === 'warn') {
+      return policy;
+    }
+    throwBadRequest(`flowSurfaces exportBlueprint options.unsupported must be 'error' or 'warn'`);
+  }
+
+  private normalizeExportBlueprintLocatorValue(value: unknown, key: string) {
+    if (_.isNil(value)) {
+      return undefined;
+    }
+    if (typeof value !== 'string' && typeof value !== 'number') {
+      throwBadRequest(`flowSurfaces exportBlueprint target.${key} must be a string`);
+    }
+    const normalized = String(value).trim();
+    return normalized || undefined;
+  }
+
+  private readRouteString(route: unknown, key: string) {
+    const routeRecord = route as ({ get?: (name: string) => unknown } & Record<string, unknown>) | undefined;
+    const value = routeRecord?.get?.(key) ?? routeRecord?.[key];
+    const normalized = typeof value === 'string' ? value.trim() : '';
+    return normalized || undefined;
+  }
+
+  private resolveExportBlueprintPageSchemaUid(
+    target: FlowSurfaceReadLocator,
+    resolved: FlowSurfaceResolvedTarget,
+  ): string {
+    const pageSchemaUid =
+      this.readRouteString(resolved.pageRoute, 'schemaUid') ||
+      (target.pageSchemaUid ? String(target.pageSchemaUid).trim() : '');
+    if (!pageSchemaUid) {
+      throwBadRequest(FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE);
+    }
+    return pageSchemaUid;
+  }
+
+  private async assertExportBlueprintRootTarget(
+    target: FlowSurfaceReadLocator,
+    resolved: FlowSurfaceResolvedTarget,
+    pageSchemaUid: string,
+    transaction?: FlowSurfaceReadOptions['transaction'],
+  ) {
+    const targetUid = target.uid ? String(target.uid).trim() : '';
+    if (!targetUid) {
+      return;
+    }
+    if (targetUid === pageSchemaUid) {
+      return;
+    }
+    const rootPageModel = await this.repository.findModelByParentId(pageSchemaUid, {
+      transaction,
+      subKey: 'page',
+      includeAsyncNode: false,
+    });
+    if (rootPageModel?.uid && targetUid === String(rootPageModel.uid).trim()) {
+      return;
+    }
+    throwBadRequest(FLOW_SURFACE_EXPORT_BLUEPRINT_ROOT_ONLY_MESSAGE);
   }
 
   private normalizeContextPath(path?: string) {
@@ -25708,18 +26069,20 @@ export class FlowSurfacesService {
     return JSON.stringify(value);
   }
 
-  private buildAIEmployeeActionDedupIdentity(values: Record<string, any>) {
+  private buildAIEmployeeActionDedupIdentity(values: Record<string, any>, defaultActionWorkContext?: any[]) {
     const username = String(values?.props?.aiEmployee?.username || '').trim();
     if (!username) {
       return '';
     }
+    const workContext = this.normalizeAIEmployeeActionWorkContextForDedupIdentity(
+      values?.props?.context?.workContext,
+      defaultActionWorkContext,
+    );
     return this.stableSerializeAIEmployeeValue({
       username,
       auto: typeof values?.props?.auto === 'boolean' ? values.props.auto : false,
-      workContext: this.normalizeAIEmployeeWorkContextForDedupIdentity(values?.props?.context?.workContext),
-      tasks: this.normalizeAIEmployeeTasksForDedupIdentity(
-        _.get(values, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]),
-      ),
+      workContext,
+      tasks: this.normalizeAIEmployeeTasksForDedupIdentity(this.readAIEmployeePersistedTasks(values), workContext),
       style: {
         ...AI_EMPLOYEE_DEFAULT_STYLE,
         ...(_.isPlainObject(values?.props?.style) ? _.pick(values.props.style, AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {}),
@@ -25728,12 +26091,39 @@ export class FlowSurfacesService {
   }
 
   private normalizeAIEmployeeWorkContextForDedupIdentity(value: any) {
-    return _.castArray(value || []).map((item: any) =>
-      _.isPlainObject(item) ? _.pick(item, AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS) : item,
-    );
+    return _.castArray(value || []).map((item: any) => {
+      if (!_.isPlainObject(item)) {
+        return item;
+      }
+      const output = _.pick(item, AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS);
+      if (!Object.prototype.hasOwnProperty.call(output, 'type') || _.isUndefined(output.type) || output.type === null) {
+        output.type = 'flow-model';
+      }
+      return output;
+    });
   }
 
-  private normalizeAIEmployeeTasksForDedupIdentity(value: any) {
+  private normalizeAIEmployeeActionWorkContextForDedupIdentity(value: any, defaultWorkContext?: any[]) {
+    if (!Array.isArray(value)) {
+      return _.cloneDeep(defaultWorkContext || []);
+    }
+    return this.normalizeAIEmployeeWorkContextForDedupIdentity(value);
+  }
+
+  private normalizeAIEmployeeDefaultActionWorkContextForSelfUid(selfUid?: string) {
+    const uid = String(selfUid || '').trim();
+    return uid ? [{ type: 'flow-model', uid }] : [];
+  }
+
+  private normalizeAIEmployeeTaskWorkContextForDedupIdentity(value: any, defaultWorkContext?: any[]) {
+    const normalized = this.normalizeAIEmployeeWorkContextForDedupIdentity(value);
+    if (Array.isArray(defaultWorkContext) && !normalized.length) {
+      return _.cloneDeep(defaultWorkContext);
+    }
+    return normalized;
+  }
+
+  private normalizeAIEmployeeTasksForDedupIdentity(value: any, defaultWorkContext?: any[]) {
     return _.castArray(value || []).map((task: any) => {
       if (!_.isPlainObject(task)) {
         return task;
@@ -25742,8 +26132,21 @@ export class FlowSurfacesService {
       if (_.isPlainObject(output.message)) {
         output.message = _.pick(output.message, AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS);
         if (Object.prototype.hasOwnProperty.call(output.message, 'workContext')) {
-          output.message.workContext = this.normalizeAIEmployeeWorkContextForDedupIdentity(output.message.workContext);
+          output.message.workContext = this.normalizeAIEmployeeTaskWorkContextForDedupIdentity(
+            output.message.workContext,
+            defaultWorkContext,
+          );
         }
+      }
+      if (!_.isPlainObject(output.message) && Array.isArray(defaultWorkContext)) {
+        output.message = {
+          workContext: _.cloneDeep(defaultWorkContext),
+        };
+      } else if (
+        _.isPlainObject(output.message) &&
+        !Object.prototype.hasOwnProperty.call(output.message, 'workContext')
+      ) {
+        output.message.workContext = _.cloneDeep(defaultWorkContext || []);
       }
       if (_.isPlainObject(output.model)) {
         output.model = _.pick(output.model, AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS);
@@ -25760,26 +26163,40 @@ export class FlowSurfacesService {
     parentUid: string,
     values: Record<string, any>,
     transaction?: any,
+    excludeUid?: string,
   ) {
-    const identity = this.buildAIEmployeeActionDedupIdentity(values);
-    if (!identity) {
-      return;
-    }
     const parentNode = await this.repository.findModelById(parentUid, {
       transaction,
       includeAsyncNode: true,
     });
-    const duplicate = _.castArray(parentNode?.subModels?.actions || []).find((action: any) => {
+    const defaultActionWorkContext = this.normalizeAIEmployeeDefaultActionWorkContextForSelfUid(
+      await this.resolveAIEmployeeActionSelfUidFromParentNode(parentNode, transaction),
+    );
+    const identity = this.buildAIEmployeeActionDedupIdentity(values, defaultActionWorkContext);
+    if (!identity) {
+      return;
+    }
+    let duplicate: any;
+    for (const action of _.castArray(parentNode?.subModels?.actions || [])) {
       if (!this.isAIEmployeeActionUse(action?.use)) {
-        return false;
+        continue;
       }
-      return (
-        this.buildAIEmployeeActionDedupIdentity({
-          props: action.props,
-          stepParams: action.stepParams,
-        }) === identity
-      );
-    });
+      if (excludeUid && String(action?.uid || '') === excludeUid) {
+        continue;
+      }
+      if (
+        this.buildAIEmployeeActionDedupIdentity(
+          {
+            props: action.props,
+            stepParams: action.stepParams,
+          },
+          defaultActionWorkContext,
+        ) === identity
+      ) {
+        duplicate = action;
+        break;
+      }
+    }
     if (!duplicate?.uid) {
       return;
     }
@@ -25793,6 +26210,33 @@ export class FlowSurfacesService {
             'Remove the duplicate aiEmployee action, or change username, task title/key, or workContext if this is a genuinely different AI employee action.',
         },
       },
+    );
+  }
+
+  private async assertNoDuplicateAIEmployeeActionForUpdateSettings(
+    actionName: string,
+    current: any,
+    effectiveNode: any,
+    transaction?: any,
+  ) {
+    if (!this.isAIEmployeeActionUse(current?.use)) {
+      return;
+    }
+    const parentUid =
+      String(current?.parentId || '').trim() ||
+      (current?.uid ? await this.locator.findParentUid(current.uid, transaction).catch(() => '') : '');
+    if (!parentUid) {
+      return;
+    }
+    await this.assertNoDuplicateAIEmployeeAction(
+      actionName,
+      parentUid,
+      {
+        props: effectiveNode?.props,
+        stepParams: effectiveNode?.stepParams,
+      },
+      transaction,
+      String(current?.uid || ''),
     );
   }
 
@@ -25864,10 +26308,24 @@ export class FlowSurfacesService {
   private readAIEmployeePersistedTasks(current: any) {
     const stepTasks = _.get(current, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
     if (Array.isArray(stepTasks)) {
-      return stepTasks;
+      return this.normalizeAIEmployeeLegacyInheritedTaskWorkContext(stepTasks);
     }
-    const legacyPropsTasks = current?.props?.tasks;
+    const legacyPropsTasks = this.normalizeAIEmployeeLegacyInheritedTaskWorkContext(current?.props?.tasks);
     return Array.isArray(legacyPropsTasks) ? legacyPropsTasks : [];
+  }
+
+  private normalizeAIEmployeeLegacyInheritedTaskWorkContext(tasks: any) {
+    if (!Array.isArray(tasks)) {
+      return tasks;
+    }
+    return tasks.map((task) => {
+      if (!_.isPlainObject(task) || !_.isPlainObject(task.message) || task.message.workContext !== null) {
+        return task;
+      }
+      const nextTask = _.cloneDeep(task);
+      delete nextTask.message.workContext;
+      return nextTask;
+    });
   }
 
   private buildAIEmployeeTaskStepParams(tasks: any[]) {
@@ -25903,7 +26361,7 @@ export class FlowSurfacesService {
     if (!this.isAIEmployeeActionUse(current?.use)) {
       return;
     }
-    const legacyPropsTasks = current?.props?.tasks;
+    const legacyPropsTasks = this.normalizeAIEmployeeLegacyInheritedTaskWorkContext(current?.props?.tasks);
     const hasLegacyPropsTasks = Array.isArray(legacyPropsTasks);
     const hasNextStepTasks = _.has(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
     const currentStepTasks = _.get(current, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
@@ -26107,6 +26565,33 @@ export class FlowSurfacesService {
         type: 'flow-model',
         uid: uidValueFromTarget,
       };
+    });
+  }
+
+  private normalizeAIEmployeeEffectiveActionWorkContext(
+    actionName: string,
+    settings: Record<string, any>,
+    currentProps: Record<string, any>,
+    options: {
+      selfUid?: string;
+      keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+      requireUsername?: boolean;
+    },
+  ) {
+    const hasSettingsWorkContext = Object.prototype.hasOwnProperty.call(settings, 'workContext');
+    const currentWorkContext = currentProps?.context?.workContext;
+    if (!hasSettingsWorkContext && !Array.isArray(currentWorkContext) && !options.requireUsername && !options.selfUid) {
+      return undefined;
+    }
+    const rawWorkContext = hasSettingsWorkContext
+      ? settings.workContext
+      : Array.isArray(currentWorkContext)
+        ? currentWorkContext
+        : [{ type: 'flow-model', target: 'self' }];
+    return this.normalizeAIEmployeeWorkContext(actionName, rawWorkContext, {
+      selfUid: options.selfUid,
+      keyMap: options.keyMap,
+      path: 'settings.workContext',
     });
   }
 
@@ -26525,15 +27010,66 @@ export class FlowSurfacesService {
       return;
     }
     const actionName = options.openViewActionName || 'updateSettings';
-    const normalizedTasks = this.normalizeAIEmployeeTasks(
-      actionName,
-      tasks,
-      this.readAIEmployeePersistedTasks(current),
-      {
-        selfUid: await this.resolveAIEmployeeActionSelfUid(current || { uid: writeTarget.uid }, options.transaction),
-        path: 'stepParams.shortcutSettings.editTasks.tasks',
+    const selfUid = await this.resolveAIEmployeeActionSelfUid(current || { uid: writeTarget.uid }, options.transaction);
+    const currentPropsForDefault = _.mergeWith(
+      {},
+      _.isPlainObject(current?.props) ? current.props : {},
+      _.isPlainObject(nextPayload.props) ? nextPayload.props : {},
+      (_currentValue, nextValue) => {
+        if (Array.isArray(nextValue)) {
+          return _.cloneDeep(nextValue);
+        }
+        return undefined;
       },
     );
+    const defaultWorkContext = this.normalizeAIEmployeeEffectiveActionWorkContext(
+      actionName,
+      {},
+      currentPropsForDefault,
+      {
+        selfUid,
+        requireUsername: true,
+      },
+    );
+    const currentTasks = this.readAIEmployeePersistedTasks(current);
+    const previousActionWorkContext = this.normalizeAIEmployeeActionWorkContextForDedupIdentity(
+      current?.props?.context?.workContext,
+      this.normalizeAIEmployeeDefaultActionWorkContextForSelfUid(selfUid),
+    );
+    const nextActionWorkContext = this.normalizeAIEmployeeActionWorkContextForDedupIdentity(
+      currentPropsForDefault?.context?.workContext,
+      defaultWorkContext,
+    );
+    if (
+      Array.isArray(defaultWorkContext) &&
+      !_.isEqual(currentPropsForDefault?.context?.workContext, defaultWorkContext)
+    ) {
+      nextPayload.props = _.mergeWith(
+        {},
+        currentPropsForDefault,
+        {
+          context: {
+            workContext: _.cloneDeep(defaultWorkContext),
+          },
+        },
+        (_currentValue, nextValue) => {
+          if (Array.isArray(nextValue)) {
+            return _.cloneDeep(nextValue);
+          }
+          return undefined;
+        },
+      );
+    }
+    const currentTasksForNormalization = this.rebaseAIEmployeeInheritedTaskWorkContext(
+      currentTasks,
+      previousActionWorkContext,
+      nextActionWorkContext,
+    );
+    const normalizedTasks = this.normalizeAIEmployeeTasks(actionName, tasks, currentTasksForNormalization, {
+      selfUid,
+      defaultWorkContext,
+      path: 'stepParams.shortcutSettings.editTasks.tasks',
+    });
     _.set(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH], normalizedTasks);
   }
 
@@ -26545,6 +27081,7 @@ export class FlowSurfacesService {
     options: {
       selfUid?: string;
       keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+      defaultWorkContext?: any[];
     },
   ) {
     if (!_.isPlainObject(value)) {
@@ -26572,12 +27109,20 @@ export class FlowSurfacesService {
     if (Object.prototype.hasOwnProperty.call(nextMessage, 'user') && typeof nextMessage.user !== 'string') {
       throwBadRequest(`flowSurfaces ${actionName} ${path}.user must be a string`);
     }
-    if (Object.prototype.hasOwnProperty.call(value, 'workContext')) {
+    if (value.workContext === null) {
+      delete nextMessage.workContext;
+    } else if (Object.prototype.hasOwnProperty.call(value, 'workContext')) {
       nextMessage.workContext = this.normalizeAIEmployeeWorkContext(actionName, value.workContext, {
         selfUid: options.selfUid,
         keyMap: options.keyMap,
         path: `${path}.workContext`,
       });
+    }
+    if (
+      !Object.prototype.hasOwnProperty.call(nextMessage, 'workContext') &&
+      this.shouldMaterializeAIEmployeeTaskDefaultWorkContext(options.defaultWorkContext)
+    ) {
+      nextMessage.workContext = _.cloneDeep(options.defaultWorkContext);
     }
     return nextMessage;
   }
@@ -26590,6 +27135,7 @@ export class FlowSurfacesService {
       selfUid?: string;
       keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
       path: string;
+      defaultWorkContext?: any[];
     },
   ) {
     if (!_.isPlainObject(patch)) {
@@ -26619,6 +27165,7 @@ export class FlowSurfacesService {
         next.message = this.normalizeAIEmployeeTaskMessage(actionName, `${options.path}.message`, value, next.message, {
           selfUid: options.selfUid,
           keyMap: options.keyMap,
+          defaultWorkContext: options.defaultWorkContext,
         });
         return;
       }
@@ -26671,6 +27218,12 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(next.message)) {
       next.message = {};
     }
+    if (
+      !Object.prototype.hasOwnProperty.call(next.message, 'workContext') &&
+      this.shouldMaterializeAIEmployeeTaskDefaultWorkContext(options.defaultWorkContext)
+    ) {
+      next.message.workContext = _.cloneDeep(options.defaultWorkContext);
+    }
     if (_.isPlainObject(next.skillSettings)) {
       if (
         Array.isArray(next.skillSettings.skills) &&
@@ -26696,6 +27249,7 @@ export class FlowSurfacesService {
       selfUid?: string;
       keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
       path: string;
+      defaultWorkContext?: any[];
     },
   ) {
     if (_.isUndefined(value) || value === null) {
@@ -26714,9 +27268,58 @@ export class FlowSurfacesService {
         selfUid: options.selfUid,
         keyMap: options.keyMap,
         path: `${options.path}[${index}]`,
+        defaultWorkContext: options.defaultWorkContext,
       });
     });
-    return nextTasks;
+    return this.withAIEmployeeTaskDefaultWorkContext(nextTasks, options.defaultWorkContext);
+  }
+
+  private withAIEmployeeTaskDefaultWorkContext(tasks: any, defaultWorkContext?: any[]) {
+    const nextTasks = Array.isArray(tasks) ? _.cloneDeep(tasks) : [];
+    if (!this.shouldMaterializeAIEmployeeTaskDefaultWorkContext(defaultWorkContext)) {
+      return nextTasks;
+    }
+    return nextTasks.map((task) => {
+      if (!_.isPlainObject(task)) {
+        return task;
+      }
+      const nextTask = _.cloneDeep(task);
+      if (!_.isPlainObject(nextTask.message)) {
+        nextTask.message = {
+          workContext: _.cloneDeep(defaultWorkContext),
+        };
+      } else if (!Object.prototype.hasOwnProperty.call(nextTask.message, 'workContext')) {
+        nextTask.message.workContext = _.cloneDeep(defaultWorkContext);
+      }
+      return nextTask;
+    });
+  }
+
+  private shouldMaterializeAIEmployeeTaskDefaultWorkContext(defaultWorkContext?: any[]) {
+    return Array.isArray(defaultWorkContext) && defaultWorkContext.length > 0;
+  }
+
+  private rebaseAIEmployeeInheritedTaskWorkContext(
+    currentTasks: any,
+    previousActionWorkContext: any[],
+    nextActionWorkContext: any[],
+  ) {
+    const tasks = this.normalizeAIEmployeeLegacyInheritedTaskWorkContext(currentTasks) || [];
+    if (!previousActionWorkContext.length || _.isEqual(previousActionWorkContext, nextActionWorkContext)) {
+      return tasks;
+    }
+    return tasks.map((task) => {
+      const nextTask = _.cloneDeep(task);
+      if (_.isPlainObject(nextTask?.message)) {
+        const currentTaskWorkContext = this.normalizeAIEmployeeWorkContextForDedupIdentity(
+          nextTask.message.workContext,
+        );
+        if (_.isEqual(currentTaskWorkContext, previousActionWorkContext)) {
+          delete nextTask.message.workContext;
+        }
+      }
+      return nextTask;
+    });
   }
 
   private normalizeAIEmployeeActionSettingsReferences(
@@ -26739,9 +27342,16 @@ export class FlowSurfacesService {
       });
     }
     if (Object.prototype.hasOwnProperty.call(nextSettings, 'tasks')) {
+      const defaultWorkContext = this.normalizeAIEmployeeEffectiveActionWorkContext(
+        actionName,
+        nextSettings,
+        {},
+        options,
+      );
       nextSettings.tasks = this.normalizeAIEmployeeTasks(actionName, nextSettings.tasks, [], {
         ...options,
         path: 'settings.tasks',
+        defaultWorkContext,
       });
     }
     return nextSettings;
@@ -26759,6 +27369,7 @@ export class FlowSurfacesService {
       promptContext?: AIEmployeePromptContextOptions;
       keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
       currentRoles?: FlowSurfaceRequestRoles;
+      skipExistingTaskWorkContextRebase?: boolean;
     },
   ) {
     this.assertAIEmployeePluginEnabled(actionName, options.enabledPackages);
@@ -26783,6 +27394,17 @@ export class FlowSurfacesService {
 
     const props: Record<string, any> = {};
     const stepParams: Record<string, any> = {};
+    const effectiveActionWorkContext = this.normalizeAIEmployeeEffectiveActionWorkContext(
+      actionName,
+      settings,
+      currentProps,
+      options,
+    );
+    const previousActionWorkContext = this.normalizeAIEmployeeActionWorkContextForDedupIdentity(
+      currentProps?.context?.workContext,
+      this.normalizeAIEmployeeDefaultActionWorkContextForSelfUid(options.selfUid),
+    );
+    const nextActionWorkContext = this.normalizeAIEmployeeWorkContextForDedupIdentity(effectiveActionWorkContext);
     if (effectiveUsername && (hasUsername || options.requireUsername)) {
       props.aiEmployee = {
         ...(_.isPlainObject(currentProps.aiEmployee) ? _.cloneDeep(currentProps.aiEmployee) : {}),
@@ -26800,30 +27422,30 @@ export class FlowSurfacesService {
       }
       props.auto = auto;
     }
-    if (Object.prototype.hasOwnProperty.call(settings, 'workContext') || options.requireUsername) {
-      const rawWorkContext = Object.prototype.hasOwnProperty.call(settings, 'workContext')
-        ? settings.workContext
-        : [{ type: 'flow-model', target: 'self' }];
+    if (
+      Array.isArray(effectiveActionWorkContext) &&
+      (Object.prototype.hasOwnProperty.call(settings, 'workContext') ||
+        options.requireUsername ||
+        !_.isEqual(currentProps?.context?.workContext, effectiveActionWorkContext))
+    ) {
       props.context = {
         ...(_.isPlainObject(currentProps.context) ? _.cloneDeep(currentProps.context) : {}),
-        workContext: this.normalizeAIEmployeeWorkContext(actionName, rawWorkContext, {
-          selfUid: options.selfUid,
-          keyMap: options.keyMap,
-          path: 'settings.workContext',
-        }),
+        workContext: _.cloneDeep(effectiveActionWorkContext),
       };
     }
     if (Object.prototype.hasOwnProperty.call(settings, 'tasks')) {
-      const normalizedTasks = this.normalizeAIEmployeeTasks(
-        actionName,
-        settings.tasks,
-        this.readAIEmployeePersistedTasks(options.current),
-        {
-          selfUid: options.selfUid,
-          keyMap: options.keyMap,
-          path: 'settings.tasks',
-        },
+      const currentTasks = this.readAIEmployeePersistedTasks(options.current);
+      const currentTasksForNormalization = this.rebaseAIEmployeeInheritedTaskWorkContext(
+        currentTasks,
+        previousActionWorkContext,
+        nextActionWorkContext,
       );
+      const normalizedTasks = this.normalizeAIEmployeeTasks(actionName, settings.tasks, currentTasksForNormalization, {
+        selfUid: options.selfUid,
+        keyMap: options.keyMap,
+        path: 'settings.tasks',
+        defaultWorkContext: effectiveActionWorkContext,
+      });
       const validation =
         options.promptContext && normalizedTasks.length
           ? await this.buildAIEmployeePromptValidationContext(
@@ -26847,6 +27469,21 @@ export class FlowSurfacesService {
       const tasks = this.appendAIEmployeeCurrentRecordPromptVariableToTasks(normalizedTasks, validation);
       this.assertAIEmployeeTaskPromptVariablesAllowed(actionName, tasks, validation);
       _.merge(stepParams, this.buildAIEmployeeTaskStepParams(tasks));
+    } else if (
+      !options.skipExistingTaskWorkContextRebase &&
+      Object.prototype.hasOwnProperty.call(settings, 'workContext') &&
+      !_.isEqual(previousActionWorkContext, nextActionWorkContext)
+    ) {
+      const currentTasks = this.readAIEmployeePersistedTasks(options.current);
+      const rebasedTasks = this.rebaseAIEmployeeInheritedTaskWorkContext(
+        currentTasks,
+        previousActionWorkContext,
+        nextActionWorkContext,
+      );
+      const tasks = this.withAIEmployeeTaskDefaultWorkContext(rebasedTasks, effectiveActionWorkContext);
+      if (tasks.length) {
+        _.merge(stepParams, this.buildAIEmployeeTaskStepParams(tasks));
+      }
     }
     if (Object.prototype.hasOwnProperty.call(settings, 'style') || options.requireUsername) {
       const style = Object.prototype.hasOwnProperty.call(settings, 'style') ? settings.style : {};
@@ -26893,7 +27530,19 @@ export class FlowSurfacesService {
       transaction,
       includeAsyncNode: true,
     });
-    if (['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel'].includes(String(parentNode?.use || ''))) {
+    return (await this.resolveAIEmployeeActionSelfUidFromParentNode(parentNode, transaction)) || parentUid;
+  }
+
+  private async resolveAIEmployeeActionSelfUidFromParentNode(parentNode: any, transaction?: any) {
+    const parentUid = String(parentNode?.uid || '').trim();
+    if (!parentUid) {
+      return '';
+    }
+    if (
+      ['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel', 'CommentItemModel'].includes(
+        String(parentNode?.use || ''),
+      )
+    ) {
       const ownerUid =
         String(parentNode?.parentId || '').trim() ||
         (parentNode?.uid ? await this.locator.findParentUid(parentNode.uid, transaction).catch(() => '') : '');
@@ -26976,14 +27625,15 @@ export class FlowSurfacesService {
       ? this.normalizeFilterActionDefaultFilterValue(changes.defaultFilter)
       : undefined;
     const stepParams: Record<string, any> = {};
-    if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'type', 'danger', 'color', 'linkageRules'])) {
+    if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color', 'linkageRules'])) {
       stepParams.buttonSettings = {
-        ...(hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'type', 'danger', 'color'])
+        ...(hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color'])
           ? {
               general: buildDefinedPayload({
                 title: changes.title,
                 tooltip: changes.tooltip,
                 icon: changes.icon,
+                iconOnly: changes.iconOnly,
                 type: changes.type,
                 danger: changes.danger,
                 color: changes.color,
@@ -27214,6 +27864,7 @@ export class FlowSurfacesService {
       title: changes.title,
       tooltip: changes.tooltip,
       icon: changes.icon,
+      iconOnly: changes.iconOnly,
       type: changes.type,
       htmlType: changes.htmlType,
       position: changes.position,
@@ -27400,6 +28051,12 @@ export class FlowSurfacesService {
     });
   }
 
+  private isCollectionTitleField(collection: any, fieldName: string) {
+    const normalizedFieldName = String(fieldName || '').trim();
+    const titleFieldName = String(getCollectionTitleFieldName(collection) || '').trim();
+    return !!normalizedFieldName && normalizedFieldName === titleFieldName;
+  }
+
   private resolveAssociationLeafDisplaySemantics(
     field: any,
     dataSourceKey: string,
@@ -27450,6 +28107,9 @@ export class FlowSurfacesService {
     generatedPopupOnly?: boolean;
   }) {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
+    const explicitDefaultFieldPaths = collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths(
+      input.defaultFieldGroups,
+    );
     return getCollectionFields(collection).flatMap((field) => {
       const fieldName = getFieldName(field);
       const fieldInterface = getFieldInterface(field);
@@ -27457,6 +28117,9 @@ export class FlowSurfacesService {
         return [];
       }
       if (input.generatedPopupOnly && !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
+        return [];
+      }
+      if (isRelationBackingForeignKeyField(collection, field) && !explicitDefaultFieldPaths.has(fieldName)) {
         return [];
       }
       if (input.mode === 'table' && field?.options?.treeChildren) {
@@ -27569,6 +28232,12 @@ export class FlowSurfacesService {
         }
         const targetFieldName = getFieldName(targetField);
         if (!targetFieldName) {
+          continue;
+        }
+        if (
+          isRelationBackingForeignKeyField(targetCollection, targetField) &&
+          !this.isCollectionTitleField(targetCollection, targetFieldName)
+        ) {
           continue;
         }
         nextCandidates.push({
@@ -27968,10 +28637,12 @@ export class FlowSurfacesService {
     const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
     const getFields = (targetCollection: any) => getCollectionFields(targetCollection);
     const isFilterFieldVisible = (field: any) => getFieldFilterable(field) !== false && !!getFieldInterface(field);
-    const directFields = getFields(collection).filter((field) =>
-      ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
-        ? isFilterFieldVisible(field)
-        : !!getFieldInterface(field),
+    const directFields = getFields(collection).filter(
+      (field) =>
+        !isRelationBackingForeignKeyField(collection, field) &&
+        (['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
+          ? isFilterFieldVisible(field)
+          : !!getFieldInterface(field)),
     );
     if (!directFields.length && !collection) {
       return [];
@@ -27986,11 +28657,18 @@ export class FlowSurfacesService {
         return [];
       }
       return getFields(targetCollection)
-        .filter((targetField) =>
-          ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
+        .filter((targetField) => {
+          const targetFieldName = getFieldName(targetField);
+          if (
+            isRelationBackingForeignKeyField(targetCollection, targetField) &&
+            !this.isCollectionTitleField(targetCollection, targetFieldName)
+          ) {
+            return false;
+          }
+          return ['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(input.ownerUse)
             ? isFilterFieldVisible(targetField)
-            : !!getFieldInterface(targetField),
-        )
+            : !!getFieldInterface(targetField);
+        })
         .map((targetField) => ({
           field: targetField,
           fieldPath: `${getFieldName(field)}.${getFieldName(targetField)}`,

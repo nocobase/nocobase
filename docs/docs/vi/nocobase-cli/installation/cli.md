@@ -48,7 +48,7 @@ Thay thế `<server-ip>` bằng IP thực của máy chủ hiện tại mà bạ
 
 Nói chung:
 
-- `default-ui-host` được sử dụng làm địa chỉ nghe mặc định của `nb init --ui` khi bắt đầu trang hướng dẫn
+- `default-ui-host` được dùng để tạo URL có thể truy cập từ trình duyệt cho wizard `nb init --ui`; bản thân dịch vụ wizard luôn lắng nghe trên `0.0.0.0`
 - `default-api-host` cho địa chỉ API được tạo theo mặc định khi cài đặt mới
 
 Nếu được triển khai trên máy chủ, cả hai giá trị thường phải được thay đổi thành IP có thể truy cập được trên máy chủ hiện tại, thay vì tiếp tục sử dụng địa chỉ cục bộ mặc định.

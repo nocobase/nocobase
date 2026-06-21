@@ -52,6 +52,7 @@ type CompilePlanStepDeps = NormalizePlanSelectorDeps & {
     target: FlowSurfaceReadLocator,
     options?: { transaction?: any },
   ) => Promise<FlowSurfaceResolvedTarget>;
+  loadResolvedSurfaceTree?: (resolved: FlowSurfaceResolvedTarget, transaction?: any) => Promise<any>;
   buildPlanKeyKind: (node: any, resolvedKind?: string) => string;
 };
 
@@ -60,8 +61,13 @@ type FlowSurfaceCreatedKeySelector = {
   summary: { source: 'created'; key: string };
 };
 
+type FlowSurfaceSystemResolvedSelector = FlowSurfaceResolvedKey & {
+  node?: any;
+  resolved?: FlowSurfaceResolvedTarget;
+};
+
 type FlowSurfaceResolvedSelector =
-  | FlowSurfaceResolvedKey
+  | FlowSurfaceSystemResolvedSelector
   | FlowSurfaceCompiledPlanStepSelectorLink
   | FlowSurfaceCreatedKeySelector;
 
@@ -236,6 +242,8 @@ async function resolvePlanSelectorInContext(
     uid: resolved.uid,
     source: 'system',
     kind: deps.buildPlanKeyKind(node, resolved.kind),
+    node: node || resolved.node,
+    resolved,
     locator: buildDefinedPayload({
       uid: normalizedSelector.locator.uid,
       pageSchemaUid: normalizedSelector.locator.pageSchemaUid,
@@ -280,6 +288,166 @@ function buildSelectorRuntimeValue(selector: FlowSurfaceResolvedSelector) {
   return selector.uid;
 }
 
+function getResolvedSelectorUid(selector: FlowSurfaceResolvedSelector | undefined) {
+  if (!selector || 'summary' in selector) {
+    return undefined;
+  }
+  return selector.uid;
+}
+
+function isReplaceComposeStep(step: FlowSurfacePlanStep) {
+  return step.action === 'compose' && String(step.values?.mode || '').trim() === 'replace';
+}
+
+function assertReplaceComposeTargetSupportsScopeResolution(
+  actionName: string,
+  index: number,
+  step: FlowSurfacePlanStep,
+  target: FlowSurfaceResolvedSelector | undefined,
+) {
+  if (!isReplaceComposeStep(step) || !target || !('summary' in target) || target.summary.source !== 'step') {
+    return;
+  }
+  throwBadRequest(
+    `flowSurfaces ${actionName} plan.steps[${index}] compose replace does not support selectors.target.step; use a concrete locator or key for the existing replace target`,
+  );
+}
+
+function collectDescendantUids(node: any, carry = new Set<string>()) {
+  if (!node || typeof node !== 'object') {
+    return carry;
+  }
+  for (const value of Object.values(node.subModels || {})) {
+    for (const child of _.castArray(value as any)) {
+      if (child?.uid) {
+        carry.add(child.uid);
+      }
+      collectDescendantUids(child, carry);
+    }
+  }
+  return carry;
+}
+
+function collectNodeAndDescendantUids(node: any, carry = new Set<string>()) {
+  if (!node || typeof node !== 'object') {
+    return carry;
+  }
+  if (node.uid) {
+    carry.add(node.uid);
+  }
+  return collectDescendantUids(node, carry);
+}
+
+function findNodeInTreeByUid(node: any, uid: string | undefined): any {
+  if (!node || typeof node !== 'object' || !uid) {
+    return undefined;
+  }
+  if (node.uid === uid) {
+    return node;
+  }
+  for (const value of Object.values(node.subModels || {})) {
+    for (const child of _.castArray(value as any)) {
+      const matched = findNodeInTreeByUid(child, uid);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+  return undefined;
+}
+
+function getContextNodeByUid(context: FlowSurfacePlanSurfaceContext, uid: string | undefined) {
+  if (!uid) {
+    return undefined;
+  }
+  return findNodeInTreeByUid(context.publicTree, uid) || findNodeInTreeByUid(context.rawTree, uid);
+}
+
+function getSingleSubModel(node: any, key: string) {
+  const value = node?.subModels?.[key];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getSubModelList(node: any, key: string) {
+  return _.castArray(node?.subModels?.[key] || []).filter((item) => item && typeof item === 'object');
+}
+
+function isGridNode(node: any) {
+  return typeof node?.use === 'string' && node.use.endsWith('GridModel');
+}
+
+function resolveReplaceComposeGridNode(targetNode: any): any {
+  if (!targetNode || typeof targetNode !== 'object') {
+    return undefined;
+  }
+  if (isGridNode(targetNode)) {
+    return targetNode;
+  }
+  const directGrid = getSingleSubModel(targetNode, 'grid');
+  if (directGrid) {
+    return directGrid;
+  }
+  const firstTab = getSubModelList(targetNode, 'tabs')[0];
+  const firstTabGrid = getSingleSubModel(firstTab, 'grid');
+  if (firstTabGrid) {
+    return firstTabGrid;
+  }
+  const popupPage = getSingleSubModel(targetNode, 'page');
+  const firstPopupTab = getSubModelList(popupPage, 'tabs')[0];
+  return getSingleSubModel(firstPopupTab, 'grid');
+}
+
+async function collectReplaceScopeExistingKeys(
+  step: FlowSurfacePlanStep,
+  context: FlowSurfacePlanSurfaceContext,
+  target: FlowSurfaceResolvedSelector | undefined,
+  deps: CompilePlanStepDeps,
+  options: { transaction?: any } = {},
+) {
+  if (!isReplaceComposeStep(step)) {
+    return new Set<string>();
+  }
+  let targetNode =
+    getContextNodeByUid(context, getResolvedSelectorUid(target)) ||
+    (!target || 'summary' in target ? undefined : target.node);
+  if (!targetNode && target && !('summary' in target) && target.resolved && deps.loadResolvedSurfaceTree) {
+    targetNode = await deps.loadResolvedSurfaceTree(target.resolved, options.transaction);
+  }
+  if (!targetNode) {
+    return new Set<string>();
+  }
+  const gridNode = resolveReplaceComposeGridNode(targetNode);
+  if (!gridNode) {
+    return new Set<string>();
+  }
+  const replacedUids = new Set<string>();
+  for (const item of getSubModelList(gridNode, 'items')) {
+    collectNodeAndDescendantUids(item, replacedUids);
+  }
+  const keys = new Set<string>();
+  context.keyMap.forEach((info, key) => {
+    if (replacedUids.has(info.uid)) {
+      keys.add(key);
+    }
+  });
+  return keys;
+}
+
+function buildExistingKeysForConflict(
+  context: FlowSurfacePlanSurfaceContext,
+  priorCreatedKeys: Set<string>,
+  allowedExistingKeys: Set<string>,
+) {
+  const existing = new Set<string>();
+  context.keyMap.forEach((_info, key) => {
+    if (!allowedExistingKeys.has(key)) {
+      existing.add(key);
+    }
+  });
+  priorCreatedKeys.forEach((key) => existing.add(key));
+  return existing;
+}
+
 export async function compilePlanStep(
   actionName: string,
   step: FlowSurfacePlanStep,
@@ -294,13 +462,6 @@ export async function compilePlanStep(
     step.action === 'compose'
       ? normalizeComposeInlineKeysForPlan(step.values || {}, `plan.steps[${index}].values`)
       : _.cloneDeep(step.values || {});
-  const payload = replaceFlowSurfacePlanStepLinks(
-    actionName,
-    runtimeValues,
-    `plan.steps[${index}].values`,
-    priorStepIds,
-    new Set<string>([...context.keyMap.keys(), ...priorCreatedKeys]),
-  );
 
   const targetSelectorKey = isFlowSurfacePureKeyObject(step.selectors?.target)
     ? String(step.selectors.target.key || '').trim()
@@ -308,10 +469,79 @@ export async function compilePlanStep(
   const createdKeys = collectFlowSurfaceCreatedKeys(step.action, step.values || {}, {
     targetSelectorKey,
   });
+
+  const spec = getFlowSurfacePlanActionSpec(step.action);
+  if (!spec) {
+    throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].action '${step.action}' is not supported`);
+  }
+  const selectorRequirements = getFlowSurfacePlanSelectorRequirements(spec.selectorMode);
+  if (selectorRequirements.requiresTarget && !step.selectors?.target) {
+    throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
+  }
+  if (!selectorRequirements.requiresTarget && step.selectors?.target) {
+    throwBadRequest(
+      `flowSurfaces ${actionName} plan.steps[${index}] action '${step.action}' does not support selectors.target`,
+    );
+  }
+  if (selectorRequirements.requiresSource && !step.selectors?.source) {
+    throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.source`);
+  }
+  if (!selectorRequirements.requiresSource && step.selectors?.source) {
+    throwBadRequest(
+      `flowSurfaces ${actionName} plan.steps[${index}] action '${step.action}' does not support selectors.source`,
+    );
+  }
+
+  let resolvedTarget: FlowSurfaceResolvedSelector | undefined;
+  let resolvedSource: FlowSurfaceResolvedSelector | undefined;
+  if (selectorRequirements.requiresTarget) {
+    const targetSelector = step.selectors?.target;
+    if (!targetSelector) {
+      throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
+    }
+    resolvedTarget = await resolvePlanSelectorInContext(
+      actionName,
+      targetSelector,
+      context,
+      deps,
+      `plan.steps[${index}].selectors.target`,
+      priorStepIds,
+      priorCreatedKeys,
+      options,
+    );
+  }
+  if (selectorRequirements.requiresSource) {
+    const sourceSelector = step.selectors?.source;
+    if (!sourceSelector) {
+      throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.source`);
+    }
+    resolvedSource = await resolvePlanSelectorInContext(
+      actionName,
+      sourceSelector,
+      context,
+      deps,
+      `plan.steps[${index}].selectors.source`,
+      priorStepIds,
+      priorCreatedKeys,
+      options,
+    );
+  }
+
+  assertReplaceComposeTargetSupportsScopeResolution(actionName, index, step, resolvedTarget);
+  const allowedExistingKeys = await collectReplaceScopeExistingKeys(step, context, resolvedTarget, deps, options);
   assertNoDuplicateFlowSurfaceCreatedKeys(createdKeys, `flowSurfaces ${actionName} plan.steps[${index}]`, {
-    existingKeys: [...context.keyMap.keys(), ...priorCreatedKeys],
+    existingKeys: buildExistingKeysForConflict(context, priorCreatedKeys, allowedExistingKeys),
     reservedNames: [...priorStepIds, ...(step.id ? [step.id] : [])],
   });
+
+  const payload = replaceFlowSurfacePlanStepLinks(
+    actionName,
+    runtimeValues,
+    `plan.steps[${index}].values`,
+    priorStepIds,
+    new Set<string>([...context.keyMap.keys(), ...priorCreatedKeys]),
+    allowedExistingKeys,
+  );
 
   const compiled: FlowSurfaceCompiledPlanStep = {
     index,
@@ -342,45 +572,10 @@ export async function compilePlanStep(
     };
   };
 
-  const spec = getFlowSurfacePlanActionSpec(step.action);
-  if (!spec) {
-    throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}].action '${step.action}' is not supported`);
-  }
-  const selectorRequirements = getFlowSurfacePlanSelectorRequirements(spec.selectorMode);
-  if (selectorRequirements.requiresTarget && !step.selectors?.target) {
-    throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
-  }
-  if (!selectorRequirements.requiresTarget && step.selectors?.target) {
-    throwBadRequest(
-      `flowSurfaces ${actionName} plan.steps[${index}] action '${step.action}' does not support selectors.target`,
-    );
-  }
-  if (selectorRequirements.requiresSource && !step.selectors?.source) {
-    throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.source`);
-  }
-  if (!selectorRequirements.requiresSource && step.selectors?.source) {
-    throwBadRequest(
-      `flowSurfaces ${actionName} plan.steps[${index}] action '${step.action}' does not support selectors.source`,
-    );
-  }
-
   if (spec.selectorMode === 'none') {
     compiled.payload = payload;
   } else if (spec.selectorMode === 'target') {
-    const targetSelector = step.selectors?.target;
-    if (!targetSelector) {
-      throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
-    }
-    const target = await resolvePlanSelectorInContext(
-      actionName,
-      targetSelector,
-      context,
-      deps,
-      `plan.steps[${index}].selectors.target`,
-      priorStepIds,
-      priorCreatedKeys,
-      options,
-    );
+    const target = resolvedTarget as FlowSurfaceResolvedSelector;
     compiled.payload = {
       ...payload,
       target: {
@@ -389,51 +584,15 @@ export async function compilePlanStep(
     };
     compiled.resolvedSelectors.target = addUsedKey(target);
   } else if (spec.selectorMode === 'rootUidTarget') {
-    const targetSelector = step.selectors?.target;
-    if (!targetSelector) {
-      throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.target`);
-    }
-    const target = await resolvePlanSelectorInContext(
-      actionName,
-      targetSelector,
-      context,
-      deps,
-      `plan.steps[${index}].selectors.target`,
-      priorStepIds,
-      priorCreatedKeys,
-      options,
-    );
+    const target = resolvedTarget as FlowSurfaceResolvedSelector;
     compiled.payload = {
       ...payload,
       uid: buildSelectorRuntimeValue(target),
     };
     compiled.resolvedSelectors.target = addUsedKey(target);
   } else if (spec.selectorMode === 'sourceTarget') {
-    const sourceSelector = step.selectors?.source;
-    const targetSelector = step.selectors?.target;
-    if (!sourceSelector || !targetSelector) {
-      throwBadRequest(`flowSurfaces ${actionName} plan.steps[${index}] requires selectors.source and selectors.target`);
-    }
-    const source = await resolvePlanSelectorInContext(
-      actionName,
-      sourceSelector,
-      context,
-      deps,
-      `plan.steps[${index}].selectors.source`,
-      priorStepIds,
-      priorCreatedKeys,
-      options,
-    );
-    const target = await resolvePlanSelectorInContext(
-      actionName,
-      targetSelector,
-      context,
-      deps,
-      `plan.steps[${index}].selectors.target`,
-      priorStepIds,
-      priorCreatedKeys,
-      options,
-    );
+    const source = resolvedSource as FlowSurfaceResolvedSelector;
+    const target = resolvedTarget as FlowSurfaceResolvedSelector;
     compiled.payload = {
       ...payload,
       sourceUid: buildSelectorRuntimeValue(source),

@@ -29,6 +29,7 @@ export const FLOW_SURFACE_ACTION_DEFINITIONS = {
   context: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
   get: { method: 'get', read: true, transaction: false, mutate: false, valueSource: 'read' },
   describeSurface: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
+  exportBlueprint: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
   getReactionMeta: { method: 'post', read: true, transaction: false, mutate: false, valueSource: 'default' },
   setFieldValueRules: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },
   setBlockLinkageRules: { method: 'post', read: false, transaction: true, mutate: false, valueSource: 'default' },

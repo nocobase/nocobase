@@ -8,16 +8,21 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
-import { CustomRequestActionModel, registerCustomRequestActionGroups } from './CustomRequestActionModel';
 import { customRequestFlowAction } from './customRequestFlowAction';
 
 export class PluginActionCustomRequestClient extends Plugin {
   async load() {
     this.app.flowEngine.registerActions({ customRequestFlowAction });
-    this.app.flowEngine.registerModels({
-      CustomRequestActionModel,
+    this.app.flowEngine.registerModelLoaders({
+      CustomRequestActionModel: {
+        extends: 'ActionModel',
+        loader: async () => {
+          const module = await import('./CustomRequestActionModel');
+          module.registerCustomRequestActionGroups(this.app.flowEngine);
+          return module.CustomRequestActionModel;
+        },
+      },
     });
-    registerCustomRequestActionGroups(this.app.flowEngine);
   }
 }
 

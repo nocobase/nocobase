@@ -193,6 +193,69 @@ test('runPromptCatalogWebUI resolves after submit even when the browser keeps a 
   }
 });
 
+test('runPromptCatalogWebUI treats host as the browser URL host and listens on all interfaces', async () => {
+  const { runPromptCatalogWebUI } = await import('../lib/prompt-web-ui.js');
+
+  const catalog = {
+    projectName: {
+      type: 'text' as const,
+      message: 'Project name',
+      required: true,
+    },
+  };
+
+  let publicUrl = '';
+  let localUrl = '';
+  const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+
+  try {
+    const webUiPromise = runPromptCatalogWebUI({
+      catalog,
+      host: '203.0.113.10',
+      timeoutMs: 5_000,
+      onServerStart: ({ listenHost, port, url }) => {
+        publicUrl = url;
+        localUrl = `http://127.0.0.1:${port}/`;
+        expect(listenHost).toBe('0.0.0.0');
+      },
+      onOpenBrowserError: () => {
+        // noop in tests
+      },
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      const startedAt = Date.now();
+      const timer = setInterval(() => {
+        if (localUrl) {
+          clearInterval(timer);
+          resolve();
+          return;
+        }
+        if (Date.now() - startedAt > 1_000) {
+          clearInterval(timer);
+          reject(new Error('Timed out waiting for the local web UI server to start.'));
+        }
+      }, 10);
+    });
+
+    expect(publicUrl).toMatch(/^http:\/\/203\.0\.113\.10:\d+\/$/);
+
+    const page = await requestWithAgent(localUrl, { agent });
+    expect(page.statusCode).toBe(200);
+
+    const submit = await requestWithAgent(`${localUrl}__pwc_ui_submit`, {
+      method: 'POST',
+      agent,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectName: 'demo' }),
+    });
+    expect(submit.statusCode).toBe(200);
+    await expect(webUiPromise).resolves.toEqual({ projectName: 'demo' });
+  } finally {
+    agent.destroy();
+  }
+});
+
 test('buildWebFormValuesFromCatalog resolves function defaults for password fields', async () => {
   const { buildWebFormValuesFromCatalog } = await import('../lib/prompt-web-ui.js');
 

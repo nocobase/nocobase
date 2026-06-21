@@ -15,6 +15,75 @@ import {
 } from '../flow-surfaces/runjs-authoring';
 
 describe('flowSurfaces RunJS authoring unit validation', () => {
+  it('should use AST function body ranges for destructured RunJS component parameters', () => {
+    const destructuredDeclarationErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const React = ctx.React;',
+        'function Comp({ label, value } = {}) {',
+        '  return <div>{label}:{value}</div>;',
+        '}',
+        'ctx.render(<Comp label="A" value="B" />);',
+      ].join('\n'),
+      path: '$.runjs.destructuredDeclaration.code',
+      modelUse: 'JSBlockModel',
+    });
+
+    expect(destructuredDeclarationErrors).toEqual([]);
+
+    const patternMatrixErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const React = ctx.React;',
+        'const A = ([first]) => <span>{first}</span>;',
+        'const B = function ({ label, ...rest }) { return <span>{label}</span>; };',
+        'const C = async ({ label } = {}) => { return label; };',
+        'function outer() {',
+        '  function inner({ label }) { return <span>{label}</span>; }',
+        '  return inner;',
+        '}',
+        'ctx.render(<div><A {...["x"]} /><B label="y" /></div>);',
+      ].join('\n'),
+      path: '$.runjs.patternMatrix.code',
+      modelUse: 'JSBlockModel',
+    });
+
+    expect(patternMatrixErrors).toEqual([]);
+  });
+
+  it('should keep React Hook top-level validation after switching to AST function ranges', () => {
+    const componentHookErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const React = ctx.React;',
+        'function Comp({ label }) {',
+        '  const normalized = React.useMemo(() => label || "A", [label]);',
+        '  return <div>{normalized}</div>;',
+        '}',
+        'ctx.render(<Comp label="A" />);',
+      ].join('\n'),
+      path: '$.runjs.componentHook.code',
+      modelUse: 'JSBlockModel',
+    });
+
+    expect(componentHookErrors).toEqual([]);
+
+    const topLevelHookErrors = inspectRunJsAuthoringCode({
+      code: [
+        'const React = ctx.React;',
+        'const value = React.useMemo(() => "A", []);',
+        'ctx.render(<div>{value}</div>);',
+      ].join('\n'),
+      path: '$.runjs.topLevelHook.code',
+      modelUse: 'JSBlockModel',
+    });
+
+    expect(topLevelHookErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-react-hook-top-level-forbidden',
+        }),
+      ]),
+    );
+  });
+
   it('should reject ctx.render inside React component render functions but allow top-level helper render calls', () => {
     const invalidErrors = inspectRunJsAuthoringCode({
       code: [
@@ -248,7 +317,13 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
     expect(nestedHelperErrors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ruleId: 'runjs-render-unreachable',
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'renderApp',
+          }),
+        }),
+        expect.objectContaining({
+          ruleId: 'runjs-render-top-level-wrapper-forbidden',
         }),
       ]),
     );

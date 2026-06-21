@@ -8,7 +8,7 @@
  */
 
 import { FlowEngine } from '@nocobase/flow-engine';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { InputFieldModel } from '../InputFieldModel';
@@ -41,6 +41,122 @@ describe('InputFieldModel', () => {
     );
 
     consoleError.mockRestore();
+  });
+
+  it('keeps IME composition text visible before the parent value is committed', () => {
+    const onChange = vi.fn();
+    const onCompositionStart = vi.fn();
+    const onCompositionEnd = vi.fn();
+    const model = createInputFieldModel({
+      value: '',
+      onChange,
+      onCompositionStart,
+      onCompositionEnd,
+    });
+
+    render(<>{model.render()}</>);
+
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: 'ni' }, nativeEvent: { isComposing: true } });
+
+    expect(input.value).toBe('ni');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onCompositionStart).toHaveBeenCalledTimes(1);
+
+    fireEvent.compositionEnd(input, { target: { value: '你' } });
+
+    expect(input.value).toBe('你');
+    expect(onCompositionEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns to the committed parent value after IME composition is submitted', () => {
+    const onChange = vi.fn();
+    const onCompositionEnd = vi.fn();
+    const createModel = (value: string) =>
+      createInputFieldModel({
+        value,
+        onChange,
+        onCompositionEnd,
+      });
+
+    const { rerender } = render(<>{createModel('').render()}</>);
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: 'ni' }, nativeEvent: { isComposing: true } });
+    fireEvent.compositionEnd(input, { target: { value: '你' } });
+
+    expect(input.value).toBe('你');
+
+    rerender(<>{createModel('你').render()}</>);
+
+    expect(input.value).toBe('你');
+  });
+
+  it('does not overwrite in-progress DOM input with a stale parent value', async () => {
+    const onChange = vi.fn();
+    const createModel = (value: string) =>
+      createInputFieldModel({
+        value,
+        onChange,
+      });
+
+    const { rerender } = render(<>{createModel('').render()}</>);
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: 'té' } });
+    rerender(<>{createModel('').render()}</>);
+
+    expect(input.value).toBe('té');
+
+    rerender(<>{createModel('reset').render()}</>);
+
+    await waitFor(() => {
+      expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('reset');
+    });
+  });
+
+  it('keeps replacement-style Vietnamese IME edits in the DOM', () => {
+    const onChange = vi.fn();
+    const createModel = (value: string) =>
+      createInputFieldModel({
+        value,
+        onChange,
+      });
+
+    const { rerender } = render(<>{createModel('').render()}</>);
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: 'te' } });
+    rerender(<>{createModel('te').render()}</>);
+    expect(input.value).toBe('te');
+
+    fireEvent.change(input, { target: { value: 'té' } });
+    rerender(<>{createModel('te').render()}</>);
+    expect(input.value).toBe('té');
+
+    fireEvent.change(input, { target: { value: 'tét' } });
+    rerender(<>{createModel('té').render()}</>);
+    expect(input.value).toBe('tét');
+  });
+
+  it('does not overwrite local replacement edit when parent advances to an older value', () => {
+    const onChange = vi.fn();
+    const createModel = (value: string) =>
+      createInputFieldModel({
+        value,
+        onChange,
+      });
+
+    const { rerender } = render(<>{createModel('').render()}</>);
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: 'té' } });
+    rerender(<>{createModel('t').render()}</>);
+
+    expect(input.value).toBe('té');
   });
 
   it('renders ScanInput when scan input is enabled', () => {

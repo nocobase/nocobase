@@ -760,6 +760,69 @@ test('license activate validates docker envs through docker license env inspecti
   }
 });
 
+test('license activate reports invalid docker license keys before env inspection', async () => {
+  const { default: LicenseActivate } = await import('../commands/license/activate.js');
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-license-'));
+
+  try {
+    const restoreTerminal = setTerminalInteractivity(true);
+    mocks.resolveManagedAppRuntime.mockResolvedValue({
+      kind: 'docker',
+      envName: 'test2',
+      source: 'docker',
+      containerName: 'nb-demo-test2-app',
+      workspaceName: 'nb-demo',
+      env: {
+        config: {
+          appPort: '13000',
+        },
+        storagePath,
+        envVars: {
+          STORAGE_PATH: storagePath,
+          DB_DIALECT: 'postgres',
+          DB_HOST: 'postgres',
+          DB_PORT: '5432',
+          DB_DATABASE: 'nocobase',
+          DB_USER: 'nocobase',
+          DB_PASSWORD: 'secret',
+        },
+      },
+    });
+    mocks.keyDecrypt.mockImplementation(() => {
+      throw new Error('bad key');
+    });
+    mocks.commandOutput.mockRejectedValue(
+      new Error(
+        'docker run exited with code 1: GenericFailure, Get postgres configuration error: error connecting to server: failed to lookup address information: Name or service not known',
+      ),
+    );
+
+    const command = Object.assign(Object.create(LicenseActivate.prototype), {
+      argv: ['--env', 'test2', '--yes', '--key', 'bad-license-key'],
+      parse: vi.fn(async () => ({
+        flags: {
+          env: 'test2',
+          json: false,
+          yes: true,
+          key: 'bad-license-key',
+          'key-file': undefined,
+        },
+      })),
+      log: vi.fn(),
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+
+    await expect((() => LicenseActivate.prototype.run.call(command))()).rejects.toThrow(/license key is invalid/);
+    expect(mocks.commandOutput).not.toHaveBeenCalled();
+    expect(mocks.getInstanceIdAsync).not.toHaveBeenCalled();
+    restoreTerminal();
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
 test('license generate-id returns an instance id without saving it', async () => {
   const { default: LicenseGenerateId } = await import('../commands/license/generate-id.js');
   const originalHost = process.env.DB_HOST;

@@ -76,8 +76,71 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "大規模言語モデル",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
+            "label": "LLMノード",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "テキスト対話",
+                "link": "/ai-employees/workflow/nodes/llm/chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "マルチモーダル対話",
+                "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "構造化出力",
+                "link": "/ai-employees/workflow/nodes/llm/structured-output"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "AI従業員ノード",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "ノード設定",
+                "link": "/ai-employees/workflow/nodes/employee/configuration"
+              },
+              {
+                "type": "custom-link",
+                "label": "ノード承認",
+                "link": "/ai-employees/workflow/nodes/employee/approval"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "AIナレッジベース",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "概要",
+                "link": "/ai-employees/workflow/nodes/knowledge/"
+              },
+              {
+                "type": "custom-link",
+                "label": "ドキュメント作成",
+                "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "ドキュメント更新",
+                "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "ドキュメント削除",
+                "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "ドキュメント検索",
+                "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+              }
+            ]
           }
         ]
       },
@@ -186,6 +249,11 @@
             "type": "custom-link",
             "label": "SQL操作",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "データベーストランザクション",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mock-collections",
-  "version": "2.2.0-beta.2",
+  "version": "2.2.0-beta.5",
   "main": "./dist/server/index.js",
   "license": "Apache-2.0",
   "peerDependencies": {
@@ -11,6 +11,14 @@
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x"
+  },
+  "nocobase": {
+    "deprecated": true,
+    "internal": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
   },
   "devDependencies": {
     "pg": "^8.11.3"

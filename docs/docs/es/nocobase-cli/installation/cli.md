@@ -48,7 +48,7 @@ Reemplace `<server-ip>` con la IP real del servidor actual al que puede acceder.
 
 En términos generales:
 
-- `default-ui-host` se utiliza para la dirección de escucha predeterminada de `nb init --ui` al iniciar la página del asistente
+- `default-ui-host` se utiliza para generar la URL accesible desde el navegador del asistente `nb init --ui`; el servicio del asistente siempre escucha en `0.0.0.0`
 - `default-api-host` para la dirección API generada de forma predeterminada en instalaciones nuevas
 
 Si se implementa en un servidor, ambos valores generalmente deben cambiarse a IP accesibles para el servidor actual, en lugar de continuar usando la dirección local predeterminada.

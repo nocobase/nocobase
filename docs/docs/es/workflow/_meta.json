@@ -76,8 +76,71 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Gran modelo de lenguaje",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
+            "label": "Nodos LLM",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Chat de texto",
+                "link": "/ai-employees/workflow/nodes/llm/chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Chat multimodal",
+                "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Salida estructurada",
+                "link": "/ai-employees/workflow/nodes/llm/structured-output"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Nodos de empleado de IA",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Configuración de nodos",
+                "link": "/ai-employees/workflow/nodes/employee/configuration"
+              },
+              {
+                "type": "custom-link",
+                "label": "Aprobación de nodos",
+                "link": "/ai-employees/workflow/nodes/employee/approval"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Base de conocimientos de IA",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Resumen",
+                "link": "/ai-employees/workflow/nodes/knowledge/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Crear documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Actualizar documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Eliminar documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Recuperar documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+              }
+            ]
           }
         ]
       },
@@ -186,6 +249,11 @@
             "type": "custom-link",
             "label": "Operación SQL",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Transacción de base de datos",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },

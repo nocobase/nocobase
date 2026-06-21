@@ -35,6 +35,11 @@ const LARGE_GENERATED_POPUP_UNSUPPORTED_COLLECTION = 'flow_surface_large_generat
 const LARGE_GENERATED_POPUP_CODE_COLLECTION = 'flow_surface_large_generated_popup_code';
 const GENERATED_POPUP_TEN_EFFECTIVE_COLLECTION = 'flow_surface_ten_effective_generated_popup';
 const GENERATED_POPUP_TEN_EFFECTIVE_FIELDS = Array.from({ length: 10 }, (_item, index) => `field${index + 1}`);
+const GENERATED_POPUP_RELATION_BACKING_FK_TARGET_COLLECTION = 'flow_surface_relation_backing_fk_targets';
+const GENERATED_POPUP_RELATION_BACKING_FK_COLLECTION = 'flow_surface_relation_backing_fk_sources';
+const GENERATED_POPUP_RELATION_BACKING_FK_FIELDS = Array.from({ length: 9 }, (_item, index) => `field${index + 1}`);
+const GENERATED_POPUP_RELATION_BACKING_FK_FIELD = 'customer';
+const GENERATED_POPUP_RELATION_BACKING_FK_NAME = 'customer_id';
 const DESCRIPTION_FORM_BEHAVIOR_COLLECTION = 'flow_surface_description_form_behavior';
 const DESCRIPTION_FORM_BEHAVIOR_IGNORED_COLLECTION = 'flow_surface_description_form_behavior_ignored';
 const DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION = 'flow_surface_description_form_behavior_field_group';
@@ -208,6 +213,47 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     });
     await rootAgent.resource('collections').create({
       values: {
+        name: GENERATED_POPUP_RELATION_BACKING_FK_TARGET_COLLECTION,
+        title: 'Flow surface relation backing FK targets',
+        titleField: 'name',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+            interface: 'input',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: GENERATED_POPUP_RELATION_BACKING_FK_COLLECTION,
+        title: 'Flow surface relation backing FK sources',
+        fields: [
+          ...GENERATED_POPUP_RELATION_BACKING_FK_FIELDS.map((name) => ({
+            name,
+            type: 'string',
+            interface: 'input',
+          })),
+          {
+            name: GENERATED_POPUP_RELATION_BACKING_FK_NAME,
+            type: 'integer',
+            interface: 'integer',
+          },
+        ],
+      },
+    });
+    await rootAgent.resource('collections.fields', GENERATED_POPUP_RELATION_BACKING_FK_COLLECTION).create({
+      values: {
+        name: GENERATED_POPUP_RELATION_BACKING_FK_FIELD,
+        type: 'belongsTo',
+        target: GENERATED_POPUP_RELATION_BACKING_FK_TARGET_COLLECTION,
+        foreignKey: GENERATED_POPUP_RELATION_BACKING_FK_NAME,
+        interface: 'm2o',
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
         name: DESCRIPTION_FORM_BEHAVIOR_COLLECTION,
         title: 'Flow surface description form behavior',
         fields: [
@@ -341,6 +387,11 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       [LARGE_GENERATED_POPUP_UNSUPPORTED_COLLECTION]: LARGE_GENERATED_POPUP_UNSUPPORTED_FIELDS,
       [LARGE_GENERATED_POPUP_CODE_COLLECTION]: LARGE_GENERATED_POPUP_CODE_FIELDS,
       [GENERATED_POPUP_TEN_EFFECTIVE_COLLECTION]: [...GENERATED_POPUP_TEN_EFFECTIVE_FIELDS, 'internalSort'],
+      [GENERATED_POPUP_RELATION_BACKING_FK_TARGET_COLLECTION]: ['name'],
+      [GENERATED_POPUP_RELATION_BACKING_FK_COLLECTION]: [
+        ...GENERATED_POPUP_RELATION_BACKING_FK_FIELDS,
+        GENERATED_POPUP_RELATION_BACKING_FK_NAME,
+      ],
       [DESCRIPTION_FORM_BEHAVIOR_COLLECTION]: ['title', 'notes'],
       [DESCRIPTION_FORM_BEHAVIOR_IGNORED_COLLECTION]: ['title', 'internalNotes'],
       [DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_COLLECTION]: DESCRIPTION_FORM_BEHAVIOR_FIELD_GROUP_FIELDS,
@@ -9146,6 +9197,150 @@ ctx.render(React.createElement(DashboardKPIs));
     ).map((item: any) => item.stepParams.fieldSettings.init.fieldPath);
     expect(generatedFieldPaths).toEqual(expect.arrayContaining(GENERATED_POPUP_TEN_EFFECTIVE_FIELDS));
     expect(generatedFieldPaths).not.toContain('internalSort');
+  });
+
+  it('should not count relation backing foreign keys as generated popup defaults', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring relation backing FK generated popup fields',
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'relationBackingFkRecordsTable',
+                type: 'table',
+                collection: GENERATED_POPUP_RELATION_BACKING_FK_COLLECTION,
+                fields: GENERATED_POPUP_RELATION_BACKING_FK_FIELDS.slice(0, 3),
+                defaultFilter: {
+                  logic: '$and',
+                  items: [
+                    { path: GENERATED_POPUP_RELATION_BACKING_FK_FIELDS[0], operator: '$notEmpty' },
+                    { path: GENERATED_POPUP_RELATION_BACKING_FK_FIELDS[1], operator: '$notEmpty' },
+                    { path: GENERATED_POPUP_RELATION_BACKING_FK_FIELDS[2], operator: '$notEmpty' },
+                    { path: GENERATED_POPUP_RELATION_BACKING_FK_FIELDS[3], operator: '$notEmpty' },
+                  ],
+                },
+                actions: [
+                  {
+                    key: 'createRelationBackingFkRecord',
+                    type: 'addNew',
+                    popup: {},
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+    const data = getData(response);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await context.flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    const createAction = collectDescendantNodes(persistedTable, (item) => item?.use === 'AddNewActionModel')[0];
+    const persistedAction = await context.flowRepo.findModelById(createAction.uid, { includeAsyncNode: true });
+    const popupTemplateUid = persistedAction?.stepParams?.popupSettings?.openView?.popupTemplateUid;
+    expect(popupTemplateUid).toBeTruthy();
+
+    const template = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: popupTemplateUid,
+        },
+      }),
+    );
+    const templateSurface = await context.flowRepo.findModelById(template.targetUid, { includeAsyncNode: true });
+    const createForm = collectDescendantNodes(templateSurface, (item) => item?.use === 'CreateFormModel')[0];
+    const generatedFieldPaths = collectDescendantNodes(
+      createForm,
+      (item) => !!item?.stepParams?.fieldSettings?.init?.fieldPath,
+    ).map((item: any) => item.stepParams.fieldSettings.init.fieldPath);
+    expect(generatedFieldPaths).toEqual(
+      expect.arrayContaining([
+        ...GENERATED_POPUP_RELATION_BACKING_FK_FIELDS,
+        GENERATED_POPUP_RELATION_BACKING_FK_FIELD,
+      ]),
+    );
+    expect(generatedFieldPaths).not.toContain(GENERATED_POPUP_RELATION_BACKING_FK_NAME);
+  });
+
+  it('should keep explicitly listed relation backing foreign keys in generated popup defaults', async () => {
+    const response = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: 'Authoring explicit relation backing FK generated popup fields',
+          },
+        },
+        defaults: {
+          collections: {
+            [GENERATED_POPUP_RELATION_BACKING_FK_COLLECTION]: {
+              fieldGroups: [
+                {
+                  title: 'Explicit fields',
+                  fields: [
+                    GENERATED_POPUP_RELATION_BACKING_FK_FIELDS[0],
+                    GENERATED_POPUP_RELATION_BACKING_FK_NAME,
+                    GENERATED_POPUP_RELATION_BACKING_FK_FIELD,
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'explicitRelationBackingFkRecordsTable',
+                type: 'table',
+                collection: GENERATED_POPUP_RELATION_BACKING_FK_COLLECTION,
+                fields: GENERATED_POPUP_RELATION_BACKING_FK_FIELDS.slice(0, 3),
+                actions: [
+                  {
+                    key: 'createExplicitRelationBackingFkRecord',
+                    type: 'addNew',
+                    popup: {
+                      tryTemplate: false,
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(response.status, readErrorMessage(response)).toBe(200);
+    const data = getData(response);
+    const tableBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'TableBlockModel')[0];
+    const persistedTable = await context.flowRepo.findModelById(tableBlock.uid, { includeAsyncNode: true });
+    const createAction = collectDescendantNodes(persistedTable, (item) => item?.use === 'AddNewActionModel')[0];
+    const persistedAction = await context.flowRepo.findModelById(createAction.uid, { includeAsyncNode: true });
+    expect(persistedAction?.stepParams?.popupSettings?.openView?.popupTemplateUid).toBeFalsy();
+    const createForm = collectDescendantNodes(persistedAction, (item) => item?.use === 'CreateFormModel')[0];
+    expect(createForm).toBeTruthy();
+    const generatedFieldPaths = collectDescendantNodes(
+      createForm,
+      (item) => !!item?.stepParams?.fieldSettings?.init?.fieldPath,
+    ).map((item: any) => item.stepParams.fieldSettings.init.fieldPath);
+    expect(generatedFieldPaths).toEqual(
+      expect.arrayContaining([
+        GENERATED_POPUP_RELATION_BACKING_FK_FIELDS[0],
+        GENERATED_POPUP_RELATION_BACKING_FK_NAME,
+        GENERATED_POPUP_RELATION_BACKING_FK_FIELD,
+      ]),
+    );
   });
 
   it('should require explicit defaults formBehavior when generated add or edit popup fields have descriptions', async () => {
