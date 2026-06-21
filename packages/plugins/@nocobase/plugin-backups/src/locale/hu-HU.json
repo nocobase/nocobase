@@ -36,7 +36,7 @@
   "New backup": "Új biztonsági mentés",
   "New backup operation started": "Új biztonsági mentési művelet indult",
   "Not a valid backup file": "Nem érvényes biztonsági mentés fájl",
-  "PG_DUMP_SERVER_VERSION_MISMATCH": "A pg_dump verziója alacsonyabb, mint a postgres szerver verziója. Kérjük, telepítse a pg_dump helyes verzióját. Ellenőrizze a hivatkozást itt: https://docs.nocobase.com/handbook/backups#installation",
+  "PG_DUMP_SERVER_VERSION_MISMATCH": "A pg_dump verziója alacsonyabb, mint a postgres szerver verziója. Kérjük, telepítse a pg_dump helyes verzióját. Ellenőrizze a hivatkozást itt: https://docs.nocobase.com/ops-management/backup-manager/",
   "Please select a backup file": "Kérjük, válasszon ki egy biztonsági mentés fájlt",
   "Required if application database schema is different with the backup": "Kötelező, ha az alkalmazás adatbázis sémája eltér a biztonsági mentéstől",
   "Restore": "Visszaállítás",

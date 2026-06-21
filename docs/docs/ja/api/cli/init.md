@@ -74,7 +74,7 @@ nb app start --env app1
 
 通常は次の通りです:
 
-- `source/` は主に npm / Git env のローカルアプリディレクトリに対応します。Docker env についても CLI はこのデフォルトのパス導出を維持しますが、ほとんどの場合は手動で気にする必要はありません
+- `source/` は主に npm / Git env のローカルアプリディレクトリに対応します。Docker env についても CLI はこのデフォルトのパス導出を維持しますが、ほとんどの場合は手動で気にする必要はありません。アップグレード時には特に注意してください。`source/` ディレクトリは削除されたあと再ダウンロードされるため、保持したいファイルをここに置かないでください
 - `storage/` には、組み込みデータベースのデータ、プラグイン、ログなどのランタイムデータを格納します
 - `.env` はオプションのアプリ環境変数ファイルです。環境変数をカスタマイズしたい場合にのみ `<app-path>/.env` に追加する必要があります。このファイルが存在する場合、Docker、npm、Git の各インストール元はデフォルトでこれを読み取ります
 
@@ -121,7 +121,7 @@ nb app start --env app1
 | `--ui`          | boolean | `false`                                                                               | ローカルブラウザウィザードを開く。`--yes`、`--resume` と一緒に使用できない   |
 | `--verbose`     | boolean | `false`                                                                               | 詳細なコマンド出力を表示する                                                 |
 | `--skip-skills` | boolean | `false`                                                                               | NocoBase AI coding skills の同期をスキップする                               |
-| `--ui-host`     | string  | `127.0.0.1`                                                                           | `--ui` ローカルサービスのバインドアドレス                                    |
+| `--ui-host`     | string  | `127.0.0.1`                                                                           | `--ui` ウィザード URL に表示するブラウザアクセス用 host。ローカルサービスは常に `0.0.0.0` で待ち受けます |
 | `--ui-port`     | integer | `0`                                                                                   | `--ui` ローカルサービスポート。`0` は自動割り当てを意味する                  |
 | `--locale`      | string  | `NB_LOCALE`、CLI 設定、またはシステム locale に従い、最終的なフォールバックは `en-US` | CLI プロンプトとローカル setup UI の言語: `en-US` または `zh-CN`             |
 | `--resume`      | boolean | `false`                                                                               | 前回未完了だった初期化を続行し、保存済みの workspace env config を再利用する |

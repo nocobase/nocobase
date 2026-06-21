@@ -1,15 +1,17 @@
 ---
-displayName: "Gerenciamento de migração"
+title: "Migration manager"
+keywords: "System management"
+displayName: "Migration manager"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Usado para migrar o conteúdo de configuração de um ambiente de produto para outro.
+  Used to migrate configuration content between application environments.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Gerenciamento de migração
+# Migration manager

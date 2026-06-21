@@ -11,6 +11,14 @@ Außer für reine Funktionsprüfungen oder experimentelle Szenarien wird **dring
 
 Die Systemkonfiguration und Kapazitätsplanung dieser Dienste sollte basierend auf der **tatsächlichen Datenmenge, der Geschäftslast und dem Grad der Nebenläufigkeit** individuell bewertet und optimiert werden.
 
+## Betriebssystem
+
+Für Produktionsumgebungen werden Linux-Server empfohlen, zum Beispiel Ubuntu LTS, Debian, Rocky Linux oder AlmaLinux. Docker, Reverse Proxy, Prozessverwaltung, Logging und Backup-Abläufe sind unter Linux ausgereifter und lassen sich leichter mit gängigen Cloud-Server-Umgebungen verbinden.
+
+NocoBase kann auch auf Windows Server installiert werden. Wenn du Windows Server wählst, solltest du Node.js, Datenbank, Reverse Proxy, Prozessüberwachung, Backups, Dateiberechtigungen, Firewall und verwandte Betriebsabläufe passend zu deiner tatsächlichen Bereitstellung prüfen.
+
+macOS eignet sich normalerweise eher für lokale Entwicklung und Tests und wird nicht als Produktionsserver empfohlen. Wenn du NocoBase lokal für Entwicklung oder AI Agents einrichtest, siehe [Local Development Setup](../ai/local-development-setup.md).
+
 ## Einzelknoten-Bereitstellungsmodus
 
 Der Einzelknoten-Bereitstellungsmodus bedeutet, dass der NocoBase-Anwendungsdienst auf einem einzigen Server oder einer einzelnen Container-Instanz ausgeführt wird.

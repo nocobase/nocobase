@@ -1,5 +1,7 @@
 ---
-displayName: "Общие коллекции Multi-app"
+title: "Multi-app share collection"
+keywords: "System management"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Общие коллекции Multi-app
+# Multi-app share collection
 
-> Примечание: этот плагин устарел (deprecated).
+> Note: This plugin is deprecated.

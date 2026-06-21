@@ -1,12 +1,14 @@
 ---
-displayName: "Variables y secretos"
+title: "Variables and secrets"
+keywords: "System management"
+displayName: "Variables and secrets"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  Gestión centralizada de variables de entorno y secretos, utilizada para el almacenamiento de datos sensibles, la reutilización de datos de configuración, el aislamiento de múltiples entornos, etc.
+  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Variables y secretos
+# Variables and secrets

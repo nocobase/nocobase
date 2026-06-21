@@ -1,14 +1,16 @@
 ---
-displayName: "Campo de colección: Cifrado"
+title: "Collection field: Encryption"
+keywords: "Collection fields"
+displayName: "Collection field: Encryption"
 packageName: '@nocobase/plugin-field-encryption'
 supportedVersions:
   - 2.x
 description: |
-  Cifra y descifra automáticamente los campos especificados para garantizar la seguridad de los datos.
+  Encrypts and decrypts specified fields automatically for secure data storage.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Campo de colección: Cifrado
+# Collection field: Encryption

@@ -48,12 +48,14 @@ import {
   resolveFlowSurfaceDefaultFilterRequiredFieldCount,
 } from './public-data-surface-default-filter';
 import {
+  collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths,
   hasFlowSurfaceInlinePopupBlocks,
   hasFlowSurfaceInlinePopupTemplate,
   isFlowSurfaceDefaultActionPopupBusinessField,
   pickFlowSurfaceDefaultActionPopupFieldGroups,
   pickFlowSurfaceDefaultActionPopupFieldPaths,
 } from './default-action-popup';
+import { isRelationBackingForeignKeyField } from './relation-backing-foreign-key';
 import { getFlowSurfaceDefaultBlockActions } from './default-block-actions';
 import { hiddenPopupHostHasLocalContent } from './hidden-popup-contract';
 import { FIELD_WRAPPER_USES } from './node-use-sets';
@@ -67,9 +69,13 @@ import {
 } from './blueprint/defaults';
 import { collectRunJsAuthoringErrors } from './runjs-authoring';
 import { getConfigureOptionKeysForUse } from './configure-options';
+import { buildFlowSurfaceContextResponse } from './context';
+import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './types';
 import {
   assertFlowSurfaceFilterGroupShape,
-  normalizeFlowSurfaceStrictFilterDateValue,
+  FLOW_SURFACE_DATE_FILTER_OPERATORS,
+  isFlowSurfaceDateLikeFieldMeta,
+  normalizeFlowSurfaceDateConditionValue,
   assertFlowSurfaceFilterOperator,
   FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
 } from './filter-group';
@@ -557,7 +563,10 @@ export async function collectFlowSurfaceAuthoringErrors(
     blocks.forEach(({ block }) => collectLocalKeys(block, localKeys));
   }
   blocks.forEach(({ block, path }) => collectBlockErrors(block, path, errors, localKeys, validationContext));
-  collectReactionErrors(values?.reaction, '$.reaction', localKeys, errors);
+  collectReactionErrors(values?.reaction, '$.reaction', localKeys, errors, {
+    values,
+    context: validationContext,
+  });
   if (!validationContext.skipGeneratedPopupDefaultFieldGroups) {
     collectGeneratedPopupDefaultFieldGroupErrors(actionName, values, validationContext, errors);
   }
@@ -1380,41 +1389,90 @@ function collectBuilderChartAssetQueryErrors(
     errors,
     withChartRepairHint(),
   );
-  collectChartQueryFilterOperatorErrors(query, `${path}.query`, errors);
+  collectChartQueryFilterOperatorErrors(query, `${path}.query`, errors, context);
   collectBuilderChartAssetFieldErrors(query, path, context, errors);
 }
 
-function collectChartQueryFilterOperatorErrors(query: any, path: string, errors: AuthoringErrorInput[]) {
+type FlowSurfaceDateConditionFieldContext = {
+  field?: any;
+  fieldPath?: string;
+  fieldMeta?: {
+    type?: string;
+    interface?: string;
+  };
+};
+
+type FlowSurfaceDateConditionFieldResolver = (fieldPath: string) => FlowSurfaceDateConditionFieldContext | null;
+
+const AUTHORABLE_REACTION_SCALAR_CONTEXT_PATHS = new Set(['role', 'locale', 'token', 'deviceType']);
+const AUTHORABLE_REACTION_CONTEXT_ROOTS = new Set([
+  'user',
+  'collection',
+  'formValues',
+  'record',
+  'item',
+  'popup',
+  'urlSearchParams',
+]);
+
+function collectChartQueryFilterOperatorErrors(
+  query: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  context?: FlowSurfaceAuthoringValidationContext,
+) {
   if (!_.isPlainObject(query) || !hasOwn(query, 'filter')) {
     return;
   }
-  collectChartFilterOperatorErrors(query.filter, `${path}.filter`, errors);
+  collectChartFilterOperatorErrors(
+    query.filter,
+    `${path}.filter`,
+    errors,
+    createChartQueryDateConditionFieldResolver(query, context),
+  );
 }
 
-function collectChartFilterOperatorErrors(filter: any, path: string, errors: AuthoringErrorInput[]) {
+function collectChartFilterOperatorErrors(
+  filter: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  resolveField?: FlowSurfaceDateConditionFieldResolver | null,
+) {
   if (_.isUndefined(filter) || _.isNull(filter) || !_.isPlainObject(filter)) {
     return;
   }
   if (Array.isArray(filter.items)) {
-    collectChartFilterGroupOperatorErrors(filter.items, `${path}.items`, errors);
+    collectChartFilterGroupOperatorErrors(filter.items, `${path}.items`, errors, resolveField);
     return;
   }
-  collectBackendQueryFilterOperatorErrors(filter, path, errors);
+  collectBackendQueryFilterOperatorErrors(filter, path, errors, resolveField);
 }
 
-function collectChartFilterGroupOperatorErrors(items: any[], path: string, errors: AuthoringErrorInput[]) {
+function collectChartFilterGroupOperatorErrors(
+  items: any[],
+  path: string,
+  errors: AuthoringErrorInput[],
+  resolveField?: FlowSurfaceDateConditionFieldResolver | null,
+) {
   items.forEach((item, index) => {
     const itemPath = `${path}[${index}]`;
     if (!_.isPlainObject(item)) {
       return;
     }
     if (Array.isArray(item.items)) {
-      collectChartFilterGroupOperatorErrors(item.items, `${itemPath}.items`, errors);
+      collectChartFilterGroupOperatorErrors(item.items, `${itemPath}.items`, errors, resolveField);
       return;
     }
     if (hasOwn(item, 'operator')) {
       collectChartFilterOperatorError(item.operator, `${itemPath}.operator`, errors);
-      collectChartFilterDateValueError(item.operator, item.value, `${itemPath}.value`, errors);
+      const fieldPath = String(item.path || item.field || '').trim();
+      collectChartFilterDateValueError(
+        item.operator,
+        item.value,
+        `${itemPath}.value`,
+        errors,
+        fieldPath ? resolveField?.(fieldPath) || { fieldPath } : undefined,
+      );
     }
   });
 }
@@ -1423,12 +1481,13 @@ function collectBackendQueryFilterOperatorErrors(
   filter: Record<string, any>,
   path: string,
   errors: AuthoringErrorInput[],
+  resolveField?: FlowSurfaceDateConditionFieldResolver | null,
 ) {
   Object.entries(filter).forEach(([field, condition]) => {
     const fieldPath = `${path}.${field}`;
     if ((field === '$and' || field === '$or') && Array.isArray(condition)) {
       condition.forEach((operand, index) =>
-        collectChartFilterOperatorErrors(operand, `${fieldPath}[${index}]`, errors),
+        collectChartFilterOperatorErrors(operand, `${fieldPath}[${index}]`, errors, resolveField),
       );
       return;
     }
@@ -1437,11 +1496,17 @@ function collectBackendQueryFilterOperatorErrors(
     }
     Object.keys(condition).forEach((operator) => {
       if (operator === '$and' || operator === '$or') {
-        collectChartFilterOperatorErrors({ [operator]: condition[operator] }, fieldPath, errors);
+        collectChartFilterOperatorErrors({ [operator]: condition[operator] }, fieldPath, errors, resolveField);
         return;
       }
       collectChartFilterOperatorError(operator, `${fieldPath}.${operator}`, errors);
-      collectChartFilterDateValueError(operator, condition[operator], `${fieldPath}.${operator}`, errors);
+      collectChartFilterDateValueError(
+        operator,
+        condition[operator],
+        `${fieldPath}.${operator}`,
+        errors,
+        resolveField?.(field) || { fieldPath: field },
+      );
     });
   });
 }
@@ -1463,9 +1528,19 @@ function collectChartFilterDateValueError(
   value: unknown,
   path: string,
   errors: AuthoringErrorInput[],
+  fieldContext?: FlowSurfaceDateConditionFieldContext | null,
 ) {
+  const fieldMeta = getDateConditionFieldContextMeta(fieldContext);
+  const normalizedOperator = typeof operator === 'string' ? operator.trim() : '';
+  if (!FLOW_SURFACE_DATE_FILTER_OPERATORS.has(normalizedOperator) && !isFlowSurfaceDateLikeFieldMeta(fieldMeta)) {
+    return;
+  }
   try {
-    normalizeFlowSurfaceStrictFilterDateValue(operator, value, path);
+    normalizeFlowSurfaceDateConditionValue(operator, value, path, {
+      fieldPath: fieldContext?.fieldPath,
+      fieldType: fieldMeta.type,
+      fieldInterface: fieldMeta.interface,
+    });
   } catch (error) {
     if (error instanceof FlowSurfaceBadRequestError) {
       pushChartBadRequestAuthoringError(errors, error, path);
@@ -1473,6 +1548,44 @@ function collectChartFilterDateValueError(
     }
     throw error;
   }
+}
+
+function createChartQueryDateConditionFieldResolver(
+  query: any,
+  context?: FlowSurfaceAuthoringValidationContext,
+): FlowSurfaceDateConditionFieldResolver | null {
+  const resource = _.isPlainObject(query?.resource) ? query.resource : null;
+  const collectionName = String(resource?.collectionName || '').trim();
+  if (!collectionName || typeof context?.getCollection !== 'function') {
+    return null;
+  }
+  const dataSourceKey = String(resource?.dataSourceKey || 'main').trim() || 'main';
+  const collection = context.getCollection(dataSourceKey, collectionName);
+  if (!collection) {
+    return null;
+  }
+  return (fieldPath: string) => {
+    const normalizedFieldPath = normalizeFieldPath(fieldPath);
+    const resolved = resolveDefaultFilterFieldPath(collection, normalizedFieldPath, dataSourceKey, context);
+    return {
+      fieldPath,
+      field: resolved.field,
+    };
+  };
+}
+
+function getDateConditionFieldMeta(field: any) {
+  return {
+    type: getFieldType(field),
+    interface: getFieldInterface(field),
+  };
+}
+
+function getDateConditionFieldContextMeta(fieldContext?: FlowSurfaceDateConditionFieldContext | null) {
+  return {
+    ...getDateConditionFieldMeta(fieldContext?.field),
+    ...(fieldContext?.fieldMeta || {}),
+  };
 }
 
 function normalizeChartAssetFieldPath(input: any) {
@@ -4216,6 +4329,9 @@ function getGeneratedPopupBusinessFieldCandidates(collection: any) {
     if (!fieldName || !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
       return [];
     }
+    if (isRelationBackingForeignKeyField(collection, field)) {
+      return [];
+    }
     return [
       {
         field,
@@ -4379,9 +4495,13 @@ function getGeneratedPopupRuntimeFieldCandidates(input: {
   context: FlowSurfaceAuthoringValidationContext;
 }) {
   const candidateContext = DEFAULT_ACTION_POPUP_FIELD_CONTEXT_BY_TYPE[input.actionType];
+  const explicitDefaultFieldPaths = collectFlowSurfaceDefaultActionPopupFieldGroupFieldPaths(input.fieldGroups);
   return getCollectionFields(input.collection).flatMap((field) => {
     const fieldName = getFieldName(field);
     if (!fieldName || !isFlowSurfaceDefaultActionPopupBusinessField(field)) {
+      return [];
+    }
+    if (isRelationBackingForeignKeyField(input.collection, field) && !explicitDefaultFieldPaths.has(fieldName)) {
       return [];
     }
     const fieldInterface = getFieldInterface(field);
@@ -4654,9 +4774,16 @@ function collectBlockErrors(
   collectChartDisplayTitleErrors(block, blockType, path, errors);
   collectTreeTableExplicitFieldsErrors(block, blockType, path, errors, context);
   collectTreeConnectFieldsErrors(block.settings?.connectFields, `${path}.settings.connectFields`, errors);
-  collectTableSettingsErrors(block, blockType, path, errors, {
-    deferPublicDataScopeErrors: context.authoringActionName === 'addBlocks',
-  });
+  collectTableSettingsErrors(
+    block,
+    blockType,
+    path,
+    errors,
+    {
+      deferPublicDataScopeErrors: context.authoringActionName === 'addBlocks',
+    },
+    context,
+  );
   collectGridCardSettingsErrors(block, blockType, path, errors);
   const descendantContext = getBlockDescendantValidationContext(block, context);
   collectActionListErrors(block.actions, `${path}.actions`, errors, block, descendantContext, 'actions');
@@ -5030,8 +5157,8 @@ async function collectConfigureErrors(
   collectCommentsBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectRecordHistoryBlockErrors(changesBlock, hostBlockType, '$.changes', errors, context);
   collectChartDisplayTitleErrors(changes, hostBlockType, '$.changes', errors);
-  collectChartConfigureFilterOperatorErrors(changes, hostBlockType, '$.changes', errors);
-  collectTableSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
+  collectChartConfigureFilterOperatorErrors(changes, hostBlockType, '$.changes', errors, context);
+  collectTableSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true }, context);
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
   collectTriggerWorkflowsErrors(changes.triggerWorkflows, '$.changes.triggerWorkflows', errors);
@@ -5133,9 +5260,28 @@ function collectUnsupportedDefaultFilterOperatorError(operator: any, path: strin
   });
 }
 
-function collectDefaultFilterDateValueError(operator: any, value: any, path: string, errors: AuthoringErrorInput[]) {
+function collectDefaultFilterDateValueError(
+  operator: any,
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  fieldContext?: FlowSurfaceDateConditionFieldContext | null,
+  options: {
+    allowContextPathValue?: boolean;
+  } = {},
+) {
+  const fieldMeta = getDateConditionFieldContextMeta(fieldContext);
+  const normalizedOperator = typeof operator === 'string' ? operator.trim() : '';
+  if (!FLOW_SURFACE_DATE_FILTER_OPERATORS.has(normalizedOperator) && !isFlowSurfaceDateLikeFieldMeta(fieldMeta)) {
+    return;
+  }
   try {
-    normalizeFlowSurfaceStrictFilterDateValue(operator, value, path);
+    normalizeFlowSurfaceDateConditionValue(operator, value, path, {
+      fieldPath: fieldContext?.fieldPath,
+      fieldType: fieldMeta.type,
+      fieldInterface: fieldMeta.interface,
+      allowContextPathValue: options.allowContextPathValue,
+    });
   } catch (error) {
     if (!(error instanceof FlowSurfaceBadRequestError)) {
       throw error;
@@ -6395,13 +6541,14 @@ function collectChartConfigureFilterOperatorErrors(
   hostBlockType: string | undefined,
   path: string,
   errors: AuthoringErrorInput[],
+  context: FlowSurfaceAuthoringValidationContext,
 ) {
   if (hostBlockType !== 'chart' || !_.isPlainObject(changes)) {
     return;
   }
-  collectChartQueryFilterOperatorErrors(changes.query, `${path}.query`, errors);
+  collectChartQueryFilterOperatorErrors(changes.query, `${path}.query`, errors, context);
   if (_.isPlainObject(changes.configure)) {
-    collectChartQueryFilterOperatorErrors(changes.configure.query, `${path}.configure.query`, errors);
+    collectChartQueryFilterOperatorErrors(changes.configure.query, `${path}.configure.query`, errors, context);
   }
 }
 
@@ -6430,7 +6577,13 @@ function visitFilterItems(
   }
   if (typeof value.operator === 'string') {
     collectUnsupportedDefaultFilterOperatorError(value.operator, `${path}.operator`, errors);
-    collectDefaultFilterDateValueError(value.operator, value.value, `${path}.value`, errors);
+    collectDefaultFilterDateValueError(
+      value.operator,
+      value.value,
+      `${path}.value`,
+      errors,
+      fieldRef ? resolveDefaultFilterDateConditionField(fieldRef.value, block, context) : undefined,
+    );
   }
   const filterItems = value.items;
   if (Array.isArray(filterItems)) {
@@ -6464,10 +6617,37 @@ function visitFilterItems(
     if (_.isPlainObject(child)) {
       Object.entries(child).forEach(([operator, operatorValue]) => {
         collectUnsupportedDefaultFilterOperatorError(operator, `${path}.${key}.${operator}`, errors);
-        collectDefaultFilterDateValueError(operator, operatorValue, `${path}.${key}.${operator}`, errors);
+        collectDefaultFilterDateValueError(
+          operator,
+          operatorValue,
+          `${path}.${key}.${operator}`,
+          errors,
+          resolveDefaultFilterDateConditionField(key, block, context),
+        );
       });
     }
   });
+}
+
+function resolveDefaultFilterDateConditionField(
+  rawFieldPath: any,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+): FlowSurfaceDateConditionFieldContext | null {
+  const fieldPath = String(rawFieldPath || '').trim();
+  if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+    return null;
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return null;
+  }
+  const dataSourceKey = getBlockDataSourceKey(block, context);
+  const resolved = resolveDefaultFilterFieldPath(collection, normalizeFieldPath(fieldPath), dataSourceKey, context);
+  return {
+    fieldPath,
+    field: resolved.field,
+  };
 }
 
 function collectTreeConnectFieldsErrors(
@@ -6909,6 +7089,7 @@ function collectTableSettingsErrors(
   blockPath: string,
   errors: AuthoringErrorInput[],
   options: { directSettings?: boolean; deferPublicDataScopeErrors?: boolean } = {},
+  context: FlowSurfaceAuthoringValidationContext = {},
 ) {
   if (blockType !== 'table' || !_.isPlainObject(block)) {
     return;
@@ -6920,6 +7101,9 @@ function collectTableSettingsErrors(
   });
   const hasSettings = _.isPlainObject(block?.settings);
   if (!hasSettings) {
+    if (options.directSettings === true && !shouldDeferPublicDataScopeErrorsToBatchItem(blockPath, errors, options)) {
+      collectPublicDataScopeErrors(block.dataScope, `${blockPath}.dataScope`, errors, block, context);
+    }
     return;
   }
   const settings = block.settings;
@@ -6935,7 +7119,7 @@ function collectTableSettingsErrors(
     pushTableSettingsUnsupportedError(errors, `${settingsPath}.${key}`, key);
   });
   if (!shouldDeferPublicDataScopeErrorsToBatchItem(blockPath, errors, options)) {
-    collectPublicDataScopeErrors(settings.dataScope, `${settingsPath}.dataScope`, errors);
+    collectPublicDataScopeErrors(settings.dataScope, `${settingsPath}.dataScope`, errors, block, context);
   }
 }
 
@@ -6952,7 +7136,13 @@ function pushTableSettingsUnsupportedError(errors: AuthoringErrorInput[], path: 
   });
 }
 
-function collectPublicDataScopeErrors(value: any, path: string, errors: AuthoringErrorInput[]) {
+function collectPublicDataScopeErrors(
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
   if (_.isUndefined(value)) {
     return;
   }
@@ -6971,6 +7161,78 @@ function collectPublicDataScopeErrors(value: any, path: string, errors: Authorin
       details: {
         repairHint:
           'Use settings.dataScope with logic/items, for example {"logic":"$and","items":[{"path":"status","operator":"$eq","value":"Active"}]}; do not use a field-name map.',
+      },
+    });
+    return;
+  }
+  collectPublicDataScopeFieldPathErrors(validationValue, path, errors, block, context);
+  collectFilterGroupDateConditionErrors(validationValue, path, errors, block, context);
+}
+
+function collectPublicDataScopeFieldPathErrors(
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (!_.isPlainObject(value)) {
+    return;
+  }
+  if (hasOwn(value, 'operator')) {
+    collectPublicDataScopeFieldPathError(value.path, `${path}.path`, block, context, errors);
+  }
+  if (Array.isArray(value.items)) {
+    value.items.forEach((item, index) =>
+      collectPublicDataScopeFieldPathErrors(item, `${path}.items[${index}]`, errors, block, context),
+    );
+  }
+}
+
+function collectPublicDataScopeFieldPathError(
+  rawFieldPath: any,
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  const fieldPath = String(rawFieldPath || '').trim();
+  if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+    return;
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return;
+  }
+  const resolved = resolveDefaultFilterFieldPath(
+    collection,
+    normalizeFieldPath(fieldPath),
+    getBlockDataSourceKey(block, context),
+    context,
+  );
+  if (!resolved.field) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'field-path-unknown',
+      message: `flowSurfaces authoring ${path} references unknown field '${fieldPath}'`,
+      details: {
+        fieldPath,
+        collection: getCollectionName(resolved.collection || collection),
+        availableFields: getCollectionFields(resolved.collection || collection)
+          .map((field) => String(getFieldName(field) || '').trim())
+          .filter(Boolean),
+      },
+    });
+    return;
+  }
+  if (isAssociationField(resolved.field)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaultFilter-relation-field-unsupported',
+      message: `flowSurfaces authoring ${path} cannot use relation field '${fieldPath}' itself; use a scalar subfield instead`,
+      details: {
+        fieldPath,
+        fieldName: getFieldName(resolved.field),
       },
     });
   }
@@ -6999,6 +7261,35 @@ function normalizePublicDataScopeValueForValidation(value: any) {
     return value.filter;
   }
   return value;
+}
+
+function collectFilterGroupDateConditionErrors(
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (!_.isPlainObject(value)) {
+    return;
+  }
+  if (Array.isArray(value.items)) {
+    value.items.forEach((item, index) =>
+      collectFilterGroupDateConditionErrors(item, `${path}.items[${index}]`, errors, block, context),
+    );
+    return;
+  }
+  if (!hasOwn(value, 'operator')) {
+    return;
+  }
+  const fieldPath = String(value.path || value.field || '').trim();
+  collectDefaultFilterDateValueError(
+    value.operator,
+    value.value,
+    `${path}.value`,
+    errors,
+    fieldPath ? resolveDefaultFilterDateConditionField(fieldPath, block, context) : undefined,
+  );
 }
 
 function collectGridCardSettingsErrors(
@@ -7161,13 +7452,14 @@ function buildAuthoringAIEmployeeActionIdentity(settings: any) {
 }
 
 function normalizeAuthoringAIEmployeePublicSettingsForIdentity(settings: Record<string, any>) {
+  const workContext = Object.prototype.hasOwnProperty.call(settings, 'workContext')
+    ? normalizeAuthoringAIEmployeeWorkContextForIdentity(settings.workContext)
+    : [{ type: 'flow-model', target: 'self' }];
   return {
     username: String(settings.username || '').trim(),
     auto: typeof settings.auto === 'boolean' ? settings.auto : false,
-    workContext: Object.prototype.hasOwnProperty.call(settings, 'workContext')
-      ? normalizeAuthoringAIEmployeeWorkContextForIdentity(settings.workContext)
-      : [{ type: 'flow-model', target: 'self' }],
-    tasks: normalizeAuthoringAIEmployeeTasksForIdentity(settings.tasks),
+    workContext,
+    tasks: normalizeAuthoringAIEmployeeTasksForIdentity(settings.tasks, workContext),
     style: {
       ...AUTHORING_AI_EMPLOYEE_DEFAULT_STYLE,
       ...(_.isPlainObject(settings.style) ? _.pick(settings.style, AUTHORING_AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {}),
@@ -7188,7 +7480,15 @@ function normalizeAuthoringAIEmployeeWorkContextForIdentity(value: any) {
   });
 }
 
-function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
+function normalizeAuthoringAIEmployeeTaskWorkContextForIdentity(value: any, defaultWorkContext?: any[]) {
+  const normalized = normalizeAuthoringAIEmployeeWorkContextForIdentity(value);
+  if (Array.isArray(defaultWorkContext) && !normalized.length) {
+    return _.cloneDeep(defaultWorkContext);
+  }
+  return normalized;
+}
+
+function normalizeAuthoringAIEmployeeTasksForIdentity(value: any, defaultWorkContext?: any[]) {
   return _.castArray(value || []).map((task: any) => {
     if (!_.isPlainObject(task)) {
       return task;
@@ -7196,10 +7496,11 @@ function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
     const output = _.pick(task, AUTHORING_AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS);
     if (_.isPlainObject(output.message)) {
       output.message = _.pick(output.message, AUTHORING_AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS);
-      if (_.isPlainObject(output.message.workContext)) {
-        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
-      } else if (Array.isArray(output.message.workContext)) {
-        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
+      if (Object.prototype.hasOwnProperty.call(output.message, 'workContext')) {
+        output.message.workContext = normalizeAuthoringAIEmployeeTaskWorkContextForIdentity(
+          output.message.workContext,
+          defaultWorkContext,
+        );
       }
     }
     if (
@@ -7210,6 +7511,16 @@ function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
         ...(_.isPlainObject(output.message) ? output.message : {}),
         user: task.prompt,
       };
+    }
+    if (!_.isPlainObject(output.message) && Array.isArray(defaultWorkContext)) {
+      output.message = {
+        workContext: _.cloneDeep(defaultWorkContext),
+      };
+    } else if (
+      _.isPlainObject(output.message) &&
+      !Object.prototype.hasOwnProperty.call(output.message, 'workContext')
+    ) {
+      output.message.workContext = _.cloneDeep(defaultWorkContext || []);
     }
     if (_.isPlainObject(output.model)) {
       output.model = _.pick(output.model, AUTHORING_AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS);
@@ -7787,7 +8098,16 @@ function collectNestedBlockErrors(
   blocks.forEach((block, index) => collectBlockErrors(block, `${path}[${index}]`, errors, localKeys, context));
 }
 
-function collectReactionErrors(reaction: any, path: string, localKeys: Set<string>, errors: AuthoringErrorInput[]) {
+function collectReactionErrors(
+  reaction: any,
+  path: string,
+  localKeys: Set<string>,
+  errors: AuthoringErrorInput[],
+  options: {
+    values?: any;
+    context?: FlowSurfaceAuthoringValidationContext;
+  } = {},
+) {
   const items = Array.isArray(reaction?.items) ? reaction.items : [];
   items.forEach((item: any, index: number) => {
     const rawTarget = item?.target ?? item?.targetKey ?? item?.targetBlock;
@@ -7805,7 +8125,254 @@ function collectReactionErrors(reaction: any, path: string, localKeys: Set<strin
         message: `flowSurfaces authoring ${path}.items[${index}].target references unknown local target '${target}'`,
       });
     }
+    collectReactionItemDateConditionErrors(item, `${path}.items[${index}]`, target, errors, options);
   });
+}
+
+function collectReactionItemDateConditionErrors(
+  item: any,
+  path: string,
+  target: string,
+  errors: AuthoringErrorInput[],
+  options: {
+    values?: any;
+    context?: FlowSurfaceAuthoringValidationContext;
+  },
+) {
+  if (!_.isPlainObject(item) || !_.isPlainObject(options.values) || !options.context) {
+    return;
+  }
+  const targetMatch = findApplyBlueprintReactionTargetBlock(options.values, target, options.context);
+  if (!targetMatch) {
+    return;
+  }
+  const type = String(item.type || '').trim();
+  const conditionFieldMetaByPath = buildApplyBlueprintReactionConditionFieldMetaByPath(
+    targetMatch.block,
+    targetMatch.context,
+  );
+  _.castArray(item.rules || []).forEach((rule, ruleIndex) => {
+    collectReactionFilterDateConditionErrors(
+      rule?.when ?? rule?.condition,
+      `${path}.rules[${ruleIndex}].when`,
+      errors,
+      targetMatch.block,
+      targetMatch.context,
+      conditionFieldMetaByPath,
+    );
+    if (type !== 'setFieldLinkageRules') {
+      return;
+    }
+    _.castArray(rule?.then || rule?.actions || []).forEach((action, actionIndex) => {
+      _.castArray(action?.items || []).forEach((assignItem, itemIndex) => {
+        collectReactionFilterDateConditionErrors(
+          assignItem?.when ?? assignItem?.condition,
+          `${path}.rules[${ruleIndex}].then[${actionIndex}].items[${itemIndex}].when`,
+          errors,
+          targetMatch.block,
+          targetMatch.context,
+          conditionFieldMetaByPath,
+        );
+      });
+    });
+  });
+}
+
+function collectReactionFilterDateConditionErrors(
+  filter: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  fieldMetaByPath: Record<string, { type?: string; interface?: string }> = {},
+) {
+  if (!_.isPlainObject(filter)) {
+    return;
+  }
+  if (Array.isArray(filter.items)) {
+    filter.items.forEach((item, index) =>
+      collectReactionFilterDateConditionErrors(
+        item,
+        `${path}.items[${index}]`,
+        errors,
+        block,
+        context,
+        fieldMetaByPath,
+      ),
+    );
+    return;
+  }
+  if (!hasOwn(filter, 'operator')) {
+    return;
+  }
+  const conditionPath = normalizeReactionConditionPath(filter.path);
+  const fieldContext = resolveReactionConditionFieldContext(conditionPath, block, context, fieldMetaByPath);
+  collectDefaultFilterDateValueError(filter.operator, filter.value, `${path}.value`, errors, fieldContext, {
+    allowContextPathValue: true,
+  });
+}
+
+function normalizeReactionConditionPath(rawPath: any) {
+  const value = String(rawPath || '').trim();
+  const templateMatch = /^\{\{\s*ctx(?:\.([^}]+?))?\s*\}\}$/.exec(value);
+  const path = templateMatch ? String(templateMatch[1] || '').trim() : value.replace(/^ctx\./, '');
+  return path
+    .split('.')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join('.');
+}
+
+function buildApplyBlueprintReactionConditionFieldMetaByPath(
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  const collection = getBlockCollection(block, context);
+  const dataSourceKey = getBlockDataSourceKey(block, context);
+  const userCollection =
+    context.getCollection?.('main', 'users') || context.getCollection?.(dataSourceKey, 'users') || null;
+  const response = buildFlowSurfaceContextResponse({
+    semantic: {
+      collection,
+      userCollection,
+      recordCollection: collection,
+      formValuesCollection: collection,
+      itemCollections: collection ? [collection] : [],
+      itemRootCollection: collection || undefined,
+      popupLevels:
+        context.isPopupSurface || context.popupHasCurrentRecord
+          ? [
+              {
+                recordCollection: collection,
+                sourceRecordCollection: collection,
+              },
+            ]
+          : [],
+    },
+    maxDepth: 4,
+  });
+  const fieldMetaByPath = collectAuthorableReactionContextFieldMetaByPath(response);
+  addCollectionFieldMetaAliases(fieldMetaByPath, collection, ['collection', 'record', 'formValues']);
+  addCollectionFieldMetaAliases(fieldMetaByPath, collection, ['item'], {
+    preserveExisting: true,
+    reservedKeys: new Set(['index', 'length', 'value', 'parentItem']),
+  });
+  if (userCollection) {
+    addCollectionFieldMetaAliases(fieldMetaByPath, userCollection, ['user']);
+  }
+  return fieldMetaByPath;
+}
+
+function collectAuthorableReactionContextFieldMetaByPath(context: FlowSurfaceContextResponse) {
+  const fieldMetaByPath: Record<string, { type?: string; interface?: string }> = {};
+  const visit = (prefix: string, info: FlowSurfaceContextVarInfo | undefined) => {
+    if (!prefix || !info) {
+      return;
+    }
+    if (isAuthorableReactionContextPath(prefix)) {
+      fieldMetaByPath[prefix] = {
+        ...(info.type ? { type: info.type } : {}),
+        ...(info.interface ? { interface: info.interface } : {}),
+      };
+    }
+    if (info.dynamicProperties) {
+      visit(`${prefix}.*`, info.dynamicProperties);
+    }
+    Object.entries(info.properties || {}).forEach(([key, child]) => visit(`${prefix}.${key}`, child));
+  };
+
+  Object.entries(context?.vars || {}).forEach(([key, info]) => visit(key, info));
+  return fieldMetaByPath;
+}
+
+function isAuthorableReactionContextPath(path: string) {
+  const segments = String(path || '')
+    .split('.')
+    .filter(Boolean);
+  const root = segments[0];
+  if (!root) {
+    return false;
+  }
+  if (AUTHORABLE_REACTION_SCALAR_CONTEXT_PATHS.has(root)) {
+    return segments.length === 1;
+  }
+  return AUTHORABLE_REACTION_CONTEXT_ROOTS.has(root);
+}
+
+function addCollectionFieldMetaAliases(
+  fieldMetaByPath: Record<string, { type?: string; interface?: string }>,
+  collection: any,
+  roots: string[],
+  options: {
+    preserveExisting?: boolean;
+    reservedKeys?: Set<string>;
+  } = {},
+) {
+  for (const field of getCollectionFields(collection)) {
+    const fieldName = getFieldName(field);
+    if (!fieldName) {
+      continue;
+    }
+    const fieldMeta = {
+      ...(getFieldType(field) ? { type: getFieldType(field) } : {}),
+      ...(getFieldInterface(field) ? { interface: getFieldInterface(field) } : {}),
+    };
+    for (const root of roots) {
+      if (options.reservedKeys?.has(fieldName)) {
+        continue;
+      }
+      const aliasPath = `${root}.${fieldName}`;
+      if (options.preserveExisting && fieldMetaByPath[aliasPath]) {
+        continue;
+      }
+      fieldMetaByPath[aliasPath] = {
+        ...fieldMetaByPath[aliasPath],
+        ...fieldMeta,
+      };
+    }
+  }
+}
+
+function resolveReactionConditionFieldContext(
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  fieldMetaByPath: Record<string, { type?: string; interface?: string }>,
+): FlowSurfaceDateConditionFieldContext | undefined {
+  const normalized = String(path || '').trim();
+  const contextMeta = resolveReactionConditionFieldMeta(normalized, fieldMetaByPath);
+  if (contextMeta) {
+    return {
+      fieldPath: normalized,
+      fieldMeta: contextMeta,
+    };
+  }
+  const fieldPath = resolveReactionConditionFieldPath(normalized);
+  return fieldPath ? resolveDefaultFilterDateConditionField(fieldPath, block, context) || undefined : undefined;
+}
+
+function resolveReactionConditionFieldMeta(
+  path: string,
+  fieldMetaByPath: Record<string, { type?: string; interface?: string }>,
+) {
+  if (fieldMetaByPath[path]) {
+    return fieldMetaByPath[path];
+  }
+  const wildcardPath = Object.keys(fieldMetaByPath)
+    .filter((candidate) => candidate.endsWith('.*'))
+    .sort((a, b) => b.length - a.length)
+    .find((candidate) => {
+      const prefix = candidate.slice(0, -2);
+      return path.startsWith(`${prefix}.`) && path.length > prefix.length + 1;
+    });
+  return wildcardPath ? fieldMetaByPath[wildcardPath] : undefined;
+}
+
+function resolveReactionConditionFieldPath(path: string) {
+  const normalized = String(path || '').trim();
+  const prefixes = ['formValues.', 'record.', 'item.value.', 'item.', 'popup.record.', 'collection.', 'user.'];
+  const prefix = prefixes.find((candidate) => normalized.startsWith(candidate));
+  return prefix ? normalized.slice(prefix.length) : '';
 }
 
 function collectFieldListErrors(

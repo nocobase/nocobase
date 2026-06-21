@@ -4241,6 +4241,66 @@ test('destroy does not remove the saved env config when cleanup fails midway', a
   expect(mocks.removeEnv).not.toHaveBeenCalled();
 });
 
+test('destroy reports permission fixes when storage data cannot be removed', async () => {
+  const { default: Destroy } = await import('../commands/app/destroy.js');
+  const storagePath = '/home/chenos/test2/storage';
+  const resolvedStoragePath = path.resolve(storagePath);
+  const storageError = new Error(
+    "EACCES: permission denied, unlink '/home/chenos/test2/storage/.license/instance-id'",
+  ) as Error & { code: string };
+  storageError.code = 'EACCES';
+
+  mocks.resolveManagedAppRuntime.mockResolvedValue({
+    kind: 'docker',
+    envName: 'test2',
+    source: 'docker',
+    containerName: 'nb-demo-test2-app',
+    workspaceName: 'nb-demo',
+    env: {
+      config: {
+        builtinDb: true,
+        dbDialect: 'postgres',
+        storagePath,
+      },
+    },
+  });
+  mocks.buildDockerDbContainerName.mockReturnValue('nb-demo-test2-postgres');
+  mocks.fsRm
+    .mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(storageError);
+
+  const command = createCommandHarness({
+    flags: {
+      env: 'test2',
+      force: true,
+    },
+  });
+
+  let thrown: Error | undefined;
+  try {
+    await Destroy.prototype.run.call(command);
+  } catch (error: unknown) {
+    thrown = error instanceof Error ? error : new Error(String(error));
+  }
+
+  expect(thrown?.message).toContain(`Failed to remove storage data for "test2" at "${resolvedStoragePath}".`);
+  expect(thrown?.message).toContain(
+    'The current user cannot delete one or more files under this path. Files may have been created by a Docker container running as root.',
+  );
+  if (process.platform === 'win32') {
+    expect(thrown?.message).not.toContain('sudo chown -R');
+  } else {
+    expect(thrown?.message).toContain(`sudo chown -R "$(id -u):$(id -g)" "${resolvedStoragePath}"`);
+  }
+  expect(thrown?.message).toContain('nb env remove test2 --purge --force');
+  expect(thrown?.message).toContain(
+    "Original error: EACCES: permission denied, unlink '/home/chenos/test2/storage/.license/instance-id'",
+  );
+  expect(mocks.removeEnv).not.toHaveBeenCalled();
+});
+
 test('destroy requires force in non-interactive mode', async () => {
   const { default: Destroy } = await import('../commands/app/destroy.js');
   mocks.resolveManagedAppRuntime.mockResolvedValue({

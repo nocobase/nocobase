@@ -9,10 +9,48 @@
 
 import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Input } from 'antd';
-import React from 'react';
+import type { InputProps } from 'antd';
+import React, { useEffect, useState } from 'react';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FieldModel } from '../base/FieldModel';
 import { ScanInput } from '../../../components/form/ScanInput';
+
+function IMESafeInput(props: InputProps) {
+  const { value, onChange, onCompositionStart, onCompositionEnd, ...rest } = props;
+  const [inputValue, setInputValue] = useState<InputProps['value']>(() => normalizeInputValue(value));
+
+  useEffect(() => {
+    setInputValue(normalizeInputValue(value));
+  }, [value]);
+
+  const getEventValue = (event: React.ChangeEvent<HTMLInputElement> | React.CompositionEvent<HTMLInputElement>) =>
+    event.currentTarget.value;
+
+  return (
+    <Input
+      {...rest}
+      value={inputValue}
+      onChange={(event) => {
+        setInputValue(getEventValue(event));
+        onChange?.(event);
+      }}
+      onCompositionStart={(event) => {
+        setInputValue(getEventValue(event));
+        onCompositionStart?.(event);
+      }}
+      onCompositionEnd={(event) => {
+        setInputValue(getEventValue(event));
+        onCompositionEnd?.(event);
+      }}
+    />
+  );
+}
+
+function normalizeInputValue(nextValue: unknown): InputProps['value'] {
+  if (typeof nextValue === 'bigint') return String(nextValue);
+  if (nextValue == null) return '';
+  return nextValue as InputProps['value'];
+}
 
 export class InputFieldModel extends FieldModel {
   render() {
@@ -20,7 +58,7 @@ export class InputFieldModel extends FieldModel {
       return <ScanInput {...this.props} />;
     }
     const { enableScan, disableManualInput, ...inputProps } = this.props;
-    return <Input {...inputProps} />;
+    return <IMESafeInput {...inputProps} />;
   }
 }
 

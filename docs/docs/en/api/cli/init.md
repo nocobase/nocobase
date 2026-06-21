@@ -74,7 +74,7 @@ By default, the CLI organizes local files under `app-path` using the following c
 
 Typically:
 
-- `source/` mainly corresponds to the local app directory for npm / Git envs. For Docker envs, the CLI also keeps this default path derivation, but most of the time you do not need to care about it manually
+- `source/` mainly corresponds to the local app directory for npm / Git envs. For Docker envs, the CLI also keeps this default path derivation, but most of the time you do not need to care about it manually. Pay special attention during upgrades: the `source/` directory will be deleted and downloaded again, so do not put files you need to keep here
 - `storage/` is used for runtime data, such as built-in database data, plugins, logs, and more
 - `.env` is an optional app environment variable file. You only need to add it in `<app-path>/.env` when you want to customize environment variables; if this file exists, Docker, npm, and Git install sources will all read it by default
 
@@ -121,7 +121,7 @@ The “Default” below means the value or behavior that `nb init` usually uses 
 | `--ui`          | boolean | `false`                                                                      | Open the local browser wizard; cannot be used with `--yes` or `--resume`               |
 | `--verbose`     | boolean | `false`                                                                      | Show detailed command output                                                           |
 | `--skip-skills` | boolean | `false`                                                                      | Skip syncing NocoBase AI coding skills                                                 |
-| `--ui-host`     | string  | `127.0.0.1`                                                                  | Bind address for the `--ui` local service                                              |
+| `--ui-host`     | string  | `127.0.0.1`                                                                  | Browser-accessible host shown in the `--ui` wizard URL; the local service always listens on `0.0.0.0` |
 | `--ui-port`     | integer | `0`                                                                          | Port for the `--ui` local service; `0` means automatic assignment                      |
 | `--locale`      | string  | Follows `NB_LOCALE`, CLI config, or system locale; final fallback is `en-US` | Language for CLI prompts and the local setup UI: `en-US` or `zh-CN`                    |
 | `--resume`      | boolean | `false`                                                                      | Continue the last unfinished initialization and reuse the saved workspace env config   |

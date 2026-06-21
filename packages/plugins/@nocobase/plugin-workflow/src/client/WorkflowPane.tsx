@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { App, Switch, Tooltip } from 'antd';
-import { onFieldChange, onFieldValueChange } from '@formily/core';
+import { createForm, onFieldChange, onFieldValueChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
 import {
@@ -123,6 +123,44 @@ function useRevisionAction() {
       }
     },
   };
+}
+
+type DuplicateWorkflowFormValues = {
+  title?: string;
+  description?: string;
+};
+
+function getDuplicateWorkflowFormValues(record: DuplicateWorkflowFormValues): DuplicateWorkflowFormValues {
+  return {
+    title: record.title ?? '',
+    description: record.description ?? '',
+  };
+}
+
+function useDuplicateWorkflowFormProps() {
+  const record = useRecord<DuplicateWorkflowFormValues>() ?? {};
+  const { title, description } = record;
+  const { visible, setFormValueChanged } = useActionContext();
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: getDuplicateWorkflowFormValues({ title, description }),
+      }),
+    [description, title],
+  );
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+    const values = getDuplicateWorkflowFormValues({ title, description });
+    form.setInitialValues(values);
+    form.setValues(values);
+    form.reset();
+    setFormValueChanged?.(false);
+  }, [description, form, setFormValueChanged, title, visible]);
+
+  return { form };
 }
 
 function TriggerPresetFieldset() {
@@ -243,6 +281,7 @@ export function WorkflowPane() {
           useResourceFilterActionProps,
           useRefreshActionProps,
           useRevisionAction,
+          useDuplicateWorkflowFormProps,
           TriggerOptionRender,
           // ExecutedLink,
           ExecutionStatusOptions,

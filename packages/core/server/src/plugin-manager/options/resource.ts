@@ -14,7 +14,7 @@ import fse from 'fs-extra';
 import path from 'path';
 import Application from '../../application';
 import PluginManager from '../plugin-manager';
-import { pmListSummary } from '../utils';
+import { assertSafePluginPackageName, pmListSummary } from '../utils';
 
 import packageJson from '../../../package.json';
 
@@ -314,12 +314,19 @@ export default {
       if (!keys.length) {
         ctx.throw(400, 'plugin name invalid');
       }
+      for (const key of keys) {
+        try {
+          assertSafePluginPackageName(key);
+        } catch (error) {
+          ctx.throw(400, 'plugin name invalid');
+        }
+      }
       const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
       const argv = ['pm', 'enable', ...keys];
       if (awaitResponse) {
         await app.runAsCLI(argv, { from: 'user', throwError: true });
       } else {
-        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+        app.runAsCLI(argv, { from: 'user' }).catch((err) => {
           app.log.error(err);
         });
       }
@@ -338,7 +345,7 @@ export default {
       if (awaitResponse) {
         await app.runAsCLI(argv, { from: 'user', throwError: true });
       } else {
-        void app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+        app.runAsCLI(argv, { from: 'user' }).catch((err) => {
           app.log.error(err);
         });
       }
@@ -356,7 +363,7 @@ export default {
       await next();
     },
     async list(ctx, next) {
-      const { mode } = ctx.action.params;
+      const { mode, v2 } = ctx.action.params;
       if (mode === 'summary') {
         ctx.body = await pmListSummary(ctx.app);
         return next();
@@ -365,7 +372,17 @@ export default {
       const pm = ctx.app.pm as PluginManager;
       // ctx.body = await pm.list({ locale, isPreset: false });
       const plugin = pm.get('nocobase') as any;
-      ctx.body = await plugin.getAllPlugins(locale);
+      const plugins = await plugin.getAllPlugins(locale);
+      ctx.body = plugins.filter((item: any) => {
+        if (process.env.NOCOBASE_SHOW_DEPRECATED_PLUGINS === 'true') {
+          return true;
+        }
+        if (!v2) {
+          return true;
+        }
+        const nocobaseConfig = item?.packageJson?.nocobase || {};
+        return nocobaseConfig.internal !== true && nocobaseConfig.deprecated !== true;
+      });
       await next();
     },
     async listEnabled(ctx, next) {

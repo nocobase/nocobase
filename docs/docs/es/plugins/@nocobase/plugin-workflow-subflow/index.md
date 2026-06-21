@@ -1,15 +1,17 @@
 ---
-displayName: "Workflow: Subproceso"
+title: "Workflow: Subflow"
+keywords: "Workflow"
+displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Se utiliza para llamar a otros workflows dentro de un workflow. Puede utilizar las variables del workflow actual como entrada del subproceso y utilizar la salida del subproceso como variables del workflow actual.
+  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Workflow: Subproceso
+# Workflow: Subflow

@@ -10,8 +10,20 @@
       },
       {
         "type": "custom-link",
-        "label": "Системные требования",
-        "link": "/get-started/system-requirements"
+        "label": "Требования к ОС",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Продакшн",
+            "link": "/get-started/system-requirements"
+          },
+          {
+            "type": "custom-link",
+            "label": "Локальная разработка",
+            "link": "/ai/local-development-setup"
+          }
+        ],
+        "collapsed": true
       },
       {
         "type": "custom-link",
@@ -22,6 +34,16 @@
         "type": "custom-link",
         "label": "Установить приложение NocoBase",
         "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Обновить приложение NocoBase",
+        "link": "/ai/upgrade-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Обновление с 2.0 до 2.1",
+        "link": "/ai/upgrade-from-2-0-to-2-1"
       },
       {
         "type": "custom-link",

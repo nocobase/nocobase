@@ -1,8 +1,8 @@
 ---
 pkg: '@nocobase/plugin-migration-manager'
-title: "Gestionnaire de migrations"
-description: "Gestionnaire de migrations en exploitation : migration de la configuration applicative d'un environnement vers un autre, prise en charge des règles structure seule, écraser, Upsert, ignorer les doublons, ignorer ; dépend du plugin Gestionnaire de sauvegardes."
-keywords: "Gestionnaire de migrations,Migration,migration de configuration,règles de migration,Upsert,migration de base de données,exploitation,NocoBase"
+title: "Gestion des migrations"
+description: "Migration opérationnelle : migrer la configuration d’une application d’un environnement à un autre, avec les règles structure seule, écraser et ignorer. Dépend de la gestion des sauvegardes."
+keywords: "Gestion des migrations,Migration,configuration application,règles de migration,structure seule,écraser,ignorer,NocoBase"
 ---
 # Gestionnaire de migrations
 
@@ -29,17 +29,15 @@ Migre les tables et données de la base de données principale d'une application
 
 ### Règles intégrées
 
-Les cinq règles de migration suivantes sont prises en charge :
+La gestion des migrations prend en charge les trois règles suivantes :
 
-- **Structure seule :** Synchronise uniquement la structure des tables, sans insertion ni mise à jour des données.
-- **Écraser (vider et réinsérer) :** Vide les enregistrements existants de la table puis insère les nouvelles données.
-- **Insérer ou mettre à jour (Upsert) :** Détermine en fonction de la clé primaire ; met à jour si l'enregistrement existe, sinon l'insère.
-- **Insérer en ignorant les doublons :** Insère de nouveaux enregistrements ; en cas de conflit de clé primaire, ignore (ne met pas à jour les enregistrements existants).
-- **Ignorer :** N'effectue aucun traitement sur cette table.
+- **Structure seule :** synchronise uniquement la structure des tables, sans insertion ni mise à jour de données.
+- **Écraser :** supprime les enregistrements existants de la table, puis insère les nouvelles données.
+- **Ignorer :** ne traite pas cette table.
 
 **Remarques :**
-- Les règles « Écraser », « Insérer ou mettre à jour » et « Insérer en ignorant les doublons » synchronisent également les modifications de structure de table.
-- Les tables avec un ID auto-incrémenté comme clé primaire ou sans clé primaire ne prennent pas en charge « Insérer ou mettre à jour » ni « Insérer en ignorant les doublons ».
+- Écraser synchronise aussi les changements de structure de table.
+- Les tables métier définies par l’utilisateur utilisent généralement Structure seule afin d’éviter d’écraser les données de production.
 
 ### Conception détaillée
 

@@ -1,12 +1,14 @@
 ---
-displayName: "File Manager"
+title: "File manager"
+keywords: "Collections,Collection fields"
+displayName: "File manager"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Provides file storage services with file collection template and Attachment field.
+  Provides files storage services with files collection template and attachment field.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# File Manager
+# File manager

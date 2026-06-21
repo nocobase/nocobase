@@ -1,8 +1,8 @@
 ---
-displayName: "Redis worker ID 分配器"
-packageName: '@nocobase/plugin-workerid-allocator-redis'
 title: "Redis worker ID 分配器"
 keywords: "Redis worker ID 分配器,插件,NocoBase"
+displayName: "Redis worker ID 分配器"
+packageName: '@nocobase/plugin-workerid-allocator-redis'
 supportedVersions:
   - 1.x
   - 2.x

@@ -9,7 +9,6 @@
 
 import actions, { Context } from '@nocobase/actions';
 import fs from 'fs';
-import _ from 'lodash';
 import { basename } from 'path';
 import { TASK_STATUS } from '../../common/constants';
 
@@ -60,12 +59,18 @@ export default {
     },
 
     async fetchFile(ctx, next) {
-      const { filterByTk, filename } = ctx.action.params;
+      const { filterByTk, resourceIndex, filename } = ctx.action.params;
+      const taskId = filterByTk ?? resourceIndex;
+
+      if (!taskId) {
+        return ctx.throw(400, 'Task id is required');
+      }
+
       const userId = ctx.auth.user.id;
       const TaskRepo = ctx.app.db.getRepository('asyncTasks');
       const task = await TaskRepo.findOne({
         where: {
-          id: filterByTk,
+          id: taskId,
           createdById: userId,
         },
       });

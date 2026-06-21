@@ -1,14 +1,16 @@
 ---
-displayName: "AI: Base de conocimientos"
+title: "AI: Knowledge base"
+keywords: "AI"
+displayName: "AI: Knowledge base"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
-  Admite la integración con bases de datos vectoriales para vectorizar documentos, proporcionando a los empleados de IA búsqueda inteligente y soporte de conocimientos.
+  Supports integration with vector databases to vectorize documents, providing AI employees with intelligent search and knowledge support.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# AI: Base de conocimientos
+# AI: Knowledge base

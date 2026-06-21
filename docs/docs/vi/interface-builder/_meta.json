@@ -55,6 +55,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Bản đồ",
+            "link": "/interface-builder/blocks/data-blocks/map"
+          },
+          {
+            "type": "custom-link",
             "label": "Kanban",
             "link": "/interface-builder/blocks/data-blocks/kanban"
           }

@@ -1,10 +1,11 @@
 ---
-displayName: "多关键词筛选"
-packageName: '@nocobase/plugin-multi-keyword-filter'
 title: "多关键词筛选"
 keywords: "多关键词筛选,插件,NocoBase"
+displayName: "多关键词筛选"
+packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
   支持常见字段的多关键词筛选，支持快捷输入或从 Excel 批量导入关键词。
 isFree: true

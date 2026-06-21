@@ -206,6 +206,10 @@ export type FlowSurfaceFieldValueCapability = FlowSurfaceReactionCapabilityBase<
   FlowSurfaceFieldValueRule
 > & {
   targetFields: FlowSurfaceFieldOption[];
+  conditionMeta: {
+    operatorsByPath: Record<string, string[]>;
+    fieldMetaByPath?: Record<string, { type?: string; interface?: string }>;
+  };
   valueExprMeta: {
     supportedSources: Array<'literal' | 'path' | 'runjs'>;
     runjsScene: 'fieldValue';
@@ -217,12 +221,14 @@ export type FlowSurfaceLinkageCapability =
       supportedActions: Array<Record<string, any>>;
       conditionMeta: {
         operatorsByPath: Record<string, string[]>;
+        fieldMetaByPath?: Record<string, { type?: string; interface?: string }>;
       };
     })
   | (FlowSurfaceReactionCapabilityBase<'actionLinkage', FlowSurfaceActionLinkageRule> & {
       supportedActions: Array<Record<string, any>>;
       conditionMeta: {
         operatorsByPath: Record<string, string[]>;
+        fieldMetaByPath?: Record<string, { type?: string; interface?: string }>;
       };
     })
   | (FlowSurfaceReactionCapabilityBase<'fieldLinkage', FlowSurfaceFieldLinkageRule> & {
@@ -230,6 +236,7 @@ export type FlowSurfaceLinkageCapability =
       targetFields: FlowSurfaceFieldOption[];
       conditionMeta: {
         operatorsByPath: Record<string, string[]>;
+        fieldMetaByPath?: Record<string, { type?: string; interface?: string }>;
       };
       valueExprMeta?: {
         supportedSources: Array<'literal' | 'path' | 'runjs'>;

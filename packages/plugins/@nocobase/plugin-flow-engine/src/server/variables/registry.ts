@@ -98,6 +98,12 @@ class VariableRegistry {
 /** 变量注册表（全局单例，确保 src/dist 共享同一实例） */
 const GLOBAL_KEY = '__ncbVarRegistry__';
 const g = (typeof globalThis !== 'undefined' ? globalThis : (global as unknown)) as Record<string, unknown>;
+
+// Rebind a reused singleton from another module realm to the current implementation.
+if (g[GLOBAL_KEY] && typeof g[GLOBAL_KEY] === 'object') {
+  Object.setPrototypeOf(g[GLOBAL_KEY], VariableRegistry.prototype);
+}
+
 if (!g[GLOBAL_KEY]) {
   g[GLOBAL_KEY] = new VariableRegistry();
 }

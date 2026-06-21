@@ -8,7 +8,7 @@
  */
 
 import { useCallback } from 'react';
-import { AIEmployee, ClearOptions, Message, SendOptions, TriggerTaskOptions } from '../../types';
+import { AIEmployee, Attachment, ClearOptions, Message, SendOptions, TriggerTaskOptions } from '../../types';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChat } from '../hooks/useChat';
@@ -256,12 +256,14 @@ export const useChatBoxActions = () => {
         } else {
           setSenderValue('');
         }
-        if (attachments) {
-          draftChat.setAttachments(attachments);
-        }
+        let contextAttachments: Attachment[] = [];
         if (workContext) {
           draftChat.setContextItems(workContext);
-          syncContextAttachments(workContext);
+          contextAttachments = syncContextAttachments(workContext);
+        }
+        const resolvedAttachments = [...(attachments ?? []), ...contextAttachments];
+        if (resolvedAttachments.length) {
+          draftChat.setAttachments(resolvedAttachments);
         }
         if (systemMessage) {
           draftChat.setSystemMessage(systemMessage);
@@ -274,7 +276,7 @@ export const useChatBoxActions = () => {
             aiEmployee,
             systemMessage,
             messages: [userMessage ?? { type: 'text', content: '' }],
-            attachments,
+            attachments: resolvedAttachments.length ? resolvedAttachments : undefined,
             workContext,
             skillSettings,
             webSearch: resolvedWebSearch,

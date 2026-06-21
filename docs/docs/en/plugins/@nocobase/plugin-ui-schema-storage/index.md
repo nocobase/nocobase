@@ -1,5 +1,7 @@
 ---
-displayName: "UI schema storage service"
+title: "UI schema storage"
+keywords: "System & security"
+displayName: "UI schema storage"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |
   Provides centralized UI schema storage service.
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI schema storage service
+# UI schema storage

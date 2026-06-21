@@ -74,7 +74,7 @@ Theo mặc định, CLI sẽ tổ chức các tệp cục bộ dưới `app-path
 
 Thông thường:
 
-- `source/` chủ yếu tương ứng với thư mục ứng dụng cục bộ của env kiểu npm / Git. Với Docker env, CLI cũng giữ quy ước suy luận đường dẫn mặc định này, nhưng phần lớn trường hợp bạn không cần quan tâm thủ công đến nó
+- `source/` chủ yếu tương ứng với thư mục ứng dụng cục bộ của env kiểu npm / Git. Với Docker env, CLI cũng giữ quy ước suy luận đường dẫn mặc định này, nhưng phần lớn trường hợp bạn không cần quan tâm thủ công đến nó. Hãy đặc biệt chú ý khi nâng cấp: thư mục `source/` sẽ bị xóa rồi tải lại, vì vậy đừng đặt các tệp cần giữ lại ở đây
 - `storage/` dùng để lưu dữ liệu runtime, chẳng hạn như dữ liệu cơ sở dữ liệu tích hợp, plugin, log, v.v.
 - `.env` là tệp biến môi trường ứng dụng tùy chọn. Chỉ khi bạn cần tùy chỉnh biến môi trường thì mới cần thêm nó vào `<app-path>/.env`; nếu tệp này tồn tại, các nguồn cài đặt Docker, npm và Git sẽ mặc định đọc nó
 
@@ -121,7 +121,7 @@ Có khá nhiều tham số, nên sẽ dễ hiểu hơn nếu tách ra theo từn
 | `--ui`          | boolean | `false`                                                                            | Mở trình hướng dẫn trên trình duyệt cục bộ; không thể dùng cùng `--yes` và `--resume` |
 | `--verbose`     | boolean | `false`                                                                            | Hiển thị đầu ra lệnh chi tiết                                                         |
 | `--skip-skills` | boolean | `false`                                                                            | Bỏ qua đồng bộ NocoBase AI coding skills                                              |
-| `--ui-host`     | string  | `127.0.0.1`                                                                        | Địa chỉ bind của dịch vụ cục bộ `--ui`                                                |
+| `--ui-host`     | string  | `127.0.0.1`                                                                        | Host có thể truy cập từ trình duyệt hiển thị trong URL wizard `--ui`; dịch vụ cục bộ luôn lắng nghe trên `0.0.0.0` |
 | `--ui-port`     | integer | `0`                                                                                | Cổng dịch vụ cục bộ `--ui`; `0` nghĩa là tự động cấp phát                             |
 | `--locale`      | string  | Theo `NB_LOCALE`, cấu hình CLI hoặc locale hệ thống; fallback cuối cùng là `en-US` | Ngôn ngữ của lời nhắc CLI và UI setup cục bộ: `en-US` hoặc `zh-CN`                    |
 | `--resume`      | boolean | `false`                                                                            | Tiếp tục lần khởi tạo trước đó chưa hoàn tất, tái sử dụng workspace env config đã lưu |

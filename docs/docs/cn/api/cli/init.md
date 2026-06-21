@@ -74,7 +74,7 @@ nb app start --env app1
 
 通常来说：
 
-- `source/` 主要对应 npm / Git env 的本地应用目录。对于 Docker env，CLI 也会保留这套默认路径推导，不过大多数时候你不需要手动关心它
+- `source/` 主要对应 npm / Git env 的本地应用目录。对于 Docker env，CLI 也会保留这套默认路径推导，不过大多数时候你不需要手动关心它。需要特别注意的是，升级应用时，`source/` 目录会被删除后重新下载，不要把需要保留的文件放在这里
 - `storage/` 用来放运行时数据，比如内置数据库数据、插件、日志等内容
 - `.env` 是可选的应用环境变量文件。只有当你需要自定义环境变量时，才需要在 `<app-path>/.env` 里添加它；如果这个文件存在，Docker、npm 和 Git 这几种安装来源默认都会读取它
 
@@ -121,7 +121,7 @@ nb app start --env app1
 | `--ui` | boolean | `false` | 打开本地浏览器向导，不能和 `--yes`、`--resume` 一起使用 |
 | `--verbose` | boolean | `false` | 显示详细命令输出 |
 | `--skip-skills` | boolean | `false` | 跳过同步 NocoBase AI coding skills |
-| `--ui-host` | string | `127.0.0.1` | `--ui` 本地服务绑定地址 |
+| `--ui-host` | string | `127.0.0.1` | `--ui` 向导页面 URL 中展示给浏览器访问的 host；本地服务固定监听 `0.0.0.0` |
 | `--ui-port` | integer | `0` | `--ui` 本地服务端口，`0` 表示自动分配 |
 | `--locale` | string | 跟随 `NB_LOCALE`、CLI 配置或系统 locale；最终回退 `en-US` | CLI 提示和本地 setup UI 语言：`en-US` 或 `zh-CN` |
 | `--resume` | boolean | `false` | 继续上一次未完成的初始化，复用已保存的 workspace env config |

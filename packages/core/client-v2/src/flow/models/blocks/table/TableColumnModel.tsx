@@ -35,6 +35,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
 import { getSavedAssociationTitleField, getTableColumnSortField } from './sortUtils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
+import { getSavedDateTimeFormatParams, resolveDateTimeDisplayProps } from '../../../utils/dateTimeDisplayProps';
 
 export function FieldDeletePlaceholder(props: any) {
   const { t } = useTranslation();
@@ -126,6 +127,15 @@ export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
       </Space.Compact>
     </div>
   );
+};
+
+const resetDateTimeDisplayProps = {
+  dateOnly: undefined,
+  dateFormat: undefined,
+  format: undefined,
+  picker: undefined,
+  showTime: undefined,
+  timeFormat: undefined,
 };
 
 export class TableColumnModel extends DisplayItemModel {
@@ -353,11 +363,22 @@ TableColumnModel.registerFlow({
           return;
         }
         const titleField = getSavedAssociationTitleField(ctx.model);
+        const fieldModel = Array.isArray(ctx.model.subModels.field) ? undefined : ctx.model.subModels.field;
+        const targetCollectionField = collectionField.targetCollection?.getField?.(titleField);
+        const savedDateTimeDisplayProps = getSavedDateTimeFormatParams(fieldModel)
+          ? resolveDateTimeDisplayProps({
+              model: fieldModel,
+              collectionField,
+              titleField,
+              currentProps: ctx.model.props,
+            })
+          : undefined;
         const componentProps =
           collectionField.isAssociationField() && titleField
             ? {
                 ...collectionField.getComponentProps(),
-                ...collectionField.targetCollection?.getField?.(titleField)?.getComponentProps?.(),
+                ...targetCollectionField?.getComponentProps?.(),
+                ...savedDateTimeDisplayProps,
               }
             : collectionField.getComponentProps();
         ctx.model.setProps('title', collectionField.title);
@@ -539,21 +560,33 @@ TableColumnModel.registerFlow({
           typeof binding?.defaultProps === 'function'
             ? binding.defaultProps(ctx, targetCollectionField)
             : binding?.defaultProps;
+        const componentProps = targetCollectionField.getComponentProps?.() || {};
+        const nextFieldProps = {
+          ...(defaultProps || {}),
+          ...componentProps,
+          titleField: params.label,
+        };
+        const nextColumnProps = {
+          ...resetDateTimeDisplayProps,
+          ...nextFieldProps,
+        };
         if (targetUse && targetUse !== currentUse) {
           await rebuildFieldSubModel({
             parentModel: ctx.model as any,
             targetUse,
-            defaultProps,
+            defaultProps: nextFieldProps,
             fieldSettingsInit,
           });
         } else if (fieldModel) {
+          fieldModel.setProps(nextColumnProps);
           fieldModel.setStepParams('fieldSettings', 'init', fieldSettingsInit);
           await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+          await fieldModel.save();
         }
         if (targetUse) {
           ctx.model.setStepParams('tableColumnSettings', 'model', { use: targetUse });
         }
-        ctx.model.setProps(targetCollectionField.getComponentProps());
+        ctx.model.setProps(nextColumnProps);
       },
       defaultParams: (ctx: any) => {
         const titleField = ctx.model?.context?.collectionField?.targetCollectionTitleFieldName;

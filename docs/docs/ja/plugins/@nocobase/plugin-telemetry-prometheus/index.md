@@ -1,15 +1,17 @@
 ---
-displayName: "テレメトリ: Prometheus"
+title: "Telemetry: Prometheus"
+keywords: "Logging and monitoring"
+displayName: "Telemetry: Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  NocoBase のテレメトリモジュールに Prometheus を統合します。
+  Integrate Prometheus with NocoBase telemetry.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# テレメトリ: Prometheus
+# Telemetry: Prometheus
