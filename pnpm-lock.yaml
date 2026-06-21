@@ -2748,9 +2748,15 @@ importers:
 
   packages/plugins/@nocobase/plugin-block-template:
     devDependencies:
+      '@nocobase/actions':
+        specifier: workspace:*
+        version: link:../../../core/actions
       '@nocobase/client':
         specifier: workspace:*
         version: link:../../../core/client
+      '@nocobase/database':
+        specifier: workspace:*
+        version: link:../../../core/database
       '@nocobase/plugin-mobile':
         specifier: workspace:*
         version: link:../plugin-mobile
@@ -2763,6 +2769,9 @@ importers:
       '@nocobase/test':
         specifier: workspace:*
         version: link:../../../core/test
+      '@nocobase/utils':
+        specifier: workspace:*
+        version: link:../../../core/utils
 
   packages/plugins/@nocobase/plugin-block-tree:
     devDependencies:

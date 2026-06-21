@@ -13,11 +13,14 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/block-template",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-template",
   "peerDependencies": {
+    "@nocobase/actions": "workspace:*",
     "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
     "@nocobase/plugin-mobile": "workspace:*",
     "@nocobase/plugin-ui-schema-storage": "workspace:*",
     "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*"
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "nocobase": {
     "deprecated": true
@@ -27,10 +30,13 @@
     "Template"
   ],
   "devDependencies": {
+    "@nocobase/actions": "workspace:*",
     "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
     "@nocobase/plugin-mobile": "workspace:*",
     "@nocobase/plugin-ui-schema-storage": "workspace:*",
     "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*"
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   }
 }
