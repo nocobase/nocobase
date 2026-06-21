@@ -15,6 +15,46 @@ import {
 } from '../flow-surfaces/runjs-authoring';
 
 describe('flowSurfaces RunJS authoring unit validation', () => {
+  it('should allow browser globals while preserving direct DOM render guardrails', () => {
+    const inspect = (code: string) =>
+      inspectRunJsAuthoringCode({
+        code,
+        path: '$.runjs.browserGlobals.code',
+        modelUse: 'JSBlockModel',
+      });
+
+    [
+      'ctx.render(null); window.document.createElement("div");',
+      'ctx.render(null); globalThis.document["createElement"]("div");',
+      'ctx.render(null); window["document"]["createElement"]("div");',
+      'ctx.render(null); globalThis["document"].createElement("div");',
+      'ctx.render(null); document.body.innerHTML = "<b>bad</b>";',
+    ].forEach((code) => {
+      const directDomError = inspect(code).find((error) => error.ruleId === 'runjs-direct-dom-render-forbidden');
+      expect(directDomError?.details?.repairClass).toBe('replace-innerhtml-with-render');
+    });
+
+    const browserGlobalRuleIds = inspect(
+      ['ctx.render(window.localStorage);', 'navigator.clipboard?.writeText?.("x");', 'await fetch("/ok");'].join('\n'),
+    ).map((error) => error.ruleId);
+
+    expect(browserGlobalRuleIds).not.toContain('runjs-global-unknown');
+    expect(browserGlobalRuleIds).not.toContain('runjs-direct-dom-render-forbidden');
+
+    const nodeGlobalErrors = inspect('ctx.render(null); process.exit(1);');
+
+    expect(nodeGlobalErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: 'runjs-global-unknown',
+          details: expect.objectContaining({
+            global: 'process',
+          }),
+        }),
+      ]),
+    );
+  });
+
   it('should use AST function body ranges for destructured RunJS component parameters', () => {
     const destructuredDeclarationErrors = inspectRunJsAuthoringCode({
       code: [

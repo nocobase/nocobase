@@ -714,6 +714,16 @@ export function collectDirectDomWrites(source: string, masked: string, bindings:
     }
     entries.push({ index, match: match[0].replace(/\s*(?:\?\.)?\($/, '') });
   }
+  for (const match of masked.matchAll(
+    /\b(document)\s*(?:\?\.|\.)\s*body\s*(?:\?\.|\.)\s*(innerHTML|insertAdjacentHTML)\b|(?<![.$\w])((window|globalThis)\s*(?:\?\.|\.)\s*document)\s*(?:\?\.|\.)\s*body\s*(?:\?\.|\.)\s*(innerHTML|insertAdjacentHTML)\b/g,
+  )) {
+    const index = match.index || 0;
+    const root = match[1] || match[4];
+    if (root && isNameBoundAtIndex(bindings, root, index)) {
+      continue;
+    }
+    entries.push({ index, match: match[0] });
+  }
   for (const match of commentMasked.matchAll(
     /\b(ctx)\s*(?:\?\.|\.)\s*element\s*(?:\?\.\s*)?\[\s*(?:(['"])([A-Za-z_$][\w$]*)\2|([^\]]+))\s*\]/g,
   )) {
@@ -739,6 +749,14 @@ export function collectDirectDomWrites(source: string, masked: string, bindings:
       !isNameBoundAtIndex(bindings, match[1], index) &&
       (dynamicMember || member === 'createElement')
     ) {
+      entries.push({ index, match: match[0] });
+    }
+  }
+  for (const match of commentMasked.matchAll(
+    /(?<![.$\w])(window|globalThis)\s*(?:\?\.\s*)?\[\s*(['"])document\2\s*\]\s*(?:(?:\?\.|\.)\s*createElement|(?:\?\.\s*)?\[\s*(['"])createElement\3\s*\])/g,
+  )) {
+    const index = match.index || 0;
+    if (isCodeTokenAt(masked, index, match[1]) && !isNameBoundAtIndex(bindings, match[1], index)) {
       entries.push({ index, match: match[0] });
     }
   }

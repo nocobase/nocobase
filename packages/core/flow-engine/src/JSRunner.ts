@@ -122,10 +122,6 @@ export const RUNJS_ALLOWED_BARE_GLOBAL_NAMES = [
   'undefined',
   'NaN',
   'Infinity',
-  'process',
-  'require',
-  'module',
-  'exports',
   ...RUNJS_BROWSER_GLOBAL_NAMES,
 ] as const;
 
