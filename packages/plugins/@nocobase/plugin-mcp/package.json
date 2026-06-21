@@ -15,7 +15,7 @@
     "editionLevel": 0
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.0.0"
+    "@modelcontextprotocol/sdk": "^1.27.1"
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
