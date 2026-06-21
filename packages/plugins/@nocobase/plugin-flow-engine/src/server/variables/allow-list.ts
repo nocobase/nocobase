@@ -13,9 +13,11 @@ import FlowModelRepository from '../repository';
 import type { JSONValue } from '../template/resolver';
 
 type RecordParams = {
+  associationName?: string;
   collection: string;
-  filterByTk: unknown;
   dataSourceKey?: string;
+  filterByTk: unknown;
+  sourceId?: unknown;
 };
 
 type VariableAllowList = {
@@ -68,8 +70,8 @@ export function hasRecordContextParams(value: unknown): boolean {
 export function sanitizeContextParams(value: Record<string, unknown> = {}): Record<string, unknown> {
   const sanitize = (input: unknown): unknown => {
     if (isRecordParams(input)) {
-      const { collection, filterByTk, dataSourceKey } = input;
-      return { collection, filterByTk, dataSourceKey };
+      const { associationName, collection, filterByTk, dataSourceKey, sourceId } = input;
+      return { associationName, collection, filterByTk, dataSourceKey, sourceId };
     }
     if (Array.isArray(input)) return input.map((item) => sanitize(item));
     if (!isObject(input)) return input;

@@ -738,6 +738,67 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.roleName).toBe(roleName);
   });
 
+  it('should preserve associationName and sourceId on sanitized record context params', async () => {
+    const roleName = 'association_context_role';
+    const rolesRepo = app.db.getRepository('roles');
+    const existing = await rolesRepo.findOne({ filter: { name: roleName } }).catch(() => null);
+    if (!existing) {
+      await rolesRepo.create({
+        values: {
+          name: roleName,
+          title: 'Association Context Role',
+          allowConfigure: true,
+        },
+      });
+    }
+
+    const userRolesRepo = app.db.getRepository('users.roles', 1) as {
+      add: (filterByTk: string) => Promise<unknown>;
+    };
+    try {
+      await userRolesRepo.add(roleName);
+    } catch (_) {
+      // ignore if already added
+    }
+
+    const originalGetRepository = app.db.getRepository.bind(app.db) as (...args: unknown[]) => unknown;
+    const calls: unknown[][] = [];
+    const dbWithRepository = app.db as { getRepository: (...args: unknown[]) => unknown };
+    dbWithRepository.getRepository = (...args: unknown[]) => {
+      calls.push(args);
+      return originalGetRepository(...args);
+    };
+
+    try {
+      const flowModelUid = await createTestFlowModel(
+        { allowed: '{{ ctx.record.roles.name }}' },
+        { collectionName: 'users' },
+      );
+      const payload = {
+        flowModelUid,
+        template: { roleName: '{{ ctx.record.roles.name }}' },
+        contextParams: {
+          'record.roles': {
+            dataSourceKey: 'main',
+            collection: 'roles',
+            filterByTk: roleName,
+            associationName: 'users.roles',
+            sourceId: 1,
+            fields: ['name', 'title'],
+            appends: ['users'],
+          },
+        },
+      };
+      const res = await execResolve(payload, 1, { autoFlowModelUid: false });
+      const data = res.body?.data ?? res.body;
+
+      expect(data.roleName).toBe(roleName);
+      expect(calls.some(([name, sourceId]) => name === 'users.roles' && sourceId === 1)).toBe(true);
+    } finally {
+      dbWithRepository.getRepository = originalGetRepository;
+    }
+  });
+
   it('should allow configured whole record variables', async () => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record }}' }, { collectionName: 'users' });
     const payload = {
