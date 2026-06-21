@@ -84,7 +84,19 @@ export function resolveHookScriptPath(params: { appPath: string; hookScript?: un
     return undefined;
   }
 
-  return path.isAbsolute(hookScript) ? hookScript : path.join(params.appPath, hookScript);
+  if (path.isAbsolute(hookScript)) {
+    return hookScript;
+  }
+
+  const appPath = trimValue(params.appPath);
+  if (!appPath) {
+    return hookScript;
+  }
+
+  const usesWindowsSeparators =
+    appPath.includes('\\') || /^[a-zA-Z]:([\\/]|$)/.test(appPath) || appPath.startsWith('\\\\');
+
+  return usesWindowsSeparators ? path.win32.join(appPath, hookScript) : path.posix.join(appPath, hookScript);
 }
 
 export async function persistHookScript(params: { sourcePath: string; appPath: string }): Promise<string> {

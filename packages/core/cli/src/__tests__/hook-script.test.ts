@@ -52,6 +52,15 @@ test('persistHookScript copies hooks into the app metadata directory', async () 
   ).toBe(path.join(appPath, '.nb', 'hooks.mjs'));
 });
 
+test('resolveHookScriptPath preserves posix-style stored app paths', () => {
+  expect(
+    resolveHookScriptPath({
+      appPath: '/tmp/app',
+      hookScript: '.nb/hooks.mjs',
+    }),
+  ).toBe('/tmp/app/.nb/hooks.mjs');
+});
+
 test('runBeforeDependencyInstallHook rejects array exports', async () => {
   const dir = await useTempDir();
   const hookPath = path.join(dir, 'hooks.mjs');
