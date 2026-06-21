@@ -10,8 +10,46 @@
 import { assign, QueryObject, transformFilter } from '@nocobase/utils';
 import { AIContextDatasource } from '../../collections/ai-context-datasource';
 import PluginAIServer from '../plugin';
-import { WorkContext } from '../types';
+import { WorkContext, WorkContextResolveStrategy } from '../types';
 import { Context } from '@nocobase/actions';
+import { checkFilterParams, parseJsonTemplate } from '@nocobase/acl';
+
+function serializeQueryFieldValue(value: unknown): unknown {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => serializeQueryFieldValue(item));
+  }
+
+  if (typeof value === 'object') {
+    if (typeof (value as any).toISOString === 'function') {
+      try {
+        return (value as any).toISOString();
+      } catch (error) {
+        // Fall through to the next serializer strategy.
+      }
+    }
+
+    if (typeof (value as any).toJSON === 'function') {
+      try {
+        const jsonValue = (value as any).toJSON();
+        if (jsonValue !== value) {
+          return serializeQueryFieldValue(jsonValue);
+        }
+      } catch (error) {
+        // Fall through to the original value.
+      }
+    }
+  }
+
+  return value;
+}
 
 export class AIContextDatasourceManager {
   constructor(protected plugin: PluginAIServer) {}
@@ -19,7 +57,11 @@ export class AIContextDatasourceManager {
     return await this.innerQuery(ctx, { ...options, filter: options.filter ? transformFilter(options.filter) : null });
   }
 
-  provideWorkContextResolveStrategy() {
+  async query(ctx: Context, options: InnerQueryOptions): Promise<QueryResult | null> {
+    return await this.innerQuery(ctx, { ...options, filter: options.filter });
+  }
+
+  provideWorkContextResolveStrategy(): WorkContextResolveStrategy {
     return async (ctx: Context, contextItem: WorkContext): Promise<string> => {
       if (!contextItem.content) {
         return '';
@@ -39,6 +81,7 @@ export class AIContextDatasourceManager {
       this.plugin.log.warn(`Datasource ${datasource} not found`);
       return {
         options,
+        total: 0,
         records: [],
       };
     }
@@ -47,6 +90,7 @@ export class AIContextDatasourceManager {
       this.plugin.log.warn(`Collection ${collectionName} not found`);
       return {
         options,
+        total: 0,
         records: [],
       };
     }
@@ -65,12 +109,13 @@ export class AIContextDatasourceManager {
       if (!can || typeof can !== 'object') {
         return {
           options,
+          total: 0,
           records: [],
         };
       }
 
-      const filteredParams = ds.acl.filterParams(ctx, collectionName, can.params);
-      const parsedParams = filteredParams ? await ds.acl.parseJsonTemplate(filteredParams, ctx) : {};
+      checkFilterParams(collection, can.params?.filter);
+      const parsedParams = can.params ? await parseJsonTemplate(can.params, ctx) : {};
 
       if (parsedParams.appends && options.fields) {
         for (const queryField of options.fields) {
@@ -105,13 +150,14 @@ export class AIContextDatasourceManager {
       });
     }
 
-    const { fields, filter, sort, limit } = options;
-    const result = await collection.repository.find({ fields, filter, sort, limit });
+    const { fields, filter, sort, offset, limit } = options;
+    const result = await collection.repository.find({ fields, filter, sort, offset: offset ?? 0, limit });
+    const total = await collection.repository.count({ fields, filter });
 
     const records = result.map((x) =>
       fields.map((field) => {
         const { name, type } = collection.getField(field)?.options || {};
-        const value = x[field];
+        const value = serializeQueryFieldValue(x[field]);
         return {
           name,
           type,
@@ -122,6 +168,7 @@ export class AIContextDatasourceManager {
 
     return {
       options,
+      total: total as number,
       records,
     };
   }
@@ -130,7 +177,7 @@ export class AIContextDatasourceManager {
 export type PreviewOptions = Pick<
   AIContextDatasource,
   'datasource' | 'collectionName' | 'fields' | 'appends' | 'filter' | 'sort' | 'limit'
->;
+> & { offset?: number };
 
 export type QueryOptions = {
   id: string;
@@ -138,6 +185,7 @@ export type QueryOptions = {
 
 export type QueryResult = {
   options: InnerQueryOptions;
+  total: number;
   records: {
     name: string;
     type: string;

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Uso básico",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Bucles",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Herramientas de formato"
+  }
+]

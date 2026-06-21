@@ -1,0 +1,14 @@
+{
+  "AddStep": "Lépés hozzáadása",
+  "Delete": "Törlés",
+  "Edit step title": "Lépés címének szerkesztése",
+  "Next": "Következő",
+  "Previous": "Előző",
+  "Step": "Lépés",
+  "Step title": "Lépés címe",
+  "StepsForm": "Több lépésből álló űrlap",
+  "StepsForm(Add new)": "Több lépésből álló űrlap (Új hozzáadása)",
+  "StepsForm(Edit)": "Több lépésből álló űrlap (Szerkesztés)",
+  "The last step cannot be deleted": "Az utolsó lépés nem törölhető",
+  "Whether to delete this step": "Biztosan törölni szeretné ezt a lépést?"
+}

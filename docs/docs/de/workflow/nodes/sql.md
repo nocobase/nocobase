@@ -1,0 +1,90 @@
+---
+pkg: '@nocobase/plugin-workflow-sql'
+---
+
+# SQL-Aktion
+
+## Einführung
+
+In einigen speziellen Szenarien können die oben genannten einfachen Aktionsknoten für Sammlungen möglicherweise keine komplexen Operationen bewältigen. In solchen Fällen können Sie den SQL-Knoten direkt nutzen, um die Datenbank komplexe SQL-Anweisungen zur Datenbearbeitung ausführen zu lassen.
+
+Der Unterschied zu einer direkten Verbindung zur Datenbank für SQL-Operationen außerhalb der Anwendung besteht darin, dass Sie innerhalb eines Workflows Variablen aus dem Prozesskontext als Parameter in der SQL-Anweisung nutzen können.
+
+## Installation
+
+Dies ist ein integriertes Plugin, das keine Installation erfordert.
+
+## Knoten erstellen
+
+Klicken Sie in der Workflow-Konfiguration auf die Plus-Schaltfläche („+“) im Ablauf, um einen „SQL-Aktion“-Knoten hinzuzufügen:
+
+![SQL-Aktion hinzufügen](https://static-docs.nocobase.com/0ce40a226d7a5bf3717813e27da40e62.png)
+
+## Knotenkonfiguration
+
+![SQL-Knoten_Knotenkonfiguration](https://static-docs.nocobase.com/20260414235136.png)
+
+### Datenquelle
+
+Wählen Sie die Datenquelle aus, auf der die SQL-Anweisung ausgeführt werden soll.
+
+Die Datenquelle muss eine Datenbank-Datenquelle sein, wie zum Beispiel die Hauptdatenquelle, PostgreSQL oder andere Sequelize-kompatible Datenquellen.
+
+### SQL-Inhalt
+
+Bearbeiten Sie die SQL-Anweisung. Derzeit wird nur eine SQL-Anweisung unterstützt.
+
+:::info
+Ab `v2.0.30` wird aus Sicherheitsgründen die direkte Textersetzung von Variablen in SQL-Anweisungen nicht mehr unterstützt. Stattdessen müssen parametrisierte Abfragen verwendet werden.
+:::
+
+In SQL-Anweisungen können Variablen aus dem Prozesskontext verwendet werden, müssen aber im Format `:variableName` als Platzhalter angegeben werden, zum Beispiel:
+
+```sql
+SELECT * FROM users WHERE id = :userId;
+```
+
+### Parameterliste
+
+In der obigen SQL-Anweisung ist `:userId` ein Platzhalter. Die Ersetzung der Platzhalter muss in der „Parameterliste" konfiguriert werden. Der Variablenname entspricht dem Namen aus dem Platzhalter, z.B. `userId`, und der Wert kann mit dem Variablenauswähler aus dem Prozesskontext ausgewählt werden.
+
+## Ergebnis der Knotenausführung
+
+Seit `v1.3.15-beta` ist das Ergebnis einer SQL-Knotenausführung ein Array aus reinen Daten. Zuvor war es die native Sequelize-Rückgabestruktur, die Abfrage-Metadaten enthielt (siehe: [`sequelize.query()`](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-query)).
+
+Zum Beispiel die folgende Abfrage:
+
+```sql
+select count(id) from posts;
+```
+
+Ergebnis vor `v1.3.15-beta`:
+
+```json
+[
+    [
+        { "count": 1 }
+    ],
+    {
+        // meta
+    }
+]
+```
+
+Ergebnis nach `v1.3.15-beta`:
+
+```json
+[
+    { "count": 1 }
+]
+```
+
+## Häufig gestellte Fragen
+
+### Wie verwende ich das Ergebnis eines SQL-Knotens?
+
+Wenn eine `SELECT`-Anweisung verwendet wird, wird das Abfrageergebnis im Knoten im JSON-Format von Sequelize gespeichert. Es kann mit dem [JSON-query](./json-query.md) Plugin analysiert und verwendet werden.
+
+### Löst die SQL-Aktion Sammlungsereignisse aus?
+
+**Nein**. Die SQL-Aktion sendet die SQL-Anweisung direkt zur Verarbeitung an die Datenbank. Die zugehörigen `CREATE` / `UPDATE` / `DELETE` Operationen finden in der Datenbank statt, während Sammlungsereignisse auf der Anwendungsebene von Node.js (ORM-Verarbeitung) auftreten. Daher werden keine Sammlungsereignisse ausgelöst.

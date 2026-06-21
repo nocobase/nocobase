@@ -1,11 +1,14 @@
 {
   "name": "@nocobase/plugin-notification-in-app-message",
-  "version": "1.9.0-alpha.15",
+  "version": "2.2.0-alpha.1",
   "displayName": "Notification: In-app message",
+  "displayName.ru-RU": "Уведомления: Всплывающие сообщения внутри приложения",
   "displayName.zh-CN": "通知：站内信",
   "description": "It supports users in receiving real-time message notifications within the NocoBase application.",
+  "description.ru-RU": "Поддерживает получение пользователями уведомлений в реальном времени внутри приложения NocoBase.",
   "description.zh-CN": "支持用户在 NocoBase 应用内实时接收消息通知。",
   "homepage": "https://docs.nocobase.com/handbook/notification-in-app-message",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/notification-in-app-message",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/notification-in-app-message",
   "keywords": [
     "Notification"
@@ -20,10 +23,14 @@
   "peerDependencies": {
     "@formily/reactive": "2.x",
     "@formily/reactive-react": "^2",
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-notification-manager": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/plugin-mobile": "2.x",
+    "@nocobase/plugin-notification-manager": "2.x",
+    "@nocobase/plugin-workflow": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
     "react-router-dom": "^6.x"
-  }
+  },
+  "license": "Apache-2.0"
 }

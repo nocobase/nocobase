@@ -9,22 +9,26 @@
 
 import 'ses';
 import _ from 'lodash';
-import { getValuesByPath } from '@nocobase/utils/client';
-
-// TODO: 是否有必要lockdown?
-// // 使用 SES 进行隔离
-// declare const lockdown: any;
-// try {
-//   // 测试环境下避免执行全局 lockdown，以免冻结测试依赖（如 Vitest/Chai）
-//   const env = (typeof process !== 'undefined' && (process as any)?.env) ? (process as any).env : {} as any;
-//   if (typeof lockdown === 'function' && env.NODE_ENV !== 'test') {
-//     lockdown({ errorTaming: 'unsafe', consoleTaming: 'unsafe' });
-//   }
-// } catch (_) {
-//   // ignore
-// }
+import { lockdownSes } from '@nocobase/utils';
+import { ServerBaseContext } from './contexts';
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
+
+type SandboxContextSource = {
+  getSandboxKeys: () => string[];
+  getSandboxValue: (key: string) => unknown;
+};
+
+type SandboxProxyKind = 'context' | 'data' | 'function';
+
+const BLOCKED_SANDBOX_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+const sandboxProxyCache = new WeakMap<object, unknown>();
+const sandboxProxyMeta = new WeakMap<object, { kind: SandboxProxyKind; source: unknown }>();
+const EMPTY_SANDBOX_CONTEXT: SandboxContextSource = {
+  getSandboxKeys: () => [],
+  getSandboxValue: () => undefined,
+};
+let resolverLockdownReady = false;
 
 /**
  * 解析 JSON 模板中形如 {{ ... }} 的占位符（服务端解析）。
@@ -70,31 +74,280 @@ async function replacePlaceholders(input: string, ctx: any) {
   return result;
 }
 
+function isObjectLike(value: unknown): value is object {
+  return value !== null && (typeof value === 'object' || typeof value === 'function');
+}
+
+function isTrustedPromise(value: unknown): value is Promise<unknown> {
+  return value instanceof Promise;
+}
+
+function isBlockedSandboxKey(key: PropertyKey) {
+  return typeof key === 'string' && BLOCKED_SANDBOX_KEYS.has(key);
+}
+
+function getSandboxDataDescriptor(source: object, key: PropertyKey) {
+  if (isBlockedSandboxKey(key) || typeof key === 'symbol') return undefined;
+  const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
+  if (!descriptor || !('value' in descriptor)) return undefined;
+  if (key === 'then' && typeof descriptor.value === 'function') return undefined;
+  return descriptor;
+}
+
+function getPrimitiveDataDescriptor(source: unknown, key: string) {
+  if (source == null || isObjectLike(source)) return undefined;
+  return getSandboxDataDescriptor(Object(source), key);
+}
+
+function isSandboxContextSource(value: unknown): value is SandboxContextSource {
+  return value === EMPTY_SANDBOX_CONTEXT || value instanceof ServerBaseContext;
+}
+
+function wrapSandboxValue(value: unknown): unknown {
+  if (isTrustedPromise(value)) {
+    return Promise.prototype.then.call(value, (resolved) => wrapSandboxValue(resolved));
+  }
+  if (!isObjectLike(value)) return value;
+  if (sandboxProxyMeta.has(value)) return value;
+
+  const cached = sandboxProxyCache.get(value);
+  if (cached) return cached;
+
+  const kind: SandboxProxyKind = isSandboxContextSource(value)
+    ? 'context'
+    : typeof value === 'function'
+      ? 'function'
+      : 'data';
+  const proxy =
+    kind === 'context'
+      ? createSandboxContextProxy(value as SandboxContextSource)
+      : kind === 'function'
+        ? createSandboxFunctionProxy(value as (...args: unknown[]) => unknown)
+        : createSandboxDataProxy(value as Record<PropertyKey, unknown>);
+
+  sandboxProxyCache.set(value, proxy);
+  sandboxProxyMeta.set(proxy as object, { kind, source: value });
+  return proxy;
+}
+
+function wrapRootSandboxContext(ctx: unknown) {
+  return wrapSandboxValue(isSandboxContextSource(ctx) ? ctx : EMPTY_SANDBOX_CONTEXT);
+}
+
+function ensureResolverLockdown() {
+  if (resolverLockdownReady) return;
+  lockdownSes({
+    consoleTaming: 'unsafe',
+    errorTaming: 'unsafe',
+    overrideTaming: 'moderate',
+    stackFiltering: 'verbose',
+  });
+  resolverLockdownReady = true;
+}
+
+function createSandboxContextProxy(source: SandboxContextSource) {
+  return new Proxy(Object.create(null), {
+    get: (_target, key) => {
+      if (isBlockedSandboxKey(key) || typeof key !== 'string') return undefined;
+      if (!source.getSandboxKeys().includes(key)) return undefined;
+      return wrapSandboxValue(source.getSandboxValue(key));
+    },
+    has: (_target, key) => typeof key === 'string' && source.getSandboxKeys().includes(key),
+    ownKeys: () => source.getSandboxKeys(),
+    getOwnPropertyDescriptor: (_target, key) => {
+      if (isBlockedSandboxKey(key) || typeof key !== 'string' || !source.getSandboxKeys().includes(key)) {
+        return undefined;
+      }
+      return {
+        configurable: true,
+        enumerable: true,
+        value: wrapSandboxValue(source.getSandboxValue(key)),
+      };
+    },
+    getPrototypeOf: () => null,
+    set: () => false,
+    defineProperty: () => false,
+    deleteProperty: () => false,
+  });
+}
+
+function createSandboxFunctionProxy(source: (...args: unknown[]) => unknown) {
+  const callable = (...args: unknown[]) => Reflect.apply(source, undefined, args);
+  return new Proxy(callable, {
+    apply: (_target, _thisArg, argArray) => wrapSandboxValue(Reflect.apply(source, undefined, argArray)),
+    get: (_target, key) => {
+      if (key === 'length' || key === 'name') return Reflect.get(source, key);
+      return undefined;
+    },
+    has: (_target, key) => key === 'length' || key === 'name',
+    ownKeys: () => [],
+    getOwnPropertyDescriptor: () => undefined,
+    getPrototypeOf: () => null,
+    set: () => false,
+    defineProperty: () => false,
+    deleteProperty: () => false,
+  });
+}
+
+function createSandboxDataProxy(source: Record<PropertyKey, unknown>) {
+  const target = Array.isArray(source) ? new Array(source.length) : Object.create(null);
+  return new Proxy(target, {
+    get: (_target, key) => {
+      const descriptor = getSandboxDataDescriptor(source, key);
+      if (!descriptor) return undefined;
+      const value = descriptor.value;
+      return typeof value === 'function' ? wrapSandboxValue(value.bind(source)) : wrapSandboxValue(value);
+    },
+    has: (_target, key) => {
+      if (isBlockedSandboxKey(key) || typeof key !== 'string') return false;
+      return !!getSandboxDataDescriptor(source, key);
+    },
+    ownKeys: () => {
+      const keys = Reflect.ownKeys(source).filter((key) => {
+        if (typeof key !== 'string' || isBlockedSandboxKey(key)) return false;
+        return !!getSandboxDataDescriptor(source, key);
+      });
+      if (Array.isArray(source) && !keys.includes('length')) keys.push('length');
+      return keys;
+    },
+    getOwnPropertyDescriptor: (proxyTarget, key) => {
+      if (isBlockedSandboxKey(key) || typeof key === 'symbol') return undefined;
+      if (Array.isArray(source) && key === 'length') {
+        return Reflect.getOwnPropertyDescriptor(proxyTarget, key);
+      }
+      const descriptor = getSandboxDataDescriptor(source, key);
+      if (!descriptor) return undefined;
+      return {
+        configurable: true,
+        enumerable: descriptor.enumerable,
+        writable: false,
+        value: wrapSandboxValue(descriptor.value),
+      };
+    },
+    getPrototypeOf: () => null,
+    set: () => false,
+    defineProperty: () => false,
+    deleteProperty: () => false,
+  });
+}
+
+async function unwrapSandboxValue(value: unknown, seen = new WeakMap<object, unknown>()): Promise<unknown> {
+  const resolved = isTrustedPromise(value) ? await value : value;
+  if (!isObjectLike(resolved)) return resolved;
+
+  const meta = sandboxProxyMeta.get(resolved);
+  if (meta?.kind === 'function' || typeof resolved === 'function') return undefined;
+  const source = meta?.source ?? resolved;
+  if (!isObjectLike(source)) return source;
+
+  if (seen.has(source)) return seen.get(source);
+
+  if (isSandboxContextSource(source)) {
+    const out: Record<string, unknown> = {};
+    seen.set(source, out);
+    for (const key of source.getSandboxKeys()) {
+      if (BLOCKED_SANDBOX_KEYS.has(key)) continue;
+      out[key] = await unwrapSandboxValue(wrapSandboxValue(source.getSandboxValue(key)), seen);
+    }
+    return out;
+  }
+
+  if (Array.isArray(source)) {
+    const out: unknown[] = [];
+    seen.set(source, out);
+    const lengthDescriptor = Reflect.getOwnPropertyDescriptor(source, 'length');
+    const length = typeof lengthDescriptor?.value === 'number' ? lengthDescriptor.value : 0;
+    for (let index = 0; index < length; index++) {
+      const descriptor = Reflect.getOwnPropertyDescriptor(source, String(index));
+      if (!descriptor || !('value' in descriptor)) continue;
+      out.push(await unwrapSandboxValue(descriptor.value, seen));
+    }
+    return out;
+  }
+
+  if (source instanceof Date) return source;
+
+  const out: Record<string, unknown> = {};
+  seen.set(source, out);
+  for (const key of Object.keys(source as Record<string, unknown>)) {
+    if (BLOCKED_SANDBOX_KEYS.has(key)) continue;
+    const descriptor = getSandboxDataDescriptor(source, key);
+    if (!descriptor) continue;
+    out[key] = await unwrapSandboxValue(descriptor.value, seen);
+  }
+  return out;
+}
+
+function getRootSandboxValue(ctx: unknown, key: string) {
+  if (BLOCKED_SANDBOX_KEYS.has(key)) return undefined;
+  if (isSandboxContextSource(ctx)) {
+    if (!ctx.getSandboxKeys().includes(key)) return undefined;
+    return wrapSandboxValue(ctx.getSandboxValue(key));
+  }
+  return undefined;
+}
+
+async function getSandboxProperty(value: unknown, key: string) {
+  if (BLOCKED_SANDBOX_KEYS.has(key)) return undefined;
+
+  const resolved = isTrustedPromise(value) ? await value : value;
+  if (resolved == null) return undefined;
+
+  const meta = isObjectLike(resolved) ? sandboxProxyMeta.get(resolved) : undefined;
+  const source = meta?.source ?? resolved;
+
+  if (isSandboxContextSource(source)) {
+    if (!source.getSandboxKeys().includes(key)) return undefined;
+    return wrapSandboxValue(source.getSandboxValue(key));
+  }
+
+  if (typeof source === 'function') {
+    return key === 'length' || key === 'name' ? Reflect.get(source, key) : undefined;
+  }
+
+  if (!isObjectLike(source)) {
+    const descriptor = getPrimitiveDataDescriptor(source, key);
+    if (!descriptor || typeof descriptor.value === 'function') return undefined;
+    return wrapSandboxValue(descriptor.value);
+  }
+  const descriptor = getSandboxDataDescriptor(source, key);
+  if (!descriptor) return undefined;
+  const current = descriptor.value;
+  return typeof current === 'function' ? wrapSandboxValue(current.bind(source)) : wrapSandboxValue(current);
+}
+
 // 在 SES 沙箱中执行完整的 JS 表达式；在此之前会将 ctx.* 访问改写为 await __get(var, path)
 async function evaluate(expr: string, ctx: any) {
   try {
     const raw = expr.trim();
 
     // 优先处理仅点号路径的聚合：ctx.a.b.c（不支持括号/函数/索引）
-    const dotOnly = raw.match(/^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)$/);
+    // 顶层变量名仍使用 JS 标识符规则；子路径允许包含 '-'（例如 formValues.roles.a-b）。
+    const dotOnly = raw.match(
+      /^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*)(?:\.([a-zA-Z_$][a-zA-Z0-9_$-]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$-]*)*))?$/,
+    );
     if (dotOnly) {
-      const path = dotOnly[1];
-      const segs = path.split('.');
-      const first = segs.shift();
-      const base = await ctx[first as string];
-      if (!segs.length) return base;
+      const first = dotOnly[1];
+      const rest = dotOnly[2];
+      const base = getRootSandboxValue(ctx, first);
+      if (!rest) return await unwrapSandboxValue(wrapSandboxValue(base));
       // 使用异步版本取值，逐段 await，并保留数组场景下的隐式聚合语义
-      return await asyncGetValuesByPath(base, segs.join('.'));
+      const resolved = await asyncGetValuesByPath(base, rest);
+      // 当 dot path 含 '-' 时可能与减号运算符存在歧义（例如：ctx.aa.bb-ctx.cc）。
+      // 若按 path 解析未取到值，则回退到 JS 表达式解析，尽量保持兼容。
+      if (typeof resolved !== 'undefined' || !rest.includes('-')) {
+        return await unwrapSandboxValue(resolved);
+      }
     }
 
     const transformed = preprocessExpression(raw);
+    ensureResolverLockdown();
     const compartment = new Compartment({
-      ctx,
-      __get: (varName: string, path?: string) => getAtPath(ctx, varName, path),
-      console,
+      ctx: wrapRootSandboxContext(ctx),
+      __get: wrapSandboxValue((varName: string, path?: string) => getAtPath(ctx, varName, path)),
     });
     const wrapped = `(async () => { try { return ${transformed}; } catch (e) { return undefined; } })()`;
-    return await compartment.evaluate(wrapped);
+    return await unwrapSandboxValue(await compartment.evaluate(wrapped));
   } catch (_) {
     return undefined;
   }
@@ -105,19 +358,15 @@ async function evaluate(expr: string, ctx: any) {
 async function getAtPath(ctx: any, varName: string, path?: string) {
   try {
     // base may be Promise; wait once
-    let current = await ctx[varName];
+    let current = getRootSandboxValue(ctx, varName);
     if (!path) return current;
     const norm = String(path || '').replace(/^\./, '');
     const segments = _.toPath(norm);
     for (const seg of segments) {
       if (current == null) return undefined;
-      let val = current[seg];
-      if (val && typeof val['then'] === 'function') {
-        val = await val;
-      }
-      current = val;
+      current = await getSandboxProperty(current, seg);
     }
-    return current;
+    return wrapSandboxValue(current);
   } catch (_) {
     return undefined;
   }
@@ -149,21 +398,22 @@ async function asyncGetValuesByPath(obj: any, path: string, defaultValue?: any):
       if (Array.isArray(currentValue)) {
         shouldReturnArray = true;
         const rest = keys.slice(i).join('.');
-        const parts = await Promise.all(currentValue.map((el) => asyncGetValuesByPath(el, rest, defaultValue)));
+        const parts = await Promise.all(
+          Array.prototype.map.call(currentValue, (el) => asyncGetValuesByPath(el, rest, defaultValue)),
+        );
         // 将数组或标量统一拍平一层
         for (const p of parts) {
-          if (Array.isArray(p)) result.push(...p);
-          else if (typeof p !== 'undefined') result.push(p);
+          if (Array.isArray(p)) {
+            for (let index = 0; index < p.length; index++) {
+              if (typeof p[index] !== 'undefined') result.push(p[index]);
+            }
+          } else if (typeof p !== 'undefined') result.push(p);
         }
         break;
       }
 
       // 普通对象属性访问，若为 Promise 则等待
-      let val = currentValue?.[key];
-      if (val && typeof (val as any).then === 'function') {
-        val = await val;
-      }
-      currentValue = val;
+      currentValue = await getSandboxProperty(currentValue, key);
 
       if (i === keys.length - 1) {
         result.push(currentValue);

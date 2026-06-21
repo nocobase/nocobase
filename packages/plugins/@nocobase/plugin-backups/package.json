@@ -1,0 +1,53 @@
+{
+  "name": "@nocobase/plugin-backups",
+  "displayName": "Backup manager",
+  "displayName.zh-CN": "备份管理器",
+  "description": "Provides backup and restore functionality, supports scheduled backups, and ensures data security and quick recovery.",
+  "description.zh-CN": "提供备份与还原功能，支持定时备份，确保数据安全与快速恢复。",
+  "version": "2.2.0-alpha.1",
+  "license": "Apache-2.0",
+  "main": "dist/server/index.js",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "devDependencies": {
+    "@koa/multer": "^3.0.2",
+    "@types/ali-oss": "^6.16.11",
+    "@types/archiver": "^5.3.1",
+    "@types/file-saver": "^2.0.7",
+    "@types/yauzl": "^2.10.3",
+    "antd": "5.x",
+    "archiver": "^5.3.1",
+    "content-disposition": "^0.5.4",
+    "dayjs": "^1.11.8",
+    "decompress": "^4.2.1",
+    "inquirer": "^8.0.0",
+    "koa-send": "^5.0.1",
+    "mkdirp": "^1.0.4",
+    "object-path": "^0.11.8",
+    "react": "^18.2.0",
+    "react-js-cron": "^3.1.0",
+    "semver": "^7.5.4",
+    "tar": "^7.5.15",
+    "yauzl": "^3.2.0"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/lock-manager": "2.x",
+    "@nocobase/plugin-file-manager": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
+  },
+  "keywords": [
+    "System management"
+  ]
+}

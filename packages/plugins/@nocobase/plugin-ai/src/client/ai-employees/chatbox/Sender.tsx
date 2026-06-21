@@ -9,33 +9,39 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Sender as AntSender } from '@ant-design/x';
-import { GetRef, Button } from 'antd';
+import { GetRef } from 'antd';
+import { css } from '@emotion/css';
 import { useT } from '../../locale';
 import { SenderFooter } from './SenderFooter';
 import { SenderHeader } from './SenderHeader';
 import { useChatConversationsStore } from './stores/chat-conversations';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
+import { useUploadFiles } from './hooks/useUploadFiles';
 import _ from 'lodash';
 
 const useSendMessage = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const isEditingMessage = useChatBoxStore.use.isEditingMessage();
   const editingMessageId = useChatBoxStore.use.editingMessageId();
+  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const webSearch = useChatConversationsStore.use.webSearch();
 
-  const attachments = useChatMessagesStore.use.attachments();
-  const contextItems = useChatMessagesStore.use.contextItems();
-  const systemMessage = useChatMessagesStore.use.systemMessage();
-  const skillSettings = useChatMessagesStore.use.skillSettings();
+  const attachments = chat.use.attachments();
+  const contextItems = chat.use.contextItems();
+  const systemMessage = chat.use.systemMessage();
+  const skillSettings = chat.use.skillSettings();
 
   const { finishEditingMessage } = useChatMessageActions();
 
   const { send } = useChatBoxActions();
   const handleSubmit = (content: string) => {
+    setShowSenderHint(false);
     send({
       sessionId: currentConversation,
       aiEmployee: currentEmployee,
@@ -50,6 +56,7 @@ const useSendMessage = () => {
       workContext: contextItems,
       editingMessageId: isEditingMessage ? editingMessageId : undefined,
       skillSettings,
+      webSearch,
     });
 
     if (isEditingMessage) {
@@ -62,16 +69,27 @@ const useSendMessage = () => {
 
 export const Sender: React.FC = () => {
   const t = useT();
+  const senderClassName = css`
+    .ant-sender-content {
+      padding: 16px;
+    }
+  `;
   const [handleSubmit] = useSendMessage();
   const senderRef = useRef<GetRef<typeof AntSender> | null>(null);
-  const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
 
   const senderValue = useChatBoxStore.use.senderValue();
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const setShowSenderHint = useChatBoxStore.use.setShowSenderHint();
   const setSenderRef = useChatBoxStore.use.setSenderRef();
+  const readonly = useChatBoxStore.use.readonly();
 
-  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const setAttachments = chat.setAttachments;
+  const uploadProps = useUploadFiles();
+
+  const responseLoading = chat.use.responseLoading();
 
   const { cancelRequest } = useChatMessageActions();
 
@@ -91,53 +109,118 @@ export const Sender: React.FC = () => {
     setValue(senderValue);
   }, [senderValue]);
 
-  const contextItems = useChatMessagesStore.use.contextItems();
-  useEffect(() => {
-    senderRef.current.nativeElement.onkeydown = (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (_.isEmpty(senderValue) && contextItems.length) {
-          senderButtonRef.current.click();
-        }
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    let file = null;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file') {
+        file = items[i].getAsFile();
+        break;
       }
+    }
+
+    if (!file) {
+      return;
+    }
+    e.preventDefault();
+
+    const uid = Date.now().toString();
+    const rawFile = file;
+    const uploadFile = {
+      uid,
+      name: rawFile.name,
+      status: 'uploading',
+      originFileObj: rawFile,
+      percent: 0,
+      type: rawFile.type,
+      size: rawFile.size,
     };
-  }, [senderValue, contextItems]);
+
+    setAttachments((prev) => [...prev, uploadFile]);
+    const { customRequest, data, headers, action } = uploadProps;
+
+    if (customRequest) {
+      customRequest({
+        file: rawFile,
+        filename: 'file',
+        data,
+        headers,
+        action,
+        onProgress: ({ percent }) => {
+          setAttachments((prev) =>
+            prev.map((item) => {
+              if (item.uid === uid) {
+                return { ...item, percent };
+              }
+              return item;
+            }),
+          );
+        },
+        onSuccess: (response, xhr) => {
+          const fileData = response?.data;
+          setAttachments((prev) =>
+            prev.map((item) => {
+              if (item.uid === uid) {
+                if (!fileData) {
+                  return {
+                    ...item,
+                    status: 'done',
+                    response,
+                  };
+                }
+                return {
+                  ...fileData,
+                  status: 'done',
+                };
+              }
+              return item;
+            }),
+          );
+        },
+        onError: (err) => {
+          setAttachments((prev) =>
+            prev.map((item) => {
+              if (item.uid === uid) {
+                return { ...item, status: 'error', error: err };
+              }
+              return item;
+            }),
+          );
+        },
+      });
+    }
+  };
 
   return (
-    <AntSender
-      // components={{
-      //   input: VariableInput,
-      // }}
-      value={value}
-      ref={senderRef}
-      onChange={(value) => {
-        setValue(value);
+    <div
+      style={{
+        margin: '8px 16px',
       }}
-      onSubmit={handleSubmit}
-      onCancel={cancelRequest}
-      header={<SenderHeader />}
-      loading={responseLoading}
-      footer={({ components }) => {
-        const { SendButton } = components;
-        if (SendButton) {
-          const DecoratedSendButton = (props) => {
-            const senderValue = useChatBoxStore.use.senderValue();
-            const contextItems = useChatMessagesStore.use.contextItems();
-            const [handleSubmit] = useSendMessage();
-            const handleEmptySubmit = () => {
-              if (_.isEmpty(senderValue) && contextItems.length) {
-                handleSubmit('');
-              }
-            };
-            return <SendButton ref={senderButtonRef} {...props} onClick={handleEmptySubmit} />;
-          };
-          components.SendButton = DecoratedSendButton;
-        }
-        return <SenderFooter components={components} />;
-      }}
-      disabled={!currentEmployee}
-      // placeholder={!currentEmployee ? t('Please choose an AI employee') : senderPlaceholder}
-      actions={false}
-    />
+    >
+      <AntSender
+        // components={{
+        //   input: VariableInput,
+        // }}
+        className={senderClassName}
+        value={value}
+        ref={senderRef}
+        onChange={(value) => {
+          setValue(value);
+        }}
+        onPaste={handlePaste}
+        onSubmit={handleSubmit}
+        onCancel={cancelRequest}
+        onBlur={() => {
+          setShowSenderHint(false);
+        }}
+        header={<SenderHeader />}
+        loading={responseLoading}
+        footer={({ components }) => <SenderFooter components={components} handleSubmit={handleSubmit} />}
+        disabled={!currentEmployee || readonly}
+        placeholder={t('Enter your question')}
+        actions={false}
+        autoSize={{ minRows: 2, maxRows: 8 }}
+      />
+    </div>
   );
 };

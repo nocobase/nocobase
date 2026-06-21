@@ -37,7 +37,7 @@ describe('actions', () => {
     db = app.db;
     repo = db.getRepository('customRequests');
     agent = app.agent();
-    resource = (agent.set('X-Role', 'admin') as any).resource('customRequests');
+    resource = ((agent as any).set('X-Role', 'admin') as any).resource('customRequests');
     user = await db.getRepository('users').findOne();
     await agent.login(user.id);
   });
@@ -175,6 +175,112 @@ describe('actions', () => {
       expect(expect.arrayContaining(params.a)).toMatchObject(['root', 'member', 'admin']);
       expect(expect.arrayContaining(params.b)).toMatchObject(['{{t("Member")}}', '{{t("Root")}}', '{{t("Admin")}}']);
       expect(expect.arrayContaining(params.c)).toMatchObject([user.id, user.id, user.id]);
+    });
+
+    test('vars payload should resolve ctx paths', async () => {
+      await repo.create({
+        values: {
+          key: 'vars-payload',
+          options: {
+            method: 'POST',
+            headers: [],
+            data: {
+              a: '{{ctx.user.name}}',
+              b: '{{ctx.record.id}} + {{ctx.record.name}}',
+            },
+            url: '/customRequests:test',
+          },
+        },
+      });
+
+      const res = await resource.send({
+        filterByTk: 'vars-payload',
+        values: {
+          vars: {
+            'ctx.user.name': 'alice',
+            'ctx.record.id': 100,
+            'ctx.record.name': 'order-100',
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(params).toMatchObject({
+        a: 'alice',
+        b: '100 + order-100',
+      });
+    });
+  });
+
+  describe('SSRF protection via SERVER_REQUEST_WHITELIST', () => {
+    const ENV_KEY = 'SERVER_REQUEST_WHITELIST';
+    let savedEnv: string | undefined;
+
+    beforeAll(async () => {
+      await repo.create({
+        values: {
+          key: 'ssrf-relative',
+          options: {
+            url: '/customRequests:test',
+            method: 'GET',
+          },
+        },
+      });
+      await repo.create({
+        values: {
+          key: 'ssrf-external',
+          options: {
+            url: 'http://169.254.169.254/latest/meta-data/',
+            method: 'GET',
+          },
+        },
+      });
+    });
+
+    beforeEach(() => {
+      savedEnv = process.env[ENV_KEY];
+    });
+
+    afterEach(() => {
+      if (savedEnv === undefined) {
+        delete process.env[ENV_KEY];
+      } else {
+        process.env[ENV_KEY] = savedEnv;
+      }
+    });
+
+    test('no whitelist: relative URL (same-server call) is allowed', async () => {
+      delete process.env[ENV_KEY];
+      const res = await resource.send({ filterByTk: 'ssrf-relative' });
+      expect(res.status).toBe(200);
+    });
+
+    test('whitelist set: relative URL (same-server call) is still allowed', async () => {
+      process.env[ENV_KEY] = 'api.example.com';
+      const res = await resource.send({ filterByTk: 'ssrf-relative' });
+      expect(res.status).toBe(200);
+    });
+
+    test('whitelist set: external absolute URL to unlisted host is blocked', async () => {
+      process.env[ENV_KEY] = 'api.example.com';
+      const res = await resource.send({ filterByTk: 'ssrf-external' });
+      // checkUrlAgainstWhitelist throws, which becomes a 500
+      expect(res.status).toBeGreaterThanOrEqual(400);
+    });
+
+    test('no whitelist: non-http scheme is always blocked', async () => {
+      delete process.env[ENV_KEY];
+      await repo.create({
+        values: {
+          key: 'ssrf-file-scheme',
+          options: {
+            url: 'file:///etc/passwd',
+            method: 'GET',
+          },
+        },
+      });
+      const res = await resource.send({ filterByTk: 'ssrf-file-scheme' });
+      expect(res.status).toBeGreaterThanOrEqual(400);
     });
   });
 });

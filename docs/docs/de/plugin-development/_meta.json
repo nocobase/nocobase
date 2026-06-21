@@ -1,0 +1,286 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Schnellstart",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Plugin-Entwicklung: Überblick",
+        "link": "/plugin-development/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Erstes Plugin schreiben",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin-Entwicklung mit KI",
+        "link": "/plugin-development/ai-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "Projektverzeichnisstruktur",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Serverseitige Entwicklung",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Überblick",
+        "link": "/plugin-development/server/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/server/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Collections (Datentabellen)",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "Database (Datenbankoperationen)",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager (Datenquellen-Verwaltung)",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ResourceManager (Ressourcen-Verwaltung)",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL (Zugriffskontrolle)",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "Middleware",
+        "link": "/plugin-development/server/middleware"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cache",
+        "link": "/plugin-development/server/cache"
+      },
+      {
+        "type": "custom-link",
+        "label": "Event (Ereignisse)",
+        "link": "/plugin-development/server/event"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context (Request-Kontext)",
+        "link": "/plugin-development/server/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration (Update-Skripte)",
+        "link": "/plugin-development/server/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger (Protokollierung)",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Telemetry (Telemetrie)",
+        "link": "/plugin-development/server/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "i18n (Internationalisierung)",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Command (Befehlszeile)",
+        "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "CronJobManager (Verwaltung geplanter Aufgaben)",
+        "link": "/plugin-development/server/cron-job-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test (Tests)",
+        "link": "/plugin-development/server/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Clientseitige Entwicklung",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Überblick",
+        "link": "/plugin-development/client/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/client/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Router (Routing)",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "Component (Komponentenentwicklung)",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Überblick",
+            "link": "/plugin-development/client/component/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Styles & Themes (Stile und Themes)",
+            "link": "/plugin-development/client/component/styles-themes"
+          },
+          {
+            "type": "custom-link",
+            "label": "i18n (Internationalisierung)",
+            "link": "/plugin-development/client/component/i18n"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Context (Kontext)",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Überblick",
+            "link": "/plugin-development/client/ctx/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Häufig genutzte Fähigkeiten",
+            "link": "/plugin-development/client/ctx/common-capabilities"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowEngine",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Überblick",
+            "link": "/plugin-development/client/flow-engine/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Block-Erweiterung",
+            "link": "/plugin-development/client/flow-engine/block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Feld-Erweiterung",
+            "link": "/plugin-development/client/flow-engine/field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aktions-Erweiterung",
+            "link": "/plugin-development/client/flow-engine/action"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Praxisbeispiele für Plugins",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Überblick",
+            "link": "/plugin-development/client/examples/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Eine Plugin-Einstellungsseite erstellen",
+            "link": "/plugin-development/client/examples/settings-page"
+          },
+          {
+            "type": "custom-link",
+            "label": "Einen benutzerdefinierten Anzeigeblock erstellen",
+            "link": "/plugin-development/client/examples/custom-block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Eine benutzerdefinierte Feld-Komponente erstellen",
+            "link": "/plugin-development/client/examples/custom-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Eine benutzerdefinierte Aktions-Schaltfläche erstellen",
+            "link": "/plugin-development/client/examples/custom-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ein Datenverwaltungs-Plugin mit Frontend-Backend-Verknüpfung erstellen",
+            "link": "/plugin-development/client/examples/fullstack-plugin"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Anhang",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "FAQ & Fehlerbehebungs-Leitfaden",
+            "link": "/plugin-development/client/appendix/faq"
+          },
+          {
+            "type": "custom-link",
+            "label": "Plugin-Entwicklungs-Spickzettel",
+            "link": "/plugin-development/client/appendix/cheatsheet"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Sonstiges",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Sprachenliste",
+        "link": "/plugin-development/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "Abhängigkeitsverwaltung",
+        "link": "/plugin-development/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Build und Paketierung",
+        "link": "/plugin-development/build"
+      }
+    ]
+  }
+]

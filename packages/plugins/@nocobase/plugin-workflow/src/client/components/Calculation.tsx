@@ -112,7 +112,7 @@ calculators.register('notEndsWith', {
   group: 'string',
 });
 calculators.register('concat', {
-  name: `{{t("concat", { ns: "${NAMESPACE}" })}}`,
+  name: `{{t("Concatenate", { ns: "${NAMESPACE}" })}}`,
   type: 'string',
   group: 'string',
 });

@@ -21,7 +21,8 @@ import {
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTreeParentRecord } from '../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { RecordProvider } from '../record-provider';
-import { useActionContext, useDesignable } from '../schema-component';
+import { useActionContext } from '../schema-component/antd/action/hooks';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider } from './hooks/useFormActiveFields';
@@ -127,7 +128,8 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const { __collection } = record || {};
   const { designable } = useDesignable();
   const collection = props.collection || cm.getCollection(association).name;
-
+  const { fieldSchema } = useActionContext();
+  const addChildForm = fieldSchema?.['x-component-props']?.addChild;
   const refresh = useUpdate();
 
   if (!designable && __collection && action) {
@@ -141,7 +143,7 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
         name={props.name || 'form'}
         {...props}
         block={'form'}
-        parentRecord={parentRecord || parentRecordData}
+        parentRecord={addChildForm ? parentRecordData : parentRecord || parentRecordData}
       >
         <FormActiveFieldsProvider name="form">
           <InternalFormBlockProvider {...props} />

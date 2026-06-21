@@ -63,8 +63,12 @@ export class FlowResource<TData = any> {
   protected _data = observable.ref<TData>(null);
   protected _meta = observable.ref<Record<string, any>>({});
   protected _error = observable.ref<ResourceError>(null);
+  protected context: FlowContext;
 
-  constructor(protected context: FlowContext) {}
+  constructor(context: FlowContext) {
+    this.context = new FlowContext();
+    this.context.addDelegate(context);
+  }
 
   getData(): TData {
     return this._data.value;

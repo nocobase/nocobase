@@ -18,7 +18,14 @@
 
 import React, { useCallback, useState } from 'react';
 import { ArrayItems } from '@formily/antd-v5';
-import { RemoteSelect, SchemaComponent, Variable, useCollectionFilterOptions, useToken } from '@nocobase/client';
+import {
+  CollectionManagerProvider,
+  RemoteSelect,
+  SchemaComponent,
+  Variable,
+  useCollectionFilterOptions,
+  useToken,
+} from '@nocobase/client';
 import { useField } from '@formily/react';
 import { Button, Popover, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
@@ -35,6 +42,14 @@ function isUserKeyField(field) {
 }
 
 export function UsersSelect(props) {
+  return (
+    <CollectionManagerProvider dataSource="main">
+      <UsersSelectContent {...props} />
+    </CollectionManagerProvider>
+  );
+}
+
+function UsersSelectContent(props) {
   const valueType = typeof props.value;
 
   return valueType === 'object' && props.value ? <UsersQuery {...props} /> : <InternalUsersSelect {...props} />;
@@ -44,7 +59,7 @@ function InternalUsersSelect({ value, onChange }) {
   const scope = useWorkflowVariableOptions({ types: [isUserKeyField] });
 
   return (
-    <Variable.Input nullable={false} scope={scope} value={value} onChange={onChange}>
+    <Variable.Input nullable={false} scope={scope} value={value} onChange={onChange} changeOnSelect={false}>
       <RemoteSelect
         fieldNames={{
           label: 'nickname',

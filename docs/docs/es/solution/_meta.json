@@ -1,0 +1,17 @@
+[
+  {
+    "type": "dir",
+    "name": "all-in-one",
+    "label": "Sistema de Gestión Integral"
+  },
+  {
+    "type": "dir",
+    "name": "ticket-system",
+    "label": "Sistema de tickets"
+  },
+  {
+    "type": "dir",
+    "name": "crm",
+    "label": "CRM"
+  }
+]

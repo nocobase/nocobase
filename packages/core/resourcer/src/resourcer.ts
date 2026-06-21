@@ -169,6 +169,7 @@ export class ResourceManager {
    */
   protected handlers = new Map<ActionName, any>();
   protected actionHandlers = new Map<ActionName, any>();
+  protected preActionHandlers = new Map<ActionName, Toposort<HandlerType>>();
   protected middlewareHandlers = new Map<string, any>();
   protected middlewares: Toposort<any>;
 
@@ -273,6 +274,24 @@ export class ResourceManager {
     return this.actionHandlers;
   }
 
+  registerPreActionHandler(name: ActionName, handler: HandlerType, options: ToposortOptions = {}) {
+    const middlewares = this.preActionHandlers.get(name) || new Toposort<HandlerType>();
+    middlewares.add(handler, options);
+    this.preActionHandlers.set(name, middlewares);
+  }
+
+  getRegisteredPreActionHandlers(name: string, action: ActionName) {
+    let specificAction = action;
+    if (!action.includes(':')) {
+      specificAction = `${name}:${action}`;
+    }
+    let middlewares = this.preActionHandlers.get(specificAction);
+    if (!middlewares) {
+      middlewares = this.preActionHandlers.get(action);
+    }
+    return middlewares?.nodes || [];
+  }
+
   /**
    * @internal
    */
@@ -302,6 +321,9 @@ export class ResourceManager {
   }
 
   use(middlewares: HandlerType | HandlerType[], options: ToposortOptions = {}) {
+    if (!options.tag && !options.group && !options.before && !options.after) {
+      options.tag = 'default';
+    }
     this.middlewares.add(middlewares, options);
   }
 

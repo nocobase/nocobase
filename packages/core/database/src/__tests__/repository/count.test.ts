@@ -8,6 +8,7 @@
  */
 
 import { Collection, HasManyRepository, createMockDatabase } from '@nocobase/database';
+import { vi } from 'vitest';
 
 describe('count', () => {
   let db;
@@ -155,6 +156,22 @@ describe('count', () => {
     expect(await User.repository.count()).toEqual(3);
   });
 
+  test('without association should not enable distinct', async () => {
+    await User.repository.createMany({
+      records: [{ name: 'u1' }, { name: 'u2' }],
+    });
+
+    const countSpy = vi.spyOn(User.model, 'count');
+
+    expect(await User.repository.count()).toEqual(2);
+    expect(countSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transaction: null,
+      }),
+    );
+    expect(countSpy.mock.calls[0][0]).not.toHaveProperty('distinct');
+  });
+
   test('with filter params', async () => {
     const repository = User.repository;
 
@@ -185,5 +202,49 @@ describe('count', () => {
         },
       }),
     ).toEqual(1);
+  });
+
+  test('with association filter should enable distinct', async () => {
+    const user1 = await User.repository.create({
+      values: {
+        name: 'u1',
+      },
+    });
+
+    const t1 = await Tag.repository.create({
+      values: {
+        name: 't1',
+      },
+    });
+
+    const t2 = await Tag.repository.create({
+      values: {
+        name: 't2',
+      },
+    });
+
+    const userPostRepository = User.repository.relation<HasManyRepository>('posts');
+
+    await userPostRepository.of(user1['id']).create({
+      values: {
+        title: 'u1p1',
+        tags: [t1, t2],
+      },
+    });
+
+    const countSpy = vi.spyOn(Post.model, 'count');
+
+    expect(
+      await Post.repository.count({
+        filter: {
+          'tags.name': 't1',
+        },
+      }),
+    ).toEqual(1);
+    expect(countSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        distinct: true,
+      }),
+    );
   });
 });

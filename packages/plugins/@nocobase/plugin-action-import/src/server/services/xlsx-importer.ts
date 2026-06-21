@@ -9,7 +9,12 @@
 
 import * as XLSX from 'xlsx';
 import lodash from 'lodash';
-import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-source-manager';
+import {
+  ICollection,
+  ICollectionManager,
+  IRelationField,
+  SequelizeCollectionManager,
+} from '@nocobase/data-source-manager';
 import {
   Collection as DBCollection,
   Database,
@@ -41,7 +46,15 @@ export type ImporterOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
   columns: Array<ImportColumn>;
-  workbook: any;
+  /** Parsed SheetJS workbook. Used for the synchronous (small-file) import path. */
+  workbook?: any;
+  /**
+   * Absolute path to the XLSX file on disk. When set, the importer uses ExcelJS
+   * streaming reader so the file is never fully loaded into memory — rows are
+   * yielded one by one and processed in chunks. This is the preferred path for
+   * large async imports.
+   */
+  filePath?: string;
   chunkSize?: number;
   explain?: string;
   repository?: any;
@@ -80,32 +93,69 @@ export class XlsxImporter extends EventEmitter {
     return data;
   }
 
-  async validate(ctx?: Context) {
-    const columns = this.getColumnsByPermission(ctx);
-    if (columns.length == 0) {
-      throw new ImportValidationError('Columns configuration is empty');
+  async validateBySpaces(data: string[][], ctx?: Context) {
+    if (ctx?.space?.can) {
+      await ctx.space.can({
+        data: data?.slice(1) || [],
+        columns: this.options.columns.map((column) => column.dataIndex),
+        collection: this.options.collection.name,
+        ctx,
+      });
     }
+  }
 
-    for (const column of this.options.columns) {
-      const field = this.options.collection.getField(column.dataIndex[0]);
-      if (!field) {
-        throw new ImportValidationError('Field not found: {{field}}', { field: column.dataIndex[0] });
-      }
-    }
+  async validate(ctx?: Context) {
+    this.validateColumns(ctx);
 
     const data = await this.getData(ctx);
+
+    await this.validateBySpaces(data, ctx);
+
     return data;
   }
 
   async run(options: RunOptions = {}) {
-    let transaction = options.transaction;
+    // If the caller already provides a transaction, keep using it as a single global transaction
+    // to respect external atomicity requirements (e.g. tests, integrations).
+    // Otherwise, each chunk will manage its own transaction to avoid holding a single large
+    // transaction open for the entire import (which causes high DB memory usage with 100k+ rows).
+    const hasExternalTransaction = !!options.transaction;
 
-    // @ts-ignore
-    if (!transaction && this.options.collectionManager.db) {
-      // @ts-ignore
-      transaction = options.transaction = await this.options.collectionManager.db.sequelize.transaction();
+    const { db } = this.options.collectionManager as SequelizeCollectionManager;
+
+    if (hasExternalTransaction) {
+      // Legacy path: single global transaction provided by caller.
+      try {
+        const data = await this.loggerService.measureExecutedTime(
+          async () => this.validate(options.context),
+          'Validation completed in {time}ms',
+        );
+
+        const imported = await this.loggerService.measureExecutedTime(
+          async () => this.performImport(data, options),
+          'Data import completed in {time}ms',
+        );
+
+        this.logger?.info(`Import completed successfully, imported ${imported} records`);
+
+        if (db) {
+          await this.loggerService.measureExecutedTime(
+            async () => this.resetSeq(options),
+            'Sequence reset completed in {time}ms',
+          );
+        }
+
+        return imported;
+      } catch (error) {
+        this.logger?.error(`Import failed: ${this.renderErrorMessage(error)}`, {
+          originalError: error.stack || error.toString(),
+        });
+        throw error;
+      }
     }
 
+    // Per-chunk transaction path: each chunk commits independently, avoiding a single
+    // long-lived transaction that accumulates all rows in DB memory.
     try {
       const data = await this.loggerService.measureExecutedTime(
         async () => this.validate(options.context),
@@ -119,19 +169,15 @@ export class XlsxImporter extends EventEmitter {
 
       this.logger?.info(`Import completed successfully, imported ${imported} records`);
 
-      // @ts-ignore
-      if (this.options.collectionManager.db) {
+      if (db) {
         await this.loggerService.measureExecutedTime(
-          async () => this.resetSeq(options),
+          async () => this.resetSeq({}),
           'Sequence reset completed in {time}ms',
         );
       }
 
-      transaction && (await transaction.commit());
-
       return imported;
     } catch (error) {
-      transaction && (await transaction.rollback());
       this.logger?.error(`Import failed: ${this.renderErrorMessage(error)}`, {
         originalError: error.stack || error.toString(),
       });
@@ -142,8 +188,7 @@ export class XlsxImporter extends EventEmitter {
   async resetSeq(options?: RunOptions) {
     const { transaction } = options;
 
-    // @ts-ignore
-    const db: Database = this.options.collectionManager.db;
+    const { db } = this.options.collectionManager as SequelizeCollectionManager;
     const collection: DBCollection = this.options.collection as DBCollection;
 
     // @ts-ignore
@@ -183,6 +228,14 @@ export class XlsxImporter extends EventEmitter {
 
     const maxVal = (await collection.model.max(autoIncrementAttribute, { transaction })) as number;
 
+    if (maxVal == null) {
+      return;
+    }
+
+    if (typeof autoIncrInfo.currentVal === 'number' && maxVal <= autoIncrInfo.currentVal) {
+      return;
+    }
+
     const queryInterface = db.queryInterface;
 
     await queryInterface.setAutoIncrementVal({
@@ -198,11 +251,74 @@ export class XlsxImporter extends EventEmitter {
 
   private getColumnsByPermission(ctx: Context): ImportColumn[] {
     const columns = this.options.columns;
-    return columns.filter((x) =>
-      _.isEmpty(ctx?.permission?.can?.params)
-        ? true
-        : _.includes(ctx?.permission?.can?.params?.fields || [], x.dataIndex[0]),
-    );
+    const fields = ctx?.permission?.can?.params?.fields;
+
+    if (!Array.isArray(fields)) {
+      return columns;
+    }
+
+    return columns.filter((x) => _.includes(fields, x.dataIndex[0]));
+  }
+
+  protected validateColumns(ctx?: Context) {
+    const columns = this.getColumnsByPermission(ctx as Context);
+    if (columns.length === 0) {
+      throw new ImportValidationError('Columns configuration is empty');
+    }
+
+    for (const column of columns) {
+      if (!Array.isArray(column?.dataIndex) || column.dataIndex.length === 0) {
+        throw new ImportValidationError('Columns configuration is empty');
+      }
+
+      if (column.dataIndex.length > 2) {
+        throw new ImportValidationError('Invalid field: {{field}}', {
+          field: column.dataIndex.join('.'),
+        });
+      }
+
+      const [fieldName, filterKey] = column.dataIndex;
+
+      if (typeof fieldName !== 'string' || fieldName.trim() === '') {
+        throw new ImportValidationError('Invalid field: {{field}}', { field: String(fieldName) });
+      }
+
+      const field = this.options.collection.getField(fieldName);
+      if (!field) {
+        throw new ImportValidationError('Field not found: {{field}}', { field: fieldName });
+      }
+
+      if (column.dataIndex.length > 1) {
+        if (typeof field.isRelationField !== 'function' || !field.isRelationField()) {
+          throw new ImportValidationError('Invalid field: {{field}}', {
+            field: column.dataIndex.join('.'),
+          });
+        }
+
+        if (typeof filterKey !== 'string' || filterKey.trim() === '') {
+          throw new ImportValidationError('Invalid field: {{field}}', {
+            field: column.dataIndex.join('.'),
+          });
+        }
+
+        const targetCollection = (field as IRelationField).targetCollection?.();
+        if (!targetCollection) {
+          throw new ImportValidationError('Field not found: {{field}}', {
+            field: column.dataIndex.join('.'),
+          });
+        }
+
+        // Check if filterKey is a valid field in target collection
+        // Use both getField (for NocoBase fields) and getAttributes (for auto-generated fields like 'id')
+        const targetField = targetCollection.getField(filterKey);
+        const isValidAttribute = (targetCollection as DBCollection).model?.getAttributes()?.[filterKey];
+        if (!targetField && !isValidAttribute) {
+          throw new ImportValidationError('Field not found: {{field}}', {
+            field: `${fieldName}.${filterKey}`,
+          });
+        }
+      }
+    }
   }
 
   async performImport(data: string[][], options?: RunOptions): Promise<any> {
@@ -219,8 +335,12 @@ export class XlsxImporter extends EventEmitter {
       handingRowIndex += 1;
     }
 
-    for (const chunkRows of chunks) {
+    // Use shift() to release each chunk reference after processing,
+    // allowing GC to reclaim memory progressively during large imports.
+    let chunkRows: string[][];
+    while ((chunkRows = chunks.shift()) !== undefined) {
       await this.handleChuckRows(chunkRows, options, { handingRowIndex, context: options?.context });
+      handingRowIndex += chunkRows.length;
       imported += chunkRows.length;
       this.emit('progress', {
         total,
@@ -235,12 +355,18 @@ export class XlsxImporter extends EventEmitter {
     return (this.repository instanceof RelationRepository ? this.repository.targetModel : this.repository.model) as any;
   }
 
-  async handleRowValuesWithColumns(row: any, rowValues: any, options: RunOptions) {
-    for (let index = 0; index < this.options.columns.length; index++) {
-      const column = this.options.columns[index];
+  async handleRowValuesWithColumns(
+    row: any,
+    rowValues: any,
+    options: RunOptions,
+    columns: ImportColumn[],
+    rowIndex = 1,
+  ) {
+    for (let index = 0; index < columns.length; index++) {
+      const column = columns[index];
       const field = this.options.collection.getField(column.dataIndex[0]);
       if (!field) {
-        throw new ImportValidationError('Import validation.Field not found', {
+        throw new ImportValidationError('Import validation. Field not found', {
           field: column.dataIndex[0],
         });
       }
@@ -257,10 +383,9 @@ export class XlsxImporter extends EventEmitter {
 
       const interfaceInstance = new InterfaceClass(field.options);
 
-      const ctx: any = {
-        transaction: options.transaction,
-        field,
-      };
+      const ctx: any = options.context ? Object.create(options.context) : {};
+      ctx.transaction = options.transaction;
+      ctx.field = field;
 
       if (column.dataIndex.length > 1) {
         ctx.associationField = field;
@@ -268,7 +393,15 @@ export class XlsxImporter extends EventEmitter {
         ctx.filterKey = column.dataIndex[1];
       }
 
-      rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
+      try {
+        rowValues[dataKey] = str == null ? null : await interfaceInstance.toValue(this.trimString(str), ctx);
+      } catch (error) {
+        throw new ImportValidationError('Failed to parse field {{field}} in row {{rowIndex}}: {{message}}', {
+          rowIndex,
+          field: dataKey,
+          message: error.message,
+        });
+      }
     }
     const model = this.getModel();
     const guard = UpdateGuard.fromOptions(model, {
@@ -291,20 +424,45 @@ export class XlsxImporter extends EventEmitter {
       context: any;
     },
   ) {
-    let { handingRowIndex = 1 } = options;
-    const { transaction } = runOptions;
+    const { handingRowIndex: chunkStartRowIndex = 1 } = options;
+
+    // If no external transaction is provided, create a per-chunk transaction so that
+    // each chunk commits independently and doesn't accumulate in a single large transaction.
+    // @ts-ignore
+    const db = this.options.collectionManager.db;
+    const externalTransaction = runOptions?.transaction;
+    const transaction = externalTransaction || (db ? await db.sequelize.transaction() : null);
+
+    const chunkRunOptions = { ...runOptions, transaction };
+    const columns = this.getColumnsByPermission(options?.context);
+
+    const translate = (message: string) => {
+      if (options.context?.t) {
+        return options.context.t(message, { ns: 'action-import' });
+      } else {
+        return message;
+      }
+    };
+
+    // Row processing and insert are both inside the try-catch so that any error
+    // (including errors thrown by toValue() during row parsing, before performInsert)
+    // always triggers a rollback of the per-chunk transaction.
     const rows = [];
-    for (const row of chunkRows) {
-      const rowValues = {};
-      await this.handleRowValuesWithColumns(row, rowValues, runOptions);
-
-      rows.push({
-        ...(this.options.rowDefaultValues || {}),
-        ...rowValues,
-      });
-    }
-
+    // Tracks which row in the current chunk is being parsed, so DB-level errors that
+    // surface after parsing can still report a meaningful row index.
+    let inChunkRowIndex = 0;
     try {
+      for (let i = 0; i < chunkRows.length; i++) {
+        inChunkRowIndex = i;
+        const row = chunkRows[i];
+        const rowValues = {};
+        await this.handleRowValuesWithColumns(row, rowValues, chunkRunOptions, columns, chunkStartRowIndex + i);
+        rows.push({
+          ...(this.options.rowDefaultValues || {}),
+          ...rowValues,
+        });
+      }
+
       await this.loggerService.measureExecutedTime(
         async () =>
           this.performInsert({
@@ -315,25 +473,42 @@ export class XlsxImporter extends EventEmitter {
         'Record insertion completed in {time}ms',
       );
       await new Promise((resolve) => setTimeout(resolve, 5));
-      handingRowIndex += chunkRows.length;
+      if (!externalTransaction) {
+        await transaction?.commit();
+      }
     } catch (error) {
-      if (error.name === 'SequelizeUniqueConstraintError') {
-        throw new Error(
-          `${options.context?.t('Unique constraint error, fields:', { ns: 'action-import' })} ${JSON.stringify(
-            error.fields,
-          )}`,
-        );
+      if (!externalTransaction) {
+        await transaction?.rollback();
       }
 
-      this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
-        rowIndex: handingRowIndex,
-        rowData: rows[handingRowIndex],
+      // Validation errors thrown during row parsing (e.g. field not found, toValue failure)
+      // are re-thrown as-is. They are not wrapped in ImportError because ImportError
+      // semantically represents a DB-level insert/update failure, and wrapping would
+      // change the error structure that callers (and tests) depend on.
+      if (error.name === 'ImportValidationError') {
+        throw error;
+      }
+
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        throw new Error(`${translate('Unique constraint error, fields:')} ${JSON.stringify(error.fields)}`);
+      }
+
+      // For DB-level errors raised by bulkCreate we cannot know which row triggered
+      // the failure, so we report the first row of the chunk. Parse-time errors below
+      // bubble up via ImportValidationError above with their own precise rowIndex.
+      const failedRowIndex = chunkStartRowIndex + inChunkRowIndex;
+      if (error.params?.rowIndex) {
+        error.params.rowIndex = failedRowIndex;
+      }
+      this.logger?.error(`Import error at row ${failedRowIndex}: ${error.message}`, {
+        rowIndex: failedRowIndex,
+        rowData: chunkRows[inChunkRowIndex],
         originalError: error.stack || error.toString(),
       });
 
-      throw new ImportError(`Import failed at row ${handingRowIndex}`, {
-        rowIndex: handingRowIndex,
-        rowData: rows[handingRowIndex],
+      throw new ImportError(`Import failed at row ${failedRowIndex}`, {
+        rowIndex: failedRowIndex,
+        rowData: chunkRows[inChunkRowIndex],
         cause: error,
       });
     }
@@ -363,15 +538,10 @@ export class XlsxImporter extends EventEmitter {
       const instance = instances[i];
       const value = values[i];
 
-      await this.loggerService.measureExecutedTime(
-        async () => updateAssociations(instance, value, { transaction }),
-        `Row ${i + 1}: updateAssociations completed in {time}ms`,
-        'debug',
-      );
       if (insertOptions.hooks !== false) {
         await this.loggerService.measureExecutedTime(
           async () => {
-            await db.emit(`${this.repository.collection.name}.afterCreate`, instance, {
+            await db.emitAsync(`${this.repository.collection.name}.afterCreate`, instance, {
               transaction,
             });
             await db.emitAsync(`${this.repository.collection.name}.afterSave`, instance, {
@@ -383,6 +553,13 @@ export class XlsxImporter extends EventEmitter {
           'debug',
         );
       }
+
+      await this.loggerService.measureExecutedTime(
+        async () => updateAssociations(instance, value, { transaction }),
+        `Row ${i + 1}: updateAssociations completed in {time}ms`,
+        'debug',
+      );
+
       if (context?.skipWorkflow !== true) {
         await this.loggerService.measureExecutedTime(
           async () => {
@@ -398,6 +575,11 @@ export class XlsxImporter extends EventEmitter {
           'debug',
         );
       }
+
+      // Release the instance reference after all events have been processed so the
+      // heavy Sequelize Model object (dataValues, _previousDataValues, etc.) can be
+      // garbage collected before the next chunk starts.
+      instances[i] = null;
     }
     return instances;
   }
@@ -448,7 +630,7 @@ export class XlsxImporter extends EventEmitter {
     return str;
   }
 
-  private getExpectedHeaders(ctx?: Context): string[] {
+  protected getExpectedHeaders(ctx?: Context): string[] {
     const columns = this.getColumnsByPermission(ctx);
     return columns.map((col) => col.title || col.defaultTitle);
   }
@@ -459,6 +641,10 @@ export class XlsxImporter extends EventEmitter {
 
     let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null, blankrows: false }) as string[][];
 
+    // Release the workbook reference immediately after converting to plain data array,
+    // so the large parsed XLSX object can be garbage collected during import.
+    this.options.workbook = null;
+
     // Find and validate header row
     const expectedHeaders = this.getExpectedHeaders(ctx);
     const { headerRowIndex, headers } = this.findAndValidateHeaders({ data, expectedHeaders });
@@ -467,7 +653,7 @@ export class XlsxImporter extends EventEmitter {
         headers: expectedHeaders.join(', '),
       });
     }
-    data = this.alignWithHeaders({ data, expectedHeaders, headers });
+    data = this.alignWithHeaders({ data, expectedHeaders, headerRowIndex });
     // Extract data rows
     const rows = data.slice(headerRowIndex + 1);
 
@@ -479,9 +665,20 @@ export class XlsxImporter extends EventEmitter {
     return [headers, ...rows];
   }
 
-  private alignWithHeaders(params: { headers: string[]; expectedHeaders: string[]; data: string[][] }): string[][] {
-    const { expectedHeaders, headers, data } = params;
-    const keepCols = headers.map((x, i) => (expectedHeaders.includes(x) ? i : -1)).filter((i) => i > -1);
+  private alignWithHeaders(params: {
+    data: string[][];
+    expectedHeaders: string[];
+    headerRowIndex: number;
+  }): string[][] {
+    const { data, expectedHeaders, headerRowIndex } = params;
+    const headerRow = data[headerRowIndex];
+    const keepCols = expectedHeaders.map((header) => headerRow.indexOf(header));
+
+    if (keepCols.some((index) => index < 0)) {
+      throw new ImportValidationError('Headers not found. Expected headers: {{headers}}', {
+        headers: expectedHeaders.join(', '),
+      });
+    }
 
     return data.map((row) => keepCols.map((i) => row[i]));
   }
@@ -504,5 +701,7 @@ export class XlsxImporter extends EventEmitter {
         return { headerRowIndex: rowIndex, headers: orderedHeaders };
       }
     }
+
+    return { headerRowIndex: -1, headers: [] };
   }
 }

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Базовое использование",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Обработка циклов",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Инструменты форматирования"
+  }
+]

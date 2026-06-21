@@ -14,6 +14,8 @@ export type RecordRef = {
   id?: any; // primary key value
   filterByTk?: any; // alias for id
   dataSourceKey?: string;
+  associationName?: string;
+  sourceId?: any;
   fields?: string[];
   appends?: string[];
   record?: any; // full record object (try to infer pk from it)
@@ -27,6 +29,8 @@ export type NormalizedRecordParams = {
   collection: string;
   filterByTk: any;
   dataSourceKey?: string;
+  associationName?: string;
+  sourceId?: any;
   fields?: string[];
   appends?: string[];
 };
@@ -63,6 +67,8 @@ function normalizeOne(ctx: FlowContext, ref?: RecordRef): NormalizedRecordParams
     collection,
     filterByTk,
     dataSourceKey,
+    associationName: ref.associationName,
+    sourceId: ref.sourceId,
     fields: ref.fields,
     appends: ref.appends,
   });

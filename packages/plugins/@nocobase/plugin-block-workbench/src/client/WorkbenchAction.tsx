@@ -16,7 +16,9 @@ import {
   ACLActionProvider,
   NAMESPACE_UI_SCHEMA,
 } from '@nocobase/client';
+import { css } from '@emotion/css';
 import { Avatar } from 'antd';
+import { List } from 'antd-mobile';
 import { createStyles } from 'antd-style';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -78,18 +80,64 @@ export const WorkbenchAction = withDynamicSchemaProps((props) => {
   const { styles, cx } = useStyles() as any;
   const fieldSchema = useFieldSchema();
   const Component = useComponent(props?.targetComponent) || Action;
-  return (
-    <ACLActionProvider>
-      <Component
-        className={cx(className, styles.action, 'nb-action-panel')}
-        {...others}
-        onlyIcon={false}
-        type="text"
-        icon={null}
-        title={<Button onlyIcon={others?.onlyIcon} />}
-        confirmTitle={fieldSchema.title}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      />
-    </ACLActionProvider>
-  );
+  const { layout = WorkbenchLayout.Grid } = fieldSchema.parent?.parent?.['x-component-props'] || {};
+
+  if (layout === 'list') {
+    const icon = fieldSchema['x-component-props']?.['icon'];
+    const backgroundColor = fieldSchema['x-component-props']?.['iconColor'];
+
+    return (
+      <ACLActionProvider>
+        <Component
+          className={cx(
+            className,
+            styles.action,
+            'nb-action-panel',
+            css`
+              > span {
+                width: 100%;
+              }
+              padding-top: 0px !important;
+            `,
+          )}
+          {...others}
+          onlyIcon={false}
+          type="text"
+          icon={null}
+          title={
+            <List.Item
+              prefix={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
+              onClick={() => {}}
+              style={{ marginTop: '5px' }}
+            >
+              <Button onlyIcon={others?.onlyIcon} />
+            </List.Item>
+          }
+          confirmTitle={fieldSchema.title}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            backgroundColor: 'rgb(255, 255, 255)',
+          }}
+        />
+      </ACLActionProvider>
+    );
+  } else {
+    return (
+      <ACLActionProvider>
+        <Component
+          className={cx(className, styles.action, 'nb-action-panel')}
+          {...others}
+          onlyIcon={false}
+          type="text"
+          icon={null}
+          title={<Button onlyIcon={others?.onlyIcon} />}
+          confirmTitle={fieldSchema.title}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        />
+      </ACLActionProvider>
+    );
+  }
 });

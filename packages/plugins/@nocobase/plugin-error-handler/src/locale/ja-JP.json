@@ -1,4 +1,6 @@
 {
-  "unique violation": "{{field}} は一意でなくてはなりません",
-  "notNull Violation": "{{field}} はNullにできません"
+  "Validation error": "{{field}} 検証エラー",
+  "notNull Violation": "{{field}} はNullにできません",
+  "notNull violation": "{{field}} を空にすることはできません",
+  "unique violation": "{{field}} は一意でなくてはなりません"
 }

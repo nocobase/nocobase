@@ -9,8 +9,9 @@
 
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
-import { FlowEngineContext } from '../flowContext';
+import { FlowContext, FlowEngineContext } from '../flowContext';
 import { BaseRecordResource } from './baseRecordResource';
+import { parseLiquidContext, transformSQL } from '@nocobase/utils/client';
 
 type SQLRunOptions = {
   bind?: Record<string, any>;
@@ -26,33 +27,33 @@ type SQLSaveOptions = {
 };
 
 export class FlowSQLRepository {
-  constructor(protected ctx: FlowEngineContext) {}
+  protected ctx: FlowContext;
 
-  transformSQL(template: string) {
-    let index = 1;
-    const bind = {};
-
-    const sql = template.replace(/{{\s*([^}]+)\s*}}/g, (_, expr) => {
-      const key = `__var${index}`;
-      bind[key] = `{{${expr.trim()}}}`;
-      index++;
-      return `$${key}`;
+  constructor(ctx: FlowContext) {
+    this.ctx = new FlowContext();
+    this.ctx.addDelegate(ctx);
+    this.ctx.defineProperty('offset', {
+      get: () => 0,
+      cache: false,
     });
-
-    return { sql, bind };
+    this.ctx.defineProperty('limit', {
+      get: () => 20,
+      cache: false,
+    });
   }
 
   async run(sql: string, options: SQLRunOptions = {}) {
-    const result = this.transformSQL(sql);
-    const bind = await this.ctx.resolveJsonTemplate(result.bind);
+    const { sql: transformedSQL, bind, liquidContext } = await transformSQL(sql);
+    const resolved = await this.ctx.resolveJsonTemplate({ bind, liquidContext });
+    const parsedSQL = await parseLiquidContext(transformedSQL, resolved.liquidContext);
     const { data } = await this.ctx.api.request({
       method: 'POST',
       url: 'flowSql:run',
       data: {
-        sql: result.sql,
+        sql: parsedSQL,
         ...options,
         bind: {
-          ...bind,
+          ...resolved.bind,
           ...options.bind,
         },
       },
@@ -78,7 +79,7 @@ export class FlowSQLRepository {
         uid,
       },
     });
-    const bind = await this.ctx.resolveJsonTemplate(response.data.data || {});
+    const { bind, liquidContext } = await this.ctx.resolveJsonTemplate(response.data.data || {});
     const { data } = await this.ctx.api.request({
       method: 'POST',
       url: 'flowSql:runById',
@@ -87,8 +88,9 @@ export class FlowSQLRepository {
         ...options,
         bind: {
           ...bind,
-          ...options.bind,
+          ...options?.bind,
         },
+        liquidContext,
       },
     });
     return data?.data;
@@ -108,6 +110,9 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
   protected _data = observable.ref<TData>(null);
   protected _meta = observable.ref<Record<string, any>>({});
   private refreshTimer: NodeJS.Timeout | null = null;
+  private refreshWaiters: Array<{ resolve: () => void; reject: (error: any) => void }> = [];
+  private _debugEnabled = false;
+  private _sql: string;
 
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
@@ -118,12 +123,74 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     headers: {} as Record<string, any>,
   };
 
+  get refreshActionName() {
+    return this._debugEnabled ? 'run' : 'runById';
+  }
+
   get supportsFilter() {
     return true;
   }
 
+  constructor(context: FlowEngineContext) {
+    super(context);
+    context.defineProperty('limit', {
+      get: () => this.getPageSize(),
+      cache: false,
+    });
+    context.defineProperty('offset', {
+      get: () => {
+        const page = this.getPage();
+        const pageSize = this.getPageSize();
+        return (page - 1) * pageSize;
+      },
+      cache: false,
+    });
+  }
+
   protected buildURL(action?: string): string {
-    return `flowSql:${action || 'runById'}`;
+    return `flowSql:${action || this.refreshActionName}`;
+  }
+
+  setPage(page: number) {
+    this.addRequestParameter('page', page);
+    return this.setMeta({ page });
+  }
+
+  getPage(): number {
+    return this.getMeta('page') || 1;
+  }
+
+  setPageSize(pageSize: number) {
+    this.addRequestParameter('pageSize', pageSize);
+    return this.setMeta({ pageSize });
+  }
+
+  setDebug(enabled: boolean) {
+    this._debugEnabled = enabled;
+    return this;
+  }
+
+  getPageSize(): number {
+    return this.getMeta('pageSize') || 20;
+  }
+
+  async next(): Promise<void> {
+    this.setPage(this.getPage() + 1);
+    await this.refresh();
+  }
+
+  async previous(): Promise<void> {
+    if (this.getPage() > 1) {
+      this.setPage(this.getPage() - 1);
+      await this.refresh();
+    }
+  }
+
+  async goto(page: number): Promise<void> {
+    if (page > 0) {
+      this.request.params.page = page;
+      await this.refresh();
+    }
   }
 
   setDataSourceKey(dataSourceKey: string): this {
@@ -133,6 +200,11 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
 
   setSQLType(type: 'selectRows' | 'selectRow' | 'selectVar') {
     this.request.data.type = type;
+    return this;
+  }
+
+  setSQL(sql: string) {
+    this._sql = sql;
     return this;
   }
 
@@ -151,6 +223,28 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return this;
   }
 
+  setLiquidContext(liquidContext: Record<string, any>) {
+    this.request.data.liquidContext = liquidContext;
+    return this;
+  }
+
+  async run() {
+    return this._debugEnabled ? await this.runBySQL() : await this.runById();
+  }
+
+  async runBySQL() {
+    const sql = this._sql;
+    const { sql: transformedSQL, bind, liquidContext } = await transformSQL(sql);
+    const resolved = await this.context.resolveJsonTemplate({ bind, liquidContext });
+    const options = _.cloneDeep({
+      method: 'post',
+      ...this.getRefreshRequestOptions(),
+    });
+    options.data.sql = await parseLiquidContext(transformedSQL, resolved.liquidContext);
+    options.data.bind = resolved.bind;
+    return await this.runAction<TData, any>('run', options);
+  }
+
   async runById() {
     const { data } = await this.runAction<TData, any>('getBind', {
       method: 'get',
@@ -158,8 +252,9 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
         uid: this.request.data.uid,
       },
     });
-    const bind = await this.context.resolveJsonTemplate(data);
+    const { bind, liquidContext } = await this.context.resolveJsonTemplate(data);
     this.setBind(bind);
+    this.setLiquidContext(liquidContext);
     return await this.runAction<TData, any>('runById', {
       method: 'post',
       ...this.getRefreshRequestOptions(),
@@ -178,20 +273,25 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
 
     // 设置新的定时器，在下一个事件循环执行
     return new Promise<void>((resolve, reject) => {
+      this.refreshWaiters.push({ resolve, reject });
       this.refreshTimer = setTimeout(async () => {
+        const waiters = this.refreshWaiters;
+        this.refreshWaiters = [];
+        this.refreshTimer = null;
         try {
           this.clearError();
           this.loading = true;
-          const { data, meta } = await this.runById();
+          this.emit('loading');
+          const { data, meta } = await this.run();
           this.setData(data).setMeta(meta);
-          this.emit('refresh');
           this.loading = false;
-          resolve();
+          this.emit('refresh');
+          waiters.forEach((w) => w.resolve());
         } catch (error) {
           this.setError(error);
-          reject(error instanceof Error ? error : new Error(String(error)));
+          const err = error instanceof Error ? error : new Error(String(error));
+          waiters.forEach((w) => w.reject(err));
         } finally {
-          this.refreshTimer = null;
           this.loading = false;
         }
       });

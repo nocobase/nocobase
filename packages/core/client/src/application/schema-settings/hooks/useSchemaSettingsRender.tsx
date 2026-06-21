@@ -10,9 +10,9 @@
 import { GeneralField } from '@formily/core';
 import { Schema } from '@formily/json-schema';
 import React, { useMemo } from 'react';
-import { Designable } from '../../../schema-component';
-import { SchemaSettingsProps } from '../../../schema-settings';
-import { useApp } from '../../hooks';
+import { Designable } from '../../../schema-component/hooks/useDesignable';
+import { SchemaSettingsProps } from '../../../schema-settings/SchemaSettings';
+import { useApp } from '../../hooks/useApp';
 import { SchemaSettingsWrapper } from '../components';
 import { SchemaSettings } from '../SchemaSettings';
 import { SchemaSettingOptions } from '../types';

@@ -1,0 +1,34 @@
+[
+  {
+    "text": "Start",
+    "link": "/ai/how-nocobase-works"
+  },
+  {
+    "text": "AI",
+    "link": "/ai/"
+  },
+  {
+    "text": "Tutorials",
+    "link": "/tutorials/v2/"
+  },
+  {
+    "text": "Handbuch",
+    "link": "/guide/"
+  },
+  {
+    "text": "Entwicklung",
+    "link": "/development/"
+  },
+  {
+    "text": "Plugins",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
+  },
+  {
+    "text": "Startseite",
+    "link": "https://www.nocobase.com/"
+  }
+]

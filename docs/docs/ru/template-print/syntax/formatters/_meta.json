@@ -1,0 +1,42 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Обзор",
+    "link": "/template-print/syntax/formatters/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматирование текста",
+    "link": "/template-print/syntax/formatters/text-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматирование чисел",
+    "link": "/template-print/syntax/formatters/number-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматирование валюты",
+    "link": "/template-print/syntax/formatters/currency-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматирование даты",
+    "link": "/template-print/syntax/formatters/date-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматирование временного интервала ",
+    "link": "/template-print/syntax/formatters/time-interval-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматирование массива",
+    "link": "/template-print/syntax/formatters/array-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматирование поля медиа",
+    "link": "/template-print/syntax/formatters/media-field-formatting"
+  }
+]

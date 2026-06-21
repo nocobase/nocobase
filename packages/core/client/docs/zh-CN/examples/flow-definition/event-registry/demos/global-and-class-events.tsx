@@ -54,7 +54,9 @@ class PluginGlobalClassEventsDemo extends Plugin {
       globalEvent: {
         name: 'globalEvent',
         title: '全局事件',
-        description: '所有模型都可以触发的事件',
+        handler: (ctx, params) => {
+          // 全局事件处理逻辑由流定义中的 handler 处理
+        },
       },
     });
 
@@ -65,7 +67,9 @@ class PluginGlobalClassEventsDemo extends Plugin {
       classEvent: {
         name: 'classEvent',
         title: '基类事件',
-        description: '基类及其子类可以触发的事件',
+        handler: (ctx, params) => {
+          // 基类事件处理逻辑由流定义中的 handler 处理
+        },
       },
     });
 
@@ -74,13 +78,17 @@ class PluginGlobalClassEventsDemo extends Plugin {
       childEvent: {
         name: 'childEvent',
         title: '子类事件',
-        description: '仅子类可以触发的事件',
+        handler: (ctx, params) => {
+          // 子类事件处理逻辑由流定义中的 handler 处理
+        },
       },
       // 覆盖父类的同名事件
       classEvent: {
         name: 'classEvent',
         title: '子类覆盖的类事件',
-        description: '子类覆盖父类的同名事件',
+        handler: (ctx, params) => {
+          // 子类覆盖的事件处理逻辑由流定义中的 handler 处理
+        },
       },
     });
 

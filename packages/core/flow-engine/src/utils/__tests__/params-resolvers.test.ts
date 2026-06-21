@@ -491,6 +491,46 @@ describe('resolveExpressions', () => {
         ],
       });
     });
+
+    test('should resolve dot-only path with dashed keys', async () => {
+      ctx.defineProperty('formValues', {
+        value: {
+          'oho-test': {
+            'o2m-users': [1, 2],
+          },
+        },
+      });
+
+      const params = '{{ctx.formValues.oho-test.o2m-users}}';
+
+      const result = await resolveExpressions(params, ctx);
+
+      expect(result).toEqual([1, 2]);
+    });
+
+    test('should resolve dashed keys inside template strings', async () => {
+      ctx.defineProperty('formValues', {
+        value: {
+          'oho-test': {
+            'o2m-users': 'X',
+          },
+        },
+      });
+
+      const params = 'prefix {{ctx.formValues.oho-test.o2m-users}} suffix';
+
+      const result = await resolveExpressions(params, ctx);
+
+      expect(result).toEqual('prefix X suffix');
+    });
+
+    test('should not treat subtraction as dashed key path', async () => {
+      const params = '{{ctx.aa.bb-ctx.cc}}';
+
+      const result = await resolveExpressions(params, ctx);
+
+      expect(result).toEqual(5);
+    });
   });
 
   // 测试高级功能：多表达式模板字符串
@@ -647,27 +687,6 @@ describe('resolveExpressions', () => {
 
       expect(result.nullTest).toBe(null);
       expect(result.undefinedTest).toBe(undefined);
-    });
-  });
-  describe('Error handling', () => {
-    test('should handle various error conditions gracefully', async () => {
-      const params = {
-        invalidMethod: '{{ ctx.nonexistentMethod(ctx.aa.bb) }}',
-        invalidPath: '{{ ctx.nonexistent.deep.path + 5 }}',
-        syntaxError: '{{ ctx.user.name + }}', // 语法错误
-        divisionByZero: '{{ 1 / 0 }}', // 特殊值情况
-        validExpression: '{{ ctx.aa.bb * 2 }}',
-      };
-
-      const result = await resolveExpressions(params, ctx);
-
-      expect(result).toEqual({
-        invalidMethod: undefined,
-        invalidPath: undefined,
-        syntaxError: undefined,
-        divisionByZero: Infinity,
-        validExpression: 20, // 10 * 2
-      });
     });
   });
 });

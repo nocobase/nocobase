@@ -50,7 +50,7 @@ export function SchemaSettingsConnectDataBlocks(props) {
   }
 
   const Content = dataBlocks.map((block) => {
-    const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
+    const title = `${compile(block.collection.title)} ${block.uid ? `#${block.uid.slice(0, 4)}` : ''}`;
     const onHover = () => {
       block.highlightBlock();
     };
@@ -94,7 +94,10 @@ export function SchemaSettingsConnectDataBlocks(props) {
         title={title}
         value={target?.field || ''}
         options={[
-          ...getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block).map((field) => {
+          ...getSupportFieldsByAssociation(
+            getAllCollectionsInheritChain(collection.name, collection.dataSource),
+            block,
+          ).map((field) => {
             return {
               label: compile(field.uiSchema.title) || field.name,
               value: `${field.name}.${getTargetKey(field)}`,

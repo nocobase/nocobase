@@ -7,38 +7,77 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Divider, Flex } from 'antd';
+import React, { useEffect, useRef } from 'react';
+import { Button, Divider, Flex, GetRef } from 'antd';
 import { Upload } from './Upload';
 import { AddContextButton } from '../AddContextButton';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatBoxStore } from './stores/chat-box';
+import { useChatConversationsStore } from './stores/chat-conversations';
+import _ from 'lodash';
+import { SearchSwitch } from './SearchSwitch';
+import { ModelSwitcher } from './ModelSwitcher';
+import { AIEmployeeSwitcher } from './AIEmployeeSwitch';
 
 export const SenderFooter: React.FC<{
   components: any;
-}> = ({ components }) => {
+  handleSubmit: (content: string) => void;
+}> = ({ components, handleSubmit }) => {
   const { SendButton, LoadingButton } = components;
+  const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
+  const currentEmployee = useChatBoxStore.use.currentEmployee?.();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const readonly = useChatBoxStore.use.readonly();
 
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const loading = chat.use.responseLoading();
+  const addContextItems = chat.addContextItems;
+  const removeContextItem = chat.removeContextItem;
 
-  const loading = useChatMessagesStore.use.responseLoading();
-  const addContextItems = useChatMessagesStore.use.addContextItems();
-  const removeContextItem = useChatMessagesStore.use.removeContextItem();
+  const senderValue = useChatBoxStore.use.senderValue();
+  const contextItems = chat.use.contextItems();
+  const handleEmptySubmit = () => {
+    if (_.isEmpty(senderValue) && contextItems.length) {
+      handleSubmit('');
+    }
+  };
+
+  const senderRef = useChatBoxStore.use.senderRef();
+  useEffect(() => {
+    if (senderRef?.current?.nativeElement) {
+      senderRef.current.nativeElement.onkeydown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (_.isEmpty(senderValue) && contextItems.length) {
+            senderButtonRef.current?.click();
+          }
+        }
+      };
+    }
+  }, [senderRef, senderValue, contextItems]);
+
+  const disabled = !currentEmployee || readonly;
 
   return (
     <Flex justify="space-between" align="center">
-      <Flex gap="small" align="center">
+      <Flex gap="middle" align="center">
         <AddContextButton
           onAdd={addContextItems}
           onRemove={removeContextItem}
-          disabled={!currentEmployee}
+          disabled={disabled}
           ignore={(key) => key === 'flow-model.variable'}
         />
-        <Divider type="vertical" />
-        <Upload />
+        <Upload disabled={disabled} />
+        <SearchSwitch disabled={disabled} />
+        <AIEmployeeSwitcher disabled={readonly} />
+        <ModelSwitcher disabled={disabled} />
       </Flex>
-      <Flex align="center">
-        {loading ? <LoadingButton type="default" /> : <SendButton type="primary" disabled={false} />}
+      <Flex align="center" gap="middle">
+        {loading ? (
+          <LoadingButton type="default" />
+        ) : (
+          <SendButton ref={senderButtonRef} type="primary" disabled={false} onClick={handleEmptySubmit} />
+        )}
       </Flex>
     </Flex>
   );

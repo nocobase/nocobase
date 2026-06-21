@@ -22,7 +22,7 @@ const DialogComponent = forwardRef<unknown, DialogComponentProps>(
   ({ afterClose, footer: initialFooter, header: initialHeader, hidden, ...props }, ref) => {
     const [visible, setVisible] = useState(true);
     const [config, setConfig] = useState<any>(props);
-    const [footer, setFooter] = useState(initialFooter);
+    const [footer, setFooter] = useState(() => initialFooter);
     const [header, setHeader] = useState(initialHeader);
 
     useImperativeHandle(ref, () => ({
@@ -62,10 +62,7 @@ const DialogComponent = forwardRef<unknown, DialogComponentProps>(
         getContainer={container}
         {...modalProps}
         open={visible}
-        onCancel={(e) => {
-          setVisible(false);
-          config.onCancel?.(e);
-        }}
+        onCancel={config.onCancel}
         afterClose={() => {
           afterClose?.();
         }}

@@ -1,15 +1,16 @@
 {
-  "Graph Collection": "Collection de graphiques",
+  "All Fields": "Tous les champs",
+  "All relationships": "Toutes les relations",
+  "Association Fields": "Champs d'association",
+  "Auto layout": "Auto layout",
+  "Choices fields": "Champs de choix",
   "Collection List": "Liste des collections",
-  "Full Screen": "Plein écran",
   "Collection Search": "Recherche de collection",
   "Create Collection": "Créer une collection",
-  "All Fields": "Tous les champs",
-  "Association Fields": "Champs d'association",
-  "Choices fields": "Champs de choix",
-  "All relationships": "Toutes les relations",
   "Entity relationship only": "Uniquement les relations d'entité",
-  "Inheritance relationship only": "Uniquement les relations d'héritage",
+  "Full Screen": "Plein écran",
+  "Graph Collection": "Collection de graphiques",
   "Graphical interface": "Interface graphique",
+  "Inheritance relationship only": "Uniquement les relations d'héritage",
   "Selection": "Sélection"
 }

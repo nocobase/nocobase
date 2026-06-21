@@ -11,7 +11,7 @@ import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { isEqual } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useTableBlockContextBasicValue } from '../../../../../block-provider/TableBlockProvider';
+import { useTableBlockContextBasicValue } from '../../../../../block-provider/TableBlockContextBasicValue';
 import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { useDataBlockRequest } from '../../../../../data-source/data-block/DataBlockRequestProvider';
 import { useDataBlockResource } from '../../../../../data-source/data-block/DataBlockResourceProvider';
@@ -34,7 +34,8 @@ export const useTableBlockProps = () => {
   const tableElementRef = useTableElementRef();
   const onPaginationChange = useCallback(() => {
     if (tableElementRef?.current) {
-      tableElementRef.current.parentElement?.scrollIntoView({ block: 'start' });
+      // TODO: 需要解决表格全高时，切换表格分页后，滚动条消失的问题
+      // tableElementRef.current.parentElement?.scrollIntoView({ block: 'start' });
     }
   }, [tableElementRef]);
   const pagination = useMemo(

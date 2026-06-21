@@ -1,0 +1,23 @@
+{
+  "Account": "Fiók",
+  "Add email address": "Email cím hozzáadása",
+  "BCC": "Titkos másolat",
+  "CC": "Másolat",
+  "Configure": "Beállítás",
+  "Content": "Tartalom",
+  "Content type": "Tartalom típusa",
+  "Email": "Email",
+  "From": "Feladó",
+  "Host": "Kiszolgáló",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "Password": "Jelszó",
+  "Plain text": "Egyszerű szöveg",
+  "Port": "Port",
+  "SMTP mail": "SMTP levél",
+  "SMTP server host": "SMTP szerver címe",
+  "Secure": "Biztonságos",
+  "Subject": "Tárgy",
+  "The email address that will be used as the sender": "A feladóként használandó email cím",
+  "To": "Címzett",
+  "Transport": "Szállítás"
+}

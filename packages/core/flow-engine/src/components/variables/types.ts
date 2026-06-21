@@ -21,6 +21,15 @@ export interface FlowContextSelectorProps
   formatPathToValue?: (item: MetaTreeNode) => string;
   open?: boolean;
   onlyLeafSelectable?: boolean;
+  ignoreFieldNames?: string[];
+  /**
+   * Footer rendered at the bottom of the dropdown. Defaults to a muted
+   * "Double click to choose entire object" hint when non-leaf selection is
+   * allowed (`onlyLeafSelectable` is false) — since double-clicking a non-leaf
+   * node selects the whole object. Pass an explicit node to override, or `null`
+   * to hide it.
+   */
+  dropdownFooter?: React.ReactNode;
 }
 
 export interface ContextSelectorItem {
@@ -69,6 +78,7 @@ export interface VariableInputProps {
    * 默认行为为 null；可设置为 '' 等，以便清空后默认切换为“常量-空字符串”。
    */
   clearValue?: any;
+  ignoreFieldNames?: string[];
   [key: string]: any;
 }
 

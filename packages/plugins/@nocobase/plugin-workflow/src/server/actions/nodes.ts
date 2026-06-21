@@ -8,20 +8,85 @@
  */
 
 import { Context, utils } from '@nocobase/actions';
-import { MultipleRelationRepository, Op, Repository } from '@nocobase/database';
+import { MultipleRelationRepository, Op, Repository, type Transaction } from '@nocobase/database';
 import WorkflowPlugin from '..';
-import type { WorkflowModel } from '../types';
+import type { FlowNodeModel, WorkflowModel } from '../types';
+
+export class NodeValidationError extends Error {
+  status = 400;
+  errors: Record<string, string>;
+
+  constructor(errors: Record<string, string>) {
+    super('Node validation failed');
+    this.name = 'NodeValidationError';
+    this.errors = errors;
+  }
+}
+
+function validateNode(context: Context, workflow: WorkflowModel | null, values: FlowNodeModel) {
+  const { type, config } = values;
+  if (!type) {
+    context.throw(400, 'Node type is required');
+  }
+  const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+  const instruction = workflowPlugin.instructions.get(type);
+  if (!instruction) {
+    context.throw(400, `Node type "${type}" is not registered`);
+  }
+  if (workflow && typeof instruction.isAvailable === 'function' && !instruction.isAvailable(workflow, values)) {
+    context.throw(400, `Node type "${type}" is not available in the current workflow`);
+  }
+  if (config && typeof instruction.validateConfig === 'function') {
+    const errors = instruction.validateConfig(config);
+    if (errors) {
+      throw new NodeValidationError(errors);
+    }
+  }
+}
+
+async function touchWorkflow(context: Context, workflowId: number | string, transaction: Transaction) {
+  const values: { updatedAt: Date; updatedById?: number | string } = {
+    updatedAt: new Date(),
+  };
+  const currentUserId = context.state?.currentUser?.id;
+  if (currentUserId != null) {
+    values.updatedById = currentUserId;
+  }
+
+  await context.db.getCollection('workflows').model.update(values, {
+    where: {
+      id: workflowId,
+    },
+    transaction,
+    hooks: false,
+  });
+}
 
 export async function create(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context) as MultipleRelationRepository;
-  const { whitelist, blacklist, updateAssociationValues, values, associatedIndex: workflowId } = context.action.params;
+  const { whitelist, blacklist, updateAssociationValues, values } = context.action.params;
+  const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
 
   context.body = await db.sequelize.transaction(async (transaction) => {
-    const workflow = (await repository.getSourceModel(transaction)) as WorkflowModel;
-    workflow.versionStats = await workflow.getVersionStats({ transaction });
+    const workflow =
+      workflowPlugin.enabledCache.get(Number.parseInt(context.action.sourceId, 10)) ||
+      ((await repository.getSourceModel(transaction)) as WorkflowModel);
+    if (!workflow.versionStats) {
+      workflow.versionStats = await workflow.getVersionStats({ transaction });
+    }
     if (workflow.versionStats.executed > 0) {
       context.throw(400, 'Node could not be created in executed workflow');
+    }
+
+    validateNode(context, workflow, values);
+
+    const NODES_LIMIT = process.env.WORKFLOW_NODES_LIMIT ? parseInt(process.env.WORKFLOW_NODES_LIMIT, 10) : null;
+    if (NODES_LIMIT) {
+      const nodesCount = await workflow.countNodes({ transaction });
+      if (nodesCount >= NODES_LIMIT) {
+        context.throw(400, `The number of nodes in a workflow cannot exceed ${NODES_LIMIT}`);
+      }
     }
 
     const instance = await repository.create({
@@ -48,6 +113,7 @@ export async function create(context: Context, next) {
         await instance.setDownstream(previousHead, { transaction });
         instance.set('downstream', previousHead);
       }
+      await touchWorkflow(context, workflow.id, transaction);
       return instance;
     }
 
@@ -96,6 +162,138 @@ export async function create(context: Context, next) {
 
     instance.set('upstream', upstream);
 
+    await touchWorkflow(context, workflow.id, transaction);
+    return instance;
+  });
+
+  await next();
+}
+
+export async function duplicate(context: Context, next) {
+  const { db } = context;
+  const repository = utils.getRepositoryFromParams(context) as MultipleRelationRepository;
+  const { whitelist, blacklist, filterByTk, values = {} } = context.action.params;
+  const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+
+  context.body = await db.sequelize.transaction(async (transaction) => {
+    const origin = filterByTk ? await repository.findOne({ filterByTk, transaction }) : null;
+    if (!origin) {
+      return context.throw(404, 'Node not found');
+    }
+
+    const workflow =
+      workflowPlugin.enabledCache.get(origin.workflowId) ||
+      ((await db.getRepository('workflows').findOne({
+        filterByTk: origin.workflowId,
+        transaction,
+      })) as WorkflowModel);
+    if (!workflow) {
+      return context.throw(400, 'Workflow not found');
+    }
+    if (!workflow.versionStats) {
+      workflow.versionStats = await workflow.getVersionStats({ transaction });
+    }
+    if (workflow.versionStats.executed > 0) {
+      context.throw(400, 'Node could not be created in executed workflow');
+    }
+
+    const NODES_LIMIT = process.env.WORKFLOW_NODES_LIMIT ? parseInt(process.env.WORKFLOW_NODES_LIMIT, 10) : null;
+    if (NODES_LIMIT) {
+      const nodesCount = await workflow.countNodes({ transaction });
+      if (nodesCount >= NODES_LIMIT) {
+        context.throw(400, `The number of nodes in a workflow cannot exceed ${NODES_LIMIT}`);
+      }
+    }
+
+    let nextConfig = values.config;
+    if (!nextConfig) {
+      const instruction = workflowPlugin.instructions.get(origin.type);
+      if (instruction && typeof instruction.duplicateConfig === 'function') {
+        nextConfig = await instruction.duplicateConfig(origin, { origin: origin ?? undefined, transaction });
+      }
+    }
+
+    const instance = await repository.create({
+      values: {
+        config: nextConfig ?? origin.config,
+        upstreamId: values.upstreamId,
+        branchIndex: values.branchIndex,
+        type: origin.type,
+        title: origin.title,
+        workflowId: origin.workflowId,
+      },
+      whitelist,
+      blacklist,
+      context,
+      transaction,
+    });
+
+    if (!instance.upstreamId) {
+      const previousHead = await repository.findOne({
+        filter: {
+          id: {
+            $ne: instance.id,
+          },
+          workflowId: origin.workflowId,
+          upstreamId: null,
+        },
+        transaction,
+      });
+      if (previousHead) {
+        await previousHead.setUpstream(instance, { transaction });
+        await instance.setDownstream(previousHead, { transaction });
+        instance.set('downstream', previousHead);
+      }
+      await touchWorkflow(context, origin.workflowId, transaction);
+      return instance;
+    }
+
+    const upstream = await instance.getUpstream({ transaction });
+
+    if (instance.branchIndex == null) {
+      const downstream = await upstream.getDownstream({ transaction });
+
+      if (downstream) {
+        await downstream.setUpstream(instance, { transaction });
+        await instance.setDownstream(downstream, { transaction });
+        instance.set('downstream', downstream);
+      }
+
+      await upstream.update(
+        {
+          downstreamId: instance.id,
+        },
+        { transaction },
+      );
+
+      upstream.set('downstream', instance);
+    } else {
+      const [downstream] = await upstream.getBranches({
+        where: {
+          id: {
+            [Op.ne]: instance.id,
+          },
+          branchIndex: instance.branchIndex,
+        },
+        transaction,
+      });
+
+      if (downstream) {
+        await downstream.update(
+          {
+            upstreamId: instance.id,
+            branchIndex: null,
+          },
+          { transaction },
+        );
+        await instance.setDownstream(downstream, { transaction });
+        instance.set('downstream', downstream);
+      }
+    }
+
+    instance.set('upstream', upstream);
+
+    await touchWorkflow(context, origin.workflowId, transaction);
     return instance;
   });
 
@@ -118,42 +316,35 @@ function searchBranchDownstreams(nodes, from) {
   return result;
 }
 
+function findBranchTail(branchHead) {
+  let tail = branchHead;
+  while (tail.downstream) {
+    tail = tail.downstream;
+  }
+  return tail;
+}
+
 export async function destroy(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context) as Repository;
-  const { filterByTk } = context.action.params;
+  const { filterByTk, keepBranch } = context.action.params;
+  const keepBranchIndex = keepBranch == null || keepBranch === '' ? null : Number.parseInt(keepBranch, 10);
 
-  const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex'];
+  const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex', 'key'];
   const instance = await repository.findOne({
     filterByTk,
     fields: [...fields, 'workflowId'],
     appends: ['upstream', 'downstream', 'workflow.versionStats.executed'],
   });
+  if (!instance) {
+    context.throw(404, 'Node not found');
+  }
   if (instance.workflow.versionStats.executed > 0) {
     context.throw(400, 'Nodes in executed workflow could not be deleted');
   }
 
   await db.sequelize.transaction(async (transaction) => {
     const { upstream, downstream } = instance.get();
-
-    if (upstream && upstream.downstreamId === instance.id) {
-      await upstream.update(
-        {
-          downstreamId: instance.downstreamId,
-        },
-        { transaction },
-      );
-    }
-
-    if (downstream) {
-      await downstream.update(
-        {
-          upstreamId: instance.upstreamId,
-          branchIndex: instance.branchIndex,
-        },
-        { transaction },
-      );
-    }
 
     const nodes = await repository.find({
       filter: {
@@ -167,8 +358,6 @@ export async function destroy(context: Context, next) {
     nodes.forEach((item) => {
       nodesMap.set(item.id, item);
     });
-    // overwrite
-    // nodesMap.set(instance.id, instance);
     // make linked list
     nodes.forEach((item) => {
       if (item.upstreamId) {
@@ -179,15 +368,367 @@ export async function destroy(context: Context, next) {
       }
     });
 
-    const branchNodes = searchBranchNodes(nodes, nodesMap.get(instance.id));
+    const keepBranchHead =
+      keepBranchIndex != null
+        ? nodes.find((item) => item.upstreamId === instance.id && item.branchIndex == keepBranchIndex)
+        : null;
+    if (keepBranchIndex != null && !keepBranchHead) {
+      context.throw(400, `Branch ${keepBranchIndex} not found`);
+    }
+    const keepBranchNodes = keepBranchHead ? searchBranchDownstreams(nodes, keepBranchHead) : [];
+    const keepBranchNodeIds = new Set<number>(keepBranchNodes.map((item) => item.id));
+
+    const branchNodes = instance ? searchBranchNodes(nodes, instance) : [];
+    const branchNodesToDelete = keepBranchHead
+      ? branchNodes.filter((item) => !keepBranchNodeIds.has(item.id))
+      : branchNodes;
+
+    if (keepBranchHead) {
+      if (upstream && upstream.downstreamId === instance.id) {
+        await upstream.update(
+          {
+            downstreamId: keepBranchHead.id,
+          },
+          { transaction },
+        );
+      }
+
+      await keepBranchHead.update(
+        {
+          upstreamId: instance.upstreamId,
+          branchIndex: instance.branchIndex,
+        },
+        { transaction },
+      );
+
+      if (downstream) {
+        const branchTail = findBranchTail(keepBranchHead);
+        await branchTail.update(
+          {
+            downstreamId: instance.downstreamId,
+          },
+          { transaction },
+        );
+        branchTail.downstreamId = instance.downstreamId;
+        branchTail.downstream = downstream;
+
+        await downstream.update(
+          {
+            upstreamId: branchTail.id,
+            branchIndex: null,
+          },
+          { transaction },
+        );
+      }
+    } else {
+      if (upstream && upstream.downstreamId === instance.id) {
+        await upstream.update(
+          {
+            downstreamId: instance.downstreamId,
+          },
+          { transaction },
+        );
+      }
+
+      if (downstream) {
+        await downstream.update(
+          {
+            upstreamId: instance.upstreamId,
+            branchIndex: instance.branchIndex,
+          },
+          { transaction },
+        );
+      }
+    }
 
     await repository.destroy({
-      filterByTk: [instance.id, ...branchNodes.map((item) => item.id)],
+      filterByTk: [instance.id, ...branchNodesToDelete.map((item) => item.id)],
       transaction,
     });
+    await touchWorkflow(context, instance.workflowId, transaction);
   });
 
   context.body = instance;
+
+  await next();
+}
+
+export async function destroyBranch(context: Context, next) {
+  const { db } = context;
+  const repository = utils.getRepositoryFromParams(context) as Repository;
+  const { filterByTk, branchIndex: branchIndexParam, shift: shiftParam } = context.action.params;
+  if (branchIndexParam == null || branchIndexParam === '') {
+    context.throw(400, 'branchIndex is required');
+  }
+  const branchIndex = Number.parseInt(branchIndexParam, 10);
+  if (Number.isNaN(branchIndex)) {
+    context.throw(400, 'branchIndex must be a number');
+  }
+  const shift = !(shiftParam == null || shiftParam === '') && Number.parseInt(String(shiftParam), 10) === 1;
+
+  const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex', 'key'];
+  const instance = await repository.findOne({
+    filterByTk,
+    fields: [...fields, 'workflowId'],
+    appends: ['workflow.versionStats.executed'],
+  });
+  if (!instance) {
+    context.throw(404, 'Node not found');
+  }
+  if (instance.workflow.versionStats.executed > 0) {
+    context.throw(400, 'Branches in executed workflow could not be deleted');
+  }
+
+  let deletedBranchHead = null;
+
+  await db.sequelize.transaction(async (transaction) => {
+    let shouldTouchWorkflow = false;
+    const nodes = await repository.find({
+      filter: {
+        workflowId: instance.workflowId,
+      },
+      fields,
+      transaction,
+    });
+    const nodesMap = new Map();
+    nodes.forEach((item) => {
+      nodesMap.set(item.id, item);
+    });
+    nodes.forEach((item) => {
+      if (item.upstreamId) {
+        item.upstream = nodesMap.get(item.upstreamId);
+      }
+      if (item.downstreamId) {
+        item.downstream = nodesMap.get(item.downstreamId);
+      }
+    });
+
+    const branchHeads = nodes
+      .filter((item) => item.upstreamId === instance.id && item.branchIndex != null)
+      .sort((a, b) => a.branchIndex - b.branchIndex);
+    const branchHead = branchHeads.find((item) => item.branchIndex === branchIndex);
+    deletedBranchHead = branchHead || null;
+
+    if (branchHead) {
+      const nodesToDelete = searchBranchDownstreams(nodes, branchHead);
+      const idsToDelete = nodesToDelete.map((item) => item.id);
+      if (idsToDelete.length) {
+        await repository.destroy({
+          filterByTk: idsToDelete,
+          transaction,
+        });
+        shouldTouchWorkflow = true;
+      }
+    }
+
+    if (shift) {
+      const headsToShift = branchHeads.filter((item) => item.branchIndex > branchIndex);
+      await Promise.all(
+        headsToShift.map((item) =>
+          item.update(
+            {
+              branchIndex: item.branchIndex - 1,
+            },
+            { transaction },
+          ),
+        ),
+      );
+      if (headsToShift.length) {
+        shouldTouchWorkflow = true;
+      }
+    }
+    if (shouldTouchWorkflow) {
+      await touchWorkflow(context, instance.workflowId, transaction);
+    }
+  });
+
+  context.body = deletedBranchHead;
+
+  await next();
+}
+
+export async function move(context: Context, next) {
+  const { db } = context;
+  const repository = utils.getRepositoryFromParams(context) as Repository;
+  const { filterByTk, values = {} } = context.action.params;
+  const rawUpstreamId = values.upstreamId;
+  const rawBranchIndex = values.branchIndex;
+  const upstreamId = rawUpstreamId == null || rawUpstreamId === '' ? null : rawUpstreamId;
+  let branchIndex = rawBranchIndex == null || rawBranchIndex === '' ? null : Number.parseInt(rawBranchIndex, 10);
+  if (rawBranchIndex != null && rawBranchIndex !== '' && Number.isNaN(branchIndex)) {
+    context.throw(400, 'branchIndex must be a number');
+  }
+  if (upstreamId == null) {
+    branchIndex = null;
+  }
+
+  const fields = ['id', 'key', 'upstreamId', 'downstreamId', 'branchIndex', 'workflowId'];
+
+  context.body = await db.sequelize.transaction(async (transaction) => {
+    const instance = await repository.findOne({
+      filterByTk,
+      fields,
+      appends: ['upstream', 'downstream', 'workflow.versionStats'],
+      transaction,
+    });
+    if (!instance) {
+      context.throw(404, 'Node not found');
+    }
+    if (instance.workflow.versionStats.executed > 0) {
+      context.throw(400, 'Nodes in executed workflow could not be moved');
+    }
+    if (upstreamId != null && String(upstreamId) === String(instance.id)) {
+      context.throw(400, 'Invalid upstream node');
+    }
+
+    const sameUpstream = (instance.upstreamId ?? null) == (upstreamId ?? null);
+    const sameBranchIndex = (instance.branchIndex ?? null) == (branchIndex ?? null);
+    if (sameUpstream && sameBranchIndex) {
+      context.throw(400, 'Node does not need to be moved');
+    }
+
+    const { upstream: oldUpstream, downstream: oldDownstream } = instance.get();
+
+    if (oldUpstream && oldUpstream.downstreamId === instance.id) {
+      await oldUpstream.update(
+        {
+          downstreamId: oldDownstream ? oldDownstream.id : null,
+        },
+        { transaction },
+      );
+    }
+
+    if (oldDownstream && oldDownstream.upstreamId === instance.id) {
+      await oldDownstream.update(
+        {
+          upstreamId: oldUpstream ? oldUpstream.id : null,
+          branchIndex: instance.branchIndex ?? null,
+        },
+        { transaction },
+      );
+    }
+
+    let targetUpstream = null;
+    if (upstreamId != null) {
+      targetUpstream = await repository.findOne({
+        filterByTk: upstreamId,
+        fields,
+        transaction,
+      });
+      if (!targetUpstream) {
+        context.throw(404, 'Upstream node not found');
+      }
+      if (targetUpstream.workflowId !== instance.workflowId) {
+        context.throw(400, 'Upstream node is not in the same workflow');
+      }
+    }
+
+    let newDownstream = null;
+    if (!targetUpstream) {
+      const previousHead = await repository.findOne({
+        filter: {
+          workflowId: instance.workflowId,
+          upstreamId: null,
+          id: {
+            [Op.ne]: instance.id,
+          },
+        },
+        fields,
+        transaction,
+      });
+      if (previousHead) {
+        await previousHead.update(
+          {
+            upstreamId: instance.id,
+            branchIndex: null,
+          },
+          { transaction },
+        );
+        newDownstream = previousHead;
+      }
+
+      await instance.update(
+        {
+          upstreamId: null,
+          branchIndex: null,
+          downstreamId: newDownstream ? newDownstream.id : null,
+        },
+        { transaction },
+      );
+
+      await touchWorkflow(context, instance.workflowId, transaction);
+      return instance;
+    }
+
+    if (branchIndex == null) {
+      if (targetUpstream.downstreamId) {
+        newDownstream = await repository.findOne({
+          filterByTk: targetUpstream.downstreamId,
+          fields,
+          transaction,
+        });
+      }
+      if (newDownstream) {
+        await newDownstream.update(
+          {
+            upstreamId: instance.id,
+            branchIndex: null,
+          },
+          { transaction },
+        );
+      }
+
+      await targetUpstream.update(
+        {
+          downstreamId: instance.id,
+        },
+        { transaction },
+      );
+
+      await instance.update(
+        {
+          upstreamId: targetUpstream.id,
+          branchIndex: null,
+          downstreamId: newDownstream ? newDownstream.id : null,
+        },
+        { transaction },
+      );
+
+      await touchWorkflow(context, instance.workflowId, transaction);
+      return instance;
+    }
+
+    const branchHead = await repository.findOne({
+      filter: {
+        upstreamId: targetUpstream.id,
+        branchIndex,
+      },
+      fields,
+      transaction,
+    });
+    if (branchHead) {
+      await branchHead.update(
+        {
+          upstreamId: instance.id,
+          branchIndex: null,
+        },
+        { transaction },
+      );
+      newDownstream = branchHead;
+    }
+
+    await instance.update(
+      {
+        upstreamId: targetUpstream.id,
+        branchIndex,
+        downstreamId: newDownstream ? newDownstream.id : null,
+      },
+      { transaction },
+    );
+
+    await touchWorkflow(context, instance.workflowId, transaction);
+    return instance;
+  });
 
   await next();
 }
@@ -196,18 +737,23 @@ export async function update(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, values, whitelist, blacklist, filter, updateAssociationValues } = context.action.params;
+  const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+
   context.body = await db.sequelize.transaction(async (transaction) => {
     // TODO(optimize): duplicated instance query
-    const { workflow } = await repository.findOne({
+    const instance = await repository.findOne({
       filterByTk,
       appends: ['workflow.versionStats.executed'],
       transaction,
     });
-    if (workflow.versionStats.executed > 0) {
+    if (instance.workflow.versionStats.executed > 0) {
       context.throw(400, 'Nodes in executed workflow could not be reconfigured');
     }
 
-    return repository.update({
+    const merged = Object.assign({}, instance.get(), values);
+    validateNode(context, null, merged);
+
+    const result = await repository.update({
       filterByTk,
       values,
       whitelist,
@@ -217,6 +763,8 @@ export async function update(context: Context, next) {
       context,
       transaction,
     });
+    await touchWorkflow(context, instance.workflowId, transaction);
+    return result;
   });
 
   await next();
@@ -227,12 +775,12 @@ export async function test(context: Context, next) {
   const { type, config = {} } = values;
   const plugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
   const instruction = plugin.instructions.get(type);
-  if (!instruction) {
-    context.throw(400, `instruction "${type}" not registered`);
-  }
   if (typeof instruction.test !== 'function') {
     context.throw(400, `test method of instruction "${type}" not implemented`);
   }
+
+  validateNode(context, null, values);
+
   try {
     context.body = await instruction.test(config);
   } catch (error) {

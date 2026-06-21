@@ -22,7 +22,7 @@ const PopoverComponent = React.forwardRef<any, any>(({ afterClose, content, plac
   React.useImperativeHandle(ref, () => ({
     destroy: () => setVisible(false),
     update: (newConfig: any) => setConfig((prev) => ({ ...prev, ...newConfig })),
-    close: (result?: any) => setVisible(false),
+    close: (result?: any, _force?: boolean) => setVisible(false),
   }));
 
   // 关闭后触发 afterClose
@@ -40,8 +40,11 @@ const PopoverComponent = React.forwardRef<any, any>(({ afterClose, content, plac
       destroyTooltipOnHide
       content={config.content}
       placement={config.placement}
-      getPopupContainer={() => document.body}
+      getPopupContainer={() => document.querySelector('#nocobase-app-container') || document.body}
       onOpenChange={(nextOpen) => {
+        if (!nextOpen && config.preventClose) {
+          return;
+        }
         setVisible(nextOpen);
         if (!nextOpen) {
           afterClose?.();

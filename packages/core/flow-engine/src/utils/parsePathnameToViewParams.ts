@@ -13,10 +13,39 @@ export interface ViewParam {
   /** 标签页唯一标识符 */
   tabUid?: string;
   /** 弹窗记录的 id */
-  filterByTk?: string;
+  filterByTk?: string | Record<string, string | number>;
   /** source Id */
   sourceId?: string;
 }
+
+export interface ParsePathnameToViewParamsOptions {
+  rootPrefix?: string;
+  basePath?: string;
+}
+
+const normalizePathname = (pathname: string) => {
+  if (!pathname || pathname === '/') {
+    return '/';
+  }
+  return `/${pathname.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+};
+
+const normalizeBasePath = (basePath: string) => `/${basePath.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+
+const stripBasePath = (pathname: string, basePath: string) => {
+  const normalizedPathname = normalizePathname(pathname);
+  const normalizedBasePath = normalizeBasePath(basePath);
+
+  if (normalizedPathname === normalizedBasePath) {
+    return '';
+  }
+
+  if (normalizedPathname.startsWith(`${normalizedBasePath}/`)) {
+    return normalizedPathname.slice(normalizedBasePath.length + 1);
+  }
+
+  return '';
+};
 
 /**
  * 解析路径名为视图参数数组
@@ -33,15 +62,21 @@ export interface ViewParam {
  * parsePathnameToViewParams('/admin/xxx/view/yyy') // [{ viewUid: 'xxx' }, { viewUid: 'yyy' }]
  * ```
  */
-export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
+export const parsePathnameToViewParams = (
+  pathname: string,
+  options: ParsePathnameToViewParamsOptions = {},
+): ViewParam[] => {
   if (!pathname || pathname === '/') {
     return [];
   }
 
-  // 移除开头的斜杠并分割路径
-  const segments = pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+  const rootPrefix = options.rootPrefix || 'admin';
+  const relativePath = options.basePath ? stripBasePath(pathname, options.basePath) : '';
 
-  if (segments.length < 2) {
+  // 移除开头的斜杠并分割路径
+  const segments = (options.basePath ? relativePath : pathname).replace(/^\/+/, '').split('/').filter(Boolean);
+
+  if (segments.length < (options.basePath ? 1 : 2)) {
     return [];
   }
 
@@ -49,11 +84,16 @@ export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
   let currentView: ViewParam | null = null;
   let i = 0;
 
+  if (options.basePath) {
+    currentView = { viewUid: segments[0] };
+    i = 1;
+  }
+
   while (i < segments.length) {
     const segment = segments[i];
 
-    // 处理 admin 或 view 关键字
-    if (segment === 'admin' || segment === 'view') {
+    // 处理布局根前缀或 view 关键字
+    if (segment === rootPrefix || segment === 'view') {
       // 如果有当前视图，先保存到结果中
       if (currentView) {
         result.push(currentView);
@@ -70,17 +110,61 @@ export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
     }
     // 处理参数
     else if (currentView && i + 1 < segments.length) {
-      const value = segments[i + 1];
+      const rawValue = segments[i + 1];
+      // 尝试对路径段进行解码
+      let decoded: string = rawValue;
+      try {
+        decoded = decodeURIComponent(rawValue);
+      } catch (_) {
+        // ignore
+      }
 
       switch (segment) {
         case 'tab':
-          currentView.tabUid = value;
+          // tab/sourceId 仅作为字符串处理
+          currentView.tabUid = decoded;
           break;
-        case 'filterbytk':
-          currentView.filterByTk = value;
+        case 'filterbytk': {
+          // 仅在 filterByTk 分支支持对象/JSON/键值对解析
+          const parseKeyValuePairs = (s: string): Record<string, string | number> => {
+            const obj: Record<string, string | number> = {};
+            s.split('&').forEach((pair) => {
+              const [k, v = ''] = pair.split('=');
+              if (!k) return;
+              try {
+                const key = decodeURIComponent(k);
+                const val = decodeURIComponent(v);
+                obj[key] = val;
+              } catch (_) {
+                obj[k] = v;
+              }
+            });
+            return obj;
+          };
+
+          let parsed: string | Record<string, string | number> = decoded;
+          if (decoded && (decoded.startsWith('{') || decoded.startsWith('['))) {
+            try {
+              const maybe = JSON.parse(decoded);
+              if (maybe && typeof maybe === 'object' && !Array.isArray(maybe)) {
+                parsed = maybe as Record<string, string | number>;
+              } else {
+                // 非对象 JSON（如数组/数字）按字符串保留
+                parsed = decoded;
+              }
+            } catch (_) {
+              // 解析失败，按字符串保留
+              parsed = decoded;
+            }
+          } else if (decoded && /^[^=&]+=[^=&]*(?:&[^=&]+=[^=&]*)*$/.test(decoded)) {
+            // 形如 a=b 或 a=b&c=d 的整体段
+            parsed = parseKeyValuePairs(decoded);
+          }
+          currentView.filterByTk = parsed;
           break;
+        }
         case 'sourceid':
-          currentView.sourceId = value;
+          currentView.sourceId = decoded;
           break;
         default:
           // 未知参数，跳过

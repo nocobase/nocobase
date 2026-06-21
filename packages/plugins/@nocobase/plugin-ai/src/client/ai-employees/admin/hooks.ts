@@ -22,7 +22,7 @@ import { useT } from '../../locale';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 
 export const useCreateFormProps = () => {
   const t = useT();
@@ -31,9 +31,10 @@ export const useCreateFormProps = () => {
       createForm({
         initialValues: {
           username: `${uid()}`,
+          enabled: true,
           enableKnowledgeBase: false,
           knowledgeBase: {
-            knowledgeBaseIds: [],
+            knowledgeBaseKeys: [],
             topK: 3,
             score: '0.6',
           },
@@ -79,14 +80,14 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const api = useAPIClient();
   const { refresh } = useDataBlockRequest();
-  const { refresh: refreshAIEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
   const t = useT();
 
   return {
     type: 'primary',
     async onClick() {
-      await form.submit();
       const values = form.values;
+      await form.submit();
       await api.resource('aiEmployees').create({
         values,
       });
@@ -94,7 +95,7 @@ export const useCreateActionProps = () => {
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
-      refreshAIEmployees();
+      await aiConfigRepository.refreshAIEmployees();
     },
   };
 };
@@ -105,7 +106,7 @@ export const useEditActionProps = () => {
   const form = useForm();
   const resource = useDataBlockResource();
   const { refresh } = useDataBlockRequest();
-  const { refresh: refreshAIEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
   const collection = useCollection();
   const filterTk = collection.getFilterTargetKey();
   const t = useT();
@@ -113,8 +114,18 @@ export const useEditActionProps = () => {
   return {
     type: 'primary',
     async onClick() {
+      const values = { ...form.values };
+      // Handle built-in AI employee about mode
+      // _aboutMode is set by SystemPrompt component for built-in employees
+      if (values._aboutMode === 'system') {
+        values.about = null;
+      }
+      // Remove temporary field before submitting
+      delete values._aboutMode;
+      // Remove enabled field to prevent editing it via form submission
+      delete values.enabled;
+
       await form.submit();
-      const values = form.values;
       await resource.update({
         values,
         filterByTk: values[filterTk],
@@ -123,7 +134,7 @@ export const useEditActionProps = () => {
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
-      refreshAIEmployees();
+      await aiConfigRepository.refreshAIEmployees();
     },
   };
 };
@@ -134,9 +145,12 @@ export const useDeleteActionProps = () => {
   const { onClick } = useDestroyActionProps();
   const isBuiltIn = record?.builtIn;
   const { message } = App.useApp();
+  const api = useAPIClient();
+  const isSuperUser = api.auth.role === 'root';
+
   return {
     async onClick(e?, callBack?) {
-      if (isBuiltIn) {
+      if (isBuiltIn && !isSuperUser) {
         message.warning(t('Cannot delete built-in ai employees'));
         return;
       }

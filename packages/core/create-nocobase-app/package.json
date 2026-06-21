@@ -1,15 +1,15 @@
 {
   "name": "create-nocobase-app",
-  "version": "1.9.0-alpha.15",
+  "version": "2.2.0-alpha.1",
   "main": "src/index.js",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "dependencies": {
     "@umijs/utils": "3.5.20",
     "axios": "^1.7.0",
     "chalk": "^4.1.1",
     "commander": "^9.2.0",
     "fs-extra": "^11.3.0",
-    "tar": "^7.4.3"
+    "tar": "^7.5.15"
   },
   "bin": {
     "create-nocobase-app": "./bin/index.js"

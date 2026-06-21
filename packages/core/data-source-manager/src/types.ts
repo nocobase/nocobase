@@ -9,13 +9,43 @@
 
 import { DataSource } from './data-source';
 
-export type CollectionOptions = {
-  name: string;
-  repository?: string;
-  filterTargetKey?: string | Array<string>;
-  fields: any[];
-  [key: string]: any;
+export type DataSourceConstructor<T extends DataSource = DataSource> = Omit<typeof DataSource, 'prototype'> & {
+  new (...args: any[]): T;
 };
+
+export type tableInfo = {
+  tableName: string;
+  schema?: string;
+};
+
+export type PartialCollectionOptions = Partial<
+  Omit<CollectionOptions, 'fields'> & {
+    fields?: Partial<FieldOptions>[];
+  }
+>;
+
+export interface CollectionOptions {
+  name: string;
+  schema?: string;
+  tableName: string;
+  title?: string;
+  template?: string;
+  timestamps?: boolean;
+  filterTargetKey?: string | Array<string>;
+  fields: FieldOptions[];
+  autoGenId?: boolean;
+  view?: boolean;
+  unsupportedFields?: UnsupportedFieldOptions[];
+  [key: string]: any;
+}
+
+export interface UnsupportedFieldOptions {
+  rawType: string;
+  name: string;
+  supported: false;
+}
+
+export type FieldInferResult = FieldOptions | UnsupportedFieldOptions;
 
 export type FieldOptions = {
   name: string;
@@ -115,6 +145,8 @@ export interface ICollectionManager {
   registerFieldInterface(name: string, fieldInterface: new (options: any) => IFieldInterface): void;
 
   getFieldInterface(name: string): new (options: any) => IFieldInterface | undefined;
+
+  isNumericField(field?: IField): boolean;
 
   registerCollectionTemplates(templates: Record<string, any>): void;
 

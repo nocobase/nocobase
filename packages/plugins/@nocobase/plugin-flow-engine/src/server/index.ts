@@ -8,3 +8,5 @@
  */
 
 export { default } from './plugin';
+export { FlowModelRepository } from './repository';
+export { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';

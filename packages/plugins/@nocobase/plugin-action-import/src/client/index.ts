@@ -16,9 +16,11 @@ export * from './ImportPluginProvider';
 export * from './useImportAction';
 
 import { Plugin, useActionAvailable } from '@nocobase/client';
+import { ImportActionModel } from '../client-v2/ImportActionModel';
 import { ImportPluginProvider } from './ImportPluginProvider';
 import { importActionSchemaSettings } from './schemaSettings';
-import { ImportActionModel } from './ImportActionModel';
+
+export { buildImportFieldOptions } from '../client-v2/buildImportFieldOptions';
 
 export class PluginActionImportClient extends Plugin {
   async load() {
@@ -47,4 +49,5 @@ export class PluginActionImportClient extends Plugin {
   }
 }
 
+export { ImportActionModel } from '../client-v2/ImportActionModel';
 export default PluginActionImportClient;

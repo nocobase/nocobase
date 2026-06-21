@@ -12,7 +12,8 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'systemSettings',
-  migrationRules: ['overwrite', 'skip'],
+  dataCategory: 'system',
+  migrationRules: ['overwrite', 'schema-only'],
   fields: [
     {
       type: 'string',

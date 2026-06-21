@@ -24,8 +24,9 @@ import {
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
-
+import { AIManager } from '@nocobase/ai';
 import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
+import { Snowflake } from '@nocobase/snowflake-id';
 import {
   applyMixins,
   AsyncEmitter,
@@ -34,7 +35,6 @@ import {
   ToposortOptions,
   wrapMiddlewareWithLogging,
 } from '@nocobase/utils';
-import { Snowflake } from '@nocobase/snowflake-id';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -43,7 +43,6 @@ import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
-import { nanoid } from 'nanoid';
 import { RecordableHistogram } from 'node:perf_hooks';
 import path, { basename, resolve } from 'path';
 import semver from 'semver';
@@ -78,12 +77,12 @@ import { availableActions } from './acl/available-action';
 import AesEncryptor from './aes-encryptor';
 import { AuditManager } from './audit-manager';
 import { Environment } from './environment';
-import { ServiceContainer } from './service-container';
 import { EventQueue, EventQueueOptions } from './event-queue';
-import { BackgroundJobManager, BackgroundJobManagerOptions } from './background-job-manager';
 import { RedisConfig, RedisConnectionManager } from './redis-connection-manager';
-import { WorkerIdAllocator } from './worker-id-allocator';
+import { ServiceContainer } from './service-container';
 import { setupSnowflakeIdField } from './snowflake-id-field';
+import { WorkerIdAllocator } from './worker-id-allocator';
+import { serving } from './worker-mode';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -140,7 +139,6 @@ export interface ApplicationOptions {
   auditManager?: AuditManager;
   lockManager?: LockManagerOptions;
   eventQueue?: EventQueueOptions;
-  backgroundJobManager?: BackgroundJobManagerOptions;
 
   /**
    * @internal
@@ -206,7 +204,12 @@ type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | '
 
 export type MaintainingCommandStatus = {
   command: {
+    components?: {
+      maintaining: string;
+      maintainingDialog: string;
+    };
     name: string;
+    [key: string]: any;
   };
   status: MaintainingStatus;
   error?: Error;
@@ -256,6 +259,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public workerIdAllocator: WorkerIdAllocator;
   public snowflakeIdGenerator: SnowflakeIdGenerator;
 
+  public aiManager: AIManager;
   public pubSubManager: PubSubManager;
   public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
@@ -270,7 +274,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public container = new ServiceContainer();
   public lockManager: LockManager;
   public eventQueue: EventQueue;
-  public backgroundJobManager: BackgroundJobManager;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -284,6 +287,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private static staticCommands = [];
+
+  static registerStaticCommand(callback: (app: Application) => void) {
+    this.staticCommands.push(callback);
+  }
 
   static addCommand(callback: (app: Application) => void) {
     this.staticCommands.push(callback);
@@ -470,32 +477,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   /**
-   * Check if the application is serving as a specific worker.
-   * @experimental
+   * @deprecated use {@link serving} from './worker-mode' instead.
    */
   public serving(key?: string): boolean {
-    const { WORKER_MODE = '' } = process.env;
-    if (!WORKER_MODE) {
-      return true;
-    }
-    if (WORKER_MODE === '-') {
-      return false;
-    }
-    const topics = WORKER_MODE.trim().split(',');
-    if (key) {
-      if (WORKER_MODE === '*') {
-        return true;
-      }
-      if (topics.includes(key)) {
-        return true;
-      }
-      return false;
-    } else {
-      if (topics.includes('!')) {
-        return true;
-      }
-      return false;
-    }
+    return serving(key);
   }
 
   /**
@@ -508,10 +493,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
-  setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
+  async setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
     this._maintainingCommandStatus = _maintainingCommandStatus;
 
-    this.emit('maintaining', _maintainingCommandStatus);
+    await this.emitAsync('maintaining', _maintainingCommandStatus);
 
     if (_maintainingCommandStatus.status == 'command_end') {
       this._maintaining = false;
@@ -535,7 +520,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link #this.version.get()} instead.
+   * Use {@link #this.getPackageVersion} instead.
    * @deprecated
    */
   getVersion() {
@@ -873,7 +858,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       const command = await this.cli.parseAsync(argv, options);
 
-      this.setMaintaining({
+      await this.setMaintaining({
         status: 'command_end',
         command: this.activatedCommand,
       });
@@ -886,7 +871,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         };
       }
 
-      this.setMaintaining({
+      await this.setMaintaining({
         status: 'command_error',
         command: this.activatedCommand,
         error,
@@ -1096,6 +1081,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async upgrade(options: any = {}) {
     this.log.info('upgrading...');
+    const pkgVersion = this.getPackageVersion();
+    const appVersion = await this.version.get();
+    if (process.env.SKIP_SAME_VERSION_UPGRADE === 'true' && pkgVersion === appVersion) {
+      this.log.info(`app is already the latest version (${appVersion})`);
+      return;
+    }
     await this.reInit();
     const migrator1 = await this.loadCoreMigrations();
     await migrator1.beforeLoad.up();
@@ -1138,7 +1129,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     //     },
     //   });
     // }, 'Sync');
-    await this.emitAsync('afterUpgrade', this, options);
+    if (!options.quickstart) {
+      await this.emitAsync('afterUpgrade', this, options);
+    }
     await this.restart();
     // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
     // if (this._started) {
@@ -1185,12 +1178,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           name: getCommandFullName(actionCommand),
         };
 
-        this.setMaintaining({
+        await this.setMaintaining({
           status: 'command_begin',
           command: this.activatedCommand,
         });
 
-        this.setMaintaining({
+        await this.setMaintaining({
           status: 'command_running',
           command: this.activatedCommand,
         });
@@ -1277,10 +1270,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
+    this.aiManager = new AIManager(this);
     this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
     this.eventQueue = new EventQueue(this, options.eventQueue);
-    this.backgroundJobManager = new BackgroundJobManager(this, options.backgroundJobManager);
     this.lockManager = new LockManager({
       defaultAdapter: process.env.LOCK_ADAPTER_DEFAULT,
       ...options.lockManager,
@@ -1305,8 +1298,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this._telemetry = new Telemetry({
-      serviceName: `nocobase-${this.name}`,
-      version: this.getVersion(),
+      appName: this.name,
+      version: this.getPackageVersion(),
       ...options.telemetry,
     });
 
@@ -1323,6 +1316,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       actions: authActions,
     });
 
+    this._dataSourceManager.beforeAddDataSource((dataSource) => {
+      if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
+        setupSnowflakeIdField(this, dataSource.collectionManager.db);
+      }
+    });
     this._dataSourceManager.afterAddDataSource((dataSource) => {
       if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
         for (const [actionName, actionParams] of Object.entries(availableActions)) {
@@ -1331,7 +1329,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     });
 
-    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
+    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth', before: 'default' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
     this._dataSourceManager.use(parseVariables, {
@@ -1360,6 +1358,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     for (const callback of Application.staticCommands) {
       callback(this);
     }
+
+    this.aiManager = new AIManager(this);
   }
 
   protected createMainDataSource(options: ApplicationOptions) {
@@ -1378,8 +1378,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
-
-    setupSnowflakeIdField(this);
   }
 
   protected createDatabase(options: ApplicationOptions) {

@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
-import { tval } from '@nocobase/utils/client';
+import { tExpr } from '@nocobase/flow-engine';
 import { namespace } from '../../locale';
 
 export const ProviderSettingsForm: React.FC = () => {
@@ -19,15 +19,9 @@ export const ProviderSettingsForm: React.FC = () => {
         type: 'void',
         properties: {
           apiKey: {
-            title: tval('API key', { ns: namespace }),
+            title: tExpr('API Key', { ns: namespace }),
             type: 'string',
             required: true,
-            'x-decorator': 'FormItem',
-            'x-component': 'TextAreaWithGlobalScope',
-          },
-          baseURL: {
-            title: tval('Base URL', { ns: namespace }),
-            type: 'string',
             'x-decorator': 'FormItem',
             'x-component': 'TextAreaWithGlobalScope',
           },

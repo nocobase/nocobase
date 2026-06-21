@@ -19,7 +19,7 @@ export class PluginActionExportServer extends Plugin {
         return;
       }
 
-      const roleNames = ['admin', 'member'];
+      const roleNames = ['admin'];
       const roles = await this.app.db.getRepository('roles').find({
         filter: {
           name: roleNames,

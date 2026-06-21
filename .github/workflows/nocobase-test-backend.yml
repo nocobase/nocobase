@@ -44,7 +44,7 @@ jobs:
   sqlite-test:
     strategy:
       matrix:
-        node_version: ['20']
+        node_version: ['22']
         underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
@@ -77,13 +77,13 @@ jobs:
   postgres-test:
     strategy:
       matrix:
-        node_version: ['20']
+        node_version: ['22']
         underscored: [true, false]
         schema: [public, nocobase]
         collection_schema: [public, user_schema]
         cache_redis: ['']
         include:
-          - node_version: 20
+          - node_version: 22
             underscored: true
             schema: public
             collection_schema: public
@@ -144,7 +144,7 @@ jobs:
   mysql-test:
     strategy:
       matrix:
-        node_version: ['20']
+        node_version: ['22']
         underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
@@ -190,7 +190,7 @@ jobs:
   mariadb-test:
     strategy:
       matrix:
-        node_version: ['20']
+        node_version: ['22']
         underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}

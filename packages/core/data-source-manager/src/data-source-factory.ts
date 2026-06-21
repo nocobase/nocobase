@@ -9,35 +9,35 @@
 
 import { DataSource } from './data-source';
 import { DataSourceManager } from './data-source-manager';
+import { DataSourceConstructor } from './types';
 
 export class DataSourceFactory {
-  public collectionTypes: Map<string, typeof DataSource> = new Map();
+  public collectionTypes: Map<string, DataSourceConstructor> = new Map();
 
   constructor(protected dataSourceManager: DataSourceManager) {}
 
-  register(type: string, dataSourceClass: typeof DataSource) {
+  register(type: string, dataSourceClass: DataSourceConstructor) {
     this.collectionTypes.set(type, dataSourceClass);
   }
 
-  getClass(type: string): typeof DataSource {
-    return this.collectionTypes.get(type);
+  getClass<T extends DataSource = DataSource>(type: string): DataSourceConstructor<T> {
+    return this.collectionTypes.get(type) as DataSourceConstructor<T>;
   }
 
-  create(type: string, options: any = {}): DataSource {
-    const klass = this.collectionTypes.get(type);
+  create<T extends DataSource = DataSource>(type: string, options: any = {}): T {
+    const klass = this.getClass<T>(type);
     if (!klass) {
       throw new Error(`Data source type "${type}" not found`);
     }
     const environment = this.dataSourceManager.options.app?.environment;
-    const { logger, sqlLogger, ...others } = options;
+    const { logger, sqlLogger, databaseInstance, ...others } = options;
 
-    const opts = { logger, sqlLogger, ...others };
+    const opts = { logger, sqlLogger, databaseInstance, ...others };
 
     if (environment) {
       Object.assign(opts, environment.renderJsonTemplate(others));
     }
-    // @ts-ignore
-    const dataSource = new klass(opts) as DataSource;
+    const dataSource = new klass(opts);
     dataSource.setDataSourceManager(this.dataSourceManager);
     return dataSource;
   }

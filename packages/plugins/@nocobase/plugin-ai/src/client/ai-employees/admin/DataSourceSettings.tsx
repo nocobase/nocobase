@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// Notice: This component is not used in the current version.
+
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { Alert } from 'antd';

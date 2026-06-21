@@ -12,6 +12,8 @@ import lodash from 'lodash';
 import { QueryInterfaceDropTableOptions } from 'sequelize';
 import { FieldModel } from './field';
 
+const databaseSyncedCollectionSources = ['db2cm', 'dbsync'];
+
 interface LoadOptions extends Transactionable {
   // TODO
   skipField?: boolean | Array<string>;
@@ -63,7 +65,11 @@ export class CollectionModel extends MagicAttributeModel {
       delete collectionOptions.schema;
     }
 
-    if (this.db.inDialect('postgres') && !collectionOptions.schema && collectionOptions.from !== 'db2cm') {
+    if (
+      this.db.inDialect('postgres') &&
+      !collectionOptions.schema &&
+      !databaseSyncedCollectionSources.includes(collectionOptions.from)
+    ) {
       collectionOptions.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
     }
 
@@ -84,6 +90,9 @@ export class CollectionModel extends MagicAttributeModel {
         lodash.set(collectionOptions, 'dumpRules.group', 'custom');
       }
 
+      const fieldModel = this.db.getModel('fields');
+      const fieldModels = await fieldModel.findAll({ where: { collectionName: name }, transaction });
+      collectionOptions['fieldModels'] = fieldModels;
       collection = this.db.collection(collectionOptions);
     }
 
@@ -149,6 +158,9 @@ export class CollectionModel extends MagicAttributeModel {
     });
 
     for (const instance of instances) {
+      if (!instance.get('collectionName')) {
+        instance.set('collectionName', this.get('name'));
+      }
       await instance.load(options);
     }
   }
@@ -194,24 +206,24 @@ export class CollectionModel extends MagicAttributeModel {
         };
       });
 
-    const beforePendingFields = getPendingField();
-
-    const collection = await this.load({
-      transaction: options?.transaction,
-    });
-
-    const afterPendingFields = getPendingField();
-
-    const resolvedPendingFields = lodash.differenceWith(beforePendingFields, afterPendingFields, lodash.isEqual);
-    const resolvedPendingFieldsCollections = lodash.uniq(resolvedPendingFields.map((field) => field.collectionName));
-
-    // postgres support zero column table, other database should not sync it to database
-    // @ts-ignore
-    if (Object.keys(collection.model.tableAttributes).length == 0 && !this.db.inDialect('postgres')) {
-      return;
-    }
-
     try {
+      const beforePendingFields = getPendingField();
+
+      const collection = await this.load({
+        transaction: options?.transaction,
+      });
+
+      const afterPendingFields = getPendingField();
+
+      const resolvedPendingFields = lodash.differenceWith(beforePendingFields, afterPendingFields, lodash.isEqual);
+      const resolvedPendingFieldsCollections = lodash.uniq(resolvedPendingFields.map((field) => field.collectionName));
+
+      // postgres support zero column table, other database should not sync it to database
+      // @ts-ignore
+      if (Object.keys(collection.model.tableAttributes).length == 0 && !this.db.inDialect('postgres')) {
+        return;
+      }
+
       const syncOptions = {
         force: false,
         alter: {

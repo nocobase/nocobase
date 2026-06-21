@@ -7,20 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CaretRightOutlined, CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, CloseOutlined, CopyOutlined, DeleteOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { createForm, Field } from '@formily/core';
 import { toJS } from '@formily/reactive';
 import { ISchema, observer, useField, useForm } from '@formily/react';
-import { Alert, App, Button, Collapse, Dropdown, Empty, Input, Space, Tag, Tooltip, message } from 'antd';
+import { Alert, App, Button, Collapse, Dropdown, Empty, Input, Skeleton, Space, Tag, Tooltip, message } from 'antd';
 import { cloneDeep, get, set } from 'lodash';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, Suspense, lazy, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
   ActionContextProvider,
   FormProvider,
   SchemaComponent,
-  SchemaInitializerItemType,
   Variable,
   css,
   cx,
@@ -32,71 +31,41 @@ import {
 } from '@nocobase/client';
 import { parse, str2moment } from '@nocobase/utils/client';
 
+import { useFlowEngine } from '@nocobase/flow-engine';
+import { useMemoizedFn } from 'ahooks';
+
 import WorkflowPlugin from '..';
-import { AddButton } from '../AddNodeContext';
+import { AddNodeSlot } from '../AddNodeContext';
 import { useFlowContext } from '../FlowContext';
+import { openNodeConfigDrawer } from '../../client-v2/canvas/NodeConfigDrawer';
+import {
+  nodeTypeClassName,
+  resolveLegacyNodeRenderMode,
+  resolveLegacyConfigRenderMode,
+} from '../../client-v2/canvas/nodeRenderDispatch';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
 import { useGetAriaLabelOfAddButton, useWorkflowExecuted } from '../hooks';
 import { lang } from '../locale';
 import useStyles from '../style';
-import { UseVariableOptions, VariableOption, WorkflowVariableInput } from '../variable';
+import { WorkflowVariableInput } from '../variable';
+import { useRemoveNodeContext } from '../RemoveNodeContext';
+import { useNodeDragContext } from '../NodeDragContext';
+import { useNodeClipboardContext } from '../NodeClipboardContext';
 
-export type NodeAvailableContext = {
-  engine: WorkflowPlugin;
-  workflow: object;
-  upstream: object;
-  branchIndex: number;
-};
+// The Instruction base class + its pure logic hooks + NodeContext now live in client-v2 and are shared by both canvases
+// (ADR-0002/0003). Re-exported here so the ~16 node files that `extends Instruction` from this barrel are unchanged.
+import { Instruction, NodeContext, useNodeContext } from '../../client-v2/canvas/Instruction';
 
-type Config = Record<string, any>;
-
-type Options = { label: string; value: any }[];
-
-export abstract class Instruction {
-  title: string;
-  type: string;
-  group: string;
-  description?: string;
-  icon?: JSX.Element;
-  /**
-   * @deprecated migrate to `presetFieldset` instead
-   */
-  options?: { label: string; value: any; key: string }[];
-  fieldset: Record<string, ISchema>;
-  /**
-   * @experimental
-   */
-  presetFieldset?: Record<string, ISchema>;
-  /**
-   * To presentation if the instruction is creating a branch
-   * @experimental
-   */
-  branching?: boolean | Options | ((config: Config) => boolean | Options);
-  /**
-   * @experimental
-   */
-  view?: ISchema;
-  scope?: Record<string, any>;
-  components?: Record<string, any>;
-  Component?(props): JSX.Element;
-  /**
-   * @experimental
-   */
-  createDefaultConfig?(): Config {
-    return {};
-  }
-  useVariables?(node, options?: UseVariableOptions): VariableOption;
-  useScopeVariables?(node, options?): VariableOption[];
-  useInitializers?(node): SchemaInitializerItemType | null;
-  /**
-   * @experimental
-   */
-  isAvailable?(ctx: NodeAvailableContext): boolean;
-  end?: boolean | ((node) => boolean);
-  testable?: boolean;
-}
+export {
+  Instruction,
+  NodeContext,
+  useNodeContext,
+  useAvailableUpstreams,
+  useUpstreamScopes,
+} from '../../client-v2/canvas/Instruction';
+export type { NodeAvailableContext, TempAssociationSource } from '../../client-v2/canvas/Instruction';
 
 function useUpdateAction() {
   const form = useForm();
@@ -112,11 +81,10 @@ function useUpdateAction() {
         return;
       }
       await form.submit();
-      await api.resource('flow_nodes').update?.({
-        filterByTk: data.id,
-        values: {
-          config: form.values,
-        },
+      await updateNodeConfig({
+        api,
+        nodeId: data.id,
+        config: form.values,
       });
       form.setInitialValues(toJS(form.values));
       ctx.setFormValueChanged(false);
@@ -126,10 +94,13 @@ function useUpdateAction() {
   };
 }
 
-export const NodeContext = React.createContext<any>({});
-
-export function useNodeContext() {
-  return useContext(NodeContext);
+export async function updateNodeConfig({ api, nodeId, config, resourceName = 'flow_nodes' }) {
+  await api.resource(resourceName).update?.({
+    filterByTk: nodeId,
+    values: {
+      config,
+    },
+  });
 }
 
 export function useNodeSavedConfig(keys = []) {
@@ -137,49 +108,34 @@ export function useNodeSavedConfig(keys = []) {
   return keys.some((key) => get(node.config, key) != null);
 }
 
-/**
- * @experimental
- */
-export function useAvailableUpstreams(node, filter?) {
-  const stack: any[] = [];
-  if (!node) {
-    return [];
-  }
-  for (let current = node.upstream; current; current = current.upstream) {
-    if (typeof filter !== 'function' || filter(current)) {
-      stack.push(current);
-    }
-  }
-
-  return stack;
-}
-
-/**
- * @experimental
- */
-export function useUpstreamScopes(node) {
-  const stack: any[] = [];
-
-  for (let current = node; current; current = current.upstream) {
-    if (current.upstream && current.branchIndex != null) {
-      stack.push(current.upstream);
-    }
-  }
-
-  return stack;
-}
-
 export function Node({ data }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
   const workflowPlugin = usePlugin(WorkflowPlugin);
-  const { Component = NodeDefaultView, end } = workflowPlugin.instructions.get(data.type) ?? {};
+  const instruction = (workflowPlugin.instructions.get(data.type) ?? {}) as Instruction;
+  const { Component, ComponentLoader, end } = instruction;
+  const renderMode = resolveLegacyNodeRenderMode(instruction);
+  // A node that dropped its v1 `Component` but still inherits a v2 `ComponentLoader` renders its card fully via v2 (the
+  // card-layer mirror of the drawer's `FieldsetLoader` dispatch). Memoize the lazy component so it isn't rebuilt every
+  // render. Other modes never touch the loader.
+  const ModernComponent = useMemo(
+    () => (renderMode === 'modern-loader' && ComponentLoader ? lazy(ComponentLoader) : null),
+    [renderMode, ComponentLoader],
+  );
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(styles.nodeBlockClass)}>
-        <Component data={data} />
+        {renderMode === 'legacy-component' && Component ? (
+          <Component data={data} />
+        ) : ModernComponent ? (
+          <Suspense fallback={<Skeleton.Button active block style={{ width: '16em', height: '4em' }} />}>
+            <ModernComponent data={data} />
+          </Suspense>
+        ) : (
+          <NodeDefaultView data={data} />
+        )}
         {!end || (typeof end === 'function' && !end(data)) ? (
-          <AddButton aria-label={getAriaLabel()} upstream={data} />
+          <AddNodeSlot aria-label={getAriaLabel()} upstream={data} />
         ) : (
           <div className="end-sign">
             <CloseOutlined />
@@ -192,94 +148,107 @@ export function Node({ data }) {
 
 export function RemoveButton() {
   const { t } = useTranslation();
-  const api = useAPIClient();
-  const { workflow, nodes, refresh } = useFlowContext() ?? {};
+  const { workflow } = useFlowContext() ?? {};
   const current = useNodeContext();
-  const { modal } = App.useApp();
   const executed = useWorkflowExecuted();
+  const removeNodeContext = useRemoveNodeContext();
+  const clipboard = useNodeClipboardContext();
+  const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === current.id);
 
-  const resource = api.resource('flow_nodes');
+  // Delegate the whole delete flow (leaf reference-check + confirm, or the keep-branch modal for branching nodes) to
+  // the shared provider.
+  const onRemove = useCallback(() => {
+    removeNodeContext?.requestRemove?.(current);
+  }, [removeNodeContext, current]);
 
-  const onOk = useCallback(async () => {
-    await resource.destroy?.({
-      filterByTk: current.id,
-    });
-    refresh();
-  }, [current.id, refresh, resource]);
-
-  const onRemove = useCallback(async () => {
-    const usingNodes = nodes.filter((node) => {
-      if (node === current) {
-        return false;
-      }
-
-      const template = parse(node.config);
-      const refs = template.parameters.filter(
-        ({ key }) => key.startsWith(`$jobsMapByNodeKey.${current.key}.`) || key === `$jobsMapByNodeKey.${current.key}`,
-      );
-      return refs.length;
-    });
-
-    if (usingNodes.length) {
-      modal.error({
-        title: lang('Can not delete'),
-        content: lang(
-          'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
-          { nodes: usingNodes.map((item) => item.title).join(', ') },
-        ),
-      });
+  const onCopy = useCallback(() => {
+    if (isCopiedSelf) {
+      clipboard?.clearClipboard?.();
       return;
     }
+    clipboard?.copyNode?.(current);
+  }, [clipboard, current, isCopiedSelf]);
 
-    const hasBranches = !nodes.find((item) => item.upstream === current && item.branchIndex != null);
-    const message = hasBranches
-      ? t('Are you sure you want to delete it?')
-      : lang('This node contains branches, deleting will also be preformed to them, are you sure?');
-
-    modal.confirm({
-      title: t('Delete'),
-      content: message,
-      onOk,
-    });
-  }, [current, modal, nodes, onOk, t]);
-
-  if (!workflow) {
+  if (!workflow || executed) {
     return null;
   }
 
-  return executed ? null : (
-    <Button
-      type="text"
-      shape="circle"
-      icon={<DeleteOutlined />}
-      onClick={onRemove}
-      className="workflow-node-remove-button"
-      size="small"
-    />
+  return (
+    <Dropdown
+      trigger={['hover']}
+      menu={{
+        items: [
+          {
+            key: 'copy',
+            label: isCopiedSelf ? lang('Cancel copy') : lang('Copy'),
+            icon: isCopiedSelf ? undefined : <CopyOutlined />,
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'delete',
+            label: t('Delete'),
+            icon: <DeleteOutlined />,
+            danger: true,
+          },
+        ],
+        onClick: ({ key }) => {
+          if (key === 'copy') {
+            onCopy();
+          }
+          if (key === 'delete') {
+            onRemove();
+          }
+        },
+      }}
+    >
+      <Button
+        type="text"
+        shape="circle"
+        icon={<EllipsisOutlined />}
+        className="workflow-node-action-button"
+        size="small"
+      />
+    </Dropdown>
   );
 }
 
 export function JobButton() {
   const { execution, setViewJob } = useFlowContext();
-  const { jobs } = useNodeContext() ?? {};
+  const { jobs } = useNodeContext();
   const { styles } = useStyles();
+
+  const onOpenJobInList = useCallback(
+    ({ key }) => {
+      if (!jobs?.length) {
+        return;
+      }
+      const job = jobs.find((item) => item.id == key);
+      setViewJob(job);
+    },
+    [jobs, setViewJob],
+  );
+
+  const onOpenOnlyJob = useCallback(() => {
+    const job = jobs?.[0];
+    if (!job) {
+      return;
+    }
+    setViewJob(job);
+  }, [jobs, setViewJob]);
 
   if (!execution) {
     return null;
   }
 
-  if (!jobs.length) {
+  if (!jobs?.length) {
     return <StatusButton className={styles.nodeJobButtonClass} disabled />;
-  }
-
-  function onOpenJob({ key }) {
-    const job = jobs.find((item) => item.id == key);
-    setViewJob(job);
   }
 
   return (
     <Tooltip title={lang('View result')}>
-      {jobs.length > 1 ? (
+      {jobs?.length > 1 ? (
         <Dropdown
           menu={{
             items: jobs.map((job) => {
@@ -293,7 +262,7 @@ export function JobButton() {
                 ),
               };
             }),
-            onClick: onOpenJob,
+            onClick: onOpenJobInList,
             className: styles.dropdownClass,
           }}
         >
@@ -306,8 +275,8 @@ export function JobButton() {
       ) : (
         <StatusButton
           statusMap={JobStatusOptionsMap}
-          status={jobs[0].status}
-          onClick={() => setViewJob(jobs[0])}
+          status={jobs?.[0].status}
+          onClick={onOpenOnlyJob}
           className={styles.nodeJobButtonClass}
         />
       )}
@@ -401,7 +370,7 @@ function TestFormFieldset({ value, onChange }) {
   );
 }
 
-function LogCollapse({ value }) {
+export function LogCollapse({ value }) {
   return value ? (
     <Collapse
       ghost
@@ -567,23 +536,32 @@ export function NodeDefaultView(props) {
   const { data, children } = props;
   const compile = useCompile();
   const api = useAPIClient();
+  const flowEngine = useFlowEngine();
   const { workflow, refresh } = useFlowContext() ?? {};
   const { styles } = useStyles();
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const executed = useWorkflowExecuted();
-  const instruction = workflowPlugin.instructions.get(data.type);
-
+  const dragContext = useNodeDragContext();
+  const clipboard = useNodeClipboardContext();
   const [editingTitle, setEditingTitle] = useState<string>(data.title);
   const [editingConfig, setEditingConfig] = useState(false);
   const [formValueChanged, setFormValueChanged] = useState(false);
 
+  const instruction = workflowPlugin.instructions.get(data.type);
+  const isDraggingSelf = Boolean(dragContext?.dragging && dragContext?.dragNode?.id === data.id);
+  const isCopiedSelf = Boolean(clipboard?.clipboard?.sourceId && clipboard.clipboard.sourceId === data.id);
+  const isActive = Boolean(editingConfig || isCopiedSelf || isDraggingSelf);
+
+  // Rebuild the form when the node data changes (switching workflow version yields a fresh `data` per node) or when
+  // execution state flips the disabled flag. `executed` already derives from `workflow.versionStats`, so `workflow`
+  // itself is not a separate dependency.
   const form = useMemo(() => {
     const values = cloneDeep(data.config);
     return createForm({
       initialValues: values,
       disabled: Boolean(executed),
     });
-  }, [data, workflow]);
+  }, [data, executed]);
 
   const resetForm = useCallback(
     (editing) => {
@@ -610,33 +588,78 @@ export function NodeDefaultView(props) {
       });
       refresh();
     },
-    [data, instruction],
+    [data, instruction, api, compile, refresh],
   );
 
-  const onOpenDrawer = useCallback(function (ev) {
+  // Drawer dispatch (ADR-0003): a legacy `fieldset` wins, so a node keeps its Formily drawer until it drops `fieldset`;
+  // only then does the inherited `FieldsetLoader` open the v2 antd config drawer (`ctx.viewer.drawer`), with the form
+  // maintained once in client-v2. This mirrors the card-layer `resolveLegacyNodeRenderMode` so every surface migrates
+  // the same way. Returns true only when it opened the v2 drawer, so the caller falls through to the Formily
+  // `Action.Drawer` (`setEditingConfig`) for the legacy/none cases.
+  const openConfig = useMemoizedFn(() => {
+    if (resolveLegacyConfigRenderMode(instruction) !== 'modern-loader') {
+      return false;
+    }
+    openNodeConfigDrawer({ ctx: flowEngine.context, data, instruction, t: lang, workflow, refresh });
+    return true;
+  });
+
+  const onOpenDrawer = useMemoizedFn(function (ev) {
+    if (dragContext?.consumeClick?.()) {
+      ev.preventDefault();
+      return;
+    }
     if (ev.target === ev.currentTarget) {
+      if (openConfig()) {
+        return;
+      }
       setEditingConfig(true);
       return;
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
     for (let el = ev.target; el && el !== ev.currentTarget && el !== document.documentElement; el = el.parentNode) {
       if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
-        setEditingConfig(true);
         ev.stopPropagation();
+        if (openConfig()) {
+          return;
+        }
+        setEditingConfig(true);
         return;
       }
     }
-  }, []);
+  });
+
+  const onCardMouseDown = useCallback(
+    (event) => {
+      // React synthetic events bubble through the React component tree (not the DOM tree),
+      // so mousedown inside a portal (e.g. the node config Drawer) also triggers this handler.
+      // When event.target is not a DOM descendant of the card element, the event originated
+      // from a portal — skip drag initiation in that case.
+      if (!event.currentTarget.contains(event.target as Node)) {
+        return;
+      }
+      dragContext?.onNodeMouseDown?.(data, event);
+    },
+    [data, dragContext],
+  );
 
   if (!instruction) {
     return (
-      <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
+      <div className={cx(styles.nodeClass, nodeTypeClassName(data.type))}>
         <Tooltip
           title={lang(
             'Node with unknown type will cause error. Please delete it or check plugin which provide this type.',
           )}
         >
-          <div role="button" aria-label={`_untyped-${editingTitle}`} className={cx(styles.nodeCardClass, 'invalid')}>
+          <div
+            role="button"
+            aria-label={`_untyped-${editingTitle}`}
+            className={cx(styles.nodeCardClass, 'invalid', {
+              dragging: isDraggingSelf,
+              active: isActive,
+            })}
+            onMouseDown={onCardMouseDown}
+          >
             <div className={styles.nodeHeaderClass}>
               <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
                 <Tag color="error">{lang('Unknown node')}</Tag>
@@ -657,11 +680,16 @@ export function NodeDefaultView(props) {
   const typeTitle = compile(instruction.title);
 
   return (
-    <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
+    <div className={cx(styles.nodeClass, nodeTypeClassName(data.type))}>
       <div
         role="button"
         aria-label={`${typeTitle}-${editingTitle}`}
-        className={cx(styles.nodeCardClass, { configuring: editingConfig })}
+        className={cx(styles.nodeCardClass, {
+          configuring: editingConfig,
+          dragging: isDraggingSelf,
+          active: isActive,
+        })}
+        onMouseDown={onCardMouseDown}
         onClick={onOpenDrawer}
       >
         <div className={styles.nodeHeaderClass}>
@@ -761,21 +789,6 @@ export function NodeDefaultView(props) {
                       fieldset: {
                         type: 'void',
                         'x-component': 'fieldset',
-                        'x-component-props': {
-                          className: css`
-                            .ant-input,
-                            .ant-select,
-                            .ant-cascader-picker,
-                            .ant-picker,
-                            .ant-input-number,
-                            .ant-input-affix-wrapper {
-                              &.auto-width {
-                                width: auto;
-                                min-width: 6em;
-                              }
-                            }
-                          `,
-                        },
                         properties: instruction.fieldset,
                       },
                       footer: executed

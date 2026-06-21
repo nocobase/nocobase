@@ -65,6 +65,7 @@ export default {
       },
     },
     path: common.path,
+    renameMode: common.renameMode,
     rules: common.rules,
     default: common.default,
     paranoid: common.paranoid,

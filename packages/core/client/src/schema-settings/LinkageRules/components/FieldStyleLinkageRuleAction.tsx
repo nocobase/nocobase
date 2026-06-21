@@ -8,8 +8,7 @@
  */
 
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { Select, Space } from 'antd';
 import React, { useCallback, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';

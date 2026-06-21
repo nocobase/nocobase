@@ -1,0 +1,14 @@
+{
+  "Add branch": "Tambah cabang",
+  "All succeeded": "Semua berhasil",
+  "Always continue after all branches end, regardless of success or failure.": "Always continue after all branches end, regardless of success or failure.",
+  "Any succeeded": "Ada yang berhasil",
+  "Any succeeded or failed": "Ada yang berhasil atau gagal",
+  "Continue after all branches succeeded": "Lanjutkan setelah semua cabang berhasil",
+  "Continue after any branch succeeded": "Lanjutkan setelah ada cabang yang berhasil",
+  "Continue after any branch succeeded, or exit after any branch failed.": "Lanjutkan setelah ada cabang yang berhasil, atau keluar setelah ada cabang yang gagal.",
+  "Mode": "Mode",
+  "Parallel branch": "Cabang paralel",
+  "Run all branches (ignore failures)": "Run all branches (ignore failures)",
+  "Run multiple branch processes in parallel.": "Jalankan beberapa proses cabang secara paralel."
+}

@@ -25,7 +25,7 @@ export class ChinaRegionInterface extends BaseInterface {
     });
 
     for (let i = 0; i < items.length; i++) {
-      const instance = instances.find((item) => item.name === items[i]);
+      const instance = instances.find((item) => item.name === items[i] && item.level === i + 1);
       if (!instance) {
         throw new Error(`china region "${items[i]}" does not exist`);
       }

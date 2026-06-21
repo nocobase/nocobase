@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { Helmet } from 'react-helmet';
 import { aiSelection } from './stores/ai-selection';
 

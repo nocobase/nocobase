@@ -39,15 +39,10 @@ import { CollectionOptions, useCollectionManager_deprecated, useCollection_depre
 import { getVariableValue } from '../../common/getVariableValue';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
+import { NAMESPACE_UI_SCHEMA } from '../../i18n/constant';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
-import {
-  removeNullCondition,
-  useActionContext,
-  useColumnSettings,
-  useCompile,
-  useDesignable,
-} from '../../schema-component';
+import { removeNullCondition, useActionContext, useColumnSettings, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
 import { replaceVariables } from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { useCurrentUserContext } from '../../user';
@@ -59,7 +54,6 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { NAMESPACE_UI_SCHEMA } from '../../i18n/constant';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -167,8 +161,9 @@ export function getFormValues({
   return getFilteredFormValues(form);
 }
 
-export function useCollectValuesToSubmit() {
-  const form = useForm();
+export function useCollectValuesToSubmit(f?: Form) {
+  const originalForm = useForm();
+  const form = f ?? originalForm;
   const filterByTk = useFilterByTk();
   const { field, resource } = useBlockRequestContext();
   const { fields, getField, getTreeParentField, name } = useCollection_deprecated();
@@ -621,9 +616,10 @@ export const useResetBlockActionProps = () => {
 };
 
 export const useCustomizeUpdateActionProps = () => {
-  const { resource, __parent, service } = useBlockRequestContext();
+  const { resource, __parent, field, service } = useBlockRequestContext();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
+  const actionField = useField();
   const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const form = useForm();
@@ -671,59 +667,72 @@ export const useCustomizeUpdateActionProps = () => {
       if (skipValidator === false) {
         await form.submit();
       }
-      const result = await resource.update({
-        filterByTk,
-        values: { ...assignedValues },
-        // TODO(refactor): should change to inject by plugin
-        triggerWorkflows: triggerWorkflows?.length
-          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-          : undefined,
-      });
 
-      let redirectTo = rawRedirectTo;
-      if (rawRedirectTo) {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        redirectTo = await getVariableValue(rawRedirectTo, {
-          variables,
-          localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
-        });
-      }
-
-      if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
-        setVisible?.(false);
-      }
-      // service?.refresh?.();
-      if (callBack) {
-        callBack?.();
-      }
-      if (!(resource instanceof TableFieldResource)) {
-        __parent?.service?.refresh?.();
-      }
-      if (!successMessage) {
+      actionField.data = actionField.data || {};
+      if (actionField.data.loading) {
         return;
       }
-      if (manualClose) {
-        modal.success({
-          title: compile(successMessage),
-          onOk: async () => {
-            if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
-              if (isURL(redirectTo)) {
-                window.location.href = redirectTo;
-              } else {
-                navigate(redirectTo);
-              }
-            }
-          },
+      actionField.data.loading = true;
+
+      try {
+        const result = await resource.update({
+          filterByTk,
+          values: { ...assignedValues },
+          // TODO(refactor): should change to inject by plugin
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
         });
-      } else {
-        message.success(compile(successMessage));
-        if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
-          if (isURL(redirectTo)) {
-            window.location.href = redirectTo;
-          } else {
-            navigate(redirectTo);
+
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          redirectTo = await getVariableValue(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
+          });
+        }
+
+        if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+          setVisible?.(false);
+        }
+        // service?.refresh?.();
+        if (callBack) {
+          callBack?.();
+        }
+        if (!(resource instanceof TableFieldResource)) {
+          __parent?.service?.refresh?.();
+        }
+        if (!successMessage) {
+          return;
+        }
+        if (manualClose) {
+          modal.success({
+            title: compile(successMessage),
+            onOk: async () => {
+              if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
+                } else {
+                  navigate(redirectTo);
+                }
+              }
+            },
+          });
+        } else {
+          message.success(compile(successMessage));
+          if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
+            } else {
+              navigate(redirectTo);
+            }
           }
         }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        actionField.data.loading = false;
       }
     },
   };
@@ -1094,41 +1103,49 @@ export const useUpdateActionProps = () => {
 
 export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
-  const { resource, service, block, __parent } = useBlockRequestContext();
+  const { resource, service, block, field, __parent } = useBlockRequestContext();
   const { setVisible, setSubmitted } = useActionContext();
   const data = useParamsFromRecord();
   const actionSchema = useFieldSchema();
+  const actionField = useField();
   return {
     async onClick(e?, callBack?) {
       const { triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-      await resource.destroy({
-        filterByTk,
-        // TODO(refactor): should change to inject by plugin
-        triggerWorkflows: triggerWorkflows?.length
-          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-          : undefined,
-        ...data,
-      });
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
+      try {
+        await resource.destroy({
+          filterByTk,
+          // TODO(refactor): should change to inject by plugin
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
+          ...data,
+        });
 
-      const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
-      if (count % pageSize === 1 && page !== 1) {
-        const currentPage = service.params[0]?.page;
-        const totalPage = service.data?.meta?.totalPage;
-        if (currentPage === totalPage && service.params[0] && currentPage !== 1) {
-          service.params[0].page = currentPage - 1;
+        const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
+        if (count % pageSize === 1 && page !== 1) {
+          const currentPage = service.params[0]?.page;
+          const totalPage = service.data?.meta?.totalPage;
+          if (currentPage === totalPage && service.params[0] && currentPage !== 1) {
+            service.params[0].page = currentPage - 1;
+          }
         }
-      }
-      if (callBack) {
-        callBack?.();
-      }
-      //  else {
-      //   service?.refresh?.();
-      // }
-      setSubmitted?.(true);
-      if (block && block !== 'TableField') {
-        __parent?.service?.refresh?.();
-        setVisible?.(false);
+        if (callBack) {
+          callBack?.();
+        }
+        //  else {
+        //   service?.refresh?.();
+        // }
         setSubmitted?.(true);
+        if (block && block !== 'TableField') {
+          __parent?.service?.refresh?.();
+          setVisible?.(false);
+          setSubmitted?.(true);
+        }
+      } catch (error) {
+        console.error(error);
+        actionField.data.loading = true;
       }
     },
   };
@@ -1496,6 +1513,7 @@ export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();
   const count = ctx.service?.data?.meta?.count || 0;
   const current = ctx.service?.data?.meta?.page;
+  const { hasNext } = ctx.service?.data?.meta || {};
   if (!count && current) {
     return {
       simple: true,
@@ -1513,7 +1531,7 @@ export const useDetailsPaginationProps = () => {
       },
       showTotal: false,
       showTitle: false,
-      total: ctx.service?.data?.data?.length ? 1 * current + 1 : 1 * current,
+      total: ctx.service?.data?.data?.length < 1 || !hasNext ? 1 * current : 1 * current + 1,
       className: css`
         .ant-pagination-simple-pager {
           display: none !important;
@@ -1861,9 +1879,9 @@ export const getAppends = ({
     if (s['x-linkage-rules'] && !isSubMode(s)) {
       const collectAppends = (obj) => {
         const type = Object.keys(obj)[0] || '$and';
-        const list = obj[type];
+        const list = obj[type] || [];
 
-        list.forEach((item) => {
+        list.filter(Boolean).forEach((item) => {
           if ('$and' in item || '$or' in item) {
             return collectAppends(item);
           }
@@ -2024,10 +2042,23 @@ async function resetFormCorrectly(form: Form) {
 }
 
 export function appendQueryStringToUrl(url: string, queryString: string) {
-  if (queryString) {
-    return url + (url.includes('?') ? '&' : '?') + queryString;
+  if (!queryString) {
+    return url;
   }
-  return url;
+
+  const hashIndex = url.indexOf('#');
+  const hasHash = hashIndex >= 0;
+  const path = hasHash ? url.slice(0, hashIndex) : url;
+  const hash = hasHash ? url.slice(hashIndex + 1) : '';
+  const isHashRoute = hash.startsWith('/') || hash.startsWith('!/');
+
+  if (hasHash && isHashRoute) {
+    const hashSeparator = hash.includes('?') ? '&' : '?';
+    return `${path}#${hash}${hashSeparator}${queryString}`;
+  }
+
+  const separator = path.includes('?') ? '&' : '?';
+  return hasHash ? `${path}${separator}${queryString}#${hash}` : `${path}${separator}${queryString}`;
 }
 
 export const useParseURLAndParams = () => {

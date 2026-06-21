@@ -1,0 +1,4 @@
+{
+  "Many to many (array)": "Banyak ke banyak (array)",
+  "Many to many (array) description": "Memungkinkan untuk membuat hubungan banyak ke banyak antara dua model dengan menyimpan array kunci unik dari model target."
+}

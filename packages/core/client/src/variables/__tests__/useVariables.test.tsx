@@ -8,20 +8,14 @@
  */
 
 import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
+import { FlowEngineProvider } from '@nocobase/flow-engine';
 import { act, renderHook, sleep, waitFor } from '@nocobase/test/client';
-import { createMemoryHistory } from 'history';
 import React from 'react';
-import { Router } from 'react-router';
-import { APIClientProvider } from '../../api-client';
 import { mockAPIClient } from '../../testUtils';
 import { CurrentUserProvider } from '../../user';
 import VariablesProvider from '../VariablesProvider';
 import useVariables from '../hooks/useVariables';
 import { Application } from '../../application/Application';
-
-const app = new Application();
-
-const Root = app.getRootComponent();
 
 vi.mock('../../collection-manager', async () => {
   return {
@@ -71,8 +65,20 @@ vi.mock('../../collection-manager', async () => {
               target: 'test',
             };
           }
+          if (path === 'staff.belongsToField') {
+            return {
+              type: 'belongsTo',
+              target: 'test',
+            };
+          }
         },
-        getCollection: () => {
+        getCollection: (collectionName?: string) => {
+          if (collectionName === 'staff') {
+            return {
+              filterTargetKey: ['uuid'],
+              getPrimaryKey: () => 'id',
+            };
+          }
           return {
             getPrimaryKey: () => 'id',
           };
@@ -84,6 +90,13 @@ vi.mock('../../collection-manager', async () => {
 });
 
 const { apiClient, mockRequest } = mockAPIClient();
+
+const app = new Application({
+  apiClient,
+  router: {
+    type: 'memory',
+  },
+});
 
 // 用于解析 `$nRole` 的值
 apiClient.auth.role = 'root';
@@ -187,20 +200,42 @@ mockRequest.onGet('/someBelongsToField/0/belongsToField:get').reply(() => {
   ];
 });
 
-const Providers = ({ children }) => {
-  const history = createMemoryHistory();
+mockRequest.onGet('/staff/staff-uuid-001/belongsToField:get').reply(() => {
+  return [
+    200,
+    {
+      data: {
+        id: 2,
+        name: '$staff.belongsToField',
+      },
+    },
+  ];
+});
+
+const AppProviders = app.getComposeProviders();
+
+const BaseLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   return (
-    <Root>
-      <APIClientProvider apiClient={apiClient}>
-        <CurrentUserProvider>
-          <SchemaOptionsContext.Provider value={{}}>
-            <SchemaExpressionScopeContext.Provider value={{}}>
-              <VariablesProvider>{children}</VariablesProvider>
-            </SchemaExpressionScopeContext.Provider>
-          </SchemaOptionsContext.Provider>
-        </CurrentUserProvider>
-      </APIClientProvider>
-    </Root>
+    <AppProviders>
+      <CurrentUserProvider>{children}</CurrentUserProvider>
+    </AppProviders>
+  );
+};
+
+const Providers = ({ children }) => {
+  const routerChildren = (
+    <SchemaOptionsContext.Provider value={{}}>
+      <SchemaExpressionScopeContext.Provider value={{}}>
+        <VariablesProvider>{children}</VariablesProvider>
+      </SchemaExpressionScopeContext.Provider>
+    </SchemaOptionsContext.Provider>
+  );
+  const Router = React.useMemo(() => app.router.getRouterComponent(routerChildren), []);
+
+  return (
+    <FlowEngineProvider engine={app.flowEngine}>
+      <Router BaseLayout={BaseLayout} />
+    </FlowEngineProvider>
   );
 };
 
@@ -973,6 +1008,29 @@ describe('useVariables', () => {
         type: 'belongsTo',
         target: 'test',
       });
+    });
+  });
+
+  it('uses source collection filterTargetKey when lazy loading belongsTo variables', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(async () => {
+      result.current.registerVariable({
+        name: '$staff',
+        ctx: {
+          id: 1,
+          uuid: 'staff-uuid-001',
+        },
+        collectionName: 'staff',
+      });
+    });
+
+    await waitFor(async () => {
+      expect(await result.current.parseVariable('{{ $staff.belongsToField.name }}').then(({ value }) => value)).toBe(
+        '$staff.belongsToField',
+      );
     });
   });
 

@@ -8,6 +8,7 @@
  */
 
 import path from 'path';
+import { promises as fs } from 'fs';
 import { Readable } from 'stream';
 
 import { getApp } from '.';
@@ -112,6 +113,44 @@ describe('file manager > server', () => {
         };
         expect(model.toJSON()).toMatchObject(matcher);
       });
+
+      it('should append subPath under storage path', async () => {
+        const storage = await StorageRepo.create({
+          values: {
+            name: 'local2',
+            type: STORAGE_TYPE_LOCAL,
+            baseUrl: DEFAULT_LOCAL_BASE_URL,
+            path: 'base',
+            rules: {
+              size: 1024,
+            },
+            paranoid: true,
+          },
+        });
+
+        const model = await plugin.createFileRecord({
+          collectionName: 'attachments',
+          storageName: 'local2',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+          subPath: 'orders/123',
+        });
+
+        expect(model.toJSON()).toMatchObject({
+          title: 'text',
+          extname: '.txt',
+          path: 'base/orders/123',
+          meta: {},
+          storageId: storage.id,
+        });
+
+        const cachedStorage = plugin.storagesCache.get(storage.id);
+        expect(cachedStorage.path).toBe('base');
+
+        const file = await fs.readFile(
+          path.resolve(process.cwd(), LOCAL_STORAGE_DEST, 'base/orders/123', model.get('filename')),
+        );
+        expect(file.toString().includes('Hello world!')).toBe(true);
+      });
     });
 
     describe('uploadFile', () => {
@@ -128,6 +167,43 @@ describe('file manager > server', () => {
           storageId: defaultStorage.id,
         };
         expect(data).toMatchObject(matcher);
+      });
+
+      it('should upload file to subPath', async () => {
+        const data = await plugin.uploadFile({
+          filePath: path.resolve(__dirname, './files/text.txt'),
+          documentRoot: 'storage/backups/test',
+          subPath: 'exports/2026',
+        });
+
+        expect(data).toMatchObject({
+          title: 'text',
+          extname: '.txt',
+          path: 'exports/2026',
+          meta: {},
+          storageId: defaultStorage.id,
+        });
+
+        const file = await fs.readFile(
+          path.resolve(process.cwd(), 'storage/backups/test', 'exports/2026', data.filename),
+        );
+        expect(file.toString().includes('Hello world!')).toBe(true);
+      });
+
+      it('should reject unsafe subPath before upload', async () => {
+        await expect(
+          plugin.uploadFile({
+            filePath: path.resolve(__dirname, './files/text.txt'),
+            subPath: '../outside',
+          }),
+        ).rejects.toThrow('Access denied');
+
+        await expect(
+          plugin.uploadFile({
+            filePath: path.resolve(__dirname, './files/text.txt'),
+            subPath: '/absolute',
+          }),
+        ).rejects.toThrow('Invalid storage sub path');
       });
     });
 
@@ -283,6 +359,17 @@ describe('file manager > server', () => {
         body.data.path = 'non-existent-path';
 
         await expect(plugin.getFileStream(body.data)).rejects.toThrow();
+      });
+
+      it('should reject path traversal', async () => {
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        body.data.path = '..';
+        body.data.filename = 'package.json';
+
+        await expect(plugin.getFileStream(body.data)).rejects.toThrow('Access denied');
       });
 
       it('should throw error when storage not found', async () => {

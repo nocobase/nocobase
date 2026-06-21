@@ -16,6 +16,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   protected _data = observable.ref<TDataItem[]>([]);
   protected _meta = observable.ref<Record<string, any>>({});
   private refreshTimer: NodeJS.Timeout | null = null;
+  private refreshWaiters: Array<{ resolve: () => void; reject: (error: any) => void }> = [];
   protected createActionOptions = {};
   protected updateActionOptions = {};
   protected _refreshActionName = 'list';
@@ -110,10 +111,15 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     }
   }
 
-  async create(data: TDataItem, options?: AxiosRequestConfig): Promise<void> {
+  async create(data: TDataItem, options?: AxiosRequestConfig & { refresh?: boolean }): Promise<void> {
     const config = this.mergeRequestConfig({ data }, this.createActionOptions, options);
-    await this.runAction('create', config);
-    await this.refresh();
+    const res = await this.runAction('create', config);
+    this.markDataSourceDirty();
+    this.emit('saved', data);
+    if (options?.refresh !== false) {
+      await this.refresh();
+    }
+    return res;
   }
 
   async get(filterByTk: any): Promise<TDataItem | undefined> {
@@ -129,17 +135,20 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   }
 
   async update(filterByTk: string | number, data: Partial<TDataItem>, options?: AxiosRequestConfig): Promise<void> {
+    const result = data;
     const config = this.mergeRequestConfig(
       {
         params: {
           filterByTk,
         },
-        data,
+        data: result,
       },
       this.updateActionOptions,
       options,
     );
     await this.runAction('update', config);
+    this.markDataSourceDirty();
+    this.emit('saved', data);
     await this.refresh();
   }
 
@@ -152,20 +161,24 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   }
 
   async destroy(
-    filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[],
+    filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[] | object,
     options?: AxiosRequestConfig,
   ): Promise<void> {
     const config = this.mergeRequestConfig(
       {
         params: {
-          filterByTk: _.castArray(filterByTk).map((item) => {
-            return typeof item === 'object' ? item['id'] : item; // TODO: ID 字段还需要根据实际情况更改
-          }),
+          filterByTk: this.jsonStringify(filterByTk),
         },
       },
       options,
     );
     await this.runAction('destroy', config);
+    this.markDataSourceDirty();
+    const currentPage = this.getPage();
+    const lastPage = Math.ceil((this.getCount() - _.castArray(filterByTk).length) / this.getPageSize());
+    if (currentPage > lastPage) {
+      this.setPage(lastPage || 1);
+    }
     await this.refresh();
   }
 
@@ -188,7 +201,11 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
 
     // 设置新的定时器，在下一个事件循环执行
     return new Promise<void>((resolve, reject) => {
+      this.refreshWaiters.push({ resolve, reject });
       this.refreshTimer = setTimeout(async () => {
+        const waiters = this.refreshWaiters;
+        this.refreshWaiters = [];
+        this.refreshTimer = null;
         try {
           this.clearError();
           this.loading = true;
@@ -204,13 +221,12 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
             this.setPageSize(meta.pageSize);
           }
           this.emit('refresh');
-          this.loading = false;
-          resolve();
+          waiters.forEach((w) => w.resolve());
         } catch (error) {
           this.setError(error);
-          reject(error instanceof Error ? error : new Error(String(error)));
+          const err = error instanceof Error ? error : new Error(String(error));
+          waiters.forEach((w) => w.reject(err));
         } finally {
-          this.refreshTimer = null;
           this.loading = false;
         }
       });

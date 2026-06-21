@@ -20,30 +20,34 @@ import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, u
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
-import { FormDialog, withSearchParams } from '..';
+import { FormDialog, ICON_POPUP_Z_INDEX, withSearchParams, zIndexContext } from '..';
 import { antTableCell } from '../../../acl/style';
 import {
   CurrentTabUidContext,
+  LocationSearchContext,
+  SearchParamsContext,
   useCurrentSearchParams,
   useCurrentTabUid,
   useLocationNoUpdate,
+  useLocationSearch,
   useNavigateNoUpdate,
   useRouterBasename,
 } from '../../../application/CustomRouterContextProvider';
 import { AppNotFound } from '../../../common/AppNotFound';
 import { useDocumentTitle } from '../../../document-title';
-import { useGlobalTheme } from '../../../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { Icon } from '../../../icon';
 import {
+  KeepAlive,
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
   useCurrentRoute,
+  useKeepAlive,
   useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
-import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
-import { KeepAlive, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
+import { shouldDisplayRouteBadge } from '../../../route-switch/antd/admin-layout/badge';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { VariableScope } from '../../../variables/VariableScope';
 import { DndContext } from '../../common';
@@ -51,12 +55,14 @@ import { SortableItem } from '../../common/sortable-item';
 import { RemoteSchemaComponent, SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { ErrorFallback } from '../error-fallback';
 import { useMenuDragEnd, useNocoBaseRoutes } from '../menu/Menu';
 import { AllDataBlocksProvider } from './AllDataBlocksProvider';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/route-types';
 
 interface PageProps {
   currentTabUid: string;
@@ -114,11 +120,32 @@ const InternalPage = React.memo((props: PageProps) => {
   );
 });
 
+export const useKeepAliveLocationSearch = () => {
+  const { active } = useKeepAlive();
+  const locationSearch = useLocationSearch();
+  const locationSearchRef = useRef(locationSearch);
+
+  // 缓存页失活后保留自己的查询串，避免被其他页面的 URL 参数污染。
+  if (active) {
+    locationSearchRef.current = locationSearch;
+  }
+
+  return active ? locationSearch : locationSearchRef.current;
+};
+
 export const Page = React.memo((props: PageProps) => {
   const { hashId, componentCls } = useStyles();
   const { active: pageActive } = useKeepAlive();
   const currentTabUid = useCurrentTabUid();
+  const locationSearch = useKeepAliveLocationSearch();
   const tabUidRef = useRef(currentTabUid);
+  const engineCtx = useFlowEngineContext();
+  const searchParams = useMemo(() => new URLSearchParams(locationSearch), [locationSearch]);
+  useEffect(() => {
+    if (pageActive && engineCtx?.pageInfo) {
+      engineCtx.pageInfo.version = 'v1';
+    }
+  }, [pageActive, engineCtx]);
 
   if (pageActive) {
     tabUidRef.current = currentTabUid;
@@ -127,10 +154,14 @@ export const Page = React.memo((props: PageProps) => {
   return (
     <AllDataBlocksProvider>
       <div className={`${componentCls} ${hashId} ${antTableCell}`}>
-        {/* Avoid passing values down to improve rendering performance */}
-        <CurrentTabUidContext.Provider value={''}>
-          <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
-        </CurrentTabUidContext.Provider>
+        <LocationSearchContext.Provider value={locationSearch}>
+          <SearchParamsContext.Provider value={searchParams}>
+            {/* Avoid passing values down to improve rendering performance */}
+            <CurrentTabUidContext.Provider value={''}>
+              <InternalPage currentTabUid={tabUidRef.current} className={props.className} />
+            </CurrentTabUidContext.Provider>
+          </SearchParamsContext.Provider>
+        </LocationSearchContext.Provider>
       </div>
     </AllDataBlocksProvider>
   );
@@ -241,7 +272,7 @@ const PageContent = memo((props: PageContentProps) => {
 const TabBadge: FC<{ tabRoute: NocoBaseDesktopRoute; style?: React.CSSProperties }> = (props) => {
   const badgeCount = useEvaluatedExpression(props.tabRoute.options?.badge?.count);
 
-  if (badgeCount == null) return null;
+  if (!shouldDisplayRouteBadge(badgeCount, props.tabRoute.options?.badge?.showZero)) return null;
 
   return (
     <Badge
@@ -291,23 +322,26 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
                 return (
                   <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
                     <FormLayout layout={'vertical'}>
-                      <SchemaComponent
-                        schema={{
-                          properties: {
-                            title: {
-                              title: t('Tab name'),
-                              'x-component': 'Input',
-                              'x-decorator': 'FormItem',
-                              required: true,
+                      {/* 防止按钮的配置弹窗的图标弹窗被遮挡 */}
+                      <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+                        <SchemaComponent
+                          schema={{
+                            properties: {
+                              title: {
+                                title: t('Tab name'),
+                                'x-component': 'Input',
+                                'x-decorator': 'FormItem',
+                                required: true,
+                              },
+                              icon: {
+                                title: t('Icon'),
+                                'x-component': 'IconPicker',
+                                'x-decorator': 'FormItem',
+                              },
                             },
-                            icon: {
-                              title: t('Icon'),
-                              'x-component': 'IconPicker',
-                              'x-decorator': 'FormItem',
-                            },
-                          },
-                        }}
-                      />
+                          }}
+                        />
+                      </zIndexContext.Provider>
                     </FormLayout>
                   </SchemaComponentOptions>
                 );

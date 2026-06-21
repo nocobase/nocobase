@@ -1,13 +1,16 @@
 {
   "name": "@nocobase/plugin-calendar",
-  "version": "1.9.0-alpha.15",
+  "version": "2.2.0-alpha.1",
   "displayName": "Calendar",
+  "displayName.ru-RU": "Календарь",
   "displayName.zh-CN": "日历",
   "description": "Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.",
+  "description.ru-RU": "Предоставляет шаблон коллекции календаря и блок для управления данными дат — такими как события, встречи, задачи и другие связанные с датой/временем данные.",
   "description.zh-CN": "提供日历数据表模板和区块，用于管理日期数据，通常用于事件、约会、任务等与日期/时间相关的信息。",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/calendar",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/calendar",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/calendar",
   "types": "./dist/server/index.d.ts",
   "devDependencies": {
@@ -27,9 +30,11 @@
     "solarlunar-es": "^1.0.9"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/plugin-data-source-manager": "2.x",
+    "@nocobase/server": "2.x"
   },
   "repository": {
     "type": "git",

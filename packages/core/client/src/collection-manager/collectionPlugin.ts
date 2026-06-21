@@ -44,6 +44,7 @@ import {
   RadioGroupFieldInterface,
   RichTextFieldInterface,
   SelectFieldInterface,
+  SnowflakeIdFieldInterface,
   SubTableFieldInterface,
   TableoidFieldInterface,
   TextareaFieldInterface,
@@ -93,6 +94,7 @@ export class CollectionPlugin extends Plugin {
     this.dataSourceManager.addDataSource(MainDataSource, {
       key: DEFAULT_DATA_SOURCE_KEY,
       displayName: DEFAULT_DATA_SOURCE_TITLE,
+      status: 'loaded',
     });
   }
 
@@ -100,27 +102,35 @@ export class CollectionPlugin extends Plugin {
     this.dataSourceManager.addFieldInterfaceGroups({
       basic: {
         label: '{{t("Basic")}}',
+        order: 1,
       },
       choices: {
         label: '{{t("Choices")}}',
+        order: 20,
       },
       media: {
         label: '{{t("Media")}}',
+        order: 40,
       },
       datetime: {
         label: '{{t("Date & Time")}}',
+        order: 80,
       },
       relation: {
         label: '{{t("Relation")}}',
+        order: 100,
       },
       advanced: {
         label: '{{t("Advanced type")}}',
+        order: 200,
       },
       systemInfo: {
         label: '{{t("System info")}}',
+        order: 400,
       },
       others: {
         label: '{{t("Others")}}',
+        order: 800,
       },
     });
   }
@@ -156,6 +166,7 @@ export class CollectionPlugin extends Plugin {
       RadioGroupFieldInterface,
       RichTextFieldInterface,
       SelectFieldInterface,
+      SnowflakeIdFieldInterface,
       SubTableFieldInterface,
       TableoidFieldInterface,
       TextareaFieldInterface,

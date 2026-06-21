@@ -149,12 +149,14 @@ describe('Input.JSON', () => {
     });
 
     const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-    await userEvent.clear(textarea);
-    // To escape special characters, use double curly braces
-    await userEvent.type(textarea, '{{name:"nocobase"}');
+    // Use fireEvent.change to set the value directly to avoid timing issues in CI
+    fireEvent.change(textarea, { target: { value: '{name:"nocobase"}' } });
     // mock blur event
-    await userEvent.click(document.body);
-    expect(screen.queryByText(/Unexpected token /)).not.toBeInTheDocument();
+    fireEvent.blur(textarea);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Unexpected token /)).not.toBeInTheDocument();
+    });
     expect(JSON5.parse(textarea.value)).toEqual({ name: 'nocobase' });
     const pre = container.querySelector('pre') as HTMLPreElement;
     expect(pre).toMatchInlineSnapshot(`

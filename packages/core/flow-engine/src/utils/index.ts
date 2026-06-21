@@ -22,7 +22,7 @@ export {
 export { escapeT, getT, tExpr } from './translation';
 
 // 异常类
-export { FlowExitException } from './exceptions';
+export { FlowCancelSaveException, FlowExitAllException, FlowExitException } from './exceptions';
 
 // 流程定义相关
 export { defineAction } from './flow-definitions';
@@ -34,21 +34,29 @@ export { isInheritedFrom } from './inheritance';
 export { resolveCreateModelOptions, resolveDefaultParams, resolveExpressions } from './params-resolvers';
 
 // Schema 工具
-export { compileUiSchema, resolveStepUiSchema, resolveUiMode } from './schema-utils';
+export {
+  compileUiSchema,
+  resolveStepUiSchema,
+  resolveStepDisabledInSettings,
+  resolveUiMode,
+  shouldHideEventInSettings,
+  shouldHideStepInSettings,
+} from './schema-utils';
 
 // Runtime Context Steps 设置
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 // Record Proxy 工具
 export { createCollectionContextMeta } from './createCollectionContextMeta';
+export { createAssociationAwareObjectMetaFactory, createAssociationSubpathResolver } from './associationObjectVariable';
 export {
   buildRecordMeta,
   collectContextParamsForTemplate,
   createCurrentRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   createRecordMetaFactory,
   extractUsedVariableNames,
   extractUsedVariablePaths,
-  inferParentRecordRef,
   inferRecordRef,
   type RecordParamsBuilder,
 } from './variablesParams';
@@ -58,6 +66,44 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
+export {
+  decodeBase64Url,
+  encodeBase64Url,
+  isCompleteCtxDatePath,
+  isCtxDatePathPrefix,
+  isCtxDateExpression,
+  parseCtxDateExpression,
+  resolveCtxDatePath,
+  serializeCtxDateValue,
+} from './dateVariable';
 
 // 安全全局对象（window/document）
-export { createSafeDocument, createSafeWindow } from './safeGlobals';
+export {
+  createSafeDocument,
+  createSafeWindow,
+  createSafeNavigator,
+  createSafeRunJSGlobals,
+  runjsWithSafeGlobals,
+} from './safeGlobals';
+
+// RunJS value helpers
+export { isRunJSValue, normalizeRunJSValue, extractUsedVariablePathsFromRunJS, type RunJSValue } from './runjsValue';
+
+// RunJS helpers
+export { resolveRunJSObjectValues } from './resolveRunJSObjectValues';
+
+// RunJS 代码兼容预处理（{{ }}）与 JSX 编译
+export { prepareRunJsCode, preprocessRunJsTemplates } from './runjsTemplateCompat';
+
+// Ephemeral context helper（用于临时注入属性/方法，避免污染父级 ctx）
+export { createEphemeralContext } from './createEphemeralContext';
+
+// Filter helpers
+export { pruneFilter } from './pruneFilter';
+export { isBeforeRenderFlow } from './flows';
+
+// Module URL resolver
+export { resolveModuleUrl, isCssFile } from './resolveModuleUrl';
+
+// Random base36 identifier with optional semantic prefix
+export { randomId } from './randomId';

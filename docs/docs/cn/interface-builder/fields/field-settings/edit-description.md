@@ -1,0 +1,17 @@
+---
+title: "编辑描述"
+description: "字段设置：为字段添加描述信息，在表单项下方显示帮助提示。"
+keywords: "编辑描述,字段描述,帮助提示,界面搭建,NocoBase"
+---
+
+# 编辑描述
+
+## 介绍
+
+字段描述是在字段组件下方以浅灰体显示的简短说明文字，可用于帮助用户理解字段的用途和输入要求。
+
+![20240411114048](https://static-docs.nocobase.com/20240411114048.png)
+
+![20240423111043](https://static-docs.nocobase.com/20240423111043.png)
+
+![20240411114433](https://static-docs.nocobase.com/20240411114433.png)

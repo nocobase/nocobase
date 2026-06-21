@@ -11,6 +11,7 @@ export type AIMessage = {
   messageId: string;
   sessionId: string;
   role: string;
+  createdAt?: string | Date;
   content: AIMessageContent;
   toolCalls?: AIToolCall[];
   attachments?: unknown[];
@@ -36,16 +37,50 @@ export type AIToolCall = {
   name: string;
   type: string;
   args: unknown;
+  [key: string]: any;
 };
 
 export type AIMessageMetadata = {
   model: string;
   provider: string;
   usage_metadata?: any;
+  response_metadata?: any;
+  additional_kwargs?: Record<string, unknown>;
   toolCall?: AIToolCall;
   autoCallTools?: string[];
   autoCall?: boolean;
   interrupted?: boolean;
+  subAgentConversations?: SubAgentConversationMetadata[];
 
   [key: string]: unknown;
+};
+
+export type SubAgentConversationMetadata = {
+  sessionId: string;
+  toolCallId: string;
+  status: 'pending' | 'completed';
+};
+
+export type AIToolMessage = {
+  id: string;
+  sessionId: string;
+  messageId: string;
+  toolCallId: string;
+  status: 'success' | 'error';
+  content: string;
+  invokeStatus: 'init' | 'interrupted' | 'waiting' | 'pending' | 'done' | 'confirmed';
+  invokeStartTime: Date;
+  invokeEndTime: Date;
+  toolName: string;
+  auto: boolean;
+  execution: 'backend' | 'frontend';
+};
+
+export type UserDecision = {
+  type: 'approve' | 'edit' | 'reject';
+  message?: string;
+  editedAction?: {
+    name: string;
+    args: any;
+  };
 };

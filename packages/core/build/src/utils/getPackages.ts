@@ -8,11 +8,11 @@
  */
 
 import Topo from '@hapi/topo';
+import { Package } from '@lerna/package';
+import { getPackagesSync } from '@lerna/project';
 import fg from 'fast-glob';
 import path from 'path';
 import { PACKAGES_PATH, ROOT_PATH } from '../constant';
-import { getPackagesSync } from '@lerna/project';
-import { Package } from '@lerna/package';
 import { toUnixPath } from './utils';
 
 /**
@@ -63,10 +63,72 @@ export function getPackages(pkgs: string[]) {
 export function sortPackages(packages: Package[]): Package[] {
   const sorter = new Topo.Sorter<Package>();
   for (const pkg of packages) {
+    if (pkg.name === '@nocobase/docs') {
+      continue;
+    }
     const pkgJson = require(`${pkg.location}/package.json`,);
     const after = Object.keys({ ...pkgJson.dependencies, ...pkgJson.devDependencies, ...pkgJson.peerDependencies });
     sorter.add(pkg, { after, group: pkg.name });
   }
 
   return sorter.nodes;
+}
+
+export function groupPackagesByTopoLevel(packages: Package[]): Package[][] {
+  const filteredPackages = packages.filter((pkg) => pkg.name !== '@nocobase/docs');
+  const packageMap = new Map(filteredPackages.map((pkg) => [pkg.name, pkg]));
+  const dependencyMap = new Map<string, Set<string>>();
+  const reverseDependencyMap = new Map<string, Set<string>>();
+
+  for (const pkg of filteredPackages) {
+    const pkgJson = require(`${pkg.location}/package.json`);
+    const internalDeps = Object.keys({
+      ...pkgJson.dependencies,
+      ...pkgJson.devDependencies,
+      ...pkgJson.peerDependencies,
+    }).filter((dep) => packageMap.has(dep));
+
+    dependencyMap.set(pkg.name, new Set(internalDeps));
+
+    for (const dep of internalDeps) {
+      if (!reverseDependencyMap.has(dep)) {
+        reverseDependencyMap.set(dep, new Set());
+      }
+      reverseDependencyMap.get(dep).add(pkg.name);
+    }
+  }
+
+  const remainingDeps = new Map(
+    Array.from(dependencyMap.entries()).map(([name, deps]) => [name, new Set(deps)]),
+  );
+  const pending = new Set(filteredPackages.map((pkg) => pkg.name));
+  const layers: Package[][] = [];
+
+  while (pending.size > 0) {
+    const layer = Array.from(pending)
+      .filter((name) => (remainingDeps.get(name)?.size ?? 0) === 0)
+      .map((name) => packageMap.get(name))
+      .filter(Boolean);
+
+    if (layer.length === 0) {
+      throw new Error(
+        `Unable to group packages by topo level, possible circular dependency among: ${Array.from(pending).join(', ')}`,
+      );
+    }
+
+    layers.push(layer);
+
+    for (const pkg of layer) {
+      pending.delete(pkg.name);
+      const dependents = reverseDependencyMap.get(pkg.name);
+      if (!dependents) {
+        continue;
+      }
+      for (const dependent of dependents) {
+        remainingDeps.get(dependent)?.delete(pkg.name);
+      }
+    }
+  }
+
+  return layers;
 }

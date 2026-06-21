@@ -1,0 +1,7 @@
+{
+  "Ignore failed sending and continue workflow": "Abaikan pengiriman yang gagal dan lanjutkan alur kerja",
+  "Ignore failure and continue workflow": "Ignore failure and continue workflow",
+  "Notification": "Notifikasi",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Kirim email dengan memanggil layanan SMTP. Anda dapat menggunakan variabel di node hulu sebagai penerima, subjek, dan konten email.",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Kirim notifikasi. Anda dapat menggunakan variabel di node hulu sebagai konten dan konfigurasi lainnya."
+}

@@ -12,6 +12,7 @@ import { FlowEngine } from '../../flowEngine';
 import type { FlowModelOptions, IModelComponentProps } from '../../types';
 import { FlowModel } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
+import { uid } from 'uid/secure';
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
@@ -49,10 +50,9 @@ describe('ForkFlowModel', () => {
   // ==================== CONSTRUCTOR & INITIALIZATION ====================
   describe('Constructor & Initialization', () => {
     test('should create fork with basic parameters', () => {
-      const fork = new ForkFlowModel(mockMaster, initialProps, 1);
+      const fork = new ForkFlowModel(mockMaster, initialProps, '1');
 
       expect(fork.uid).toBe(mockMaster.uid);
-      expect(fork.forkId).toBe(1);
       expect(fork.localProps).toEqual(initialProps);
       expect(fork.isFork).toBe(true);
       expect((fork as any).master).toBe(mockMaster);
@@ -63,7 +63,6 @@ describe('ForkFlowModel', () => {
       const fork = new ForkFlowModel(mockMaster);
 
       expect(fork.uid).toBe(mockMaster.uid);
-      expect(fork.forkId).toBe(0);
       expect(fork.localProps).toEqual({});
       expect(fork.isFork).toBe(true);
     });
@@ -77,12 +76,45 @@ describe('ForkFlowModel', () => {
     });
   });
 
+  // ==================== HIDDEN STATE ====================
+  describe('Hidden State', () => {
+    test('should initialize hidden from master', () => {
+      mockMaster.hidden = true;
+      const fork = new ForkFlowModel(mockMaster);
+
+      expect(fork.hidden).toBe(true);
+    });
+
+    test('should keep hidden independent between master and fork', () => {
+      mockMaster.hidden = true;
+      const fork = new ForkFlowModel(mockMaster);
+
+      // initial copy from master
+      expect(fork.hidden).toBe(true);
+
+      // change fork.hidden should not affect master
+      fork.hidden = false;
+      expect(fork.hidden).toBe(false);
+      expect(mockMaster.hidden).toBe(true);
+
+      // change master.hidden should not affect existing fork
+      mockMaster.hidden = false;
+      expect(mockMaster.hidden).toBe(false);
+      expect(fork.hidden).toBe(false);
+
+      // toggle master again; fork remains unchanged
+      mockMaster.hidden = true;
+      expect(mockMaster.hidden).toBe(true);
+      expect(fork.hidden).toBe(false);
+    });
+  });
+
   // ==================== PROXY GET MECHANISM ====================
   describe('Proxy Get Mechanism', () => {
     let fork: ForkFlowModel;
 
     beforeEach(() => {
-      fork = new ForkFlowModel(mockMaster, initialProps, 1);
+      fork = new ForkFlowModel(mockMaster, initialProps, '1');
     });
 
     test('should return disposed status correctly', () => {
@@ -116,7 +148,7 @@ describe('ForkFlowModel', () => {
 
     test('should return fork own properties first', () => {
       expect(fork.uid).toBe(mockMaster.uid);
-      expect(fork.forkId).toBe(1);
+      expect(fork.forkId).toBe('1');
       expect(fork.isFork).toBe(true);
       expect(fork.localProps).toEqual(initialProps);
     });
@@ -179,6 +211,58 @@ describe('ForkFlowModel', () => {
 
     test('should handle undefined master properties', () => {
       expect((fork as any).nonExistentProperty).toBeUndefined();
+    });
+
+    test('should fork object sub model and point parent to fork', () => {
+      const child = createMockFlowModel({ uid: 'child-object' });
+      mockMaster.setSubModel('child', child);
+
+      const forkedSubModels = fork.subModels as Record<string, FlowModel>;
+      const childFork = forkedSubModels.child;
+
+      expect(childFork).not.toBe(child);
+      expect(childFork.uid).toBe(child.uid);
+      expect(childFork.isFork).toBe(true);
+      expect(childFork.parent).toBe(fork);
+      expect(child.forks.size).toBe(0);
+    });
+
+    test('should fork array sub models with stable instances', () => {
+      const child1 = createMockFlowModel({ uid: 'child-array-1' });
+      const child2 = createMockFlowModel({ uid: 'child-array-2' });
+      mockMaster.addSubModel('children', child1);
+      mockMaster.addSubModel('children', child2);
+
+      const firstRead = fork.subModels as Record<string, FlowModel[]>;
+      const secondRead = fork.subModels as Record<string, FlowModel[]>;
+
+      expect(firstRead.children).toHaveLength(2);
+      expect(firstRead.children[0]).toBe(secondRead.children[0]);
+      expect(firstRead.children[1]).toBe(secondRead.children[1]);
+      expect(firstRead.children[0]).not.toBe(child1);
+      expect(firstRead.children[1]).not.toBe(child2);
+      expect(firstRead.children[0].parent).toBe(fork);
+      expect(firstRead.children[1].parent).toBe(fork);
+      expect(child1.forks.size).toBe(0);
+      expect(child2.forks.size).toBe(0);
+    });
+
+    test('should dispose stale child forks when master sub models change', () => {
+      const child1 = createMockFlowModel({ uid: 'child-stale-1' });
+      const child2 = createMockFlowModel({ uid: 'child-stale-2' });
+      mockMaster.addSubModel('children', child1);
+      mockMaster.addSubModel('children', child2);
+
+      const firstRead = fork.subModels as Record<string, FlowModel[]>;
+      const staleFork = firstRead.children[0];
+      mockMaster.subModels.children = [child2];
+
+      const secondRead = fork.subModels as Record<string, FlowModel[]>;
+
+      expect(staleFork['disposed']).toBe(true);
+      expect(secondRead.children).toHaveLength(1);
+      expect(secondRead.children[0].uid).toBe(child2.uid);
+      expect(secondRead.children[0]['disposed']).toBe(false);
     });
 
     test('should create correct context object for functions', () => {
@@ -389,6 +473,24 @@ describe('ForkFlowModel', () => {
         existing: 'updated',
         new: 'added',
       });
+    });
+
+    test('should clear local props with clearProps', () => {
+      const masterProps = { master: 'value', conflict: 'master' };
+      mockMaster.getProps = vi.fn(() => masterProps);
+
+      // 先设置一些本地属性
+      fork.setProps({ local: 'v', conflict: 'local' });
+      expect(fork.localProps).toEqual({ initial: 'value', local: 'v', conflict: 'local' });
+
+      // 调用 clearProps，应当返回一个空对象
+      const result = (fork as any).clearProps();
+      expect(result).toStrictEqual({});
+      expect(fork.localProps).toStrictEqual({});
+
+      // 清空后，合并的 props 应回退为仅 master 的 props
+      expect(fork.getProps()).toEqual(masterProps);
+      expect(fork.props).toEqual(masterProps);
     });
 
     test('should get merged props from master and local', () => {
@@ -628,9 +730,19 @@ describe('ForkFlowModel', () => {
       expect(fork['disposed']).toBe(true);
     });
 
+    test('should dispose child forks', () => {
+      const child = createMockFlowModel({ uid: 'child-dispose' });
+      mockMaster.setSubModel('child', child);
+      const childFork = (fork.subModels as Record<string, FlowModel>).child;
+
+      fork.dispose();
+
+      expect(childFork['disposed']).toBe(true);
+    });
+
     test('should find and remove correct fork from cache', () => {
-      const fork1 = new ForkFlowModel(mockMaster, {}, 1);
-      const fork2 = new ForkFlowModel(mockMaster, {}, 2);
+      const fork1 = new ForkFlowModel(mockMaster, {}, '1');
+      const fork2 = new ForkFlowModel(mockMaster, {}, '2');
 
       (mockMaster as any).forkCache.set('key1', fork1);
       (mockMaster as any).forkCache.set('key2', fork2);
@@ -639,6 +751,22 @@ describe('ForkFlowModel', () => {
 
       expect((mockMaster as any).forkCache.has('key1')).toBe(false);
       expect((mockMaster as any).forkCache.has('key2')).toBe(true);
+    });
+
+    test('forkIds must be unique', () => {
+      // 创建第一个 fork
+      const fork1 = mockMaster.createFork({}, uid());
+      const forkId1 = fork1.forkId;
+      expect(forkId1).toBeDefined();
+      // 创建第二个 fork
+      const fork2 = mockMaster.createFork({}, uid());
+      expect(fork2.forkId).not.toBe(forkId1);
+      // 销毁第一个 fork
+      fork1.dispose();
+      // 创建第三个 fork
+      const fork3 = mockMaster.createFork({}, uid());
+      expect(fork1['disposed']).toBe(true);
+      expect(fork3.forkId).not.toBe(fork2.forkId);
     });
   });
 

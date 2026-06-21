@@ -1,0 +1,17 @@
+{
+  "Connect to foreign data": "Kapcsolódás külső adatokhoz",
+  "Connection successful": "Kapcsolat sikeres",
+  "Create database server": "Adatbázis szerver létrehozása",
+  "Database": "Adatbázis",
+  "Database server": "Adatbázis szerver",
+  "Display name": "Megjelenítési név",
+  "Edit database server": "Adatbázis szerver szerkesztése",
+  "Host": "Gazda",
+  "Password": "Jelszó",
+  "Port": "Port",
+  "Remote table": "Távoli tábla",
+  "Server name": "Szerver név",
+  "Sync from remote table": "Szinkronizálás távoli táblából",
+  "Test Connection": "Kapcsolat tesztelése",
+  "Username": "Felhasználónév"
+}

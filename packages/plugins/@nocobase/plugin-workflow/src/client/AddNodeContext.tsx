@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { createForm } from '@formily/core';
 import { observer, useForm } from '@formily/react';
 
@@ -25,48 +25,24 @@ import {
 
 import WorkflowPlugin, { Instruction, useStyles, useWorkflowExecuted } from '.';
 import { useFlowContext } from './FlowContext';
+import { getInstructionAvailable } from './utils';
 import { lang, NAMESPACE } from './locale';
 import { RadioWithTooltip } from './components';
 import { uid } from '@nocobase/utils/client';
-import { Button, Dropdown, Menu } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Menu, Tooltip } from 'antd';
+import { SnippetsOutlined, PlusOutlined } from '@ant-design/icons';
 import { MenuItemGroupType } from 'antd/es/menu/interface';
+import { useFlowEngine } from '@nocobase/flow-engine';
+import { useMemoizedFn } from 'ahooks';
+export { AddNodeSlot } from '../client-v2/canvas/AddNodeSlot';
+import { PresetDialogForm } from '../client-v2/canvas/AddNodeContext';
+import { AddNodeContext, useAddNodeContext } from '../client-v2/canvas/AddNodeContext.shared';
+import { createNodeAndMaybeReparent, resolveAddNodeDecision } from '../client-v2/canvas/addNodeController';
 
 interface AddButtonProps {
   upstream;
   branchIndex?: number | null;
   [key: string]: any;
-}
-
-export function AddButton(props: AddButtonProps) {
-  const { upstream, branchIndex = null } = props;
-  const { workflow } = useFlowContext() ?? {};
-  const { styles } = useStyles();
-  const { anchor, creating, onMenuOpen } = useAddNodeContext();
-  const executed = useWorkflowExecuted();
-  const onOpen = useCallback(() => onMenuOpen({ upstream, branchIndex }), [onMenuOpen, upstream, branchIndex]);
-
-  if (!workflow) {
-    return null;
-  }
-
-  return (
-    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
-      {executed ? (
-        <span className="ant-btn-placeholder" />
-      ) : (
-        <Button
-          aria-label={props['aria-label'] || 'add-button'}
-          shape="circle"
-          icon={<PlusOutlined />}
-          loading={creating?.upstreamId == upstream?.id && creating?.branchIndex === branchIndex}
-          size="small"
-          onClick={onOpen}
-          className={cx({ anchoring: anchor?.upstream === upstream && anchor?.branchIndex === branchIndex })}
-        />
-      )}
-    </div>
-  );
 }
 
 function useAddNodeSubmitAction() {
@@ -109,6 +85,7 @@ function useAddNodeSubmitAction() {
         }
         ctx.setVisible(false);
         setPresetting(null);
+        form.reset();
         refresh();
       } catch (err) {
         console.error(err);
@@ -119,19 +96,8 @@ function useAddNodeSubmitAction() {
   };
 }
 
-const AddNodeContext = createContext(null);
-
-export function useAddNodeContext() {
-  return useContext(AddNodeContext);
-}
-
 const defaultBranchingOptions = [
   {
-    label: `{{t('After end of branches', { ns: "${NAMESPACE}" })}}`,
-    value: false,
-  },
-  {
-    label: `{{t('Inside of branch', { ns: "${NAMESPACE}" })}}`,
     value: 0,
   },
 ];
@@ -140,6 +106,7 @@ const DownstreamBranchIndex = observer((props) => {
   const { presetting } = useAddNodeContext();
   const { nodes } = useFlowContext();
   const { values } = useForm();
+  const compile = useCompile();
   const options = useMemo(() => {
     if (!presetting?.instruction) {
       return [];
@@ -156,8 +123,20 @@ const DownstreamBranchIndex = observer((props) => {
     if (!branching) {
       return [];
     }
-    return branching === true ? defaultBranchingOptions : branching;
-  }, [presetting, nodes, values.config]);
+    const br = branching === true ? defaultBranchingOptions : branching;
+    return [
+      {
+        label: lang('After end of branches'),
+        value: false,
+      },
+      ...br.map((item) => ({
+        ...item,
+        label: item.label
+          ? lang('Inside of "{{branchName}}" branch', { branchName: compile(item.label) })
+          : lang('Inside of branch'),
+      })),
+    ];
+  }, [presetting, nodes, values.config, compile]);
 
   if (!options.length) {
     return null;
@@ -205,6 +184,8 @@ function PresetFieldset() {
   }
   return (
     <SchemaComponent
+      components={presetting.instruction.components}
+      scope={presetting.instruction.scope}
       schema={{
         type: 'void',
         properties: {
@@ -229,21 +210,23 @@ function NodeMenu() {
   const groups = useMemo(() => {
     return groupOptions
       .map((group): MenuItemGroupType => {
-        const groupInstructions = instructionList.filter(
-          (item) =>
-            item.group === group.key && (item.isAvailable ? item.isAvailable({ engine, workflow, ...anchor }) : true),
-        );
+        const groupInstructions = instructionList.filter((item) => item.group === group.key);
 
         return {
           ...group,
           type: 'group',
-          children: groupInstructions.map((item) => ({
-            role: 'button',
-            'aria-label': item.type,
-            key: item.type,
-            label: compile(item.title),
-            icon: item.icon,
-          })),
+          children: groupInstructions.map((item) => {
+            const unavailableMessage = getInstructionAvailable(item, { engine, workflow, ...anchor });
+            const title = compile(item.title);
+            return {
+              role: 'button',
+              'aria-label': item.type,
+              key: item.type,
+              label: unavailableMessage ? <Tooltip title={unavailableMessage}>{title}</Tooltip> : title,
+              icon: item.icon,
+              disabled: Boolean(unavailableMessage),
+            };
+          }),
         };
       })
       .filter((group) => group.children.length);
@@ -255,7 +238,7 @@ function NodeMenu() {
       await onCreate({ type, ...anchor });
       onMenuCancel();
     },
-    [anchor, onCreate],
+    [anchor, onCreate, onMenuCancel],
   );
 
   return (
@@ -283,6 +266,7 @@ function NodeMenu() {
 export function AddNodeContextProvider(props) {
   const api = useAPIClient();
   const compile = useCompile();
+  const flowEngine = useFlowEngine();
   const engine = usePlugin(WorkflowPlugin);
   const [anchor, setAnchor] = useState(null);
   const [creating, setCreating] = useState(null);
@@ -290,8 +274,8 @@ export function AddNodeContextProvider(props) {
   const [formValueChanged, setFormValueChanged] = useState(false);
   const { workflow, nodes, refresh } = useFlowContext() ?? {};
 
-  const onMenuOpen = useCallback(({ upstream, branchIndex }) => {
-    setAnchor({ upstream, branchIndex });
+  const onMenuOpen = useCallback(({ upstream, branchIndex, branchContext }) => {
+    setAnchor({ upstream, branchIndex, branchContext });
   }, []);
   const onMenuCancel = useCallback(() => {
     setAnchor(null);
@@ -327,37 +311,90 @@ export function AddNodeContextProvider(props) {
     [api, refresh, workflow.id],
   );
 
-  const onCreate = useCallback(
-    async ({ type, upstream, branchIndex }) => {
-      const instruction = engine.instructions.get(type);
-      if (!instruction) {
-        console.error(`Instruction "${type}" not found`);
-        return;
-      }
-      const data = {
-        key: uid(),
-        type,
-        upstreamId: upstream?.id ?? null,
-        branchIndex,
-        title: compile(instruction.title),
-        config: instruction.createDefaultConfig?.() ?? {},
-      };
-      const downstream = upstream?.id
-        ? nodes.find((item) => item.upstreamId === data.upstreamId && item.branchIndex === data.branchIndex)
-        : nodes.find((item) => item.upstreamId === null);
-      if (
-        instruction.presetFieldset ||
-        ((typeof instruction.branching === 'function' ? instruction.branching(data.config) : instruction.branching) &&
-          downstream)
-      ) {
-        setPresetting({ data, instruction });
-        return;
-      }
+  const createModernNode = useMemoizedFn(async (anchor, instruction, presetValues) => {
+    const { downstreamBranchIndex, config: presetConfig } = presetValues ?? {};
+    const values = {
+      key: uid(),
+      type: instruction.type,
+      upstreamId: anchor.upstream?.id ?? null,
+      branchIndex: anchor.branchIndex ?? null,
+      title: flowEngine.context.t(instruction.title),
+      config: { ...(instruction.createDefaultConfig?.() ?? {}), ...(presetConfig ?? {}) },
+    };
+    setCreating(values);
+    try {
+      await createNodeAndMaybeReparent({
+        workflowId: workflow.id,
+        api,
+        refresh,
+        values,
+        downstreamBranchIndex,
+      });
+    } catch (err) {
+      console.error(err);
+      throw err;
+    } finally {
+      setCreating(null);
+    }
+  });
 
-      await create(data);
-    },
-    [compile, create, engine.instructions, nodes],
-  );
+  const onCreate = useMemoizedFn(async ({ type, upstream, branchIndex, branchContext }) => {
+    const decision = resolveAddNodeDecision({
+      type,
+      anchor: { upstream, branchIndex, branchContext },
+      runtime: {
+        workflow,
+        nodes: nodes ?? [],
+        getInstruction: (instructionType) => engine.instructions.get(instructionType),
+        getInstructionAvailable: (instruction, context) =>
+          getInstructionAvailable(instruction, {
+            ...context,
+            engine,
+          }),
+        translateTitle: (title) => compile(title),
+      },
+    });
+
+    if (decision.kind === 'missing') {
+      console.error(`Instruction "${type}" not found`);
+      return;
+    }
+    if (decision.kind === 'blocked') {
+      return;
+    }
+
+    // Preset dispatch (ADR-0003), v1-first like the card/drawer surfaces: a legacy `presetFieldset` (with entries)
+    // keeps the Formily preset modal; only a node that dropped it falls through to the inherited `PresetFieldsetLoader`
+    // and the v2 antd preset dialog (`ctx.viewer.dialog`), maintained once in client-v2.
+    if (decision.kind === 'legacy-preset') {
+      setPresetting({ data: decision.draft, instruction: decision.instruction });
+      return;
+    }
+
+    if (decision.kind === 'modern-preset') {
+      flowEngine.context.viewer.dialog({
+        width: 520,
+        closable: true,
+        content: () => (
+          <PresetDialogForm
+            instruction={decision.instruction}
+            hasDownstream={decision.hasDownstream}
+            onSubmit={(values) => createModernNode(decision.anchor, decision.instruction, values)}
+          />
+        ),
+      });
+      return;
+    }
+
+    // No preset form on either side — still show the v1 branch-preservation modal when the node branches into an
+    // existing downstream.
+    if (decision.kind === 'branch-fallback') {
+      setPresetting({ data: decision.draft, instruction: decision.instruction });
+      return;
+    }
+
+    await create(decision.draft);
+  });
 
   return (
     <AddNodeContext.Provider

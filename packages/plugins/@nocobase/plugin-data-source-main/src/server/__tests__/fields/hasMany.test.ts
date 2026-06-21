@@ -135,4 +135,18 @@ describe('hasMany field options', () => {
       targetKey: 'ghi',
     });
   });
+
+  it('should reload collection`s fields after foreignKey added', async () => {
+    await Field.repository.create({
+      values: {
+        type: 'hasMany',
+        collectionName: 'tests',
+        target: 'foos',
+        foreignKey: 'test_id',
+        interface: 'o2m',
+      },
+      context: {},
+    });
+    expect(db.getCollection('foos').getField('test_id')).toBeDefined();
+  });
 });

@@ -9,7 +9,7 @@
 
 import { Plugin, useActionAvailable } from '@nocobase/client';
 import { bulkUpdateActionSettings, deprecatedBulkUpdateActionSettings } from './BulkUpdateAction.Settings';
-import { BulkUpdateActionModel } from './BulkUpdateActionModel';
+import { BulkUpdateActionModel } from '../client-v2/BulkUpdateActionModel';
 import { BulkUpdateActionInitializer } from './BulkUpdateActionInitializer';
 import { CustomizeActionInitializer } from './CustomizeActionInitializer';
 import { useCustomizeBulkUpdateActionProps } from './utils';
@@ -36,5 +36,5 @@ export class PluginActionBulkUpdateClient extends Plugin {
     this.app.schemaInitializerManager.addItem('map:configureActions', 'customize.bulkUpdate', initializerData);
   }
 }
-
+export { BulkUpdateActionModel } from '../client-v2/BulkUpdateActionModel';
 export default PluginActionBulkUpdateClient;

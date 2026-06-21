@@ -1,0 +1,593 @@
+{
+  "target": {
+    "uid": "plmj6eypi4t8",
+    "kind": "block",
+    "node": {
+      "uid": "plmj6eypi4t8",
+      "use": "DetailsBlockModel"
+    },
+    "pageSchemaUid": "pet-management",
+    "tabSchemaUid": null
+  },
+  "tree": {
+    "uid": "plmj6eypi4t8",
+    "use": "DetailsBlockModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "pets"
+        }
+      },
+      "detailsSettings": {
+        "layout": {
+          "layout": "vertical",
+          "colon": true
+        },
+        "dataScope": {
+          "filter": {
+            "logic": "$and",
+            "items": []
+          }
+        },
+        "linkageRules": {
+          "value": []
+        }
+      }
+    },
+    "subKey": "items",
+    "subType": "array",
+    "subModels": {
+      "grid": {
+        "uid": "obyzusxgdv6w",
+        "use": "DetailsGridModel",
+        "stepParams": {},
+        "subKey": "grid",
+        "subType": "object",
+        "subModels": {
+          "items": [
+            {
+              "uid": "ak1p7lei4dun",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "name"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "g5w5yampdf15",
+                  "use": "DisplayTextFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "name"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 1
+                }
+              },
+              "sortIndex": 1
+            },
+            {
+              "uid": "f34uio74shio",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "species"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "rd1njnddjka0",
+                  "use": "DisplayTextFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "species"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 1
+                }
+              },
+              "sortIndex": 2
+            },
+            {
+              "uid": "al8zg87eu739",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "breed"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "bnlkyabme31d",
+                  "use": "DisplayTextFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "breed"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 1
+                }
+              },
+              "sortIndex": 3
+            },
+            {
+              "uid": "sq9b10osgiq6",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "ageYears"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "fifbv8dgx4og",
+                  "use": "DisplayNumberFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "ageYears"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 4
+            },
+            {
+              "uid": "cul9x0hro5d0",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "gender"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "vbvstng0dpma",
+                  "use": "DisplayTextFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "gender"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 1
+                }
+              },
+              "sortIndex": 5
+            },
+            {
+              "uid": "ol3fjo39iqup",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "owner"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "lao3dohdgbw6",
+                  "use": "DisplayTextFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "owner"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 1
+                }
+              },
+              "sortIndex": 6
+            },
+            {
+              "uid": "yf7kossp3y9i",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "status"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "nol0fyesnipr",
+                  "use": "DisplayTextFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "status"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 1
+                }
+              },
+              "sortIndex": 7
+            },
+            {
+              "uid": "uuzrdjzs334h",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "vaccinated"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "c9b07r886apj",
+                  "use": "DisplayCheckboxFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "vaccinated"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 8
+            },
+            {
+              "uid": "grte2z1y6hk9",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "lastVisitAt"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "uinvgndog60q",
+                  "use": "DisplayDateTimeFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "lastVisitAt"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 9
+            },
+            {
+              "uid": "hk33ueoh3h7m",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "notes"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "pr1qe69t2d4e",
+                  "use": "DisplayTextFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "notes"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 1
+                }
+              },
+              "sortIndex": 10
+            },
+            {
+              "uid": "cf9p6r8gcwii",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "createdAt"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "j7e4yt5k4c56",
+                  "use": "DisplayDateTimeFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "createdAt"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 11
+            },
+            {
+              "uid": "iwuyyhrebfgt",
+              "use": "DetailsItemModel",
+              "stepParams": {
+                "fieldSettings": {
+                  "init": {
+                    "dataSourceKey": "main",
+                    "collectionName": "pets",
+                    "fieldPath": "updatedAt"
+                  }
+                },
+                "detailItemSettings": {
+                  "showLabel": {
+                    "showLabel": true
+                  }
+                }
+              },
+              "subKey": "items",
+              "subType": "array",
+              "subModels": {
+                "field": {
+                  "uid": "e903qkbq4z8n",
+                  "use": "DisplayDateTimeFieldModel",
+                  "stepParams": {
+                    "fieldSettings": {
+                      "init": {
+                        "dataSourceKey": "main",
+                        "collectionName": "pets",
+                        "fieldPath": "updatedAt"
+                      }
+                    }
+                  },
+                  "subKey": "field",
+                  "subType": "object",
+                  "sortIndex": 2
+                }
+              },
+              "sortIndex": 12
+            }
+          ]
+        },
+        "sortIndex": 1
+      }
+    }
+  },
+  "pageRoute": {
+    "createdAt": "2026-03-28T05:50:46.516Z",
+    "updatedAt": "2026-03-28T05:50:46.516Z",
+    "id": 355788225118208,
+    "parentId": 336550660341760,
+    "title": "Pet Management",
+    "tooltip": null,
+    "icon": null,
+    "schemaUid": "pet-management",
+    "menuSchemaUid": "menu-pet-management",
+    "tabSchemaName": null,
+    "type": "flowPage",
+    "options": null,
+    "sort": 17,
+    "hideInMenu": null,
+    "enableTabs": false,
+    "enableHeader": null,
+    "displayTitle": null,
+    "hidden": null,
+    "createdById": null,
+    "updatedById": null,
+    "children": [
+      {
+        "createdAt": "2026-03-28T05:50:46.807Z",
+        "updatedAt": "2026-03-28T05:50:46.807Z",
+        "id": 355788225118210,
+        "parentId": 355788225118208,
+        "title": null,
+        "tooltip": null,
+        "icon": null,
+        "schemaUid": "tabs-pet-management",
+        "menuSchemaUid": null,
+        "tabSchemaName": "tab-pet-management",
+        "type": "tabs",
+        "options": null,
+        "sort": 1,
+        "hideInMenu": null,
+        "enableTabs": null,
+        "enableHeader": null,
+        "displayTitle": null,
+        "hidden": true,
+        "createdById": null,
+        "updatedById": null
+      }
+    ]
+  },
+  "tabs": [
+    {
+      "createdAt": "2026-03-28T05:50:46.807Z",
+      "updatedAt": "2026-03-28T05:50:46.807Z",
+      "id": 355788225118210,
+      "parentId": 355788225118208,
+      "title": null,
+      "tooltip": null,
+      "icon": null,
+      "schemaUid": "tabs-pet-management",
+      "menuSchemaUid": null,
+      "tabSchemaName": "tab-pet-management",
+      "type": "tabs",
+      "options": null,
+      "sort": 1,
+      "hideInMenu": null,
+      "enableTabs": null,
+      "enableHeader": null,
+      "displayTitle": null,
+      "hidden": true,
+      "createdById": null,
+      "updatedById": null
+    }
+  ]
+}

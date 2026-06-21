@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { VectorStore } from '@langchain/core/vectorstores';
-import { VectorStoreProp } from '../types';
+import { DocumentSegmentedWithScore, VectorStoreProp } from '../types';
 
 export interface VectorStoreProviderFeature {
   register(vsp: VectorStoreProvider): void;
+  providerNames: string[];
   createVectorStoreService(providerName: string, vectorStoreProps?: VectorStoreProp[]): Promise<VectorStoreService>;
 }
 
@@ -20,8 +20,8 @@ export interface VectorStoreProvider {
   createVectorStoreService(vectorStoreProps?: VectorStoreProp[]): Promise<VectorStoreService>;
 }
 
-export interface VectorStoreService {
-  getVectorStore(): Promise<VectorStore>;
+export interface VectorStoreService<VS = any> {
+  getVectorStore(): Promise<VS>;
   search(query: string, options?: VectorStoreSearchOptions): Promise<DocumentSegmentedWithScore[]>;
 }
 
@@ -29,14 +29,4 @@ export type VectorStoreSearchOptions = {
   topK?: number;
   score?: string;
   filter?: any;
-};
-
-export type DocumentSegmented = {
-  content: string;
-  metadata: Record<string, any>;
-  id?: string;
-};
-
-export type DocumentSegmentedWithScore = DocumentSegmented & {
-  score: number;
 };

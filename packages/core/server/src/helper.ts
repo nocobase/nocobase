@@ -10,7 +10,7 @@
 import cors from '@koa/cors';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
-import { uid } from '@nocobase/utils';
+import { getDateVars, uid } from '@nocobase/utils';
 import { Command } from 'commander';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
@@ -39,6 +39,33 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
+function resolveCorsOrigin(ctx: any) {
+  const origin = ctx.get('origin');
+  const disallowNoOrigin = process.env.CORS_DISALLOW_NO_ORIGIN === 'true';
+  const whitelistString = process.env.CORS_ORIGIN_WHITELIST;
+
+  if (!origin && disallowNoOrigin) {
+    return false;
+  }
+
+  if (!whitelistString) {
+    return origin;
+  }
+
+  const whitelist = new Set(
+    whitelistString
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
+
+  if (whitelist.has(origin)) {
+    return origin;
+  }
+
+  return false;
+}
+
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
   app.use(
     async function generateReqId(ctx, next) {
@@ -55,9 +82,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   app.use(
     cors({
       exposeHeaders: ['content-disposition'],
-      origin(ctx) {
-        return ctx.get('origin');
-      },
+      origin: resolveCorsOrigin,
       ...options.cors,
     }),
     {
@@ -169,4 +194,102 @@ export const enablePerfHooks = (app: Application) => {
 
 export function getBodyLimit() {
   return process.env.REQUEST_BODY_LIMIT || '10mb';
+}
+
+function getUser(ctx) {
+  return async ({ fields }) => {
+    const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
+    ctx.logger?.info('filter-parse: ', { userFields });
+    if (!ctx.state.currentUser) {
+      return;
+    }
+    if (!userFields.length) {
+      return;
+    }
+    const user = await ctx.db.getRepository('users').findOne({
+      filterByTk: ctx.state.currentUser.id,
+      fields: userFields,
+    });
+    ctx.logger?.info('filter-parse: ', {
+      $user: user?.toJSON(),
+    });
+    return user;
+  };
+}
+
+function isNumeric(str: any) {
+  if (typeof str === 'number') return true;
+  if (typeof str != 'string') return false;
+  return !isNaN(str as any) && !isNaN(parseFloat(str));
+}
+
+function getFieldFromCollectionManager(ctx, resourceName: string, fieldPath: string) {
+  const collectionManager = ctx.dataSource?.collectionManager;
+  if (!collectionManager?.getCollection) {
+    return;
+  }
+
+  const collection = collectionManager.getCollection(resourceName);
+  if (!collection?.getField) {
+    return;
+  }
+
+  const [firstName, ...others] = fieldPath.split('.');
+  let field = collection.getField(firstName);
+  if (!field || !others.length) {
+    return field;
+  }
+
+  let currentCollection =
+    typeof field.targetCollection === 'function' ? field.targetCollection() : field.targetCollection;
+
+  for (const name of others) {
+    if (!currentCollection?.getField) {
+      return;
+    }
+    field = currentCollection.getField(name);
+    if (!field) {
+      return;
+    }
+    currentCollection =
+      typeof field.targetCollection === 'function' ? field.targetCollection() : field.targetCollection;
+  }
+
+  return field;
+}
+
+export function createContextVariablesScope(ctx) {
+  const state = JSON.parse(JSON.stringify(ctx.state));
+  return {
+    timezone: ctx.get('x-timezone'),
+    now: new Date().toISOString(),
+    getField: (path) => {
+      const { resourceName } = ctx.action;
+      const fieldPath = path
+        .split('.')
+        .filter((p) => !p.startsWith('$') && !isNumeric(p))
+        .join('.');
+
+      if (!ctx.database) {
+        return getFieldFromCollectionManager(ctx, resourceName, fieldPath);
+      }
+
+      return ctx.database.getFieldByPath(`${resourceName}.${fieldPath}`);
+    },
+    vars: {
+      ctx: {
+        state,
+      },
+      // @deprecated
+      $system: {
+        now: new Date().toISOString(),
+      },
+      // @deprecated
+      $date: getDateVars(),
+      // 新的命名方式，防止和 formily 内置变量冲突
+      $nDate: getDateVars(),
+      $user: getUser(ctx),
+      $nRole: ctx.state.currentRole === '__union__' ? ctx.state.currentRoles : ctx.state.currentRole,
+    },
+  };
 }

@@ -1,0 +1,286 @@
+[
+  {
+    "type": "custom-link",
+    "label": "クイックスタート",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "プラグイン開発概要",
+        "link": "/plugin-development/"
+      },
+      {
+        "type": "custom-link",
+        "label": "最初のプラグインを作成",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI でプラグイン開発",
+        "link": "/plugin-development/ai-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "プロジェクトディレクトリ構造",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "サーバーサイド開発",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/plugin-development/server/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin プラグイン",
+        "link": "/plugin-development/server/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Collections データテーブル",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "Database データベース操作",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager データソース管理",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ResourceManager リソース管理",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL 権限制御",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "Middleware ミドルウェア",
+        "link": "/plugin-development/server/middleware"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cache キャッシュ",
+        "link": "/plugin-development/server/cache"
+      },
+      {
+        "type": "custom-link",
+        "label": "Event イベント",
+        "link": "/plugin-development/server/event"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context リクエストコンテキスト",
+        "link": "/plugin-development/server/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration アップグレードスクリプト",
+        "link": "/plugin-development/server/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger ログ",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Telemetry テレメトリ",
+        "link": "/plugin-development/server/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "i18n 国際化",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Command コマンドライン",
+        "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "CronJobManager 定期タスク管理",
+        "link": "/plugin-development/server/cron-job-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test テスト",
+        "link": "/plugin-development/server/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "クライアントサイド開発",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/plugin-development/client/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin プラグイン",
+        "link": "/plugin-development/client/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Router ルーティング",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "Component コンポーネント開発",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概要",
+            "link": "/plugin-development/client/component/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Styles & Themes スタイルとテーマ",
+            "link": "/plugin-development/client/component/styles-themes"
+          },
+          {
+            "type": "custom-link",
+            "label": "i18n 国際化",
+            "link": "/plugin-development/client/component/i18n"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Context コンテキスト",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概要",
+            "link": "/plugin-development/client/ctx/"
+          },
+          {
+            "type": "custom-link",
+            "label": "よく使う機能",
+            "link": "/plugin-development/client/ctx/common-capabilities"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowEngine",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概要",
+            "link": "/plugin-development/client/flow-engine/"
+          },
+          {
+            "type": "custom-link",
+            "label": "ブロック拡張",
+            "link": "/plugin-development/client/flow-engine/block"
+          },
+          {
+            "type": "custom-link",
+            "label": "フィールド拡張",
+            "link": "/plugin-development/client/flow-engine/field"
+          },
+          {
+            "type": "custom-link",
+            "label": "アクション拡張",
+            "link": "/plugin-development/client/flow-engine/action"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "プラグイン実装例",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概要",
+            "link": "/plugin-development/client/examples/"
+          },
+          {
+            "type": "custom-link",
+            "label": "プラグイン設定ページを作る",
+            "link": "/plugin-development/client/examples/settings-page"
+          },
+          {
+            "type": "custom-link",
+            "label": "カスタム表示ブロックを作る",
+            "link": "/plugin-development/client/examples/custom-block"
+          },
+          {
+            "type": "custom-link",
+            "label": "カスタムフィールドコンポーネントを作る",
+            "link": "/plugin-development/client/examples/custom-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "カスタムアクションボタンを作る",
+            "link": "/plugin-development/client/examples/custom-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "フロント・バック連携のデータ管理プラグインを作る",
+            "link": "/plugin-development/client/examples/fullstack-plugin"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "付録",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "FAQ・トラブルシューティング",
+            "link": "/plugin-development/client/appendix/faq"
+          },
+          {
+            "type": "custom-link",
+            "label": "プラグイン開発チートシート",
+            "link": "/plugin-development/client/appendix/cheatsheet"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "その他",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "言語リスト",
+        "link": "/plugin-development/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "依存関係管理",
+        "link": "/plugin-development/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "ビルドとパッケージング",
+        "link": "/plugin-development/build"
+      }
+    ]
+  }
+]

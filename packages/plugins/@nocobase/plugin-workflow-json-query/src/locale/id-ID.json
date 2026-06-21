@@ -1,0 +1,13 @@
+{
+  "Add property": "Tambah properti",
+  "Alias": "Alias",
+  "Data source": "Sumber data",
+  "Display label": "Label tampilan",
+  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "Jika tipe hasil kueri adalah objek atau array objek, dapat memetakan properti yang akan diakses di node berikutnya.",
+  "JSON calculation": "Perhitungan JSON",
+  "Properties mapping": "Pemetaan properti",
+  "Property key": "Kunci properti",
+  "Query engine": "Mesin kueri",
+  "Query expression": "Ekspresi kueri",
+  "Transforming or calculating values from complex JSON data.": "Mentransformasi atau menghitung nilai dari data JSON kompleks."
+}

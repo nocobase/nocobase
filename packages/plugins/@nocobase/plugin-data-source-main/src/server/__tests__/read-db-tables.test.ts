@@ -7,19 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
-import Application, { Plugin } from '@nocobase/server';
+import Database, { createMockDatabase } from '@nocobase/database';
+import { MainDataSource, Plugin } from '@nocobase/server';
 import { createApp } from '.';
+import { uid } from '@nocobase/utils';
+import { DataTypes, QueryTypes, Sequelize } from 'sequelize';
 
 describe('db2cm test', () => {
   let db: Database;
   let app: any;
 
-  afterEach(async () => {
-    await app.destroy();
-  });
-
   describe('uiManageable test', async () => {
+    afterEach(async () => {
+      await app.destroy();
+    });
     class Plugin1 extends Plugin {
       static collection = {
         name: 'hello',
@@ -85,6 +86,252 @@ describe('db2cm test', () => {
       expect(response.status).toBe(500);
       const fields = await db.getRepository('fields').find({ filter: { collectionName: 'hello' } });
       expect(fields.some((c) => c.name === 'name')).toBeTruthy();
+    });
+  });
+
+  describe.skipIf(process.env.DB_DIALECT === 'sqlite')('read db tables', async () => {
+    let queryInterface: any;
+    let schema: string;
+
+    beforeEach(async () => {
+      app = await createApp({
+        plugins: ['data-source-manager'],
+      });
+      db = app.db;
+
+      queryInterface = db.sequelize.getQueryInterface();
+      schema = db.options.schema;
+    });
+
+    afterEach(async () => {
+      await db.clean({ drop: true });
+      await app.destroy();
+    });
+
+    it('get available tables', async () => {
+      await queryInterface.createTable(
+        {
+          schema,
+          tableName: 'table',
+        },
+        {
+          id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+          },
+        },
+      );
+      const response = await app
+        .agent()
+        .resource('dataSources')
+        .readTables({
+          values: {
+            dataSourceKey: 'main',
+          },
+        });
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].name).toBe('table');
+    });
+
+    it('load table', async () => {
+      await queryInterface.createTable(
+        {
+          schema,
+          tableName: 'table',
+        },
+        {
+          id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+          },
+        },
+      );
+      const tables = ['table'];
+
+      let collections = await db.getRepository('collections').find({
+        filter: { name: tables },
+      });
+      expect(collections.length).toBe(0);
+
+      const response = await app
+        .agent()
+        .resource('dataSources')
+        .loadTables({
+          values: {
+            dataSourceKey: 'main',
+            tables,
+          },
+        });
+      expect(response.status).toBe(200);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      collections = await db.getRepository('collections').find({
+        filter: { name: tables },
+      });
+
+      expect(collections.length).toBe(1);
+    });
+  });
+
+  describe('read db tables with table prefix', async () => {
+    let queryInterface: any;
+    let schema: string;
+    let mainDataSource: MainDataSource;
+
+    beforeEach(async () => {
+      app = await createApp({
+        database: {
+          tablePrefix: 'nb',
+        },
+      });
+      db = app.db;
+      mainDataSource = app.dataSourceManager.get('main') as MainDataSource;
+
+      queryInterface = db.sequelize.getQueryInterface();
+      schema = db.options.schema;
+    });
+
+    afterEach(async () => {
+      await db.clean({ drop: true });
+      await app.destroy();
+    });
+
+    it('reproduces loadTables using prefixed runtime table instead of the original physical table', async () => {
+      await queryInterface.createTable(
+        {
+          schema,
+          tableName: 'a1',
+        },
+        {
+          caspian_id: {
+            type: DataTypes.STRING(32),
+            primaryKey: true,
+            allowNull: false,
+          },
+          refpoint: {
+            type: DataTypes.STRING(50),
+            allowNull: true,
+          },
+        },
+      );
+
+      const quotedTableName = db.utils.quoteTable(
+        schema
+          ? {
+              schema,
+              tableName: 'a1',
+            }
+          : 'a1',
+      );
+      await db.sequelize.query(`INSERT INTO ${quotedTableName} (caspian_id, refpoint) VALUES ('id1', 'rp1')`, {
+        type: QueryTypes.INSERT,
+      });
+
+      const tablesBeforeLoad = await mainDataSource.readTables();
+      expect(tablesBeforeLoad.some((table) => table.name === 'a1')).toBe(true);
+
+      await mainDataSource.loadTables({} as any, ['a1']);
+
+      const loadedCollectionModel = await db.getRepository('collections').findOne({
+        filter: {
+          name: 'a1',
+        },
+      });
+      expect(loadedCollectionModel.get('tableName')).toBe('a1');
+
+      const loadedCollection = db.getCollection('a1');
+      expect(loadedCollection.model.tableName).toBe('a1');
+
+      const listResponse = await app.agent().resource('a1').list({
+        page: 1,
+        pageSize: 20,
+        tree: false,
+      });
+      expect(listResponse.status).toBe(200);
+      expect(listResponse.body.data).toHaveLength(1);
+      const row = listResponse.body.data[0];
+      expect(row.refpoint).toBe('rp1');
+
+      const records = await loadedCollection.repository.find();
+      expect(records).toHaveLength(1);
+      expect(String(records[0].get('caspian_id')).trim()).toBe('id1');
+      expect(records[0].get('refpoint')).toBe('rp1');
+
+      const tablesAfterLoad = await mainDataSource.readTables();
+      expect(tablesAfterLoad.some((table) => table.name === 'a1')).toBe(false);
+    });
+  });
+
+  describe.runIf(process.env.DB_DIALECT === 'postgres')('sync fields with database schema', () => {
+    let collectionName: string;
+
+    beforeEach(async () => {
+      app = await createApp();
+      db = app.db;
+      collectionName = `t_${uid(6)}`;
+    });
+
+    afterEach(async () => {
+      await db.clean({ drop: true });
+      await app.destroy();
+    });
+
+    it('should not persist current database schema into collection options when syncing fields', async () => {
+      await app
+        .agent()
+        .resource('collections')
+        .create({
+          values: {
+            name: collectionName,
+            fields: [
+              {
+                type: 'string',
+                name: 'title',
+              },
+            ],
+          },
+        });
+
+      let collectionRecord = await db.getRepository('collections').findOne({
+        filter: {
+          name: collectionName,
+        },
+      });
+      expect(collectionRecord.get('schema')).toBeUndefined();
+
+      const collection = db.getCollection(collectionName);
+      await db.sequelize.getQueryInterface().addColumn(collection.getTableNameWithSchema(), 'description', {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      });
+
+      const response = await app
+        .agent()
+        .resource('mainDataSource')
+        .syncFields({
+          values: {
+            collections: [collectionName],
+          },
+        });
+      expect(response.status).toBe(200);
+
+      collectionRecord = await db.getRepository('collections').findOne({
+        filter: {
+          name: collectionName,
+        },
+      });
+      expect(collectionRecord.get('schema')).toBeUndefined();
     });
   });
 });

@@ -15,6 +15,7 @@ export default {
   },
   migrationRules: ['schema-only'],
   name: 'executions',
+  dataCategory: 'business',
   shared: true,
   fields: [
     {
@@ -30,6 +31,18 @@ export default {
       },
       primaryKey: true,
       allowNull: false,
+    },
+    {
+      type: 'bigInt',
+      name: 'workflowId',
+      interface: 'id',
+      uiSchema: {
+        type: 'number',
+        title: `{{t("Version ID", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'InputNumber',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
     },
     {
       type: 'belongsTo',
@@ -81,9 +94,32 @@ export default {
       },
     },
     {
+      type: 'string',
+      name: 'reason',
+      uiSchema: {
+        title: `{{t("Reason", { ns: "${NAMESPACE}" })}}`,
+        type: 'string',
+        'x-component': 'Select',
+        'x-decorator': 'FormItem',
+        enum: '{{ExecutionReasonOptions}}',
+      },
+    },
+    {
       type: 'boolean',
       name: 'dispatched',
       defaultValue: false,
+    },
+    {
+      type: 'bigInt',
+      name: 'parentExecutionId',
+      interface: 'id',
+      uiSchema: {
+        type: 'number',
+        title: `{{t("Parent execution ID", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'InputNumber',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
     },
     {
       type: 'json',
@@ -94,9 +130,31 @@ export default {
       name: 'output',
     },
     {
-      interface: 'createdAt',
+      type: 'datetime',
+      name: 'startedAt',
+      uiSchema: {
+        type: 'datetime',
+        title: `{{t("Started at", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
+    {
+      type: 'datetime',
+      name: 'expiresAt',
+      uiSchema: {
+        type: 'datetime',
+        title: `{{t("Expires at", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
+    {
       type: 'datetime',
       name: 'createdAt',
+      interface: 'createdAt',
       uiSchema: {
         type: 'datetime',
         title: `{{t("Triggered at", { ns: "${NAMESPACE}" })}}`,
@@ -105,6 +163,22 @@ export default {
         'x-read-pretty': true,
       },
     },
+    {
+      type: 'boolean',
+      name: 'manually',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        title: `{{t("Triggered manually", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'Checkbox',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
   ],
-  indexes: [{ fields: ['dispatched', 'id'] }],
+  indexes: [
+    { fields: ['dispatched', 'id'] },
+    { fields: ['status', 'expiresAt'] },
+    { fields: ['parentExecutionId', 'status'] },
+  ],
 };

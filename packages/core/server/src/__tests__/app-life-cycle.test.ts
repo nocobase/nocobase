@@ -12,16 +12,7 @@ import Application, { ApplicationOptions } from '../application';
 import { createAppProxy } from '../helper';
 import Plugin from '../plugin';
 import { AddPresetError } from '../plugin-manager';
-
-const mockServer = (options?: ApplicationOptions) => {
-  return new Application({
-    database: {
-      dialect: 'sqlite',
-      storage: ':memory:',
-    },
-    ...options,
-  });
-};
+import { mockServer } from '@nocobase/test';
 
 describe('application life cycle', () => {
   let app: Application;

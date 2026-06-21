@@ -14,7 +14,7 @@ import fs from 'fs/promises';
 
 import Application from './application';
 import { SystemLogger } from '@nocobase/logger';
-import { sleep } from '@nocobase/utils';
+import { sleep, storagePathJoin } from '@nocobase/utils';
 
 export const QUEUE_DEFAULT_INTERVAL = 250;
 export const QUEUE_DEFAULT_CONCURRENCY = 1;
@@ -24,6 +24,7 @@ export type QueueCallbackOptions = {
   id?: string;
   retried?: number;
   signal?: AbortSignal;
+  queueOptions?: QueueMessageOptions;
 };
 
 export type QueueCallback = (message: any, options: QueueCallbackOptions) => Promise<void>;
@@ -34,6 +35,12 @@ export type QueueEventOptions = {
    */
   interval?: number;
   concurrency?: number;
+  /**
+   * Shared across multiple applications.
+   * Will not use app prefix for channel name.
+   * @experimental
+   */
+  shared?: boolean;
   idle(): boolean;
   process: QueueCallback;
 };
@@ -80,7 +87,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   }
 
   private get storagePath() {
-    return path.resolve(process.cwd(), 'storage', 'apps', this.options.appName, 'event-queue.json');
+    return storagePathJoin('apps', this.options.appName, 'event-queue.json');
   }
 
   listen = (channel: string) => {
@@ -296,6 +303,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         id,
         retried,
         signal: AbortSignal.timeout(timeout),
+        queueOptions: message.options,
       }))()
       .then(() => {
         logger.debug(`memory queue (${channel}) consumed message (${id})`);
@@ -329,19 +337,20 @@ export class EventQueue {
     protected app: Application,
     protected options: EventQueueOptions = {},
   ) {
-    if (app.serving()) {
-      this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name, logger: this.app.logger }));
+    this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name, logger: this.app.logger }));
 
-      app.on('afterStart', async () => {
-        await this.connect();
-      });
-      app.on('beforeStop', async () => {
-        app.logger.info('[queue] gracefully shutting down...');
-        await this.close();
-      });
-    }
+    app.on('afterStart', async () => {
+      await this.connect();
+    });
+    app.on('afterStop', async () => {
+      app.logger.info('[queue] gracefully shutting down...');
+      await this.close();
+    });
   }
-  getFullChannel(channel: string) {
+  getFullChannel(channel: string, shared = false) {
+    if (shared) {
+      return [this.channelPrefix, channel].filter(Boolean).join('.');
+    }
     return [this.app.name, this.channelPrefix, channel].filter(Boolean).join('.');
   }
   setAdapter<A extends IEventQueueAdapter>(adapter: A) {
@@ -357,15 +366,11 @@ export class EventQueue {
     if (!this.adapter) {
       throw new Error('no adapter set, cannot connect');
     }
-    if (!this.app.serving()) {
-      this.app.logger.warn('app is not serving, will not connect to event queue');
-      return;
-    }
     await this.adapter.connect();
     this.app.logger.debug(`connected to adapter, using memory? ${this.adapter instanceof MemoryEventQueueAdapter}`);
 
     for (const [channel, event] of this.events.entries()) {
-      this.adapter.subscribe(this.getFullChannel(channel), event);
+      this.adapter.subscribe(this.getFullChannel(channel, event.shared), event);
     }
   }
   async close() {
@@ -373,8 +378,8 @@ export class EventQueue {
       return;
     }
     await this.adapter.close();
-    for (const channel of this.events.keys()) {
-      this.adapter.unsubscribe(this.getFullChannel(channel));
+    for (const [channel, event] of this.events.entries()) {
+      this.adapter.unsubscribe(this.getFullChannel(channel, event.shared));
     }
   }
   subscribe(channel: string, options: QueueEventOptions) {
@@ -385,7 +390,7 @@ export class EventQueue {
     this.events.set(channel, options);
 
     if (this.isConnected()) {
-      this.adapter.subscribe(this.getFullChannel(channel), options);
+      this.adapter.subscribe(this.getFullChannel(channel, options.shared), this.events.get(channel));
     }
   }
   unsubscribe(channel: string) {
@@ -395,7 +400,7 @@ export class EventQueue {
     this.events.delete(channel);
 
     if (this.isConnected()) {
-      this.adapter.unsubscribe(this.getFullChannel(channel));
+      this.adapter.unsubscribe(this.getFullChannel(channel, this.events.get(channel)?.shared));
     }
   }
   async publish(channel: string, message: any, options: QueueMessageOptions = {}) {
@@ -405,7 +410,11 @@ export class EventQueue {
     if (!this.isConnected()) {
       throw new Error('event queue not connected, cannot publish');
     }
-    const c = this.getFullChannel(channel);
+    const event = this.events.get(channel);
+    if (!event) {
+      throw new Error(`event queue not subscribed on channel "${channel}", cannot publish`);
+    }
+    const c = this.getFullChannel(channel, event.shared);
     this.app.logger.debug(`event queue publishing to channel(${c})`, { message });
     await this.adapter.publish(c, message, {
       timeout: QUEUE_DEFAULT_ACK_TIMEOUT,

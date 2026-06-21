@@ -22,13 +22,13 @@ describe('workflow > instructions > manual', () => {
   let CommentRepo;
   let WorkflowModel;
   let workflow;
-  let UserModel;
+  let UserRepo;
   let users;
   let UserJobModel;
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'auth', 'workflow-manual'],
+      plugins: ['workflow-manual'],
     });
     // await app.getPlugin('auth').install();
     agent = app.agent();
@@ -36,13 +36,15 @@ describe('workflow > instructions > manual', () => {
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     CommentRepo = db.getCollection('comments').repository;
-    UserModel = db.getCollection('users').model;
+    UserRepo = db.getRepository('users');
     UserJobModel = db.getModel('workflowManualTasks');
 
-    users = await UserModel.bulkCreate([
-      { id: 2, nickname: 'a' },
-      { id: 3, nickname: 'b' },
-    ]);
+    users = await UserRepo.create({
+      values: [
+        { id: 2, nickname: 'a' },
+        { id: 3, nickname: 'b' },
+      ],
+    });
 
     userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
 

@@ -29,6 +29,7 @@ export default {
       name: 'avatar',
       type: 'string',
       interface: 'image',
+      defaultValue: 'nocobase-015-male',
     },
     {
       name: 'bio',
@@ -37,6 +38,11 @@ export default {
     },
     {
       name: 'about',
+      type: 'text',
+      interface: 'textarea',
+    },
+    {
+      name: 'defaultPrompt',
       type: 'text',
       interface: 'textarea',
     },
@@ -76,7 +82,7 @@ export default {
      * knowledgeBase: {
      *  topK: number;
      *  score: string;
-     *  knowledgeBaseIds: string[];
+     *  knowledgeBaseKeys: string[];
      * }
      */
     {
@@ -96,5 +102,42 @@ export default {
       allowNull: false,
       defaultValue: false,
     },
+    {
+      name: 'category',
+      type: 'string',
+      allowNull: false,
+      defaultValue: 'business', // business, developer
+    },
+    {
+      name: 'deprecated',
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: false,
+    },
   ],
+};
+
+export type AIEmployee = {
+  username: string;
+  nickname?: string;
+  position?: string;
+  avatar?: string;
+  bio?: string;
+  about?: string;
+  defaultPrompt?: string;
+  greeting?: string;
+  chatSettings?: unknown;
+  skillSettings?: unknown;
+  modelSettings?: unknown;
+  dataSourceSettings?: unknown;
+  knowledgeBasePrompt?: string;
+  knowledgeBase?: {
+    topK: number;
+    score: string;
+    knowledgeBaseKeys: string[];
+  };
+  enableKnowledgeBase: boolean;
+  enabled: boolean;
+  builtIn: boolean;
+  missingKnowledgeBaseKeys?: string[];
 };

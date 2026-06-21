@@ -1,0 +1,15 @@
+{
+  "External API Settings": "External API Settings",
+  "API Configuration": "API Configuration",
+  "About": "About",
+  "Plugin name": "Plugin name",
+  "Version": "Version",
+  "This is a demo plugin showing how to register a settings page with multiple tabs.": "This is a demo plugin showing how to register a settings page with multiple tabs.",
+  "Please enter API Key": "Please enter API Key",
+  "Please enter API Secret": "Please enter API Secret",
+  "Please enter endpoint URL": "Please enter endpoint URL",
+  "Save": "Save",
+  "Reset": "Reset",
+  "Saved successfully": "Saved successfully",
+  "Save failed": "Save failed"
+}

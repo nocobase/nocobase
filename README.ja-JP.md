@@ -1,70 +1,161 @@
-[English](./README.md) | [简体中文](./README.zh-CN.md) | 日本語
+[English](./README.md) | [简体中文](./README.zh-CN.md) | 日本語 | [Français](./README.fr.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Bahasa Indonesia](./README.id.md) | [Tiếng Việt](./README.vi.md) | [Deutsch](./README.de.md)
 
-https://github.com/user-attachments/assets/cf08bfe5-e6e6-453c-8b96-350a6a8bed17
+https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 
 <p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-<a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 </p>
 
-## NocoBaseはなに？
+## 目次
 
-NocoBaseは非常に拡張性の高いオープンソースのノーコード開発プラットフォームです。
-大量のお時間と資金を投入して開発する必要がなく、NocoBaseをデプロイすることですぐにでもプライベートで制御可能かつ非常に拡張性の高いノーコード開発プラットフォームを構築することができます。
+- [NocoBase とは](#nocobase-とは)
+- [クイックスタート](#クイックスタート)
+- [リリースノート](#リリースノート)
+- [主な特長](#主な特長)
 
-ホームページ：  
-https://www.nocobase.com/
+## NocoBase とは
 
-オンライン体験：  
-https://demo-cn.nocobase.com/new
+NocoBase は、企業向け業務システムをすばやく構築するためのオープンソース AI + ノーコード開発プラットフォームです。AI にゼロからコードを生成させるのとは異なり、NocoBase は本番環境で検証済みの基盤機能と、見たまま操作できるノーコード UI を提供します。これにより、AI と人が効率よく協働し、開発スピードとシステムの信頼性を両立できます。
 
-ドキュメント：  
-https://docs-cn.nocobase.com/
+公式サイト:  
+https://www.nocobase.com/ja
 
-コミュニティ：  
+オンラインデモ:  
+https://demo.nocobase.com/new
+
+ドキュメント:  
+https://docs.nocobase.com/ja/
+
+フォーラム:  
 https://forum.nocobase.com/
 
-チュートリアル：  
-https://www.nocobase.com/ja/tutorials
-
-顧客のストーリー：  
+ユーザーストーリー:  
 https://www.nocobase.com/ja/blog/tags/customer-stories
+
+## クイックスタート
+
+```bash
+# NocoBase CLI をインストール
+npm install -g @nocobase/cli
+nb --version
+
+# NocoBase アプリをインストール
+nb init --ui
+
+# オプション: AI Agent と協力して構築
+codex # claude, opencode
+```
+
+詳細手順:
+
+- <a target="_blank" href="https://docs.nocobase.com/ja/ai/install-nocobase-app">NocoBase アプリをインストール</a>
+- <a target="_blank" href="https://docs.nocobase.com/ja/ai/quick-start">AI Agent 接続ガイド</a>
 
 ## リリースノート
 
-リリースノートは[ブログ](https://www.nocobase.com/ja/blog/timeline)で随時更新され、週ごとにまとめて公開しています。
+[リリースノート](https://www.nocobase.com/ja/blog/timeline) では、更新内容を継続的に公開しています。
 
-## 他の製品との違い
+## 主な特長
 
-### 1. データモデル駆動 
+### 1. 協働: AI と人が一緒に構築
 
-多くのノーコード製品はフォーム、表、またはプロセス駆動型であり、表に項目を追加することでフィールドを新しく作成するなど、ユーザーインターフェース上で直接データ構造を作成します。この方法のメリットは使いやすさですが、機能と柔軟性が制限されており、複雑なシナリオには対応しにくいという欠点があります。
+Coding Agent には CLI と Skills を、人には見たまま使えるノーコード UI を提供し、両者が効率よく協働できます。
 
-NocoBaseはデータ構造とユーザーインターフェースを分離する設計理念を採用しており、データテーブルに任意の数や形態のブロック（データビュー）を作成できます。各ブロックには異なるスタイル、テキスト、操作を定義できるため、ノーコードの簡単な操作性とネイティブ開発の柔軟性を両立しています。
-![model](https://static-docs.nocobase.com/model.png)
+#### 使い慣れた AI Coding Agent で開発
 
-### 2. リアルタイムエディタ
-NocoBaseは複雑で特徴的な業務システムを開発できますが、複雑で専門的な知識は必要としません。ワンクリックで設定オプションをユーザーインターフェースに表示でき、システム設定権限を持つ管理者は、見たままの操作方法でユーザーインターフェースを直接設定できます。
+主要な Coding Agent を使えば、デプロイから構築まで短時間で進められます。
+
+- Claude Code、Cursor、Codex、OpenCode、TRAE など主要 Agent に対応
+- セットアップ、構築、移行、公開まで Agent が一通り担えます
+
+![coding-agent](https://static-docs.nocobase.com/coding-agent.png)
+
+#### 見たまま操作できる ノーコード UI で人が構築
+
+見たまま操作できる UI で、人が直接構築・修正できます。AI なしでも進められます。
+
+- 利用モードと設定モードをワンクリックで切り替え
+- データモデル、ページ、ワークフロー、権限を可視化して確認・設定できます
+- 一般ユーザー向けで、開発者だけのものではありません
+
 ![wysiwyg](https://static-docs.nocobase.com/wysiwyg.gif)
 
-### 3. プラグインによる高拡張性
+#### AI 開発と手動構築 を自由に組み合わせ
 
-NocoBaseはプラグイン化されたアーキテクチャを採用しており、新しい機能はすべてプラグインの開発とインストールによって実現できます。機能の拡張は、スマートフォンにアプリをインストールするのと同じくらい簡単です。
+必要に応じて分担でき、人が AI の成果を調整し、AI も人の設定を引き継げます。
+
+- AI はデータモデル、ページ、ワークフローをすばやく作れます
+- 人は UI や操作性をすばやく調整できます
+- 必要に応じて協働し、継続的に改善
+
+![ai-no-coding](https://static-docs.nocobase.com/ai-no-coding.png)
+
+### 2. インテリジェント: AI は開発だけでなく業務も担う
+
+NocoBase には AI 社員が組み込まれており、AI がシステム内で直接働けます。
+
+#### AI 社員 が業務フローに組み込まれる
+
+AI 社員は業務コンテキストを自動取得し、システム内で直接タスクを実行します。
+
+- フロント側: 分析、質問応答、フォーム入力などを支援
+- バックエンド側: 文書認識、リスク監視、タスク振り分けを自動処理
+- ワークフローに統合され、判断や実行にも参加できます
+
+![AI-employee](https://static-docs.nocobase.com/ai-employee-home.png)
+
+#### オープンな接続口 で Agent エコシステムと連携
+
+MCP、HTTP API、CLI、Skills により、外部 Agent が安全に接続できます。
+
+- OpenClaw、Hermes、Dify、Coze、n8n などが標準プロトコルで接続できます
+- Telegram、WhatsApp、Slack、Gmail と連携し、データ参照、操作実行、業務フロー起動が行えます
+- 統一されたインターフェースで、内部と外部の Agent が同じ境界で動作します
+
+![agents](https://static-docs.nocobase.com/f-agents-logos.jpeg)
+
+#### 権限制御 により、振る舞いを管理できる
+
+AI のすべての操作は、人と同じ細かな権限制御に従います。
+
+- 各 AI 社員は独立ロールを持ち、権限はフィールド単位まで設定できます
+- 監査ログで、各データ変更やフロー起動を追跡できます
+- 管理者は AI の権限をいつでも調整し、境界を明確に保てます
+
+![permission](https://static-docs.nocobase.com/f-permission.png)
+
+### 3. 信頼性: 基盤は整っているので、業務に集中できる
+
+データモデル、権限制御、ワークフロー編成といった機能は複雑で、ミスが許されません。  
+NocoBase はそれらを組み込みの基盤機能として提供し、厳格なテストと多数の本番利用で検証されています。
+
+#### 充実した基盤機能 があり、毎回ゼロから始めなくてよい
+
+数十の基盤モジュールで、よくある業務要件を広くカバーします。
+
+- データモデリング、権限、ワークフロー、監査ログをすぐに使えます
+- AI が毎回作り直すブラックボックスなコードではなく、本番で検証済みです
+- 組み込みのガードレールで、AI の出力をアーキテクチャに沿わせます
+
+![core](https://static-docs.nocobase.com/f-core.png)
+
+#### データモデル駆動 で、データと UI を分離
+
+業務データは標準的なリレーショナル構造で保持され、UI から分離されます。
+
+- メイン DB、外部 DB、サードパーティ API をデータソースにできます
+- AI も人も同じデータモデルで作業するため、結果が透明です
+- データは常に自分のデータベースに保存され、プラットフォームにロックインされません
+
+![model](https://static-docs.nocobase.com/model.png)
+
+#### プラグインアーキテクチャ で、システムを持続的に進化できる
+
+マイクロカーネル設計により、すべての機能がプラグインとして成長できます。
+
+- 新機能は共通ルールに沿った組み合わせ可能なプラグインで拡張できます
+- 自社製と公式プラグインを組み合わせて業務に合わせられます
+- AI 生成でも手動開発でも、同じアーキテクチャで統一されます
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
-
-## インストール
-
-NocoBaseは3つのインストール方法をサポートしています：
-
-- <a target="_blank" href="https://docs-cn.nocobase.com/welcome/getting-started/installation/docker-compose">Dockerインストール（推奨）</a >
-
-   コードを書く必要がないノーコードシナリオに適しています。アップグレード時は最新のイメージをダウンロードして再起動するだけです。
-
-- <a target="_blank" href="https://docs-cn.nocobase.com/welcome/getting-started/installation/create-nocobase-app">create-nocobase-appインストール</a >
-
-   プロジェクトのビジネスコードが完全に独立しており、ローコード開発をサポートします。
-
-- <a target="_blank" href="https://docs-cn.nocobase.com/welcome/getting-started/installation/git-clone">Gitソースコードインストール</a >
-
-   最新の未公開バージョンを体験したい場合や、貢献したい場合、ソースコードを変更、デバッグする必要がある場合にこの方法を選択することをお勧めします。この方法は高度な開発技術が必要です。コードが更新された場合、gitフローを使用して最新のコードを取得できます。

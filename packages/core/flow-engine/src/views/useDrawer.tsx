@@ -9,20 +9,55 @@
 
 import * as React from 'react';
 import DOMPurify from 'dompurify';
-import { observer } from '..';
+import { autorun, observable, observer } from '..';
 import { FlowContext, FlowEngineContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
-import { createViewMeta } from './createViewMeta';
+import { registerPopupVariable } from './createViewMeta';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
-
-let uuid = 0;
+import { VIEW_ACTIVATED_EVENT, bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
+import { FlowEngineProvider } from '../provider';
+import { createViewScopedEngine } from '../ViewScopedFlowEngine';
+import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
+import { runViewBeforeClose } from './runViewBeforeClose';
+import { inheritLayoutContextForDetachedView } from './inheritLayoutContext';
 
 export function useDrawer() {
   const holderRef = React.useRef(null);
+  const drawerList = React.useMemo(() => observable.shallow({ value: [] }), []);
+
+  const RenderNestedDrawer = React.memo((props: { index: number }) => {
+    const { index } = props;
+    const [RenderDrawer, setRenderDrawer] = React.useState<React.ComponentType | null>(null);
+
+    React.useEffect(() => {
+      autorun(() => {
+        const list = drawerList.value;
+        if (list[index] && RenderDrawer !== list[index]) {
+          setRenderDrawer(list[index]);
+        }
+
+        if (!list[index]) {
+          setRenderDrawer(null);
+        }
+      });
+    }, [RenderDrawer, index]);
+
+    if (!RenderDrawer) {
+      return null;
+    }
+
+    return (
+      <RenderDrawer>
+        <RenderNestedDrawer index={index + 1} />
+      </RenderDrawer>
+    );
+  });
+
+  RenderNestedDrawer.displayName = 'RenderNestedDrawer';
 
   const open = (config, flowContext: FlowEngineContext) => {
-    uuid += 1;
+    const parentEngine = flowContext.engine;
     const drawerRef = React.createRef<{
       destroy: () => void;
       update: (config: any) => void;
@@ -42,7 +77,7 @@ export function useDrawer() {
     let currentHeader: any = null;
 
     // Footer 组件实现
-    const FooterComponent = ({ children, ...props }) => {
+    const FooterComponent: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       React.useEffect(() => {
         currentFooter = children;
         drawerRef.current?.setFooter(children);
@@ -57,10 +92,10 @@ export function useDrawer() {
     };
 
     // Header 组件实现
-    const HeaderComponent = ({ ...props }) => {
+    const HeaderComponent: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> = (props) => {
       React.useEffect(() => {
         currentHeader = props;
-        drawerRef.current?.setHeader(props as any);
+        drawerRef.current?.setHeader(props);
 
         return () => {
           currentHeader = null;
@@ -71,20 +106,63 @@ export function useDrawer() {
       return null; // Header 组件本身不渲染内容
     };
 
+    const ctx = new FlowContext();
+    // 为当前视图创建作用域引擎（隔离实例与缓存）
+    const scopedEngine = createViewScopedEngine(flowContext.engine);
+    const openerEngine = resolveOpenerEngine(parentEngine, scopedEngine);
+
+    // 先将引擎暴露给视图上下文，再按需继承父上下文
+    ctx.defineProperty('engine', { value: scopedEngine });
+    ctx.addDelegate(scopedEngine.context);
+    if (config.inheritContext !== false) {
+      ctx.addDelegate(flowContext);
+    } else {
+      ctx.addDelegate(flowContext.engine.context);
+      inheritLayoutContextForDetachedView(ctx, flowContext);
+    }
+
+    // 幂等保护：防止 FlowPage 路由清理时二次调用 destroy
+    let destroyed = false;
+
     // 构造 currentDrawer 实例
     const currentDrawer = {
-      type: 'drawer',
+      type: 'drawer' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
-      destroy: () => drawerRef.current?.destroy(),
-      update: (newConfig) => drawerRef.current?.update(newConfig),
-      close: (result?: any) => {
-        if (config.preventClose) {
-          return;
-        }
+      beforeClose: undefined,
+      destroy: (result?: any) => {
+        if (destroyed) return;
+        destroyed = true;
+        config.onClose?.();
         drawerRef.current?.destroy();
         closeFunc?.();
         resolvePromise?.(result);
+        // Notify opener view that it becomes active again.
+        const openerEmitter = openerEngine?.emitter;
+        bumpViewActivatedVersion(openerEmitter);
+        openerEmitter?.emit?.(VIEW_ACTIVATED_EVENT, { type: 'drawer', viewUid: currentDrawer?.inputArgs?.viewUid });
+        // 关闭时修正 previous/next 指针
+        scopedEngine.unlinkFromStack();
+      },
+      update: (newConfig) => drawerRef.current?.update(newConfig),
+      close: async (result?: any, force?: boolean) => {
+        if (config.preventClose && !force) {
+          return false;
+        }
+
+        const shouldClose = await runViewBeforeClose(currentDrawer, { result, force });
+        if (!shouldClose) {
+          return false;
+        }
+
+        if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+          // 交由路由系统来销毁当前视图
+          config.inputArgs.navigation.back();
+          return true;
+        }
+
+        currentDrawer.destroy(result);
+        return true;
       },
       Footer: FooterComponent,
       Header: HeaderComponent,
@@ -97,23 +175,30 @@ export function useDrawer() {
         drawerRef.current?.setHeader(header);
       },
       navigation: config.inputArgs?.navigation,
+      get record() {
+        return getViewRecordFromParent(flowContext, ctx);
+      },
     };
 
-    const ctx = new FlowContext();
     ctx.defineProperty('view', {
       get: () => currentDrawer,
-      meta: createViewMeta(ctx, () => currentDrawer),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
-    if (config.inheritContext !== false) {
-      ctx.addDelegate(flowContext);
-    } else {
-      ctx.addDelegate(flowContext.engine.context);
-    }
+    // 注册视图销毁回调，供外部（如 afterSuccess）通过引擎栈遍历来关闭多层弹窗。
+    // 对路由触发的弹窗：先 navigation.back() 清理 URL（replace 方式），再 destroy() 立即移除元素；
+    // 对非路由弹窗：直接 destroy()。destroy() 已做幂等保护，FlowPage 后续清理不会重复执行。
+    scopedEngine.setDestroyView(() => {
+      if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+        config.inputArgs.navigation.back();
+      }
+      currentDrawer.destroy();
+    });
+    // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
+    registerPopupVariable(ctx, currentDrawer);
 
     // 内部组件，在 Provider 内部计算 content
-    const DrawerWithContext: React.FC = observer(
-      (props) => {
+    const DrawerWithContext: React.FC = React.memo(
+      observer((props) => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const mountedRef = React.useRef(false);
         const rawContent = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
@@ -140,53 +225,47 @@ export function useDrawer() {
             ref={drawerRef}
             {...config}
             footer={currentFooter}
-            header={currentHeader}
+            header={config.header || currentHeader}
             hidden={config.inputArgs?.hidden?.value}
-            afterClose={() => {
-              closeFunc?.();
-              config.onClose?.();
-              resolvePromise?.(config.result);
+            onClose={() => {
+              currentDrawer.close(config.result);
             }}
+            isMobile={ctx.isMobileLayout}
           >
             {content}
             {props.children}
           </DrawerComponent>
         );
-      },
-      {
-        displayName: 'DrawerWithContext',
-      },
+      }),
     );
 
-    const renderDrawer = (children: any) => (
-      <FlowViewContextProvider context={ctx}>
-        <DrawerWithContext>{children}</DrawerWithContext>
-      </FlowViewContextProvider>
-    );
+    DrawerWithContext.displayName = 'DrawerWithContext';
 
-    closeFunc = holderRef.current?.patchElement(renderDrawer);
+    const RenderDrawer = React.memo(({ children }) => (
+      <FlowEngineProvider engine={scopedEngine}>
+        <FlowViewContextProvider context={ctx}>
+          <DrawerWithContext>{children}</DrawerWithContext>
+        </FlowViewContextProvider>
+      </FlowEngineProvider>
+    ));
+
+    RenderDrawer.displayName = 'RenderDrawer';
+
+    closeFunc = holderRef.current?.patchElement(RenderDrawer);
     return Object.assign(promise, currentDrawer);
   };
 
   const api = React.useMemo(() => ({ open }), []);
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
-      const [elements, patchElement] = usePatchElement<(children: any) => React.ReactElement>();
+      const [elements, patchElement] = usePatchElement<React.ElementType>();
       React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
 
-      // 嵌套渲染：后面的元素是前一个元素的子元素
-      const renderNestedElements = () => {
-        if (elements.length === 0) {
-          return null;
-        }
+      React.useEffect(() => {
+        drawerList.value = elements;
+      }, [elements]);
 
-        // 从最后一个元素开始，向前递归渲染
-        return elements.reduceRight((children: React.ReactNode, renderElement) => {
-          return renderElement(children);
-        }, null as React.ReactNode);
-      };
-
-      return <>{renderNestedElements()}</>;
+      return <RenderNestedDrawer index={0} />;
     }),
   );
 

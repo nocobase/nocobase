@@ -65,6 +65,20 @@ export class PresetNocoBase extends Plugin {
         packageName: packageJson.name,
       },
     });
+    const langMap = {
+      'zh-CN': 'cn/',
+      'en-US': '',
+      'ja-JP': 'ja/',
+      'es-ES': 'es/',
+      'pt-PT': 'pt/',
+      'de-DE': 'de',
+      'fr-FR': 'fr/',
+    };
+    if (packageName.startsWith('@nocobase/plugin-')) {
+      const homepage = `https://docs.nocobase.com/${langMap[locale] || ''}plugins/${packageName}`;
+      packageJson[`homepage.${locale}`] = homepage;
+      packageJson.homepage = homepage;
+    }
     return {
       packageName: packageJson.name,
       name: name,

@@ -10,25 +10,24 @@
 import React from 'react';
 import { Card, Typography, Button, App } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
-import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { useGlobalTheme, useToken } from '@nocobase/client';
+import { lazy, useToken } from '@nocobase/client';
 import { useT } from '../../../locale';
+import { isSupportLanguage } from '../../built-in/utils';
+import { Code as AICoding } from '../../ai-coding/markdown/Code';
+import { useChat } from '../hooks/useChat';
+import { useChatConversationsStore } from '../stores/chat-conversations';
+
+const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'CodeHighlight');
 
 export const CodeInternal: React.FC<{
   language: string;
   value: string;
-}> = ({ language, value, ...rest }) => {
-  const { isDarkTheme } = useGlobalTheme();
+}> = ({ language, value, ...rest }) => <CodeHighlight {...rest} language={language} value={value} />;
 
-  return (
-    <SyntaxHighlighter {...rest} PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
-      {value}
-    </SyntaxHighlighter>
-  );
-};
-
-export const Code = (props: any) => {
+export const CodeBasic: React.FC<{
+  children?: React.ReactNode;
+  className?: string;
+}> = (props: any) => {
   const { children, className, node, message, ...rest } = props;
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
@@ -64,4 +63,18 @@ export const Code = (props: any) => {
       {children}
     </Typography.Text>
   );
+};
+
+export const Code = (props: any) => {
+  const { className } = props;
+  const match = /language-(\w+)/.exec(className || '');
+  const language = match ? match[1] : '';
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+
+  const editorRefMap = chat.use.editorRef();
+  const currentEditorRefUid = chat.use.currentEditorRefUid();
+  const hasEditorRef = !!editorRefMap[currentEditorRefUid];
+
+  return hasEditorRef && isSupportLanguage(language) ? <AICoding {...props} /> : <CodeBasic {...props} />;
 };

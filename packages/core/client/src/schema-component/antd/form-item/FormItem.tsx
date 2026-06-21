@@ -30,7 +30,8 @@ import useParseDefaultValue from './hooks/useParseDefaultValue';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { VariableScope } from '../../../variables/VariableScope';
-
+import { useFlag } from '../../../flag-provider';
+import { EllipsisWithTooltip } from '../../../schema-component';
 Item.displayName = 'FormilyFormItem';
 
 const formItemWrapCss = css`
@@ -47,6 +48,21 @@ const formItemWrapCss = css`
     }
     .ant-formily-item-label-content {
       display: inline;
+    }
+  }
+  .ant-formily-item-label label {
+    word-break: normal;
+  }
+
+  .ant-input,
+  .ant-select,
+  .ant-cascader-picker,
+  .ant-picker,
+  .ant-input-number,
+  .ant-input-affix-wrapper {
+    &.auto-width {
+      width: auto;
+      min-width: 6em;
     }
   }
 `;
@@ -71,6 +87,7 @@ export const FormItem: any = withDynamicSchemaProps(
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
     useLinkageRulesForSubTableOrSubForm();
+    const { isInSubTable } = useFlag();
 
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);
@@ -91,7 +108,7 @@ export const FormItem: any = withDynamicSchemaProps(
           field.description
         );
       }
-    }, [field.description]);
+    }, [field.description, t]);
     const className = useMemo(() => {
       return cx(formItemWrapCss, {
         [formItemLabelCss]: showTitle === false,
@@ -109,10 +126,10 @@ export const FormItem: any = withDynamicSchemaProps(
             className={cx(
               'nb-form-item',
               css`
-                .ant-formily-item-layout-horizontal .ant-formily-item-control {
-                  max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
-                    ? '100% !important'
-                    : null};
+                ${showTitle === false || schema['x-component'] !== 'CollectionField'
+                  ? '.ant-formily-item-layout-horizontal .ant-formily-item-control'
+                  : '.nb-grid-col & .ant-formily-item-layout-horizontal .ant-formily-item-control'} {
+                  max-width: 100% !important;
                 }
               `,
             )}
@@ -126,6 +143,22 @@ export const FormItem: any = withDynamicSchemaProps(
                   ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
                   ...wrapperStyle,
                 }}
+                feedbackText={
+                  isInSubTable && field.errors?.length ? (
+                    <EllipsisWithTooltip
+                      ellipsis
+                      style={{
+                        color: 'red',
+                        maxWidth: 300,
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        width: '100%',
+                      }}
+                    >
+                      <div style={{ cursor: 'pointer' }}>{field.errors.map((e) => e.messages).join(', ')}</div>
+                    </EllipsisWithTooltip>
+                  ) : null
+                }
               />
             </ACLCollectionFieldProvider>
           </BlockItem>

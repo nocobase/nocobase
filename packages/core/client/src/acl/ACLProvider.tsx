@@ -75,6 +75,10 @@ export const ACLRolesCheckProvider = (props) => {
     },
     {
       onSuccess(data) {
+        if (app.context.acl) {
+          app.context.acl.setData(data?.data || {});
+          app.context.acl.setMeta(data?.meta || {});
+        }
         if (!data?.data?.snippets.includes('ui.*')) {
           setDesignable(false);
         }

@@ -35,11 +35,17 @@ Event Registry 是 NocoBase Flow Engine 的事件管理系统，提供了两层�
 事件定义包含以下属性：
 
 ```ts
-interface EventDefinition {
+// EventDefinition 现在是 ActionDefinition 的类型别名
+type EventDefinition<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext> = ActionDefinition<TModel, TCtx>;
+
+// 主要属性：
+interface ActionDefinition {
   name: string;       // 事件名称（必需）
-  label?: string;     // 事件标签
   title?: string;     // 事件标题
-  description?: string; // 事件描述
+  handler: (ctx: FlowContext, params: any) => Promise<any> | any; // 事件处理函数（必需）
+  uiSchema?: Record<string, ISchema>; // UI 配置
+  defaultParams?: Record<string, any>; // 默认参数
+  // ... 其他属性
 }
 ```
 
@@ -65,7 +71,9 @@ flowEngine.registerEvents({
   globalEvent: {
     name: 'globalEvent',
     title: '全局事件',
-    description: '所有模型都可以触发的事件'
+    handler: (ctx, params) => {
+      // 处理全局事件逻辑
+    }
   }
 });
 
@@ -74,14 +82,19 @@ BaseModel.registerEvents({
   classEvent: {
     name: 'classEvent', 
     title: '类事件',
-    description: '仅此类及其子类可以触发的事件'
+    handler: (ctx, params) => {
+      // 处理类级事件逻辑
+    }
   }
 });
 
 // 单个事件注册
 flowEngine.registerEvent({
   name: 'singleEvent',
-  label: '单个事件'
+  title: '单个事件',
+  handler: (ctx, params) => {
+    // 处理单个事件逻辑
+  }
 });
 
 // 获取事件
@@ -99,12 +112,24 @@ class ChildModel extends BaseModel {}
 
 // 父类注册事件
 BaseModel.registerEvents({
-  baseEvent: { name: 'baseEvent', title: '基础事件' }
+  baseEvent: { 
+    name: 'baseEvent', 
+    title: '基础事件',
+    handler: (ctx, params) => {
+      // 处理基础事件
+    }
+  }
 });
 
 // 子类注册事件
 ChildModel.registerEvents({
-  childEvent: { name: 'childEvent', title: '子类事件' }
+  childEvent: { 
+    name: 'childEvent', 
+    title: '子类事件',
+    handler: (ctx, params) => {
+      // 处理子类事件
+    }
+  }
 });
 
 // 子类可以访问父类的事件

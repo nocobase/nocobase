@@ -1,26 +1,34 @@
 {
   "name": "@nocobase/plugin-localization",
-  "version": "1.9.0-alpha.15",
+  "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/localization-management",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/localization-management",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/localization-management",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "devDependencies": {
     "deepmerge": "^4.3.1"
   },
   "peerDependencies": {
-    "@nocobase/cache": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/ai": "2.x",
+    "@nocobase/cache": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-ai": "2.x",
+    "@nocobase/plugin-async-task-manager": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "System management"
   ],
   "displayName": "Localization",
   "displayName.zh-CN": "本地化",
+  "displayName.ru-RU": "Локализация",
   "description": "Allows to manage localization resources of the application.",
+  "description.ru-RU": "Позволяет управлять ресурсами локализации приложения.",
   "description.zh-CN": "支持管理应用程序的本地化资源。",
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

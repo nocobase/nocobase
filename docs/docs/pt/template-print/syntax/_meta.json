@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Uso básico",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Loops",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Ferramentas de formatação"
+  }
+]

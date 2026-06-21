@@ -146,7 +146,8 @@ export const pagination = {
               'x-decorator': 'FormItem',
               'x-component': 'WorkflowVariableInput',
               'x-component-props': {
-                useTypedConstant: ['number', 'null'],
+                nullable: false,
+                useTypedConstant: [['number', { min: 1 }]],
               },
               default: 1,
             },
@@ -160,9 +161,10 @@ export const pagination = {
               type: 'number',
               title: '{{t("Page size")}}',
               'x-decorator': 'FormItem',
-              'x-component': 'InputNumber',
+              'x-component': 'WorkflowVariableInput',
               'x-component-props': {
-                min: 1,
+                nullable: false,
+                useTypedConstant: [['number', { min: 1 }]],
               },
               default: 20,
             },

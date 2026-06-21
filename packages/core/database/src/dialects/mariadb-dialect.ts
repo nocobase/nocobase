@@ -14,7 +14,12 @@ export class MariadbDialect extends BaseDialect {
   static dialectName = 'mariadb';
 
   getSequelizeOptions(options: DatabaseOptions) {
-    options.dialectOptions = { ...(options.dialectOptions || {}), supportBigNumbers: true, bigNumberStrings: true };
+    options.dialectOptions = {
+      ...(options.dialectOptions || {}),
+      multipleStatements: true,
+      supportBigNumbers: true,
+      bigNumberStrings: true,
+    };
     return options;
   }
 

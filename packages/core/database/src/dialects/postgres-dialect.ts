@@ -22,10 +22,6 @@ export class PostgresDialect extends BaseDialect {
       options.hooks['afterConnect'] = [];
     }
 
-    options.hooks['afterConnect'].push(async (connection) => {
-      await connection.query('SET search_path TO public;');
-    });
-
     return options;
   }
 

@@ -14,7 +14,23 @@ import { resolveJsonTemplate } from '../template/resolver';
 import { HttpRequestContext } from '../template/contexts';
 
 function makeKoaCtx(spy: (opts: any) => void, collectionName = 'users') {
+  // 为新实现提供必要的模型元数据（rawAttributes/associations/primaryKey）
+  const modelMeta = {
+    primaryKeyAttribute: 'id',
+    rawAttributes: {
+      id: {},
+      name: {},
+      // 非关联字段举例；关联在 associations 中声明
+    } as Record<string, unknown>,
+    associations: {
+      roles: {},
+      company: {},
+    } as Record<string, unknown>,
+  };
+
   const repo = {
+    // 提供 collection.model，供 fetchRecordWithRequestCache 补充主键/判断最小载荷
+    collection: { model: modelMeta },
     async findOne(opts: any) {
       spy(opts);
       return {
@@ -23,7 +39,8 @@ function makeKoaCtx(spy: (opts: any) => void, collectionName = 'users') {
         },
       } as any;
     },
-  };
+  } as any;
+
   const koa: any = {
     app: {
       dataSourceManager: {
@@ -31,6 +48,8 @@ function makeKoaCtx(spy: (opts: any) => void, collectionName = 'users') {
           collectionManager: {
             db: {
               getRepository: (name: string) => repo,
+              // adjustSelectsForCollection 会从这里取模型元数据
+              getCollection: (name: string) => ({ model: modelMeta }),
             },
           },
         }),
@@ -120,7 +139,6 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     } else {
       // If ctx.view doesn't exist, the test should be skipped or the contextParams format should be fixed
       // For now, let's just skip the test
-      console.log('Skipping test - ctx.view was not created');
     }
   });
 
@@ -187,7 +205,7 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     expect(spyCalls[0].appends).toEqual(expect.arrayContaining(['roles']));
   });
 
-  it('attachUsedVariables(dynamic: view.record): fields/appends 只能推断，忽略显式传入', async () => {
+  it('attachUsedVariables(dynamic: view.record): respects explicit fields/appends (locks selects)', async () => {
     const spyCalls: any[] = [];
     const koa = makeKoaCtx((opts) => spyCalls.push(opts));
     const ctx = new HttpRequestContext(koa);
@@ -196,16 +214,17 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
       username: '{{ ctx.view.record.name }}',
     } as any;
     const contextParams = {
-      // 即便显式传入 fields/appends，也应被实现忽略，仅依据模板用法进行推断
-      'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1, fields: ['id'], appends: ['author'] },
+      // 显式传入 fields/appends 时应锁定 selects：不再基于模板 usage 自动推断补全
+      'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1, fields: ['id'], appends: [] },
     } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
     const _ = await ((ctx as any).view as any).record;
 
     const call = spyCalls[0];
-    // 依据模板用法应推断出：字段 name，关联 roles（而不是使用显式传入的 id/author）
-    expect(call.fields).toEqual(expect.arrayContaining(['name']));
-    expect(call.appends).toEqual(expect.arrayContaining(['roles']));
+    // 即便模板引用了 name/roles，也应只查询显式选择的字段，并且不附加 roles
+    expect(call.fields).toEqual(expect.arrayContaining(['id']));
+    expect(call.fields).not.toEqual(expect.arrayContaining(['name']));
+    expect(call.appends).toBeUndefined();
   });
 
   it('attachUsedVariables(dynamic: view.record): allows fields inference with numeric index after segment', async () => {

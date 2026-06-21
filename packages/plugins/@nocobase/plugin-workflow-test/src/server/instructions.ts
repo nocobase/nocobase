@@ -12,11 +12,20 @@ import { lodash } from '@nocobase/utils';
 
 export default {
   echo: {
-    run({ config = {} }: any, { result }, processor) {
+    run({ config = {} }: any, job = null, processor) {
       return {
         status: 1,
-        result: config.path == null ? result : lodash.get(result, config.path),
+        result: config.path == null ? job?.result : lodash.get(job?.result, config.path),
       };
+    },
+    duplicateConfig(node, { origin }) {
+      if (origin?.config?.duplicateFlag) {
+        return {
+          ...origin.config,
+          duplicated: true,
+        };
+      }
+      return origin?.config ?? node.config;
     },
     test(config = {}) {
       return {
@@ -94,12 +103,18 @@ export default {
         upstreamId: input?.id ?? null,
       });
 
+      const plugin = processor.options.plugin;
       setTimeout(() => {
+        // Check if app is still running before resuming to avoid "Database handle is closed" error
+        if (!plugin.app || plugin.app.stopped) {
+          return;
+        }
+
         job.set({
           status: 1,
         });
 
-        processor.options.plugin.resume(job);
+        plugin.resume(job);
       }, node.config.duration ?? 100);
 
       return null;
@@ -140,6 +155,16 @@ export default {
     run(node, input, processor) {
       return {
         status: -100,
+      };
+    },
+  },
+
+  log: {
+    run({ config = {} }: any, input, processor) {
+      return {
+        status: 1,
+        result: config.result ?? null,
+        log: config.log ?? null,
       };
     },
   },

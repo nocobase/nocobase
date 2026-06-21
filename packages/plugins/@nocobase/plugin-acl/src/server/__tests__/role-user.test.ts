@@ -10,7 +10,6 @@
 import Database, { BelongsToManyRepository } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { createMockServer, MockServer } from '@nocobase/test';
-import jwt from 'jsonwebtoken';
 import { SystemRoleMode } from '../enum';
 import { UNION_ROLE_KEY } from '../constants';
 
@@ -146,7 +145,7 @@ describe('role', () => {
     await userRolesRepo.add('test1');
     await userRolesRepo.add('test2');
 
-    const userToken = jwt.sign({ userId: user.get('id') }, 'test-key');
+    const userToken = api.authManager.jwt.sign({ userId: user.get('id') });
     const response = await api
       .agent()
       .post('/users:setDefaultRole')
@@ -188,7 +187,7 @@ describe('role', () => {
         roleMode: SystemRoleMode.allowUseUnion,
       },
     });
-    const userToken = jwt.sign({ userId: user.get('id') }, 'test-key');
+    const userToken = api.authManager.jwt.sign({ userId: user.get('id') });
     const response = await api
       .agent()
       .post('/users:setDefaultRole')
@@ -237,5 +236,22 @@ describe('role', () => {
     const agent = await api.agent().login(user);
     const response3 = await agent.resource('roles').check();
     expect(response3.statusCode).toEqual(200);
+  });
+
+  it('should not allow to set other role', async () => {
+    const user = await db.getRepository('users').create({
+      values: {},
+    });
+    const client = await api.agent().login(user);
+    await client.post('/users:setDefaultRole').send({
+      roleName: 'root',
+    });
+    const role = await db.getRepository('rolesUsers').findOne({
+      where: {
+        userId: user.get('id'),
+        roleName: 'root',
+      },
+    });
+    expect(role).toBeFalsy();
   });
 });

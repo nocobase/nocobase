@@ -9,3 +9,4 @@
 
 export * from './AIEmployeeShortcutModel';
 export * from './AIEmployeeShortcutListModel';
+export * from './AIEmployeeActionModel';

@@ -25,6 +25,14 @@ export async function prepareApp(): Promise<MockServer> {
       'collection-tree',
       'system-settings',
     ],
+    logger: {
+      system: {
+        level: 'debug',
+      },
+      request: {
+        level: 'info',
+      },
+    },
   });
 
   return app;

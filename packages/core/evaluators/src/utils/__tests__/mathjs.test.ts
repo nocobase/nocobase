@@ -17,4 +17,8 @@ describe('evaluators > mathjs', () => {
   it('precision should be 9', () => {
     expect(mathjs('100*2.3')).toBe(230);
   });
+
+  it('numeric should work', () => {
+    expect(mathjs(`numeric('123')`)).toBe(123);
+  });
 });

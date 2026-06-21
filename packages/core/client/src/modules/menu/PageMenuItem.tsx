@@ -14,16 +14,18 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client/hooks/useAPIClient';
 import { SchemaInitializerItem } from '../../application';
-import { useGlobalTheme } from '../../global-theme';
-import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import {
   FormDialog,
+  ICON_POPUP_Z_INDEX,
   SchemaComponent,
   SchemaComponentOptions,
   useNocoBaseRoutes,
   useParentRoute,
+  zIndexContext,
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
+import { NocoBaseDesktopRouteType } from '../../route-switch';
 
 export const useInsertPageSchema = () => {
   const api = useAPIClient();
@@ -55,23 +57,26 @@ export const PageMenuItem = () => {
         return (
           <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
             <FormLayout layout={'vertical'}>
-              <SchemaComponent
-                schema={{
-                  properties: {
-                    title: {
-                      title: t('Menu item title'),
-                      required: true,
-                      'x-component': 'Input',
-                      'x-decorator': 'FormItem',
+              {/* 防止图标弹窗被遮挡 */}
+              <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+                <SchemaComponent
+                  schema={{
+                    properties: {
+                      title: {
+                        title: t('Menu item title'),
+                        required: true,
+                        'x-component': 'Input',
+                        'x-decorator': 'FormItem',
+                      },
+                      icon: {
+                        title: t('Icon'),
+                        'x-component': 'IconPicker',
+                        'x-decorator': 'FormItem',
+                      },
                     },
-                    icon: {
-                      title: t('Icon'),
-                      'x-component': 'IconPicker',
-                      'x-decorator': 'FormItem',
-                    },
-                  },
-                }}
-              />
+                  }}
+                />
+              </zIndexContext.Provider>
             </FormLayout>
           </SchemaComponentOptions>
         );
@@ -108,7 +113,11 @@ export const PageMenuItem = () => {
     insertPageSchema(getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
   }, [createRoute, insertPageSchema, options?.components, options?.scope, parentRoute?.id, t, theme]);
   return (
-    <SchemaInitializerItem title={t('Classic page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />
+    <SchemaInitializerItem
+      title={t('Classic page (v1)')}
+      onClick={handleClick}
+      className={`${componentCls} ${hashId}`}
+    />
   );
 };
 

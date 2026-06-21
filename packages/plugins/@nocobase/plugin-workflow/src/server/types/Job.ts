@@ -13,13 +13,14 @@ import FlowNodeModel from './FlowNode';
 export default class JobModel extends Model {
   declare id: number;
   declare status: number;
-  declare result: any;
+  declare result?: any;
+  declare meta?: any;
 
   declare createdAt: Date;
   declare updatedAt: Date;
 
   declare upstreamId: number;
-  declare upstream: JobModel;
+  declare upstream?: JobModel;
 
   declare nodeId: number;
   declare node?: FlowNodeModel;

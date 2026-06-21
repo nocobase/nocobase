@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Administración del sistema",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Gestión de plugins",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuración del sistema",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Marca personalizada",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Editor de temas",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuración de idioma",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gestión de localización",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

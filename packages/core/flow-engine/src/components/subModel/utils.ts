@@ -7,16 +7,30 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as _ from 'lodash';
+import _ from 'lodash';
 import type { Collection } from '../../data-source';
 import { FlowModelContext } from '../../flowContext';
 import { FlowModelMeta, ModelConstructor } from '../../types';
 import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
 import { SubModelItem } from './AddSubModelButton';
 
-export function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext, skipHide = false): SubModelItem {
+async function callHideFunction(
+  hide: boolean | ((context: FlowModelContext) => boolean | Promise<boolean>),
+  ctx: FlowModelContext,
+) {
+  if (typeof hide === 'function') {
+    return await hide(ctx);
+  }
+  return hide;
+}
+
+export async function buildSubModelItem(
+  M: ModelConstructor,
+  ctx: FlowModelContext,
+  skipHide = false,
+): Promise<SubModelItem | undefined> {
   const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
-  if (meta.hide && !skipHide) {
+  if ((await callHideFunction(meta.hide, ctx)) && !skipHide) {
     return;
   }
   // 判断是否为 CollectionBlockModel 的子类（用于集合选择层开启搜索）
@@ -102,8 +116,13 @@ export function buildSubModelItems(subModelBaseClass: string | ModelConstructor,
   return async (ctx: FlowModelContext) => {
     const SubModelClasses = ctx.engine.getSubclassesOf(subModelBaseClass);
     // Collect and sort subclasses by meta.sort (ascending), excluding hidden or inherited ones in `exclude`
-    let candidates = Array.from(SubModelClasses.values())
-      .filter((C) => !C.meta?.hide)
+    let candidates = [];
+    for (const C of Array.from(SubModelClasses.values())) {
+      if (!(await callHideFunction(C.meta?.hide, ctx))) {
+        candidates.push(C);
+      }
+    }
+    candidates = candidates
       .filter((C) => {
         for (const P of exclude as (string | ModelConstructor)[]) {
           if (typeof P === 'string') {
@@ -120,14 +139,14 @@ export function buildSubModelItems(subModelBaseClass: string | ModelConstructor,
     if (candidates.length === 0) {
       const BaseClass =
         typeof subModelBaseClass === 'string' ? ctx.engine.getModelClass(subModelBaseClass) : subModelBaseClass;
-      if (BaseClass && !BaseClass.meta?.hide) {
+      if (BaseClass && !(await callHideFunction(BaseClass.meta?.hide, ctx))) {
         candidates = [BaseClass];
       }
     }
 
     const items: SubModelItem[] = [];
     for (const M of candidates) {
-      const item = buildSubModelItem(M, ctx);
+      const item = await buildSubModelItem(M, ctx);
       if (item) items.push(item);
     }
     return items;
@@ -170,18 +189,40 @@ export function buildSubModelGroups(subModelBaseClasses: (string | ModelConstruc
       }
 
       if (!hasChildren) continue;
-      // 优先使用父类的 meta.label；若无则回退到传入的基类字符串，避免使用压缩后不稳定的类名
+      // 优先使用父类的 meta.label；若无则回退到传入的基类字符串
       const groupLabel =
         BaseClass?.meta?.label || (typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name);
-      items.push({
-        // 使用传入的字符串作为 key，避免使用类名在压缩后不稳定的问题
-        key: typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name,
-        type: 'group',
-        label: groupLabel,
-        children,
-      });
+
+      const baseKey = typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name;
+      const menuType = BaseClass?.meta?.menuType || 'group';
+      const groupSort = BaseClass?.meta?.sort ?? 1000;
+      const searchable = !!BaseClass?.meta?.searchable;
+      const searchPlaceholder = BaseClass?.meta?.searchPlaceholder;
+      if (menuType === 'submenu') {
+        // 作为可点击的一级项，展开二级子菜单
+        items.push({
+          key: baseKey,
+          label: groupLabel,
+          sort: groupSort,
+          searchable,
+          searchPlaceholder,
+          children,
+        });
+      } else {
+        // 默认作为分组标题，子项平铺显示
+        items.push({
+          key: baseKey,
+          type: 'group',
+          label: groupLabel,
+          sort: groupSort,
+          searchable,
+          searchPlaceholder,
+          children,
+        });
+      }
     }
-    return items;
+    // 基于 meta.sort 对分组进行稳定排序（升序）；未指定时默认 1000
+    return items.sort((a: any, b: any) => (a?.sort ?? 1000) - (b?.sort ?? 1000));
   };
 }
 
@@ -191,6 +232,7 @@ export interface BuildFieldChildrenOptions {
   fieldUseModel?: string | ((field: any) => string);
   collection?: Collection;
   associationPathName?: string;
+  maxAssociationFieldDepth?: number;
   /**
    * 点击这些子项后，除自身路径外，还需要联动刷新的其他菜单路径前缀
    */
@@ -198,13 +240,17 @@ export interface BuildFieldChildrenOptions {
 }
 
 export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildFieldChildrenOptions) {
-  const { useModel, fieldUseModel, associationPathName, refreshTargets } = options;
+  const { useModel, fieldUseModel, associationPathName, refreshTargets, maxAssociationFieldDepth = 2 } = options;
   const collection: Collection = options.collection || ctx.model['collection'] || ctx.collection;
   const fields = collection.getFields();
   const defaultItemKeys = ['fieldSettings', 'init'];
   const children: SubModelItem[] = [];
+  const associationDepth = associationPathName ? associationPathName.split('.').filter(Boolean).length : 0;
   for (const f of fields) {
     if (!f?.options?.interface) continue;
+    if (associationDepth >= maxAssociationFieldDepth && (f.isAssociationField?.() || f.target || f.targetCollection)) {
+      continue;
+    }
     const fieldPath = associationPathName ? `${associationPathName}.${f.name}` : f.name;
 
     const childUse = typeof fieldUseModel === 'function' ? fieldUseModel(f) : fieldUseModel ?? 'FieldModel';

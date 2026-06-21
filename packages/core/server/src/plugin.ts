@@ -11,13 +11,14 @@
 
 import { Model, Transactionable } from '@nocobase/database';
 import { LoggerOptions } from '@nocobase/logger';
-import { fsExists } from '@nocobase/utils';
+import { fsExists, resolvePluginStoragePath } from '@nocobase/utils';
 import fs from 'fs';
 import type { TFuncKey, TOptions } from 'i18next';
 import { resolve } from 'path';
 import { Application } from './application';
 import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
 import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
+import { SkillsLoader, ToolsLoader, AIEmployeeLoader, MCPLoader } from '@nocobase/ai';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -73,6 +74,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   get name() {
     return this.options.name as string;
+  }
+
+  get ai() {
+    return this.app.aiManager;
   }
 
   get pm() {
@@ -204,6 +209,60 @@ export abstract class Plugin<O = any> implements PluginInterface {
   }
 
   /**
+   * @internal
+   */
+  async loadAI() {
+    const pluginRoot = await this.getPluginBasePath();
+    if (!pluginRoot) {
+      return;
+    }
+    const basePath = resolve(pluginRoot, 'ai');
+    if (!(await fsExists(basePath))) {
+      return;
+    }
+    const toolsLoader = new ToolsLoader(this.ai, {
+      pluginName: this.getName(),
+      scan: {
+        basePath,
+        pattern: ['**/tools/**/*.ts', '**/tools/**/*.js', '!**/tools/**/*.d.ts', '**/tools/**/*/description.md'],
+      },
+      log: this.log,
+    });
+    await toolsLoader.load();
+    const mcpLoader = new MCPLoader(this.ai, {
+      pluginName: this.getName(),
+      scan: {
+        basePath,
+        pattern: ['mcp/*.ts', 'mcp/*.js', '!mcp/*.d.ts'],
+      },
+      log: this.log,
+    });
+    await mcpLoader.load();
+    const skillsLoader = new SkillsLoader(this.ai, {
+      pluginName: this.getName(),
+      scan: { basePath, pattern: ['**/skills/**/SKILLS.md'] },
+      log: this.log,
+    });
+    await skillsLoader.load();
+    const employeeLoader = new AIEmployeeLoader(this.ai, {
+      pluginName: this.getName(),
+      scan: {
+        basePath,
+        pattern: [
+          '**/ai-employees/*.ts',
+          '**/ai-employees/*/index.ts',
+          '**/ai-employees/*.js',
+          '**/ai-employees/*/index.js',
+          '**/ai-employees/*/prompt.md',
+          '!**/ai-employees/**/*.d.ts',
+        ],
+      },
+      log: this.log,
+    });
+    await employeeLoader.load();
+  }
+
+  /**
    * @deprecated
    */
   requiredPlugins() {
@@ -226,6 +285,20 @@ export abstract class Plugin<O = any> implements PluginInterface {
       };
     }
 
+    const langMap = {
+      'zh-CN': 'cn/',
+      'en-US': '',
+      'ja-JP': 'ja/',
+      'es-ES': 'es/',
+      'pt-PT': 'pt/',
+      'de-DE': 'de',
+      'fr-FR': 'fr/',
+    };
+
+    if (packageName.startsWith('@nocobase/plugin-')) {
+      packageJson.homepage = `https://docs.nocobase.com/${langMap[locale] || ''}plugins/${packageName}`;
+    }
+
     const results = {
       ...this.options,
       keywords: packageJson.keywords,
@@ -233,7 +306,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
       changelogUrl: getExposeChangelogUrl(packageName),
       displayName: packageJson[`displayName.${locale}`] || packageJson.displayName || name,
       description: packageJson[`description.${locale}`] || packageJson.description,
-      homepage: packageJson[`homepage.${locale}`] || packageJson.homepage,
+      homepage: packageJson.homepage,
     };
 
     if (!options.withOutOpenFile) {
@@ -246,7 +319,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
         ...(await checkAndGetCompatible(packageName)),
         lastUpdated: (await fs.promises.stat(file)).ctime,
         file,
-        updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
+        updatable: file.startsWith(resolvePluginStoragePath()),
       };
     }
 

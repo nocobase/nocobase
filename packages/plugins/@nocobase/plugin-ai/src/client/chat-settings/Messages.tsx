@@ -11,17 +11,81 @@ import { SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { namespace, useT } from '../locale';
 import { tval } from '@nocobase/utils/client';
-import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
-import { useField, observer } from '@formily/react';
-import { Field } from '@formily/core';
+import { ArrayBase, FormLayout } from '@formily/antd-v5';
+import { clone } from '@formily/shared';
+import { RecursionField, useField, observer, useFieldSchema } from '@formily/react';
+import { ArrayField, Field } from '@formily/core';
 import { WorkflowVariableInput, WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
+import ListCollapse, { ListCollapseProps } from '../components/ListCollapse';
+import { Badge } from 'antd';
+
+type ListCollapseValue = Record<string, unknown>;
+
+type FormilyListCollapseProps = Pick<
+  ListCollapseProps<ListCollapseValue>,
+  'addText' | 'bordered' | 'defaultOpenPanelCount' | 'defaultValue' | 'itemTitle' | 'size'
+> & {
+  header?: React.ReactNode;
+};
+
+const FormilyListCollapse: React.FC<FormilyListCollapseProps> = observer((props) => {
+  const field = useField<ArrayField>();
+  const fieldSchema = useFieldSchema();
+  const items = Array.isArray(field.value) ? (field.value as ListCollapseValue[]) : [];
+  const { header, itemTitle } = props;
+
+  const updateItems = (next: ListCollapseValue[]) => {
+    field.form.setValuesIn(field.path, next);
+  };
+
+  return (
+    <ArrayBase>
+      <ListCollapse<ListCollapseValue>
+        {...props}
+        value={items}
+        onChange={updateItems}
+        getDefaultValue={() => clone(props.defaultValue) as ListCollapseValue}
+        renderHeader={(_, index) => {
+          const errors = field.form.queryFeedbacks({
+            type: 'error',
+            address: `${field.address.concat(index)}.**`,
+          });
+          const title = header ?? itemTitle;
+
+          return errors.length ? (
+            <Badge size="small" className="errors-badge" count={errors.length}>
+              {title}
+            </Badge>
+          ) : (
+            title
+          );
+        }}
+        renderItem={(item, index) => {
+          const itemSchema = Array.isArray(fieldSchema.items)
+            ? fieldSchema.items[index] || fieldSchema.items[0]
+            : fieldSchema.items;
+
+          if (!itemSchema) {
+            return null;
+          }
+
+          return (
+            <ArrayBase.Item index={index} record={item}>
+              <RecursionField schema={itemSchema} name={index} />
+            </ArrayBase.Item>
+          );
+        }}
+      />
+    </ArrayBase>
+  );
+});
 
 const UserMessage: React.FC = observer(() => {
   const t = useT();
   const field = useField();
-  const type = field.query('.type').take() as Field;
+  const type = field.query('.type').take() as Field | undefined;
 
-  if (type.value === 'image_url' || type.value === 'image_base64') {
+  if (type?.value === 'image_url' || type?.value === 'image_base64') {
     return (
       <SchemaComponent
         components={{ WorkflowVariableInput }}
@@ -74,30 +138,34 @@ const UserMessage: React.FC = observer(() => {
 const Content: React.FC = observer(() => {
   const t = useT();
   const field = useField();
-  const role = field.query('.role').take() as Field;
+  const role = field.query('.role').take() as Field | undefined;
+
+  if (!role) {
+    return null;
+  }
 
   if (role.value === 'user') {
     return (
       <SchemaComponent
-        components={{ UserMessage }}
+        components={{ FormLayout, ListCollapse: FormilyListCollapse, UserMessage }}
         schema={{
           type: 'void',
           properties: {
             content: {
               type: 'array',
-              'x-component': 'ArrayCollapse',
+              'x-component': 'ListCollapse',
               'x-component-props': {
                 size: 'small',
                 bordered: false,
+                addText: tval('Add content', { ns: namespace }),
+                defaultValue: { type: 'text' },
+                header: t('Content'),
+                itemTitle: t('Content'),
               },
               default: [{ type: 'text' }],
               'x-decorator': 'FormItem',
               items: {
                 type: 'object',
-                'x-component': 'ArrayCollapse.CollapsePanel',
-                'x-component-props': {
-                  header: t('Content'),
-                },
                 properties: {
                   form: {
                     type: 'void',
@@ -124,28 +192,6 @@ const Content: React.FC = observer(() => {
                       },
                     },
                   },
-                  moveUp: {
-                    type: 'void',
-                    'x-component': 'ArrayCollapse.MoveUp',
-                  },
-                  moveDown: {
-                    type: 'void',
-                    'x-component': 'ArrayCollapse.MoveDown',
-                  },
-                  remove: {
-                    type: 'void',
-                    'x-component': 'ArrayCollapse.Remove',
-                  },
-                },
-              },
-              properties: {
-                addition: {
-                  type: 'void',
-                  title: tval('Add content', { ns: namespace }),
-                  'x-component': 'ArrayCollapse.Addition',
-                  'x-component-props': {
-                    defaultValue: { type: 'text' },
-                  },
                 },
               },
             },
@@ -156,6 +202,7 @@ const Content: React.FC = observer(() => {
   }
   return (
     <SchemaComponent
+      components={{ WorkflowVariableRawTextArea }}
       schema={{
         type: 'void',
         properties: {
@@ -176,24 +223,24 @@ export const Messages: React.FC = () => {
 
   return (
     <SchemaComponent
-      components={{ ArrayCollapse, FormLayout, Content }}
+      components={{ Content, FormLayout, ListCollapse: FormilyListCollapse }}
       schema={{
         type: 'void',
         properties: {
           messages: {
             type: 'array',
-            'x-component': 'ArrayCollapse',
+            'x-component': 'ListCollapse',
             'x-component-props': {
               size: 'small',
+              addText: tval('Add prompt', { ns: namespace }),
+              defaultValue: { role: 'user', content: [{ type: 'text' }] },
+              header: t('Message'),
+              itemTitle: t('Message'),
             },
             'x-decorator': 'FormItem',
             default: [{ role: 'user', content: [{ type: 'text' }] }],
             items: {
               type: 'object',
-              'x-component': 'ArrayCollapse.CollapsePanel',
-              'x-component-props': {
-                header: t('Message'),
-              },
               properties: {
                 form: {
                   type: 'void',
@@ -219,28 +266,6 @@ export const Messages: React.FC = () => {
                       'x-component': 'Content',
                     },
                   },
-                },
-                moveUp: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.MoveUp',
-                },
-                moveDown: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.MoveDown',
-                },
-                remove: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.Remove',
-                },
-              },
-            },
-            properties: {
-              addition: {
-                type: 'void',
-                title: tval('Add prompt', { ns: namespace }),
-                'x-component': 'ArrayCollapse.Addition',
-                'x-component-props': {
-                  defaultValue: { role: 'user', content: [{ type: 'text' }] },
                 },
               },
             },

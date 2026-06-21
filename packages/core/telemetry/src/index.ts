@@ -8,3 +8,7 @@
  */
 
 export * from './telemetry';
+export * from './metric';
+export * from './trace';
+export { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+export { Meter } from '@opentelemetry/api';

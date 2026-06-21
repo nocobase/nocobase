@@ -1,0 +1,14 @@
+{
+  "Add branch": "Ág hozzáadása",
+  "All succeeded": "Mind sikeres",
+  "Always continue after all branches end, regardless of success or failure.": "Always continue after all branches end, regardless of success or failure.",
+  "Any succeeded": "Bármelyik sikeres",
+  "Any succeeded or failed": "Bármelyik sikeres vagy sikertelen",
+  "Continue after all branches succeeded": "Folytatás miután minden ág sikeres",
+  "Continue after any branch succeeded": "Folytatás bármely ág sikeressége után",
+  "Continue after any branch succeeded, or exit after any branch failed.": "Folytatás bármely ág sikeressége után, vagy kilépés bármely ág sikertelensége után.",
+  "Mode": "Mód",
+  "Parallel branch": "Párhuzamos ág",
+  "Run all branches (ignore failures)": "Run all branches (ignore failures)",
+  "Run multiple branch processes in parallel.": "Több ág folyamatának párhuzamos futtatása."
+}

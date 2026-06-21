@@ -75,7 +75,7 @@ export class WSServer extends EventEmitter {
         const handleAppName = await Gateway.getInstance().getRequestHandleAppName({
           url: client.url,
           headers: client.headers,
-        });
+        } as any);
 
         for (const tag of client.tags) {
           if (tag.startsWith('app#')) {
@@ -85,7 +85,7 @@ export class WSServer extends EventEmitter {
 
         client.tags.add(`app#${handleAppName}`);
 
-        AppSupervisor.getInstance().bootStrapApp(handleAppName);
+        AppSupervisor.getInstance().bootstrapApp(handleAppName);
       });
     });
 
@@ -112,6 +112,7 @@ export class WSServer extends EventEmitter {
 
       const payload = getPayloadByErrorCode(status, {
         app,
+        appName,
         message,
         command,
       });
@@ -253,6 +254,9 @@ export class WSServer extends EventEmitter {
 
   removeClientTag(clientId: string, tagKey: string) {
     const client = this.webSocketClients.get(clientId);
+    if (!client) {
+      return;
+    }
     // remove all tags with the given tagKey
     client.tags.forEach((tag) => {
       if (tag.startsWith(`${tagKey}#`)) {
@@ -276,7 +280,7 @@ export class WSServer extends EventEmitter {
     const hasApp = AppSupervisor.getInstance().hasApp(handleAppName);
 
     if (!hasApp) {
-      AppSupervisor.getInstance().bootStrapApp(handleAppName);
+      AppSupervisor.getInstance().bootstrapApp(handleAppName);
     }
   }
 

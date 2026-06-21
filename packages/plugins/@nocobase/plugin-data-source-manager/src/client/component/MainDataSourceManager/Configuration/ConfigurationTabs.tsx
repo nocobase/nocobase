@@ -26,14 +26,16 @@ import {
   SchemaComponentOptions,
   useAPIClient,
   useCompile,
+  usePlugin,
   useResourceActionContext,
 } from '@nocobase/client';
 import { App, Badge, Card, Dropdown, Space, Tabs } from 'antd';
 import _ from 'lodash';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
+import PluginDatabaseConnectionsClient from '../../../';
 
 function Draggable(props) {
   const { attributes, listeners, setNodeRef } = useDraggable({
@@ -164,12 +166,6 @@ export const ConfigurationTabs = () => {
     return res;
   }, [data]);
 
-  useEffect(() => {
-    if (activeKey.tab !== 'all') {
-      onChange(activeKey.tab);
-    }
-  }, []);
-
   const onChange = (key: string) => {
     setActiveKey({ tab: key });
     setKey(uid());
@@ -189,14 +185,19 @@ export const ConfigurationTabs = () => {
       title: compile("{{t('Delete category')}}"),
       content: compile("{{t('Are you sure you want to delete it?')}}"),
       onOk: async () => {
+        const isActiveCategory = String(key) === activeKey.tab;
         await api.resource('collectionCategories').destroy({
           filter: {
             id: key,
           },
         });
-        key === +activeKey.tab && setActiveKey({ tab: 'all' });
+        if (isActiveCategory) {
+          onChange('all');
+        }
         await refresh();
-        await refreshCM();
+        if (!isActiveCategory) {
+          await refreshCM();
+        }
       },
     });
   };
@@ -259,7 +260,7 @@ export const ConfigurationTabs = () => {
           />
         }
         onChange={onChange}
-        defaultActiveKey={activeKey.tab || 'all'}
+        activeKey={activeKey.tab || 'all'}
         type="editable-card"
         destroyInactiveTabPane={true}
         tabBarStyle={{ marginBottom: '0px' }}
@@ -284,7 +285,7 @@ export const ConfigurationTabs = () => {
             children: (
               <Card bordered={false}>
                 <SchemaComponentOptions
-                  components={{ CollectionFields }}
+                  components={{ CollectionFields, ExtendableActions }}
                   inherit
                   scope={{ loadCategories, categoryVisible: item.id === 'all', categoryId: item.id }}
                 >
@@ -296,5 +297,19 @@ export const ConfigurationTabs = () => {
         })}
       />
     </DndProvider>
+  );
+};
+
+const ExtendableActions: React.FC = () => {
+  const plugin = usePlugin(PluginDatabaseConnectionsClient);
+  const managerActions = plugin.extensionManager.getManagerActions();
+  return managerActions?.length ? (
+    <div style={{ margin: '0px 8px' }}>
+      {_.sortBy(managerActions, 'order').map((action, index) => (
+        <action.component key={index} />
+      ))}
+    </div>
+  ) : (
+    <></>
   );
 };

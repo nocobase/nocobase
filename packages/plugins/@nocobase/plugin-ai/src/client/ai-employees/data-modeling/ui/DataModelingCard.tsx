@@ -7,39 +7,64 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Card } from 'antd';
-import { DatabaseOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Card, Spin } from 'antd';
+import { DatabaseOutlined, ExclamationCircleTwoTone, LoadingOutlined } from '@ant-design/icons';
 import { useT } from '../../../locale';
-import { useToken } from '@nocobase/client';
+import { ToolsUIProperties, useToken } from '@nocobase/client';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { ToolCall } from '../../types';
 import { CollectionDataType } from '../types';
+import { useChat } from '../../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 
-export const DataModelingCard: React.FC<{
-  messageId: string;
-  tool: ToolCall<{
+export const DataModelingCard: React.FC<
+  ToolsUIProperties<{
     collections: CollectionDataType[];
-  }>;
-}> = ({ messageId, tool }) => {
+  }>
+> = ({ messageId, toolCall }) => {
   const t = useT();
   const { token } = useToken();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
+  const responseLoading = chat.use.responseLoading();
+  const messages = chat.use.messages();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
-  const version = toolsByMessageId[messageId]?.[tool.id]?.version;
+  const version = toolsByMessageId[messageId]?.[toolCall.id]?.version;
+  const generating = responseLoading && messages[length - 1]?.content.messageId === messageId;
+
+  let description = <>{t('Please review and finish the process')}</>;
+  if (generating) {
+    description = (
+      <>
+        <Spin indicator={<LoadingOutlined spin />} size="small" /> {t('Generating...')}
+      </>
+    );
+  } else if (!toolCall.args.collections) {
+    console.error('Invalid definition', toolCall.args);
+    description = (
+      <>
+        <ExclamationCircleTwoTone twoToneColor="#eb2f96" /> {t('Invalid definition')}
+      </>
+    );
+  }
 
   return (
     <>
       <Card
         style={{
-          marginBottom: '16px',
+          margin: '16px 0',
           cursor: 'pointer',
         }}
         onClick={() => {
-          setActiveTool(tool);
+          if (generating || !toolCall.args.collections) {
+            return;
+          }
+          setActiveTool(toolCall);
           setActiveMessageId(messageId);
           setOpen(true);
         }}
@@ -64,7 +89,7 @@ export const DataModelingCard: React.FC<{
               ) : null}
             </>
           }
-          description={t('Please review and finish the process')}
+          description={description}
         />
       </Card>
     </>

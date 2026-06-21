@@ -77,10 +77,21 @@ export const InternalSubTable = observer(
               .ant-table-tbody .nb-column-initializer {
                 min-width: 40px !important;
               }
+              .ant-formily-item-feedback-layout-terse {
+                margin-bottom: 0px;
+              }
+              .ant-formily-item-error-help {
+                box-shadow: none !important;
+                background: none !important;
+                overflow-x: hidden;
+              }
+              .ant-formily-item-control:has(.ant-formily-item-error-help) .ant-formily-item-control-content-component {
+                margin-bottom: 13px !important;
+              }
             `}
             layout={'vertical'}
             bordered={false}
-            feedbackLayout="popover"
+            feedbackLayout="terse"
           >
             <SchemaOptionsContext.Provider
               value={{

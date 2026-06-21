@@ -27,7 +27,8 @@ import { BelongsToField, Field, FieldOptions, HasManyField, RelationField } from
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
-import { buildJoiSchema, getJoiErrorMessage } from './utils/field-validation';
+import { buildJoiSchema } from './utils/field-validation';
+import Joi from 'joi';
 
 export type RepositoryType = typeof Repository;
 
@@ -92,10 +93,19 @@ export type DumpRules =
 
 export type MigrationRule = 'overwrite' | 'skip' | 'upsert' | 'schema-only' | 'insert-ignore' | (string & {}) | null;
 
+/**
+ * `dataCategory = system` marks data that is foundational to system operation and should be treated as core runtime data.
+ * `dataCategory = business` marks data owned by plugin features and used as part of the plugin's business domain.
+ * `dataCategory = runtime` excludes the collection's data from backup snapshots.
+ */
+export type DataCategory = 'system' | 'business' | 'runtime';
+export type DataCategories = DataCategory | DataCategory[];
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   title?: string;
   namespace?: string;
+  dataCategory?: DataCategories;
   migrationRules?: MigrationRule[];
   dumpRules?: DumpRules;
   tableName?: string;
@@ -179,6 +189,10 @@ export class Collection<
     this.setSortable(options.sortable);
   }
 
+  get dataCategory() {
+    return this.options.dataCategory;
+  }
+
   get underscored() {
     return this.options.underscored;
   }
@@ -217,6 +231,10 @@ export class Collection<
     return (this.options.titleField as string) || this.model.primaryKeyAttribute;
   }
 
+  get titleFieldInstance() {
+    return this.getField(this.titleField);
+  }
+
   get db() {
     return this.context.database;
   }
@@ -237,23 +255,12 @@ export class Collection<
     }
   }
 
-  validate(options: {
-    values: Record<string, any> | Record<string, any>[];
-    operation: 'create' | 'update';
-    context: { t: Function };
-  }) {
-    const { values: updateValues, context, operation } = options;
+  validate(options: { values: Record<string, any> | Record<string, any>[]; operation: 'create' | 'update' }) {
+    const { values: updateValues, operation } = options;
     if (!updateValues) {
       return;
     }
     const values = Array.isArray(updateValues) ? updateValues : [updateValues];
-    const { t } = context || { t: (key: string, options: any) => key };
-
-    const unwrapTplLabel = (label: any) => {
-      if (typeof label !== 'string') return label as any;
-      const m = label.match(/^[\s\t]*\{\{\s*t\(\s*(['"])(.*?)\1(?:\s*,[\s\S]*)?\)\s*\}\}[\s\t]*$/);
-      return m ? m[2] : label;
-    };
 
     const helper = (field: Field, value: Object) => {
       const val = value[field.name];
@@ -261,34 +268,25 @@ export class Collection<
         return;
       }
 
-      const fieldLabel = unwrapTplLabel(field.options.uiSchema?.title || field.name);
       if (field instanceof RelationField) {
-        if (field.options?.validation.rules) {
-          const isRequired = field.options?.validation.rules.some((rule) => rule.name === 'required');
-          if (isRequired && !val) {
-            throw new Error(
-              t('{{#label}} is required', {
-                ns: 'client',
-                '#label': `${t('Collection', { ns: 'client' })}: ${this.name}, ${t('Field', { ns: 'client' })}: ${t(
-                  fieldLabel,
-                  { ns: 'client' },
-                )}`,
-              }),
-            );
+        const rules = field.options?.validation?.rules || [];
+        const required = rules.some((rule) => rule.name === 'required');
+
+        if (required) {
+          const { error } = Joi.any().empty(null).required().label(`${this.name}.${field.name}`).validate(val);
+          if (error) {
+            throw error;
           }
         }
+
         return;
       }
 
       const joiSchema = buildJoiSchema(field.options.validation, {
-        label: `${t('Collection', { ns: 'client' })}: ${this.name}, ${t('Field', { ns: 'client' })}: ${t(fieldLabel, {
-          ns: 'client',
-        })}`,
+        label: `${this.name}.${field.name}`,
         value: val,
       });
-      const { error } = joiSchema.validate(val, {
-        messages: getJoiErrorMessage(t),
-      });
+      const { error } = joiSchema.validate(val);
       if (error) {
         throw error;
       }
@@ -422,6 +420,10 @@ export class Collection<
 
     if (!autoGenId) {
       this.model.removeAttribute('id');
+
+      // the auto add `id` attribute let autoIncrementAttribute = 'id', if remove `id` attribute should set autoIncrementAttribute to null
+      // @ts-ignore
+      this.model.autoIncrementAttribute = null;
     }
 
     // @ts-ignore
@@ -805,6 +807,13 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
+  private normalizeFieldName(val: string | string[]) {
+    if (!this.options.underscored) {
+      return val;
+    }
+    return Array.isArray(val) ? val.map((v) => snakeCase(v)) : snakeCase(val);
+  }
+
   addIndex(
     index:
       | string
@@ -851,7 +860,7 @@ export class Collection<
     }
 
     for (const item of indexes) {
-      if (lodash.isEqual(item.fields, indexName)) {
+      if (lodash.isEqual(this.normalizeFieldName(item.fields), this.normalizeFieldName(indexName))) {
         return;
       }
 
@@ -903,14 +912,26 @@ export class Collection<
     // @ts-ignore
     const indexes: any[] = this.model._indexes;
 
+    const attributes = {};
+    for (const [name, field] of Object.entries(this.model.getAttributes())) {
+      attributes[this.normalizeFieldName(name)] = field;
+    }
+
     // @ts-ignore
     this.model._indexes = lodash.uniqBy(
       indexes
         .filter((item) => {
-          return item.fields.every((field) => this.model.rawAttributes[field]);
+          return item.fields.every((field) => {
+            const name = this.normalizeFieldName(field);
+            return attributes[name];
+          });
         })
         .map((item) => {
-          item.fields = item.fields.map((field) => this.model.rawAttributes[field].field);
+          item.fields = item.fields.map((field) => {
+            const name = this.normalizeFieldName(field);
+            return attributes[name].field;
+          });
+
           return item;
         }),
       'name',

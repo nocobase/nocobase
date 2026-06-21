@@ -1,0 +1,14 @@
+{
+  "AddStep": "Add step",
+  "Delete": "Delete",
+  "Edit step title": "Edit step title",
+  "Next": "Next",
+  "Previous": "Previous",
+  "Step": "Step",
+  "Step title": "Step title",
+  "StepsForm": "Multi-step form",
+  "StepsForm(Add new)": "Multi-step form (Add new)",
+  "StepsForm(Edit)": "Multi-step form (Edit)",
+  "The last step cannot be deleted": "The last step cannot be deleted",
+  "Whether to delete this step": "Whether to delete this step?"
+}

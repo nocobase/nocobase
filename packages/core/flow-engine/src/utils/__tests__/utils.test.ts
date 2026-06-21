@@ -12,7 +12,10 @@ import {
   getT,
   isInheritedFrom,
   resolveDefaultParams,
+  shouldHideEventInSettings,
   resolveStepUiSchema,
+  resolveStepDisabledInSettings,
+  shouldHideStepInSettings,
   FlowExitException,
   defineAction,
   compileUiSchema,
@@ -25,11 +28,13 @@ import type {
   FlowDefinitionOptions,
   ActionDefinition,
   DeepPartial,
+  EventDefinition,
   ModelConstructor,
   StepParams,
   StepDefinition,
 } from '../../types';
 import { FlowRuntimeContext } from '../../flowContext';
+import { ContextPathProxy } from '../../ContextPathProxy';
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
@@ -996,26 +1001,277 @@ describe('Utils', () => {
 
         consoleSpy.mockRestore();
       });
+    });
+  });
 
-      test('should handle missing getAction method', async () => {
-        // Mock a flowEngine without getAction method
-        const originalGetAction = mockModel.flowEngine.getAction;
-        mockModel.flowEngine.getAction = undefined;
+  // ==================== shouldHideEventInSettings() FUNCTION ====================
+  describe('shouldHideEventInSettings()', () => {
+    let mockFlow: any;
+    let mockEvent: EventDefinition;
 
-        mockStep.use = 'testAction';
-        mockStep.uiSchema = {
-          field1: { type: 'string', title: 'Field 1' },
-        };
+    beforeEach(() => {
+      mockFlow = {
+        key: 'testFlow',
+        title: 'Test Flow',
+        steps: {},
+      };
 
-        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+      mockEvent = {
+        name: 'close',
+        title: 'Close',
+        handler: vi.fn(),
+      };
+    });
 
-        expect(result).toEqual({
-          field1: { type: 'string', title: 'Field 1' },
-        });
+    test('returns true for static hideInSettings=true', async () => {
+      mockEvent.hideInSettings = true;
 
-        // Restore the original method
-        mockModel.flowEngine.getAction = originalGetAction;
-      });
+      const result = await shouldHideEventInSettings(mockModel, mockFlow, mockEvent);
+
+      expect(result).toBe(true);
+    });
+
+    test('returns false for static hideInSettings=false', async () => {
+      mockEvent.hideInSettings = false;
+
+      const result = await shouldHideEventInSettings(mockModel, mockFlow, mockEvent);
+
+      expect(result).toBe(false);
+    });
+
+    test('evaluates function hideInSettings with FlowRuntimeContext and can read ctx.view.preventClose', async () => {
+      mockModel.context.defineProperty('view', { value: { preventClose: true } });
+      const hideFn = vi.fn().mockImplementation((ctx) => !!ctx.view?.preventClose);
+      mockEvent.hideInSettings = hideFn as any;
+
+      const result = await shouldHideEventInSettings(mockModel, mockFlow, mockEvent);
+
+      expect(hideFn).toHaveBeenCalledTimes(1);
+      const ctx = hideFn.mock.calls[0][0] as FlowRuntimeContext;
+      expect(ctx).toBeInstanceOf(FlowRuntimeContext);
+      expect(result).toBe(true);
+    });
+
+    test('returns false and logs warning when event hideInSettings throws', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockEvent.hideInSettings = vi.fn().mockRejectedValue(new Error('boom')) as any;
+
+      const result = await shouldHideEventInSettings(mockModel, mockFlow, mockEvent);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(result).toBe(false);
+      consoleSpy.mockRestore();
+    });
+  });
+
+  // ==================== shouldHideStepInSettings() FUNCTION ====================
+  describe('shouldHideStepInSettings()', () => {
+    let mockFlow: any;
+    let mockStep: StepDefinition;
+
+    beforeEach(() => {
+      mockFlow = {
+        key: 'testFlow',
+        title: 'Test Flow',
+        steps: {},
+      };
+
+      mockStep = {
+        key: 'testStep',
+        handler: vi.fn(),
+      };
+    });
+
+    test('returns true when step is falsy', async () => {
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, null);
+      expect(result).toBe(true);
+    });
+
+    test('respects static step.hideInSettings=true', async () => {
+      mockStep.hideInSettings = true;
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toBe(true);
+    });
+
+    test('respects static step.hideInSettings=false', async () => {
+      mockStep.hideInSettings = false;
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toBe(false);
+    });
+
+    test('falls back to action.hideInSettings when step.hideInSettings is undefined', async () => {
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        hideInSettings: true,
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+      expect(mockModel.flowEngine.getAction).toHaveBeenCalledWith('testAction');
+      expect(result).toBe(true);
+    });
+
+    test('prefers step.hideInSettings over action.hideInSettings', async () => {
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        hideInSettings: true,
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockStep.hideInSettings = false;
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toBe(false);
+    });
+
+    test('evaluates function step.hideInSettings with FlowRuntimeContext', async () => {
+      const hideFn = vi.fn().mockResolvedValue(true);
+      mockStep.hideInSettings = hideFn as any;
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+
+      expect(hideFn).toHaveBeenCalledTimes(1);
+      const ctx = hideFn.mock.calls[0][0] as FlowRuntimeContext;
+      expect(ctx).toBeInstanceOf(FlowRuntimeContext);
+      expect((ctx as any).model).toBe(mockModel);
+      expect((ctx as any).flowKey).toBe('testFlow');
+      expect((ctx as any).mode).toBe('settings');
+      expect((ctx as any).currentStep).toBeInstanceOf(ContextPathProxy);
+      expect(String((ctx as any).currentStep)).toBe('{{ctx.currentStep}}');
+      expect(result).toBe(true);
+    });
+
+    test('evaluates function action.hideInSettings when step.hideInSettings is undefined', async () => {
+      const hideFn = vi.fn().mockResolvedValue(false);
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        hideInSettings: hideFn as any,
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+
+      expect(hideFn).toHaveBeenCalledTimes(1);
+      const ctx = hideFn.mock.calls[0][0] as FlowRuntimeContext;
+      expect((ctx as any).currentStep).toBeInstanceOf(ContextPathProxy);
+      expect(String((ctx as any).currentStep)).toBe('{{ctx.currentStep}}');
+      expect(result).toBe(false);
+    });
+
+    test('returns false and logs warning when function hideInSettings throws', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const hideFn = vi.fn().mockRejectedValue(new Error('boom'));
+      mockStep.hideInSettings = hideFn as any;
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(result).toBe(false);
+      consoleSpy.mockRestore();
+    });
+  });
+
+  // ==================== resolveStepDisabledInSettings() FUNCTION ====================
+  describe('resolveStepDisabledInSettings()', () => {
+    let mockFlow: any;
+    let mockStep: StepDefinition;
+
+    beforeEach(() => {
+      mockFlow = {
+        key: 'testFlow',
+        title: 'Test Flow',
+        steps: {},
+      };
+
+      mockStep = {
+        key: 'testStep',
+        handler: vi.fn(),
+      };
+    });
+
+    test('returns disabled=false when step is falsy', async () => {
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, null as any);
+      expect(result).toEqual({ disabled: false });
+    });
+
+    test('respects static step.disabledInSettings and disabledReasonInSettings', async () => {
+      mockStep.disabledInSettings = true;
+      mockStep.disabledReasonInSettings = 'legacy reason';
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toEqual({ disabled: true, reason: 'legacy reason' });
+    });
+
+    test('falls back to action disabled settings when step value is undefined', async () => {
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        disabledInSettings: true,
+        disabledReasonInSettings: 'from action',
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toEqual({ disabled: true, reason: 'from action' });
+    });
+
+    test('prefers step disabled settings over action values', async () => {
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        disabledInSettings: false,
+        disabledReasonInSettings: 'from action',
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockStep.disabledInSettings = true;
+      mockStep.disabledReasonInSettings = 'from step';
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toEqual({ disabled: true, reason: 'from step' });
+    });
+
+    test('evaluates function disabled settings with FlowRuntimeContext', async () => {
+      const disabledFn = vi.fn().mockResolvedValue(true);
+      const reasonFn = vi.fn().mockResolvedValue('computed reason');
+      mockStep.disabledInSettings = disabledFn as any;
+      mockStep.disabledReasonInSettings = reasonFn as any;
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+
+      expect(disabledFn).toHaveBeenCalledTimes(1);
+      expect(reasonFn).toHaveBeenCalledTimes(1);
+      const disabledCtx = disabledFn.mock.calls[0][0] as FlowRuntimeContext;
+      const reasonCtx = reasonFn.mock.calls[0][0] as FlowRuntimeContext;
+      expect(disabledCtx).toBeInstanceOf(FlowRuntimeContext);
+      expect(reasonCtx).toBeInstanceOf(FlowRuntimeContext);
+      expect((disabledCtx as any).currentStep).toBeInstanceOf(ContextPathProxy);
+      expect(String((disabledCtx as any).currentStep)).toBe('{{ctx.currentStep}}');
+      expect(result).toEqual({ disabled: true, reason: 'computed reason' });
+    });
+
+    test('returns disabled=false when function disabledInSettings throws', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockStep.disabledInSettings = vi.fn().mockRejectedValue(new Error('boom')) as any;
+
+      const result = await resolveStepDisabledInSettings(mockModel, mockFlow, mockStep);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(result).toEqual({ disabled: false });
+      consoleSpy.mockRestore();
     });
   });
 });

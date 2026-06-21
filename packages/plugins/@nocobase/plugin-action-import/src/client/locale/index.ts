@@ -8,8 +8,9 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { NAMESPACE } from '../../client-v2/locale';
 
-export const NAMESPACE = 'action-import';
+export { NAMESPACE };
 
 export function useImportTranslation() {
   return useTranslation([NAMESPACE, 'client'], { nsMode: 'fallback' });

@@ -32,6 +32,7 @@ interface IEllipsisWithTooltipProps {
   popoverContent: unknown;
   children: any;
   role?: string;
+  style?: any;
 }
 
 const popoverStyle = {
@@ -97,7 +98,7 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
       onOpenChange={(visible) => {
         setVisible(ellipsis && visible);
       }}
-      content={<div style={popoverStyle}>{props.popoverContent || props.children}</div>}
+      content={<div style={{ ...popoverStyle, ...(props?.style || {}) }}>{props.popoverContent || props.children}</div>}
     >
       {divContent}
     </Popover>

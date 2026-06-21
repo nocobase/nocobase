@@ -9,10 +9,9 @@
 
 import type { ISchema } from '@formily/json-schema';
 import { Schema } from '@formily/json-schema';
-import { toJS } from '@formily/reactive';
 import type { FlowModel } from '../models';
 import { FlowRuntimeContext } from '../flowContext';
-import type { StepDefinition, StepUIMode } from '../types';
+import type { EventDefinition, StepDefinition, StepUIMode } from '../types';
 import { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 /**
@@ -77,6 +76,29 @@ export async function resolveUiMode<TModel extends FlowModel = FlowModel>(
 // 模块级全局缓存，与 useCompile 保持一致
 const compileCache = {};
 
+const hasFunctionValue = (source: any): boolean => {
+  if (typeof source === 'function') return true;
+  if (!source || typeof source !== 'object') return false;
+  const seen = new WeakSet<object>();
+  const walk = (val: any): boolean => {
+    if (typeof val === 'function') return true;
+    if (!val || typeof val !== 'object') return false;
+    if (seen.has(val)) return false;
+    seen.add(val);
+    if (Array.isArray(val)) {
+      for (const it of val) {
+        if (walk(it)) return true;
+      }
+      return false;
+    }
+    for (const k of Object.keys(val)) {
+      if (walk((val as any)[k])) return true;
+    }
+    return false;
+  };
+  return walk(source);
+};
+
 /**
  * 编译 UI Schema 中的表达式
  *
@@ -111,8 +133,18 @@ export function compileUiSchema(scope: Record<string, any>, uiSchema: any, optio
         console.warn('Failed to stringify:', e);
         return source;
       }
-      if (compileCache[cacheKey]) return compileCache[cacheKey];
       shouldCompile = hasVariable(cacheKey);
+      // schema 中包含函数（如 x-reactions 的闭包）时，缓存会导致跨上下文复用旧闭包，必须禁用缓存
+      const hasFn = shouldCompile && !noCache ? hasFunctionValue(source) : false;
+      if (compileCache[cacheKey] && !noCache && !hasFn) return compileCache[cacheKey];
+      if (hasFn) {
+        try {
+          return Schema.compile(source, scope);
+        } catch (error) {
+          console.warn('Failed to compile with Formily Schema.compile:', error);
+          return source;
+        }
+      }
     }
 
     // source is Array, for example: [{ 'title': "{{ t('Admin') }}", name: 'admin' }, { 'title': "{{ t('Root') }}", name: 'root' }]
@@ -123,8 +155,17 @@ export function compileUiSchema(scope: Record<string, any>, uiSchema: any, optio
         console.warn('Failed to stringify:', e);
         return source;
       }
-      if (compileCache[cacheKey]) return compileCache[cacheKey];
       shouldCompile = hasVariable(cacheKey);
+      const hasFn = shouldCompile && !noCache ? hasFunctionValue(source) : false;
+      if (compileCache[cacheKey] && !noCache && !hasFn) return compileCache[cacheKey];
+      if (hasFn) {
+        try {
+          return Schema.compile(source, scope);
+        } catch (error) {
+          console.warn('Failed to compile with Formily Schema.compile:', error);
+          return source;
+        }
+      }
     }
 
     if (shouldCompile) {
@@ -174,7 +215,7 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
 ): Promise<Record<string, ISchema> | null> {
   // 创建运行时上下文
   const flowRuntimeContext = new FlowRuntimeContext(model, flow.key, 'settings');
-  setupRuntimeContextSteps(flowRuntimeContext, flow, model, flow.key);
+  setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, flow.key);
   flowRuntimeContext.defineProperty('currentStep', { value: step });
 
   // 获取步骤的uiSchema
@@ -182,7 +223,7 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
 
   if (step.use) {
     try {
-      const action = model.flowEngine?.getAction?.(step.use);
+      const action = model.getAction?.(step.use);
       if (action && action.uiSchema) {
         stepUiSchema = stepUiSchema || action.uiSchema;
       }
@@ -199,4 +240,148 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
   }
 
   return resolvedStepUiSchema;
+}
+
+/**
+ * 判断事件在设置菜单中是否应被隐藏。
+ * - 支持 EventDefinition.hideInSettings。
+ * - hideInSettings 可为布尔值或函数（接收 FlowRuntimeContext）。
+ */
+export async function shouldHideEventInSettings<TModel extends FlowModel = FlowModel>(
+  model: TModel,
+  flow: any,
+  event: EventDefinition<TModel> | undefined,
+): Promise<boolean> {
+  if (!event) return true;
+
+  const { hideInSettings } = event;
+
+  if (typeof hideInSettings === 'function') {
+    try {
+      const ctx = new FlowRuntimeContext(model, flow.key, 'settings');
+      setupRuntimeContextSteps(ctx, flow.steps || {}, model, flow.key);
+      const result = await hideInSettings(ctx as any);
+      return !!result;
+    } catch (error) {
+      console.warn(`Error evaluating hideInSettings for event '${event.name || ''}' in flow '${flow.key}':`, error);
+      return false;
+    }
+  }
+
+  return !!hideInSettings;
+}
+
+/**
+ * 判断步骤在设置菜单中是否应被隐藏。
+ * - 支持 StepDefinition.hideInSettings 与 ActionDefinition.hideInSettings（step 优先）。
+ * - hideInSettings 可为布尔值或函数（接收 FlowRuntimeContext）。
+ */
+export async function shouldHideStepInSettings<TModel extends FlowModel = FlowModel>(
+  model: TModel,
+  flow: any,
+  step: StepDefinition,
+): Promise<boolean> {
+  if (!step) return true;
+
+  // 优先使用 step.hideInSettings，其次回退到 action.hideInSettings
+  let hideInSettings = step.hideInSettings;
+
+  if (typeof hideInSettings === 'undefined' && step.use) {
+    const action = model.getAction?.(step.use);
+    hideInSettings = action?.hideInSettings;
+  }
+
+  if (typeof hideInSettings === 'function') {
+    try {
+      const ctx = new FlowRuntimeContext(model, flow.key, 'settings');
+      setupRuntimeContextSteps(ctx, flow.steps, model, flow.key);
+      ctx.defineProperty('currentStep', { value: step });
+      const result = await hideInSettings(ctx as any);
+      return !!result;
+    } catch (error) {
+      console.warn(`Error evaluating hideInSettings for step '${step.key || ''}' in flow '${flow.key}':`, error);
+      return false;
+    }
+  }
+
+  return !!hideInSettings;
+}
+
+/**
+ * 解析步骤在设置菜单中的禁用状态与提示文案。
+ * - 支持 StepDefinition.disabledInSettings 与 ActionDefinition.disabledInSettings（step 优先）。
+ * - 支持 StepDefinition.disabledReasonInSettings 与 ActionDefinition.disabledReasonInSettings（step 优先）。
+ * - 以上属性均支持静态值与函数（接收 FlowRuntimeContext）。
+ */
+export async function resolveStepDisabledInSettings<TModel extends FlowModel = FlowModel>(
+  model: TModel,
+  flow: any,
+  step: StepDefinition,
+): Promise<{ disabled: boolean; reason?: string }> {
+  if (!step) return { disabled: false };
+
+  let disabledInSettings = step.disabledInSettings;
+  let disabledReasonInSettings = step.disabledReasonInSettings;
+
+  if ((typeof disabledInSettings === 'undefined' || typeof disabledReasonInSettings === 'undefined') && step.use) {
+    try {
+      const action = model.getAction?.(step.use);
+      if (typeof disabledInSettings === 'undefined') {
+        disabledInSettings = action?.disabledInSettings;
+      }
+      if (typeof disabledReasonInSettings === 'undefined') {
+        disabledReasonInSettings = action?.disabledReasonInSettings;
+      }
+    } catch (error) {
+      console.warn(`Failed to get action ${step.use}:`, error);
+    }
+  }
+
+  let ctx: FlowRuntimeContext<TModel> | null = null;
+  const getContext = () => {
+    if (ctx) return ctx;
+    ctx = new FlowRuntimeContext(model, flow.key, 'settings');
+    setupRuntimeContextSteps(ctx, flow.steps, model, flow.key);
+    ctx.defineProperty('currentStep', { value: step });
+    return ctx;
+  };
+
+  let disabled = false;
+  if (typeof disabledInSettings === 'function') {
+    try {
+      disabled = !!(await disabledInSettings(getContext() as any));
+    } catch (error) {
+      console.warn(`Error evaluating disabledInSettings for step '${step.key || ''}' in flow '${flow.key}':`, error);
+      return { disabled: false };
+    }
+  } else {
+    disabled = !!disabledInSettings;
+  }
+
+  if (!disabled) {
+    return { disabled: false };
+  }
+
+  let reason: string | undefined;
+  if (typeof disabledReasonInSettings === 'function') {
+    try {
+      const resolved = await disabledReasonInSettings(getContext() as any);
+      if (typeof resolved !== 'undefined' && resolved !== null && resolved !== '') {
+        reason = String(resolved);
+      }
+    } catch (error) {
+      console.warn(
+        `Error evaluating disabledReasonInSettings for step '${step.key || ''}' in flow '${flow.key}':`,
+        error,
+      );
+    }
+  } else if (
+    typeof disabledReasonInSettings !== 'undefined' &&
+    disabledReasonInSettings !== null &&
+    disabledReasonInSettings !== ''
+  ) {
+    reason = String(disabledReasonInSettings);
+  }
+
+  return { disabled: true, reason };
 }

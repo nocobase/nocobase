@@ -8,50 +8,111 @@
  */
 
 import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { observer, useField, useForm } from '@formily/react';
+import { css } from '@emotion/css';
+import { observer, useForm } from '@formily/react';
+import { ISchema } from '@formily/json-schema';
 import {
-  CollectionField,
   CollectionProvider_deprecated,
   SchemaComponent,
   Variable,
-  css,
   parseCollectionName,
   useCollectionManager_deprecated,
   useCompile,
   useToken,
+  Fieldset,
 } from '@nocobase/client';
-import { Button, Dropdown, Form, Input, MenuProps } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import { Button, Dropdown, Form, MenuProps } from 'antd';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { lang } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
 
-function AssociationInput(props) {
-  const { getCollectionFields } = useCollectionManager_deprecated();
-  const { path } = useField();
-  const fieldName = path.segments[path.segments.length - 1] as string;
-  const { values: config } = useForm();
-  const [dataSourceName, collectionName] = parseCollectionName(config?.collection);
-  const fields = getCollectionFields(collectionName, dataSourceName);
-  const { type } = fields.find((item) => item.name === fieldName);
+const fieldItemClassName = css`
+  position: relative;
 
-  const value = Array.isArray(props.value) ? props.value.join(',') : props.value;
-  const onChange = useCallback(
-    (ev) => {
-      const trimed = ev.target.value.trim();
-      const next = ['belongsTo', 'hasOne'].includes(type)
-        ? trimed || null
-        : trimed
-            .split(',')
-            .map((item) => item.trim())
-            .filter((item) => item !== '');
-      props.onChange(next);
-    },
-    [props.onChange, type],
-  );
+  .ant-form-item-label > label {
+    padding-right: 32px;
+    font-weight: 600;
+  }
+`;
 
-  return <Input {...props} value={value} onChange={onChange} />;
-}
+const CollectionFieldSetItem = observer(
+  ({ field, value, disabled, collectionName, dataSourceName, onChange, onRemove }: any) => {
+    const compile = useCompile();
+    const scope = useWorkflowVariableOptions();
+    const { getCollection, getInterface } = useCollectionManager_deprecated();
+
+    const fieldSchema = useMemo<ISchema>(() => {
+      const targetCollection = field.target ? getCollection(field.target, dataSourceName) : undefined;
+      const interfaceConfig = field.interface ? getInterface(field.interface) : undefined;
+      const nextFieldSchema: ISchema = {
+        type: field.uiSchema?.type || 'string',
+        'x-component': 'CollectionField',
+        'x-collection-field': `${collectionName}.${field.name}`,
+        'x-component-props': {
+          ...(field.uiSchema?.['x-component-props'] || {}),
+          disabled,
+        },
+        ['x-validator']() {
+          return '';
+        },
+      };
+
+      interfaceConfig?.schemaInitialize?.(nextFieldSchema, {
+        field,
+        block: 'Form',
+        readPretty: false,
+        targetCollection,
+      });
+
+      nextFieldSchema['x-component-props'] = {
+        ...(nextFieldSchema['x-component-props'] || {}),
+        disabled,
+      };
+
+      return nextFieldSchema;
+    }, [collectionName, dataSourceName, disabled, field, getCollection, getInterface]);
+
+    return (
+      <div style={{ position: 'relative' }}>
+        <Form.Item
+          key={field.name}
+          className={fieldItemClassName}
+          label={compile(field.uiSchema?.title ?? field.name)}
+          labelAlign="left"
+          layout="vertical"
+          colon
+        >
+          <Variable.Input scope={scope} value={value} changeOnSelect onChange={onChange}>
+            <SchemaComponent
+              schema={{
+                type: 'void',
+                properties: {
+                  [field.name]: fieldSchema,
+                },
+              }}
+            />
+          </Variable.Input>
+        </Form.Item>
+        {!disabled ? (
+          <Button
+            aria-label="icon-close"
+            type="link"
+            icon={<CloseCircleOutlined />}
+            onClick={onRemove}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              paddingInline: 0,
+            }}
+          />
+        ) : null}
+      </div>
+    );
+  },
+  { displayName: 'CollectionFieldSetItem' },
+);
 
 /**
  * @deprecated
@@ -63,7 +124,6 @@ const CollectionFieldSet = observer(
     const compile = useCompile();
     const form = useForm();
     const { getCollectionFields } = useCollectionManager_deprecated();
-    const scope = useWorkflowVariableOptions();
     const { values: config } = form;
     const [dataSourceName, collectionName] = parseCollectionName(config?.collection);
     const collectionFields = getCollectionFields(collectionName, dataSourceName).filter((field) => field.uiSchema);
@@ -85,78 +145,31 @@ const CollectionFieldSet = observer(
           label: compile(field.uiSchema?.title ?? field.name),
         })),
       };
-    }, [onChange, unassignedFields, value]);
+    }, [compile, onChange, unassignedFields, value]);
 
     return (
-      <fieldset
-        className={css`
-          margin-top: 0.5em;
-
-          > .ant-formily-item {
-            flex-direction: column;
-
-            > .ant-formily-item-label {
-              line-height: 32px;
-            }
-          }
-        `}
-      >
+      <Fieldset>
         {fields.length ? (
           <CollectionProvider_deprecated name={collectionName} dataSource={dataSourceName}>
             {fields
               .filter((field) => value && field.name in value)
               .map((field) => {
-                // constant for associations to use Input, others to use CollectionField
-                // dynamic values only support belongsTo/hasOne association, other association type should disable
-                const ConstantCompoent = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
-                  ? AssociationInput
-                  : CollectionField;
-                // TODO: try to use <ObjectField> to replace this map
                 return (
-                  <Form.Item
+                  <CollectionFieldSetItem
                     key={field.name}
-                    label={compile(field.uiSchema?.title ?? field.name)}
-                    labelAlign="left"
-                    className={css`
-                      .ant-form-item-control-input-content {
-                        display: flex;
-                      }
-                    `}
-                  >
-                    <Variable.Input
-                      scope={scope}
-                      value={value[field.name]}
-                      changeOnSelect
-                      onChange={(next) => {
-                        onChange({ ...value, [field.name]: next });
-                      }}
-                    >
-                      <SchemaComponent
-                        schema={{
-                          type: 'void',
-                          properties: {
-                            [field.name]: {
-                              'x-component': ConstantCompoent,
-                              ['x-validator']() {
-                                return '';
-                              },
-                            },
-                          },
-                        }}
-                      />
-                    </Variable.Input>
-                    {!mergedDisabled ? (
-                      <Button
-                        aria-label="icon-close"
-                        type="link"
-                        icon={<CloseCircleOutlined />}
-                        onClick={() => {
-                          const { [field.name]: _, ...rest } = value;
-                          onChange(rest);
-                        }}
-                      />
-                    ) : null}
-                  </Form.Item>
+                    field={field}
+                    value={value[field.name]}
+                    disabled={mergedDisabled}
+                    collectionName={collectionName}
+                    dataSourceName={dataSourceName}
+                    onChange={(next: any) => {
+                      onChange({ ...value, [field.name]: next });
+                    }}
+                    onRemove={() => {
+                      const { [field.name]: _, ...rest } = value;
+                      onChange(rest);
+                    }}
+                  />
                 );
               })}
             {unassignedFields.length ? (
@@ -168,7 +181,7 @@ const CollectionFieldSet = observer(
         ) : (
           <p style={{ color: token.colorText }}>{lang('Please select collection first')}</p>
         )}
-      </fieldset>
+      </Fieldset>
     );
   },
   { displayName: 'CollectionFieldSet' },

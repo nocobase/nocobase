@@ -11,6 +11,7 @@ import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import Plugin from '../../Plugin';
+import { EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > actions > workflows', () => {
   let app: MockServer;
@@ -38,6 +39,27 @@ describe('workflow > actions > workflows', () => {
   });
 
   afterEach(() => app.destroy());
+
+  describe('create', () => {
+    it('type should be required', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          enabled: true,
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('type should be valid', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          enabled: true,
+          type: 'invalid',
+        },
+      });
+      expect(status).toBe(400);
+    });
+  });
 
   describe('update', () => {
     it('update unexecuted workflow should be ok', async () => {
@@ -147,10 +169,12 @@ describe('workflow > actions > workflows', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
-      const c1 = await workflow.countExecutions();
-      expect(c1).toBe(1);
+      await vi.waitFor(async () => {
+        const executions = await workflow.getExecutions();
+        expect(executions.length).toBe(1);
+        expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(await PostRepo.count()).toBe(2);
+      });
 
       const { status, body } = await agent.resource('workflows').update({
         filterByTk: workflow.id,
@@ -169,13 +193,12 @@ describe('workflow > actions > workflows', () => {
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
 
-      await sleep(500);
-
-      const c2 = await workflow.countExecutions();
-      expect(c2).toBe(4);
-
-      const p2s = await PostRepo.find();
-      expect(p2s.length).toBe(6);
+      await vi.waitFor(async () => {
+        const executions = await workflow.getExecutions();
+        expect(executions.length).toBe(4);
+        expect(executions.map((item) => item.status)).toEqual(Array(4).fill(EXECUTION_STATUS.RESOLVED));
+        expect(await PostRepo.count()).toBe(6);
+      });
     });
   });
 
@@ -400,7 +423,10 @@ describe('workflow > actions > workflows', () => {
       });
 
       const n1 = await w1.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
       const n2 = await w1.createNode({
         type: 'calculation',
@@ -426,7 +452,7 @@ describe('workflow > actions > workflows', () => {
       const n2_2 = w2.nodes.find((n) => !n.downstreamId);
 
       expect(n1_2.key).toBe(n1.key);
-      expect(n1_2.type).toBe('echo');
+      expect(n1_2.type).toBe('echoVariable');
       expect(n2_2.type).toBe('calculation');
       expect(n2_2.config).toMatchObject({
         engine: 'math.js',
@@ -683,6 +709,61 @@ describe('workflow > actions > workflows', () => {
       });
       expect(w2.categories.length).toBe(categories.length);
       expect(w2.key).not.toBe(w1.key);
+    });
+
+    it('duplicate with node has duplicate config', async () => {
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'collection',
+          config: {
+            mode: 1,
+            collection: 'posts',
+          },
+        },
+      });
+
+      const workflowPlugin = app.pm.get(Plugin) as Plugin;
+      workflowPlugin.instructions.register('duplicateNode', {
+        run() {
+          return {
+            status: 1,
+          };
+        },
+        duplicateConfig(node) {
+          return {
+            ...node.config,
+            a: 1,
+          };
+        },
+      });
+
+      const n1 = await w1.createNode({
+        type: 'duplicateNode',
+        config: {
+          a: 0,
+          b: 1,
+        },
+      });
+
+      const { body, status } = await agent.resource(`workflows`).revision({
+        filterByTk: w1.id,
+      });
+
+      expect(status).toBe(200);
+
+      const w2 = await WorkflowModel.findOne({
+        where: {
+          id: body.data.id,
+        },
+        include: ['nodes'],
+      });
+
+      const n2 = w2.nodes.find((n) => n.key === n1.key);
+      expect(n2.config).toEqual({
+        a: 1,
+        b: 1,
+      });
     });
   });
 });

@@ -1,0 +1,95 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Обзор",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Настройка администратора",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Руководство по настройке",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Настройка Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Настройка Outlook",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Часто задаваемые вопросы",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Обзор функций",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Центр управления почтой",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Почтовый блок",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Подпись электронной почты",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Почтовые алиасы",
+        "link": "/email-manager/usage/alias"
+      },
+      {
+        "type": "custom-link",
+        "label": "Шаблоны писем",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Расширенные возможности",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Заметки к письмам",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Задачи электронной почты",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Метки электронной почты",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Пакетная отправка",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Автосохранение черновика",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

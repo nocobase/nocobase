@@ -85,6 +85,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   showValueComponent = true,
   onlyLeafSelectable = false,
   clearValue,
+  ignoreFieldNames,
   ...restProps
 }) => {
   const [currentMetaTreeNode, setCurrentMetaTreeNode] = useState<MetaTreeNode | null>(null);
@@ -138,7 +139,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   // 当 value 存在但 currentMetaTreeNode 还未恢复，尝试按路径逐级加载（支持 children 为函数的场景）
   useEffect(() => {
     const restoreFromValue = async () => {
-      if (!Array.isArray(resolvedMetaTree) || !value) return;
+      if (!Array.isArray(resolvedMetaTree) || value == null) return;
 
       // 若已存在且路径匹配，跳过
       if (currentMetaTreeNode) {
@@ -202,17 +203,39 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   useEffect(() => {
     if (!resolvedMetaTreeNode) return;
-    if (!Array.isArray(resolvedMetaTree) || !innerValue) return;
-    const finalValue = resolveValueFromPath?.(resolvedMetaTreeNode) || innerValue;
-    emitChange(finalValue, resolvedMetaTreeNode);
+    if (!Array.isArray(resolvedMetaTree) || innerValue == null) return;
+    // During initial restoration, `innerValue` already represents the persisted value.
+    // Do NOT override it with `resolveValueFromPath`, otherwise truthy defaults (e.g. RunJSValue objects)
+    // may accidentally wipe persisted content when reopening.
+    emitChange(innerValue, resolvedMetaTreeNode);
     setCurrentMetaTreeNode(resolvedMetaTreeNode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedMetaTreeNode]);
+
+  // Track IME composition input
+  const composingRef = useRef(false);
+  const handleComposition = useCallback(
+    (e: React.CompositionEvent<HTMLInputElement> | any) => {
+      if (e?.type === 'compositionend') {
+        composingRef.current = false;
+        // After composition ends, ensure latest value is emitted
+        const newValue = e?.target?.value !== undefined ? e.target.value : e;
+        setInnerValue(newValue);
+        emitChange(newValue);
+      } else {
+        composingRef.current = true;
+      }
+    },
+    [emitChange],
+  );
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
       const newValue = e?.target?.value !== undefined ? e.target.value : e;
       setInnerValue(newValue);
+      // If currently composing, defer outer change until compositionend
+      const isComposing = composingRef.current || (e?.nativeEvent && (e.nativeEvent as any).isComposing);
+      if (isComposing) return;
       emitChange(newValue);
     },
     [emitChange],
@@ -220,12 +243,18 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   const handleVariableSelect = useCallback(
     (variableValue: string, metaTreeNode?: MetaTreeNode) => {
+      if (!metaTreeNode && variableValue === '') {
+        const cleared = clearValue !== undefined ? clearValue : null;
+        setInnerValue(cleared);
+        emitChange(cleared as any);
+        return;
+      }
       setCurrentMetaTreeNode(metaTreeNode);
       const finalValue = resolveValueFromPath?.(metaTreeNode) || variableValue;
       setInnerValue(finalValue);
       emitChange(finalValue, metaTreeNode);
     },
-    [emitChange, resolveValueFromPath],
+    [emitChange, resolveValueFromPath, clearValue],
   );
 
   const { disabled } = restProps;
@@ -234,11 +263,29 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     if (disabled) {
       return;
     }
-    setCurrentMetaTreeNode(null);
     const cleared = clearValue !== undefined ? clearValue : null;
     setInnerValue(cleared);
+
+    // 若 clearValue 能解析到某个路径（例如 ['constant']），
+    // 则尝试立即定位到对应的 MetaTreeNode，以便渲染正确的常量组件。
+    try {
+      const path = resolvePathFromValue?.(cleared);
+      if (Array.isArray(resolvedMetaTree) && path && path.length > 0) {
+        const node = findMetaTreeNodeByPath(resolvedMetaTree as MetaTreeNode[], path as string[]);
+        if (node) {
+          setCurrentMetaTreeNode(node);
+          emitChange(cleared as any, node);
+          return;
+        }
+      }
+    } catch (_) {
+      // 忽略解析异常，走默认回退
+    }
+
+    // 默认回退（无法定位具体 MetaTreeNode 时）
+    setCurrentMetaTreeNode(null);
     emitChange(cleared as any);
-  }, [emitChange, disabled, clearValue]);
+  }, [emitChange, disabled, clearValue, resolvedMetaTree, resolvePathFromValue]);
 
   const stableProps = useMemo(() => {
     const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;
@@ -247,7 +294,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   const inputProps = useMemo(() => {
     const baseProps = {
-      value: innerValue || '',
+      value: ValueComponent === Input ? innerValue ?? '' : innerValue,
       onChange: handleInputChange,
       disabled,
     };
@@ -267,11 +314,16 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     const props = {
       ...baseProps,
       ...restOthers,
+      // Ensure IME composition works correctly for text inputs
+      onCompositionStart: handleComposition,
+      onCompositionUpdate: handleComposition,
+      onCompositionEnd: handleComposition,
     };
     return props;
   }, [
     innerValue,
     handleInputChange,
+    handleComposition,
     disabled,
     handleClear,
     resolvedMetaTreeNode,
@@ -308,6 +360,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
         parseValueToPath={resolvePathFromValue}
         formatPathToValue={resolveValueFromPath}
         onlyLeafSelectable={onlyLeafSelectable}
+        ignoreFieldNames={ignoreFieldNames}
         {...(!showValueComponent && { children: null, placeholder: restProps?.placeholder })}
       />
     </Space.Compact>

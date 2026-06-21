@@ -25,26 +25,28 @@ describe('ColorPicker', () => {
     });
     expect(container).toMatchInlineSnapshot(`
       <div>
-        <div
-          class="css-dev-only-do-not-override-nlgwwc ant-app"
-          style="height: 100%;"
-        >
+        <div>
           <div
-            aria-label="color-picker-normal"
-            role="button"
-            style="display: inline-block;"
+            class="css-dev-only-do-not-override-nlgwwc ant-app"
+            style="height: 100%;"
           >
             <div
-              aria-describedby="test-id"
-              class="ant-color-picker-trigger css-dev-only-do-not-override-nlgwwc"
+              aria-label="color-picker-normal"
+              role="button"
+              style="display: inline-block;"
             >
               <div
-                class="ant-color-picker-color-block"
+                aria-describedby="test-id"
+                class="ant-color-picker-trigger css-dev-only-do-not-override-nlgwwc"
               >
                 <div
-                  class="ant-color-picker-color-block-inner"
-                  style="background: rgb(139, 187, 17);"
-                />
+                  class="ant-color-picker-color-block"
+                >
+                  <div
+                    class="ant-color-picker-color-block-inner"
+                    style="background: rgb(139, 187, 17);"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -59,7 +61,12 @@ describe('ColorPicker', () => {
       value: 'rgb(139, 187, 17)',
     });
 
-    await userEvent.hover(screen.getByRole('button').querySelector('.ant-color-picker-trigger'));
+    const button = await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'color-picker-normal' })).toBeInTheDocument();
+      return screen.getByRole('button', { name: 'color-picker-normal' });
+    });
+
+    await userEvent.hover(button.querySelector('.ant-color-picker-trigger'));
 
     await waitFor(() => {
       expect(document.querySelector('.ant-color-picker-input')).toBeInTheDocument();
@@ -90,26 +97,28 @@ describe('ColorPicker', () => {
     });
     expect(container).toMatchInlineSnapshot(`
       <div>
-        <div
-          class="css-dev-only-do-not-override-nlgwwc ant-app"
-          style="height: 100%;"
-        >
+        <div>
           <div
-            aria-label="color-picker-read-pretty"
-            class="ant-description-color-picker css-gy8kge"
-            role="button"
+            class="css-dev-only-do-not-override-nlgwwc ant-app"
+            style="height: 100%;"
           >
             <div
-              aria-describedby="test-id"
-              class="ant-color-picker-trigger ant-color-picker-sm css-dev-only-do-not-override-nlgwwc ant-color-picker-trigger-disabled"
+              aria-label="color-picker-read-pretty"
+              class="ant-description-color-picker css-gy8kge"
+              role="button"
             >
               <div
-                class="ant-color-picker-color-block"
+                aria-describedby="test-id"
+                class="ant-color-picker-trigger ant-color-picker-sm css-dev-only-do-not-override-nlgwwc ant-color-picker-trigger-disabled"
               >
                 <div
-                  class="ant-color-picker-color-block-inner"
-                  style="background: rgb(139, 187, 17);"
-                />
+                  class="ant-color-picker-color-block"
+                >
+                  <div
+                    class="ant-color-picker-color-block-inner"
+                    style="background: rgb(139, 187, 17);"
+                  />
+                </div>
               </div>
             </div>
           </div>

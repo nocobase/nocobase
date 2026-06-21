@@ -7,9 +7,87 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { promisify } from 'util';
+import Path from 'path';
+import crypto from 'crypto';
+
 import { AttachmentModel, StorageType } from '.';
 import { STORAGE_TYPE_ALI_OSS } from '../../constants';
 import { cloudFilenameGetter, getFileKey } from '../utils';
+
+const ERROR_NO_CLIENT = new Error('oss client undefined');
+
+// keep same signature as multer native
+function getRandomFilename(req, file, cb) {
+  crypto.pseudoRandomBytes(16, function (err, raw) {
+    cb(err, err ? undefined : `${raw.toString('hex')}${Path.extname(file.originalname)}`);
+  });
+}
+
+class AliYunOssStorage {
+  client;
+  getDestination: Function;
+  getFilename: Function;
+  constructor({ config, destination = '', filename = getRandomFilename }) {
+    const OSS = require('ali-oss');
+    this.client = new OSS(config);
+    this.getDestination = typeof destination === 'string' ? (req, file, cb) => cb(null, destination) : destination;
+    this.getFilename = filename;
+  }
+
+  _handleFile(req, file, cb) {
+    if (!this.client) {
+      return cb(ERROR_NO_CLIENT);
+    }
+
+    const getDestination = promisify(this.getDestination);
+    const getFilename = promisify(this.getFilename);
+
+    let size = 0;
+
+    Promise.all([getDestination(req, file), getFilename(req, file)])
+      .then(([destination, filename]) => {
+        // add listener here because if put in upper scope,
+        // the uploaded file will be 0 byte (very weird!).
+        file.stream.on('data', (chunk) => {
+          size += Buffer.byteLength(chunk);
+        });
+
+        const options: Record<string, any> = {};
+        if (file.mimetype === 'text/plain') {
+          options.mime = 'text/plain; charset=utf-8'; // force text/plain to have utf-8 charset
+        }
+        return this.client.putStream(`${destination}/${filename}`, file.stream, options);
+      })
+      .then((result) => {
+        const { url, name } = result;
+        const lastSlashIndex = name.lastIndexOf('/');
+        const path = name.substr(0, lastSlashIndex);
+        // eslint-disable-next-line promise/no-callback-in-promise
+        cb(null, {
+          destination: path,
+          filename: name.substr(lastSlashIndex + 1),
+          path,
+          size,
+          url,
+        });
+      })
+      // eslint-disable-next-line promise/no-callback-in-promise
+      .catch(cb);
+  }
+
+  async _removeFile(req, file, cb) {
+    if (!this.client) {
+      return cb(ERROR_NO_CLIENT);
+    }
+    try {
+      const result = await this.client.delete(file.filename);
+      cb(null, result);
+    } catch (error) {
+      cb(error);
+    }
+  }
+}
 
 export default class extends StorageType {
   static defaults() {
@@ -28,12 +106,30 @@ export default class extends StorageType {
   }
 
   make() {
-    const createAliOssStorage = require('multer-aliyun-oss');
-    return new createAliOssStorage({
+    return new AliYunOssStorage({
       config: { timeout: 600_000, ...this.storage.options },
       filename: cloudFilenameGetter(this.storage),
     });
   }
+
+  async exists(record: AttachmentModel): Promise<boolean> {
+    const { client } = this.make();
+    try {
+      await client.head(getFileKey(record));
+      return true;
+    } catch (error) {
+      if (['NoSuchKey', 'NotFoundError'].includes((error as Error).name)) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  async copy(source: AttachmentModel, target: AttachmentModel): Promise<void> {
+    const { client } = this.make();
+    await client.copy(getFileKey(target), getFileKey(source));
+  }
+
   async delete(records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
     const { client } = this.make();
     const { deleted } = await client.deleteMulti(records.map(getFileKey));

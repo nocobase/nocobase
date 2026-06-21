@@ -1,0 +1,95 @@
+---
+title: 'Instalar e atualizar plugins'
+description: 'Início rápido do NocoBase: instalar e atualizar plugins'
+keywords: 'install,upgrade,plugins,NocoBase'
+---
+
+# Instalar e atualizar plugins
+
+## Plugins integrados
+
+Os plugins integrados do NocoBase são atualizados automaticamente junto com a versão do núcleo, sem necessidade de operação manual.
+
+## Plugins comerciais
+
+Para métodos detalhados de ativação e atualização, consulte: [Ativação e atualização de plugins comerciais](../api/cli/license/index.md)
+
+## Plugins de terceiros
+
+### Instalar plugins pela linha de comando
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+Se o aplicativo já tiver esse plugin instalado e precisar atualizá-lo, execute:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Enviar e descompactar manualmente
+
+Primeiro, baixe o pacote do plugin para o computador local e depois envie-o e descompacte-o manualmente no diretório `./storage/plugins`. Se esse plugin já estiver habilitado, execute o comando a seguir após concluir o envio e a descompactação para finalizar a atualização do plugin.
+
+> ⚠️ **Nota**: Para evitar problemas de cache, certifique-se de que o aplicativo NocoBase esteja parado antes de executar.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Forma correta de descompactar um plugin
+
+O exemplo a seguir demonstra como descompactar corretamente o pacote do plugin no diretório especificado:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+Esse comando descompacta o plugin no diretório especificado e não cria um nível extra de diretório `package`.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### Exemplo de estrutura de diretórios correta
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt
+```

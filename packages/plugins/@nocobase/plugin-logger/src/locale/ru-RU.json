@@ -1,0 +1,9 @@
+{
+  "API request and response logs": "Логи запросов и ответов API",
+  "Application, database, plugins and other system logs, the error level logs will be sent to": "Логи приложения, базы данных, плагинов и других систем. Логи уровня ошибок будут отправлены в",
+  "Download": "Скачать",
+  "Download logs": "Скачать логи",
+  "Logger": "Логгер",
+  "SQL execution logs, printed by Sequelize when the db logging is enabled": "Логи выполнения SQL, выводимые Sequelize при включенной записи логов базы данных",
+  "Search": "Поиск"
+}

@@ -7,51 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  SchemaComponent,
-  useCollectionRecordData,
-  useCurrentRoleVariable,
-  useCurrentUserVariable,
-  useDatetimeVariable,
-} from '@nocobase/client';
+import { SchemaComponent, useCollectionRecordData, useAPIClient } from '@nocobase/client';
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
 import { useT } from '../../locale';
-import { Switch } from '@formily/antd-v5';
-
-const useVariableOptions = () => {
-  const t = useT();
-  const { currentUserSettings } = useCurrentUserVariable({
-    maxDepth: 3,
-    noDisabled: true,
-  });
-  const { currentRoleSettings } = useCurrentRoleVariable({
-    noDisabled: true,
-  });
-  const { datetimeSettings } = useDatetimeVariable({ noDisabled: true });
-  return [
-    currentUserSettings,
-    currentRoleSettings,
-    {
-      key: '$nLang',
-      value: '$nLang',
-      label: t('Current language'),
-    },
-    datetimeSettings,
-  ];
-};
 
 export const ProfileSettings: React.FC<{
   edit?: boolean;
 }> = ({ edit }) => {
   const t = useT();
-  const options = useVariableOptions();
   const record = useCollectionRecordData();
   const isBuiltIn = record?.builtIn;
   return (
     <SchemaComponent
       scope={{ t }}
-      components={{ AvatarSelect, Switch }}
+      components={{ AvatarSelect }}
       schema={{
         type: 'void',
         properties: {
@@ -69,14 +39,6 @@ export const ProfileSettings: React.FC<{
             'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
-            required: true,
-          },
-          enabled: {
-            type: 'boolean',
-            title: '{{t("Enabled")}}',
-            'x-decorator': 'FormItem',
-            'x-component': 'Switch',
-            default: true,
             required: true,
           },
           position: {
@@ -107,21 +69,6 @@ export const ProfileSettings: React.FC<{
             'x-component': 'Input.TextArea',
             'x-component-props': {
               placeholder: t('Bio placeholder'),
-            },
-          },
-          about: {
-            type: 'string',
-            title: '{{t("About me")}}',
-            required: true,
-            'x-disabled': isBuiltIn,
-            'x-decorator': 'FormItem',
-            'x-component': 'Variable.RawTextArea',
-            'x-component-props': {
-              scope: options,
-              placeholder: t('About me placeholder'),
-              autoSize: {
-                minRows: 15,
-              },
             },
           },
           greeting: {

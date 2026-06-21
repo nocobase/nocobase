@@ -25,3 +25,9 @@
 `element.addEventListener()` 是独立的，允许同一个事件添加多个监听函数。
 
 <code src="./event-listener.tsx"></code>
+
+## on.phase（执行时机）
+
+除了声明触发事件 `eventName` 外，还可以通过 `phase / flowKey / stepKey` 把 flow 的步骤插入到其它 flow 的指定位置执行。
+
+<code src="./execution-timing.tsx"></code>

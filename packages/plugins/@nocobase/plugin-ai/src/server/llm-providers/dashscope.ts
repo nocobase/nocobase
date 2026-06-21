@@ -7,41 +7,110 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
+import { AIMessageChunk } from '@langchain/core/messages';
+import { OpenAIEmbeddings } from '@langchain/openai';
 import { EmbeddingProvider, LLMProvider } from './provider';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { SupportedModel } from '../manager/ai-manager';
+import { Context } from '@nocobase/actions';
+import { Model } from '@nocobase/database';
+import _ from 'lodash';
+import PluginAIServer from '../plugin';
+import path from 'node:path';
+import { ReasoningChatOpenAI } from './common/reasoning';
+import { AttachmentModel } from '@nocobase/plugin-file-manager';
 
 const DASHSCOPE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
 export class DashscopeProvider extends LLMProvider {
-  declare chatModel: ChatOpenAI;
+  declare chatModel: ReasoningChatOpenAI;
 
   get baseURL() {
     return DASHSCOPE_URL;
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
-      type: responseFormat,
-    };
-    if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['json_schema'] = schema;
+    const { name, schema } = structuredOutput || {};
+
+    const modelKwargs: Record<string, any> = {};
+
+    // Only set response_format when responseFormat is explicitly provided
+    // Dashscope API rejects { type: undefined }
+    if (responseFormat) {
+      const responseFormatOptions: Record<string, any> = {
+        type: responseFormat,
+      };
+      if (responseFormat === 'json_schema' && schema) {
+        responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
+      }
+      modelKwargs['response_format'] = responseFormatOptions;
+    } else {
+      modelKwargs['response_format'] = { type: 'text' };
     }
-    return new ChatOpenAI({
+
+    if (this.modelOptions?.builtIn?.webSearch === true) {
+      // enable platform's web search ability
+      // ref: https://bailian.console.aliyun.com/?tab=doc#/doc/?type=model&url=2867560
+      modelKwargs['enable_search'] = true;
+    }
+
+    return new ReasoningChatOpenAI({
       apiKey,
+      topP: 0.8,
+      temperature: 0.7,
       ...this.modelOptions,
-      modelKwargs: {
-        response_format: responseFormatOptions,
-      },
+      modelKwargs,
       configuration: {
-        baseURL: baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       },
       verbose: false,
     });
+  }
+
+  isToolConflict(): boolean {
+    return true;
+  }
+
+  resolveTools(toolDefinitions: any[]): any[] {
+    if (this.isToolConflict() && this.modelOptions?.builtIn?.webSearch === true) {
+      return [];
+    } else {
+      return toolDefinitions;
+    }
+  }
+
+  parseResponseMessage(message: Model) {
+    const result = super.parseResponseMessage(message);
+    if (['user', 'tool'].includes(result?.role)) {
+      return result;
+    }
+    const { metadata } = message?.toJSON() ?? {};
+    if (!_.isEmpty(metadata?.additional_kwargs?.reasoning_content)) {
+      result.content = {
+        ...(result.content ?? {}),
+        reasoning: {
+          status: 'stop',
+          content: metadata?.additional_kwargs.reasoning_content,
+        },
+      };
+    }
+    return result;
+  }
+
+  parseReasoningContent(chunk: AIMessageChunk): { status: string; content: string } {
+    if (!_.isEmpty(chunk?.additional_kwargs?.reasoning_content)) {
+      return {
+        status: 'streaming',
+        content: chunk.additional_kwargs.reasoning_content as string,
+      };
+    }
+    return null;
+  }
+
+  protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
+    return attachment.mimetype?.startsWith('image/') ?? false;
   }
 }
 
@@ -53,7 +122,7 @@ export class DashscopeEmbeddingProvider extends EmbeddingProvider {
   createEmbedding(): EmbeddingsInterface {
     return new OpenAIEmbeddings({
       configuration: {
-        baseURL: this.baseUrl ?? '',
+        baseURL: this.baseURL,
         apiKey: this.apiKey,
       },
       model: this.model,
@@ -64,6 +133,7 @@ export class DashscopeEmbeddingProvider extends EmbeddingProvider {
 export const dashscopeProviderOptions = {
   title: '{{t("Dashscope", {ns: "ai"})}}',
   supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
+  supportWebSearch: true,
   models: {
     [SupportedModel.LLM]: [
       'qwen-long',

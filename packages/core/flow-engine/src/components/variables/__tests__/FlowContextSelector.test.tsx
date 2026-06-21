@@ -11,6 +11,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import * as FlowContextSelectorModule from '../../FlowContextSelector';
+import type { MetaTreeNode } from '../../../flowContext';
 import { createTestFlowContext, TestFlowContextWrapper } from './test-utils';
 
 const FlowContextSelector = FlowContextSelectorModule.FlowContextSelector;
@@ -176,13 +177,242 @@ describe('FlowContextSelector', () => {
     const cascader = screen.getByRole('button');
     fireEvent.click(cascader);
 
+    const searchInput = await screen.findByPlaceholderText('Search');
+
     await waitFor(() => {
       expect(screen.getByText('User')).toBeInTheDocument();
     });
 
-    // Search functionality is enabled via showSearch prop
-    // The actual search input behavior depends on antd's internal implementation
-    // This test verifies that showSearch prop is accepted
+    fireEvent.change(searchInput, { target: { value: 'config' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Config')).toBeInTheDocument();
+      expect(screen.queryByText('User')).not.toBeInTheDocument();
+    });
+
+    fireEvent.change(searchInput, { target: { value: '' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('User')).toBeInTheDocument();
+    });
+  });
+
+  it('should not render search input when search is disabled', async () => {
+    const flowContext = createTestFlowContext();
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} showSearch={false} />
+      </TestFlowContextWrapper>,
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    await waitFor(() => {
+      expect(screen.getByText('User')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByPlaceholderText('Search')).not.toBeInTheDocument();
+  });
+
+  it('should load and expand lazy relation node after searching', async () => {
+    const flowContext = createTestFlowContext();
+    const loadOrgChildren = vi.fn(async () => [
+      {
+        name: 'org_name',
+        title: 'Org Name',
+        type: 'string',
+        paths: ['org_oho', 'org_name'],
+        parentTitles: ['org_oho'],
+      },
+    ]);
+    const metaTree: MetaTreeNode[] = [
+      {
+        name: 'org_oho',
+        title: 'org_oho',
+        type: 'object',
+        paths: ['org_oho'],
+        children: loadOrgChildren,
+      },
+      {
+        name: 'staff',
+        title: 'staff',
+        type: 'string',
+        paths: ['staff'],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={metaTree} showSearch onlyLeafSelectable={true} />
+      </TestFlowContextWrapper>,
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+    const searchInput = await screen.findByPlaceholderText('Search');
+
+    fireEvent.change(searchInput, { target: { value: 'oho' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('org_oho')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('org_oho'));
+
+    await waitFor(() => {
+      expect(loadOrgChildren).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Org Name')).toBeInTheDocument();
+    });
+  });
+
+  it('should support inline search input when children is null and keep lazy expand', async () => {
+    const flowContext = createTestFlowContext();
+    const loadOrgChildren = vi.fn(async () => [
+      {
+        name: 'org_name',
+        title: 'Org Name',
+        type: 'string',
+        paths: ['org_oho', 'org_name'],
+        parentTitles: ['org_oho'],
+      },
+    ]);
+
+    const metaTree: MetaTreeNode[] = [
+      {
+        name: 'org_oho',
+        title: 'org_oho',
+        type: 'object',
+        paths: ['org_oho'],
+        children: loadOrgChildren,
+      },
+      {
+        name: 'staff',
+        title: 'staff',
+        type: 'string',
+        paths: ['staff'],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={metaTree} onlyLeafSelectable={true}>
+          {null}
+        </FlowContextSelector>
+      </TestFlowContextWrapper>,
+    );
+
+    const inlineInput = screen.getByRole('textbox');
+    fireEvent.focus(inlineInput);
+    fireEvent.change(inlineInput, { target: { value: 'oho' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('org_oho')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('org_oho'));
+
+    await waitFor(() => {
+      expect(loadOrgChildren).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Org Name')).toBeInTheDocument();
+    });
+  });
+
+  it('should keep dropdown open on first pointer click in inline input mode', async () => {
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()}>{null}</FlowContextSelector>
+      </TestFlowContextWrapper>,
+    );
+
+    const inlineInput = await screen.findByRole('textbox');
+
+    fireEvent.mouseDown(inlineInput);
+    fireEvent.focus(inlineInput);
+    fireEvent.mouseUp(inlineInput);
+    fireEvent.click(inlineInput);
+
+    await waitFor(() => {
+      expect(screen.getByText('User')).toBeInTheDocument();
+    });
+  });
+
+  it('should show selected path text when inline input dropdown is closed', async () => {
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} value="{{ ctx.user.name }}">
+          {null}
+        </FlowContextSelector>
+      </TestFlowContextWrapper>,
+    );
+
+    const inlineInput = screen.getByRole('textbox') as HTMLInputElement;
+
+    await waitFor(() => {
+      expect(inlineInput.value).toBe('User / Name');
+    });
+  });
+
+  it('should clear selected value when clearing inline input while dropdown is closed', async () => {
+    const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+        >
+          {null}
+        </FlowContextSelector>
+      </TestFlowContextWrapper>,
+    );
+
+    const inlineInput = screen.getByRole('textbox');
+    fireEvent.change(inlineInput, { target: { value: '' } });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('', undefined);
+    });
+  });
+
+  it('should clear selected value when clicking inline clear icon while dropdown is closed', async () => {
+    const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+        >
+          {null}
+        </FlowContextSelector>
+      </TestFlowContextWrapper>,
+    );
+
+    await screen.findByRole('textbox');
+
+    const clearIcon = document.querySelector('.ant-input-clear-icon') as HTMLElement | null;
+    expect(clearIcon).toBeInTheDocument();
+
+    fireEvent.mouseDown(clearIcon!);
+    fireEvent.mouseUp(clearIcon!);
+    fireEvent.click(clearIcon!);
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('', undefined);
+    });
   });
 
   it('should handle FlowContext metaTree', async () => {
@@ -453,6 +683,33 @@ describe('FlowContextSelector', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('button')).toBeInTheDocument();
+      });
+    });
+
+    it('should handle non-array parsed path in inline input mode', async () => {
+      const flowContext = createTestFlowContext();
+      const customParseValueToPath = vi.fn().mockReturnValue('' as any);
+
+      render(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector
+            metaTree={() => flowContext.getPropertyMetaTree()}
+            value="invalid.path"
+            parseValueToPath={customParseValueToPath as any}
+          >
+            {null}
+          </FlowContextSelector>
+        </TestFlowContextWrapper>,
+      );
+
+      const inlineInput = await screen.findByRole('textbox');
+      expect(inlineInput).toBeInTheDocument();
+      expect((inlineInput as HTMLInputElement).value).toBe('');
+
+      fireEvent.focus(inlineInput);
+
+      await waitFor(() => {
+        expect(screen.getByText('User')).toBeInTheDocument();
       });
     });
 

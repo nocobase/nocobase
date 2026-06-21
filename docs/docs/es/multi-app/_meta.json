@@ -1,0 +1,43 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Multiaplicación",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visión general",
+        "link": "/multi-app/multi-app/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modo de memoria compartida",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modo multi-entorno",
+        "link": "/multi-app/multi-app/remote"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bloque de aplicaciones y selector",
+        "link": "/multi-app/multi-app/app-block-and-switcher"
+      },
+      {
+        "type": "custom-link",
+        "label": "SSO de aplicaciones",
+        "link": "/multi-app/multi-app/app-sso"
+      },
+      {
+        "type": "custom-link",
+        "label": "Llamar APIs de subaplicaciones",
+        "link": "/multi-app/multi-app/sub-app-api"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Multiespacio",
+    "link": "/multi-app/multi-space/"
+  }
+]

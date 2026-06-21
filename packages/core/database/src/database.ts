@@ -103,6 +103,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  rawTimezone?: string;
   logger?: LoggerOptions | Logger;
   customHooks?: any;
   instanceId?: string;
@@ -309,6 +310,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.sequelize.beforeDefine((model, opts) => {
       if (this.options.tablePrefix) {
+        // Preserve explicit physical table names only for database-synced
+        // collections. Collections created from UI definitions should still
+        // follow the normal auto-prefix behavior.
+        if (opts.tableName && opts['from'] === 'dbsync') {
+          return;
+        }
         if (opts.tableName && opts.tableName.startsWith(this.options.tablePrefix)) {
           return;
         }
@@ -318,6 +325,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.collection({
       name: 'migrations',
+      dataCategory: 'system',
       autoGenId: false,
       timestamps: false,
       dumpRules: 'required',
@@ -393,8 +401,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
    */
   initListener() {
     this.on('afterConnect', async (client) => {
-      if (this.inDialect('postgres')) {
-        await client.query('SET search_path = public');
+      if (this.isPostgresCompatibleDialect()) {
+        await client.query('SET search_path TO public');
       }
     });
 
@@ -565,11 +573,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     options = lodash.cloneDeep(options);
 
-    if (typeof options.underscored !== 'boolean') {
-      if (this.options.underscored) {
-        options.underscored = true;
-      }
-    }
+    options.underscored = options.underscored ?? this.options.underscored;
 
     this.logger.trace(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
       databaseInstanceId: this.instanceId,
@@ -581,7 +585,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.collections.set(collection.name, collection);
 
-    this.emit('afterDefineCollection', collection);
+    this.emit('afterDefineCollection', collection, { fieldModels: options.fieldModels });
 
     return collection;
   }
@@ -645,6 +649,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   removeCollection(name: string) {
     const collection = this.collections.get(name);
+    if (!collection) {
+      return;
+    }
     this.emit('beforeRemoveCollection', collection);
 
     collection.resetFields();
@@ -846,8 +853,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   /* istanbul ignore next -- @preserve */
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
-    const { retry = 9, ...others } = options;
-    const startingDelay = 200;
+    const { retry = 10, ...others } = options;
+    const startingDelay = 1000;
     const timeMultiple = 2;
 
     let attemptNumber = 1; // To track the current attempt number
@@ -874,6 +881,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         numOfAttempts: retry as number,
         startingDelay: startingDelay,
         timeMultiple: timeMultiple,
+        maxDelay: 30 * 1000,
       });
     } catch (error) {
       throw new Error(`Unable to connect to the database`, { cause: error });
@@ -1064,18 +1072,31 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.getQueryInterface().quoteIdentifiers(tableName);
   }
 
+  private async runSQLWithSchema(finalSQL: string, bind: any, transaction?: any) {
+    if (!this.options.schema || !this.isPostgresCompatibleDialect()) {
+      return this.sequelize.query(finalSQL, { bind, transaction });
+    }
+
+    const execute = async (t: any) => {
+      await this.sequelize.query(`SET LOCAL search_path TO ${this.options.schema}`, { transaction: t });
+      return this.sequelize.query(finalSQL, { bind, transaction: t });
+    };
+
+    return transaction ? execute(transaction) : this.sequelize.transaction(execute);
+  }
+
   async runSQL(sql: string, options: RunSQLOptions = {}) {
     const { filter, bind, type, transaction } = options;
     let finalSQL = sql;
     if (!finalSQL.replace(/\s+/g, ' ').trim()) {
       throw new Error('SQL cannot be empty');
     }
+    const queryGenerator = this.sequelize.getQueryInterface().queryGenerator as any;
     if (filter) {
       let where = {};
       const tmpCollection = new Collection({ name: 'tmp', underscored: false }, { database: this });
       const r = tmpCollection.repository;
       where = r.buildQueryOptions({ filter }).where;
-      const queryGenerator = this.sequelize.getQueryInterface().queryGenerator as any;
       const wSQL = queryGenerator.getWhereConditions(where, null, null, { bindParam: true });
 
       if (wSQL) {
@@ -1088,7 +1109,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     }
     this.logger.debug('runSQL', { finalSQL });
-    const result = await this.sequelize.query(finalSQL, { bind, transaction });
+    const result = await this.runSQLWithSchema(finalSQL, bind, transaction);
     let data: any = result[0];
     if (type === 'selectVar') {
       if (Array.isArray(data)) {

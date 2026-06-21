@@ -24,33 +24,42 @@ export class SortField extends Field {
     const { model } = this.context.collection;
 
     instances = Array.isArray(instances) ? instances : [instances];
-    for (const instance of instances) {
-      if (from == 'create' && isNumber(instance.get(name))) {
-        continue;
-      }
-      if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
-        continue;
-      }
+    await (<typeof SortField>this.constructor).lockManager.runExclusive(
+      this.context.collection.name,
+      async () => {
+        const maxCache = new Map<string, number>();
 
-      const where = {};
+        for (const instance of instances) {
+          if (from == 'create' && isNumber(instance.get(name))) {
+            continue;
+          }
+          if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
+            continue;
+          }
 
-      if (scopeKey) {
-        const value = instance.get(scopeKey);
-        if (value !== undefined && value !== null) {
-          where[scopeKey] = value;
-        }
-      }
+          const where = {};
+          let cacheKey = '__default__';
 
-      await (<typeof SortField>this.constructor).lockManager.runExclusive(
-        this.context.collection.name,
-        async () => {
-          const max = await model.max<number, any>(name, { ...options, where });
-          const newValue = (max || 0) + 1;
+          if (scopeKey) {
+            const value = instance.get(scopeKey);
+            if (value !== undefined && value !== null) {
+              where[scopeKey] = value;
+              cacheKey = `${typeof value}:${String(value)}`;
+            }
+          }
+
+          if (!maxCache.has(cacheKey)) {
+            const max = await model.max<number, any>(name, { ...options, where });
+            maxCache.set(cacheKey, max || 0);
+          }
+
+          const newValue = (maxCache.get(cacheKey) ?? 0) + 1;
+          maxCache.set(cacheKey, newValue);
           instance.set(name, newValue);
-        },
-        2000,
-      );
-    }
+        }
+      },
+      2000,
+    );
   };
 
   onScopeChange = async (instance, options) => {
@@ -120,21 +129,29 @@ export class SortField extends Field {
       const sortColumnName = queryInterface.quoteIdentifier(this.collection.model.rawAttributes[this.name].field);
 
       let sql: string;
+      let bind: any[] | undefined;
 
       const whereClause =
         scopeKey && scopeValue
           ? (() => {
               const filteredScopeValue = scopeValue.filter((v) => v !== null);
-              if (filteredScopeValue.length === 0) {
+              const clauses: string[] = [];
+
+              if (filteredScopeValue.length > 0) {
+                bind = filteredScopeValue;
+                const placeholders = filteredScopeValue.map((_, index) => `$${index + 1}`).join(', ');
+                clauses.push(`${queryInterface.quoteIdentifier(scopeKey)} IN (${placeholders})`);
+              }
+
+              if (scopeValue.includes(null)) {
+                clauses.push(`${queryInterface.quoteIdentifier(scopeKey)} IS NULL`);
+              }
+
+              if (clauses.length === 0) {
                 return '';
               }
-              const initialClause = `
-  WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${filteredScopeValue.map((v) => `'${v}'`).join(', ')})`;
-
-              const nullCheck = scopeValue.includes(null)
-                ? ` OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL`
-                : '';
-              return initialClause + nullCheck;
+              return `
+  WHERE ${clauses.join(' OR ')}`;
             })()
           : '';
 
@@ -180,6 +197,7 @@ export class SortField extends Field {
   `;
       }
       await this.collection.db.sequelize.query(sql, {
+        bind,
         transaction,
       });
     };
@@ -187,7 +205,13 @@ export class SortField extends Field {
     const scopeKey = this.options.scopeKey;
 
     if (scopeKey) {
-      const scopeKeyColumn = this.collection.model.rawAttributes[scopeKey].field;
+      const scopeKeyAttribute = this.collection.model.rawAttributes[scopeKey];
+
+      if (!scopeKeyAttribute || !scopeKeyAttribute.field) {
+        return;
+      }
+
+      const scopeKeyColumn = scopeKeyAttribute.field;
 
       const groups = await this.collection.model.findAll({
         attributes: [[Sequelize.fn('DISTINCT', Sequelize.col(scopeKeyColumn)), scopeKey]],

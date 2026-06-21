@@ -1,17 +1,22 @@
 {
   "name": "@nocobase/plugin-collection-tree",
-  "version": "1.9.0-alpha.15",
+  "version": "2.2.0-alpha.1",
   "displayName": "Collection: Tree",
+  "displayName.ru-RU": "Древовидная Коллекция",
   "displayName.zh-CN": "数据表：树",
   "description": "Provides tree collection template",
+  "description.ru-RU": "Предоставляет шаблон коллекции в виде дерева. Широко используется для организации документов, каталожных разделов, управляемых задач, меню, комментариев и других сценариев, где важна вложенность и классификация.",
   "description.zh-CN": "提供树数据表模板",
   "keywords": [
     "Collections"
   ],
   "main": "dist/server/index.js",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
-  }
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/plugin-data-source-manager": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "license": "Apache-2.0"
 }

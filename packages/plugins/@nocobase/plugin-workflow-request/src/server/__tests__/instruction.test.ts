@@ -26,7 +26,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { Buffer } from 'buffer';
 
-const HOST = 'localhost';
+const HOST = '127.0.0.1';
 
 class MockAPI {
   app: Koa;
@@ -104,18 +104,22 @@ class MockAPI {
   }
 
   async start() {
-    return new Promise((resolve) => {
-      this.server = this.app.listen(0, () => {
-        this.port = this.server.address()['port'];
-        resolve(true);
+    return new Promise<void>((resolve, reject) => {
+      this.server = this.app.listen(0, HOST, () => {
+        this.port = (this.server.address() as AddressInfo).port;
+        resolve();
       });
+      this.server.once('error', reject);
     });
   }
 
   async close() {
-    return new Promise((resolve) => {
+    if (!this.server?.listening) {
+      return;
+    }
+    return new Promise<void>((resolve) => {
       this.server.close(() => {
-        resolve(true);
+        resolve();
       });
     });
   }
@@ -134,7 +138,7 @@ describe('workflow > instructions > request', () => {
 
   beforeEach(async () => {
     api = new MockAPI();
-    api.start();
+    await api.start();
     app = await getApp({
       resourcer: {
         prefix: '/api',
@@ -228,6 +232,7 @@ describe('workflow > instructions > request', () => {
       expect(job.result).toMatchObject({
         data: { meta: {}, data: {} },
       });
+      expect(job.result).not.toHaveProperty('config');
     });
 
     it('timeout', async () => {
@@ -246,17 +251,69 @@ describe('workflow > instructions > request', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.FAILED);
+      expect(job.status).toBe(JOB_STATUS.ABORTED);
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'AxiosError',
-        // status: null,
         message: 'timeout of 250ms exceeded',
       });
+      expect(job.result).not.toHaveProperty('config');
+      expect(job.result).not.toHaveProperty('stack');
+      expect(job.result).not.toHaveProperty('name');
 
       // NOTE: to wait for the response to finish and avoid non finished promise.
       await sleep(1500);
+    });
+
+    it('workflow timeout should abort async request and discard late response', async () => {
+      workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        options: {
+          timeout: 300,
+        },
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_TIMEOUT,
+          method: 'GET',
+          timeout: 5000,
+        } as RequestInstructionConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(100);
+
+      const plugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
+      let [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+      expect(execution.startedAt).toBeTruthy();
+      expect(execution.expiresAt).toBeTruthy();
+
+      let [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(350);
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
+      [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.ABORTED);
+
+      await sleep(2200);
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
+      const jobs = await execution.getJobs();
+      expect(jobs).toHaveLength(1);
+      expect(jobs[0].status).toBe(JOB_STATUS.ABORTED);
     });
 
     it('ignoreFail', async () => {
@@ -279,10 +336,9 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
-        name: 'AxiosError',
-        // status: null,
         message: 'timeout of 250ms exceeded',
       });
+      expect(job.result).not.toHaveProperty('config');
     });
 
     it('response 400 without body', async () => {
@@ -301,7 +357,13 @@ describe('workflow > instructions > request', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.FAILED);
-      expect(job.result.status).toBe(400);
+      expect(job.result).toEqual({
+        message: 'Request failed with status code 400',
+        code: 'ERR_BAD_REQUEST',
+        status: 400,
+        statusText: 'Bad Request',
+        data: 'Bad Request',
+      });
     });
 
     it('response 400 with text message', async () => {
@@ -322,6 +384,8 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.FAILED);
       expect(job.result.status).toBe(400);
       expect(job.result.data).toBe('bad request message');
+      expect(job.result).not.toHaveProperty('config');
+      expect(job.result).not.toHaveProperty('headers');
     });
 
     it('response 400 with object', async () => {
@@ -342,6 +406,8 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.FAILED);
       expect(job.result.status).toBe(400);
       expect(job.result.data).toEqual({ a: 1 });
+      expect(job.result).not.toHaveProperty('config');
+      expect(job.result).not.toHaveProperty('headers');
     });
 
     it('response just end', async () => {
@@ -362,10 +428,10 @@ describe('workflow > instructions > request', () => {
       expect(job.status).toBe(JOB_STATUS.FAILED);
       expect(job.result).toMatchObject({
         code: 'ECONNRESET',
-        name: 'Error',
-        // status: null,
         message: 'socket hang up',
       });
+      expect(job.result).not.toHaveProperty('config');
+      expect(job.result).not.toHaveProperty('stack');
     });
 
     it('response 400 ignoreFail', async () => {
@@ -625,25 +691,19 @@ describe('workflow > instructions > request', () => {
     it('request db resource', async () => {
       const user = await db.getRepository('users').create({});
 
-      const token = jwt.sign(
-        {
-          userId: user.id,
-          signInTime: Date.now(),
-        },
-        process.env.APP_KEY,
-        {
-          expiresIn: '1d',
-        },
-      );
+      const token = app.authManager.jwt.sign({
+        userId: user.id,
+        signInTime: Date.now(),
+      });
 
-      const server = app.listen(0, () => {});
+      const server = app.listen(0, HOST, () => {});
 
       await sleep(1000);
 
       const n1 = await workflow.createNode({
         type: 'request',
         config: {
-          url: `http://localhost:${(server.address() as AddressInfo).port}/api/categories`,
+          url: `http://${HOST}:${(server.address() as AddressInfo).port}/api/categories`,
           method: 'POST',
           headers: [{ name: 'Authorization', value: `Bearer ${token}` }],
         } as RequestInstructionConfig,
@@ -694,6 +754,7 @@ describe('workflow > instructions > request', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.data).toEqual({ meta: {}, data: {} });
+      expect(job.result).not.toHaveProperty('config');
     });
 
     it('ignoreFail', async () => {
@@ -713,6 +774,7 @@ describe('workflow > instructions > request', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.status).toBe(404);
+      expect(job.result).not.toHaveProperty('config');
     });
   });
 
@@ -720,7 +782,7 @@ describe('workflow > instructions > request', () => {
     it('invalid config', async () => {
       const { status, result } = await instruction.test(Object.create({}));
       expect(status).toBe(JOB_STATUS.FAILED);
-      expect(result).toBe('Invalid URL');
+      expect(result).toEqual({ message: 'Invalid URL', code: 'ERR_INVALID_URL' });
     });
 
     it('data url', async () => {
@@ -733,6 +795,7 @@ describe('workflow > instructions > request', () => {
       expect(status).toBe(JOB_STATUS.RESOLVED);
       expect(result.status).toBe(200);
       expect(result.data).toEqual({ meta: {}, data: { a: 1 } });
+      expect(result).not.toHaveProperty('config');
     });
 
     it('404', async () => {
@@ -743,6 +806,8 @@ describe('workflow > instructions > request', () => {
       });
       expect(status).toBe(JOB_STATUS.FAILED);
       expect(result.status).toBe(404);
+      expect(result).not.toHaveProperty('config');
+      expect(result).not.toHaveProperty('headers');
     });
 
     it('timeout', async () => {
@@ -752,8 +817,10 @@ describe('workflow > instructions > request', () => {
         timeout: 1000,
         contentType: '',
       });
-      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(status).toBe(JOB_STATUS.ABORTED);
       expect(result.code).toBe('ECONNABORTED');
+      expect(result).not.toHaveProperty('config');
+      expect(result).not.toHaveProperty('stack');
     });
 
     it('ignoreFail', async () => {
@@ -765,6 +832,7 @@ describe('workflow > instructions > request', () => {
       });
       expect(status).toBe(JOB_STATUS.RESOLVED);
       expect(result.status).toBe(404);
+      expect(result).not.toHaveProperty('config');
     });
 
     it('timeout and ignoreFail', async () => {
@@ -777,6 +845,173 @@ describe('workflow > instructions > request', () => {
       });
       expect(status).toBe(JOB_STATUS.RESOLVED);
       expect(result.code).toBe('ECONNABORTED');
+      expect(result).not.toHaveProperty('config');
+    });
+  });
+
+  describe('validation', () => {
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should accept when url is not provided', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: {} },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should reject when method is invalid', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost', method: 'INVALID' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should reject when contentType is invalid', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost', contentType: 'invalid' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept with valid config', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost', method: 'POST' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept with url only', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept url with variable syntax', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: '{{$variable.url}}' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept url with variable embedded in template string', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://{{$env.HOST}}/api/data' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept plain invalid url string at config time', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'not-a-valid-url' } },
+      });
+      expect(status).toBe(200);
+    });
+  });
+
+  describe('SSRF protection via SERVER_REQUEST_WHITELIST', () => {
+    const ENV_KEY = 'SERVER_REQUEST_WHITELIST';
+    let savedEnv: string | undefined;
+
+    beforeEach(() => {
+      savedEnv = process.env[ENV_KEY];
+    });
+
+    afterEach(() => {
+      if (savedEnv === undefined) {
+        delete process.env[ENV_KEY];
+      } else {
+        process.env[ENV_KEY] = savedEnv;
+      }
+    });
+
+    it('no whitelist: allows request to any host', async () => {
+      delete process.env[ENV_KEY];
+      const { status } = await instruction.test({
+        url: api.URL_DATA,
+        method: 'GET',
+        contentType: 'application/json',
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+    });
+
+    it('whitelist set: blocks request to unlisted host', async () => {
+      process.env[ENV_KEY] = '192.0.2.1'; // TEST-NET, not the mock API host
+      const { status, result } = await instruction.test({
+        url: api.URL_DATA,
+        method: 'GET',
+        contentType: 'application/json',
+      });
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result.message).toMatch(/blocked/i);
+    });
+
+    it('whitelist set: allows request to whitelisted host', async () => {
+      process.env[ENV_KEY] = HOST;
+      const { status } = await instruction.test({
+        url: api.URL_DATA,
+        method: 'GET',
+        contentType: 'application/json',
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+    });
+
+    it('whitelist set: ignoreFail still resolves when blocked', async () => {
+      process.env[ENV_KEY] = '192.0.2.1';
+      const { status, result } = await instruction.test({
+        url: api.URL_DATA,
+        method: 'GET',
+        contentType: 'application/json',
+        ignoreFail: true,
+      });
+      expect(status).toBe(JOB_STATUS.RESOLVED);
+      expect(result.message).toMatch(/blocked/i);
+    });
+
+    it('whitelist set: blocks metadata endpoint (SSRF attack target)', async () => {
+      process.env[ENV_KEY] = 'api.example.com';
+      const { status, result } = await instruction.test({
+        url: 'http://169.254.169.254/latest/meta-data/',
+        method: 'GET',
+        contentType: 'application/json',
+      });
+      expect(status).toBe(JOB_STATUS.FAILED);
+      expect(result.message).toMatch(/blocked/i);
+    });
+
+    it('whitelist set: async workflow node fails job when host is blocked', async () => {
+      process.env[ENV_KEY] = '192.0.2.1';
+
+      await workflow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_DATA,
+          method: 'GET',
+        } as RequestInstructionConfig,
+      });
+
+      await PostRepo.create({ values: { title: 'ssrf-test' } });
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.FAILED);
+      expect(job.result.message).toMatch(/blocked/i);
     });
   });
 });

@@ -8,8 +8,9 @@
  */
 
 import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
-import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
-import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
+import { Registry, resolveStorageRoot, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
+import { lockdownSes } from '@nocobase/utils';
+import { syncPluginSymlinks } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
 import { randomUUID } from 'crypto';
@@ -18,19 +19,32 @@ import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import compose from 'koa-compose';
 import { promisify } from 'node:util';
-import { isAbsolute, resolve } from 'path';
+import { homedir } from 'node:os';
+import { extname, isAbsolute, resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
 import { AppSupervisor } from '../app-supervisor';
-import { ApplicationOptions } from '../application';
+import { ApplicationOptions, Application } from '../application';
 import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
+import { getStorageUploadSecurityHeaders } from './static-file-security';
+import {
+  injectRuntimeScript,
+  MODERN_CLIENT_DIST_DIR,
+  normalizeModernClientPrefix,
+  resolvePublicPath,
+  resolveV2PublicPath,
+  rewriteV2AssetPublicPath,
+} from './utils';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
 import process from 'node:process';
+import { Duplex } from 'node:stream';
+
+export { getHost, getHostname } from './utils';
 
 const compress = promisify(compression());
 
@@ -38,6 +52,13 @@ export interface IncomingRequest {
   url: string;
   headers: any;
 }
+
+export interface GatewayRequestContext {
+  req: IncomingMessage;
+  res: ServerResponse;
+  appName: string;
+}
+type GatewayMiddleware = (ctx: GatewayRequestContext, next: () => Promise<void>) => Promise<void> | void;
 
 export type AppSelector = (req: IncomingRequest) => string | Promise<string>;
 export type AppSelectorMiddleware = (ctx: AppSelectorMiddlewareContext, next: () => Promise<void>) => void;
@@ -53,22 +74,30 @@ interface RunOptions {
 }
 
 export interface AppSelectorMiddlewareContext {
-  req: IncomingRequest;
+  req: IncomingMessage | IncomingRequest;
   resolvedAppName: string | null;
 }
 
+function normalizeBasePath(path = '') {
+  const normalized = path.replace(/\/+/g, '/').replace(/\/$/, '');
+  return normalized || '/';
+}
+
+/** Align with cli-v1 `generateGatewayPath()` / `process.env.SOCKET_PATH` after initEnv. */
 function getSocketPath() {
-  const { SOCKET_PATH } = process.env;
-
-  if (isAbsolute(SOCKET_PATH)) {
-    return SOCKET_PATH;
+  const socketPath = process.env.SOCKET_PATH;
+  if (socketPath) {
+    return isAbsolute(socketPath) ? socketPath : resolve(process.cwd(), socketPath);
   }
-
-  return resolve(process.cwd(), SOCKET_PATH);
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return resolve(homedir(), '.nocobase', 'gateway.sock');
+  }
+  return storagePathJoin('gateway.sock');
 }
 
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
+  middlewares: Toposort<GatewayMiddleware>;
   /**
    * use main app as default app to handle request
    */
@@ -80,12 +109,65 @@ export class Gateway extends EventEmitter {
   loggers = new Registry<SystemLogger>();
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
-  private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
+  private socketPath = getSocketPath();
+  private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
+  private terminating = false;
+
+  private getOriginalRequestUrl(req: IncomingMessage) {
+    return ((req as any).originalUrl as string | undefined) || req.url;
+  }
+
+  private async proxyRequestToSubApp(
+    supervisor: AppSupervisor,
+    appName: string,
+    req: IncomingMessage,
+    res: ServerResponse,
+  ) {
+    const internalUrl = req.url;
+    req.url = this.getOriginalRequestUrl(req);
+    try {
+      return await supervisor.proxyWeb(appName, req, res);
+    } finally {
+      req.url = internalUrl;
+    }
+  }
+
+  private onTerminate = async (signal?: NodeJS.Signals) => {
+    if (this.terminating) {
+      return;
+    }
+
+    this.terminating = true;
+
+    const supervisor = AppSupervisor.getInstance();
+    const apps = Object.values(supervisor.apps || {});
+
+    try {
+      for (const app of apps) {
+        try {
+          if (!app) {
+            continue;
+          }
+          await app.destroy({ signal });
+        } catch (error) {
+          const logger = app?.log ?? console;
+          logger.error?.(error);
+        }
+      }
+
+      await supervisor.destroy();
+    } catch (error) {
+      console.error('Failed to shutdown applications gracefully', error);
+    } finally {
+      this.destroy();
+    }
+  };
 
   private constructor() {
     super();
     this.reset();
-    this.socketPath = getSocketPath();
+    process.once('SIGTERM', this.onTerminate);
+    process.once('SIGINT', this.onTerminate);
   }
 
   public static getInstance(options: any = {}): Gateway {
@@ -94,6 +176,10 @@ export class Gateway extends EventEmitter {
     }
 
     return Gateway.instance;
+  }
+
+  use(middleware: GatewayMiddleware, options?: ToposortOptions) {
+    this.middlewares.add(middleware, options);
   }
 
   static async getIPCSocketClient() {
@@ -106,24 +192,48 @@ export class Gateway extends EventEmitter {
   }
 
   destroy() {
+    process.off('SIGTERM', this.onTerminate);
+    process.off('SIGINT', this.onTerminate);
     this.reset();
     Gateway.instance = null;
   }
 
   public reset() {
+    this.middlewares = new Toposort<GatewayMiddleware>();
     this.selectorMiddlewares = new Toposort<AppSelectorMiddleware>();
 
     this.addAppSelectorMiddleware(
       async (ctx: AppSelectorMiddlewareContext, next) => {
         const { req } = ctx;
-        const appName = qs.parse(parse(req.url).query)?.__appName as string | null;
+        const parsedUrl = parse(req.url);
+        const appName = qs.parse(parsedUrl.query)?.__appName as string | null;
+        const apiBasePath = normalizeBasePath(process.env.API_BASE_PATH || '/api');
+        const appPathPrefix = `${apiBasePath}/__app/`;
+
+        if (req.headers['x-app']) {
+          ctx.resolvedAppName = req.headers['x-app'] as string;
+        }
 
         if (appName) {
           ctx.resolvedAppName = appName;
         }
 
-        if (req.headers['x-app']) {
-          ctx.resolvedAppName = req.headers['x-app'];
+        if (parsedUrl.pathname?.startsWith(appPathPrefix)) {
+          const restPath = parsedUrl.pathname.slice(appPathPrefix.length);
+          const [pathAppName, ...segments] = restPath.split('/');
+
+          if (pathAppName) {
+            ctx.resolvedAppName = pathAppName;
+
+            const rewrittenPath = `${apiBasePath}${segments.length ? `/${segments.join('/')}` : ''}`;
+            const rewrittenUrl = `${rewrittenPath}${parsedUrl.search || ''}`;
+
+            if (!(req as any).originalUrl) {
+              (req as any).originalUrl = req.url;
+            }
+
+            req.url = rewrittenUrl;
+          }
         }
 
         await next();
@@ -142,6 +252,11 @@ export class Gateway extends EventEmitter {
     if (this.ipcSocketServer) {
       this.ipcSocketServer.close();
       this.ipcSocketServer = null;
+    }
+
+    if (this.wsServer) {
+      this.wsServer.close();
+      this.wsServer = null;
     }
   }
 
@@ -188,13 +303,117 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, options) {
+    const log = this.getLogger(options.appName, res);
     const error = applyErrorWithArgs(getErrorWithCode(code), options);
+    log.error(error.message, {
+      method: 'responseErrorWithCode',
+      code,
+      error,
+      statusCode: res.statusCode,
+      appName: options.appName,
+    });
     this.responseError(res, error);
+  }
+
+  private getV2PublicPath() {
+    return resolveV2PublicPath(process.env.APP_PUBLIC_PATH || '/');
+  }
+
+  private getAppPublicPath() {
+    return resolvePublicPath(process.env.APP_PUBLIC_PATH || '/');
+  }
+
+  private isV2Request(pathname: string) {
+    const v2PublicPath = this.getV2PublicPath();
+    return pathname === v2PublicPath.slice(0, -1) || pathname.startsWith(v2PublicPath);
+  }
+
+  private isV2IndexRequest(pathname: string) {
+    if (!this.isV2Request(pathname)) {
+      return false;
+    }
+    const v2PublicPath = this.getV2PublicPath();
+    if (
+      pathname === v2PublicPath ||
+      pathname === v2PublicPath.slice(0, -1) ||
+      pathname === `${v2PublicPath}index.html`
+    ) {
+      return true;
+    }
+    return !extname(pathname);
+  }
+
+  private getV2RuntimeConfig() {
+    return {
+      __nocobase_public_path__: this.getV2PublicPath(),
+      __nocobase_modern_client_prefix__: normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX),
+      __webpack_public_path__: process.env.CDN_BASE_URL ? `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/` : '',
+      __nocobase_api_base_url__: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+      __nocobase_api_client_storage_prefix__: process.env.API_CLIENT_STORAGE_PREFIX,
+      __nocobase_api_client_storage_type__: process.env.API_CLIENT_STORAGE_TYPE,
+      __nocobase_api_client_share_token__: process.env.API_CLIENT_SHARE_TOKEN === 'true',
+      __nocobase_ws_url__: process.env.WEBSOCKET_URL || '',
+      __nocobase_ws_path__: process.env.WS_PATH,
+      __nocobase_app_dev__: process.env.NOCOBASE_APP_DEV === 'true',
+      __esm_cdn_base_url__: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+      __esm_cdn_suffix__: process.env.ESM_CDN_SUFFIX || '',
+    };
+  }
+
+  private getV2RuntimeConfigScript() {
+    const runtimeConfig = this.getV2RuntimeConfig();
+    const scriptContent = Object.entries(runtimeConfig)
+      .map(([key, value]) => `window['${key}'] = ${JSON.stringify(value)};`)
+      .join('\n');
+
+    return `<script>${scriptContent}</script>`;
+  }
+
+  private getV2AssetPublicPath() {
+    if (process.env.CDN_BASE_URL) {
+      // CDN hosts the assets under the fixed build-output directory name.
+      return `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/${MODERN_CLIENT_DIST_DIR}/`;
+    }
+
+    return this.getV2PublicPath();
+  }
+
+  private getV2IndexTemplate() {
+    const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/${MODERN_CLIENT_DIST_DIR}/index.html`;
+    if (!fs.existsSync(file)) {
+      return null;
+    }
+    const stat = fs.statSync(file);
+    if (
+      this.v2IndexTemplateCache &&
+      this.v2IndexTemplateCache.file === file &&
+      this.v2IndexTemplateCache.mtimeMs === stat.mtimeMs
+    ) {
+      return this.v2IndexTemplateCache.html;
+    }
+
+    const html = fs.readFileSync(file, 'utf-8');
+    this.v2IndexTemplateCache = {
+      file,
+      mtimeMs: stat.mtimeMs,
+      html,
+    };
+    return html;
+  }
+
+  private renderV2IndexHtml() {
+    const template = this.getV2IndexTemplate();
+    if (!template) {
+      return null;
+    }
+    const html = rewriteV2AssetPublicPath(template, this.getV2AssetPublicPath());
+    return injectRuntimeScript(html, this.getV2RuntimeConfigScript());
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const { pathname } = parse(req.url);
-    const { PLUGIN_STATICS_PATH, APP_PUBLIC_PATH } = process.env;
+    const { PLUGIN_STATICS_PATH } = process.env;
+    const APP_PUBLIC_PATH = this.getAppPublicPath();
 
     if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;
@@ -202,11 +421,46 @@ export class Gateway extends EventEmitter {
       return;
     }
 
+    const supervisor = AppSupervisor.getInstance();
+    let handleApp = 'main';
+    try {
+      handleApp = await this.getRequestHandleAppName(req);
+    } catch (error) {
+      this.getLogger('main', res).error('Failed to get handle app name', { error });
+      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
+      return;
+    }
+
     if (pathname.startsWith(APP_PUBLIC_PATH + 'storage/uploads/')) {
-      req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
+      if (handleApp !== 'main') {
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
+      const headers = getStorageUploadSecurityHeaders(pathname);
+      for (const [key, value] of Object.entries(headers)) {
+        res.setHeader(key, value);
+      }
+      req.url = req.url.substring(APP_PUBLIC_PATH.length + 'storage'.length);
       await compress(req, res);
       return handler(req, res, {
-        public: resolve(process.cwd()),
+        public: resolveStorageRoot(),
+        directoryListing: false,
+      });
+    }
+
+    if (pathname.startsWith(APP_PUBLIC_PATH + 'dist/')) {
+      if (handleApp !== 'main') {
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
+      req.url = req.url.substring(APP_PUBLIC_PATH.length + 'dist'.length);
+      await compress(req, res);
+      return handler(req, res, {
+        public: storagePathJoin('dist-client'),
         directoryListing: false,
       });
     }
@@ -214,6 +468,12 @@ export class Gateway extends EventEmitter {
     // pathname example: /static/plugins/@nocobase/plugins-acl/README.md
     // protect server files
     if (pathname.startsWith(PLUGIN_STATICS_PATH) && !pathname.includes('/server/')) {
+      if (handleApp !== 'main') {
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
       await compress(req, res);
       const packageName = getPackageNameByExposeUrl(pathname);
       // /static/plugins/@nocobase/plugins-acl/README.md => /User/projects/nocobase/plugins/acl
@@ -232,6 +492,44 @@ export class Gateway extends EventEmitter {
     }
 
     if (!pathname.startsWith(process.env.API_BASE_PATH)) {
+      if (this.isV2Request(pathname)) {
+        if (handleApp !== 'main') {
+          const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+          if (isProxy) {
+            return;
+          }
+        }
+
+        if (this.isV2IndexRequest(pathname)) {
+          const v2Html = this.renderV2IndexHtml();
+          if (v2Html) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(v2Html);
+            return;
+          }
+        }
+
+        req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
+        // Map the runtime modern-client prefix segment back to the fixed
+        // on-disk build directory (e.g. /admin/assets/x.js -> /v/assets/x.js)
+        // so assets resolve when serving standalone (no nginx) and the runtime
+        // prefix differs from the dist dir. No-op when they match (the default).
+        const modernPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
+        if (modernPrefix !== MODERN_CLIENT_DIST_DIR && req.url.startsWith(`/${modernPrefix}/`)) {
+          req.url = `/${MODERN_CLIENT_DIST_DIR}/${req.url.slice(modernPrefix.length + 2)}`;
+        }
+        await compress(req, res);
+        return handler(req, res, {
+          public: `${process.env.APP_PACKAGE_ROOT}/dist/client`,
+        });
+      }
+
+      if (handleApp !== 'main') {
+        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+        if (isProxy) {
+          return;
+        }
+      }
       req.url = req.url.substring(APP_PUBLIC_PATH.length - 1);
       await compress(req, res);
       return handler(req, res, {
@@ -240,24 +538,27 @@ export class Gateway extends EventEmitter {
       });
     }
 
-    let handleApp = 'main';
-    try {
-      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
-    } catch (error) {
-      console.log(error);
-      this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
-      return;
+    if (handleApp !== 'main') {
+      const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
+      if (isProxy) {
+        return;
+      }
     }
-    const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
+    const hasApp = supervisor.hasApp(handleApp);
 
     if (!hasApp) {
-      void AppSupervisor.getInstance().bootStrapApp(handleApp);
+      void supervisor.bootstrapApp(handleApp);
     }
 
-    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
+    let appStatus = await supervisor.getAppStatus(handleApp, 'preparing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+      return;
+    }
+
+    if (appStatus === 'preparing') {
+      this.responseErrorWithCode('APP_PREPARING', res, { appName: handleApp });
       return;
     }
 
@@ -267,12 +568,21 @@ export class Gateway extends EventEmitter {
     }
 
     if (appStatus === 'initialized') {
-      const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
-      appInstance.runCommand('start', '--quickstart');
-      appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
+      const appInstance = await supervisor.getApp(handleApp);
+      if (!appInstance) {
+        this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+        return;
+      }
+      supervisor.startApp(handleApp);
+      appStatus = await supervisor.getAppStatus(handleApp);
     }
 
-    const app = await AppSupervisor.getInstance().getApp(handleApp);
+    const app = await supervisor.getApp(handleApp);
+
+    if (!app) {
+      this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+      return;
+    }
 
     if (appStatus !== 'running') {
       this.responseErrorWithCode(`${appStatus}`, res, { app, appName: handleApp });
@@ -286,17 +596,25 @@ export class Gateway extends EventEmitter {
     }
 
     if (handleApp !== 'main') {
-      AppSupervisor.getInstance().touchApp(handleApp);
+      await supervisor.setAppLastSeenAt(handleApp);
     }
 
-    app.callback()(req, res);
+    const ctx: GatewayRequestContext = { req, res, appName: handleApp };
+    const fn = compose([
+      ...this.middlewares.nodes,
+      async (_ctx) => {
+        await app.callback()(req, res);
+      },
+    ]);
+
+    await fn(ctx);
   }
 
   getAppSelectorMiddlewares() {
     return this.selectorMiddlewares;
   }
 
-  async getRequestHandleAppName(req: IncomingRequest) {
+  async getRequestHandleAppName(req: IncomingMessage | IncomingRequest) {
     const appSelectorMiddlewares = this.selectorMiddlewares.sort();
 
     const ctx: AppSelectorMiddlewareContext = {
@@ -358,7 +676,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (isStart || !ipcClient) {
-      await createStoragePluginsSymlink();
+      await syncPluginSymlinks();
     }
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);
@@ -366,6 +684,16 @@ export class Gateway extends EventEmitter {
     // NOTE: to avoid listener number warning (default to 10)
     // See: https://nodejs.org/api/events.html#emittersetmaxlistenersn
     mainApp.setMaxListeners(50);
+
+    // Delay SES lockdown until the app has finished starting to avoid breaking late-loaded modules.
+    mainApp.once('afterStart', () => {
+      lockdownSes({
+        consoleTaming: 'unsafe',
+        errorTaming: 'unsafe',
+        overrideTaming: 'moderate',
+        stackFiltering: 'verbose',
+      });
+    });
 
     let runArgs: any = [process.argv, { throwError: true, from: 'node' }];
 
@@ -441,11 +769,34 @@ export class Gateway extends EventEmitter {
       return;
     }
 
-    this.server = http.createServer(this.getCallback());
+    this.server = http.createServer(async (req, res) => {
+      const appInstance = await AppSupervisor.getInstance().getApp('main');
+      for (const handler of Gateway.requestHandlers) {
+        try {
+          const result = await handler(req as IncomingRequest, res as ServerResponse, appInstance);
+          if (result !== false) {
+            return;
+          }
+        } catch (error) {
+          console.error('gateway request handler error:', error);
+        }
+      }
+      this.getCallback()(req, res);
+    });
 
     this.wsServer = new WSServer();
-
-    this.server.on('upgrade', (request, socket, head) => {
+    this.server.on('upgrade', async (request, socket, head) => {
+      const isProxy = await AppSupervisor.getInstance().proxyWs(request, socket, head);
+      if (isProxy) {
+        return;
+      }
+      const appInstance = await AppSupervisor.getInstance().getApp('main');
+      for (const handle of Gateway.wsServers) {
+        const result = await handle(request, socket, head, appInstance);
+        if (result !== false) {
+          return;
+        }
+      }
       const { pathname } = parse(request.url);
 
       if (pathname === process.env.WS_PATH) {
@@ -482,5 +833,39 @@ export class Gateway extends EventEmitter {
   close() {
     this.server?.close();
     this.wsServer?.close();
+  }
+
+  private static requestHandlers: ((req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void)[] =
+    [];
+
+  static registerRequestHandler(
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+  ) {
+    Gateway.requestHandlers.push(handler);
+  }
+
+  static unregisterRequestHandler(
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+  ) {
+    Gateway.requestHandlers = Gateway.requestHandlers.filter((h) => h !== handler);
+  }
+
+  private static wsServers: ((
+    req: IncomingMessage,
+    socket: Duplex,
+    head: Buffer,
+    app: Application,
+  ) => boolean | void)[] = [];
+
+  static registerWsHandler(
+    wsServer: (req: IncomingMessage, socket: Duplex, head: Buffer, app: Application) => boolean | void,
+  ) {
+    Gateway.wsServers.push(wsServer);
+  }
+
+  static unregisterWsHandler(
+    wsServer: (req: IncomingMessage, socket: Duplex, head: Buffer, app: Application) => boolean | void,
+  ) {
+    Gateway.wsServers = Gateway.wsServers.filter((ws) => ws !== wsServer);
   }
 }

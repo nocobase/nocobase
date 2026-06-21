@@ -13,23 +13,35 @@ import { define, observable, reaction } from '@formily/reactive';
 import { Button, Collapse, Space, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
+import { Emitter } from './emitter';
 import { FlowRuntimeContext } from './flowContext';
-import { FlowEngine } from './flowEngine';
+import { FlowEngine, untracked } from '.';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
-import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
+import {
+  DynamicFlowSource,
+  DynamicFlowSourceProvider,
+  ParamObject,
+  StepSettingsDialogProps,
+  ToolbarItemConfig,
+} from './types';
 import {
   compileUiSchema,
+  FlowCancelSaveException,
   FlowExitException,
   getT,
   resolveDefaultParams,
   resolveStepUiSchema,
   resolveUiMode,
   setupRuntimeContextSteps,
+  shouldHideStepInSettings,
 } from './utils';
+import { FlowExitAllException } from './utils/exceptions';
+import { FlowStepContext } from './hooks/useFlowStep';
+import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
+import { lazy } from './lazy-helper';
 
 const Panel = Collapse.Panel;
 
@@ -49,17 +61,57 @@ export interface FlowSettingsOpenOptions {
   stepKey?: string;
   /** 弹窗展现形式（drawer 或 dialog） */
   uiMode?:
+    | 'select'
+    | 'switch'
     | 'dialog'
     | 'drawer'
     | 'embed'
     | {
-        type?: 'dialog' | 'drawer' | 'embed';
+        type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch';
         props?: {
           title?: string;
           width?: number;
           target?: any;
           onOpen?: () => void;
           onClose?: () => void;
+          /**
+           * 自定义弹窗底部内容
+           *
+           * 支持三种形式：
+           * 1. `React.ReactNode` - 直接替换整个底部内容
+           * 2. `Function` - 函数式自定义，接收原始底部内容和按钮组件，返回新的内容
+           * 3. `null` - 隐藏底部内容
+           *
+           * @example
+           * ```typescript
+           * // 1. 直接替换底部内容
+           * footer: <div>Custom Footer</div>
+           *
+           * // 2. 函数式自定义 - 在原有按钮基础上添加内容
+           * footer: (originNode, { OkBtn, CancelBtn }) => (
+           *   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+           *     <span>Additional info</span>
+           *     {originNode}
+           *   </div>
+           * )
+           *
+           * // 3. 函数式自定义 - 完全重新组合按钮
+           * footer: (originNode, { OkBtn, CancelBtn }) => (
+           *   <Space>
+           *     <CancelBtn title="Close" />
+           *     <Button type="link">Help</Button>
+           *     <OkBtn title="Apply" />
+           *   </Space>
+           * )
+           *
+           * // 4. 隐藏底部
+           * footer: null
+           * ```
+           */
+          footer?:
+            | React.ReactNode
+            | ((originNode: React.ReactNode, extra: { OkBtn: React.FC; CancelBtn: React.FC }) => React.ReactNode)
+            | null;
           [key: string]: any;
         };
       };
@@ -69,15 +121,24 @@ export interface FlowSettingsOpenOptions {
   onSaved?: () => void | Promise<void>;
 }
 
+export type FlowSettingsComponent = React.ComponentType<any>;
+export type FlowSettingsComponentModule = { default?: FlowSettingsComponent } | Record<string, FlowSettingsComponent>;
+export type FlowSettingsComponentLoader = () => Promise<FlowSettingsComponentModule | FlowSettingsComponent>;
+export type FlowSettingsComponentLoaderMap = Record<string, FlowSettingsComponentLoader>;
+
 export class FlowSettings {
   public components: Record<string, any> = {};
   public scopes: Record<string, any> = {};
   private antdComponentsLoaded = false;
   public enabled: boolean;
+  private engine: FlowEngine;
   #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
+  private dynamicFlowSourceProviders: DynamicFlowSourceProvider[] = [];
+  #emitter: Emitter = new Emitter();
 
   constructor(engine: FlowEngine) {
+    this.engine = engine;
     // 初始默认为 false，由 SchemaComponentProvider 根据实际设计模式状态同步设置
     this.enabled = false;
     engine.context.defineProperty('flowSettingsEnabled', {
@@ -90,6 +151,14 @@ export class FlowSettings {
     define(this, {
       enabled: observable,
     });
+  }
+
+  on(event: 'beforeOpen', callback: (...args: any[]) => void) {
+    this.#emitter.on(event, callback);
+  }
+
+  off(event: 'beforeOpen', callback: (...args: any[]) => void) {
+    this.#emitter.off(event, callback);
   }
 
   /**
@@ -157,8 +226,7 @@ export class FlowSettings {
         Upload,
       } = await import('@formily/antd-v5');
 
-      // 单独导入 Button 组件
-      const { Button } = await import('antd');
+      const { Button, Alert } = await import('antd');
 
       // 注册基础组件
       this.components.Form = Form;
@@ -206,6 +274,7 @@ export class FlowSettings {
       this.components.Space = Space;
       this.components.Editable = Editable;
       this.components.PreviewText = PreviewText;
+      this.components.Alert = Alert;
 
       // 注册按钮组件
       this.components.Button = Button;
@@ -237,6 +306,30 @@ export class FlowSettings {
     });
   }
 
+  public registerComponentLoaders(loaders: FlowSettingsComponentLoaderMap): void {
+    Object.entries(loaders).forEach(([name, loader]) => {
+      if (this.components[name]) {
+        console.warn(`FlowSettings: Component with name '${name}' is already registered and will be overwritten.`);
+      }
+      this.components[name] = lazy(async () => {
+        const loaded = await loader();
+        if (typeof loaded === 'function') {
+          return { default: loaded };
+        }
+        if (loaded?.default && typeof loaded.default === 'function') {
+          return { default: loaded.default };
+        }
+        const namedComponent = loaded?.[name];
+        if (typeof namedComponent === 'function') {
+          return { default: namedComponent };
+        }
+        throw new Error(
+          `FlowSettings: component loader for '${name}' must resolve to a React component or a module exporting it.`,
+        );
+      });
+    });
+  }
+
   /**
    * 添加作用域到 FlowSettings 的作用域注册表中。
    * 这些作用域可以在 flow step 的 uiSchema 中使用。
@@ -257,13 +350,15 @@ export class FlowSettings {
   /**
    * 启用流程设置组件的显示
    * @example
-   * flowSettings.enable();
+   * await flowSettings.enable();
    */
-  public enable(): void {
+  public async enable(): Promise<void> {
+    await this.engine.preloadModelLoaders();
     this.enabled = true;
   }
 
-  public forceEnable() {
+  public async forceEnable(): Promise<void> {
+    await this.engine.preloadModelLoaders();
     this.#forceEnabled = true;
     this.enabled = true;
   }
@@ -271,16 +366,16 @@ export class FlowSettings {
   /**
    * 禁用流程设置组件的显示
    * @example
-   * flowSettings.disable();
+   * await flowSettings.disable();
    */
-  public disable(): void {
+  public async disable(): Promise<void> {
     if (this.#forceEnabled) {
       return;
     }
     this.enabled = false;
   }
 
-  public forceDisable() {
+  public async forceDisable(): Promise<void> {
     this.#forceEnabled = false;
     this.enabled = false;
   }
@@ -375,6 +470,83 @@ export class FlowSettings {
     return [...this.toolbarItems];
   }
 
+  public registerDynamicFlowSourceProvider(provider: DynamicFlowSourceProvider): () => void {
+    const existingIndex = this.dynamicFlowSourceProviders.findIndex((item) => item.key === provider.key);
+    if (existingIndex !== -1) {
+      console.warn(
+        `FlowSettings: Dynamic flow source provider with key '${provider.key}' already exists and will be replaced.`,
+      );
+      this.dynamicFlowSourceProviders[existingIndex] = provider;
+    } else {
+      this.dynamicFlowSourceProviders.push(provider);
+    }
+
+    this.dynamicFlowSourceProviders.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+
+    return () => {
+      const index = this.dynamicFlowSourceProviders.indexOf(provider);
+      if (index !== -1) {
+        this.dynamicFlowSourceProviders.splice(index, 1);
+      }
+    };
+  }
+
+  public hasDynamicFlowSourceProvider(model: FlowModel): boolean {
+    return this.dynamicFlowSourceProviders.some((provider) => {
+      try {
+        return provider.visible ? provider.visible(model) : true;
+      } catch (error) {
+        console.warn(`FlowSettings: Dynamic flow source provider '${provider.key}' visibility check failed.`, error);
+        return false;
+      }
+    });
+  }
+
+  public async getDynamicFlowSources(model: FlowModel): Promise<DynamicFlowSource[]> {
+    const t = getT(model);
+    const selfSource: DynamicFlowSource = {
+      key: 'self',
+      label: t('Current block'),
+      model,
+      sort: -1000,
+    };
+    const sources: DynamicFlowSource[] = [];
+    const seenKeys = new Set<string>(['self']);
+    const seenModelUids = new Set<string>([model.uid]);
+
+    for (const provider of this.dynamicFlowSourceProviders) {
+      try {
+        if (provider.visible && !provider.visible(model)) {
+          continue;
+        }
+
+        const providerSources = await provider.getSources(model);
+        for (const source of providerSources || []) {
+          if (!source?.key || !source.model) {
+            continue;
+          }
+          const key = String(source.key);
+          const uid = source.model.uid;
+          if (seenKeys.has(key) || seenModelUids.has(uid)) {
+            continue;
+          }
+          seenKeys.add(key);
+          seenModelUids.add(uid);
+          sources.push({
+            ...source,
+            key,
+            label: source.label || key,
+            sort: source.sort || 0,
+          });
+        }
+      } catch (error) {
+        console.warn(`FlowSettings: Dynamic flow source provider '${provider.key}' failed.`, error);
+      }
+    }
+
+    return [selfSource, ...sources.sort((a, b) => (a.sort || 0) - (b.sort || 0))];
+  }
+
   /**
    * 清空所有工具栏项目
    * @example
@@ -416,12 +588,14 @@ export class FlowSettings {
     flowEngine,
     form,
     onFormValuesChange,
+    key,
   }: {
     uiSchema: any;
     initialValues: any;
     flowEngine: any;
     form?: any;
     onFormValuesChange?: (form: any) => void;
+    key?: string;
   }): React.ReactElement {
     // 获取 scopes 和 components
     const scopes = {
@@ -448,7 +622,7 @@ export class FlowSettings {
 
     return React.createElement(
       FormProviderWithForm,
-      { form, scopes, initialValues, onFormValuesChange },
+      { form, initialValues, onFormValuesChange, key },
       React.createElement(SchemaField as any, {
         schema: compiledSchema,
         components: flowEngine?.flowSettings?.components || {},
@@ -478,7 +652,7 @@ export class FlowSettings {
    * - options.flowKey?: 目标 flow 的 key。
    * - options.flowKeys?: 多个目标 flow 的 key 列表（当同时提供 flowKey 时被忽略）。
    * - options.stepKey?: 目标步骤的 key（通常与 flowKey 搭配使用）。
-   * - options.uiMode?: 'dialog' | 'drawer' | 'embed' ｜ { type?: 'dialog' | 'drawer' | 'embed'; props?: { title?: string; width?: number; target?: any; onOpen?: () => void; onClose?: () => void; [key: string]: any } }，默认 'dialog'。
+   * - options.uiMode?: 默认 'dialog'。
    * - options.onCancel?: 取消按钮点击后触发的回调（无参数）。
    * - options.onSaved?: 配置保存成功后触发的回调（无参数）。
    *
@@ -486,6 +660,7 @@ export class FlowSettings {
    * @returns {Promise<boolean>} 是否成功打开弹窗
    */
   public async open(options: FlowSettingsOpenOptions): Promise<boolean> {
+    this.#emitter.emit('beforeOpen', options);
     const { model, flowKey, flowKeys, stepKey, uiMode = 'dialog', preset, onCancel, onSaved } = options;
 
     // 基础校验
@@ -537,22 +712,20 @@ export class FlowSettings {
         // 如明确指定了 stepKey，则仅处理对应步骤
         if (stepKey && sk !== stepKey) continue;
         const step = (flow.steps as any)[sk];
-        if (!preset && (!step || step.hideInSettings)) continue;
+        if (!preset && (!step || (await shouldHideStepInSettings(model, flow, step)))) continue;
         // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
         if (preset && !step.preset) continue;
 
         // 解析合并后的 uiSchema（包含 action 的 schema）
         const mergedUiSchema = await resolveStepUiSchema(model, flow, step);
-        if (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) continue;
-
         // 计算标题与 hooks
         let stepTitle: string = step.title;
         let beforeParamsSave = step.beforeParamsSave;
         let afterParamsSave = step.afterParamsSave;
         let actionDefaultParams: Record<string, any> = {};
-        let uiMode;
+        let uiMode = step.uiMode;
         if (step.use) {
-          const action = (model as any).flowEngine?.getAction?.(step.use);
+          const action = model.getAction?.(step.use);
           if (action) {
             actionDefaultParams = action.defaultParams || {};
             stepTitle = stepTitle || action.title;
@@ -563,20 +736,28 @@ export class FlowSettings {
         }
 
         // 构建 settings 上下文
-        const flowRuntimeContext = new FlowRuntimeContext(model as any, fk, 'settings');
-        setupRuntimeContextSteps(flowRuntimeContext as any, flow as any, model as any, fk);
+        const flowRuntimeContext = new FlowRuntimeContext(model, fk, 'settings');
+        setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, fk);
         flowRuntimeContext.defineProperty('currentStep', { value: step });
+        flowRuntimeContext.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
+          return forms.get(keyOf({ flowKey, stepKey }))?.values;
+        });
 
         // 解析默认值 + 当前参数
-        const modelStepParams = (model as any).getStepParams(fk, sk) || {};
-        const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext as any);
-        const resolvedActionDefaults = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext as any);
+        const modelStepParams = model.getStepParams(fk, sk) || {};
+        const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
+        const resolvedActionDefaults = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext);
         const initialValues = {
           ...(resolvedActionDefaults || {}),
           ...(resolvedDefaultParams || {}),
           ...modelStepParams,
         };
-
+        if (
+          (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) &&
+          !['select', 'switch'].includes(uiMode?.type || uiMode)
+        ) {
+          continue;
+        }
         entries.push({
           flowKey: fk,
           flowTitle: t(flow.title) || fk,
@@ -602,41 +783,56 @@ export class FlowSettings {
 
     // 渲染视图（对话框/抽屉）
     // 兼容新的 uiMode 定义：字符串或 { type, props }
-    const viewer = (model as any).context.viewer;
+    const viewer = model.context.viewer;
     // 解析 uiMode，支持函数式
     const resolvedUiMode =
       entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
     const modeType = typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
-    let modeProps: Record<string, any> =
-      typeof resolvedUiMode === 'object' && resolvedUiMode ? resolvedUiMode.props || {} : {};
-
-    if (modeType === 'embed') {
-      const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
-      const onOpen = modeProps.onOpen;
-      const onClose = modeProps.onClose;
-      modeProps = {
-        target,
-        ...modeProps,
-        onOpen() {
-          target.style.width = modeProps.width || '50%';
-          target.style.maxWidth = modeProps.maxWidth || '800px';
-          onOpen?.();
-        },
-        onClose() {
-          target.style.width = 'auto';
-          target.style.maxWidth = 'none';
-          onClose?.();
-        },
-      };
+    if (['select', 'switch'].includes(modeType)) {
+      return;
     }
-
     const openView = viewer[modeType || 'dialog'].bind(viewer);
-    const flowEngine = (model as any).flowEngine;
+    const flowEngine = model.flowEngine;
     const scopes = {
       // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
       useFlowSettingsContext,
       ...(flowEngine?.flowSettings?.scopes || {}),
     } as Record<string, any>;
+
+    let modeProps: Record<string, any> =
+      typeof resolvedUiMode === 'object' && resolvedUiMode ? resolvedUiMode.props || {} : {};
+
+    if (modeType === 'embed') {
+      const target = document.querySelector<HTMLDivElement>(`#${GLOBAL_EMBED_CONTAINER_ID}`);
+      const onOpen = modeProps.onOpen;
+      const onClose = modeProps.onClose;
+
+      modeProps = {
+        target,
+        styles: {
+          body: {
+            padding: flowEngine.context.themeToken?.padding,
+          },
+        },
+        ...modeProps,
+        onOpen() {
+          if (target) {
+            target.style.width = modeProps.width || '33.3%';
+            target.style.maxWidth = modeProps.maxWidth || '800px';
+            target.style.minWidth = modeProps.minWidth || '0px';
+          }
+          onOpen?.();
+        },
+        onClose() {
+          if (target && target.dataset[EMBED_REPLACING_DATA_KEY] !== '1') {
+            target.style.width = 'auto';
+            target.style.maxWidth = 'none';
+            target.style.minWidth = 'auto';
+          }
+          onClose?.();
+        },
+      };
+    }
 
     // 将步骤分组到 flow 下，用于 Collapse 分组展示
     const grouped: Record<string, { title: string; steps: StepEntry[] }> = {};
@@ -647,7 +843,7 @@ export class FlowSettings {
 
     // 为每个步骤创建独立的表单实例，互不干扰
     const forms = new Map<string, ReturnType<typeof createForm>>();
-    const keyOf = (e: StepEntry) => `${e.flowKey}::${e.stepKey}`;
+    const keyOf = (e: { flowKey: string; stepKey: string }) => `${e.flowKey}::${e.stepKey}`;
 
     entries.forEach((e) => {
       const form = createForm({ initialValues: compileUiSchema(scopes, e.initialValues) });
@@ -694,6 +890,14 @@ export class FlowSettings {
       );
     };
 
+    const baseViewInputArgs = model.context.view?.inputArgs || {};
+    const navigation = model.context.view?.navigation;
+    const inputArgs = {
+      ...baseViewInputArgs,
+      ...(navigation ? { navigation } : {}),
+      ...(modeProps?.inputArgs || {}),
+    };
+
     openView({
       // 默认标题与宽度可被传入的 props 覆盖
       title: modeProps.title || getTitle(),
@@ -703,7 +907,12 @@ export class FlowSettings {
       zIndex: 5000,
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
-      content: (currentView) => {
+      // 统一构造 settings 弹窗的 inputArgs（集合/记录/父导航/关联）
+      inputArgs,
+      content: (currentView, viewCtx) => {
+        viewCtx?.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
+          return forms.get(keyOf({ flowKey, stepKey }))?.values;
+        });
         // 渲染单个 step 表单（无 JSX）：FormProvider + SchemaField
         const renderStepForm = (entry: StepEntry) => {
           const form = forms.get(keyOf(entry));
@@ -714,12 +923,21 @@ export class FlowSettings {
           return React.createElement(
             FlowSettingsContextProvider as any,
             { value: entry.ctx },
-            this.renderStepForm({
-              uiSchema: entry.mergedUiSchema,
-              initialValues: entry.initialValues,
-              flowEngine,
-              form,
-            }),
+            React.createElement(
+              FlowStepContext.Provider,
+              {
+                value: {
+                  params: untracked(() => ({ ...entry.initialValues, ...form.values })),
+                  path: `${model.uid}_${entry.flowKey}_${entry.stepKey}`,
+                },
+              },
+              this.renderStepForm({
+                uiSchema: entry.mergedUiSchema,
+                initialValues: entry.initialValues,
+                flowEngine,
+                form,
+              }),
+            ),
           );
         };
 
@@ -773,7 +991,7 @@ export class FlowSettings {
               if (!form) continue;
               await form.submit();
               const currentValues = form.values;
-              (model as any).setStepParams(e.flowKey, e.stepKey, currentValues);
+              model.setStepParams(e.flowKey, e.stepKey, currentValues as ParamObject);
 
               if (typeof e.beforeParamsSave === 'function') {
                 await e.beforeParamsSave(e.ctx, currentValues, e.previousParams);
@@ -794,6 +1012,10 @@ export class FlowSettings {
 
             currentView.close();
 
+            // 配置变更后立即刷新 beforeRender，避免命中旧缓存导致界面不更新
+            model.invalidateFlowCache('beforeRender', true);
+            await model.rerender();
+
             // 触发保存成功回调
             try {
               await onSaved?.();
@@ -801,7 +1023,10 @@ export class FlowSettings {
               console.error('FlowSettings.open: onSaved callback error', cbErr);
             }
           } catch (err) {
-            if (err instanceof FlowExitException) {
+            if (err instanceof FlowCancelSaveException) {
+              return;
+            }
+            if (err instanceof FlowExitException || err instanceof FlowExitAllException) {
               currentView.close();
               return;
             }
@@ -813,10 +1038,8 @@ export class FlowSettings {
         currentView.submit = onSaveAll;
 
         const stepsEl = renderStepsContainer();
-        const footerButtons = React.createElement(
-          Space,
-          { align: 'end' },
-          React.createElement(
+        const Cancel = (props: { title?: string }) => {
+          return React.createElement(
             Button,
             {
               onClick: async () => {
@@ -828,10 +1051,32 @@ export class FlowSettings {
                 }
               },
             },
-            t('Cancel'),
-          ),
-          React.createElement(Button, { type: 'primary', onClick: onSaveAll }, t('OK')),
+            props.title || t('Cancel'),
+          );
+        };
+        const Save = (props: { title?: string }) => {
+          return React.createElement(Button, { type: 'primary', onClick: onSaveAll }, props.title || t('Save'));
+        };
+
+        let footerButtons = React.createElement(
+          Space,
+          { align: 'end' },
+          React.createElement(Cancel),
+          React.createElement(Save),
         );
+
+        if (modeProps.footer) {
+          footerButtons = _.isFunction(modeProps.footer)
+            ? modeProps.footer(footerButtons, {
+                OkBtn: Save,
+                CancelBtn: Cancel,
+              })
+            : modeProps.footer;
+        }
+
+        if (modeProps.footer === null) {
+          footerButtons = null;
+        }
 
         let footerEl;
         if (currentView.Footer) {
@@ -929,13 +1174,11 @@ export class FlowSettings {
 function FormProviderWithForm({
   children,
   form,
-  scopes,
   initialValues,
   onFormValuesChange: _onFormValuesChange,
 }: {
   children?: React.ReactNode;
   form?: any;
-  scopes?: Record<string, any>;
   initialValues?: Record<string, any>;
   onFormValuesChange?: (form: any) => void;
 }) {
@@ -943,7 +1186,7 @@ function FormProviderWithForm({
 
   if (!formInstanceRef.current) {
     formInstanceRef.current = createForm({
-      initialValues: compileUiSchema(scopes, initialValues),
+      initialValues,
       effects() {
         onFormValuesChange(_onFormValuesChange);
       },

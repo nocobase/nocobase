@@ -1,0 +1,9 @@
+{
+  "API request and response logs": "Log permintaan dan respons API",
+  "Application, database, plugins and other system logs, the error level logs will be sent to": "Log aplikasi, database, plugin, dan sistem lainnya, log tingkat kesalahan akan dikirim ke",
+  "Download": "Unduh",
+  "Download logs": "Unduh log",
+  "Logger": "Pencatat",
+  "SQL execution logs, printed by Sequelize when the db logging is enabled": "Log eksekusi SQL, dicetak oleh Sequelize ketika pencatatan db diaktifkan",
+  "Search": "Cari"
+}

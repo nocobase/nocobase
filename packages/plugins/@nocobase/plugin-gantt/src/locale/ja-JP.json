@@ -1,7 +1,10 @@
 {
-  "Title field": "タイトルフィールド",
-  "Time scale": "タイムスケール",
-  "Start date field": "開始日フィールド",
+  "Enable drag to reschedule": "Enable drag to reschedule",
+  "End date field": "終了日フィールド",
+  "Details": "詳細",
+  "Event popup settings": "予定ポップアップ設定",
   "Progress field": "進行状況フィールド",
-  "End date field": "終了日フィールド"
+  "Start date field": "開始日フィールド",
+  "Time scale": "タイムスケール",
+  "Title field": "タイトルフィールド"
 }

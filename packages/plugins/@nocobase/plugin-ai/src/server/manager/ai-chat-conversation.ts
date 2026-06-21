@@ -87,6 +87,7 @@ class AIChatConversationImpl implements AIChatConversation {
   async getMessage(messageId: string): Promise<AIMessage | null> {
     return await this.aiMessagesRepo.findByTargetKey(messageId);
   }
+
   async listMessages(query: AIMessageQuery): Promise<AIMessage[]> {
     const filter: Filter = {
       sessionId: this.sessionId,
@@ -96,10 +97,12 @@ class AIChatConversationImpl implements AIChatConversation {
         $lt: query.messageId,
       };
     }
-    return await this.aiConversationMessagesRepo.find({
-      sort: ['messageId'],
+    const messages = await this.aiConversationMessagesRepo.find({
+      sort: ['-messageId'], // 改为倒序，取最新的
+      limit: 50, // 限制最多 50 条消息
       filter,
     });
+    return messages.reverse(); // 反转回正序
   }
 
   async lastUserMessage(): Promise<AIMessage> {
@@ -113,77 +116,32 @@ class AIChatConversationImpl implements AIChatConversation {
     });
   }
 
-  async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
-    const aiMessages = await this.listMessages(options);
-    const messages = await this.formatMessages(aiMessages, options);
-    if (options?.systemPrompt) {
-      messages.unshift({
-        role: 'system',
-        content: options.systemPrompt,
-      });
-    }
-    return {
+  async getChatContext(options?: AIChatContextOptions): Promise<AIChatContext> {
+    const {
+      userMessages,
+      userDecisions: decisions,
+      tools,
+      middleware,
+      getSystemPrompt,
+      formatMessages,
+    } = options ?? {};
+    let messages = userMessages ? (await formatMessages?.(userMessages)) ?? [] : undefined;
+    const additionSystemPrompt = messages
+      ?.filter((it) => it.role === 'system')
+      .map((it) => it.content)
+      .filter(Boolean)
+      .join('\n');
+    messages = messages?.filter((it) => it.role !== 'system');
+    const baseSystemPrompt = await getSystemPrompt?.(userMessages ?? []);
+    const systemPrompt = [baseSystemPrompt, additionSystemPrompt].filter(Boolean).join('\n\n') || undefined;
+    const chatContext: AIChatContext = {
+      systemPrompt,
       messages,
-      tools: options?.tools,
+      decisions,
+      tools,
+      middleware,
     };
-  }
-
-  private async formatMessages(messages: AIMessage[], options: AIChatContextOptions) {
-    const formattedMessages = [];
-    const { provider, workContextHandler } = options;
-
-    for (const msg of messages) {
-      const attachments = msg.attachments;
-      const workContext = msg.workContext;
-      let content = msg.content.content;
-      if (!content && !attachments && !msg.toolCalls?.length) {
-        continue;
-      }
-      if (msg.role === 'user') {
-        if (typeof content === 'string') {
-          content = `<user_query>${content}</user_query>`;
-          if (workContext?.length) {
-            const workContextStr = (await workContextHandler.resolve(this.ctx, workContext))
-              .map((x) => `<work_context>${x}</work_context>`)
-              .join('\n');
-            content = workContextStr + '\n' + content;
-          }
-        }
-        const contents = [];
-        if (attachments?.length) {
-          for (const attachment of attachments) {
-            const parsed = await provider.parseAttachment(attachment);
-            contents.push(parsed);
-          }
-          if (content) {
-            contents.push({
-              type: 'text',
-              text: content,
-            });
-          }
-        }
-        formattedMessages.push({
-          role: 'user',
-          content: contents.length ? contents : content,
-        });
-        continue;
-      }
-      if (msg.role === 'tool') {
-        formattedMessages.push({
-          role: 'tool',
-          content,
-          tool_call_id: msg.metadata?.toolCall?.id,
-        });
-        continue;
-      }
-      formattedMessages.push({
-        role: 'assistant',
-        content,
-        tool_calls: msg.toolCalls,
-      });
-    }
-
-    return formattedMessages;
+    return chatContext;
   }
 
   private clone(): AIChatConversationImpl {

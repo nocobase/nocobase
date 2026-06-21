@@ -13,6 +13,7 @@ import { deprecatedDuplicateActionSettings, duplicateActionSettings } from './Du
 import { DuplicateActionDecorator } from './DuplicateActionDecorator';
 import { DuplicateActionInitializer } from './DuplicateActionInitializer';
 import { DuplicatePluginProvider } from './DuplicatePluginProvider';
+import { DuplicateActionModel } from '../client-v2/DuplicateActionModel';
 
 export class PluginActionDuplicateClient extends Plugin {
   async load() {
@@ -42,8 +43,12 @@ export class PluginActionDuplicateClient extends Plugin {
     };
 
     this.app.schemaInitializerManager.addItem('table:configureItemActions', 'actions.duplicate', initializerTableData);
+    this.app.flowEngine.registerModels({
+      DuplicateActionModel,
+    });
   }
 }
 
 export default PluginActionDuplicateClient;
 export * from './DuplicateAction';
+export { DuplicateActionModel } from '../client-v2/DuplicateActionModel';

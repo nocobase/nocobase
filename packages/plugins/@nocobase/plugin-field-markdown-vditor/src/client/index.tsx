@@ -7,14 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
+import { lazy, Plugin } from '@nocobase/client';
 import 'vditor/dist/index.css';
-// import { MarkdownVditor } from './components';
-import { lazy } from '@nocobase/client';
-import { VditorFieldModel } from './VditorFieldModel';
-import { DisplayVditorFieldModel } from './DisplayVditorFieldModel';
+import { DisplayVditorFieldModel } from '../client-v2/models/DisplayVditorFieldModel';
+import { VditorFieldModel } from '../client-v2/models/VditorFieldModel';
 const { MarkdownVditor } = lazy(() => import('./components'), 'MarkdownVditor');
-
+import { editModeSettingsItem } from './settings/markdownVditorComponentFieldSettings';
 import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';
 export class PluginFieldMarkdownVditorClient extends Plugin {
   dependencyLoaded = false;
@@ -30,10 +28,14 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
       VditorFieldModel,
       DisplayVditorFieldModel,
     });
+    this.app.schemaSettingsManager.addItem('fieldSettings:component:MarkdownVditor', 'editMode', editModeSettingsItem);
   }
 
   getCDN() {
-    return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client/vditor';
+    if (process.env.NODE_ENV === 'production') {
+      return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
+    }
+    return `https://cdn.jsdelivr.net/npm/vditor@3.11.2`;
   }
 
   initVditorDependency() {

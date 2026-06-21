@@ -35,6 +35,7 @@ export function getConfigFormCommonFieldset({ variableOptions }) {
         autoSize: {
           minRows: 10,
         },
+        delimiters: ['{{{', '}}}'],
       },
     },
     options: {

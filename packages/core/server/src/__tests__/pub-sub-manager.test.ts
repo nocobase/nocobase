@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MemoryPubSubAdapter, MockServer, createMockServer, sleep } from '@nocobase/test';
+import { MemoryPubSubAdapter, MockServer, createMockCluster, createMockServer, sleep } from '@nocobase/test';
 import { PubSubManager } from '../pub-sub-manager';
 
 describe('connect', () => {
@@ -53,6 +53,36 @@ describe('connect', () => {
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
+  });
+
+  test('closed before db close on app stop', async () => {
+    const mockListener = vi.fn();
+    await app.start();
+    await pubSubManager.subscribe('test1', mockListener);
+    // Verify message works before stop
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).toBeCalledTimes(1);
+    mockListener.mockClear();
+    // Track the order of close and db.close
+    const order: string[] = [];
+    const origClose = pubSubManager.close.bind(pubSubManager);
+    vi.spyOn(pubSubManager, 'close').mockImplementation(async () => {
+      order.push('pubsub.close');
+      return origClose();
+    });
+    const origDbClose = app.db.close.bind(app.db);
+    vi.spyOn(app.db, 'close').mockImplementation(async () => {
+      order.push('db.close');
+      return origDbClose();
+    });
+    await app.stop();
+    // pubSub should be closed before db (may appear more than once due to disposeServices)
+    const pubsubFirst = order.indexOf('pubsub.close');
+    const dbFirst = order.indexOf('db.close');
+    expect(pubsubFirst).toBeLessThan(dbFirst);
+    // After stop, publish should not reach subscriber
+    await pubSubManager.publish('test1', 'message2');
+    expect(mockListener).not.toHaveBeenCalled();
   });
 
   test('subscribe after connect', async () => {
@@ -165,29 +195,22 @@ describe('skipSelf, unsubscribe, debounce', () => {
 describe('Pub/Sub', () => {
   let publisher: MockServer;
   let subscriber: MockServer;
+  let cluster;
 
   beforeEach(async () => {
     const pubsub = new MemoryPubSubAdapter();
-    publisher = await createMockServer({
-      name: 'publisher',
-      pubSubManager: { channelPrefix: 'pubsub1' },
+    cluster = await createMockCluster({
       skipStart: true,
     });
-    publisher.pubSubManager.setAdapter(pubsub);
-    await publisher.start();
-
-    subscriber = await createMockServer({
-      name: 'subscriber',
-      pubSubManager: { channelPrefix: 'pubsub1' },
-      skipStart: true,
-    });
-    subscriber.pubSubManager.setAdapter(pubsub);
-    await subscriber.start();
+    [publisher, subscriber] = cluster.nodes;
+    for (const app of cluster.nodes) {
+      app.pubSubManager.setAdapter(pubsub);
+      await app.start();
+    }
   });
 
   afterEach(async () => {
-    await publisher.destroy();
-    await subscriber.destroy();
+    await cluster.destroy();
   });
 
   test('subscribe publish', async () => {

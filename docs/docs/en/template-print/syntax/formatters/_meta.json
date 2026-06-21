@@ -1,0 +1,42 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "link": "/template-print/syntax/formatters/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Text Formatting",
+    "link": "/template-print/syntax/formatters/text-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Number Formatting",
+    "link": "/template-print/syntax/formatters/number-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Currency Formatting",
+    "link": "/template-print/syntax/formatters/currency-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Date Formatting",
+    "link": "/template-print/syntax/formatters/date-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Time Interval Formatting",
+    "link": "/template-print/syntax/formatters/time-interval-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Array Formatting",
+    "link": "/template-print/syntax/formatters/array-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Media Field Formatting",
+    "link": "/template-print/syntax/formatters/media-field-formatting"
+  }
+]

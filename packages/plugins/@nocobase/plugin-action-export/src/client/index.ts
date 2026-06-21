@@ -11,10 +11,12 @@ export * from './ExportActionInitializer';
 export * from './ExportDesigner';
 export * from './ExportPluginProvider';
 export * from './useExportAction';
-import { Plugin, useCollection, useActionAvailable } from '@nocobase/client';
+import { Plugin, useActionAvailable } from '@nocobase/client';
+import { ExportActionModel } from '../client-v2/ExportActionModel';
 import { ExportPluginProvider } from './ExportPluginProvider';
 import { exportActionSchemaSettings } from './schemaSettings';
-import { ExportActionModel } from './ExportActionModel';
+
+export { buildExportFieldOptions } from '../client-v2/buildExportFieldOptions';
 
 export class PluginActionExportClient extends Plugin {
   async load() {
@@ -43,4 +45,5 @@ export class PluginActionExportClient extends Plugin {
   }
 }
 
+export { ExportActionModel } from '../client-v2/ExportActionModel';
 export default PluginActionExportClient;

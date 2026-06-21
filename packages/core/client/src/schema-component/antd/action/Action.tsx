@@ -20,7 +20,6 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { uid } from '@formily/shared';
 import { ErrorFallback, StablePopover, TabsContextProvider, useActionContext } from '../..';
-import { useDesignable } from '../../';
 import { useACLActionParamsContext } from '../../../acl';
 import {
   useCollectionParentRecordData,
@@ -35,6 +34,7 @@ import { VariablePopupRecordProvider } from '../../../modules/variable/variables
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
+import { useDesignable } from '../../hooks/useDesignable';
 import { useProps } from '../../hooks/useProps';
 import { PopupVisibleProvider } from '../page/PagePopups';
 import { usePopupUtils } from '../page/pagePopupUtils';
@@ -337,7 +337,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     disabled: disableAction,
     loading: loadingOfUseAction,
   } = useAction?.(actionCallback) || ({} as any);
-  const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
+  const disabled = form.disabled || field.data?.disabled || propsDisabled || disableAction;
   const buttonStyle = useMemo(() => {
     return {
       ...style,
@@ -591,7 +591,9 @@ const RenderButton = ({
         }
       };
       if (d.confirmEnable !== false && d.confirmContent) {
-        await form?.submit?.();
+        if (!fieldSchema?.['x-action-settings']?.skipValidator) {
+          await form?.submit?.();
+        }
         d.modal.confirm({
           title: d.t(resultTitle, { title: d.confirmTitleProp || d.title || d.field?.title }),
           content: d.t(resultContent, { title: d.confirmTitleProp || d.title || d.field?.title }),

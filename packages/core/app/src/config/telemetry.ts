@@ -10,6 +10,7 @@
 import { AppTelemetryOptions } from '@nocobase/server';
 
 export const telemetry: AppTelemetryOptions = {
+  serviceName: process.env.TELEMETRY_SERVICE_NAME || 'nocobase',
   enabled: process.env.TELEMETRY_ENABLED === 'on',
   metric: {
     readerName: process.env.TELEMETRY_METRIC_READER,

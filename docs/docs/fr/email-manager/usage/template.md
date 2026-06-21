@@ -1,0 +1,21 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
+
+# Modèles d'e-mail
+
+## Configuration des modèles
+
+Accédez au Centre de gestion des e-mails et cliquez sur le bouton Paramètres :
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
+
+Passez au panneau des modèles :
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_12_PM.png)
+
+C'est ici que vous pouvez gérer les modèles :
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM.png)
+
+## Utilisation des modèles
+
+Dans le champ du corps de l'e-mail, cliquez sur l'icône du modèle pour sélectionner le modèle souhaité :
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM%20(1).png)

@@ -7,22 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
-import { observer } from '@formily/reactive-react';
-import { getSubAppName } from '@nocobase/sdk';
 import { tval } from '@nocobase/utils/client';
-import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
-import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { BlockSchemaComponentPlugin } from '../block-provider';
 import { CollectionPlugin } from '../collection-manager';
-import { AppNotFound } from '../common/AppNotFound';
 import { RemoteDocumentTitlePlugin } from '../document-title';
-import { PluginFlowEngine } from '../flow';
+import { useAPIClient } from '../api-client';
+import { AppNotFound, PluginFlowEngine } from '@nocobase/client-v2';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
@@ -36,243 +30,23 @@ import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
-const AppSpin = () => {
-  return (
-    <Spin style={{ position: 'fixed', top: '50%', left: '50%', fontSize: 72, transform: 'translate(-50%, -50%)' }} />
-  );
-};
-
-const useErrorProps = (app: Application, error: any) => {
-  if (!error) {
-    return {};
-  }
-  const err = error?.response?.data?.errors?.[0] || error;
-  const subApp = getSubAppName(app.getPublicPath());
-  switch (err.code) {
-    case 'USER_HAS_NO_ROLES_ERR':
-      return {
-        title: app.i18n.t('Permission denied'),
-        subTitle: err.message,
-        extra: [
-          <Button
-            type="primary"
-            key="try"
-            onClick={() => {
-              app.apiClient.auth.setToken(null);
-              window.location.reload();
-            }}
-          >
-            {app.i18n.t('Sign in with another account')}
-          </Button>,
-          subApp ? (
-            <Button key="back" onClick={() => (window.location.href = '/admin')}>
-              {app.i18n.t('Return to the main application')}
-            </Button>
-          ) : null,
-        ],
-      };
-    default:
-      return {};
-  }
-};
-
-const AppError: FC<{ error: Error & { title?: string }; app: Application }> = observer(
-  ({ app, error }) => {
-    const props = getProps(app);
-    return (
-      <div>
-        <Result
-          className={css`
-            top: 50%;
-            position: absolute;
-            width: 100%;
-            transform: translate(0, -50%);
-          `}
-          status="error"
-          title={error?.title || app.i18n.t('App error', { ns: 'client' })}
-          subTitle={app.i18n.t(error?.message)}
-          {...props}
-          extra={[
-            <Button type="primary" key="try" onClick={() => window.location.reload()}>
-              {app.i18n.t('Try again')}
-            </Button>,
-          ]}
-          {...props}
-        />
-      </div>
-    );
-  },
-  { displayName: 'AppError' },
-);
-
-const getProps = (app: Application) => {
-  if (app.ws.serverDown) {
-    return {
-      status: 'error',
-      icon: <DisconnectOutlined />,
-      title: "You're offline",
-      subTitle: 'Please check the server status or network connection status',
-    };
-  }
-
-  if (!app.error) {
-    return {};
-  }
-
-  if (app.error.code === 'APP_NOT_FOUND') {
-    return {
-      status: 'warning',
-      title: 'App not found',
-      subTitle: app.error?.message,
-    };
-  }
-
-  if (app.error.code === 'APP_WARNING') {
-    return {
-      status: 'warning',
-      title: 'App warning',
-      subTitle: app.error?.message,
-    };
-  }
-
-  if (app.error.code === 'APP_INITIALIZING') {
-    return {
-      status: 'info',
-      icon: <LoadingOutlined />,
-      title: 'App initializing',
-      subTitle: app.error?.message,
-    };
-  }
-
-  if (app.error.code === 'APP_INITIALIZED') {
-    return {
-      status: 'warning',
-      title: 'App initialized',
-      subTitle: app.error?.message,
-    };
-  }
-
-  if (['ENOENT', 'APP_ERROR', 'LOAD_ERROR'].includes(app.error.code)) {
-    return {
-      status: 'error',
-      title: 'App error',
-      subTitle: app.error?.message,
-    };
-  }
-
-  if (app.error.code === 'APP_NOT_INSTALLED_ERROR') {
-    return {
-      status: 'warning',
-      title: 'App not installed',
-      subTitle: app.error?.message,
-    };
-  }
-
-  if (app.error.code === 'APP_STOPPED') {
-    return {
-      status: 'warning',
-      title: 'App stopped',
-      subTitle: app.error?.message,
-    };
-  }
-
-  if (app.error.code === 'APP_COMMANDING') {
-    const props = {
-      status: 'info',
-      icon: <LoadingOutlined />,
-      title: app.error?.command?.name,
-      subTitle: app.error?.message,
-    };
-    const commands = {
-      start: {
-        title: 'App starting',
-      },
-      restart: {
-        title: 'App restarting',
-      },
-      install: {
-        title: 'App installing',
-      },
-      upgrade: {
-        title: 'App upgrading',
-      },
-      'pm.add': {
-        title: 'Adding plugin',
-      },
-      'pm.update': {
-        title: 'Updating plugin',
-      },
-      'pm.enable': {
-        title: 'Enabling plugin',
-      },
-      'pm.disable': {
-        title: 'Disabling plugin',
-      },
-      'pm.remove': {
-        title: 'Removing plugin',
-      },
-    };
-    return { ...props, ...commands[app.error?.command?.name] };
-  }
-
-  return {
-    status: 'warning',
-    title: 'App warning',
-    subTitle: app.error?.message,
-  };
-};
-
-const AppMaintaining: FC<{ app: Application; error: Error }> = observer(
-  ({ app }) => {
-    const { icon, status, title, subTitle } = getProps(app);
-    return (
-      <div>
-        <Result
-          className={css`
-            top: 50%;
-            position: absolute;
-            width: 100%;
-            transform: translate(0, -50%);
-          `}
-          icon={icon}
-          status={status}
-          title={app.i18n.t(title)}
-          subTitle={<div style={{ whiteSpace: 'pre-wrap' }}>{app.i18n.t(subTitle)}</div>}
-          // extra={[
-          //   <Button type="primary" key="try" onClick={() => window.location.reload()}>
-          //     {app.i18n.t('Try again')}
-          //   </Button>,
-          // ]}
-        />
-      </div>
-    );
-  },
-  { displayName: 'AppMaintaining' },
-);
-
-const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(
-  ({ app }) => {
-    const { icon, status, title, subTitle } = getProps(app);
-    return (
-      <Modal open={true} footer={null} closable={false}>
-        <Result icon={icon} status={status} title={app.i18n.t(title)} subTitle={app.i18n.t(subTitle)} />
-      </Modal>
-    );
-  },
-  { displayName: 'AppMaintainingDialog' },
-);
-
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd() {
-    this.app.addComponents({
-      AppSpin,
-      AppError,
-      AppMaintaining,
-      AppMaintainingDialog,
-      AppNotFound,
-    });
     await this.addPlugins();
   }
+
+  /**
+   * Redirect component for root path:
+   * - If there is a token, go to `/admin` (existing behavior)
+   * - If not logged in, go to `/signin?redirect=/admin`
+   * This avoids the race where `/` first jumps to `/admin` before auth check.
+   */
+  private static RootRedirect: FC = () => {
+    const api = useAPIClient();
+    const hasToken = !!api?.auth?.token;
+    const to = hasToken ? '/admin' : '/signin?redirect=/admin';
+    return <Navigate replace to={to} />;
+  };
 
   async load() {
     this.addComponents();
@@ -290,7 +64,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
   addRoutes() {
     this.router.add('root', {
       path: '/',
-      element: <Navigate replace to="/admin" />,
+      element: <NocoBaseBuildInPlugin.RootRedirect />,
     });
 
     this.router.add('not-found', {
@@ -353,7 +127,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
       config: {
         items: {
           ui: { order: 100, component: 'DesignableSwitch', pin: true, snippet: 'ui.*' },
-          pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
+          // pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
           sc: { order: 300, component: 'SettingsCenterDropdown', pin: true, snippet: 'pm.*' },
         },
       },

@@ -9,14 +9,13 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
-import { Plugin } from '@nocobase/server';
+import { parseLiquidContext, transformSQL } from '@nocobase/utils';
+import { registerFlowSurfacesResource } from './flow-surfaces';
 import PluginUISchemaStorageServer from './server';
-import { GlobalContext, HttpRequestContext } from './template/contexts';
-import { JSONValue, resolveJsonTemplate } from './template/resolver';
-import { variables } from './variables/registry';
+import { JSONValue } from './template/resolver';
+import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
-  private globalContext!: GlobalContext;
   async afterAdd() {}
 
   async beforeLoad() {
@@ -32,113 +31,30 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     return cm.db;
   }
 
-  // 预取：构建“同记录”的字段/关联并集，一次查询写入 ctx.state.__varResolveBatchCache，供后续解析复用
-  private async prefetchRecordsForResolve(
-    koaCtx: ResourcerContext,
-    items: Array<{ template: JSONValue; contextParams?: Record<string, unknown> }>,
-  ) {
-    try {
-      const groupMap = new Map<
-        string,
-        { dataSourceKey: string; collection: string; filterByTk: unknown; fields: Set<string>; appends: Set<string> }
-      >();
-      const ensureGroup = (dataSourceKey: string, collection: string, filterByTk: unknown) => {
-        const groupKey = JSON.stringify({ ds: dataSourceKey, collection, tk: filterByTk });
-        let group = groupMap.get(groupKey);
-        if (!group) {
-          group = { dataSourceKey, collection, filterByTk, fields: new Set<string>(), appends: new Set<string>() };
-          groupMap.set(groupKey, group);
-        }
-        return group;
-      };
-      const normalizeNestedSeg = (segment: string): string => (/^\d+$/.test(segment) ? `[${segment}]` : segment);
-      const toFirstSeg = (path: string): { segment: string; hasDeep: boolean } => {
-        const m = path.match(/^([^.[]+|\[[^\]]+\])([\s\S]*)$/);
-        const segment = m ? m[1] : '';
-        const rest = m ? m[2] : '';
-        return { segment, hasDeep: rest.includes('.') || rest.includes('[') || rest.length > 0 };
-      };
-      for (const it of items) {
-        const template = it?.template ?? {};
-        const contextParams = (it?.contextParams || {}) as Record<string, any>;
-        const usage = variables.extractUsage(template);
-        for (const [cpKey, recordParams] of Object.entries(contextParams)) {
-          const parts = String(cpKey).split('.');
-          const varName = parts[0];
-          const nestedSeg = parts.slice(1).join('.');
-          const paths = usage?.[varName] || [];
-          if (!paths.length) continue;
-          const segNorm = nestedSeg ? normalizeNestedSeg(nestedSeg) : '';
-          const remainders: string[] = [];
-          for (const p of paths) {
-            if (!segNorm) remainders.push(p);
-            else if (p === segNorm) remainders.push('');
-            else if (p.startsWith(`${segNorm}.`) || p.startsWith(`${segNorm}[`))
-              remainders.push(p.slice(segNorm.length + 1));
-          }
-          if (!remainders.length) continue;
-          const dataSourceKey = (recordParams as any)?.dataSourceKey || 'main';
-          const collection = (recordParams as any)?.collection;
-          const filterByTk = (recordParams as any)?.filterByTk;
-          if (!collection || typeof filterByTk === 'undefined') continue;
-          const group = ensureGroup(dataSourceKey, collection, filterByTk);
-          for (const r of remainders) {
-            const { segment, hasDeep } = toFirstSeg(r);
-            if (!segment) continue;
-            const key = segment.replace(/^\[(.+)\]$/, '$1');
-            if (hasDeep) group.appends.add(key);
-            else group.fields.add(key);
-          }
-        }
-      }
-      if (!groupMap.size) return;
-      const stateObj = (koaCtx as any).state as Record<string, any>;
-      if (stateObj && !stateObj['__varResolveBatchCache']) {
-        stateObj['__varResolveBatchCache'] = new Map<string, unknown>();
-      }
-      const cache: Map<string, unknown> | undefined = (koaCtx as any).state?.['__varResolveBatchCache'];
-      for (const { dataSourceKey, collection, filterByTk, fields, appends } of groupMap.values()) {
-        try {
-          const dataSource = this.app.dataSourceManager.get(dataSourceKey);
-          const cm = dataSource.collectionManager as SequelizeCollectionManager;
-          if (!cm?.db) continue;
-          const repo = cm.db.getRepository(collection);
-          const fld = fields.size ? Array.from(fields) : undefined;
-          const app = appends.size ? Array.from(appends) : undefined;
-          const rec = await repo.findOne({ filterByTk: filterByTk as any, fields: fld, appends: app });
-          const json = rec ? rec.toJSON() : undefined;
-          if (cache) {
-            const key = JSON.stringify({ ds: dataSourceKey, c: collection, tk: filterByTk, f: fld, a: app });
-            cache.set(key, json);
-          }
-        } catch {
-          // ignore prefetch error
-        }
-      }
-    } catch {
-      // ignore prefetch failure entirely
+  async runSQLByDataSourceKey(dataSourceKey: string | undefined, sql: string, options: Record<string, unknown> = {}) {
+    const key = dataSourceKey || 'main';
+    const dataSource = this.app.dataSourceManager.get(key);
+    if (!dataSource) {
+      throw new Error(`data source "${key}" does not exist`);
     }
-  }
 
-  transformSQL(template: string) {
-    let index = 1;
-    const bind = {};
+    const cm = dataSource.collectionManager as SequelizeCollectionManager;
 
-    const sql = template.replace(/{{\s*([^}]+)\s*}}/g, (_, expr) => {
-      const key = `__var${index}`;
-      bind[key] = `{{${expr.trim()}}}`;
-      index++;
-      return `$${key}`;
-    });
+    if (typeof cm.db?.runSQL !== 'function') {
+      throw new Error(`data source "${key}" does not support SQL`);
+    }
 
-    return { sql, bind };
+    return await cm.db.runSQL(sql, options);
   }
 
   async load() {
     await super.load();
-    // Initialize a shared GlobalContext once, using server environment variables
-    this.globalContext = new GlobalContext(this.app.environment?.getVariables?.());
+    registerFlowSurfacesResource(this);
+    this.app.auditManager.registerAction('flowSql:save');
+    this.app.auditManager.registerAction('flowModels:save');
+    this.app.auditManager.registerAction('flowModels:duplicate');
     this.app.acl.allow('flowSql', 'runById', 'loggedIn');
+    this.app.acl.allow('flowSql', 'getBind', 'loggedIn');
     this.app.acl.allow('variables', 'resolve', 'loggedIn');
     // 赋值动作权限
     this.app.acl.allow('fieldAssignments', 'apply', 'loggedIn');
@@ -161,23 +77,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
               template: JSONValue;
               contextParams?: Record<string, unknown>;
             }>;
-            await this.prefetchRecordsForResolve(
-              ctx as ResourcerContext,
-              batchItems.map((it) => ({
-                template: it.template,
-                contextParams: (it.contextParams || {}) as Record<string, unknown>,
-              })),
-            );
-            const results: Array<{ id?: string | number; data: unknown }> = [];
-            for (const item of batchItems) {
-              const template = item?.template ?? {};
-              const contextParams = item?.contextParams || {};
-              const requestCtx = new HttpRequestContext(ctx);
-              requestCtx.delegate(this.globalContext);
-              await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
-              const resolved = await resolveJsonTemplate(template, requestCtx);
-              results.push({ id: item?.id, data: resolved });
-            }
+            const results = await resolveVariablesBatch(ctx as ResourcerContext, batchItems);
             ctx.body = { results };
             await next();
             return;
@@ -192,12 +92,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           }
           const template = values.template as JSONValue;
           const contextParams = values?.contextParams || {};
-          await this.prefetchRecordsForResolve(ctx as ResourcerContext, [{ template, contextParams }]);
-          const requestCtx = new HttpRequestContext(ctx);
-          requestCtx.delegate(this.globalContext);
-          await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
-          const resolved = await resolveJsonTemplate(template, requestCtx);
-          ctx.body = resolved;
+          ctx.body = await resolveVariablesTemplate(ctx as ResourcerContext, template, contextParams);
           await next();
         },
       },
@@ -213,14 +108,14 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     // 兼容：保留部分动作通过 name:action 注册（如 flowSql）
     this.app.resourceManager.registerActionHandlers({
       'flowSql:runById': async (ctx, next) => {
-        const { uid, type, filter, bind, dataSourceKey = 'main' } = ctx.action.params.values;
+        const { uid, type, filter, bind, liquidContext, dataSourceKey = 'main' } = ctx.action.params.values;
         const r = this.db.getRepository('flowSql');
         const record = await r.findOne({
           filter: { uid },
         });
-        const db = this.getDatabaseByDataSourceKey(record.dataSourceKey || dataSourceKey);
-        const result = this.transformSQL(record.sql);
-        ctx.body = await db.runSQL(result.sql, {
+        const result = await transformSQL(record.sql);
+        const sql = await parseLiquidContext(result.sql, liquidContext);
+        ctx.body = await this.runSQLByDataSourceKey(record.dataSourceKey || dataSourceKey, sql, {
           type,
           filter,
           bind,
@@ -233,8 +128,11 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
         const record = await r.findOne({
           filter: { uid },
         });
-        const { bind } = this.transformSQL(record.sql);
-        ctx.body = bind;
+        const { bind, liquidContext } = await transformSQL(record.sql);
+        ctx.body = {
+          bind,
+          liquidContext,
+        };
         await next();
       },
       'flowSql:save': async (ctx, next) => {
@@ -249,8 +147,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
       },
       'flowSql:run': async (ctx, next) => {
         const { sql, type, filter, bind, dataSourceKey } = ctx.action.params.values;
-        const db = this.getDatabaseByDataSourceKey(dataSourceKey);
-        ctx.body = await db.runSQL(sql, { type, filter, bind });
+        ctx.body = await this.runSQLByDataSourceKey(dataSourceKey, sql, { type, filter, bind });
         await next();
       },
     });

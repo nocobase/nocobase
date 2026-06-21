@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { round } from 'mathjs';
 
 import { parseCollectionName } from '@nocobase/data-source-manager';
@@ -22,6 +23,26 @@ const aggregators = {
 };
 
 export default class extends Instruction {
+  configSchema = Joi.object({
+    aggregator: Joi.string().valid(...Object.keys(aggregators)),
+    collection: Joi.string(),
+    associated: Joi.boolean(),
+    association: Joi.when('associated', {
+      is: true,
+      then: Joi.object({
+        associatedCollection: Joi.string().required(),
+        name: Joi.string().required(),
+        associatedKey: Joi.string().required(),
+      }),
+      otherwise: Joi.forbidden().allow(null),
+    }),
+    params: Joi.object({
+      field: Joi.string(),
+      filter: Joi.object(),
+    }),
+    precision: Joi.number().integer().min(0).max(14).default(2),
+  });
+
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { aggregator, associated, collection, association = {}, params = {}, precision = 2 } = node.config;
     const options = processor.getParsedValue(params, node.id);
@@ -41,11 +62,14 @@ export default class extends Instruction {
     if (!options.dataType && aggregator === 'avg') {
       options.dataType = DataTypes.DOUBLE;
     }
+    const transaction =
+      processor.getScopeTransaction(node, dataSourceName) ??
+      this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
 
     const result = await repo.aggregate({
       ...options,
       method: aggregators[aggregator],
-      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+      transaction,
     });
 
     return {

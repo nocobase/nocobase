@@ -12,6 +12,7 @@ import { screen } from '@testing-library/react';
 import { FlowSettings } from '../flowSettings';
 import { FlowModel } from '../models';
 import { FlowEngine } from '../flowEngine';
+import { GLOBAL_EMBED_CONTAINER_ID } from '../views';
 
 // We will stub viewer directly on model.context in tests
 
@@ -82,15 +83,30 @@ vi.mock('antd', () => {
       Paragraph: ({ children }: any) => children ?? 'Paragraph',
       Text: ({ children }: any) => children ?? 'Text',
     },
+    ConfigProvider: ({ children }: any) => children ?? 'ConfigProvider',
+    theme: { useToken: () => ({}) },
   };
 });
 
 // helper to locate the primary Button element in a React element tree
+// Updated to work with new Cancel/Save component structure
 const findPrimaryButton = async (node: any) => {
   const { Button } = await import('antd');
   const walk = (n: any): any => {
     if (!n || typeof n !== 'object') return null;
+
+    // Look for Button with type='primary'
     if (n.type === Button && n?.props?.type === 'primary') return n;
+
+    // Also look for the Save component (function component that creates primary button)
+    if (typeof n.type === 'function' && n.type.name === 'Save') {
+      // Return the actual Button element created by Save component
+      const buttonEl = n.type(n.props);
+      if (buttonEl && buttonEl.type === Button && buttonEl.props?.type === 'primary') {
+        return { ...buttonEl, props: { ...buttonEl.props, onClick: n.props?.onClick || buttonEl.props?.onClick } };
+      }
+    }
+
     const children = n.props?.children;
     if (!children) return null;
     if (Array.isArray(children)) {
@@ -106,13 +122,26 @@ const findPrimaryButton = async (node: any) => {
 };
 
 // helper to locate the cancel Button (the non-primary one with text 'Cancel')
+// Updated to work with new Cancel/Save component structure
 const findCancelButton = async (node: any) => {
   const { Button } = await import('antd');
   const walk = (n: any): any => {
     if (!n || typeof n !== 'object') return null;
+
+    // Look for Button without type and with 'Cancel' text
     const isBtn = n.type === Button;
     const isCancel = isBtn && !n?.props?.type && n?.props?.children === 'Cancel';
     if (isCancel) return n;
+
+    // Also look for the Cancel component (function component that creates cancel button)
+    if (typeof n.type === 'function' && n.type.name === 'Cancel') {
+      // Return the actual Button element created by Cancel component
+      const buttonEl = n.type(n.props);
+      if (buttonEl && buttonEl.type === Button && !buttonEl.props?.type) {
+        return { ...buttonEl, props: { ...buttonEl.props, onClick: n.props?.onClick || buttonEl.props?.onClick } };
+      }
+    }
+
     const children = n.props?.children;
     if (!children) return null;
     if (Array.isArray(children)) {
@@ -172,13 +201,23 @@ describe('FlowSettings.open rendering behavior', () => {
           container.setAttribute('data-testid', 'flow-settings-container');
           // execute content function to ensure render path doesn't throw
           if (typeof content === 'function') {
-            content(dialog);
+            content(dialog, { defineMethod: vi.fn() });
           }
           document.body.appendChild(container);
           return dialog;
         },
         drawer: ({ content }) => {
-          return (this as any).dialog({ content });
+          const dialog = {
+            close: () => container.remove?.(),
+            Footer: () => null,
+          } as any;
+          const container = document.createElement('div');
+          container.setAttribute('data-testid', 'flow-settings-container');
+          if (typeof content === 'function') {
+            content(dialog, { defineMethod: vi.fn() });
+          }
+          document.body.appendChild(container);
+          return dialog;
         },
       },
     });
@@ -220,13 +259,23 @@ describe('FlowSettings.open rendering behavior', () => {
           const container = document.createElement('div');
           container.setAttribute('data-testid', 'flow-settings-container');
           if (typeof content === 'function') {
-            content(dialog);
+            content(dialog, { defineMethod: vi.fn() });
           }
           document.body.appendChild(container);
           return dialog;
         },
         drawer: ({ content }) => {
-          return (this as any).dialog({ content });
+          const dialog = {
+            close: () => container.remove?.(),
+            Footer: () => null,
+          } as any;
+          const container = document.createElement('div');
+          container.setAttribute('data-testid', 'flow-settings-container');
+          if (typeof content === 'function') {
+            content(dialog, { defineMethod: vi.fn() });
+          }
+          document.body.appendChild(container);
+          return dialog;
         },
       },
     });
@@ -289,7 +338,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const openSpy = { lastTree: null as any };
     const viewerDrawer = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (props: any) => null } as any;
-      openSpy.lastTree = typeof content === 'function' ? content(dlg) : null;
+      openSpy.lastTree = typeof content === 'function' ? content(dlg, { defineMethod: vi.fn() }) : null;
       return dlg;
     });
     const viewerDialog = vi.fn();
@@ -517,7 +566,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
     const dialog = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof content === 'function') content(dlg);
+      if (typeof content === 'function') content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -580,7 +629,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
     const dialog = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof content === 'function') content(dlg);
+      if (typeof content === 'function') content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -611,7 +660,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
     const dialog = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof content === 'function') content(dlg);
+      if (typeof content === 'function') content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -651,7 +700,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
     const dialog = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof content === 'function') content(dlg);
+      if (typeof content === 'function') content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -694,7 +743,7 @@ describe('FlowSettings.open rendering behavior', () => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
       // Execute content once to ensure it is callable
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -734,7 +783,7 @@ describe('FlowSettings.open rendering behavior', () => {
       // also check title fallback if not provided in props
       expect(typeof opts.title === 'string').toBe(true);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -771,7 +820,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const dialog = vi.fn((opts: any) => {
       expect(opts.title).toBe('General');
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     model.context.defineProperty('viewer', { value: { dialog } });
@@ -799,7 +848,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const dialog = vi.fn((opts: any) => {
       expect(opts.title).toBe('A');
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     model.context.defineProperty('viewer', { value: { dialog } });
@@ -830,7 +879,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const dialog = vi.fn((opts: any) => {
       expect(opts.title).toBe('');
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     model.context.defineProperty('viewer', { value: { dialog } });
@@ -862,7 +911,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Function Title');
       expect(opts.width).toBe(800);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -900,7 +949,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Async Function Title');
       expect(opts.width).toBe(900);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -933,7 +982,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Static Title');
       expect(opts.width).toBe(700);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -968,7 +1017,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Global Title');
       expect(opts.width).toBe(600);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -1014,7 +1063,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Global Multi Steps Title');
       expect(opts.width).toBe(1000);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const drawer = vi.fn();
@@ -1039,18 +1088,18 @@ describe('FlowSettings.open rendering behavior', () => {
 
     // Create mock DOM element for embed target
     const mockTarget = document.createElement('div');
-    mockTarget.id = 'nocobase-embed-container';
+    mockTarget.id = GLOBAL_EMBED_CONTAINER_ID;
     mockTarget.style.width = 'auto';
     mockTarget.style.maxWidth = 'none';
     document.body.appendChild(mockTarget);
 
     // Mock querySelector to return our mock element
-    const originalQuerySelector = document.querySelector;
-    document.querySelector = vi.fn((selector) => {
-      if (selector === '#nocobase-embed-container') {
+    const originalQuerySelector = document.querySelector.bind(document);
+    const querySelectorSpy = vi.spyOn(document, 'querySelector').mockImplementation((selector: string) => {
+      if (selector === `#${GLOBAL_EMBED_CONTAINER_ID}`) {
         return mockTarget;
       }
-      return originalQuerySelector.call(document, selector);
+      return originalQuerySelector(selector);
     });
 
     const M = model.constructor as any;
@@ -1086,7 +1135,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(onCloseSpy).toHaveBeenCalled();
 
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -1116,7 +1165,61 @@ describe('FlowSettings.open rendering behavior', () => {
 
     // Cleanup
     document.body.removeChild(mockTarget);
-    document.querySelector = originalQuerySelector;
+    querySelectorSpy.mockRestore();
+  });
+
+  it('does not clear embed target DOM before opening (avoids portal unmount errors)', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const model = new FlowModel({ uid: 'm-embed-no-clear', flowEngine: engine });
+
+    const mockTarget = document.createElement('div');
+    mockTarget.id = GLOBAL_EMBED_CONTAINER_ID;
+    mockTarget.innerHTML = '<div data-testid="existing">Existing</div>';
+    document.body.appendChild(mockTarget);
+
+    const originalQuerySelector = document.querySelector.bind(document);
+    const querySelectorSpy = vi.spyOn(document, 'querySelector').mockImplementation((selector: string) => {
+      if (selector === `#${GLOBAL_EMBED_CONTAINER_ID}`) {
+        return mockTarget;
+      }
+      return originalQuerySelector(selector);
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'embedNoClearFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const embed = vi.fn((opts: any) => {
+      // The existing DOM should not be wiped out before opening the embed view.
+      expect(mockTarget.querySelector('[data-testid="existing"]')).toBeTruthy();
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { embed } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'embedNoClearFlow',
+      stepKey: 'step',
+      uiMode: 'embed',
+    } as any);
+
+    expect(embed).toHaveBeenCalledTimes(1);
+    expect(mockTarget.querySelector('[data-testid="existing"]')).toBeTruthy();
+
+    document.body.removeChild(mockTarget);
+    querySelectorSpy.mockRestore();
   });
 
   it('uses embed uiMode with default props when target element exists', async () => {
@@ -1126,16 +1229,16 @@ describe('FlowSettings.open rendering behavior', () => {
 
     // Create mock DOM element for embed target
     const mockTarget = document.createElement('div');
-    mockTarget.id = 'nocobase-embed-container';
+    mockTarget.id = GLOBAL_EMBED_CONTAINER_ID;
     document.body.appendChild(mockTarget);
 
     // Mock querySelector
-    const originalQuerySelector = document.querySelector;
-    document.querySelector = vi.fn((selector) => {
-      if (selector === '#nocobase-embed-container') {
+    const originalQuerySelector = document.querySelector.bind(document);
+    const querySelectorSpy = vi.spyOn(document, 'querySelector').mockImplementation((selector: string) => {
+      if (selector === `#${GLOBAL_EMBED_CONTAINER_ID}`) {
         return mockTarget;
       }
-      return originalQuerySelector.call(document, selector);
+      return originalQuerySelector(selector);
     });
 
     const M = model.constructor as any;
@@ -1153,11 +1256,11 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.target).toBe(mockTarget);
       // Test default width and maxWidth
       opts.onOpen();
-      expect(mockTarget.style.width).toBe('50%'); // default width
+      expect(mockTarget.style.width).toBe('33.3%'); // default width
       expect(mockTarget.style.maxWidth).toBe('800px'); // default maxWidth
 
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -1175,7 +1278,7 @@ describe('FlowSettings.open rendering behavior', () => {
 
     // Cleanup
     document.body.removeChild(mockTarget);
-    document.querySelector = originalQuerySelector;
+    querySelectorSpy.mockRestore();
   });
 
   it('handles embed uiMode when target element is not found', async () => {
@@ -1184,8 +1287,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const model = new FlowModel({ uid: 'm-embed-no-target', flowEngine: engine });
 
     // Mock querySelector to return null (target not found)
-    const originalQuerySelector = document.querySelector;
-    document.querySelector = vi.fn(() => null);
+    const querySelectorSpy = vi.spyOn(document, 'querySelector').mockReturnValue(null);
 
     const M = model.constructor as any;
     M.registerFlow({
@@ -1201,7 +1303,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const embed = vi.fn((opts: any) => {
       expect(opts.target).toBeNull();
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -1218,7 +1320,7 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(embed).toHaveBeenCalledTimes(1);
 
     // Restore querySelector
-    document.querySelector = originalQuerySelector;
+    querySelectorSpy.mockRestore();
   });
 
   it('handles error in function-based step uiMode gracefully', async () => {
@@ -1248,7 +1350,7 @@ describe('FlowSettings.open rendering behavior', () => {
       // Should fallback to default 'dialog' when function throws error
       expect(typeof opts.title === 'string').toBe(true);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -1309,7 +1411,7 @@ describe('FlowSettings.open rendering behavior', () => {
       } as any;
 
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -1381,7 +1483,7 @@ describe('FlowSettings.open rendering behavior', () => {
       } as any;
 
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -1457,7 +1559,7 @@ describe('FlowSettings.open rendering behavior', () => {
       } as any;
 
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -1518,7 +1620,7 @@ describe('FlowSettings.open rendering behavior', () => {
       } as any;
 
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -1581,7 +1683,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1643,7 +1745,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1670,8 +1772,8 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(capturedDialog.close).toHaveBeenCalled();
   });
 
-  it('submit method handles FlowExitException by closing dialog without error message', async () => {
-    const { FlowExitException } = await import('../utils/exceptions');
+  it('submit method handles FlowExitAllException by closing dialog without error message', async () => {
+    const { FlowExitAllException } = await import('../utils/exceptions');
 
     const engine = new FlowEngine();
     const flowSettings = new FlowSettings(engine);
@@ -1684,7 +1786,7 @@ describe('FlowSettings.open rendering behavior', () => {
         step: {
           title: 'Step',
           beforeParamsSave: () => {
-            throw new FlowExitException('exitFlow', 'm-submit-exit', 'Exit requested');
+            throw new FlowExitAllException('exitFlow', 'm-submit-exit', 'Exit requested');
           },
           uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
         },
@@ -1704,7 +1806,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1716,10 +1818,60 @@ describe('FlowSettings.open rendering behavior', () => {
     // Call submit method
     await capturedDialog.submit();
 
-    // Verify FlowExitException handling
+    // Verify FlowExitAllException handling
     expect(error).not.toHaveBeenCalled(); // Should not show error message
     expect(success).not.toHaveBeenCalled(); // Should not show success message
     expect(capturedDialog.close).toHaveBeenCalled(); // Should close dialog
+  });
+
+  it('submit method keeps dialog open on FlowCancelSaveException', async () => {
+    const { FlowCancelSaveException } = await import('../utils/exceptions');
+
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-cancel-save');
+    const model = new TestFlowModel({ uid: 'm-submit-cancel-save', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'cancelSaveFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          beforeParamsSave: () => {
+            throw new FlowCancelSaveException();
+          },
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const info = vi.fn();
+    const error = vi.fn();
+    const success = vi.fn();
+    model.context.defineProperty('message', { value: { info, error, success } });
+
+    const saveStepParams = vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog, { defineMethod: vi.fn() });
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'cancelSaveFlow', stepKey: 'step' } as any);
+    await capturedDialog.submit();
+
+    expect(capturedDialog.close).not.toHaveBeenCalled();
+    expect(saveStepParams).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
   });
 
   it('submit method handles general errors by showing error message and keeping dialog open', async () => {
@@ -1752,7 +1904,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1803,7 +1955,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1846,7 +1998,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },

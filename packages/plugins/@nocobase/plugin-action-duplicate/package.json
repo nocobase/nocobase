@@ -1,18 +1,32 @@
 {
   "name": "@nocobase/plugin-action-duplicate",
-  "version": "1.9.0-alpha.15",
+  "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-duplicate",
+  "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-duplicate",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-duplicate",
   "displayName": "Action: Duplicate record",
+  "displayName.ru-RU": "Действие: Дублирование записи",
   "displayName.zh-CN": "操作：复制记录",
   "description": "Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.",
   "description.zh-CN": "复制一条记录，可以复制到表单中编辑后再提交，也可以直接复制并生成一条新记录。",
-  "license": "AGPL-3.0",
+  "description.ru-RU": "Дублирование записи: можно скопировать запись в форму для редактирования перед сохранением или сразу создать новую запись-дубликат.",
+  "license": "Apache-2.0",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "devDependencies": {
+    "lru-cache": "^11.3.5"
+  },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

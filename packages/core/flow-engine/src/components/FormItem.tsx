@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Tooltip, Form } from 'antd';
-import type { FormItemProps } from 'antd';
+import type { FormItemProps, TooltipProps } from 'antd';
 
 type ChildExtraProps = Record<string, any>;
 
@@ -18,6 +18,9 @@ interface ExtendedFormItemProps extends FormItemProps {
   labelWrap?: boolean;
   showLabel?: boolean;
 }
+
+export const verticalFormItemLabelStyle = { paddingBottom: 0 };
+export const formItemStyle = { marginBottom: 12 };
 
 const formItemPropKeys: (keyof ExtendedFormItemProps)[] = [
   'colon',
@@ -73,6 +76,8 @@ export const FormItem = ({
         });
   const { label, labelWrap, colon = true, layout } = rest;
   const effectiveLabelWrap = !layout || layout === 'vertical' ? true : labelWrap;
+  const labelColStyle =
+    layout === 'vertical' ? { width: labelWidth, ...verticalFormItemLabelStyle } : { width: labelWidth };
   const renderLabel = () => {
     if (!showLabel) return null;
     if (effectiveLabelWrap) {
@@ -118,10 +123,19 @@ export const FormItem = ({
   return (
     <Form.Item
       {...rest}
-      labelCol={{ style: { width: labelWidth } }}
+      style={{ ...formItemStyle, ...rest.style }}
+      labelCol={{ style: labelColStyle }}
       layout={layout}
       label={renderLabel()}
       colon={false}
+      extra={rest.extra && <span style={{ whiteSpace: 'pre-wrap' }}>{rest.extra}</span>}
+      tooltip={
+        rest.tooltip &&
+        ({
+          title: rest.tooltip,
+          overlayInnerStyle: { whiteSpace: 'pre-line' },
+        } as TooltipProps)
+      }
     >
       {processedChildren}
     </Form.Item>

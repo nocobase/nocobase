@@ -1,0 +1,57 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Быстрый старт Мастера ИИ-разработки",
+    "link": "/ai-builder/"
+  },
+  {
+    "type": "file",
+    "name": "security",
+    "label": "Безопасность и аудит"
+  },
+  {
+    "type": "file",
+    "name": "env-bootstrap",
+    "label": "Управление окружением"
+  },
+  {
+    "type": "file",
+    "name": "data-modeling",
+    "label": "Моделирование данных"
+  },
+  {
+    "type": "file",
+    "name": "ui-builder",
+    "label": "Настройка интерфейса"
+  },
+  {
+    "type": "file",
+    "name": "workflow",
+    "label": "Управление рабочими процессами"
+  },
+  {
+    "type": "file",
+    "name": "acl",
+    "label": "Настройка ACL"
+  },
+  {
+    "type": "file",
+    "name": "dsl-reconciler",
+    "label": "Решения"
+  },
+  {
+    "type": "file",
+    "name": "plugin-manage",
+    "label": "Управление плагинами"
+  },
+  {
+    "type": "file",
+    "name": "publish",
+    "label": "Управление релизами"
+  },
+  {
+    "type": "file",
+    "name": "version-control",
+    "label": "Контроль версий"
+  }
+]

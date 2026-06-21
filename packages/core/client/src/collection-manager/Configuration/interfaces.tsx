@@ -58,3 +58,7 @@ export const useFieldInterfaceOptions = () => {
     return getOptions(fieldInterfaceInstancesByGroups, fieldGroups);
   }, [dm]);
 };
+
+export const isPrimaryKeyCandidate = (field: CollectionFieldInterface) => {
+  return true && field.properties?.layout?.properties?.primaryKey;
+};

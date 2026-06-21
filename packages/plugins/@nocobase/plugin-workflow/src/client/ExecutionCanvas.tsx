@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
+import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip, Typography } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -26,14 +26,21 @@ import {
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
 
-import { DownOutlined, ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
+import {
+  DownOutlined,
+  ExclamationCircleFilled,
+  StopOutlined,
+  ReloadOutlined,
+  QuestionCircleOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
 import { StatusButton } from './components/StatusButton';
-import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
+import { ExecutionReasonOptionsMap, ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
+import { LogCollapse } from './nodes';
 import useStyles from './style';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath, linkNodes } from './utils';
 import { get } from 'lodash';
@@ -46,6 +53,9 @@ function attachJobs(nodes, jobs: any[] = []): void {
   });
   jobs.forEach((item) => {
     const node = nodesMap.get(item.nodeId);
+    if (!node) {
+      return;
+    }
     node.jobs.push(item);
     item.node = {
       id: node.id,
@@ -59,29 +69,44 @@ function attachJobs(nodes, jobs: any[] = []): void {
   });
 }
 
-function JobResult(props) {
-  const { viewJob } = useFlowContext();
-  const { data, loading } = useRequest({
-    resource: 'jobs',
-    action: 'get',
-    params: {
-      filterByTk: viewJob.id,
+function useJobData(id) {
+  return useRequest(
+    {
+      resource: 'jobs',
+      action: 'get',
+      params: {
+        filterByTk: id,
+      },
     },
-  });
+    {
+      cacheKey: `job-${id}`,
+    },
+  );
+}
 
+function JobResult({ jobData, loading, ...props }) {
   if (loading) {
     return <Spin />;
   }
-  const result = get(data, 'data.result');
+  const result = get(jobData, 'result');
   return <Input.JSON {...props} value={result} disabled />;
 }
 
-function JobModal() {
+function JobLog({ jobData, loading }) {
+  if (loading) {
+    return null;
+  }
+  const log = get(jobData, 'log');
+  return <LogCollapse value={log} />;
+}
+
+function JobModalContent({ job, setViewJob }) {
   const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
-  const { viewJob: job, setViewJob } = useFlowContext();
   const { styles } = useStyles();
 
+  const { data, loading } = useJobData(job.id);
+  const latestJob = get(data, 'data') ?? job;
   const { node = {} } = job ?? {};
   const instruction = instructions.get(node.type);
 
@@ -90,15 +115,20 @@ function JobModal() {
       <SchemaComponent
         components={{
           JobResult,
+          JobLog,
         }}
         schema={{
           type: 'void',
           properties: {
-            [`${job?.id}-${job?.updatedAt}-modal`]: {
+            [`${latestJob.id}-${latestJob.updatedAt}-modal`]: {
               type: 'void',
               'x-decorator': 'Form',
               'x-decorator-props': {
-                initialValue: job,
+                initialValue: {
+                  ...job,
+                  ...latestJob,
+                  node,
+                },
               },
               'x-component': 'Action.Modal',
               title: (
@@ -133,11 +163,21 @@ function JobModal() {
                   'x-decorator': 'FormItem',
                   'x-component': 'JobResult',
                   'x-component-props': {
+                    jobData: latestJob,
+                    loading,
                     className: styles.nodeJobResultClass,
                     autoSize: {
                       minRows: 4,
                       maxRows: 32,
                     },
+                  },
+                },
+                log: {
+                  type: 'string',
+                  'x-component': 'JobLog',
+                  'x-component-props': {
+                    jobData: latestJob,
+                    loading,
                   },
                 },
               },
@@ -149,59 +189,82 @@ function JobModal() {
   );
 }
 
+function JobModal() {
+  const { viewJob: job, setViewJob } = useFlowContext();
+
+  if (!job) {
+    return null;
+  }
+
+  return <JobModalContent job={job} setViewJob={setViewJob} />;
+}
+
 function ExecutionsDropdown(props) {
   const { execution } = useFlowContext();
   const apiClient = useAPIClient();
   const navigate = useNavigate();
   const { styles } = useStyles();
+  const { refresh } = useResourceActionContext();
   const [executionsBefore, setExecutionsBefore] = useState([]);
   const [executionsAfter, setExecutionsAfter] = useState([]);
+  const [loadedBeforeById, setLoadedBeforeById] = useState(null);
+  const [loadedAfterById, setLoadedAfterById] = useState(null);
+  const [lastLoadedAt, setLastLoadedAt] = useState(null);
 
-  useEffect(() => {
-    if (!execution) {
-      return;
-    }
-    apiClient
-      .resource('executions')
-      .list({
-        filter: {
-          key: execution.key,
-          id: {
-            $lt: execution.id,
-          },
-        },
-        sort: '-createdAt',
-        pageSize: 10,
-        fields: ['id', 'status', 'createdAt'],
-      })
-      .then(({ data }) => {
-        setExecutionsBefore(data.data);
-      })
-      .catch(() => {});
-  }, [execution.id]);
+  const loadPrevAndNext = useCallback(
+    (visible) => {
+      if (!execution || !visible) {
+        return;
+      }
 
-  useEffect(() => {
-    if (!execution) {
-      return;
-    }
-    apiClient
-      .resource('executions')
-      .list({
-        filter: {
-          key: execution.key,
-          id: {
-            $gt: execution.id,
-          },
-        },
-        sort: 'createdAt',
-        pageSize: 10,
-        fields: ['id', 'status', 'createdAt'],
-      })
-      .then(({ data }) => {
-        setExecutionsAfter(data.data.reverse());
-      })
-      .catch(() => {});
-  }, [execution.id]);
+      if (loadedBeforeById !== execution.id) {
+        apiClient
+          .resource('executions')
+          .list({
+            filter: {
+              key: execution.key,
+              id: {
+                $lt: execution.id,
+              },
+            },
+            sort: '-id',
+            pageSize: 10,
+            fields: ['id', 'status', 'createdAt'],
+          })
+          .then(({ data }) => {
+            setLoadedBeforeById(execution.id);
+            setExecutionsBefore(data.data);
+          })
+          .catch(() => {});
+      }
+
+      if (
+        loadedAfterById !== execution.id ||
+        (lastLoadedAt && Date.now() - Number(lastLoadedAt) > 60_000 && executionsAfter.length < 10)
+      ) {
+        apiClient
+          .resource('executions')
+          .list({
+            filter: {
+              key: execution.key,
+              id: {
+                $gt: execution.id,
+              },
+            },
+            sort: 'id',
+            pageSize: 10,
+            fields: ['id', 'status', 'createdAt'],
+          })
+          .then(({ data }) => {
+            setLoadedAfterById(execution.id);
+            setLastLoadedAt(Date.now());
+            setExecutionsAfter(data.data.reverse());
+          })
+          .catch(() => {});
+      }
+    },
+    [execution, loadedBeforeById, loadedAfterById, lastLoadedAt, executionsAfter.length, apiClient],
+  );
 
   const onClick = useCallback(
     ({ key }) => {
@@ -209,38 +272,42 @@ function ExecutionsDropdown(props) {
         navigate(getWorkflowExecutionsPath(key));
       }
     },
-    [execution.id],
+    [execution.id, navigate],
   );
 
   return execution ? (
-    <Dropdown
-      menu={{
-        onClick,
-        defaultSelectedKeys: [`${execution.id}`],
-        className: cx(styles.dropdownClass, styles.executionsDropdownRowClass),
-        items: [...executionsAfter, execution, ...executionsBefore].map((item) => {
-          return {
-            key: item.id,
-            label: (
-              <>
-                <span className="id">{`#${item.id}`}</span>
-                <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
-              </>
-            ),
-            icon: (
-              <span>
-                <StatusButton statusMap={ExecutionStatusOptionsMap} status={item.status} />
-              </span>
-            ),
-          };
-        }),
-      }}
-    >
-      <Space>
-        <strong>{`#${execution.id}`}</strong>
-        <DownOutlined />
-      </Space>
-    </Dropdown>
+    <Space>
+      <Dropdown
+        onOpenChange={loadPrevAndNext}
+        menu={{
+          onClick,
+          defaultSelectedKeys: [`${execution.id}`],
+          className: cx(styles.dropdownClass, styles.executionsDropdownRowClass),
+          items: [...executionsAfter, execution, ...executionsBefore].map((item) => {
+            return {
+              key: item.id,
+              label: (
+                <>
+                  <span className="id">{`#${item.id}`}</span>
+                  <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+                </>
+              ),
+              icon: (
+                <span>
+                  <StatusButton statusMap={ExecutionStatusOptionsMap} status={item.status} />
+                </span>
+              ),
+            };
+          }),
+        }}
+      >
+        <Space>
+          <strong>{`#${execution.id}`}</strong>
+          <DownOutlined />
+        </Space>
+      </Dropdown>
+      <Button type="link" size="small" icon={<ReloadOutlined />} onClick={refresh} />
+    </Space>
   ) : null;
 }
 
@@ -279,6 +346,10 @@ export function ExecutionCanvas() {
     });
   }, [data?.data]);
 
+  const onBack = useCallback(() => {
+    history.back();
+  }, []);
+
   if (!data?.data) {
     if (loading) {
       return <Spin />;
@@ -286,7 +357,8 @@ export function ExecutionCanvas() {
     return <Result status="404" title="Not found" />;
   }
 
-  const { jobs = [], workflow: { nodes = [], revisions = [], ...workflow } = {}, ...execution } = data?.data ?? {};
+  const { jobs = [], workflow, ...execution } = data?.data ?? {};
+  const { nodes = [] } = workflow || {};
 
   linkNodes(nodes);
   attachJobs(nodes, jobs);
@@ -295,7 +367,7 @@ export function ExecutionCanvas() {
 
   const statusOption = ExecutionStatusOptionsMap[execution.status];
 
-  return (
+  return workflow ? (
     <FlowContext.Provider
       value={{
         workflow: workflow.type ? workflow : null,
@@ -322,7 +394,19 @@ export function ExecutionCanvas() {
           />
         </header>
         <aside>
-          <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
+          <Tag color={statusOption.color}>
+            <Space>
+              {compile(statusOption.label)}
+              {execution.reason ? (
+                <Tooltip
+                  title={compile(ExecutionReasonOptionsMap[execution.reason]?.label ?? execution.reason)}
+                  placement="bottom"
+                >
+                  <QuestionCircleOutlined />
+                </Tooltip>
+              ) : null}
+            </Space>
+          </Tag>
           {execution.status ? null : (
             <Tooltip title={lang('Cancel the execution')}>
               <Button type="link" danger onClick={onCancel} shape="circle" size="small" icon={<StopOutlined />} />
@@ -334,5 +418,12 @@ export function ExecutionCanvas() {
       <CanvasContent entry={entry} />
       <JobModal />
     </FlowContext.Provider>
+  ) : (
+    <Result
+      status="404"
+      title={lang('Not found')}
+      subTitle={lang('Workflow of execution is not existed')}
+      extra={<Button onClick={onBack}>{lang('Go back')}</Button>}
+    />
   );
 }

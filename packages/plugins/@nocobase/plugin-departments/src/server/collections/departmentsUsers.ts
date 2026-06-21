@@ -20,18 +20,23 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'departmentsUsers',
+  dataCategory: 'business',
   dumpRules: 'required',
   migrationRules: ['schema-only'],
   fields: [
     {
       type: 'boolean',
-      name: 'isOwner', // Weather the user is the owner of the department
+      name: 'isOwner',
       allowNull: false,
       defaultValue: false,
     },
+    /**
+     * @deprecated
+     * use `user.mainDepartmentId` instead
+     */
     {
       type: 'boolean',
-      name: 'isMain', // Weather this is the main department of the user
+      name: 'isMain',
       allowNull: false,
       defaultValue: false,
     },

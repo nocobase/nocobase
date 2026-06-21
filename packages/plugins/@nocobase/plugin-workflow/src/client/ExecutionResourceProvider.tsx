@@ -17,6 +17,7 @@ export const ExecutionResourceProvider = ({ request, filter = {}, ...others }) =
     request: {
       ...request,
       params: {
+        disableDefaultAppends: true,
         ...request?.params,
         filter: {
           ...request?.params?.filter,

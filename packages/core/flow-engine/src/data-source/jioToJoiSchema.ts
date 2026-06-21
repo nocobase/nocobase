@@ -97,6 +97,7 @@ export function jioToJoiSchema<T extends JioType>(jioConfig: {
   // 4️⃣ 如果没有 required，默认可选并允许空字符串
   if (!hasRequired) {
     schema = schema.optional().allow('');
+    schema = schema.optional().allow(null);
   }
 
   return schema;

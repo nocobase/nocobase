@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
-import { CurrentUserContext } from '@nocobase/client';
+import React, { useEffect } from 'react';
+import { useApp, useMobileLayout } from '@nocobase/client';
 import { ChatBoxWrapper } from './ChatBox';
 import { Helmet } from 'react-helmet';
 import { ChatButton } from './ChatButton';
@@ -16,25 +16,41 @@ import { useChatBoxEffect } from './hooks/useChatBoxEffect';
 import { useChatBoxStore } from './stores/chat-box';
 import { ToolModal } from './generative-ui/ToolModal';
 import { useChatToolsStore } from './stores/chat-tools';
+// [AI_DEBUG]
+import { DebugPanel } from './DebugPanel';
+import { useChatConversationActions } from './hooks/useChatConversationActions';
 
 export const ChatBoxLayout: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
-  const currentUserCtx = useContext(CurrentUserContext);
   const open = useChatBoxStore.use.open();
   const expanded = useChatBoxStore.use.expanded();
   const activeTool = useChatToolsStore.use.activeTool();
+  // [AI_DEBUG]
+  const showDebugPanel = useChatBoxStore.use.showDebugPanel();
+  const { isMobileLayout } = useMobileLayout();
 
   useChatBoxEffect();
 
-  if (!currentUserCtx?.data?.data) {
-    return <>{props.children}</>;
-  }
+  const app = useApp();
+  const { loadUnreadCounts } = useChatConversationActions();
+  useEffect(() => {
+    void loadUnreadCounts();
+  }, [loadUnreadCounts]);
+  useEffect(() => {
+    app.eventBus.addEventListener('ws:message:ai-employee-tasks:status', loadUnreadCounts);
+    app.eventBus.addEventListener('ws:message:ai-conversations:read', loadUnreadCounts);
+    return () => {
+      app.eventBus.removeEventListener('ws:message:ai-employee-tasks:status', loadUnreadCounts);
+      app.eventBus.removeEventListener('ws:message:ai-conversations:read', loadUnreadCounts);
+    };
+  }, [app.eventBus, loadUnreadCounts]);
+
   return (
-    <div>
+    <>
       {props.children}
       <ChatButton />
-      {open && !expanded ? (
+      {open && !expanded && !isMobileLayout ? (
         <Helmet>
           <style type="text/css">
             {`
@@ -64,6 +80,8 @@ html body {
       ) : null}
       {open ? <ChatBoxWrapper /> : null}
       {activeTool && <ToolModal />}
-    </div>
+      {/* [AI_DEBUG] Debug Panel */}
+      {showDebugPanel && <DebugPanel />}
+    </>
   );
 };

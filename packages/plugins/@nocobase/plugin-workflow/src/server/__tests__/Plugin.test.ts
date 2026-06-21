@@ -8,11 +8,12 @@
  */
 
 import { MockServer } from '@nocobase/test';
-import Database from '@nocobase/database';
+import Database, { Transaction } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
+import type { ExecutionModel } from '../types';
 
 describe('workflow > Plugin', () => {
   let app: MockServer;
@@ -30,6 +31,38 @@ describe('workflow > Plugin', () => {
   });
 
   afterEach(() => app.destroy());
+
+  describe('useDataSourceTransaction', () => {
+    it('create should reuse the incoming same-datasource transaction', async () => {
+      const sourceTransaction = await db.sequelize.transaction();
+      try {
+        const transaction = await plugin.useDataSourceTransaction('main', sourceTransaction, true);
+
+        expect(transaction).toBe(sourceTransaction);
+      } finally {
+        await sourceTransaction.rollback();
+      }
+    });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'create with null transaction should open a transaction isolated from the incoming same-datasource transaction',
+      async () => {
+        const sourceTransaction = await db.sequelize.transaction();
+        let historyTransaction: Transaction | undefined;
+        try {
+          historyTransaction = await plugin.useDataSourceTransaction('main', null, true);
+
+          expect(historyTransaction).toBeDefined();
+          expect(historyTransaction).not.toBe(sourceTransaction);
+        } finally {
+          if (historyTransaction) {
+            await historyTransaction.rollback();
+          }
+          await sourceTransaction.rollback();
+        }
+      },
+    );
+  });
 
   describe('create', () => {
     it('create with enabled', async () => {
@@ -248,6 +281,273 @@ describe('workflow > Plugin', () => {
   });
 
   describe('dispatcher', () => {
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'should acquire pending execution only once under concurrent dispatch',
+      async () => {
+        const w1 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+
+        const e1 = await w1.createExecution({
+          key: w1.key,
+          context: {},
+          dispatched: false,
+          status: EXECUTION_STATUS.QUEUEING,
+        });
+        const sameExecution = (await db.getRepository('executions').findOne({
+          filterByTk: e1.id,
+        })) as ExecutionModel;
+
+        type PendingDispatcher = {
+          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+        };
+        const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
+
+        const acquired = await Promise.all([
+          dispatcher.prepare(e1, { immediate: true }),
+          dispatcher.prepare(sameExecution, { immediate: true }),
+        ]);
+
+        const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
+        expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
+
+        await e1.reload();
+        expect(e1.dispatched).toBe(true);
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      },
+    );
+
+    it('should not acquire pending execution when acquire transaction fails', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const e1 = await w1.createExecution({
+        key: w1.key,
+        context: {},
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      type PendingDispatcher = {
+        prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
+      const transaction = db.sequelize.transaction;
+      db.sequelize.transaction = (async () => {
+        throw new Error('simulated transaction failure');
+      }) as typeof db.sequelize.transaction;
+
+      try {
+        const acquired = await dispatcher.prepare(e1, { immediate: true });
+        expect(acquired).toBeNull();
+      } finally {
+        db.sequelize.transaction = transaction;
+      }
+
+      await e1.reload();
+      expect(e1.dispatched).toBe(false);
+      expect(e1.status).toBe(EXECUTION_STATUS.QUEUEING);
+    });
+
+    it('should recover after unexpected dispatch error before cleanup', async () => {
+      type RecoveringDispatcher = {
+        dispatch(): void;
+        executing: Promise<unknown> | null;
+        pending: unknown[];
+        idle: boolean;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: RecoveringDispatcher }).dispatcher;
+      const serving = plugin.serving;
+
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w1.createNode({
+        type: 'echo',
+      });
+      await w1.createExecution({
+        key: w1.key,
+        context: { first: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      plugin.serving = (() => {
+        const stack = new Error().stack;
+        if (stack?.includes('Dispatcher.ts')) {
+          throw new Error('simulated serving check failure');
+        }
+        return serving.call(plugin);
+      }) as typeof plugin.serving;
+
+      try {
+        dispatcher.dispatch();
+        await dispatcher.executing?.catch(() => null);
+
+        for (let i = 0; i < 20; i++) {
+          if (!dispatcher.executing) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(dispatcher.executing).toBeNull();
+        expect(dispatcher.idle).toBe(true);
+
+        plugin.serving = serving;
+
+        const w2 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+        await w2.createNode({
+          type: 'echo',
+        });
+
+        plugin.trigger(w2, { second: true });
+
+        let e2: ExecutionModel | null = null;
+        for (let i = 0; i < 20; i++) {
+          [e2] = await w2.getExecutions();
+          if (e2?.status === EXECUTION_STATUS.RESOLVED) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(e2?.status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2?.dispatched).toBe(true);
+      } finally {
+        plugin.serving = serving;
+        await dispatcher.executing?.catch(() => null);
+        dispatcher.executing = null;
+        dispatcher.pending = [];
+      }
+    });
+
+    it('should stop retrying local pending after repeated unexpected dispatch errors', async () => {
+      type RecoveringDispatcher = {
+        run(pending: { execution: ExecutionModel }): Promise<void>;
+        prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+        executing: Promise<unknown> | null;
+        pending: unknown[];
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: RecoveringDispatcher }).dispatcher;
+      const prepare = dispatcher.prepare;
+      let prepareCalls = 0;
+
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w1.createNode({
+        type: 'echo',
+      });
+      const e1 = await w1.createExecution({
+        key: w1.key,
+        context: { first: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      dispatcher.prepare = (async () => {
+        prepareCalls += 1;
+        throw new Error('simulated prepare failure');
+      }) as typeof dispatcher.prepare;
+
+      try {
+        await dispatcher.run({ execution: e1 });
+
+        for (let i = 0; i < 20; i++) {
+          if (!dispatcher.executing && !dispatcher.pending.length) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        const callsAfterDrain = prepareCalls;
+        await sleep(100);
+
+        expect(callsAfterDrain).toBe(3);
+        expect(prepareCalls).toBe(callsAfterDrain);
+        expect(dispatcher.executing).toBeNull();
+        expect(dispatcher.pending).toHaveLength(0);
+
+        dispatcher.prepare = prepare;
+
+        const w2 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+        await w2.createNode({
+          type: 'echo',
+        });
+
+        plugin.trigger(w2, { second: true });
+
+        let e2: ExecutionModel | null = null;
+        for (let i = 0; i < 20; i++) {
+          [e2] = await w2.getExecutions();
+          if (e2?.status === EXECUTION_STATUS.RESOLVED) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(e2?.status).toBe(EXECUTION_STATUS.RESOLVED);
+      } finally {
+        dispatcher.prepare = prepare;
+        await dispatcher.executing?.catch(() => null);
+        dispatcher.executing = null;
+        dispatcher.pending = [];
+      }
+    });
+
+    it('should treat postgres deadlock as concurrent acquire error', () => {
+      type ConcurrentAcquireDispatcher = {
+        isConcurrentAcquireError(error: unknown): boolean;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: ConcurrentAcquireDispatcher }).dispatcher;
+      const error = Object.assign(new Error('deadlock detected'), { parent: { code: '40P01' } });
+
+      expect(dispatcher.isConcurrentAcquireError(error)).toBe(true);
+    });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'should acquire queueing execution only once under concurrent dispatch',
+      async () => {
+        const w1 = await WorkflowModel.create({
+          enabled: true,
+          type: 'asyncTrigger',
+        });
+
+        const e1 = await w1.createExecution({
+          key: w1.key,
+          context: {},
+          dispatched: false,
+          status: EXECUTION_STATUS.QUEUEING,
+        });
+
+        type QueueingDispatcher = {
+          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+        };
+        const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
+
+        const acquired = await Promise.all([dispatcher.prepare(null), dispatcher.prepare(null)]);
+
+        const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
+        expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
+
+        await e1.reload();
+        expect(e1.dispatched).toBe(true);
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      },
+    );
+
     it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
@@ -412,6 +712,43 @@ describe('workflow > Plugin', () => {
       await e3.reload();
       expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
+
+    it('beforeStop should wait for all pending and executing tasks', async () => {
+      // trigger multiple events and await their initiation to ensure DB operations are not cut off,
+      // but dispatcher will still process them asynchronously in local queues.
+      const count = 1000;
+
+      const PostModel = db.getCollection('posts').model;
+      const posts = await PostModel.bulkCreate(
+        Array(count)
+          .fill(0)
+          .map((_, index) => ({
+            title: `t${index}`,
+          })),
+        {
+          returning: true,
+        },
+      );
+
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      for (const post of posts) {
+        await db.emitAsync('posts.afterCreateWithAssociations', post, {});
+      }
+      // stop the app immediately.
+      // dispatcher.beforeStop() should now wait for all events to be prepared and all pending executions to be processed.
+      await app.emitAsync('beforeStop', app);
+
+      const executions = await w1.getExecutions({ attributes: ['id', 'status'] });
+      expect(executions.length).toBe(count);
+    });
   });
 
   describe('options.deleteExecutionOnStatus', () => {
@@ -520,7 +857,7 @@ describe('workflow > Plugin', () => {
       const e1s = await w1.getExecutions();
       expect(e1s.length).toBe(1);
       expect(e1s[0].dispatched).toBe(true);
-      expect(e1s[0].status).toBe(EXECUTION_STATUS.QUEUEING);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
 
       plugin.start(e1s[0]);
 
@@ -529,6 +866,34 @@ describe('workflow > Plugin', () => {
       const e2s = await w1.getExecutions();
       expect(e2s.length).toBe(1);
       expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('timeout should start counting after deferred execution starts', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+        options: {
+          timeout: 1000,
+        },
+      });
+
+      plugin.trigger(w1, {}, { deferred: true });
+
+      await sleep(500);
+
+      const [e1] = await w1.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      expect(e1.startedAt).toBeNull();
+      expect(e1.expiresAt).toBeNull();
+
+      await plugin.start(e1);
+      await sleep(500);
+
+      const [e2] = await w1.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2.startedAt).toBeTruthy();
+      expect(e2.expiresAt).toBeTruthy();
+      expect(e2.expiresAt.getTime()).toBeGreaterThan(e2.startedAt.getTime());
     });
 
     it('sync workflow will ignore the deferred option, and start it immediately', async () => {
@@ -576,6 +941,39 @@ describe('workflow > Plugin', () => {
       expect(processor.execution.id).toBe(executions[0].id);
       expect(processor.execution.status).toBe(executions[0].status);
     });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'history should persist after the source transaction rolls back',
+      async () => {
+        const w1 = await WorkflowModel.create({
+          enabled: true,
+          type: 'syncTrigger',
+        });
+
+        await w1.createNode({
+          type: 'echo',
+        });
+
+        const transaction = await db.sequelize.transaction();
+        try {
+          await plugin.trigger(w1, {}, { transaction });
+          await transaction.rollback();
+        } catch (error) {
+          await transaction.rollback();
+          throw error;
+        }
+
+        const executions = await w1.getExecutions();
+        expect(executions.length).toBe(1);
+        expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+        const jobs = await executions[0].getJobs();
+        expect(jobs.length).toBe(1);
+
+        const stats = await w1.getStats();
+        expect(Number(stats.executed)).toBe(1);
+      },
+    );
   });
 
   describe('stats', () => {

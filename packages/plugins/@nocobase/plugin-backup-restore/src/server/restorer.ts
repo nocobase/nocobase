@@ -11,6 +11,7 @@ import decompress from 'decompress';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
+import { storagePathJoin } from '@nocobase/utils';
 import { AppMigrator, AppMigratorOptions } from './app-migrator';
 import { readLines } from './utils';
 import { Application } from '@nocobase/server';
@@ -100,7 +101,7 @@ export class Restorer extends AppMigrator {
     if (path.isAbsolute(backUpFilePath)) {
       this.backUpFilePath = backUpFilePath;
     } else if (path.basename(backUpFilePath) === backUpFilePath) {
-      const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
+      const dirname = storagePathJoin('duplicator');
       this.backUpFilePath = path.resolve(dirname, backUpFilePath);
     } else {
       this.backUpFilePath = path.resolve(process.cwd(), backUpFilePath);

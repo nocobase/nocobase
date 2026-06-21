@@ -9,6 +9,7 @@
 
 export default {
   name: 'desktopRoutes',
+  dataCategory: 'system',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   inherit: false,
@@ -285,14 +286,21 @@ export default {
       key: 'm0k5qbaktab',
       name: 'type',
       type: 'string',
-      interface: 'input',
+      interface: 'select',
       description: null,
       collectionName: 'desktopRoutes',
       parentKey: null,
       reverseKey: null,
       uiSchema: {
         type: 'string',
-        'x-component': 'Input',
+        'x-component': 'Select',
+        enum: [
+          { label: '{{t("Group")}}', value: 'group' },
+          { label: '{{t("Page")}}', value: 'page' },
+          { label: '{{t("Page (v2)")}}', value: 'flowPage' },
+          { label: '{{t("Link")}}', value: 'link' },
+          { label: '{{t("Tab")}}', value: 'tabs' },
+        ],
         title: '{{t("Type")}}',
       },
     },

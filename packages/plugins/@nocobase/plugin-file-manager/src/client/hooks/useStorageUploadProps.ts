@@ -7,21 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useCollection, useCollectionField, useCollectionManager, usePlugin, useRequest } from '@nocobase/client';
+import {
+  useCollection,
+  useCollectionField,
+  useCollectionManager,
+  useDataSourceKey,
+  usePlugin,
+  useRequest,
+} from '@nocobase/client';
 import { useEffect } from 'react';
 import FileManagerPlugin from '../';
 
+function appendUploadDataSourceKey(url: string, dataSourceKey?: string) {
+  if (!dataSourceKey || dataSourceKey === 'main') {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}uploadDataSourceKey=${encodeURIComponent(dataSourceKey)}`;
+}
+
 export function useStorage(storage) {
   const name = storage ?? '';
-  const url = `storages:getBasicInfo/${name}`;
+  const dataSourceKey = useDataSourceKey();
+  const url = appendUploadDataSourceKey(`storages:getBasicInfo/${name}`, dataSourceKey);
   const { loading, data, run } = useRequest<any>(
     {
       url,
     },
     {
       manual: true,
-      refreshDeps: [name],
-      cacheKey: url,
+      refreshDeps: [name, dataSourceKey],
+      cacheKey: `${dataSourceKey || 'main'}:${url}`,
     },
   );
   useEffect(() => {
@@ -46,11 +63,18 @@ export function useStorageCfg() {
   };
 }
 export function useStorageUploadProps(props) {
+  const dataSourceKey = useDataSourceKey();
   const { storage, storageType } = useStorageCfg();
   const useStorageTypeUploadProps = storageType?.useUploadProps;
   const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
+  const headers = {
+    ...storageTypeUploadProps.headers,
+  };
+
   return {
+    action: appendUploadDataSourceKey(props.action, dataSourceKey),
     rules: storage?.rules,
     ...storageTypeUploadProps,
+    headers,
   };
 }

@@ -7,20 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { pick } from 'lodash';
 import { isValidFilter } from '@nocobase/utils';
-import { Collection, Model, Transactionable } from '@nocobase/database';
-import { ICollection, parseCollectionName, SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import { Collection, Model } from '@nocobase/database';
+import {
+  ICollection,
+  parseCollectionName,
+  SequelizeCollectionManager,
+  SequelizeDataSource,
+} from '@nocobase/data-source-manager';
 
 import Trigger from '.';
-import { toJSON } from '../utils';
+import { toJSON, validateCollectionField } from '../utils';
 import type { WorkflowModel } from '../types';
-import type { EventOptions } from '../Plugin';
-import { Context } from '@nocobase/actions';
+import type { EventOptions } from '../Dispatcher';
+import PluginWorkflowServer from '../Plugin';
+import { EXECUTION_STATUS } from '../constants';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;
   mode: number;
+  rollbackOnFailure?: boolean;
   // TODO: ICondition
   condition: any;
 }
@@ -49,7 +57,53 @@ function getFieldRawName(collection: ICollection, name: string) {
 }
 
 export default class CollectionTrigger extends Trigger {
+  configSchema = Joi.object({
+    collection: Joi.string().required(),
+    mode: Joi.number().valid(
+      MODE_BITMAP.CREATE,
+      MODE_BITMAP.UPDATE,
+      MODE_BITMAP.DESTROY,
+      MODE_BITMAP.CREATE | MODE_BITMAP.UPDATE,
+    ),
+    changed: Joi.when('mode', {
+      is: (mode) => (mode & MODE_BITMAP.UPDATE) === MODE_BITMAP.UPDATE,
+      then: Joi.array().items(Joi.string()).optional(),
+      otherwise: Joi.forbidden(),
+    }),
+    condition: Joi.object(),
+    rollbackOnFailure: Joi.boolean().optional(),
+    appends: Joi.when('mode', {
+      is: (mode) => mode !== MODE_BITMAP.DESTROY,
+      then: Joi.array().items(Joi.string()).optional(),
+      otherwise: Joi.forbidden(),
+    }),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
+
   events = new Map();
+
+  constructor(public readonly workflow: PluginWorkflowServer) {
+    super(workflow);
+    this.workflow.app.dataSourceManager.afterAddDataSource((dataSource) => {
+      for (const item of this.workflow.enabledCache.values()) {
+        if (item.type !== 'collection' || !item.config.collection) {
+          continue;
+        }
+        const [dataSourceName] = parseCollectionName(item.config.collection);
+        if (dataSource.name === dataSourceName) {
+          this.off(item);
+          this.on(item);
+        }
+      }
+    });
+  }
 
   // async function, should return promise
   private static async handler(this: CollectionTrigger, workflowId: number, eventType: string, data: Model, options) {
@@ -66,10 +120,34 @@ export default class CollectionTrigger extends Trigger {
     }
 
     if (workflow.sync) {
-      await this.workflow.trigger(workflow, ctx, {
+      if (transaction && this.workflow.db.options.dialect === 'sqlite') {
+        transaction.afterCommit(async () => {
+          await this.workflow.trigger(workflow, ctx, { stack });
+        });
+        return;
+      }
+
+      const processor = await this.workflow.trigger(workflow, ctx, {
         transaction,
         stack,
       });
+      const execution = processor ? processor.execution : null;
+      const lastSavedJob = processor ? processor.lastSavedJob : null;
+      if (workflow.config.rollbackOnFailure && (!execution || execution.status < EXECUTION_STATUS.STARTED)) {
+        this.workflow
+          .getLogger(workflow.id)
+          .error('[CollectionTrigger] source operation rolled back because sync workflow failed', {
+            workflowId: workflow.id,
+            workflowKey: workflow.key,
+            workflowTitle: workflow.title,
+            executionId: execution?.id,
+            executionStatus: execution?.status,
+            lastJobId: lastSavedJob?.id,
+            lastJobStatus: lastSavedJob?.status,
+            lastJobResult: lastSavedJob?.result,
+          });
+        throw this.createRollbackOnFailureError(options.context?.getCurrentLocale?.());
+      }
     } else {
       if (transaction) {
         transaction.afterCommit(() => {
@@ -79,6 +157,16 @@ export default class CollectionTrigger extends Trigger {
         this.workflow.trigger(workflow, ctx, { stack });
       }
     }
+  }
+
+  createRollbackOnFailureError(locale?: string) {
+    const message = this.workflow
+      .t('System process failed, please contact administrator.', locale ? { lng: locale } : {})
+      .toString();
+    const error = new Error(message) as Error & { status?: number; code?: string };
+    error.status = 422;
+    error.code = 'WORKFLOW_ROLLBACK_ON_FAILURE';
+    return error;
   }
 
   async prepare(workflow: WorkflowModel, data: Model | Record<string, any> | string | number, options) {
@@ -160,9 +248,14 @@ export default class CollectionTrigger extends Trigger {
       return;
     }
     const [dataSourceName, collectionName] = parseCollectionName(collection);
-    // @ts-ignore
-    const { db } = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName)?.collectionManager ?? {};
+    const dataSource = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName) as SequelizeDataSource;
+    if (!dataSource) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] data source not exists: ${dataSourceName}`);
+      return;
+    }
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     if (!db || !db.getCollection(collectionName)) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] collection not exists: ${dataSourceName}`);
       return;
     }
 
@@ -191,9 +284,14 @@ export default class CollectionTrigger extends Trigger {
       return;
     }
     const [dataSourceName, collectionName] = parseCollectionName(collection);
-    // @ts-ignore
-    const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName)?.collectionManager ?? {};
+    const dataSource = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName) as SequelizeDataSource;
+    if (!dataSource) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] data source not exists: ${dataSourceName}`);
+      return;
+    }
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     if (!db || !db.getCollection(collectionName)) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] collection not exists: ${dataSourceName}`);
       return;
     }
 

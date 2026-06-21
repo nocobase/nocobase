@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { css, useCollectionManager_deprecated, useCompile } from '@nocobase/client';
 import { Tag } from 'antd';
 import React from 'react';

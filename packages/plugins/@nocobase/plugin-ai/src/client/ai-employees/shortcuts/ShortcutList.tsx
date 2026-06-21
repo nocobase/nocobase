@@ -7,15 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Button, Divider } from 'antd';
-import { LeftOutlined, RightOutlined, PlusOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import React, { useMemo, useState } from 'react';
+import { Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { AddSubModelButton, FlowModelRenderer } from '@nocobase/flow-engine';
+import React, { useEffect } from 'react';
 import { useShortcuts } from './useShortcuts';
-import { useDesignable, useToken } from '@nocobase/client';
+import { useDesignable } from '@nocobase/client';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { observer } from '@formily/react';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { observer } from '@nocobase/flow-engine';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { isHide } from '../built-in/utils';
 
 export const ShortcutList: React.FC = observer(() => {
   const { designable } = useDesignable();
@@ -23,7 +24,13 @@ export const ShortcutList: React.FC = observer(() => {
   const designMode = designable && !builtIn;
   const hasShortcuts = model?.subModels?.shortcuts?.length > 0;
 
-  const { loading, aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const loading = aiConfigRepository.aiEmployeesLoading;
+  const aiEmployees = aiConfigRepository.aiEmployees;
+
+  useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
 
   return (
     <>
@@ -42,18 +49,20 @@ export const ShortcutList: React.FC = observer(() => {
           items={async () => {
             return loading
               ? []
-              : aiEmployees.map((aiEmployee) => ({
-                  key: aiEmployee.username,
-                  label: <AIEmployeeListItem aiEmployee={aiEmployee} />,
-                  createModelOptions: {
-                    use: 'AIEmployeeShortcutModel',
-                    props: {
-                      aiEmployee: {
-                        username: aiEmployee.username,
+              : aiEmployees
+                  ?.filter((aiEmployee) => !isHide(aiEmployee))
+                  .map((aiEmployee) => ({
+                    key: aiEmployee.username,
+                    label: <AIEmployeeListItem aiEmployee={aiEmployee} />,
+                    createModelOptions: {
+                      use: 'AIEmployeeShortcutModel',
+                      props: {
+                        aiEmployee: {
+                          username: aiEmployee.username,
+                        },
                       },
                     },
-                  },
-                }));
+                  }));
           }}
         >
           <Button

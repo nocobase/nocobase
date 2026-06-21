@@ -1,4 +1,5 @@
-import { generatePlugins, getUmiConfig } from '@nocobase/devtools/umiConfig';
+import { generatePlugins } from '@nocobase/devtools/common';
+import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import path from 'path';
 import { defineConfig } from 'umi';
 
@@ -25,15 +26,20 @@ export default defineConfig({
         ? `
           window['__nocobase_public_path__'] = "${process.env.APP_PUBLIC_PATH || '/'}";
           window['__nocobase_dev_public_path__'] = "/";
+          window['__esm_cdn_base_url__'] = '${process.env.ESM_CDN_BASE_URL || ''}';
+          window['__esm_cdn_suffix__'] = '${process.env.ESM_CDN_SUFFIX || ''}';
         `
         : `
-        window['__webpack_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
+        window['__webpack_public_path__'] = '{{env.CDN_BASE_URL}}';
         window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';
         window['__nocobase_api_base_url__'] = '{{env.API_BASE_URL}}';
         window['__nocobase_api_client_storage_prefix__'] = '{{env.API_CLIENT_STORAGE_PREFIX}}';
         window['__nocobase_api_client_storage_type__'] = '{{env.API_CLIENT_STORAGE_TYPE}}';
+        window['__nocobase_api_client_share_token__'] = {{env.API_CLIENT_SHARE_TOKEN}};
         window['__nocobase_ws_url__'] = '{{env.WS_URL}}';
         window['__nocobase_ws_path__'] = '{{env.WS_PATH}}';
+        window['__esm_cdn_base_url__'] = '{{env.ESM_CDN_BASE_URL}}';
+        window['__esm_cdn_suffix__'] = '{{env.ESM_CDN_SUFFIX}}';
       `,
     },
     {
@@ -83,6 +89,5 @@ export default defineConfig({
     }
     return config;
   },
-  extraBabelPlugins: ['react-imported-component/babel'],
   routes: [{ path: '/*', component: 'index' }],
 });

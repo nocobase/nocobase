@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowNodeModel, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
+import { FlowNodeModel, Instruction, JOB_STATUS, Processor, isWorkflowTimeoutError } from '@nocobase/plugin-workflow';
 import PluginAIServer from '../../../plugin';
 import { LLMProvider } from '../../../llm-providers/provider';
 import _ from 'lodash';
@@ -36,6 +36,9 @@ export class LLMInstruction extends Instruction {
   async run(node: FlowNodeModel, input: any, processor: Processor) {
     const { llmService, ...chatOptions } = processor.getParsedValue(node.config, node.id);
     const { messages, structuredOutput, ...modelOptions } = chatOptions;
+    if (modelOptions && structuredOutput) {
+      modelOptions.structuredOutput = structuredOutput;
+    }
     let provider: LLMProvider;
     try {
       provider = await this.getLLMProvider(llmService, modelOptions);
@@ -54,20 +57,32 @@ export class LLMInstruction extends Instruction {
     });
 
     const parsedMessages = await parseMessages(messages);
+    const abortHandle = processor.createBackgroundAbortHandle();
 
     // eslint-disable-next-line promise/catch-or-return
     provider
-      .invokeChat({
-        messages: parsedMessages,
-        structuredOutput,
-      })
-      .then((aiMsg) => {
+      .invoke(
+        {
+          messages: parsedMessages,
+          structuredOutput,
+        },
+        {
+          signal: abortHandle.signal,
+        },
+      )
+      .then(async (aiMsg) => {
+        abortHandle.throwIfAborted();
         let raw = aiMsg;
         if (aiMsg.raw) {
           raw = aiMsg.raw;
         }
 
-        job.set({
+        const pendingJob = await processor.findPendingJob(job.id);
+        if (!pendingJob) {
+          return;
+        }
+
+        pendingJob.set({
           status: JOB_STATUS.RESOLVED,
           result: {
             id: raw.id,
@@ -78,22 +93,33 @@ export class LLMInstruction extends Instruction {
             structuredContent: aiMsg.parsed,
           },
         });
+        setImmediate(() => {
+          this.workflow.resume(pendingJob);
+        });
       })
-      .catch((e) => {
+      .catch(async (e) => {
+        if (isWorkflowTimeoutError(e) || abortHandle.signal.aborted) {
+          return;
+        }
         processor.logger.error(`llm invoke failed, ${e.message}`, {
           node: node.id,
-          error: e,
+          stack: e.stack,
           chatOptions: _.omit(chatOptions, 'messages'),
         });
-        job.set({
+        const pendingJob = await processor.findPendingJob(job.id);
+        if (!pendingJob) {
+          return;
+        }
+        pendingJob.set({
           status: JOB_STATUS.ERROR,
           result: e.message,
         });
+        setImmediate(() => {
+          this.workflow.resume(pendingJob);
+        });
       })
       .finally(() => {
-        setImmediate(() => {
-          this.workflow.resume(job);
-        });
+        abortHandle.dispose();
       });
 
     processor.logger.trace(`llm invoke, waiting for response...`, {

@@ -1,12 +1,12 @@
 {
-  "Share collections": "共享数据表",
-  "Unshared collections": "未共享的数据表",
-  "Shared collections": "已共享的数据表",
   "All categories": "所有分类",
-  "Enter name or title...": "输入数据表标题或标识",
   "Are you sure to add the following collections?": "确定添加以下数据表？",
   "Are you sure to remove the following collections?": "确定移除以下数据表？",
+  "Collection category": "分类",
   "Collection display name": "标题",
   "Collection name": "标识",
-  "Collection category": "分类"
+  "Enter name or title...": "输入数据表标题或标识",
+  "Share collections": "共享数据表",
+  "Shared collections": "已共享的数据表",
+  "Unshared collections": "未共享的数据表"
 }

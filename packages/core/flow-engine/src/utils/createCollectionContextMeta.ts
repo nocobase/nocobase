@@ -14,10 +14,14 @@ import type { PropertyMetaFactory } from '../flowContext';
 const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'] as const;
 const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'] as const;
 
+function shouldShowFieldInMeta(field: CollectionField, includeNonFilterable?: boolean) {
+  return Boolean(field.interface && (includeNonFilterable || field.filterable));
+}
+
 /**
  * 创建字段的完整元数据（统一处理关联和非关联字段）
  */
-function createFieldMetadata(field: CollectionField) {
+function createFieldMetadata(field: CollectionField, includeNonFilterable?: boolean) {
   const baseProperties = createMetaBaseProperties(field);
 
   if (field.isAssociationField()) {
@@ -36,7 +40,9 @@ function createFieldMetadata(field: CollectionField) {
       properties: async () => {
         const subProperties: Record<string, any> = {};
         targetCollection.fields.forEach((subField) => {
-          subProperties[subField.name] = createFieldMetadata(subField);
+          if (shouldShowFieldInMeta(subField, includeNonFilterable)) {
+            subProperties[subField.name] = createFieldMetadata(subField, includeNonFilterable);
+          }
         });
         return subProperties;
       },
@@ -86,6 +92,7 @@ function createMetaBaseProperties(field: CollectionField) {
   return {
     title: field.title || field.name,
     interface: field.interface,
+    options: field.options,
     uiSchema: field.uiSchema || {},
   };
 }
@@ -93,6 +100,7 @@ function createMetaBaseProperties(field: CollectionField) {
 export function createCollectionContextMeta(
   collectionOrFactory: Collection | (() => Collection | null),
   title?: string,
+  includeNonFilterable?: boolean,
 ): PropertyMetaFactory {
   const metaFn: PropertyMetaFactory = async () => {
     const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
@@ -110,7 +118,9 @@ export function createCollectionContextMeta(
 
         // 添加所有字段
         collection.fields.forEach((field) => {
-          properties[field.name] = createFieldMetadata(field);
+          if (shouldShowFieldInMeta(field, includeNonFilterable)) {
+            properties[field.name] = createFieldMetadata(field, includeNonFilterable);
+          }
         });
 
         return properties;

@@ -10,6 +10,7 @@
 export * from './aes-encryptor';
 export * from './app-supervisor';
 export * from './application';
+export * from './gateway/ws-server';
 export { Application as default } from './application';
 export * from './audit-manager';
 export * from './gateway';
@@ -19,10 +20,12 @@ export * from './plugin';
 export * from './plugin-manager';
 export * from './pub-sub-manager';
 export * from './event-queue';
-export * from './background-job-manager';
 export * from './worker-id-allocator';
+export * from './worker-mode';
 export * from './redis-connection-manager';
-export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
+export * from './main-data-source';
+export * from './constants';
+export type { LocaleSource, LocaleSourceText } from './locale';
 
 export {
   appendToBuiltInPlugins,
@@ -33,3 +36,4 @@ export {
 } from './plugin-manager/findPackageNames';
 
 export { runPluginStaticImports } from './run-plugin-static-imports';
+export { createContextVariablesScope } from './helper';

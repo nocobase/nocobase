@@ -1,0 +1,21 @@
+{
+  "1 Day": "1 Day",
+  "30 Days": "30 Days",
+  "7 Days": "7 Days",
+  "90 Days": "90 Days",
+  "API key created successfully": "API key created successfully",
+  "API keys": "API keys",
+  "Add API key": "Add API key",
+  "Allow only your own roles to be selected": "Allow only your own roles to be selected",
+  "Created at": "Created at",
+  "Custom": "Custom",
+  "Delete API key": "Delete API key",
+  "Expiration": "Expiration",
+  "Key name": "Key name",
+  "Keys manager": "Keys manager",
+  "Make sure to copy your personal access key now as you will not be able to see this again.": "Make sure to copy your personal access key now as you will not be able to see this again.",
+  "Never": "Never",
+  "Never expires": "Never expires",
+  "Role": "Vai trò",
+  "Role not found": "Role not found"
+}

@@ -10,6 +10,9 @@
 export { BasicAuth } from './basic-auth';
 export { AuthModel } from './model/authenticator';
 export { presetAuthType } from '../preset';
+export { defaultTokenPolicyConfig } from '../constants';
+export { buildRedirectPath, getModernClientPrefix, resolveSigninPrefix } from './utils/buildRedirectPath';
+export type { BuildRedirectPathOptions, ResolveSigninPrefixOptions } from './utils/buildRedirectPath';
 
 export { default } from './plugin';
 export * from '../constants';

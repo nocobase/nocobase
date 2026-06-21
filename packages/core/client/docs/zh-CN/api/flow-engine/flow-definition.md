@@ -10,20 +10,12 @@
 interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   key: string; // 流唯一标识
   title?: string; // 可选：流显示名称
-  // 注意：自动执行策略：未配置 on 且未显式 manual: true 的流，视为自动执行
+  // 注意：自动执行策略：
+  // 1) 未配置 on 且未显式 manual: true 的流，视为自动执行；
+  // 2) 等价地，你也可以显式声明 on: 'beforeRender' 将其作为“渲染前生命周期事件”流；
   manual?: boolean; // 可选：是否仅手动执行
   sort?: number; // 可选：流执行排序，数字越小越先执行，默认为 0，可为负数
-  on?:
-    | string
-    | {
-        eventName: string;
-        /**
-         * 触发条件，可使用 Filter 结构或返回布尔值的函数。
-         * - Filter 结构会在运行期套用 `evaluateConditions`，自动解析 `ctx.*` 变量
-         * - 函数会收到运行态上下文（兼容 FlowContext API，附带 model/event/inputArgs）
-         */
-        condition?: FilterGroupType | ((ctx: FlowContext) => boolean | Promise<boolean>);
-      }; // 可选：事件触发配置（支持附加条件）
+  on?: FlowEvent<TModel>; // 可选：事件触发配置
   steps: Record<string, StepDefinition<TModel>>; // 流步骤定义
   /**
    * Flow 级默认参数：在模型创建（createModel）时填充步骤参数，仅填补缺失、不覆盖已有。
@@ -55,6 +47,69 @@ interface InlineStepDefinition<TModel extends FlowModel = FlowModel> {
 ```
 
 ---
+
+## on（事件触发配置）
+
+`on` 用于声明该 Flow 可以被 `model.dispatchEvent('<eventName>')` 触发：
+
+- `on: '<eventName>'`
+- `on: { eventName: '<eventName>', ... }`
+
+简化类型如下：
+
+```ts
+type FlowEventName =
+  | 'click'
+  | 'submit'
+  | 'reset'
+  | 'remove'
+  | 'openView'
+  | 'dropdownOpen'
+  | 'popupScroll'
+  | 'search'
+  | 'customRequest'
+  | 'collapseToggle'
+  // 也支持任意自定义事件名
+  | (string & {});
+
+type FlowEventPhase =
+  | 'beforeAllFlows'
+  | 'afterAllFlows'
+  | 'beforeFlow'
+  | 'afterFlow'
+  | 'beforeStep'
+  | 'afterStep';
+
+type FlowEvent =
+  | FlowEventName
+  | {
+      eventName: FlowEventName;
+      /** 事件步骤（event step）的默认参数，会与事件定义的 defaultParams 合并 */
+      defaultParams?: Record<string, any>;
+      /**
+       * 执行时机：把该事件流插入到“内置静态流”的指定位置。
+       * - 缺省/`beforeAllFlows`：保持现有行为（默认在所有内置静态流之前执行）
+       */
+      phase?: FlowEventPhase;
+      /** phase 为 beforeFlow/afterFlow/beforeStep/afterStep 时使用 */
+      flowKey?: string;
+      /** phase 为 beforeStep/afterStep 时使用 */
+      stepKey?: string;
+    };
+```
+
+### phase（执行时机）
+
+当同一个事件存在多条事件流时，可以用 `phase / flowKey / stepKey` 指定该事件流插入到内置静态流的哪个位置执行：
+
+| phase | 含义 | 需要的字段 |
+| --- | --- | --- |
+| `beforeAllFlows`（默认） | 在所有内置静态流之前执行 | - |
+| `afterAllFlows` | 在所有内置静态流之后执行 | - |
+| `beforeFlow` | 在某条内置静态流开始前执行 | `flowKey` |
+| `afterFlow` | 在某条内置静态流结束后执行 | `flowKey` |
+| `beforeStep` | 在某条内置静态流的某个 step 开始前执行 | `flowKey` + `stepKey` |
+| `afterStep` | 在某条内置静态流的某个 step 结束后执行 | `flowKey` + `stepKey` |
 
 ## 定义流方式
 
@@ -126,34 +181,6 @@ const myFlow = defineFlow<MyFlowSteps>({
 MyFlowModel.registerFlow(myFlow); // 注册流
 ```
 
-#### 事件触发条件 `on.condition`
-
-- `condition` 支持两种写法：
-  - **过滤器结构**：与「联动规则」共用 `FilterGroupType` 形状（`logic + items`）。运行期会自动调用 `evaluateConditions`，并通过 `ctx` 解析变量（支持 `ctx.model`、`ctx.event`、`ctx.inputArgs` 等）。
-  - **函数**：`(ctx: FlowEngineContext) => boolean | Promise<boolean>`，可直接编写任意判断逻辑。
-- 当 `condition` 为空对象或数组时默认视为始终通过；若结构非法（如 items 全是空对象）则会被判定为不满足条件。
-- 过滤器项与联动规则一致，可在 UI 中选择变量，例如：
-
-```json5
-{
-  "logic": "$and",
-  "items": [
-    {
-      "path": "{{ ctx.event.args.type }}",
-      "operator": "$eq",
-      "value": "primary"
-    },
-    {
-      "path": "{{ ctx.model.props.count }}",
-      "operator": "$gt",
-      "value": 10
-    }
-  ]
-}
-```
-
-> **提示**：`ctx.event.args` 对应 `model.dispatchEvent(eventName, inputArgs)` 传入的参数；`ctx.inputArgs` 为运行时透传的同名对象。
-
 ---
 
 ### 类式定义（适合复杂流）
@@ -164,7 +191,8 @@ MyFlowModel.registerFlow(myFlow); // 注册流
 class MyFlowDefinition implements FlowDefinition {
   key = 'MyFlowDefinition';
   title = '我的复杂流程';
-  auto = true;
+  // 等价于未显式声明 on 且 manual !== true 的“自动流”
+  on = { eventName: 'beforeRender' };
   sort = 0;
 
   steps = {
@@ -253,7 +281,7 @@ myModel.setStepParams('myFlow', 'step1', { name: '小明' });
 ```ts
 await myModel.applyFlow('myFlow'); // 主动执行指定流
 myModel.dispatchEvent('user.created'); // 分发事件触发流（如流配置了 on.eventName）
-await myModel.applyAutoFlows(); // 执行所有 auto=true 的流，按 sort 排序
+await myModel.dispatchEvent('beforeRender'); // beforeRender 默认顺序执行并使用缓存（可覆盖）
 ```
 
 ---

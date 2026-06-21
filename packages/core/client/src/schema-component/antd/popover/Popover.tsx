@@ -11,6 +11,8 @@ import { Popover as AntdPopover, PopoverProps } from 'antd';
 import React, { useCallback, useRef } from 'react';
 import { getZIndex, useZIndexContext, zIndexContext } from '../action/zIndexContext';
 
+export const ICON_POPUP_Z_INDEX = 2000;
+
 /**
  * 参见：https://github.com/ant-design/ant-design/issues/44119
  * fix https://nocobase.height.app/T-1508

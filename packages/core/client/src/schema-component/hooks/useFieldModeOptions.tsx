@@ -59,7 +59,7 @@ export const useFieldModeOptions = (props?) => {
             { label: t('Record picker'), value: 'Picker' },
             !isTableField &&
               ['m2m', 'o2m'].includes(collectionField.interface) && { label: t('Sub-table'), value: 'SubTable' },
-            !isTableField && { label: t('Cascade Select'), value: 'CascadeSelect' },
+            !isTableField && { label: t('Cascader Select'), value: 'CascadeSelect' },
             !isTableField && { label: t('Sub-form'), value: 'Nester' },
             { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
           ];
@@ -125,6 +125,6 @@ export const useFieldModeOptions = (props?) => {
               { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ];
     }
-  }, [t, collectionField?.interface, label]);
+  }, [t, collectionField?.interface, label, isReadPretty, isTableField]);
   return (fieldModeOptions || []).filter(Boolean);
 };

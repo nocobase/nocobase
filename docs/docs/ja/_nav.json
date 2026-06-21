@@ -1,0 +1,34 @@
+[
+  {
+    "text": "スタート",
+    "link": "/ai/how-nocobase-works"
+  },
+  {
+    "text": "AI",
+    "link": "/ai/"
+  },
+  {
+    "text": "チュートリアル",
+    "link": "/tutorials/v2/"
+  },
+  {
+    "text": "マニュアル",
+    "link": "/guide/"
+  },
+  {
+    "text": "開発",
+    "link": "/development/"
+  },
+  {
+    "text": "プラグイン",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
+  },
+  {
+    "text": "ホーム",
+    "link": "https://www.nocobase.com/ja/"
+  }
+]

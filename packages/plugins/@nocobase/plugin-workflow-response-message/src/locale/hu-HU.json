@@ -1,0 +1,8 @@
+{
+  "Add response message, will be send to client when process of request ends.": "Válaszüzenet hozzáadása, amely a kérés folyamatának befejezésekor kerül elküldésre a kliensnek.",
+  "If the workflow ends normally, the response message will return a success status by default.": "Ha a munkafolyamat normál módon fejeződik be, a válaszüzenet alapértelmezés szerint sikeres állapotot fog visszaadni.",
+  "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "Ha sikertelen állapotot szeretne visszaadni, kérjük, adjon hozzá egy \"Folyamat befejezése\" csomópontot a munkafolyamat befejezéséhez.",
+  "Message content": "Üzenet tartalma",
+  "Response message": "Válaszüzenet",
+  "Supports variables in template.": "Támogatja a változókat a sablonban."
+}

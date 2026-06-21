@@ -92,7 +92,8 @@ model.mapSubModels('tabs', (tab) => {
 ### 作为属性值使用
 
 ```tsx | pure
-await model.applySubModelsAutoFlows(ctx);
+// 先让子列模型完成 beforeRender 事件流（如列的可见性、标题、渲染器等）
+await model.applySubModelsBeforeRenderFlows('columns');
 const columns = model.mapSubModels('columns', (column) => column.getProps());
 <Table columns={columns} />
 ```

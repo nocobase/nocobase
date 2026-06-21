@@ -7,11 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import formulajs from '../../utils/formulajs';
+import { BASE_BLOCKED_IDENTIFIERS } from '@nocobase/utils/client';
+import { createFormulaEvaluator } from '../../utils/formulajs';
+
+const blockedIdentifiers = [
+  ...BASE_BLOCKED_IDENTIFIERS,
+  'window',
+  'document',
+  'parent',
+  'top',
+  'frames',
+  'navigator',
+  'location',
+  'localStorage',
+  'sessionStorage',
+];
+
+const formulajs = createFormulaEvaluator({
+  blockedIdentifiers,
+});
 
 export default {
   label: 'Formula.js',
   tooltip: '{{t("Formula.js supports most Microsoft Excel formula functions.")}}',
-  link: 'https://docs.nocobase.com/handbook/calculation-engines/formula',
+  link: 'FORMULAJS_DOC_URL',
   evaluate: formulajs,
 };

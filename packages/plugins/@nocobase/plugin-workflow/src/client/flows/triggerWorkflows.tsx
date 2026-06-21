@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AppendsTreeSelect, CollectionBlockModel, FormSubmitActionModel, joinCollectionName } from '@nocobase/client';
+import {
+  AppendsTreeSelect,
+  CollectionBlockModel,
+  FormSubmitActionModel,
+  UpdateRecordActionModel,
+  joinCollectionName,
+} from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 import { TriggerWorkflowSelect } from '../components';
 
@@ -16,6 +22,7 @@ type SchemaOptions = {
   optionFilter?: (option: { key: string; type: string; config: any }) => boolean;
   usingContext?: boolean;
   filter?: Record<string, any>;
+  description?: string | ((ctx: any) => string | undefined);
 };
 
 export function createTriggerWorkflowsSchema({
@@ -23,13 +30,31 @@ export function createTriggerWorkflowsSchema({
   optionFilter,
   usingContext = true,
   filter,
+  description,
 }: SchemaOptions = {}) {
   return (ctx) => {
     const { collection: collectionModel } = ctx.blockModel as CollectionBlockModel;
     const workflowCollection = collectionModel
       ? joinCollectionName(collectionModel.dataSource.name, collectionModel.name)
       : null;
+    const workflowDescription = typeof description === 'function' ? description(ctx) : description;
     return {
+      ...(workflowDescription
+        ? {
+            description: {
+              type: 'void',
+              'x-component': 'Alert',
+              'x-component-props': {
+                type: 'info',
+                showIcon: true,
+                message: workflowDescription,
+                style: {
+                  marginBottom: '1em',
+                },
+              },
+            },
+          }
+        : {}),
       group: {
         type: 'array',
         'x-decorator': 'FormItem',
@@ -48,40 +73,41 @@ export function createTriggerWorkflowsSchema({
                 },
               },
             },
-            ...(usingContext
-              ? {
-                  context: {
-                    type: 'void',
-                    'x-component': 'ArrayTable.Column',
-                    'x-component-props': {
-                      title: `{{t('Trigger data context', { ns: 'workflow' })}}`,
-                      width: 200,
-                    },
-                    properties: {
-                      context: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': AppendsTreeSelect,
-                        'x-component-props': {
-                          placeholder: `{{t('Select context', { ns: 'workflow' })}}`,
-                          popupMatchSelectWidth: false,
-                          collection: workflowCollection,
-                          filter(field) {
-                            return ['belongsTo', 'hasOne'].includes(field.type);
-                          },
-                          rootOption: {
-                            label: `{{t('Full form data', { ns: 'workflow' })}}`,
-                            value: '',
-                          },
-                          allowClear: false,
-                          // loadData: buttonAction === 'destroy' ? null : undefined,
-                        },
-                        default: '',
-                      },
-                    },
-                  },
-                }
-              : {}),
+            // @deprecated
+            // ...(usingContext
+            //   ? {
+            //       context: {
+            //         type: 'void',
+            //         'x-component': 'ArrayTable.Column',
+            //         'x-component-props': {
+            //           title: `{{t('Trigger data context', { ns: 'workflow' })}}`,
+            //           width: 200,
+            //         },
+            //         properties: {
+            //           context: {
+            //             type: 'string',
+            //             'x-decorator': 'FormItem',
+            //             'x-component': AppendsTreeSelect,
+            //             'x-component-props': {
+            //               placeholder: `{{t('Select context', { ns: 'workflow' })}}`,
+            //               popupMatchSelectWidth: false,
+            //               collection: workflowCollection,
+            //               filter(field) {
+            //                 return ['belongsTo', 'hasOne'].includes(field.type);
+            //               },
+            //               rootOption: {
+            //                 label: `{{t('Full form data', { ns: 'workflow' })}}`,
+            //                 value: '',
+            //               },
+            //               allowClear: false,
+            //               // loadData: buttonAction === 'destroy' ? null : undefined,
+            //             },
+            //             default: '',
+            //           },
+            //         },
+            //       },
+            //     }
+            //   : {}),
             workflowKey: {
               type: 'void',
               'x-component': 'ArrayTable.Column',
@@ -97,7 +123,7 @@ export function createTriggerWorkflowsSchema({
                     filter,
                     ...(usingContext
                       ? {
-                          collection: collectionModel,
+                          collection: workflowCollection,
                         }
                       : {}),
                     scope: 'form',
@@ -135,13 +161,40 @@ export function createTriggerWorkflowsSchema({
   };
 }
 
+const operationEventDescription = `{{t('Support pre-action event (local mode), post-action event (local mode), and approval event here.', { ns: "${NAMESPACE}" })}}`;
+
 FormSubmitActionModel.registerFlow({
   key: 'formTriggerWorkflowsActionSettings',
   title: `{{t('Workflow', { ns: 'workflow' })}}`,
   steps: {
     setTriggerWorkflows: {
       title: `{{t('Bind workflows', { ns: "${NAMESPACE}" })}}`,
-      uiSchema: createTriggerWorkflowsSchema(),
+      uiSchema: createTriggerWorkflowsSchema({
+        description: operationEventDescription,
+      }),
+      handler(ctx, params) {
+        const triggerWorkflows = params.group?.length
+          ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+          : undefined;
+        ctx.model.setSaveRequestConfig({
+          params: {
+            triggerWorkflows,
+          },
+        });
+      },
+    },
+  },
+});
+
+UpdateRecordActionModel.registerFlow({
+  key: 'recordTriggerWorkflowsActionSettings',
+  title: `{{t('Workflow', { ns: 'workflow' })}}`,
+  steps: {
+    setTriggerWorkflows: {
+      title: `{{t('Bind workflows', { ns: "${NAMESPACE}" })}}`,
+      uiSchema: createTriggerWorkflowsSchema({
+        description: operationEventDescription,
+      }),
       handler(ctx, params) {
         const triggerWorkflows = params.group?.length
           ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')

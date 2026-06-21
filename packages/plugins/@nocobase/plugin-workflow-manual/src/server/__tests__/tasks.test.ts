@@ -8,9 +8,10 @@
  */
 
 import Database from '@nocobase/database';
-import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
+import { TASK_STATUS } from '../../common/constants';
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
 describe('workflow > instructions > manual > tasks', () => {
@@ -23,7 +24,7 @@ describe('workflow > instructions > manual > tasks', () => {
   let AnotherPostRepo;
   let WorkflowModel;
   let workflow;
-  let UserModel;
+  let UserRepo;
   let users;
   let ManualTaskModel;
   let UserTaskRepo;
@@ -37,16 +38,18 @@ describe('workflow > instructions > manual > tasks', () => {
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
-    UserModel = db.getCollection('users').model;
+    UserRepo = db.getRepository('users');
     ManualTaskModel = db.getModel('workflowManualTasks');
     UserTaskRepo = db.getRepository('userWorkflowTasks');
 
-    root = await UserModel.findOne();
+    root = await UserRepo.findOne();
     rootAgent = await app.agent().login(root);
-    users = await UserModel.bulkCreate([
-      { id: 2, nickname: 'a' },
-      { id: 3, nickname: 'b' },
-    ]);
+    users = await UserRepo.create({
+      values: [
+        { id: 2, nickname: 'a' },
+        { id: 3, nickname: 'b' },
+      ],
+    });
 
     userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
 
@@ -167,9 +170,59 @@ describe('workflow > instructions > manual > tasks', () => {
 
       await sleep(500);
 
+      const abortedTasks = await ManualTaskModel.findAll({
+        order: [['userId', 'ASC']],
+      });
+      expect(abortedTasks).toHaveLength(1);
+      expect(abortedTasks[0].status).toBe(TASK_STATUS.ABORTED);
+
       const s2s = await UserTaskRepo.find();
       expect(s2s.length).toBe(1);
       expect(s2s[0].get('stats')).toMatchObject({
+        pending: 0,
+        all: 1,
+      });
+    });
+
+    it('timeout should abort pending manual tasks', async () => {
+      await workflow.update({
+        options: {
+          timeout: 100,
+        },
+      });
+
+      await workflow.createNode({
+        type: 'manual',
+        config: {
+          assignees: [users[0].id],
+          forms: {
+            f1: {
+              type: 'create',
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
+              collection: 'posts',
+              dataSource: 'another',
+            },
+          },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
+      expect(execution.reason).toBe(EXECUTION_REASON.TIMEOUT);
+
+      const tasks = await ManualTaskModel.findAll({
+        order: [['userId', 'ASC']],
+      });
+      expect(tasks).toHaveLength(1);
+      expect(tasks[0].status).toBe(TASK_STATUS.ABORTED);
+
+      const stats = await UserTaskRepo.find();
+      expect(stats).toHaveLength(1);
+      expect(stats[0].get('stats')).toMatchObject({
         pending: 0,
         all: 1,
       });
@@ -208,8 +261,8 @@ describe('workflow > instructions > manual > tasks', () => {
       const s2s = await UserTaskRepo.find();
       expect(s2s.length).toBe(1);
       expect(s2s[0].get('stats')).toMatchObject({
-        pending: 0,
-        all: 0,
+        pending: 1,
+        all: 1,
       });
     });
 

@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, useCollection } from '@nocobase/client';
+import React from 'react';
+import { attachmentFileTypes, Plugin, useCollection } from '@nocobase/client';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import { FileManagerProvider } from './FileManagerProvider';
 import { FileSizeField } from './FileSizeField';
@@ -16,9 +17,54 @@ import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks'
 import { useStorageCfg } from './hooks/useStorageUploadProps';
 import { AttachmentFieldInterface } from './interfaces/attachment';
 import { NAMESPACE } from './locale';
+import { DisplayPreviewFieldModel } from '../client-v2/models/DisplayPreviewFieldModel';
+import { UploadFieldModel } from '../client-v2/models/UploadFieldModel';
+import { UploadActionModel } from '../client-v2/models/UploadActionModel';
+import { FilePreviewRenderer, getDownloadFileName, getFileUrl, isPdfFile } from './previewer/filePreviewTypes';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
-import { DisplayPreviewFieldModel } from './fieldModels/DisplayPreviewFieldModel';
+
+function AttachmentPdfPreviewer({ index, list, onSwitchIndex }) {
+  const file = list[index];
+  const onDownload = React.useCallback(
+    (targetFile?: any) => {
+      const target = targetFile || file;
+      const url = getFileUrl(target);
+      if (!url) {
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = getDownloadFileName(target, url);
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    },
+    [file],
+  );
+
+  if (!file) {
+    return null;
+  }
+
+  return (
+    <FilePreviewRenderer
+      open={index != null}
+      file={file}
+      index={index}
+      list={list}
+      onOpenChange={(open) => {
+        if (!open) {
+          onSwitchIndex(null);
+        }
+      }}
+      onClose={() => onSwitchIndex(null)}
+      onSwitchIndex={onSwitchIndex}
+      onDownload={onDownload}
+    />
+  );
+}
 
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
@@ -38,6 +84,11 @@ export class PluginFileManagerClient extends Plugin {
     });
     Object.values(storageTypes).forEach((storageType) => {
       this.registerStorageType(storageType.name, storageType);
+    });
+
+    attachmentFileTypes.add({
+      match: isPdfFile,
+      Previewer: AttachmentPdfPreviewer,
     });
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('table:configureActions');
@@ -67,7 +118,7 @@ export class PluginFileManagerClient extends Plugin {
       FileSizeField,
     });
 
-    this.flowEngine.registerModels({ DisplayPreviewFieldModel });
+    this.flowEngine.registerModels({ DisplayPreviewFieldModel, UploadActionModel, UploadFieldModel });
   }
 
   registerStorageType(name: string, options) {
@@ -82,44 +133,66 @@ export class PluginFileManagerClient extends Plugin {
     file: File;
     fileCollectionName?: string;
     storageType?: string;
-    /** 后面可能会废弃这个参数 */
     storageId?: number;
     storageRules?: {
       size: number;
     };
+    dataSourceKey?: string;
+    query?: Record<string, any>; // ⭐️ 新增可选 query 参数
   }): Promise<{ errorMessage?: string; data?: any }> {
-    const storageTypeObj = this.getStorageType(options?.storageType);
+    if (!options?.file) {
+      return { errorMessage: 'Missing file' };
+    }
+
+    const { file, storageType, storageId, storageRules, dataSourceKey, query = {} } = options;
+    const fileCollectionName = options?.fileCollectionName || 'attachments';
+
+    const storageTypeObj = this.getStorageType(storageType);
+    const uploadQuery = {
+      ...query,
+      ...(dataSourceKey && dataSourceKey !== 'main' ? { uploadDataSourceKey: dataSourceKey } : {}),
+    };
+
+    // 1. storageType 自定义上传
     if (storageTypeObj?.upload) {
-      // 1. If storageType is provided, call the upload method directly
       return await storageTypeObj.upload({
-        file: options.file,
+        file,
         apiClient: this.app.apiClient,
-        storageType: options.storageType,
-        storageId: options.storageId,
-        storageRules: options.storageRules,
-        fileCollectionName: options.fileCollectionName,
+        storageType,
+        storageId,
+        storageRules,
+        dataSourceKey,
+        fileCollectionName,
+        query: uploadQuery,
       });
     }
 
-    // 2. If storageType is not provided, use the default upload method
+    // 2. 默认上传 —— 拼接 URL 参数
     try {
       const formData = new FormData();
-      formData.append('file', options.file);
+      formData.append('file', file);
+
+      /** ⭐️ 拼接 URL 查询参数 */
+      const queryString = new URLSearchParams(uploadQuery).toString();
+      const url = queryString ? `${fileCollectionName}:create?${queryString}` : `${fileCollectionName}:create`;
+
       const res = await this.app.apiClient.request({
-        url: `${options.fileCollectionName || 'attachments'}:create`,
+        url,
         method: 'post',
         data: formData,
       });
 
+      return { data: res.data?.data };
+    } catch (error: any) {
       return {
-        data: res.data?.data,
-      };
-    } catch (error) {
-      return {
-        errorMessage: error.message,
+        errorMessage: error?.message ?? 'Upload failed',
       };
     }
   }
 }
+
+export { filePreviewTypes, wrapWithModalPreviewer } from './previewer/filePreviewTypes';
+export type { FilePreviewType, FilePreviewerProps } from './previewer/filePreviewTypes';
+export { CardUpload, UploadFieldModel } from '../client-v2/models/UploadFieldModel';
 
 export default PluginFileManagerClient;

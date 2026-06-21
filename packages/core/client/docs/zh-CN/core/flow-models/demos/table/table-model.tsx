@@ -41,7 +41,7 @@ export class TableModel extends FlowModel<S> {
                   },
                 },
               });
-              model.applyAutoFlows();
+              model.dispatchEvent('beforeRender');
             },
             items: this.collection.mapFields((field) => {
               return {
@@ -128,7 +128,7 @@ TableModel.registerFlow({
         resource.setAPIClient(api);
         ctx.model.resource = resource;
         await resource.refresh();
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
   },

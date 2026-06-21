@@ -8,15 +8,35 @@
  */
 
 import { Schema } from '@formily/json-schema';
+import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../../data-source/collection/Collection';
+import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { useParentCollection } from '../../../data-source/collection/AssociationProvider';
 import { useFlag } from '../../../flag-provider';
 import { useSubFormValue } from '../../../schema-component/antd/association-field/hooks';
 import { useBaseVariable } from './useBaseVariable';
 
+const getResolvedParent = (parent, currentObjectCtx) => {
+  let resolvedParent = parent;
+
+  // 子表格单元格内部会重复包裹同一行数据的 SubFormProvider，这里需要跳过这层“当前对象”的镜像父级。
+  while (resolvedParent?.parent && resolvedParent.value === currentObjectCtx) {
+    resolvedParent = resolvedParent.parent;
+  }
+
+  return resolvedParent;
+};
+
 export const useParentObjectContext = () => {
-  const { parent } = useSubFormValue();
-  const { value: parentObjectCtx, collection: collectionOfParentObject } = parent || {};
+  const { parent, formValue } = useSubFormValue();
+  const parentRecordData = useCollectionParentRecordData();
+  const parentCollection = useParentCollection();
+  const resolvedParent = getResolvedParent(parent, formValue);
+  const subFormParentObjectCtx = resolvedParent?.value;
+  const parentObjectCtx =
+    _.isEmpty(subFormParentObjectCtx) && !_.isEmpty(parentRecordData) ? parentRecordData : subFormParentObjectCtx;
+  const collectionOfParentObject = resolvedParent?.collection || parentCollection;
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
   return {

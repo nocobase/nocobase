@@ -12,6 +12,7 @@ import React, { FC, createContext, useContext, useDeferredValue, useMemo, useRef
 
 import _ from 'lodash';
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
+import { useLocationSearch } from '../../application/CustomRouterContextProvider';
 import { useTemplateBlockContext } from '../../block-provider/TemplateBlockProvider';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { useSourceKey } from '../../modules/blocks/useSourceKey';
@@ -126,14 +127,18 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   const recordRequestRef = useRef<UseRequestResult<any>>(props.recordRequest);
   const prevRequestDataRef = useRef<any>(props.recordRequest?.data);
   const { active: pageActive } = useKeepAlive();
-  const prevPageActiveRef = useRef(pageActive);
+  const locationSearch = useLocationSearch();
+  const prevDeferredPageActiveRef = useRef(pageActive);
+  const prevActiveLocationSearchRef = useRef(locationSearch);
   // Prevent page switching lag
   const deferredPageActive = useDeferredValue(pageActive);
   const blockProps = useDataBlockProps();
+  const wasDeferredPageActive = prevDeferredPageActiveRef.current;
 
   if (
     deferredPageActive &&
-    !prevPageActiveRef.current &&
+    !wasDeferredPageActive &&
+    prevActiveLocationSearchRef.current === locationSearch &&
     (_.isNil(blockProps.dataLoadingMode) || blockProps.dataLoadingMode === 'auto')
   ) {
     props.recordRequest?.refresh();
@@ -143,15 +148,19 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   if (
     deferredPageActive &&
     // the stage when loading just ended
-    prevPageActiveRef.current &&
+    wasDeferredPageActive &&
     !props.recordRequest?.loading &&
     !_.isEqual(prevRequestDataRef.current, props.recordRequest?.data)
   ) {
     prevRequestDataRef.current = props.recordRequest?.data;
   }
 
-  if (deferredPageActive !== prevPageActiveRef.current) {
-    prevPageActiveRef.current = deferredPageActive;
+  if (pageActive && wasDeferredPageActive) {
+    prevActiveLocationSearchRef.current = locationSearch;
+  }
+
+  if (deferredPageActive !== wasDeferredPageActive) {
+    prevDeferredPageActiveRef.current = deferredPageActive;
   }
 
   recordRequestRef.current = props.recordRequest;

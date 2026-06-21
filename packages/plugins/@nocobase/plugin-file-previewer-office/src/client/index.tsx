@@ -12,22 +12,33 @@ import { Modal, Button } from 'antd';
 import { saveAs } from 'file-saver';
 
 import { Plugin, attachmentFileTypes } from '@nocobase/client';
+import { filePreviewTypes, wrapWithModalPreviewer } from '@nocobase/plugin-file-manager/client';
+// Core office logic + inline previewer live in client-v2; v1 reuses them via relative path
+// so there is a single implementation shared by both runtimes.
+import { getOfficePreviewUrl, isOfficeFile } from '../client-v2/utils';
+import { OfficeInlinePreviewer } from '../client-v2/OfficeInlinePreviewer';
 import { useT } from './locale';
 
-function IframePreviewer({ index, list, onSwitchIndex }) {
+interface OfficeModalPreviewerFile {
+  url: string;
+  title: string;
+  extname: string;
+}
+
+interface OfficeModalPreviewerProps {
+  index: number;
+  list: OfficeModalPreviewerFile[];
+  onSwitchIndex: (index: number | null) => void;
+}
+
+function OfficeModalPreviewer({ index, list, onSwitchIndex }: OfficeModalPreviewerProps) {
   const t = useT();
   const file = list[index];
   const url = useMemo(() => {
-    const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
-    const src =
-      file.url.startsWith('https://') || file.url.startsWith('http://')
-        ? file.url
-        : `${location.origin}/${file.url.replace(/^\//, '')}`;
-    u.searchParams.set('src', src);
-    return u.href;
-  }, [file.url]);
+    return getOfficePreviewUrl(file);
+  }, [file]);
   const onOpen = useCallback(
-    (e) => {
+    (e: React.MouseEvent<HTMLElement>) => {
       e.preventDefault();
       e.stopPropagation();
       window.open(url);
@@ -35,7 +46,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
     [url],
   );
   const onDownload = useCallback(
-    (e) => {
+    (e: React.MouseEvent<HTMLElement>) => {
       e.preventDefault();
       e.stopPropagation();
       saveAs(file.url, `${file.title}${file.extname}`);
@@ -66,23 +77,18 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
     >
       <div
         style={{
-          maxWidth: '100%',
-          maxHeight: 'calc(100vh - 256px)',
-          height: '90vh',
           width: '100%',
+          height: 'calc(85vh - 120px)',
           background: 'white',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          overflowY: 'auto',
         }}
       >
         <iframe
           src={url}
           style={{
             width: '100%',
-            maxHeight: '90vh',
+            height: '100%',
             flex: '1 1 auto',
             border: 'none',
           }}
@@ -95,33 +101,12 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
 export class PluginFilePreviewerOfficeClient extends Plugin {
   async load() {
     attachmentFileTypes.add({
-      match(file) {
-        if (
-          file.mimetype &&
-          [
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          ].includes(file.mimetype)
-        ) {
-          return true;
-        }
-        if (file.url) {
-          const src =
-            file.url.startsWith('https://') || file.url.startsWith('http://')
-              ? file.url
-              : `${location.origin}/${file.url.replace(/^\//, '')}`;
-          const url = new URL(src);
-          const parts = url.pathname.split('.');
-          if (parts.length > 1) {
-            const ext = parts[parts.length - 1].toLowerCase();
-            return ['docx', 'xlsx', 'pptx', 'odt'].includes(ext);
-          }
-          return false;
-        }
-        return false;
-      },
-      Previewer: IframePreviewer,
+      match: isOfficeFile,
+      Previewer: OfficeModalPreviewer,
+    });
+    filePreviewTypes.add({
+      match: isOfficeFile,
+      Previewer: wrapWithModalPreviewer(OfficeInlinePreviewer),
     });
   }
 }

@@ -10,19 +10,21 @@
 import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useContext } from 'react';
-import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
-import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
+import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
+import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockContextBasicValue';
+import { useAssociationName } from '../../../data-source/collection/AssociationProvider';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
+import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
+import { CollectionRecord } from '../../../data-source/collection-record/CollectionRecord';
 import {
-  CollectionRecord,
-  useAssociationName,
-  useCollection,
-  useCollectionManager,
   useCollectionParentRecord,
   useCollectionRecord,
+} from '../../../data-source/collection-record/CollectionRecordProvider';
+import {
   useDataBlockRequestData,
   useDataBlockRequestGetter,
-  useDataSourceKey,
-} from '../../../data-source';
+} from '../../../data-source/data-block/DataBlockRequestProvider';
+import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 import { ActionContext } from '../action/context';
 import { PopupVisibleProviderContext, useCurrentPopupContext } from './PagePopups';
 import { usePopupSettings } from './PopupSettingsProvider';
@@ -314,13 +316,7 @@ export const usePopupUtils = (
 
       const newPathName = removeLastPopupPath(location.pathname);
 
-      // 1. If there is a previous route in the route stack, navigate back to the previous route.
-      // 2. If the popup was opened directly via a URL and there is no previous route in the stack, navigate to the route of the previous popup.
-      if (getPopupLayerState(currentLevel)) {
-        navigate(-1);
-      } else {
-        navigate(withSearchParams(newPathName), { replace: true });
-      }
+      navigate(withSearchParams(newPathName), { replace: true });
       location.pathname = newPathName; // 立即更新 location.pathname 的值，防止重复调用 openPopup 时，导致错误拼接重复的 pathname
       removePopupLayerState(currentLevel);
       popupParams?.popupuid && deletePopupContext(popupParams.popupuid);

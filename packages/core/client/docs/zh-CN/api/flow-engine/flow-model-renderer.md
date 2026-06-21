@@ -10,7 +10,15 @@ interface FlowModelRendererProps {
   uid?: string;
 
   /** 是否显示流设置入口（如按钮、菜单等） */
-  showFlowSettings?: boolean; // 默认 false
+  showFlowSettings?:
+    | boolean
+    | {
+        showBackground?: boolean;
+        showBorder?: boolean;
+        showDragHandle?: boolean;
+        style?: React.CSSProperties;
+        toolbarPosition?: 'inside' | 'above' | 'below';
+      }; // 默认 false
 
   /** 流设置的交互风格 */
   flowSettingsVariant?: 'dropdown' | 'contextMenu' | 'modal' | 'drawer'; // 默认 'dropdown'
@@ -18,10 +26,7 @@ interface FlowModelRendererProps {
   /** 是否在设置中隐藏移除按钮 */
   hideRemoveInSettings?: boolean; // 默认 false
 
-  /** 是否跳过自动应用流，默认 false */
-  skipApplyAutoFlows?: boolean; // 默认 false
-
-  /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的运行时参数 */
+  /** 传递给 beforeRender 事件的运行时参数 */
   inputArgs?: Record<string, any>
 
   /** 设置菜单层级：1=仅当前模型(默认)，2=包含子模型 */
@@ -37,14 +42,17 @@ interface FlowModelRendererProps {
 - **model**: 要渲染的 FlowModel 实例
 - **uid**: 流模型的唯一标识符
 - **showFlowSettings**: 是否显示流设置入口，如按钮、菜单等
+  - 传入对象时可进一步控制工具栏背景、边框、拖拽把手和自定义样式
+  - `toolbarPosition` 用于控制图标条显示在宿主框内部、上方或下方
+  - 工具栏会默认通过 portal 渲染到最近的 popup root，其次是 `#nocobase-app-container`，最后才 fallback 到 `document.body`
+  - `style.top/left/right/bottom` 会作为 portal overlay 的 inset 使用，可用于向外扩展 hover 框
 - **flowSettingsVariant**: 流设置的交互风格
   - `dropdown`: 下拉菜单形式（默认）
   - `contextMenu`: 右键上下文菜单
   - `modal`: 模态框形式（待实现）
   - `drawer`: 抽屉形式（待实现）
 - **hideRemoveInSettings**: 是否在设置中隐藏移除按钮，当设为 `true` 时，流设置菜单中不会显示删除/移除选项
-- **skipApplyAutoFlows**: 是否跳过自动应用流。当设为 `true` 时，组件不会调用 `useApplyAutoFlows` hook
-- **inputArgs**: 运行时参数，当 `skipApplyAutoFlows` 为 `false` 时传递给 `useApplyAutoFlows` hook
+- **inputArgs**: 运行时参数，传递给 beforeRender 事件
 - **settingsMenuLevel**: 设置菜单层级，控制设置菜单的显示范围
   - `1`: 仅显示当前模型的设置（默认）
   - `2`: 包含子模型的设置
@@ -70,10 +78,10 @@ interface FlowModelRendererProps {
   hideRemoveInSettings={true}
 />
 
-// 跳过自动应用流
+// 传递 beforeRender 事件上下文
 <FlowModelRenderer 
   model={model} 
-  skipApplyAutoFlows={true}
+  inputArgs={{ customData: 'value' }}
 />
 
 // 传递额外上下文
@@ -89,6 +97,14 @@ interface FlowModelRendererProps {
   settingsMenuLevel={2} // 包含子模型设置
 />
 
+// 调整工具栏渲染位置
+<FlowModelRenderer
+  model={model}
+  showFlowSettings={{
+    toolbarPosition: 'above',
+  }}
+/>
+
 // 完整配置示例
 <FlowModelRenderer 
   model={model}
@@ -96,7 +112,6 @@ interface FlowModelRendererProps {
   showFlowSettings={true}
   flowSettingsVariant="contextMenu"
   hideRemoveInSettings={false}
-  skipApplyAutoFlows={false}
   settingsMenuLevel={2}
   inputArgs={{ 
     userId: 123,
@@ -136,17 +151,7 @@ interface FlowModelRendererProps {
 />
 ```
 
-### 4. 自定义流控制
-当需要手动控制流应用时，可以跳过自动流：
-
-```tsx | pure
-<FlowModelRenderer 
-  model={flowModel} 
-  skipApplyAutoFlows={true}
-/>
-```
-
-### 5. 传递自定义上下文
+### 4. 传递自定义上下文
 当需要向流传递特定上下文数据时：
 
 ```tsx | pure
@@ -160,7 +165,7 @@ interface FlowModelRendererProps {
 />
 ```
 
-### 6. 控制设置菜单层级
+### 5. 控制设置菜单层级
 当需要控制设置菜单显示范围时，可以通过 `settingsMenuLevel` 参数配置：
 
 ```tsx | pure

@@ -7,16 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, ExclamationCircleOutlined, SettingOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
+import { DeleteOutlined, ExclamationCircleOutlined, QuestionCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Alert, Dropdown, Modal } from 'antd';
-import React, { useCallback } from 'react';
+import { Alert, Dropdown, Modal, Tooltip, theme } from 'antd';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlowRuntimeContext } from '../../../../flowContext';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
-import { getT, setupRuntimeContextSteps } from '../../../../utils';
+import {
+  getT,
+  resolveStepDisabledInSettings,
+  setupRuntimeContextSteps,
+  shouldHideStepInSettings,
+} from '../../../../utils';
 import { openStepSettingsDialog } from './StepSettingsDialog';
+import { ActionDefinition } from '../../../../types';
+import { observer } from '../../../../reactive';
 
 // 右键菜单组件接口
 interface ModelProvidedProps {
@@ -73,6 +79,21 @@ const FlowsContextMenu: React.FC<FlowsContextMenuProps> = (props) => {
 const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
   ({ model, children, enabled = true, position = 'right', showDeleteButton = true }) => {
     const t = getT(model);
+    const { token } = theme.useToken();
+    const disabledIconColor = token?.colorTextTertiary || token?.colorTextDescription || token?.colorTextSecondary;
+    const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<any[]>([]);
+    const isStepMenuItemDisabled = useCallback(
+      (key: string) => {
+        const [flowKey, stepKey] = key.split(':');
+        if (!flowKey || !stepKey) return false;
+        return configurableFlowsAndSteps.some(({ flow, steps }) => {
+          if (flow.key !== flowKey) return false;
+          return steps.some((stepInfo) => stepInfo.stepKey === stepKey && !!stepInfo.disabled);
+        });
+      },
+      [configurableFlowsAndSteps],
+    );
+
     const handleMenuClick = useCallback(
       ({ key }: { key: string }) => {
         if (key === 'delete') {
@@ -98,6 +119,9 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             },
           });
         } else {
+          if (isStepMenuItemDisabled(key)) {
+            return;
+          }
           // 处理step配置，key格式为 "flowKey:stepKey"
           const [flowKey, stepKey] = key.split(':');
           try {
@@ -111,7 +135,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             }
 
             const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
-            setupRuntimeContextSteps(ctx, flow, model, flowKey);
+            setupRuntimeContextSteps(ctx, flow.steps, model, flowKey);
             ctx.defineProperty('currentStep', { value: step });
 
             openStepSettingsDialog({
@@ -126,7 +150,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           }
         }
       },
-      [model],
+      [isStepMenuItemDisabled, model],
     );
 
     if (!model) {
@@ -139,30 +163,31 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     }
 
     // 获取可配置的flows和steps
-    const getConfigurableFlowsAndSteps = useCallback(() => {
+    const getConfigurableFlowsAndSteps = useCallback(async () => {
       try {
         const flows = (model as FlowModel).getFlows();
 
         const flowsArray = Array.from(flows.values());
 
-        return flowsArray
-          .map((flow) => {
-            const configurableSteps = Object.entries(flow.steps)
-              .map(([stepKey, stepDefinition]) => {
-                const actionStep = stepDefinition;
+        const result = await Promise.all(
+          flowsArray.map(async (flow) => {
+            const configurableSteps = await Promise.all(
+              Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
+                const actionStep: any = stepDefinition;
 
-                // 如果步骤设置了 hideInSettings: true，则跳过此步骤
-                if (actionStep.hideInSettings) {
+                // 支持静态与动态 hideInSettings
+                if (await shouldHideStepInSettings(model as FlowModel, flow, actionStep)) {
                   return null;
                 }
+                const disabledState = await resolveStepDisabledInSettings(model as FlowModel, flow, actionStep);
 
                 // 从step获取uiSchema（如果存在）
-                const stepUiSchema = actionStep.uiSchema || {};
+                const stepUiSchema: ActionDefinition['uiSchema'] = actionStep.uiSchema || {};
 
                 // 如果step使用了action，也获取action的uiSchema
                 let actionUiSchema = {};
                 if (actionStep.use) {
-                  const action = model.flowEngine?.getAction?.(actionStep.use);
+                  const action = model.getAction?.(actionStep.use);
                   if (action && action.uiSchema) {
                     actionUiSchema = action.uiSchema;
                   }
@@ -190,20 +215,35 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
                   step: actionStep,
                   uiSchema: mergedUiSchema,
                   title: actionStep.title || stepKey,
+                  disabled: disabledState.disabled,
+                  disabledReason: disabledState.reason,
                 };
-              })
-              .filter(Boolean);
+              }),
+            ).then((steps) => steps.filter(Boolean));
 
             return configurableSteps.length > 0 ? { flow, steps: configurableSteps } : null;
-          })
-          .filter(Boolean);
+          }),
+        );
+
+        return result.filter(Boolean);
       } catch (error) {
         console.warn('[FlowsContextMenu] 获取可配置flows失败:', error);
         return [];
       }
     }, [model]);
 
-    const configurableFlowsAndSteps = getConfigurableFlowsAndSteps();
+    useEffect(() => {
+      let mounted = true;
+      (async () => {
+        const flows = await getConfigurableFlowsAndSteps();
+        if (mounted) {
+          setConfigurableFlowsAndSteps(flows as any[]);
+        }
+      })();
+      return () => {
+        mounted = false;
+      };
+    }, [getConfigurableFlowsAndSteps]);
 
     // 如果没有可配置的flows且不显示删除按钮，直接返回children
     if (configurableFlowsAndSteps.length === 0 && !showDeleteButton) {
@@ -227,7 +267,17 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           menuItems.push({
             key: `${flow.key}:${stepInfo.stepKey}`,
             icon: <SettingOutlined />,
-            label: stepInfo.title,
+            label: stepInfo.disabled ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {stepInfo.title}
+                <Tooltip title={stepInfo.disabledReason} placement="right" destroyTooltipOnHide>
+                  <QuestionCircleOutlined style={{ color: disabledIconColor }} />
+                </Tooltip>
+              </span>
+            ) : (
+              stepInfo.title
+            ),
+            disabled: !!stepInfo.disabled,
           });
         });
       });

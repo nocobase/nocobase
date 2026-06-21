@@ -46,13 +46,11 @@ export async function getBasicInfo(context, next) {
 }
 
 export async function check(context, next) {
-  console.log(1111111111, context.db);
-  const { fileCollectionName } = context.action.params;
-  console.log(fileCollectionName);
+  const { fileCollectionName, storageName: storage_name } = context.action.params;
   let storage;
 
   const fileCollection = context.db.getCollection(fileCollectionName || 'attachments');
-  const storageName = fileCollection?.options?.storage;
+  const storageName = storage_name || fileCollection?.options?.storage;
   if (storageName) {
     storage = await context.db.getRepository('storages').findOne({
       where: {
@@ -71,8 +69,7 @@ export async function check(context, next) {
     context.throw(400, context.t('Storage configuration not found. Please configure a storage provider first.'));
   }
 
-  const isSupportToUploadFiles =
-    storage.type !== 's3-compatible' || (storage.options?.baseUrl && storage.options?.public);
+  const isSupportToUploadFiles = !!fileCollection;
 
   const storageInfo = {
     id: storage.id,

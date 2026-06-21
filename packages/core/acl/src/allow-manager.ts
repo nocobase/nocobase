@@ -16,14 +16,16 @@ export class AllowManager {
 
   protected registeredCondition = new Map<string, ConditionFunc>();
 
+  isPublicCondition = () => {
+    return true;
+  };
+
   constructor(public acl: ACL) {
     this.registerAllowCondition('loggedIn', (ctx) => {
       return ctx.state.currentUser;
     });
 
-    this.registerAllowCondition('public', (ctx) => {
-      return true;
-    });
+    this.registerAllowCondition('public', this.isPublicCondition);
 
     this.registerAllowCondition('allowConfigure', async (ctx) => {
       const roleName = ctx.state.currentRole;
@@ -69,6 +71,16 @@ export class AllowManager {
 
   registerAllowCondition(name: string, condition: ConditionFunc) {
     this.registeredCondition.set(name, condition);
+  }
+
+  async isPublic(resourceName: string, actionName: string, ctx: any) {
+    const skippedConditions = this.getAllowedConditions(resourceName, actionName);
+    for (const skippedCondition of skippedConditions) {
+      if (skippedCondition === this.isPublicCondition) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async isAllowed(resourceName: string, actionName: string, ctx: any) {

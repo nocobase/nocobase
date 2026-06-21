@@ -7,21 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
+import Database, { Repository } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
-import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
+import { EXECUTION_STATUS, WorkflowModel } from '@nocobase/plugin-workflow';
 
 describe('workflow > instructions > aggregate', () => {
   let app: Application;
   let db: Database;
-  let PostRepo;
-  let CommentRepo;
-  let TagRepo;
-  let WorkflowModel;
-  let workflow;
+  let PostRepo: Repository;
+  let CommentRepo: Repository;
+  let TagRepo: Repository;
+  let WorkflowRepo: Repository;
+  let workflow: WorkflowModel;
 
   beforeEach(async () => {
     app = await getApp({
@@ -29,19 +29,20 @@ describe('workflow > instructions > aggregate', () => {
     });
 
     db = app.db;
-    WorkflowModel = db.getCollection('workflows').model;
-    WorkflowModel = db.getCollection('workflows').model;
+    WorkflowRepo = db.getCollection('workflows').repository;
     PostRepo = db.getCollection('posts').repository;
     CommentRepo = db.getCollection('comments').repository;
     TagRepo = db.getCollection('tags').repository;
 
-    workflow = await WorkflowModel.create({
-      sync: true,
-      enabled: true,
-      type: 'collection',
-      config: {
-        mode: 1,
-        collection: 'posts',
+    workflow = await WorkflowRepo.create({
+      values: {
+        sync: true,
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
       },
     });
   });
@@ -455,15 +456,18 @@ describe('workflow > instructions > aggregate', () => {
     });
 
     it('transaction in sync workflow', async () => {
-      PostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const another = app.dataSourceManager.dataSources.get('another');
+      PostRepo = another.collectionManager.getRepository('posts');
 
-      const w1 = await WorkflowModel.create({
-        enabled: true,
-        type: 'collection',
-        sync: true,
-        config: {
-          mode: 1,
-          collection: 'another:posts',
+      const w1 = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'collection',
+          sync: true,
+          config: {
+            mode: 1,
+            collection: 'another:posts',
+          },
         },
       });
 

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import assert from 'assert';
 import { Collection, createMockDatabase, Database, updateAssociations } from '@nocobase/database';
 
 describe('update associations', () => {
@@ -678,7 +679,7 @@ describe('update associations', () => {
           students: [{ id: student.id }],
         },
       });
-      assert.ok(teacher);
+      expect(teacher).toBeTruthy();
     });
 
     test('should update belongsToMany association not throw error when relation table field is nanoid', async () => {
@@ -719,7 +720,7 @@ describe('update associations', () => {
           students: [{ id: student.id }],
         },
       });
-      assert.ok(teacher);
+      expect(teacher).toBeTruthy();
     });
   });
 });

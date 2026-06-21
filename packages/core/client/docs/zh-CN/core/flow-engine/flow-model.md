@@ -75,17 +75,14 @@
 - **applyFlow(flowKey: string, inputArgs?: Record<string, any>): Promise\<any\>**  
   执行指定流。
 
-- **dispatchEvent(eventName: string, inputArgs?: Record<string, any>, options?: { debounce: boolean }): Promise\<void\>**  
-  触发事件，自动匹配并执行相关流。支持防抖功能，防止快速连续触发。
-  - `eventName`: 要触发的事件名称
-  - `inputArgs`: 可选的事件参数  
-  - `options.debounce`: 是否启用防抖功能，默认为 `false`。当设为 `true` 时，100ms 内的重复调用会被防抖处理
+- **dispatchEvent(eventName: string, inputArgs?: Record<string, any>, options?: { debounce?: boolean; sequential?: boolean; useCache?: boolean }): Promise\<any[]\>**  
+  触发事件并执行对应的流程集合。
+  - `sequential`: 是否顺序执行（默认并行）；beforeRender 的默认值为顺序执行（可覆盖）
+  - `useCache`: 是否启用事件级缓存（默认 false）；beforeRender 的默认值为启用缓存（可覆盖）
+  - `debounce`: 是否启用防抖（默认 false）
 
-- **applyAutoFlows(inputArgs?: Record<string, any>): Promise\<any[]\>**  
-  执行所有自动流。
-
-- **applySubModelsAutoFlows(subKey: string, extra?: Record\<string, any\>): Promise\<void\>**  
-  执行指定子模型的自动流。
+- **applySubModelsBeforeRenderFlows(subKey: string, inputArgs?: Record\<string, any\>): Promise\<void\>**  
+  对指定子模型派发 `beforeRender` 事件（内部顺序执行并使用缓存）。
 
 - **getFlow(key: string): FlowDefinition \| undefined**  
   获取指定 key 的流配置。
@@ -93,23 +90,17 @@
 - **getFlows(): Map\<string, FlowDefinition\>**  
   获取所有已配置流（含继承）。
 
-- **getAutoFlows(): FlowDefinition[]**  
-  获取所有自动应用流程定义并按 sort 排序。
+- **getEventFlows(eventName: string): FlowDefinition[]**  
+  按事件名获取流程集合并按 sort 排序。
+  - 特殊事件 `beforeRender`: 兼容包含“未声明 on 且 manual !== true”的流程。
 
 ---
 
-### 自动流执行生命周期钩子
+### 事件分发钩子
 
-FlowModel 提供了三个全局自动流执行生命周期钩子，子类可以重写这些方法来实现自定义逻辑：
-
-- **async onBeforeAutoFlows(inputArgs?: Record<string, any>): Promise\<void\>**
-  在所有自动流执行前调用。可以通过抛出 `FlowExitException` 来终止后续流程执行。
-
-- **async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise\<void\>**
-  在所有自动流执行后调用。可以访问所有自动流的执行结果。
-
-- **async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise\<void\>**
-  在自动流执行或生命周期钩子出错时调用。可进行自定义错误处理。
+- **async onDispatchEventStart(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>)**
+- **async onDispatchEventEnd(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>, results?: any[])**
+- **async onDispatchEventError(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>, error?: Error)**
 
 ---
 
@@ -205,7 +196,7 @@ await model.save();
 
 // 执行流
 await model.applyFlow('default');
-await model.applyAutoFlows();
+await model.dispatchEvent('beforeRender');
 
 // 触发事件（立即执行）
 await model.dispatchEvent('click');

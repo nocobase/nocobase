@@ -10,19 +10,19 @@
 // components/drawer/useDrawer/DrawerComponent.tsx
 import { Drawer } from 'antd';
 import * as React from 'react';
+import { MobilePopup } from '../components/MobilePopup';
 
 const DrawerComponent = React.forwardRef((props: any, ref) => {
-  const { children, footer: initialFooter, title, extra, hidden, ...drawerProps } = props;
+  const { children, footer: initialFooter, title, extra, hidden, isMobile, ...drawerProps } = props;
   const [open, setOpen] = React.useState(true);
-  const [footer, setFooter] = React.useState(initialFooter);
-  const [header, setHeader] = React.useState({ title, extra });
+  const [footer, setFooter] = React.useState(() => initialFooter);
+  const [header, setHeader] = React.useState({ title, extra, ...drawerProps.header });
 
   React.useImperativeHandle(
     ref,
     () => ({
       destroy: () => {
         setOpen(false);
-        drawerProps.afterClose?.();
       },
       update: (newConfig) => {
         // 更新 drawer 配置
@@ -46,6 +46,21 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
     return document.querySelector('#nocobase-app-container');
   }, []);
 
+  if (isMobile) {
+    return (
+      <MobilePopup
+        className={hidden ? 'nb-hidden' : ''}
+        visible={open}
+        {...drawerProps}
+        footer={footer}
+        {...header}
+        onClose={drawerProps.onClose}
+      >
+        {children}
+      </MobilePopup>
+    );
+  }
+
   return (
     <Drawer
       rootClassName={hidden ? 'nb-hidden' : ''}
@@ -59,10 +74,7 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
         footer: { display: 'flex', justifyContent: 'flex-end', ...drawerProps.styles?.footer },
       }}
       {...header} // 使用 extra 属性作为自定义 header
-      onClose={() => {
-        setOpen(false);
-        drawerProps.afterClose?.();
-      }}
+      onClose={drawerProps.onClose}
     >
       {children}
     </Drawer>

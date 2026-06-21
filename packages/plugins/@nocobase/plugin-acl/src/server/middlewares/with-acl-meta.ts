@@ -23,7 +23,7 @@ function createWithACLMetaMiddleware() {
     const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
     const db = dataSource ? dataSource.collectionManager.db : ctx.db;
 
-    if (!db) {
+    if (!db || db.isDBInstance === false) {
       return;
     }
 
@@ -52,9 +52,14 @@ function createWithACLMetaMiddleware() {
       return;
     }
 
-    // @ts-ignore
-    const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
+    const filterTargetKey = collection.filterTargetKey;
 
+    // ensure we only proceed when there is a single string key
+    if (!filterTargetKey || typeof filterTargetKey !== 'string') {
+      return;
+    }
+
+    const primaryKeyField = filterTargetKey;
     let listData;
 
     if (ctx.body?.data) {
@@ -79,15 +84,19 @@ function createWithACLMetaMiddleware() {
 
     for (const action of inspectActions) {
       const actionCtx: any = {
-        db,
+        db: ctx.db,
+        database: db,
         get: () => {
           return undefined;
         },
         app: {
+          dataSourceManager: ctx.app.dataSourceManager,
           getDb() {
             return db;
           },
         },
+        log: ctx.log,
+        logger: ctx.logger,
         getCurrentRepository: ctx.getCurrentRepository,
         action: {
           actionName: action,
@@ -98,6 +107,7 @@ function createWithACLMetaMiddleware() {
           mergeParams() {},
         },
         state: {
+          ...ctx.state,
           currentRole: ctx.state.currentRole,
           currentRoles: ctx.state.currentRoles,
           currentUser: (() => {

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { i18n as defaultI18n } from '../../i18n';
 import type { Application } from '../../application/Application';
 import type { CollectionOptions } from './Collection';
 
@@ -15,21 +16,34 @@ import type { CollectionOptions } from './Collection';
  */
 export const collectionTransform = (collection: CollectionOptions, app: Application) => {
   const { rawTitle, title, fields = [], ...rest } = collection;
+  const t = (key: string, options?: any): string => {
+    if (collection.disableTranslation) {
+      return key;
+    }
+    if (app.context?.t) {
+      return app.context.t(key, options);
+    }
+    const i18n = app.i18n || app.getOptions?.().i18n || defaultI18n;
+    if (i18n?.t) {
+      return i18n.t(key, options) as unknown as string;
+    }
+    return key;
+  };
   return {
     ...rest,
-    title: rawTitle ? title : app.i18n.t(title, { ns: 'lm-collections' }),
+    title: rawTitle ? title : t(title, { ns: 'lm-collections' }),
     rawTitle: rawTitle || title,
     fields: fields?.map(({ uiSchema, ...field }) => {
       if (uiSchema?.title) {
         const title = uiSchema.title;
-        uiSchema.title = uiSchema.rawTitle ? title : app.i18n.t(title, { ns: 'lm-collections' });
+        uiSchema.title = uiSchema.rawTitle ? title : t(title, { ns: 'lm-collections' });
         uiSchema.rawTitle = uiSchema.rawTitle || title;
       }
       if (Array.isArray(uiSchema?.enum)) {
         uiSchema.enum = uiSchema.enum.map((item) => ({
           ...item,
           value: item?.value === undefined ? item : item.value,
-          label: item.rawLabel ? item.label : app.i18n.t(item.label, { ns: 'lm-collections' }),
+          label: item.rawLabel ? item.label : t(item.label, { ns: 'lm-collections' }),
           rawLabel: item.rawLabel || item.label,
         }));
       }

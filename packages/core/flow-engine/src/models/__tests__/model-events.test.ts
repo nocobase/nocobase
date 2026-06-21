@@ -23,12 +23,34 @@ describe('FlowModel per-class Events', () => {
     engine.registerModels({ A, B });
 
     // global
-    engine.registerEvents({ global: { name: 'global', label: 'Global' } });
+    engine.registerEvents({
+      global: {
+        name: 'global',
+        title: 'Global',
+        handler: (ctx, params) => {},
+      },
+    });
 
-    A.registerEvent({ name: 'a', label: 'A' });
-    A.registerEvent({ name: 'dup', label: 'A-dup' });
-    B.registerEvent({ name: 'b', label: 'B' });
-    B.registerEvent({ name: 'dup', label: 'B-dup' });
+    A.registerEvent({
+      name: 'a',
+      title: 'A',
+      handler: (ctx, params) => {},
+    });
+    A.registerEvent({
+      name: 'dup',
+      title: 'A-dup',
+      handler: (ctx, params) => {},
+    });
+    B.registerEvent({
+      name: 'b',
+      title: 'B',
+      handler: (ctx, params) => {},
+    });
+    B.registerEvent({
+      name: 'dup',
+      title: 'B-dup',
+      handler: (ctx, params) => {},
+    });
 
     const m = engine.createModel<B>({ use: 'B' });
 
@@ -37,11 +59,11 @@ describe('FlowModel per-class Events', () => {
     expect(events.has('a')).toBe(true);
     expect(events.has('b')).toBe(true);
     // child overrides parent with same name
-    expect(events.get('dup')?.label).toBe('B-dup');
+    expect(events.get('dup')?.title).toBe('B-dup');
 
     // getEvent should prefer class events, then fallback to engine
-    expect(m.getEvent('b')?.label).toBe('B');
-    expect(m.getEvent('a')?.label).toBe('A');
-    expect(m.getEvent('global')?.label).toBe('Global');
+    expect(m.getEvent('b')?.title).toBe('B');
+    expect(m.getEvent('a')?.title).toBe('A');
+    expect(m.getEvent('global')?.title).toBe('Global');
   });
 });

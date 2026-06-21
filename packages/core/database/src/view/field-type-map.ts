@@ -19,14 +19,14 @@ const postgres = {
 
   smallint: ['integer', 'sort'],
   integer: ['integer', 'unixTimestamp', 'sort'],
-  bigint: ['bigInt', 'unixTimestamp', 'sort'],
+  bigint: ['bigInt', 'snowflakeId', 'unixTimestamp', 'sort'],
   decimal: 'decimal',
-  numeric: 'float',
+  numeric: 'decimal',
   real: 'float',
   'double precision': 'float',
 
   'timestamp without time zone': 'datetimeNoTz',
-  'timestamp with time zone': 'datetimeTz',
+  'timestamp with time zone': ['datetimeTz', 'date'],
   'time without time zone': 'time',
 
   date: 'dateOnly',
@@ -64,15 +64,15 @@ const mysql = {
   int: ['integer', 'unixTimestamp', 'sort'],
   'int unsigned': ['integer', 'unixTimestamp', 'sort'],
   integer: ['integer', 'unixTimestamp', 'sort'],
-  bigint: ['bigInt', 'unixTimestamp', 'sort'],
+  bigint: ['bigInt', 'snowflakeId', 'unixTimestamp', 'sort'],
   'bigint unsigned': ['bigInt', 'unixTimestamp', 'sort'],
   float: 'float',
   double: 'float',
   boolean: 'boolean',
   decimal: 'decimal',
   year: ['string', 'integer'],
-  datetime: ['datetimeNoTz', 'datetimeTz'],
-  timestamp: 'datetimeTz',
+  datetime: ['datetimeNoTz', 'datetimeTz', 'date'],
+  timestamp: ['datetimeTz', 'date'],
   json: ['json', 'array'],
   enum: 'string',
 };
@@ -84,7 +84,7 @@ const sqlite = {
   integer: 'integer',
   real: 'real',
 
-  datetime: 'datetimeTz',
+  datetime: ['datetimeTz', 'date'],
   date: 'date',
   time: 'time',
 

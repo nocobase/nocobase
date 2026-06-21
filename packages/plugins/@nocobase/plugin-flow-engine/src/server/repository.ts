@@ -24,6 +24,33 @@ export interface GetPropertiesOptions {
   transaction?: Transaction;
 }
 
+export type FlowModelAttachPosition = 'first' | 'last' | TargetPosition;
+
+export interface FlowModelAttachOptions {
+  parentId: string;
+  subKey: string;
+  subType: 'array' | 'object';
+  position?: FlowModelAttachPosition;
+}
+
+type FlowModelMovePosition = 'before' | 'after';
+
+interface FlowModelMoveOptions {
+  sourceId: string;
+  targetId: string;
+  position?: FlowModelMovePosition;
+}
+
+interface SiblingInfo {
+  parentUid: string;
+  type: string;
+}
+
+interface SiblingSortRow {
+  uid: string;
+  sort: number | string | null;
+}
+
 type BreakRemoveOnType = {
   [key: string]: any;
 };
@@ -227,6 +254,38 @@ export class FlowModelRepository extends Repository {
     return this.doGetJsonSchema(uid, options);
   }
 
+  static optionsToJson(options: any) {
+    return lodash.isPlainObject(options) ? options : JSON.parse(options);
+  }
+
+  private static getSortNumber(value: unknown) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  private static compareBySortAndUid(a: { sort?: unknown; uid?: unknown }, b: { sort?: unknown; uid?: unknown }) {
+    const aSort = FlowModelRepository.getSortNumber(a.sort);
+    const bSort = FlowModelRepository.getSortNumber(b.sort);
+    if (aSort !== null && bSort !== null && aSort !== bSort) {
+      return aSort - bSort;
+    }
+    if (aSort !== null && bSort === null) {
+      return -1;
+    }
+    if (aSort === null && bSort !== null) {
+      return 1;
+    }
+    return String(a.uid || '').localeCompare(String(b.uid || ''));
+  }
+
   nodesToSchema(nodes, rootUid) {
     const nodeAttributeSanitize = (node) => {
       const schema = {
@@ -236,8 +295,9 @@ export class FlowModelRepository extends Repository {
         ['x-async']: !!node.async,
       };
 
-      if (lodash.isNumber(node.sort)) {
-        schema['x-index'] = node.sort;
+      const sort = FlowModelRepository.getSortNumber(node.sort);
+      if (sort !== null) {
+        schema['x-index'] = sort;
       }
 
       return schema;
@@ -255,7 +315,12 @@ export class FlowModelRepository extends Repository {
         for (const childType of Object.keys(childrenGroupByType)) {
           const properties = childrenGroupByType[childType]
             .map((child) => buildTree(child))
-            .sort((a, b) => a['x-index'] - b['x-index']) as any;
+            .sort((a, b) =>
+              FlowModelRepository.compareBySortAndUid(
+                { sort: a['x-index'], uid: a.uid },
+                { sort: b['x-index'], uid: b.uid },
+              ),
+            ) as any;
 
           rootNode[childType] =
             childType == 'items'
@@ -330,7 +395,10 @@ export class FlowModelRepository extends Repository {
     await this.clearXUidPathCache(rootUid, transaction);
     if (!newSchema['properties']) {
       const s = await this.model.findByPk(rootUid, { transaction });
-      s.set('options', { ...s.toJSON(), ...newSchema });
+      s.set('options', {
+        ...lodash.omit(FlowModelRepository.optionsToJson(s.get('options') || {}), ['uid']),
+        ...lodash.omit(newSchema, ['uid', 'name', 'options']),
+      });
       await s.save({ transaction, hooks: false });
       await this.emitAfterSaveEvent(s, options);
       if (newSchema['x-server-hooks']) {
@@ -443,6 +511,29 @@ export class FlowModelRepository extends Repository {
       return;
     }
 
+    const descendants = (await this.database.sequelize.query(
+      this.sqlAdapter(`SELECT descendant FROM ${this.flowModelTreePathTableName} WHERE ancestor = :uid`),
+      {
+        type: 'SELECT',
+        replacements: {
+          uid,
+        },
+        transaction,
+      },
+    )) as Array<{ descendant?: string }>;
+    const uids = descendants.map((row) => row.descendant).filter(Boolean) as string[];
+
+    if (uids.length) {
+      await this.database.emitAsync(
+        `${this.collection.name}.beforeRemoveTree`,
+        {
+          rootUid: uid,
+          uids,
+        },
+        options,
+      );
+    }
+
     await this.database.sequelize.query(
       this.sqlAdapter(`DELETE FROM ${this.flowModelsTableName} WHERE "uid" IN (
             SELECT descendant FROM ${this.flowModelTreePathTableName} WHERE ancestor = :uid
@@ -526,13 +617,155 @@ export class FlowModelRepository extends Repository {
   }
 
   @transaction()
-  async duplicate(uid: string, options?: Transactionable) {
-    const s = await this.getJsonSchema(uid, { ...options, includeAsyncNode: true });
-    if (!s?.['uid']) {
+  async duplicate(modelUid: string, options?: Transactionable) {
+    let nodes = await this.findNodesById(modelUid, { ...options, includeAsyncNode: true });
+    if (!nodes?.length) {
       return null;
     }
-    this.regenerateUid(s);
-    return this.insert(s, options);
+
+    nodes = this.dedupeNodesForDuplicate(nodes, modelUid);
+
+    // 1) 生成 old -> new uid 映射
+    const uidMap: Record<string, string> = {};
+    for (const n of nodes) {
+      uidMap[n['uid']] = uid();
+    }
+    // 2) 父先于子，同时在同一父/同一分组内按原 sort 顺序插入
+    const sorted: any[] = [...nodes].sort((a: any, b: any) => {
+      if (a.depth !== b.depth) return a.depth - b.depth;
+      const ap = a.parent || '';
+      const bp = b.parent || '';
+      if (ap !== bp) return ap < bp ? -1 : 1;
+      const at = a.type || '';
+      const bt = b.type || '';
+      if (at !== bt) return at < bt ? -1 : 1;
+      const as = a.sort ?? 0;
+      const bs = b.sort ?? 0;
+      return as - bs;
+    });
+
+    for (const n of sorted) {
+      const oldUid = n['uid'];
+      const newUid = uidMap[oldUid];
+      const oldParentUid = n['parent'];
+      const newParentUid = uidMap[oldParentUid] ?? null;
+
+      const optionsObj = this.replaceStepParamsModelUids(
+        lodash.cloneDeep(FlowModelRepository.optionsToJson(n.options)),
+        uidMap,
+      );
+      delete optionsObj.uid;
+      delete optionsObj.name;
+      delete optionsObj.childOptions;
+      delete optionsObj['x-async'];
+      if (newParentUid) {
+        optionsObj.parent = newParentUid;
+        optionsObj.parentId = newParentUid;
+      } else {
+        delete optionsObj.parent;
+        delete optionsObj.parentId;
+      }
+
+      const schemaNode: SchemaNode = {
+        ...optionsObj,
+        uid: newUid,
+        name: newUid,
+        ['x-async']: !!n.async,
+      };
+
+      if (newParentUid) {
+        schemaNode.childOptions = {
+          parentUid: newParentUid,
+          type: n.type,
+          position: 'last',
+        };
+      }
+
+      await this.insertSingleNode(schemaNode, { transaction: (options as any)?.transaction });
+    }
+
+    // 3) 返回新根节点的完整模型
+    return this.findModelById(uidMap[modelUid], { ...options });
+  }
+
+  private dedupeNodesForDuplicate(nodes: any[], rootUid: string) {
+    if (!Array.isArray(nodes) || nodes.length <= 1) {
+      return nodes;
+    }
+
+    const rowsByUid = lodash.groupBy(nodes, 'uid');
+    const uniqueUids = Object.keys(rowsByUid);
+    if (uniqueUids.length === nodes.length) {
+      return nodes;
+    }
+
+    const uidsInSubtree = new Set(uniqueUids);
+    const rootDepthByUid = new Map<string, number>();
+    for (const uid of uniqueUids) {
+      const rows = rowsByUid[uid] || [];
+      const depths = rows.map((row) => Number(row?.depth ?? 0));
+      rootDepthByUid.set(uid, depths.length ? Math.min(...depths) : 0);
+    }
+
+    const pickRowForUid = (uid: string, rows: any[]) => {
+      if (!rows?.length) return null;
+      if (rows.length === 1) return rows[0];
+      if (uid === rootUid) return rows[0];
+
+      let bestRow = rows[0];
+      let bestParentRootDepth = -1;
+
+      for (const row of rows) {
+        const parentUid = row?.parent;
+        if (!parentUid || !uidsInSubtree.has(parentUid)) {
+          continue;
+        }
+
+        const parentRootDepth = rootDepthByUid.get(parentUid) ?? -1;
+        if (parentRootDepth > bestParentRootDepth) {
+          bestParentRootDepth = parentRootDepth;
+          bestRow = row;
+        }
+      }
+
+      return bestRow;
+    };
+
+    const uidsInQueryOrder: string[] = [];
+    const seenUidsInQueryOrder = new Set<string>();
+    for (const row of nodes) {
+      const uid = row?.uid;
+      if (!uid || seenUidsInQueryOrder.has(uid)) continue;
+      seenUidsInQueryOrder.add(uid);
+      uidsInQueryOrder.push(uid);
+    }
+
+    return uidsInQueryOrder.map((uid) => pickRowForUid(uid, rowsByUid[uid])).filter(Boolean);
+  }
+
+  private replaceStepParamsModelUids(options: any, uidMap: Record<string, string>) {
+    const opts = options && typeof options === 'object' ? options : {};
+    const replaceUidString = (v: any) => (typeof v === 'string' && uidMap[v] ? uidMap[v] : v);
+
+    const replaceInPlace = (val: any): any => {
+      if (Array.isArray(val)) {
+        for (let i = 0; i < val.length; i++) {
+          val[i] = replaceInPlace(val[i]);
+        }
+        return val;
+      }
+      if (val && typeof val === 'object') {
+        for (const k of Object.keys(val)) {
+          (val as any)[k] = replaceInPlace((val as any)[k]);
+        }
+        return val;
+      }
+      return replaceUidString(val);
+    };
+
+    if (opts.stepParams) opts.stepParams = replaceInPlace(opts.stepParams);
+
+    return opts;
   }
 
   @transaction()
@@ -849,11 +1082,11 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
       // move node to new parent
       if (oldParentUid !== null && oldParentUid !== parentUid) {
-        await this.database.emitAsync('uiSchemaMove', savedNode, {
-          transaction,
-          oldParentUid,
-          parentUid,
-        });
+        // await this.database.emitAsync('uiSchemaMove', savedNode, {
+        //   transaction,
+        //   oldParentUid,
+        //   parentUid,
+        // });
 
         if (options.removeParentsIfNoChildren) {
           await this.recursivelyRemoveIfNoChildren({
@@ -891,7 +1124,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     await nodeModel.update(
       {
         options: {
-          ...(nodeModel.get('options') as any),
+          ...lodash.omit(FlowModelRepository.optionsToJson(nodeModel.get('options') || {}), ['uid']),
           ...lodash.omit(schema, ['x-async', 'name', 'uid', 'properties']),
         },
       },
@@ -940,6 +1173,134 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     });
 
     return parent ? (parent.get('ancestor') as string) : null;
+  }
+
+  private async findSiblingInfo(uid: string, transaction?: Transaction): Promise<SiblingInfo | null> {
+    const rows = (await this.database.sequelize.query(
+      this.sqlAdapter(`SELECT ParentPath.ancestor as parent, NodeInfo.type as type
+        FROM ${this.flowModelTreePathTableName} as ParentPath
+        LEFT JOIN ${this.flowModelTreePathTableName} as NodeInfo
+          ON NodeInfo.ancestor = ParentPath.descendant
+          AND NodeInfo.descendant = ParentPath.descendant
+          AND NodeInfo.depth = 0
+        WHERE ParentPath.descendant = :uid AND ParentPath.depth = 1`),
+      {
+        type: 'SELECT',
+        replacements: { uid },
+        transaction,
+      },
+    )) as Array<{ parent?: string; type?: string }>;
+
+    const row = rows[0];
+    if (!row?.parent || !row?.type) {
+      return null;
+    }
+    return {
+      parentUid: row.parent,
+      type: row.type,
+    };
+  }
+
+  private async findSiblingSortRows(
+    parentUid: string,
+    type: string,
+    transaction?: Transaction,
+  ): Promise<SiblingSortRow[]> {
+    const treeTable = this.flowModelTreePathTableName;
+    const rows = (await this.database.sequelize.query(
+      this.sqlAdapter(`SELECT ChildPath.descendant as uid, ChildPath.sort as sort
+        FROM ${treeTable} as ChildPath
+        LEFT JOIN ${treeTable} as NodeInfo
+          ON NodeInfo.ancestor = ChildPath.descendant
+          AND NodeInfo.descendant = ChildPath.descendant
+          AND NodeInfo.depth = 0
+        WHERE ChildPath.ancestor = :parentUid
+          AND ChildPath.depth = 1
+          AND NodeInfo.type = :type`),
+      {
+        type: 'SELECT',
+        replacements: { parentUid, type },
+        transaction,
+      },
+    )) as SiblingSortRow[];
+
+    return rows.sort((a, b) => FlowModelRepository.compareBySortAndUid(a, b));
+  }
+
+  private async writeSiblingSorts(parentUid: string, orderedUids: string[], transaction?: Transaction) {
+    const treeTable = this.flowModelTreePathTableName;
+    for (const [index, uid] of orderedUids.entries()) {
+      await this.database.sequelize.query(
+        this.sqlAdapter(
+          `UPDATE ${treeTable} SET sort = :sort WHERE ancestor = :parentUid AND descendant = :uid AND depth = 1`,
+        ),
+        {
+          type: 'UPDATE',
+          replacements: {
+            parentUid,
+            uid,
+            sort: index + 1,
+          },
+          transaction,
+        },
+      );
+    }
+
+    await this.clearXUidPathCache(parentUid, transaction);
+  }
+
+  private async normalizeSiblingSorts(info: SiblingInfo | null | undefined, transaction?: Transaction) {
+    if (!info) {
+      return;
+    }
+    const siblingRows = await this.findSiblingSortRows(info.parentUid, info.type, transaction);
+    await this.writeSiblingSorts(
+      info.parentUid,
+      siblingRows.map((row) => row.uid),
+      transaction,
+    );
+  }
+
+  private async isAncestorOf(ancestorUid: string, descendantUid: string, transaction?: Transaction) {
+    const rows = (await this.database.sequelize.query(
+      this.sqlAdapter(`SELECT 1 as v
+        FROM ${this.flowModelTreePathTableName}
+        WHERE ancestor = :ancestorUid
+          AND descendant = :descendantUid
+          AND depth > 0
+        LIMIT 1`),
+      {
+        type: 'SELECT',
+        replacements: { ancestorUid, descendantUid },
+        transaction,
+      },
+    )) as Array<{ v?: number }>;
+    return rows.length > 0;
+  }
+
+  private async updateModelParentOptions(
+    uid: string,
+    parentId: string,
+    subKey: string,
+    subType: 'array' | 'object',
+    transaction?: Transaction,
+  ) {
+    const modelInstance = await this.model.findByPk(uid, { transaction });
+    if (!modelInstance) {
+      throw new Error(`flowModels:move sourceId '${uid}' not found`);
+    }
+    await modelInstance.update(
+      {
+        options: {
+          ...lodash.omit(FlowModelRepository.optionsToJson(modelInstance.get('options') || {}), ['uid']),
+          parentId,
+          parent: parentId,
+          subKey,
+          subType,
+        },
+      },
+      { transaction, hooks: false },
+    );
   }
 
   protected async findNodeSchemaWithParent(uid, transaction) {
@@ -1291,12 +1652,12 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const subModels: Record<string, any> = {};
 
     for (const child of children) {
-      const { subKey, subType } = child.options;
+      const { subKey, subType } = this.optionsToJson(child.options);
       if (!subKey) continue;
       // 递归处理子节点
       const model = FlowModelRepository.nodesToModel(nodes, child['uid']) || {
+        ...this.optionsToJson(child.options),
         uid: child['uid'],
-        ...child.options,
         sortIndex: child.sort,
       };
       // 保证 sortIndex
@@ -1312,7 +1673,17 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     // 5. 对数组类型的 subModels 排序
     for (const key in subModels) {
       if (Array.isArray(subModels[key])) {
-        subModels[key].sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0));
+        subModels[key] = subModels[key]
+          .sort((a, b) =>
+            FlowModelRepository.compareBySortAndUid(
+              { sort: a.sortIndex, uid: a.uid },
+              { sort: b.sortIndex, uid: b.uid },
+            ),
+          )
+          .map((item, index) => {
+            item.sortIndex = index + 1;
+            return item;
+          });
       }
     }
 
@@ -1327,11 +1698,19 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     }
 
     // 7. 返回最终 model
-    return {
+    const model = {
+      ...this.optionsToJson(rootNode.options),
       uid: rootNode['uid'],
-      ...rootNode.options,
       ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
     };
+    if (rootNode.parent) {
+      model.parent = rootNode.parent;
+      model.parentId = rootNode.parent;
+    } else {
+      delete model.parent;
+      delete model.parentId;
+    }
+    return model;
   }
 
   @transaction()
@@ -1352,8 +1731,14 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       await instance.update(
         {
           options: {
-            ...(instance.get('options') as any),
+            ...lodash.omit(instance.get('options') as any, ['uid']),
             ...lodash.omit(node, ['x-async', 'name', 'uid', 'childOptions']),
+            ...(node.childOptions?.parentUid
+              ? {
+                  parent: node.childOptions.parentUid,
+                  parentId: node.childOptions.parentUid,
+                }
+              : {}),
           },
         },
         {
@@ -1421,11 +1806,241 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return null;
   }
 
-  async move(options) {
+  @transaction()
+  async attach(uid: string, attachOptions: FlowModelAttachOptions, options?: Transactionable) {
+    const { transaction } = options || {};
+    const modelUid = String(uid || '').trim();
+    const parentId = String(attachOptions?.parentId || '').trim();
+    const subKey = String(attachOptions?.subKey || '').trim();
+    const subType = attachOptions?.subType;
+
+    if (!modelUid || !parentId || !subKey || (subType !== 'array' && subType !== 'object')) {
+      throw new Error('flowModels:attach missing required params');
+    }
+    if (modelUid === parentId) {
+      throw new Error('flowModels:attach cannot attach model to itself');
+    }
+
+    const treeTable = this.flowModelTreePathTableName;
+
+    const modelInstance = await this.model.findByPk(modelUid, { transaction });
+    if (!modelInstance) {
+      throw new Error(`flowModels:attach uid '${modelUid}' not found`);
+    }
+    const parentInstance = await this.model.findByPk(parentId, { transaction });
+    if (!parentInstance) {
+      throw new Error(`flowModels:attach parentId '${parentId}' not found`);
+    }
+
+    // 环检测：禁止将祖先挂到其子孙节点下
+    const cycle = await this.database.sequelize.query(
+      `SELECT 1 as v
+       FROM ${treeTable}
+       WHERE ancestor = :ancestor AND descendant = :descendant AND depth > 0
+       LIMIT 1`,
+      {
+        type: 'SELECT',
+        replacements: {
+          ancestor: modelUid,
+          descendant: parentId,
+        },
+        transaction,
+      },
+    );
+    if (cycle?.length) {
+      throw new Error('flowModels:attach cycle detected');
+    }
+
+    // object 子模型：同一 parent + subKey 只能存在一个
+    if (subType === 'object') {
+      const conflict = await this.database.sequelize.query(
+        `SELECT TreeTable.descendant as uid
+         FROM ${treeTable} as TreeTable
+                  LEFT JOIN ${treeTable} as NodeInfo
+                            ON NodeInfo.descendant = TreeTable.descendant
+                                AND NodeInfo.depth = 0
+         WHERE TreeTable.depth = 1
+           AND TreeTable.ancestor = :ancestor
+           AND NodeInfo.type = :type
+           AND TreeTable.descendant != :uid
+         LIMIT 1`,
+        {
+          type: 'SELECT',
+          replacements: {
+            ancestor: parentId,
+            type: subKey,
+            uid: modelUid,
+          },
+          transaction,
+        },
+      );
+      if (conflict?.length) {
+        throw new Error(`flowModels:attach subKey '${subKey}' already exists on parent '${parentId}'`);
+      }
+    }
+
+    const normalizePosition = (input: unknown): FlowModelAttachPosition => {
+      if (!input) return 'last';
+      if (input === 'first' || input === 'last') return input;
+      if (typeof input === 'object') {
+        const p = input as any;
+        const type = p?.type;
+        const target = String(p?.target || '').trim();
+        if ((type === 'before' || type === 'after') && target) {
+          return { type, target };
+        }
+      }
+      throw new Error('flowModels:attach invalid position');
+    };
+
+    const position: FlowModelAttachPosition =
+      subType === 'object' ? 'last' : normalizePosition(attachOptions?.position as any);
+
+    // 目标排序锚点校验：before/after 必须是同 parent + subKey 下的兄弟节点
+    if (typeof position === 'object') {
+      const target = String(position.target || '').trim();
+      if (target === modelUid) {
+        throw new Error('flowModels:attach position target cannot be itself');
+      }
+
+      const ok = await this.database.sequelize.query(
+        `SELECT 1 as v
+         FROM ${treeTable} as TreeTable
+                  LEFT JOIN ${treeTable} as NodeInfo
+                            ON NodeInfo.descendant = TreeTable.descendant
+                                AND NodeInfo.depth = 0
+         WHERE TreeTable.depth = 1
+           AND TreeTable.ancestor = :ancestor
+           AND TreeTable.descendant = :descendant
+           AND NodeInfo.type = :type
+         LIMIT 1`,
+        {
+          type: 'SELECT',
+          replacements: {
+            ancestor: parentId,
+            descendant: target,
+            type: subKey,
+          },
+          transaction,
+        },
+      );
+      if (!ok?.length) {
+        throw new Error('flowModels:attach position target is not a sibling under the same parent/subKey');
+      }
+    }
+
+    // 清理旧路径缓存（旧祖先）
+    await this.clearXUidPathCache(modelUid, transaction);
+
+    // 更新 root options：确保 nodesToModel 能按 subKey/subType 正确挂载
+    await modelInstance.update(
+      {
+        options: {
+          ...lodash.omit(modelInstance.get('options') as any, ['uid']),
+          parentId,
+          parent: parentId,
+          subKey,
+          subType,
+        },
+      },
+      { transaction, hooks: false },
+    );
+
+    // 更新 tree path：移动（move）语义
+    await this.insertSingleNode(
+      {
+        uid: modelUid,
+        name: modelUid,
+        childOptions: {
+          parentUid: parentId,
+          type: subKey,
+          position,
+        },
+      } as any,
+      { transaction, removeParentsIfNoChildren: false },
+    );
+
+    return await this.findModelById(modelUid, { transaction, includeAsyncNode: true });
+  }
+
+  @transaction()
+  async move(options: FlowModelMoveOptions, transactionOptions?: Transactionable) {
     const { sourceId, targetId, position } = options;
-    return await this.insertAdjacent(position === 'after' ? 'afterEnd' : 'beforeBegin', targetId, {
-      ['uid']: sourceId,
-    });
+    const sourceUid = String(sourceId || '').trim();
+    const targetUid = String(targetId || '').trim();
+    if (!sourceUid || !targetUid) {
+      throw new Error('flowModels:move missing required params');
+    }
+    if (position !== 'before' && position !== 'after') {
+      throw new Error('flowModels:move invalid position');
+    }
+
+    const transaction = transactionOptions?.transaction;
+    const sourceInstance = await this.model.findByPk(sourceUid, { transaction });
+    if (!sourceInstance) {
+      throw new Error(`flowModels:move sourceId '${sourceUid}' not found`);
+    }
+
+    if (sourceUid === targetUid) {
+      await this.normalizeSiblingSorts(await this.findSiblingInfo(sourceUid, transaction), transaction);
+      return null;
+    }
+
+    const sourceInfo = await this.findSiblingInfo(sourceUid, transaction);
+    const targetInfo = await this.findSiblingInfo(targetUid, transaction);
+    if (!targetInfo) {
+      throw new Error('flowModels:move target is not attached to a parent');
+    }
+    const targetInstance = await this.model.findByPk(targetUid, { transaction });
+    const targetOptions = FlowModelRepository.optionsToJson(targetInstance?.get('options') || {});
+    const targetSubType = targetOptions.subType === 'object' ? 'object' : 'array';
+    if (targetInfo.parentUid === sourceUid || (await this.isAncestorOf(sourceUid, targetInfo.parentUid, transaction))) {
+      throw new Error('flowModels:move cycle detected');
+    }
+
+    if (sourceInfo?.parentUid === targetInfo.parentUid && sourceInfo.type === targetInfo.type) {
+      const siblingRows = await this.findSiblingSortRows(sourceInfo.parentUid, sourceInfo.type, transaction);
+      const sourceRow = siblingRows.find((row) => row.uid === sourceUid);
+      const targetIndex = siblingRows.findIndex((row) => row.uid === targetUid);
+      if (!sourceRow || targetIndex === -1) {
+        throw new Error('flowModels:move source and target must be sibling nodes under the same parent/subKey');
+      }
+
+      const rowsWithoutSource = siblingRows.filter((row) => row.uid !== sourceUid);
+      const insertIndex = rowsWithoutSource.findIndex((row) => row.uid === targetUid);
+      rowsWithoutSource.splice(position === 'after' ? insertIndex + 1 : insertIndex, 0, sourceRow);
+      await this.writeSiblingSorts(
+        sourceInfo.parentUid,
+        rowsWithoutSource.map((row) => row.uid),
+        transaction,
+      );
+      return await this.findModelById(sourceUid, { transaction });
+    }
+
+    await this.normalizeSiblingSorts(sourceInfo, transaction);
+    await this.normalizeSiblingSorts(targetInfo, transaction);
+    await this.updateModelParentOptions(sourceUid, targetInfo.parentUid, targetInfo.type, targetSubType, transaction);
+
+    await this.insertSingleNode(
+      {
+        uid: sourceUid,
+        name: sourceUid,
+        childOptions: {
+          parentUid: targetInfo.parentUid,
+          type: targetInfo.type,
+          position: {
+            type: position,
+            target: targetUid,
+          },
+        },
+      } as SchemaNode,
+      { transaction, removeParentsIfNoChildren: false },
+    );
+
+    await this.normalizeSiblingSorts(sourceInfo, transaction);
+    await this.normalizeSiblingSorts(await this.findSiblingInfo(sourceUid, transaction), transaction);
+
+    return await this.findModelById(sourceUid, { transaction });
   }
 }
 

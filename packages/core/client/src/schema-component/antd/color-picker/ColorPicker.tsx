@@ -24,6 +24,7 @@ export const ColorPicker = connect(
     return (
       <div role="button" aria-label="color-picker-normal" style={{ display: 'inline-block' }}>
         <AntdColorPicker
+          allowClear
           value={value}
           trigger="hover"
           {...others}

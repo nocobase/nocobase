@@ -8,29 +8,38 @@
  */
 
 import { Plugin, useActionAvailable } from '@nocobase/client';
-import {
-  bulkEditActionSettings,
-  deprecatedBulkEditActionSettings,
-  bulkEditFormSubmitActionSettings,
-} from './BulkEditAction.Settings';
+import * as BulkEditActionSettings from './BulkEditAction.Settings';
 import { BulkEditActionDecorator } from './BulkEditActionDecorator';
 import { BulkEditActionInitializer } from './BulkEditActionInitializer';
-import {
-  BulkEditBlockInitializers_deprecated,
-  CreateFormBulkEditBlockInitializers,
-  bulkEditBlockInitializers,
-} from './BulkEditBlockInitializers';
-import {
-  BulkEditFormActionInitializers_deprecated,
-  bulkEditFormActionInitializers,
-} from './BulkEditFormActionInitializers';
-import { BulkEditFormItemInitializers_deprecated, bulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
+import * as BulkEditBlockInitializers from './BulkEditBlockInitializers';
+import * as BulkEditFormActionInitializers from './BulkEditFormActionInitializers';
+import * as BulkEditFormItemInitializers from './BulkEditFormItemInitializers';
 import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
 import { bulkEditFormBlockSettings } from './BulkEditFormBlockSettings';
 import { BulkEditField } from './component/BulkEditField';
 import { useCustomizeBulkEditActionProps } from './utils';
+import { bulkEditTitleField } from '../client-v2/flow/bulkEditTitleField';
+import { bulkEditFieldComponent } from '../client-v2/flow/bulkEditFieldComponent';
+import * as models from '../client-v2/flow/models';
+
+const deprecatedBulkEditActionSettings = (BulkEditActionSettings as any).deprecatedBulkEditActionSettings;
+const BulkEditBlockInitializers_deprecated = (BulkEditBlockInitializers as any).BulkEditBlockInitializers_deprecated;
+const CreateFormBulkEditBlockInitializers = (BulkEditBlockInitializers as any).CreateFormBulkEditBlockInitializers;
+const BulkEditFormActionInitializers_deprecated = (BulkEditFormActionInitializers as any)
+  .BulkEditFormActionInitializers_deprecated;
+const BulkEditFormItemInitializers_deprecated = (BulkEditFormItemInitializers as any)
+  .BulkEditFormItemInitializers_deprecated;
+
+const { bulkEditActionSettings, bulkEditFormSubmitActionSettings } = BulkEditActionSettings;
+const { bulkEditBlockInitializers } = BulkEditBlockInitializers;
+const { bulkEditFormActionInitializers } = BulkEditFormActionInitializers;
+const { bulkEditFormItemInitializers } = BulkEditFormItemInitializers;
+
 export class PluginActionBulkEditClient extends Plugin {
   async load() {
+    // 先注册 bulkEditTitleField/bulkEditFieldComponent action，再导入 models
+    this.app.flowEngine.registerActions({ bulkEditTitleField, bulkEditFieldComponent });
+    this.app.flowEngine.registerModels(models);
     this.app.addComponents({ BulkEditField, BulkEditActionDecorator });
     this.app.addScopes({ useCustomizeBulkEditActionProps });
     this.app.schemaSettingsManager.add(bulkEditFormBlockSettings);

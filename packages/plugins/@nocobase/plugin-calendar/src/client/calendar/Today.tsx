@@ -7,22 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';
-import { useDesignable, useLazy } from '@nocobase/client';
+import { useDesignable } from '@nocobase/client';
 import { useTranslation } from '../../locale';
+import { Navigate } from 'react-big-calendar';
 
 export const Today = observer(
   (props) => {
     const { DesignableBar } = useDesignable();
     const { onNavigate } = useContext(CalendarToolbarContext);
     const { t } = useTranslation();
-    const Navigate = useLazy<typeof import('react-big-calendar/dist/react-big-calendar.esm').Navigate>(
-      () => import('react-big-calendar/dist/react-big-calendar.esm'),
-      'Navigate',
-    );
 
     return (
       <Button

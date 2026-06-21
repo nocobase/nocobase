@@ -1,0 +1,230 @@
+# create-nocobase-app インストール
+
+:::tip 前提条件
+
+- Node.js 20+、Yarn 1.22.x がインストールされていること
+- MySQL 8.0.17+、MariaDB 10.9+、PostgreSQL 10+ のいずれかのデータベースが設定され、起動していること
+- 中国国内のネットワーク環境のため、国内ミラーへの変更をお勧めします（必須ではありません）。
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
+
+:::
+
+## 1. NocoBase プロジェクトの作成
+
+NocoBase のバージョン（[バージョン比較](../quickstart.md)）とデータベースの種類を選択し、対応するコマンドを実行してください。
+
+<Tabs>
+
+<Tab label="Latest バージョン">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Beta バージョン">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Alpha バージョン">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+</Tabs>
+
+:::warning 環境変数の説明
+
+- `TZ` はアプリケーションのタイムゾーンを設定するために使用されます。デフォルトはオペレーティングシステムのタイムゾーンです。
+- `APP_KEY` はアプリケーションの秘密鍵で、ユーザーのトークン生成などに使用されます（`APP_KEY` を変更すると、古いトークンも無効になります）。任意のランダムな文字列に設定できます。**ご自身の秘密鍵に変更し、外部に漏洩しないようにしてください。**
+- `DB_*` はデータベース関連の設定です。実際の状況に合わせて、ご自身のデータベース接続情報に変更してください。
+
+:::
+
+## 2. ディレクトリの移動
+
+```bash
+cd my-nocobase-app
+```
+
+## 3. 依存関係のインストール
+
+📢 ネットワーク環境やシステム構成などの要因により、このステップには10分以上かかる場合があります。
+
+```bash
+yarn install
+```
+
+:::tip 本番環境でのヒント
+
+本番環境にデプロイする際は、サイズを削減するために必要な依存関係のみをインストールできます。
+
+```bash
+yarn install --production
+```
+
+:::
+
+## 4. NocoBase のインストール
+
+```bash
+yarn nocobase install --lang=ja-JP
+```
+
+インストールプロセスでは、データベースのテーブル構造の作成とデータの初期化が自動的に行われます。
+
+## 5. NocoBase の起動
+
+**開発環境**
+
+```bash
+yarn dev
+```
+
+**本番環境**
+
+```bash
+yarn start
+```
+
+## 6. NocoBase へのログイン
+
+ブラウザで [http://localhost:13000](http://localhost:13000) を開きます。初期アカウントとパスワードは `admin@nocobase.com` と `admin123` です。
+
+:::warning アカウントセキュリティのヒント
+
+初回ログイン後、システムの安全性を確保するために、速やかにデフォルトパスワードを変更してください。
+
+:::

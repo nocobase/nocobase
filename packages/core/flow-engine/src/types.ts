@@ -8,18 +8,12 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import type { FilterGroupType } from '@nocobase/utils/client';
-import { SubModelItem, SubModelItemsType } from './components';
-import {
-  FlowContext,
-  FlowEngineContext,
-  FlowModelContext,
-  FlowRuntimeContext,
-  FlowSettingsContext,
-} from './flowContext';
-import type { FlowDefinition } from './FlowDefinition';
+import { SubModelItem } from './components';
+import type { PropertyOptions } from './flowContext';
+import { FlowContext, FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
+import { FilterGroupOptions } from './resources';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -116,6 +110,8 @@ export interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
    * 仅填补缺失，不覆盖已有。固定返回形状：{ [stepKey]: params }
    */
   defaultParams?: Record<string, any> | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>);
+  enableTitle?: boolean;
+  divider?: 'top' | 'bottom';
 }
 
 export interface IModelComponentProps {
@@ -139,12 +135,18 @@ export type ModelConstructor<T extends FlowModel<any> = FlowModel<any>> = (new (
 export enum ActionScene {
   /** 块级联动规则可用 */
   BLOCK_LINKAGE_RULES = 1,
-  /** 字段级联动规则可用 */
+  /** 表单字段级联动规则可用 */
   FIELD_LINKAGE_RULES,
+  /** 子表单字段级联动规则可用 */
+  SUB_FORM_FIELD_LINKAGE_RULES,
+  /** 详情字段级联动规则可用 */
+  DETAILS_FIELD_LINKAGE_RULES,
   /** 按钮级联动规则可用 */
   ACTION_LINKAGE_RULES,
   /** 动态事件流可用 */
   DYNAMIC_EVENT_FLOW,
+  /** 菜单项联动规则可用 */
+  MENU_LINKAGE_RULES,
 }
 
 /**
@@ -162,6 +164,48 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
   scene?: ActionScene | ActionScene[];
   sort?: number;
+  /**
+   * Whether the step/action requires params to be configured before use.
+   */
+  paramsRequired?: boolean;
+  /**
+   * Whether to hide this step/action from settings menus.
+   * - Supports static boolean and dynamic decision based on runtime context.
+   * - StepDefinition.hideInSettings can override the ActionDefinition value.
+   */
+  hideInSettings?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
+  /**
+   * Whether to disable this step/action in settings menus.
+   * - Supports static boolean and dynamic decision based on runtime context.
+   * - StepDefinition.disabledInSettings can override the ActionDefinition value.
+   */
+  disabledInSettings?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
+  /**
+   * Optional reason shown when this step/action is disabled in settings menus.
+   * - Supports static string and dynamic resolver based on runtime context.
+   * - StepDefinition.disabledReasonInSettings can override the ActionDefinition value.
+   */
+  disabledReasonInSettings?: string | ((ctx: TCtx) => string | Promise<string>);
+  /**
+   * 在执行 Action 前为 ctx 定义临时属性。
+   * - 仅支持 PropertyOptions 形态（例如：{ foo: { value: 5 } }）；
+   * - 或函数形式（接收 ctx，返回 PropertyOptions 对象；支持 Promise）。
+   */
+  defineProperties?:
+    | Record<string, PropertyOptions>
+    | ((ctx: TCtx) => Record<string, PropertyOptions> | Promise<Record<string, PropertyOptions>>);
+  /**
+   * 在执行 Action 前为 ctx 定义临时方法。
+   * - 支持 JSON 形式（对象的值应为函数）
+   * - 或函数形式（接收 ctx，返回方法对象；支持 Promise）
+   */
+  defineMethods?:
+    | Record<string, (this: TCtx, ...args: any[]) => any>
+    | ((
+        ctx: TCtx,
+      ) =>
+        | Record<string, (this: TCtx, ...args: any[]) => any>
+        | Promise<Record<string, (this: TCtx, ...args: any[]) => any>>);
 }
 
 /**
@@ -171,6 +215,7 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
  */
 export type FlowEventName =
   | 'click'
+  | 'close'
   | 'submit'
   | 'reset'
   | 'remove'
@@ -184,22 +229,54 @@ export type FlowEventName =
   | (string & {});
 
 /**
+ * 事件流的执行时机（phase）。
+ *
+ * 说明：
+ * - 缺省（phase 未配置）表示保持现有行为；
+ * - 当配置了 phase 时，运行时会将其映射为 `scheduleModelOperation` 的 `when` 锚点；
+ * - phase 同时适用于动态事件流（实例级）与静态流（内置）。
+ */
+export type FlowEventPhase =
+  | 'beforeAllFlows'
+  | 'afterAllFlows'
+  | 'beforeFlow'
+  | 'afterFlow'
+  | 'beforeStep'
+  | 'afterStep';
+
+/**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
-export type FlowEventCondition = FilterGroupType | ((ctx: FlowContext) => boolean | Promise<boolean>);
 export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | FlowEventName
-  | { eventName: FlowEventName; condition?: FlowEventCondition };
+  | {
+      eventName: FlowEventName;
+      defaultParams?: Record<string, any>;
+      /** 动态事件流的执行时机（默认 beforeAllFlows） */
+      phase?: FlowEventPhase;
+      /** phase 为 beforeFlow/afterFlow/beforeStep/afterStep 时使用 */
+      flowKey?: string;
+      /** phase 为 beforeStep/afterStep 时使用 */
+      stepKey?: string;
+    };
+
+/**
+ * 事件分发选项。
+ */
+export interface DispatchEventOptions {
+  /** 是否顺序执行（默认并行） */
+  sequential?: boolean;
+  /** 是否使用缓存（默认 false；beforeRender 的默认值为 true，可覆盖） */
+  useCache?: boolean;
+}
 
 /**
  * 事件定义：用于事件注册表（全局/模型类级）。
  */
-export interface EventDefinition<TModel extends FlowModel = FlowModel> {
-  name: FlowEventName;
-  label?: string;
-  title?: string;
-  description?: string;
-}
+export type EventDefinition<
+  TModel extends FlowModel = FlowModel,
+  TCtx extends FlowContext = FlowContext,
+> = ActionDefinition<TModel, TCtx>;
 
 export type StepUIMode =
   | 'dialog'
@@ -207,7 +284,7 @@ export type StepUIMode =
   | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer' | 'embed'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch'; props?: Record<string, any>; key?: string };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 
@@ -226,8 +303,6 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   // Step configuration
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
-  paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
-  hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
 }
 
@@ -287,6 +362,18 @@ export type ParamObject = {
 export type RegisteredModelClassName = string;
 
 /**
+ * resolveUse 返回类型：可返回目标 use，或 { use, stop } 包含中断标志。
+ */
+export type ResolveUseResult =
+  | RegisteredModelClassName
+  | ModelConstructor
+  | {
+      use: RegisteredModelClassName | ModelConstructor;
+      /** 标记是否终止后续 resolveUse 链；默认 false（继续解析） */
+      stop?: boolean;
+    };
+
+/**
  * Options for creating a model instance
  */
 export interface CreateModelOptions {
@@ -303,11 +390,71 @@ export interface CreateModelOptions {
   delegateToParent?: boolean;
   [key: string]: any; // 允许额外的自定义选项
 }
+
+/**
+ * FlowModel loader result.
+ * Supports returning the model constructor directly, a default export, or a module object containing the named export.
+ */
+export type FlowModelLoaderResult =
+  | ModelConstructor
+  | {
+      default?: ModelConstructor;
+      [key: string]: unknown;
+    }
+  | Record<string, unknown>;
+
+/**
+ * FlowModel loader function.
+ */
+export type FlowModelLoader = () => Promise<FlowModelLoaderResult>;
+
+/**
+ * FlowModel loader entry (normalized internal form).
+ */
+export interface FlowModelLoaderEntry {
+  loader: FlowModelLoader;
+  extends?: string[];
+  // meta?: Partial<FlowModelMeta>;
+  // scenes?: string[];
+}
+
+/**
+ * FlowModel loader input (user-facing form for registerModelLoaders).
+ * The `extends` field accepts flexible formats that will be normalized to `string[]` at registration time.
+ */
+export interface FlowModelLoaderInput {
+  loader: FlowModelLoader;
+  extends?: string | ModelConstructor | (string | ModelConstructor)[];
+}
+
+/**
+ * FlowModel loader entry map (normalized internal form).
+ */
+export type FlowModelLoaderMap = Record<string, FlowModelLoaderEntry>;
+
+/**
+ * FlowModel loader input map (user-facing form for registerModelLoaders).
+ */
+export type FlowModelLoaderInputMap = Record<string, FlowModelLoaderInput>;
+
+/**
+ * Batch ensure result.
+ */
+export interface EnsureBatchResult {
+  requested: string[];
+  loaded: string[];
+  failed: Array<{
+    name: string;
+    error?: unknown;
+  }>;
+}
+
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
   save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;
+  duplicate(uid: string): Promise<Record<string, any> | null>;
 }
 
 /**
@@ -412,6 +559,12 @@ export type FlowModelMeta =
     // FlowModelMeta 独有的属性
     group?: string;
     /**
+     * 菜单展示形态：
+     * - 'group'：作为分组标题，子项平铺显示（默认）
+     * - 'submenu'：作为可点击的一级项，展开二级子菜单
+     */
+    menuType?: 'group' | 'submenu';
+    /**
      * 排序权重，数字越小排序越靠前，用于控制显示顺序和默认选择
      * 排序最靠前的将作为默认选择
      * @default 0
@@ -421,7 +574,7 @@ export type FlowModelMeta =
      * 是否在菜单中隐藏该模型类
      * @default false
      */
-    hide?: boolean;
+    hide?: boolean | ((context: FlowModelContext) => boolean);
     eventList?: { label: string; value: string }[]; // 支持的事件列表
   };
 
@@ -457,6 +610,20 @@ export interface ToolbarItemConfig {
   visible?: (model: FlowModel) => boolean;
   /** 排序权重，数字越小越靠右（先添加的在右边） */
   sort?: number;
+}
+
+export interface DynamicFlowSource {
+  key: string;
+  label: React.ReactNode;
+  model: FlowModel;
+  sort?: number;
+}
+
+export interface DynamicFlowSourceProvider {
+  key: string;
+  sort?: number;
+  visible?: (model: FlowModel) => boolean;
+  getSources: (model: FlowModel) => DynamicFlowSource[] | Promise<DynamicFlowSource[]>;
 }
 
 export interface ApplyFlowCacheEntry {

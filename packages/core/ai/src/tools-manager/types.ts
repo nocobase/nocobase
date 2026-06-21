@@ -1,0 +1,59 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type { Context } from '@nocobase/actions';
+
+export interface ToolsManager extends ToolsRegistration {
+  getTools(toolName: string, filter?: ToolsFilter): Promise<ToolsEntry>;
+  listTools(filter?: ToolsFilter): Promise<ToolsEntry[]>;
+  isToolsExisted(toolName: string): boolean;
+}
+
+export interface ToolsRegistration {
+  registerTools(options: ToolsOptions | ToolsOptions[]): void;
+  registerDynamicTools(provider: DynamicToolsProvider): void;
+}
+
+export type ToolsOptions = {
+  scope: Scope;
+  from?: From;
+  execution?: 'frontend' | 'backend';
+  defaultPermission?: Permission;
+  silence?: boolean;
+  introduction?: {
+    title: string;
+    about?: string;
+  };
+  definition: {
+    name: string;
+    description: string;
+    schema?: any;
+  };
+  invoke: (ctx: Context, args: any, runtime: ToolsRuntime) => Promise<any>;
+};
+
+export type ToolsRuntime = {
+  toolCallId: string;
+  writer: (chunk: any) => void;
+};
+
+export type ToolsEntry = ToolsOptions;
+
+export type Scope = 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
+export type Permission = 'ASK' | 'ALLOW';
+export type From = 'loader' | 'workflow' | 'mcp';
+
+export type DynamicToolsProvider = (register: ToolsRegistration, filter?: ToolsFilter) => Promise<void>;
+
+export type ToolsFilter = {
+  scope?: Scope;
+  defaultPermission?: Permission;
+  silence?: boolean;
+  sessionId?: string;
+};

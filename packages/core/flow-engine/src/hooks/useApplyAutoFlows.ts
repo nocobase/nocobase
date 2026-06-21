@@ -21,7 +21,7 @@ import { useFlowEngine } from '../provider';
 export function useApplyAutoFlows(
   modelOrUid: FlowModel | string,
   inputArgs?: Record<string, any>,
-  options?: { throwOnError?: boolean },
+  options?: { throwOnError?: boolean; useCache?: boolean },
 ) {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
@@ -35,10 +35,12 @@ export function useApplyAutoFlows(
 
   const { loading, error } = useRequest(
     async () => {
-      await model.applyAutoFlows(inputArgs);
+      if (!model) return;
+      // beforeRender 在模型层默认顺序执行并默认使用缓存（可覆盖）
+      await model.dispatchEvent('beforeRender', inputArgs, { useCache: options?.useCache });
     },
     {
-      refreshDeps: [model, inputArgs],
+      refreshDeps: [model, inputArgs, options?.useCache],
     },
   );
 

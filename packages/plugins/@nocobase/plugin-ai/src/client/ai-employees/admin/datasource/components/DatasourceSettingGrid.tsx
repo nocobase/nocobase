@@ -9,7 +9,20 @@
 
 import React, { PropsWithChildren } from 'react';
 import { FlowModelContext, MultiRecordResource, observer, useFlowContext } from '@nocobase/flow-engine';
-import { Button, ButtonProps, Divider, Flex, List, Modal, Result, Space, Switch, Tooltip, Typography } from 'antd';
+import {
+  Button,
+  ButtonProps,
+  Divider,
+  Empty,
+  Flex,
+  List,
+  Modal,
+  Result,
+  Space,
+  Switch,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { PlusOutlined, DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { Card, Col, Row } from 'antd';
 import _ from 'lodash';
@@ -45,14 +58,11 @@ export const DatasourceSettingGrid: React.FC = observer(() => {
       {data.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', height: '80vh' }}>
           <Card style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <Result
-              title={ctx.t('No datasource yet')}
-              extra={
-                <AddButton icon={<PlusOutlined />} type="primary">
-                  <span>{ctx.t('Create a new datasource')}</span>
-                </AddButton>
-              }
-            />
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}>
+              <AddButton icon={<PlusOutlined />} type="primary">
+                <span>{ctx.t('Create a new datasource')}</span>
+              </AddButton>
+            </Empty>
           </Card>
         </div>
       ) : (

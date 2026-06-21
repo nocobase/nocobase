@@ -9,7 +9,10 @@
 
 export default {
   name: 'asyncTasks',
+  dataCategory: 'business',
   autoGenId: false,
+  dumpRules: 'required',
+  migrationRules: ['schema-only'],
   createdAt: true,
   updatedAt: true,
   createdBy: true,

@@ -22,7 +22,7 @@ interface FlowEngineProviderProps {
 
 const FlowEngineReactContext = createContext<FlowEngine | null>(null);
 
-export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => {
+export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = React.memo((props) => {
   const { engine, children } = props;
   if (!engine) {
     throw new Error('FlowEngineProvider must be supplied with an engine.');
@@ -32,7 +32,9 @@ export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => 
       <FlowContextProvider context={engine.context}>{children}</FlowContextProvider>
     </FlowEngineReactContext.Provider>
   );
-};
+});
+
+FlowEngineProvider.displayName = 'FlowEngineProvider';
 
 export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { modal, message, notification } = App.useApp();
@@ -43,54 +45,72 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   const engine = useFlowEngine();
   const config = useContext(ConfigProvider.ConfigContext);
   const { token } = theme.useToken();
+  const isDarkTheme = React.useMemo(() => {
+    const algorithm = config?.theme?.algorithm;
+    if (Array.isArray(algorithm)) {
+      return algorithm.includes(theme.darkAlgorithm);
+    }
+    return algorithm === theme.darkAlgorithm;
+  }, [config]);
+
+  // 这些全局能力需要在 children 首次渲染前就可读，不能等到 effect 后再挂到上下文。
+  engine.context.defineProperty('viewer', {
+    cache: false,
+    get: (ctx) => new FlowViewer(ctx, { drawer, embed, popover, dialog }),
+  });
+  for (const item of Object.entries({
+    antdConfig: config,
+    modal,
+    message,
+    notification,
+  })) {
+    const [key, value] = item;
+    if (value) {
+      engine.context.defineProperty(key, { value });
+    }
+  }
+  // 将 themeToken 定义为 observable, 使组件能够响应主题的变更。
+  engine.context.defineProperty('themeToken', {
+    get: () => token,
+    observable: true,
+    cache: true,
+  });
+  // 统一把暗色模式暴露到 Flow 上下文，避免 flow 侧继续依赖 global-theme。
+  engine.context.defineProperty('isDarkTheme', {
+    get: () => isDarkTheme,
+    observable: true,
+    cache: true,
+    info: {
+      description: 'Whether current theme algorithm is dark mode.',
+      detail: 'boolean',
+    },
+  });
 
   useEffect(() => {
-    const context = {
-      antdConfig: config,
-      // themeToken 改为可观察的 getter，在下方单独 define
-      modal,
-      message,
-      notification,
-    };
-    engine.context.defineProperty('viewer', {
-      cache: false,
-      get: (ctx) => new FlowViewer(ctx, { drawer, embed, popover, dialog }),
-    });
-    // 将 themeToken 定义为 observable, 使组件能够响应主题的变更
-    engine.context.defineProperty('themeToken', {
-      get: () => token,
-      observable: true,
-      cache: true,
-    });
-    for (const item of Object.entries(context)) {
-      const [key, value] = item;
-      if (value) {
-        engine.context.defineProperty(key, { value });
-      }
-    }
     engine.reactView.refresh();
-  }, [engine, drawer, modal, message, notification, config, popover, token, dialog, embed]);
+  }, [engine, drawer, modal, message, notification, config, popover, token, dialog, embed, isDarkTheme]);
 
   return (
-    <>
+    <ConfigProvider {...config} locale={engine.context.locales?.antd} popupMatchSelectWidth={false}>
       {children}
       {contextHolder as any}
       {popoverContextHolder as any}
       {pageContextHolder as any}
       {dialogContextHolder as any}
       {/* The modal context is provided by App.useApp() */}
-    </>
+    </ConfigProvider>
   );
 };
-
-export const useFlowEngine = (): FlowEngine => {
+// 不 throw Error 怎么处理？
+export const useFlowEngine = ({ throwError = true } = {}): FlowEngine => {
   const context = useContext(FlowEngineReactContext);
-  if (!context) {
+  if (!context && throwError) {
     // This error should ideally not be hit if FlowEngineProvider is used correctly at the root
     // and always supplied with an engine.
-    throw new Error(
+    console.warn(
       'useFlowEngine must be used within a FlowEngineProvider, and FlowEngineProvider must be supplied with an engine.',
     );
+    return;
   }
   return context;
 };

@@ -1,4 +1,5 @@
-import { Application, CardUpload, FieldModelRenderer, FormComponent, Plugin, UploadFieldModel } from '@nocobase/client';
+import { Application, FieldModelRenderer, FormComponent, Plugin } from '@nocobase/client';
+import { CardUpload, UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 import { FlowModel, FlowModelRenderer, FormItem } from '@nocobase/flow-engine';
 import React from 'react';
 

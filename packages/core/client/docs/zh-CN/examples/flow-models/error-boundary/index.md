@@ -3,7 +3,7 @@
 本页汇总并演示三类常见的错误回退场景，便于一次性对比查看：
 
 - CreateForm 字段渲染异常
-- CreateForm 自动流（useApplyAutoFlows）异常
+- CreateForm beforeRender事件流
 - 表格列（RenderFunction）单元格渲染异常
 
 ## CreateForm 字段异常
@@ -12,7 +12,7 @@
 
 <code src="./create-form-field-error.tsx"></code>
 
-## CreateForm 自动流异常
+## CreateForm beforeRender事件流异常
 
 当自动流（useApplyAutoFlows）执行过程中发生异常时，错误将被提升为渲染期错误并由外层错误边界捕获。
 

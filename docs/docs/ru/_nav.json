@@ -1,0 +1,34 @@
+[
+  {
+    "text": "Начало работы",
+    "link": "/ai/how-nocobase-works"
+  },
+  {
+    "text": "ИИ",
+    "link": "/ai/"
+  },
+  {
+    "text": "Обучение",
+    "link": "/tutorials/v2/"
+  },
+  {
+    "text": "Руководство",
+    "link": "/guide/"
+  },
+  {
+    "text": "Разработка",
+    "link": "/development/"
+  },
+  {
+    "text": "Плагины",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
+  },
+  {
+    "text": "Главная",
+    "link": "https://nocobase.ru/"
+  }
+]

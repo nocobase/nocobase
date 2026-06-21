@@ -313,7 +313,6 @@ export function correctIdReferences(schemas) {
 }
 
 export function convertTemplateToBlock(data, templateKey?: string, options?: any) {
-  // debugger;
   let tpls = data?.properties; // Grid开始的区块
   tpls = _.get(Object.values(tpls), '0.properties'); // Grid.Row开始的区块
   const schemas = [];

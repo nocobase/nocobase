@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { useRecord } from '@nocobase/client';
 import { Select, Tag } from 'antd';
 import React from 'react';
@@ -15,10 +15,10 @@ import { omit } from 'lodash';
 
 export const FieldType = observer(
   (props: any) => {
-    const { value, handleFieldChange, onChange } = props;
+    const { value, handleFieldChange, onChange, disabled } = props;
     const record = useRecord();
     const item = omit(record, ['__parent', '__collectionName']);
-    return !item?.possibleTypes ? (
+    return disabled || !item?.possibleTypes ? (
       <Tag>{value}</Tag>
     ) : (
       <Select

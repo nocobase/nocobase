@@ -25,12 +25,13 @@ import {
   useCollectionParentRecordData,
   useDesignable,
   useFormBlockContext,
-  useLazy,
+  lazy,
   usePopupUtils,
   useProps,
   withDynamicSchemaProps,
   withSkeletonComponent,
   useAPIClient,
+  useLazy,
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -52,6 +53,7 @@ import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import zhCN from 'date-fns/locale/zh-CN';
+import ru from 'date-fns/locale/ru';
 
 interface Event {
   id: string;
@@ -80,6 +82,7 @@ function Toolbar(props: ToolbarProps) {
       }, null),
     [],
   );
+
   return (
     <CalendarToolbarContext.Provider value={props}>
       <NocoBaseRecursionField name={toolBarSchema.name} schema={toolBarSchema} />
@@ -99,6 +102,7 @@ const useEvents = (
   date: Date,
   view: (typeof Weeks)[number] | any = 'month',
 ) => {
+  // 这里的 useLazy 暂时不迁移，因为是在 hooks 里的同步依赖
   const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
     () => import('cron-parser'),
     'parseExpression',
@@ -257,18 +261,8 @@ export const Calendar: any = withDynamicSchemaProps(
       const { openPopup } = usePopupUtils({
         setVisible,
       });
-      const reactBigCalendar = useLazy(
-        () => import('react-big-calendar'),
-        (module) => ({
-          BigCalendar: module.Calendar,
-          dayjsLocalizer: module.dayjsLocalizer,
-        }),
-      );
+      const { Calendar: BigCalendar } = lazy(() => import('react-big-calendar'), 'Calendar');
 
-      const eq = useLazy<typeof import('react-big-calendar/lib/utils/dates').eq>(
-        () => import('react-big-calendar/lib/utils/dates'),
-        'eq',
-      );
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { dataSource, fieldNames, showLunar, getFontColor, getBackgroundColor, enableQuickCreateEvent } =
         useProps(props);
@@ -281,6 +275,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const parentRecordData = useCollectionParentRecordData();
       const fieldSchema = useFieldSchema();
       const field = useField();
+      const hasSchemaRuntime = fieldSchema?.properties;
       //nint deal with slot select to show create popup
       const { parseAction } = useACLRoleContext();
       const collection = useCollection();
@@ -295,31 +290,59 @@ export const Calendar: any = withDynamicSchemaProps(
       const locales = {
         'zh-CN': zhCN,
         'en-US': enUS,
+        'ru-RU': ru,
       };
       const locale = apiClient.auth.locale || 'en-US';
       const formats = useMemo(() => {
         return {
           monthHeaderFormat: (date, culture, local) =>
-            local.format(date, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locales[locale]),
-          dayHeaderFormat: (date, culture, local) => {
-            return local.format(date, props.locale === 'zh-CN' ? 'eee, M/d' : 'EEE, MMM d', locales[locale]);
-          },
+            local.format(
+              date,
+              culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+              culture,
+            ),
+          // dayHeaderFormat: (date, culture, local) => {
+          //   return local.format(date, culture === 'zh-CN' ? 'eee, M/d' : culture === 'ru-RU' ? 'EEE, d MMM' : 'EEE, MMM d', culture);
+          // },
           agendaDateFormat: (date, culture, local) => {
-            return local.format(date, props.locale === 'zh-CN' ? 'M月d日' : 'M-dd', locales[locale]);
+            // return local.format(date, culture === 'zh-CN' ? 'M月d日' : culture === 'ru-RU' ? 'd MMM' : 'M-dd', culture);
+            return local.format(
+              date,
+              culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+              culture,
+            );
           },
+          dayHeaderFormat: (date, culture, local) => {
+            return local.format(
+              date,
+              culture === 'zh-CN' ? 'eee, M/d' : culture === 'ru-RU' ? 'EEE, d MMM' : 'EEE, MMM d',
+              culture,
+            );
+          },
+          // agendaDateFormat: (date, culture, local) => {
+          //   return local.format(date, culture === 'zh-CN' ? 'M月d日' : culture === 'ru-RU' ? 'd MMM' : 'M-dd', culture);
+          // },
 
           dayRangeHeaderFormat: ({ start, end }, culture, local) => {
             if (start.getMonth() === end.getMonth()) {
-              return local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locale);
+              return local.format(
+                start,
+                culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+                culture,
+              );
             }
-            return `${local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locale)} - ${local.format(
+            return `${local.format(
+              start,
+              culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+              culture,
+            )} - ${local.format(
               end,
-              locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy',
-              locale,
+              culture === 'zh-CN' ? 'yyyy年M月' : culture === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
+              culture,
             )}`;
           },
           weekdayFormat: (date, culture, local) => {
-            return local.format(date, 'eee', locale);
+            return local.format(date, 'EEE', culture);
           },
         };
       }, [locale, view]);
@@ -394,8 +417,6 @@ export const Calendar: any = withDynamicSchemaProps(
       // 快速创建行程
       const useCreateFormBlockProps = () => {
         const ctx = useFormBlockContext();
-        let startDateValue = currentSelectDate.start;
-        let endDataValue = currentSelectDate.end;
         const startCollectionField = collection.getField(startFieldName);
         const endCollectionField = collection.getField(endFieldName);
 
@@ -414,7 +435,7 @@ export const Calendar: any = withDynamicSchemaProps(
               ...ctx.form?.query(endFieldName).take()?.componentProps,
             };
 
-            startDateValue = handleDateChangeOnForm(
+            const startDateValue = handleDateChangeOnForm(
               currentSelectDate.start,
               startFieldProps.dateOnly,
               startFieldProps.utc,
@@ -422,7 +443,7 @@ export const Calendar: any = withDynamicSchemaProps(
               startFieldProps.showTime,
               startFieldProps.gtm,
             );
-            endDataValue = handleDateChangeOnForm(
+            const endDataValue = handleDateChangeOnForm(
               currentSelectDate.end,
               endFieldProps.dateOnly,
               endFieldProps.utc,
@@ -437,12 +458,17 @@ export const Calendar: any = withDynamicSchemaProps(
               form.setInitialValuesIn([endFieldName], endDataValue);
             }
           }
-        }, [ctx.form, ctx.service?.data?.data, ctx.service?.loading]);
+        }, [
+          ctx.form,
+          ctx.service?.data?.data,
+          ctx.service?.loading,
+          endCollectionField?.uiSchema,
+          startCollectionField?.uiSchema,
+        ]);
         return {
           form: ctx.form,
         };
       };
-      const BigCalendar = reactBigCalendar?.BigCalendar;
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
@@ -465,7 +491,8 @@ export const Calendar: any = withDynamicSchemaProps(
               onView={setView}
               onSelectSlot={(slotInfo) => {
                 setCurrentSelectDate(slotInfo);
-                if (canCreate && enableQuickCreateEvent) {
+                props.onSelectSlot?.(slotInfo);
+                if (hasSchemaRuntime && canCreate && enableQuickCreateEvent) {
                   insertAddNewer(addNew);
                   setVisibleAddNewer(true);
                 }
@@ -478,6 +505,10 @@ export const Calendar: any = withDynamicSchemaProps(
                 if (!record) {
                   return;
                 }
+                props.onSelectEvent?.({ event, record });
+                if (!hasSchemaRuntime) {
+                  return;
+                }
                 record.__event = {
                   ...omit(event, 'title'),
                   start: formatDate(dayjs(event.start)),
@@ -487,7 +518,7 @@ export const Calendar: any = withDynamicSchemaProps(
                 setRecord(record);
                 openPopup({
                   recordData: record,
-                  customActionSchema: findEventSchema(fieldSchema),
+                  customActionSchema: fieldSchema ? findEventSchema(fieldSchema) : undefined,
                 });
               }}
               formats={formats}
@@ -503,33 +534,38 @@ export const Calendar: any = withDynamicSchemaProps(
               //   },
               // }}
               components={components}
+              culture={locale}
               localizer={localizer}
               tooltipAccessor={(val) => {
+                // @ts-expect-error 这里没有改之前的运行时代码，只是从 useLazy 改成了动态 import 导入。
+                // 之前使用 useLazy 引入的 Calendar 的类型是 any，所以没报错。这里有实际类型了，但是类型有点问题，先不处理
                 return val.rawTitle ? val.rawTitle : '';
               }}
             />
           </PopupContextProvider>
-          <ActionContextProvider
-            value={{
-              ...ctx,
-              visible: visibleAddNewer,
-              setVisible: setVisibleAddNewer,
-              openMode: findEventSchema(fieldSchema)?.['x-component-props']?.['openMode'],
-            }}
-          >
-            <CollectionProvider name={collection.name}>
-              <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
-                <NocoBaseRecursionField
-                  onlyRenderProperties
-                  basePath={field?.address}
-                  schema={fieldSchema}
-                  filterProperties={(s) => {
-                    return s['x-component'] === 'AssociationField.AddNewer';
-                  }}
-                />
-              </SchemaComponentOptions>
-            </CollectionProvider>
-          </ActionContextProvider>
+          {hasSchemaRuntime && collection ? (
+            <ActionContextProvider
+              value={{
+                ...ctx,
+                visible: visibleAddNewer,
+                setVisible: setVisibleAddNewer,
+                openMode: findEventSchema(fieldSchema)?.['x-component-props']?.['openMode'],
+              }}
+            >
+              <CollectionProvider name={collection.name}>
+                <SchemaComponentOptions scope={{ useCreateFormBlockProps }}>
+                  <NocoBaseRecursionField
+                    onlyRenderProperties
+                    basePath={field?.address}
+                    schema={fieldSchema}
+                    filterProperties={(s) => {
+                      return s['x-component'] === 'AssociationField.AddNewer';
+                    }}
+                  />
+                </SchemaComponentOptions>
+              </CollectionProvider>
+            </ActionContextProvider>
+          ) : null}
         </div>,
       );
     },

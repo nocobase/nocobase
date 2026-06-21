@@ -14,14 +14,50 @@ import { Logger } from '@nocobase/logger';
 import { parse } from '@nocobase/utils';
 import set from 'lodash/set';
 import type Plugin from './Plugin';
-import { EXECUTION_STATUS, JOB_STATUS } from './constants';
-import { Runner } from './instructions';
+import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from './constants';
+import { IJob, InstructionResult, Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
+import { isWorkflowTimeoutError, WorkflowTimeoutError } from './timeout-errors';
+
+export type ProcessorRunOptions = {
+  rerun?: true;
+  signal?: AbortSignal;
+};
+
+export type ProcessorRerunOptions = {
+  nodeId?: string | number;
+  overwrite?: boolean;
+};
+
+type RerunContext = {
+  overwrite: boolean;
+  targetJob?: JobModel;
+};
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;
   [key: string]: any;
 }
+
+export type BackgroundAbortHandle = {
+  signal: AbortSignal;
+  dispose: () => void;
+  throwIfAborted: () => void;
+};
+
+export type ScopeTransaction = {
+  transaction: Transaction;
+  dataSource: string;
+  isolationLevel?: string;
+  closing?: 'commit' | 'rollback';
+};
+
+type TransactionWithFinished = Transaction & {
+  // Sequelize sets this runtime flag after commit/rollback; it is not part of NocoBase's Transaction type.
+  finished?: string;
+};
+
+const OPEN_SCOPE_PENDING_ERROR = 'Pending jobs are not allowed inside an open transaction scope';
 
 export default class Processor {
   static StatusMap = {
@@ -40,12 +76,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  transaction: Transaction;
-
-  /**
-   * @experimental
-   */
-  mainTransaction: Transaction;
+  transaction?: Transaction | null = null;
 
   /**
    * @experimental
@@ -60,11 +91,18 @@ export default class Processor {
   private jobsMapByNodeKey: { [key: string]: JobModel } = {};
   private jobResultsMapByNodeKey: { [key: string]: any } = {};
   private jobsToSave: Map<string, JobModel> = new Map();
+  private scopeTransactions = new Map<string, ScopeTransaction>();
+  private rerunContext: RerunContext | null = null;
 
   /**
    * @experimental
    */
   lastSavedJob: JobModel | null = null;
+  abortController = new AbortController();
+  timeoutGuard: NodeJS.Timeout | null = null;
+  private runningRegistered = false;
+  private abortReason: string | null = null;
+  private aborted = false;
 
   constructor(
     public execution: ExecutionModel,
@@ -72,6 +110,104 @@ export default class Processor {
   ) {
     this.logger = options.plugin.getLogger(execution.workflowId);
     this.transaction = options.transaction;
+  }
+
+  get abortSignal() {
+    return this.abortController.signal;
+  }
+
+  setTimeoutGuard(ms: number) {
+    if (this.timeoutGuard) {
+      clearTimeout(this.timeoutGuard);
+    }
+    this.timeoutGuard = setTimeout(() => {
+      this.abortExecution(EXECUTION_REASON.TIMEOUT);
+    }, ms);
+  }
+
+  abortExecution(reason?: string) {
+    this.aborted = true;
+    this.abortReason = reason ?? null;
+    if (!this.abortController.signal.aborted) {
+      this.abortController.abort(
+        reason === EXECUTION_REASON.TIMEOUT
+          ? new WorkflowTimeoutError('Workflow execution has been aborted')
+          : new Error('Workflow execution has been aborted'),
+      );
+    }
+  }
+
+  isTimeoutAborted() {
+    return this.abortSignal.aborted;
+  }
+
+  /**
+   * Create an independent abort handle for background work that outlives this processor's
+   * run loop (e.g. fire-and-forget instructions that resume the job later). It mirrors the
+   * current abort state and sets its own timer based on the execution's `expiresAt`, so the
+   * timeout still applies after the processor has exited its synchronous run.
+   *
+   * The caller must invoke `dispose()` once the background work settles to release the timer
+   * and the abort listener.
+   */
+  createBackgroundAbortHandle(): BackgroundAbortHandle {
+    const controller = new AbortController();
+    const sourceSignal = this.abortSignal;
+    let timeoutGuard: NodeJS.Timeout | null = null;
+    let sourceListener: (() => void) | null = null;
+
+    const abort = (reason?: any) => {
+      if (!controller.signal.aborted) {
+        controller.abort(isWorkflowTimeoutError(reason) ? reason : new WorkflowTimeoutError());
+      }
+    };
+
+    if (sourceSignal.aborted) {
+      abort(sourceSignal.reason);
+    } else {
+      sourceListener = () => abort(sourceSignal.reason);
+      sourceSignal.addEventListener('abort', sourceListener, { once: true });
+    }
+
+    const remaining = this.execution.expiresAt ? this.execution.expiresAt.getTime() - Date.now() : null;
+    if (remaining != null) {
+      if (remaining <= 0) {
+        abort();
+      } else {
+        timeoutGuard = setTimeout(abort, remaining);
+      }
+    }
+
+    return {
+      signal: controller.signal,
+      dispose: () => {
+        if (timeoutGuard) {
+          clearTimeout(timeoutGuard);
+          timeoutGuard = null;
+        }
+        if (sourceListener) {
+          sourceSignal.removeEventListener('abort', sourceListener);
+          sourceListener = null;
+        }
+      },
+      throwIfAborted: () => {
+        if (controller.signal.aborted) {
+          throw controller.signal.reason ?? new WorkflowTimeoutError();
+        }
+      },
+    };
+  }
+
+  /**
+   * Reload a job and return it only when it is still pending, otherwise `null`. Background
+   * work uses this before resuming so it never overwrites a job that another path (timeout
+   * abort, a competing resume) has already settled.
+   */
+  async findPendingJob(jobId: number | string): Promise<JobModel | null> {
+    const job = await this.options.plugin.db.getRepository('jobs').findOne({
+      filterByTk: jobId,
+    });
+    return job?.status === JOB_STATUS.PENDING ? job : null;
   }
 
   // make dual linked nodes list then cache
@@ -94,11 +230,15 @@ export default class Processor {
   }
 
   private makeJobs(jobs: Array<JobModel>) {
-    jobs.forEach((job) => {
+    for (const job of jobs) {
       const node = this.nodesMap.get(job.nodeId);
+      if (!node) {
+        this.logger.warn(`node (#${job.nodeId}) not found for job (#${job.id}), this will lead to unexpected error`);
+        continue;
+      }
       this.jobsMapByNodeKey[node.key] = job;
       this.jobResultsMapByNodeKey[node.key] = job.result;
-    });
+    }
   }
 
   public async prepare() {
@@ -107,16 +247,14 @@ export default class Processor {
       options: { plugin },
     } = this;
 
-    this.mainTransaction = plugin.useDataSourceTransaction('main', this.transaction);
-
-    const transaction = this.mainTransaction;
-
     if (!execution.workflow) {
-      execution.workflow =
-        plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
+      execution.workflow = plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow());
+    }
+    if (!execution.workflow) {
+      throw new Error(`workflow (#${execution.workflowId}) not found for execution (#${execution.id})`);
     }
 
-    const nodes = execution.workflow.nodes || (await execution.workflow.getNodes({ transaction }));
+    const nodes = execution.workflow.nodes || (await execution.workflow.getNodes());
     execution.workflow.nodes = nodes;
 
     this.makeNodes(nodes);
@@ -129,14 +267,12 @@ export default class Processor {
         executionId: execution.id,
       },
       raw: true,
-      transaction,
     });
     const jobs = await execution.getJobs({
       where: {
         id: jobIds.map((item) => item.id),
       },
       order: [['id', 'ASC']],
-      transaction,
     });
 
     execution.jobs = jobs;
@@ -146,62 +282,172 @@ export default class Processor {
 
   public async start() {
     const { execution } = this;
-    if (execution.status) {
-      this.logger.warn(`execution was ended with status ${execution.status} before, could not be started again`);
+    if (!(await this.shouldContinueExecution())) {
+      this.logger.warn(`execution was ended with status ${execution.status} before, could not be started again`, {
+        workflowId: execution.workflowId,
+      });
       return;
     }
-    await this.prepare();
-    if (this.nodes.length) {
-      const head = this.nodes.find((item) => !item.upstream);
-      await this.run(head, { result: execution.context });
-    } else {
-      await this.exit(JOB_STATUS.RESOLVED);
+    this.enterRunningState();
+    try {
+      await this.prepare();
+      if (this.nodes.length) {
+        const head = this.nodes.find((item) => !item.upstream);
+        if (!head) {
+          this.logger.warn(`head node not found for workflow (${execution.workflowId}), could not be started`, {
+            workflowId: execution.workflowId,
+          });
+          return this.exit(JOB_STATUS.ERROR);
+        }
+        await this.run(head);
+      } else {
+        await this.exit(JOB_STATUS.RESOLVED);
+      }
+    } finally {
+      this.leaveRunningState();
     }
   }
 
   public async resume(job: JobModel) {
     const { execution } = this;
-    if (execution.status) {
-      this.logger.warn(`execution was ended with status ${execution.status} before, could not be resumed`);
+    if (!(await this.shouldContinueExecution())) {
+      this.logger.warn(`execution was ended with status ${execution.status} before, could not be resumed`, {
+        workflowId: execution.workflowId,
+      });
       return;
     }
-    await this.prepare();
-    const node = this.nodesMap.get(job.nodeId);
-    await this.recall(node, job);
+    this.enterRunningState();
+    try {
+      await this.prepare();
+      const node: FlowNodeModel = this.nodesMap.get(job.nodeId) as FlowNodeModel;
+      await this.recall(node, job);
+    } finally {
+      this.leaveRunningState();
+    }
   }
 
-  private async exec(instruction: Runner, node: FlowNodeModel, prevJob) {
-    let job;
+  public resolveRerun(options: ProcessorRerunOptions = {}) {
+    const node = this.getRerunNode(options.nodeId);
+    const targetJob = this.jobsMapByNodeKey[node.key];
+
+    if (options.nodeId != null && !targetJob) {
+      throw new Error(`job of node (#${node.id}) not found in execution (#${this.execution.id})`);
+    }
+
+    if (options.nodeId == null && options.overwrite && !targetJob) {
+      throw new Error(`job of head node (#${node.id}) not found in execution (#${this.execution.id})`);
+    }
+
+    const input = this.getRerunInput(node);
+    return { node, input, targetJob };
+  }
+
+  public async rerun(options: ProcessorRerunOptions = {}) {
+    const { execution } = this;
+    if (execution.status !== EXECUTION_STATUS.STARTED) {
+      throw new Error(`execution (#${execution.id}) is not started`);
+    }
+    if (!(await this.shouldContinueExecution())) {
+      this.logger.warn(`execution was ended with status ${execution.status} before, could not be rerun`, {
+        workflowId: execution.workflowId,
+      });
+      return;
+    }
+
+    this.enterRunningState();
+    try {
+      await this.prepare();
+      const { node, input, targetJob } = this.resolveRerun(options);
+      this.rerunContext = {
+        overwrite: options.overwrite === true,
+        targetJob,
+      };
+
+      return await this.run(node, input, { rerun: true });
+    } finally {
+      this.rerunContext = null;
+      this.leaveRunningState();
+    }
+  }
+
+  private getRerunNode(nodeId?: string | number) {
+    if (nodeId != null) {
+      const node = this.nodesMap.get(nodeId) || this.nodes.find((item) => String(item.id) === String(nodeId));
+      if (!node) {
+        throw new Error(`node (#${nodeId}) not found in workflow (#${this.execution.workflowId})`);
+      }
+      return node;
+    }
+
+    const head = this.nodes.find((item) => !item.upstream);
+    if (!head) {
+      throw new Error(`head node not found in workflow (#${this.execution.workflowId})`);
+    }
+    return head;
+  }
+
+  private getRerunInput(node: FlowNodeModel) {
+    if (!node.upstream) {
+      return { result: this.execution.context };
+    }
+
+    const upstreamJob = this.jobsMapByNodeKey[node.upstream.key];
+    if (!upstreamJob) {
+      throw new Error(`upstream job of node (#${node.id}) not found in execution (#${this.execution.id})`);
+    }
+
+    return upstreamJob;
+  }
+
+  private async exec(
+    instruction: Runner,
+    node: FlowNodeModel,
+    prevJob?: JobModel | { result: unknown },
+    options: ProcessorRunOptions = {},
+  ): Promise<any> {
+    let job: InstructionResult;
+    if (!(await this.shouldContinueExecution())) {
+      return this.exit();
+    }
     try {
       // call instruction to get result and status
-      this.logger.debug(`config of node`, { data: node.config });
-      job = await instruction(node, prevJob, this);
+      this.logger.debug(`config of node`, { data: node.config, workflowId: node.workflowId });
+      job = await instruction(node, prevJob, this, { ...options, signal: this.abortSignal });
       if (job === null) {
         return this.exit();
       }
       if (!job) {
         return this.exit(true);
       }
-    } catch (err) {
-      // for uncaught error, set to error
-      this.logger.error(
-        `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) failed: `,
-        err,
-      );
-      job = {
-        result:
-          err instanceof Error
-            ? {
-                message: err.message,
-                ...err,
-              }
-            : err,
-        status: JOB_STATUS.ERROR,
-      };
+    } catch (err: any) {
+      if (isWorkflowTimeoutError(err) || (this.abortSignal.aborted && this.aborted)) {
+        job = {
+          result: {
+            message: err.message,
+          },
+          status: JOB_STATUS.ABORTED,
+        };
+      } else {
+        // for uncaught error, set to error
+        this.logger.error(
+          `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) failed: `,
+          { error: err, workflowId: node.workflowId },
+        );
+        job = {
+          result:
+            err instanceof Error
+              ? {
+                  ...err,
+                  message: err.message,
+                }
+              : err,
+          status: JOB_STATUS.ERROR,
+        };
+      }
       // if previous job is from resuming
-      if (prevJob && prevJob.nodeId === node.id) {
-        prevJob.set(job);
-        job = prevJob;
+      if (prevJob instanceof Model && (prevJob as JobModel).nodeId === node.id) {
+        (prevJob as JobModel).set(job);
+        job = prevJob as JobModel;
       }
     }
 
@@ -214,8 +460,15 @@ export default class Processor {
 
     this.logger.info(
       `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) finished as status: ${savedJob.status}`,
+      {
+        workflowId: node.workflowId,
+      },
     );
     this.logger.debug(`result of node`, { data: savedJob.result });
+
+    if (this.execution.status === EXECUTION_STATUS.ABORTED || this.isTimeoutAborted()) {
+      return this.exit(JOB_STATUS.ABORTED);
+    }
 
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
@@ -227,7 +480,7 @@ export default class Processor {
     return this.end(node, savedJob);
   }
 
-  public async run(node, input?) {
+  public async run(node: FlowNodeModel, input?: JobModel | { result: unknown }, options?: ProcessorRunOptions) {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
     if (!instruction) {
@@ -237,17 +490,21 @@ export default class Processor {
       return Promise.reject(new Error('`run` should be implemented for customized execution of the node'));
     }
 
-    this.logger.info(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id})`);
-    return this.exec(instruction.run.bind(instruction), node, input);
+    this.logger.info(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id})`, {
+      workflowId: node.workflowId,
+    });
+    return this.exec(instruction.run.bind(instruction), node, input, options);
   }
 
   // parent node should take over the control
-  public async end(node, job: JobModel) {
+  public async end(node: FlowNodeModel, job: JobModel) {
     this.logger.debug(`branch ended at node (${node.id})`);
     const parentNode = this.findBranchParentNode(node);
     // no parent, means on main flow
     if (parentNode) {
-      this.logger.debug(`not on main, recall to parent entry node (${node.id})})`);
+      this.logger.debug(`not on main, recall to parent entry node (${node.id})})`, {
+        workflowId: node.workflowId,
+      });
       await this.recall(parentNode, job);
       return null;
     }
@@ -257,7 +514,7 @@ export default class Processor {
     return this.exit(job.status);
   }
 
-  private async recall(node, job) {
+  private async recall(node: FlowNodeModel, job: JobModel) {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
     if (!instruction) {
@@ -269,14 +526,29 @@ export default class Processor {
       );
     }
 
-    this.logger.info(`execution (${this.execution.id}) resume instruction [${node.type}] for node (${node.id})`);
+    this.logger.info(`execution (${this.execution.id}) resume instruction [${node.type}] for node (${node.id})`, {
+      workflowId: node.workflowId,
+    });
     return this.exec(instruction.resume.bind(instruction), node, job);
   }
 
   public async exit(s?: number | true) {
+    this.leaveRunningState();
     if (s === true) {
       return;
     }
+
+    if ((s == null || s === JOB_STATUS.PENDING) && this.hasOpenScopeTransactions()) {
+      this.markOpenScopePendingJobsAsError(OPEN_SCOPE_PENDING_ERROR);
+      s = JOB_STATUS.ERROR;
+    }
+
+    const hadScopeTransactions = this.scopeTransactions.size > 0;
+    await this.cleanupScopeTransactions({ allowCommit: s === JOB_STATUS.RESOLVED });
+    if (hadScopeTransactions && s == null && this.execution.status === EXECUTION_STATUS.STARTED) {
+      s = JOB_STATUS.ERROR;
+    }
+
     if (this.jobsToSave.size) {
       const newJobs = [];
       for (const job of this.jobsToSave.values()) {
@@ -289,6 +561,10 @@ export default class Processor {
             changes.push([`status`, job.status]);
             job.changed('status', false);
           }
+          if (job.changed('meta')) {
+            changes.push([`meta`, JSON.stringify(job.meta ?? null)]);
+            job.changed('meta', false);
+          }
           if (job.changed('result')) {
             changes.push([`result`, JSON.stringify(job.result ?? null)]);
             job.changed('result', false);
@@ -298,10 +574,10 @@ export default class Processor {
               `UPDATE ${JobCollection.quotedTableName()} SET ${changes.map(([key]) => `${key} = ?`)} WHERE id='${
                 job.id
               }'`,
-              { replacements: changes.map(([, value]) => value), transaction: this.mainTransaction },
+              { replacements: changes.map(([, value]) => value) },
             );
           }
-          // await job.save({ transaction: this.mainTransaction });
+          // await job.save();
         }
       }
       if (newJobs.length) {
@@ -309,7 +585,6 @@ export default class Processor {
         await JobsModel.bulkCreate(
           newJobs.map((job) => job.toJSON()),
           {
-            transaction: this.mainTransaction,
             returning: false,
           },
         );
@@ -320,26 +595,172 @@ export default class Processor {
       this.jobsToSave.clear();
     }
     if (typeof s === 'number') {
-      const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
-      await this.execution.update({ status }, { transaction: this.mainTransaction });
+      const status =
+        (<typeof Processor>this.constructor).StatusMap[s as keyof typeof Processor.StatusMap] ?? Math.sign(s);
+      const values: { status: number; reason?: string } = { status };
+      if (status === EXECUTION_STATUS.ABORTED && this.abortReason) {
+        values.reason = this.abortReason;
+      }
+      const ExecutionModelClass = this.options.plugin.db.getModel('executions');
+      const [affected] = await ExecutionModelClass.update(values, {
+        where: {
+          id: this.execution.id,
+          status: EXECUTION_STATUS.STARTED,
+        },
+        individualHooks: true,
+      });
+      if (affected) {
+        this.execution.set(values);
+      } else {
+        await this.execution.reload();
+      }
     }
-    if (this.mainTransaction && this.mainTransaction !== this.transaction) {
-      await this.mainTransaction.commit();
+
+    if (this.execution.status === EXECUTION_STATUS.STARTED) {
+      this.options.plugin.timeoutManager.scheduleExecutionTimeout(this.execution);
+    } else {
+      this.options.plugin.timeoutManager.clear(this.execution.id);
+      this.options.plugin.timeoutManager.invalidateNextExpiresAtIfMatches(this.execution.expiresAt);
     }
-    this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`);
+
+    this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`, {
+      workflowId: this.execution.workflowId,
+    });
     return null;
+  }
+
+  setScopeTransaction(key: string, info: ScopeTransaction) {
+    this.scopeTransactions.set(key, info);
+  }
+
+  getScopeTransactionByKey(key: string) {
+    return this.scopeTransactions.get(key) ?? null;
+  }
+
+  clearScopeTransaction(key: string) {
+    this.scopeTransactions.delete(key);
+  }
+
+  markScopeTransactionClosing(key: string, action: 'commit' | 'rollback') {
+    const scopeTransaction = this.scopeTransactions.get(key);
+    if (scopeTransaction) {
+      scopeTransaction.closing = action;
+    }
+  }
+
+  getScopeTransaction(node: FlowNodeModel, dataSourceName?: string): Transaction | null {
+    for (let current: FlowNodeModel | null = node; current; current = current.upstream) {
+      const scopeTransaction = this.scopeTransactions.get(current.key);
+      if (!scopeTransaction) {
+        continue;
+      }
+      if (dataSourceName && scopeTransaction.dataSource !== dataSourceName) {
+        continue;
+      }
+      const branchStartNode = this.findBranchStartNode(node, current);
+      if (branchStartNode?.branchIndex !== 1) {
+        continue;
+      }
+      return scopeTransaction.transaction;
+    }
+    return null;
+  }
+
+  isInstructionSync(node: FlowNodeModel): boolean {
+    return this.options.plugin.isWorkflowSync(this.execution.workflow) || Boolean(this.getScopeTransaction(node));
+  }
+
+  private hasOpenScopeTransactions() {
+    for (const { transaction } of this.scopeTransactions.values()) {
+      if (!(transaction as TransactionWithFinished).finished) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private markOpenScopePendingJobsAsError(message: string) {
+    const pendingJobs = new Set<JobModel>();
+    for (const job of this.jobsToSave.values()) {
+      if (job.status === JOB_STATUS.PENDING) {
+        pendingJobs.add(job);
+      }
+    }
+    for (const job of Object.values(this.jobsMapByNodeKey)) {
+      if (job.status === JOB_STATUS.PENDING) {
+        pendingJobs.add(job);
+      }
+    }
+    for (const key of this.scopeTransactions.keys()) {
+      const job = this.jobsMapByNodeKey[key];
+      if (job?.status === JOB_STATUS.PENDING) {
+        pendingJobs.add(job);
+      }
+    }
+    for (const job of pendingJobs) {
+      job.set({
+        status: JOB_STATUS.ERROR,
+        result: {
+          message,
+        },
+      });
+      this.saveJob(job);
+    }
+  }
+
+  private async cleanupScopeTransactions({ allowCommit = false } = {}) {
+    if (!this.scopeTransactions.size) {
+      return;
+    }
+    for (const [key, { transaction, dataSource, closing }] of Array.from(this.scopeTransactions.entries()).reverse()) {
+      const tx = transaction as TransactionWithFinished;
+      if (tx.finished) {
+        this.scopeTransactions.delete(key);
+        continue;
+      }
+      const action = closing === 'commit' && allowCommit ? 'commit' : 'rollback';
+      const actionText = action === 'commit' ? 'committing' : 'rolling back';
+      this.logger.warn(
+        `scope transaction (${key}) on data source "${dataSource}" was not closed before exit, ${actionText}`,
+        {
+          workflowId: this.execution.workflowId,
+        },
+      );
+      try {
+        await tx[action]();
+      } catch (error) {
+        this.logger.error(`scope transaction (${key}) fallback ${action} failed`, {
+          error,
+          workflowId: this.execution.workflowId,
+        });
+      } finally {
+        this.scopeTransactions.delete(key);
+      }
+    }
   }
 
   /**
    * @experimental
    */
-  saveJob(payload: JobModel | Record<string, any>): JobModel {
+  saveJob(payload: JobModel | IJob): JobModel {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
-    const { model } = database.getCollection('jobs');
-    let job;
+    const model = database.getModel('jobs');
+    let job: JobModel;
     if (payload instanceof model) {
       job = payload;
       job.set('updatedAt', new Date());
+    } else if (
+      this.rerunContext?.overwrite &&
+      this.rerunContext.targetJob &&
+      this.rerunContext.targetJob.nodeId === payload.nodeId
+    ) {
+      job = this.rerunContext.targetJob;
+      job.set({
+        status: payload.status,
+        result: Object.prototype.hasOwnProperty.call(payload, 'result') ? payload.result : null,
+        meta: Object.prototype.hasOwnProperty.call(payload, 'meta') ? payload.meta : null,
+        updatedAt: new Date(),
+      });
     } else {
       job = model.build(
         {
@@ -352,14 +773,16 @@ export default class Processor {
         {
           isNewRecord: true,
         },
-      );
+      ) as JobModel;
     }
-    this.jobsToSave.set(job.id, job);
+    this.jobsToSave.set(job.id.toString(), job);
 
     this.lastSavedJob = job;
     this.jobsMapByNodeKey[job.nodeKey] = job;
     this.jobResultsMapByNodeKey[job.nodeKey] = job.result;
-    this.logger.debug(`job added to save list: ${JSON.stringify(job)}`);
+    this.logger.debug(`job added to save list: ${JSON.stringify(job)}`, {
+      workflowId: this.execution.workflowId,
+    });
 
     return job;
   }
@@ -371,6 +794,40 @@ export default class Processor {
     return this.nodes
       .filter((item) => item.upstream === node && item.branchIndex !== null)
       .sort((a, b) => Number(a.branchIndex) - Number(b.branchIndex));
+  }
+
+  private enterRunningState() {
+    this.options.plugin.timeoutManager.clear(this.execution.id);
+    this.abortReason = null;
+    this.aborted = false;
+    this.options.plugin.registerRunningExecution(this.execution.id, (reason) => this.abortExecution(reason));
+    this.runningRegistered = true;
+
+    const remaining = this.execution.expiresAt ? this.execution.expiresAt.getTime() - Date.now() : null;
+    if (remaining == null) {
+      return;
+    }
+    if (remaining <= 0) {
+      this.abortExecution(EXECUTION_REASON.TIMEOUT);
+      return;
+    }
+    this.setTimeoutGuard(remaining);
+  }
+
+  private async shouldContinueExecution() {
+    return this.options.plugin.timeoutManager.shouldContinue(this.execution);
+  }
+
+  private leaveRunningState() {
+    if (this.timeoutGuard) {
+      clearTimeout(this.timeoutGuard);
+      this.timeoutGuard = null;
+    }
+    if (!this.runningRegistered) {
+      return;
+    }
+    this.options.plugin.unregisterRunningExecution(this.execution.id);
+    this.runningRegistered = false;
   }
 
   /**
@@ -396,7 +853,7 @@ export default class Processor {
    * @experimental
    * find the node start current branch
    */
-  findBranchParentNode(node: FlowNodeModel): FlowNodeModel | null {
+  findBranchParentNode(node?: FlowNodeModel): FlowNodeModel | null {
     for (let n = node; n; n = n.upstream) {
       if (n.branchIndex !== null) {
         return n.upstream;
@@ -441,7 +898,7 @@ export default class Processor {
    * @experimental
    */
   public getScope(sourceNodeId?: number | string, includeSelfScope = false) {
-    const node = this.nodesMap.get(sourceNodeId);
+    const node: FlowNodeModel | undefined = sourceNodeId ? this.nodesMap.get(sourceNodeId) : undefined;
     const systemFns = {};
     const scope = {
       execution: this.execution,
@@ -451,7 +908,7 @@ export default class Processor {
       set(systemFns, name, fn.bind(scope));
     }
 
-    const $scopes = {};
+    const $scopes: Record<string, any> = {};
     for (let n = includeSelfScope ? node : this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
       const instruction = this.options.plugin.instructions.get(n.type);
       if (typeof instruction?.getScope === 'function') {
@@ -459,12 +916,17 @@ export default class Processor {
       }
     }
 
-    return {
+    const scopes = {
       $context: this.execution.context,
       $jobsMapByNodeKey: this.jobResultsMapByNodeKey,
       $system: systemFns,
       $scopes,
       $env: this.options.plugin.app.environment.getVariables(),
+    };
+
+    return {
+      ...scopes,
+      ctx: scopes, // 2.0
     };
   }
 
@@ -472,13 +934,13 @@ export default class Processor {
    * @experimental
    */
   public getParsedValue(
-    value,
+    value: any,
     sourceNodeId?: number | string,
     { additionalScope = {}, includeSelfScope = false } = {},
   ) {
     const template = parse(value);
     const scope = Object.assign(this.getScope(sourceNodeId, includeSelfScope), additionalScope);
-    template.parameters.forEach(({ key }) => {
+    template.parameters.forEach(({ key }: { key: string }) => {
       appendArrayColumn(scope, key);
     });
     return template(scope);

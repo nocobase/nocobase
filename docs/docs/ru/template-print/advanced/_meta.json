@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Условные выражения",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "Расширенные возможности",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

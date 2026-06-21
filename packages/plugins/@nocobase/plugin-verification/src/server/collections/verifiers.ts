@@ -13,4 +13,5 @@ import verifiers from '../../collections/verifiers';
 export default defineCollection({
   migrationRules: ['overwrite', 'skip'],
   ...verifiers,
+  dataCategory: 'system',
 });

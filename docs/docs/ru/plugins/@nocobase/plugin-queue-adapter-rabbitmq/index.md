@@ -1,0 +1,17 @@
+---
+title: "RabbitMQ queue adapter"
+keywords: "RabbitMQ queue adapter,Plugin,NocoBase"
+displayName: "Адаптер очереди RabbitMQ"
+packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
+supportedVersions:
+  - 1.x
+  - 2.x
+description: |
+  Обработка очереди сообщений с помощью RabbitMQ.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 3
+---
+
+# Адаптер очереди RabbitMQ

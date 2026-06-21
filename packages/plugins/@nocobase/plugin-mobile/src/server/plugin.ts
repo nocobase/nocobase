@@ -8,7 +8,6 @@
  */
 
 import { Model, Transaction } from '@nocobase/database';
-import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import _ from 'lodash';
@@ -33,6 +32,32 @@ export class PluginMobileServer extends Plugin {
           transaction,
         });
       }
+    });
+
+    this.app.on('afterInstallPlugin', async (plugin) => {
+      if (plugin.name !== 'mobile') {
+        return;
+      }
+      const record = await this.pm.repository.findOne({
+        filter: {
+          name: 'mobile',
+        },
+      });
+      if (!record) {
+        return;
+      }
+      record.options = {
+        ...record.options,
+        deprecated: true,
+      };
+      await this.pm.repository.update({
+        filter: {
+          name: 'mobile',
+        },
+        values: {
+          options: record.options,
+        },
+      });
     });
   }
 
@@ -153,11 +178,7 @@ export class PluginMobileServer extends Plugin {
   }
 
   registerLocalizationSource() {
-    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
-    if (!localizationPlugin) {
-      return;
-    }
-    localizationPlugin.sourceManager.registerSource('mobile-routes', {
+    this.app.localeManager.registerSource('mobile-routes', {
       title: tval('Mobile routes'),
       sync: async (ctx) => {
         const mobileRoutes = await ctx.db.getRepository('mobileRoutes').find({

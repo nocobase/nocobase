@@ -12,6 +12,9 @@ export * from './types';
 
 // 工具函数
 export * from './utils';
+export { compileRunJs } from './utils/jsxTransform';
+export { registerRunJSLib } from './runjsLibs';
+export type { RunJSLibCache, RunJSLibLoader } from './runjsLibs';
 
 // 资源类
 export * from './resources';
@@ -21,10 +24,8 @@ export * from './flowEngine';
 export * from './hooks';
 export * from './models';
 export * from './provider';
-export * from './withFlowModel';
 
-export * from '@formily/reactive';
-export { observer } from '@formily/reactive-react';
+export * from './reactive';
 export * from './components';
 export * from './data-source';
 export * from './decorators';
@@ -32,7 +33,31 @@ export * from './ElementProxy';
 export * from './flowContext';
 export * from './FlowContextProvider';
 export * from './JSRunner';
+export {
+  getRunJSDocFor,
+  createJSRunnerWithVersion,
+  getRunJSScenesForModel,
+  getRunJSScenesForContext,
+} from './runjs-context/helpers';
+export { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
+export { setupRunJSContexts } from './runjs-context/setup';
+export type { RunJSContextContribution, RunJSContextContributionApi } from './runjs-context/contributions';
+export { registerRunJSContextContribution } from './runjs-context/contributions';
+export type { RunJSSnippetLoader } from './runjs-context/snippets';
+export { getSnippetBody, listSnippetsForContext, registerRunJSSnippet } from './runjs-context/snippets';
 
 export * from './views';
+export {
+  DATA_SOURCE_DIRTY_EVENT,
+  ENGINE_SCOPE_KEY,
+  getEmitterViewActivatedVersion,
+  VIEW_ACTIVATED_EVENT,
+  VIEW_ACTIVATED_VERSION,
+  VIEW_ENGINE_SCOPE,
+} from './views/viewEvents';
 
 export * from './FlowDefinition';
+export { DetachedFlowRegistry, replaceFlowRegistry, serializeFlowRegistry } from './flow-registry';
+export type { FlowRegistryData } from './flow-registry';
+export { createViewScopedEngine } from './ViewScopedFlowEngine';
+export { createBlockScopedEngine } from './BlockScopedFlowEngine';

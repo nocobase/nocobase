@@ -1,0 +1,23 @@
+{
+  "Account": "계정",
+  "Add email address": "이메일 주소 추가",
+  "BCC": "숨은 참조",
+  "CC": "참조",
+  "Configure": "설정",
+  "Content": "내용",
+  "Content type": "내용 유형",
+  "Email": "이메일",
+  "From": "보낸 사람",
+  "Host": "호스트",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "Password": "비밀번호",
+  "Plain text": "일반 텍스트",
+  "Port": "포트",
+  "SMTP mail": "SMTP 메일",
+  "SMTP server host": "SMTP 서버 호스트",
+  "Secure": "보안",
+  "Subject": "제목",
+  "The email address that will be used as the sender": "발신자로 사용할 이메일 주소",
+  "To": "받는 사람",
+  "Transport": "전송 방식"
+}

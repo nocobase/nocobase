@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SnowflakeIdField as BaseSnowflakeIdField } from '@nocobase/database';
+import { SnowflakeIdField as BaseSnowflakeIdField, Database } from '@nocobase/database';
 import Application from './application';
 
-export function setupSnowflakeIdField(app: Application) {
+export function setupSnowflakeIdField(app: Application, db: Database) {
   class SnowflakeIdField extends BaseSnowflakeIdField {}
   SnowflakeIdField.setApp(app);
-  app.db.registerFieldTypes({
+  db.registerFieldTypes({
     snowflakeId: SnowflakeIdField,
   });
 }

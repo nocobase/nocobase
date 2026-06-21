@@ -1,0 +1,143 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Как работает NocoBase",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "type": "custom-link",
+    "label": "Системные требования",
+    "link": "/get-started/system-requirements"
+  },
+  {
+    "type": "file",
+    "name": "quickstart",
+    "label": "Быстрый старт"
+  },
+  {
+    "type": "custom-link",
+    "label": "Установка NocoBase",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Установка через Docker",
+        "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Установка через create-nocobase-app",
+        "link": "/get-started/installation/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Установка из исходного кода Git",
+        "link": "/get-started/installation/git"
+      },
+      {
+        "type": "custom-link",
+        "label": "Переменные окружения",
+        "link": "/get-started/installation/env"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Обновление NocoBase",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Обновление при установке через Docker",
+        "link": "/get-started/upgrading/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Обновление при установке через create-nocobase-app",
+        "link": "/get-started/upgrading/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Обновление при установке из исходного кода Git",
+        "link": "/get-started/upgrading/git"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Развёртывание",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Развёртывание в продакшн-среде",
+        "link": "/get-started/deployment/production"
+      },
+      {
+        "type": "custom-link",
+        "label": "Развёртывание во внутренней сети",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker",
+            "link": "/get-started/deployment/intranet/docker"
+          },
+          {
+            "type": "custom-link",
+            "label": "create-nocobase-app",
+            "link": "/get-started/deployment/intranet/create-nocobase-app"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Проксирование статических ресурсов",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nginx",
+            "link": "/get-started/deployment/static-resource-proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "caddy",
+            "link": "/get-started/deployment/static-resource-proxy/caddy"
+          },
+          {
+            "type": "custom-link",
+            "label": "cdn",
+            "link": "/get-started/deployment/static-resource-proxy/cdn"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Часто используемые команды",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "docker compose",
+            "link": "/get-started/deployment/common-commands/docker-compose"
+          },
+          {
+            "type": "custom-link",
+            "label": "pm2",
+            "link": "/get-started/deployment/common-commands/pm2"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Как ускорить развёртывание",
+        "link": "/get-started/deployment/how-to-deploy-nocobase-faster"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Установка и обновление плагинов",
+    "link": "/get-started/install-upgrade-plugins"
+  },
+  {
+    "type": "custom-link",
+    "label": "Участие в переводе",
+    "link": "/get-started/translations"
+  }
+]

@@ -17,18 +17,30 @@ import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
 import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
+import { Emitter } from './emitter';
+import ModelOperationScheduler from './scheduler/ModelOperationScheduler';
+import type { ScheduleOptions, ScheduledCancel } from './scheduler/ModelOperationScheduler';
+import { createLoadedPageCache } from './utils/loadedPageCache';
 import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
   CreateModelOptions,
+  EnsureBatchResult,
   EventDefinition,
+  FlowModelLoaderEntry,
+  FlowModelLoaderInputMap,
+  FlowModelLoaderResult,
   FlowModelOptions,
   IFlowModelRepository,
   ModelConstructor,
   PersistOptions,
   ResourceType,
+  RegisteredModelClassName,
+  ResolveUseResult,
 } from './types';
 import { isInheritedFrom } from './utils';
+
+const getFlowEngineLoggerLevel = () => (process.env.NODE_ENV === 'production' ? 'warn' : 'trace');
 
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
@@ -56,55 +68,119 @@ export class FlowEngine {
   /**
    * Global action registry
    */
-  #actionRegistry = new EngineActionRegistry();
+  private _actionRegistry = new EngineActionRegistry();
 
   /**
    * Global event registry
    */
-  #eventRegistry = new EngineEventRegistry();
+  private _eventRegistry = new EngineEventRegistry();
 
   /**
    * Registered model classes.
    * Key is the model class name, value is the model class constructor.
    * @private
    */
-  #modelClasses: Map<string, ModelConstructor> = observable.shallow(new Map());
+  private _modelClasses: Map<string, ModelConstructor> = observable.shallow(new Map());
+
+  /**
+   * Registered model entries.
+   * Key is the model class name, value is the model loader entry.
+   * @private
+   */
+  private _modelLoaders: Map<string, FlowModelLoaderEntry> = new Map();
+
+  /**
+   * In-flight model loading promises.
+   * Key is the model class name, value is the loading promise.
+   * @private
+   */
+  private _loadingModelPromises: Map<string, Promise<ModelConstructor | null>> = new Map();
+
+  /**
+   * Whether model-loader preload has completed in this session.
+   * @private
+   */
+  private _modelLoadersPreloaded = false;
+
+  /**
+   * In-flight model-loader preload promise.
+   * @private
+   */
+  private _modelLoadersPreloadPromise?: Promise<EnsureBatchResult>;
 
   /**
    * Created model instances.
    * Key is the model instance UID, value is the model instance object.
    * @private
    */
-  #modelInstances: Map<string, any> = new Map();
+  private _modelInstances: Map<string, any> = new Map();
 
   /**
    * The current model repository instance, implements IFlowModelRepository.
    * Used for model persistence and queries.
    * @private
    */
-  #modelRepository: IFlowModelRepository | null = null;
+  private _modelRepository: IFlowModelRepository | null = null;
 
   /**
    * Flow application cache.
    * Key is the cache key, value is ApplyFlowCacheEntry.
    * @private
    */
-  #applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
+  private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
   /**
    * Model saving state tracking.
    * Key is the model UID, value is the save promise.
    * @private
    */
-  readonly #savingModels = new Map<string, Promise<any>>();
+  private _savingModels = new Map<string, Promise<any>>();
+
+  private _loadedPageCache = createLoadedPageCache();
 
   /**
    * Flow engine context object.
    * @private
    */
-  #flowContext: FlowEngineContext;
+  private _flowContext: FlowEngineContext;
 
-  #resources = new Map<string, typeof FlowResource>();
+  /**
+   * 视图作用域引擎的栈式链表指针。
+   * - previousEngine：打开当前视图的上一个引擎
+   * - nextEngine：在当前之上的下一个引擎
+   */
+  private _previousEngine?: FlowEngine;
+  private _nextEngine?: FlowEngine;
+
+  /**
+   * 视图销毁回调。由 useDrawer / useDialog 在创建弹窗视图时注册，
+   * 供外部（如 afterSuccess）通过引擎栈遍历来关闭多层弹窗。
+   * embed 视图（usePage）不注册此回调，因此 destroyView() 会自然跳过。
+   */
+  private _destroyView?: () => void;
+
+  private _resources = new Map<string, typeof FlowResource>();
+
+  /**
+   * Data change registry used to coordinate "refresh on active" across view-scoped engines.
+   *
+   * Keyed by: dataSourceKey -> resourceName -> version.
+   * - mark: increments version
+   * - get: returns current version (default 0)
+   *
+   * NOTE: ViewScopedFlowEngine proxies delegate non-local fields/methods to parents, so this
+   * registry naturally lives on the root engine instance and is shared across the whole view stack.
+   */
+  private _dataSourceDirtyVersions: Map<string, Map<string, number>> = new Map();
+
+  /**
+   * 引擎事件总线（目前用于模型生命周期等事件）。
+   * ViewScopedFlowEngine 持有自己的实例，实现作用域隔离。
+   */
+  public emitter: Emitter = new Emitter();
+
+  /** 调度器：仅在 View 作用域引擎本地启用；根/Block 作用域默认不持有 */
+  private _modelOperationScheduler?: ModelOperationScheduler;
 
   logger: pino.Logger;
 
@@ -122,7 +198,7 @@ export class FlowEngine {
    */
   public reactView: ReactView;
   /**
-   * Flow executor that runs flows and auto-flows.
+   * Flow executor that runs event flows.
    */
   public executor: FlowExecutor;
 
@@ -142,7 +218,7 @@ export class FlowEngine {
       MultiRecordResource,
     });
     this.logger = pino({
-      level: 'trace',
+      level: getFlowEngineLoggerLevel(),
       browser: {
         write: {
           fatal: (o) => console.trace(o),
@@ -157,15 +233,130 @@ export class FlowEngine {
     this.executor = new FlowExecutor(this);
   }
 
+  /** 获取/创建当前引擎的调度器（仅在本地作用域） */
+  public getScheduler(): ModelOperationScheduler {
+    if (!this._modelOperationScheduler) {
+      this._modelOperationScheduler = new ModelOperationScheduler(this);
+    }
+    return this._modelOperationScheduler;
+  }
+
+  /** 释放并清理当前引擎本地调度器（若存在） */
+  public disposeScheduler(): void {
+    if (this._modelOperationScheduler) {
+      try {
+        this._modelOperationScheduler.dispose();
+      } finally {
+        this._modelOperationScheduler = undefined;
+      }
+    }
+  }
+
+  /**
+   * Mark a data source resource as "dirty" (changed).
+   * This is used by data blocks to decide whether to refresh when a view becomes active.
+   */
+  public markDataSourceDirty(dataSourceKey: string, resourceName: string): number {
+    const dsKey = String(dataSourceKey || 'main');
+    const resName = String(resourceName || '');
+    if (!resName) return this.getDataSourceDirtyVersion(dsKey, resName);
+
+    const ds = this._dataSourceDirtyVersions.get(dsKey) || new Map<string, number>();
+    if (!this._dataSourceDirtyVersions.has(dsKey)) {
+      this._dataSourceDirtyVersions.set(dsKey, ds);
+    }
+    const next = (ds.get(resName) || 0) + 1;
+    ds.set(resName, next);
+    return next;
+  }
+
+  /**
+   * Get current dirty version for a data source resource.
+   * Returns 0 when no writes have been recorded.
+   */
+  public getDataSourceDirtyVersion(dataSourceKey: string, resourceName: string): number {
+    const dsKey = String(dataSourceKey || 'main');
+    const resName = String(resourceName || '');
+    if (!resName) return 0;
+    return this._dataSourceDirtyVersions.get(dsKey)?.get(resName) || 0;
+  }
+
+  /** 在目标模型生命周期达成时执行操作（仅在 View 引擎本地存储计划） */
+  public scheduleModelOperation(
+    fromModelOrUid: FlowModel | string,
+    toUid: string,
+    fn: (model: FlowModel) => Promise<void> | void,
+    options?: ScheduleOptions,
+  ): ScheduledCancel {
+    return this.getScheduler().schedule(fromModelOrUid, toUid, fn, options);
+  }
+
+  /** 上一个引擎（根引擎为 undefined） */
+  get previousEngine(): FlowEngine | undefined {
+    return this._previousEngine;
+  }
+  /** 下一个引擎（若存在） */
+  get nextEngine(): FlowEngine | undefined {
+    return this._nextEngine;
+  }
+
+  /**
+   * 将当前引擎链接到 prev 之后（用于视图打开时形成栈关系）。
+   */
+  public linkAfter(engine: FlowEngine): void {
+    // 找到栈底
+    let prev: FlowEngine = engine;
+    while (prev._nextEngine) prev = prev._nextEngine;
+    this._previousEngine = prev;
+    if (prev) {
+      prev._nextEngine = this;
+    }
+  }
+
+  /**
+   * 将当前引擎从栈中移除并修复相邻指针（用于视图关闭时）。
+   */
+  public unlinkFromStack(): void {
+    const prev = this._previousEngine;
+    const next = this._nextEngine;
+    if (prev) {
+      prev._nextEngine = undefined;
+    }
+  }
+
+  /**
+   * 注册视图销毁回调（由 useDrawer / useDialog 调用）。
+   */
+  public setDestroyView(fn: () => void): void {
+    this._destroyView = fn;
+  }
+
+  /**
+   * 关闭当前引擎关联的弹窗视图。
+   * 路由触发的弹窗会先 navigation.back() 清理 URL，再 destroy() 移除元素；
+   * 非路由弹窗直接 destroy()。
+   * embed 视图不注册回调，调用时返回 false 自动跳过。
+   * @returns 是否成功执行
+   */
+  public destroyView(): boolean {
+    if (this._destroyView) {
+      this._destroyView();
+      return true;
+    }
+    return false;
+  }
+
+  // （已移除）getModelGlobal/forEachModelGlobal/getAllModelsGlobal：不再维护冗余全局遍历 API
+
   /**
    * Get the flow engine context object.
    * @returns {FlowEngineContext} Flow engine context
    */
   get context() {
-    if (!this.#flowContext) {
-      this.#flowContext = new FlowEngineContext(this);
+    if (!this._flowContext) {
+      this._flowContext = new FlowEngineContext(this);
     }
-    return this.#flowContext;
+    return this._flowContext;
   }
 
   get dataSourceManager() {
@@ -178,7 +369,7 @@ export class FlowEngine {
    * @internal
    */
   get applyFlowCache() {
-    return this.#applyFlowCache;
+    return this._applyFlowCache;
   }
 
   /**
@@ -189,14 +380,14 @@ export class FlowEngine {
    * flowEngine.setModelRepository(new MyFlowModelRepository());
    */
   setModelRepository(modelRepository: IFlowModelRepository) {
-    if (this.#modelRepository) {
+    if (this._modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
     }
-    this.#modelRepository = modelRepository;
+    this._modelRepository = modelRepository;
   }
 
   get modelRepository(): IFlowModelRepository | null {
-    return this.#modelRepository;
+    return this._modelRepository;
   }
 
   /**
@@ -214,7 +405,7 @@ export class FlowEngine {
    * @param {Record<string, ActionDefinition>} actions Action definition object collection
    */
   registerActions(actions: Record<string, ActionDefinition>): void {
-    this.#actionRegistry.registerActions(actions);
+    this._actionRegistry.registerActions(actions);
   }
 
   /**
@@ -226,7 +417,7 @@ export class FlowEngine {
   public getAction<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(
     name: string,
   ): ActionDefinition<TModel, TCtx> | undefined {
-    return this.#actionRegistry.getAction<TModel, TCtx>(name);
+    return this._actionRegistry.getAction<TModel, TCtx>(name);
   }
 
   /**
@@ -237,28 +428,28 @@ export class FlowEngine {
     string,
     ActionDefinition<TModel, TCtx>
   > {
-    return this.#actionRegistry.getActions<TModel, TCtx>();
+    return this._actionRegistry.getActions<TModel, TCtx>();
   }
 
   /**
    * Register multiple events.
    */
   registerEvents(events: Record<string, EventDefinition>): void {
-    this.#eventRegistry.registerEvents(events);
+    this._eventRegistry.registerEvents(events);
   }
 
   /**
    * Get a registered event definition.
    */
   public getEvent<TModel extends FlowModel = FlowModel>(name: string): EventDefinition<TModel> | undefined {
-    return this.#eventRegistry.getEvent<TModel>(name);
+    return this._eventRegistry.getEvent<TModel>(name);
   }
 
   /**
    * Get all registered global events.
    */
   public getEvents<TModel extends FlowModel = FlowModel>(): Map<string, EventDefinition<TModel>> {
-    return this.#eventRegistry.getEvents<TModel>();
+    return this._eventRegistry.getEvents<TModel>();
   }
 
   /**
@@ -268,11 +459,18 @@ export class FlowEngine {
    * @private
    */
   #registerModel(name: string, modelClass: ModelConstructor): void {
-    if (this.#modelClasses.has(name)) {
+    return this._registerModel(name, modelClass);
+  }
+
+  /**
+   * for proxy instance, the #registerModel can't be called.
+   */
+  private _registerModel(name: string, modelClass: ModelConstructor): void {
+    if (this._modelClasses.has(name)) {
       console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
     }
     Object.defineProperty(modelClass, 'name', { value: name });
-    this.#modelClasses.set(name, modelClass);
+    this._modelClasses.set(name, modelClass);
   }
 
   /**
@@ -288,15 +486,315 @@ export class FlowEngine {
     }
   }
 
+  /**
+   * Register multiple model loader entries.
+   * The `extends` field declares parent class(es) for async subclass discovery via `getSubclassesOfAsync`.
+   * It accepts `string | ModelConstructor | (string | ModelConstructor)[]` and is normalized to `string[]` internally.
+   * @param {FlowModelLoaderInputMap} loaders Model loader input map
+   * @returns {void}
+   * @example
+   * flowEngine.registerModelLoaders({
+   *   DemoModel: {
+   *     extends: 'BaseModel',
+   *     loader: () => import('./models/DemoModel'),
+   *   },
+   * });
+   */
+  public registerModelLoaders(loaders: FlowModelLoaderInputMap): void {
+    let changed = false;
+    for (const [name, input] of Object.entries(loaders)) {
+      if (this._modelLoaders.has(name)) {
+        console.warn(`FlowEngine: Model loader with name '${name}' is already registered and will be overwritten.`);
+      }
+      const entry: FlowModelLoaderEntry = {
+        loader: input.loader,
+      };
+      if (input.extends != null) {
+        const raw = Array.isArray(input.extends) ? input.extends : [input.extends];
+        entry.extends = raw.map((item) => (typeof item === 'string' ? item : item.name));
+      }
+      this._modelLoaders.set(name, entry);
+      changed = true;
+    }
+    if (changed) {
+      this._modelLoadersPreloaded = false;
+      this._modelLoadersPreloadPromise = undefined;
+    }
+  }
+
+  /**
+   * Get a registered model class (constructor) asynchronously.
+   * This will first ensure the model loader entry is resolved.
+   * @param {string} name Model class name
+   * @returns {Promise<ModelConstructor | undefined>} Model constructor, or undefined if not found
+   */
+  public async getModelClassAsync(name: string): Promise<ModelConstructor | undefined> {
+    await this.ensureModel(name);
+    return this.getModelClass(name);
+  }
+
+  /**
+   * Get all registered model classes asynchronously.
+   * This will first ensure all registered model loader entries are resolved.
+   * @returns {Promise<Map<string, ModelConstructor>>} Model class map
+   */
+  public async getModelClassesAsync(): Promise<Map<string, ModelConstructor>> {
+    await this.ensureModels(Array.from(this._modelLoaders.keys()));
+    return this.getModelClasses();
+  }
+
+  /**
+   * Create and register a model instance asynchronously.
+   * This will first ensure all string-based model references in the model tree are resolved.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {CreateModelOptions} options Model creation options
+   * @returns {Promise<T>} Created model instance
+   */
+  public async createModelAsync<T extends FlowModel = FlowModel>(
+    options: CreateModelOptions,
+    extra?: { delegateToParent?: boolean; delegate?: FlowContext },
+  ): Promise<T> {
+    await this.resolveModelTree(options);
+    return this.createModel<T>(options, extra);
+  }
+
+  /**
+   * Normalize a loader result into a model constructor.
+   * @param {string} name Model class name
+   * @param {FlowModelLoaderResult} loaded Loader result
+   * @returns {ModelConstructor | null} Normalized model constructor
+   * @private
+   */
+  private normalizeModelLoaderResult(name: string, loaded: FlowModelLoaderResult): ModelConstructor | null {
+    if (typeof loaded === 'function') {
+      return loaded as ModelConstructor;
+    }
+    if (loaded && typeof loaded === 'object') {
+      const defaultExport = loaded.default;
+      if (typeof defaultExport === 'function') {
+        return defaultExport as ModelConstructor;
+      }
+      const namedExport = loaded[name];
+      if (typeof namedExport === 'function') {
+        return namedExport as ModelConstructor;
+      }
+    }
+    console.warn(`FlowEngine: model loader for '${name}' did not resolve to a valid model constructor.`);
+    return null;
+  }
+
+  /**
+   * Collect string-based model names from a model tree.
+   * @param {unknown} data Model tree data
+   * @param {Set<string>} names Model name set
+   * @private
+   */
+  private collectModelNamesFromTree(data: unknown, names: Set<string>): void {
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+    if (Array.isArray(data)) {
+      data.forEach((item) => this.collectModelNamesFromTree(item, names));
+      return;
+    }
+
+    const tree = data as Record<string, any>;
+    if (typeof tree.use === 'string') {
+      names.add(tree.use);
+    }
+
+    const subModels = tree.subModels;
+    if (!subModels || typeof subModels !== 'object') {
+      return;
+    }
+
+    Object.values(subModels).forEach((value) => {
+      this.collectModelNamesFromTree(value, names);
+    });
+  }
+
+  /**
+   * Collect additional model names from object-form meta.createModelOptions defaults.
+   * @param {ModelConstructor} modelClass Model class constructor
+   * @param {Set<string>} names Model name set
+   * @private
+   */
+  private collectModelNamesFromMetaDefaults(modelClass: ModelConstructor, names: Set<string>): void {
+    const metaCreate = (modelClass as typeof FlowModel).meta?.createModelOptions;
+    if (metaCreate && typeof metaCreate === 'object') {
+      this.collectModelNamesFromTree(metaCreate, names);
+    }
+  }
+
+  /**
+   * Ensure a single model class is available.
+   * @param {string} name Model class name
+   * @returns {Promise<ModelConstructor | null>} Model constructor or null when resolution fails
+   * @private
+   */
+  private async ensureModel(name: string): Promise<ModelConstructor | null> {
+    const existing = this._modelClasses.get(name);
+    if (existing) {
+      return existing;
+    }
+
+    const inflight = this._loadingModelPromises.get(name);
+    if (inflight) {
+      return inflight;
+    }
+
+    const entry = this._modelLoaders.get(name);
+    if (!entry) {
+      console.warn(`FlowEngine: Model entry '${name}' not found. Falling back to ErrorFlowModel when needed.`);
+      return null;
+    }
+
+    const promise = (async () => {
+      try {
+        const loaded = await entry.loader();
+        const modelClass = this.normalizeModelLoaderResult(name, loaded);
+        if (!modelClass) {
+          return null;
+        }
+        // 这里拿到的 this 是 Proxy(FlowEngine) 而不是原始的 FlowEngine，无法直接调用 #registerModel
+        this._registerModel(name, modelClass);
+        return modelClass;
+      } catch (error) {
+        console.warn(`FlowEngine: Failed to load model '${name}'. Falling back to ErrorFlowModel when needed.`, error);
+        return null;
+      } finally {
+        this._loadingModelPromises.delete(name);
+      }
+    })();
+
+    this._loadingModelPromises.set(name, promise);
+    return promise;
+  }
+
+  /**
+   * Ensure multiple model classes are available.
+   * @param {string[]} names Model class names
+   * @returns {Promise<EnsureBatchResult>} Batch ensure result
+   * @private
+   */
+  private async ensureModels(names: string[]): Promise<EnsureBatchResult> {
+    const requested = Array.from(new Set(names.filter((name): name is string => !!name)));
+    const loaded: string[] = [];
+    const failed: EnsureBatchResult['failed'] = [];
+
+    const results = await Promise.all(
+      requested.map(async (name) => {
+        const modelClass = await this.ensureModel(name);
+        return { name, modelClass };
+      }),
+    );
+
+    results.forEach(({ name, modelClass }) => {
+      if (modelClass) {
+        loaded.push(name);
+      } else {
+        failed.push({ name });
+      }
+    });
+
+    return { requested, loaded, failed };
+  }
+
+  /**
+   * Resolve all unresolved string-based model references in a model tree before synchronous creation begins.
+   *
+   * Use this when you already have a model tree object, such as repository-returned data or resolved
+   * `createModelOptions`, and you need to ensure every string `use` in that tree has been loaded and
+   * registered into `_modelClasses` before calling `createModel()`.
+   *
+   * @param {unknown} data Model tree data
+   * @returns {Promise<EnsureBatchResult>} Batch ensure result
+   */
+  public async resolveModelTree(data: unknown): Promise<EnsureBatchResult> {
+    const requested = new Set<string>();
+    const loaded = new Set<string>();
+    const failed = new Map<string, { name: string; error?: unknown }>();
+    const processed = new Set<string>();
+    const pending = new Set<string>();
+
+    this.collectModelNamesFromTree(data, pending);
+
+    while (pending.size > 0) {
+      const batch = Array.from(pending).filter((name) => !processed.has(name));
+      pending.clear();
+      if (batch.length === 0) {
+        break;
+      }
+
+      batch.forEach((name) => requested.add(name));
+      const result = await this.ensureModels(batch);
+
+      result.loaded.forEach((name) => {
+        processed.add(name);
+        loaded.add(name);
+        const modelClass = this.getModelClass(name);
+        if (modelClass) {
+          const discovered = new Set<string>();
+          this.collectModelNamesFromMetaDefaults(modelClass, discovered);
+          discovered.forEach((discoveredName) => {
+            if (!processed.has(discoveredName)) {
+              pending.add(discoveredName);
+            }
+          });
+        }
+      });
+
+      result.failed.forEach((item) => {
+        processed.add(item.name);
+        failed.set(item.name, item);
+      });
+    }
+
+    return {
+      requested: Array.from(requested),
+      loaded: Array.from(loaded),
+      failed: Array.from(failed.values()),
+    };
+  }
+
+  /**
+   * Preload all currently registered unresolved model loaders.
+   *
+   * This method is intended for flow-settings/discovery style entry points that need registered model
+   * classes to exist before UI is rendered, without requiring callers to know which specific models
+   * will be touched next.
+   *
+   * @returns {Promise<EnsureBatchResult>} Batch ensure result
+   */
+  public async preloadModelLoaders(): Promise<EnsureBatchResult> {
+    const unresolved = Array.from(this._modelLoaders.keys()).filter((name) => !this._modelClasses.has(name));
+    if (unresolved.length === 0) {
+      this._modelLoadersPreloaded = true;
+      return { requested: [], loaded: [], failed: [] };
+    }
+    if (this._modelLoadersPreloadPromise) {
+      return this._modelLoadersPreloadPromise;
+    }
+
+    this._modelLoadersPreloadPromise = (async () => {
+      const result = await this.ensureModels(unresolved);
+      this._modelLoadersPreloaded = result.failed.length === 0;
+      this._modelLoadersPreloadPromise = undefined;
+      return result;
+    })();
+
+    return this._modelLoadersPreloadPromise;
+  }
+
   registerResources(resources: Record<string, any>) {
     for (const [name, resourceClass] of Object.entries(resources)) {
-      this.#resources.set(name, resourceClass);
+      this._resources.set(name, resourceClass);
     }
   }
 
   createResource<T = FlowResource>(resourceType: ResourceType<T>, options?: { context?: FlowContext }): T {
     if (typeof resourceType === 'string') {
-      const ResourceClass = this.#resources.get(resourceType);
+      const ResourceClass = this._resources.get(resourceType);
       if (!ResourceClass) {
         throw new Error(`Resource class '${resourceType}' not found. Please register it first.`);
       }
@@ -311,7 +809,7 @@ export class FlowEngine {
    * @returns {Map<string, ModelConstructor>} Model class map
    */
   getModelClasses() {
-    return this.#modelClasses;
+    return this._modelClasses;
   }
 
   /**
@@ -320,7 +818,7 @@ export class FlowEngine {
    * @returns {ModelConstructor | undefined} Model constructor, or undefined if not found
    */
   public getModelClass(name: string): ModelConstructor | undefined {
-    return this.#modelClasses.get(name);
+    return this._modelClasses.get(name);
   }
 
   /**
@@ -331,7 +829,7 @@ export class FlowEngine {
   public findModelClass(
     predicate: (name: string, ModelClass: ModelConstructor) => boolean,
   ): [string, ModelConstructor] | undefined {
-    for (const [name, ModelClass] of this.#modelClasses) {
+    for (const [name, ModelClass] of this._modelClasses) {
       if (predicate(name, ModelClass)) {
         return [name, ModelClass];
       }
@@ -352,13 +850,77 @@ export class FlowEngine {
     const parentModelClass = typeof baseClass === 'string' ? this.getModelClass(baseClass) : baseClass;
     const result = new Map<string, ModelConstructor>();
     if (!parentModelClass) return result;
-    for (const [className, ModelClass] of this.#modelClasses) {
+    for (const [className, ModelClass] of this._modelClasses) {
       if (isInheritedFrom(ModelClass, parentModelClass)) {
         if (!filter || filter(ModelClass, className)) {
           result.set(className, ModelClass);
         }
       }
     }
+    return result;
+  }
+
+  /**
+   * Asynchronously get all subclasses of a base class, including those registered via model loaders.
+   * Merges results from already-loaded classes (_modelClasses) and async loader entries with matching `extends` declarations.
+   * Loader-resolved classes are validated with `isInheritedFrom`; mismatches are warned and excluded.
+   * @param {string | ModelConstructor} baseClass Base class name or constructor
+   * @param {(ModelClass: ModelConstructor, className: string) => boolean} [filter] Optional filter function
+   * @returns {Promise<Map<string, ModelConstructor>>} Model classes that are subclasses of the base class
+   */
+  public async getSubclassesOfAsync(
+    baseClass: string | ModelConstructor,
+    filter?: (ModelClass: ModelConstructor, className: string) => boolean,
+  ): Promise<Map<string, ModelConstructor>> {
+    const baseClassName = typeof baseClass === 'string' ? baseClass : baseClass.name;
+
+    // If baseClass is a string and not yet loaded, try to resolve it first
+    let parentModelClass: ModelConstructor | undefined;
+    if (typeof baseClass === 'string') {
+      if (!this.getModelClass(baseClass)) {
+        await this.ensureModel(baseClass);
+      }
+      parentModelClass = this.getModelClass(baseClass);
+    } else {
+      parentModelClass = baseClass;
+    }
+
+    if (!parentModelClass) {
+      return new Map();
+    }
+
+    // Step 1: Collect already-loaded subclasses from _modelClasses
+    const result = this.getSubclassesOf(parentModelClass, filter);
+
+    // Step 2: Find unloaded loaders whose extends includes baseClassName
+    const loaderCandidates: string[] = [];
+    for (const [name, entry] of this._modelLoaders) {
+      if (result.has(name) || this._modelClasses.has(name)) continue;
+      if (entry.extends?.includes(baseClassName)) {
+        loaderCandidates.push(name);
+      }
+    }
+
+    // Step 3: Resolve all matching loaders
+    if (loaderCandidates.length > 0) {
+      await this.ensureModels(loaderCandidates);
+    }
+
+    // Step 4: Validate resolved classes and add to result
+    for (const name of loaderCandidates) {
+      const ModelClass = this._modelClasses.get(name);
+      if (!ModelClass) continue;
+      if (!isInheritedFrom(ModelClass, parentModelClass)) {
+        console.warn(
+          `FlowEngine: Model '${name}' declares extends '${baseClassName}' but does not actually inherit from it. Skipping.`,
+        );
+        continue;
+      }
+      if (!filter || filter(ModelClass, name)) {
+        result.set(name, ModelClass);
+      }
+    }
+
     return result;
   }
 
@@ -374,10 +936,17 @@ export class FlowEngine {
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
   ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
-    const ModelClass = typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName;
+    const parentModel = parentId
+      ? ((this.getModel(parentId) || this.previousEngine?.getModel(parentId)) as FlowModel | undefined)
+      : undefined;
+    const ModelClass = this._resolveModelClass(
+      typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName,
+      options,
+      parentModel,
+    );
 
-    if (uid && this.#modelInstances.has(uid)) {
-      return this.#modelInstances.get(uid) as T;
+    if (uid && this._modelInstances.has(uid)) {
+      return this._modelInstances.get(uid) as T;
     }
 
     let modelInstance: T | ErrorFlowModel;
@@ -393,20 +962,26 @@ export class FlowEngine {
       modelInstance.context.addDelegate(extra.delegate);
     }
 
-    if (parentId && this.#modelInstances.has(parentId)) {
-      modelInstance.setParent(this.#modelInstances.get(parentId));
+    if (parentModel) {
+      modelInstance.setParent(parentModel);
       if (extra?.delegateToParent === false) {
         modelInstance.removeParentDelegate();
       }
     }
 
-    this.#modelInstances.set(modelInstance.uid, modelInstance);
+    this._modelInstances.set(modelInstance.uid, modelInstance);
 
     modelInstance.onInit(options);
 
+    // 发射 created 生命周期事件
+    void this.emitter.emitAsync('model:created', {
+      uid: modelInstance.uid,
+      model: modelInstance,
+    });
+
     // 在模型实例化阶段应用 flow 级 defaultParams（仅填充缺失的 stepParams，不覆盖）
     // 不阻塞创建流程：允许 defaultParams 为异步函数
-    this.#applyFlowDefinitionDefaultParams(modelInstance as FlowModel).catch((err) => {
+    this._applyFlowDefinitionDefaultParams(modelInstance as FlowModel).catch((err) => {
       console.warn('FlowEngine: apply flow defaultParams failed:', err);
     });
 
@@ -416,10 +991,70 @@ export class FlowEngine {
   }
 
   /**
+   * 按类上的 resolveUse 链路解析最终用于实例化的模型类。
+   * 允许模型类根据上下文动态指定实际使用的类，支持多级 resolveUse。
+   */
+  private _resolveModelClass(
+    initial: ModelConstructor | undefined,
+    options: CreateModelOptions,
+    parent?: FlowModel,
+  ): ModelConstructor | undefined {
+    const normalize = (
+      resolved: ResolveUseResult | void,
+    ): { target?: RegisteredModelClassName | ModelConstructor; stop?: boolean } => {
+      if (!resolved) return {};
+      if (typeof resolved === 'object' && 'use' in resolved) {
+        return { target: resolved.use, stop: !!resolved.stop };
+      }
+      return { target: resolved as any, stop: false };
+    };
+
+    let current = initial;
+    const visited = new Set<ModelConstructor>();
+
+    while (current) {
+      if (visited.has(current)) {
+        break;
+      }
+      visited.add(current);
+
+      const resolver = (current as any)?.resolveUse as
+        | ((opts: CreateModelOptions, engine: FlowEngine, parent?: FlowModel) => ResolveUseResult | void)
+        | undefined;
+      if (typeof resolver !== 'function') {
+        break;
+      }
+
+      const { target, stop } = normalize(resolver(options, this, parent));
+      if (!target || target === current) {
+        break;
+      }
+
+      let next: ModelConstructor | undefined;
+      if (typeof target === 'string') {
+        next = this.getModelClass(target);
+        if (!next) {
+          console.warn(`FlowEngine: resolveUse returned '${target}' but no model is registered under that name.`);
+          return undefined;
+        }
+      } else {
+        next = target;
+      }
+
+      current = next;
+      if (stop) {
+        break;
+      }
+    }
+
+    return current;
+  }
+
+  /**
    * 尝试应用当前模型可用 flow 的 defaultParams（如果存在）到 model.stepParams。
    * 仅对尚未存在的步骤参数进行填充，不覆盖已有值。
    */
-  async #applyFlowDefinitionDefaultParams(model: FlowModel) {
+  async _applyFlowDefinitionDefaultParams(model: FlowModel) {
     try {
       const flows = model.getFlows();
       if (!flows || flows.size === 0) return;
@@ -462,8 +1097,23 @@ export class FlowEngine {
    * @param {string} uid Model instance UID
    * @returns {T | undefined} Model instance, or undefined if not found
    */
-  public getModel<T extends FlowModel = FlowModel>(uid: string): T | undefined {
-    return this.#modelInstances.get(uid) as T | undefined;
+  public getModel<T extends FlowModel = FlowModel>(uid: string, global?: boolean): T | undefined {
+    // 默认仅在当前引擎查找；只有当 global === true 时才跨视图栈查找
+    if (!global) {
+      return this._modelInstances.get(uid) as T | undefined;
+    }
+    // 跨视图栈查找：按视图栈从栈顶到根逐个查找
+    // 1) 找到栈顶引擎
+    let top: FlowEngine = this;
+    while (top.nextEngine) top = top.nextEngine;
+    // 2) 从栈顶向下查找，命中即返回
+    let eng: FlowEngine | undefined = top;
+    while (eng) {
+      const found = eng._modelInstances.get(uid) as T | undefined;
+      if (found) return found;
+      eng = eng.previousEngine;
+    }
+    return undefined;
   }
 
   /**
@@ -472,7 +1122,7 @@ export class FlowEngine {
    * @param {(model: T) => void} callback Callback function
    */
   forEachModel<T extends FlowModel = FlowModel>(callback: (model: T) => void): void {
-    this.#modelInstances.forEach(callback);
+    this._modelInstances.forEach(callback);
   }
 
   /**
@@ -481,11 +1131,13 @@ export class FlowEngine {
    * @returns {boolean} Returns true if successfully destroyed, false otherwise (e.g. instance does not exist)
    */
   public removeModel(uid: string): boolean {
-    if (!this.#modelInstances.has(uid)) {
-      console.warn(`FlowEngine: Model with UID '${uid}' does not exist.`);
+    if (!this._modelInstances.has(uid)) {
+      this.logger.debug(`FlowEngine: Model with UID '${uid}' does not exist.`);
       return false;
     }
-    const modelInstance = this.#modelInstances.get(uid) as FlowModel;
+    const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    // Ensure any cached beforeRender results tied to this uid are cleared before removal.
+    modelInstance.invalidateFlowCache(undefined, true);
     modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
@@ -497,17 +1149,71 @@ export class FlowEngine {
           if (index !== -1) {
             subModelValue.splice(index, 1);
             modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
+            this.emitter?.emit('model:subModel:removed', {
+              parentUid: modelInstance.parent.uid,
+              parent: modelInstance.parent,
+              model: modelInstance,
+            });
             break;
           }
         } else if (subModelValue && subModelValue === modelInstance) {
           delete modelInstance.parent.subModels[subKey];
           modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
+          this.emitter?.emit('model:subModel:removed', {
+            parentUid: modelInstance.parent.uid,
+            parent: modelInstance.parent,
+            model: modelInstance,
+          });
           break;
         }
       }
     }
-    this.#modelInstances.delete(uid);
+    this._modelInstances.delete(uid);
+
+    // 发射 destroyed 生命周期事件（在移除后，但携带实例便于调度器传递；严格模式：不吞错）
+    void this.emitter.emitAsync('model:destroyed', {
+      uid,
+      model: modelInstance,
+    });
     return true;
+  }
+
+  /**
+   * Remove a local model instance and all its sub-models recursively.
+   * @param {string} uid UID of the model instance to destroy
+   * @returns {boolean} Returns true if successfully destroyed, false otherwise
+   */
+  public removeModelWithSubModels(uid: string): boolean {
+    const model = this.getModel(uid);
+    if (!model) {
+      return false;
+    }
+
+    const collectDescendants = (m: FlowModel, acc: FlowModel[]) => {
+      if (m.subModels) {
+        for (const key in m.subModels) {
+          const sub = m.subModels[key];
+          if (Array.isArray(sub)) {
+            [...sub].forEach((s) => collectDescendants(s, acc));
+          } else if (sub) {
+            collectDescendants(sub, acc);
+          }
+        }
+      }
+      acc.push(m);
+    };
+
+    const allModels: FlowModel[] = [];
+    collectDescendants(model, allModels);
+
+    let success = true;
+    for (const m of allModels) {
+      if (!this.removeModel(m.uid)) {
+        success = false;
+      }
+    }
+
+    return success;
   }
 
   /**
@@ -516,11 +1222,115 @@ export class FlowEngine {
    * @private
    */
   private ensureModelRepository(): boolean {
-    if (!this.#modelRepository) {
+    if (!this._modelRepository) {
       // 不抛错，直接返回 false
       return false;
     }
     return true;
+  }
+
+  /**
+   * Try to locate a model instance in previous engines (view stack) by uid.
+   * This is mainly used by view-scoped engines to reuse already-loaded model trees
+   * (e.g. models created from local JSON) without hitting the repository.
+   */
+  private findModelInPreviousEngines<T extends FlowModel = FlowModel>(uid: string): T | undefined {
+    let eng = this.previousEngine;
+    while (eng) {
+      const found = eng.getModel<T>(uid);
+      if (found) return found;
+      eng = eng.previousEngine;
+    }
+    return undefined;
+  }
+
+  /**
+   * Try to locate a sub-model in previous engines (view stack) by (parentId, subKey).
+   */
+  private findSubModelInPreviousEngines<T extends FlowModel = FlowModel>(
+    parentId: string,
+    subKey: string,
+  ): { parent: FlowModel; model: T } | undefined {
+    let eng = this.previousEngine;
+    while (eng) {
+      const parent = eng.getModel<FlowModel>(parentId);
+      if (parent) {
+        const sub = (parent.subModels as any)?.[subKey];
+        if (sub) {
+          const model = Array.isArray(sub) ? (sub[0] as T) : (sub as T);
+          if (model) return { parent, model };
+        }
+      }
+      eng = eng.previousEngine;
+    }
+    return undefined;
+  }
+
+  /**
+   * Hydrate a model into current engine from an already-existing model instance in previous engines.
+   * - Avoids repository requests when the model tree is already present in memory.
+   */
+  private async hydrateModelFromPreviousEngines<T extends FlowModel = FlowModel>(
+    options: any,
+    extra?: { delegateToParent?: boolean; delegate?: FlowContext },
+  ): Promise<T | null> {
+    const uid = options?.uid;
+    const parentId = options?.parentId;
+    const subKey = options?.subKey;
+
+    // 1) Prefer exact uid match when provided.
+    if (uid && !this._modelInstances.has(uid)) {
+      const existing = this.findModelInPreviousEngines<T>(uid);
+      if (existing?.context.flowSettingsEnabled) {
+        // 如果模型实例启用 flowSettingsEnabled，直接返回 null, 避免旧数据
+        return null;
+      }
+      if (existing) {
+        const data = existing.serialize();
+        return this.createModelAsync<T>(data as any, extra);
+      }
+    }
+
+    // 2) Parent/subKey lookup (common for pages/popups).
+    if (parentId && subKey) {
+      const found = this.findSubModelInPreviousEngines<T>(parentId, subKey);
+      if (!found || found.parent.context.flowSettingsEnabled) return null;
+
+      const { parent: parentFromPrev, model: modelFromPrev } = found;
+      // Ensure the parent shell exists in current engine so findModelByParentId can work locally.
+      let localParent = this.getModel<FlowModel>(parentId);
+      if (!localParent) {
+        const parentData = parentFromPrev.serialize();
+        delete (parentData as any).subModels;
+        localParent = await this.createModelAsync<FlowModel>(parentData as any, extra);
+      }
+      // Create (or reuse) the sub-model instance in current engine.
+      const modelData = modelFromPrev.serialize();
+      const localModel = await this.createModelAsync<T>(modelData as any, extra);
+
+      // Mount under local parent if not mounted yet (so later lookups by parentId/subKey won't hit repo).
+      const mounted = (localParent.subModels as any)?.[subKey];
+      if (Array.isArray(mounted)) {
+        const exists = mounted.some((m) => m?.uid === (localModel as any)?.uid);
+        if (!exists) {
+          localParent.addSubModel(subKey, localModel as any);
+        }
+      } else if (mounted instanceof FlowModel) {
+        // Keep existing instance when uid matches; otherwise, replace.
+        if (mounted.uid !== (localModel as any)?.uid) {
+          localParent.setSubModel(subKey, localModel as any);
+        }
+      } else {
+        if ((localModel as any)?.subType === 'array') {
+          localParent.addSubModel(subKey, localModel as any);
+        } else {
+          localParent.setSubModel(subKey, localModel as any);
+        }
+      }
+      return localModel;
+    }
+
+    return null;
   }
 
   /**
@@ -531,12 +1341,37 @@ export class FlowEngine {
    */
   async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const model = this.findModelByParentId(options.parentId, options.subKey);
-    if (model) {
-      return model as T;
+    const refresh = !!options?.refresh;
+    const bypassLoadedPageCache = this._loadedPageCache.shouldBypass(options, () => this.context.flowSettingsEnabled);
+    if (!refresh && !bypassLoadedPageCache) {
+      const model = this.findModelByParentId(options.parentId, options.subKey);
+      if (model) {
+        return model as T;
+      }
+      const hydrated = await this.hydrateModelFromPreviousEngines<T>(options);
+      if (hydrated) {
+        return hydrated as T;
+      }
     }
-    const data = await this.#modelRepository.findOne(options);
-    return data?.uid ? this.createModel<T>(data as any) : null;
+    const data = await this._modelRepository.findOne(options);
+    if (!data?.uid) {
+      if (bypassLoadedPageCache) {
+        this._loadedPageCache.clear(options);
+      }
+      return null;
+    }
+    if (refresh || bypassLoadedPageCache) {
+      const existing = this.getModel(data.uid);
+      if (existing) {
+        this.removeModelWithSubModels(existing.uid);
+      }
+    }
+    const model = await this.createModelAsync<T>(data as any);
+    if (bypassLoadedPageCache) {
+      this._loadedPageCache.mountModelToParent(model, true);
+      this._loadedPageCache.clear(options);
+    }
+    return model;
   }
 
   /**
@@ -547,8 +1382,8 @@ export class FlowEngine {
    * @returns {T | null} Found sub-model or null
    */
   findModelByParentId<T extends FlowModel = FlowModel>(parentId: string, subKey: string): T | null {
-    if (parentId && this.#modelInstances.has(parentId)) {
-      const parentModel = this.#modelInstances.get(parentId) as FlowModel;
+    if (parentId && this._modelInstances.has(parentId)) {
+      const parentModel = this._modelInstances.get(parentId) as FlowModel;
       if (parentModel && parentModel.subModels[subKey]) {
         const subModels = parentModel.subModels[subKey];
         if (Array.isArray(subModels)) {
@@ -569,39 +1404,48 @@ export class FlowEngine {
   async loadOrCreateModel<T extends FlowModel = FlowModel>(
     options,
     extra?: {
+      skipSave?: boolean;
       delegateToParent?: boolean;
       delegate?: FlowContext;
     },
   ): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
     const { uid, parentId, subKey } = options;
-    if (uid && this.#modelInstances.has(uid)) {
-      return this.#modelInstances.get(uid) as T;
+    const bypassLoadedPageCache = this._loadedPageCache.shouldBypass(options, () => this.context.flowSettingsEnabled);
+    if (uid && !bypassLoadedPageCache && this._modelInstances.has(uid)) {
+      return this._modelInstances.get(uid) as T;
     }
-    const m = this.findModelByParentId<T>(parentId, subKey);
-    if (m) {
-      return m;
+    if (!bypassLoadedPageCache) {
+      const m = this.findModelByParentId<T>(parentId, subKey);
+      if (m) {
+        return m;
+      }
+
+      const hydrated = await this.hydrateModelFromPreviousEngines<T>(options, extra);
+      if (hydrated) {
+        return hydrated;
+      }
     }
-    const data = await this.#modelRepository.findOne(options);
+
+    const data = await this._modelRepository.findOne(options);
     let model: T | null = null;
     if (data?.uid) {
-      model = this.createModel<T>(data as any, extra);
+      if (bypassLoadedPageCache) {
+        const existing = this.getModel(data.uid);
+        if (existing) {
+          this.removeModelWithSubModels(existing.uid);
+        }
+      }
+      model = await this.createModelAsync<T>(data as any, extra);
     } else {
-      model = this.createModel<T>(options, extra);
-      await model.save();
+      model = await this.createModelAsync<T>(options, extra);
+      if (!extra?.skipSave) {
+        await model.save();
+      }
     }
-    if (model.parent) {
-      const subModel = model.parent.findSubModel(model.subKey, (m) => {
-        return m.uid === model.uid;
-      });
-      if (subModel) {
-        return model;
-      }
-      if (model.subType === 'array') {
-        model.parent.addSubModel(model.subKey, model);
-      } else {
-        model.parent.setSubModel(model.subKey, model);
-      }
+    this._loadedPageCache.mountModelToParent(model, bypassLoadedPageCache);
+    if (bypassLoadedPageCache) {
+      this._loadedPageCache.clear(options);
     }
     return model;
   }
@@ -621,23 +1465,27 @@ export class FlowEngine {
     if (!this.ensureModelRepository()) return;
 
     const modelUid = model.uid;
+    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(model, {
+      force: !!options?.onlyStepParams,
+    });
 
     // 如果这个 model 正在保存中，返回现有的保存 Promise
-    if (this.#savingModels.has(modelUid)) {
+    if (this._savingModels.has(modelUid)) {
       this.logger.debug(`Model ${modelUid} is already being saved, waiting for existing save operation`);
-      return await this.#savingModels.get(modelUid);
+      return await this._savingModels.get(modelUid);
     }
 
     // 创建保存 Promise 并添加到追踪 Map 中
-    const savePromise = this.#performModelSave(model, options);
-    this.#savingModels.set(modelUid, savePromise);
+    const savePromise = this._performModelSave(model, options);
+    this._savingModels.set(modelUid, savePromise);
 
     try {
       const result = await savePromise;
+      this._loadedPageCache.markDirty(dirtyLoadedPageKey);
       return result;
     } finally {
       // 无论成功还是失败，都要清除保存状态
-      this.#savingModels.delete(modelUid);
+      this._savingModels.delete(modelUid);
     }
   }
 
@@ -649,13 +1497,13 @@ export class FlowEngine {
    * @returns {Promise<any>} Repository save result
    * @private
    */
-  async #performModelSave<T extends FlowModel = FlowModel>(
+  async _performModelSave<T extends FlowModel = FlowModel>(
     model: T,
     options?: { onlyStepParams?: boolean },
   ): Promise<any> {
     this.logger.debug(`Starting save operation for model ${model.uid}`);
     try {
-      const result = await this.#modelRepository.save(model, options);
+      const result = await this._modelRepository.save(model, options);
       this.logger.debug(`Successfully saved model ${model.uid}`);
       return result;
     } catch (error) {
@@ -670,10 +1518,32 @@ export class FlowEngine {
    * @returns {Promise<boolean>} Whether destroyed successfully
    */
   async destroyModel(uid: string) {
-    if (this.ensureModelRepository()) {
-      await this.#modelRepository.destroy(uid);
+    const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(modelInstance);
+    const hasModelRepository = this.ensureModelRepository();
+    if (hasModelRepository) {
+      await this._modelRepository.destroy(uid);
     }
-    return this.removeModel(uid);
+
+    if (hasModelRepository) {
+      this._loadedPageCache.markDirty(dirtyLoadedPageKey);
+    }
+    const parent = modelInstance?.parent;
+    const result = this.removeModel(uid);
+    parent && parent.emitter.emit('onSubModelDestroyed', modelInstance);
+
+    return result;
+  }
+
+  /**
+   * Duplicate a model tree via repository API.
+   * Returns the duplicated model JSON (root with subModels) or null if not available.
+   * @param {string} uid UID of the model to duplicate
+   * @returns {Promise<any | null>} Duplicated model JSON or null
+   */
+  async duplicateModel(uid: string) {
+    if (!this.ensureModelRepository()) return null;
+    return this._modelRepository.duplicate(uid);
   }
 
   /**
@@ -745,9 +1615,15 @@ export class FlowEngine {
     // 7. 触发事件以通知其他部分模型已替换
     if (currentParent) {
       currentParent.emitter.setPaused(false);
-      currentParent.parent.invalidateAutoFlowCache(true);
+      currentParent.parent.invalidateFlowCache('beforeRender', true);
       currentParent.parent?.rerender();
       currentParent.emitter.emit('onSubModelReplaced', { oldModel, newModel });
+      this.emitter?.emit('model:subModel:replaced', {
+        parentUid: currentParent.uid,
+        parent: currentParent,
+        oldModel,
+        newModel,
+      });
     }
     await newModel.save();
     return newModel;
@@ -755,17 +1631,25 @@ export class FlowEngine {
 
   /**
    * Move a model instance within its parent model.
-   * @param {any} sourceId Source model UID
-   * @param {any} targetId Target model UID
+   * @param {string | number} sourceId Source model UID
+   * @param {string | number} targetId Target model UID
    * @returns {Promise<void>} No return value
    */
-  async moveModel(sourceId: any, targetId: any, options?: PersistOptions): Promise<void> {
-    const sourceModel = this.getModel(sourceId);
-    const targetModel = this.getModel(targetId);
+  async moveModel(sourceId: string | number, targetId: string | number, options?: PersistOptions): Promise<void> {
+    const sourceUid = String(sourceId);
+    const targetUid = String(targetId);
+    if (!sourceUid || !targetUid || sourceUid === targetUid) {
+      return;
+    }
+
+    const sourceModel = this.getModel(sourceUid);
+    const targetModel = this.getModel(targetUid);
     if (!sourceModel || !targetModel) {
       console.warn(`FlowEngine: Cannot move model. Source or target model not found.`);
       return;
     }
+    let position: 'before' | 'after' = 'after';
+    const dirtyLoadedPageKey = this._loadedPageCache.getDirtyKeyForModel(sourceModel);
     const move = (sourceModel: FlowModel, targetModel: FlowModel) => {
       if (!sourceModel.parent || !targetModel.parent || sourceModel.parent !== targetModel.parent) {
         console.error('FlowModel.moveTo: Both models must have the same parent to perform move operation.');
@@ -779,7 +1663,8 @@ export class FlowEngine {
         return false;
       }
 
-      const findIndex = (model: FlowModel) => subModels.findIndex((item) => item.uid === model.uid);
+      const subModelsCopy = [...subModels];
+      const findIndex = (model: FlowModel) => subModelsCopy.findIndex((item) => item.uid === model.uid);
 
       const currentIndex = findIndex(sourceModel);
       const targetIndex = findIndex(targetModel);
@@ -794,24 +1679,39 @@ export class FlowEngine {
         return false;
       }
 
+      position = currentIndex < targetIndex ? 'after' : 'before';
+
       // 使用splice直接移动数组元素（O(n)比排序O(n log n)更快）
-      const [movedModel] = subModels.splice(currentIndex, 1);
-      subModels.splice(targetIndex, 0, movedModel);
+      const [movedModel] = subModelsCopy.splice(currentIndex, 1);
+      subModelsCopy.splice(targetIndex, 0, movedModel);
 
       // 重新分配连续的sortIndex
-      subModels.forEach((model, index) => {
+      subModelsCopy.forEach((model, index) => {
         model.sortIndex = index;
       });
 
+      // 更新父模型的 subModels 引用，确保拖拽后仍为可观察数组
+      subModels.splice(0, subModels.length, ...subModelsCopy);
+
       return true;
     };
-    move(sourceModel, targetModel);
+    const moved = move(sourceModel, targetModel);
+    if (!moved) {
+      return;
+    }
+
     if (options?.persist !== false && this.ensureModelRepository()) {
-      const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'after' : 'before';
-      await this.#modelRepository.move(sourceId, targetId, position);
+      await this._modelRepository.move(sourceUid, targetUid, position);
+      this._loadedPageCache.markDirty(dirtyLoadedPageKey);
     }
     // 触发事件以通知其他部分模型已移动
     sourceModel.parent.emitter.emit('onSubModelMoved', { source: sourceModel, target: targetModel });
+    this.emitter?.emit('model:subModel:moved', {
+      parentUid: sourceModel.parent?.uid,
+      parent: sourceModel.parent,
+      source: sourceModel,
+      target: targetModel,
+    });
   }
 
   /**
@@ -825,7 +1725,7 @@ export class FlowEngine {
       return new Map();
     }
     const modelClasses = new Map<string, ModelConstructor>();
-    for (const [className, ModelClass] of this.#modelClasses) {
+    for (const [className, ModelClass] of this._modelClasses) {
       if (isInheritedFrom(ModelClass, parentModelClass)) {
         modelClasses.set(className, ModelClass);
       }

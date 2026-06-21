@@ -1,0 +1,22 @@
+{
+  "Allow roles union": "Allow roles union",
+  "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.": "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.",
+  "Data sources": "Sumber data",
+  "Desktop menu": "Menu desktop",
+  "Do not use role union. Users need to switch between their roles individually.": "Do not use role union. Users need to switch between their roles individually.",
+  "Force users to use only role union. They cannot switch between individual roles.": "Force users to use only role union. They cannot switch between individual roles.",
+  "Full permissions": "Full permissions",
+  "General": "Umum",
+  "Independent roles": "Independent roles",
+  "New role": "Peran baru",
+  "Permissions": "Izin",
+  "Please select role mode": "Please select role mode",
+  "Plugin settings": "Pengaturan plugin",
+  "Role mode": "Role mode",
+  "Role mode doc": "https://docs.nocobase.com/handbook/acl/manual",
+  "Roles & Permissions": "Peran & Izin",
+  "Roles union only": "Roles union only",
+  "Saved successfully": "Saved successfully",
+  "The current user has no roles. Please try another account.": "Pengguna saat ini tidak memiliki peran. Harap coba akun lain.",
+  "The user role does not exist. Please try signing in again": "Peran pengguna tidak ada. Harap coba masuk lagi"
+}

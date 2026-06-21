@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, userEvent } from '@nocobase/test/client';
+import { fireEvent, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
@@ -25,8 +25,10 @@ describe('Select', () => {
     expect(screen.getByText('莆田')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('福州'));
-    expect(container.querySelectorAll('.ant-tag')).toHaveLength(1);
-    expect(container.querySelector('.ant-tag')).toHaveTextContent('福州');
+    await waitFor(() => {
+      expect(container.querySelectorAll('.ant-tag')).toHaveLength(1);
+      expect(container.querySelector('.ant-tag')).toHaveTextContent('福州');
+    });
   });
 
   it('select multiple', async () => {
@@ -45,12 +47,16 @@ describe('Select', () => {
     const selector = container.querySelector('.ant-select-selector') as HTMLElement;
 
     // default value
-    expect(container.querySelectorAll('.ant-tag')).toHaveLength(1);
-    expect(container.querySelector('.ant-tag')).toHaveTextContent('福州');
+    await waitFor(() => {
+      expect(container.querySelectorAll('.ant-tag')).toHaveLength(1);
+      expect(container.querySelector('.ant-tag')).toHaveTextContent('福州');
+    });
 
     await userEvent.click(selector);
     await userEvent.click(screen.getByText('莆田'));
-    expect(container.querySelectorAll('.ant-tag')).toHaveLength(1);
-    expect(container.querySelector('.ant-tag')).toHaveTextContent('莆田');
+    await waitFor(() => {
+      expect(container.querySelectorAll('.ant-tag')).toHaveLength(1);
+      expect(container.querySelector('.ant-tag')).toHaveTextContent('莆田');
+    });
   });
 });

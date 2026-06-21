@@ -7,18 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Input, Tag, Tooltip, message } from 'antd';
 import { cloneDeep } from 'lodash';
 import { InfoOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
-import { ISchema, useForm } from '@formily/react';
+import { useForm } from '@formily/react';
 
 import {
   ActionContextProvider,
   FormProvider,
   SchemaComponent,
-  SchemaInitializerItemType,
   css,
   cx,
   useAPIClient,
@@ -33,7 +32,13 @@ import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
-import { UseVariableOptions, VariableOption } from '../variable';
+import { useFlowEngine } from '@nocobase/flow-engine';
+import { useMemoizedFn } from 'ahooks';
+import { openTriggerConfigDrawer } from '../../client-v2/triggers/TriggerConfig';
+import { Trigger, resolveLegacyTriggerConfigRenderMode } from '../../client-v2/triggers';
+
+export { Trigger } from '../../client-v2/triggers';
+export type { TriggerTempAssociationSource } from '../../client-v2/triggers';
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -60,25 +65,6 @@ function useUpdateConfigAction() {
       refresh();
     },
   };
-}
-
-export abstract class Trigger {
-  sync: boolean;
-  title: string;
-  description?: string;
-  // group: string;
-  useVariables?(config: Record<string, any>, options?: UseVariableOptions): VariableOption[];
-  fieldset: Record<string, ISchema>;
-  triggerFieldset?: Record<string, ISchema>;
-  validate(config: Record<string, any>): boolean {
-    return true;
-  }
-  view?: ISchema;
-  scope?: { [key: string]: any };
-  components?: { [key: string]: any };
-  useInitializers?(config): SchemaInitializerItemType | null;
-  initializers?: any;
-  isActionTriggerable_deprecated?: boolean | ((config: object, context?: object) => boolean);
 }
 
 function TriggerExecution() {
@@ -165,6 +151,7 @@ function useFormProviderProps() {
 
 export const TriggerConfig = () => {
   const api = useAPIClient();
+  const flowEngine = useFlowEngine();
   const { workflow, refresh } = useFlowContext();
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
@@ -178,7 +165,7 @@ export const TriggerConfig = () => {
     if (workflow) {
       setEditingTitle(workflow.triggerTitle ?? workflow.title ?? compile(trigger?.title));
     }
-  }, [workflow, trigger]);
+  }, [compile, workflow, trigger]);
 
   const form = useMemo(() => {
     const values = cloneDeep(workflow.config);
@@ -186,50 +173,58 @@ export const TriggerConfig = () => {
       initialValues: values,
       disabled: Boolean(executed),
     });
-  }, [workflow]);
+  }, [workflow, executed]);
 
-  const resetForm = useCallback(
-    (editing) => {
-      setEditingConfig(editing);
-      if (!editing) {
-        form.reset();
-      }
-    },
-    [form],
-  );
+  const resetForm = useMemoizedFn((editing: boolean) => {
+    setEditingConfig(editing);
+    if (!editing) {
+      form.reset();
+    }
+  });
 
-  const onChangeTitle = useCallback(
-    async function (next) {
-      const t = next || compile(trigger?.title);
-      setEditingTitle(t);
-      if (t === workflow.triggerTitle) {
+  const onChangeTitle = useMemoizedFn(async (next: string) => {
+    const title = next || compile(trigger?.title);
+    setEditingTitle(title);
+    if (title === workflow.triggerTitle) {
+      return;
+    }
+    await api.resource('workflows').update({
+      filterByTk: workflow.id,
+      values: {
+        triggerTitle: title,
+      },
+    });
+    refresh();
+  });
+
+  const openConfig = useMemoizedFn(() => {
+    if (resolveLegacyTriggerConfigRenderMode(trigger) !== 'modern-loader') {
+      return false;
+    }
+    openTriggerConfigDrawer({ ctx: flowEngine.context, trigger, workflow, refresh });
+    return true;
+  });
+
+  const onOpenDrawer = useMemoizedFn((ev: React.MouseEvent<HTMLDivElement>) => {
+    if (ev.target === ev.currentTarget) {
+      if (openConfig()) {
         return;
       }
-      await api.resource('workflows').update({
-        filterByTk: workflow.id,
-        values: {
-          triggerTitle: t,
-        },
-      });
-      refresh();
-    },
-    [workflow, trigger],
-  );
-
-  const onOpenDrawer = useCallback(function (ev) {
-    if (ev.target === ev.currentTarget) {
       setEditingConfig(true);
       return;
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
-    for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
+    for (let el = ev.target as HTMLElement | null; el && el !== ev.currentTarget; el = el.parentElement) {
       if ((Array.from(el.classList ?? []) as string[]).some((name: string) => whiteSet.has(name))) {
+        if (openConfig()) {
+          return;
+        }
         setEditingConfig(true);
         ev.stopPropagation();
         return;
       }
     }
-  }, []);
+  });
 
   const titleText = lang('Trigger');
 
@@ -391,5 +386,10 @@ export const TriggerConfig = () => {
 export function useTrigger() {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const { workflow } = useFlowContext();
+
+  if (!workflow?.type) {
+    return null;
+  }
+
   return workflowPlugin.triggers.get(workflow.type);
 }

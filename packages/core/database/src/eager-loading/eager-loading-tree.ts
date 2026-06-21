@@ -71,16 +71,20 @@ const queryParentSQL = (options: {
 
   const queryInterface = db.sequelize.getQueryInterface();
   const q = queryInterface.quoteIdentifier.bind(queryInterface);
-  return `WITH RECURSIVE cte AS (
+  const placeholders = nodeIds.map((_, index) => `$${index + 1}`).join(', ');
+  return {
+    sql: `WITH RECURSIVE cte AS (
       SELECT ${q(targetKeyField)}, ${q(foreignKeyField)}
       FROM ${tableName}
-      WHERE ${q(targetKeyField)} IN (${nodeIds.join(',')})
+      WHERE ${q(targetKeyField)} IN (${placeholders})
       UNION ALL
       SELECT t.${q(targetKeyField)}, t.${q(foreignKeyField)}
       FROM ${tableName} AS t
       INNER JOIN cte ON t.${q(targetKeyField)} = cte.${q(foreignKeyField)}
       )
-      SELECT ${q(targetKeyField)} AS ${q(targetKey)}, ${q(foreignKeyField)} AS ${q(foreignKey)} FROM cte`;
+      SELECT ${q(targetKeyField)} AS ${q(targetKey)}, ${q(foreignKeyField)} AS ${q(foreignKey)} FROM cte`,
+    bind: nodeIds,
+  };
 };
 
 export class EagerLoadingTree {
@@ -173,6 +177,12 @@ export class EagerLoadingTree {
           pushAttribute(eagerLoadingTreeParent, sourceKey);
         }
 
+        if (associationType == 'BelongsToArray') {
+          const { foreignKey, targetKey } = association;
+          pushAttribute(eagerLoadingTreeParent, foreignKey);
+          pushAttribute(child, targetKey);
+        }
+
         eagerLoadingTreeParent.children.push(child);
 
         if (include.include) {
@@ -262,6 +272,7 @@ export class EagerLoadingTree {
               group: `${node.model.name}.${primaryKeyField}`,
               transaction,
               include: processIncludes(includeForFilter, node.model),
+              raw: true,
             } as any)
           ).map((row) => {
             return { row, pk: row[primaryKeyField] };
@@ -374,7 +385,7 @@ export class EagerLoadingTree {
           // load parent instances recursively
           if (node.includeOption.recursively && instances.length > 0) {
             const targetKey = association.targetKey;
-            const sql = queryParentSQL({
+            const { sql, bind } = queryParentSQL({
               db: this.db,
               collection,
               foreignKey,
@@ -383,6 +394,7 @@ export class EagerLoadingTree {
             });
 
             const results = await this.db.sequelize.query(sql, {
+              bind,
               type: 'SELECT',
               transaction,
             });

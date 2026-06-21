@@ -32,13 +32,13 @@ const availableActions: {
   view: {
     displayName: '{{t("View")}}',
     type: 'old-data',
-    aliases: ['get', 'list'],
+    aliases: ['get', 'list', 'query'],
     allowConfigureFields: true,
   },
   update: {
     displayName: '{{t("Edit")}}',
     type: 'old-data',
-    aliases: ['update', 'move', 'add', 'set', 'remove', 'toggle'],
+    aliases: ['update', 'move'],
     allowConfigureFields: true,
   },
   destroy: {

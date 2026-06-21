@@ -46,8 +46,22 @@ export const ownersField = {
   },
 };
 
+export const parentIdField = {
+  type: 'bigInt',
+  name: 'parentId',
+  interface: 'integer',
+  isForeignKey: true,
+  uiSchema: {
+    type: 'number',
+    title: 'parentId',
+    'x-component': 'InputNumber',
+    'x-read-pretty': true,
+  },
+};
+
 export default defineCollection({
   name: 'departments',
+  dataCategory: 'business',
   migrationRules: ['overwrite'],
   title: '{{t("Departments")}}',
   dumpRules: 'required',
@@ -64,7 +78,7 @@ export default defineCollection({
       type: 'snowflakeId',
       name: 'id',
       primaryKey: true,
-      interface: 'id',
+      interface: 'integer',
       uiSchema: {
         type: 'number',
         title: '{{t("ID")}}',
@@ -82,6 +96,7 @@ export default defineCollection({
         'x-component': 'Input',
       },
     },
+    parentIdField,
     {
       type: 'boolean',
       name: 'isLeaf',

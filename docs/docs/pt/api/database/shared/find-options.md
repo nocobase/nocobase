@@ -1,0 +1,1 @@
+Por favor, forneça o conteúdo em chinês (e inglês, se disponível) para que eu possa realizar a tradução. O campo de entrada está vazio.

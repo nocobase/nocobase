@@ -8,24 +8,33 @@
  */
 
 import React, { memo, useEffect, useMemo } from 'react';
-import { Button, Space, App, Alert, Flex } from 'antd';
+import { Button, Space, App, Alert, Flex, Collapse, Typography, Tooltip } from 'antd';
 import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
-import { usePlugin, useToken } from '@nocobase/client';
-import { Markdown } from './markdown/Markdown';
+import { lazy, usePlugin, useToken, toToolsMap } from '@nocobase/client';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
 import { Message, Task } from '../types';
-import { Attachment } from './Attachment';
 import { ContextItem } from './ContextItem';
 import { ToolCard } from './generative-ui/ToolCard';
 import { useChatConversationsStore } from './stores/chat-conversations';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import _ from 'lodash';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { observer } from '@nocobase/flow-engine';
+
+const { Markdown } = lazy(() => import('./markdown/Markdown'), 'Markdown');
+
+const { Link } = Typography;
+
+const messageFooterWeakClass = css`
+  margin-top: 4px;
+  display: flex;
+`;
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -34,45 +43,88 @@ const MessageWrapper = React.forwardRef<
     footer?: React.ReactNode;
   }
 >(({ children, footer, ...props }, ref) => {
-  const [showFooter, setShowFooter] = React.useState(false);
-
   return (
-    <div ref={ref} {...props} onMouseEnter={() => setShowFooter(true)} onMouseLeave={() => setShowFooter(false)}>
+    <div ref={ref} {...props}>
       {children}
-      {footer && <div style={{ marginTop: '4px', opacity: showFooter ? 1 : 0 }}>{footer}</div>}
+      {footer && <div className={messageFooterWeakClass}>{footer}</div>}
     </div>
   );
 });
 
 const AITextMessageRenderer: React.FC<{
   msg: Message['content'];
-}> = ({ msg }) => {
+  toolInlineActions?: React.ReactNode;
+}> = React.memo(({ msg, toolInlineActions }) => {
+  const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
+  const reasoningText = msg.reasoning?.content;
+  const reasoningStatus = msg.reasoning?.status;
+  const reasoningPanel =
+    reasoningText && reasoningStatus ? (
+      <Collapse
+        size="small"
+        bordered={false}
+        defaultActiveKey="thinking"
+        style={{
+          marginBottom: 14,
+        }}
+        items={[
+          {
+            key: 'thinking',
+            label: reasoningStatus === 'streaming' ? t('Thinking in progress') : t('Thinking completed'),
+            children: (
+              <div
+                className={css`
+                  white-space: pre-wrap;
+                  color: rgba(0, 0, 0, 0.65);
+                  font-size: 12px;
+                `}
+              >
+                {reasoningText}
+              </div>
+            ),
+          },
+        ]}
+      />
+    ) : null;
+
   if (!provider?.components?.MessageRenderer) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-        }}
-      >
-        {typeof msg.content === 'string' && <Markdown message={msg} />}
-        {msg.tool_calls?.length ? <ToolCard tools={msg.tool_calls} messageId={msg.messageId} /> : null}
-      </div>
+      <>
+        {reasoningPanel}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {typeof msg.content === 'string' && <Markdown message={msg} />}
+          {msg.tool_calls?.length ? (
+            <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} inlineActions={toolInlineActions} />
+          ) : null}
+        </div>
+      </>
     );
   }
   const M = provider.components.MessageRenderer;
   return <M msg={msg} />;
-};
+});
 
 const AIMessageRenderer: React.FC<{
   msg: Message['content'];
-}> = ({ msg }) => {
+  toolInlineActions?: React.ReactNode;
+}> = React.memo(({ msg, toolInlineActions }) => {
   switch (msg.type) {
     case 'greeting':
-      return <Bubble content={msg.content} />;
+      return (
+        <Bubble
+          content={msg.content}
+          style={{
+            marginBottom: '8px',
+          }}
+        />
+      );
     default:
       return (
         <Bubble
@@ -83,99 +135,139 @@ const AIMessageRenderer: React.FC<{
             },
           }}
           variant="borderless"
-          content={<AITextMessageRenderer msg={msg} />}
+          content={<AITextMessageRenderer msg={msg} toolInlineActions={toolInlineActions} />}
         />
       );
   }
-};
+});
 
 export const AIMessage: React.FC<{
   msg: Message['content'];
-}> = memo(({ msg }) => {
+}> = observer(({ msg }) => {
   const t = useT();
   const { token } = useToken();
   const { message } = App.useApp();
+  const aiConfigRepository = useAIConfigRepository();
+  const toolsLoading = aiConfigRepository.aiToolsLoading;
+  const tools = aiConfigRepository.aiTools;
+  const toolsMap = useMemo(() => toToolsMap(tools || []), [tools]);
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  useEffect(() => {
+    aiConfigRepository.getAITools(currentConversation);
+  }, [aiConfigRepository, currentConversation]);
+  const plugin = usePlugin('ai') as PluginAIClient;
+  const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
+  const hasCustomRenderer = !!provider?.components?.MessageRenderer;
+  const footerButtonStyle: React.CSSProperties = {
+    color: token.colorTextSecondary,
+    fontSize: token.fontSizeSM,
+    height: token.controlHeightSM,
+    padding: `0 ${token.paddingXS}px`,
+  };
+  const footerIconStyle: React.CSSProperties = {
+    color: token.colorTextSecondary,
+    fontSize: token.fontSizeSM,
+  };
   const copy = () => {
     navigator.clipboard.writeText(msg.content);
     message.success(t('Copied'));
   };
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const readonly = useChatBoxStore.use.readonly();
 
   const { resendMessages } = useChatMessageActions();
   const usageMetadata = msg.metadata?.usage_metadata;
+  const hasTextContent = typeof msg.content === 'string' && msg.content.trim().length > 0;
+  const hasSingleToolCall = msg.tool_calls?.length === 1;
+  const toolCall = hasSingleToolCall ? msg.tool_calls?.[0] : undefined;
+  const isDefaultToolCard = !!toolCall && !toolsLoading && !toolsMap.get(toolCall.name)?.ui?.card;
+  const useInlineToolActions = !hasCustomRenderer && hasSingleToolCall && !hasTextContent && isDefaultToolCard;
+  const messageActions =
+    msg.type !== 'greeting' ? (
+      <Space>
+        {msg.from === 'main-agent' && readonly !== true && (
+          <Button
+            color="default"
+            variant="text"
+            size="small"
+            style={footerButtonStyle}
+            icon={
+              <ReloadOutlined
+                style={footerIconStyle}
+                onClick={() =>
+                  resendMessages({
+                    sessionId: currentConversation,
+                    messageId: msg.messageId,
+                    aiEmployee: currentEmployee,
+                  })
+                }
+              />
+            }
+          />
+        )}
+        {typeof msg.content === 'string' && msg.content && (
+          <Button
+            color="default"
+            variant="text"
+            size="small"
+            style={footerButtonStyle}
+            icon={<CopyOutlined style={footerIconStyle} onClick={copy} />}
+          />
+        )}
+      </Space>
+    ) : null;
   return (
-    <MessageWrapper
-      ref={msg.ref}
-      footer={
-        msg.type !== 'greeting' && (
-          <Space>
-            <Button
-              color="default"
-              variant="text"
-              size="small"
-              icon={
-                <ReloadOutlined
-                  onClick={() =>
-                    resendMessages({
-                      sessionId: currentConversation,
-                      messageId: msg.messageId,
-                      aiEmployee: currentEmployee,
-                    })
-                  }
-                />
-              }
-            />
-            {typeof msg.content === 'string' && msg.content && (
-              <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
-            )}
-            {/* {usageMetadata && usageMetadata.input_tokens && usageMetadata.output_tokens && ( */}
-            {/*   <span */}
-            {/*     style={{ */}
-            {/*       fontSize: token.fontSizeSM, */}
-            {/*       color: token.colorTextDescription, */}
-            {/*     }} */}
-            {/*   > */}
-            {/*     <span */}
-            {/*       style={{ */}
-            {/*         marginLeft: '8px', */}
-            {/*       }} */}
-            {/*     > */}
-            {/*       Tokens: <ArrowUpOutlined /> */}
-            {/*       {new Intl.NumberFormat('en-US', { */}
-            {/*         notation: 'compact', */}
-            {/*         maximumFractionDigits: 1, */}
-            {/*       }).format(usageMetadata.input_tokens)} */}
-            {/*     </span> */}
-            {/*     <span */}
-            {/*       style={{ */}
-            {/*         marginLeft: '4px', */}
-            {/*       }} */}
-            {/*     > */}
-            {/*       <ArrowDownOutlined /> */}
-            {/*       {new Intl.NumberFormat('en-US', { */}
-            {/*         notation: 'compact', */}
-            {/*         maximumFractionDigits: 1, */}
-            {/*       }).format(usageMetadata.output_tokens)} */}
-            {/*     </span> */}
-            {/*   </span> */}
-            {/* )} */}
-          </Space>
-        )
-      }
-    >
-      <AIMessageRenderer msg={msg} />
+    <MessageWrapper ref={msg.ref} footer={messageActions && !useInlineToolActions ? messageActions : null}>
+      {msg.reference?.length ? <Reference references={msg.reference} /> : null}
+      <AIMessageRenderer msg={msg} toolInlineActions={useInlineToolActions ? messageActions : null} />
     </MessageWrapper>
   );
 });
+
+export const Reference: React.FC<{ references: { title: string; url: string }[] }> = ({ references }) => {
+  const t = useT();
+  const items = [
+    {
+      key: '1',
+      label: t('Cite {{count}} pieces of information as references', { count: references.length }),
+      children: (
+        <Space style={{ width: '100%' }} direction="vertical">
+          {references.map((ref, index) => {
+            const url = ref.url;
+            const title = _.isEmpty(ref.title) ? t('references {{index}}', { index: index + 1 }) : ref.title;
+            const tooltip = _.isEmpty(ref.title) ? ref.url : ref.title;
+            return (
+              <Tooltip key={index} title={tooltip} arrow={false}>
+                <Link href={url} target="_blank" ellipsis>
+                  {title}
+                </Link>
+              </Tooltip>
+            );
+          })}
+        </Space>
+      ),
+    },
+  ];
+  return <Collapse items={items} bordered={false} size="small" style={{ marginBottom: 8 }} />;
+};
 
 export const UserMessage: React.FC<{
   msg: Message['content'];
 }> = memo(({ msg }) => {
   const t = useT();
+  const { token } = useToken();
   const { message } = App.useApp();
+  const footerButtonStyle: React.CSSProperties = {
+    color: token.colorTextSecondary,
+    fontSize: token.fontSizeSM,
+    height: token.controlHeightSM,
+    padding: `0 ${token.paddingXS}px`,
+  };
+  const footerIconStyle: React.CSSProperties = {
+    color: token.colorTextSecondary,
+    fontSize: token.fontSizeSM,
+  };
 
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const senderRef = useChatBoxStore.use.senderRef();
@@ -196,6 +288,8 @@ export const UserMessage: React.FC<{
     ...item,
   }));
 
+  const readonly = useChatBoxStore.use.readonly();
+
   return (
     <MessageWrapper
       ref={msg.ref}
@@ -206,22 +300,32 @@ export const UserMessage: React.FC<{
       `)}
       footer={
         <Space>
-          <Button
-            color="default"
-            variant="text"
-            size="small"
-            icon={
-              <EditOutlined
-                onClick={() => {
-                  startEditingMessage(msg);
-                  setSenderValue(msg.content);
-                  senderRef.current?.focus();
-                }}
-              />
-            }
-          />
+          {msg.from === 'main-agent' && readonly !== true && (
+            <Button
+              color="default"
+              variant="text"
+              size="small"
+              style={footerButtonStyle}
+              icon={
+                <EditOutlined
+                  style={footerIconStyle}
+                  onClick={() => {
+                    startEditingMessage(msg);
+                    setSenderValue(msg.content);
+                    senderRef.current?.focus();
+                  }}
+                />
+              }
+            />
+          )}
           {typeof msg.content === 'string' && msg.content && (
-            <Button color="default" variant="text" size="small" icon={<CopyOutlined onClick={copy} />} />
+            <Button
+              color="default"
+              variant="text"
+              size="small"
+              style={footerButtonStyle}
+              icon={<CopyOutlined style={footerIconStyle} onClick={copy} />}
+            />
           )}
         </Space>
       }
@@ -233,22 +337,36 @@ export const UserMessage: React.FC<{
           }}
         >
           {msg.workContext.map((item: any) => (
-            <ContextItem item={item} key={`${item.type}:${item.uid}`} />
+            <ContextItem within="chatbox" item={item} key={`${item.type}:${item.uid}`} />
           ))}
         </div>
       ) : null}
       {items?.length ? (
         <div
           style={{
-            marginBottom: '4px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 4,
           }}
         >
           {items.map((item) => (
-            <Attachment file={item} key={item.filename} />
+            <Attachments.FileCard key={item.uid} item={item} />
           ))}
         </div>
       ) : null}
-      {_.isEmpty(msg.content) ? <></> : <Bubble content={msg.content} />}
+      {_.isEmpty(msg.content) ? (
+        <></>
+      ) : (
+        <Bubble
+          content={msg.content}
+          styles={{
+            content: {
+              whiteSpace: 'pre-wrap',
+            },
+          }}
+        />
+      )}
     </MessageWrapper>
   );
 });
@@ -257,38 +375,53 @@ export const ErrorMessage: React.FC<{
   msg: any;
 }> = memo(({ msg }) => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-
   const currentConversation = useChatConversationsStore.use.currentConversation();
-
-  const messages = useChatMessagesStore.use.messages();
-
+  const chat = useChat(currentConversation);
+  const messages = chat.use.messages();
   const { resendMessages } = useChatMessageActions();
 
+  const showAlert = msg.content !== 'GraphRecursionError';
+  useEffect(() => {
+    if (msg.content === 'GraphRecursionError') {
+      resendMessages({
+        sessionId: currentConversation,
+        aiEmployee: currentEmployee,
+        important: msg.content,
+      });
+    }
+  }, [msg]);
+
   return (
-    <Alert
-      message={<>{msg.content} </>}
-      action={
-        <Button
-          onClick={() => {
-            let messageId: string;
-            const prev = messages[messages.length - 2];
-            if (prev && prev.role !== 'user') {
-              messageId = prev.key as string;
-            }
-            resendMessages({
-              sessionId: currentConversation,
-              messageId,
-              aiEmployee: currentEmployee,
-            });
-          }}
-          icon={<ReloadOutlined />}
-          type="text"
-        />
-      }
-      type="warning"
-      showIcon
-    />
+    showAlert && (
+      <Alert
+        message={<>{msg.content} </>}
+        action={
+          <Button
+            onClick={() => {
+              let messageId: string;
+              const prev = messages[messages.length - 2];
+              if (prev && prev.role !== 'user') {
+                messageId = prev.key as string;
+              }
+              resendMessages({
+                sessionId: currentConversation,
+                messageId,
+                aiEmployee: currentEmployee,
+              });
+            }}
+            icon={<ReloadOutlined />}
+            type="text"
+          />
+        }
+        type="warning"
+        showIcon
+      />
+    )
   );
+});
+
+export const HintMessage: React.FC<{ msg: any }> = memo(({ msg }) => {
+  return <Alert style={{ marginBottom: 8 }} message={<>{msg.content} </>} type="info" showIcon closable />;
 });
 
 export const TaskMessage: React.FC<{
@@ -297,7 +430,9 @@ export const TaskMessage: React.FC<{
   };
 }> = memo(({ msg }) => {
   const t = useT();
-  const tasks = msg.content;
+  // 保证 msg.content 始终被归一化为数组
+  const rawTasks = (msg as any)?.content;
+  const tasks: Task[] = Array.isArray(rawTasks) ? rawTasks : rawTasks ? [rawTasks] : [];
 
   const taskVariables = useChatBoxStore.use.taskVariables();
   const currentEmployee = useChatBoxStore.use.currentEmployee();

@@ -7,109 +7,189 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application } from '@nocobase/server';
+import { Transaction } from '@nocobase/database';
 import { SendFnType, BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
+import { v4 as uuidv4 } from 'uuid';
 import { InAppMessageFormValues } from '../types';
-import { PassThrough } from 'stream';
 import { InAppMessagesDefinition as MessagesDefinition } from '../types';
 import { parseUserSelectionConf } from './parseUserSelectionConf';
 import defineMyInAppMessages from './defineMyInAppMessages';
 import defineMyInAppChannels from './defineMyInAppChannels';
 
-type UserID = string;
-type ClientID = string;
 export default class InAppNotificationChannel extends BaseNotificationChannel {
-  // userClientsMap: Record<UserID, Record<ClientID, PassThrough>>;
+  private static readonly SLOW_SEND_THRESHOLD_MS = 200;
+  private static readonly MESSAGE_BATCH_SIZE = 100;
 
-  // constructor(protected app: Application) {
-  //   super(app);
-  //   this.userClientsMap = {};
-  // }
-
-  async load() {
-    this.app.db.on(`${MessagesDefinition.name}.afterCreate`, this.onMessageCreated);
-    this.app.db.on(`${MessagesDefinition.name}.afterUpdate`, this.onMessageUpdated);
-    this.defineActions();
+  private getMessagePayload(message: any) {
+    return typeof message?.toJSON === 'function' ? message.toJSON() : message;
   }
 
-  onMessageCreated = async (model, options) => {
-    const userId = model.userId;
-    this.app.emit('ws:sendToTag', {
-      tagKey: 'userId',
-      tagValue: userId,
-      message: {
-        type: 'in-app-message:created',
-        payload: model.toJSON(),
-      },
+  private emitMessageEventsAsync(type: 'created' | 'updated', messages: any[]) {
+    setImmediate(() => {
+      try {
+        const startedAt = Date.now();
+        this.emitMessageEvents(type, messages);
+        const elapsed = Date.now() - startedAt;
+        if (elapsed >= InAppNotificationChannel.SLOW_SEND_THRESHOLD_MS) {
+          this.app.logger.warn('in-app notification websocket dispatch is slow', {
+            type,
+            count: messages.length,
+            elapsed,
+          });
+        }
+      } catch (error) {
+        this.app.logger.error(`failed to emit in-app message events: ${error.message}`, {
+          error,
+          type,
+          count: messages.length,
+        });
+      }
     });
-  };
+  }
 
-  onMessageUpdated = async (model, options) => {
-    const userId = model.userId;
-    this.app.emit('ws:sendToTag', {
-      tagKey: 'userId',
-      tagValue: userId,
-      message: {
-        type: 'in-app-message:updated',
-        payload: model.toJSON(),
-      },
-    });
-  };
-
-  saveMessageToDB = async ({
-    content,
-    status,
-    userId,
-    title,
-    channelName,
-    receiveTimestamp,
-    options = {},
-  }: {
-    content: string;
-    userId: number;
-    title: string;
-    channelName: string;
-    status: 'read' | 'unread';
-    receiveTimestamp?: number;
-    options?: Record<string, any>;
-  }): Promise<any> => {
-    const messagesRepo = this.app.db.getRepository(MessagesDefinition.name);
-    const message = await messagesRepo.create({
-      values: {
-        content,
-        title,
-        channelName,
-        status,
-        userId,
-        receiveTimestamp: receiveTimestamp ?? Date.now(),
-        options,
-      },
-    });
-    return message;
-  };
-
-  send: SendFnType<InAppMessageFormValues> = async (params) => {
-    const { channel, message, receivers } = params;
-    let userIds: number[];
-    const { content, title, options = {} } = message;
-    const userRepo = this.app.db.getRepository('users');
-    if (receivers?.type === 'userId') {
-      userIds = receivers.value;
-    } else {
-      userIds = (await parseUserSelectionConf(message.receivers, userRepo)).map((i) => parseInt(i));
+  private scheduleMessageEvents(type: 'created' | 'updated', messages: any[], transaction?: Transaction) {
+    if (!messages.length) {
+      return;
     }
-    await Promise.all(
-      userIds.map(async (userId) => {
-        await this.saveMessageToDB({
+
+    if (transaction?.afterCommit) {
+      transaction.afterCommit(() => {
+        this.emitMessageEventsAsync(type, messages);
+      });
+      return;
+    }
+
+    this.emitMessageEventsAsync(type, messages);
+  }
+
+  private emitMessageEvents(type: 'created' | 'updated', messages: any[]) {
+    for (const message of messages) {
+      this.app.emit('ws:sendToUser', {
+        userId: message.userId,
+        message: {
+          type: `in-app-message:${type}`,
+          payload: message,
+        },
+      });
+    }
+  }
+
+  private async persistMessagesInBatches(options: {
+    userIds: number[];
+    title: string;
+    content: string;
+    channelName: string;
+    receiveTimestamp: number;
+    messageOptions: Record<string, any>;
+    transaction?: Transaction;
+  }) {
+    const { userIds, title, content, channelName, receiveTimestamp, messageOptions, transaction } = options;
+    const MessageModel = this.app.db.getModel(MessagesDefinition.name);
+    const persist = async (activeTransaction?: Transaction) => {
+      let persistedCount = 0;
+
+      for (let index = 0; index < userIds.length; index += InAppNotificationChannel.MESSAGE_BATCH_SIZE) {
+        const batchUserIds = userIds.slice(index, index + InAppNotificationChannel.MESSAGE_BATCH_SIZE);
+        const messageBatch = batchUserIds.map((userId) => ({
+          id: uuidv4(),
           title,
           content,
           status: 'unread',
           userId,
-          channelName: channel.name,
-          options,
+          channelName,
+          receiveTimestamp,
+          options: messageOptions,
+        }));
+
+        await MessageModel.bulkCreate(messageBatch, {
+          hooks: false,
+          transaction: activeTransaction,
+          validate: false,
+          returning: false,
         });
-      }),
-    );
+        persistedCount += messageBatch.length;
+        this.scheduleMessageEvents('created', messageBatch, activeTransaction);
+      }
+
+      return persistedCount;
+    };
+
+    if (transaction) {
+      return persist(transaction);
+    }
+
+    const internalTransaction = await this.app.db.sequelize.transaction();
+
+    try {
+      const persistedCount = await persist(internalTransaction);
+      await internalTransaction.commit();
+      return persistedCount;
+    } catch (error) {
+      await internalTransaction.rollback();
+      throw error;
+    }
+  }
+
+  async load() {
+    this.app.db.on(`${MessagesDefinition.name}.afterCreate`, this.onMessageCreated);
+    this.app.db.on(`${MessagesDefinition.name}.afterBulkCreate`, this.onMessageCreated);
+    this.app.db.on(`${MessagesDefinition.name}.afterUpdate`, this.onMessageUpdated);
+    this.app.db.on(`${MessagesDefinition.name}.afterBulkUpdate`, this.onMessageUpdated);
+    this.defineActions();
+  }
+
+  onMessageCreated = async (model, options) => {
+    const messages = (Array.isArray(model) ? model : [model]).map((item) => this.getMessagePayload(item));
+    this.scheduleMessageEvents('created', messages, options?.transaction);
+  };
+
+  onMessageUpdated = async (model, options) => {
+    const messages = (Array.isArray(model) ? model : [model]).map((item) => this.getMessagePayload(item));
+    this.scheduleMessageEvents('updated', messages, options?.transaction);
+  };
+
+  send: SendFnType<InAppMessageFormValues> = async (params) => {
+    const startedAt = Date.now();
+    const { channel, message, receivers, transaction } = params;
+    let userIds: number[];
+    const { content, title, options = {} } = message;
+    const userRepo = this.app.db.getRepository('users');
+    const resolveReceiversStartedAt = Date.now();
+    if (receivers?.type === 'userId') {
+      userIds = receivers.value;
+    } else {
+      userIds = (await parseUserSelectionConf(message.receivers, userRepo, { transaction })).map((i) => parseInt(i));
+    }
+    const resolveReceiversMs = Date.now() - resolveReceiversStartedAt;
+
+    const uniqueUserIds = [...new Set(userIds)];
+    if (!uniqueUserIds.length) {
+      return { status: 'success', message };
+    }
+
+    const receiveTimestamp = Date.now();
+    const persistStartedAt = Date.now();
+    const persistedCount = await this.persistMessagesInBatches({
+      userIds: uniqueUserIds,
+      title,
+      content,
+      channelName: channel.name,
+      receiveTimestamp,
+      messageOptions: options,
+      transaction,
+    });
+    const persistMs = Date.now() - persistStartedAt;
+    const totalMs = Date.now() - startedAt;
+    if (totalMs >= InAppNotificationChannel.SLOW_SEND_THRESHOLD_MS) {
+      this.app.logger.warn('in-app notification send is slow', {
+        channelName: channel.name,
+        userCount: persistedCount,
+        batchSize: InAppNotificationChannel.MESSAGE_BATCH_SIZE,
+        resolveReceiversMs,
+        persistMs,
+        totalMs,
+      });
+    }
     return { status: 'success', message };
   };
 
@@ -118,6 +198,6 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     defineMyInAppChannels(this.app);
     this.app.acl.allow('myInAppMessages', '*', 'loggedIn');
     this.app.acl.allow('myInAppChannels', '*', 'loggedIn');
-    this.app.acl.allow('notificationInAppMessages', '*', 'loggedIn');
+    this.app.acl.allow('notificationInAppMessages', 'updateMyOwn', 'loggedIn');
   }
 }

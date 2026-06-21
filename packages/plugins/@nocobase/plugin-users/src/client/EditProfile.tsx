@@ -74,7 +74,9 @@ const useUpdateProfileActionProps = () => {
 const useEditProfileFormBlockDecoratorProps = () => {
   const { data } = useCurrentUserContext() || {};
   return {
-    record: data?.data,
+    params: {
+      filterByTk: data?.data?.id,
+    },
   };
 };
 

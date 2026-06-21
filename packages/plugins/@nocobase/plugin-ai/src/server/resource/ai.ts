@@ -7,9 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// @ts-ignore
+import { name as namespace } from '../../../package.json';
 import { ResourceOptions } from '@nocobase/resourcer';
 import { PluginAIServer } from '../plugin';
 import _ from 'lodash';
+
+const getModelsListFailedMessage = 'Get models list failed, you can enter a model name manually.';
+const testFlightFailedMessage = 'LLM service test failed. Please check the service configuration.';
 
 const aiResource: ResourceOptions = {
   name: 'ai',
@@ -23,6 +28,7 @@ const aiResource: ResourceOptions = {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const { model } = ctx.action.params;
       const filter = ctx.action.params.filter ?? {};
+      filter.enabled = { $ne: false };
       if (model) {
         const supportedProvider = plugin.aiManager.getSupportedProvider(model);
         if (!supportedProvider || _.isEmpty(supportedProvider)) {
@@ -67,12 +73,71 @@ const aiResource: ResourceOptions = {
         const res = await provider.listModels();
         if (res.errMsg) {
           ctx.log.error(res.errMsg);
-          ctx.throw(500, ctx.t('Get models list failed, you can enter a model name manually.'));
+          ctx.throw(res.code || 500, ctx.t(getModelsListFailedMessage, { ns: namespace }));
         }
         ctx.body = res.models || [];
       }
 
       return next();
+    },
+    listProviderModels: async (ctx, next) => {
+      const { provider, options, model } = ctx.action.params.values ?? {};
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+
+      const providerOptions = plugin.aiManager.llmProviders.get(provider);
+      if (!providerOptions) {
+        ctx.throw(400, 'invalid llm provider');
+      }
+
+      const Provider = providerOptions.provider;
+      const providerClient = new Provider({
+        app: ctx.app,
+        serviceOptions: options,
+      });
+
+      const res = await providerClient.listModels();
+      if (res.errMsg) {
+        ctx.log.error(res.errMsg);
+        ctx.throw(res.code || 500, ctx.t(getModelsListFailedMessage, { ns: namespace }));
+      }
+      const models = res.models || [];
+      if (model) {
+        ctx.body = models.filter((m) => m.id.toLowerCase().includes(model.toLowerCase()));
+      } else {
+        ctx.body = models;
+      }
+
+      return next();
+    },
+    testFlight: async (ctx, next) => {
+      const { provider, options, model } = ctx.action.params.values ?? {};
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const providerOptions = plugin.aiManager.llmProviders.get(provider);
+      if (!providerOptions) {
+        ctx.throw(400, 'invalid llm provider');
+      }
+      const Provider = providerOptions.provider;
+      const providerClient = new Provider({
+        app: ctx.app,
+        serviceOptions: options,
+        modelOptions: {
+          model,
+          responseFormat: 'text',
+        },
+      });
+      const result = await providerClient.testFlight();
+      if (result.status === 'error') {
+        ctx.log.error(result.message);
+        result.message = ctx.t(testFlightFailedMessage, { ns: namespace });
+      }
+      ctx.body = result;
+      return next();
+    },
+
+    listAllEnabledModels: async (ctx, next) => {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      ctx.body = await plugin.aiManager.listAllEnabledModels();
+      await next();
     },
   },
 };

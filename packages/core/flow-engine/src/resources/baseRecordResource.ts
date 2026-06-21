@@ -12,6 +12,7 @@ import _ from 'lodash';
 import { APIResource } from './apiResource';
 import { FilterItem } from './filterItem';
 import { ResourceError } from './flowResource';
+import { DATA_SOURCE_DIRTY_EVENT } from '../views/viewEvents';
 
 export abstract class BaseRecordResource<TData = any> extends APIResource<TData> {
   protected resourceName: string;
@@ -95,6 +96,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   async runAction<TData = any, TMeta = any>(action: string, options: any) {
+    const { rawResponse, ...rest } = options;
     const config = this.mergeRequestConfig(
       _.omit(this.request, ['params', 'data', 'method']),
       {
@@ -102,14 +104,18 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
         url: this.buildURL(action),
       },
       this.runActionOptions?.[action],
-      options,
+      rest,
     );
     if (['create', 'update', 'firstOrCreate', 'updateOrCreate'].includes(action)) {
       config.params = config.params || {};
       config.params.updateAssociationValues = this.getUpdateAssociationValues();
     }
     try {
-      const { data } = await this.api.request(config);
+      const response = await this.api.request(config);
+      if (rawResponse) {
+        return response;
+      }
+      const { data } = response;
       if (!data?.data) {
         return data;
       }
@@ -129,6 +135,36 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
 
   getResourceName(): string {
     return this.resourceName;
+  }
+
+  /**
+   * Mark current resource as dirty on the root FlowEngine.
+   * Used to coordinate "refresh on active" across view stacks.
+   */
+  protected markDataSourceDirty(resourceName?: string) {
+    const engine = this.context.engine;
+    if (!engine) return;
+
+    const dataSourceKey = this.getDataSourceKey() || 'main';
+    const resName = resourceName || this.getResourceName();
+    if (!resName) return;
+
+    const affectedResourceNames = new Set<string>([String(resName)]);
+    // Optional safety: association resources like "users.profile" may impact parent collection views.
+    if (typeof resName === 'string' && resName.includes('.')) {
+      affectedResourceNames.add(resName.split('.')[0]);
+    }
+
+    for (const name of affectedResourceNames) {
+      engine.markDataSourceDirty(dataSourceKey, name);
+    }
+
+    // Signal current view to re-evaluate dirty blocks (e.g., same-view sibling refresh).
+    // This is emitted on the *current* engine emitter (view-scoped) so it won't affect other views.
+    engine.emitter?.emit?.(DATA_SOURCE_DIRTY_EVENT, {
+      dataSourceKey,
+      resourceNames: Array.from(affectedResourceNames),
+    });
   }
 
   setSourceId(sourceId: string | number) {
@@ -227,8 +263,15 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     return this;
   }
 
+  jsonStringify(value: any): string {
+    if (value !== null && typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return value;
+  }
+
   setFilterByTk(filterByTk: any) {
-    return this.addRequestParameter('filterByTk', filterByTk);
+    return this.addRequestParameter('filterByTk', this.jsonStringify(filterByTk));
   }
 
   getFilterByTk(): any {

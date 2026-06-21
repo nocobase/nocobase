@@ -10,8 +10,8 @@
 import React from 'react';
 import { Alert } from 'antd';
 import { useFlowModelById } from '../../../../hooks';
-import { observer } from '@formily/react';
 import FlowsSettingsContent from './FlowsSettingsContent';
+import { observer } from '../../../../reactive';
 
 // 简单的流程设置组件接口
 interface ModelProvidedProps {

@@ -8,8 +8,19 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { getInstanceId, saveLicenseKey, isLicenseKeyExists } from './utils';
-import { keyDecrypt } from '@nocobase/license-kit';
+import {
+  getInstanceId,
+  saveLicenseKey,
+  isLicenseKeyExists,
+  getLicenseValidate,
+  CACHE_KEY,
+  getLicenseStatus,
+  testPkgConnection,
+  testPkgLogin,
+  testServiceConnection,
+  getLocalKeyData,
+} from './utils';
+import pick from 'lodash/pick';
 
 export class PluginLicenseServer extends Plugin {
   async afterAdd() {}
@@ -26,16 +37,70 @@ export class PluginLicenseServer extends Plugin {
         },
         'license-key': async (ctx, next) => {
           const { licenseKey } = ctx.request.body;
-          try {
-            keyDecrypt(licenseKey);
-          } catch (e) {
-            return ctx.throw(500, ctx.t('Invalid license key', { ns: '@nocobase/plugin-license' }));
+          const licenseValidate = await getLicenseValidate({ key: licenseKey, ctx });
+          const licenseStatus = await getLicenseStatus(licenseValidate.keyData);
+          ctx.body = {
+            ...licenseValidate,
+            licenseStatus,
+          };
+          if (ctx.body.envMatch && ctx.body.domainMatch && ctx.body.licenseStatus === 'active') {
+            await saveLicenseKey(licenseKey, ctx);
           }
-          await saveLicenseKey(licenseKey);
           await next();
         },
         'is-exists': async (ctx, next) => {
           ctx.body = await isLicenseKeyExists();
+          await next();
+        },
+        'license-validate': async (ctx, next) => {
+          const isExist = await isLicenseKeyExists();
+          if (!isExist) {
+            ctx.body = {
+              keyExist: false,
+            };
+            await next();
+            return;
+          }
+          const licenseValidate = await getLicenseValidate({ ctx });
+          ctx.body = {
+            keyExist: true,
+            ...licenseValidate,
+            keyData: pick(licenseValidate.keyData, ['service']),
+          };
+          await next();
+        },
+        'service-validate': async (ctx, next) => {
+          const keyExist = await isLicenseKeyExists();
+          if (!keyExist) {
+            ctx.body = {
+              keyExist,
+            };
+            await next();
+            return;
+          }
+          let isPkgConnection = false;
+          try {
+            isPkgConnection = await testPkgConnection();
+          } catch (e) {
+            isPkgConnection = false;
+          }
+          let isPkgLogin = false;
+          let isServiceConnection = false;
+          try {
+            const keyData = await getLocalKeyData();
+            isPkgLogin = await testPkgLogin(keyData);
+            isServiceConnection = await testServiceConnection(keyData);
+          } catch (e) {
+            isPkgLogin = false;
+            isServiceConnection = false;
+          }
+
+          ctx.body = {
+            keyExist,
+            isPkgConnection,
+            isPkgLogin,
+            isServiceConnection,
+          };
           await next();
         },
       },

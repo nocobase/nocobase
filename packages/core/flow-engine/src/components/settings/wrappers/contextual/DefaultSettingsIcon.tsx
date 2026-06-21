@@ -7,14 +7,45 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
-import { App, Dropdown, Modal } from 'antd';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ExclamationCircleOutlined, MenuOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
+import type { DropdownProps, MenuProps } from 'antd';
+import { App, Dropdown, Modal, Tooltip, theme } from 'antd';
+import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
-import { StepDefinition } from '../../../../types';
-import { getT, resolveStepUiSchema } from '../../../../utils';
-import { openStepSettings } from './StepSettings';
+import type { FlowModelExtraMenuItem } from '../../../../models';
+import type { StepDefinition, StepUIMode } from '../../../../types';
+import {
+  getT,
+  resolveStepUiSchema,
+  resolveStepDisabledInSettings,
+  shouldHideStepInSettings,
+  resolveDefaultParams,
+  resolveUiMode,
+} from '../../../../utils';
+import { useNiceDropdownMaxHeight } from '../../../../hooks';
+import { SwitchWithTitle } from '../component/SwitchWithTitle';
+import { SelectWithTitle } from '../component/SelectWithTitle';
+import type { FlowSettingsContext } from '../../../../flowContext';
+
+const findExtraMenuItemByKey = (
+  items: FlowModelExtraMenuItem[],
+  targetKey: string,
+): FlowModelExtraMenuItem | undefined => {
+  for (const item of items) {
+    const itemKey = String(item?.key ?? '');
+    if (itemKey === targetKey) {
+      return item;
+    }
+    if (item.children?.length) {
+      const matched = findExtraMenuItemByKey(item.children, targetKey);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+  return undefined;
+};
 
 // Type definitions for better type safety
 interface StepInfo {
@@ -23,6 +54,9 @@ interface StepInfo {
   uiSchema: Record<string, any>;
   title: string;
   modelKey?: string;
+  uiMode?: StepUIMode;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 interface FlowInfo {
@@ -31,10 +65,58 @@ interface FlowInfo {
   modelKey?: string;
 }
 
-interface MenuConfig {
-  maxDepth?: number;
-  enablePerformanceOptimization?: boolean;
-}
+const walkSubModels = (rootModel, options, cb) => {
+  const maxDepth = options.maxDepth;
+  const arrayLimit = typeof options.arrayLimit === 'number' ? options.arrayLimit : Number.POSITIVE_INFINITY;
+  const mode = options.mode ?? 'stack';
+
+  const visited = new Set();
+  const stackIds = new Set();
+
+  const walk = (model, depth, modelKey?) => {
+    if (!model || depth > maxDepth) return;
+
+    const run = () => {
+      cb(model, { depth, modelKey });
+      if (depth >= maxDepth) return;
+
+      Object.entries(model.subModels || {}).forEach(([subKey, subModelValue]) => {
+        if (Array.isArray(subModelValue)) {
+          const limit = Number.isFinite(arrayLimit) ? Math.min(subModelValue.length, arrayLimit) : subModelValue.length;
+          for (let index = 0; index < limit; index++) {
+            const subModel = subModelValue[index];
+            if (subModel instanceof FlowModel) {
+              walk(subModel, depth + 1, `${subKey}[${index}]`);
+            }
+          }
+          return;
+        }
+
+        if (subModelValue instanceof FlowModel) {
+          walk(subModelValue, depth + 1, subKey);
+        }
+      });
+    };
+
+    if (mode === 'visited') {
+      if (visited.has(model)) return;
+      visited.add(model);
+      run();
+      return;
+    }
+
+    const modelId = model.uid || `temp-${Date.now()}`;
+    if (stackIds.has(modelId)) return;
+    stackIds.add(modelId);
+    try {
+      run();
+    } finally {
+      stackIds.delete(modelId);
+    }
+  };
+
+  walk(rootModel, 1);
+};
 
 /**
  * Find sub-model by key with validation
@@ -84,6 +166,39 @@ const findSubModelByKey = (model: FlowModel, subModelKey: string): FlowModel | n
   }
 };
 
+const componentMap = {
+  switch: SwitchWithTitle,
+  select: SelectWithTitle,
+};
+
+const MenuLabelItem = ({ title, uiMode, itemProps }) => {
+  const type = uiMode?.type || uiMode;
+  const Component = type ? componentMap[type] : null;
+  const disabled = !!itemProps?.disabled;
+  const disabledReason = itemProps?.disabledReason;
+  const disabledIconColor = itemProps?.disabledIconColor;
+
+  const content = (() => {
+    if (!Component) {
+      return <>{title}</>;
+    }
+    return <Component title={title} {...itemProps} />;
+  })();
+
+  if (!disabled) {
+    return content;
+  }
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      {content}
+      <Tooltip title={disabledReason} placement="right" destroyTooltipOnHide>
+        <QuestionCircleOutlined style={{ color: disabledIconColor }} />
+      </Tooltip>
+    </span>
+  );
+};
+
 /**
  * 默认的设置菜单图标组件
  * 提供原有的配置菜单功能
@@ -94,8 +209,42 @@ interface DefaultSettingsIconProps {
   showCopyUidButton?: boolean;
   menuLevels?: number; // Menu levels: 1=current model only (default), 2=include sub-models
   flattenSubMenus?: boolean; // Whether to flatten sub-menus: false=group by model (default), true=flatten all
+  onDropdownVisibleChange?: (open: boolean) => void;
+  getPopupContainer?: DropdownProps['getPopupContainer'];
   [key: string]: any; // Allow additional props
 }
+
+const TOOLBAR_ICONS_SELECTOR = '.nb-toolbar-container-icons';
+const TOOLBAR_CONTAINER_SELECTOR = '.nb-toolbar-container';
+const TOOLBAR_DROPDOWN_OVERLAY_CLASS = css`
+  width: max-content;
+  min-width: max-content;
+
+  .ant-dropdown-menu {
+    width: max-content;
+    min-width: max-content;
+  }
+`;
+
+const getToolbarPopupContainer = (triggerNode?: HTMLElement | null) => {
+  if (!triggerNode) {
+    return null;
+  }
+
+  return (
+    (triggerNode.closest(TOOLBAR_ICONS_SELECTOR) as HTMLElement | null) ||
+    (triggerNode.closest(TOOLBAR_CONTAINER_SELECTOR) as HTMLElement | null)
+  );
+};
+
+const removeExtraMenuItemClickHandlers = (item: FlowModelExtraMenuItem): FlowModelExtraMenuItem => {
+  const { onClick: _onClick, children, ...rest } = item;
+
+  return {
+    ...rest,
+    children: children?.length ? children.map(removeExtraMenuItemClickHandlers) : undefined,
+  };
+};
 
 export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   model,
@@ -103,22 +252,174 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   showCopyUidButton = true,
   menuLevels = 1, // 默认一级菜单
   flattenSubMenus = true,
+  onDropdownVisibleChange,
+  getPopupContainer,
 }) => {
   const { message } = App.useApp();
-  const t = getT(model);
+  const t = useMemo(() => getT(model), [model]);
+  const { token } = theme.useToken();
+  const disabledIconColor = token?.colorTextTertiary || token?.colorTextDescription || token?.colorTextSecondary;
+  const [visible, setVisible] = useState(false);
+  // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [extraMenuItems, setExtraMenuItems] = useState<FlowModelExtraMenuItem[]>([]);
+  const [extraMenuItemsLoaded, setExtraMenuItemsLoaded] = useState(false);
+  const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<FlowInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const commonExtras = useMemo(
+    () => extraMenuItems.filter((it) => it.group === 'common-actions').sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)),
+    [extraMenuItems],
+  );
+  const hasCommonActions = showCopyUidButton || showDeleteButton || commonExtras.length > 0;
+  const shouldDeferConfigLoading = flattenSubMenus && menuLevels > 1 && hasCommonActions;
+  const shouldWaitForCommonActionProbe =
+    flattenSubMenus && menuLevels > 1 && !showCopyUidButton && !showDeleteButton && !extraMenuItemsLoaded;
+  const canRenderIcon = hasCommonActions || (!isLoading && configurableFlowsAndSteps.length > 0);
+  const closeDropdown = useCallback(() => {
+    setVisible(false);
+    onDropdownVisibleChange?.(false);
+  }, [onDropdownVisibleChange]);
+  const resolvePopupContainer = useCallback<NonNullable<DropdownProps['getPopupContainer']>>(
+    (triggerNode) => {
+      // 工具栏自身容器必须优先，保证鼠标从 icon 移到菜单时仍处于同一 hover 树。
+      // 弹窗场景的裁剪问题由 useFloatToolbarPortal 负责把 toolbar 挂到正确的 popup host。
+      return (
+        getToolbarPopupContainer(triggerNode) ||
+        getPopupContainer?.(triggerNode) ||
+        triggerNode?.parentElement ||
+        document.body
+      );
+    },
+    [getPopupContainer],
+  );
+  const handleOpenChange: DropdownProps['onOpenChange'] = useCallback(
+    (nextOpen: boolean, info) => {
+      if (info.source === 'trigger' || nextOpen) {
+        // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
+        startTransition(() => {
+          setVisible(nextOpen);
+        });
+        onDropdownVisibleChange?.(nextOpen);
+      }
+    },
+    [onDropdownVisibleChange],
+  );
+  useEffect(() => {
+    return () => {
+      onDropdownVisibleChange?.(false);
+    };
+  }, [onDropdownVisibleChange]);
+  const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
+  useEffect(() => {
+    let mounted = true;
+    const loadExtras = async () => {
+      setExtraMenuItemsLoaded(false);
+      try {
+        const allExtras: FlowModelExtraMenuItem[] = [];
+        const modelsToProcess: Array<{ model: FlowModel; modelKey?: string }> = [];
+        walkSubModels(model, { maxDepth: menuLevels, arrayLimit: 50, mode: 'stack' }, (targetModel, { modelKey }) => {
+          modelsToProcess.push({ model: targetModel, modelKey });
+        });
 
-  // 分离处理函数以便更好的代码组织
+        for (const { model: targetModel, modelKey } of modelsToProcess) {
+          const Cls = targetModel.constructor as typeof FlowModel;
+          const extras = await Cls.getExtraMenuItems?.(targetModel, t);
+          if (extras?.length) {
+            allExtras.push(
+              ...extras.map((item) => ({
+                ...item,
+                key: modelKey ? `${modelKey}:${item.key}` : item.key,
+              })),
+            );
+          }
+        }
+
+        if (!mounted) {
+          return;
+        }
+        const seen = new Set<string>();
+        const dedupedExtras = allExtras.filter((item) => {
+          if (seen.has(`${item.key}`)) {
+            return false;
+          }
+          seen.add(`${item.key}`);
+          return true;
+        });
+        setExtraMenuItems(dedupedExtras);
+      } catch (error) {
+        console.error('Failed to load extra menu items:', error);
+        if (mounted) {
+          setExtraMenuItems([]);
+        }
+      } finally {
+        if (mounted) {
+          setExtraMenuItemsLoaded(true);
+        }
+      }
+    };
+    loadExtras();
+    return () => {
+      mounted = false;
+    };
+  }, [model, menuLevels, t, refreshTick]);
+
+  // 统一的复制 UID 方法
+  const copyUidToClipboard = useCallback(
+    async (uid: string) => {
+      try {
+        await navigator.clipboard.writeText(uid);
+        message.success(t('UID copied to clipboard'));
+      } catch (error) {
+        console.error(t('Copy failed'), ':', error);
+        // 如果不是 HTTPS 协议，给出更具体的提示：HTTP 下剪贴板 API 不可用
+        const isHttps = typeof window !== 'undefined' && window.location?.protocol === 'https:';
+        if (!isHttps) {
+          message.error(
+            t(
+              'Copy failed under HTTP. Clipboard API is unavailable on non-HTTPS pages. Please copy [{{uid}}] manually.',
+              { uid },
+            ),
+          );
+          return;
+        } else {
+          message.error(t('Copy failed, please copy [{{uid}}] manually.', { uid }));
+        }
+      }
+    },
+    [message, t],
+  );
+
+  // 复制当前模型 UID
   const handleCopyUid = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(model.uid);
-      message.success(t('UID copied to clipboard'));
-    } catch (error) {
-      console.error(t('Copy failed'), ':', error);
-      message.error(t('Copy failed, please copy [{{uid}}] manually.', { uid: model.uid }));
-    }
-  }, [model.uid, message]);
+    copyUidToClipboard(model.uid);
+  }, [model.uid, copyUidToClipboard]);
+
+  // 复制弹窗对应模型的 UID（根据菜单 key 判断是否为子模型）
+  const handleCopyPopupUid = useCallback(
+    (menuKey: string) => {
+      try {
+        const originalKey = menuKey.replace(/^copy-pop-uid:/, '');
+        const keyParts = originalKey.split(':');
+
+        let targetModel: FlowModel | null = model;
+        if (keyParts.length === 3) {
+          const [subModelKey] = keyParts;
+          targetModel = findSubModelByKey(model, subModelKey) || model;
+        } else if (keyParts.length !== 2) {
+          console.error('Invalid copy-pop-uid key format:', menuKey);
+          return;
+        }
+
+        copyUidToClipboard(targetModel.uid);
+      } catch (error) {
+        console.error('handleCopyPopupUid error:', error);
+      }
+    },
+    [model, copyUidToClipboard],
+  );
 
   const handleDelete = useCallback(() => {
+    closeDropdown();
     Modal.confirm({
       title: t('Confirm delete'),
       icon: <ExclamationCircleOutlined />,
@@ -139,7 +440,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         }
       },
     });
-  }, [model]);
+  }, [closeDropdown, model, t]);
 
   const handleStepConfiguration = useCallback(
     (key: string) => {
@@ -172,6 +473,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       }
 
       try {
+        closeDropdown();
         targetModel.openFlowSettings({
           flowKey,
           stepKey,
@@ -180,16 +482,64 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         console.log(t('Configuration popup cancelled or error'), ':', error);
       }
     },
-    [model],
+    [closeDropdown, model, t],
+  );
+
+  const isStepMenuItemDisabled = useCallback(
+    (key: string) => {
+      const cleanKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
+      const keys = cleanKey.split(':');
+      let modelKey: string | undefined;
+      let flowKey: string | undefined;
+      let stepKey: string | undefined;
+
+      if (keys.length === 3) {
+        [modelKey, flowKey, stepKey] = keys;
+      } else if (keys.length === 2) {
+        [flowKey, stepKey] = keys;
+      } else {
+        return false;
+      }
+
+      return configurableFlowsAndSteps.some(({ flow, steps, modelKey: flowModelKey }: FlowInfo) => {
+        const sameModel = (flowModelKey || undefined) === modelKey;
+        if (!sameModel || flow.key !== flowKey) return false;
+        return steps.some((stepInfo: StepInfo) => stepInfo.stepKey === stepKey && !!stepInfo.disabled);
+      });
+    },
+    [configurableFlowsAndSteps],
   );
 
   const handleMenuClick = useCallback(
     ({ key }: { key: string }) => {
+      const originalKey = key;
       // Handle duplicate key suffixes (e.g., "key-1" -> "key")
       const cleanKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
 
+      if (cleanKey.startsWith('copy-pop-uid:')) {
+        closeDropdown();
+        handleCopyPopupUid(cleanKey);
+        return;
+      }
+
+      const extra =
+        findExtraMenuItemByKey(extraMenuItems, originalKey) || findExtraMenuItemByKey(extraMenuItems, cleanKey);
+      if (extra?.disabled) {
+        return;
+      }
+      if (extra?.onClick) {
+        closeDropdown();
+        extra.onClick();
+        return;
+      }
+
+      if (isStepMenuItemDisabled(cleanKey)) {
+        return;
+      }
+
       switch (cleanKey) {
         case 'copy-uid':
+          closeDropdown();
           handleCopyUid();
           break;
         case 'delete':
@@ -200,14 +550,25 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           break;
       }
     },
-    [handleCopyUid, handleDelete, handleStepConfiguration],
+    [
+      closeDropdown,
+      handleCopyUid,
+      handleDelete,
+      handleStepConfiguration,
+      handleCopyPopupUid,
+      extraMenuItems,
+      isStepMenuItemDisabled,
+    ],
   );
 
   // 获取单个模型的可配置flows和steps
   const getModelConfigurableFlowsAndSteps = useCallback(
     async (targetModel: FlowModel, modelKey?: string): Promise<FlowInfo[]> => {
       try {
-        const flows = targetModel.getFlows();
+        // 仅使用静态流（类级全局注册的 flows）
+        const flowsMap = new Map((targetModel.constructor as typeof FlowModel).globalFlowRegistry.getFlows());
+
+        const flows = flowsMap;
 
         const flowsArray = Array.from(flows.values());
 
@@ -216,12 +577,13 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             const configurableSteps = await Promise.all(
               Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
                 const actionStep = stepDefinition;
-
-                // 如果步骤设置了 hideInSettings: true，则跳过此步骤
-                if (actionStep.hideInSettings) {
+                let step = actionStep;
+                // 支持静态与动态 hideInSettings
+                if (await shouldHideStepInSettings(targetModel, flow, actionStep)) {
                   return null;
                 }
-
+                const disabledState = await resolveStepDisabledInSettings(targetModel, flow, actionStep as any);
+                let uiMode: any = await resolveUiMode(actionStep.uiMode, (targetModel as any).context);
                 // 检查是否有uiSchema（静态或动态）
                 const hasStepUiSchema = actionStep.uiSchema != null;
 
@@ -230,16 +592,19 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 let stepTitle = actionStep.title;
                 if (actionStep.use) {
                   try {
-                    const action = targetModel.flowEngine?.getAction?.(actionStep.use);
+                    const action = targetModel.getAction?.(actionStep.use);
+                    step = { ...(action || {}), ...actionStep };
+                    uiMode = await resolveUiMode(action?.uiMode || uiMode, (targetModel as any).context);
                     hasActionUiSchema = action && action.uiSchema != null;
-                    stepTitle = stepTitle || action.title;
+                    stepTitle = stepTitle || action?.title;
                   } catch (error) {
                     console.warn(t('Failed to get action {{action}}', { action: actionStep.use }), ':', error);
                   }
                 }
+                const selectOrSwitchMode = ['select', 'switch'].includes(uiMode?.type || uiMode);
 
                 // 如果都没有uiSchema（静态或动态），返回null
-                if (!hasStepUiSchema && !hasActionUiSchema) {
+                if (!selectOrSwitchMode && !hasStepUiSchema && !hasActionUiSchema) {
                   return null;
                 }
 
@@ -251,7 +616,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   const resolvedSchema = await resolveStepUiSchema(targetModel, flow, actionStep);
 
                   // 如果解析后没有可配置的UI Schema，跳过此步骤
-                  if (!resolvedSchema) {
+                  if (!resolvedSchema && !selectOrSwitchMode) {
                     return null;
                   }
 
@@ -260,13 +625,15 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   console.warn(t('Failed to resolve uiSchema for step {{stepKey}}', { stepKey }), ':', error);
                   return null;
                 }
-
                 return {
                   stepKey,
-                  step: actionStep,
+                  step,
                   uiSchema: mergedUiSchema,
                   title: t(stepTitle) || stepKey,
                   modelKey, // 添加模型标识
+                  uiMode,
+                  disabled: disabledState.disabled,
+                  disabledReason: disabledState.reason,
                 };
               }),
             ).then((steps) => steps.filter(Boolean));
@@ -285,96 +652,93 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         return [];
       }
     },
-    [],
+    [t],
   );
 
   // 获取可配置的flows和steps
   const getConfigurableFlowsAndSteps = useCallback(async (): Promise<FlowInfo[]> => {
     const result: FlowInfo[] = [];
-    const processedModels = new Set<string>(); // 防止循环引用
+    const modelsToProcess: Array<{ model: FlowModel; modelKey?: string }> = [];
+    walkSubModels(model, { maxDepth: menuLevels, arrayLimit: 50, mode: 'stack' }, (targetModel, { modelKey }) => {
+      modelsToProcess.push({ model: targetModel, modelKey });
+    });
 
-    const processModel = async (targetModel: FlowModel, depth: number, modelKey?: string) => {
-      // 限制递归深度为menuLevels
-      if (depth > menuLevels) {
-        return;
-      }
-
-      // 防止循环引用
-      const modelId = targetModel.uid || `temp-${Date.now()}`;
-      if (processedModels.has(modelId)) {
-        return;
-      }
-      processedModels.add(modelId);
-
-      try {
-        const modelFlows = await getModelConfigurableFlowsAndSteps(targetModel, modelKey);
-        result.push(...modelFlows);
-
-        // 如果需要，处理子模型
-        if (depth < menuLevels && targetModel.subModels) {
-          await Promise.all(
-            Object.entries(targetModel.subModels).map(async ([subKey, subModelValue]) => {
-              if (Array.isArray(subModelValue)) {
-                await Promise.all(
-                  subModelValue.map(async (subModel, index) => {
-                    if (subModel instanceof FlowModel && index < 50) {
-                      // 合理的限制
-                      await processModel(subModel, depth + 1, `${subKey}[${index}]`);
-                    }
-                  }),
-                );
-              } else if (subModelValue instanceof FlowModel) {
-                await processModel(subModelValue, depth + 1, subKey);
-              }
-            }),
-          );
-        }
-      } finally {
-        processedModels.delete(modelId);
-      }
-    };
-
-    await processModel(model, 1);
+    for (const { model: targetModel, modelKey } of modelsToProcess) {
+      const modelFlows = await getModelConfigurableFlowsAndSteps(targetModel, modelKey);
+      result.push(...modelFlows);
+    }
     return result;
   }, [model, menuLevels, getModelConfigurableFlowsAndSteps]);
 
-  const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<FlowInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
-  const [refreshTick, setRefreshTick] = useState(0);
-
   useEffect(() => {
-    const triggerRebuild = () => setRefreshTick((v) => v + 1);
-    if (model?.emitter) {
-      model.emitter.on('onSubModelAdded', triggerRebuild);
-      model.emitter.on('onSubModelRemoved', triggerRebuild);
-      model.emitter.on('onSubModelReplaced', triggerRebuild);
-    }
-    return () => {
-      if (model?.emitter) {
-        model.emitter.off('onSubModelAdded', triggerRebuild);
-        model.emitter.off('onSubModelRemoved', triggerRebuild);
-        model.emitter.off('onSubModelReplaced', triggerRebuild);
-      }
+    const triggerRebuild = () => {
+      setRefreshTick((v) => v + 1);
     };
-  }, [model]);
+
+    const cleanups: Array<() => void> = [];
+
+    walkSubModels(model, { maxDepth: menuLevels, mode: 'visited' }, (targetModel, { depth }) => {
+      const eventNames = ['onStepParamsChanged'];
+      if (depth === 1) {
+        eventNames.push('onSubModelAdded', 'onSubModelRemoved', 'onSubModelReplaced');
+      }
+
+      eventNames.forEach((eventName) => {
+        targetModel.emitter?.on(eventName, triggerRebuild);
+        cleanups.push(() => targetModel.emitter?.off(eventName, triggerRebuild));
+      });
+    });
+
+    return () => {
+      cleanups.forEach((dispose) => dispose());
+    };
+  }, [model, menuLevels, refreshTick]);
 
   useEffect(() => {
+    let mounted = true;
     const loadConfigurableFlowsAndSteps = async () => {
       setIsLoading(true);
+      if (shouldDeferConfigLoading) {
+        setConfigurableFlowsAndSteps([]);
+      }
       try {
         const flows = await getConfigurableFlowsAndSteps();
-        setConfigurableFlowsAndSteps(flows);
+        if (mounted) {
+          setConfigurableFlowsAndSteps(flows);
+        }
       } catch (error) {
         console.error('Failed to load configurable flows and steps:', error);
-        setConfigurableFlowsAndSteps([]);
+        if (mounted) {
+          setConfigurableFlowsAndSteps([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
+    if (shouldWaitForCommonActionProbe) {
+      setConfigurableFlowsAndSteps([]);
+      setIsLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    if (!visible && shouldDeferConfigLoading) {
+      setConfigurableFlowsAndSteps([]);
+      setIsLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
     loadConfigurableFlowsAndSteps();
-  }, [getConfigurableFlowsAndSteps, refreshTick]);
+    return () => {
+      mounted = false;
+    };
+  }, [getConfigurableFlowsAndSteps, refreshTick, shouldDeferConfigLoading, shouldWaitForCommonActionProbe, visible]);
 
   // 构建菜单项，包含错误处理和记忆化
   const menuItems = useMemo((): NonNullable<MenuProps['items']> => {
@@ -394,13 +758,19 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         // 平铺模式：只有流程分组，没有模型层级
         configurableFlowsAndSteps.forEach(({ flow, steps, modelKey }: FlowInfo) => {
           const groupKey = generateUniqueKey(`flow-group-${modelKey ? `${modelKey}-` : ''}${flow.key}`);
-
+          if (flow.options.divider === 'top') {
+            items.push({
+              type: 'divider',
+            });
+          }
           // 在平铺模式下始终按流程分组
-          items.push({
-            key: groupKey,
-            label: t(flow.title) || flow.key,
-            type: 'group',
-          });
+          if (flow.options.enableTitle) {
+            items.push({
+              key: groupKey,
+              label: t(flow.title) || flow.key,
+              type: 'group',
+            });
+          }
 
           steps.forEach((stepInfo: StepInfo) => {
             // 构建菜单项key，为子模型包含modelKey
@@ -409,12 +779,47 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               : `${flow.key}:${stepInfo.stepKey}`;
 
             const uniqueKey = generateUniqueKey(baseMenuKey);
-
+            const uiMode = stepInfo.uiMode;
+            const subModel = stepInfo.modelKey ? findSubModelByKey(model, stepInfo.modelKey) : null;
+            const targetModel = subModel || model;
+            const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
+            const itemProps = {
+              getDefaultValue: async () => {
+                let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
+                if (stepInfo.step.use) {
+                  const action = targetModel.getAction?.(stepInfo.step.use);
+                  defaultParams = await resolveDefaultParams(action.defaultParams, targetModel.context);
+                }
+                return { ...defaultParams, ...stepParams };
+              },
+              onChange: async (val) => {
+                targetModel.setStepParams(flow.key, stepInfo.stepKey, val);
+                if (typeof stepInfo.step.beforeParamsSave === 'function') {
+                  await stepInfo.step.beforeParamsSave(targetModel.context as FlowSettingsContext, val, stepParams);
+                }
+                await targetModel.saveStepParams();
+                message?.success?.(t('Configuration saved'));
+                if (typeof stepInfo.step.afterParamsSave === 'function') {
+                  await stepInfo.step.afterParamsSave(targetModel.context as FlowSettingsContext, val, stepParams);
+                }
+              },
+              ...((uiMode as any)?.props || {}),
+              itemKey: (uiMode as any)?.key,
+              disabled: !!stepInfo.disabled,
+              disabledReason: stepInfo.disabledReason,
+              disabledIconColor,
+            };
             items.push({
               key: uniqueKey,
-              label: t(stepInfo.title),
+              label: <MenuLabelItem title={stepInfo.title} uiMode={uiMode} itemProps={itemProps} />,
+              disabled: !!stepInfo.disabled,
             });
           });
+          if (flow.options.divider === 'bottom') {
+            items.push({
+              type: 'divider',
+            });
+          }
         });
       } else {
         // 层级模式：真正的子菜单结构
@@ -438,7 +843,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             // 直接添加当前模型的flows
             flows.forEach(({ flow, steps }: FlowInfo) => {
               const groupKey = generateUniqueKey(`flow-group-${flow.key}`);
-
               items.push({
                 key: groupKey,
                 label: t(flow.title) || flow.key,
@@ -450,7 +854,17 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 items.push({
                   key: uniqueKey,
-                  label: t(stepInfo.title),
+                  label: stepInfo.disabled ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {stepInfo.title}
+                      <Tooltip title={stepInfo.disabledReason} placement="right" destroyTooltipOnHide>
+                        <QuestionCircleOutlined style={{ color: disabledIconColor }} />
+                      </Tooltip>
+                    </span>
+                  ) : (
+                    stepInfo.title
+                  ),
+                  disabled: !!stepInfo.disabled,
                 });
               });
             });
@@ -465,7 +879,17 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 subMenuChildren.push({
                   key: uniqueKey,
-                  label: t(stepInfo.title),
+                  label: stepInfo.disabled ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {stepInfo.title}
+                      <Tooltip title={stepInfo.disabledReason} placement="right" destroyTooltipOnHide>
+                        <QuestionCircleOutlined style={{ color: disabledIconColor }} />
+                      </Tooltip>
+                    </span>
+                  ) : (
+                    stepInfo.title
+                  ),
+                  disabled: !!stepInfo.disabled,
                 });
               });
             });
@@ -481,19 +905,28 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [configurableFlowsAndSteps, flattenSubMenus]);
+  }, [configurableFlowsAndSteps, disabledIconColor, flattenSubMenus, message, model, t]);
 
   // 向菜单项添加额外按钮
   const finalMenuItems = useMemo((): NonNullable<MenuProps['items']> => {
     const items = [...menuItems];
 
-    if (showCopyUidButton || showDeleteButton) {
-      // 使用分组呈现常用操作（不再使用分割线）
+    if (showCopyUidButton || showDeleteButton || commonExtras.length > 0) {
       items.push({
-        key: 'common-actions',
-        label: t('Common actions'),
-        type: 'group' as const,
+        type: 'divider',
       });
+      // 使用分组呈现常用操作（不再使用分割线）
+
+      // items.push({
+      //   key: 'common-actions',
+      //   label: t('Common actions'),
+      //   type: 'group' as const,
+      // });
+
+      if (commonExtras.length > 0) {
+        // Antd Menu 会同时触发 item.onClick 和 menu.onClick，这里统一交给 handleMenuClick 执行。
+        items.push(...(commonExtras.map(removeExtraMenuItemClickHandlers) as MenuProps['items']));
+      }
 
       // 添加复制uid按钮
       if (showCopyUidButton && model.uid) {
@@ -513,10 +946,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy]);
+  }, [menuItems, showCopyUidButton, showDeleteButton, commonExtras, model.uid, model.destroy, t]);
 
-  // 如果正在加载或没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
-  if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton)) {
+  if (!canRenderIcon) {
     return null;
   }
 
@@ -528,9 +960,15 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   return (
     <Dropdown
+      getPopupContainer={resolvePopupContainer}
+      overlayClassName={TOOLBAR_DROPDOWN_OVERLAY_CLASS}
+      overlayStyle={{ width: 'max-content', minWidth: 'max-content' }}
+      onOpenChange={handleOpenChange}
+      open={visible}
       menu={{
         items: finalMenuItems,
         onClick: handleMenuClick,
+        style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' },
       }}
       trigger={['hover']}
       placement="bottomRight"

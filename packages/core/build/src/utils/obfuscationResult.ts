@@ -18,7 +18,7 @@ export const obfuscate = (filePath: string) => {
     deadCodeInjection: false,
     debugProtection: false,
     debugProtectionInterval: 0,
-    disableConsoleOutput: true,
+    disableConsoleOutput: false,
     identifierNamesGenerator: 'hexadecimal',
     log: false,
     numbersToExpressions: false,
@@ -37,7 +37,8 @@ export const obfuscate = (filePath: string) => {
     stringArrayWrappersParametersMaxCount: 2,
     stringArrayWrappersType: 'variable',
     stringArrayThreshold: 0.75,
-    unicodeEscapeSequence: false
+    target: 'node',
+    unicodeEscapeSequence: false,
   });
   fs.writeFileSync(filePath, obfuscationResult.getObfuscatedCode(), 'utf8');
 };

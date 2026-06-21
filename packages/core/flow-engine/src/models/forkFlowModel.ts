@@ -12,6 +12,7 @@ import { FlowForkModelContext, FlowModelContext } from '../flowContext';
 import type { IModelComponentProps } from '../types';
 import { FlowModel } from './flowModel';
 import { FlowEngine } from '../flowEngine';
+import { uid } from 'uid/secure';
 
 /**
  * ForkFlowModel 作为 FlowModel 的独立实例：
@@ -38,7 +39,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   private disposed = false;
 
   /** fork 在 master.forks 中的索引 */
-  public readonly forkId: number;
+  public readonly forkId: string;
 
   /** 需要与 master 共享的属性列表 */
   private static readonly SHARED_PROPERTIES = ['stepParams', 'sortIndex'];
@@ -63,20 +64,22 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
    * 注意：此属性通过 Proxy 在 get/set 陷阱中被动态访问，IDE 可能无法检测到使用, 切勿删除！
    */
   private localProperties: Record<string, any> = {};
-  private _childForkCache: Map<string, ForkFlowModel<any>> = new Map();
+  private childForkCache: Map<string, ForkFlowModel> = new Map();
 
   // 不需要定义自己的属性了，现在是SHARED_PROPERTIES中指定的少数几个属性，所有属性设置时会自动添加自己的fork内的独有属性
   #flowContext: FlowModelContext;
 
-  constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId = 0) {
+  constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId?: string) {
     void this.localProperties; // 避免 IDE 提示 unused
     this.master = master;
     this.uid = master.uid;
     this.localProps = { ...initialProps };
-    this.forkId = forkId;
+    this.forkId = forkId || uid();
+    this.hidden = this.master.hidden;
 
     define(this, {
       localProps: observable,
+      hidden: observable,
       setProps: action,
     });
 
@@ -90,17 +93,14 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
         if (prop === 'constructor') {
           return target.master.constructor;
         }
-        // subModels 需要按需 fork 子模型
         if (prop === 'subModels') {
-          return target._getForkedSubModels();
+          return target.getForkedSubModels();
         }
-        // parent 在 fork 场景中应返回父级的 fork（若存在）
         if (prop === 'parent') {
-          // 若本地覆盖了 parent（例如由父 fork 设置），优先返回本地值
           if (Object.prototype.hasOwnProperty.call(target.localProperties, 'parent')) {
-            return target.localProperties['parent'];
+            return target.localProperties.parent;
           }
-          return (target.master as any).parent;
+          return target.master.parent;
         }
         if (prop === 'props') {
           // 对 props 做合并返回
@@ -218,6 +218,13 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   /**
+   * 清理局部 props，仅影响当前 fork
+   */
+  clearProps() {
+    return (this.localProps = {});
+  }
+
+  /**
    * render 依旧使用 master 的方法，但合并后的 props 需要透传
    */
   render() {
@@ -235,10 +242,10 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   /**
-   * 自动流程缓存的作用域标识（fork 专用）。
+   * 事件缓存的作用域标识（fork 专用）。
    */
-  public getAutoFlowCacheScope(): string {
-    return String(this.forkId);
+  public getFlowCacheScope(eventName: string): string {
+    return `${String(eventName)}:${String(this.forkId)}`;
   }
 
   // onUnmount() {
@@ -261,17 +268,48 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
-    // 先释放子 fork，避免悬挂引用
     try {
-      for (const [, cf] of this._childForkCache) {
-        cf?.dispose?.();
+      for (const fork of this.childForkCache.values()) {
+        fork.dispose();
       }
     } finally {
-      this._childForkCache.clear();
+      this.childForkCache.clear();
     }
+    // 统一按事件缓存命名规则清理当前 fork 的所有缓存项（覆盖所有事件）
+    try {
+      const cache = this.flowEngine?.applyFlowCache;
+      if (cache && cache.size > 0) {
+        const uidSuffixes = [`:${this.uid}`, `-${this.uid}`];
+        const forkIdColon = `:${this.forkId}:`;
+        const forkIdHyphen = `-${this.forkId}-`;
+
+        for (const key of cache.keys()) {
+          // 事件缓存统一以 event: 或 event- 开头
+          const isEventCache = key.startsWith('event:') || key.startsWith('event-');
+          if (!isEventCache) continue;
+
+          // 仅删除当前 fork + 当前 uid 的键
+          const endMatches = uidSuffixes.some((s) => key.endsWith(s));
+          if (!endMatches) continue;
+
+          // 限定在去除 uid 后缀的范围内匹配 forkId 片段，避免误伤
+          let trimmed = key;
+          for (const suf of uidSuffixes) {
+            if (trimmed.endsWith(suf)) {
+              trimmed = trimmed.slice(0, -suf.length);
+              break;
+            }
+          }
+          if (trimmed.includes(forkIdColon) || trimmed.includes(forkIdHyphen)) {
+            cache.delete(key);
+          }
+        }
+      }
+    } catch {
+      // 忽略清理阶段异常，避免影响后续释放
+    }
+
     if (this.master && (this.master as any).forks) {
-      const forkCacheKey = FlowEngine.generateApplyFlowCacheKey(`${this.forkId}`, 'all', this.uid);
-      this.flowEngine.applyFlowCache.delete(forkCacheKey);
       (this.master as any).forks.delete(this as any);
     }
     // 从 master 的 forkCache 中移除自己
@@ -302,38 +340,34 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 
   /**
    * Build a forked view of master.subModels with stable child fork instances.
-   * - Arrays map to arrays of child forks
-   * - Objects map to a single child fork
-   * Also prunes cache entries for children that no longer exist.
    */
-  private _getForkedSubModels(): Record<string, any> {
-    // 读取 master.subModels 以建立响应式依赖
-    const masterSubModels = (this.master as any).subModels as Record<string, FlowModel | FlowModel[]> | undefined;
+  private getForkedSubModels(): Record<string, any> {
+    const masterSubModels = this.master.subModels as Record<string, FlowModel | FlowModel[]> | undefined;
     const result: Record<string, any> = {};
-    if (!masterSubModels || typeof masterSubModels !== 'object') return result;
+    if (!masterSubModels || typeof masterSubModels !== 'object') {
+      return result;
+    }
 
-    // 收集现存子 uid，用于后续清理
     const alive = new Set<string>();
-
-    const getChildFork = (child: FlowModel): ForkFlowModel<any> => {
+    const getChildFork = (child: FlowModel): ForkFlowModel => {
       const key = child.uid;
       alive.add(key);
-      let fork = this._childForkCache.get(key);
-      if (fork && !(fork as any).disposed) {
-        return fork;
+
+      const cachedFork = this.childForkCache.get(key);
+      if (cachedFork && !cachedFork['disposed']) {
+        return cachedFork;
       }
-      // 创建子 fork，不在子 master 上注册（避免污染 child.master.forks 管理）
-      fork = child.createFork({}, undefined, { register: false }) as ForkFlowModel<any>;
-      // 让子 fork 的 parent 指向当前 fork（避免溯源到 master）
+
+      const fork = child.createFork({}, undefined, { register: false });
       fork.localProperties = fork.localProperties || {};
       fork.localProperties.parent = this;
-      this._childForkCache.set(key, fork);
+      this.childForkCache.set(key, fork);
       return fork;
     };
 
     for (const [subKey, value] of Object.entries(masterSubModels)) {
       if (Array.isArray(value)) {
-        result[subKey] = value.map((m) => getChildFork(m));
+        result[subKey] = value.map((model) => getChildFork(model));
       } else if (value instanceof FlowModel) {
         result[subKey] = getChildFork(value);
       } else {
@@ -341,11 +375,10 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
       }
     }
 
-    // 清理已不存在的子 fork
-    for (const [key, fork] of this._childForkCache.entries()) {
+    for (const [key, fork] of this.childForkCache.entries()) {
       if (!alive.has(key)) {
-        fork?.dispose?.();
-        this._childForkCache.delete(key);
+        fork.dispose();
+        this.childForkCache.delete(key);
       }
     }
 

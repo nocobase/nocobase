@@ -9,11 +9,10 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, cleanup, waitFor } from '@testing-library/react';
+import { render, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { App, ConfigProvider } from 'antd';
 import { FlowEngine } from '../../flowEngine';
 import { FlowModel, ModelRenderMode } from '../../models/flowModel';
-import { DefaultSettingsIcon } from '../settings/wrappers/contextual/DefaultSettingsIcon';
 import { FlowEngineProvider } from '../../provider';
 import { FlowModelRenderer } from '../FlowModelRenderer';
 
@@ -81,6 +80,7 @@ vi.mock('antd', () => {
     Alert,
     Skeleton,
     Spin,
+    theme: { useToken: () => ({}) },
   } as any;
 });
 
@@ -92,6 +92,16 @@ const clickDeleteFromLastDropdown = async () => {
   });
   const menu = (globalThis as any).__lastDropdownMenu;
   menu.onClick?.({ key: 'delete' });
+};
+
+const getHost = (element: HTMLElement) => element.closest('[data-has-float-menu="true"]') as HTMLDivElement;
+
+const hoverHostAndClickDelete = async (element: HTMLElement) => {
+  const host = getHost(element);
+  if (host) {
+    fireEvent.mouseEnter(host);
+  }
+  await clickDeleteFromLastDropdown();
 };
 
 // ---------------- Tests ----------------
@@ -114,23 +124,23 @@ describe('Delete problematic model via FlowSettings menu', () => {
     }
 
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ BrokenModel });
     const model = engine.createModel({ use: 'BrokenModel', uid: 'broken-top-2' }) as BrokenModel;
     // satisfy FlowsFloatContextMenu styles
     model.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
 
-    render(
+    const { findByTestId } = render(
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
-            <FlowModelRenderer model={model} showFlowSettings showErrorFallback skipApplyAutoFlows />
+            <FlowModelRenderer model={model} showFlowSettings showErrorFallback />
           </FlowEngineProvider>
         </App>
       </ConfigProvider>,
     );
 
-    await clickDeleteFromLastDropdown();
+    await hoverHostAndClickDelete(await findByTestId('result'));
     expect(engine.getModel(model.uid)).toBeUndefined();
   });
 
@@ -141,7 +151,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
         return (
           <div>
             {items.map((m: FlowModel) => (
-              <FlowModelRenderer key={m.uid} model={m} showFlowSettings showErrorFallback skipApplyAutoFlows />
+              <FlowModelRenderer key={m.uid} model={m} showFlowSettings showErrorFallback />
             ))}
           </div>
         );
@@ -154,7 +164,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
     }
 
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ ParentModel, BrokenChild });
     const parent = engine.createModel({ use: 'ParentModel', uid: 'parent-3' }) as ParentModel;
     const child = engine.createModel({ use: 'BrokenChild', uid: 'child-3' }) as BrokenChild;
@@ -163,17 +173,17 @@ describe('Delete problematic model via FlowSettings menu', () => {
     parent.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
     child.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
 
-    render(
+    const { findByTestId } = render(
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
-            <FlowModelRenderer model={parent} skipApplyAutoFlows />
+            <FlowModelRenderer model={parent} />
           </FlowEngineProvider>
         </App>
       </ConfigProvider>,
     );
 
-    await clickDeleteFromLastDropdown();
+    await hoverHostAndClickDelete(await findByTestId('result'));
     expect(engine.getModel(child.uid)).toBeUndefined();
     const remain = (parent.subModels as any).items || [];
     expect(remain.find((m: FlowModel) => m.uid === child.uid)).toBeUndefined();
@@ -186,7 +196,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
         return (
           <div>
             {cells.map((m: FlowModel) => (
-              <FlowModelRenderer key={m.uid} model={m} showFlowSettings showErrorFallback skipApplyAutoFlows />
+              <FlowModelRenderer key={m.uid} model={m} showFlowSettings showErrorFallback />
             ))}
           </div>
         );
@@ -200,7 +210,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
     }
 
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ ParentModel, RenderFnChild });
     const parent = engine.createModel({ use: 'ParentModel', uid: 'parent-4' }) as ParentModel;
     const child = engine.createModel({ use: 'RenderFnChild', uid: 'cell-4' }) as RenderFnChild;
@@ -208,17 +218,17 @@ describe('Delete problematic model via FlowSettings menu', () => {
     parent.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
     child.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
 
-    render(
+    const { findByTestId } = render(
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
-            <FlowModelRenderer model={parent} skipApplyAutoFlows />
+            <FlowModelRenderer model={parent} />
           </FlowEngineProvider>
         </App>
       </ConfigProvider>,
     );
 
-    await clickDeleteFromLastDropdown();
+    await hoverHostAndClickDelete(await findByTestId('result'));
     expect(engine.getModel(child.uid)).toBeUndefined();
     const remain = (parent.subModels as any).cells || [];
     expect(remain.find((m: FlowModel) => m.uid === child.uid)).toBeUndefined();

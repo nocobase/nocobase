@@ -12,7 +12,7 @@ import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { TASK_STATUS } from '../common/constants';
 
-async function getUsers(config, { db, transaction }): Promise<number[]> {
+async function getUsers(config, { db }): Promise<number[]> {
   const users: Set<number> = new Set();
   const UserRepo = db.getRepository('users');
   for (const item of config) {
@@ -23,7 +23,6 @@ async function getUsers(config, { db, transaction }): Promise<number[]> {
       const result = await UserRepo.find({
         ...item,
         fields: ['id'],
-        transaction,
       });
       result.forEach((item) => users.add(item.id));
     } else {
@@ -49,7 +48,7 @@ export default class CCInstruction extends Instruction {
       .getParsedValue(node.config.users ?? [], node.id)
       .flat()
       .filter(Boolean);
-    const users = await getUsers(usersConfig, { db, transaction: processor.mainTransaction });
+    const users = await getUsers(usersConfig, { db });
 
     const RecordRepo = db.getRepository('workflowCcTasks');
     const title = node.config.title ? processor.getParsedValue(node.config.title, node.id) : node.title;
@@ -63,7 +62,6 @@ export default class CCInstruction extends Instruction {
         status: TASK_STATUS.UNREAD,
         title,
       })),
-      transaction: processor.mainTransaction,
     });
 
     // const { notifications = [] } = node.config;
@@ -80,16 +78,36 @@ export default class CCInstruction extends Instruction {
 
   async duplicateConfig(node, { transaction }) {
     const uiSchemaRepo = this.workflow.app.db.getRepository('uiSchemas') as UiSchemaRepository;
-    if (!node.config.ccDetail) {
-      return node.config;
-    }
-    const result = await uiSchemaRepo.duplicate(node.config.ccDetail, {
-      transaction,
-    });
+    const flowModelRepo = this.workflow.app.db.getRepository('flowModels') as any;
+    const nextConfig = { ...node.config };
 
-    return {
-      ...node.config,
-      ccDetail: result?.['x-uid'] ?? uid(),
+    if (node.config.ccDetail) {
+      const result = await uiSchemaRepo.duplicate(node.config.ccDetail, {
+        transaction,
+      });
+      nextConfig.ccDetail = result?.['x-uid'] ?? uid();
+    }
+
+    const duplicateFlowModelUid = async (modelUid?: string) => {
+      if (!modelUid) return undefined;
+      try {
+        const duplicated = await flowModelRepo?.duplicate?.(modelUid, { transaction });
+        // 兜底生成新 uid，避免复制后共用旧模型
+        return duplicated?.uid || duplicated?.data?.uid || duplicated?.data?.data?.uid || uid();
+      } catch (error) {
+        // 复制失败时不阻断流程，尽量保留原配置
+        return modelUid;
+      }
     };
+
+    if (node.config.ccUid) {
+      nextConfig.ccUid = await duplicateFlowModelUid(node.config.ccUid);
+    }
+
+    if (node.config.taskCardUid) {
+      nextConfig.taskCardUid = await duplicateFlowModelUid(node.config.taskCardUid);
+    }
+
+    return nextConfig;
   }
 }

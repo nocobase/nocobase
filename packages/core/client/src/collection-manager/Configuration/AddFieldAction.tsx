@@ -335,6 +335,7 @@ export const AddFieldAction = (props) => {
               scopeKeyOptions,
               createMainOnly: true,
               editMainOnly: true,
+              primaryKeyOnly: false,
               ...scope,
             }}
           />

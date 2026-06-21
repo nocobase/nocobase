@@ -8,9 +8,12 @@
  */
 
 import { z } from 'zod';
-import PluginWorkflowServer, { Processor, EXECUTION_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflowServer, { Processor } from '@nocobase/plugin-workflow';
 import { Context } from '@nocobase/actions';
-import { ToolRegisterOptions } from '../manager/tool-manager';
+import { truncateLongStrings } from './utils';
+import { ToolsRegistration } from '@nocobase/ai';
+import { Plugin } from '@nocobase/server';
+import _ from 'lodash';
 
 interface ParameterConfig {
   name: string;
@@ -86,36 +89,41 @@ const invoke = async (ctx: Context, workflow: Workflow, args: Record<string, any
   const processor = (await workflowPlugin.trigger(workflow as any, {
     ...args,
   })) as Processor;
-  if (!processor.lastSavedJob) {
+  const output = processor.execution.output ?? processor.lastSavedJob?.result;
+  if (output == null || output === '') {
     return { status: 'error' as const, content: 'No content' };
   }
-  if (processor.execution.status !== EXECUTION_STATUS.RESOLVED) {
+  if (processor.execution.status < 0) {
     return { status: 'error' as const, content: 'Workflow execution exceptions' };
   }
-  const lastJobResult = processor.lastSavedJob.result;
+  const result = truncateLongStrings(output);
   return {
     status: 'success' as const,
-    content: JSON.stringify(lastJobResult),
+    content: JSON.stringify(result),
   };
 };
 
-export const getWorkflowCallers = async (plugin) => {
+export const getWorkflowCallers = (plugin: Plugin, prefix?: string) => async (register: ToolsRegistration) => {
   const workflowPlugin = plugin.app.pm.get('workflow') as PluginWorkflowServer;
   const aiSupporterWorkflows = Array.from(workflowPlugin.enabledCache.values()).filter(
     (item) => item.type === 'ai-employee',
   );
-  const register: ToolRegisterOptions[] = [];
+
   for (const workflow of aiSupporterWorkflows) {
     const config = workflow.config;
-    register.push({
-      tool: {
-        name: workflow.key,
+    register.registerTools({
+      scope: 'CUSTOM',
+      from: 'workflow',
+      introduction: {
         title: workflow.title,
+        about: workflow.description,
+      },
+      definition: {
+        name: !_.isEmpty(prefix) ? `${prefix}-${workflow.key}` : workflow.key,
         description: workflow.description,
         schema: buildSchema(config),
-        invoke: async (ctx: Context, args: Record<string, any>) => invoke(ctx, workflow, args),
       },
+      invoke: async (ctx: Context, args: Record<string, any>) => invoke(ctx, workflow, args),
     });
   }
-  return register;
 };

@@ -1,5 +1,10 @@
 {
-  "Title field": "Campo de título",
+  "Enable drag to reschedule": "Enable drag to reschedule",
+  "End date field": "Campo de data de término",
+  "Details": "Detalhes",
+  "Event popup settings": "Configuracoes do popup de evento",
+  "Progress field": "Progress field",
   "Start date field": "Campo de data de início",
-  "End date field": "Campo de data de término"
+  "Time scale": "Time scale",
+  "Title field": "Campo de título"
 }

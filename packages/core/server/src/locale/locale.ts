@@ -10,8 +10,8 @@
 import { Cache } from '@nocobase/cache';
 import { Registry, lodash } from '@nocobase/utils';
 import Application from '../application';
+import { OFFICIAL_PLUGIN_PREFIX } from '../constants';
 import { getResource } from './resource';
-import { OFFICIAL_PLUGIN_PREFIX } from '..';
 import deepmerge from 'deepmerge';
 
 export interface ResourceStorer {
@@ -21,6 +21,26 @@ export interface ResourceStorer {
   reset?: () => Promise<void>;
 }
 
+export type LocaleSourceText = {
+  text: string;
+  module: string;
+};
+
+export type LocaleSource = {
+  title: string;
+  sync?: (ctx: any) => Promise<{
+    [module: string]: {
+      [text: string]: string;
+    };
+  }>;
+  namespace?: string;
+  collections?: {
+    collection: string;
+    fields?: string[];
+    getTexts?: (instance: any, options?: any) => LocaleSourceText[] | Promise<LocaleSourceText[]>;
+  }[];
+};
+
 export class Locale {
   app: Application;
   cache: Cache;
@@ -29,6 +49,7 @@ export class Locale {
   resourceCached = new Map();
   i18nInstances = new Map();
   resourceStorers = new Registry<ResourceStorer>();
+  sources = new Registry<LocaleSource>();
 
   constructor(app: Application) {
     this.app = app;
@@ -77,6 +98,27 @@ export class Locale {
     this.resourceStorers.register(name, storer);
   }
 
+  registerSource(name: string, source: LocaleSource) {
+    this.sources.register(name, source);
+  }
+
+  async syncSources(ctx: any, types: string[]) {
+    const resources: { [module: string]: any } = { client: {} };
+    const sources = Array.from(this.sources.getKeys());
+    const syncSources = sources.filter((source) => types.includes(source) && this.sources.get(source).sync);
+    const promises = syncSources.map((source) => this.sources.get(source).sync(ctx));
+    const results = await Promise.all(promises);
+    return results.reduce((result, resource) => {
+      Object.entries(resource).forEach(([module, texts]) => {
+        result[module] = {
+          ...(result[module] || {}),
+          ...texts,
+        };
+      });
+      return result;
+    }, resources);
+  }
+
   async get(lang: string) {
     const defaults = {
       resources: await this.getCacheResources(lang),
@@ -114,7 +156,7 @@ export class Locale {
     return await this.wrapCache(`resources:${lang}`, () => this.getResources(lang));
   }
 
-  async getResources(lang: string) {
+  async getBuiltInResources(lang: string) {
     const resources = {};
     const names = this.app.pm.getPlugins().keys();
     for (const name of names) {
@@ -129,7 +171,7 @@ export class Locale {
         }
         // this.app.log.debug(`load [${packageName}] locale resource `);
         // this.app.setMaintainingMessage(`load [${packageName}] locale resource `);
-        const res = getResource(packageName, lang);
+        const res = await getResource(packageName, lang);
         if (res) {
           resources[packageName] = { ...res };
           if (packageName.includes(OFFICIAL_PLUGIN_PREFIX)) {
@@ -140,6 +182,12 @@ export class Locale {
         // empty
       }
     }
+
+    return resources;
+  }
+
+  async getResources(lang: string) {
+    const resources = await this.getBuiltInResources(lang);
 
     // handle custom resources
     const storers = this.resourceStorers.getValues();

@@ -13,7 +13,7 @@ import { TaskStatusOptions } from '../common/constants';
 import { NAMESPACE } from '../locale';
 import { getWorkflowTodoViewActionSchema } from './WorkflowTodo';
 
-const todoCollection = {
+export const todoCollection = {
   title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
   name: 'workflowManualTasks',
   fields: [

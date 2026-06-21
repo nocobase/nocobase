@@ -10,7 +10,6 @@
 import { Registry } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
 import { ZodObject } from 'zod';
-import zodToJsonSchema from 'zod-to-json-schema';
 import _ from 'lodash';
 
 export interface AIToolRegister {
@@ -35,10 +34,12 @@ export interface ToolOptions {
   invoke: (
     ctx: Context,
     args: Record<string, any>,
+    id: string,
   ) => Promise<{
     status: 'success' | 'error';
     content: string;
   }>;
+  [key: string]: unknown;
 }
 
 export type ToolRegisterOptions = {
@@ -123,7 +124,7 @@ export class ToolManager implements AIToolRegister {
     }
   }
 
-  async listTools(): Promise<
+  async listTools(raw = true): Promise<
     {
       group: ToolGroupRegisterOptions;
       tools: ToolOptions[];
@@ -146,8 +147,8 @@ export class ToolManager implements AIToolRegister {
     }
 
     const toolList = toolRegisters.map((x) => {
-      const t = { ...x };
-      t.tool.schema = this.processSchema(t.tool.schema, true);
+      const t = { ...x, tool: { ...x.tool } };
+      t.tool.schema = this.processSchema(t.tool.schema, raw);
       return t;
     });
 
@@ -176,7 +177,7 @@ export class ToolManager implements AIToolRegister {
     if (!schema) return undefined;
     try {
       // Use type assertion to break the recursive type checking
-      return (schema as any) instanceof ZodObject && raw ? zodToJsonSchema(schema as any) : schema;
+      return (schema as any) instanceof ZodObject && raw ? schema.toJSONSchema() : schema;
     } catch (error) {
       // Fallback if zodToJsonSchema fails
       return schema;

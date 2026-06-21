@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
+import Database, { Model } from '@nocobase/database';
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, AppSupervisor, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
@@ -301,10 +301,12 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       };
     });
 
-    // 子应用数据库创建
-    multiAppManager.setAppDbCreator(async (app) => {
-      const schema = app.options.database.schema;
-      await this.app.db.sequelize.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+    this.db.on('applications.beforeCreate', async (model: Model) => {
+      const options = model.get('options');
+      model.setDataValue('options', {
+        ...options,
+        dbConnType: 'new_schema',
+      });
     });
   }
 }

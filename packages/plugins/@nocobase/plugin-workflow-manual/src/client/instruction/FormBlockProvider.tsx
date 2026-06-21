@@ -19,7 +19,7 @@ import {
   FormBlockContext,
   FormV2,
   RecordProvider,
-  RerenderDataBlockProvider,
+  TemplateBlockProvider,
   useAPIClient,
   useAssociationNames,
   useBlockRequestContext,
@@ -81,23 +81,25 @@ export function FormBlockProvider(props) {
   }, [field, form, params, service, updateAssociationValues]);
 
   return !userJob?.status || values ? (
-    <CollectionManagerProvider dataSource={dataSource}>
-      <CollectionProvider_deprecated collection={props.collection}>
-        <BlockProvider name={props.name || 'form'} {...props} block={'form'} parentRecord={null}>
-          <FormActiveFieldsProvider name="form">
-            <BlockRequestContext_deprecated.Provider
-              value={{ block: 'form', props, field, service, resource, __parent }}
-            >
-              <FormBlockContext.Provider value={formBlockValue}>
-                <RecordProvider record={values} parent={null}>
-                  <FormV2.Templates style={{ marginBottom: token.margin }} form={form} />
-                  <div ref={formBlockRef}>{props.children}</div>
-                </RecordProvider>
-              </FormBlockContext.Provider>
-            </BlockRequestContext_deprecated.Provider>
-          </FormActiveFieldsProvider>
-        </BlockProvider>
-      </CollectionProvider_deprecated>
-    </CollectionManagerProvider>
+    <TemplateBlockProvider>
+      <CollectionManagerProvider dataSource={dataSource}>
+        <CollectionProvider_deprecated collection={props.collection}>
+          <BlockProvider name={props.name || 'form'} {...props} block={'form'} parentRecord={null}>
+            <FormActiveFieldsProvider name="form">
+              <BlockRequestContext_deprecated.Provider
+                value={{ block: 'form', props, field, service, resource, __parent }}
+              >
+                <FormBlockContext.Provider value={formBlockValue}>
+                  <RecordProvider record={values} parent={null}>
+                    <FormV2.Templates style={{ marginBottom: token.margin }} form={form} />
+                    <div ref={formBlockRef}>{props.children}</div>
+                  </RecordProvider>
+                </FormBlockContext.Provider>
+              </BlockRequestContext_deprecated.Provider>
+            </FormActiveFieldsProvider>
+          </BlockProvider>
+        </CollectionProvider_deprecated>
+      </CollectionManagerProvider>
+    </TemplateBlockProvider>
   ) : null;
 }

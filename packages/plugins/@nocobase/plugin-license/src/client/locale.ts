@@ -13,7 +13,7 @@ import { useApp } from '@nocobase/client';
 
 export function useT() {
   const app = useApp();
-  return (str: string) => app.i18n.t(str, { ns: [pkg.name, 'client'] });
+  return (str: string, options?: any) => String(app.i18n.t(str, { ns: [pkg.name, 'client'], ...(options || {}) }));
 }
 
 export function tStr(key: string) {

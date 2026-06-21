@@ -12,9 +12,9 @@ import { FormProvider, Observer, observer, ReactFC } from '@formily/react';
 import { untracked } from '@formily/reactive';
 import { applyMiddleware, IMiddleware, isBool, isFn, isNum, isStr } from '@formily/shared';
 import { Modal, ModalProps, ThemeConfig } from 'antd';
-import React, { Fragment, useLayoutEffect, useRef, useState } from 'react';
+import React, { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GlobalThemeProvider } from '../../../global-theme';
+import { GlobalThemeProvider } from '@nocobase/client-v2';
 import { createPortalProvider, createPortalRoot, loading, usePrefixCls, useToken } from '../__builtins__';
 
 type FormDialogRenderer = React.ReactElement | ((form: Form) => React.ReactElement);
@@ -102,13 +102,20 @@ export function FormDialog(title: any, id: any, renderer?: any, theme?: any): IF
           {() => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { token } = useToken();
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const container: HTMLElement = useMemo(() => {
+              return document.body;
+            }, []);
+            const inputZIndex = Number(modal?.zIndex);
+            const defaultZIndex = token.zIndexPopupBase + 1000;
+            const normalizedZIndex =
+              Number.isFinite(inputZIndex) && inputZIndex > 0 ? Math.max(defaultZIndex, inputZIndex) : defaultZIndex;
 
             return (
               <Modal
-                // fix https://nocobase.height.app/T-2797
-                // fix https://nocobase.height.app/T-2838
-                zIndex={token.zIndexPopupBase + 1000}
                 {...modal}
+                zIndex={normalizedZIndex}
+                getContainer={modal?.getContainer ?? container}
                 open={open}
                 confirmLoading={form.submitting}
                 onCancel={(e) => {

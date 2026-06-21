@@ -12,15 +12,40 @@
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { PluginCommandError } from '../errors/plugin-command-error';
+import { pmListSummary } from '../plugin-manager/utils';
 
 export default (app: Application) => {
   const pm = app.command('pm');
+
+  pm.command('list').action(async () => {
+    const items = await pmListSummary(app);
+    console.log('--- BEGIN_PLUGIN_LIST_JSON ---');
+    console.log(JSON.stringify(items));
+    console.log('--- END_PLUGIN_LIST_JSON ---');
+  });
 
   pm.command('create')
     .argument('plugin')
     .option('--force-recreate')
     .action(async (plugin, options) => {
       await app.pm.create(plugin, options);
+    });
+
+  pm.command('pull')
+    .arguments('<packageNames...>')
+    .option('--registry [registry]')
+    .option('--auth-token [authToken]')
+    .option('--version [version]')
+    .action(async (packageNames, options, cli) => {
+      try {
+        let name = packageNames;
+        if (Array.isArray(packageNames) && packageNames.length === 1) {
+          name = packageNames[0];
+        }
+        await app.pm.pull(name, { ...options });
+      } catch (error) {
+        throw new PluginCommandError(`Failed to pull plugin`, { cause: error });
+      }
     });
 
   pm.command('add')

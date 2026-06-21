@@ -81,7 +81,33 @@ describe('FlowExecutor', () => {
     expect(result.step2).toBe('step2-ok');
   });
 
-  it('runAutoFlows executes only auto flows in sort order and caches result', async () => {
+  it('runFlow silently skips steps without use or handler', async () => {
+    const flows = {
+      referenceSettings: {
+        steps: {
+          target: {},
+        },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+    const model = createModelWithFlows('m-empty-step', flows);
+    const loggerChildSpy = vi.spyOn(engine.logger, 'child').mockReturnValue(engine.logger);
+    const loggerWarnSpy = vi.spyOn(engine.logger, 'warn').mockImplementation(() => {});
+    const loggerErrorSpy = vi.spyOn(engine.logger, 'error').mockImplementation(() => {});
+
+    try {
+      const result = await engine.executor.runFlow(model, 'referenceSettings');
+
+      expect(result).toEqual({});
+      expect(loggerWarnSpy).not.toHaveBeenCalled();
+      expect(loggerErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      loggerChildSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
+    }
+  });
+
+  it("dispatchEvent('beforeRender') executes flows in sort order and caches result (when options specify)", async () => {
     const calls: string[] = [];
     const mkFlow = (key: string, sort: number) => ({
       sort,
@@ -104,15 +130,21 @@ describe('FlowExecutor', () => {
 
     const model = createModelWithFlows('m-auto', flows);
 
-    const r1 = await engine.executor.runAutoFlows(model);
-    expect(r1).toHaveLength(2);
+    const r1 = await engine.executor.dispatchEvent(model, 'beforeRender', undefined, {
+      sequential: true,
+      useCache: true,
+    });
+    expect(Array.isArray(r1)).toBe(true);
     // sort order: f1 then f2
     expect(calls).toEqual(['f1', 'f2']);
 
     // second run should hit cache and not execute handlers again
     const prevCount = calls.length;
-    const r2 = await engine.executor.runAutoFlows(model);
-    expect(r2).toEqual(r1);
+    const r2 = await engine.executor.dispatchEvent(model, 'beforeRender', undefined, {
+      sequential: true,
+      useCache: true,
+    });
+    expect(Array.isArray(r2)).toBe(true);
     expect(calls.length).toBe(prevCount);
   });
 
@@ -133,290 +165,267 @@ describe('FlowExecutor', () => {
     expect(submitHandler).not.toHaveBeenCalled();
   });
 
-  it('dispatchEvent respects filter group conditions', async () => {
-    const matchedHandler = vi.fn().mockResolvedValue('matched');
-    const skippedHandler = vi.fn().mockResolvedValue('skipped');
+  it("dispatchEvent('click') skips instance flows when triggerByRouter is true", async () => {
+    class MyModel extends FlowModel {}
 
-    const flows = {
-      shouldRun: {
-        on: {
-          eventName: 'click',
-          condition: {
-            logic: '$and',
-            items: [
-              {
-                path: '{{ ctx.model.props.status }}',
-                operator: '$eq',
-                value: 'active',
-              },
-            ],
-          },
-        },
-        steps: { step: { handler: matchedHandler } },
+    const globalHandler = vi.fn().mockResolvedValue('global-ok');
+    MyModel.registerFlow('globalClick', {
+      on: 'click',
+      steps: {
+        s: { handler: globalHandler },
       },
-      shouldSkip: {
-        on: {
-          eventName: 'click',
-          condition: {
-            logic: '$and',
-            items: [
-              {
-                path: '{{ ctx.model.props.status }}',
-                operator: '$eq',
-                value: 'inactive',
-              },
-            ],
-          },
-        },
-        steps: { step: { handler: skippedHandler } },
-      },
-    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+    });
 
-    const model = new FlowModel({
-      uid: 'm-conditional',
+    const instanceHandler = vi.fn().mockResolvedValue('instance-ok');
+    const model = new MyModel({
+      uid: 'm-click-router-replay',
       flowEngine: engine,
-      props: { status: 'active' },
+      flowRegistry: {
+        instanceClick: {
+          on: 'click',
+          steps: {
+            s: { handler: instanceHandler },
+          },
+        },
+      },
       stepParams: {},
       subModels: {},
-      flowRegistry: flows,
     } as FlowModelOptions);
 
-    // 提供最小 jsonLogic 实现，确保条件可计算
-    model.context.defineProperty('app', {
-      value: {
-        jsonLogic: {
-          apply(logic: any) {
-            const op = Object.keys(logic)[0];
-            const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
-            const [a, b] = values;
-            switch (op) {
-              case '$eq':
-                return a === b;
-              default:
-                return false;
-            }
+    await engine.executor.dispatchEvent(model, 'click', { triggerByRouter: true }, { sequential: true });
+
+    expect(globalHandler).toHaveBeenCalledTimes(1);
+    expect(instanceHandler).not.toHaveBeenCalled();
+  });
+
+  it("dispatchEvent('click') keeps instance flows when triggerByRouter is not true", async () => {
+    class MyModel extends FlowModel {}
+
+    const globalHandler = vi.fn().mockResolvedValue('global-ok');
+    MyModel.registerFlow('globalClick', {
+      on: 'click',
+      steps: {
+        s: { handler: globalHandler },
+      },
+    });
+
+    const instanceHandler = vi.fn().mockResolvedValue('instance-ok');
+    const model = new MyModel({
+      uid: 'm-click-normal',
+      flowEngine: engine,
+      flowRegistry: {
+        instanceClick: {
+          on: 'click',
+          steps: {
+            s: { handler: instanceHandler },
           },
+        },
+      },
+      stepParams: {},
+      subModels: {},
+    } as FlowModelOptions);
+
+    await engine.executor.dispatchEvent(model, 'click', { triggerByRouter: false }, { sequential: true });
+
+    expect(globalHandler).toHaveBeenCalledTimes(1);
+    expect(instanceHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it('dispatchEvent default parallel does not stop on exitAll', async () => {
+    const calls: string[] = [];
+    const mkFlow = (key: string, opts?: { exitAll?: boolean }) => ({
+      on: { eventName: 'par' },
+      steps: {
+        only: {
+          handler: vi.fn().mockImplementation((ctx) => {
+            calls.push(key);
+            if (opts?.exitAll) ctx.exitAll();
+          }),
         },
       },
     });
 
-    await engine.executor.dispatchEvent(model, 'click');
+    const flows = {
+      a: mkFlow('a', { exitAll: true }),
+      b: mkFlow('b'),
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
 
-    expect(matchedHandler).toHaveBeenCalledTimes(1);
-    expect(skippedHandler).not.toHaveBeenCalled();
+    const model = createModelWithFlows('m-par', flows);
+
+    await engine.executor.dispatchEvent(model, 'par');
+
+    // 在并行模式下，b 不会被 exitAll 中断
+    expect(calls.sort()).toEqual(['a', 'b']);
   });
 
-  it('dispatchEvent supports function conditions', async () => {
-    const handler = vi.fn().mockResolvedValue('fn-matched');
-    const conditionFn = vi.fn().mockReturnValue(true);
-
+  it('dispatchEvent sequential exposes abortedByExitAll metadata on result array', async () => {
     const flows = {
-      fnFlow: {
-        on: {
-          eventName: 'click',
-          condition: conditionFn,
+      stopClose: {
+        on: { eventName: 'close' },
+        steps: {
+          only: {
+            handler: vi.fn().mockImplementation((ctx) => {
+              ctx.exit();
+            }),
+          },
         },
-        steps: { step: { handler } },
+      },
+      afterClose: {
+        on: { eventName: 'close', phase: 'afterAllFlows' },
+        steps: {
+          only: {
+            handler: vi.fn(),
+          },
+        },
       },
     } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
 
-    const model = createModelWithFlows('m-function', flows);
+    const model = createModelWithFlows('m-close-meta', flows);
 
-    await engine.executor.dispatchEvent(model, 'click');
+    const result = await engine.executor.dispatchEvent(model, 'close', {}, { sequential: true });
 
-    expect(conditionFn).toHaveBeenCalledTimes(1);
+    expect(Array.isArray(result)).toBe(true);
+    expect((result as any).__abortedByExitAll).toBe(true);
+    expect(flows.afterClose.steps.only.handler).not.toHaveBeenCalled();
+  });
+
+  it('dispatchEvent sequential respects sort order and stops on errors', async () => {
+    const calls: string[] = [];
+    const mkFlow = (key: string, sort: number, opts?: { throw?: boolean }) => ({
+      on: { eventName: 'seq2' },
+      sort,
+      steps: {
+        only: {
+          handler: vi.fn().mockImplementation(() => {
+            calls.push(key);
+            if (opts?.throw) throw new Error('boom');
+          }),
+        },
+      },
+    });
+
+    const flows = {
+      f2: mkFlow('f2', 2),
+      f1: mkFlow('f1', 1, { throw: true }),
+      f3: mkFlow('f3', 3),
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const model = createModelWithFlows('m-seq2', flows);
+    await engine.executor.dispatchEvent(model, 'seq2', {}, { sequential: true });
+
+    // 顺序：按 sort 执行；f1 抛错后终止，f2 和 f3 不会执行
+    expect(calls).toEqual(['f1']);
+  });
+
+  it('dispatchEvent caches non-beforeRender when useCache=true', async () => {
+    const handler = vi.fn();
+    const flows = {
+      onFoo: { on: 'foo', steps: { s: { handler } } },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+    const model = createModelWithFlows('m-evt-cache', flows);
+
+    await engine.executor.dispatchEvent(model, 'foo', {}, { useCache: true });
+    await engine.executor.dispatchEvent(model, 'foo', {}, { useCache: true });
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it('dispatchEvent evaluates nested groups and $or checks', async () => {
-    const matchedHandler = vi.fn().mockResolvedValue('nested-ok');
-    const fallbackHandler = vi.fn().mockResolvedValue('fallback');
-
+  it("dispatchEvent('beforeRender') runs once due to cache (when options specify)", async () => {
+    const handler = vi.fn();
     const flows = {
-      nestedMatch: {
-        on: {
-          eventName: 'click',
-          condition: {
-            logic: '$or',
-            items: [
-              {
-                path: '{{ ctx.event.args.type }}',
-                operator: '$eq',
-                value: 'primary',
-              },
-              {
-                logic: '$and',
-                items: [
-                  {
-                    path: '{{ ctx.model.props.role }}',
-                    operator: '$eq',
-                    value: 'admin',
-                  },
-                  {
-                    path: '{{ ctx.model.props.count }}',
-                    operator: '$gt',
-                    value: 10,
-                  },
-                ],
-              },
-            ],
-          },
-        },
-        steps: { step: { handler: matchedHandler } },
-      },
-      nestedSkip: {
-        on: {
-          eventName: 'click',
-          condition: {
-            logic: '$and',
-            items: [
-              {
-                path: '{{ ctx.event.args.type }}',
-                operator: '$eq',
-                value: 'secondary',
-              },
-            ],
-          },
-        },
-        steps: { step: { handler: fallbackHandler } },
-      },
+      auto1: { steps: { s: { handler } } }, // 无 on → 视为 beforeRender
+      auto2: { on: 'beforeRender', steps: { s: { handler } } },
     } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
 
-    const model = new FlowModel({
-      uid: 'm-nested',
-      flowEngine: engine,
-      props: { role: 'member', count: 5 },
-      stepParams: {},
-      subModels: {},
-      flowRegistry: flows,
-    } as FlowModelOptions);
+    const model = createModelWithFlows('m-br-cache', flows);
 
-    model.context.defineProperty('app', {
-      value: {
-        jsonLogic: {
-          apply(logic: any) {
-            const op = Object.keys(logic)[0];
-            const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
-            const [a, b] = values;
-            switch (op) {
-              case '$eq':
-                return a === b;
-              case '$gt':
-                return a > b;
-              default:
-                return false;
-            }
-          },
-        },
-      },
-    });
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
 
-    await engine.executor.dispatchEvent(model, 'click', { type: 'primary' });
-
-    expect(matchedHandler).toHaveBeenCalledTimes(1);
-    expect(fallbackHandler).not.toHaveBeenCalled();
+    // 两次触发但步骤处理只执行一次（命中缓存）
+    expect(handler).toHaveBeenCalledTimes(2); // 每个 flow 各 1 次，共 2 次
   });
 
-  it('dispatchEvent handles unary operators like $notEmpty', async () => {
-    const handler = vi.fn().mockResolvedValue('not-empty');
-
+  it("dispatchEvent('beforeRender') keeps aborted flag on end event when cache hits", async () => {
+    const handler = vi.fn().mockImplementation((ctx) => {
+      ctx.exitAll();
+    });
     const flows = {
-      nonEmptyTags: {
-        on: {
-          eventName: 'click',
-          condition: {
-            logic: '$and',
-            items: [
-              {
-                path: '{{ ctx.model.props.tags }}',
-                operator: '$notEmpty',
-                value: '',
-              },
-            ],
-          },
-        },
-        steps: { step: { handler } },
-      },
+      abortFlow: { steps: { s: { handler } } },
     } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+    const model = createModelWithFlows('m-br-cache-aborted', flows);
 
-    const model = new FlowModel({
-      uid: 'm-unary',
-      flowEngine: engine,
-      props: { tags: ['a', 'b'] },
-      stepParams: {},
-      subModels: {},
-      flowRegistry: flows,
-    } as FlowModelOptions);
+    const endEvents: any[] = [];
+    const onEnd = (payload: any) => {
+      endEvents.push(payload);
+    };
+    engine.emitter.on('model:event:beforeRender:end', onEnd);
 
-    model.context.defineProperty('app', {
-      value: {
-        jsonLogic: {
-          apply(logic: any) {
-            const op = Object.keys(logic)[0];
-            const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
-            const [a] = values;
-            switch (op) {
-              case '$notEmpty':
-                return Array.isArray(a) ? a.length > 0 : !!a;
-              default:
-                return false;
-            }
-          },
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+
+    engine.emitter.off('model:event:beforeRender:end', onEnd);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(endEvents).toHaveLength(2);
+    expect(endEvents[0]?.aborted).toBe(true);
+    expect(endEvents[1]?.aborted).toBe(true);
+  });
+
+  it('dispatchEvent supports sequential execution order and exitAll break', async () => {
+    const calls: string[] = [];
+    const mkFlow = (key: string, sort: number, opts?: { exitAll?: boolean }) => ({
+      on: { eventName: 'seq' },
+      sort,
+      steps: {
+        only: {
+          handler: vi.fn().mockImplementation((ctx) => {
+            calls.push(key);
+            if (opts?.exitAll) ctx.exitAll();
+          }),
         },
       },
     });
 
-    await engine.executor.dispatchEvent(model, 'click');
+    const flows = {
+      f1: mkFlow('f1', 1, { exitAll: true }),
+      f2: mkFlow('f2', 2),
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
 
+    const model = createModelWithFlows('m-seq', flows);
+
+    await engine.executor.dispatchEvent(model, 'seq', {}, { sequential: true });
+
+    // f1 executed then exitAll stops f2
+    expect(calls).toEqual(['f1']);
+  });
+
+  it("dispatchEvent('beforeRender') caches results (key includes eventName) when options specify", async () => {
+    const handler = vi.fn().mockResolvedValue('ok');
+    const flows = {
+      f1: { steps: { s: { handler } } },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+    const model = createModelWithFlows('m-br', flows);
+
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+
+    // handler only executed once because of cache
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it('dispatchEvent skips flows when condition evaluates to false', async () => {
-    const handler = vi.fn().mockResolvedValue('should-not-run');
-
+  it("dispatchEvent('beforeRender') rejects when a step throws", async () => {
+    const handler = vi.fn().mockImplementation(() => {
+      throw new Error('boom-br');
+    });
     const flows = {
-      invalidCondition: {
-        on: {
-          eventName: 'click',
-          condition: {
-            logic: '$and',
-            items: [
-              {
-                path: '{{ ctx.event.args.type }}',
-                operator: '$eq',
-                value: 'never',
-              },
-            ],
-          },
-        },
-        steps: { step: { handler } },
-      },
+      bad: { steps: { s: { handler } } },
     } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
 
-    const model = createModelWithFlows('m-invalid', flows);
+    const model = createModelWithFlows('m-br-reject', flows);
 
-    // 注入最小 jsonLogic，确保 $eq 可用
-    model.context.defineProperty('app', {
-      value: {
-        jsonLogic: {
-          apply(logic: any) {
-            const op = Object.keys(logic)[0];
-            const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
-            const [a, b] = values;
-            switch (op) {
-              case '$eq':
-                return a === b;
-              default:
-                return false;
-            }
-          },
-        },
-      },
-    });
-
-    await engine.executor.dispatchEvent(model, 'click');
-
-    expect(handler).not.toHaveBeenCalled();
+    await expect(engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true })).rejects.toThrow(
+      'boom-br',
+    );
   });
 
   it('instance flow overrides global flow with same key', async () => {

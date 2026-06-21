@@ -151,7 +151,20 @@ describe('pm', () => {
   test('enable', async () => {
     app = mockServer();
     await app.load();
-    await expect(() => app.pm.enable('Plugin0')).rejects.toThrow('Plugin0 plugin does not exist');
+    await expect(() => app.pm.enable('Plugin0')).rejects.toThrowError();
+  });
+  test('enable rejects unsafe plugin names', async () => {
+    app = mockServer();
+    const tryReloadOrRestart = vi.spyOn(app, 'tryReloadOrRestart').mockResolvedValue(undefined);
+    const resolvePlugin = vi.spyOn(PluginManager, 'resolvePlugin');
+
+    await expect(app.pm.enable('/etc/passwd')).rejects.toThrow('Invalid plugin package name');
+    await expect(app.pm.enable('../../../tmp/pwn')).rejects.toThrow('Invalid plugin package name');
+
+    expect(resolvePlugin).not.toHaveBeenCalled();
+
+    resolvePlugin.mockRestore();
+    tryReloadOrRestart.mockRestore();
   });
   test('enable', async () => {
     const loadFn = vi.fn();
@@ -414,7 +427,7 @@ describe('pm', () => {
     await app.reload();
     expect(app.pm.get('Plugin1')).toBeUndefined();
     expect(loadFn).not.toBeCalled();
-    await expect(() => app.pm.disable('Plugin1')).rejects.toThrow('Plugin1 plugin does not exist');
+    await expect(() => app.pm.disable('Plugin1')).rejects.toThrow('Plugin1 plugin load error');
     PluginManager.resolvePlugin = resolvePlugin;
   });
   test('disable', async () => {

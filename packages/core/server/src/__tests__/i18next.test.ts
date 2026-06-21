@@ -9,23 +9,21 @@
 
 import supertest from 'supertest';
 import { Application } from '../application';
+import { mockServer } from '@nocobase/test';
 
 describe('i18next', () => {
   let app: Application;
   let agent: supertest.SuperAgentTest;
 
   beforeEach(() => {
-    app = new Application({
-      database: {
-        dialect: 'sqlite',
-        storage: ':memory:',
-      },
+    app = mockServer({
       resourcer: {
         prefix: '/api',
       },
       acl: false,
       dataWrapping: false,
       registerActions: false,
+      skipSupervisor: true,
     });
     app.i18n.addResources('zh-CN', 'translation', {
       hello: '你好',

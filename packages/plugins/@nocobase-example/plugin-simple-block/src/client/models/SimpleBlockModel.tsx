@@ -13,15 +13,36 @@ import { tExpr } from '../locale';
 
 export class SimpleBlockModel extends BlockModel {
   renderComponent() {
-    return (
-      <div>
-        <h1>Hello, NocoBase!</h1>
-        <p>This is a simple block rendered by SimpleBlockModel.</p>
-      </div>
-    );
+    return <div dangerouslySetInnerHTML={{ __html: this.props.html }} />;
   }
 }
 
 SimpleBlockModel.define({
   label: tExpr('Simple block'),
+});
+
+SimpleBlockModel.registerFlow({
+  key: 'flow1',
+  title: tExpr('Simple Block Flow'),
+  on: 'beforeRender',
+  steps: {
+    editHtml: {
+      title: tExpr('Edit HTML Content'),
+      uiSchema: {
+        html: {
+          type: 'string',
+          title: tExpr('HTML Content'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+        },
+      },
+      defaultParams: {
+        html: `<h3>This is a simple block</h3>
+<p>You can edit the HTML content.</p>`,
+      },
+      handler(ctx, params) {
+        ctx.model.props.html = params.html;
+      },
+    },
+  },
 });

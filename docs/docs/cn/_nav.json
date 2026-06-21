@@ -1,0 +1,34 @@
+[
+  {
+    "text": "开始",
+    "link": "/ai/how-nocobase-works"
+  },
+  {
+    "text": "AI",
+    "link": "/ai/"
+  },
+  {
+    "text": "教程",
+    "link": "/tutorials/v2/"
+  },
+  {
+    "text": "手册",
+    "link": "/guide/"
+  },
+  {
+    "text": "开发",
+    "link": "/development/"
+  },
+  {
+    "text": "插件",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
+  },
+  {
+    "text": "首页",
+    "link": "https://www.nocobase.com/cn/"
+  }
+]

@@ -28,6 +28,7 @@ import { VariableInput, getShouldChange } from '../../../schema-settings/Variabl
 import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 interface AssignedFieldProps {
   value: any;
   onChange: (value: any) => void;
@@ -154,6 +155,7 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
     }
     field.title = typeof field.title === 'undefined' ? uiSchema?.title || field.name : field.title;
   }, [JSON.stringify(uiSchema)]);
+
   return (
     <FlagProvider collectionField={collectionField}>
       <VariableInput
@@ -171,8 +173,4 @@ export const AssignedFieldInner = (props: AssignedFieldProps) => {
   );
 };
 
-export const AssignedField = (props) => {
-  const { form } = useFormBlockContext();
-  const { name } = useBlockContext() || {};
-  return <AssignedFieldInner {...props} />;
-};
+export const AssignedField = withDynamicSchemaProps(AssignedFieldInner);

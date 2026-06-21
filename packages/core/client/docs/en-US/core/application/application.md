@@ -410,7 +410,7 @@ app.registerVariable({
     },
     visible: true
   }),
-  useCtx: () => ({ id: 1, name: 'admin' })
+  useCtx: () => useMemo(() => ({ id: 1, name: 'admin' }), []),
 });
 
 // Variable with asynchronous context support
@@ -420,12 +420,14 @@ app.registerVariable({
     option: {
       value: 'dynamicData',
       label: 'Dynamic Data',
-    }
+    },
   }),
-  useCtx: () => async ({ variableName }) => {
-    const data = await fetchSomeData(variableName);
-    return data;
-  }
+  useCtx: () => {
+    return useCallback(async ({ variableName }) => {
+      const data = await fetchSomeData(variableName);
+      return data;
+    }, []);
+  },
 });
 
 // Variable with nested options support
@@ -447,7 +449,7 @@ app.registerVariable({
       ]
     }
   }),
-  useCtx: () => ({ theme: 'dark', language: 'en-US' })
+  useCtx: () => useMemo(() => ({ theme: 'dark', language: 'en-US' }), []),
 });
 ```
 

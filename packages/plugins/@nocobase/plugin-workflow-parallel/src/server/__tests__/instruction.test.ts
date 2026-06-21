@@ -369,7 +369,8 @@ describe('workflow > instructions > parallel', () => {
       expect(j1s.find((item) => item.nodeId === n2.id).status).toBe(JOB_STATUS.RESOLVED);
       expect(j1s.find((item) => item.nodeId === n3.id).status).toBe(JOB_STATUS.PENDING);
 
-      await sleep(300);
+      // Wait longer to ensure the asyncResume timer (500ms) completes and workflow fully finishes
+      await sleep(500);
 
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -679,6 +680,40 @@ describe('workflow > instructions > parallel', () => {
       expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await e2.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(5);
+    });
+  });
+
+  describe('validation', () => {
+    let agent;
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      agent = (app as any).agent();
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should reject when mode is invalid', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'parallel', config: { mode: 'invalid' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept with valid mode', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'parallel', config: { mode: 'all' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept with empty config', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'parallel', config: {} },
+      });
+      expect(status).toBe(200);
     });
   });
 });

@@ -8,6 +8,7 @@
  */
 
 import { Field } from '@formily/core';
+import { castArray } from 'lodash';
 import { observer, useField, useForm } from '@formily/react';
 import { Select, AutoComplete } from 'antd';
 import React, { useState, useEffect } from 'react';
@@ -169,11 +170,15 @@ export const TargetKey = observer(
     field.required = true;
     useEffect(() => {
       if (target) {
+        const filterTargetKey = castArray(getCollection(target).filterTargetKey);
         setOptions(
           getCollection(target)
             .fields?.filter((v) => {
               if (v.primaryKey || v.unique) {
                 return true;
+              }
+              if (filterTargetKey.length === 1) {
+                return filterTargetKey[0] === v.name;
               }
               return type === 'hasMany' && supportTypes.includes(v.type);
             })
@@ -194,11 +199,15 @@ export const TargetKey = observer(
           onDropdownVisibleChange={async (open) => {
             const { target, type } = form.values;
             if (target && open) {
+              const filterTargetKey = castArray(getCollection(target).filterTargetKey);
               setOptions(
                 getCollection(target)
                   .fields?.filter((v) => {
                     if (v.primaryKey || v.unique) {
                       return true;
+                    }
+                    if (filterTargetKey.length === 1) {
+                      return filterTargetKey[0] === v.name;
                     }
                     return type === 'hasMany' && supportTypes.includes(v.type);
                   })
