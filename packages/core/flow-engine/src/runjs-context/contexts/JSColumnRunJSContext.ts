@@ -8,6 +8,7 @@
  */
 
 import { FlowRunJSContext } from '../../flowContext';
+import { createElementPropertyDoc, createZhCNElementPropertyDoc } from './elementDoc';
 
 /**
  * RunJS context for JSColumnModel (table custom column).
@@ -18,8 +19,9 @@ export class JSColumnRunJSContext extends FlowRunJSContext {}
 JSColumnRunJSContext.define({
   label: 'JSColumn RunJS context',
   properties: {
-    element:
+    element: createElementPropertyDoc(
       'ElementProxy instance providing a safe DOM container for the current table cell. Supports innerHTML/append and basic DOM APIs.',
+    ),
     record: 'Current row record object (read-only).',
     recordIndex: 'Index of the current row in the page (0-based).',
     collection: 'Collection definition metadata (read-only).',
@@ -40,7 +42,7 @@ JSColumnRunJSContext.define(
   {
     label: 'JS 列 RunJS 上下文',
     properties: {
-      element: 'ElementProxy，表格单元格的安全 DOM 容器，支持 innerHTML/append 等',
+      element: createZhCNElementPropertyDoc('ElementProxy，表格单元格的安全 DOM 容器，支持 innerHTML/append 等'),
       record: '当前行记录对象（只读）',
       recordIndex: '当前行索引（从 0 开始）',
       collection: '集合定义元数据（只读）',

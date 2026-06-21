@@ -62,4 +62,8 @@ export interface SendUserOptions extends Transactionable {
 }
 
 export type NotificationChannelConstructor = new (app: Application) => BaseNotificationChannel;
-export type RegisterServerTypeFnParams = { type: string; Channel: NotificationChannelConstructor };
+export type RegisterServerTypeFnParams = {
+  type: string;
+  Channel: NotificationChannelConstructor;
+  useQueue?: boolean;
+};

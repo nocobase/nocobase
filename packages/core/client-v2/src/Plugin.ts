@@ -8,12 +8,28 @@
  */
 
 import type { TFuncKey, TOptions } from 'i18next';
-import type { Application } from './Application';
+import type { BaseApplication } from './BaseApplication';
+import { Application } from './Application';
 
-export class Plugin<T = any> {
+/**
+ * 插件配置选项。
+ *
+ * 作为 Plugin 类的泛型参数，描述插件注册时可接收的配置项。
+ *
+ * @template T 插件自定义配置类型
+ */
+export interface PluginOptions<T = any> {
+  name?: string;
+  packageName?: string;
+  options?: any;
+  config?: T;
+  [key: string]: any;
+}
+
+export class Plugin<T extends PluginOptions<any> = PluginOptions, TApp extends BaseApplication<any> = Application> {
   constructor(
     public options: T,
-    protected app: Application,
+    protected app: TApp,
   ) {
     this.options = options;
     this.app = app;
@@ -47,10 +63,6 @@ export class Plugin<T = any> {
     return this.app.pluginSettingsManager;
   }
 
-  get pluginSettingsRouter() {
-    return this.app.pluginSettingsManager;
-  }
-
   get schemaInitializerManager() {
     // @ts-ignore
     return this.app.schemaInitializerManager;
@@ -66,6 +78,10 @@ export class Plugin<T = any> {
     return this.app.dataSourceManager;
   }
 
+  get ai() {
+    return this.app.aiManager;
+  }
+
   async afterAdd() {}
 
   async beforeLoad() {}
@@ -73,6 +89,6 @@ export class Plugin<T = any> {
   async load() {}
 
   t(text: TFuncKey | TFuncKey[], options: TOptions = {}) {
-    return this.app.i18n.t(text, { ns: this.options?.['packageName'], ...(options as any) });
+    return this.app.i18n.t(text, { ns: this.options?.packageName, ...(options as any) });
   }
 }

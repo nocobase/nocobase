@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # APIキー
 
 ## はじめに
@@ -10,7 +6,7 @@
 
 ## 使用方法
 
-http://localhost:13000/admin/settings/api-keys/configuration
+https://example.com/admin/settings/api-keys
 
 ![](https://static-docs.nocobase.com/d64ccbdc8a512a0224e9f81dfe14a0a8.png)
 

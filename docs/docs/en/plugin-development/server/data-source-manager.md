@@ -1,6 +1,12 @@
+---
+title: "DataSourceManager"
+description: "NocoBase server-side data source management: app.dataSourceManager, multiple data sources, addDataSource, getDataSource."
+keywords: "DataSourceManager,data source management,multiple data sources,addDataSource,getDataSource,NocoBase"
+---
+
 # DataSourceManager
 
-NocoBase provides `DataSourceManager` for managing multiple data sources. Each `DataSource` has its own `Database`, `ResourceManager`, and `ACL` instances, making it convenient for developers to flexibly manage and extend multiple data sources.
+NocoBase provides `DataSourceManager` for managing multiple data sources. Each `DataSource` has its own `Database`, `ResourceManager`, and `ACL` instances, allowing you to flexibly manage and extend different data sources.
 
 ## Basic Concepts
 
@@ -10,7 +16,7 @@ Each `DataSource` instance contains the following:
 - **`dataSource.resourceManager`**: Handles resource-related operations (such as CRUD, etc.).
 - **`dataSource.acl`**: Access control (ACL) for resource operations.
 
-For convenient access, aliases are provided for main data source members:
+For convenient access, NocoBase provides aliases for main data source members:
 
 - `app.db` is equivalent to `dataSourceManager.get('main').collectionManager.db`
 - `app.acl` is equivalent to `dataSourceManager.get('main').acl`
@@ -20,7 +26,7 @@ For convenient access, aliases are provided for main data source members:
 
 ### dataSourceManager.get(dataSourceKey)
 
-This method returns the specified `DataSource` instance.
+Returns the specified `DataSource` instance.
 
 ```ts
 const dataSource = dataSourceManager.get('main');
@@ -28,25 +34,25 @@ const dataSource = dataSourceManager.get('main');
 
 ### dataSourceManager.use()
 
-Register middleware for all data sources. This will affect operations on all data sources.
+Register middleware for all data sources, which will affect operations on all data sources.
 
 ```ts
-dataSourceManager.use((ctx, next) => {
-  console.log('This middleware applies to all data sources.');
+dataSourceManager.use(async (ctx, next) => {
+  console.log('This middleware applies to all data sources');
   await next();
 });
 ```
 
 ### dataSourceManager.beforeAddDataSource()
 
-Executes before data source loading. Commonly used for static class registration, such as model classes and field type registration:
+Executes before data source loading. Typically used for static class registration, such as model classes and field type registration:
 
 ```ts
 dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
   const collectionManager = dataSource.collectionManager;
   if (collectionManager instanceof SequelizeCollectionManager) {
     collectionManager.registerFieldTypes({
-      belongsToArray: BelongsToArrayField, // Custom field type
+      belongsToArray: BelongsToArrayField, // Register custom field type
     });
   }
 });
@@ -54,13 +60,13 @@ dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
 
 ### dataSourceManager.afterAddDataSource()
 
-Executes after data source loading. Commonly used for registering operations, setting access control, etc.
+Executes after data source loading. Typically used for registering operations, setting access control, etc.
 
 ```ts
 dataSourceManager.afterAddDataSource((dataSource) => {
   dataSource.resourceManager.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
   dataSource.resourceManager.registerActionHandler('importXlsx', importXlsx);
-  dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn'); // Set access permissions
+  dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn'); // Logged-in users can access
 });
 ```
 
@@ -68,3 +74,10 @@ dataSourceManager.afterAddDataSource((dataSource) => {
 
 For complete data source extension, please refer to the data source extension chapter.
 
+## Related Links
+
+- [Database](./database.md) - CRUD, Repository, transactions, and database events
+- [Collections](./collections.md) - Define or extend data table structures with code
+- [ResourceManager](./resource-manager.md) - Register custom APIs and resource operations
+- [ACL](./acl.md) - Role permissions, permission snippets, and access control
+- [Plugin](./plugin.md) - Plugin class lifecycle, member methods, and the `app` object

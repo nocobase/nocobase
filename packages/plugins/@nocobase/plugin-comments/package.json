@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-comments",
-  "version": "2.0.49",
+  "version": "2.1.9",
   "displayName": "Comments",
   "displayName.zh-CN": "评论",
   "description": "Provides comment collection template and block to add commenting functionality for any collection.",
@@ -25,6 +25,9 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-data-source-manager": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },

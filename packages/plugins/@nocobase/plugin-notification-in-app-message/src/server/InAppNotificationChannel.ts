@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Transaction } from '@nocobase/database';
 import { SendFnType, BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { InAppMessageFormValues } from '../types';
@@ -17,6 +18,7 @@ import defineMyInAppChannels from './defineMyInAppChannels';
 
 export default class InAppNotificationChannel extends BaseNotificationChannel {
   private static readonly SLOW_SEND_THRESHOLD_MS = 200;
+  private static readonly MESSAGE_BATCH_SIZE = 100;
 
   private getMessagePayload(message: any) {
     return typeof message?.toJSON === 'function' ? message.toJSON() : message;
@@ -45,11 +47,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     });
   }
 
-  private scheduleMessageEvents(
-    type: 'created' | 'updated',
-    messages: any[],
-    transaction?: { afterCommit?: (callback: () => void) => void } | null,
-  ) {
+  private scheduleMessageEvents(type: 'created' | 'updated', messages: any[], transaction?: Transaction) {
     if (!messages.length) {
       return;
     }
@@ -73,6 +71,62 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
           payload: message,
         },
       });
+    }
+  }
+
+  private async persistMessagesInBatches(options: {
+    userIds: number[];
+    title: string;
+    content: string;
+    channelName: string;
+    receiveTimestamp: number;
+    messageOptions: Record<string, any>;
+    transaction?: Transaction;
+  }) {
+    const { userIds, title, content, channelName, receiveTimestamp, messageOptions, transaction } = options;
+    const MessageModel = this.app.db.getModel(MessagesDefinition.name);
+    const persist = async (activeTransaction?: Transaction) => {
+      let persistedCount = 0;
+
+      for (let index = 0; index < userIds.length; index += InAppNotificationChannel.MESSAGE_BATCH_SIZE) {
+        const batchUserIds = userIds.slice(index, index + InAppNotificationChannel.MESSAGE_BATCH_SIZE);
+        const messageBatch = batchUserIds.map((userId) => ({
+          id: uuidv4(),
+          title,
+          content,
+          status: 'unread',
+          userId,
+          channelName,
+          receiveTimestamp,
+          options: messageOptions,
+        }));
+
+        await MessageModel.bulkCreate(messageBatch, {
+          hooks: false,
+          transaction: activeTransaction,
+          validate: false,
+          returning: false,
+        });
+        persistedCount += messageBatch.length;
+        this.scheduleMessageEvents('created', messageBatch, activeTransaction);
+      }
+
+      return persistedCount;
+    };
+
+    if (transaction) {
+      return persist(transaction);
+    }
+
+    const internalTransaction = await this.app.db.sequelize.transaction();
+
+    try {
+      const persistedCount = await persist(internalTransaction);
+      await internalTransaction.commit();
+      return persistedCount;
+    } catch (error) {
+      await internalTransaction.rollback();
+      throw error;
     }
   }
 
@@ -114,32 +168,23 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     }
 
     const receiveTimestamp = Date.now();
-    const messages = uniqueUserIds.map((userId) => ({
-      id: uuidv4(),
+    const persistStartedAt = Date.now();
+    const persistedCount = await this.persistMessagesInBatches({
+      userIds: uniqueUserIds,
       title,
       content,
-      status: 'unread',
-      userId,
       channelName: channel.name,
       receiveTimestamp,
-      options,
-    }));
-
-    const MessageModel = this.app.db.getModel(MessagesDefinition.name);
-    const persistStartedAt = Date.now();
-    await MessageModel.bulkCreate(messages, {
-      hooks: false,
+      messageOptions: options,
       transaction,
-      validate: false,
-      returning: false,
     });
     const persistMs = Date.now() - persistStartedAt;
-    this.scheduleMessageEvents('created', messages, transaction);
     const totalMs = Date.now() - startedAt;
     if (totalMs >= InAppNotificationChannel.SLOW_SEND_THRESHOLD_MS) {
       this.app.logger.warn('in-app notification send is slow', {
         channelName: channel.name,
-        userCount: messages.length,
+        userCount: persistedCount,
+        batchSize: InAppNotificationChannel.MESSAGE_BATCH_SIZE,
         resolveReceiversMs,
         persistMs,
         totalMs,

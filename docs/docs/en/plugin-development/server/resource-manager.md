@@ -1,10 +1,16 @@
+---
+title: "ResourceManager"
+description: "NocoBase server resource management: app.resourceManager, registerActions, resource.use, Action registration."
+keywords: "ResourceManager,resource management,registerActions,resource.use,Action,NocoBase"
+---
+
 # ResourceManager
 
-NocoBase's resource management feature can automatically convert existing collections and associations into resources, with built-in operation types to help developers quickly build REST API resource operations. Different from traditional REST APIs, NocoBase resource operations don't rely on HTTP request methods, but determine the specific operation to execute through explicit `:action` definitions.
+NocoBase's resource management automatically converts Collections and Associations into resources, with built-in operation types that allow you to quickly build REST APIs. Unlike traditional REST APIs, NocoBase resource operations don't directly depend on HTTP request methods, but determine the specific operation to execute through explicit `:action` definitions.
 
 ## Auto-generating Resources
 
-NocoBase automatically converts `collection` and `association` defined in the database into resources. For example, defining two collections, `posts` and `tags`:
+NocoBase automatically converts Collections and Associations defined in the database into resources. For example, defining two collections, `posts` and `tags`:
 
 ```ts
 db.defineCollection({
@@ -22,9 +28,9 @@ db.defineCollection({
 
 This will automatically generate the following resources:
 
-*   `posts` resource
-*   `tags` resource
-*   `posts.tags` association resource
+* `posts` resource
+* `tags` resource
+* `posts.tags` association resource
 
 Request examples:
 
@@ -32,7 +38,7 @@ Request examples:
 | ------ | ---------------------- | -------------- |
 | `GET`  | `/api/posts:list`      | Query list     |
 | `GET`  | `/api/posts:get/1`     | Query single   |
-| `POST` | `/api/posts:create`    | Add new        |
+| `POST` | `/api/posts:create`    | Create         |
 | `POST` | `/api/posts:update/1`  | Update         |
 | `POST` | `/api/posts:destroy/1` | Delete         |
 
@@ -40,7 +46,7 @@ Request examples:
 | ------ | ---------------------- | -------------- |
 | `GET`  | `/api/tags:list`       | Query list     |
 | `GET`  | `/api/tags:get/1`      | Query single   |
-| `POST` | `/api/tags:create`     | Add new        |
+| `POST` | `/api/tags:create`     | Create         |
 | `POST` | `/api/tags:update/1`   | Update         |
 | `POST` | `/api/tags:destroy/1`  | Delete         |
 
@@ -58,13 +64,13 @@ Request examples:
 
 :::tip Tip
 
-NocoBase resource operations don't directly depend on request methods, but determine operations through explicit `:action` definitions.
+NocoBase resource operations don't directly depend on HTTP request methods, but determine operations through explicit `:action` definitions.
 
 :::
 
 ## Resource Operations
 
-NocoBase provides rich built-in operation types to meet various business needs.
+NocoBase provides built-in operation types covering common business scenarios.
 
 ### Basic CRUD Operations
 
@@ -91,23 +97,23 @@ NocoBase provides rich built-in operation types to meet various business needs.
 
 Common operation parameters include:
 
-*   `filter`: Query conditions
-*   `values`: Values to set
-*   `fields`: Specify returned fields
-*   `appends`: Include associated data
-*   `except`: Exclude fields
-*   `sort`: Sorting rules
-*   `page`, `pageSize`: Pagination parameters
-*   `paginate`: Whether to enable pagination
-*   `tree`: Whether to return tree structure
-*   `whitelist`, `blacklist`: Field whitelist/blacklist
-*   `updateAssociationValues`: Whether to update association values
+* `filter`: Query conditions
+* `values`: Values to set
+* `fields`: Specify returned fields
+* `appends`: Include associated data
+* `except`: Exclude fields
+* `sort`: Sorting rules
+* `page`, `pageSize`: Pagination parameters
+* `paginate`: Whether to enable pagination
+* `tree`: Whether to return tree structure
+* `whitelist`, `blacklist`: Field whitelist/blacklist
+* `updateAssociationValues`: Whether to update association values
 
 ---
 
 ## Custom Resource Operations
 
-NocoBase allows registering additional operations for existing resources. You can use `registerActionHandlers` to customize operations for all or specific resources.
+You can use `registerActionHandlers` to register additional operations for existing resources, supporting both global and resource-specific operations.
 
 ### Register Global Operations
 
@@ -140,7 +146,7 @@ Naming rule: `resourceName:actionName`, use dot syntax (`posts.comments`) when i
 
 ## Custom Resources
 
-If you need to provide resources unrelated to collections, you can use the `resourceManager.define` method to define them:
+If you need to provide resources unrelated to data tables, you can use `resourceManager.define` to define them:
 
 ```ts
 resourceManager.define({
@@ -155,14 +161,12 @@ resourceManager.define({
 
 Request methods are consistent with auto-generated resources:
 
-*   `GET /api/app:getInfo`
-*   `POST /api/app:getInfo` (supports both GET/POST by default)
+* `GET /api/app:getInfo`
+* `POST /api/app:getInfo` (supports both GET/POST by default)
 
 ## Custom Middleware
 
-Use the `resourceManager.use()` method to register global middleware. For example:
-
-Global logging middleware
+Use `resourceManager.use()` to register global middleware. For example, a global logging middleware:
 
 ```ts
 resourceManager.use(async (ctx, next) => {
@@ -175,13 +179,13 @@ resourceManager.use(async (ctx, next) => {
 
 ## Special Context Properties
 
-Being able to enter the `resourceManager` layer's middleware or action means the resource must exist.
+Being able to enter the `resourceManager` layer's middleware or action means the resource must exist. You can access the request context through the following properties:
 
 ### ctx.action
 
-*   `ctx.action.actionName`: Operation name
-*   `ctx.action.resourceName`: Can be a collection or association
-*   `ctx.action.params`: Operation parameters
+* `ctx.action.actionName`: Operation name
+* `ctx.action.resourceName`: Can be a Collection or Association
+* `ctx.action.params`: Operation parameters
 
 ### ctx.dataSource
 
@@ -193,7 +197,7 @@ The current repository object.
 
 ## How to Get resourceManager Objects for Different Data Sources
 
-`resourceManager` belongs to a data source, and operations can be registered separately for different data sources.
+`resourceManager` belongs to a data source, and you can register operations separately for different data sources.
 
 ### Main Data Source
 
@@ -205,7 +209,7 @@ app.resourceManager.registerActionHandlers();
 
 ### Other Data Sources
 
-For other data sources, you can get a specific data source instance through `dataSourceManager` and use that instance's `resourceManager`:
+For other data sources, you can get the corresponding instance through `dataSourceManager`:
 
 ```ts
 const dataSource = dataSourceManager.get('external');
@@ -214,10 +218,19 @@ dataSource.resourceManager.registerActionHandlers();
 
 ### Iterate All Data Sources
 
-If you need to perform the same operations on all added data sources, you can use the `dataSourceManager.afterAddDataSource` method to iterate, ensuring each data source's `resourceManager` can register the corresponding operations:
+If you need to perform the same operations on all data sources, you can use `dataSourceManager.afterAddDataSource` to iterate:
 
 ```ts
 dataSourceManager.afterAddDataSource((dataSource) => {
   dataSource.resourceManager.registerActionHandlers();
 });
 ```
+
+## Related Links
+
+- [Resource API Reference](../../api/flow-engine/resource.md) — Full method signatures and usage for client-side MultiRecordResource / SingleRecordResource
+- [ACL](./acl.md) — Configure role permissions and access control for resource operations
+- [Context](./context.md) — Access context information in request handlers
+- [Middleware](./middleware.md) — Add interception and processing logic for requests
+- [DataSourceManager](./data-source-manager.md) — Manage multiple data sources and their resource managers
+- [Collections](./collections.md) — Automatic mapping between Collections and Resources

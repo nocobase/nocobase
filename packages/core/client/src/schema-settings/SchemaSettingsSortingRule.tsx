@@ -11,9 +11,12 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager_deprecated, useCollection_deprecated, useDesignable, useSortFields } from '..';
 import { SchemaSettingsModalItem } from './SchemaSettings';
 import { ArrayItems } from '@formily/antd-v5';
+import { useSortFields } from '../collection-manager/action-hooks';
+import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
+import { useCollection_deprecated } from '../collection-manager/hooks/useCollection_deprecated';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 
 export const SchemaSettingsSortingRule = function SortRuleConfigure(props) {
   const field = useField();

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-api-keys'
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 # APIキー
 
@@ -12,13 +8,13 @@ pkg: '@nocobase/plugin-api-keys'
 
 ## 使い方
 
-http://localhost:13000/admin/settings/api-keys/configuration
+https://example.com/admin/settings/api-keys
 
 ![](https://static-docs.nocobase.com/d64ccbdc8a512a0224e9f81dfe14a0a8.png)
 
 ### APIキーの追加
 
-![](https://static-docs.nocobase.com/46181872fc0ad9a96fa5b14e97fcba12.png)
+![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
 
 **注意事項**
 

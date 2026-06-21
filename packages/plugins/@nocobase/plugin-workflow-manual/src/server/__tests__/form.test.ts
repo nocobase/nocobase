@@ -462,6 +462,11 @@ describe('workflow > instructions > manual', () => {
         f1: { number: 1 },
         f2: { number: 2 },
       });
+      const savedTask = await UserJobModel.findByPk(pendingJobs[0].get('id'));
+      expect(savedTask.result).toMatchObject({
+        f1: { number: 1 },
+        f2: { number: 2 },
+      });
 
       const res3 = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: pendingJobs[0].get('id'),

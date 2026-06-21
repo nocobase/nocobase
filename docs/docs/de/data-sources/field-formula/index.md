@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-formula"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # Formel

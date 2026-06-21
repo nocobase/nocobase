@@ -30,9 +30,9 @@ export class DashscopeProvider extends LLMProvider {
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
+    const { name, schema } = structuredOutput || {};
 
     const modelKwargs: Record<string, any> = {};
 
@@ -43,7 +43,7 @@ export class DashscopeProvider extends LLMProvider {
         type: responseFormat,
       };
       if (responseFormat === 'json_schema' && schema) {
-        responseFormatOptions['json_schema'] = schema;
+        responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
       }
       modelKwargs['response_format'] = responseFormatOptions;
     } else {
@@ -63,7 +63,7 @@ export class DashscopeProvider extends LLMProvider {
       ...this.modelOptions,
       modelKwargs,
       configuration: {
-        baseURL: baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       },
       verbose: false,
     });
@@ -122,7 +122,7 @@ export class DashscopeEmbeddingProvider extends EmbeddingProvider {
   createEmbedding(): EmbeddingsInterface {
     return new OpenAIEmbeddings({
       configuration: {
-        baseURL: this.baseURL ?? '',
+        baseURL: this.baseURL,
         apiKey: this.apiKey,
       },
       model: this.model,

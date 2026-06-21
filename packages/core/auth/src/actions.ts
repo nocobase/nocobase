@@ -10,6 +10,26 @@
 /* istanbul ignore file -- @preserve */
 import { Handlers } from '@nocobase/resourcer';
 
+function filterHiddenFields(ctx, user) {
+  if (!user) {
+    return {};
+  }
+
+  const data = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
+  const collection = ctx.db?.getCollection?.('users');
+  if (!collection) {
+    return data;
+  }
+
+  for (const field of collection.fields.values()) {
+    if (field.options.hidden) {
+      delete data[field.options.name];
+    }
+  }
+
+  return data;
+}
+
 export const actions = {
   signIn: async (ctx, next) => {
     ctx.body = await ctx.auth.signIn();
@@ -17,6 +37,7 @@ export const actions = {
   },
   signOut: async (ctx, next) => {
     await ctx.auth.signOut();
+    await ctx.app.emitAsync('auth:signOut', { ctx, auth: ctx.auth });
     await next();
   },
   signUp: async (ctx, next) => {
@@ -24,7 +45,7 @@ export const actions = {
     await next();
   },
   check: async (ctx, next) => {
-    ctx.body = ctx.auth.user || {};
+    ctx.body = filterHiddenFields(ctx, ctx.auth.user);
     await next();
   },
 } as Handlers;

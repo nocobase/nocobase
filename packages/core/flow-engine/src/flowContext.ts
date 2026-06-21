@@ -400,6 +400,10 @@ export type FlowContextGetApiInfosOptions = {
    * RunJS 文档版本（默认 v1）。
    */
   version?: RunJSVersion;
+  /**
+   * Include editor completion metadata. Defaults to false so API-doc callers keep the compact public shape.
+   */
+  includeCompletion?: boolean;
 };
 
 export type FlowContextGetVarInfosOptions = {
@@ -704,10 +708,11 @@ export class FlowContext {
    * - 输出仅来自 RunJS doc 与 defineProperty/defineMethod 的 info
    * - 不读取/展开 PropertyMeta（变量结构）
    * - 不自动展开深层 properties
-   * - 不返回自动补全字段（例如 completion）
+   * - 默认不返回自动补全字段（例如 completion），传入 includeCompletion=true 时返回
    */
   async getApiInfos(options: FlowContextGetApiInfosOptions = {}): Promise<Record<string, FlowContextApiInfo>> {
     const version = (options.version as RunJSVersion) || ('v1' as RunJSVersion);
+    const includeCompletion = !!options.includeCompletion;
     const evalCtx = this.createProxy();
 
     const isPrivateKey = (key: string) => typeof key === 'string' && key.startsWith('_');
@@ -759,7 +764,14 @@ export class FlowContext {
       const src = toDocObject(obj);
       if (!src) return {};
       const out: any = {};
-      for (const k of ['description', 'examples', 'ref', 'params', 'returns']) {
+      for (const k of [
+        'description',
+        'examples',
+        ...(includeCompletion ? ['completion'] : []),
+        'ref',
+        'params',
+        'returns',
+      ]) {
         const v = (src as any)[k];
         if (typeof v !== 'undefined') out[k] = v;
       }
@@ -773,7 +785,17 @@ export class FlowContext {
       const src = toDocObject(obj);
       if (!src) return {};
       const out: any = {};
-      for (const k of ['title', 'type', 'interface', 'description', 'examples', 'ref', 'params', 'returns']) {
+      for (const k of [
+        'title',
+        'type',
+        'interface',
+        'description',
+        'examples',
+        ...(includeCompletion ? ['completion'] : []),
+        'ref',
+        'params',
+        'returns',
+      ]) {
         const v = (src as any)[k];
         if (typeof v !== 'undefined') out[k] = v;
       }
@@ -872,7 +894,7 @@ export class FlowContext {
       node = { ...node, ...pickPropertyInfo(docObj) };
       node = { ...node, ...pickPropertyInfo(infoObj) };
       delete (node as any).properties;
-      delete (node as any).completion;
+      if (!includeCompletion) delete (node as any).completion;
       if (!Object.keys(node).length) continue;
       const outKey = mapDocKeyToApiKey(key, docNode);
       // Avoid exposing ctx.React/ctx.ReactDOM/ctx.antd in api docs when mapping to ctx.libs.*.
@@ -890,7 +912,7 @@ export class FlowContext {
       node = { ...node, ...pickMethodInfo(docObj) };
       node = { ...node, ...pickMethodInfo(info) };
       delete (node as any).properties;
-      delete (node as any).completion;
+      if (!includeCompletion) delete (node as any).completion;
       if (!Object.keys(node).length) continue;
       node.type = 'function';
 
@@ -913,7 +935,7 @@ export class FlowContext {
         let node: FlowContextApiInfo = {};
         node = { ...node, ...pickPropertyInfo(childObj) };
         delete (node as any).properties;
-        delete (node as any).completion;
+        if (!includeCompletion) delete (node as any).completion;
         if (!node.description || !String(node.description).trim()) continue;
         out[outKey] = node;
       }
@@ -3006,8 +3028,10 @@ export class FlowContext {
 }
 
 class BaseFlowEngineContext extends FlowContext {
+  declare t: (key: any, options?: any) => string;
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
+  declare isDarkTheme: boolean;
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => Promise<JSRunner>;
@@ -3034,6 +3058,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   declare engine: FlowEngine;
   declare api: APIClient;
+  declare locale: string;
   declare viewer: FlowViewer;
   declare view: FlowView;
   declare modal: HookAPI;
@@ -3072,6 +3097,17 @@ class BaseFlowEngineContext extends FlowContext {
         const jsCode = await prepareRunJsCode(String(code ?? ''), { preprocessTemplates: shouldPreprocessTemplates });
         return runner.run(jsCode);
       },
+      {
+        description: 'Execute a RunJS code string in the current Flow context.',
+        detail: '(code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<RunJSResult>',
+        params: [
+          { name: 'code', type: 'string', description: 'RunJS code to execute.' },
+          { name: 'variables', type: 'Record<string, any>', optional: true, description: 'Additional globals.' },
+          { name: 'options', type: 'JSRunnerOptions', optional: true, description: 'Runner options.' },
+        ],
+        returns: { type: 'Promise<{ success: boolean; value?: any; error?: any; timeout?: boolean }>' },
+        completion: { insertText: `await ctx.runjs('return 1')` },
+      },
     );
   }
 }
@@ -3101,6 +3137,37 @@ class BaseFlowModelContext extends BaseFlowEngineContext {
    * @returns The resource instance.
    */
   declare makeResource: <T extends FlowResource = FlowResource>(resourceType: ResourceType<T>) => T;
+}
+
+const OPEN_VIEW_INHERITED_INPUT_ARG_KEYS = [
+  'dataSourceKey',
+  'collectionName',
+  'associationName',
+  'filterByTk',
+  'sourceId',
+  'tabUid',
+];
+
+function pickDefinedKeys(source: Record<string, unknown> | null | undefined, keys: string[]) {
+  const res: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (typeof source?.[key] !== 'undefined') {
+      res[key] = source[key];
+    }
+  }
+  return res;
+}
+
+function pickDefinedOpenViewInputArgs(source?: Record<string, unknown> | null) {
+  return pickDefinedKeys(source, OPEN_VIEW_INHERITED_INPUT_ARG_KEYS);
+}
+
+function applyDefinedDefaults(target: Record<string, unknown>, defaults: Record<string, unknown>) {
+  for (const [key, value] of Object.entries(defaults)) {
+    if (typeof target[key] === 'undefined') {
+      target[key] = value;
+    }
+  }
 }
 
 export class FlowEngineContext extends BaseFlowEngineContext {
@@ -3143,6 +3210,15 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     const i18n = new FlowI18n(this);
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
+    });
+    this.defineProperty('locale', {
+      get: () => this.api?.auth?.locale || this.i18n?.language,
+      cache: false,
+      meta: Object.assign(() => ({ type: 'string', title: this.t('Current language'), sort: 970 }), {
+        title: escapeT('Current language'),
+        sort: 970,
+        hasChildren: false,
+      }),
     });
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);
@@ -3569,6 +3645,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       },
     });
     this.defineMethod('aclCheck', function (params) {
+      if (this.skipAclCheck) {
+        return true;
+      }
       return this.acl.aclCheck(params);
     });
     this.defineMethod('createResource', function (this: BaseFlowEngineContext, resourceType) {
@@ -3639,7 +3718,14 @@ export class FlowModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('openView', async function (uid: string, options) {
-      const opts = { ...options };
+      const inheritedInputArgs = {
+        ...(typeof this.model?.['getInputArgs'] === 'function'
+          ? pickDefinedOpenViewInputArgs(this.model['getInputArgs']())
+          : {}),
+        ...pickDefinedOpenViewInputArgs(this.inputArgs),
+      };
+      const opts = { ...(options || {}) };
+      applyDefinedDefaults(opts, inheritedInputArgs);
       // NOTE: when custom context is passed, route navigation must be disabled to avoid losing it after refresh.
       if (opts.defineProperties || opts.defineMethods) {
         opts.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
@@ -3647,15 +3733,6 @@ export class FlowModelContext extends BaseFlowModelContext {
       let model: FlowModel | null = null;
       model = await this.engine.loadModel({ uid });
       if (!model) {
-        const pickDefined = (src: Record<string, any>, keys: string[]) => {
-          const res: Record<string, any> = {};
-          for (const k of keys) {
-            if (typeof src?.[k] !== 'undefined') {
-              res[k] = src[k];
-            }
-          }
-          return res;
-        };
         model = this.engine.createModel({
           uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
           use: 'PopupActionModel',
@@ -3666,7 +3743,7 @@ export class FlowModelContext extends BaseFlowModelContext {
             popupSettings: {
               openView: {
                 // 仅在创建时持久化一份默认配置；运行时以本次 opts 为准，避免多个 opener 互相覆盖。
-                ...pickDefined(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
+                ...pickDefinedKeys(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
               },
             },
           },
@@ -3686,8 +3763,6 @@ export class FlowModelContext extends BaseFlowModelContext {
       // 统一语义：为即将打开的外部视图定义一个 PendingView（占位视图）
       const pendingType = (opts?.isMobileLayout ? 'embed' : opts?.mode || 'drawer') as any;
       const pendingInputArgs = { ...opts, viewUid, navigation: opts.navigation };
-      pendingInputArgs.filterByTk = pendingInputArgs.filterByTk || this.inputArgs?.filterByTk;
-      pendingInputArgs.sourceId = pendingInputArgs.sourceId || this.inputArgs?.sourceId;
 
       const pendingView = {
         type: pendingType,
@@ -3706,17 +3781,10 @@ export class FlowModelContext extends BaseFlowModelContext {
       } else if (on && typeof on === 'object' && typeof (on as any).eventName === 'string' && (on as any).eventName) {
         openEventName = (on as any).eventName;
       }
-      await model.dispatchEvent(
-        openEventName,
-        {
-          // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
-          // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
-          ...opts,
-        },
-        {
-          debounce: true,
-        },
-      );
+      await model.dispatchEvent(openEventName, {
+        // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+        ...opts,
+      });
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();
@@ -3912,6 +3980,7 @@ export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRunt
 
 export type RunJSDocCompletionDoc = {
   insertText?: string;
+  requires?: Array<'element'>;
 };
 
 export type RunJSDocHiddenDoc = boolean | ((ctx: any) => boolean | Promise<boolean>);

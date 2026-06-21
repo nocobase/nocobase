@@ -15,6 +15,7 @@ export default {
   },
   migrationRules: ['schema-only'],
   name: 'workflowVersionStats',
+  dataCategory: 'business',
   shared: true,
   autoGenId: false,
   fields: [

@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { ListBlockModel, ListItemModel } from './models';
+import { ListBlockModel, ListItemModel } from '../client-v2/models';
 
 export class PluginBlockListClient extends Plugin {
   async load() {

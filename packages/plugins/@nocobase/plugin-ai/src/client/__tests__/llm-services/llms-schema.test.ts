@@ -44,7 +44,7 @@ describe('LLM Schema', () => {
       expect(drawerProperties.options.type).toBe('object');
       expect(drawerProperties['options.baseURL']).toBeDefined();
       expect(drawerProperties['options.baseURL'].type).toBe('string');
-      expect(drawerProperties['options.baseURL']['x-component']).toBe('Input');
+      expect(drawerProperties['options.baseURL']['x-component']).toBe('TextAreaWithGlobalScope');
     });
 
     it('includes LLMTestFlight in create form footer', () => {
@@ -61,6 +61,7 @@ describe('LLM Schema', () => {
       expect(editDrawerProperties.provider['x-component']).toBe('ProviderDisplay');
       expect(editDrawerProperties.enabledModels.type).toBe('object');
       expect(editDrawerProperties.enabledModels['x-component']).toBe('EnabledModelsSelect');
+      expect(editDrawerProperties['options.baseURL']['x-component']).toBe('TextAreaWithGlobalScope');
     });
 
     it('includes LLMTestFlight in edit form footer', () => {

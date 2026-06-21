@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Select } from 'antd';
+import { Select, Tooltip } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useFlowEngineContext } from '../../../../provider';
 
@@ -19,6 +19,7 @@ export interface SelectWithTitleProps {
   itemKey?: string;
   onChange?: (...args: any[]) => void;
   dropdownRender?: any;
+  tooltip?: any;
 }
 
 export function SelectWithTitle({
@@ -28,6 +29,7 @@ export function SelectWithTitle({
   options,
   fieldNames,
   itemKey,
+  tooltip,
   ...others
 }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
@@ -66,6 +68,17 @@ export function SelectWithTitle({
     setValue(val);
     onChange?.({ [itemKey]: val });
   };
+  const titleNode = (
+    <span
+      style={{
+        whiteSpace: 'nowrap', // 不换行
+        flexShrink: 0, // 不被挤压
+      }}
+    >
+      {title}
+    </span>
+  );
+
   return (
     <div
       style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
@@ -79,14 +92,13 @@ export function SelectWithTitle({
         }, 200);
       }}
     >
-      <span
-        style={{
-          whiteSpace: 'nowrap', // 不换行
-          flexShrink: 0, // 不被挤压
-        }}
-      >
-        {title}
-      </span>
+      {tooltip ? (
+        <Tooltip title={tooltip} placement="top" destroyTooltipOnHide>
+          {titleNode}
+        </Tooltip>
+      ) : (
+        titleNode
+      )}
       <Select
         {...others}
         open={open}

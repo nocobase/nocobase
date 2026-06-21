@@ -7,15 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModelContext } from '@nocobase/flow-engine';
-import React from 'react';
-
-export interface VectorDatabaseProviderFeature {
-  registerComponent(providerComponents: VectorDatabaseProviderComponents): void;
-  getComponents(providerName: string): VectorDatabaseProviderComponents;
-}
-
-export type VectorDatabaseProviderComponents = {
-  name: string;
-  formComponent: (ctx: FlowModelContext, record?: unknown) => React.JSX.Element;
-};
+export * from '../../client-v2/features/vector-database-provider';

@@ -1,7 +1,15 @@
 [
   {
     "text": "Démarrer",
-    "link": "/get-started/how-nocobase-works"
+    "link": "/ai/how-nocobase-works"
+  },
+  {
+    "text": "AI",
+    "link": "/ai/"
+  },
+  {
+    "text": "Tutoriels",
+    "link": "/tutorials/v2/"
   },
   {
     "text": "Manuel",

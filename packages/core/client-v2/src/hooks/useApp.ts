@@ -8,9 +8,11 @@
  */
 
 import { useFlowEngineContext } from '@nocobase/flow-engine';
-import type { Application } from '../Application';
+import type { BaseApplication } from '../BaseApplication';
 
-export const useApp = () => {
+type CompatibleApplication = BaseApplication<any> & Record<string, any>;
+
+export const useApp = <TApp extends CompatibleApplication = CompatibleApplication>() => {
   const ctx = useFlowEngineContext();
-  return ctx.app as Application;
+  return ctx.app as TApp;
 };

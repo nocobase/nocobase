@@ -12,7 +12,8 @@ import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepos
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
 import { Avatar, Popover, Tooltip } from 'antd';
-import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
+import { useChat } from '../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
 import { EditorRef } from '@nocobase/client';
@@ -37,10 +38,12 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const aiEmployees = aiConfigRepository.aiEmployees;
     const open = useChatBoxStore.use.open();
     const currentEmployee = useChatBoxStore.use.currentEmployee();
+    const currentConversation = useChatConversationsStore.use.currentConversation();
+    const chat = useChat(currentConversation);
     const { triggerTask } = useChatBoxActions();
-    const addContextItems = useChatMessagesStore.use.addContextItems();
-    const setEditorRef = useChatMessagesStore.use.setEditorRef();
-    const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();
+    const addContextItems = chat.addContextItems;
+    const setEditorRef = chat.setEditorRef;
+    const setCurrentEditorRefUid = chat.setCurrentEditorRefUid;
     const ctx = useFlowContext();
 
     const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
@@ -122,7 +125,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     const tasks: Task[] = Object.values(taskMap);
 
     // Store flow context for frontend context tools
-    useChatMessagesStore.getState().setFlowContext(ctx);
+    chat.setFlowContext(ctx);
 
     return aiEmployee ? (
       <Tooltip

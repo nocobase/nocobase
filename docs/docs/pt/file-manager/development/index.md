@@ -1,14 +1,10 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Desenvolvimento de Extensões
 
 ## Estendendo motores de armazenamento
 
 ### Lado do servidor
 
-1. **Herda `StorageType`**
+1. **Herdar `StorageType`**
    
    Crie uma nova classe e implemente os métodos `make()` e `delete()`. Se necessário, sobrescreva hooks como `getFileURL()`, `getFileStream()` e `getFileData()`.
 
@@ -174,4 +170,3 @@ As props de entrada são:
 * `file`: objeto do arquivo atual (pode ser uma URL em string ou um objeto contendo `url`/`preview`)
 * `index`: índice do arquivo na lista
 * `list`: lista de arquivos
-

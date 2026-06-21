@@ -10,7 +10,7 @@
 import { Button, ButtonProps } from 'antd';
 import React, { FC } from 'react';
 import { Icon } from '../../../icon';
-import { useCompile } from '../../../schema-component';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { SchemaInitializerOptions } from '../types';
 

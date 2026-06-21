@@ -7,15 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PluginFeatureManager } from './feature-manager';
-import type { VectorDatabaseProviderFeature } from './vector-database-provider';
-
-export type AIPluginFeatures = {
-  vectorDatabaseProvider: VectorDatabaseProviderFeature;
-};
-
-export interface AIPluginFeatureManager extends PluginFeatureManager<AIPluginFeatures> {
-  get vectorDatabaseProvider(): VectorDatabaseProviderFeature;
-}
-
-export type { VectorDatabaseProviderFeature, VectorDatabaseProviderComponents } from './vector-database-provider';
+export * from '../../client-v2/features';

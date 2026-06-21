@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-action-template-print"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 
 pkg: "@nocobase/plugin-action-template-print"
@@ -31,7 +27,7 @@ O plugin de Impressão de Templates permite que você crie templates no Word, Ex
 
 ### Instalar o Plugin
 
-Consulte [Instalando e Atualizando Plugins Comerciais](https://www.nocobase.com/c/blog/nocobase-commercial-license-activation-guide)
+Consulte [Instalando e Atualizando Plugins Comerciais](https://www.nocobase.com/pt/blog/nocobase-commercial-license-activation-guide)
 
 ### Instalar o LibreOffice (Opcional)
 

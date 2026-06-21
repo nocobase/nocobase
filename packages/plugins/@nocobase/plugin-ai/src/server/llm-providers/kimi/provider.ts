@@ -19,21 +19,21 @@ import { AttachmentModel } from '@nocobase/plugin-file-manager';
 
 export class KimiProvider extends LLMProvider {
   declare chatModel: ReasoningChatOpenAI;
-  private _documentLoader: CachedDocumentLoader;
+  private _documentLoader: CachedDocumentLoader | undefined;
 
   get baseURL() {
     return 'https://api.moonshot.cn/v1';
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
+    const { name, schema } = structuredOutput || {};
+    const responseFormatOptions: Record<string, any> = {
       type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['json_schema'] = schema;
+      responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
     }
     return new ReasoningChatOpenAI({
       apiKey,
@@ -42,7 +42,7 @@ export class KimiProvider extends LLMProvider {
         response_format: responseFormatOptions,
       },
       configuration: {
-        baseURL: baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       },
     });
   }
@@ -83,7 +83,7 @@ export class KimiProvider extends LLMProvider {
     if (!this._documentLoader) {
       const loader = new KimiDocumentLoader(this.aiPlugin.fileManager, {
         apiKey: this.serviceOptions?.apiKey,
-        baseURL: this.serviceOptions?.baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       });
       this._documentLoader = new CachedDocumentLoader(this.aiPlugin, {
         loader,

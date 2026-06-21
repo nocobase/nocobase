@@ -10,6 +10,9 @@ on:
       is_feat:
         description: 'is feat'
         type: boolean
+      version:
+        description: 'specific a version'
+        type: 'string'
 
 jobs:
   get-plugins:
@@ -84,8 +87,9 @@ jobs:
       - name: Run release.sh
         shell: bash
         run: |
-          bash release.sh $IS_FEAT
+          bash release.sh $VERSION $IS_FEAT
         env:
+          VERSION: ${{ inputs.version && format('--version {0}', inputs.version) || '' }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.alpha-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}

@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # FlowModel から始める
 
 ## カスタム FlowModel
@@ -32,7 +28,12 @@ class HelloModel extends FlowModel {
 ```ts
 export class PluginHelloClient extends Plugin {
   async load() {
-    this.engine.registerModels({ HelloModel });
+    this.engine.registerModelLoaders({
+      HelloModel: {
+        // 動的インポート: このモデルが初めて本当に必要になったときにのみモデルモジュールを読み込みます
+        loader: () => import('./HelloModel'),
+      },
+    });
   }
 }
 ```

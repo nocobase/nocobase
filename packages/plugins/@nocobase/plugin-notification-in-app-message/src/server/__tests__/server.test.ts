@@ -18,6 +18,21 @@ import defineMyInAppMessages from '../defineMyInAppMessages';
 import InAppNotificationChannel from '../InAppNotificationChannel';
 
 describe('inapp message channels', () => {
+  const createMockManagedTransaction = () => {
+    const afterCommitCallbacks: Array<() => void> = [];
+    return {
+      afterCommit: vi.fn((callback) => {
+        afterCommitCallbacks.push(callback);
+      }),
+      commit: vi.fn(async () => {
+        for (const callback of afterCommitCallbacks) {
+          callback();
+        }
+      }),
+      rollback: vi.fn().mockResolvedValue(undefined),
+    };
+  };
+
   let app: MockServer;
   let db: Database;
   let UserRepo;
@@ -143,6 +158,16 @@ describe('inapp message channels', () => {
       expect(res.body.data[0].latestMsgTitle).toBe('user-0');
       expect(res.body.data[0].unreadMsgCnt).toBe(1);
       expect(res.body.data[0].latestMsgReceiveTimestamp).toBe(now);
+      expect(res.body.data[0]).toMatchObject({
+        name: channelsRes[0].name,
+        title: '测试渠道',
+        totalMsgCnt: 1,
+        userId: String(users[0].id),
+      });
+      expect(res.body.data[0]).not.toHaveProperty('options');
+      expect(res.body.data[0]).not.toHaveProperty('meta');
+      expect(res.body.data[0]).not.toHaveProperty('notificationType');
+      expect(res.body.data[0]).not.toHaveProperty('description');
     });
 
     test('filter channel by status', async () => {
@@ -203,6 +228,185 @@ describe('inapp message channels', () => {
       });
       expect(allChannelsRes.body.data.length).toBe(3);
     });
+
+    test('filter channel by name', async () => {
+      const channels = await channelsRepo.create({
+        values: [
+          {
+            title: 'target_channel',
+            notificationType: 'in-app-message',
+          },
+          {
+            title: 'other_channel',
+            notificationType: 'in-app-message',
+          },
+        ],
+      });
+      const targetChannel = channels.find((channel) => channel.title === 'target_channel');
+      const otherChannel = channels.find((channel) => channel.title === 'other_channel');
+
+      await createMessages(
+        { messagesRepo },
+        { unreadNum: 1, readNum: 0, channelName: targetChannel.name, startTimeStamp: Date.now(), userId: currUserId },
+      );
+      await createMessages(
+        { messagesRepo },
+        { unreadNum: 1, readNum: 0, channelName: otherChannel.name, startTimeStamp: Date.now(), userId: currUserId },
+      );
+
+      const res = await currUserAgent.resource('myInAppChannels').list({ filter: { name: targetChannel.name } });
+
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].name).toBe(targetChannel.name);
+    });
+
+    test('filter channel by latest message receive timestamp', async () => {
+      const channels = await channelsRepo.create({
+        values: [
+          {
+            title: 'old_channel',
+            notificationType: 'in-app-message',
+          },
+          {
+            title: 'new_channel',
+            notificationType: 'in-app-message',
+          },
+        ],
+      });
+      const oldChannel = channels.find((channel) => channel.title === 'old_channel');
+      const newChannel = channels.find((channel) => channel.title === 'new_channel');
+      const now = Date.now();
+
+      await messagesRepo.create({
+        values: [
+          {
+            channelName: oldChannel.name,
+            userId: currUserId,
+            status: 'unread',
+            title: 'old message',
+            content: 'old content',
+            receiveTimestamp: now - 1000,
+          },
+          {
+            channelName: newChannel.name,
+            userId: currUserId,
+            status: 'unread',
+            title: 'new message',
+            content: 'new content',
+            receiveTimestamp: now,
+          },
+        ],
+      });
+
+      const res = await currUserAgent.resource('myInAppChannels').list({
+        filter: {
+          latestMsgReceiveTimestamp: {
+            $lt: now,
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].name).toBe(oldChannel.name);
+    });
+
+    test('should accept numeric string latest message receive timestamp filter', async () => {
+      const channels = await channelsRepo.create({
+        values: [
+          {
+            title: 'old_channel',
+            notificationType: 'in-app-message',
+          },
+          {
+            title: 'new_channel',
+            notificationType: 'in-app-message',
+          },
+        ],
+      });
+      const oldChannel = channels.find((channel) => channel.title === 'old_channel');
+      const newChannel = channels.find((channel) => channel.title === 'new_channel');
+      const now = Date.now();
+
+      await messagesRepo.create({
+        values: [
+          {
+            channelName: oldChannel.name,
+            userId: currUserId,
+            status: 'unread',
+            title: 'old message',
+            content: 'old content',
+            receiveTimestamp: now - 1000,
+          },
+          {
+            channelName: newChannel.name,
+            userId: currUserId,
+            status: 'unread',
+            title: 'new message',
+            content: 'new content',
+            receiveTimestamp: now,
+          },
+        ],
+      });
+
+      const res = await currUserAgent.resource('myInAppChannels').list({
+        filter: {
+          latestMsgReceiveTimestamp: {
+            $lt: String(now),
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].name).toBe(oldChannel.name);
+    });
+
+    test('should accept zero latest message receive timestamp filter', async () => {
+      const channels = await channelsRepo.create({
+        values: {
+          title: 'channel',
+          notificationType: 'in-app-message',
+        },
+      });
+
+      await messagesRepo.create({
+        values: {
+          channelName: channels.name,
+          userId: currUserId,
+          status: 'unread',
+          title: 'message',
+          content: 'content',
+          receiveTimestamp: Date.now(),
+        },
+      });
+
+      const res = await currUserAgent.resource('myInAppChannels').list({
+        filter: {
+          latestMsgReceiveTimestamp: {
+            $lt: 0,
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(0);
+    });
+
+    test.each(['0) OR 1=1 --', { value: Date.now() }, 'Infinity', ''])(
+      'should reject invalid latest message receive timestamp filter: %s',
+      async (latestMsgReceiveTimestamp) => {
+        const res = await currUserAgent.resource('myInAppChannels').list({
+          filter: {
+            latestMsgReceiveTimestamp: {
+              $lt: latestMsgReceiveTimestamp,
+            },
+          },
+        });
+
+        expect(res.status).toBe(400);
+      },
+    );
     // test('channel last receive timestamp filter', () => {
     //   const currentTS = Date.now();
     // });
@@ -295,6 +499,137 @@ describe('inapp message channels', () => {
         payload: messages[1],
       },
     });
+  });
+
+  test('send should split large receiver sets into bulk batches', async () => {
+    const bulkCreate = vi.fn().mockResolvedValue(undefined);
+    const emit = vi.fn();
+    const internalTransaction = createMockManagedTransaction();
+    const logger = {
+      error: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    const channel = new InAppNotificationChannel({
+      db: {
+        getRepository: vi.fn().mockReturnValue({}),
+        getModel: vi.fn().mockReturnValue({ bulkCreate }),
+        sequelize: {
+          transaction: vi.fn().mockResolvedValue(internalTransaction),
+        },
+      },
+      emit,
+      logger,
+    } as any);
+
+    await channel.send({
+      channel: {
+        name: 'in-app',
+        notificationType: 'in-app-message',
+        options: {},
+      },
+      message: {
+        title: 'batched title',
+        content: 'batched content',
+        options: {
+          url: '/admin/batched',
+        },
+      } as any,
+      receivers: {
+        type: 'userId',
+        value: Array.from({ length: 250 }, (_, index) => index + 1),
+      },
+    });
+
+    expect(bulkCreate).toHaveBeenCalledTimes(3);
+    expect(bulkCreate.mock.calls[0][0]).toHaveLength(100);
+    expect(bulkCreate.mock.calls[1][0]).toHaveLength(100);
+    expect(bulkCreate.mock.calls[2][0]).toHaveLength(50);
+    for (const [, options] of bulkCreate.mock.calls) {
+      expect(options).toMatchObject({
+        hooks: false,
+        transaction: internalTransaction,
+        validate: false,
+        returning: false,
+      });
+    }
+    expect(internalTransaction.commit).toHaveBeenCalledTimes(1);
+    expect(internalTransaction.rollback).not.toHaveBeenCalled();
+
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(emit).toHaveBeenCalledTimes(250);
+    expect(emit).toHaveBeenNthCalledWith(1, 'ws:sendToUser', {
+      userId: 1,
+      message: {
+        type: 'in-app-message:created',
+        payload: expect.objectContaining({
+          title: 'batched title',
+          content: 'batched content',
+          channelName: 'in-app',
+          userId: 1,
+        }),
+      },
+    });
+    expect(emit).toHaveBeenNthCalledWith(250, 'ws:sendToUser', {
+      userId: 250,
+      message: {
+        type: 'in-app-message:created',
+        payload: expect.objectContaining({
+          title: 'batched title',
+          content: 'batched content',
+          channelName: 'in-app',
+          userId: 250,
+        }),
+      },
+    });
+  });
+
+  test('send should rollback internal transaction when a later batch insert fails', async () => {
+    const bulkCreate = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('batch failed'));
+    const emit = vi.fn();
+    const internalTransaction = createMockManagedTransaction();
+    const logger = {
+      error: vi.fn(),
+      warn: vi.fn(),
+    };
+
+    const channel = new InAppNotificationChannel({
+      db: {
+        getRepository: vi.fn().mockReturnValue({}),
+        getModel: vi.fn().mockReturnValue({ bulkCreate }),
+        sequelize: {
+          transaction: vi.fn().mockResolvedValue(internalTransaction),
+        },
+      },
+      emit,
+      logger,
+    } as any);
+
+    await expect(
+      channel.send({
+        channel: {
+          name: 'in-app',
+          notificationType: 'in-app-message',
+          options: {},
+        },
+        message: {
+          title: 'batched title',
+          content: 'batched content',
+        } as any,
+        receivers: {
+          type: 'userId',
+          value: Array.from({ length: 101 }, (_, index) => index + 1),
+        },
+      }),
+    ).rejects.toThrow('batch failed');
+
+    expect(internalTransaction.commit).not.toHaveBeenCalled();
+    expect(internalTransaction.rollback).toHaveBeenCalledTimes(1);
+
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(emit).not.toHaveBeenCalled();
   });
 
   test('model hooks should defer websocket events until transaction committed', async () => {

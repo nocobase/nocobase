@@ -8,7 +8,6 @@
  */
 
 import { observable } from '@formily/reactive';
-import { CascaderProps } from 'antd';
 import _ from 'lodash';
 import { FlowEngine } from '../flowEngine';
 import { jioToJoiSchema } from './jioToJoiSchema';
@@ -20,9 +19,37 @@ export interface DataSourceOptions extends Record<string, any> {
   [key: string]: any;
 }
 
+export type DataSourceRequester = (options: Record<string, any>) => Promise<any>;
+
+export interface DataSourceLoadResult {
+  collections?: CollectionOptions[];
+  dataSources?: Array<DataSourceOptions & { collections?: CollectionOptions[] }>;
+}
+
+export type DataSourceLoader = (context: { key: string; manager: DataSourceManager }) => Promise<DataSourceLoadResult>;
+
 export class DataSourceManager {
   dataSources: Map<string, DataSource>;
   flowEngine: FlowEngine;
+  requester?: DataSourceRequester;
+  collectionFieldInterfaceManager?: {
+    addFieldInterfaces?: (fieldInterfaceClasses?: any[]) => void;
+    addFieldInterfaceGroups?: (groups: Record<string, { label: string; order?: number }>) => void;
+    addFieldInterfaceComponentOption?: (name: string, option: any) => void;
+    addFieldInterfaceOperator?: (name: string, operator: any) => void;
+    registerFieldFilterOperator?: (operator: any) => void;
+    registerFieldFilterOperatorGroup?: (name: string, operators?: any[]) => void;
+    addFieldFilterOperatorsToGroup?: (name: string, operators?: any[]) => void;
+    getFieldInterface?: (name: string) => any;
+    registerFieldInterfaceConfigure?: (options: unknown) => void;
+    getFieldInterfaceConfigure?: (name: string, collectionInfo?: unknown) => unknown;
+    getFieldInterfaceConfigureProperties?: (name: string, collectionInfo?: any) => Record<string, any>;
+  };
+  loaders = new Map<string, DataSourceLoader>();
+  loadedKeys = new Set<string>();
+  loadingKeys = new Set<string>();
+  loadErrors = new Map<string, Error | null>();
+  loadingPromise: Promise<void> | null = null;
 
   constructor() {
     this.dataSources = observable.shallow<Map<string, DataSource>>(new Map());
@@ -30,6 +57,50 @@ export class DataSourceManager {
 
   setFlowEngine(flowEngine: FlowEngine) {
     this.flowEngine = flowEngine;
+  }
+
+  setRequester(requester?: DataSourceRequester) {
+    this.requester = requester;
+  }
+
+  setCollectionFieldInterfaceManager(manager: DataSourceManager['collectionFieldInterfaceManager']) {
+    this.collectionFieldInterfaceManager = manager;
+  }
+
+  addFieldInterfaces(fieldInterfaceClasses: any[] = []) {
+    this.collectionFieldInterfaceManager?.addFieldInterfaces?.(fieldInterfaceClasses);
+  }
+
+  addFieldInterfaceGroups(groups: Record<string, { label: string; order?: number }>) {
+    this.collectionFieldInterfaceManager?.addFieldInterfaceGroups?.(groups);
+  }
+
+  addFieldInterfaceComponentOption(name: string, option: any) {
+    this.collectionFieldInterfaceManager?.addFieldInterfaceComponentOption?.(name, option);
+  }
+
+  addFieldInterfaceOperator(name: string, operator: any) {
+    this.collectionFieldInterfaceManager?.addFieldInterfaceOperator?.(name, operator);
+  }
+
+  registerFieldFilterOperator(operator: any) {
+    this.collectionFieldInterfaceManager?.registerFieldFilterOperator?.(operator);
+  }
+
+  registerFieldFilterOperatorGroup(name: string, operators: any[] = []) {
+    this.collectionFieldInterfaceManager?.registerFieldFilterOperatorGroup?.(name, operators);
+  }
+
+  addFieldFilterOperatorsToGroup(name: string, operators: any[] = []) {
+    this.collectionFieldInterfaceManager?.addFieldFilterOperatorsToGroup?.(name, operators);
+  }
+
+  registerLoader(key: string, loader: DataSourceLoader) {
+    this.loaders.set(key, loader);
+  }
+
+  removeLoader(key: string) {
+    this.loaders.delete(key);
   }
 
   addDataSource(ds: DataSource | DataSourceOptions) {
@@ -48,7 +119,7 @@ export class DataSourceManager {
 
   upsertDataSource(ds: DataSource | DataSourceOptions) {
     if (this.dataSources.has(ds.key)) {
-      this.dataSources.get(ds.key)?.setOptions(ds);
+      this.dataSources.get(ds.key)?.patchOptions(ds);
     } else {
       this.addDataSource(ds);
     }
@@ -82,6 +153,195 @@ export class DataSourceManager {
     if (!ds) return undefined;
     return ds.getCollectionField(otherKeys.join('.'));
   }
+
+  async ensureLoaded(options: { force?: boolean; keys?: string[] } = {}) {
+    const { force = false } = options;
+    const keys = this.resolveLoadKeys(options.keys);
+    const pendingKeys = force ? keys : keys.filter((key) => !this.loadedKeys.has(key));
+    if (!pendingKeys.length) {
+      return;
+    }
+    if (this.loadingPromise) {
+      return this.loadingPromise;
+    }
+
+    this.loadingPromise = (async () => {
+      try {
+        for (const key of pendingKeys) {
+          await this.loadKey(key, { initial: !this.loadedKeys.has(key), force });
+        }
+      } finally {
+        this.loadingPromise = null;
+      }
+    })();
+
+    return this.loadingPromise;
+  }
+
+  async reload(options: { keys?: string[] } = {}) {
+    const keys = this.resolveLoadKeys(options.keys);
+    if (!keys.length) {
+      return;
+    }
+    if (this.loadingPromise) {
+      return this.loadingPromise;
+    }
+
+    this.loadingPromise = (async () => {
+      try {
+        for (const key of keys) {
+          await this.loadKey(key, { initial: false, force: true });
+        }
+      } finally {
+        this.loadingPromise = null;
+      }
+    })();
+
+    return this.loadingPromise;
+  }
+
+  async reloadDataSource(key: string) {
+    if (this.loadingKeys.has(key) && this.loadingPromise) {
+      return this.loadingPromise;
+    }
+    if (!this.loaders.has(key) && this.loaders.has('*')) {
+      return this.reload({ keys: ['*'] });
+    }
+    return this.reload({ keys: [key] });
+  }
+
+  protected resolveLoadKeys(requestedKeys?: string[]) {
+    const normalizedKeys = requestedKeys?.length ? requestedKeys : ['main'];
+    const explicitKeys = normalizedKeys.filter((key) => this.loaders.has(key));
+    if (this.loaders.has('*')) {
+      return _.uniq(['*', ...explicitKeys]);
+    }
+    return explicitKeys.length ? explicitKeys : normalizedKeys;
+  }
+
+  protected getApp() {
+    return this.flowEngine?.context?.app as { eventBus?: EventTarget } | undefined;
+  }
+
+  protected dispatchDataSourceEvent(
+    type: 'dataSource:loaded' | 'dataSource:loadFailed',
+    detail: { dataSourceKey: string; initial: boolean; error?: Error },
+  ) {
+    this.getApp()?.eventBus?.dispatchEvent(new CustomEvent(type, { detail }));
+  }
+
+  protected setDataSourceState(
+    key: string,
+    options: Partial<Pick<DataSourceOptions, 'status' | 'errorMessage'>> & Record<string, any>,
+  ) {
+    const dataSource = this.getDataSource(key);
+    if (!dataSource) {
+      return;
+    }
+    dataSource.patchOptions(options);
+  }
+
+  protected applyDataSourceLoadResult(key: string, result: DataSourceLoadResult) {
+    if (key === '*') {
+      const dataSources = result?.dataSources || [];
+      dataSources.forEach((dataSourceOptions) => {
+        const { collections, ...dataSource } = dataSourceOptions;
+        this.upsertDataSource(dataSource);
+        if (collections) {
+          this.getDataSource(dataSource.key)?.setCollections(collections, { clearFields: true });
+        }
+      });
+      return;
+    }
+
+    const dataSource = this.getDataSource(key);
+    if (!dataSource) {
+      return;
+    }
+    dataSource.setCollections(result?.collections || [], { clearFields: true });
+  }
+
+  protected async loadKey(key: string, options: { initial: boolean; force: boolean }) {
+    const loader = this.loaders.get(key);
+    if (!loader) {
+      return;
+    }
+
+    if (!this.getDataSource(key) && key !== '*') {
+      this.addDataSource({ key });
+    }
+
+    const { initial } = options;
+    this.loadingKeys.add(key);
+    if (key !== '*') {
+      this.setDataSourceState(key, {
+        status: initial ? 'loading' : 'reloading',
+        errorMessage: undefined,
+      });
+    }
+    this.loadErrors.set(key, null);
+
+    try {
+      const result = (await loader({ key, manager: this })) || {};
+      this.applyDataSourceLoadResult(key, result);
+      this.loadedKeys.add(key);
+      if (key !== '*') {
+        this.setDataSourceState(key, {
+          status: 'loaded',
+          errorMessage: undefined,
+        });
+      }
+      this.dispatchDataSourceEvent('dataSource:loaded', { dataSourceKey: key, initial });
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      this.loadErrors.set(key, normalizedError);
+      if (key !== '*') {
+        this.setDataSourceState(key, {
+          status: initial ? 'loading-failed' : 'reloading-failed',
+          errorMessage: normalizedError.message,
+        });
+      }
+      this.dispatchDataSourceEvent('dataSource:loadFailed', {
+        dataSourceKey: key,
+        initial,
+        error: normalizedError,
+      });
+      throw normalizedError;
+    } finally {
+      this.loadingKeys.delete(key);
+    }
+  }
+}
+
+export type CollectionFieldInterfaceDataSourceManager = Pick<DataSourceManager, 'collectionFieldInterfaceManager'>;
+
+export function getCollectionFieldInterface(
+  interfaceName: string | undefined,
+  ...dataSourceManagers: Array<CollectionFieldInterfaceDataSourceManager | null | undefined>
+) {
+  if (!interfaceName) {
+    return undefined;
+  }
+
+  // TODO: Once legacy client is removed and all runtimes share the client-v2 flow-engine
+  // DataSourceManager, callers should only pass the flow-engine context DataSourceManager.
+  for (const dataSourceManager of dataSourceManagers) {
+    const collectionFieldInterfaceManager = dataSourceManager?.collectionFieldInterfaceManager;
+    const getFieldInterface = collectionFieldInterfaceManager?.getFieldInterface;
+    if (typeof getFieldInterface === 'function') {
+      return getFieldInterface.call(collectionFieldInterfaceManager, interfaceName);
+    }
+  }
+
+  return undefined;
+}
+
+function shouldTranslateOptionLabel(label: unknown): label is string {
+  return typeof label === 'string' && /\{\{\s*t\s*\(/.test(label);
+}
+
+function translateOptionLabel(flowEngine: FlowEngine, label: unknown, options?: Record<string, any>) {
+  return shouldTranslateOptionLabel(label) ? flowEngine.translate(label, options) : label;
 }
 
 export class DataSource {
@@ -108,6 +368,14 @@ export class DataSource {
 
   get name() {
     return this.options.key;
+  }
+
+  get status() {
+    return this.options.status;
+  }
+
+  get errorMessage() {
+    return this.options.errorMessage;
   }
 
   setDataSourceManager(dataSourceManager: DataSourceManager) {
@@ -149,6 +417,10 @@ export class DataSource {
     return this.collectionManager.upsertCollections(collections, options);
   }
 
+  setCollections(collections: CollectionOptions[], options: { clearFields?: boolean } = {}) {
+    return this.collectionManager.setCollections(collections, options);
+  }
+
   removeCollection(name: string) {
     return this.collectionManager.removeCollection(name);
   }
@@ -160,6 +432,14 @@ export class DataSource {
   setOptions(newOptions: any = {}) {
     Object.keys(this.options).forEach((key) => delete this.options[key]);
     Object.assign(this.options, newOptions);
+  }
+
+  patchOptions(newOptions: any = {}) {
+    Object.assign(this.options, newOptions);
+  }
+
+  reload() {
+    return this.dataSourceManager.reloadDataSource(this.key);
   }
 
   getCollectionField(fieldPath: string) {
@@ -194,6 +474,11 @@ export class CollectionManager {
     this.collections = observable.shallow<Map<string, Collection>>(new Map());
   }
 
+  protected resetCaches() {
+    this.childrenCollectionsName = {};
+    this.allCollectionsInheritChain = undefined;
+  }
+
   get flowEngine() {
     return this.dataSource.flowEngine;
   }
@@ -208,10 +493,12 @@ export class CollectionManager {
     col.setDataSource(this.dataSource);
     col.initInherits();
     this.collections.set(col.name, col);
+    this.resetCaches();
   }
 
   removeCollection(name: string) {
     this.collections.delete(name);
+    this.resetCaches();
   }
 
   updateCollection(newOptions: CollectionOptions, options: { clearFields?: boolean } = {}) {
@@ -220,6 +507,7 @@ export class CollectionManager {
       throw new Error(`Collection ${newOptions.name} not found`);
     }
     collection.setOptions(newOptions, options);
+    this.resetCaches();
   }
 
   upsertCollection(options: CollectionOptions) {
@@ -239,6 +527,12 @@ export class CollectionManager {
         this.addCollection(collection);
       }
     }
+    this.resetCaches();
+  }
+
+  setCollections(collections: CollectionOptions[], options: { clearFields?: boolean } = {}) {
+    this.clearCollections();
+    this.upsertCollections(collections, options);
   }
 
   sortCollectionsByInherits(collections: CollectionOptions[]): CollectionOptions[] {
@@ -315,6 +609,7 @@ export class CollectionManager {
 
   clearCollections() {
     this.collections.clear();
+    this.resetCaches();
   }
 
   getAssociation(associationName: string): CollectionField | undefined {
@@ -535,6 +830,10 @@ export class Collection {
       this.clearFields();
     }
     this.upsertFields(this.options.fields || []);
+  }
+
+  setOption(key: string, value: any) {
+    this.options[key] = value;
   }
 
   getFields(): CollectionField[] {
@@ -795,7 +1094,7 @@ export class CollectionField {
         }
         return {
           ...v,
-          label: v.label ? this.flowEngine.translate(v.label, { ns: 'lm-collections' }) : v.label,
+          label: translateOptionLabel(this.flowEngine, v.label, { ns: 'lm-collections' }),
           value: Number(v.value),
         };
       });
@@ -803,7 +1102,7 @@ export class CollectionField {
     return options.map((v) => {
       return {
         ...v,
-        label: this.flowEngine.translate(v.label, { ns: 'lm-collections' }),
+        label: translateOptionLabel(this.flowEngine, v.label, { ns: 'lm-collections' }),
       };
     });
   }
@@ -841,7 +1140,7 @@ export class CollectionField {
       {
         ..._.omit(this.options.uiSchema?.['x-component-props'] || {}, 'fieldNames'),
         options: this.enum.length ? this.enum : undefined,
-        mode: this.type === 'array' ? 'multiple' : undefined,
+        mode: this.interface === 'multipleSelect' ? 'multiple' : undefined,
         multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
         maxCount: target && !['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) ? 1 : undefined,
         target: target,
@@ -862,7 +1161,21 @@ export class CollectionField {
           });
 
           if (error) {
-            const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
+            const message = error.details
+              .map((d: any) => {
+                const translated = this.flowEngine.translate(d.type, {
+                  ...d.context,
+                  ns: 'data-source-main',
+                  label,
+                });
+
+                if (translated && translated !== d.type) {
+                  return translated;
+                }
+
+                return d.message.replace(/"value"/g, `"${label}"`);
+              })
+              .join(', ');
             return Promise.reject(message);
           }
 
@@ -885,8 +1198,13 @@ export class CollectionField {
   }
 
   getInterfaceOptions() {
-    const app = this.flowEngine.context.app;
-    return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
+    const ctx = this.flowEngine.context;
+    return getCollectionFieldInterface(
+      this.interface,
+      this.collection?.dataSource?.dataSourceManager,
+      ctx.dataSourceManager,
+      ctx.app?.dataSourceManager,
+    );
   }
 
   getFilterOperators() {

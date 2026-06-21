@@ -12,11 +12,11 @@ import { css } from '@emotion/css';
 import { observer } from '@nocobase/flow-engine';
 import { parseHTML } from '@nocobase/utils/client';
 import { Dropdown, Menu, Popover } from 'antd';
+import { MenuDividerType, MenuItemType } from 'antd/es/menu/interface';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DropdownVisibleContext, usePlugin, useToken } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
-import { MenuItemType, MenuDividerType } from 'antd/es/menu/interface';
 
 type SettingsMenuItemType = MenuItemType | MenuDividerType;
 
@@ -64,7 +64,7 @@ const SettingsMenu: React.FC<{
       key: 'userManual',
       label: (
         <a
-          href={isSimplifiedChinese ? 'https://v2.docs.nocobase.com/cn/guide/' : 'https://v2.docs.nocobase.com/guide/'}
+          href={isSimplifiedChinese ? 'https://docs.nocobase.com/cn/guide/' : 'https://docs.nocobase.com/guide/'}
           target="_blank"
           rel="noreferrer"
         >

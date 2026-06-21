@@ -9,6 +9,7 @@
 
 import Database, { Model, Repository } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
+import CleanOrphanFlowRouteModelsMigration from '../migrations/202605121200-clean-orphan-flow-route-models';
 
 describe('desktopRoutes:listAccessible', () => {
   let app: MockServer;
@@ -288,5 +289,190 @@ describe('desktopRoutes', async () => {
     await transaction.commit();
     rolesDesktopRoutes = await rolesDesktopRoutesRepo.find({ where: { roleName: role.get('name') } });
     expect(rolesDesktopRoutes.length).toBe(0);
+  });
+});
+
+describe('desktopRoutes flow model cleanup', () => {
+  let app: MockServer, db: Database, desktopRoutesRepo: Repository;
+  let flowRepo: any, usageRepo: any;
+
+  const buildReferenceOptions = (templateUid: string) => ({
+    use: 'ReferenceBlockModel',
+    stepParams: {
+      referenceSettings: {
+        useTemplate: {
+          templateUid,
+          templateName: `name-${templateUid}`,
+          mode: 'reference',
+        },
+      },
+    },
+  });
+
+  const createTemplate = async (uid: string) => {
+    await app
+      .agent()
+      .resource('flowModelTemplates')
+      .create({
+        values: {
+          uid,
+          name: uid,
+          targetUid: 'target-block',
+        },
+      });
+  };
+
+  const saveRouteTreeWithReferenceBlock = async (routeUid: string, referenceUid: string, templateUid: string) => {
+    await app
+      .agent()
+      .resource('flowModels')
+      .save({
+        values: {
+          uid: routeUid,
+          use: 'RouteModel',
+          subModels: {
+            page: {
+              uid: `${routeUid}-page`,
+              use: 'RootPageModel',
+              subModels: {
+                grid: {
+                  uid: referenceUid,
+                  ...buildReferenceOptions(templateUid),
+                },
+              },
+            },
+          },
+        },
+      });
+  };
+
+  const createSchemaRouteRoot = async (routeUid: string) => {
+    await flowRepo.create({
+      values: {
+        uid: routeUid,
+        name: routeUid,
+        schema: {
+          use: 'RouteModel',
+        },
+      },
+    });
+  };
+
+  const countUsage = (filter: Record<string, any>) => {
+    return usageRepo.count({ filter });
+  };
+
+  beforeEach(async () => {
+    app = await createMockServer({
+      registerActions: true,
+      plugins: [
+        'error-handler',
+        'client',
+        'field-sort',
+        'acl',
+        'ui-schema-storage',
+        'system-settings',
+        'data-source-main',
+        'data-source-manager',
+        'flow-engine',
+        'ui-templates',
+      ],
+    });
+    db = app.db;
+    desktopRoutesRepo = db.getRepository('desktopRoutes');
+    flowRepo = db.getRepository('flowModels');
+    usageRepo = db.getRepository('flowModelTemplateUsages');
+
+    await flowRepo.create({
+      values: {
+        uid: 'target-block',
+        options: {
+          use: 'TargetBlock',
+        },
+      },
+    });
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should remove child route flow model tree and template usages when deleting a parent desktop route', async () => {
+    await createTemplate('tpl-route-cleanup');
+    const group = await desktopRoutesRepo.create({
+      values: {
+        title: 'group',
+        type: 'group',
+      },
+    });
+    await desktopRoutesRepo.create({
+      values: {
+        title: 'child page',
+        type: 'flowPage',
+        parentId: group.get('id'),
+        schemaUid: 'route-cleanup',
+      },
+    });
+    await saveRouteTreeWithReferenceBlock('route-cleanup', 'ref-route-cleanup', 'tpl-route-cleanup');
+
+    expect(await countUsage({ templateUid: 'tpl-route-cleanup', modelUid: 'ref-route-cleanup' })).toBe(1);
+
+    await desktopRoutesRepo.destroy({
+      filterByTk: group.get('id'),
+    });
+
+    expect(await flowRepo.findOne({ filter: { uid: 'route-cleanup' } })).toBeFalsy();
+    expect(await flowRepo.findOne({ filter: { uid: 'route-cleanup-page' } })).toBeFalsy();
+    expect(await flowRepo.findOne({ filter: { uid: 'ref-route-cleanup' } })).toBeFalsy();
+    expect(await countUsage({ templateUid: 'tpl-route-cleanup', modelUid: 'ref-route-cleanup' })).toBe(0);
+
+    const destroyTemplateResp = await app.agent().resource('flowModelTemplates').destroy({
+      filterByTk: 'tpl-route-cleanup',
+    });
+    expect(destroyTemplateResp.status).toBe(200);
+  });
+
+  it('should clean orphan RouteModel trees and stale usages in migration', async () => {
+    await createTemplate('tpl-orphan-route');
+    await desktopRoutesRepo.create({
+      values: {
+        title: 'active page',
+        type: 'flowPage',
+        schemaUid: 'active-route',
+      },
+    });
+    await desktopRoutesRepo.create({
+      values: {
+        title: 'active schema page',
+        type: 'flowPage',
+        schemaUid: 'active-schema-route',
+      },
+    });
+
+    await saveRouteTreeWithReferenceBlock('active-route', 'ref-active-route', 'tpl-orphan-route');
+    await saveRouteTreeWithReferenceBlock('orphan-route', 'ref-orphan-route', 'tpl-orphan-route');
+    await createSchemaRouteRoot('orphan-schema-route');
+    await usageRepo.create({
+      values: {
+        uid: 'usage-missing-route-model',
+        templateUid: 'tpl-orphan-route',
+        modelUid: 'missing-route-model',
+      },
+    });
+
+    expect(await countUsage({ templateUid: 'tpl-orphan-route' })).toBe(3);
+
+    const migration = new CleanOrphanFlowRouteModelsMigration({ db, app } as any);
+    await migration.up();
+
+    expect(await flowRepo.findOne({ filter: { uid: 'active-route' } })).toBeTruthy();
+    expect(await flowRepo.findOne({ filter: { uid: 'active-schema-route' } })).toBeTruthy();
+    expect(await flowRepo.findOne({ filter: { uid: 'ref-active-route' } })).toBeTruthy();
+    expect(await flowRepo.findOne({ filter: { uid: 'orphan-route' } })).toBeFalsy();
+    expect(await flowRepo.findOne({ filter: { uid: 'orphan-schema-route' } })).toBeFalsy();
+    expect(await flowRepo.findOne({ filter: { uid: 'ref-orphan-route' } })).toBeFalsy();
+    expect(await countUsage({ templateUid: 'tpl-orphan-route', modelUid: 'ref-orphan-route' })).toBe(0);
+    expect(await countUsage({ templateUid: 'tpl-orphan-route', modelUid: 'missing-route-model' })).toBe(0);
+    expect(await countUsage({ templateUid: 'tpl-orphan-route', modelUid: 'ref-active-route' })).toBe(1);
   });
 });

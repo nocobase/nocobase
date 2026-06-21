@@ -34,7 +34,7 @@ export const useCreateFormProps = () => {
           enabled: true,
           enableKnowledgeBase: false,
           knowledgeBase: {
-            knowledgeBaseIds: [],
+            knowledgeBaseKeys: [],
             topK: 3,
             score: '0.6',
           },

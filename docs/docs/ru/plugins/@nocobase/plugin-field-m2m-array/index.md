@@ -1,4 +1,6 @@
 ---
+title: "Collection field: Many to many (array)"
+keywords: "Collection fields"
 displayName: "Collection field: Many to many (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

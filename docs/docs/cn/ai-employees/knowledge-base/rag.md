@@ -1,5 +1,5 @@
 ---
-pkg: "@nocobase/plugin-ai"
+pkg: "@nocobase/plugin-ai-knowledge-base"
 title: "RAG 检索增强生成"
 description: "在 AI 员工设置中启用 RAG，配置 Knowledge Base Prompt、知识库选择、Top K、Score 阈值，AI 基于检索文档回复。"
 keywords: "RAG,检索增强,知识库检索,Top K,NocoBase"
@@ -24,7 +24,7 @@ keywords: "RAG,检索增强,知识库检索,Top K,NocoBase"
 在`Knowledge base` 标签页中，打开`Enable`开关。
 
 - 在 `Knowledge Base Prompt` 输入引用知识库的提示语，`{knowledgeBaseData}` 是固定的占位符，不要修改；
-- 在 `Knowledge Base` 选择配置好的知识库，参考：[知识库](/ai-employees/knowledge-base/knowledge-base)；
+- 在 `Knowledge Base` 选择配置好的知识库，参考：[知识库](./knowledge-base/)；
 - 在 `Top K` 输入框中输入要检索的文档数量，默认为 3 个；
 - 在 `Score` 输入框检索时文档相关系阈值；
 

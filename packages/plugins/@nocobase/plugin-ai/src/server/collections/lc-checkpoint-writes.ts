@@ -11,7 +11,8 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'lcCheckpointWrites',
-  migrationRules: ['overwrite', 'schema-only'],
+  dataCategory: 'runtime',
+  migrationRules: ['schema-only'],
   autoGenId: false,
   fields: [
     {

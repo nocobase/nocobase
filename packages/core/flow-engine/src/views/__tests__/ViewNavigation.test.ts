@@ -146,6 +146,47 @@ describe('ViewNavigation', () => {
 
       expect(mockCtx.router.navigate).toHaveBeenCalledWith('/admin', { replace: true });
     });
+
+    it('should use explicit basePath when navigating back', () => {
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }], { basePath: '/embed' });
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/embed', { replace: true });
+    });
+
+    it('should use layout route basePathname when explicit basePath is absent', () => {
+      mockCtx.layoutRoute = {
+        basePathname: '/mobile',
+      };
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/mobile', { replace: true });
+    });
+
+    it('should fall back to layout routePath when explicit basePath is absent', () => {
+      mockCtx.layout = {
+        routePath: '/mobile',
+      };
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/mobile', { replace: true });
+    });
+
+    it('should ignore relative layout routePath when runtime basePathname is absent', () => {
+      mockCtx.layout = {
+        routePath: 'public-forms',
+      };
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/admin', { replace: true });
+    });
   });
 });
 
@@ -158,6 +199,17 @@ describe('generatePathnameFromViewParams', () => {
 
   it('should generate single view path', () => {
     expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }])).toBe('/admin/xxx');
+  });
+
+  it('should generate path with custom prefix', () => {
+    expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }], { basePath: '/embed' })).toBe('/embed/xxx');
+    expect(generatePathnameFromViewParams([], { basePath: '/embed' })).toBe('/embed');
+  });
+
+  it('should generate path with nested basePath', () => {
+    expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }], { basePath: '/admin/settings/public-forms' })).toBe(
+      '/admin/settings/public-forms/xxx',
+    );
   });
 
   it('should generate view with tab', () => {

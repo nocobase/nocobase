@@ -1,4 +1,6 @@
 ---
+title: "Workflow: date calculation node"
+keywords: "Workflow"
 displayName: "Workflow: date calculation node"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

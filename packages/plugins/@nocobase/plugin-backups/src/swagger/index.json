@@ -1,0 +1,313 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "NocoBase API - Backup manager",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/backupSettings:get": {
+      "get": {
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/backupSettings:update": {
+      "post": {
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/backup:list": {
+      "get": {
+        "tags": ["backups"],
+        "summary": "List backup files",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BackupFile"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup:create": {
+      "post": {
+        "tags": ["backups"],
+        "summary": "Create a backup file",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "inProgress": { "type": "boolean" }
+                  },
+                  "required": ["name", "inProgress"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup:status": {
+      "get": {
+        "tags": ["backups"],
+        "summary": "Get backup task status",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "description": "Backup file name returned by `backup create`.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/TaskStatus"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup:download": {
+      "get": {
+        "tags": ["backups"],
+        "summary": "Download a backup file",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backup file stream",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup:remove": {
+      "post": {
+        "tags": ["backups"],
+        "summary": "Remove a backup file",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOk"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup:restore": {
+      "post": {
+        "tags": ["backups"],
+        "summary": "Restore from a server-side backup file",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "password": { "type": "string" },
+                  "dbSchema": {
+                    "type": "string",
+                    "description": "Target application database schema. Required when the backup schema differs from the current application schema."
+                  },
+                  "skipRevertOnError": { "type": "boolean" },
+                  "force": {
+                    "type": "boolean",
+                    "description": "Ignore PostgreSQL database schema mismatch and restore with schema remapping."
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCreated"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup:restoreUpload": {
+      "post": {
+        "tags": ["backups"],
+        "summary": "Upload and restore a backup file",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "password": { "type": "string" },
+                  "dbSchema": {
+                    "type": "string",
+                    "description": "Target application database schema. Required when the backup schema differs from the current application schema."
+                  },
+                  "skipRevertOnError": { "type": "boolean" },
+                  "force": {
+                    "type": "boolean",
+                    "description": "Ignore PostgreSQL database schema mismatch and restore with schema remapping."
+                  }
+                },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCreated"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup:restoreStatus": {
+      "get": {
+        "tags": ["backups"],
+        "summary": "Get restore task status",
+        "parameters": [
+          {
+            "name": "task",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BackupFile": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "fileSize": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "inProgress": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      },
+      "StatusOk": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["ok"] }
+        }
+      },
+      "TaskCreated": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["ok"] },
+          "task": { "type": "string" }
+        },
+        "required": ["status", "task"]
+      },
+      "TaskStatus": {
+        "type": "object",
+        "properties": {
+          "inProgress": { "type": "boolean" },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

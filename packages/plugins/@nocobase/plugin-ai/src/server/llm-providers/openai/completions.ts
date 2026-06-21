@@ -18,14 +18,14 @@ export class OpenAICompletionsProvider extends LLMProvider {
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
+    const { name, schema } = structuredOutput || {};
+    const responseFormatOptions: Record<string, any> = {
       type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['json_schema'] = schema;
+      responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
     }
     return new ChatOpenAI({
       apiKey,
@@ -34,7 +34,7 @@ export class OpenAICompletionsProvider extends LLMProvider {
         response_format: responseFormatOptions,
       },
       configuration: {
-        baseURL: baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       },
     });
   }

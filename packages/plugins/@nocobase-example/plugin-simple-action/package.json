@@ -3,10 +3,11 @@
   "name": "@nocobase-example/plugin-simple-action",
   "displayName": "Plugin example: Simple action",
   "description": "This plugin demonstrates how to use the simple action feature to create a simple action.",
-  "version": "2.0.49",
+  "version": "2.1.9",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   }

@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Mit Google anmelden
 
 > https://developers.google.com/identity/openid-connect/openid-connect
