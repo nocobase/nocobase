@@ -16,12 +16,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Branding Kustom",
+        "label": "Custom Brand",
         "link": "/system-management/custom-brand/"
       },
       {
         "type": "custom-link",
-        "label": "Editor Tema",
+        "label": "Theme Editor",
         "link": "/system-management/theme-editor/"
       },
       {

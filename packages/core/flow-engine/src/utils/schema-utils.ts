@@ -11,7 +11,7 @@ import type { ISchema } from '@formily/json-schema';
 import { Schema } from '@formily/json-schema';
 import type { FlowModel } from '../models';
 import { FlowRuntimeContext } from '../flowContext';
-import type { StepDefinition, StepUIMode } from '../types';
+import type { EventDefinition, StepDefinition, StepUIMode } from '../types';
 import { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 /**
@@ -240,6 +240,35 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
   }
 
   return resolvedStepUiSchema;
+}
+
+/**
+ * 判断事件在设置菜单中是否应被隐藏。
+ * - 支持 EventDefinition.hideInSettings。
+ * - hideInSettings 可为布尔值或函数（接收 FlowRuntimeContext）。
+ */
+export async function shouldHideEventInSettings<TModel extends FlowModel = FlowModel>(
+  model: TModel,
+  flow: any,
+  event: EventDefinition<TModel> | undefined,
+): Promise<boolean> {
+  if (!event) return true;
+
+  const { hideInSettings } = event;
+
+  if (typeof hideInSettings === 'function') {
+    try {
+      const ctx = new FlowRuntimeContext(model, flow.key, 'settings');
+      setupRuntimeContextSteps(ctx, flow.steps || {}, model, flow.key);
+      const result = await hideInSettings(ctx as any);
+      return !!result;
+    } catch (error) {
+      console.warn(`Error evaluating hideInSettings for event '${event.name || ''}' in flow '${flow.key}':`, error);
+      return false;
+    }
+  }
+
+  return !!hideInSettings;
 }
 
 /**

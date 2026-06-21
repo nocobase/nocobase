@@ -1,3 +1,9 @@
+---
+title: "自定义图表配置"
+description: "Custom 模式编写 JS 返回 ECharts option，基于 ctx.data 支持 dataset、多系列合并、复杂提示与动态样式，完整 ECharts 能力。"
+keywords: "自定义图表,Custom 模式,ECharts option,ctx.data,dataset,NocoBase"
+---
+
 # 自定义图表配置
 
 自定义模式配置图表，可以在代码编辑器编写 JS，基于 `ctx.data` 返回完整的 ECharts `option`，适合多系列合并、复杂提示与动态样式。理论上可以支持完整的 Echart 功能和所有的图表类型。

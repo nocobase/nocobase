@@ -1,73 +1,75 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Menulis Plugin NocoBase Pertama"
+description: "Membuat plugin Block dari nol: yarn pm create, skeleton plugin, direktori client/server, registrasi Block, alur development debug."
+keywords: "menulis plugin,plugin pertama,yarn pm create,skeleton plugin,plugin Block,plugin development NocoBase"
+---
 
-# Menulis Plugin Pertama Anda
+# Menulis Plugin Pertama
 
-Panduan ini akan memandu Anda membuat sebuah plugin blok yang dapat digunakan di halaman, mulai dari nol. Ini akan membantu Anda memahami struktur dasar dan alur kerja pengembangan plugin NocoBase.
+Dokumen ini akan memandu Anda membuat plugin Block yang dapat digunakan di halaman dari nol, untuk membantu Anda memahami struktur dasar dan alur pengembangan plugin NocoBase.
 
 ## Prasyarat
 
-Sebelum memulai, pastikan Anda telah berhasil menginstal NocoBase. Jika belum, Anda dapat merujuk ke panduan instalasi berikut:
+Sebelum memulai, pastikan Anda telah menginstal NocoBase. Jika belum diinstal, Anda dapat merujuk pada:
 
-- [Instalasi menggunakan create-nocobase-app](/get-started/installation/create-nocobase-app)
-- [Instalasi dari sumber Git](/get-started/installation/git)
+- [Instalasi menggunakan create-nocobase-app](../get-started/installation/create-nocobase-app)
+- [Instalasi dari source code Git](../get-started/installation/git)
 
-Setelah instalasi selesai, Anda dapat secara resmi memulai perjalanan pengembangan plugin Anda.
+Setelah instalasi selesai, Anda dapat memulai.
 
-## Langkah 1: Membuat Kerangka Plugin melalui CLI
+## Langkah 1: Membuat Skeleton Plugin melalui CLI
 
-Jalankan perintah berikut di direktori root repositori untuk membuat plugin kosong dengan cepat:
+Jalankan perintah berikut di root direktori repository untuk dengan cepat menggenerate plugin kosong:
 
 ```bash
 yarn pm create @my-project/plugin-hello
 ```
 
-Setelah perintah berhasil dijalankan, file dasar akan dibuat di direktori `packages/plugins/@my-project/plugin-hello`. Struktur default-nya adalah sebagai berikut:
+Setelah perintah berhasil dijalankan, file dasar akan digenerate di direktori `packages/plugins/@my-project/plugin-hello`, dengan struktur default sebagai berikut:
 
 ```bash
 ├─ /packages/plugins/@my-project/plugin-hello
   ├─ package.json
   ├─ README.md
-  ├─ client.d.ts
-  ├─ client.js
+  ├─ client-v2.d.ts
+  ├─ client-v2.js
   ├─ server.d.ts
   ├─ server.js
   └─ src
-     ├─ index.ts                 # Ekspor default plugin sisi server
-     ├─ client                   # Lokasi kode sisi klien
-     │  ├─ index.tsx             # Kelas plugin sisi klien yang diekspor secara default
-     │  ├─ plugin.tsx            # Entri plugin (mewarisi @nocobase/client Plugin)
-     │  ├─ models                # Opsional: model frontend (misalnya, node alur kerja)
+     ├─ index.ts                 # Default ekspor plugin server
+     ├─ client-v2                 # Lokasi penyimpanan kode client
+     │  ├─ index.tsx             # Class plugin client yang diekspor secara default
+     │  ├─ plugin.tsx            # Entry plugin (extends @nocobase/client-v2 Plugin)
+     │  ├─ models                # Opsional: model front-end (seperti node flow)
      │  │  └─ index.ts
      │  └─ utils
      │     ├─ index.ts
      │     └─ useT.ts
-     ├─ server                   # Lokasi kode sisi server
-     │  ├─ index.ts              # Kelas plugin sisi server yang diekspor secara default
-     │  ├─ plugin.ts             # Entri plugin (mewarisi @nocobase/server Plugin)
-     │  ├─ collections           # Opsional: koleksi sisi server
+     ├─ server                   # Lokasi penyimpanan kode server
+     │  ├─ index.ts              # Class plugin server yang diekspor secara default
+     │  ├─ plugin.ts             # Entry plugin (extends @nocobase/server Plugin)
+     │  ├─ collections           # Opsional: collections server
      │  ├─ migrations            # Opsional: migrasi data
      │  └─ utils
      │     └─ index.ts
      ├─ utils
      │  ├─ index.ts
      │  └─ tExpr.ts
-     └─ locale                   # Opsional: multibahasa
+     └─ locale                   # Opsional: multi-bahasa
         ├─ en-US.json
         └─ zh-CN.json
 ```
 
-Setelah pembuatan selesai, Anda dapat mengakses halaman manajer plugin di browser Anda (URL default: http://localhost:13000/admin/settings/plugin-manager) untuk memastikan apakah plugin telah muncul dalam daftar.
+Setelah pembuatan selesai, Anda dapat mengakses halaman "Plugin Manager" di browser (alamat default: http://localhost:13000/admin/settings/plugin-manager) untuk memastikan plugin sudah muncul di daftar.
 
-## Langkah 2: Mengimplementasikan Blok Klien Sederhana
+## Langkah 2: Mengimplementasikan Block Client Sederhana
 
-Selanjutnya, kita akan menambahkan model blok kustom ke plugin untuk menampilkan pesan selamat datang.
+Selanjutnya tambahkan model Block kustom ke plugin, untuk menampilkan teks selamat datang.
 
-1.  **Buat file model blok baru** `client/models/HelloBlockModel.tsx`:
+1. **Tambahkan file model Block** `client-v2/models/HelloBlockModel.tsx`:
 
 ```tsx pure
-import { BlockModel } from '@nocobase/client';
+import { BlockModel } from '@nocobase/client-v2';
 import React from 'react';
 import { tExpr } from '../utils';
 
@@ -87,7 +89,7 @@ HelloBlockModel.define({
 });
 ```
 
-2.  **Daftarkan model blok**. Edit `client/models/index.ts` untuk mengekspor model baru, agar dapat dimuat oleh runtime frontend:
+2. **Daftarkan model Block**. Edit `client-v2/models/index.ts`, ekspor model baru tersebut untuk dimuat saat runtime front-end:
 
 ```ts
 import { ModelConstructor } from '@nocobase/flow-engine';
@@ -98,39 +100,89 @@ export default {
 } as Record<string, ModelConstructor>;
 ```
 
-Setelah menyimpan kode, jika Anda sedang menjalankan skrip pengembangan, Anda akan melihat log hot-reload di output terminal.
+Setelah menyimpan kode, jika Anda menjalankan script development, Anda akan melihat log hot update di output terminal.
 
-## Langkah 3: Mengaktifkan dan Menguji Plugin
+## Langkah 3: Aktifkan dan Coba Plugin
 
-Anda dapat mengaktifkan plugin melalui baris perintah atau antarmuka:
+Anda dapat mengaktifkan plugin melalui command line atau antarmuka:
 
--   **Baris Perintah**
+- **Command Line**
 
-    ```bash
-    yarn pm enable @my-project/plugin-hello
-    ```
+  ```bash
+  yarn pm enable @my-project/plugin-hello
+  ```
 
--   **Antarmuka Manajemen**: Akses manajer plugin, temukan `@my-project/plugin-hello`, lalu klik "Aktifkan".
+- **Antarmuka Manajemen**: Akses "Plugin Manager", temukan `@my-project/plugin-hello`, klik "Aktifkan".
 
-Setelah diaktifkan, buat halaman "Modern page (v2)" baru. Saat menambahkan blok, Anda akan melihat "Hello block". Sisipkan ke halaman untuk melihat konten selamat datang yang baru saja Anda tulis.
+Setelah diaktifkan, buat halaman "Modern page (v2)" baru, saat menambahkan Block Anda akan melihat "Hello block", masukkan ke halaman dan Anda akan melihat konten selamat datang yang baru saja Anda tulis.
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
-## Langkah 4: Membangun dan Mengemas
+### Membuat Plugin Default Preset atau Default Aktif (Opsional)
 
-Ketika Anda siap untuk mendistribusikan plugin ke lingkungan lain, Anda perlu membangun (build) dan mengemasnya (package) terlebih dahulu:
+Di atas dijelaskan cara mengaktifkan plugin secara manual satu per satu. Jika Anda memelihara aplikasi NocoBase sendiri dan ingin beberapa plugin sudah siap secara otomatis setelah menjalankan `nocobase install` (instalasi pertama) atau `nocobase upgrade` (upgrade), Anda dapat menggunakan dua environment variable untuk mengontrol status default plugin:
+
+- **`APPEND_PRESET_LOCAL_PLUGINS` (tambahkan plugin preset lokal default)** — Menambahkan plugin ke daftar plugin preset lokal; setelah instalasi akan muncul di "Plugin Manager", tetapi tidak aktif secara default dan perlu diaktifkan secara manual
+- **`APPEND_PRESET_BUILT_IN_PLUGINS` (tambahkan plugin built-in default)** — Menambahkan plugin ke daftar plugin built-in; saat instalasi plugin diaktifkan secara otomatis, dan sebagai plugin built-in, **tidak dapat dinonaktifkan atau dihapus di "Plugin Manager"**
+
+Nilai kedua variable ini adalah nama paket plugin (field `name` di `package.json`), pisahkan beberapa plugin dengan koma. Konfigurasi di file `.env` seperti berikut:
+
+```bash
+# Default preset: muncul di daftar Plugin Manager, tetapi tidak diaktifkan secara otomatis
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# Default aktif: diinstal dan diaktifkan secara otomatis, serta tidak dapat dinonaktifkan melalui antarmuka
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+Pada umumnya, untuk pengembangan dan debugging lokal, `yarn pm enable` sudah cukup. Kedua variable ini lebih cocok untuk skenario distribusi "siap pakai" — misalnya Anda mengemas aplikasi NocoBase dengan plugin tertentu dan ingin plugin langsung tersedia setelah inisialisasi.
+
+:::tip Tips
+
+- Plugin harus sudah diunduh ke lokal dan dapat ditemukan di `node_modules`, lihat [Struktur Direktori Proyek](./project-structure.md)
+- Setelah dikonfigurasi, perlu menjalankan ulang `nocobase install` atau `nocobase upgrade` agar perubahan berlaku
+- Penjelasan lengkap environment variable lihat [Environment Variable](../get-started/installation/env.md#append_preset_local_plugins)
+
+:::
+
+## Langkah 4: Build & Packaging
+
+Ketika Anda siap mendistribusikan plugin ke environment lain, Anda perlu build kemudian packaging:
 
 ```bash
 yarn build @my-project/plugin-hello --tar
-# Atau jalankan dalam dua langkah
+# atau jalankan dalam dua langkah
 yarn build @my-project/plugin-hello
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-> Catatan: Jika plugin dibuat di repositori sumber, build pertama akan memicu pemeriksaan tipe seluruh repositori, yang mungkin memakan waktu cukup lama. Disarankan untuk memastikan dependensi telah terinstal dan repositori berada dalam kondisi yang dapat dibangun (buildable).
+:::tip Tips
 
-Setelah build selesai, file paket secara default terletak di `storage/tar/@my-project/plugin-hello.tar.gz`.
+Jika plugin dibuat di repository source code, build pertama akan memicu pemeriksaan tipe untuk seluruh repository, yang mungkin memakan waktu cukup lama. Pastikan dependensi sudah terinstal dan repository dalam kondisi siap untuk dibuild.
 
-## Langkah 5: Mengunggah ke Aplikasi NocoBase Lain
+:::
 
-Unggah dan ekstrak ke direktori `./storage/plugins` aplikasi target. Untuk detailnya, lihat [Instalasi dan Peningkatan Plugin](../get-started/install-upgrade-plugins.mdx).
+Setelah build selesai, file packaging secara default berada di `storage/tar/@my-project/plugin-hello.tar.gz`.
+
+:::tip Tips
+
+Sebelum plugin dirilis, disarankan untuk menulis test case untuk memvalidasi logika inti, NocoBase menyediakan toolchain test server yang lengkap. Lihat [Test Pengujian](./server/test.md).
+
+:::
+
+## Langkah 5: Upload ke Aplikasi NocoBase Lain
+
+Upload dan ekstrak file packaging ke direktori `./storage/plugins` aplikasi target. Untuk langkah detail, lihat [Instalasi & Upgrade Plugin](../get-started/install-upgrade-plugins.mdx).
+
+## Tautan Terkait
+
+- [Ikhtisar Plugin Development](./index.md) — Memahami arsitektur microkernel NocoBase dan siklus hidup plugin
+- [Struktur Direktori Proyek](./project-structure.md) — Konvensi direktori proyek, path dan prioritas loading plugin
+- [Ikhtisar Pengembangan Server](./server/index.md) — Pengantar menyeluruh dan konsep inti plugin server
+- [Ikhtisar Pengembangan Client](./client/index.md) — Pengantar menyeluruh dan konsep inti plugin client
+- [Build & Packaging](./build.md) — Alur build, packaging, dan distribusi plugin
+- [Test Pengujian](./server/test.md) — Menulis test case plugin server
+- [Instalasi menggunakan create-nocobase-app](../get-started/installation/create-nocobase-app) — Salah satu cara instalasi NocoBase
+- [Instalasi dari source code Git](../get-started/installation/git) — Instalasi NocoBase dari source code
+- [Instalasi & Upgrade Plugin](../get-started/install-upgrade-plugins.mdx) — Upload plugin yang sudah di-package ke environment lain
+- [Environment Variable](../get-started/installation/env.md) — Konfigurasi environment variable untuk plugin preset dan built-in

@@ -1,59 +1,70 @@
 ---
 pkg: '@nocobase/plugin-workflow-cc'
+title: "Node Workflow - CC"
+description: "Node CC: mengirim konten konteks alur ke pengguna yang ditentukan, ditampilkan di pusat tugas 'CC ke Saya'."
+keywords: "Workflow,CC,CC ke saya,pusat tugas,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# CC <Badge>v1.8.2+</Badge>
 
-# Salinan Karbon <Badge>v1.8.2+</Badge>
+## Pengantar
 
-## Pendahuluan
+Node CC digunakan untuk mengirimkan konten konteks tertentu selama proses eksekusi Workflow ke pengguna yang ditentukan, untuk diketahui dan ditinjau. Misalnya dalam alur persetujuan atau alur lainnya, dapat mengirimkan informasi terkait kepada peserta lain, agar mereka dapat segera mengetahui kemajuan pekerjaan.
 
-Node Salinan Karbon digunakan untuk mengirimkan konten kontekstual tertentu dari proses eksekusi alur kerja kepada pengguna yang ditentukan, untuk informasi dan peninjauan mereka. Misalnya, dalam proses persetujuan atau alur kerja lainnya, informasi relevan dapat disalin karbon kepada peserta lain agar mereka dapat tetap mengetahui perkembangan pekerjaan.
+Anda dapat mengatur beberapa Node CC dalam Workflow, sehingga ketika Workflow dieksekusi sampai Node tersebut, mengirimkan informasi terkait ke penerima yang ditentukan.
 
-Anda dapat mengatur beberapa node Salinan Karbon dalam sebuah alur kerja. Ketika eksekusi alur kerja mencapai node tersebut, informasi relevan akan dikirimkan kepada penerima yang ditentukan.
-
-Konten yang disalin karbon akan ditampilkan di menu "CC untuk Saya" di Pusat Tugas. Pengguna dapat melihat semua konten yang disalin karbon kepada mereka di sini. Sistem juga akan memberi tahu pengguna tentang konten salinan karbon yang belum dilihat berdasarkan status belum dibaca. Setelah melihatnya, pengguna dapat secara aktif menandainya sebagai sudah dibaca.
+Konten CC akan ditampilkan di menu "CC ke Saya" di pusat tugas, pengguna dapat melihat semua konten yang di-CC ke dirinya di sini. Dan akan memberi tip pengguna konten CC yang belum dilihat berdasarkan status belum dibaca, setelah pengguna melihat dapat secara aktif menandai sebagai sudah dibaca.
 
 ## Membuat Node
 
-Pada antarmuka konfigurasi alur kerja, klik tombol plus ('+') dalam alur untuk menambahkan node "Salinan Karbon":
+Pada antarmuka konfigurasi Workflow, klik tombol plus ("+") di alur, tambahkan Node "CC":
 
-![抄送_添加](https://static-docs.nocobase.com/20250710222842.png)
+![CC_tambah](https://static-docs.nocobase.com/20250710222842.png)
 
 ## Konfigurasi Node
 
-![节点配置](https://static-docs.nocobase.com/20250710224041.png)
+![Konfigurasi Node](https://static-docs.nocobase.com/20250710224041.png)
 
-Pada antarmuka konfigurasi node, Anda dapat mengatur parameter berikut:
+Pada antarmuka konfigurasi Node, dapat mengatur parameter berikut:
 
 ### Penerima
 
-Penerima adalah koleksi pengguna target untuk salinan karbon, yang bisa berupa satu atau lebih pengguna. Sumber yang dipilih dapat berupa nilai statis yang dipilih dari daftar pengguna, nilai dinamis yang ditentukan oleh variabel, atau hasil dari kueri pada koleksi pengguna.
+Penerima adalah kumpulan pengguna objek CC, dapat satu atau beberapa pengguna. Sumber pemilihan dapat berupa nilai statis yang dipilih dari daftar pengguna, atau juga nilai dinamis yang ditentukan oleh variabel, atau juga hasil kueri tabel pengguna.
 
-![接收者配置](https://static-docs.nocobase.com/20250710224421.png)
+![Konfigurasi penerima](https://static-docs.nocobase.com/20250710224421.png)
 
 ### Antarmuka Pengguna
 
-Penerima perlu melihat konten salinan karbon di menu "CC untuk Saya" di Pusat Tugas. Anda dapat mengonfigurasi hasil dari pemicu dan node apa pun dalam konteks alur kerja sebagai blok konten.
+Penerima perlu melihat konten CC di menu "CC ke Saya" pusat tugas. Dapat mengonfigurasi Trigger pada konteks alur dan hasil Node manapun sebagai Block konten.
 
-![用户界面](https://static-docs.nocobase.com/20250710225400.png)
+![Antarmuka pengguna](https://static-docs.nocobase.com/20250710225400.png)
+
+### Kartu Tugas <Badge>2.0+</Badge>
+
+Dapat digunakan untuk mengonfigurasi kartu tugas dalam daftar "CC ke Saya" pusat tugas.
+
+![20260213010947](https://static-docs.nocobase.com/20260213010947.png)
+
+Pada kartu dapat dengan bebas mengonfigurasi field bisnis (kecuali field relasi) yang ingin ditampilkan.
+
+Setelah tugas CC Workflow dibuat, daftar pusat tugas dapat melihat kartu tugas kustom:
+
+![20260214124325](https://static-docs.nocobase.com/20260214124325.png)
 
 ### Judul Tugas
 
-Judul tugas adalah judul yang ditampilkan di Pusat Tugas. Anda dapat menggunakan variabel dari konteks alur kerja untuk menghasilkan judul secara dinamis.
+Judul tugas adalah judul yang ditampilkan di pusat tugas, dapat menggunakan variabel pada konteks alur untuk menghasilkan judul secara dinamis.
 
-![任务标题](https://static-docs.nocobase.com/20250710225603.png)
+![Judul tugas](https://static-docs.nocobase.com/20250710225603.png)
 
 ## Pusat Tugas
 
-Pengguna dapat melihat dan mengelola semua konten yang disalin karbon kepada mereka di Pusat Tugas, serta memfilter dan melihatnya berdasarkan status baca.
+Pengguna dapat melihat dan mengelola semua konten yang di-CC ke dirinya di pusat tugas, dan memfilter dan melihat berdasarkan status pembacaan.
 
 ![20250710232932](https://static-docs.nocobase.com/20250710232932.png)
 
 ![20250710233032](https://static-docs.nocobase.com/20250710233032.png)
 
-Setelah melihatnya, Anda dapat menandainya sebagai sudah dibaca, dan jumlah yang belum dibaca akan berkurang.
+Setelah dilihat dapat ditandai sebagai sudah dibaca, jumlah yang belum dibaca akan berkurang sesuai.
 
 ![20250710233102](https://static-docs.nocobase.com/20250710233102.png)

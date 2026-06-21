@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Dropdown (chọn nhiều)"
+description: "Field dropdown chọn nhiều, chọn nhiều mục từ các tùy chọn được thiết lập sẵn."
+keywords: "dropdown chọn nhiều,multiple-select,chọn nhiều,Field tùy chọn,NocoBase"
+---
 
-
-# Chọn nhiều (Dropdown)
+# Dropdown (chọn nhiều)
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512180236](https://static-docs.nocobase.com/20240512180236.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung

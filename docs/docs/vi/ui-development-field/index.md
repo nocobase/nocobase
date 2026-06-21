@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Mở rộng Field"
+description: "Phát triển mở rộng Field: mở rộng loại field tùy chỉnh dựa trên FieldModel, hỗ trợ form, table, filter."
+keywords: "mở rộng Field,FieldModel,plugin Field,NocoBase"
+---
 
-
-# Trường mở rộng
+# Mở rộng Field

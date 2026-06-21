@@ -1,3 +1,9 @@
+---
+title: "Filter Operators"
+description: "NocoBase Repository 过滤操作符：$eq、$ne、$in、$and、$or 等，用于 find/findOne filter 参数。"
+keywords: "Filter 操作符,$eq,$in,$and,$or,Repository 查询,filter 参数,NocoBase"
+---
+
 # Filter Operators
 
 用于 Repository 的 `find`、`findOne`、`findAndCount`、`count` 等 API 的 filter 参数中：

@@ -1,15 +1,14 @@
 ---
 pkg: "@nocobase/plugin-action-export-pro"
+title: "Action Ekspor Lampiran"
+description: "Action Ekspor Lampiran: mengekspor lampiran file yang terkait dengan record, mendukung ekspor batch, download paket terkompresi."
+keywords: "Ekspor Lampiran, ExportAttachments, ekspor lampiran, download file, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 # Ekspor Lampiran
 
-## Pendahuluan
+## Pengantar
 
-Fitur ekspor lampiran memungkinkan Anda mengekspor bidang-bidang terkait lampiran dalam format paket terkompresi.
+Ekspor lampiran mendukung ekspor Field terkait lampiran ke format paket terkompresi.
 
 #### Konfigurasi Ekspor Lampiran
 
@@ -19,15 +18,16 @@ Fitur ekspor lampiran memungkinkan Anda mengekspor bidang-bidang terkait lampira
 
 ![20251029173345](https://static-docs.nocobase.com/20251029173345.png)
 
-- Konfigurasikan bidang lampiran yang akan diekspor; mendukung banyak pilihan.
-- Anda dapat memilih apakah akan membuat folder untuk setiap catatan.
+- Konfigurasi Field lampiran yang akan diekspor, mendukung multi-select.
+- Anda dapat memilih apakah akan membuat folder untuk setiap record.
 
-Aturan penamaan berkas:
+Aturan penamaan file:
 
-- Jika Anda memilih untuk membuat folder untuk setiap catatan, aturan penamaan berkas adalah: `{nilai bidang judul catatan}/{nama bidang lampiran}[-{nomor urut berkas}].{ekstensi berkas}`.
-- Jika Anda memilih untuk tidak membuat folder, aturan penamaan berkas adalah: `{nilai bidang judul catatan}-{nama bidang lampiran}[-{nomor urut berkas}].{ekstensi berkas}`.
+- Jika memilih untuk membuat folder untuk setiap record, aturan penamaan file adalah: `{nilai Field judul record}/{nama Field lampiran}[-{nomor file}].{ekstensi file}`.
+- Jika memilih untuk tidak membuat folder, aturan penamaan file adalah: `{nilai Field judul record}-{nama Field lampiran}[-{nomor file}].{ekstensi file}`.
 
-Nomor urut berkas akan dibuat secara otomatis jika ada beberapa lampiran dalam satu bidang lampiran.
+Nomor file akan otomatis dihasilkan saat ada beberapa lampiran di Field lampiran.
 
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule): Menampilkan/menyembunyikan tombol secara dinamis;
-- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Mengedit judul, tipe, dan ikon tombol;
+
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule): tampilan/sembunyi tombol secara dinamis;
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, ikon tombol;

@@ -17,85 +17,46 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
+import { syncUserMainDepartment } from '../sync-user-main-department';
+
+const normalizeIds = (values: any[] = []) =>
+  values
+    .map((value) => (typeof value === 'object' && value ? value.id ?? value : value))
+    .filter((value) => value !== null && value !== undefined);
+
+const syncUsersMainDepartment = async (ctx: Context, userIds: any[]) => {
+  const uniqUserIds = [...new Set(normalizeIds(userIds))];
+  for (const userId of uniqUserIds) {
+    await syncUserMainDepartment(ctx.db, userId, ctx.transaction);
+  }
+};
 
 export const setMainDepartment = async (ctx: Context, next: Next) => {
+  const { associatedName, resourceName, associatedIndex, actionName, values, filterByTk } = ctx.action.params;
+  let affectedDepartmentMemberUserIds: any[] = [];
+
+  if (associatedName === 'departments' && resourceName === 'members' && actionName === 'set') {
+    const throughRepo = ctx.db.getRepository('departmentsUsers');
+    const currentMembers = await throughRepo.find({
+      fields: ['userId'],
+      filter: { departmentId: associatedIndex },
+      transaction: ctx.transaction,
+    });
+    affectedDepartmentMemberUserIds = currentMembers.map((member: any) => member.get?.('userId') ?? member.userId);
+  }
+
   await next();
 
-  const { associatedName, resourceName, associatedIndex, actionName, values, filterByTk } = ctx.action.params;
-
   // When operating from department side: departments.members
-  if (associatedName === 'departments' && resourceName === 'members' && values?.length) {
-    const userRepo = ctx.db.getRepository('users');
-    const throughRepo = ctx.db.getRepository('departmentsUsers');
-
-    if (actionName === 'add' || actionName === 'set') {
-      // Set first main if not have one
-      for (const userId of values) {
-        const user = await userRepo.findOne({ filterByTk: userId, fields: ['id', 'mainDepartmentId'] });
-        if (!user?.mainDepartmentId) {
-          await userRepo.update({
-            filterByTk: userId,
-            values: { mainDepartmentId: associatedIndex },
-          });
-        }
-      }
-      return;
-    }
-
-    if (actionName === 'remove') {
-      for (const userId of values) {
-        const user = await userRepo.findOne({ filterByTk: userId, fields: ['id', 'mainDepartmentId'] });
-        if (user?.mainDepartmentId === Number(associatedIndex)) {
-          const firstDept = await throughRepo.findOne({
-            filter: { userId },
-          });
-          await userRepo.update({
-            filterByTk: userId,
-            values: { mainDepartmentId: firstDept ? firstDept.departmentId : null },
-          });
-        }
-      }
-    }
+  if (associatedName === 'departments' && resourceName === 'members' && ['add', 'remove', 'set'].includes(actionName)) {
+    const affectedUserIds =
+      actionName === 'set' ? [...affectedDepartmentMemberUserIds, ...(values || [])] : values || [];
+    await syncUsersMainDepartment(ctx, affectedUserIds);
+    return;
   }
 
   // When operating from user side: users.departments
   if (associatedName === 'users' && resourceName === 'departments' && ['add', 'remove', 'set'].includes(actionName)) {
-    const userRepo = ctx.db.getRepository('users');
-    const throughRepo = ctx.db.getRepository('departmentsUsers');
-    const user = await userRepo.findOne({ filterByTk: associatedIndex, fields: ['id', 'mainDepartmentId'] });
-
-    // If user has no main OR current main department is no longer associated, pick a new one from remaining
-    let hasValidMain = false;
-    if (user?.mainDepartmentId) {
-      const existingAssoc = await throughRepo.findOne({
-        filter: { userId: associatedIndex, departmentId: user.mainDepartmentId },
-      });
-      hasValidMain = !!existingAssoc;
-    }
-
-    if (!hasValidMain) {
-      const firstDept = await throughRepo.findOne({
-        filter: { userId: associatedIndex },
-      });
-      await userRepo.update({
-        filterByTk: associatedIndex,
-        values: { mainDepartmentId: firstDept ? firstDept.departmentId : null },
-      });
-    }
-  }
-
-  // 用户更新：当通过 users.update 修改部门关联后，若仅剩一个部门则设为主属部门
-  if (resourceName === 'users' && actionName === 'update') {
-    const userRepo = ctx.db.getRepository('users');
-    const throughRepo = ctx.db.getRepository('departmentsUsers');
-    const userId = associatedIndex ?? filterByTk ?? ctx.body?.data?.id;
-    if (!userId) return;
-    const deptUsers = await throughRepo.find({ filter: { userId } });
-    if (deptUsers.length === 1) {
-      await userRepo.update({
-        filterByTk: userId,
-        values: { mainDepartmentId: deptUsers[0].departmentId },
-      });
-    }
+    await syncUsersMainDepartment(ctx, [associatedIndex ?? filterByTk]);
   }
 };

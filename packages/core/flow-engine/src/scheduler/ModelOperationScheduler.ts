@@ -21,7 +21,11 @@ type LifecycleType =
   | `event:${string}:end`
   | `event:${string}:error`;
 
-export type ScheduleWhen = LifecycleType | ((e: LifecycleEvent) => boolean);
+type EventPredicateWhen = ((e: LifecycleEvent) => boolean) & {
+  __eventType?: string;
+};
+
+export type ScheduleWhen = LifecycleType | EventPredicateWhen;
 
 export interface ScheduleOptions {
   when?: ScheduleWhen;
@@ -37,6 +41,7 @@ export interface LifecycleEvent {
   error?: any;
   inputArgs?: Record<string, any>;
   result?: any;
+  aborted?: boolean;
   flowKey?: string;
   stepKey?: string;
 }
@@ -216,8 +221,14 @@ export class ModelOperationScheduler {
   }
 
   private ensureEventSubscriptionIfNeeded(when?: ScheduleWhen) {
-    if (!when || typeof when !== 'string') return;
-    const parsed = this.parseEventWhen(when);
+    const eventType =
+      typeof when === 'string'
+        ? when
+        : typeof when === 'function'
+          ? (when as EventPredicateWhen).__eventType
+          : undefined;
+    if (!eventType) return;
+    const parsed = this.parseEventWhen(eventType as ScheduleWhen);
     if (!parsed) return;
     const { name } = parsed;
     if (this.subscribedEventNames.has(name)) return;

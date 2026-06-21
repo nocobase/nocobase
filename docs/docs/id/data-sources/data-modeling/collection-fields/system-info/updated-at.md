@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Tanggal Modifikasi Terakhir"
+description: "Field sistem waktu modifikasi, otomatis mencatat waktu modifikasi terakhir."
+keywords: "updatedAt,waktu modifikasi,field sistem,field audit,NocoBase"
+---
 
-# Terakhir Diperbarui
+# Tanggal Modifikasi Terakhir
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512174826](https://static-docs.nocobase.com/20240512174826.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-file-previewer-office'
+title: "Office 文件预览"
+description: "Office 预览插件：基于微软 Office Web Viewer 在线预览 Word、Excel、PowerPoint、ODT，支持 docx/xlsx/pptx 格式，无需下载。"
+keywords: "Office 预览,Word 预览,Excel 预览,PowerPoint 预览,docx,xlsx,pptx,Office Web Viewer,NocoBase"
 ---
-
 # Office 文件预览 <Badge>v1.8.11+</Badge>
 
 Office 文件预览插件用于在 NocoBase 应用中预览 Office 格式的文件，如 Word、Excel、PowerPoint 等。  

@@ -66,6 +66,11 @@
       },
       {
         "type": "custom-link",
+        "label": "外部 NocoBase",
+        "link": "/data-sources/data-source-external-nocobase/"
+      },
+      {
+        "type": "custom-link",
         "label": "人大金仓（KingbaseES）数据源",
         "link": "/data-sources/data-source-kingbase/"
       }
@@ -134,7 +139,7 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/data-sources/data-modeling/collection-fields"
+        "link": "/data-sources/data-modeling/collection-fields/"
       },
       {
         "type": "custom-link",
@@ -261,6 +266,11 @@
             "type": "custom-link",
             "label": "附件（URL）",
             "link": "/data-sources/field-attachment-url/"
+          },
+          {
+            "type": "custom-link",
+            "label": "手写签名",
+            "link": "/data-sources/field-signature/"
           }
         ]
       },
@@ -271,7 +281,7 @@
           {
             "type": "custom-link",
             "label": "概述",
-            "link": "/data-sources/data-modeling/collection-fields/datetime"
+            "link": "/data-sources/data-modeling/collection-fields/datetime/"
           },
           {
             "type": "custom-link",
@@ -374,6 +384,11 @@
             "type": "custom-link",
             "label": "加密",
             "link": "/data-sources/field-encryption/"
+          },
+          {
+            "type": "custom-link",
+            "label": "中国行政区",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/china-region"
           }
         ]
       },
@@ -420,27 +435,27 @@
           {
             "type": "custom-link",
             "label": "概述",
-            "link": "/data-sources/data-modeling/collection-fields/associations"
+            "link": "/data-sources/data-modeling/collection-fields/associations/"
           },
           {
             "type": "custom-link",
             "label": "一对一",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
           },
           {
             "type": "custom-link",
             "label": "一对多",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
           },
           {
             "type": "custom-link",
             "label": "多对一",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
           },
           {
             "type": "custom-link",
             "label": "多对多",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
           },
           {
             "type": "custom-link",
@@ -458,7 +473,7 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/data-sources/development"
+        "link": "/data-sources/development/"
       }
     ]
   }

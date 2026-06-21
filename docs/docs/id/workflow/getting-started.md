@@ -1,97 +1,99 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Memulai Workflow"
+description: "Memulai Workflow: konfigurasi Workflow pertama Anda, Trigger event tabel data, Node komputasi, simpan dan uji, kuasai dalam 5 menit."
+keywords: "Workflow,memulai,event tabel data,Node komputasi,konfigurasi Trigger,NocoBase"
+---
 
-# Mulai Cepat
+# Memulai
 
-## Konfigurasi Alur Kerja Pertama Anda
+## Konfigurasi Workflow Pertama
 
-Masuk ke halaman manajemen *plugin* alur kerja dari menu konfigurasi *plugin* di bilah menu atas:
+Masuk ke halaman manajemen plugin Workflow dari menu konfigurasi plugin di bilah menu atas:
 
-![Akses manajemen plugin alur kerja](https://static-docs.nocobase.com/20251027222721.png)
+![Pintu masuk manajemen plugin Workflow](https://static-docs.nocobase.com/20251027222721.png)
 
-Antarmuka manajemen akan menampilkan semua alur kerja yang telah dibuat:
+Antarmuka manajemen akan menampilkan semua Workflow yang sudah dibuat:
 
-![Manajemen Alur Kerja](https://static-docs.nocobase.com/20251027222900.png)
+![Manajemen Workflow](https://static-docs.nocobase.com/20251027222900.png)
 
-Klik tombol "Baru" untuk membuat alur kerja baru dan pilih Event Koleksi:
+Klik tombol "Buat Baru" untuk membuat Workflow baru, lalu pilih event tabel data:
 
-![Buat Alur Kerja](https://static-docs.nocobase.com/20251027222951.png)
+![Buat Workflow](https://static-docs.nocobase.com/20251027222951.png)
 
-Setelah mengirimkan, klik tautan "Konfigurasi" di daftar untuk masuk ke antarmuka konfigurasi alur kerja:
+Setelah dikirim, klik tautan "Konfigurasi" pada daftar untuk masuk ke antarmuka konfigurasi Workflow:
 
-![Alur kerja kosong](https://static-docs.nocobase.com/20251027223131.png)
+![Workflow kosong](https://static-docs.nocobase.com/20251027223131.png)
 
-Kemudian, klik kartu *trigger* untuk membuka *drawer* konfigurasi *trigger*. Pilih sebuah koleksi yang telah dibuat sebelumnya (misalnya, koleksi "Artikel"), untuk waktu *trigger*, pilih "Setelah data ditambahkan", dan klik tombol "Simpan" untuk menyelesaikan konfigurasi *trigger*:
+Kemudian klik kartu Trigger untuk membuka panel konfigurasi Trigger, pilih salah satu tabel data yang sudah dibuat sebelumnya (misalnya tabel "Artikel"), pilih waktu pemicuan "Setelah penambahan data", klik tombol "Simpan" untuk menyelesaikan konfigurasi Trigger:
 
 ![Konfigurasi Trigger](https://static-docs.nocobase.com/20251027224735.png)
 
-Selanjutnya, kita dapat mengklik tombol plus di alur untuk menambahkan sebuah *node*. Misalnya, pilih *node* perhitungan yang digunakan untuk menggabungkan bidang "Judul" dan bidang "ID" dari data *trigger*:
+Selanjutnya kita dapat mengklik tombol tambah pada alur untuk menambahkan Node, misalnya pilih Node komputasi yang berfungsi untuk menggabungkan field "Judul" dan field "ID" dari data Trigger:
 
-![Tambah Node Perhitungan](https://static-docs.nocobase.com/20251027224842.png)
+![Tambah Node komputasi](https://static-docs.nocobase.com/20251027224842.png)
 
-Klik kartu *node* untuk membuka *drawer* konfigurasi *node*. Gunakan fungsi perhitungan `CONCATENATE` yang disediakan oleh Formula.js untuk menggabungkan bidang "Judul" dan "ID". Kedua bidang ini dimasukkan melalui pemilih variabel:
+Klik kartu Node untuk membuka panel konfigurasi Node, gunakan fungsi komputasi `CONCATENATE` yang disediakan oleh Formula.js untuk menggabungkan field "Judul" dan "ID", kedua field tersebut disisipkan melalui pemilih variabel:
 
-![Node perhitungan menggunakan fungsi dan variabel](https://static-docs.nocobase.com/20251027224939.png)
+![Node komputasi menggunakan fungsi dan variabel](https://static-docs.nocobase.com/20251027224939.png)
 
-Setelah itu, buat *node* pembaruan data untuk menyimpan hasilnya ke bidang "Judul":
+Kemudian buat lagi Node Perbarui Data untuk menyimpan hasil ke field "Judul":
 
-![Buat Node Pembaruan Data](https://static-docs.nocobase.com/20251027232654.png)
+![Buat Node Perbarui Data](https://static-docs.nocobase.com/20251027232654.png)
 
-Demikian pula, klik kartu untuk membuka *drawer* konfigurasi *node* pembaruan data. Pilih koleksi "Artikel". Untuk ID data yang akan diperbarui, pilih ID data dari *trigger*. Untuk item data yang akan diperbarui, pilih "Judul". Untuk nilai data yang akan diperbarui, pilih hasil dari *node* perhitungan:
+Sama seperti sebelumnya, klik kartu untuk membuka panel konfigurasi Node Perbarui Data, pilih tabel "Artikel", pilih ID data Trigger sebagai ID data yang akan diperbarui, pilih "Judul" sebagai item data yang diperbarui, dan pilih hasil dari Node komputasi sebagai nilai data yang diperbarui:
 
-![Konfigurasi Node Pembaruan Data](https://static-docs.nocobase.com/20251027232802.png)
+![Konfigurasi Node Perbarui Data](https://static-docs.nocobase.com/20251027232802.png)
 
-Terakhir, klik tombol *toggle* "Aktifkan"/"Nonaktifkan" di bilah alat kanan atas untuk mengubah status alur kerja menjadi aktif, sehingga alur kerja dapat dipicu dan dijalankan.
+Terakhir, klik sakelar "Aktifkan"/"Nonaktifkan" pada bilah alat di pojok kanan atas untuk mengubah Workflow ke status aktif. Dengan demikian, Workflow dapat dipicu dan dieksekusi.
 
-## Memicu Alur Kerja
+## Memicu Workflow
 
-Kembali ke antarmuka utama sistem, buat sebuah artikel melalui blok artikel, dan isi judul artikel:
+Kembali ke antarmuka utama sistem, buat sebuah artikel melalui Block Artikel, isi judul artikel:
 
 ![Buat data artikel](https://static-docs.nocobase.com/20251027233004.png)
 
-Setelah mengirimkan dan menyegarkan blok, Anda dapat melihat bahwa judul artikel telah diperbarui secara otomatis menjadi format "Judul Artikel + ID Artikel":
+Setelah dikirim, refresh Block, Anda akan melihat judul artikel diperbarui secara otomatis menjadi format "Judul Artikel + ID Artikel":
 
-![Judul artikel dimodifikasi oleh alur kerja](https://static-docs.nocobase.com/20251027233043.png)
+![Judul artikel yang dimodifikasi oleh Workflow](https://static-docs.nocobase.com/20251027233043.png)
 
 :::info{title=Tips}
-Karena alur kerja yang dipicu oleh event koleksi dieksekusi secara asinkron, Anda tidak dapat melihat pembaruan data segera di antarmuka setelah mengirimkan data. Namun, setelah beberapa saat, Anda dapat melihat konten yang diperbarui dengan menyegarkan halaman atau blok.
+Karena Workflow yang dipicu oleh tabel data dieksekusi secara asinkron, pembaruan data tidak akan langsung terlihat di antarmuka setelah pengiriman data, tetapi setelah beberapa saat dan refresh halaman atau Block, konten yang diperbarui akan terlihat.
 :::
 
 ## Melihat Riwayat Eksekusi
 
-Alur kerja tadi telah berhasil dipicu dan dieksekusi sekali. Kita dapat kembali ke antarmuka manajemen alur kerja untuk melihat riwayat eksekusi yang sesuai:
+Workflow tadi telah berhasil dipicu dan dieksekusi sekali, kita dapat kembali ke antarmuka manajemen Workflow untuk melihat riwayat eksekusi terkait:
 
-![Lihat daftar alur kerja](https://static-docs.nocobase.com/20251027233246.png)
+![Lihat daftar Workflow](https://static-docs.nocobase.com/20251027233246.png)
 
-Di daftar alur kerja, Anda dapat melihat bahwa alur kerja ini telah menghasilkan satu riwayat eksekusi. Klik tautan di kolom jumlah untuk membuka catatan riwayat eksekusi untuk alur kerja yang sesuai:
+Pada daftar Workflow, terlihat bahwa Workflow ini telah menghasilkan satu riwayat eksekusi. Klik tautan jumlah untuk membuka catatan riwayat eksekusi Workflow tersebut:
 
-![Daftar riwayat eksekusi untuk alur kerja yang sesuai](https://static-docs.nocobase.com/20251027233341.png)
+![Daftar riwayat eksekusi Workflow terkait](https://static-docs.nocobase.com/20251027233341.png)
 
-Kemudian, klik tautan "Lihat" untuk masuk ke halaman detail untuk eksekusi tersebut, di mana Anda dapat melihat status eksekusi dan data hasil untuk setiap *node*:
+Klik tautan "Lihat" untuk masuk ke halaman detail eksekusi tersebut, Anda dapat melihat status eksekusi dan data hasil setiap Node:
 
-![Detail riwayat eksekusi alur kerja](https://static-docs.nocobase.com/20251027233615.png)
+![Detail riwayat eksekusi Workflow](https://static-docs.nocobase.com/20251027233615.png)
 
-Data konteks *trigger* dan data hasil eksekusi *node* dapat dilihat dengan mengklik tombol status di sudut kanan atas kartu yang sesuai. Misalnya, mari kita lihat data hasil dari *node* perhitungan:
+Data konteks Trigger dan data hasil eksekusi Node dapat dibuka dan dilihat dengan mengklik tombol status di pojok kanan atas kartu terkait, misalnya kita melihat data hasil dari Node komputasi:
 
-![Hasil node perhitungan](https://static-docs.nocobase.com/20251027233635.png)
+![Hasil Node komputasi](https://static-docs.nocobase.com/20251027233635.png)
 
-Anda dapat melihat bahwa data hasil dari *node* perhitungan berisi judul yang telah dihitung. Judul ini adalah data yang digunakan oleh *node* pembaruan data selanjutnya.
+Terlihat bahwa data hasil dari Node komputasi mengandung judul yang sudah dikomputasi, judul ini adalah data yang akan diperbarui oleh Node Perbarui Data berikutnya.
 
 ## Ringkasan
 
-Melalui langkah-langkah di atas, kita telah menyelesaikan konfigurasi dan pemicuan alur kerja sederhana dan juga telah mengenal beberapa konsep dasar berikut:
+Melalui langkah-langkah di atas, kita telah menyelesaikan konfigurasi dan pemicuan Workflow sederhana, serta berkenalan dengan beberapa konsep dasar berikut:
 
--   **Alur Kerja**: Digunakan untuk mendefinisikan informasi dasar sebuah alur, termasuk nama, jenis *trigger*, dan status aktif. Anda dapat mengkonfigurasi berapa pun jumlah *node* di dalamnya. Ini adalah entitas yang menampung alur.
--   **Trigger**: Setiap alur kerja berisi satu *trigger*, yang dapat dikonfigurasi dengan kondisi spesifik agar alur kerja dapat dipicu. Ini adalah titik masuk alur.
--   **Node**: Sebuah *node* adalah unit instruksi dalam sebuah alur kerja yang melakukan tindakan spesifik. Beberapa *node* dalam alur kerja membentuk alur eksekusi yang lengkap melalui hubungan hulu dan hilir.
--   **Eksekusi**: Sebuah eksekusi adalah objek eksekusi spesifik setelah alur kerja dipicu, juga dikenal sebagai catatan eksekusi atau riwayat eksekusi. Ini berisi informasi seperti status eksekusi dan data konteks *trigger*. Ada juga hasil eksekusi yang sesuai untuk setiap *node*, yang mencakup status eksekusi *node* dan informasi data hasil.
+- **Workflow**: digunakan untuk mendefinisikan informasi dasar alur, termasuk nama, tipe Trigger, dan status aktivasi, dapat dikonfigurasi dengan sejumlah Node di dalamnya, merupakan entitas yang membawa alur.
+- **Trigger**: setiap Workflow memiliki satu Trigger, yang dapat dikonfigurasikan sebagai kondisi spesifik untuk memicu Workflow, merupakan pintu masuk dari alur.
+- **Node**: Node adalah unit instruksi yang melaksanakan operasi spesifik di dalam Workflow, banyak Node dalam Workflow dihubungkan melalui hubungan hulu-hilir membentuk alur eksekusi yang lengkap.
+- **Rencana Eksekusi**: rencana eksekusi adalah objek eksekusi konkret setelah Workflow dipicu, juga disebut catatan eksekusi atau riwayat eksekusi, mengandung informasi seperti status eksekusi, data konteks pemicu, dan lain-lain. Untuk setiap Node juga ada hasil eksekusi yang sesuai, mengandung informasi status dan data hasil setelah Node dieksekusi.
 
-Untuk penggunaan yang lebih mendalam, Anda dapat merujuk pada konten berikut:
+Untuk penggunaan yang lebih mendalam, Anda dapat merujuk ke konten berikut:
 
--   [Trigger](./triggers/index)
--   [Node](./nodes/index)
--   [Menggunakan Variabel](./advanced/variables)
--   [Eksekusi](./advanced/executions)
--   [Manajemen Versi](./advanced/revisions)
--   [Opsi Lanjutan](./advanced/options)
+- [Trigger](./triggers/index)
+- [Node](./nodes/index)
+- [Menggunakan Variabel](./advanced/variables)
+- [Rencana Eksekusi](./advanced/executions)
+- [Manajemen Versi](./advanced/revisions)
+- [Konfigurasi Lanjutan](./advanced/options)

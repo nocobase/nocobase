@@ -1,15 +1,17 @@
 ---
-displayName: "Access control"
+displayName: "Kiểm soát quyền hạn"
 packageName: '@nocobase/plugin-acl'
+title: "Kiểm soát quyền hạn"
+keywords: "Kiểm soát quyền hạn,Vai trò,ACL,Tài nguyên,Hành động,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
+  Kiểm soát quyền hạn dựa trên vai trò, tài nguyên và hành động, cho phép kiểm soát chính xác quyền cấu hình giao diện, quyền thao tác dữ liệu, quyền truy cập menu và quyền plugin.
 isFree: true
 builtIn: true
 defaultEnabled: true
 editionLevel: 0
 ---
 
-# Access control
+# Kiểm soát quyền hạn

@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "URL"
+description: "Field URL, menyimpan link halaman web, mendukung validasi format."
+keywords: "URL,field url,link,link halaman web,NocoBase"
+---
 
 # URL
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512175641](https://static-docs.nocobase.com/20240512175641.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

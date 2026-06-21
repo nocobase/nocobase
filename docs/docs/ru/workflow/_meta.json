@@ -1,12 +1,12 @@
 [
   {
     "type": "section-header",
-    "label": "Рабочие процессы"
+    "label": "Workflow"
   },
   {
     "type": "custom-link",
     "label": "Обзор",
-    "link": "/workflow/index"
+    "link": "/workflow/"
   },
   {
     "type": "custom-link",
@@ -15,27 +15,27 @@
   },
   {
     "type": "custom-link",
-    "label": "Триггер",
+    "label": "Триггеры",
     "collapsed": true,
     "items": [
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/workflow/triggers/index"
+        "link": "/workflow/triggers/"
       },
       {
         "type": "custom-link",
-        "label": "Событие таблицы данных",
+        "label": "Событие коллекции",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "Задача по расписанию",
+        "label": "Запланированная задача",
         "link": "/workflow/triggers/schedule"
       },
       {
         "type": "custom-link",
-        "label": "Событие перед действием",
+        "label": "Событие до действия",
         "link": "/workflow/triggers/pre-action"
       },
       {
@@ -45,7 +45,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Пользовательское событие действия",
+        "label": "Событие пользовательского действия",
         "link": "/workflow/triggers/custom-action"
       },
       {
@@ -62,22 +62,85 @@
   },
   {
     "type": "custom-link",
-    "label": "Узел",
+    "label": "Узлы",
     "collapsed": true,
     "items": [
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/workflow/nodes/index"
+        "link": "/workflow/nodes/"
       },
       {
         "type": "custom-link",
-        "label": "Искусственный интеллект (AI)",
+        "label": "Искусственный интеллект",
         "items": [
           {
             "type": "custom-link",
-            "label": "Большая языковая модель (LLM)",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
+            "label": "Узел LLM",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Текстовый чат",
+                "link": "/ai-employees/workflow/nodes/llm/chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Мультимодальный чат",
+                "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Структурированный вывод",
+                "link": "/ai-employees/workflow/nodes/llm/structured-output"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Узел AI-сотрудника",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Настройка узла",
+                "link": "/ai-employees/workflow/nodes/employee/configuration"
+              },
+              {
+                "type": "custom-link",
+                "label": "Согласование узла",
+                "link": "/ai-employees/workflow/nodes/employee/approval"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "База знаний AI",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Обзор",
+                "link": "/ai-employees/workflow/nodes/knowledge/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Создать документ",
+                "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Обновить документ",
+                "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Удалить документ",
+                "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Поиск документов",
+                "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+              }
+            ]
           }
         ]
       },
@@ -92,7 +155,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Ветвление по условиям",
+            "label": "Ветвление по нескольким условиям",
             "link": "/workflow/nodes/multi-conditions"
           },
           {
@@ -102,7 +165,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Переменная",
+            "label": "Переменные",
             "link": "/workflow/nodes/variable"
           },
           {
@@ -132,14 +195,14 @@
           },
           {
             "type": "custom-link",
-            "label": "Завершение",
+            "label": "Конец",
             "link": "/workflow/nodes/end"
           }
         ]
       },
       {
         "type": "section-header",
-        "label": "Вычисление",
+        "label": "Вычисления",
         "items": [
           {
             "type": "custom-link",
@@ -164,7 +227,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Добавление данных",
+            "label": "Создание данных",
             "link": "/workflow/nodes/create"
           },
           {
@@ -186,6 +249,11 @@
             "type": "custom-link",
             "label": "Операция SQL",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Транзакция базы данных",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },
@@ -221,7 +289,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Скрипт JavaScript",
+            "label": "JavaScript-скрипт",
             "link": "/workflow/nodes/javascript"
           },
           {
@@ -231,7 +299,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Отправка email",
+            "label": "Отправка почты",
             "link": "/workflow/nodes/mailer"
           },
           {
@@ -250,13 +318,13 @@
   },
   {
     "type": "custom-link",
-    "label": "Переменная",
+    "label": "Переменные",
     "link": "/workflow/advanced/variables"
   },
   {
     "type": "custom-link",
-    "label": "Журнал выполнения",
-    "link": "/workflow/advanced/execution"
+    "label": "История выполнения",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -275,16 +343,16 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/workflow/development/index"
+        "link": "/workflow/development/"
       },
       {
         "type": "custom-link",
-        "label": "Расширенные типы триггеров",
+        "label": "Расширение типов триггеров",
         "link": "/workflow/development/trigger"
       },
       {
         "type": "custom-link",
-        "label": "Расширенные типы узлов",
+        "label": "Расширение типов узлов",
         "link": "/workflow/development/node"
       },
       {

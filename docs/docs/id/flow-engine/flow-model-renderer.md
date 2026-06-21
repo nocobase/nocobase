@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "FlowModelRenderer Merender FlowModel"
+description: "FlowModelRenderer merender FlowModel menjadi Component React, penggunaan dan konfigurasi rendering FlowModel, entry rendering FlowEngine."
+keywords: "FlowModelRenderer,rendering FlowModel,Component React,rendering FlowEngine,NocoBase"
+---
 
 # Merender FlowModel
 
-`FlowModelRenderer` adalah komponen React inti yang digunakan untuk merender `FlowModel`. Komponen ini bertanggung jawab untuk mengubah instance `FlowModel` menjadi komponen React yang dapat divisualisasikan.
+FlowModelRenderer adalah Component React inti yang digunakan untuk merender FlowModel, bertanggung jawab mengkonversi instance FlowModel menjadi Component React yang dapat divisualisasikan.
 
 ## Penggunaan Dasar
 
@@ -17,58 +19,61 @@ import { FlowModelRenderer } from '@nocobase/flow-engine';
 <FlowModelRenderer model={myModel} />
 ```
 
+```tsx file="./_demos/flow-model-renderer.tsx" preview
+```
+
 ### FieldModelRenderer
 
-Untuk Model bidang (field) yang terkontrol, gunakan `FieldModelRenderer` untuk merender:
+Untuk Model field yang dikontrol, gunakan FieldModelRenderer untuk render:
 
 ```tsx pure
 import { FieldModelRenderer } from '@nocobase/flow-engine';
 
-// Merender bidang yang terkontrol
+// Rendering field yang dikontrol
 <FieldModelRenderer model={fieldModel} />
 ```
 
-## Properti (Props)
+## Parameter Props
 
 ### FlowModelRendererProps
 
-| Parameter | Tipe | Nilai Default | Deskripsi |
+| Parameter | Tipe | Default | Penjelasan |
 |------|------|--------|------|
 | `model` | `FlowModel` | - | Instance FlowModel yang akan dirender |
-| `uid` | `string` | - | Pengidentifikasi unik untuk model alur |
-| `fallback` | `React.ReactNode` | `<Skeleton.Button size="small" />` | Konten fallback yang ditampilkan saat rendering gagal |
-| `showFlowSettings` | `boolean \| object` | `false` | Apakah akan menampilkan entri untuk pengaturan alur |
-| `flowSettingsVariant` | `'dropdown' \| 'contextMenu' \| 'modal' \| 'drawer'` | `'dropdown'` | Gaya interaksi untuk pengaturan alur |
-| `hideRemoveInSettings` | `boolean` | `false` | Apakah akan menyembunyikan tombol hapus di pengaturan |
-| `showTitle` | `boolean` | `false` | Apakah akan menampilkan judul model di sudut kiri atas batas |
-| `skipApplyAutoFlows` | `boolean` | `false` | Apakah akan melewati penerapan alur otomatis |
-| `inputArgs` | `Record<string, any>` | - | Konteks tambahan yang diteruskan ke `useApplyAutoFlows` |
-| `showErrorFallback` | `boolean` | `true` | Apakah akan membungkus lapisan terluar dengan komponen `FlowErrorFallback` |
-| `settingsMenuLevel` | `number` | - | Tingkat menu pengaturan: 1=hanya model saat ini, 2=termasuk model anak |
-| `extraToolbarItems` | `ToolbarItemConfig[]` | - | Item bilah alat tambahan |
+| `uid` | `string` | - | Identifier unik flow model |
+| `fallback` | `React.ReactNode` | `<Skeleton.Button size="small" />` | Konten fallback saat rendering gagal |
+| `showFlowSettings` | `boolean \| object` | `false` | Apakah menampilkan entry pengaturan flow |
+| `flowSettingsVariant` | `'dropdown' \| 'contextMenu' \| 'modal' \| 'drawer'` | `'dropdown'` | Gaya interaksi pengaturan flow |
+| `hideRemoveInSettings` | `boolean` | `false` | Apakah menyembunyikan tombol remove dalam pengaturan |
+| `showTitle` | `boolean` | `false` | Apakah menampilkan judul model di pojok kiri atas border |
+| `skipApplyAutoFlows` | `boolean` | `false` | Apakah melewati auto apply flow |
+| `inputArgs` | `Record<string, any>` | - | Konteks tambahan yang dilewatkan ke useApplyAutoFlows |
+| `showErrorFallback` | `boolean` | `true` | Apakah membungkus Component FlowErrorFallback di lapisan terluar |
+| `settingsMenuLevel` | `number` | - | Level menu pengaturan: 1=hanya model saat ini, 2=termasuk sub model |
+| `extraToolbarItems` | `ToolbarItemConfig[]` | - | Item toolbar tambahan |
 
 ### Konfigurasi Detail showFlowSettings
 
-Ketika `showFlowSettings` berupa objek, konfigurasi berikut didukung:
+Saat `showFlowSettings` adalah objek, mendukung konfigurasi berikut:
 
 ```tsx pure
 showFlowSettings={{
-  showBackground: true,    // Tampilkan latar belakang
-  showBorder: true,        // Tampilkan batas
-  showDragHandle: true,    // Tampilkan pegangan seret
-  style: {},              // Gaya bilah alat kustom
-  toolbarPosition: 'inside' // Posisi bilah alat: 'inside' | 'above' | 'below'
+  showBackground: true,    // Menampilkan background
+  showBorder: true,        // Menampilkan border
+  showDragHandle: true,    // Menampilkan drag handle
+  style: {},              // Custom style toolbar
+  toolbarPosition: 'inside' // Posisi toolbar: 'inside' | 'above' | 'below'
 }}
 ```
 
 ## Siklus Hidup Rendering
 
-Seluruh siklus rendering memanggil metode-metode berikut secara berurutan:
+Seluruh siklus rendering akan memanggil method berikut secara berurutan:
 
-1.  **model.dispatchEvent('beforeRender')** - Event sebelum rendering
-2.  **model.render()** - Mengeksekusi metode render model
-3.  **model.onMount()** - Hook pemasangan komponen
-4.  **model.onUnmount()** - Hook pelepasan komponen
+1. **model.dispatchEvent('beforeRender')** - Event sebelum rendering
+2. **model.render()** - Mengeksekusi method rendering model
+3. **model.onMount()** - Hook mounting Component
+4. **model.onUnmount()** - Hook unmounting Component
 
 ## Contoh Penggunaan
 
@@ -83,30 +88,30 @@ function MyComponent() {
   return (
     <FlowModelRenderer 
       model={model}
-      fallback={<div>Memuat...</div>}
+      fallback={<div>Loading...</div>}
     />
   );
 }
 ```
 
-### Rendering dengan Pengaturan Alur
+### Rendering dengan Pengaturan Flow
 
 ```tsx pure
-// Tampilkan pengaturan tetapi sembunyikan tombol hapus
+// Menampilkan pengaturan tetapi menyembunyikan tombol delete
 <FlowModelRenderer
   model={myModel}
   showFlowSettings={true}
   hideRemoveInSettings={true}
 />
 
-// Tampilkan pengaturan dan judul
+// Menampilkan pengaturan dan judul
 <FlowModelRenderer
   model={myModel}
   showFlowSettings={true}
   showTitle={true}
 />
 
-// Gunakan mode menu konteks
+// Menggunakan mode menu kanan klik
 <FlowModelRenderer
   model={myModel}
   showFlowSettings={true}
@@ -115,7 +120,7 @@ function MyComponent() {
 />
 ```
 
-### Bilah Alat Kustom
+### Custom Toolbar
 
 ```tsx pure
 <FlowModelRenderer
@@ -124,17 +129,17 @@ function MyComponent() {
   extraToolbarItems={[
     {
       key: 'custom-action',
-      title: 'Aksi Kustom',
+      title: 'Action Kustom',
       icon: 'SettingOutlined',
       onClick: () => {
-        console.log('Aksi kustom');
+        console.log('Action kustom');
       }
     }
   ]}
 />
 ```
 
-### Melewati Alur Otomatis
+### Melewati Auto Flow
 
 ```tsx pure
 <FlowModelRenderer
@@ -144,7 +149,7 @@ function MyComponent() {
 />
 ```
 
-### Rendering Model Bidang
+### Rendering Field Model
 
 ```tsx pure
 import { FieldModelRenderer } from '@nocobase/flow-engine';
@@ -162,11 +167,11 @@ function FormField({ model, onChange, ...props }) {
 
 ## Penanganan Error
 
-`FlowModelRenderer` memiliki mekanisme penanganan error bawaan yang komprehensif:
+FlowModelRenderer memiliki mekanisme penanganan error bawaan yang lengkap:
 
--   **Batas Error Otomatis**: `showErrorFallback={true}` diaktifkan secara default
--   **Error Alur Otomatis**: Menangkap dan menangani error selama eksekusi alur otomatis
--   **Error Rendering**: Menampilkan konten fallback saat rendering model gagal
+- **Error Boundary Otomatis**: Default mengaktifkan `showErrorFallback={true}`
+- **Error Auto Flow**: Menangkap dan menangani error saat eksekusi auto flow
+- **Error Rendering**: Menampilkan konten fallback saat rendering model gagal
 
 ```tsx pure
 <FlowModelRenderer
@@ -178,9 +183,9 @@ function FormField({ model, onChange, ...props }) {
 
 ## Optimasi Performa
 
-### Melewati Alur Otomatis
+### Melewati Auto Flow
 
-Untuk skenario di mana alur otomatis tidak diperlukan, Anda dapat melewatinya untuk meningkatkan performa:
+Untuk skenario yang tidak memerlukan auto flow, dapat dilewati untuk meningkatkan performa:
 
 ```tsx pure
 <FlowModelRenderer
@@ -189,13 +194,13 @@ Untuk skenario di mana alur otomatis tidak diperlukan, Anda dapat melewatinya un
 />
 ```
 
-### Pembaruan Reaktif
+### Update Reaktif
 
-`FlowModelRenderer` menggunakan `observer` dari `@formily/reactive-react` untuk pembaruan reaktif, memastikan bahwa komponen secara otomatis merender ulang saat status model berubah.
+FlowModelRenderer menggunakan `observer` dari `@formily/reactive-react` untuk update reaktif, memastikan Component dapat secara otomatis re-render saat status model berubah.
 
-## Catatan
+## Perhatian
 
-1.  **Validasi Model**: Pastikan `model` yang diteruskan memiliki metode `render` yang valid.
-2.  **Manajemen Siklus Hidup**: Hook siklus hidup model akan dipanggil pada waktu yang tepat.
-3.  **Batas Error**: Disarankan untuk mengaktifkan batas error di lingkungan produksi untuk memberikan pengalaman pengguna yang lebih baik.
-4.  **Pertimbangan Performa**: Untuk skenario yang melibatkan rendering sejumlah besar model, pertimbangkan untuk menggunakan opsi `skipApplyAutoFlows`.
+1. **Validasi Model**: Pastikan `model` yang dilewatkan memiliki method `render` yang valid
+2. **Manajemen Siklus Hidup**: Hook siklus hidup model akan dipanggil pada waktu yang tepat
+3. **Error Boundary**: Disarankan mengaktifkan error boundary di environment production untuk memberikan pengalaman pengguna yang lebih baik
+4. **Pertimbangan Performa**: Untuk skenario rendering banyak model, pertimbangkan menggunakan opsi `skipApplyAutoFlows`

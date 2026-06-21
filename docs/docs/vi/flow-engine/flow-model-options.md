@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Mục cấu hình FlowModel (props/Flow/renderComponent)"
+description: "Mục cấu hình FlowModel: props, sự kiện, Flow, renderComponent và các mục cấu hình khác, định nghĩa khai báo hành vi và render của component."
+keywords: "Mục cấu hình FlowModel,props,Flow,renderComponent,Cấu hình khai báo,Hành vi component,FlowEngine,NocoBase"
+---
 
-
-# Cấu hình FlowModel
+# Mục cấu hình FlowModel

@@ -1,9 +1,10 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Khái niệm cốt lõi FlowModel"
+description: "FlowModel là cốt lõi của FlowEngine, quản lý thuộc tính, trạng thái, Flow, render của component, hiểu FlowModel là bước đầu tiên để nắm vững FlowEngine."
+keywords: "FlowModel,Cốt lõi FlowEngine,Component model,Quản lý thuộc tính,Mang Flow,Có thể điều phối,NocoBase"
+---
 
-
-# Bắt đầu với FlowModel
+# Bắt đầu từ FlowModel
 
 ## Tùy chỉnh FlowModel
 
@@ -20,25 +21,30 @@ class HelloModel extends FlowModel {
 }
 ```
 
-## Các lớp cơ sở FlowModel có sẵn
+## Các lớp cơ sở FlowModel khả dụng
 
-| Tên lớp cơ sở           | Mô tả                                 |
-| ----------------------- | ------------------------------------- |
-| `BlockModel`            | Lớp cơ sở cho tất cả các khối         |
-| `CollectionBlockModel`  | Khối bộ sưu tập, kế thừa từ BlockModel |
-| `ActionModel`           | Lớp cơ sở cho tất cả các hành động    |
+| Tên lớp cơ sở                    | Mô tả                       |
+| ----------------------- | ------------------------ |
+| `BlockModel`            | Lớp cơ sở của tất cả Block                  |
+| `CollectionBlockModel`  | Block bảng dữ liệu, kế thừa từ BlockModel     |
+| `ActionModel`           | Lớp cơ sở của tất cả Action                  |
 
 ## Đăng ký FlowModel
 
 ```ts
 export class PluginHelloClient extends Plugin {
   async load() {
-    this.engine.registerModels({ HelloModel });
+    this.engine.registerModelLoaders({
+      HelloModel: {
+        // Dynamic import, chỉ tải module tương ứng khi model này được dùng đến lần đầu
+        loader: () => import('./HelloModel'),
+      },
+    });
   }
 }
 ```
 
-## Kết xuất FlowModel
+## Render FlowModel
 
 ```tsx pure
 <FlowModelRenderer model={model} />

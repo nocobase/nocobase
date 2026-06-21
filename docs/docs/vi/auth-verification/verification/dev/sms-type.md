@@ -1,17 +1,18 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Mở rộng nhà cung cấp SMS"
+description: "Mở rộng nhà cung cấp xác minh SMS của NocoBase thông qua plugin: đăng ký AdminSettingsForm phía client, triển khai SMSProvider.send phía server, đăng ký bằng registerProvider."
+keywords: "Mở rộng nhà cung cấp SMS,SMSProvider,registerProvider,plugin SMS,Aliyun,Tencent Cloud,NocoBase"
+---
 
+# Mở rộng nhà cung cấp SMS
 
-# Mở rộng nhà cung cấp dịch vụ SMS
+Bài viết này chủ yếu giới thiệu cách mở rộng nhà cung cấp SMS trong tính năng [Xác minh: SMS](../sms) thông qua hình thức plugin.
 
-Bài viết này chủ yếu giới thiệu cách mở rộng chức năng nhà cung cấp dịch vụ SMS trong tính năng [Xác minh: SMS](../sms) thông qua một plugin.
+## Client
 
-## Phía Client
+### Đăng ký form cấu hình
 
-### Đăng ký biểu mẫu cấu hình
-
-Khi cấu hình trình xác minh SMS, sau khi chọn loại nhà cung cấp dịch vụ SMS, một biểu mẫu cấu hình liên quan đến loại nhà cung cấp đó sẽ xuất hiện. Biểu mẫu cấu hình này cần được nhà phát triển tự đăng ký ở phía client.
+Khi người dùng cấu hình SMS verifier, sau khi chọn loại nhà cung cấp SMS, sẽ xuất hiện một form cấu hình liên kết với loại nhà cung cấp đó. Form cấu hình này cần được nhà phát triển tự đăng ký phía client.
 
 ![](https://static-docs.nocobase.com/202503011221912.png)
 
@@ -55,17 +56,17 @@ class PluginCustomSMSProviderClient extends Plugin {
 }
 ```
 
-## Phía Server
+## Server
 
-### Triển khai giao diện gửi
+### Triển khai interface gửi
 
-Plugin xác minh đã đóng gói quy trình tạo mật khẩu dùng một lần (OTP), vì vậy nhà phát triển chỉ cần triển khai logic gửi tin nhắn để tương tác với nhà cung cấp dịch vụ SMS.
+Plugin xác minh đã đóng gói sẵn quy trình tạo mã xác minh động một lần (OTP), nhà phát triển chỉ cần triển khai logic gửi tương tác với nhà cung cấp SMS.
 
 ```ts
 class CustomSMSProvider extends SMSProvider {
   constructor(options) {
     super(options);
-    // options là đối tượng cấu hình từ phía client
+    // options là object cấu hình từ phía client
     const options = this.options;
     // ...
   }
@@ -78,7 +79,7 @@ class CustomSMSProvider extends SMSProvider {
 
 ### Đăng ký loại xác minh
 
-Sau khi giao diện gửi được triển khai, cần tiến hành đăng ký.
+Sau khi triển khai xong interface gửi, cần thực hiện đăng ký.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -88,7 +89,7 @@ import { tval } from '@nocobase/utils';
 class PluginCustomSMSProviderServer extends Plugin {
   async load() {
     const plugin = this.app.pm.get('verification') as PluginVerificationServer;
-    // name cần phải tương ứng với phía client
+    // name cần khớp với phía client
     plugin.smsOTPProviderManager.registerProvider('custom-sms-provider-name', {
       title: tval('Custom SMS provider', { ns: namespace }),
       provider: CustomSMSProvider,

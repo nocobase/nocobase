@@ -1,4 +1,6 @@
 ---
+title: "区块：iframe"
+keywords: "区块：iframe,插件,NocoBase"
 displayName: "区块：iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |

@@ -1,4 +1,6 @@
 ---
+title: "数据表字段：关系快照"
+keywords: "数据表字段：关系快照,插件,NocoBase"
 displayName: "数据表字段：关系快照"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |

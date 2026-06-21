@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-notification-email'
+title: "电子邮件通知"
+description: "电子邮件通知渠道：通过 SMTP 发送邮件通知，配置 SMTP 服务器、工作流通知节点，预置插件需激活。"
+keywords: "电子邮件通知,SMTP,邮件渠道,工作流通知,通知管理,NocoBase"
 ---
 
 # 通知：电子邮件

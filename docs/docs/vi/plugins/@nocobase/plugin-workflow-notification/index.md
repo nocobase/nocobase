@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: notification node"
+displayName: "Workflow: Node thông báo"
 packageName: '@nocobase/plugin-workflow-notification'
+title: "Workflow: Node thông báo"
+keywords: "Workflow: Node thông báo,Plugin,NocoBase"
 description: |
-  Send notification in workflow.
+  Có thể được sử dụng để gửi nhiều loại thông báo trong workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: notification node
+# Workflow: Node thông báo

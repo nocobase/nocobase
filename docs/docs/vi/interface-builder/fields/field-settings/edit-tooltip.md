@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Chỉnh sửa thông tin gợi ý"
+description: "Cấu hình Field: cài đặt thông tin gợi ý tooltip của Field, hiển thị khi di chuột."
+keywords: "chỉnh sửa gợi ý,tooltip,thông tin gợi ý,cấu hình Field,Interface Builder,NocoBase"
+---
 
-
-# Chỉnh sửa Tooltip
+# Chỉnh sửa thông tin gợi ý
 
 ## Giới thiệu
 
-Tooltip trường là văn bản hiển thị khi bạn di chuột qua một trường, nhằm cung cấp giải thích hoặc hướng dẫn bổ sung về trường đó. Các tooltip này thường bao gồm thông tin như mục đích của trường, định dạng nhập liệu và các ràng buộc, giúp người dùng hiểu rõ hơn và sử dụng trường hiệu quả hơn.
+Thông tin gợi ý Field là văn bản hiển thị khi bạn di chuột qua Field, nhằm cung cấp giải thích hoặc hướng dẫn bổ sung về Field đó. Các thông tin gợi ý này thường bao gồm mục đích của Field, định dạng nhập, điều kiện ràng buộc, v.v., giúp bạn hiểu và sử dụng Field tốt hơn.
 
 ![20251028210852](https://static-docs.nocobase.com/20251028210852.png)
 

@@ -1,7 +1,8 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "FlowModel"
+description: "API FlowModel của NocoBase: các thuộc tính và phương thức của model như uid, registerFlow, define, renderComponent."
+keywords: "FlowModel,uid,renderComponent,FlowEngine,NocoBase"
+---
 
 # FlowModel
 

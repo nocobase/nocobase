@@ -1,42 +1,44 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Contoh Konfigurasi SAML: Google Workspace"
+description: "Mengkonfigurasi Google Workspace sebagai SAML IdP: pengaturan aplikasi web dan mobile, menyalin SSO URL dan sertifikat, menambahkan authenticator SAML di NocoBase, attribute mapping."
+keywords: "SAML,Google Workspace,konfigurasi IdP,SSO,attribute mapping,sertifikat,NocoBase"
+---
 
 # Google Workspace
 
 ## Mengatur Google sebagai IdP
 
-[Konsol Admin Google](https://admin.google.com/) - Aplikasi - Aplikasi Web dan Seluler
+[Google Admin Console](https://admin.google.com/) - Aplikasi - Aplikasi Web dan Mobile
 
 ![](https://static-docs.nocobase.com/0812780b990a97a63c14ea8991959827.png)
 
-Setelah mengatur aplikasi, salin **URL SSO**, **ID Entitas**, dan **Sertifikat**.
+Setelah melakukan pengaturan aplikasi, salin **SSO URL**, **Entity ID**, dan **Certificate**.
 
-![](https://static-docs.nocobase.com/aafd20a7930e85411c0c8f368637e0.png)
+![](https://static-docs.nocobase.com/aafd20a794730e85411c0c8f368637e0.png)
 
-## Menambahkan Autentikator Baru di NocoBase
+## Menambahkan Authenticator Baru di NocoBase
 
-Pengaturan plugin - Autentikasi Pengguna - Tambah - SAML
+Plugin Settings - Autentikasi Pengguna - Tambah - SAML
 
 ![](https://static-docs.nocobase.com/5bc18c7952b8f15828e26bb07251a335.png)
 
-Isi informasi yang baru saja disalin secara berurutan:
+Isi informasi yang baru saja disalin secara berurutan
 
-- URL SSO: URL SSO
-- Sertifikat Publik: Sertifikat
-- Penerbit IdP: ID Entitas
-- http: Centang jika Anda melakukan pengujian secara lokal dengan http
+- SSO URL: SSO URL
+- Public Certificate: Certificate
+- idP Issuer: Entity ID
+- http: Centang jika pengujian dilakukan di http lokal
 
-Kemudian salin SP Issuer/EntityID dan URL ACS dari bagian Penggunaan.
+Setelah itu, salin SP Issuer/EntityID dan ACS URL pada bagian Usage.
 
 ## Mengisi Informasi SP di Google
 
-Kembali ke Konsol Google, pada halaman **Detail Penyedia Layanan**, masukkan URL ACS dan ID Entitas yang telah disalin sebelumnya, lalu centang **Respons yang Ditandatangani**.
+Kembali ke Google console, di halaman **Detail Penyedia Layanan**, masukkan ACS URL dan Entity ID yang baru saja disalin, dan centang **Signed Response**.
 
-![](https://static-docs.nocobase.com/1536268bf8df4a5ebc7384317172191.png)
+![](https://static-docs.nocobase.com/1536268bf8df4a5ebc72384317172191.png)
 
 ![](https://static-docs.nocobase.com/c7de1f8b84c1335de110e5a7c96255c4.png)
 
-Pada bagian **Pemetaan Atribut**, tambahkan pemetaan untuk atribut yang sesuai.
+Pada bagian **Attribute Mapping**, tambahkan mapping untuk memetakan atribut yang sesuai.
 
 ![](https://static-docs.nocobase.com/27180f2f46480c3fee3016df86d6fdb8.png)

@@ -1,79 +1,81 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Trigger Workflow - Tugas Terjadwal"
+description: "Trigger tugas terjadwal: pemicuan waktu kustom (cron), field waktu tabel data, eksekusi presisi detik, penjadwalan Workflow."
+keywords: "Workflow,tugas terjadwal,Schedule,Cron,penjadwalan,NocoBase"
+---
 
 # Tugas Terjadwal
 
-## Pendahuluan
+## Pengantar
 
-Tugas terjadwal adalah sebuah peristiwa yang dipicu oleh kondisi waktu, dan terbagi menjadi dua mode:
+Tugas terjadwal adalah event yang menggunakan waktu sebagai kondisi pemicuan, dibagi menjadi dua mode:
 
-- Waktu Kustom: Pemicuan terjadwal berdasarkan waktu sistem, mirip dengan cron.
-- Kolom Waktu Koleksi: Pemicuan berdasarkan nilai kolom waktu dalam sebuah **koleksi** saat waktu yang ditentukan tercapai.
+- Waktu Kustom: pemicuan terjadwal mirip cron berdasarkan waktu sistem yang reguler
+- Field Waktu Tabel Data: pemicuan ketika nilai field waktu di tabel data tiba
 
-Ketika sistem mencapai titik waktu (dengan akurasi hingga detik) yang memenuhi kondisi pemicu yang telah dikonfigurasi, **alur kerja** yang sesuai akan dipicu.
+Ketika sistem berjalan ke titik waktu yang memenuhi kondisi pemicuan yang dikonfigurasi (presisi hingga detik), akan memicu Workflow yang sesuai.
 
 ## Penggunaan Dasar
 
 ### Membuat Tugas Terjadwal
 
-Saat membuat **alur kerja** di daftar **alur kerja**, pilih jenis "Tugas Terjadwal":
+Pada daftar Workflow saat membuat Workflow, pilih tipe "Tugas Terjadwal":
 
-![Membuat tugas terjadwal](https://static-docs.nocobase.com/e09b6c9065167875b2ca7de5f5a799a7.png)
+![Buat tugas terjadwal](https://static-docs.nocobase.com/e09b6c9065167875b2ca7de5f5a799a7.png)
 
 ### Mode Waktu Kustom
 
-Untuk mode reguler, Anda perlu mengonfigurasi waktu mulai ke titik waktu mana pun (dengan akurasi hingga detik). Waktu mulai dapat diatur ke waktu di masa depan atau di masa lalu. Jika diatur ke waktu di masa lalu, sistem akan memeriksa apakah waktu tersebut sudah tiba berdasarkan kondisi pengulangan yang dikonfigurasi. Apabila tidak ada kondisi pengulangan yang dikonfigurasi dan waktu mulai berada di masa lalu, **alur kerja** tidak akan lagi dipicu.
+Untuk mode reguler, pertama Anda perlu mengonfigurasi waktu mulai sebagai titik waktu apa pun (presisi hingga detik). Waktu mulai dapat dikonfigurasi sebagai waktu di masa depan, atau juga waktu di masa lalu. Ketika dikonfigurasi sebagai waktu di masa lalu, akan memeriksa apakah sudah waktunya berdasarkan kondisi pengulangan yang dikonfigurasi. Jika tidak ada kondisi pengulangan yang dikonfigurasi, jika waktu mulai adalah waktu masa lalu, Workflow tidak akan dipicu lagi.
 
-Ada dua cara untuk mengonfigurasi aturan pengulangan:
+Aturan pengulangan memiliki dua cara konfigurasi:
 
-- Berdasarkan Interval: Dipicu pada interval tetap setelah waktu mulai, seperti setiap jam, setiap 30 menit, dan sebagainya.
-- Mode Lanjutan: Yaitu, berdasarkan aturan cron, dapat dikonfigurasi untuk siklus yang mencapai tanggal dan waktu tetap berdasarkan aturan.
+- Berdasarkan Interval Waktu: pemicuan setiap interval waktu tetap setelah waktu mulai, seperti setiap satu jam, setiap 30 menit, dll.
+- Mode Lanjutan: yaitu berdasarkan aturan cron, dapat dikonfigurasi sebagai siklus mencapai tanggal waktu aturan tetap.
 
-Setelah mengonfigurasi aturan pengulangan, Anda juga dapat mengonfigurasi kondisi akhir. Ini dapat diakhiri pada titik waktu tetap atau dibatasi oleh jumlah eksekusi yang telah dilakukan.
+Setelah aturan pengulangan dikonfigurasi, Anda juga dapat mengonfigurasi kondisi akhir, dapat melalui titik waktu tetap untuk mengakhiri, atau juga melalui pembatasan jumlah eksekusi.
 
-### Mode Kolom Waktu Koleksi
+### Mode Field Waktu Tabel Data
 
-Menggunakan kolom waktu **koleksi** untuk menentukan waktu mulai adalah mode pemicu yang menggabungkan tugas terjadwal biasa dengan kolom waktu **koleksi**. Menggunakan mode ini dapat menyederhanakan node dalam beberapa proses spesifik dan juga lebih intuitif dalam hal konfigurasi. Misalnya, untuk mengubah status pesanan yang belum dibayar melebihi batas waktu menjadi dibatalkan, Anda cukup mengonfigurasi satu tugas terjadwal dalam mode kolom waktu **koleksi**, dengan memilih waktu mulai 30 menit setelah pesanan dibuat.
+Menggunakan field waktu tabel data untuk menentukan waktu mulai adalah mode pemicuan yang menggabungkan tugas terjadwal biasa dan field waktu tabel data. Menggunakan mode ini dapat menyederhanakan Node dalam beberapa alur tertentu, dari segi konfigurasi juga lebih intuitif. Misalnya, perlu mengubah pesanan yang belum dibayar dalam waktu yang lama menjadi status dibatalkan, Anda hanya perlu mengonfigurasi tugas terjadwal mode field waktu tabel data, pilih waktu mulai sebagai 30 menit setelah pesanan dibuat,
 
 ## Tips Terkait
 
-### Tugas Terjadwal dalam Keadaan Tidak Aktif atau Mati
+### Tugas Terjadwal dalam Status Belum Dimulai atau Berhenti
 
-Jika kondisi waktu yang dikonfigurasi terpenuhi, tetapi seluruh layanan aplikasi NocoBase berada dalam keadaan tidak aktif atau mati, tugas terjadwal yang seharusnya dipicu pada titik waktu tersebut akan terlewatkan. Selain itu, setelah layanan dimulai ulang, tugas yang terlewatkan tidak akan dipicu lagi. Oleh karena itu, saat menggunakannya, Anda mungkin perlu mempertimbangkan penanganan untuk situasi tersebut atau memiliki langkah-langkah cadangan.
+Jika kondisi waktu yang dikonfigurasi terpenuhi, tetapi seluruh layanan aplikasi NocoBase berada dalam status belum dimulai atau berhenti, maka tugas terjadwal yang seharusnya dipicu pada titik waktu tersebut akan terlewat, dan setelah layanan dimulai ulang, tugas yang sudah terlewat tidak akan dipicu lagi. Jadi saat menggunakan, Anda mungkin perlu mempertimbangkan penanganan situasi yang sesuai, atau langkah cadangan.
 
 ### Jumlah Pengulangan
 
-Ketika kondisi akhir "berdasarkan jumlah pengulangan" dikonfigurasi, ini menghitung total jumlah eksekusi di semua versi **alur kerja** yang sama. Misalnya, jika sebuah tugas terjadwal telah dieksekusi 10 kali di versi 1, dan jumlah pengulangan juga diatur ke 10, **alur kerja** tersebut tidak akan lagi dipicu. Bahkan jika disalin ke versi baru, ia tidak akan dipicu, kecuali jika jumlah pengulangan diubah menjadi angka yang lebih besar dari 10. Namun, jika disalin sebagai **alur kerja** baru, jumlah eksekusi akan diatur ulang menjadi 0. Tanpa mengubah konfigurasi terkait, **alur kerja** baru dapat dipicu 10 kali lagi.
+Ketika dikonfigurasi dengan jumlah pengulangan dalam kondisi akhir, yang dihitung adalah total jumlah eksekusi semua versi Workflow yang sama. Misalnya tugas terjadwal yang sudah dieksekusi 10 kali pada versi 1, jika jumlah pengulangan juga diatur ke 10, Workflow tersebut tidak akan dipicu lagi, bahkan jika disalin ke versi baru, juga tidak akan dipicu, kecuali jumlah pengulangan diubah menjadi angka lebih besar dari 10. Tetapi jika disalin sebagai Workflow baru, jumlah eksekusi yang sudah dilakukan akan dihitung ulang dari 0. Tanpa mengubah konfigurasi terkait, Workflow baru akan dapat dipicu 10 kali lagi.
 
-### Perbedaan antara Interval Waktu dan Mode Lanjutan dalam Aturan Pengulangan
+### Perbedaan Antara Interval Waktu dan Mode Lanjutan dalam Aturan Pengulangan
 
-Interval waktu dalam aturan pengulangan bersifat relatif terhadap waktu pemicuan terakhir (atau waktu mulai), sedangkan mode lanjutan dipicu pada titik waktu tetap. Misalnya, jika dikonfigurasi untuk dipicu setiap 30 menit, dan pemicuan terakhir adalah pada 2021-09-01 12:01:23, maka waktu pemicuan berikutnya adalah 2021-09-01 12:31:23. Sementara itu, mode lanjutan, yaitu mode cron, dikonfigurasi untuk dipicu pada titik waktu tetap. Contohnya, Anda dapat mengonfigurasinya untuk dipicu pada menit ke-01 dan ke-31 setiap jam.
+Interval waktu dalam aturan pengulangan adalah relatif terhadap titik waktu pemicuan terakhir (waktu mulai), sedangkan mode lanjutan adalah pemicuan pada titik waktu tetap. Misalnya, dikonfigurasi pemicuan setiap 30 menit, jika pemicuan terakhir adalah 2021-09-01 12:01:23, maka waktu pemicuan berikutnya adalah 2021-09-01 12:31:23. Sedangkan mode lanjutan yaitu mode cron, aturan yang dikonfigurasi semuanya adalah pemicuan pada titik waktu tetap, misalnya, dapat dikonfigurasi pemicuan pada menit 01 dan 31 setiap jam.
 
 ## Contoh
 
-Misalkan kita perlu memeriksa pesanan yang belum dibayar lebih dari 30 menit setelah dibuat setiap menit, dan secara otomatis mengubah statusnya menjadi dibatalkan. Kita akan mengimplementasikannya menggunakan kedua mode.
+Misalkan setiap menit memeriksa pesanan yang dibuat lebih dari 30 menit yang lalu dan belum selesai dibayar, dan secara otomatis mengubahnya ke status dibatalkan. Implementasikan masing-masing menggunakan dua mode.
 
 ### Mode Waktu Kustom
 
-Buat **alur kerja** berbasis tugas terjadwal. Dalam konfigurasi pemicu, pilih mode "Waktu Kustom", atur waktu mulai ke titik waktu mana pun yang tidak lebih lambat dari waktu saat ini, pilih "Setiap menit" untuk aturan pengulangan, dan biarkan kondisi akhir kosong:
+Buat sebuah Workflow berbasis tugas terjadwal, pada konfigurasi Trigger pilih mode "Waktu Kustom", waktu mulai pilih titik waktu apa pun yang tidak lebih lambat dari waktu saat ini, aturan pengulangan pilih "Setiap Menit", kondisi akhir kosongkan:
 
-![Tugas Terjadwal_Konfigurasi Pemicu_Mode Waktu Kustom](https://static-docs.nocobase.com/71131e3f2034263f883062389b356cbd.png)
+![Tugas terjadwal_konfigurasi Trigger_mode waktu kustom](https://static-docs.nocobase.com/71131e3f2034263f883062389b356cbd.png)
 
-Selanjutnya, konfigurasikan node lain sesuai dengan logika proses, hitung waktu 30 menit yang lalu, dan ubah status pesanan yang belum dibayar yang dibuat sebelum waktu tersebut menjadi dibatalkan:
+Kemudian konfigurasikan Node lainnya berdasarkan logika alur, hitung waktu 30 menit yang lalu, dan ubah pesanan yang dibuat sebelumnya dan belum dibayar menjadi status dibatalkan:
 
-![Tugas Terjadwal_Konfigurasi Pemicu_Mode Waktu Kustom](https://static-docs.nocobase.com/188bc5287ffa1fb24a4e7baa1de6eb29.png)
+![Tugas terjadwal_konfigurasi Trigger_mode waktu kustom](https://static-docs.nocobase.com/188bc5287ffa1fb24a4e7baa1de6eb29.png)
 
-Setelah **alur kerja** diaktifkan, ia akan dipicu sekali setiap menit mulai dari waktu mulai, menghitung waktu 30 menit yang lalu untuk memperbarui status pesanan yang dibuat sebelum titik waktu tersebut menjadi dibatalkan.
+Setelah Workflow diaktifkan, mulai dari waktu mulai akan dipicu setiap menit, menghitung waktu 30 menit yang lalu, untuk memperbarui status pesanan yang dibuat sebelum titik waktu tersebut menjadi dibatalkan.
 
-### Mode Kolom Waktu Koleksi
+### Mode Field Waktu Tabel Data
 
-Buat **alur kerja** berbasis tugas terjadwal. Dalam konfigurasi pemicu, pilih mode "Kolom Waktu **Koleksi**", pilih **koleksi** "Pesanan", atur waktu mulai menjadi 30 menit setelah waktu pembuatan pesanan, dan pilih "Tidak berulang" untuk aturan pengulangan:
+Buat sebuah Workflow berbasis tugas terjadwal, pada konfigurasi Trigger pilih mode "Field Waktu Tabel Data", tabel data pilih tabel "Pesanan", waktu mulai pilih 30 menit setelah waktu pembuatan pesanan, aturan pengulangan pilih "Tidak Berulang":
 
-![Tugas Terjadwal_Konfigurasi Pemicu_Mode Kolom Waktu Koleksi_Pemicu](https://static-docs.nocobase.com/d40d5aef57f42799d31cc5882dd94246.png)
+![Tugas terjadwal_konfigurasi Trigger_mode field waktu tabel data_Trigger](https://static-docs.nocobase.com/d40d5aef57f42799d31cc5882dd94246.png)
 
-Selanjutnya, konfigurasikan node lain sesuai dengan logika proses untuk memperbarui status pesanan dengan ID data pemicu dan status "belum dibayar" menjadi dibatalkan:
+Kemudian konfigurasikan Node lainnya berdasarkan logika alur, perbarui pesanan dengan ID yang sama dengan ID data pemicu dan statusnya "Belum Dibayar" menjadi status dibatalkan:
 
-![Tugas Terjadwal_Konfigurasi Pemicu_Mode Kolom Waktu Koleksi_Node Pembaruan](https://static-docs.nocobase.com/491dde9df77a1fb24a4e7baa1de6eb29.png)
+![Tugas terjadwal_konfigurasi Trigger_mode field waktu tabel data_Node Perbarui](https://static-docs.nocobase.com/491dde9df8f773f5b14a4fd8ceac9d3e.png)
 
-Berbeda dengan mode waktu kustom, di sini tidak perlu menghitung waktu 30 menit yang lalu, karena konteks data pemicu **alur kerja** sudah berisi baris data yang memenuhi kondisi waktu, sehingga Anda dapat langsung memperbarui status pesanan yang sesuai.
+Berbeda dengan mode waktu kustom, di sini tidak perlu menghitung waktu 30 menit yang lalu, karena konteks data pemicu Workflow sudah mengandung baris data yang sesuai dengan kondisi waktu, jadi dapat langsung memperbarui status pesanan yang sesuai.

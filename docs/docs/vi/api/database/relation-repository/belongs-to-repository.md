@@ -1,9 +1,10 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "BelongsToRepository"
+description: "API Repository của NocoBase: BelongsToRepository dùng để xử lý quan hệ BelongsTo, interface giống HasOneRepository."
+keywords: "BelongsToRepository,Repository,BelongsTo,quan hệ,NocoBase"
+---
 
 ## BelongsToRepository
 
-Giao diện của nó tương tự như [HasOneRepository](./has-one-repository.md).
-`BelongsToRepository` là một `Repository` được dùng để xử lý các quan hệ `BelongsTo`. Nó cung cấp các phương thức tiện lợi để thao tác với các quan hệ này.
+Interface giống [HasOneRepository](./has-one-repository.md).
+`BelongsToRepository` là `Repository` dùng để xử lý quan hệ `BelongsTo`, cung cấp một số phương thức tiện lợi để xử lý quan hệ `BelongsTo`.

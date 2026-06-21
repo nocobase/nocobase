@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMServiceItem } from './LLMServicesRepository';
+import { LLMServiceItem } from '../repositories/AIConfigRepository';
 
 export type ModelWithLabel = {
   llmService: string;

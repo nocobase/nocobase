@@ -1,13 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Collection Selector"
+description: "Field Collection Selector, memilih record terkait dari Collection yang ditentukan."
+keywords: "collection selector,collection-select,pemilihan terkait,Collection,NocoBase"
+---
 
-# Pemilih Koleksi
+# Collection Selector
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512174047](https://static-docs.nocobase.com/20240512174047.png)
 
 ## Contoh
+

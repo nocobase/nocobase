@@ -1,38 +1,39 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Phạm vi dữ liệu"
+description: "Cấu hình Block: cài đặt phạm vi dữ liệu, hỗ trợ điều kiện lọc, lọc theo quyền, kiểm soát phạm vi dữ liệu hiển thị của Block."
+keywords: "phạm vi dữ liệu,lọc dữ liệu,lọc theo quyền,cấu hình Block,Interface Builder,NocoBase"
+---
 
-
-# Thiết lập Phạm vi Dữ liệu
+# Cài đặt phạm vi dữ liệu
 
 ## Giới thiệu
 
-Thiết lập phạm vi dữ liệu có nghĩa là định nghĩa các điều kiện lọc mặc định cho một khối dữ liệu. Người dùng có thể linh hoạt điều chỉnh phạm vi dữ liệu theo nhu cầu kinh doanh, nhưng bất kể thao tác lọc nào được thực hiện, hệ thống sẽ tự động áp dụng điều kiện lọc mặc định này, đảm bảo dữ liệu luôn nằm trong giới hạn của phạm vi đã chỉ định.
+Cài đặt phạm vi dữ liệu là định nghĩa điều kiện lọc mặc định cho Block dữ liệu, bạn có thể điều chỉnh phạm vi dữ liệu linh hoạt theo nhu cầu nghiệp vụ, nhưng bất kể thực hiện thao tác lọc nào, hệ thống đều sẽ tự động áp dụng điều kiện lọc mặc định này, đảm bảo dữ liệu luôn phù hợp với giới hạn phạm vi đã chỉ định.
 
 ## Hướng dẫn sử dụng
 
 ![20251027110053](https://static-docs.nocobase.com/20251027110053.png)
 
-Trường lọc hỗ trợ chọn các trường từ bộ sưu tập hiện tại và các bộ sưu tập liên quan.
+Field lọc hỗ trợ chọn Field của Table này, Field của Table quan hệ.
 
 ![20251027110140](https://static-docs.nocobase.com/20251027110140.png)
 
 ### Toán tử
 
-Các loại trường khác nhau hỗ trợ các toán tử khác nhau. Ví dụ, trường văn bản hỗ trợ các toán tử như bằng, không bằng, chứa; trường số hỗ trợ các toán tử như lớn hơn, nhỏ hơn; trong khi trường ngày tháng hỗ trợ các toán tử như nằm trong phạm vi, trước một ngày cụ thể.
+Các loại Field khác nhau hỗ trợ các toán tử khác nhau, ví dụ Field văn bản hỗ trợ các toán tử bằng, không bằng, chứa, v.v., Field số hỗ trợ các toán tử lớn hơn, nhỏ hơn, v.v., Field ngày tháng hỗ trợ các toán tử trong phạm vi, trước ngày cụ thể, v.v.
 
 ![20251027111124](https://static-docs.nocobase.com/20251027111124.png)
 
-### Giá trị Tĩnh
+### Giá trị tĩnh
 
-Ví dụ: Lọc dữ liệu theo "Trạng thái" của đơn hàng.
+Ví dụ: Lọc dữ liệu theo "Trạng thái" đơn hàng.
 
 ![20251027111229](https://static-docs.nocobase.com/20251027111229.png)
 
-### Giá trị Biến
+### Giá trị biến
 
 Ví dụ: Lọc dữ liệu đơn hàng của người dùng hiện tại.
 
 ![20251027113349](https://static-docs.nocobase.com/20251027113349.png)
 
-Để biết thêm về biến, xem [Biến](/interface-builder/variables)
+Xem thêm về biến tại [Biến](/interface-builder/variables)

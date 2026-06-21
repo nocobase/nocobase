@@ -1,15 +1,16 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Logger"
+description: "API log của NocoBase: tạo logger, mức log, cấu hình xuất log."
+keywords: "Logger,API log,mức log,xuất log,NocoBase"
+---
 
 # Logger
 
-## Tạo Logger
+## Tạo log
 
 ### `createLogger()`
 
-Tạo một logger tùy chỉnh.
+Tạo logger tùy chỉnh.
 
 #### Chữ ký
 
@@ -27,18 +28,18 @@ interface LoggerOptions
 }
 ```
 
-#### Chi tiết
+#### Thông tin chi tiết
 
-| Thuộc tính | Mô tả                      |
-| :--------- | :------------------------- |
-| `dirname`  | Thư mục đầu ra của nhật ký |
-| `filename` | Tên tệp nhật ký            |
-| `format`   | Định dạng nhật ký          |
-| `transports` | Phương thức xuất nhật ký   |
+| Thuộc tính   | Mô tả             |
+| ------------ | ----------------- |
+| `dirname`    | Thư mục xuất log  |
+| `filename`   | Tên file log      |
+| `format`     | Định dạng log     |
+| `transports` | Phương thức xuất log |
 
 ### `createSystemLogger()`
 
-Tạo các nhật ký hệ thống được in theo một phương thức quy định. Tham khảo [Logger - Nhật ký hệ thống](/log-and-monitor/logger/index.md#system-log)
+Tạo log vận hành hệ thống được in theo cách quy định. Tham khảo [Log - Log hệ thống](#).
 
 #### Chữ ký
 
@@ -52,15 +53,15 @@ export interface SystemLoggerOptions extends LoggerOptions {
 }
 ```
 
-#### Chi tiết
+#### Thông tin chi tiết
 
-| Thuộc tính      | Mô tả                                        |
-| :-------------- | :------------------------------------------- |
-| `seperateError` | Có xuất riêng các nhật ký cấp độ `error` hay không |
+| Thuộc tính      | Mô tả                                  |
+| --------------- | -------------------------------------- |
+| `seperateError` | Có xuất log mức `error` riêng hay không |
 
 ### `requestLogger()`
 
-Middleware để ghi nhật ký yêu cầu và phản hồi API.
+Middleware log request và response của API.
 
 ```ts
 app.use(requestLogger(app.name));
@@ -80,13 +81,13 @@ export interface RequestLoggerOptions extends LoggerOptions {
 }
 ```
 
-#### Chi tiết
+#### Thông tin chi tiết
 
-| Thuộc tính          | Kiểu                              | Mô tả                                                            | Giá trị mặc định                                                                                                                                                 |
-| :------------------ | :-------------------------------- | :--------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `skip`              | `(ctx?: any) => Promise<boolean>` | Bỏ qua việc ghi nhật ký cho một số yêu cầu dựa trên ngữ cảnh yêu cầu. | -                                                                                                                                                       |
-| `requestWhitelist`  | `string[]`                        | Danh sách trắng các thông tin yêu cầu được in trong nhật ký.       | `[ 'action', 'header.x-role', 'header.x-hostname', 'header.x-timezone', 'header.x-locale','header.x-authenticator', 'header.x-data-source', 'referer']` |
-| `responseWhitelist` | `string[]`                        | Danh sách trắng các thông tin phản hồi được in trong nhật ký.      | `['status']`                                                                                                                                            |
+| Thuộc tính          | Kiểu                              | Mô tả                                  | Giá trị mặc định                                                                                                                                       |
+| ------------------- | --------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `skip`              | `(ctx?: any) => Promise<boolean>` | Bỏ qua một số log request theo ngữ cảnh | -                                                                                                                                                       |
+| `requestWhitelist`  | `string[]`                        | Whitelist thông tin request được in log | `[ 'action', 'header.x-role', 'header.x-hostname', 'header.x-timezone', 'header.x-locale','header.x-authenticator', 'header.x-data-source', 'referer']` |
+| `responseWhitelist` | `string[]`                        | Whitelist thông tin response được in log | `['status']`                                                                                                                                            |
 
 ### app.createLogger()
 
@@ -104,11 +105,11 @@ class Application {
 }
 ```
 
-Khi `dirname` là một đường dẫn tương đối, các tệp nhật ký sẽ được xuất vào thư mục có tên của ứng dụng hiện tại.
+Khi `dirname` là đường dẫn tương đối, file log sẽ được xuất vào thư mục có tên là tên ứng dụng hiện tại.
 
 ### plugin.createLogger()
 
-Cách sử dụng tương tự như `app.createLogger()`.
+Cách dùng giống `app.createLogger()`.
 
 #### Định nghĩa
 
@@ -120,37 +121,37 @@ class Plugin {
 }
 ```
 
-## Cấu hình Logger
+## Cấu hình log
 
 ### getLoggerLevel()
 
 `getLoggerLevel(): 'debug' | 'info' | 'warn' | 'error'`
 
-Lấy cấp độ nhật ký hiện đang được cấu hình trong hệ thống.
+Lấy mức log đã cấu hình của hệ thống hiện tại.
 
 ### getLoggerFilePath()
 
 `getLoggerFilePath(...paths: string[]): string`
 
-Nối các đường dẫn thư mục dựa trên thư mục nhật ký hiện đang được cấu hình trong hệ thống.
+Lấy đường dẫn ghép dựa trên thư mục log đã cấu hình của hệ thống hiện tại.
 
 ### getLoggerTransports()
 
 `getLoggerTransports(): ('console' | 'file' | 'dailyRotateFile')[]`
 
-Lấy các phương thức xuất nhật ký hiện đang được cấu hình trong hệ thống.
+Lấy phương thức xuất log đã cấu hình của hệ thống hiện tại.
 
 ### getLoggerFormat()
 
 `getLoggerFormat(): 'logfmt' | 'json' | 'delimiter' | 'console'`
 
-Lấy định dạng nhật ký hiện đang được cấu hình trong hệ thống.
+Lấy định dạng log đã cấu hình của hệ thống hiện tại.
 
-## Xuất nhật ký
+## Xuất log
 
 ### Transports
 
-Các phương thức xuất được định nghĩa trước.
+Các phương thức xuất có sẵn.
 
 - `Transports.console`
 - `Transports.file`
@@ -166,5 +167,5 @@ const transport = Transports.console({
 
 ## Tài liệu liên quan
 
-- [Hướng dẫn phát triển - Logger](/plugin-development/server/logger)
-- [Logger](/log-and-monitor/logger/index.md)
+- [Hướng dẫn phát triển - Log](/plugin-development/server/logger)
+- [Log](/log-and-monitor/logger/index.md)

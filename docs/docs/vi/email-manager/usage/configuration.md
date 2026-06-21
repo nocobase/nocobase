@@ -1,64 +1,98 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Cấu hình Email Block"
+description: "Block bảng Email: thêm block, cấu hình field, phạm vi dữ liệu (tất cả/người dùng hiện tại), lọc theo địa chỉ Email hoặc đuôi Email."
+keywords: "Email block,bảng Email,phạm vi dữ liệu,lọc Email,NocoBase"
 ---
+# Cấu hình Block
 
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+## Block Email message
 
+### Thêm block
 
+Trong trang cấu hình, click nút **Tạo block**, chọn block **Email Table** để thêm block Email message.
 
-# Cấu hình Khối
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_09_56_PM.png)
 
-## Khối Tin nhắn Email
+### Cấu hình field
 
-### Thêm Khối
+Click nút **Field** của block để chọn các field cần hiển thị, các thao tác chi tiết có thể tham khảo cấu hình field của bảng.
 
-Trên trang cấu hình, nhấp vào nút **Tạo khối**, sau đó chọn khối **Tin nhắn Email (Tất cả)** hoặc **Tin nhắn Email (Cá nhân)** để thêm khối tin nhắn email.
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_09_58_PM.png)
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_03_58_PM.png)
+### Đặt phạm vi dữ liệu
+Cấu hình phía bên phải block có thể chọn phạm vi dữ liệu: Tất cả Email hoặc Email của người dùng đang đăng nhập.
 
-### Cấu hình Trường
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_09_58_PM%20(1).png)
 
-Nhấp vào nút **Trường** của khối để chọn các trường cần hiển thị. Để biết chi tiết, vui lòng tham khảo phương pháp cấu hình trường cho bảng.
+### Lọc dữ liệu theo địa chỉ Email
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_37_PM.png)
+Click nút cấu hình bên phải block Email message, chọn **Phạm vi dữ liệu**, thiết lập phạm vi dữ liệu để lọc Email.
 
-### Cấu hình Lọc Dữ liệu
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
 
-Nhấp vào biểu tượng cấu hình ở bên phải bảng và chọn **Phạm vi dữ liệu** để thiết lập phạm vi dữ liệu lọc email.
+Cấu hình điều kiện lọc, chọn field địa chỉ Email cần lọc, click **OK** để lưu.
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_39_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_26_PM.png)
 
-Bạn có thể lọc email có cùng hậu tố thông qua các biến:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_41_PM.png)
+Block Email message sẽ hiển thị các Email phù hợp với điều kiện lọc.
 
-## Khối Chi tiết Email
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_29_PM.png)
 
-Đầu tiên, hãy bật tính năng **Bật nhấp để mở** trên một trường trong khối tin nhắn email:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_45_PM.png)
+> Lọc theo địa chỉ Email không phân biệt chữ hoa chữ thường.
 
-Thêm khối **Chi tiết Email** vào cửa sổ bật lên:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_46_PM.png)
+### Lọc dữ liệu theo đuôi Email
 
-Bạn có thể xem nội dung chi tiết của email:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_04_49_PM.png)
+Trong bảng nghiệp vụ, tạo field để lưu trữ đuôi Email (kiểu JSON) để sau này lọc Email message.
 
-Bạn có thể tự cấu hình các nút cần thiết ở phía dưới.
+![](https://static-docs.nocobase.com/email-manager/data-source-manager-main-NocoBase-12-02-2025_04_36_PM.png)
 
-## Khối Gửi Email
+Duy trì thông tin đuôi Email.
 
-Có hai cách để tạo biểu mẫu gửi email:
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_38_PM.png)
 
-1. Thêm nút **Gửi email** ở đầu bảng:
-   ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_52_PM.png)
+Click nút cấu hình bên phải block Email message, chọn **Phạm vi dữ liệu**, thiết lập phạm vi dữ liệu để lọc Email.
 
-2. Thêm khối **Gửi email**:
-   ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_53_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
 
-Cả hai cách đều có thể tạo một biểu mẫu gửi email hoàn chỉnh:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_53_PM%20(1).png)
+Cấu hình điều kiện lọc, chọn field đuôi Email cần lọc, click **OK** để lưu.
 
-Mỗi trường trong biểu mẫu email đều nhất quán với một biểu mẫu thông thường và có thể được cấu hình với **Giá trị mặc định** hoặc **Quy tắc liên kết**, v.v.
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_41_PM.png)
 
-> Các biểu mẫu trả lời và chuyển tiếp email ở cuối chi tiết email mặc định mang theo một số xử lý dữ liệu, có thể được sửa đổi thông qua **Luồng sự kiện**.
+Bảng Email message sẽ hiển thị các Email phù hợp với điều kiện lọc.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_48_PM.png)
+
+## Block chi tiết Email
+
+Đầu tiên bật tính năng **Bật click để mở** trong field của block Email message.
+
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_10_01_PM.png)
+
+Trong popup, thêm block **Chi tiết Email**.
+
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_10_02_PM.png)
+
+Có thể xem nội dung chi tiết của Email.
+
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_10_03_PM.png)
+
+Phía dưới có thể tùy chỉnh cấu hình các nút cần thiết.
+
+> Nếu Email hiện tại ở trạng thái nháp, mặc định sẽ hiển thị form chỉnh sửa nháp.
+
+## Block gửi Email
+
+Có hai cách để tạo form gửi Email:
+
+1. Thêm nút **Gửi Email** ở phía trên bảng:  
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_04_PM.png)
+
+2. Thêm block **Gửi Email**:  
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_05_PM.png)
+
+Cả hai cách đều có thể tạo ra form gửi Email hoàn chỉnh.
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_05_PM%20(1).png)
+
+Mỗi field của form Email giống như form thông thường, có thể cấu hình **Giá trị mặc định** hoặc **Quy tắc liên kết**, v.v.

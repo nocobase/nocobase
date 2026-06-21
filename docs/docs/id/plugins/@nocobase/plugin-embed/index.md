@@ -1,12 +1,14 @@
 ---
 displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
+title: "Embed NocoBase"
+keywords: "Embed NocoBase,plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
-isFree: false
-builtIn: false
+  Sematkan NocoBase ke dalam sistem atau halaman eksternal sehingga menjadi bagian dari sistem atau halaman tersebut.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

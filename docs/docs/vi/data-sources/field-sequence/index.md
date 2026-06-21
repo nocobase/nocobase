@@ -1,18 +1,17 @@
 ---
 pkg: "@nocobase/plugin-field-sequence"
+title: "Auto-coding"
+description: "Field sequence tự động sinh mã duy nhất, hỗ trợ tùy chỉnh format và bước nhảy, phù hợp cho mã đơn hàng, mã phiếu công, v.v."
+keywords: "Auto-coding,Sequence,Sequence number,Auto-increment number,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Tạo mã tự động
+# Auto-coding
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512173752](https://static-docs.nocobase.com/20240512173752.png)
 
 ## Ví dụ
 
-Đang cập nhật
+Sẽ được bổ sung sau

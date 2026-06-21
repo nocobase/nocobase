@@ -1,3 +1,9 @@
+---
+title: "RunJS 插件扩展点"
+description: "RunJS 插件扩展点：ctx 文档、snippets 代码片段、场景映射，扩展 RunJS 开发体验，FlowEngine JS 模型扩展。"
+keywords: "RunJS 扩展点,ctx 文档,snippets,场景映射,JS 模型,FlowEngine,NocoBase"
+---
+
 # RunJS 插件扩展点（ctx 文档 / snippets / 场景映射）
 
 当插件新增或扩展 RunJS 能力时，建议通过 **官方扩展点**把“上下文映射 / `ctx` 文档 / 示例代码”一并注册进去，让：

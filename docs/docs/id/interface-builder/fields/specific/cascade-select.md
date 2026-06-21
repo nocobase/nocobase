@@ -1,46 +1,45 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Cascade Select"
+description: "Field Cascade Select: dropdown linkage multi-level, mendukung pemilihan data tree seperti provinsi/kota/kecamatan, level kategori, dll."
+keywords: "Cascade Select, CascadeSelect, linkage multi-level, pemilihan tree, interface builder, NocoBase"
+---
 
-# Pilihan Bertingkat
+# Cascade Select
 
-## Pendahuluan
+## Pengantar
 
-Pemilih bertingkat dirancang untuk *field* relasi yang *koleksi* targetnya adalah tabel pohon. Ini memungkinkan pengguna memilih data mengikuti struktur hierarkis *koleksi* pohon dan mendukung pencarian *fuzzy* untuk pemfilteran cepat.
+Cascade Selector cocok untuk Field relasi yang Table targetnya adalah Tree Table. Pengguna dapat memilih data sesuai dengan struktur level Tree Table, mendukung pencarian fuzzy untuk data.
 
 ## Petunjuk Penggunaan
 
-- Untuk relasi **satu-ke-satu**, pemilih bertingkat adalah **pilihan tunggal**.
+- Relasi to-one, cascade adalah single select.
 
 ![20251125214656](https://static-docs.nocobase.com/20251125214656.png)
 
-- Untuk relasi **satu-ke-banyak**, pemilih bertingkat adalah **pilihan ganda**.
+- Relasi to-many, cascade adalah multi-select.
 
 ![20251125215318](https://static-docs.nocobase.com/20251125215318.png)
 
-## Opsi Konfigurasi Field
+## Konfigurasi Field
 
 ### Field Judul
 
-*Field* judul menentukan label yang ditampilkan untuk setiap opsi.
+Field Judul adalah Field label yang ditampilkan di opsi.
 
 ![20251125214923](https://static-docs.nocobase.com/20251125214923.gif)
 
-> Mendukung pencarian cepat berdasarkan *field* judul
+> Mendukung pencarian cepat berdasarkan Field Judul
 
 ![20251125215026](https://static-docs.nocobase.com/20251125215026.gif)
 
-Untuk detail lebih lanjut, lihat:
-[Field Judul](/interface-builder/fields/field-settings/title-field)
+Untuk informasi lebih lanjut, lihat [Field Judul](/interface-builder/fields/field-settings/title-field)
 
-### Cakupan Data
+### Atur Cakupan Data
 
-Mengontrol cakupan data daftar pohon (jika catatan anak memenuhi kondisi, catatan induknya juga akan disertakan).
+Mengontrol cakupan data list tree (saat sub-record memenuhi kondisi, parent record juga akan muncul).
 
 ![20251125215111](https://static-docs.nocobase.com/20251125215111.png)
 
-Untuk detail lebih lanjut, lihat:
-[Cakupan Data](/interface-builder/fields/field-settings/data-scope)
+Untuk informasi lebih lanjut, lihat [Atur Cakupan Data](/interface-builder/fields/field-settings/data-scope)
 
-Komponen *field* lainnya:
-[Komponen Field](/interface-builder/fields/association-field)
+[Komponen Field](/interface-builder/fields/association-field);

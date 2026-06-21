@@ -1,4 +1,6 @@
 ---
+title: "Migration manager"
+keywords: "System management"
 displayName: "Migration manager"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 3
+editionLevel: 2
 ---
 
 # Migration manager

@@ -1,136 +1,135 @@
 ---
 pkg: '@nocobase/plugin-workflow-date-calculation'
+title: "Node Workflow - Komputasi Tanggal"
+description: "Node komputasi tanggal: penambahan/pengurangan periode, format, konversi unit, dan sembilan fungsi komputasi, mendukung pipa berantai."
+keywords: "Workflow,komputasi tanggal,Date,format waktu,pipa berantai,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Komputasi Tanggal
 
-# Perhitungan Tanggal
+## Pengantar
 
-## Pendahuluan
-
-Node Perhitungan Tanggal menyediakan sembilan fungsi perhitungan, termasuk menambahkan periode waktu, mengurangi periode waktu, output string waktu yang diformat, dan konversi satuan durasi. Setiap fungsi memiliki tipe nilai input dan output spesifik, serta dapat menerima hasil dari node lain sebagai variabel parameter. Node ini menggunakan alur perhitungan untuk merangkai hasil perhitungan fungsi yang telah dikonfigurasi guna mendapatkan output yang diharapkan.
+Node komputasi tanggal menyediakan sembilan fungsi komputasi termasuk penambahan periode, pengurangan periode, output format string waktu, konversi unit durasi. Setiap fungsi memiliki tipe nilai input dan output spesifik, sambil dapat menerima hasil Node lain sebagai variabel parameter, dan dengan cara pipa komputasi, hasil komputasi fungsi yang dikonfigurasi dirangkai bersama, akhirnya mendapatkan output yang diharapkan.
 
 ## Membuat Node
 
-Pada antarmuka konfigurasi alur kerja, klik tombol plus ("+") di alur untuk menambahkan node "Perhitungan Tanggal":
+Pada antarmuka konfigurasi Workflow, klik tombol plus ("+") di alur, tambahkan Node "Komputasi Waktu":
 
-![Node Perhitungan Tanggal_Membuat Node](https://static-docs.nocobase.com/[图片].png)
+![Node komputasi tanggal_buat Node](https://static-docs.nocobase.com/[image].png)
 
 ## Konfigurasi Node
 
-![Node Perhitungan Tanggal_Konfigurasi Node](https://static-docs.nocobase.com/20240817184423.png)
+![Node komputasi tanggal_konfigurasi Node](https://static-docs.nocobase.com/20240817184423.png)
 
 ### Nilai Input
 
-Nilai input dapat berupa variabel atau konstanta tanggal. Variabel dapat berupa data yang memicu alur kerja ini atau hasil dari node hulu dalam alur kerja ini. Untuk konstanta, Anda dapat memilih tanggal apa pun.
+Nilai input dapat memilih variabel atau konstanta tanggal. Variabel dapat berupa data yang memicu Workflow ini, atau juga hasil Node hulu dalam Workflow ini. Konstanta dapat memilih tanggal apa pun.
 
 ### Tipe Nilai Input
 
-Mengacu pada tipe nilai input. Ada dua kemungkinan nilai.
+Merepresentasikan tipe nilai input, ada dua nilai.
 
-*   **Tipe Tanggal:** Berarti nilai input pada akhirnya dapat dikonversi ke tipe tanggal-waktu, seperti timestamp numerik atau string yang merepresentasikan waktu.
-*   **Tipe Angka:** Karena tipe nilai input akan memengaruhi pilihan langkah perhitungan waktu berikutnya, penting untuk memilih tipe nilai input dengan benar.
+* Tipe Tanggal: yaitu nilai input yang akhirnya dapat dikonversi ke tipe tanggal waktu, seperti timestamp tipe numerik atau string yang merepresentasikan waktu.
+* Tipe Numerik: karena tipe nilai input akan memengaruhi pemilihan langkah komputasi waktu di bawah, perlu memilih tipe nilai input dengan benar.
 
-### Langkah Perhitungan
+### Langkah Komputasi
 
-Setiap langkah perhitungan terdiri dari fungsi perhitungan dan konfigurasi parameternya. Node ini mengadopsi desain pipeline, di mana hasil perhitungan dari fungsi sebelumnya akan menjadi nilai input untuk perhitungan fungsi berikutnya. Dengan cara ini, serangkaian perhitungan dan konversi waktu dapat diselesaikan.
+Setiap langkah komputasi terdiri dari satu fungsi komputasi dan konfigurasi parameternya, sambil menggunakan desain pipa, hasil yang diperoleh komputasi fungsi sebelumnya akan menjadi nilai input fungsi berikutnya untuk terus berpartisipasi dalam komputasi. Dengan cara ini, dapat menyelesaikan serangkaian komputasi dan konversi waktu.
 
-Setelah setiap langkah perhitungan, tipe output juga tetap dan akan memengaruhi fungsi yang tersedia untuk langkah perhitungan berikutnya. Perhitungan hanya dapat dilanjutkan jika tipe datanya cocok. Jika tidak, hasil dari suatu langkah akan menjadi output akhir dari node.
+Setelah setiap langkah komputasi, tipe output juga tetap, dan akan memengaruhi fungsi yang dapat digunakan langkah komputasi berikutnya. Tipe harus cocok baru dapat melanjutkan komputasi. Jika tidak hasil suatu langkah akan menjadi hasil output Node akhir.
 
-## Fungsi Perhitungan
+## Fungsi Komputasi
 
-### Menambahkan Periode Waktu
+### Tambah Periode
 
--   Menerima tipe nilai input: Tanggal
--   Parameter
-    -   Jumlah yang akan ditambahkan, dapat berupa angka atau variabel bawaan dari node.
-    -   Satuan waktu.
--   Tipe nilai output: Tanggal
--   Contoh: Jika nilai input adalah `2024-7-15 00:00:00`, jumlahnya `1`, dan satuannya "hari", maka hasil perhitungannya adalah `2024-7-16 00:00:00`.
+- Tipe Nilai Input yang Diterima: tanggal
+- Parameter
+  - Jumlah yang ditambah, dapat mengisi angka, atau memilih variabel bawaan Node.
+  - Unit waktu.
+- Tipe Nilai Output: tanggal
+- Contoh: nilai input `2024-7-15 00:00:00`, jumlah `1`, unit "hari", maka hasil komputasi adalah `2024-7-16 00:00:00`.
 
-### Mengurangi Periode Waktu
+### Kurangi Periode
 
--   Menerima tipe nilai input: Tanggal
--   Parameter
-    -   Jumlah yang akan dikurangi, dapat berupa angka atau variabel bawaan dari node.
-    -   Satuan waktu.
--   Tipe nilai output: Tanggal
--   Contoh: Jika nilai input adalah `2024-7-15 00:00:00`, jumlahnya `1`, dan satuannya "hari", maka hasil perhitungannya adalah `2024-7-14 00:00:00`.
+- Tipe Nilai Input yang Diterima: tanggal
+- Parameter
+  - Jumlah yang dikurangi, dapat mengisi angka, atau memilih variabel bawaan Node.
+  - Unit waktu.
+- Tipe Nilai Output: tanggal
+- Contoh: nilai input `2024-7-15 00:00:00`, jumlah `1`, unit "hari", maka hasil komputasi adalah `2024-7-14 00:00:00`.
 
-### Menghitung Selisih dengan Waktu Lain
+### Hitung Selisih dengan Waktu Lain
 
--   Menerima tipe nilai input: Tanggal
--   Parameter
-    -   Tanggal yang akan dihitung selisihnya, dapat berupa konstanta tanggal atau variabel dari konteks alur kerja.
-    -   Satuan waktu.
-    -   Apakah mengambil nilai absolut.
-    -   Operasi pembulatan: Pilihan termasuk mempertahankan desimal, pembulatan ke terdekat, pembulatan ke atas, dan pembulatan ke bawah.
--   Tipe nilai output: Angka
--   Contoh: Jika nilai input adalah `2024-7-15 00:00:00`, objek pembanding adalah `2024-7-16 06:00:00`, satuannya "hari", nilai absolut tidak diambil, dan desimal dipertahankan, maka hasil perhitungannya adalah `-1.25`.
+- Tipe Nilai Input yang Diterima: tanggal
+- Parameter
+  - Tanggal yang akan dihitung selisihnya, dapat memilih konstanta tanggal, atau memilih variabel di konteks Workflow.
+  - Unit waktu.
+  - Apakah ambil nilai absolut.
+  - Operasi pembulatan: dapat memilih simpan desimal, pembulatan, pembulatan ke atas, dan pembulatan ke bawah.
+- Tipe Nilai Output: numerik
+- Contoh: nilai input `2024-7-15 00:00:00`, objek perbandingan `2024-7-16 06:00:00`, unit "hari", tidak ambil nilai absolut, simpan desimal, maka hasil komputasi adalah `-1.25`.
 
 :::info{title=Tips}
-Ketika nilai absolut dan pembulatan dikonfigurasi secara bersamaan, nilai absolut akan diambil terlebih dahulu, kemudian pembulatan diterapkan.
+Saat nilai absolut dan pembulatan dikonfigurasi bersamaan, akan diambil nilai absolut dulu baru pembulatan.
 :::
 
-### Mendapatkan Nilai Waktu dalam Satuan Tertentu
+### Ambil Nilai Waktu pada Unit Tertentu
 
--   Menerima tipe nilai input: Tanggal
--   Parameter
-    -   Satuan waktu.
--   Tipe nilai output: Angka
--   Contoh: Jika nilai input adalah `2024-7-15 00:00:00` dan satuannya "hari", maka hasil perhitungannya adalah `15`.
+- Tipe Nilai Input yang Diterima: tanggal
+- Parameter
+  - Unit waktu.
+- Tipe Nilai Output: numerik
+- Contoh: nilai input `2024-7-15 00:00:00`, unit "hari", maka hasil komputasi adalah `15`.
 
-### Mengatur Tanggal ke Awal Satuan Tertentu
+### Atur Tanggal sebagai Awal Unit Tertentu
 
--   Menerima tipe nilai input: Tanggal
--   Parameter
-    -   Satuan waktu.
--   Tipe nilai output: Tanggal
--   Contoh: Jika nilai input adalah `2024-7-15 14:26:30` dan satuannya "hari", maka hasil perhitungannya adalah `2024-7-15 00:00:00`.
+- Tipe Nilai Input yang Diterima: tanggal
+- Parameter
+  - Unit waktu.
+- Tipe Nilai Output: tanggal
+- Contoh: nilai input `2024-7-15 14:26:30`, unit "hari". Maka hasil komputasi adalah `2024-7-15 00:00:00`
 
-### Mengatur Tanggal ke Akhir Satuan Tertentu
+### Atur Tanggal sebagai Akhir Unit Tertentu
 
--   Menerima tipe nilai input: Tanggal
--   Parameter
-    -   Satuan waktu.
--   Tipe nilai output: Tanggal
--   Contoh: Jika nilai input adalah `2024-7-15 14:26:30` dan satuannya "hari", maka hasil perhitungannya adalah `2024-7-15 23:59:59`.
+- Tipe Nilai Input yang Diterima: tanggal
+- Parameter
+  - Unit waktu.
+- Tipe Nilai Output: tanggal
+- Contoh: nilai input `2024-7-15 14:26:30`, unit "hari". Maka hasil komputasi adalah `2024-7-15 23:59:59`
 
-### Memeriksa Tahun Kabisat
+### Cek Tahun Kabisat
 
--   Menerima tipe nilai input: Tanggal
--   Parameter
-    -   Tanpa parameter
--   Tipe nilai output: Boolean
--   Contoh: Jika nilai input adalah `2024-7-15 14:26:30`, maka hasil perhitungannya adalah `true`.
+- Tipe Nilai Input yang Diterima: tanggal
+- Parameter
+  - Tanpa parameter
+- Tipe Nilai Output: boolean
+- Contoh: nilai input `2024-7-15 14:26:30`, maka hasil komputasi adalah `true`.
 
-### Memformat sebagai String
+### Format ke String
 
--   Menerima tipe nilai input: Tanggal
--   Parameter
-    -   Format, lihat [Day.js: Format](https://day.js.org/docs/en/display/format)
--   Tipe nilai output: String
--   Contoh: Jika nilai input adalah `2024-7-15 14:26:30` dan formatnya `the time is YYYY/MM/DD HH:mm:ss`, maka hasil perhitungannya adalah `the time is 2024/07/15 14:26:30`.
+- Tipe Nilai Input yang Diterima: tanggal
+- Parameter
+  - Format, lihat [Day.js: Format](https://day.js.org/docs/en/display/format)
+- Tipe Nilai Output: string
+- Contoh: nilai input `2024-7-15 14:26:30`, format `the time is YYYY/MM/DD HH:mm:ss`, maka hasil komputasi adalah `the time is 2024/07/15 14:26:30`.
 
-### Mengonversi Satuan
+### Konversi Unit
 
--   Menerima tipe nilai input: Angka
--   Parameter
-    -   Satuan waktu sebelum konversi.
-    -   Satuan waktu setelah konversi.
-    -   Operasi pembulatan, pilihan termasuk mempertahankan desimal, pembulatan ke terdekat, pembulatan ke atas, dan pembulatan ke bawah.
--   Tipe nilai output: Angka
--   Contoh: Jika nilai input adalah `2`, satuan sebelum konversi adalah "minggu", satuan setelah konversi adalah "hari", dan desimal tidak dipertahankan, maka hasil perhitungannya adalah `14`.
+- Tipe Nilai Input yang Diterima: numerik
+- Parameter
+  - Unit waktu sebelum konversi.
+  - Unit waktu setelah konversi.
+  - Operasi pembulatan, dapat memilih simpan desimal, pembulatan, pembulatan ke atas, dan pembulatan ke bawah.
+- Tipe Nilai Output: numerik
+- Contoh: nilai input `2`, unit sebelum konversi "minggu", unit setelah konversi "hari", tidak simpan desimal, maka hasil komputasi adalah `14`.
 
 ## Contoh
 
-![Node Perhitungan Tanggal_Contoh](https://static-docs.nocobase.com/20240817184137.png)
+![Node komputasi tanggal_contoh](https://static-docs.nocobase.com/20240817184137.png)
 
-Misalkan ada acara promosi, dan kita ingin menambahkan waktu berakhir promosi pada bidang produk saat setiap produk dibuat. Waktu berakhir ini adalah pukul 23:59:59 pada hari terakhir minggu berikutnya setelah waktu pembuatan produk. Jadi, kita dapat membuat dua fungsi waktu dan menjalankannya dalam mode pipeline:
+Misalkan ada acara promosi, kita ingin saat setiap produk dibuat dapat menambahkan waktu akhir acara promosi pada field produk. Waktu akhir ini adalah pada hari terakhir minggu setelah waktu pembuatan produk pukul 23:59:59, jadi kita dapat membuat dua fungsi waktu, dan menjalankannya dengan cara pipa:
 
--   Menghitung waktu untuk minggu berikutnya
--   Mengatur ulang hasil ke pukul 23:59:59 pada hari terakhir minggu tersebut
+- Hitung waktu minggu depan
+- Reset hasil yang diperoleh ke hari terakhir minggunya pukul 23:59:59
 
-Dengan cara ini, kita mendapatkan nilai waktu yang diinginkan dan meneruskannya ke node berikutnya, misalnya node modifikasi koleksi, untuk menambahkan waktu berakhir promosi ke dalam koleksi.
+Dengan demikian kita mendapatkan nilai waktu yang diharapkan, dan diteruskan ke Node berikutnya, misalnya Node modifikasi tabel data, menambahkan waktu akhir acara promosi ke tabel data.

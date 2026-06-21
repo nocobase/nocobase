@@ -1,12 +1,12 @@
 [
   {
     "type": "section-header",
-    "label": "Chế độ cụm"
+    "label": "Cluster Mode"
   },
   {
     "type": "custom-link",
     "label": "Tổng quan",
-    "link": "/cluster-mode/index"
+    "link": "/cluster-mode/"
   },
   {
     "type": "custom-link",

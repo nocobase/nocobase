@@ -1,31 +1,33 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Field Title"
+description: "Field Title: menampilkan judul record, biasanya digunakan untuk tampilan judul detail, list, mendukung Field relasi."
+keywords: "Field Title, Title, judul record, interface builder, NocoBase"
+---
 
-# Judul
+# Title
 
-## Pendahuluan
+## Pengantar
 
-Dalam mode tampilan, field relasi secara default ditampilkan menggunakan **Komponen Field Judul**, yang mengidentifikasi rekaman terkait saat ini dengan menampilkan nilai dari field judul.
-Sistem secara otomatis mencocokkan dan merender komponen field judul yang sesuai berdasarkan tipe field judul.
+Dalam status mode baca, Field relasi secara default menggunakan **komponen Field judul** untuk ditampilkan, mengidentifikasi record yang terkait saat ini dengan menampilkan nilai Field judul.
+Sistem akan otomatis mencocokkan dan merender komponen Field judul yang sesuai berdasarkan tipe Field judul yang berbeda.
 
-## Opsi Konfigurasi Field
+## Konfigurasi Field
 
 ### Field Judul
 
-Ketika tipe field judul adalah 'Angka':
+Saat tipe Field judul adalah "numerik":
 
 ![20251028155817](https://static-docs.nocobase.com/20251028155817.png)
 
-Komponen field adalah komponen angka.
+Komponen Field adalah komponen numerik.
 
 ![20251028155837](https://static-docs.nocobase.com/20251028155837.png)
 
-Ketika tipe field judul adalah 'Tanggal & Waktu':
+Saat tipe Field judul adalah "tanggal waktu":
 
 ![20251029213244](https://static-docs.nocobase.com/20251029213244.png)
 
-Komponen field beralih ke komponen tanggal.
+Komponen Field di-switch ke komponen tanggal.
 
 ![20251029213320](https://static-docs.nocobase.com/20251029213320.png)
 
@@ -33,10 +35,10 @@ Komponen field beralih ke komponen tanggal.
 
 ![20251028155644](https://static-docs.nocobase.com/20251028155644.png)
 
-### Aktifkan klik untuk membuka (aktif secara default)
+### Aktifkan Klik untuk Membuka (Default Aktif)
 
-Klik untuk membuka jendela pop-up di mana Anda dapat menyesuaikan blok untuk pengelolaan data.
+Klik untuk memunculkan Popup yang dapat dikonfigurasi Block kustom untuk manajemen data.
 
 ![20251028160742](https://static-docs.nocobase.com/20251028160742.png)
 
-Untuk detail lebih lanjut, lihat [Komponen Field](/interface-builder/fields/association-field).
+Untuk informasi lebih lanjut, lihat [Komponen Field](/interface-builder/fields/association-field);

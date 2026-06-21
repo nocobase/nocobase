@@ -1,8 +1,10 @@
 ---
 displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
+title: "Logger"
+keywords: "Logger,Plugin,NocoBase"
 description: |
-  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
+  Log sisi server, terutama mencakup log permintaan API dan log operasi sistem, serta mendukung pengemasan dan pengunduhan file log.
 isFree: true
 builtIn: true
 defaultEnabled: false

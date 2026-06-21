@@ -1,17 +1,18 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Logger - Nhật ký (Server)"
+description: "Nhật ký phía server của NocoBase: app.logger, các cấp độ log, tạo logger con, cấu hình đầu ra log."
+keywords: "Logger,Nhật ký,app.logger,Cấp độ log,Log server,NocoBase"
+---
 
+# Logger - Nhật ký
 
-# Logger
+Log của NocoBase được đóng gói dựa trên <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Mặc định, NocoBase chia log thành log request interface, log chạy hệ thống và log thực thi SQL. Trong đó log request interface và log thực thi SQL được in bởi nội bộ ứng dụng, nhà phát triển Plugin thường chỉ cần quan tâm đến log chạy hệ thống liên quan đến Plugin.
 
-Hệ thống ghi nhật ký (logging) của NocoBase được xây dựng dựa trên <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Theo mặc định, NocoBase phân loại nhật ký thành nhật ký yêu cầu API, nhật ký hoạt động hệ thống và nhật ký thực thi SQL. Trong đó, nhật ký yêu cầu API và nhật ký thực thi SQL được ứng dụng in ra nội bộ. Các nhà phát triển plugin thường chỉ cần in các nhật ký hoạt động hệ thống liên quan đến plugin.
+Dưới đây giới thiệu cách tạo và in log khi phát triển Plugin.
 
-Tài liệu này sẽ hướng dẫn cách tạo và in nhật ký khi phát triển plugin.
+## Phương thức in mặc định
 
-## Các phương thức in mặc định
-
-NocoBase cung cấp các phương thức in nhật ký hoạt động hệ thống. Nhật ký được in theo các trường quy định và đồng thời được xuất ra các tệp chỉ định.
+NocoBase cung cấp phương thức in log chạy hệ thống, log được in theo các trường quy định, đồng thời xuất ra tệp đã chỉ định.
 
 ```ts
 // Phương thức in mặc định
@@ -22,7 +23,7 @@ async function (ctx, next) {
   ctx.log.info("message");
 }
 
-// Sử dụng trong plugin
+// Sử dụng trong Plugin
 class CustomPlugin extends Plugin {
   async load() {
     this.log.info("message");
@@ -30,9 +31,9 @@ class CustomPlugin extends Plugin {
 }
 ```
 
-Tất cả các phương thức trên đều tuân theo cách sử dụng dưới đây:
+Các phương thức trên đều tuân theo cách dùng sau:
 
-Tham số đầu tiên là thông báo nhật ký, và tham số thứ hai là một đối tượng metadata tùy chọn, có thể là bất kỳ cặp khóa-giá trị nào. Trong đó, `module`, `submodule` và `method` sẽ được trích xuất thành các trường riêng biệt, còn các trường còn lại sẽ được đặt trong trường `meta`.
+Tham số đầu tiên là nội dung log, tham số thứ hai là object metadata tùy chọn, có thể là cặp key-value bất kỳ. Trong đó `module`, `submodule`, `method` sẽ được trích xuất thành trường riêng, các trường còn lại đặt vào trường `meta`.
 
 ```ts
 app.log.info('message', {
@@ -49,9 +50,9 @@ app.log.warn();
 app.log.error();
 ```
 
-## Xuất ra các tệp khác
+## Xuất ra tệp khác
 
-Nếu bạn muốn sử dụng phương thức in mặc định của hệ thống nhưng không muốn xuất ra tệp mặc định, bạn có thể tạo một thể hiện logger hệ thống tùy chỉnh bằng cách sử dụng `createSystemLogger`.
+Nếu muốn dùng phương thức in mặc định của hệ thống, nhưng không muốn xuất ra tệp mặc định, có thể dùng `createSystemLogger` để tạo một instance log hệ thống tùy chỉnh.
 
 ```ts
 import { createSystemLogger } from '@nocobase/logger';
@@ -59,13 +60,13 @@ import { createSystemLogger } from '@nocobase/logger';
 const logger = createSystemLogger({
   dirname: '/pathto/',
   filename: 'xxx',
-  seperateError: true, // Có xuất riêng nhật ký cấp độ error ra tệp 'xxx_error.log' hay không
+  seperateError: true, // Có xuất log cấp error riêng vào xxx_error.log không
 });
 ```
 
-## Logger tùy chỉnh
+## Log tùy chỉnh
 
-Nếu bạn không muốn sử dụng các phương thức in do hệ thống cung cấp mà muốn sử dụng các phương thức gốc của Winston, bạn có thể tạo nhật ký bằng các phương thức sau.
+Nếu không muốn dùng phương thức in được hệ thống cung cấp, muốn dùng trực tiếp cách Winston gốc, có thể tạo log thông qua các phương thức sau.
 
 ### `createLogger`
 
@@ -77,14 +78,14 @@ const logger = createLogger({
 });
 ```
 
-`options` mở rộng từ `winston.LoggerOptions` gốc.
+`options` được mở rộng trên cơ sở `winston.LoggerOptions` ban đầu.
 
-- `transports` - Sử dụng `'console' | 'file' | 'dailyRotateFile'` để áp dụng các phương thức xuất đã được cài đặt sẵn.
-- `format` - Sử dụng `'logfmt' | 'json' | 'delimiter'` để áp dụng các định dạng in đã được cài đặt sẵn.
+- `transports` - Có thể dùng `'console' | 'file' | 'dailyRotateFile'` để áp dụng phương thức xuất tích hợp sẵn.
+- `format` - Có thể dùng `'logfmt' | 'json' | 'delimiter'` để áp dụng định dạng in tích hợp sẵn.
 
 ### `app.createLogger`
 
-Trong các tình huống đa ứng dụng, đôi khi chúng ta muốn tùy chỉnh thư mục và tệp đầu ra, có thể xuất ra thư mục được đặt tên theo ứng dụng hiện tại.
+Trong tình huống đa ứng dụng, nếu bạn muốn log tùy chỉnh xuất ra thư mục có tên ứng dụng hiện tại, có thể dùng phương thức này.
 
 ```ts
 app.createLogger({
@@ -95,7 +96,7 @@ app.createLogger({
 
 ### `plugin.createLogger`
 
-Trường hợp sử dụng và cách dùng tương tự như `app.createLogger`.
+Tình huống và cách dùng giống `app.createLogger`.
 
 ```ts
 class CustomPlugin extends Plugin {
@@ -109,3 +110,11 @@ class CustomPlugin extends Plugin {
   }
 }
 ```
+
+## Liên kết liên quan
+
+- [Context Request](./context.md) — Trong middleware và Action in log thông qua `ctx.logger`
+- [Plugin](./plugin.md) — Sử dụng log thông qua `this.log` và `plugin.createLogger` trong Plugin
+- [Telemetry](./telemetry.md) — Kết hợp log và telemetry để triển khai khả năng quan sát
+- [Middleware](./middleware.md) — Tình huống điển hình ghi log request trong middleware
+- [Tổng quan phát triển server](./index.md) — Vị trí của hệ thống log trong kiến trúc server

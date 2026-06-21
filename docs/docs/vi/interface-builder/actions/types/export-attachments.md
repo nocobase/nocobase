@@ -1,17 +1,16 @@
 ---
 pkg: "@nocobase/plugin-action-export-pro"
+title: "Action xuất tập tin đính kèm"
+description: "Action xuất tập tin đính kèm: xuất các tập tin đính kèm liên kết với bản ghi, hỗ trợ xuất hàng loạt, tải xuống tập tin nén."
+keywords: "xuất tập tin đính kèm,ExportAttachments,xuất đính kèm,tải tập tin,Interface Builder,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Xuất tệp đính kèm
+# Xuất tập tin đính kèm
 
 ## Giới thiệu
 
-Tính năng xuất tệp đính kèm hỗ trợ xuất các trường liên quan đến tệp đính kèm dưới dạng gói nén.
+Xuất tập tin đính kèm hỗ trợ xuất các Field liên quan đến tập tin đính kèm thành định dạng tập tin nén.
 
-#### Cấu hình xuất tệp đính kèm
+#### Cấu hình xuất tập tin đính kèm
 
 ![20251029173251](https://static-docs.nocobase.com/20251029173251.png)
 
@@ -19,15 +18,16 @@ Tính năng xuất tệp đính kèm hỗ trợ xuất các trường liên quan
 
 ![20251029173345](https://static-docs.nocobase.com/20251029173345.png)
 
-- Cấu hình các trường tệp đính kèm cần xuất; bạn có thể chọn nhiều trường.
-- Bạn có thể chọn có tạo thư mục cho mỗi bản ghi hay không.
+- Cấu hình Field tập tin đính kèm cần xuất, hỗ trợ chọn nhiều.
+- Có thể chọn có tạo một thư mục cho mỗi bản ghi hay không.
 
-Quy tắc đặt tên tệp:
+Quy tắc đặt tên tập tin:
 
-- Nếu bạn chọn tạo thư mục cho mỗi bản ghi, quy tắc đặt tên tệp sẽ là: `{Giá trị trường tiêu đề của bản ghi}/{Tên trường tệp đính kèm}[-{Số thứ tự tệp}].{Phần mở rộng tệp}`.
-- Nếu bạn chọn không tạo thư mục, quy tắc đặt tên tệp sẽ là: `{Giá trị trường tiêu đề của bản ghi}-{Tên trường tệp đính kèm}[-{Số thứ tự tệp}].{Phần mở rộng tệp}`.
+- Nếu chọn tạo một thư mục cho mỗi bản ghi, quy tắc đặt tên tập tin là: `{giá trị Field tiêu đề bản ghi}/{tên Field tập tin đính kèm}[-{số thứ tự tập tin}].{phần mở rộng tập tin}`.
+- Nếu chọn không tạo thư mục, quy tắc đặt tên tập tin là: `{giá trị Field tiêu đề bản ghi}-{tên Field tập tin đính kèm}[-{số thứ tự tập tin}].{phần mở rộng tập tin}`.
 
-Số thứ tự tệp sẽ tự động được tạo khi một trường tệp đính kèm chứa nhiều tệp.
+Số thứ tự tập tin được tự động tạo khi có nhiều tập tin đính kèm trong Field tập tin đính kèm.
 
-- [Quy tắc liên kết](/interface-builder/actions/action-settings/linkage-rule): Hiển thị/ẩn nút một cách linh hoạt;
-- [Chỉnh sửa nút](/interface-builder/actions/action-settings/edit-button): Chỉnh sửa tiêu đề, loại và biểu tượng của nút;
+
+- [Quy tắc liên kết](/interface-builder/actions/action-settings/linkage-rule): hiển thị/ẩn nút bấm động;
+- [Chỉnh sửa nút bấm](/interface-builder/actions/action-settings/edit-button): chỉnh sửa tiêu đề, loại, biểu tượng của nút bấm;

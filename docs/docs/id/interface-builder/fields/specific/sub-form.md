@@ -1,37 +1,39 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Sub-Form"
+description: "Field Sub-Form: Form bersarang, digunakan untuk tambah edit data terkait one-to-many, mendukung edit inline atau Popup."
+keywords: "Sub-Form, SubForm, Form bersarang, one-to-many, interface builder, NocoBase"
+---
 
-# Sub-formulir
+# Sub-Form
 
-## Pendahuluan
+## Pengantar
 
-Sub-formulir cocok untuk skenario di mana Anda membuat data terkait baru sebelum menautkannya. Data terkait multi-level ditampilkan dengan jelas dalam bentuk formulir bersarang. Dibandingkan dengan komponen Pemilih Data (Data Selector) dan Dropdown, sub-formulir memungkinkan Anda mengelola langsung bidang-bidang koleksi terkait dalam blok halaman saat ini, dan data terkait akan dikirimkan bersama dengan formulir utama.
+Sub-Form cocok untuk skenario membuat data relasi terlebih dahulu kemudian mengasosiasikan data. Data relasi multi-level ditampilkan dengan jelas dalam bentuk Form bersarang. Dibandingkan dengan Data Picker dan Dropdown Select, Sub-Form langsung memelihara Field Table relasi di Block Page saat ini, dan data relasi di-submit bersama dengan Table utama.
 
-## Penggunaan
+## Petunjuk Penggunaan
 
-### Sub-formulir untuk bidang asosiasi 'to-many'
+### Sub-Form Field Relasi To-Many
 
 ![20251029205655](https://static-docs.nocobase.com/20251029205655.png)
 
-### Sub-formulir untuk bidang asosiasi 'to-one'
+### Sub-Form Field Relasi To-One
 
 ![20251027202218](https://static-docs.nocobase.com/20251027202218.png)
 
-### Mendukung konfigurasi bersarang untuk bidang asosiasi multi-level.
+### Mendukung Konfigurasi Bersarang Field Relasi Multi-Level.
 
 ![20251027201218](https://static-docs.nocobase.com/20251027201218.png)
 
-## Opsi Konfigurasi Bidang
+## Konfigurasi Field
 
-### Komponen Bidang
+### Komponen Field
 
 ![20251030150601](https://static-docs.nocobase.com/20251030150601.png)
 
-[Komponen Bidang](/interface-builder/fields/association-field): Beralih ke komponen bidang asosiasi lainnya, seperti Dropdown, Pemilih Data, dll.
+[Komponen Field](/interface-builder/fields/association-field): switch ke komponen Field relasi lainnya, seperti dropdown select, data picker, dll.;
 
-### Aturan Keterkaitan
+### Aturan Linkage
 
-[Aturan Keterkaitan](/interface-builder/linkage-rule): Konfigurasi aturan keterkaitan untuk bidang sub-formulir.
+[Aturan Linkage](/interface-builder/linkage-rule): mengkonfigurasi aturan linkage Field Sub-Form;
 
 ![20251027202439](https://static-docs.nocobase.com/20251027202439.png)

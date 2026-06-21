@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "AppCommand"
+description: "Ekstensi command line NocoBase: perintah kustom berbasis commander."
+keywords: "AppCommand,commander,command line,NocoBase"
+---
 
 # AppCommand
 
@@ -11,3 +13,4 @@ Diimplementasikan berdasarkan [commander](https://www.npmjs.com/package/commande
 ## auth()
 
 ## preload()
+

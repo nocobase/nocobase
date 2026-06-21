@@ -1,81 +1,79 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Konfigurasi Outlook"
+description: "Integrasi email Outlook: registrasi Azure, Microsoft Entra ID, App registrations, Client ID/Secret, konfigurasi OAuth callback URL."
+keywords: "konfigurasi Outlook,email Microsoft,Azure,Microsoft Entra ID,OAuth,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-
 # Konfigurasi Microsoft
 
 ### Prasyarat
-Agar pengguna dapat menghubungkan kotak surat Outlook mereka ke NocoBase, Anda harus menyebarkan NocoBase di server yang dapat mengakses layanan Microsoft. Backend akan memanggil API Microsoft.
+Agar user dapat mengintegrasikan email Outlook ke NocoBase, harus di-deploy di server yang mendukung akses ke layanan Microsoft. Backend akan memanggil API Microsoft.
 
-### Mendaftar Akun
+### Registrasi Akun
 
 1. Buka https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account
     
-2. Masuk ke akun Microsoft Anda
+2. Login ke akun Microsoft
     
 ![](https://static-docs.nocobase.com/mail-1733818625779.png)
 
-### Membuat Tenant
+### Buat Tenant
 
-1. Buka https://azure.microsoft.com/zh-cn/pricing/purchase-options/azure-account?icid=azurefreeaccount dan masuk ke akun Anda.
+1. Buka https://azure.microsoft.com/en/pricing/purchase-options/azure-account?icid=azurefreeaccount, dan login akun
     
-2. Isi informasi dasar dan dapatkan kode verifikasi.
+2. Isi informasi dasar, dan dapatkan verification code
 
 ![](https://static-docs.nocobase.com/mail-1733818625984.png)
 
-3. Isi informasi lainnya dan lanjutkan.
+3. Isi informasi lainnya dan lanjutkan
 
 ![](https://static-docs.nocobase.com/mail-1733818626352.png)
 
-4. Isi informasi kartu kredit Anda (Anda dapat melewati langkah ini untuk saat ini).
+4. Isi informasi terkait kartu kredit (dapat tidak dibuat dahulu)
 
 ![](https://static-docs.nocobase.com/mail-1733818626622.png)
 
-### Mendapatkan Client ID
+### Dapatkan Client ID
 
-1. Klik menu atas dan pilih "Microsoft Entra ID".
+1. Klik menu atas, pilih **Microsoft Entra ID**
 
 ![](https://static-docs.nocobase.com/mail-1733818626871.png)
 
-2. Pilih "App registrations" di sisi kiri.
+2. Pilih **App registrations** di sebelah kiri
 
 ![](https://static-docs.nocobase.com/mail-1733818627097.png)
 
-3. Klik "New registration" di bagian atas.
+3. Klik **New registration** di bagian atas
 
 ![](https://static-docs.nocobase.com/mail-1733818627309.png)
 
-4. Isi informasi dan kirimkan.
+4. Isi informasi dan submit
 
-Nama bisa apa saja. Untuk jenis akun, pilih opsi yang ditunjukkan pada gambar di bawah. Anda dapat membiarkan Redirect URI kosong untuk saat ini.
+Nama bebas, account types pilih sesuai gambar di bawah, Redirect URI dapat tidak diisi dahulu
 
 ![](https://static-docs.nocobase.com/mail-1733818627555.png)
 
-5. Dapatkan Client ID.
+5. Dapatkan Client ID
 
 ![](https://static-docs.nocobase.com/mail-1733818627797.png)
 
 ### Otorisasi API
 
-1. Buka menu "API permissions" di sisi kiri.
+1. Buka menu **API permissions** di sebelah kanan
 
 ![](https://static-docs.nocobase.com/mail-1733818628178.png)
 
-2. Klik tombol "Add a permission".
+2. Klik tombol **Add a permission**
 
 ![](https://static-docs.nocobase.com/mail-1733818628448.png)
 
-3. Klik "Microsoft Graph".
+3. Klik **Microsoft Graph**
 
 ![](https://static-docs.nocobase.com/mail-1733818628725.png)
 
 ![](https://static-docs.nocobase.com/mail-1733818628927.png)
 
-4. Cari dan tambahkan izin berikut. Hasil akhirnya akan terlihat seperti pada gambar di bawah.
+4. Cari dan tambahkan izin berikut, hasil akhir seperti gambar di bawah
     
     1. `"email"`
     2. `"offline_access"`
@@ -86,24 +84,24 @@ Nama bisa apa saja. Untuk jenis akun, pilih opsi yang ditunjukkan pada gambar di
 
 ![](https://static-docs.nocobase.com/mail-1733818629130.png)
 
-### Mendapatkan Secret
+### Dapatkan Secret
 
-1. Klik "Certificates & secrets" di sisi kiri.
+1. Klik **Certificates & secrets** di sebelah kiri
 
 ![](https://static-docs.nocobase.com/mail-1733818629369.png)
 
-2. Klik tombol "New client secret".
+2. Klik tombol **New client secret**
 
 ![](https://static-docs.nocobase.com/mail-1733818629554.png)
 
-3. Isi deskripsi dan waktu kedaluwarsa, lalu klik Tambah.
+3. Isi description dan expiration time, lalu add
 
 ![](https://static-docs.nocobase.com/mail-1733818630292.png)
 
-4. Dapatkan Secret ID.
+4. Dapatkan Secret ID
 
 ![](https://static-docs.nocobase.com/mail-1733818630535.png)
 
-5. Salin Client ID dan Client secret, lalu tempelkan ke halaman konfigurasi email.
+5. Salin Client ID dan Client secret masing-masing dan isi ke halaman konfigurasi email
 
 ![](https://static-docs.nocobase.com/mail-1733818630710.png)

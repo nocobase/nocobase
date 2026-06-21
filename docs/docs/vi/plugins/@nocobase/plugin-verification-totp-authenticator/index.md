@@ -1,15 +1,17 @@
 ---
-displayName: "Verification: TOTP authenticator"
+displayName: "Xác minh: TOTP Authenticator"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
+title: "Xác minh: TOTP Authenticator"
+keywords: "Xác minh: TOTP Authenticator,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support users in binding a TOTP authenticator and verifying their identity using time-based one-time codes (TOTP).
+  Hỗ trợ người dùng liên kết TOTP authenticator và xác thực danh tính bằng mã một lần dựa trên thời gian (TOTP).
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Verification: TOTP authenticator
+# Xác minh: TOTP Authenticator

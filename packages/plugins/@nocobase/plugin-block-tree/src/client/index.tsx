@@ -12,17 +12,45 @@ import { useTreeProps } from './schema';
 import { Tree } from './component';
 import { treeSettings } from './settings';
 import { treeInitializerItem } from './initializer';
+import {
+  treeConnectDataBlocks,
+  TreeActionGroupModel,
+  TreeBlockModel,
+  TreeFilterBlockMenuModel,
+  TreeTitleFieldSettingsModel,
+} from '../client-v2/models';
 export * from './component';
 
 export class PluginBlockTreeClient extends Plugin {
   async load() {
+    this.flowEngine.registerActions({
+      treeConnectDataBlocks,
+    });
+    this.flowEngine.registerModels({
+      TreeActionGroupModel,
+      TreeBlockModel,
+      TreeFilterBlockMenuModel,
+      TreeTitleFieldSettingsModel,
+    });
     this.app.addComponents({ Tree });
     this.app.schemaSettingsManager.add(treeSettings);
     this.app.addScopes({ useTreeProps });
 
-    this.app.schemaInitializerManager.addItem('page:addBlock', `filterBlocks.${treeInitializerItem.name}`, treeInitializerItem);
-    this.app.schemaInitializerManager.addItem('popup:common:addBlock', `filterBlocks.${treeInitializerItem.name}`, treeInitializerItem);
-    this.app.schemaInitializerManager.addItem('popup:tableSelector:addBlock', `filterBlocks.${treeInitializerItem.name}`, treeInitializerItem);
+    this.app.schemaInitializerManager.addItem(
+      'page:addBlock',
+      `filterBlocks.${treeInitializerItem.name}`,
+      treeInitializerItem,
+    );
+    this.app.schemaInitializerManager.addItem(
+      'popup:common:addBlock',
+      `filterBlocks.${treeInitializerItem.name}`,
+      treeInitializerItem,
+    );
+    this.app.schemaInitializerManager.addItem(
+      'popup:tableSelector:addBlock',
+      `filterBlocks.${treeInitializerItem.name}`,
+      treeInitializerItem,
+    );
   }
 }
 

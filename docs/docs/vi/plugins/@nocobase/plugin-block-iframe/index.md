@@ -1,8 +1,10 @@
 ---
 displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
+title: "Block: iframe"
+keywords: "Block: iframe,Plugin,NocoBase"
 description: |
-  Create an iframe block on the page to embed and display external web pages or content.
+  Tạo và quản lý iframe trên trang, dùng để nhúng và hiển thị trang web hoặc nội dung bên ngoài.
 isFree: true
 builtIn: true
 defaultEnabled: false

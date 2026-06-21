@@ -1,3 +1,9 @@
+---
+title: "RunJS 容器内渲染"
+description: "ctx.render() 将 React 元素、JSX 或 DOM 渲染到 ctx.element 容器，自动继承 ConfigProvider、主题，适用于 JSBlock、JSField 自定义展示。"
+keywords: "ctx.render,容器渲染,JSX,React,ConfigProvider,JSBlock,JSField,NocoBase RunJS"
+---
+
 # 容器内渲染
 
 使用 `ctx.render()` 将内容渲染到当前容器（`ctx.element`）中，支持以下三种形式：

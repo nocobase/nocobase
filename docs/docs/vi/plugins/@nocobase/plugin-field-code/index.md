@@ -1,15 +1,17 @@
 ---
-displayName: "Collection field: Code"
+displayName: "Field: Mã"
 packageName: '@nocobase/plugin-field-code'
+title: "Field: Mã"
+keywords: "Field: Mã,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
-isFree: false
-builtIn: false
+  Dùng để chỉnh sửa và làm nổi bật mã, hỗ trợ các ngôn ngữ như Java, JavaScript, Python, SQL.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Code
+# Field: Mã

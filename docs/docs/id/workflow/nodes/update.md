@@ -1,50 +1,52 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Node Workflow - Update Data"
+description: "Node Update Data: update record tabel data berdasarkan kondisi, mendukung kondisi filter, mode update, assignment dengan variable."
+keywords: "Workflow,Update Data,Update,operasi tabel data,kondisi filter,NocoBase"
+---
 
-# Memperbarui Data
+# Update Data
 
-Digunakan untuk memperbarui data dalam sebuah **koleksi** yang memenuhi kondisi tertentu.
+Digunakan untuk meng-update data pada tabel data tertentu yang memenuhi kondisi.
 
-Bagian **koleksi** dan penetapan nilai bidang (field) sama dengan node "Buat Catatan Baru". Perbedaan utama pada node "Memperbarui Data" adalah penambahan kondisi filter dan kebutuhan untuk memilih mode pembaruan. Selain itu, hasil dari node "Memperbarui Data" akan mengembalikan jumlah baris data yang berhasil diperbarui. Ini hanya dapat dilihat di riwayat eksekusi dan tidak dapat digunakan sebagai variabel di node selanjutnya.
+Bagian tabel data dan assignment field sama dengan Node Tambah, perbedaan utama Node Update adalah penambahan kondisi filter, dan Anda perlu memilih mode update. Selain itu, hasil Node Update akan mengembalikan jumlah baris data yang berhasil diupdate, hanya dapat dilihat di riwayat eksekusi, dan tidak dapat digunakan sebagai variable pada Node berikutnya.
 
 ## Membuat Node
 
-Pada antarmuka konfigurasi **alur kerja**, klik tombol plus ("+") di dalam alur untuk menambahkan node "Memperbarui Data":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Update Data":
 
-![更新数据_添加](https://static-docs.nocobase.com/9ff24d7bc173b3a71decc1f70ca9fb66.png)
+![Update Data_Tambah](https://static-docs.nocobase.com/9ff24d7bc173b3a71decc1f70ca9fb66.png)
 
 ## Konfigurasi Node
 
-![更新节点_节点配置](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
+![Node Update_Konfigurasi](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
-### Koleksi
+### Tabel Data
 
-Pilih **koleksi** tempat data perlu diperbarui.
+Pilih tabel data yang akan diupdate.
 
-### Mode Pembaruan
+### Mode Update
 
-Ada dua mode pembaruan:
+Mode update memiliki dua mode:
 
-*   **Pembaruan Massal**: Tidak akan memicu event **koleksi** untuk setiap catatan yang diperbarui. Mode ini menawarkan kinerja yang lebih baik dan cocok untuk operasi pembaruan data dalam jumlah besar.
-*   **Pembaruan Satu per Satu**: Akan memicu event **koleksi** untuk setiap catatan yang diperbarui. Namun, mode ini dapat menyebabkan masalah kinerja pada volume data yang besar dan harus digunakan dengan hati-hati.
+* Update batch: tidak akan memicu event tabel data untuk setiap record yang diupdate, performanya lebih baik, cocok untuk operasi update data dalam jumlah besar.
+* Update satu per satu: akan memicu event tabel data untuk setiap record yang diupdate, tetapi pada jumlah data besar akan ada masalah performa, perlu digunakan dengan hati-hati.
 
-Pilihan mode ini biasanya bergantung pada data target yang akan diperbarui dan apakah event **alur kerja** lain perlu dipicu. Jika Anda memperbarui satu catatan berdasarkan kunci utama, "Pembaruan Satu per Satu" direkomendasikan. Jika Anda memperbarui beberapa catatan berdasarkan kondisi, "Pembaruan Massal" direkomendasikan.
+Biasanya pemilihan didasarkan pada data target yang diupdate dan apakah perlu memicu event workflow lain. Jika update record tunggal berdasarkan primary key, disarankan menggunakan update satu per satu. Jika update beberapa record berdasarkan kondisi, disarankan menggunakan update batch.
 
 ### Kondisi Filter
 
-Mirip dengan kondisi filter pada kueri **koleksi** biasa, Anda dapat menggunakan variabel konteks dari **alur kerja**.
+Mirip dengan kondisi filter pada query tabel data biasa, dapat menggunakan variable konteks alur.
 
-### Nilai Bidang
+### Nilai Field
 
-Mirip dengan penetapan nilai bidang pada node "Buat Catatan Baru", Anda dapat menggunakan variabel konteks dari **alur kerja** atau mengisi nilai statis secara manual.
+Mirip dengan assignment field pada Node Tambah, dapat menggunakan variable konteks alur, atau mengisi nilai statis secara manual.
 
-Catatan: Data yang diperbarui oleh node "Memperbarui Data" dalam **alur kerja** tidak secara otomatis menangani data "Terakhir Dimodifikasi Oleh". Anda perlu mengonfigurasi nilai bidang ini sendiri sesuai kebutuhan.
+Catatan: data yang diupdate oleh Node Update di workflow tidak akan otomatis memproses data "terakhir dimodifikasi oleh", Anda perlu mengkonfigurasi nilai field ini sendiri sesuai situasi.
 
 ## Contoh
 
-Sebagai contoh, ketika sebuah "Artikel" baru dibuat, Anda perlu secara otomatis memperbarui bidang "Jumlah Artikel" di **koleksi** "Kategori Artikel". Ini dapat dicapai dengan menggunakan node "Memperbarui Data":
+Misalnya saat menambah "Artikel", perlu otomatis meng-update field "Jumlah Artikel" pada tabel "Kategori Artikel", dapat diimplementasikan menggunakan Node Update:
 
-![更新节点_示例_节点配置](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
+![Node Update_Contoh_Konfigurasi Node](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
-Setelah **alur kerja** dipicu, bidang "Jumlah Artikel" pada **koleksi** "Kategori Artikel" akan secara otomatis diperbarui menjadi jumlah artikel saat ini + 1.
+Saat workflow di-trigger, akan secara otomatis meng-update field "Jumlah Artikel" pada tabel "Kategori Artikel" menjadi jumlah artikel saat ini +1.

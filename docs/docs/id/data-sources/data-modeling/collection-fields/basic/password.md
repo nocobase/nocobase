@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Password"
+description: "Field Password, menyimpan password terenkripsi, ditampilkan tersembunyi saat input."
+keywords: "password,password,field terenkripsi,field sensitif,NocoBase"
+---
 
-# Kata Sandi
+# Password
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Kolom
+## Konfigurasi Field
 
 ![20240512175917](https://static-docs.nocobase.com/20240512175917.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

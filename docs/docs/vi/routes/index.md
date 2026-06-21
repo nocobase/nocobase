@@ -1,66 +1,65 @@
 ---
-pkg: "@nocobase/plugin-client"
+title: "Trình quản lý route"
+description: "Trình quản lý route quản lý route trang chính và menu, hỗ trợ desktop/mobile, bốn loại route group/page/tab/link, đồng bộ menu và route."
+keywords: "route,Routes,menu route,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Trình quản lý route
 
-
-# Trình quản lý định tuyến
+<PluginInfo name="client"></PluginInfo>
 
 ## Giới thiệu
 
-Trình quản lý định tuyến là một công cụ dùng để quản lý các định tuyến của trang chính hệ thống, hỗ trợ cả thiết bị `máy tính để bàn` và `di động`. Các định tuyến được tạo bằng trình quản lý định tuyến sẽ tự động hiển thị trong menu (có thể cấu hình để không hiển thị trong menu). Ngược lại, các mục menu được thêm vào từ menu trang cũng sẽ được đồng bộ hóa vào danh sách của trình quản lý định tuyến.
+Trình quản lý route là công cụ để quản lý route trang chính của hệ thống, hỗ trợ cả `desktop` và `mobile`. Các route được tạo bằng trình quản lý route sẽ tự động hiển thị trong menu (có thể cấu hình để không hiển thị trong menu). Ngược lại, các menu được thêm tại trang menu cũng sẽ tự động hiển thị trong danh sách trình quản lý route.
 
 ![20250107115449](https://static-docs.nocobase.com/20250107115449.png)
 
 ## Hướng dẫn sử dụng
 
-### Các loại định tuyến
+### Loại route
 
-Hệ thống hỗ trợ bốn loại định tuyến:
+Hệ thống hỗ trợ bốn loại route:
 
-- Nhóm (`group`): Dùng để quản lý các định tuyến bằng cách nhóm chúng lại, và có thể chứa các định tuyến con.
-- Trang (`page`): Là một trang nội bộ của hệ thống.
-- Tab (`tab`): Loại định tuyến dùng để chuyển đổi giữa các tab bên trong một trang.
-- Liên kết (`link`): Là một liên kết nội bộ hoặc bên ngoài, có thể chuyển hướng trực tiếp đến địa chỉ liên kết đã cấu hình.
+- Group: dùng để nhóm các route, có thể chứa route con
+- Page: trang nội bộ của hệ thống
+- Tab: loại route dùng để chuyển tab bên trong trang
+- Link: liên kết nội bộ hoặc bên ngoài, có thể chuyển trực tiếp đến địa chỉ link đã cấu hình
 
-### Thêm định tuyến
+### Thêm route
 
-Nhấp vào nút “Add new” ở góc trên bên phải để tạo một định tuyến mới:
+Click nút "Add new" ở góc trên bên phải để tạo route mới:
 
-1. Chọn loại định tuyến (`Type`)
-2. Điền tiêu đề định tuyến (`Title`)
-3. Chọn biểu tượng định tuyến (`Icon`)
-4. Cấu hình xem có hiển thị trong menu hay không (`Show in menu`)
-5. Cấu hình xem có bật các tab trang hay không (`Enable page tabs`)
-6. Đối với loại trang, hệ thống sẽ tự động tạo một đường dẫn định tuyến (`Path`) duy nhất.
+1. Chọn loại route (Type)
+2. Điền tiêu đề route (Title)
+3. Chọn icon route (Icon)
+4. Đặt có hiển thị trong menu hay không (Show in menu)
+5. Đặt có bật page tabs hay không (Enable page tabs)
+6. Với loại page, hệ thống sẽ tự động sinh đường dẫn route duy nhất (Path)
 
 ![20250124131803](https://static-docs.nocobase.com/20250124131803.png)
 
-### Thao tác định tuyến
+### Thao tác route
 
-Mỗi mục định tuyến hỗ trợ các thao tác sau:
+Mỗi mục route hỗ trợ các thao tác sau:
 
-- Add child: Thêm định tuyến con
-- Edit: Chỉnh sửa cấu hình định tuyến
-- View: Xem trang định tuyến
-- Delete: Xóa định tuyến
+- Add child: thêm route con
+- Edit: chỉnh sửa cấu hình route
+- View: xem trang route
+- Delete: xóa route
 
 ### Thao tác hàng loạt
 
-Thanh công cụ phía trên cung cấp các chức năng thao tác hàng loạt sau:
+Thanh công cụ phía trên cung cấp các thao tác hàng loạt sau:
 
-- Refresh: Làm mới danh sách định tuyến
-- Delete: Xóa các định tuyến đã chọn
-- Hide in menu: Ẩn các định tuyến đã chọn khỏi menu
-- Show in menu: Hiển thị các định tuyến đã chọn trong menu
+- Refresh: làm mới danh sách route
+- Delete: xóa các route đã chọn
+- Hide in menu: ẩn các route đã chọn trong menu
+- Show in menu: hiển thị các route đã chọn trong menu
 
-### Lọc định tuyến
+### Lọc route
 
-Sử dụng chức năng “Filter” ở phía trên để lọc danh sách định tuyến theo nhu cầu.
+Sử dụng tính năng "Filter" ở phía trên để lọc danh sách route theo nhu cầu.
 
-:::info{title=Lưu ý}
-Việc sửa đổi cấu hình định tuyến sẽ ảnh hưởng trực tiếp đến cấu trúc menu điều hướng của hệ thống. Vui lòng thao tác cẩn thận và đảm bảo tính chính xác của các cấu hình định tuyến.
+:::info{title=Mẹo}
+Việc thay đổi cấu hình route sẽ ảnh hưởng trực tiếp đến cấu trúc menu điều hướng của hệ thống. Hãy thao tác cẩn thận để đảm bảo tính chính xác của cấu hình route.
 :::

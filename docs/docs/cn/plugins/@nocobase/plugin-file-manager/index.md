@@ -1,4 +1,6 @@
 ---
+title: "文件管理器"
+keywords: "文件管理器,插件,NocoBase"
 displayName: "文件管理器"
 packageName: '@nocobase/plugin-file-manager'
 description: |

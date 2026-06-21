@@ -10,16 +10,16 @@
       },
       {
         "type": "custom-link",
-        "label": "Manajemen Autentikator",
+        "label": "Manajemen Authenticator",
         "link": "/auth-verification/auth/authenticators"
       },
       {
         "type": "custom-link",
-        "label": "Jenis Autentikasi",
+        "label": "Tipe Autentikasi",
         "items": [
           {
             "type": "custom-link",
-            "label": "Kata Sandi",
+            "label": "Password",
             "link": "/auth-verification/auth/password"
           },
           {
@@ -43,12 +43,12 @@
                 "items": [
                   {
                     "type": "custom-link",
-                    "label": "Login Google",
+                    "label": "Sign in with Google",
                     "link": "/auth-verification/auth-oidc/examples/google"
                   },
                   {
                     "type": "custom-link",
-                    "label": "Login Microsoft",
+                    "label": "Sign in with Microsoft",
                     "link": "/auth-verification/auth-oidc/examples/microsoft"
                   }
                 ]
@@ -71,7 +71,7 @@
                 "items": [
                   {
                     "type": "custom-link",
-                    "label": "Login Google",
+                    "label": "Sign in with Google",
                     "link": "/auth-verification/auth-saml/examples/google"
                   }
                 ]
@@ -90,7 +90,7 @@
           },
           {
             "type": "custom-link",
-            "label": "WeChat Work",
+            "label": "WeCom",
             "link": "/auth-verification/auth-wecom/"
           },
           {
@@ -100,20 +100,20 @@
           },
           {
             "type": "custom-link",
-            "label": "Kunci API",
+            "label": "API Keys",
             "link": "/auth-verification/api-keys/"
           }
         ]
       },
       {
         "type": "dir",
-        "label": "Panduan Pengembang",
+        "label": "Panduan Pengembangan",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Memperluas Jenis Autentikasi",
-            "link": "/auth-verification/auth/dev"
+            "label": "Memperluas Tipe Autentikasi",
+            "link": "/auth-verification/auth/dev/"
           },
           {
             "type": "custom-link",
@@ -135,7 +135,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Jenis Verifikasi",
+        "label": "Tipe Verifikasi",
         "items": [
           {
             "type": "custom-link",
@@ -144,7 +144,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Autentikator TOTP",
+            "label": "TOTP Authenticator",
             "link": "/auth-verification/verification-totp/"
           }
         ]
@@ -152,11 +152,11 @@
       {
         "type": "dir",
         "collapsed": true,
-        "label": "Panduan Pengembang",
+        "label": "Panduan Pengembangan",
         "items": [
           {
             "type": "custom-link",
-            "label": "Memperluas Jenis Verifikasi",
+            "label": "Memperluas Tipe Verifikasi",
             "link": "/auth-verification/verification/dev/type"
           },
           {
@@ -166,7 +166,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Memperluas Penyedia Layanan SMS",
+            "label": "Memperluas Provider SMS",
             "link": "/auth-verification/verification/dev/sms-type"
           },
           {
@@ -180,7 +180,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Autentikasi Dua Faktor (2FA)",
+    "label": "Two-Factor Authentication (2FA)",
     "link": "/auth-verification/2fa/"
   }
 ]

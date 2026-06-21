@@ -1,58 +1,55 @@
 ---
-pkg: "@nocobase/plugin-ip-restriction"
----
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-
-
 pkg: '@nocobase/plugin-ip-restriction'
+title: "IP Restriction"
+description: "IP Restriction: IP whitelist/blacklist, CIDR network range, log akses ditolak, membatasi akses tidak terotorisasi, perlindungan IP berbahaya, fitur enterprise."
+keywords: "IP restriction,IP whitelist,IP blacklist,CIDR,log akses ditolak,enterprise,NocoBase"
 ---
 
-# Pembatasan IP
+# IP Restriction
 
-## Pendahuluan
+<PluginInfo licenseBundled="enterprise" name="ip-restriction"></PluginInfo>
 
-NocoBase memungkinkan administrator untuk mengatur daftar putih (whitelist) atau daftar hitam (blacklist) untuk IP akses pengguna. Ini bertujuan untuk membatasi koneksi jaringan eksternal yang tidak sah atau memblokir alamat IP berbahaya yang diketahui, sehingga mengurangi risiko keamanan. Administrator juga dapat melihat log penolakan akses untuk mengidentifikasi IP yang berisiko.
+## Pengantar
 
-## Aturan Konfigurasi
+NocoBase mendukung administrator mengatur whitelist atau blacklist untuk IP akses user, untuk membatasi koneksi jaringan eksternal yang tidak terotorisasi atau memblokir alamat IP berbahaya yang sudah diketahui, mengurangi risiko keamanan. Sekaligus mendukung administrator melakukan query log akses ditolak, untuk mengidentifikasi IP berisiko.
+
+## Konfigurasi Rule
 
 ![2025-01-23-10-07-34-20250123100733](https://static-docs.nocobase.com/2025-01-23-10-07-34-20250123100733.png)
 
-### Mode Pemfilteran IP
+### Mode Filter IP
 
-- **Daftar Hitam (Blacklist)**: Ketika IP akses pengguna cocok dengan IP dalam daftar, sistem akan **menolak** akses; IP yang tidak cocok secara default akan **diizinkan** akses.
-- **Daftar Putih (Whitelist)**: Ketika IP akses pengguna cocok dengan IP dalam daftar, sistem akan **mengizinkan** akses; IP yang tidak cocok secara default akan **ditolak** akses.
+- Blacklist: Saat IP akses user cocok dengan IP di list, sistem akan **menolak** akses; IP yang tidak cocok default **diizinkan** akses.
+- Whitelist: Saat IP akses user cocok dengan IP di list, sistem akan **mengizinkan** akses; IP yang tidak cocok default **dilarang** akses.
 
-### Daftar IP
+### List IP
 
-Digunakan untuk mendefinisikan alamat IP yang diizinkan atau ditolak aksesnya ke sistem. Fungsi spesifiknya bergantung pada mode pemfilteran IP yang dipilih. Anda dapat memasukkan alamat IP atau segmen jaringan CIDR, dengan beberapa alamat dipisahkan oleh koma atau baris baru.
+Digunakan untuk mendefinisikan alamat IP yang diizinkan atau dilarang mengakses sistem. Efek spesifiknya tergantung pada pilihan mode filter IP. Mendukung input alamat IP atau alamat CIDR network range, beberapa alamat dipisahkan dengan koma atau line break.
 
-## Melihat Log
+## Query Log
 
-Setelah pengguna ditolak aksesnya, IP akses akan dicatat ke dalam log sistem. Anda dapat mengunduh file log yang sesuai untuk analisis.
+Setelah user ditolak aksesnya, IP akses akan ditulis ke system log. Anda dapat men-download file log yang sesuai untuk analisis.
 
 ![2025-01-17-13-33-51-20250117133351](https://static-docs.nocobase.com/2025-01-17-13-33-51-20250117133351.png)
 
-Contoh Log:
+Contoh log:
 
 ![2025-01-14-14-42-06-20250114144205](https://static-docs.nocobase.com/2025-01-14-14-42-06-20250114144205.png)
 
-## Rekomendasi Konfigurasi
+## Saran Konfigurasi
 
-### Rekomendasi Mode Daftar Hitam
+### Saran Mode Blacklist
 
-- Tambahkan alamat IP berbahaya yang diketahui untuk mencegah potensi serangan jaringan.
-- Periksa dan perbarui daftar hitam secara berkala, hapus alamat IP yang tidak valid atau tidak lagi perlu diblokir.
+Tambahkan alamat IP berbahaya yang sudah diketahui untuk mencegah serangan jaringan potensial.
+Periksa dan update blacklist secara berkala, hapus IP yang tidak valid atau yang tidak perlu lagi diblokir.
 
-### Rekomendasi Mode Daftar Putih
+### Saran Mode Whitelist
 
-- Tambahkan alamat IP jaringan internal yang tepercaya (misalnya, segmen jaringan kantor) untuk memastikan akses aman ke sistem inti.
-- Hindari menyertakan alamat IP yang ditetapkan secara dinamis dalam daftar putih untuk mencegah gangguan akses.
+Tambahkan alamat IP jaringan internal yang dipercaya (seperti network range kantor), untuk memastikan akses aman ke sistem inti.
+Hindari memasukkan alamat IP yang dialokasikan secara dinamis di whitelist, untuk mencegah gangguan akses.
 
-### Rekomendasi Umum
+### Saran Umum
 
-- Gunakan segmen jaringan CIDR untuk menyederhanakan konfigurasi, misalnya menggunakan `192.168.0.0/24` daripada menambahkan alamat IP satu per satu.
-- Cadangkan konfigurasi daftar IP secara berkala agar dapat pulih dengan cepat jika terjadi kesalahan operasi atau kegagalan sistem.
-- Pantau log akses secara berkala untuk mengidentifikasi IP yang tidak normal dan segera sesuaikan daftar hitam atau daftar putih.
+Gunakan CIDR network range untuk menyederhanakan konfigurasi, contohnya menggunakan 192.168.0.0/24 alih-alih menambahkan alamat IP satu per satu.
+Backup konfigurasi list IP secara berkala, agar dapat dengan cepat dipulihkan saat operasi salah atau kegagalan sistem.
+Monitor log akses secara berkala, identifikasi IP abnormal dan sesuaikan blacklist/whitelist tepat waktu.

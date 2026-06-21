@@ -1,36 +1,35 @@
 ---
 pkg: "@nocobase/plugin-action-bulk-update"
+title: "Action Bulk Update"
+description: "Action Bulk Update: update batch record yang dipilih, mendukung kondisi filter untuk update batch."
+keywords: "Bulk Update, BulkUpdate, modifikasi batch, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Bulk Update
 
-# Pembaruan Massal
+## Pengantar
 
-## Pendahuluan
-
-Aksi pembaruan massal digunakan ketika Anda perlu menerapkan pembaruan yang sama pada sekelompok catatan. Sebelum melakukan pembaruan massal, pengguna perlu menentukan logika penugasan bidang untuk pembaruan tersebut terlebih dahulu. Logika ini akan diterapkan pada semua catatan yang dipilih saat pengguna mengklik tombol pembaruan.
+Action Bulk Update digunakan ketika perlu melakukan update yang sama pada sekelompok record. Sebelum mengeksekusi Action Bulk Update, pengguna perlu mendefinisikan logika penugasan Field update terlebih dahulu. Logika ini akan diterapkan pada semua record yang dipilih ketika pengguna mengklik tombol update.
 
 ![20251029195320](https://static-docs.nocobase.com/20251029195320.png)
 
-## Konfigurasi Aksi
+## Konfigurasi Action
 
 ![20251029195729](https://static-docs.nocobase.com/20251029195729.png)
 
-### Data yang Akan Diperbarui
+### Data yang Diupdate
 
-Terpilih/Semua, defaultnya adalah Terpilih.
+Selected/All, default adalah Selected.
 
 ![20251029200034](https://static-docs.nocobase.com/20251029200034.png)
 
-### Penugasan Bidang
+### Penugasan Field
 
-Atur bidang-bidang untuk pembaruan massal. Hanya bidang yang diatur yang akan diperbarui.
+Atur Field untuk Bulk Update. Hanya Field yang ditetapkan yang akan diupdate.
 
-Seperti yang ditunjukkan pada gambar, konfigurasikan aksi pembaruan massal di tabel pesanan untuk memperbarui data yang dipilih secara massal menjadi "Menunggu Persetujuan".
+Seperti pada gambar, konfigurasi Action Bulk Update di Table pesanan, update batch data yang dipilih menjadi "Menunggu Persetujuan".
 
 ![20251029200109](https://static-docs.nocobase.com/20251029200109.png)
 
-- [Tombol Edit](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, dan ikon tombol;
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule): Menampilkan/menyembunyikan tombol secara dinamis;
-- [Konfirmasi Ulang](/interface-builder/actions/action-settings/double-check)
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, ikon tombol;
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule): tampilan/sembunyi tombol secara dinamis;
+- [Konfirmasi Ganda](/interface-builder/actions/action-settings/double-check)

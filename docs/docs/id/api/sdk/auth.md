@@ -1,74 +1,76 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Auth (SDK)"
+description: "Auth SDK frontend NocoBase: login, logout, manajemen token."
+keywords: "Auth SDK,login,logout,manajemen token,autentikasi frontend,NocoBase"
+---
 
 # Auth
 
 ## Ikhtisar
 
-Kelas `Auth` terutama digunakan di sisi klien untuk mengakses informasi pengguna dan memanggil API terkait autentikasi pengguna.
+Class `Auth` terutama digunakan untuk akses informasi user di sisi client, melakukan request ke interface yang terkait autentikasi user.
 
-## Properti Instans
+## Properti Instance
 
 ### `locale`
 
-Bahasa yang digunakan oleh pengguna saat ini.
+Bahasa yang digunakan oleh user saat ini.
 
 ### `role`
 
-Peran yang digunakan oleh pengguna saat ini.
+Role yang digunakan oleh user saat ini.
 
 ### `token`
 
-Token API.
+`token` interface API.
 
 ### `authenticator`
 
-Autentikator yang digunakan untuk autentikasi pengguna saat ini. Lihat [Autentikasi Pengguna](/auth-verification/auth/).
+Authenticator yang digunakan saat autentikasi user saat ini. Lihat [Autentikasi User](/auth-verification/auth/index.md).
 
-## Metode Kelas
+## Method Class
 
 ### `signIn()`
 
-Masuk Pengguna.
+User login.
 
-#### Tanda Tangan
+#### Signature
 
 - `async signIn(values: any, authenticator?: string): Promise<AxiosResponse<any>>`
 
 #### Detail
 
-| Nama Parameter  | Tipe     | Deskripsi                                    |
-| --------------- | -------- | -------------------------------------------- |
-| `values`        | `any`    | Parameter permintaan untuk API masuk         |
-| `authenticator` | `string` | Pengidentifikasi autentikator yang digunakan untuk masuk |
+| Nama Parameter | Tipe | Deskripsi |
+| --------------- | -------- | -------------------- |
+| `values` | `any` | Parameter request interface login |
+| `authenticator` | `string` | Identifier authenticator yang digunakan untuk login |
 
 ### `signUp()`
 
-Daftar Pengguna.
+User registrasi.
 
-#### Tanda Tangan
+#### Signature
 
 - `async signUp(values: any, authenticator?: string): Promise<AxiosResponse<any>>`
 
 #### Detail
 
-| Nama Parameter  | Tipe     | Deskripsi                                    |
-| --------------- | -------- | -------------------------------------------- |
-| `values`        | `any`    | Parameter permintaan untuk API pendaftaran   |
-| `authenticator` | `string` | Pengidentifikasi autentikator yang digunakan untuk pendaftaran |
+| Nama Parameter | Tipe | Deskripsi |
+| --------------- | -------- | -------------------- |
+| `values` | `any` | Parameter request interface registrasi |
+| `authenticator` | `string` | Identifier authenticator yang digunakan untuk registrasi |
 
 ### `signOut()`
 
-Keluar.
+Logout.
 
-#### Tanda Tangan
+#### Signature
 
 - `async signOut(values: any, authenticator?: string): Promise<AxiosResponse<any>>`
 
 #### Detail
 
-| Nama Parameter  | Tipe     | Deskripsi                                    |
-| --------------- | -------- | -------------------------------------------- |
-| `values`        | `any`    | Parameter permintaan untuk API keluar        |
-| `authenticator` | `string` | Pengidentifikasi autentikator yang digunakan untuk keluar |
+| Nama Parameter | Tipe | Deskripsi |
+| --------------- | -------- | -------------------- |
+| `values` | `any` | Parameter request interface logout |
+| `authenticator` | `string` | Identifier authenticator yang digunakan untuk logout |

@@ -9,7 +9,7 @@
 
 /* istanbul ignore next -- @preserve */
 
-import { importModule, isURL, requireResolve } from '@nocobase/utils';
+import { importModule, isURL, requireResolve, resolvePluginStoragePath } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
@@ -21,18 +21,13 @@ import os from 'os';
 import path from 'path';
 import semver from 'semver';
 import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticUtils';
-import {
-  APP_NAME,
-  DEFAULT_PLUGIN_PATH,
-  DEFAULT_PLUGIN_STORAGE_PATH,
-  EXTERNAL,
-  importRegex,
-  pluginPrefix,
-  requireRegex,
-} from './constants';
+import { APP_NAME, DEFAULT_PLUGIN_PATH, EXTERNAL, importRegex, pluginPrefix, requireRegex } from './constants';
 import deps from './deps';
 import { PluginManagerRepository } from './plugin-manager-repository';
 import { PluginData } from './types';
+import Application from '../application';
+import { findBuiltInPlugins, findLocalPlugins } from './findPackageNames';
+import PluginManager from './plugin-manager';
 
 /**
  * get temp dir
@@ -45,9 +40,38 @@ export async function getTempDir() {
   return path.join(temporaryDirectory, APP_NAME);
 }
 
-export function getPluginStoragePath() {
-  const pluginStoragePath = process.env.PLUGIN_STORAGE_PATH || DEFAULT_PLUGIN_STORAGE_PATH;
-  return path.isAbsolute(pluginStoragePath) ? pluginStoragePath : path.join(process.cwd(), pluginStoragePath);
+export function assertSafePluginPackageName(packageName: string) {
+  if (!packageName || typeof packageName !== 'string') {
+    throw new Error('Invalid plugin package name');
+  }
+
+  if (packageName.includes('\0')) {
+    throw new Error('Invalid plugin package name');
+  }
+
+  if (path.isAbsolute(packageName)) {
+    throw new Error('Invalid plugin package name');
+  }
+
+  if (packageName.includes('..') || packageName.includes('\\')) {
+    throw new Error('Invalid plugin package name');
+  }
+
+  const valid = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i.test(packageName);
+  if (!valid) {
+    throw new Error('Invalid plugin package name');
+  }
+}
+
+export function resolveSafeChildPath(baseDir: string, child: string) {
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedTarget = path.resolve(baseDir, child);
+
+  if (resolvedTarget !== resolvedBase && !resolvedTarget.startsWith(`${resolvedBase}${path.sep}`)) {
+    throw new Error('Path traversal detected');
+  }
+
+  return resolvedTarget;
 }
 
 export function getLocalPluginPackagesPathArr(): string[] {
@@ -59,8 +83,9 @@ export function getLocalPluginPackagesPathArr(): string[] {
 }
 
 export function getStoragePluginDir(packageName: string) {
-  const pluginStoragePath = getPluginStoragePath();
-  return path.join(pluginStoragePath, packageName);
+  const pluginStoragePath = resolvePluginStoragePath();
+  assertSafePluginPackageName(packageName);
+  return resolveSafeChildPath(pluginStoragePath, packageName);
 }
 
 export function getLocalPluginDir(packageDirBasename: string) {
@@ -76,7 +101,8 @@ export function getLocalPluginDir(packageDirBasename: string) {
 }
 
 export function getNodeModulesPluginDir(packageName: string) {
-  return path.join(process.env.NODE_MODULES_PATH, packageName);
+  assertSafePluginPackageName(packageName);
+  return resolveSafeChildPath(process.env.NODE_MODULES_PATH, packageName);
 }
 
 export function getAuthorizationHeaders(registry?: string, authToken?: string) {
@@ -381,7 +407,7 @@ export async function updatePluginByCompressedFileUrl(
 
   if (!instance) {
     await removeTmpDir(tempFile, tempPackageContentDir);
-    throw new Error(`plugin ${packageName} does not exist`);
+    throw new Error(`${packageName} does not exist`);
   }
 
   const { packageDir } = await copyTempPackageToStorageAndLinkToNodeModules(
@@ -600,4 +626,34 @@ export async function getPluginBasePath(packageName: string) {
     // skip
   }
   return path.dirname(path.dirname(file));
+}
+
+export async function pmListSummary(app: Application) {
+  const plugins1 = await findBuiltInPlugins();
+  const plugins2 = await findLocalPlugins();
+  let enabledPlugins = [];
+  try {
+    enabledPlugins = (
+      await app.pm.repository.find({
+        filter: {
+          enabled: true,
+        },
+      })
+    ).map((item) => item.packageName);
+  } catch (error) {
+    // ignore error
+  }
+  const items = await Promise.all(
+    [...plugins1, ...plugins2].map(async (name) => {
+      const item = await PluginManager.parseName(name);
+      const json = await PluginManager.getPackageJson(item.packageName);
+      return {
+        displayName: json.displayName || name,
+        packageName: item.packageName,
+        enabled: enabledPlugins.includes(item.packageName),
+        description: json.description,
+      };
+    }),
+  );
+  return items;
 }

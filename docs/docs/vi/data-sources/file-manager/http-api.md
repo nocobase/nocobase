@@ -1,19 +1,20 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "File Manager HTTP API"
+description: "Field attachment và file collection upload file thông qua HTTP API, upload phía server (S3/OSS/COS), upload trực tiếp phía client, hỗ trợ JWT authentication và chỉ định storage engine."
+keywords: "HTTP API upload file,attachments create,Server-side upload,Client-side upload,NocoBase"
+---
 
 # HTTP API
 
-Tải tệp lên cho cả trường đính kèm và các bộ sưu tập tệp đều có thể được xử lý thông qua HTTP API. Phương thức gọi API sẽ khác nhau tùy thuộc vào công cụ lưu trữ mà trường đính kèm hoặc bộ sưu tập tệp sử dụng.
+Việc upload file của field attachment và file collection đều hỗ trợ xử lý thông qua HTTP API. Tùy theo storage engine được sử dụng bởi attachment hoặc file collection, có các cách gọi khác nhau.
 
-## Tải lên phía máy chủ
+## Upload phía server
 
-Đối với các công cụ lưu trữ mã nguồn mở tích hợp sẵn như S3, OSS và COS, việc gọi HTTP API tương tự như khi sử dụng tính năng tải lên qua giao diện người dùng, trong đó các tệp được tải lên thông qua máy chủ. Các lệnh gọi API yêu cầu truyền mã thông báo JWT dựa trên thông tin đăng nhập của người dùng trong tiêu đề yêu cầu `Authorization`; nếu không, quyền truy cập sẽ bị từ chối.
+Đối với các open-source storage engine được tích hợp sẵn trong dự án như S3, OSS, COS, HTTP API gọi giống với chức năng upload trên giao diện người dùng, file đều được upload qua server. Khi gọi API cần truyền JWT token dựa trên login của user thông qua header `Authorization`, nếu không sẽ bị từ chối truy cập.
 
-### Trường đính kèm
+### Field Attachment
 
-Bạn thực hiện thao tác `create` trên tài nguyên `attachments` (bảng đính kèm) bằng cách gửi yêu cầu POST và tải lên nội dung nhị phân thông qua trường `file`. Sau khi gọi, tệp sẽ được tải lên công cụ lưu trữ mặc định.
+Thông qua việc gọi action `create` trên resource bảng attachments (`attachments`), gửi request dạng POST, và upload nội dung binary thông qua field `file`. Sau khi gọi, file sẽ được upload vào storage engine mặc định.
 
 ```shell
 curl -X POST \
@@ -22,7 +23,7 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create"
 ```
 
-Để tải tệp lên một công cụ lưu trữ khác, bạn có thể sử dụng tham số `attachmentField` để chỉ định công cụ lưu trữ đã được cấu hình cho trường của bộ sưu tập. Nếu không được cấu hình, tệp sẽ được tải lên công cụ lưu trữ mặc định.
+Nếu cần upload file vào storage engine khác, có thể chỉ định storage engine đã được cấu hình trong field của Collection thuộc về thông qua tham số `attachmentField` (nếu chưa cấu hình, sẽ upload vào storage engine mặc định).
 
 ```shell
 curl -X POST \
@@ -31,9 +32,9 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create?attachmentField=<collection_name>.<field_name>"
 ```
 
-### Bộ sưu tập tệp
+### File Collection
 
-Khi tải lên một bộ sưu tập tệp, một bản ghi tệp sẽ tự động được tạo. Bạn thực hiện thao tác `create` trên tài nguyên bộ sưu tập tệp bằng cách gửi yêu cầu POST và tải lên nội dung nhị phân thông qua trường `file`.
+Việc upload vào file collection sẽ tự động sinh bản ghi file, thông qua việc gọi action `create` trên resource file collection, gửi request dạng POST, và upload nội dung binary thông qua field `file`.
 
 ```shell
 curl -X POST \
@@ -42,24 +43,24 @@ curl -X POST \
     "http://localhost:3000/api/<file_collection_name>:create"
 ```
 
-Khi tải lên một bộ sưu tập tệp, bạn không cần chỉ định công cụ lưu trữ; tệp sẽ được tải lên công cụ lưu trữ đã được cấu hình cho bộ sưu tập đó.
+Việc upload vào file collection không cần chỉ định storage engine, file sẽ được upload vào storage engine được cấu hình của bảng đó.
 
-## Tải lên phía máy khách
+## Upload phía client
 
-Đối với các công cụ lưu trữ tương thích S3 được cung cấp thông qua plugin thương mại S3-Pro, việc tải lên bằng HTTP API yêu cầu thực hiện qua nhiều bước.
+Đối với storage engine tương thích S3 được cung cấp bởi commercial plugin S3-Pro, việc upload qua HTTP API cần được gọi qua nhiều bước.
 
-### Trường đính kèm
+### Field Attachment
 
-1.  Lấy thông tin công cụ lưu trữ
+1.  Lấy thông tin storage engine
 
-    Bạn thực hiện thao tác `getBasicInfo` trên bộ sưu tập `storages` (bảng lưu trữ), đồng thời truyền theo tên công cụ lưu trữ (`storage name`), để yêu cầu thông tin cấu hình của công cụ lưu trữ.
+    Gọi action `getBasicInfo` trên bảng storages (`storages`), đồng thời mang theo storage space identifier (storage name), request thông tin cấu hình storage engine
 
     ```shell
     curl 'http://localhost:13000/api/storages:getBasicInfo/<storage_name>' \
       -H 'Authorization: Bearer <JWT>'
     ```
 
-    Ví dụ về thông tin cấu hình công cụ lưu trữ được trả về:
+    Ví dụ thông tin cấu hình storage engine được trả về:
 
     ```json
     {
@@ -71,9 +72,9 @@ Khi tải lên một bộ sưu tập tệp, bạn không cần chỉ định cô
     }
     ```
 
-2.  Lấy thông tin URL đã ký trước từ nhà cung cấp dịch vụ
+2.  Lấy thông tin pre-signed của nhà cung cấp dịch vụ
 
-    Bạn thực hiện thao tác `createPresignedUrl` trên tài nguyên `fileStorageS3` bằng cách gửi yêu cầu POST, truyền thông tin liên quan đến tệp trong phần body, để lấy thông tin tải lên đã ký trước.
+    Gọi action `createPresignedUrl` trên resource `fileStorageS3`, gửi request dạng POST, và mang theo thông tin liên quan đến file trong body, lấy thông tin upload pre-signed
 
     ```shell
     curl 'http://localhost:13000/api/fileStorageS3:createPresignedUrl' \
@@ -84,21 +85,21 @@ Khi tải lên một bộ sưu tập tệp, bạn không cần chỉ định cô
       --data-raw '{"name":<name>,"size":<size>,"type":<type>,"storageId":<storageId>,"storageType":<storageType>}'
     ```
 
-    > Lưu ý:
-    >
-    > * `name`: Tên tệp
-    > * `size`: Kích thước tệp (tính bằng byte)
-    > * `type`: Loại MIME của tệp. Bạn có thể tham khảo: [Các loại MIME phổ biến](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
-    > * `storageId`: ID của công cụ lưu trữ (trường `id` được trả về ở bước 1)
-    > * `storageType`: Loại công cụ lưu trữ (trường `type` được trả về ở bước 1)
-    >
-    > Ví dụ dữ liệu yêu cầu:
-    >
+    > Mô tả:
+    > 
+    > * name: Tên file
+    > * size: Kích thước file (đơn vị bytes)
+    > * type: Kiểu MIME của file, có thể tham khảo: [Các kiểu MIME thông dụng](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
+    > * storageId: id của storage engine (field `id` được trả về ở bước 1)
+    > * storageType: Kiểu storage engine (field `type` được trả về ở bước 1)
+    > 
+    > Ví dụ dữ liệu request:
+    > 
     > ```
     > --data-raw '{"name":"a.png","size":4405,"type":"image/png","storageId":2,"storageType":"s3-compatible"}'
     > ```
 
-    Cấu trúc dữ liệu của thông tin đã ký trước nhận được như sau:
+    Cấu trúc dữ liệu thông tin pre-signed lấy được như sau
 
     ```json
     {
@@ -116,30 +117,29 @@ Khi tải lên một bộ sưu tập tệp, bạn không cần chỉ định cô
     }
     ```
 
-3.  Tải tệp lên
+3.  Upload file
 
-    Sử dụng `putUrl` được trả về để thực hiện yêu cầu `PUT`, tải tệp lên dưới dạng body.
+    Sử dụng `putUrl` được trả về để gửi request `PUT`, upload file dưới dạng body.
 
     ```shell
     curl '<putUrl>' \
       -X 'PUT' \
       -T <file_path>
     ```
-
-    > Lưu ý:
-    > * `putUrl`: Trường `putUrl` được trả về ở bước trước.
-    > * `file_path`: Đường dẫn cục bộ của tệp cần tải lên.
-    >
-    > Ví dụ dữ liệu yêu cầu:
+    > Mô tả:
+    > * putUrl: Field `putUrl` được trả về ở bước trước
+    > * file_path: Đường dẫn local của file cần upload
+    > 
+    > Ví dụ dữ liệu request:
     > ```
     > curl 'https://xxxxxxx' \
     >  -X 'PUT' \
     >  -T /Users/Downloads/a.png
     > ```
 
-4.  Tạo bản ghi tệp
+4.  Tạo bản ghi file
 
-    Sau khi tải lên thành công, bạn tạo bản ghi tệp bằng cách thực hiện thao tác `create` trên tài nguyên `attachments` (bảng đính kèm) với yêu cầu POST.
+    Sau khi upload thành công, thông qua việc gọi action `create` trên resource bảng attachments (`attachments`), gửi request dạng POST, tạo bản ghi file.
 
     ```shell
     curl 'http://localhost:13000/api/attachments:create?attachmentField=<collection_name>.<field_name>' \
@@ -150,25 +150,25 @@ Khi tải lên một bộ sưu tập tệp, bạn không cần chỉ định cô
       --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
     ```
 
-    > Giải thích dữ liệu phụ thuộc trong `data-raw`:
-    > * `title`: Trường `fileInfo.title` được trả về ở bước trước.
-    > * `filename`: Trường `fileInfo.key` được trả về ở bước trước.
-    > * `extname`: Trường `fileInfo.extname` được trả về ở bước trước.
-    > * `path`: Mặc định là trống.
-    > * `size`: Trường `fileInfo.size` được trả về ở bước trước.
-    > * `url`: Mặc định là trống.
-    > * `mimetype`: Trường `fileInfo.mimetype` được trả về ở bước trước.
-    > * `meta`: Trường `fileInfo.meta` được trả về ở bước trước.
-    > * `storageId`: Trường `id` được trả về ở bước 1.
-    >
-    > Ví dụ dữ liệu yêu cầu:
+    > Mô tả các dữ liệu phụ thuộc trong data-raw:
+    > * title: Field `fileInfo.title` được trả về ở bước trước
+    > * filename: Field `fileInfo.key` được trả về ở bước trước
+    > * extname: Field `fileInfo.extname` được trả về ở bước trước
+    > * path: Mặc định trống
+    > * size: Field `fileInfo.size` được trả về ở bước trước
+    > * url: Mặc định trống
+    > * mimetype: Field `fileInfo.mimetype` được trả về ở bước trước
+    > * meta: Field `fileInfo.meta` được trả về ở bước trước
+    > * storageId: Field `id` được trả về ở bước 1
+    > 
+    > Ví dụ dữ liệu request:
     > ```
     >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
     > ```
 
-### Bộ sưu tập tệp
+### File Collection
 
-Ba bước đầu tiên tương tự như khi tải lên trường đính kèm. Tuy nhiên, ở bước thứ tư, bạn cần tạo bản ghi tệp bằng cách thực hiện thao tác `create` trên tài nguyên bộ sưu tập tệp với yêu cầu POST, tải thông tin tệp lên trong phần body.
+Ba bước đầu tương tự upload field attachment, nhưng ở bước 4 cần tạo bản ghi file, thông qua việc gọi action create trên resource file collection, gửi request dạng POST, và upload thông tin file thông qua body.
 
 ```shell
 curl 'http://localhost:13000/api/<file_collection_name>:create' \
@@ -177,18 +177,18 @@ curl 'http://localhost:13000/api/<file_collection_name>:create' \
   --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
 ```
 
-> Giải thích dữ liệu phụ thuộc trong `data-raw`:
-> * `title`: Trường `fileInfo.title` được trả về ở bước trước.
-> * `filename`: Trường `fileInfo.key` được trả về ở bước trước.
-> * `extname`: Trường `fileInfo.extname` được trả về ở bước trước.
-> * `path`: Mặc định là trống.
-> * `size`: Trường `fileInfo.size` được trả về ở bước trước.
-> * `url`: Mặc định là trống.
-> * `mimetype`: Trường `fileInfo.mimetype` được trả về ở bước trước.
-> * `meta`: Trường `fileInfo.meta` được trả về ở bước trước.
-> * `storageId`: Trường `id` được trả về ở bước 1.
->
-> Ví dụ dữ liệu yêu cầu:
+> Mô tả các dữ liệu phụ thuộc trong data-raw:
+> * title: Field `fileInfo.title` được trả về ở bước trước
+> * filename: Field `fileInfo.key` được trả về ở bước trước
+> * extname: Field `fileInfo.extname` được trả về ở bước trước
+> * path: Mặc định trống
+> * size: Field `fileInfo.size` được trả về ở bước trước
+> * url: Mặc định trống
+> * mimetype: Field `fileInfo.mimetype` được trả về ở bước trước
+> * meta: Field `fileInfo.meta` được trả về ở bước trước
+> * storageId: Field `id` được trả về ở bước 1
+> 
+> Ví dụ dữ liệu request:
 > ```
 >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
 > ```

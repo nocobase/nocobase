@@ -1,16 +1,19 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Konfirmasi Ganda"
+description: "Konfigurasi Action: mengkonfigurasi Popup konfirmasi ganda sebelum Action dieksekusi untuk mencegah operasi yang salah."
+keywords: "konfirmasi ganda, double check, Popup konfirmasi, konfigurasi Action, interface builder, NocoBase"
+---
 
-# Konfirmasi Ulang
+# Konfirmasi Ganda
 
-## Pendahuluan
+## Pengantar
 
-Konfigurasi konfirmasi ulang berfungsi untuk memastikan eksekusi suatu tindakan. Saat tindakan diklik, kotak dialog konfirmasi akan muncul. Secara default, tombol hapus mengaktifkan konfirmasi ulang untuk mencegah kehilangan data atau hasil yang tidak dapat diubah akibat kesalahan operasi.
+Konfigurasi konfirmasi ganda digunakan untuk mengkonfirmasi apakah Action akan dieksekusi. Saat Action diklik, dialog konfirmasi akan muncul. Tombol Hapus secara default mengaktifkan konfirmasi ganda untuk mencegah operasi yang salah yang menyebabkan kehilangan data atau hasil yang tidak dapat dibalik.
 
 ![20251029125021](https://static-docs.nocobase.com/20251029125021.png)
 
-Fitur ini mendukung penyesuaian konten dan judul konfirmasi ulang, serta pengambilan variabel.
+Mendukung kustomisasi konten dan judul konfirmasi ganda, mendukung pengambilan variabel.
+
 
 ![20251029125058](https://static-docs.nocobase.com/20251029125058.png)
 

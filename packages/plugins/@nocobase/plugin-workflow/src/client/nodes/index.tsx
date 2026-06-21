@@ -52,6 +52,7 @@ export type NodeAvailableContext = {
   workflow: object;
   upstream: object;
   branchIndex: number;
+  syncOnly?: boolean;
 };
 
 type Config = Record<string, any>;
@@ -64,6 +65,7 @@ export abstract class Instruction {
   group: string;
   description?: string;
   icon?: JSX.Element;
+  async?: boolean;
   /**
    * @deprecated migrate to `presetFieldset` instead
    */
@@ -481,7 +483,7 @@ function TestFormFieldset({ value, onChange }) {
   );
 }
 
-function LogCollapse({ value }) {
+export function LogCollapse({ value }) {
   return value ? (
     <Collapse
       ghost
@@ -722,6 +724,13 @@ export function NodeDefaultView(props) {
 
   const onCardMouseDown = useCallback(
     (event) => {
+      // React synthetic events bubble through the React component tree (not the DOM tree),
+      // so mousedown inside a portal (e.g. the node config Drawer) also triggers this handler.
+      // When event.target is not a DOM descendant of the card element, the event originated
+      // from a portal — skip drag initiation in that case.
+      if (!event.currentTarget.contains(event.target as Node)) {
+        return;
+      }
       dragContext?.onNodeMouseDown?.(data, event);
     },
     [data, dragContext],

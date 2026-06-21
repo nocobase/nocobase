@@ -1,15 +1,17 @@
 ---
-displayName: "Collection field: Code"
+displayName: "Collection Field: Code"
 packageName: '@nocobase/plugin-field-code'
+title: "Collection Field: Code"
+keywords: "Collection Field: Code,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
-isFree: false
-builtIn: false
+  Untuk pengeditan dan highlight kode. Mendukung bahasa seperti Java, JavaScript, Python, SQL, dan lainnya.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Code
+# Collection Field: Code

@@ -1,77 +1,74 @@
 ---
 pkg: '@nocobase/plugin-record-history'
+title: "Record History"
+description: "Plugin record history melacak perubahan tabel data: secara otomatis menyimpan snapshot dan diff dari penambahan, modifikasi, penghapusan, mendukung perubahan tingkat field, sinkronisasi snapshot historis, block record history, dan konfigurasi template deskripsi."
+keywords: "record history,riwayat record,pelacakan perubahan data,snapshot,perubahan tingkat field,audit,block record history,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Record History
 
+## Pengantar
 
-
-# Riwayat Catatan
-
-## Pendahuluan
-
-Plugin **Riwayat Catatan** melacak perubahan data dengan secara otomatis menyimpan *snapshot* dan perbedaan dari operasi **buat**, **perbarui**, dan **hapus**. Ini membantu pengguna meninjau modifikasi data dengan cepat dan mengaudit aktivitas operasi.
+Plugin record history digunakan untuk melacak proses perubahan data, secara otomatis menyimpan snapshot dan diff dari operasi penambahan, modifikasi, dan penghapusan, membantu pengguna dengan cepat menelusuri kembali perubahan data dan mengaudit perilaku operasi.
 
 ![](https://static-docs.nocobase.com/202511011338499.png)
 
-## Mengaktifkan Riwayat Catatan
+## Mengaktifkan Record History
 
-### Menambahkan Koleksi dan *Field*
+### Menambahkan Tabel Data dan Field
 
-Pertama, buka halaman pengaturan plugin Riwayat Catatan untuk menambahkan koleksi dan *field* yang ingin Anda lacak riwayatnya. Untuk meningkatkan efisiensi pencatatan dan menghindari redundansi data, disarankan untuk hanya melacak *field* yang penting. *Field* seperti **ID unik**, **createdAt**, **updatedAt**, **createdBy**, dan **updatedBy** biasanya tidak perlu dicatat.
+Pertama, masuk ke halaman konfigurasi plugin record history, lalu tambahkan tabel data dan field yang perlu dicatat riwayat operasinya. Untuk meningkatkan efisiensi pencatatan dan menghindari redundansi data, disarankan hanya mengkonfigurasi tabel data dan field yang diperlukan. Field seperti ID unik, tanggal pembuatan, tanggal pembaruan, pembuat, pemodifikasi biasanya tidak perlu dicatat.
 
 ![](https://static-docs.nocobase.com/202511011315010.png)
 
 ![](https://static-docs.nocobase.com/202511011316342.png)
 
-### Sinkronisasi *Snapshot* Data Riwayat
+### Sinkronisasi Snapshot Data Historis
 
-- Untuk catatan yang dibuat sebelum riwayat diaktifkan, perubahan hanya dapat dicatat setelah pembaruan pertama menghasilkan *snapshot*; oleh karena itu, pembaruan atau penghapusan awal tidak akan dicatat.
-- Untuk mempertahankan riwayat data yang sudah ada, Anda dapat melakukan sinkronisasi *snapshot* satu kali.
-- Ukuran *snapshot* per koleksi dihitung sebagai: jumlah catatan × jumlah *field* yang dilacak.
-- Untuk *dataset* yang besar, disarankan untuk memfilter berdasarkan cakupan data dan hanya menyinkronkan catatan penting.
+- Data yang dibuat sebelum record history diaktifkan, hanya akan dapat dicatat perubahannya setelah snapshot pertama dibuat saat update pertama; oleh karena itu update atau delete pertama tidak akan meninggalkan riwayat.
+- Jika perlu mempertahankan riwayat data yang sudah ada, Anda dapat menjalankan sinkronisasi snapshot sekali.
+- Volume data snapshot tabel tunggal = jumlah record × jumlah field yang perlu dicatat.
+- Jika volume data sangat besar, disarankan untuk hanya menyinkronkan data penting melalui filter rentang data.
 
 ![](https://static-docs.nocobase.com/202511011319386.png)
 
 ![](https://static-docs.nocobase.com/202511011319284.png)
 
-Klik tombol **“Sinkronkan *Snapshot* Riwayat”**, konfigurasi *field* dan cakupan data, lalu mulai sinkronisasi.
+Klik tombol "Sync history record snapshot", atur field dan rentang data yang perlu disinkronkan, lalu sinkronisasi akan dimulai.
 
 ![](https://static-docs.nocobase.com/202511011320958.png)
 
-Tugas sinkronisasi akan diantrekan dan berjalan di latar belakang. Anda dapat menyegarkan daftar untuk memeriksa status penyelesaiannya.
+Tugas sinkronisasi akan diantrekan dan berjalan di background, Anda dapat me-refresh daftar untuk memeriksa apakah tugas telah selesai.
 
-## Menggunakan Blok Riwayat Catatan
+## Menggunakan Block Record History
 
-### Menambahkan Blok
+### Menambahkan Block
 
-Pilih **Blok Riwayat Catatan** dan pilih koleksi untuk menambahkan blok riwayat yang sesuai ke halaman Anda.
+Pilih block record history, lalu pilih tabel data, untuk menambahkan block record history yang sesuai dengan tabel data tersebut.
 
 ![](https://static-docs.nocobase.com/202511011323410.png)
 
 ![](https://static-docs.nocobase.com/202511011331667.png)
 
-Jika Anda menambahkan blok riwayat di dalam *pop-up* detail catatan, Anda dapat memilih **“Catatan Saat Ini”** untuk menampilkan riwayat yang spesifik untuk catatan tersebut.
+Jika Anda menambahkan block record history di dalam popup record data tertentu, Anda dapat memilih "Current record" untuk menambahkan block record history yang ditujukan untuk record data tersebut.
 
 ![](https://static-docs.nocobase.com/202511011338042.png)
 
 ![](https://static-docs.nocobase.com/202511011338499.png)
 
-### Mengedit Templat Deskripsi
+### Mengedit Template Deskripsi
 
-Klik **“Edit Templat”** pada pengaturan blok untuk mengonfigurasi teks deskripsi untuk catatan operasi.
+Klik "Edit template" pada konfigurasi block, untuk mengkonfigurasi teks deskripsi record operasi.
 
 ![](https://static-docs.nocobase.com/202511011340406.png)
 
-Saat ini, Anda dapat mengonfigurasi templat deskripsi secara terpisah untuk operasi **buat**, **perbarui**, dan **hapus**. Untuk operasi pembaruan, Anda juga dapat mengonfigurasi templat deskripsi untuk perubahan *field*, baik sebagai templat tunggal untuk semua *field* maupun untuk *field* tertentu secara individual.
+Saat ini mendukung konfigurasi teks deskripsi terpisah untuk record create, update, dan delete; di mana untuk record update, juga mendukung konfigurasi teks deskripsi perubahan field, mendukung konfigurasi terpadu maupun konfigurasi terpisah untuk field tertentu.
 
 ![](https://static-docs.nocobase.com/202511011346400.png)
 
-Variabel dapat digunakan saat mengonfigurasi teks.
+Saat mengkonfigurasi teks, Anda dapat menggunakan variable.
 
 ![](https://static-docs.nocobase.com/202511011347163.png)
 
-Setelah konfigurasi, Anda dapat memilih untuk menerapkan templat ke **Semua blok riwayat catatan dari koleksi saat ini** atau **Hanya blok riwayat catatan ini**.
+Setelah konfigurasi selesai, Anda dapat memilih untuk menerapkannya pada "All record history blocks of current data table" atau "Only the current record history block".
 
 ![](https://static-docs.nocobase.com/202511011348885.png)

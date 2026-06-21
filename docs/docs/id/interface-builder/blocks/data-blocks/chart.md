@@ -1,16 +1,14 @@
 ---
 pkg: '@nocobase/plugin-data-visualization'
+title: "Block Chart"
+description: "Block Chart: menampilkan data dalam bentuk chart, mendukung berbagai tipe chart seperti bar chart, line chart, pie chart, visualisasi data."
+keywords: "Block Chart, Chart, bar chart, line chart, pie chart, visualisasi data, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Chart
 
+## Pengantar
 
-# Grafik
-
-## Pendahuluan
-
-Plugin visualisasi data NocoBase menyediakan kueri data visual dan beragam komponen grafik. Pengguna dapat dengan cepat membangun dasbor visualisasi melalui konfigurasi yang sederhana untuk menampilkan wawasan data, serta mendukung analisis dan presentasi data multi-dimensi.
+Plugin Visualisasi Data NocoBase, menyediakan query data visual dan komponen chart yang kaya. Pengguna dapat dengan cepat membangun dashboard visual melalui konfigurasi sederhana, menampilkan insight data, dan mendukung analisis dan tampilan data multi-dimensi.
 
 ![clipboard-image-1761749573](https://static-docs.nocobase.com/clipboard-image-1761749573.png)
 

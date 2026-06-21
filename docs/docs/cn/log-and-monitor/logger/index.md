@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-logger'
+title: "NocoBase 服务端日志"
+description: "NocoBase 服务端日志：请求日志、系统日志、SQL 日志，console/json/logfmt/delimiter 格式，storage/logs 目录结构，日志打包下载。"
+keywords: "服务端日志,请求日志,系统日志,SQL 日志,日志格式,logfmt,日志打包,NocoBase"
 ---
-
 # 日志
 
 ## 介绍

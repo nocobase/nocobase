@@ -1,42 +1,42 @@
 ---
 pkg: '@nocobase/plugin-verification-totp-authenticator'
+title: "Xác minh: TOTP Authenticator"
+description: "NocoBase TOTP Authenticator: mật khẩu một lần dựa trên thời gian theo chuẩn RFC-6238, hỗ trợ Google Authenticator và các authenticator khác, gắn kết và hủy gắn kết người dùng."
+keywords: "TOTP,Google Authenticator,mật khẩu động,OTP,RFC-6238,gắn kết authenticator,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Xác thực: Trình xác thực TOTP
+# Xác minh: TOTP Authenticator
 
 ## Giới thiệu
 
-Trình xác thực TOTP cho phép người dùng liên kết bất kỳ trình xác thực nào tuân thủ tiêu chuẩn Mật khẩu dùng một lần dựa trên thời gian (TOTP) (<a href="https://www.rfc-editor.org/rfc/rfc6238" target="_blank">RFC-6238</a>), và thực hiện xác minh danh tính bằng mật khẩu dùng một lần dựa trên thời gian (TOTP).
+TOTP Authenticator hỗ trợ người dùng gắn kết bất kỳ authenticator nào tuân theo chuẩn TOTP (Time-based One-Time Password) (<a href="https://www.rfc-editor.org/rfc/rfc6238" target="_blank">RFC-6238</a>), thực hiện xác minh danh tính thông qua mật khẩu một lần dựa trên thời gian (TOTP).
 
-## Cấu hình của quản trị viên
+## Cấu hình của Quản trị viên
 
-Truy cập trang Quản lý xác thực.
+Vào trang quản lý xác minh.
 
 ![](https://static-docs.nocobase.com/202502271726791.png)
 
-Thêm - Trình xác thực TOTP
+Thêm - TOTP verifier
 
 ![](https://static-docs.nocobase.com/202502271745028.png)
 
-Ngoài mã định danh duy nhất và tiêu đề, Trình xác thực TOTP không yêu cầu cấu hình bổ sung nào khác.
+Ngoài định danh duy nhất và tiêu đề, TOTP verifier không cần cấu hình thêm gì khác.
 
 ![](https://static-docs.nocobase.com/202502271746034.png)
 
-## Liên kết của người dùng
+## Người dùng gắn kết
 
-Sau khi thêm trình xác thực, người dùng có thể liên kết trình xác thực TOTP trong khu vực quản lý xác thực cá nhân của họ.
+Sau khi thêm verifier, người dùng có thể gắn kết TOTP Authenticator trong phần quản lý xác minh ở trung tâm cá nhân.
 
 ![](https://static-docs.nocobase.com/202502272252324.png)
 
 :::warning
-Plugin hiện chưa cung cấp cơ chế mã khôi phục. Sau khi liên kết trình xác thực TOTP, người dùng nên bảo quản cẩn thận. Nếu vô tình làm mất trình xác thực, họ có thể sử dụng phương pháp xác thực thay thế để xác minh danh tính, hủy liên kết trình xác thực, sau đó liên kết lại.
+Plugin tạm thời chưa cung cấp cơ chế recovery code, sau khi gắn kết TOTP Authenticator, vui lòng giữ gìn cẩn thận. Nếu lỡ làm mất authenticator, bạn có thể sử dụng phương thức xác minh khác để xác minh danh tính, hoặc thông qua phương thức xác minh khác để hủy gắn kết rồi gắn kết lại.
 :::
 
-## Hủy liên kết của người dùng
+## Người dùng hủy gắn kết
 
-Hủy liên kết trình xác thực yêu cầu xác minh bằng phương pháp xác thực đã liên kết.
+Hủy gắn kết authenticator cần thông qua phương thức xác minh đã gắn kết để thực hiện xác minh.
 
 ![](https://static-docs.nocobase.com/202502282103205.png)

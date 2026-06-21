@@ -17,12 +17,11 @@ import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCata
 import { getServiceByOverride } from '../../llm-services/utils';
 import { useT } from '../../locale';
 
-export const SearchSwitch: React.FC = observer(
-  () => {
+export const SearchSwitch: React.FC<{ disabled?: boolean }> = observer(
+  ({ disabled }) => {
     const t = useT();
     const webSearch = useChatConversationsStore.use.webSearch();
     const setWebSearch = useChatConversationsStore.use.setWebSearch();
-    const currentEmployee = useChatBoxStore.use.currentEmployee();
     const model = useChatBoxStore.use.model();
     const { services } = useLLMServiceCatalog();
 
@@ -43,7 +42,7 @@ export const SearchSwitch: React.FC = observer(
       setWebSearch(!webSearch);
     };
 
-    if (!currentEmployee) {
+    if (disabled) {
       return <Button type="text" icon={<GlobalOutlined />} disabled={true} />;
     }
 
@@ -52,7 +51,6 @@ export const SearchSwitch: React.FC = observer(
     const disabledTooltip = isToolConflict ? (
       <div>
         <div>{t('Enable search')}</div>
-        <div style={{ marginTop: 4 }}>{t('Search disables tools')}</div>
       </div>
     ) : (
       t('Enable search')

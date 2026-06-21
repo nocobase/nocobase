@@ -125,8 +125,15 @@ class AIChatConversationImpl implements AIChatConversation {
       getSystemPrompt,
       formatMessages,
     } = options ?? {};
-    const messages = userMessages ? (await formatMessages?.(userMessages)) ?? [] : undefined;
-    const systemPrompt = (await getSystemPrompt?.()) ?? '';
+    let messages = userMessages ? (await formatMessages?.(userMessages)) ?? [] : undefined;
+    const additionSystemPrompt = messages
+      ?.filter((it) => it.role === 'system')
+      .map((it) => it.content)
+      .filter(Boolean)
+      .join('\n');
+    messages = messages?.filter((it) => it.role !== 'system');
+    const baseSystemPrompt = await getSystemPrompt?.(userMessages ?? []);
+    const systemPrompt = [baseSystemPrompt, additionSystemPrompt].filter(Boolean).join('\n\n') || undefined;
     const chatContext: AIChatContext = {
       systemPrompt,
       messages,

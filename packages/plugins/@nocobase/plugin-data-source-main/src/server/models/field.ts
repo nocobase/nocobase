@@ -24,6 +24,28 @@ export class FieldModel extends MagicAttributeModel {
     return (<any>this.constructor).database;
   }
 
+  set(key: any, value?: any, options?: any) {
+    if (typeof key === 'string') {
+      if (key === 'defaultValue') {
+        // `defaultValue` should replace as a whole value, not deep-merge.
+        return this.setV1(`${this.magicAttribute}.defaultValue`, value, options);
+      }
+      return super.set(key, value, options);
+    }
+
+    if (_.isPlainObject(key) && Object.prototype.hasOwnProperty.call(key, 'defaultValue')) {
+      const { defaultValue, ...rest } = key;
+      const setOptions = value;
+      if (Object.keys(rest).length) {
+        super.set(rest, setOptions);
+      }
+      this.setV1(`${this.magicAttribute}.defaultValue`, defaultValue, setOptions);
+      return this;
+    }
+
+    return super.set(key, value, options);
+  }
+
   isAssociationField() {
     return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(this.get('type'));
   }
@@ -95,6 +117,9 @@ export class FieldModel extends MagicAttributeModel {
   async syncUniqueIndex(options: Transactionable) {
     const unique = this.get('unique');
     const collection = this.getFieldCollection();
+    if (!collection) {
+      return;
+    }
     const field = collection.getField(this.get('name'));
     const columnName = collection.model.rawAttributes[this.get('name')].field;
     const tableName = collection.model.tableName;

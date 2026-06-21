@@ -15,7 +15,7 @@ import { FormProvider, observer, ReactFC } from '@formily/react';
 import { isNum, isStr, isBool, isFn, applyMiddleware, IMiddleware } from '@formily/shared';
 import { Drawer, DrawerProps, ThemeConfig } from 'antd';
 import { usePrefixCls, createPortalProvider, createPortalRoot, loading } from '../__builtins__';
-import { GlobalThemeProvider } from '../../../global-theme';
+import { GlobalThemeProvider } from '@nocobase/client-v2';
 
 type FormDrawerRenderer = React.ReactElement | ((form: Form) => React.ReactElement);
 

@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "邮件管理常见问题"
+description: "Outlook/Gmail 授权登录、微软账户与谷歌账户区别、取消授权、邮件无法接收等常见问题解答。"
+keywords: "邮件 FAQ,Outlook 授权,Gmail 授权,取消授权,邮件管理,NocoBase"
 ---
-
 # 常见问题
 
 ## 微软账户授权登录后，邮件无法接收

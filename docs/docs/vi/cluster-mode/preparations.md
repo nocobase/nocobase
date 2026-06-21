@@ -1,147 +1,149 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+pkg: "@nocobase/preset-cluster"
+title: "Chuẩn bị triển khai Cluster"
+description: "Chuẩn bị trước khi triển khai Cluster: license plugin thương mại (PubSub, Queue, Lock, WorkerID adapter), database, middleware Redis/RabbitMQ, shared storage, cấu hình load balancer."
+keywords: "Chuẩn bị Cluster,license plugin thương mại,middleware Redis,RabbitMQ,shared storage,load balancer,Nginx,NocoBase"
+---
 
 # Chuẩn bị
 
-Trước khi triển khai ứng dụng theo cụm, bạn cần hoàn tất các bước chuẩn bị sau.
+Trước khi triển khai ứng dụng cluster, cần hoàn thành các chuẩn bị sau.
 
-## Giấy phép plugin thương mại
+## License plugin thương mại
 
-Để chạy ứng dụng NocoBase ở chế độ cụm, cần có sự hỗ trợ từ các plugin sau:
+Việc chạy ứng dụng NocoBase ở chế độ cluster cần dựa trên các plugin sau:
 
-| Chức năng                   | Plugin                                                                              |
-| --------------------------- | ----------------------------------------------------------------------------------- |
-| Bộ điều hợp bộ nhớ đệm      | Tích hợp sẵn                                                                        |
-| Bộ điều hợp tín hiệu đồng bộ | `@nocobase/plugin-pubsub-adapter-redis`                                             |
-| Bộ điều hợp hàng đợi tin nhắn | `@nocobase/plugin-queue-adapter-redis` hoặc `@nocobase/plugin-queue-adapter-rabbitmq` |
-| Bộ điều hợp khóa phân tán   | `@nocobase/plugin-lock-adapter-redis`                                               |
-| Bộ cấp phát Worker ID       | `@nocobase/plugin-workerid-allocator-redis`                                         |
+| Tính năng             | Plugin                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| Cache adapter       | Tích hợp sẵn                                                                                |
+| Sync signal adapter   | `@nocobase/plugin-pubsub-adapter-redis`                                             |
+| Message queue adapter   | `@nocobase/plugin-queue-adapter-redis` hoặc `@nocobase/plugin-queue-adapter-rabbitmq` |
+| Distributed lock adapter   | `@nocobase/plugin-lock-adapter-redis`                                               |
+| Worker ID allocator | `@nocobase/plugin-workerid-allocator-redis`                                         |
 
-Trước tiên, hãy đảm bảo bạn đã có giấy phép cho các plugin trên (bạn có thể mua giấy phép plugin tương ứng thông qua nền tảng dịch vụ plugin thương mại).
+Đầu tiên hãy đảm bảo bạn đã có license cho các plugin trên (có thể mua license plugin tương ứng qua nền tảng dịch vụ plugin thương mại).
 
-## Các thành phần hệ thống
+## Thành phần hệ thống
 
-Ngoài các phiên bản ứng dụng, các thành phần hệ thống khác có thể được nhân viên vận hành lựa chọn tùy theo nhu cầu của từng nhóm.
+Ngoài instance ứng dụng, các thành phần hệ thống khác có thể được lựa chọn bởi đội ngũ vận hành dựa trên nhu cầu vận hành của các đội khác nhau.
 
-### Cơ sở dữ liệu
+### Database
 
-Vì chế độ cụm hiện tại chỉ tập trung vào các phiên bản ứng dụng, cơ sở dữ liệu tạm thời chỉ hỗ trợ một nút đơn. Nếu bạn có kiến trúc cơ sở dữ liệu như master-slave, bạn cần tự triển khai thông qua middleware và đảm bảo nó minh bạch đối với ứng dụng NocoBase.
+Vì chế độ Cluster hiện tại chỉ áp dụng cho instance ứng dụng, database tạm thời chỉ hỗ trợ single-node. Nếu có kiến trúc database master-slave, cần tự thực hiện qua middleware và đảm bảo trong suốt với ứng dụng NocoBase.
 
 ### Middleware
 
-Chế độ cụm của NocoBase cần dựa vào một số middleware để đạt được giao tiếp và điều phối giữa các cụm, bao gồm:
+Chế độ Cluster của NocoBase cần dựa vào một số middleware để thực hiện giao tiếp và phối hợp giữa các instance trong cluster, bao gồm:
 
-- **Bộ nhớ đệm** (Cache): Sử dụng middleware bộ nhớ đệm phân tán dựa trên Redis để tăng tốc độ truy cập dữ liệu.
-- **Tín hiệu đồng bộ** (Sync signal): Sử dụng tính năng stream của Redis để truyền tín hiệu đồng bộ giữa các cụm.
-- **Hàng đợi tin nhắn** (Message queue): Sử dụng middleware hàng đợi tin nhắn dựa trên Redis hoặc RabbitMQ để xử lý tin nhắn không đồng bộ.
-- **Khóa phân tán** (Distributed lock): Sử dụng khóa phân tán dựa trên Redis để đảm bảo an toàn truy cập tài nguyên dùng chung trong cụm.
+- **Cache**: Sử dụng middleware distributed cache dựa trên Redis để nâng cao tốc độ truy cập dữ liệu.
+- **Sync signal**: Sử dụng tính năng stream của Redis để thực hiện truyền sync signal giữa các instance trong cluster.
+- **Message queue**: Sử dụng middleware message queue dựa trên Redis hoặc RabbitMQ để thực hiện xử lý message async.
+- **Distributed lock**: Sử dụng distributed lock dựa trên Redis để đảm bảo an toàn khi truy cập tài nguyên chung trong cluster.
 
-Khi tất cả các thành phần middleware đều sử dụng Redis, bạn có thể khởi động một dịch vụ Redis duy nhất trong mạng nội bộ của cụm (hoặc Kubernetes). Ngoài ra, bạn cũng có thể kích hoạt một dịch vụ Redis riêng cho từng chức năng (bộ nhớ đệm, tín hiệu đồng bộ, hàng đợi tin nhắn và khóa phân tán).
+Khi tất cả middleware đều sử dụng Redis, có thể khởi động một dịch vụ Redis duy nhất trong mạng nội bộ cluster (hoặc Kubernetes). Cũng có thể kích hoạt một dịch vụ Redis riêng cho mỗi tính năng (cache, sync signal, message queue và distributed lock).
 
-**Đề xuất phiên bản**
+**Khuyến nghị phiên bản**
 
-- Redis: >=8.0 hoặc phiên bản redis-stack có tính năng Bloom Filter.
+- Redis: >=8.0 hoặc sử dụng phiên bản redis-stack chứa tính năng Bloom Filter.
 - RabbitMQ: >=4.0
 
-### Lưu trữ chia sẻ
+### Shared Storage
 
-NocoBase cần sử dụng thư mục `storage` để lưu trữ các tệp liên quan đến hệ thống. Ở chế độ đa nút, bạn nên gắn kết ổ đĩa đám mây (hoặc NFS) để hỗ trợ truy cập chia sẻ giữa nhiều nút. Nếu không, bộ nhớ cục bộ sẽ không tự động đồng bộ hóa và không thể hoạt động bình thường.
+NocoBase cần sử dụng thư mục storage để lưu các file liên quan đến hệ thống. Trong chế độ multi-node, nên gắn cloud disk (hoặc NFS) để hỗ trợ truy cập chung từ nhiều node. Nếu không, local storage sẽ không tự động đồng bộ và không thể sử dụng bình thường.
 
-Khi triển khai bằng Kubernetes, vui lòng tham khảo phần [Triển khai Kubernetes: Lưu trữ chia sẻ](./kubernetes#shared-storage).
+Khi triển khai bằng Kubernetes, vui lòng tham khảo chương [Triển khai Kubernetes: Shared Storage](./kubernetes#shared-storage).
 
-### Cân bằng tải
+### Load Balancer
 
-Chế độ cụm yêu cầu một bộ cân bằng tải để phân phối các yêu cầu, cũng như kiểm tra tình trạng và chuyển đổi dự phòng cho các phiên bản ứng dụng. Phần này nên được lựa chọn và cấu hình theo nhu cầu vận hành của nhóm.
+Chế độ Cluster cần thực hiện phân phối request thông qua load balancer, cũng như health check và failover của các instance ứng dụng. Phần này được lựa chọn và cấu hình theo nhu cầu vận hành của đội ngũ.
 
-Lấy Nginx tự cài đặt làm ví dụ, hãy thêm nội dung sau vào tệp cấu hình:
+Lấy ví dụ tự xây dựng Nginx, thêm nội dung sau vào file cấu hình:
 
 ```
 upstream myapp {
-    # ip_hash; # Có thể dùng để duy trì phiên, khi bật, các yêu cầu từ cùng một máy khách luôn được gửi đến cùng một máy chủ backend.
-    server 172.31.0.1:13000; # Nút nội bộ 1
-    server 172.31.0.2:13000; # Nút nội bộ 2
-    server 172.31.0.3:13000; # Nút nội bộ 3
+    # ip_hash; # Có thể dùng để giữ session, sau khi bật, request từ cùng client luôn được gửi đến cùng backend server.
+    server 172.31.0.1:13000; # Node 1 trong mạng nội bộ
+    server 172.31.0.2:13000; # Node 2 trong mạng nội bộ
+    server 172.31.0.3:13000; # Node 3 trong mạng nội bộ
 }
 
 server {
     listen 80;
 
     location / {
-        # Sử dụng upstream đã định nghĩa để cân bằng tải
+        # Sử dụng upstream đã định nghĩa để load balancing
         proxy_pass http://myapp;
         # ... các cấu hình khác
     }
 }
 ```
 
-Điều này có nghĩa là các yêu cầu được proxy ngược và phân phối đến các nút máy chủ khác nhau để xử lý.
+Có nghĩa là phân phối request reverse proxy đến các node server khác nhau để xử lý.
 
-Đối với middleware cân bằng tải do các nhà cung cấp dịch vụ đám mây khác cung cấp, vui lòng tham khảo tài liệu cấu hình của nhà cung cấp cụ thể.
+Các middleware load balancer do các nhà cung cấp dịch vụ cloud khác cung cấp có thể tham khảo tài liệu cấu hình cụ thể của nhà cung cấp dịch vụ.
 
 ## Cấu hình biến môi trường
 
-Tất cả các nút trong cụm nên sử dụng cùng một cấu hình biến môi trường. Ngoài các [biến môi trường](/api/cli/env) cơ bản của NocoBase, bạn cũng cần cấu hình các biến môi trường liên quan đến middleware sau.
+Tất cả các node trong cluster nên sử dụng cùng cấu hình biến môi trường. Ngoài [biến môi trường](../api/app/env) cơ bản của NocoBase, còn cần cấu hình các biến môi trường liên quan đến middleware sau.
 
-### Chế độ đa lõi
+### Chế độ multi-core
 
-Khi ứng dụng chạy trên nút đa lõi, bạn có thể bật chế độ đa lõi của nút:
+Khi ứng dụng chạy trên node multi-core, có thể bật chế độ multi-core của node:
 
 ```ini
-# Bật chế độ đa lõi PM2
+# Bật chế độ multi-core PM2
 # CLUSTER_MODE=max # Mặc định không bật, cần cấu hình thủ công
 ```
 
-Nếu bạn triển khai các pod ứng dụng trong Kubernetes, bạn có thể bỏ qua cấu hình này và kiểm soát số lượng phiên bản ứng dụng thông qua số lượng bản sao của pod.
+Khi triển khai pod ứng dụng trong Kubernetes, có thể bỏ qua cấu hình này, kiểm soát số lượng instance ứng dụng thông qua số bản sao của pod.
 
-### Bộ nhớ đệm
+### Cache
 
 ```ini
-# Bộ điều hợp bộ nhớ đệm, ở chế độ cụm cần điền là redis (mặc định nếu không điền là bộ nhớ trong)
+# Cache adapter, ở chế độ Cluster cần điền là redis (mặc định không điền là memory)
 CACHE_DEFAULT_STORE=redis
 
-# URL kết nối bộ điều hợp bộ nhớ đệm Redis, cần điền vào
+# Địa chỉ kết nối Redis cache adapter, cần điền chủ động
 CACHE_REDIS_URL=
 ```
 
-### Tín hiệu đồng bộ
+### Sync signal
 
 ```ini
-# URL kết nối bộ điều hợp đồng bộ Redis, mặc định nếu không điền là redis://localhost:6379/0
+# Địa chỉ kết nối Redis sync adapter, mặc định không điền là redis://localhost:6379/0
 PUBSUB_ADAPTER_REDIS_URL=
 ```
 
-### Khóa phân tán
+### Distributed lock
 
 ```ini
-# Bộ điều hợp khóa, ở chế độ cụm cần điền là redis (mặc định nếu không điền là khóa cục bộ trong bộ nhớ)
+# Lock adapter, ở chế độ Cluster cần điền là redis (mặc định không điền là local lock memory)
 LOCK_ADAPTER_DEFAULT=redis
 
-# URL kết nối bộ điều hợp khóa Redis, mặc định nếu không điền là redis://localhost:6379/0
+# Địa chỉ kết nối Redis lock adapter, mặc định không điền là redis://localhost:6379/0
 LOCK_ADAPTER_REDIS_URL=
 ```
 
-### Hàng đợi tin nhắn
+### Message queue
 
 ```ini
-# Bật Redis làm bộ điều hợp hàng đợi tin nhắn, mặc định nếu không điền là bộ điều hợp trong bộ nhớ
+# Kích hoạt Redis làm message queue adapter, mặc định không điền là memory adapter
 QUEUE_ADAPTER=redis
-# URL kết nối bộ điều hợp hàng đợi tin nhắn Redis, mặc định nếu không điền là redis://localhost:6379/0
+# Địa chỉ kết nối Redis message queue adapter, mặc định không điền là redis://localhost:6379/0
 QUEUE_ADAPTER_REDIS_URL=
 ```
 
-### Bộ cấp phát Worker ID
+### Worker ID allocator
 
-Vì một số bộ sưu tập hệ thống trong NocoBase sử dụng ID duy nhất toàn cầu làm khóa chính, nên cần có Bộ cấp phát Worker ID để đảm bảo mỗi phiên bản ứng dụng trong cụm được gán một Worker ID duy nhất, từ đó tránh các vấn đề xung đột khóa chính. Phạm vi Worker ID hiện tại được thiết kế là 0-31, nghĩa là cùng một ứng dụng có thể hỗ trợ tối đa 32 nút chạy đồng thời. Để biết chi tiết về thiết kế ID duy nhất toàn cầu, hãy tham khảo [@nocobase/snowflake-id](https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id).
+Vì một số system table trong NocoBase sử dụng global unique ID làm primary key, cần phải thông qua Worker ID allocator để đảm bảo mỗi instance ứng dụng trong cluster được phân bổ Worker ID duy nhất, từ đó tránh xung đột primary key. Phạm vi Worker ID hiện được thiết kế là 0-31, tức là cùng một ứng dụng tối đa hỗ trợ 32 node chạy đồng thời. Về thiết kế global unique ID, tham khảo [@nocobase/snowflake-id](https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id)
 
 ```ini
-# URL kết nối Redis cho Bộ cấp phát Worker ID. Nếu bỏ qua, một Worker ID ngẫu nhiên sẽ được gán.
+# Địa chỉ kết nối Redis của Worker ID allocator, mặc định không điền là phân bổ ngẫu nhiên
 REDIS_URL=
 ```
 
 :::info{title=Mẹo}
-Thông thường, các bộ điều hợp liên quan đều có thể sử dụng cùng một phiên bản Redis, nhưng tốt nhất nên phân biệt và sử dụng các cơ sở dữ liệu khác nhau để tránh các vấn đề xung đột khóa có thể xảy ra, ví dụ:
+Thông thường, các adapter liên quan có thể đều sử dụng cùng một instance Redis, nhưng tốt nhất nên phân biệt sử dụng các database khác nhau để tránh các vấn đề xung đột key có thể có, ví dụ:
 
 ```ini
 CACHE_REDIS_URL=redis://localhost:6379/0
@@ -151,10 +153,10 @@ QUEUE_ADAPTER_REDIS_URL=redis://localhost:6379/3
 REDIS_URL=redis://localhost:6379/4
 ```
 
-Hiện tại, mỗi plugin sử dụng các biến môi trường Redis riêng. Trong tương lai, chúng tôi có thể xem xét việc sử dụng thống nhất `REDIS_URL` làm cấu hình dự phòng.
+Hiện tại các plugin sử dụng cấu hình biến môi trường Redis riêng. Trong tương lai sẽ xem xét sử dụng thống nhất `REDIS_URL` làm cấu hình fallback.
 
 :::
 
-Nếu bạn sử dụng Kubernetes để quản lý cụm, bạn có thể cấu hình các biến môi trường trên trong ConfigMap hoặc Secret. Để biết thêm nội dung liên quan, bạn có thể tham khảo [Triển khai Kubernetes](./kubernetes).
+Nếu sử dụng Kubernetes để quản lý cluster, có thể cấu hình các biến môi trường trên trong ConfigMap hoặc Secret. Để biết thêm nội dung liên quan, có thể tham khảo [Triển khai Kubernetes](./kubernetes).
 
-Sau khi hoàn tất tất cả các bước chuẩn bị trên, bạn có thể chuyển sang [Quy trình vận hành](./operations) để tiếp tục quản lý các phiên bản ứng dụng.
+Sau khi tất cả các chuẩn bị trên hoàn tất, có thể vào [Quy trình vận hành](./operations) để tiếp tục quản lý các instance ứng dụng.

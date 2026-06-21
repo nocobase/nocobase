@@ -8,19 +8,30 @@
  */
 
 export * from './PluginManagerLink';
-import { PageHeader } from '@ant-design/pro-layout';
+import { MenuOutlined } from '@ant-design/icons';
 import { useDebounce } from 'ahooks';
-import { Button, Card, Col, Divider, Input, List, Modal, Row, Space, Spin, Table, TableProps, Tabs } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  Divider,
+  Grid,
+  Input,
+  List,
+  Modal,
+  Popover,
+  Row,
+  Space,
+  Spin,
+  Table,
+  TableProps,
+} from 'antd';
 import _ from 'lodash';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
 
 import { css } from '@emotion/css';
-import { useACLRoleContext } from '../acl/ACLProvider';
 import { useAPIClient, useRequest } from '../api-client';
-import { AppNotFound } from '../common/AppNotFound';
-import { useDocumentTitle } from '../document-title';
 import { useToken } from '../style';
 import { PluginCard } from './PluginCard';
 import { PluginAddModal } from './PluginForm/modal/PluginAddModal';
@@ -193,7 +204,10 @@ const LocalPlugins = () => {
   const [isShowAddForm, setShowAddForm] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [keyword, setKeyword] = useState(null);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const debouncedSearchValue = useDebounce(searchValue, { wait: 100 });
+  const screens = Grid.useBreakpoint();
+  const isWide = !!screens.md;
 
   const keyWordlists = [
     'Data model tools',
@@ -209,6 +223,7 @@ const LocalPlugins = () => {
     'Notification',
     'System management',
     'Security',
+    'Architecture',
     'Logging and monitoring',
     'Others',
   ];
@@ -262,6 +277,25 @@ const LocalPlugins = () => {
   if (loading) {
     return <Spin />;
   }
+
+  const handleCategorySelect = (key: string) => {
+    setKeyword((prev) => (prev === key ? null : key));
+    setCategoryOpen(false);
+  };
+
+  const categoryList = (
+    <List
+      size="small"
+      dataSource={keyWordsfilterList}
+      split={false}
+      renderItem={(item) => (
+        <List.Item style={{ padding: '3px 0', cursor: 'pointer' }} onClick={() => handleCategorySelect(item.key)}>
+          <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>{t(item.key)}</a>
+        </List.Item>
+      )}
+    />
+  );
+
   return (
     <>
       <PluginAddModal
@@ -277,11 +311,24 @@ const LocalPlugins = () => {
           className={css`
             justify-content: space-between;
             display: flex;
+            flex-wrap: wrap;
+            gap: ${theme.margin}px;
             align-items: center;
           `}
         >
-          <div style={{ marginLeft: 200 }}>
-            <Space size={theme.marginXXS} split={<Divider type="vertical" />}>
+          <div style={{ marginLeft: isWide ? 200 : 0 }}>
+            <Space size={theme.marginXXS} split={<Divider type="vertical" />} wrap>
+              {!isWide && (
+                <Popover
+                  trigger="click"
+                  placement="bottomLeft"
+                  open={categoryOpen}
+                  onOpenChange={setCategoryOpen}
+                  content={<div style={{ minWidth: 180, maxHeight: '60vh', overflowY: 'auto' }}>{categoryList}</div>}
+                >
+                  <Button type="text" size="small" icon={<MenuOutlined />} aria-label={t('Category')} />
+                </Popover>
+              )}
               {filterList.map((item, index) => (
                 <a
                   role="button"
@@ -294,53 +341,45 @@ const LocalPlugins = () => {
                   {filterIndex === index ? `(${pluginList?.length})` : null}
                 </a>
               ))}
-              <Input
-                allowClear
-                placeholder={t('Search plugin')}
-                onChange={(e) => handleSearch(e.currentTarget.value)}
-              />
             </Space>
           </div>
-          <div>
-            <Space>
-              <BulkEnableButton plugins={data?.data || []} />
-              <Button onClick={() => setShowAddForm(true)} type="primary">
-                {t('Add & Update')}
-              </Button>
-            </Space>
+          <div
+            className={css`
+              display: flex;
+              flex: 1 1 auto;
+              justify-content: flex-end;
+              align-items: center;
+              gap: ${theme.marginSM}px;
+            `}
+          >
+            <Input
+              allowClear
+              placeholder={t('Search plugin')}
+              onChange={(e) => handleSearch(e.currentTarget.value)}
+              style={{ flex: '1 1 auto', maxWidth: 320, minWidth: 160 }}
+            />
+            <div style={{ flexShrink: 0 }}>
+              <Space>
+                <BulkEnableButton plugins={data?.data || []} />
+                <Button onClick={() => setShowAddForm(true)} type="primary">
+                  {t('Add & Update')}
+                </Button>
+              </Space>
+            </div>
           </div>
         </div>
         <Row gutter={8} style={{ width: 'calc(100% + 8px)' }} wrap={false}>
-          <Col flex="200px">
-            <Card>
-              <List
-                size="small"
-                dataSource={keyWordsfilterList}
-                split={false}
-                renderItem={(item) => {
-                  return (
-                    <List.Item
-                      style={{ padding: '3px 0' }}
-                      onClick={() => (item.key !== keyword ? setKeyword(item.key) : setKeyword(null))}
-                    >
-                      <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>{t(item.key)}</a>
-                    </List.Item>
-                  );
-                }}
-              />
-            </Card>
-          </Col>
+          {isWide && (
+            <Col flex="200px">
+              <Card>{categoryList}</Card>
+            </Col>
+          )}
           <Col flex="auto">
             <div
               className={css`
-                --grid-gutter: ${theme.margin}px;
-                --extensions-card-width: calc(25% - var(--grid-gutter) + var(--grid-gutter) / 4);
                 display: grid;
-                grid-column-gap: var(--grid-gutter);
-                grid-row-gap: var(--grid-gutter);
-                grid-template-columns: repeat(auto-fill, var(--extensions-card-width));
-                justify-content: left;
-                margin: auto;
+                gap: ${theme.margin}px;
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
               `}
             >
               {pluginList.map((item) => (

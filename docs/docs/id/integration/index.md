@@ -1,89 +1,91 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ikhtisar Integrasi NocoBase"
+description: "Kemampuan integrasi NocoBase: API Key dan dokumentasi, SSO Single Sign-On, Workflow Webhook/HTTP Request, sumber data eksternal FDW, embed Iframe, integrasi sistem perusahaan dan layanan pihak ketiga."
+keywords: "integrasi,integrasi API,Webhook,FDW,SSO,single sign-on,integrasi workflow,sumber data eksternal,NocoBase"
+---
 
 # Integrasi
 
-## Gambaran Umum
+## Ikhtisar
 
-NocoBase menyediakan kemampuan integrasi yang komprehensif, memungkinkan koneksi tanpa hambatan dengan sistem eksternal, layanan pihak ketiga, dan berbagai sumber data. Melalui metode integrasi yang fleksibel, Anda dapat memperluas fungsionalitas NocoBase untuk memenuhi beragam kebutuhan bisnis.
+NocoBase menyediakan kemampuan integrasi yang komprehensif, memungkinkan koneksi yang mulus dengan sistem eksternal, layanan pihak ketiga, dan berbagai sumber data. Melalui metode integrasi yang fleksibel, Anda dapat memperluas fungsi NocoBase untuk memenuhi kebutuhan bisnis yang beragam.
 
 ## Metode Integrasi
 
 ### Integrasi API
 
-NocoBase menyediakan kemampuan API yang tangguh untuk berintegrasi dengan aplikasi dan layanan eksternal:
+NocoBase menyediakan kemampuan API yang kuat untuk integrasi dengan aplikasi dan layanan eksternal:
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
-- **[Kunci API](/integration/api-keys/)**: Gunakan kunci API untuk autentikasi aman, guna mengakses sumber daya NocoBase secara terprogram.
-- **[Dokumentasi API](/integration/api-doc/)**: Dokumentasi API bawaan untuk menjelajahi dan menguji *endpoint*.
+- **[API Key](/integration/api-keys/index.md)**: gunakan API Key untuk autentikasi yang aman, akses sumber daya NocoBase secara terprogram
+- **[Dokumentasi API](/integration/api-doc/index.md)**: dokumentasi API bawaan untuk eksplorasi dan pengujian endpoint
 
 ### Single Sign-On (SSO)
 
-Berintegrasi dengan sistem identitas perusahaan untuk mencapai autentikasi terpadu:
+Integrasikan dengan sistem identitas perusahaan untuk autentikasi terpadu:
 
 ![auth_sso-2025-11-24-08-26-46](https://static-docs.nocobase.com/auth_sso-2025-11-24-08-26-46.png)
 
-- **[Integrasi SSO](/integration/sso/)**: Mendukung autentikasi SAML, OIDC, CAS, LDAP, dan platform pihak ketiga.
-- Manajemen pengguna terpusat dan kontrol akses.
-- Pengalaman autentikasi tanpa hambatan di seluruh sistem.
+- **[Integrasi SSO](/integration/sso/index.md)**: mendukung autentikasi SAML, OIDC, CAS, LDAP, dan platform pihak ketiga
+- Manajemen pengguna dan kontrol akses terpusat
+- Pengalaman autentikasi yang mulus lintas sistem
 
-### Integrasi Alur Kerja
+### Integrasi Workflow
 
-Menghubungkan alur kerja NocoBase dengan sistem eksternal:
+Hubungkan Workflow NocoBase dengan sistem eksternal:
 
 ![auth_sso-2025-11-24-12-02-01](https://static-docs.nocobase.com/auth_sso-2025-11-24-12-02-01.png)
 
-- **[Webhook Alur Kerja](/integration/workflow-webhook/)**: Menerima *event* dari sistem eksternal untuk memicu alur kerja.
-- **[Permintaan HTTP Alur Kerja](/integration/workflow-http-request/)**: Mengirim permintaan HTTP ke API eksternal dari alur kerja.
-- Mengotomatiskan proses bisnis lintas platform.
+- **[Webhook Workflow](/integration/workflow-webhook/index.md)**: terima event dari sistem eksternal untuk memicu Workflow
+- **[HTTP Request Workflow](/integration/workflow-http-request/index.md)**: kirim HTTP Request ke API eksternal dari Workflow
+- Otomatisasi proses bisnis lintas platform
 
 ### Sumber Data Eksternal
 
-Menghubungkan ke basis data dan sistem data eksternal:
+Hubungkan ke database dan sistem data eksternal:
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-- **[Basis Data Eksternal](/data-sources/)**: Terhubung langsung ke basis data MySQL, PostgreSQL, MariaDB, MSSQL, Oracle, dan KingbaseES.
-- Mengenali struktur tabel basis data eksternal dan melakukan operasi CRUD pada data eksternal langsung di NocoBase.
-- Antarmuka manajemen data terpadu.
+- **[Database Eksternal](/data-sources/index.md)**: hubungkan langsung ke database MySQL, PostgreSQL, MariaDB, MSSQL, Oracle, dan KingbaseES
+- Kenali struktur tabel database eksternal, lakukan operasi CRUD pada data eksternal langsung di NocoBase
+- Antarmuka manajemen data terpadu
 
-### Konten Tersemat
+### Konten Tertanam
 
-Menyematkan konten eksternal di NocoBase:
+Tanam konten eksternal pada NocoBase:
 
 ![20240408220322](https://static-docs.nocobase.com/20240408220322.png)
 
-- **[Blok Iframe](/integration/block-iframe/)**: Menyematkan halaman web dan aplikasi eksternal.
-- **Blok JS**: Menjalankan kode JavaScript kustom untuk integrasi tingkat lanjut.
+- **[Blok Iframe](/integration/block-iframe/index.md)**: tanam halaman web dan aplikasi eksternal
+- **JS Block**: jalankan kode JavaScript kustom untuk integrasi lanjutan
 
 ## Skenario Integrasi Umum
 
 ### Integrasi Sistem Perusahaan
 
-- Menghubungkan NocoBase dengan ERP, CRM, atau sistem perusahaan lainnya.
-- Sinkronisasi data dua arah.
-- Mengotomatiskan alur kerja lintas sistem.
+- Hubungkan NocoBase dengan ERP, CRM, atau sistem perusahaan lainnya
+- Sinkronisasi data dua arah
+- Otomatisasi Workflow lintas sistem
 
 ### Integrasi Layanan Pihak Ketiga
 
-- Mengajukan kueri status pembayaran dari *payment gateway*, mengintegrasikan layanan pesan, atau platform *cloud*.
-- Memanfaatkan API eksternal untuk memperluas fungsionalitas.
-- Membangun integrasi kustom menggunakan *webhook* dan permintaan HTTP.
+- Periksa status pembayaran gateway pembayaran, integrasikan layanan pesan atau platform cloud
+- Manfaatkan API eksternal untuk memperluas fungsionalitas
+- Bangun integrasi kustom dengan webhook dan HTTP Request
 
 ### Integrasi Data
 
-- Menghubungkan ke beberapa sumber data.
-- Mengagregasi data dari sistem yang berbeda.
-- Membuat *dashboard* dan laporan terpadu.
+- Hubungkan ke beberapa sumber data
+- Agregasikan data dari berbagai sistem
+- Buat dashboard dan laporan terpadu
 
 ## Pertimbangan Keamanan
 
 Saat mengintegrasikan NocoBase dengan sistem eksternal, pertimbangkan praktik terbaik keamanan berikut:
 
-1.  **Gunakan HTTPS**: Selalu gunakan koneksi terenkripsi untuk transmisi data.
-2.  **Amankan Kunci API**: Simpan kunci API dengan aman dan rotasi secara berkala.
-3.  **Prinsip Hak Akses Minimal**: Berikan hanya hak akses yang diperlukan untuk integrasi.
-4.  **Pencatatan Audit**: Pantau dan catat aktivitas integrasi.
-5.  **Validasi Data**: Validasi semua data dari sumber eksternal.
+1. **Gunakan HTTPS**: selalu gunakan koneksi terenkripsi untuk transmisi data
+2. **Lindungi API Key**: simpan API Key dengan aman dan rotasikan secara berkala
+3. **Prinsip hak akses minimum**: berikan hanya izin yang diperlukan untuk integrasi
+4. **Log audit**: pantau dan catat aktivitas integrasi
+5. **Validasi data**: validasi semua data dari sumber eksternal

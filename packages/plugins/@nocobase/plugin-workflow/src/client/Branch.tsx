@@ -7,20 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext } from 'react';
+import React from 'react';
 import { CloseOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 
-import { css, cx } from '@nocobase/client';
+import { cx } from '@nocobase/client';
 
 import { AddNodeSlot } from './AddNodeContext';
+import { BranchContext } from './BranchContext';
 import { useGetAriaLabelOfAddButton } from './hooks/useGetAriaLabelOfAddButton';
 import { Node } from './nodes';
 import useStyles from './style';
 
-export const BranchIndexContext = createContext(null);
+export { useBranchContext, useBranchIndex } from './BranchContext';
 
-export function useBranchIndex() {
-  return React.useContext(BranchIndexContext);
+function EndSign({ title }: { title?: React.ReactNode }) {
+  const content = (
+    <div className="end-sign">
+      <CloseOutlined />
+    </div>
+  );
+
+  return title ? <Tooltip title={title}>{content}</Tooltip> : content;
 }
 
 export function Branch({
@@ -29,14 +37,24 @@ export function Branch({
   branchIndex = null,
   controller = null,
   className,
-  end,
+  end = null,
+  addable = true,
+  syncOnly = false,
+  start = false,
+  startTitle,
+  dashed = false,
 }: {
   from?: any;
   entry?: any;
   branchIndex?: number | null;
   controller?: React.ReactNode;
   className?: string;
-  end?: boolean;
+  end?: true | React.ReactNode | null;
+  addable?: boolean;
+  syncOnly?: boolean;
+  start?: boolean;
+  startTitle?: React.ReactNode;
+  dashed?: boolean;
 }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(from, branchIndex);
@@ -46,22 +64,19 @@ export function Branch({
   }
 
   return (
-    <BranchIndexContext.Provider value={branchIndex}>
-      <div className={cx('workflow-branch', styles.branchClass, className)}>
+    <BranchContext.Provider value={{ branchIndex, addable, syncOnly }}>
+      <div className={cx('workflow-branch', styles.branchClass, className, { 'workflow-branch-dashed': dashed })}>
         <div className="workflow-branch-lines" />
         {controller ? <div className="workflow-branch-controller">{controller}</div> : null}
         <div className="workflow-node-list">
-          <AddNodeSlot aria-label={getAriaLabel()} upstream={from} branchIndex={branchIndex} />
+          {start ? <EndSign title={startTitle} /> : null}
+          {addable ? <AddNodeSlot aria-label={getAriaLabel()} upstream={from} branchIndex={branchIndex} /> : null}
           {list.map((item) => (
             <Node data={item} key={item.id} />
           ))}
         </div>
-        {end ? (
-          <div className="end-sign">
-            <CloseOutlined />
-          </div>
-        ) : null}
+        {end === true ? <EndSign /> : end}
       </div>
-    </BranchIndexContext.Provider>
+    </BranchContext.Provider>
   );
 }

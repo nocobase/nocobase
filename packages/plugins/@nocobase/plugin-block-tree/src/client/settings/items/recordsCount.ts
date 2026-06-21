@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSelectSchemaSettingsItem } from "@nocobase/client";
-import { generateNTemplate } from "../../locale";
+import { createSelectSchemaSettingsItem } from '@nocobase/client';
+import { generateNTemplate } from '../../locale';
 
 export const recordsCountFieldSchemaSettingsItem = createSelectSchemaSettingsItem({
   name: 'recordsCount',

@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Penugasan Field"
+description: "Konfigurasi Action: mengkonfigurasi penugasan Field Form saat Action dieksekusi, mengimplementasikan penugasan linkage, pengisian nilai default."
+keywords: "penugasan Field, assign values, penugasan linkage, konfigurasi Action, interface builder, NocoBase"
+---
 
-# Penugasan Bidang
+# Penugasan Field
 
-## Pendahuluan
+## Pengantar
 
-Penugasan bidang adalah proses menetapkan nilai awal untuk suatu bidang sebelum menjalankan operasi. Saat memperbarui atau membuat catatan, data ini akan terisi secara otomatis, sehingga tidak perlu memasukkan data secara manual. Contohnya termasuk memperbarui status pesanan secara massal, atau mengatur waktu pengiriman ke waktu saat ini saat pesanan telah terkirim.
+Penugasan Field merujuk pada pra-pengaturan nilai Field sebelum Action dieksekusi. Saat update atau pembuatan record, data ini akan otomatis diisi tanpa perlu memasukkan data secara manual, seperti skenario update batch status pesanan, atau saat pesanan dikirim, atur waktu pengiriman ke waktu saat ini, dll.
 
 ![20251029143712](https://static-docs.nocobase.com/20251029143712.png)
 
@@ -14,11 +16,11 @@ Penugasan bidang adalah proses menetapkan nilai awal untuk suatu bidang sebelum 
 
 ![20251029144142](https://static-docs.nocobase.com/20251029144142.png)
 
-## Penggunaan
+## Petunjuk Penggunaan
 
-### Konfigurasi Bidang
+### Konfigurasi Field
 
-Hanya bidang dari koleksi blok saat ini yang dapat dikonfigurasi.
+Hanya mendukung konfigurasi Field Collection Block saat ini.
 
 ![20251029144652](https://static-docs.nocobase.com/20251029144652.png)
 
@@ -30,4 +32,5 @@ Hanya bidang dari koleksi blok saat ini yang dapat dikonfigurasi.
 
 ![20251029144547](https://static-docs.nocobase.com/20251029144547.png)
 
-Untuk informasi lebih lanjut tentang variabel, lihat [Variabel](/interface-builder/variables)
+
+Untuk informasi lebih lanjut tentang variabel, silakan lihat [Variabel](/interface-builder/variables)

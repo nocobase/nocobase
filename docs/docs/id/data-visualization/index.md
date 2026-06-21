@@ -1,28 +1,28 @@
 ---
 pkg: "@nocobase/plugin-data-visualization"
+title: "Ikhtisar Data Visualization"
+description: "NocoBase Data Visualization: blok Chart, query data Builder/SQL, ukuran dan dimensi, konfigurasi ECharts, event interaksi, linkage filter halaman, analisis multi-dimensi."
+keywords: "data visualization,blok chart,ECharts,dashboard,ukuran,dimensi,Builder,query SQL,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Ikhtisar
 
-# Gambaran Umum
-
-Plugin visualisasi data NocoBase menyediakan kueri data visual dan beragam komponen bagan. Dengan konfigurasi sederhana, Anda dapat dengan cepat membangun panel visualisasi, menampilkan insight data, serta mendukung analisis dan tampilan data multi-dimensi.
+Plugin Data Visualization NocoBase menyediakan query data visual dan komponen Chart yang kaya.
+Pengguna dapat dengan cepat membangun panel visualisasi melalui konfigurasi sederhana untuk menampilkan wawasan data, serta mendukung analisis dan tampilan data multi-dimensi.
 
 ![clipboard-image-1761749573](https://static-docs.nocobase.com/clipboard-image-1761749573.png)
 
 ## Konsep Dasar
-- Blok Bagan: Sebuah komponen bagan yang dapat dikonfigurasi pada halaman, mendukung kueri data, opsi bagan, dan event interaksi.
-- Kueri Data (Builder / SQL): Konfigurasi secara visual menggunakan Builder, atau tulis SQL untuk mengambil data.
-- Ukuran (Measures) dan Dimensi (Dimensions): Ukuran digunakan untuk agregasi numerik; Dimensi digunakan untuk mengelompokkan data (misalnya, tanggal, kategori, wilayah).
-- Pemetaan Bidang: Memetakan kolom hasil kueri ke bidang inti bagan seperti `xField`, `yField`, `seriesField`, atau `Category / Value`.
-- Opsi Bagan (Dasar / Kustom): Dasar mengonfigurasi properti umum secara visual; Kustom mengembalikan objek `option` ECharts lengkap melalui JS.
-- Jalankan Kueri: Jalankan kueri dan ambil data di panel konfigurasi; Anda dapat beralih ke Tabel / JSON untuk melihat data yang dikembalikan.
-- Pratinjau dan Simpan: Pratinjau bersifat sementara; mengklik "Simpan" akan menulis konfigurasi ke database dan menerapkannya secara resmi.
-- Variabel Konteks: Menggunakan kembali informasi konteks halaman, pengguna, dan filter (misalnya, `{{ ctx.user.id }}`) dalam kueri dan konfigurasi bagan.
-- Filter dan Keterkaitan: "Blok filter" tingkat halaman mengumpulkan kondisi terpadu, secara otomatis digabungkan ke dalam kueri bagan, dan menyegarkan bagan yang terkait.
-- Event Interaksi: Daftarkan event melalui `chart.on` untuk mengaktifkan perilaku seperti penyorotan, navigasi, dan drill-down.
+- Blok Chart: komponen Chart yang dapat dikonfigurasi pada halaman, mendukung query data, opsi Chart, dan event interaksi.
+- Query Data (Builder / SQL): mengambil data melalui konfigurasi grafis Builder, atau dengan menulis SQL.
+- Ukuran (Measures) dan Dimensi (Dimensions): ukuran digunakan untuk agregasi numerik, dimensi digunakan untuk pengelompokan (seperti tanggal, kategori, wilayah).
+- Pemetaan Field: memetakan kolom hasil query ke field inti Chart, seperti `xField`, `yField`, `seriesField` atau `Category / Value`.
+- Opsi Chart (Basic / Custom): Basic mengkonfigurasi properti umum secara grafis; Custom mengembalikan `option` ECharts lengkap melalui JS.
+- Menjalankan Query: jalankan query di panel konfigurasi untuk meminta data, dapat beralih antara Table / JSON untuk melihat data yang dikembalikan.
+- Preview dan Simpan: preview adalah efek sementara; setelah klik "Simpan", konfigurasi ditulis ke database dan resmi berlaku.
+- Variabel Konteks: gunakan kembali informasi konteks halaman, pengguna, filter, dll. (seperti `{{ ctx.user.id }}`) untuk query dan konfigurasi Chart.
+- Filter Halaman dan Linkage: "Blok Filter" tingkat halaman menyediakan input kondisi terpadu, secara otomatis digabung ke query Chart dan refresh secara terhubung.
+- Event Interaksi: daftarkan event melalui `chart.on` untuk mengimplementasikan perilaku seperti highlight, navigasi, drill-down.
 
 ## Instalasi
-Visualisasi data adalah plugin bawaan NocoBase; siap pakai tanpa perlu instalasi terpisah.
+Data Visualization adalah Plugin bawaan NocoBase, siap pakai tanpa instalasi terpisah.

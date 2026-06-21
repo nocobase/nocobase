@@ -1,3 +1,9 @@
+---
+title: "工作流节点 - 多条件分支"
+description: "多条件分支节点：类似 switch/case，按顺序判断条件，执行对应分支或否则分支。"
+keywords: "工作流,多条件分支,switch,case,流程分支,NocoBase"
+---
+
 # 多条件分支 <Badge>v2.0.0+</Badge>
 
 ## 介绍

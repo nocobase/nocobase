@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-action-import-pro"
+title: "导入 Pro 操作"
+description: "导入 Pro 操作：高级导入功能，支持自定义模板、多表导入、数据校验。"
+keywords: "导入 Pro,ImportPro,高级导入,自定义模板,界面搭建,NocoBase"
 ---
 # 导入 Pro
 

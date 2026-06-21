@@ -1,30 +1,33 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Pengembangan Plugin Cluster Mode"
+description: "Pengembangan plugin dalam cluster mode: Cache, SyncMessageManager sync signal, PubSubManager message broadcast, Queue, distributed lock, untuk menyelesaikan konsistensi state, scheduling task, dan race condition."
+keywords: "pengembangan plugin cluster,Cache,SyncMessageManager,PubSubManager,message queue,distributed lock,sinkronisasi state,WORKER_MODE,NocoBase"
+---
 
 # Pengembangan Plugin
 
-## Latar Belakang Masalah
+## Latar Belakang
 
-Dalam lingkungan *single-node*, *plugin* biasanya dapat memenuhi kebutuhan melalui status dalam proses, *event*, atau tugas. Namun, dalam mode *cluster*, *plugin* yang sama mungkin berjalan secara bersamaan di beberapa *instance*, menghadapi masalah-masalah umum berikut:
+Dalam environment single-node, plugin biasanya dapat memenuhi kebutuhan melalui state, event, atau task dalam proses; sedangkan dalam cluster mode, plugin yang sama mungkin berjalan di multiple instance bersamaan, menghadapi masalah tipikal berikut:
 
-- **Konsistensi Status**: Jika konfigurasi atau data *runtime* hanya disimpan dalam memori, akan sulit untuk menyinkronkannya antar *instance*, sehingga mudah terjadi *dirty read* atau eksekusi berulang.
-- **Penjadwalan Tugas**: Tugas yang memakan waktu lama, jika tidak memiliki mekanisme antrean dan konfirmasi yang jelas, dapat menyebabkan beberapa *instance* mengeksekusi tugas yang sama secara bersamaan.
-- **Kondisi Persaingan (*Race Conditions*)**: Ketika melibatkan perubahan *schema* atau alokasi sumber daya, diperlukan operasi serialisasi untuk menghindari konflik yang disebabkan oleh penulisan bersamaan.
+- **Konsistensi state**: Jika data konfigurasi atau runtime hanya disimpan di memory, sulit untuk disinkronkan antar instance, mudah terjadi dirty read atau eksekusi duplikat.
+- **Scheduling task**: Task yang memakan waktu lama tanpa mekanisme antrian dan konfirmasi yang jelas, akan menyebabkan multiple instance mengeksekusi task yang sama secara bersamaan.
+- **Race condition**: Saat melibatkan perubahan schema atau alokasi resource, perlu serialisasi operasi untuk menghindari conflict akibat concurrent write.
 
-Inti NocoBase menyediakan berbagai antarmuka *middleware* pada lapisan aplikasi untuk membantu *plugin* menggunakan kembali kemampuan terpadu di lingkungan *cluster*. Bagian selanjutnya akan menjelaskan penggunaan dan praktik terbaik untuk *caching*, pesan sinkron, antrean pesan, dan *distributed lock*, disertai referensi kode sumber.
+Inti NocoBase telah menyediakan berbagai interface middleware di lapisan aplikasi, membantu plugin menggunakan kemampuan terpadu dalam environment cluster. Berikut akan memperkenalkan penggunaan dan best practice cache, sync message, message queue, dan distributed lock dengan kode sumber.
 
 ## Solusi
 
 ### Komponen Cache
 
-Untuk data yang perlu disimpan dalam memori, disarankan untuk menggunakan komponen *cache* bawaan sistem untuk pengelolaannya.
+Untuk data yang akan disimpan di memory, disarankan menggunakan komponen cache built-in sistem untuk pengelolaan.
 
-- Dapatkan *instance cache* default melalui `app.cache`.
-- `Cache` menyediakan operasi dasar seperti `set/get/del/reset`, dan juga mendukung `wrap` serta `wrapWithCondition` untuk membungkus logika *caching*, serta metode *batch* seperti `mset/mget/mdel`.
-- Saat melakukan *deployment* dalam *cluster*, disarankan untuk menempatkan data bersama dalam penyimpanan yang memiliki kemampuan persistensi (seperti Redis), dan mengatur `ttl` secara wajar untuk mencegah hilangnya *cache* saat *instance* di-*restart*.
+- Dapatkan instance cache default melalui `app.cache`.
+- `Cache` menyediakan operasi dasar seperti `set/get/del/reset`, juga mendukung `wrap` dan `wrapWithCondition` untuk membungkus logika cache, serta metode batch `mset/mget/mdel`.
+- Pada deployment cluster, disarankan meletakkan shared data di storage yang memiliki kemampuan persistensi (seperti Redis), dan mengatur `ttl` dengan bijak untuk menghindari kehilangan cache akibat restart instance.
 
-Contoh: [Inisialisasi dan penggunaan *cache* di `plugin-auth`](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-auth/src/server/plugin.ts#L11-L72)
+Contoh: [Inisialisasi dan penggunaan cache di `plugin-auth`](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-auth/src/server/plugin.ts#L11-L72)
 
 ```ts title="Membuat dan menggunakan cache di plugin"
 // packages/plugins/@nocobase/plugin-auth/src/server/plugin.ts
@@ -42,17 +45,17 @@ async load() {
 }
 ```
 
-### Manajer Pesan Sinkron (SyncMessageManager)
+### SyncMessageManager
 
-Jika status dalam memori tidak dapat dikelola dengan *cache* terdistribusi (misalnya, tidak dapat di-*serialize*), maka ketika status berubah karena tindakan pengguna, perubahan tersebut perlu diberitahukan ke *instance* lain melalui sinyal sinkron untuk menjaga konsistensi status.
+Jika state di memory tidak dapat menggunakan distributed cache (misalnya tidak dapat di-serialize), maka saat state berubah karena operasi user, perubahan tersebut perlu diberi tahu ke instance lain melalui sync signal untuk menjaga konsistensi state.
 
-- Kelas dasar *plugin* telah mengimplementasikan `sendSyncMessage`, yang secara internal memanggil `app.syncMessageManager.publish` dan secara otomatis menambahkan *prefix* tingkat aplikasi ke *channel* untuk menghindari konflik *channel*.
-- `publish` dapat menentukan `transaction`, dan pesan akan dikirim setelah transaksi basis data di-*commit*, memastikan sinkronisasi status dan pesan.
-- Tangani pesan yang datang dari *instance* lain melalui `handleSyncMessage`. Berlangganan pada fase `beforeLoad` sangat cocok untuk skenario seperti perubahan konfigurasi dan sinkronisasi *schema*.
+- Plugin base class telah mengimplementasikan `sendSyncMessage`, secara internal memanggil `app.syncMessageManager.publish` dan secara otomatis menambahkan prefix tingkat aplikasi pada channel, untuk menghindari channel conflict.
+- `publish` dapat menentukan `transaction`, message akan dikirim setelah database transaction di-commit, untuk menjamin sinkronisasi state dan message.
+- Tangani message dari instance lain melalui `handleSyncMessage`, dapat di-subscribe pada tahap `beforeLoad`, sangat cocok untuk skenario seperti perubahan konfigurasi, sinkronisasi Schema, dll.
 
-Contoh: [`plugin-data-source-main` menggunakan pesan sinkron untuk menjaga konsistensi *schema* di berbagai *node*](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-data-source-main/src/server/server.ts#L20-L220)
+Contoh: [`plugin-data-source-main` menjaga konsistensi schema multi-node melalui sync message](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-data-source-main/src/server/server.ts#L20-L220)
 
-```ts title="Menyinkronkan pembaruan Schema dalam plugin"
+```ts title="Sinkronisasi update Schema dalam plugin"
 export class PluginDataSourceMainServer extends Plugin {
   async handleSyncMessage(message) {
     if (message.type === 'syncCollection') {
@@ -61,22 +64,22 @@ export class PluginDataSourceMainServer extends Plugin {
   }
 
   private sendSchemaChange(data, options) {
-    this.sendSyncMessage(data, options); // Secara otomatis memanggil app.syncMessageManager.publish
+    this.sendSyncMessage(data, options); // Otomatis memanggil app.syncMessageManager.publish
   }
 }
 ```
 
-### Manajer Pesan Siaran (PubSubManager)
+### PubSubManager
 
-Pesan siaran adalah komponen dasar dari sinyal sinkron dan juga dapat digunakan secara langsung. Ketika Anda perlu menyiarkan pesan antar *instance*, Anda dapat menggunakan komponen ini.
+Message broadcast adalah komponen dasar dari sync signal, dan juga mendukung penggunaan langsung. Saat perlu broadcast message antar instance, dapat diimplementasikan melalui komponen ini.
 
-- `app.pubSubManager.subscribe(channel, handler, { debounce })` dapat digunakan untuk berlangganan *channel* antar *instance*; opsi `debounce` digunakan untuk menghilangkan *debounce*, menghindari *callback* yang sering disebabkan oleh siaran berulang.
-- `publish` mendukung `skipSelf` (defaultnya `true`) dan `onlySelf`, digunakan untuk mengontrol apakah pesan dikirim kembali ke *instance* ini.
-- Adaptor (seperti Redis, RabbitMQ, dll.) harus dikonfigurasi sebelum aplikasi dimulai; jika tidak, secara default tidak akan terhubung ke sistem pesan eksternal.
+- `app.pubSubManager.subscribe(channel, handler, { debounce })` dapat melakukan subscribe channel antar instance; opsi `debounce` digunakan untuk debouncing, untuk menghindari callback berulang akibat broadcast duplikat.
+- `publish` mendukung `skipSelf` (default true) dan `onlySelf`, untuk mengontrol apakah message dikirim balik ke instance ini.
+- Adapter perlu dikonfigurasi sebelum aplikasi dimulai (seperti Redis, RabbitMQ, dll), jika tidak default tidak akan terhubung ke sistem messaging eksternal.
 
-Contoh: [`plugin-async-task-manager` menggunakan PubSub untuk menyiarkan *event* pembatalan tugas](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-async-task-manager/src/server/base-task-manager.ts#L194-L258)
+Contoh: [`plugin-async-task-manager` menggunakan PubSub untuk broadcast event task cancellation](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-async-task-manager/src/server/base-task-manager.ts#L194-L258)
 
-```ts title="Menyiarkan sinyal pembatalan tugas"
+```ts title="Broadcast sinyal task cancellation"
 const channel = `${plugin.name}.task.cancel`;
 
 await this.app.pubSubManager.subscribe(channel, async ({ id }) => {
@@ -87,17 +90,17 @@ await this.app.pubSubManager.subscribe(channel, async ({ id }) => {
 await this.app.pubSubManager.publish(channel, { id: taskId }, { skipSelf: true });
 ```
 
-### Komponen Antrean Pesan (EventQueue)
+### Komponen Message Queue (EventQueue)
 
-Antrean pesan digunakan untuk menjadwalkan tugas asinkron, cocok untuk menangani operasi yang memakan waktu lama atau dapat dicoba ulang (*retryable*).
+Message queue digunakan untuk menjadwalkan async task, cocok untuk menangani operasi yang memakan waktu lama atau yang dapat di-retry.
 
-- Deklarasikan *consumer* dengan `app.eventQueue.subscribe(channel, { idle, process, concurrency })`. `process` mengembalikan `Promise`, dan Anda dapat menggunakan `AbortSignal.timeout` untuk mengontrol *timeout*.
-- `publish` akan secara otomatis menambahkan *prefix* nama aplikasi dan mendukung opsi seperti `timeout`, `maxRetries`, dll. Secara default, ini mengadaptasi antrean dalam memori, tetapi dapat dialihkan ke adaptor yang diperluas seperti RabbitMQ sesuai kebutuhan.
-- Dalam *cluster*, pastikan semua *node* menggunakan adaptor yang sama untuk menghindari fragmentasi tugas antar *node*.
+- Deklarasikan consumer melalui `app.eventQueue.subscribe(channel, { idle, process, concurrency })`, `process` mengembalikan `Promise`, dapat menggunakan `AbortSignal.timeout` untuk mengontrol timeout.
+- `publish` akan secara otomatis melengkapi prefix nama aplikasi, dan mendukung opsi seperti `timeout`, `maxRetries`. Default mengadaptasi memory queue, dapat dialihkan ke extension adapter seperti RabbitMQ sesuai kebutuhan.
+- Dalam cluster, pastikan semua node menggunakan adapter yang sama, untuk menghindari pemisahan task antar node.
 
-Contoh: [`plugin-async-task-manager` menggunakan EventQueue untuk menjadwalkan tugas](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-async-task-manager/src/server/base-task-manager.ts#L199-L240)
+Contoh: [`plugin-async-task-manager` menggunakan EventQueue untuk scheduling task](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-async-task-manager/src/server/base-task-manager.ts#L199-L240)
 
-```ts title="Mendistribusikan tugas asinkron dalam antrean"
+```ts title="Mendistribusikan async task dalam queue"
 this.app.eventQueue.subscribe(`${plugin.name}.task`, {
   concurrency: this.concurrency,
   idle: this.idle,
@@ -109,17 +112,17 @@ this.app.eventQueue.subscribe(`${plugin.name}.task`, {
 await this.app.eventQueue.publish(`${plugin.name}.task`, { id: taskId }, { maxRetries: 3 });
 ```
 
-### Manajer Kunci Terdistribusi (LockManager)
+### LockManager
 
-Ketika Anda perlu menghindari operasi *race condition*, Anda dapat menggunakan kunci terdistribusi untuk men-*serialize* akses ke sumber daya.
+Saat perlu menghindari operasi race, dapat menggunakan distributed lock untuk men-serialize akses ke resource.
 
-- Secara default, ini menyediakan adaptor `local` berbasis proses. Anda dapat mendaftarkan implementasi terdistribusi seperti Redis; kontrol konkurensi melalui `app.lockManager.runExclusive(key, fn, ttl)` atau `acquire`/`tryAcquire`.
-- `ttl` digunakan sebagai pengaman untuk melepaskan kunci, mencegah kunci ditahan selamanya dalam kasus pengecualian.
-- Skenario umum meliputi: perubahan *schema*, mencegah tugas duplikat, pembatasan laju (*rate limiting*), dll.
+- Default menyediakan adapter `local` berbasis proses, dapat mendaftarkan implementasi distributed seperti Redis; kontrol concurrency melalui `app.lockManager.runExclusive(key, fn, ttl)` atau `acquire`/`tryAcquire`.
+- `ttl` digunakan untuk fallback release lock, mencegah lock dipegang selamanya pada situasi anomali.
+- Skenario umum meliputi: perubahan Schema, mencegah task duplikat, rate limiting, dll.
 
-Contoh: [`plugin-data-source-main` menggunakan kunci terdistribusi untuk melindungi proses penghapusan *field*](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-data-source-main/src/server/server.ts#L320-L360)
+Contoh: [`plugin-data-source-main` menggunakan distributed lock untuk melindungi proses delete field](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-data-source-main/src/server/server.ts#L320-L360)
 
-```ts title="Men-*serialize* operasi penghapusan field"
+```ts title="Serialisasi operasi delete field"
 const lockKey = `${this.name}:fields.beforeDestroy:${collectionName}`;
 await this.app.lockManager.runExclusive(lockKey, async () => {
   await fieldModel.remove(options);
@@ -127,12 +130,12 @@ await this.app.lockManager.runExclusive(lockKey, async () => {
 });
 ```
 
-## Rekomendasi Pengembangan
+## Saran Pengembangan
 
-- **Konsistensi Status dalam Memori**: Sebisa mungkin hindari penggunaan status dalam memori selama pengembangan. Sebagai gantinya, gunakan *caching* atau pesan sinkron untuk menjaga konsistensi status.
-- **Prioritaskan Penggunaan Kembali Antarmuka Bawaan**: Gunakan kemampuan terpadu seperti `app.cache`, `app.syncMessageManager`, dll., untuk menghindari implementasi ulang logika komunikasi antar-*node* dalam *plugin*.
-- **Perhatikan Batasan Transaksi**: Operasi yang melibatkan transaksi harus menggunakan `transaction.afterCommit` (`syncMessageManager.publish` sudah terintegrasi) untuk menjamin konsistensi data dan pesan.
-- **Susun Strategi *Backoff***: Untuk tugas antrean dan siaran, atur nilai `timeout`, `maxRetries`, dan `debounce` secara wajar untuk mencegah lonjakan lalu lintas baru dalam situasi pengecualian.
-- **Sertakan Pemantauan dan Pencatatan (*Logging*)**: Manfaatkan log aplikasi dengan baik untuk mencatat nama *channel*, *payload* pesan, kunci *lock*, dan informasi lainnya, guna mempermudah pemecahan masalah insidental dalam *cluster*.
+- **Konsistensi state memory**: Hindari menggunakan state memory dalam pengembangan sebanyak mungkin, gunakan cache atau sync message untuk menjaga konsistensi state.
+- **Prioritaskan reuse interface built-in**: Gunakan kemampuan seperti `app.cache`, `app.syncMessageManager` secara terpadu, hindari mengimplementasikan logika komunikasi cross-node berulang dalam plugin.
+- **Perhatikan transaction boundary**: Operasi dengan transaction harus menggunakan `transaction.afterCommit` (`syncMessageManager.publish` sudah built-in) untuk menjamin konsistensi data dan message.
+- **Tetapkan strategi backoff**: Untuk task queue dan broadcast, atur `timeout`, `maxRetries`, `debounce` dengan bijak, untuk mencegah lonjakan traffic baru pada situasi anomali.
+- **Monitoring dan logging pendukung**: Manfaatkan log aplikasi dengan baik untuk mencatat informasi seperti nama channel, payload message, lock key, untuk memudahkan investigasi masalah occasional di cluster.
 
-Dengan kemampuan di atas, *plugin* dapat dengan aman berbagi status, menyinkronkan konfigurasi, dan menjadwalkan tugas antar *instance* yang berbeda, memenuhi persyaratan stabilitas dan konsistensi dalam skenario *deployment* *cluster*.
+Melalui kemampuan di atas, plugin dapat berbagi state secara aman antar instance, sinkronisasi konfigurasi, scheduling task, memenuhi requirement stabilitas dan konsistensi pada skenario deployment cluster.

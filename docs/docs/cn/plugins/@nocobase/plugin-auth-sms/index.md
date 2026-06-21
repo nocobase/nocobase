@@ -1,4 +1,6 @@
 ---
+title: "认证：短信"
+keywords: "认证：短信,插件,NocoBase"
 displayName: "认证：短信"
 packageName: '@nocobase/plugin-auth-sms'
 description: |

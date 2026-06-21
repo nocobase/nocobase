@@ -1,20 +1,19 @@
 ---
 pkg: '@nocobase/plugin-auth-cas'
+title: "Autentikasi: CAS"
+description: "Autentikasi CAS NocoBase: mengikuti protokol Central Authentication Service, login menggunakan akun IdP pihak ketiga, mengaktifkan plugin, menambahkan autentikasi, mengkonfigurasi, dan login."
+keywords: "CAS,Central Authentication Service,SSO,Single Sign-On,IdP,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Autentikasi: CAS
 
-## Pendahuluan
+## Pengantar
 
-Plugin Autentikasi: CAS mengikuti standar protokol CAS (Central Authentication Service), memungkinkan pengguna untuk masuk ke NocoBase menggunakan akun yang disediakan oleh penyedia layanan autentikasi identitas pihak ketiga (IdP).
+Plugin Autentikasi: CAS mengikuti standar protokol CAS (Central Authentication Service), memungkinkan pengguna login ke NocoBase menggunakan akun yang disediakan oleh penyedia layanan autentikasi identitas pihak ketiga (IdP).
 
 ## Instalasi
 
-## Panduan Pengguna
+## Petunjuk Penggunaan
 
 ### Mengaktifkan Plugin
 
@@ -22,7 +21,7 @@ Plugin Autentikasi: CAS mengikuti standar protokol CAS (Central Authentication S
 
 ### Menambahkan Autentikasi CAS
 
-Kunjungi halaman manajemen autentikasi pengguna
+Akses halaman manajemen autentikasi pengguna
 
 http://localhost:13000/admin/settings/auth/authenticators
 
@@ -34,7 +33,7 @@ Konfigurasi CAS dan aktifkan
 
 ![](https://static-docs.nocobase.com/2518b3fcc80d8a41391f3b629a510a02.png)
 
-### Kunjungi Halaman Masuk
+### Akses Halaman Login
 
 http://localhost:13000/signin
 

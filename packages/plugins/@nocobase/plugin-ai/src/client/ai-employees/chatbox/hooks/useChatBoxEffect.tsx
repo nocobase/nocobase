@@ -7,24 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useChatBoxStore } from '../stores/chat-box';
 import { aiEmployeeRole, defaultRoles } from '../roles';
-import { useChatConversationActions } from './useChatConversationActions';
-import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
-import { useTools } from '@nocobase/client';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 
 export const useChatBoxEffect = () => {
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const aiEmployees = aiConfigRepository.aiEmployees;
 
   const open = useChatBoxStore.use.open();
   const senderRef = useChatBoxStore.use.senderRef();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setRoles = useChatBoxStore.use.setRoles();
 
-  const { conversationsService } = useChatConversationActions();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
 
-  const { refresh } = useTools();
+  useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
 
   useEffect(() => {
     if (!aiEmployees) {
@@ -53,16 +55,13 @@ export const useChatBoxEffect = () => {
 
   useEffect(() => {
     if (open) {
-      conversationsService.run();
       senderRef?.current?.focus();
-      refresh();
     }
-  }, [open]);
+  }, [open, senderRef]);
 
-  // Refresh conversations when current employee changes
   useEffect(() => {
-    if (currentEmployee && open) {
-      conversationsService.run();
+    if (open) {
+      aiConfigRepository.refreshAITools(currentConversation);
     }
-  }, [currentEmployee?.username]);
+  }, [open, currentConversation]);
 };

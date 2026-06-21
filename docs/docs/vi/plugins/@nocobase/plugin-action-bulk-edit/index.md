@@ -1,15 +1,17 @@
 ---
-displayName: "Action: Batch edit"
+displayName: "Action: Chỉnh sửa hàng loạt"
 packageName: '@nocobase/plugin-action-bulk-edit'
+title: "Action: Chỉnh sửa hàng loạt"
+keywords: "Action: Chỉnh sửa hàng loạt,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Batch edit all records or selected records.
+  Chỉnh sửa hàng loạt toàn bộ dữ liệu hoặc dữ liệu đã chọn.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Batch edit
+# Action: Chỉnh sửa hàng loạt

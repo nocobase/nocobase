@@ -12,6 +12,9 @@ import { NAMESPACE } from '../../common/constants';
 
 export default defineCollection({
   name: 'workflowManualTasks',
+  dataCategory: 'business',
+  filterTargetKey: 'id',
+  simplePaginate: true,
   dumpRules: {
     group: 'log',
   },

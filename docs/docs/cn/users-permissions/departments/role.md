@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-departments'
+title: "部门角色管理"
+description: "NocoBase 部门角色管理：部门与角色关联、部门级权限、组织架构中的角色配置。"
+keywords: "部门角色,部门权限,组织架构,角色关联,plugin-departments,NocoBase"
 ---
-
 # 部门角色管理
 
 通过给部门关联一个或多个角色，可以使当前部门下的成员拥有这些角色。

@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Cách kích hoạt engine federated trong MySQL"
+description: "Kích hoạt storage engine federated trong MySQL: chỉnh sửa my.cnf, cấu hình volumes của Docker, dùng cho FDW kết nối bảng MySQL/MariaDB từ xa."
+keywords: "MySQL federated,engine federated,FDW,kết nối bảng từ xa,NocoBase"
+---
 
+# Cách kích hoạt engine federated trong MySQL
 
-# Cách bật Federated Engine trong MySQL
-
-Cơ sở dữ liệu MySQL không bật mô-đun federated theo mặc định. Bạn cần sửa đổi cấu hình `my.cnf`. Nếu bạn đang sử dụng phiên bản Docker, bạn có thể xử lý việc mở rộng thông qua `volumes`:
+Database MySQL mặc định không bật module federated, bạn cần chỉnh sửa cấu hình my.cnf. Nếu là phiên bản docker, có thể xử lý mở rộng thông qua volumes:
 
 ```yml
 mysql:
@@ -22,14 +23,14 @@ mysql:
     - nocobase
 ```
 
-Tạo một tệp mới `./storage/mysql-conf/federated.cnf`
+Tạo tệp `./storage/mysql-conf/federated.cnf` mới
 
 ```ini
 [mysqld]
 federated
 ```
 
-Khởi động lại MySQL
+Khởi động lại mysql
 
 ```bash
 docker compose up -d mysql

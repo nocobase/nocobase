@@ -1,38 +1,40 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Preview dan Simpan"
+description: "Preview merender konfigurasi sementara untuk verifikasi, simpan menulis ke database agar berlaku; mode grafis preview otomatis, mode SQL/Custom perlu preview manual; debounce dan pesan error."
+keywords: "preview,simpan,konfigurasi berlaku,debounce,konfigurasi chart,NocoBase"
+---
 
-# Pratinjau dan Simpan
+# Preview dan Simpan
 
-*   **Pratinjau**: Menampilkan sementara perubahan dari panel konfigurasi ke dalam grafik halaman untuk memverifikasi hasilnya.
-*   **Simpan**: Menyimpan perubahan dari panel konfigurasi secara permanen ke dalam database.
+* Preview: merender perubahan dari panel konfigurasi sementara ke Chart pada halaman, untuk memverifikasi efek.
+* Simpan: benar-benar menyimpan perubahan dari panel konfigurasi ke database.
 
-## Titik Akses
+## Pintu Operasi
 
 ![clipboard-image-1761479218](https://static-docs.nocobase.com/clipboard-image-1761479218.png)
 
-*   Dalam mode konfigurasi visual (Basic), semua perubahan akan diterapkan ke pratinjau secara otomatis secara *default*.
-*   Dalam mode SQL dan Custom, setelah melakukan perubahan, Anda dapat mengeklik tombol **Pratinjau** di sisi kanan untuk menerapkan perubahan ke pratinjau.
-*   Tombol "Pratinjau" yang terpadu tersedia di bagian bawah seluruh panel konfigurasi.
+- Semua perubahan pada mode konfigurasi grafis secara default akan otomatis menjalankan preview.
+- Setelah perubahan pada mode SQL, mode Custom, Anda dapat klik tombol Preview di sebelah kanan untuk menjalankan preview.
+- Pada bagian bawah seluruh panel konfigurasi, tersedia tombol "Preview" terpadu.
 
-## Perilaku Pratinjau
-*   Menampilkan konfigurasi sementara di halaman tanpa menyimpannya ke database. Setelah memuat ulang halaman atau membatalkan operasi, hasil pratinjau tidak akan dipertahankan.
-*   **Debounce bawaan**: Beberapa pemicu pemuatan ulang dalam waktu singkat hanya akan mengeksekusi yang terakhir untuk menghindari permintaan yang sering.
-*   Mengeklik "Pratinjau" lagi akan menimpa hasil pratinjau sebelumnya.
+## Perilaku Preview
+- Tampilkan konfigurasi sementara ke halaman, tetapi tidak menulis ke database. Setelah refresh halaman atau membatalkan operasi, hasil preview tidak akan dipertahankan.
+- Debounce bawaan: saat refresh dipicu beberapa kali dalam waktu singkat, hanya yang terakhir yang dieksekusi, untuk menghindari permintaan yang sering.
+- Klik "Preview" lagi akan menimpa hasil preview sebelumnya.
 
-## Pesan Kesalahan
-*   **Kesalahan kueri atau kegagalan validasi**: Ditampilkan di area "Lihat Data".
-*   **Kesalahan konfigurasi grafik** (pemetaan Basic hilang, pengecualian dari Custom JS): Ditampilkan di area grafik atau konsol sambil menjaga halaman tetap dapat dioperasikan.
-*   Konfirmasikan nama kolom dan tipe data di "Lihat Data" sebelum melakukan pemetaan bidang atau menulis kode Custom untuk mengurangi kesalahan secara efektif.
+## Pesan Error
+- Error query atau validasi gagal: pesan error ditampilkan pada area "Lihat Data".
+- Error konfigurasi Chart (pemetaan Basic hilang, Custom JS error): error ditampilkan pada area Chart atau console, halaman tetap dapat dioperasikan.
+- Konfirmasikan nama dan tipe kolom pada "Lihat Data" terlebih dahulu sebelum melakukan pemetaan field atau menulis kode Custom, ini akan secara efektif mengurangi error.
 
-## Simpan dan Batalkan
-*   **Simpan**: Menulis perubahan saat ini ke dalam konfigurasi blok dan segera menerapkannya ke halaman.
-*   **Batalkan**: Membuang perubahan yang belum disimpan di panel saat ini dan kembali ke status terakhir yang disimpan.
-*   **Cakupan Penyimpanan**:
-    *   **Kueri Data**: Parameter Builder; dalam mode SQL, teks SQL juga disimpan.
-    *   **Opsi Grafik**: Tipe Basic, pemetaan bidang, dan properti; teks JS Custom.
-    *   **Event Interaksi**: Teks JS event dan logika pengikatan.
-*   Setelah disimpan, blok akan berlaku untuk semua pengunjung (tergantung pada pengaturan izin halaman).
+## Simpan dan Batal
+- Simpan: tulis perubahan panel saat ini ke konfigurasi blok dan langsung berlaku pada halaman.
+- Batal: batalkan perubahan panel saat ini yang belum disimpan, kembalikan ke status simpan sebelumnya.
+- Cakupan simpan:
+  - Query Data: parameter query Builder; pada mode SQL juga menyimpan teks SQL.
+  - Opsi Chart: jenis dan pemetaan field, properti Basic; teks JS Custom.
+  - Event Interaksi: teks JS event dan logika binding.
+- Setelah disimpan, blok berlaku untuk semua pengunjung (tergantung pengaturan izin halaman).
 
-## Alur Kerja yang Direkomendasikan
-*   Konfigurasi kueri data → Jalankan kueri → Lihat data untuk mengonfirmasi nama kolom dan tipe → Konfigurasi opsi grafik untuk memetakan bidang inti → Pratinjau untuk validasi → Simpan untuk menerapkan.
+## Jalur Operasi yang Direkomendasikan
+- Konfigurasikan Query Data → Jalankan Query → Konfirmasikan nama dan tipe kolom pada Lihat Data → Konfigurasikan Opsi Chart, petakan field inti → Verifikasi preview → Simpan agar berlaku.

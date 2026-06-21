@@ -1,13 +1,25 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { defineConfig, type RspressPlugin } from '@rspress/core';
 import { pluginLlms } from '@rspress/plugin-llms';
-// import { pluginPreview } from '@rspress/plugin-preview';
+import { pluginSchema } from './plugins/pluginSchema';
+import { pluginOgDescription } from './plugins/pluginOgDescription';
+import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
+import { pluginPreview } from '@rspress/plugin-preview';
+import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
+import {
+  pluginCrossRefSidebar,
+  crossRefCanonicalMap,
+} from './plugins/pluginCrossRef';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
 const lang = process.env.DOCS_LANG || 'en';
 const base = process.env.DOCS_BASE || lang === 'en' ? '/' : `/${lang}/`;
 const checkDeadLinks = process.env.CHECK_DEAD_LINKS !== 'false';
+const rspressI18nAliases: Readonly<Record<string, string>> = {
+  cn: 'zh',
+};
 
 const locales = {
   en: {
@@ -18,22 +30,53 @@ const locales = {
     title: 'NocoBase 文档',
     description: '快速学习和掌握 NocoBase',
   },
-}
+};
 
 const currentLocale = locales[lang as keyof typeof locales] || locales.en;
 
-const indexLanguages = ['en', 'cn', 'ja', 'ko', 'es', 'pt', 'de', 'fr'];
+const indexLanguages = [
+  'en',
+  'cn',
+  'ja',
+  'es',
+  'pt',
+  'de',
+  'fr',
+  'ru',
+  'id',
+  'vi',
+];
 
 const langMap = {
   en: 'en-US',
   cn: 'zh-CN',
   ja: 'ja-JP',
-  ko: 'ko-KR',
   es: 'es-ES',
   pt: 'pt-PT',
   de: 'de-DE',
   fr: 'fr-FR',
+  ru: 'ru-RU',
+  id: 'id-ID',
+  vi: 'vi-VN',
 };
+
+function withRspressI18nAliases(
+  source: Record<string, Record<string, string>>,
+) {
+  return Object.fromEntries(
+    Object.entries(source).map(([key, translations]) => {
+      const nextTranslations = { ...translations };
+
+      for (const [alias, original] of Object.entries(rspressI18nAliases)) {
+        if (!nextTranslations[alias] && nextTranslations[original]) {
+          nextTranslations[alias] = nextTranslations[original];
+        }
+      }
+
+      return [key, nextTranslations];
+    }),
+  );
+}
 
 function sitemap(): RspressPlugin {
   const routes = new Set<string>();
@@ -64,7 +107,7 @@ function sitemap(): RspressPlugin {
         return;
       }
 
-      const baseDomain = 'https://v2.docs.nocobase.com';
+      const baseDomain = 'https://docs.nocobase.com';
 
       const urlEntries = Array.from(routes)
         .sort()
@@ -121,23 +164,38 @@ function sitemap(): RspressPlugin {
 }
 export default defineConfig({
   head: [
-    ['meta', { name: 'robots', content: indexLanguages.includes(lang) ? 'index,follow' : 'noindex,nofollow' }],
+    [
+      'meta',
+      {
+        name: 'robots',
+        content: indexLanguages.includes(lang)
+          ? 'index,follow'
+          : 'noindex,nofollow',
+      },
+    ],
     (route) => {
+      // 跨模块虚拟路由通过 frontmatter canonicalPath 指向原始页面
+      const canonicalRoute =
+        crossRefCanonicalMap?.[route.routePath] || route.routePath;
       if (lang !== 'en') {
-        return `<link rel="canonical" href="https://v2.docs.nocobase.com/${lang}${route.routePath}" />`
+        return `<link rel="canonical" href="https://docs.nocobase.com/${lang}${canonicalRoute}" />`;
       }
-      return `<link rel="canonical" href="https://v2.docs.nocobase.com${route.routePath}" />`
+      return `<link rel="canonical" href="https://docs.nocobase.com${canonicalRoute}" />`;
     },
     (route) => {
       const links = [];
-      links.push(...indexLanguages.map(language => {
-        if (language === 'en') {
-          return `<link rel="alternate" hreflang="en-US" href="https://v2.docs.nocobase.com${route.routePath}" />`;
-        }
-        const hreflang = langMap[language as keyof typeof langMap];
-        return `<link rel="alternate" hreflang="${hreflang}" href="https://v2.docs.nocobase.com/${language}${route.routePath}" />`
-      }));
-      links.push(`<link rel="alternate" hreflang="x-default" href="https://v2.docs.nocobase.com${route.routePath}" />`);
+      links.push(
+        ...indexLanguages.map((language) => {
+          if (language === 'en') {
+            return `<link rel="alternate" hreflang="en-US" href="https://docs.nocobase.com${route.routePath}" />`;
+          }
+          const hreflang = langMap[language as keyof typeof langMap];
+          return `<link rel="alternate" hreflang="${hreflang}" href="https://docs.nocobase.com/${language}${route.routePath}" />`;
+        }),
+      );
+      links.push(
+        `<link rel="alternate" hreflang="x-default" href="https://docs.nocobase.com${route.routePath}" />`,
+      );
       return links.join('\n');
     },
   ],
@@ -156,14 +214,21 @@ export default defineConfig({
     cleanUrls: true,
   },
   builderConfig: {
-    plugins: [pluginSass()],
+    html: {
+      tags: [
+        {
+          tag: 'script',
+          // 通过 window.RSPRESS_THEME 变量来指定默认的主题模式
+          children: "window.RSPRESS_THEME = 'light';",
+        },
+      ],
+    },
+    source: {
+      tsconfigPath: path.join(__dirname, 'tsconfig.json'),
+    },
+    plugins: [pluginSass(), pluginNodePolyfill()],
     resolve: {
-      alias: {
-        '@nocobase/client-v2': path.join(__dirname, '../packages/core/client-v2/src'),
-        '@nocobase/shared': path.join(__dirname, '../packages/core/shared/src'),
-        '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk/src'),
-        '@nocobase/flow-engine': path.join(__dirname, '../packages/core/flow-engine/src'),
-      },
+      aliasStrategy: 'prefer-tsconfig',
     },
   },
   markdown: {
@@ -171,32 +236,26 @@ export default defineConfig({
       checkDeadLinks,
     },
   },
+  // Rspress ships built-in Simplified Chinese strings under `zh`, while this site uses `/cn/`.
+  i18nSource: (value) => withRspressI18nAliases(value),
   plugins: [
-    // pluginPreview({
-    //   iframeOptions: {
-    //     builderConfig: {
-    //       resolve: {
-    //         alias: {
-    //           '@nocobase/client-v2': path.join(__dirname, '../client-v2/src'),
-    //           '@nocobase/shared': path.join(__dirname, '../shared/src'),
-    //           '@nocobase/sdk': path.join(__dirname, '../sdk/src'),
-    //           '@nocobase/flow-engine': path.join(__dirname, '../flow-engine/src'),
-    //         },
-    //       },
-    //     },
-    //   },
-    // }),
+    pluginPreview(),
     pluginLlms(),
+    pluginSchema(),
+    pluginOgDescription(),
+    pluginRemoveGenerator(),
+    pluginCrossRefSidebar(),
     sitemap(),
   ],
   lang,
   themeConfig: {
+    darkMode: false,
     socialLinks: [
       {
         icon: 'github',
         mode: 'link',
         content: 'https://github.com/nocobase/nocobase',
-      }
+      },
     ],
   },
 });

@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: JSON variable mapping"
+displayName: "Workflow: Pemetaan Variabel JSON"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
+title: "Workflow: Pemetaan Variabel JSON"
+keywords: "Workflow: Pemetaan Variabel JSON,Plugin,NocoBase"
 description: |
-  Used for mapping any JSON data to structured variables for usage in subsequent nodes.
+  Digunakan untuk memetakan data JSON apa pun menjadi variabel terstruktur untuk digunakan oleh node selanjutnya.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: JSON variable mapping
+# Workflow: Pemetaan Variabel JSON

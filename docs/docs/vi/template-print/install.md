@@ -1,15 +1,18 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Template In ấn - Cài đặt"
+description: "Cài đặt Plugin Template In ấn: Kích hoạt Plugin thương mại, cài đặt LibreOffice (sinh PDF), cấu hình môi trường Docker."
+keywords: "Template In ấn,Cài đặt,LibreOffice,PDF,NocoBase"
+---
 
 
-### Cài đặt plugin
+### Cài đặt Plugin
 
-Tham khảo tài liệu về Cài đặt và Nâng cấp plugin thương mại.
+Cách cài đặt và nâng cấp chi tiết vui lòng tham khảo: [Hướng dẫn kích hoạt Plugin thương mại](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
-### Cài đặt LibreOffice (Tùy chọn)
+### Cài đặt LibreOffice (tùy chọn)
 
-Để tạo tệp PDF, bạn cần cài đặt LibreOffice. [Vui lòng tải xuống từ trang web chính thức](https://www.libreoffice.org/download/download-libreoffice). Đối với phiên bản Docker, bạn có thể tạo một script trực tiếp trong thư mục `./storage/scripts`.
+Để sinh PDF phải cài đặt LibreOffice, [vui lòng truy cập trang chính thức để tải xuống](
+https://www.libreoffice.org/download/download-libreoffice). Phiên bản Docker, có thể trực tiếp viết một đoạn script trong thư mục `./storage/scripts`.
 
 ```bash
 mkdir ./storage/scripts
@@ -17,7 +20,7 @@ cd ./storage/scripts
 vim install-libreoffice.sh
 ```
 
-Nội dung của tệp `install-libreoffice.sh` như sau:
+Nội dung của `install-libreoffice.sh` như sau:
 
 ```sh
 #!/bin/bash
@@ -97,15 +100,15 @@ fi
 echo "LibreOffice installation completed successfully."
 ```
 
-Khởi động lại container `app`:
+Khởi động lại container app
 
 ```bash
 docker compose restart app
-# Xem nhật ký
+# Xem log
 docker compose logs app
 ```
 
-Kiểm tra xem quá trình cài đặt có thành công không:
+Kiểm tra cài đặt thành công không
 
 ```bash
 $ docker compose exec app bash -c "libreoffice --version"

@@ -1,8 +1,10 @@
 ---
-displayName: "Workflow: Dynamic calculation node"
+displayName: "Workflow: Node tính toán biểu thức động"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
+title: "Workflow: Node tính toán biểu thức động"
+keywords: "Workflow: Node tính toán biểu thức động,Plugin,NocoBase"
 description: |
-  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
+  Dùng để thực hiện tính toán biểu thức động dựa trên hàng dữ liệu trong workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Workflow: Dynamic calculation node
+# Workflow: Node tính toán biểu thức động
 
-> Note: This plugin is deprecated.
+> Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

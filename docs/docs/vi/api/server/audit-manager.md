@@ -1,15 +1,16 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "AuditManager"
+description: "Trình quản lý audit của NocoBase: AuditManager ghi log thao tác và theo dõi audit."
+keywords: "AuditManager,audit,log thao tác,NocoBase"
+---
 
 # AuditManager
 
 ## Tổng quan
 
-`AuditManager` là mô-đun quản lý kiểm toán tài nguyên trong NocoBase, dùng để đăng ký các giao diện tài nguyên cần được kiểm toán.
+`AuditManager` là module quản lý audit tài nguyên trong NocoBase, dùng để đăng ký các API tài nguyên cần tham gia audit.
 
-### Cách sử dụng cơ bản
+### Cách dùng cơ bản
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -25,7 +26,7 @@ class PluginCustomAuditResourceServer extends Plugin {
 
 ### `setLogger()`
 
-Đặt phương thức xuất cho nhật ký kiểm toán.
+Đặt phương thức ghi log audit.
 
 ```ts
 const auditManager = new AuditManager();
@@ -65,7 +66,7 @@ export interface AuditLogger {
 
 ### `registerAction()`
 
-Đăng ký một hành động tài nguyên để kiểm toán.
+Đăng ký thao tác tài nguyên tham gia audit.
 
 #### Chữ ký
 
@@ -96,29 +97,29 @@ type Action =
     };
 ```
 
-#### Chi tiết
+#### Thông tin chi tiết
 
-Hỗ trợ một số cách viết sau:
+Hỗ trợ các cách viết:
 
-1. Áp dụng cho tất cả tài nguyên
+1. Áp dụng cho mọi tài nguyên
 
 ```ts
 registerActions(['create']);
 ```
 
-2. Áp dụng cho tất cả hành động của một tài nguyên cụ thể `resource:*`
+2. Áp dụng cho mọi thao tác của một tài nguyên `resource:*`
 
 ```ts
 registerActions(['app:*']);
 ```
 
-3. Áp dụng cho một hành động cụ thể của một tài nguyên cụ thể `resource:action`
+3. Áp dụng cho một thao tác cụ thể của tài nguyên `resouce:action`
 
 ```ts
 registerAction(['pm:update']);
 ```
 
-4. Hỗ trợ truyền vào các phương thức `getMetaData`, `getUserInfo`, và `getSourceAndTarget` tùy chỉnh cho hành động
+4. Hỗ trợ truyền các phương thức tùy chỉnh `getMetaData`, `getUserInfo`, `getSourceAndTarget` cho thao tác
 
 ```ts
 registerActions([
@@ -127,7 +128,7 @@ registerActions([
 ]);
 ```
 
-Khi các giao diện đã đăng ký bị trùng lặp, phương thức đăng ký có độ chi tiết cao hơn sẽ có ưu tiên cao hơn. Ví dụ:
+Khi các API đăng ký bị chồng lấp, cách đăng ký có độ chi tiết cao hơn sẽ ưu tiên hơn, ví dụ:
 
 1. `registerActions('create')`
 
@@ -135,12 +136,12 @@ Khi các giao diện đã đăng ký bị trùng lặp, phương thức đăng k
 
 3. `registerAction({ name: 'user:create', getMetaData })`
 
-Đối với giao diện `user:create`, phương thức `3` sẽ có hiệu lực.
+Đối với API `user:create`, đăng ký `3` sẽ có hiệu lực.
 
 ### `registerActions()`
 
-Đăng ký nhiều hành động tài nguyên để kiểm toán.
+Đăng ký nhiều thao tác tài nguyên tham gia audit.
 
 #### Chữ ký
 
-- `registerActions(actions: Action[])`
+- `registerAction(actions: Action[])`

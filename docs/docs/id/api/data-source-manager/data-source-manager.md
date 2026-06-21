@@ -1,33 +1,35 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "DataSourceManager"
+description: "API DataSourceManager NocoBase: mengelola beberapa instance DataSource, abstract class DataSource."
+keywords: "DataSourceManager,DataSource,multi data source,manajemen data source,NocoBase"
+---
 
 # DataSourceManager
 
-`DataSourceManager` adalah kelas manajemen untuk beberapa instans `dataSource`.
+`DataSourceManager` adalah class manajemen untuk beberapa instance `dataSource`.
 
 ## API
 
 ### add()
-Menambahkan sebuah instans `dataSource`.
+Menambahkan satu instance `dataSource`.
 
-#### Tanda Tangan
+#### Signature
 
 - `add(dataSource: DataSource, options: any = {}): Promise<void>`
 
 ### use()
 
-Menambahkan middleware global ke instans `dataSource`.
+Menambahkan middleware global ke instance `dataSource`.
 
 ### middleware()
 
-Mendapatkan middleware dari instans `dataSourceManager` saat ini, yang dapat digunakan untuk merespons permintaan HTTP.
+Mengambil middleware dari instance `dataSourceManager` saat ini, dapat digunakan untuk merespons request HTTP.
 
 ### afterAddDataSource()
 
-Sebuah fungsi *hook* yang dipanggil setelah `dataSource` baru ditambahkan.
+Hook function yang dipanggil setelah `dataSource` baru ditambahkan.
 
-#### Tanda Tangan
+#### Signature
 
 - `afterAddDataSource(hook: DataSourceHook)`
 
@@ -37,24 +39,24 @@ type DataSourceHook = (dataSource: DataSource) => void;
 
 ### registerDataSourceType()
 
-Mendaftarkan tipe sumber data dan kelasnya.
+Mendaftarkan tipe data source dan class-nya.
 
-#### Tanda Tangan
+#### Signature
 
 - `registerDataSourceType(type: string, dataSourceClass: typeof DataSource)`
 
 ### getDataSourceType()
 
-Mendapatkan kelas sumber data.
+Mengambil class data source.
 
-#### Tanda Tangan
+#### Signature
 
 - `getDataSourceType(type: string): typeof DataSource`
 
 ### buildDataSourceByType()
 
-Membuat instans sumber data berdasarkan tipe sumber data yang terdaftar dan opsi instans.
+Membuat instance data source berdasarkan tipe data source yang terdaftar dan parameter instance.
 
-#### Tanda Tangan
+#### Signature
 
 - `buildDataSourceByType(type: string, options: any): DataSource`

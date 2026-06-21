@@ -1,29 +1,31 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+pkg: "@nocobase/plugin-ai-knowledge-base"
+title: "Tổng quan về Knowledge Base AI"
+description: "Knowledge Base AI cung cấp năng lực truy xuất RAG cho Nhân viên AI, nâng cao tính chính xác và khả năng truy nguyên của câu trả lời thông qua Embedding và truy xuất vector, cần kích hoạt Plugin AI: Knowledge base."
+keywords: "Knowledge Base AI,RAG,Tăng cường truy xuất tạo sinh,Embedding,NocoBase"
+---
 
 # Tổng quan
 
 ## Giới thiệu
 
-Plugin Cơ sở tri thức AI cung cấp khả năng truy xuất RAG cho các trợ lý AI.
+Plugin Knowledge Base AI cung cấp năng lực truy xuất RAG cho Nhân viên AI.
 
-Khả năng truy xuất RAG cho phép các trợ lý AI cung cấp những câu trả lời chính xác hơn, chuyên nghiệp hơn và có tính liên quan cao hơn đến nội bộ doanh nghiệp khi phản hồi câu hỏi của người dùng.
+Năng lực truy xuất RAG cho phép Nhân viên AI khi trả lời câu hỏi của người dùng có thể cung cấp câu trả lời chính xác hơn, chuyên nghiệp hơn và có liên quan cao hơn với nội bộ doanh nghiệp.
 
-Bằng cách sử dụng các tài liệu chuyên ngành và tài liệu nội bộ doanh nghiệp được cung cấp từ cơ sở tri thức do quản trị viên duy trì, độ chính xác và khả năng truy xuất nguồn gốc của các phản hồi từ trợ lý AI được nâng cao.
+Thông qua tài liệu chuyên ngành và tài liệu nội bộ doanh nghiệp do Quản trị viên duy trì trong Knowledge Base, nâng cao tính chính xác và khả năng truy nguyên của câu trả lời từ Nhân viên AI.
 
 ### RAG là gì
 
-RAG (Retrieval Augmented Generation) là viết tắt của "Truy xuất – Tăng cường – Sinh tạo".
+RAG (Retrieval Augmented Generation) có nghĩa là "Truy xuất - Tăng cường - Tạo sinh"
 
-- Truy xuất: Câu hỏi của người dùng được chuyển đổi thành vector bởi một mô hình Embedding (ví dụ: BERT). Các đoạn văn bản liên quan Top-K được truy xuất từ thư viện vector thông qua truy xuất dày đặc (tương đồng ngữ nghĩa) hoặc truy xuất thưa thớt (khớp từ khóa).
-- Tăng cường: Kết quả truy xuất được ghép nối với câu hỏi gốc để tạo thành một lời nhắc tăng cường (Prompt), sau đó được đưa vào cửa sổ ngữ cảnh của LLM.
-- Sinh tạo: LLM kết hợp lời nhắc tăng cường để sinh tạo câu trả lời cuối cùng, đảm bảo tính xác thực và khả năng truy xuất nguồn gốc.
+- Truy xuất: Câu hỏi của người dùng được mô hình Embedding (như BERT) chuyển đổi thành vector, trong cơ sở dữ liệu vector thông qua truy xuất dày đặc (độ tương đồng ngữ nghĩa) hoặc truy xuất thưa (khớp từ khóa) thu hồi Top-K khối văn bản liên quan.
+- Tăng cường: Kết quả truy xuất kết hợp với câu hỏi gốc thành Prompt tăng cường, đưa vào cửa sổ ngữ cảnh của LLM.
+- Tạo sinh: LLM kết hợp Prompt tăng cường để tạo câu trả lời cuối cùng, đảm bảo tính sự thật và khả năng truy nguyên.
 
 ## Cài đặt
 
-1. Truy cập trang quản lý plugin.
-2. Tìm plugin `AI: Knowledge base` và kích hoạt.
+1. Vào trang quản lý Plugin
+2. Tìm Plugin `AI: Knowledge base`, và kích hoạt
 
 ![20251022224818](https://static-docs.nocobase.com/20251022224818.png)

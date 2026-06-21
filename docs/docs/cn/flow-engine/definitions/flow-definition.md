@@ -1,3 +1,9 @@
+---
+title: "FlowDefinition 流定义"
+description: "FlowDefinition 定义流的基本结构和配置：key、on、steps、defaultParams，描述流的元信息、触发条件、执行步骤，FlowEngine 核心类型。"
+keywords: "FlowDefinition,流定义,Flow 配置,on,steps,defaultParams,FlowEngine 类型,NocoBase"
+---
+
 # FlowDefinition
 
 FlowDefinition 定义了流的基本结构和配置，是流引擎的核心概念之一。它描述了流的元信息、触发条件、执行步骤等。
@@ -159,6 +165,7 @@ sort: 1   // 延后执行
 用于声明触发事件名（字符串或 `{ eventName }`），以及可选的执行时机（`phase`）。不包含处理函数（处理逻辑在 `steps` 里）。
 
 **支持的事件类型**:
+- `'beforeRender'` - 渲染前事件，组件首次渲染时自动触发
 - `'click'` - 点击事件
 - `'submit'` - 提交事件
 - `'reset'` - 重置事件

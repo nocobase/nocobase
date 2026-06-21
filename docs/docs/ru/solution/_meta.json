@@ -1,0 +1,17 @@
+[
+  {
+    "type": "dir",
+    "name": "all-in-one",
+    "label": "Единая система управления бизнесом"
+  },
+  {
+    "type": "dir",
+    "name": "ticket-system",
+    "label": "Система заявок"
+  },
+  {
+    "type": "dir",
+    "name": "crm",
+    "label": "CRM"
+  }
+]

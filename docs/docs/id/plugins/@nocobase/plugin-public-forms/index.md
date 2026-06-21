@@ -1,12 +1,14 @@
 ---
-displayName: "Public forms"
+displayName: "Formulir Publik"
 packageName: '@nocobase/plugin-public-forms'
+title: "Formulir Publik"
+keywords: "Formulir Publik,Plugin,NocoBase"
 description: |
-  Share public forms externally to collect information from anonymous users
+  Bagikan formulir publik secara eksternal untuk mengumpulkan informasi dari pengguna anonim.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Public forms
+# Formulir Publik

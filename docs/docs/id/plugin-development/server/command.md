@@ -1,25 +1,27 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Command Command Line"
+description: "Command line kustom server NocoBase: app.command, commander, ekstensi CLI, sub-command yarn nocobase."
+keywords: "Command,command line,app.command,commander,CLI,yarn nocobase,NocoBase"
+---
 
-# Perintah
+# Command Command Line
 
-Di NocoBase, perintah (Command) digunakan untuk menjalankan operasi terkait aplikasi atau plugin di baris perintah. Contohnya, untuk menjalankan tugas sistem, melakukan operasi migrasi atau sinkronisasi, menginisialisasi konfigurasi, atau berinteraksi dengan instans aplikasi yang sedang berjalan. Pengembang dapat mendefinisikan perintah kustom untuk plugin dan mendaftarkannya melalui objek `app`, lalu menjalankannya di CLI dalam format `nocobase <command>`.
+Di NocoBase, Command (Perintah) digunakan untuk mengeksekusi operasi terkait aplikasi atau plugin pada command line — seperti menjalankan task sistem, mengeksekusi migration, menginisialisasi konfigurasi, atau berinteraksi dengan instance aplikasi yang sedang berjalan. Anda dapat mendefinisikan command kustom untuk plugin, setelah didaftarkan melalui objek `app`, dapat dieksekusi di CLI dalam bentuk `nocobase <command>`.
 
-## Jenis Perintah
+## Tipe Command
 
-Di NocoBase, pendaftaran perintah dibagi menjadi dua jenis:
+Di NocoBase, cara registrasi command dibagi menjadi dua jenis:
 
-| Jenis          | Metode Pendaftaran                  | Apakah Plugin Perlu Diaktifkan | Skenario Umum                               |
-| -------------- | ----------------------------------- | ------------------------------ | ------------------------------------------- |
-| Perintah Dinamis | `app.command()`                     | ✅ Ya                          | Perintah terkait bisnis plugin              |
-| Perintah Statis  | `Application.registerStaticCommand()` | ❌ Tidak                       | Perintah instalasi, inisialisasi, dan pemeliharaan |
+| Tipe | Cara Registrasi | Apakah Plugin Perlu Diaktifkan | Skenario Tipikal |
+|------|------------|------------------|-----------|
+| Command Dinamis | `app.command()` | Ya | Command terkait bisnis plugin |
+| Command Statis | `Application.registerStaticCommand()` | Tidak | Command instalasi, inisialisasi, maintenance |
 
-## Perintah Dinamis
+## Command Dinamis
 
-Gunakan `app.command()` untuk mendefinisikan perintah plugin. Perintah hanya dapat dieksekusi setelah plugin diaktifkan. File perintah harus ditempatkan di `src/server/commands/*.ts` dalam direktori plugin.
+Menggunakan `app.command()` untuk mendefinisikan command plugin, baru dapat dieksekusi setelah plugin diaktifkan. File command biasanya ditempatkan di `src/server/commands/*.ts` di direktori plugin.
 
-Contoh
+### Contoh
 
 ```ts
 import { Application } from '@nocobase/server';
@@ -37,25 +39,25 @@ export default function (app: Application) {
 }
 ```
 
-Penjelasan
+Di mana:
 
-- `app.command('echo')`: Mendefinisikan perintah bernama `echo`.
-- `.option('-v, --version')`: Menambahkan opsi ke perintah.
-- `.action()`: Mendefinisikan logika eksekusi perintah.
-- `app.version.get()`: Mengambil versi aplikasi saat ini.
+- `app.command('echo')` — Mendefinisikan command bernama `echo`
+- `.option('-v, --version')` — Menambahkan opsi untuk command
+- `.action()` — Mendefinisikan logika eksekusi command
+- `app.version.get()` — Mendapatkan versi aplikasi saat ini
 
-Eksekusi Perintah
+### Mengeksekusi Command
 
 ```bash
 nocobase echo
 nocobase echo -v
 ```
 
-## Perintah Statis
+## Command Statis
 
-Gunakan `Application.registerStaticCommand()` untuk mendaftar. Perintah statis dapat dieksekusi tanpa mengaktifkan plugin, cocok untuk tugas instalasi, inisialisasi, migrasi, atau debugging. Daftarkan di metode `staticImport()` kelas plugin.
+Didaftarkan menggunakan `Application.registerStaticCommand()`, command statis dapat dieksekusi tanpa perlu mengaktifkan plugin, cocok untuk task instalasi, inisialisasi, migrasi, atau debug. Biasanya didaftarkan di method `staticImport()` class plugin.
 
-Contoh
+### Contoh
 
 ```ts
 import { Application, Plugin } from '@nocobase/server';
@@ -77,44 +79,44 @@ export default class PluginHelloServer extends Plugin {
 }
 ```
 
-Eksekusi Perintah
+### Mengeksekusi Command
 
 ```bash
 nocobase echo
 nocobase echo --version
 ```
 
-Penjelasan
+Di mana:
 
-- `Application.registerStaticCommand()` mendaftarkan perintah sebelum aplikasi diinstansiasi.
-- Perintah statis biasanya digunakan untuk menjalankan tugas global yang tidak terkait dengan status aplikasi atau plugin.
+- `Application.registerStaticCommand()` akan mendaftarkan command sebelum aplikasi diinstansiasi
+- Command statis biasanya digunakan untuk mengeksekusi task global yang tidak terkait dengan status aplikasi atau plugin
 
 ## Command API
 
-Objek perintah menyediakan tiga metode pembantu opsional untuk mengontrol konteks eksekusi perintah:
+Objek command menyediakan tiga method bantuan opsional, untuk mengontrol konteks eksekusi command:
 
-| Metode    | Tujuan                                                | Contoh                               |
-| --------- | ----------------------------------------------------- | ------------------------------------ |
-| `ipc()`   | Berkomunikasi dengan instans aplikasi yang sedang berjalan (melalui IPC) | `app.command('reload').ipc().action()` |
-| `auth()`  | Memverifikasi konfigurasi basis data sudah benar      | `app.command('seed').auth().action()` |
-| `preload()` | Memuat konfigurasi aplikasi di awal (menjalankan `app.load()`) | `app.command('sync').preload().action()` |
+| Method | Fungsi | Contoh |
+|------|------|------|
+| `ipc()` | Komunikasi dengan instance aplikasi yang sedang berjalan (melalui IPC) | `app.command('reload').ipc().action()` |
+| `auth()` | Memvalidasi apakah konfigurasi database benar | `app.command('seed').auth().action()` |
+| `preload()` | Pre-load konfigurasi aplikasi (mengeksekusi `app.load()`) | `app.command('sync').preload().action()` |
 
-Penjelasan Konfigurasi
+### Penjelasan Konfigurasi
 
 - **`ipc()`**
-  Secara default, perintah dieksekusi dalam instans aplikasi baru. Setelah mengaktifkan `ipc()`, perintah akan berinteraksi dengan instans aplikasi yang sedang berjalan melalui komunikasi antar-proses (IPC), cocok untuk perintah operasi real-time (seperti menyegarkan cache, mengirim notifikasi).
+  Biasanya, command akan dieksekusi dalam instance aplikasi baru. Setelah mengaktifkan `ipc()`, command akan berinteraksi dengan instance aplikasi yang sedang berjalan melalui inter-process communication (IPC), cocok untuk command operasi real-time (seperti refresh cache, kirim notifikasi).
 
 - **`auth()`**
-  Memeriksa apakah konfigurasi basis data tersedia sebelum eksekusi perintah. Jika konfigurasi basis data salah atau koneksi gagal, perintah tidak akan dilanjutkan. Sering digunakan untuk tugas yang melibatkan penulisan atau pembacaan basis data.
+  Memeriksa apakah konfigurasi database tersedia sebelum command dieksekusi. Jika konfigurasi database salah atau koneksi gagal, command tidak akan dilanjutkan. Sering digunakan untuk task yang melibatkan tulis atau baca database.
 
 - **`preload()`**
-  Memuat konfigurasi aplikasi di awal sebelum menjalankan perintah, setara dengan menjalankan `app.load()`. Cocok untuk perintah yang bergantung pada konfigurasi atau konteks plugin.
+  Pre-load konfigurasi aplikasi sebelum mengeksekusi command, setara dengan mengeksekusi `app.load()`. Cocok untuk command yang bergantung pada konfigurasi atau konteks plugin.
 
-Untuk metode API lainnya, silakan lihat [AppCommand](/api/server/app-command).
+Untuk method API lainnya dapat merujuk ke [AppCommand API](../../api/server/app-command.md).
 
 ## Contoh Umum
 
-Menginisialisasi Data Default
+### Menginisialisasi Data Default
 
 ```ts
 app
@@ -128,7 +130,7 @@ app
   });
 ```
 
-Meminta Instans yang Berjalan untuk Memuat Ulang Cache (Mode IPC)
+### Membuat Instance yang Berjalan Memuat Ulang Cache (Mode IPC)
 
 ```ts
 app
@@ -139,7 +141,7 @@ app
   });
 ```
 
-Pendaftaran Statis Perintah Instalasi
+### Registrasi Statis Command Instalasi
 
 ```ts
 Application.registerStaticCommand((app) => {
@@ -150,3 +152,12 @@ Application.registerStaticCommand((app) => {
     });
 });
 ```
+
+## Tautan Terkait
+
+- [Plugin](./plugin.md) — Siklus hidup plugin dan API inti
+- [Ikhtisar Pengembangan Server](./index.md) — Ringkasan setiap modul server
+- [Test Pengujian](./test.md) — Cara menulis test plugin server
+- [Migration Migrasi](./migration.md) — Migrasi data dan skrip upgrade
+- [Ikhtisar Plugin Development](../index.md) — Pengantar menyeluruh tentang plugin development
+- [AppCommand API](../../api/server/app-command.md) — Referensi API lengkap AppCommand

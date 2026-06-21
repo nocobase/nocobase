@@ -1,35 +1,37 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Aliyun OSS"
+description: "Konfigurasi storage engine Aliyun OSS: Bucket, Endpoint, AccessKey, mendukung akses publik dan internal."
+keywords: "Aliyun OSS,Aliyun Object Storage,OSS storage,cloud storage,NocoBase"
+---
 
 # Aliyun OSS
 
-Mesin penyimpanan berbasis Aliyun OSS. Sebelum menggunakannya, Anda perlu menyiapkan akun dan izin yang relevan.
+Storage engine berbasis Aliyun OSS, sebelum digunakan perlu menyiapkan akun dan izin terkait.
 
-## Konfigurasi Parameter
+## Parameter Konfigurasi
 
-![Contoh konfigurasi mesin penyimpanan Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)
+![Contoh konfigurasi storage engine Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)
 
-:::info{title=Catatan}
-Bagian ini hanya menjelaskan parameter khusus untuk mesin penyimpanan Aliyun OSS. Untuk parameter umum, silakan lihat [Parameter Umum Mesin](./index.md#parameter-umum-mesin).
+:::info{title=Tips}
+Hanya menjelaskan parameter khusus storage engine Aliyun OSS, untuk parameter umum harap lihat [Parameter Umum Engine](./index.md#parameter-umum-engine).
 :::
 
-### Wilayah
+### Region
 
-Isi wilayah penyimpanan OSS, contoh: `oss-cn-hangzhou`.
+Isi region penyimpanan OSS, contoh: `oss-cn-hangzhou`.
 
-:::info{title=Catatan}
-Anda dapat melihat informasi wilayah *bucket* penyimpanan di [konsol Aliyun OSS](https://oss.console.aliyun.com/). Anda hanya perlu menggunakan bagian awalan wilayah (tanpa nama domain lengkap).
+:::info{title=Tips}
+Anda dapat melihat informasi region storage space di [Aliyun OSS Console](https://oss.console.aliyun.com/), dan hanya perlu mengambil bagian prefix region (tanpa domain lengkap).
 :::
 
 ### AccessKey ID
 
-Isi ID kunci akses terotorisasi Alibaba Cloud.
+Isi ID access key Aliyun.
 
 ### AccessKey Secret
 
-Isi *secret* kunci akses terotorisasi Alibaba Cloud.
+Isi Secret access key Aliyun.
 
 ### Bucket
 
-Isi nama *bucket* penyimpanan OSS.
+Isi nama Bucket penyimpanan OSS.

@@ -1,4 +1,6 @@
 ---
+title: "用户认证"
+keywords: "用户认证,插件,NocoBase"
 displayName: "用户认证"
 packageName: '@nocobase/plugin-auth'
 description: |

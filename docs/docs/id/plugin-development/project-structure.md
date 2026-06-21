@@ -1,74 +1,80 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Struktur Direktori Proyek Plugin"
+description: "Struktur proyek plugin NocoBase: Yarn Workspace, packages/plugins, storage, direktori client/server, konfigurasi lerna.json."
+keywords: "struktur proyek,Yarn Workspace,packages/plugins,direktori plugin,create-nocobase-app,NocoBase"
+---
 
 # Struktur Direktori Proyek
 
-Baik Anda mengkloning kode sumber dari Git atau menginisialisasi proyek menggunakan `create-nocobase-app`, proyek NocoBase yang dihasilkan pada dasarnya adalah sebuah monorepo berbasis **Yarn Workspace**.
+Apakah Anda meng-clone source code melalui Git, atau menginisialisasi proyek dengan `create-nocobase-app`, proyek NocoBase yang dihasilkan pada dasarnya adalah repository multi-paket berbasis **Yarn Workspace**.
 
 ## Ikhtisar Direktori Tingkat Atas
 
-Contoh berikut menggunakan `my-nocobase-app/` sebagai direktori proyek. Mungkin ada sedikit perbedaan di lingkungan yang berbeda:
+Berikut menggunakan `my-nocobase-app/` sebagai direktori proyek. Mungkin ada sedikit perbedaan di environment yang berbeda:
 
 ```bash
 my-nocobase-app/
-├── packages/              # Kode sumber proyek
-│   ├── plugins/           # Plugin yang sedang dikembangkan (belum terkompilasi)
-├── storage/               # Data saat runtime dan konten yang dihasilkan secara dinamis
+├── packages/              # Source code proyek
+│   ├── plugins/           # Source code plugin yang sedang dikembangkan (belum dicompile)
+├── storage/               # Data runtime dan konten yang digenerate dinamis
 │   ├── apps/
 │   ├── db/
 │   ├── logs/
 │   ├── uploads/
-│   ├── plugins/           # Plugin yang sudah terkompilasi (termasuk yang diunggah melalui antarmuka pengguna)
-│   └── tar/               # File paket plugin (.tar)
-├── scripts/               # Skrip utilitas dan perintah alat
-├── .env*                  # Konfigurasi variabel lingkungan untuk berbagai lingkungan
+│   ├── plugins/           # Plugin yang sudah dicompile (termasuk yang diupload melalui antarmuka)
+│   └── tar/               # File hasil packaging plugin (.tar)
+├── scripts/               # Script utilitas dan perintah tools
+├── .env*                  # Konfigurasi variabel untuk environment yang berbeda
 ├── lerna.json             # Konfigurasi workspace Lerna
-├── package.json           # Konfigurasi paket root, mendeklarasikan workspace dan skrip
-├── tsconfig*.json         # Konfigurasi TypeScript (frontend, backend, pemetaan jalur)
-├── vitest.config.mts      # Konfigurasi pengujian unit Vitest
-└── playwright.config.ts   # Konfigurasi pengujian E2E Playwright
+├── package.json           # Konfigurasi paket root, mendeklarasikan workspace dan script
+├── tsconfig*.json         # Konfigurasi TypeScript (front-end, back-end, path mapping)
+├── vitest.config.mts      # Konfigurasi unit test Vitest
+└── playwright.config.ts   # Konfigurasi E2E test Playwright
 ```
 
 ## Penjelasan Subdirektori packages/
 
-Direktori `packages/` berisi modul inti NocoBase dan paket yang dapat diperluas. Kontennya bergantung pada sumber proyek:
+Direktori `packages/` berisi modul inti dan paket yang dapat diperluas dari NocoBase, konten spesifik bergantung pada sumber proyek:
 
--   **Proyek yang dibuat melalui `create-nocobase-app`**: Secara default, hanya menyertakan `packages/plugins/`, yang digunakan untuk menyimpan kode sumber **plugin** kustom. Setiap subdirektori adalah paket npm independen.
--   **Repositori kode sumber resmi yang dikloning**: Anda dapat melihat lebih banyak subdirektori, seperti `core/`, `plugins/`, `pro-plugins/`, `presets/`, dll., yang masing-masing sesuai dengan inti framework, **plugin** bawaan, dan solusi preset resmi.
+- **Proyek yang dibuat melalui `create-nocobase-app`**: Secara default hanya memiliki `packages/plugins/`, digunakan untuk menyimpan source code plugin kustom. Setiap subdirektori adalah paket npm independen.
+- **Clone repository source code resmi**: Akan terlihat lebih banyak subdirektori, seperti `core/`, `plugins/`, `pro-plugins/`, `presets/`, dll., masing-masing sesuai dengan core framework, plugin bawaan, dan solusi preset resmi.
 
-Dalam kedua kasus, `packages/plugins` adalah lokasi utama untuk mengembangkan dan melakukan debug **plugin** kustom.
+Apapun kasusnya, `packages/plugins` adalah lokasi utama Anda untuk mengembangkan dan men-debug plugin kustom.
 
 ## Direktori Runtime storage/
 
-`storage/` menyimpan data yang dihasilkan saat runtime dan output build. Penjelasan subdirektori umum adalah sebagai berikut:
+`storage/` menyimpan data yang digenerate saat runtime dan output build. Penjelasan subdirektori umum sebagai berikut:
 
--   `apps/`: Konfigurasi dan cache untuk skenario multi-aplikasi.
--   `logs/`: Log runtime dan output debug.
--   `uploads/`: File dan sumber daya media yang diunggah pengguna.
--   `plugins/`: **Plugin** terpaket yang diunggah melalui antarmuka pengguna atau diimpor melalui CLI.
--   `tar/`: Paket terkompresi **plugin** yang dihasilkan setelah menjalankan `yarn build <plugin> --tar`.
+- `apps/`: Konfigurasi dan cache untuk skenario multi-aplikasi.
+- `logs/`: Log runtime dan output debug.
+- `uploads/`: File dan resource media yang diupload pengguna.
+- `plugins/`: Plugin yang di-package, diupload melalui antarmuka atau diimpor melalui CLI.
+- `tar/`: Paket terkompresi plugin yang dihasilkan setelah menjalankan `yarn build <plugin> --tar`.
 
-> Umumnya disarankan untuk menambahkan direktori `storage` ke `.gitignore` dan menanganinya secara terpisah saat deployment atau backup.
+:::tip Tips
 
-## Konfigurasi Lingkungan dan Skrip Proyek
+Umumnya disarankan untuk menambahkan direktori `storage` ke `.gitignore`, dan menanganinya secara terpisah saat deployment atau backup.
 
--   `.env`, `.env.test`, `.env.e2e`: Digunakan untuk menjalankan secara lokal, pengujian unit/integrasi, dan pengujian end-to-end secara berurutan.
--   `scripts/`: Menyimpan skrip pemeliharaan umum (seperti inisialisasi database, utilitas rilis, dll.).
+:::
 
-## Jalur Pemuatan dan Prioritas Plugin
+## Konfigurasi Environment dan Script Proyek
 
-**Plugin** mungkin ada di beberapa lokasi. NocoBase akan memuatnya dengan urutan prioritas berikut saat memulai:
+- `.env`, `.env.test`, `.env.e2e`: Masing-masing untuk runtime lokal, test unit/integrasi, dan test end-to-end.
+- `scripts/`: Menyimpan script operasional umum, seperti inisialisasi database, tools bantuan rilis, dll.
 
-1.  Versi kode sumber di `packages/plugins` (untuk pengembangan dan debug lokal).
-2.  Versi terpaket di `storage/plugins` (diunggah melalui antarmuka pengguna atau diimpor melalui CLI).
-3.  Paket dependensi di `node_modules` (diinstal melalui npm/yarn atau bawaan framework).
+## Path dan Prioritas Loading Plugin
 
-Ketika **plugin** dengan nama yang sama ada di direktori sumber dan direktori terpaket, sistem akan memprioritaskan pemuatan versi sumber, memfasilitasi penimpaan dan debug lokal.
+Plugin dapat berada di beberapa lokasi, NocoBase memuatnya saat startup berdasarkan prioritas berikut:
+
+1. Versi source code di `packages/plugins` (untuk pengembangan dan debugging lokal).
+2. Versi yang di-package di `storage/plugins` (diupload melalui antarmuka atau diimpor melalui CLI).
+3. Paket dependensi di `node_modules` (diinstal melalui npm/yarn atau bawaan framework).
+
+Jika plugin dengan nama sama berada di direktori source code dan direktori package secara bersamaan, NocoBase akan memuat versi source code terlebih dahulu, untuk memudahkan override dan debugging lokal.
 
 ## Template Direktori Plugin
 
-Buat **plugin** menggunakan CLI:
+Membuat plugin dengan CLI:
 
 ```bash
 yarn pm create @my-project/plugin-hello
@@ -78,27 +84,38 @@ Struktur direktori yang dihasilkan adalah sebagai berikut:
 
 ```bash
 packages/plugins/@my-project/plugin-hello/
-├── dist/                    # Output build (dihasilkan sesuai kebutuhan)
-├── src/                     # Direktori kode sumber
-│   ├── client/              # Kode frontend (blok, halaman, model, dll.)
-│   │   ├── plugin.ts        # Kelas utama plugin sisi klien
-│   │   └── index.ts         # Titik masuk sisi klien
-│   ├── locale/              # Sumber daya multibahasa (dibagi antara frontend dan backend)
+├── dist/                    # Output build (digenerate sesuai kebutuhan)
+├── src/                     # Direktori source code
+│   ├── client-v2/           # Kode front-end (Block, halaman, model, dll.)
+│   │   ├── plugin.ts        # Class utama plugin client
+│   │   └── index.ts         # Entry client
+│   ├── locale/              # Resource multi-bahasa (digunakan bersama oleh front-back end)
 │   ├── swagger/             # Dokumentasi OpenAPI/Swagger
-│   └── server/              # Kode sisi server
-│       ├── collections/     # Definisi koleksi / tabel data
-│       ├── commands/        # Perintah kustom
-│       ├── migrations/      # Skrip migrasi database
-│       ├── plugin.ts        # Kelas utama plugin sisi server
-│       └── index.ts         # Titik masuk sisi server
-├── index.ts                 # Ekspor jembatan frontend dan backend
-├── client.d.ts              # Deklarasi tipe frontend
-├── client.js                # Artefak build frontend
-├── server.d.ts              # Deklarasi tipe sisi server
-├── server.js                # Artefak build sisi server
-├── .npmignore               # Konfigurasi abaikan publikasi
+│   └── server/              # Kode server
+│       ├── collections/     # Definisi tabel data / collection
+│       ├── commands/        # Command kustom
+│       ├── migrations/      # Script migrasi database
+│       ├── plugin.ts        # Class utama plugin server
+│       └── index.ts         # Entry server
+├── index.ts                 # Bridge ekspor front-back end
+├── client-v2.d.ts           # Deklarasi tipe front-end
+├── client-v2.js             # Hasil build front-end
+├── server.d.ts              # Deklarasi tipe server
+├── server.js                # Hasil build server
+├── .npmignore               # Konfigurasi pengabaian publikasi
 └── package.json
 ```
 
-> Setelah proses build selesai, direktori `dist/` serta file `client.js` dan `server.js` akan dimuat saat **plugin** diaktifkan.
-> Selama fase pengembangan, Anda hanya perlu memodifikasi direktori `src/`. Sebelum publikasi, jalankan `yarn build <plugin>` atau `yarn build <plugin> --tar`.
+:::tip Tips
+
+Setelah build selesai, file `dist/` serta `client-v2.js` dan `server.js` akan dimuat saat plugin diaktifkan. Selama tahap pengembangan Anda hanya perlu memodifikasi direktori `src/`, sebelum rilis jalankan `yarn build <plugin>` atau `yarn build <plugin> --tar`.
+
+:::
+
+## Tautan Terkait
+
+- [Menulis Plugin Pertama](./write-your-first-plugin.md) — Membuat plugin dari nol dan merasakan alur pengembangan lengkap
+- [Ikhtisar Pengembangan Server](./server/index.md) — Pengantar menyeluruh dan konsep inti plugin server
+- [Ikhtisar Pengembangan Client](./client/index.md) — Pengantar menyeluruh dan konsep inti plugin client
+- [Build & Packaging](./build.md) — Alur build, packaging, dan distribusi plugin
+- [Manajemen Dependensi](./dependency-management.md) — Cara deklarasi dan manajemen dependensi plugin

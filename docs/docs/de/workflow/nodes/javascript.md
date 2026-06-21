@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # JavaScript-Skript
 
@@ -12,7 +8,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 Der JavaScript-Skript-Knoten ermöglicht es Ihnen, ein benutzerdefiniertes serverseitiges JavaScript-Skript innerhalb eines **Workflows** auszuführen. Das Skript kann Variablen aus vorgelagerten Schritten des **Workflows** als Parameter verwenden, und sein Rückgabewert kann nachgelagerten Knoten zur Verfügung gestellt werden.
 
-Das Skript wird in einem Worker-Thread auf dem Server der NocoBase-Anwendung ausgeführt und unterstützt die meisten Node.js-Funktionen. Es gibt jedoch einige Unterschiede zur nativen Ausführungsumgebung. Details dazu finden Sie in der [Funktionsliste](#funktionsliste).
+Das Skript wird in einem Worker-Thread auf dem Server der NocoBase-Anwendung ausgeführt. Standardmäßig verwendet es eine sichere Sandbox (QuickJS auf WebAssembly-Basis), die weder `require` noch Node.js-Built-in-APIs unterstützt. Details dazu finden Sie unter [Ausführungs-Engine](#ausführungs-engine) und [Funktionsliste](#funktionsliste).
 
 ## Knoten erstellen
 
@@ -48,15 +44,32 @@ Wenn diese Option aktiviert ist, werden nachfolgende Knoten auch dann ausgeführ
 Wenn das Skript fehlerhaft ist, gibt es keinen Rückgabewert. Das Ergebnis des Knotens wird stattdessen mit der Fehlermeldung gefüllt. Falls nachfolgende Knoten die Ergebnisvariable des Skriptknotens verwenden, ist hier Vorsicht geboten.
 :::
 
-## Funktionsliste
+## Ausführungs-Engine
 
-### Node.js-Version
+Der JavaScript-Skript-Knoten unterstützt zwei Ausführungs-Engines, die automatisch anhand der Konfiguration der Umgebungsvariable `WORKFLOW_SCRIPT_MODULES` ausgewählt werden:
 
-Entspricht der Node.js-Version, mit der die Hauptanwendung ausgeführt wird.
+### Sicherer Modus (Standard)
 
-### Modulunterstützung
+Wenn `WORKFLOW_SCRIPT_MODULES` **nicht konfiguriert** ist, werden Skripte mit der [QuickJS](https://bellard.org/quickjs/)-Engine auf WebAssembly-Basis ausgeführt. Diese Engine führt Code in einer isolierten JavaScript-Laufzeitumgebung mit folgenden Eigenschaften aus:
 
-Module können im Skript mit Einschränkungen verwendet werden, konsistent mit CommonJS. Module werden im Code mit der `require()`-Anweisung importiert.
+- `require` wird **nicht unterstützt** — es können keine Module importiert werden
+- Node.js-Built-in-APIs (wie `process`, `Buffer`, `global` usw.) werden **nicht unterstützt**
+- Es stehen nur ECMAScript-Standardobjekte zur Verfügung (wie `JSON`, `Math`, `Promise`, `Date` usw.)
+- Die Übergabe von Daten über Parameter, `console` für Logging sowie `async`/`await` werden unterstützt
+
+Dies ist der empfohlene Standardmodus, geeignet für reine Berechnungs- und Datenverarbeitungslogik, und bietet das höchste Maß an Sicherheitsisolierung.
+
+### Unsicherer Modus (Modulunterstützung)
+
+Wenn `WORKFLOW_SCRIPT_MODULES` **konfiguriert ist**, wechseln Skripte zur integrierten Node.js-`vm`-Engine, um die `require`-Funktionalität zu ermöglichen.
+
+:::warning{title="Sicherheitswarnung"}
+Der unsichere Modus verwendet Node.js `vm` nur, um CommonJS-`require` zu unterstützen. Das Node.js-`vm`-Modul ist kein sicherer Sandbox-Mechanismus. Die Aktivierung dieses Modus bedeutet, dass allen Benutzern vertraut wird, die Workflow-Skripte bearbeiten, testen oder ausführen können, als könnten sie Code mit den Berechtigungen des NocoBase-Servers ausführen.
+
+`WORKFLOW_SCRIPT_MODULES` ist keine Sicherheitsgrenze und kein Berechtigungsmodell. Es steuert nur, welche Modulnamen von `require()` akzeptiert werden, bevor der Skriptcode ausgeführt wird.
+:::
+
+Module können im Skript konsistent mit CommonJS verwendet werden. Module werden im Code mit der `require()`-Anweisung importiert.
 
 Es werden native Node.js-Module und in `node_modules` installierte Module (einschließlich der von NocoBase bereits verwendeten Abhängigkeitspakete) unterstützt. Module, die dem Code zur Verfügung stehen sollen, müssen in der Umgebungsvariable `WORKFLOW_SCRIPT_MODULES` der Anwendung deklariert werden. Mehrere Paketnamen werden durch Kommas getrennt, zum Beispiel:
 
@@ -65,7 +78,7 @@ WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
 :::info{title="Hinweis"}
-Module, die nicht in der Umgebungsvariable `WORKFLOW_SCRIPT_MODULES` deklariert sind, können im Skript **nicht** verwendet werden, selbst wenn sie nativ in Node.js vorhanden oder bereits in `node_modules` installiert sind. Diese Richtlinie kann auf Betriebsebene genutzt werden, um die Liste der für Benutzer verfügbaren Module zu steuern und in bestimmten Szenarien zu verhindern, dass Skripte übermäßige Berechtigungen erhalten.
+Module, die nicht in der Umgebungsvariable `WORKFLOW_SCRIPT_MODULES` deklariert sind, können nicht direkt mit `require()` importiert werden, selbst wenn sie nativ in Node.js vorhanden oder bereits in `node_modules` installiert sind. Diese Liste dient nur zur Konfiguration unterstützter Imports. Verlassen Sie sich nicht darauf, um Skriptberechtigungen zu reduzieren oder die Bearbeitung von Skripten sicher an weniger vertrauenswürdige Benutzer zu delegieren.
 :::
 
 In einer Umgebung, die nicht aus dem Quellcode bereitgestellt wird, können Sie ein benötigtes Modul, das nicht in `node_modules` installiert ist, manuell in das `storage`-Verzeichnis installieren. Wenn Sie beispielsweise das `exceljs`-Paket verwenden möchten, können Sie die folgenden Schritte ausführen:
@@ -81,12 +94,18 @@ Fügen Sie dann den relativen (oder absoluten) Pfad des Pakets, basierend auf de
 WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
 ```
 
-Anschließend können Sie das `exceljs`-Paket in Ihrem Skript verwenden:
+Anschließend können Sie das `exceljs`-Paket in Ihrem Skript verwenden (der in `require` verwendete Name muss exakt mit dem in der Umgebungsvariable definierten übereinstimmen):
 
 ```js
-const ExcelJS = require('exceljs');
+const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
+
+## Funktionsliste
+
+### Node.js-Version
+
+Entspricht der Node.js-Version, mit der die Hauptanwendung ausgeführt wird.
 
 ### Globale Variablen
 
@@ -133,7 +152,7 @@ return value;
 
 ### Timer
 
-Um Methoden wie `setTimeout`, `setInterval` oder `setImmediate` zu verwenden, müssen Sie diese aus dem Node.js `timers`-Paket importieren.
+Um Methoden wie `setTimeout`, `setInterval` oder `setImmediate` zu verwenden, müssen Sie diese aus dem Node.js `timers`-Paket importieren (nur im unsicheren Modus verfügbar).
 
 ```js
 const { setTimeout, setInterval, setImmediate, clearTimeout, clearInterval, clearImmediate } = require('timers');

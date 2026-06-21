@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Обзор решения"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Подробное проектирование"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Установка"
+  },
+  {
+    "type": "dir",
+    "name": "guide",
+    "label": "Руководство пользователя"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "История изменений"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "Старая версия CRM (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Дополнительно"
+  }
+]

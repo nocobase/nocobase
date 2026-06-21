@@ -1,12 +1,14 @@
 ---
-displayName: "Users"
+displayName: "Pengguna"
 packageName: '@nocobase/plugin-users'
+title: "Pengguna"
+keywords: "Pengguna,Plugin,NocoBase"
 description: |
-  Provides basic user model, as well as created by and updated by fields.
+  Menyediakan model pengguna dasar, serta Field pembuat dan Field pembaru terakhir.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Users
+# Pengguna

@@ -1,25 +1,27 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Email Signature"
+description: "Konfigurasi email signature: buat signature, atur signature default, pilih signature di body editor untuk dimasukkan."
+keywords: "email signature,manajemen signature,signature default,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Email Signature
 
+## Konfigurasi Signature
 
-# Tanda Tangan Email
+Masuk ke email management center, klik tombol Settings.
 
-## Konfigurasi Tanda Tangan
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
 
-Masuk ke Pusat Manajemen Email, lalu klik tombol pengaturan:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_34_PM.png)
+Beralih ke panel signature.
 
-Beralih ke panel tanda tangan:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_51_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM%20(1).png)
 
-Di sini Anda dapat mengelola tanda tangan. Centang opsi di depan tanda tangan untuk menjadikannya sebagai tanda tangan default:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_37_PM.png)
+Di sini Anda dapat melakukan manajemen signature, centang opsi sebelum signature untuk mengaturnya sebagai signature default.
 
-## Penggunaan Tanda Tangan
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_09_PM.png)
 
-Di dalam kotak isi email, klik ikon tanda tangan untuk memilih tanda tangan yang Anda inginkan:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_40_PM.png)
+## Penggunaan Signature
+
+Di body editor pengiriman email, klik icon signature untuk memilih signature yang dibutuhkan.
+
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_11_PM.png)

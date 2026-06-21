@@ -6,12 +6,19 @@ import TreePlugin from '@nocobase/plugin-block-tree/client';
 import { getTreeSchema } from '../schema';
 
 const Demo = () => {
-  return <SchemaComponent schema={{ type: 'void', properties: { test: getTreeSchema({ collection: 'tree-collection', props: { searchable: false } }), } }} />;
+  return (
+    <SchemaComponent
+      schema={{
+        type: 'void',
+        properties: { test: getTreeSchema({ collection: 'tree-collection', props: { searchable: false } }) },
+      }}
+    />
+  );
 };
 
 class DemoPlugin extends Plugin {
   async load() {
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

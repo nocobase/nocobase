@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Auth"
+description: "API xác thực của NocoBase: lớp xác thực Auth, xác minh danh tính người dùng và phát hành token."
+keywords: "Auth API,xác thực,đăng nhập,đăng xuất,phát hành token,NocoBase"
+---
 
 # Auth
 
 ## Tổng quan
 
-`Auth` là một lớp trừu tượng dành cho các loại xác thực người dùng. Lớp này định nghĩa các giao diện cần thiết để hoàn tất quá trình xác thực người dùng. Để mở rộng một loại xác thực người dùng mới, bạn cần kế thừa lớp `Auth` và triển khai các phương thức của nó. Để tham khảo cách triển khai cơ bản, hãy xem: [BaseAuth](./base-auth.md).
+`Auth` là lớp trừu tượng cho kiểu xác thực người dùng, định nghĩa các interface cần thiết để hoàn tất xác thực. Mở rộng kiểu xác thực người dùng mới cần kế thừa lớp `Auth` và triển khai các phương thức của nó. Triển khai cơ bản có thể tham khảo: [BaseAuth](./base-auth.md).
 
 ```ts
 interface IAuth {
@@ -26,18 +27,18 @@ export abstract class Auth implements IAuth {
 }
 
 class CustomAuth extends Auth {
-  // check: authentication
+  // check: xác thực
   async check() {
     // ...
   }
 }
 ```
 
-## Thuộc tính của thể hiện
+## Thuộc tính của instance
 
 ### `user`
 
-Thông tin người dùng đã được xác thực.
+Thông tin người dùng đã xác thực.
 
 #### Chữ ký
 
@@ -47,7 +48,7 @@ Thông tin người dùng đã được xác thực.
 
 ### `constructor()`
 
-Hàm khởi tạo, dùng để tạo một thể hiện (instance) của `Auth`.
+Constructor, tạo một instance `Auth`.
 
 #### Chữ ký
 
@@ -65,19 +66,19 @@ export type AuthConfig = {
 };
 ```
 
-#### Chi tiết
+#### Thông tin chi tiết
 
 ##### AuthConfig
 
 | Thuộc tính      | Kiểu                                            | Mô tả                                                                                                 |
 | --------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `authenticator` | [`Authenticator`](./auth-manager#authenticator) | Mô hình dữ liệu của bộ xác thực (authenticator). Kiểu thực tế trong ứng dụng NocoBase là [AuthModel](/auth-verification/auth/dev/api#authmodel). |
-| `options`       | `Record<string, any>`                           | Cấu hình liên quan đến bộ xác thực (authenticator).                                                   |
-| `ctx`           | `Context`                                       | Ngữ cảnh yêu cầu.                                                                                     |
+| `authenticator` | [`Authenticator`](./auth-manager#authenticator) | Model dữ liệu của authenticator, kiểu thực tế trong ứng dụng NocoBase là [AuthModel](/auth-verification/auth/dev/api#authmodel) |
+| `options`       | `Record<string, any>`                           | Cấu hình liên quan đến authenticator                                                                 |
+| `ctx`           | `Context`                                       | Ngữ cảnh request                                                                                     |
 
 ### `check()`
 
-Xác thực người dùng. Phương thức này trả về thông tin người dùng và là một phương thức trừu tượng mà tất cả các loại xác thực đều phải triển khai.
+Xác thực người dùng, trả về thông tin người dùng. Đây là phương thức trừu tượng mà mọi kiểu xác thực phải triển khai.
 
 #### Chữ ký
 

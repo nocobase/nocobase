@@ -1,17 +1,19 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Manajemen Plugin"
+description: "Manajemen plugin: Plugin Manager untuk melihat, instal, mengaktifkan, menonaktifkan plugin, Plugin Settings Center untuk konfigurasi terpadu setiap plugin, entry point di pojok kanan atas halaman."
+keywords: "manajemen plugin,Plugin Manager,instal plugin,aktifkan nonaktifkan plugin,Plugin Settings Center,manajemen sistem,NocoBase"
+---
 
 # Manajemen Plugin
 
-## Manajer Plugin
+## Plugin Manager
 
-Klik ikon manajer plugin di pojok kanan atas halaman untuk masuk ke halaman manajer plugin. Di halaman ini, Anda dapat melihat, menginstal, mengaktifkan, atau menonaktifkan plugin.
+Klik ikon Plugin Manager di pojok kanan atas halaman untuk masuk ke halaman Plugin Manager. Pada halaman ini Anda dapat melihat, menginstal, mengaktifkan, atau menonaktifkan plugin.
 
 ![2024-04-10_08-47-45](https://static-docs.nocobase.com/2024-04-10_08-47-45.png)
 
-## Pusat Pengaturan Plugin
+## Plugin Settings Center
 
-Plugin biasanya memiliki halaman pengaturannya sendiri. Klik ikon pengaturan di pojok kanan atas halaman untuk melihat menu pengaturan semua plugin. Klik item menu yang sesuai untuk mengonfigurasi plugin tersebut.
+Plugin biasanya memiliki halaman pengaturannya sendiri. Klik ikon settings di pojok kanan atas halaman untuk melihat menu pengaturan semua plugin. Klik item menu yang sesuai untuk mengonfigurasi plugin.
 
 ![2024-04-10_08-52-41](https://static-docs.nocobase.com/2024-04-10_08-52-41.png)

@@ -16,25 +16,31 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
+import Joi from 'joi';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import WorkflowPluginServer, {
   EventOptions,
   EXECUTION_STATUS,
   Trigger,
+  validateCollectionField,
   WorkflowModel,
+  getWorkflowExecutionLogMeta,
 } from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 import Application from '@nocobase/server';
 import { get, pick } from 'lodash';
-import { Context, Next } from '@nocobase/actions';
-import { CONTEXT_TYPE, EVENT_TYPE } from '../common/constants';
+import { Next } from '@nocobase/actions';
+import { CONTEXT_TYPE, EVENT_TYPE, NAMESPACE } from '../common/constants';
+import { ResourcerContext } from '@nocobase/resourcer';
 
-type CustomActionTriggerEvent = [WorkflowModel, Record<string, any>?];
+type CustomActionTriggerEvent = [WorkflowModel, Record<string, any>];
+
+const ASYNC_WORKFLOW_TRIGGER_DELAY_MS = 200;
 
 class CustomActionInterceptionError extends Error {
   status = 400;
   messages: any[] = [];
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = 'CustomActionInterceptionError';
   }
@@ -43,8 +49,29 @@ class CustomActionInterceptionError extends Error {
 export default class CustomActionTrigger extends Trigger {
   static TYPE = EVENT_TYPE;
 
-  async globalTriggerAction(context: Context, next: Next) {
-    const { triggerWorkflows, values = {} } = context.action.params;
+  configSchema = Joi.object({
+    type: Joi.number().valid(CONTEXT_TYPE.SINGLE_RECORD, CONTEXT_TYPE.MULTIPLE_RECORDS, CONTEXT_TYPE.GLOBAL).required(),
+    collection: Joi.when('type', {
+      is: Joi.valid(CONTEXT_TYPE.SINGLE_RECORD, CONTEXT_TYPE.MULTIPLE_RECORDS),
+      then: Joi.string().required().messages({ 'any.required': 'Collection is required for record-based context' }),
+      otherwise: Joi.string().allow(null, ''),
+    }),
+    appends: Joi.array().items(Joi.string()).optional(),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    if (config.collection) {
+      return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+    }
+    return null;
+  }
+
+  async globalTriggerAction(context: ResourcerContext, next: Next) {
+    const { triggerWorkflows, values = {} } = context.action!.params;
 
     const { currentUser, currentRole } = context.state;
     const { model: UserModel } = this.workflow.db.getCollection('users');
@@ -77,11 +104,10 @@ export default class CustomActionTrigger extends Trigger {
       }
     }
 
-    const syncGroup = [];
-    const asyncGroup = [];
+    const syncGroup: CustomActionTriggerEvent[] = [];
+    const asyncGroup: CustomActionTriggerEvent[] = [];
     for (const workflow of workflows) {
-      const event: CustomActionTriggerEvent = [workflow];
-      event.push({ data: values, ...userInfo });
+      const event: CustomActionTriggerEvent = [workflow, { data: values, ...userInfo }];
       (workflow.sync ? syncGroup : asyncGroup).push(event);
     }
 
@@ -92,11 +118,11 @@ export default class CustomActionTrigger extends Trigger {
     });
   }
 
-  triggerAction = async (context: Context, next: Next) => {
+  triggerAction = async (context: ResourcerContext, next: Next) => {
     const {
       resourceName,
       params: { filterByTk, values, triggerWorkflows = '', associatedIndex },
-    } = context.action;
+    } = context.action!;
 
     if (!triggerWorkflows) {
       return context.throw(400, 'parameter "triggerWorkflows" is required');
@@ -146,22 +172,28 @@ export default class CustomActionTrigger extends Trigger {
       }
     }
 
-    const syncGroup = [];
-    const asyncGroup = [];
+    // Extract ACL scope filter (e.g., from "own data" scope configuration)
+    const scopeFilter = context.permission?.parsedParams?.filter;
+
+    const syncGroup: CustomActionTriggerEvent[] = [];
+    const asyncGroup: CustomActionTriggerEvent[] = [];
     for (const workflow of workflows) {
-      const event: [WorkflowModel, Record<string, any>?] = [workflow];
+      const event: CustomActionTriggerEvent = [workflow, {}];
       const { appends = [] } = workflow.config;
       const dataPath = triggerWorkflowsMap.get(workflow.key);
       const formData = dataPath ? get(values, dataPath) : values;
       let data = formData;
       if (filterByTk != null) {
         if (Array.isArray(filterByTk)) {
-          data = (await repository.find({ filterByTk, appends, context })).map((item) =>
+          data = (await repository.find({ filterByTk, appends, context, filter: scopeFilter })).map((item) =>
             Object.assign(item.toJSON(), formData),
           );
         } else {
-          data = await repository.findOne({ filterByTk, appends, context });
+          data = await repository.findOne({ filterByTk, appends, context, filter: scopeFilter });
           if (!data) {
+            if (scopeFilter) {
+              return context.throw(403, 'No permissions');
+            }
             continue;
           }
           if (typeof data.toJSON === 'function') {
@@ -171,7 +203,7 @@ export default class CustomActionTrigger extends Trigger {
           }
         }
       }
-      event.push({ data, ...userInfo });
+      event[1] = { data, ...userInfo };
       (workflow.sync ? syncGroup : asyncGroup).push(event);
     }
 
@@ -187,11 +219,41 @@ export default class CustomActionTrigger extends Trigger {
 
     this.workflow.app.dataSourceManager.afterAddDataSource((dataSource) => {
       dataSource.resourceManager.registerActionHandler('trigger', this.triggerAction);
-      // TODO: ACL on `:trigger` action
-      // dataSource.acl.setAvailableAction('trigger', {
-      //   displayName: `{{t("Trigger workflow", { ns: "${NAMESPACE}" })}}`,
-      // });
-      dataSource.acl.allow('*', ['trigger'], 'loggedIn');
+      dataSource.acl.setAvailableAction('trigger', {
+        displayName: `{{t("Trigger workflow", { ns: "${NAMESPACE}" })}}`,
+      });
+      dataSource.acl.setAvailableAction('triggerNew', {
+        displayName: `{{t("Trigger workflow", { ns: "${NAMESPACE}" })}}`,
+        onNewRecord: true,
+      });
+
+      // When a `:trigger` request has no filterByTk, it targets a not-yet-persisted record.
+      // Rewrite actionName to `triggerNew` so ACL evaluates the new-data permission, then
+      // restore it before the handler runs so everything downstream sees the real action.
+      // Handler dispatch uses the immutable Action.name, so the rewrite never affects it.
+      dataSource.resourceManager.use(
+        async (ctx, next) => {
+          const { resourceName, actionName, params } = ctx.action ?? {};
+          if (actionName === 'trigger' && resourceName !== 'workflows' && params?.filterByTk == null) {
+            ctx.action.actionName = 'triggerNew';
+            ctx.state.__customActionTriggerRenamed = true;
+          }
+          await next();
+        },
+        { tag: 'customActionTriggerRename', before: 'acl', after: 'auth' },
+      );
+      dataSource.resourceManager.use(
+        async (ctx, next) => {
+          if (ctx.state.__customActionTriggerRenamed) {
+            ctx.action.actionName = 'trigger';
+          }
+          await next();
+        },
+        { tag: 'customActionTriggerRestore', after: 'acl' },
+      );
+
+      // TODO: ACL on `workflows:trigger` action
+      dataSource.acl.allow('workflows', ['trigger'], 'loggedIn');
     });
 
     (workflow.app.pm.get(PluginErrorHandler) as PluginErrorHandler).errorHandler.register(
@@ -211,13 +273,39 @@ export default class CustomActionTrigger extends Trigger {
     next,
   }: {
     events: [CustomActionTriggerEvent[], CustomActionTriggerEvent[]];
-    context: Context;
+    context: ResourcerContext;
     next: Next;
   }) {
-    for (const event of syncGroup) {
-      const processor = await this.workflow.trigger(event[0], event[1], { httpContext: context });
+    if (!syncGroup.length && !asyncGroup.length) {
+      context.logger.warn('No workflow triggered');
+      return context.throw(500, 'No action done, please contact the administrator');
+    }
+
+    const { resourceName, actionName } = context.action!;
+
+    for (const [index, event] of syncGroup.entries()) {
+      const workflow = event[0];
+      const syncLogMeta = {
+        workflowId: workflow.id,
+        workflowKey: workflow.key,
+        workflowTitle: workflow.title,
+        resourceName,
+        actionName,
+        currentSyncOrder: index + 1,
+        totalSyncWorkflows: syncGroup.length,
+        remainingSyncWorkflows: syncGroup.length - index - 1,
+        pendingAsyncWorkflows: asyncGroup.length,
+      };
+
+      context.logger.debug('[Workflow custom-action]: executing sync workflow', syncLogMeta);
+
+      const processor = await this.workflow.trigger(workflow, event[1], { httpContext: context });
       // NOTE: workflow trigger failed
       if (!processor) {
+        context.logger.error(
+          '[Workflow custom-action]: sync workflow trigger failed before execution created',
+          syncLogMeta,
+        );
         return context.throw(500);
       }
 
@@ -226,34 +314,84 @@ export default class CustomActionTrigger extends Trigger {
       // NOTE: passthrough
       if (processor.execution.status === EXECUTION_STATUS.RESOLVED) {
         if (lastNode?.type === 'end') {
+          context.logger.debug('[Workflow custom-action]: sync workflow ended request chain on end node', {
+            ...syncLogMeta,
+            ...getWorkflowExecutionLogMeta(workflow, processor),
+          });
           // NOTE: response will be set in data-wrapper middleware
           return;
         }
+        context.logger.debug('[Workflow custom-action]: sync workflow finished successfully', {
+          ...syncLogMeta,
+          ...getWorkflowExecutionLogMeta(workflow, processor),
+        });
         continue;
       }
       // NOTE: intercept
       if (processor.execution.status < EXECUTION_STATUS.STARTED) {
         if (lastNode?.type !== 'end') {
+          context.logger.error('[Workflow custom-action]: sync workflow failed', {
+            ...syncLogMeta,
+            ...getWorkflowExecutionLogMeta(workflow, processor),
+          });
           return context.throw(500, 'Workflow on your action failed, please contact the administrator');
         }
 
+        context.logger.warn('[Workflow custom-action]: sync workflow intercepted request on end node', {
+          ...syncLogMeta,
+          ...getWorkflowExecutionLogMeta(workflow, processor),
+        });
         const err = new CustomActionInterceptionError('Request is intercepted by workflow');
         err.status = 400;
         err.messages = context.state.messages;
         return context.throw(err.status, err);
       }
       // NOTE: should not be pending
+      context.logger.error('[Workflow custom-action]: sync workflow is still pending after trigger', {
+        ...syncLogMeta,
+        ...getWorkflowExecutionLogMeta(workflow, processor),
+      });
       return context.throw(500, 'Workflow on your action hangs, please contact the administrator');
     }
 
     await next();
 
-    for (const event of asyncGroup) {
-      this.workflow.trigger(event[0], event[1]);
-    }
+    this.scheduleAsyncWorkflowTriggers(context, asyncGroup);
   }
 
-  validateContext(values, workflow: WorkflowModel) {
+  private scheduleAsyncWorkflowTriggers(context: ResourcerContext, events: CustomActionTriggerEvent[]) {
+    if (!events.length) {
+      return;
+    }
+
+    const triggerAsyncWorkflows = () => {
+      const triggerAsyncWorkflow = async (workflow: WorkflowModel, values: Record<string, any>) => {
+        await this.workflow.trigger(workflow, values);
+      };
+
+      setTimeout(() => {
+        for (const [workflow, values] of events) {
+          triggerAsyncWorkflow(workflow, values).catch((error) => {
+            context.logger.error('[Workflow custom-action]: async workflow trigger failed', {
+              error,
+              workflowId: workflow.id,
+              workflowKey: workflow.key,
+              workflowTitle: workflow.title,
+            });
+          });
+        }
+      }, ASYNC_WORKFLOW_TRIGGER_DELAY_MS);
+    };
+
+    if (context.res.writableEnded) {
+      triggerAsyncWorkflows();
+      return;
+    }
+
+    context.res.once('finish', triggerAsyncWorkflows);
+  }
+
+  validateContext(values: any, workflow: WorkflowModel) {
     const { type } = workflow.config;
     if (type === CONTEXT_TYPE.SINGLE_RECORD) {
       if (!values.data) {
@@ -272,10 +410,14 @@ export default class CustomActionTrigger extends Trigger {
     return null;
   }
 
-  async execute(workflow: WorkflowModel, values, options: EventOptions) {
+  async execute(workflow: WorkflowModel, values: Record<string, any>, options: EventOptions) {
+    const { userId } = values;
+    if (userId == null) {
+      throw new Error('user is not provided');
+    }
     const UserRepo = this.workflow.app.db.getRepository('users');
     const actor = await UserRepo.findOne({
-      filterByTk: values.userId,
+      filterByTk: typeof userId === 'object' ? userId['id'] : userId,
       appends: ['roles'],
     });
     if (!actor) {
@@ -319,7 +461,7 @@ export default class CustomActionTrigger extends Trigger {
         filterByTk = collection.isMultiFilterTargetKey()
           ? pick(
               data,
-              collection.filterTargetKey.sort((a, b) => a.localeCompare(b)),
+              collection.filterTargetKey.sort((a: string, b: string) => a.localeCompare(b)),
             )
           : get(data, collection.filterTargetKey);
       } else {

@@ -9,17 +9,22 @@
 
 import React, { ComponentType, useEffect } from 'react';
 import { DefaultToolCard } from './DefaultToolCard';
-import { ToolsUIProperties, toToolsMap, useTools } from '@nocobase/client';
+import { ToolsUIProperties, toToolsMap } from '@nocobase/client';
 import { ToolCall } from '../../types';
 import { jsonrepair } from 'jsonrepair';
 import { useToolCallActions } from '../hooks/useToolCallActions';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { observer } from '@nocobase/flow-engine';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 
 export const ToolCard: React.FC<{
   messageId: string;
   toolCalls: ToolCall[];
   inlineActions?: React.ReactNode;
-}> = ({ toolCalls, messageId, inlineActions }) => {
-  const { tools, loading } = useTools();
+}> = observer(({ toolCalls, messageId, inlineActions }) => {
+  const aiConfigRepository = useAIConfigRepository();
+  const loading = aiConfigRepository.aiToolsLoading;
+  const tools = aiConfigRepository.aiTools;
   const toolsMap = toToolsMap(tools);
   const { getDecisionActions } = useToolCallActions({ messageId });
   const toolsWithUI: ({ C: ComponentType<ToolsUIProperties> } & ToolsUIProperties)[] = [];
@@ -34,7 +39,6 @@ export const ToolCard: React.FC<{
           toolCall.args = JSON.parse(repaired);
         } catch (err) {
           console.error(err, toolCall.args);
-          toolCall.args = {};
         }
       } else {
         toolCall.args = {};
@@ -43,6 +47,9 @@ export const ToolCard: React.FC<{
     const toolEntry = toolsMap.get(toolCall.name);
     const C = toolEntry?.ui?.card;
     if (C) {
+      if (typeof toolCall.args !== 'object' || toolCall.args === null) {
+        toolCall.args = {};
+      }
       toolsWithUI.push({
         C,
         messageId,
@@ -54,6 +61,11 @@ export const ToolCard: React.FC<{
       toolsWithoutUI.push(toolCall);
     }
   }
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  useEffect(() => {
+    aiConfigRepository.getAITools(currentConversation);
+  }, [aiConfigRepository, currentConversation]);
 
   useEffect(() => {
     if (!messageId) {
@@ -94,4 +106,4 @@ export const ToolCard: React.FC<{
       )}
     </>
   );
-};
+});

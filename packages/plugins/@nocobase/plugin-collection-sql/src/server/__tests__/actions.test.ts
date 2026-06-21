@@ -50,6 +50,21 @@ describe('sql collection', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
+
+    for (const sql of [
+      'select usename, passwd from pg_shadow',
+      'select rolname, rolsuper from pg_roles',
+      'select table_name from information_schema.tables',
+      'select * from (select usename, passwd from pg_shadow) as passwords',
+    ]) {
+      res = await agent.resource('sqlCollection').execute({
+        values: {
+          sql,
+        },
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
+    }
   });
 
   it('sqlCollection:execute', async () => {
@@ -184,6 +199,67 @@ describe('sql collection', () => {
     expect(fields2.length).toBe(1);
     const loadedFields2 = db.getCollection('sqlCollection').fields;
     expect(loadedFields2.size).toBe(1);
+  });
+
+  it('sqlCollection:update: should check sql', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'fakeCollection',
+        fields: [
+          {
+            name: 'testField1',
+            type: 'string',
+            interface: 'input',
+          },
+        ],
+      },
+    });
+    await agent.resource('collections').create({
+      values: {
+        name: 'sqlCollection',
+        sql: 'select * from "fakeCollection"',
+        template: 'sql',
+        fields: [
+          {
+            name: 'testField1',
+            type: 'string',
+            interface: 'input',
+          },
+        ],
+      },
+    });
+
+    const collection = await db.getRepository('collections').findOne({
+      filter: {
+        name: 'sqlCollection',
+      },
+    });
+
+    const updateRes = await agent.resource('sqlCollection').update({
+      filterByTk: 'sqlCollection',
+      values: {
+        key: collection.key,
+        sql: "select pg_read_file('/etc/passwd')",
+        name: 'sqlCollection',
+        fields: [
+          {
+            name: 'testField1',
+            type: 'string',
+            interface: 'input',
+          },
+        ],
+      },
+    });
+
+    expect(updateRes.status).toBe(400);
+    expect(updateRes.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
+
+    const collectionAfterUpdate = await db.getRepository('collections').findOne({
+      filter: {
+        name: 'sqlCollection',
+      },
+    });
+    expect(collectionAfterUpdate.options.sql).toBe('select * from "fakeCollection"');
   });
 
   it('sqlCollection:setFields', async () => {

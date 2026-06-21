@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-action-bulk-edit"
+title: "批量编辑操作"
+description: "批量编辑操作：批量更新选中记录的指定字段，支持多选后统一修改。"
+keywords: "批量编辑,BulkEdit,批量更新,多选,界面搭建,NocoBase"
 ---
-
 # 批量编辑
 
 ## 介绍

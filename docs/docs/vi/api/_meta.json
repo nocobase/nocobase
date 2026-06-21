@@ -2,7 +2,7 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Tổng quan API"
+    "label": "API Overview"
   },
   {
     "type": "dir",
@@ -14,6 +14,12 @@
     "type": "dir",
     "name": "cache",
     "label": "@nocobase/cache",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "app",
+    "label": "@nocobase/app",
     "collapsed": true
   },
   {
@@ -62,6 +68,12 @@
     "type": "dir",
     "name": "sdk",
     "label": "@nocobase/sdk",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "telemetry",
+    "label": "@nocobase/telemetry",
     "collapsed": true
   }
 ]

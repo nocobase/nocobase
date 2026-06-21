@@ -1,35 +1,41 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Gửi hàng loạt"
+description: "Gửi Email hàng loạt tới nhiều người nhận, mỗi người nhận sẽ nhận một Email riêng biệt; có thể cấu hình gửi hàng loạt theo lựa chọn trong bảng, field người nhận, theo dõi gửi."
+keywords: "gửi hàng loạt,Email hàng loạt,bảng gửi hàng loạt,theo dõi gửi Email,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
 # Gửi hàng loạt
 
-## Tổng quan về tính năng gửi hàng loạt
-Bạn có thể gửi email đến nhiều người cùng lúc (mỗi người nhận sẽ nhận được một email riêng biệt).
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_10_PM.png)
+## Tổng quan gửi hàng loạt
+Hỗ trợ gửi Email hàng loạt đến nhiều người nhận, mỗi người nhận sẽ nhận được một Email riêng biệt.
 
-## Gửi hàng loạt qua bảng
-Bạn cũng có thể gửi email hàng loạt thông qua một bảng:
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_15_PM.png)
 
-1. Thêm nút gửi email vào bảng
-   ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_14_PM.png)
+## Gửi hàng loạt thông qua bảng
 
-2. Cấu hình trường email trong bảng (dùng để phân tích địa chỉ email sau khi chọn các hàng trong bảng)
-   ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_13_PM.png)
+Có thể cấu hình tính năng gửi Email hàng loạt theo lựa chọn trong bảng.
 
-3. Chọn dữ liệu trong bảng để gửi email
-   ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_15_PM.png)
+1. Thêm nút gửi Email vào bảng
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_04_PM.png)
 
-Nếu bạn cần gửi email đến tất cả các địa chỉ trong toàn bộ bảng, bạn có thể bật tính năng **Mặc định chọn tất cả bản ghi trong bảng hiện tại làm người nhận**:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_16_PM.png)
+2. Cấu hình field người nhận (hệ thống sẽ trích xuất địa chỉ Email từ dữ liệu bảng được chọn).
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_17_PM%20(1).png)
 
-Sau khi chỉnh sửa nội dung email, hãy nhấp vào nút gửi hàng loạt để gửi:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_17_PM.png)
+3. Tích chọn các hàng dữ liệu cần gửi trong bảng.
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
 
-## Theo dõi trạng thái gửi email
-Bạn có thể xem và theo dõi trạng thái gửi email cụ thể tại Trung tâm quản lý email:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM%20(1).png)
+Nếu cần gửi cho tất cả các bản ghi trong bảng, có thể đặt phạm vi người nhận là **All records**.
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_18_PM%20(1).png)
+
+Sau khi chỉnh sửa nội dung Email, click nút **Gửi hàng loạt** để hoàn tất gửi.
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
+
+## Theo dõi gửi Email
+
+Sau khi gửi xong, có thể xem trạng thái gửi và thông tin Email trong Email Center.
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_20_PM.png)
+
 ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM.png)

@@ -1,35 +1,37 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Pertanyaan Umum Data Visualization"
+description: "Tanya jawab umum tentang pemilihan Chart, interoperabilitas query data Builder/SQL, pemetaan field, preview dan simpan, jenis Chart ECharts."
+keywords: "FAQ data visualization,pemilihan chart,line chart,bar chart,pie chart,Builder,mode SQL,preview simpan,NocoBase"
+---
 
 # Pertanyaan Umum
 
-## Pemilihan Bagan
-### Bagaimana cara memilih bagan yang sesuai?
-Jawab: Pilih berdasarkan tujuan dan data Anda:
-- Tren atau perubahan: Bagan garis atau area
-- Perbandingan nilai: Bagan kolom atau batang
-- Komposisi atau proporsi: Bagan pai atau donat
-- Korelasi atau distribusi: Bagan sebar
-- Struktur hierarki atau progres tahapan: Bagan corong
+## Pertanyaan Pemilihan Chart
+### Bagaimana cara memilih Chart yang sesuai?
+Jawaban: pilih sesuai dengan tujuan data:
+- Tren dan perubahan: line chart atau area chart
+- Perbandingan numerik: bar chart atau column chart
+- Struktur proporsi: pie chart atau donut chart
+- Korelasi dan distribusi: scatter chart
+- Struktur hierarki dan perubahan kemajuan: funnel chart
 
-Untuk jenis bagan lainnya, silakan lihat [contoh ECharts](https://echarts.apache.org/examples).
+Untuk lebih banyak jenis Chart, lihat [contoh ECharts](https://echarts.apache.org/examples).
 
-### Jenis bagan apa saja yang didukung NocoBase?
-Jawab: Mode visualisasi menyertakan bagan umum (garis, area, kolom, batang, pai, donat, corong, sebar, dll.). Mode kustom mendukung semua jenis bagan ECharts.
+### Chart apa saja yang didukung NocoBase?
+Jawaban: konfigurasi visualisasi memiliki Chart umum bawaan (line chart, area chart, bar chart, column chart, pie chart, donut chart, funnel chart, scatter chart, dll.); konfigurasi kustom dapat menggunakan semua jenis Chart ECharts.
 
-## Masalah Kueri Data
-### Apakah mode visualisasi dan mode SQL saling berbagi konfigurasi?
-Jawab: Tidak. Konfigurasi keduanya disimpan secara terpisah. Mode yang digunakan saat terakhir Anda menyimpan akan diterapkan.
+## Pertanyaan Query Data
+### Apakah konfigurasi visualisasi dan konfigurasi SQL saling terhubung?
+Jawaban: tidak terhubung, konfigurasi disimpan secara terpisah. Mode konfigurasi pada saat penyimpanan terakhir yang berlaku.
 
-## Opsi Bagan
-### Bagaimana cara mengonfigurasi kolom bagan?
-Jawab: Dalam mode visualisasi, pilih kolom data sesuai dengan jenis bagan. Misalnya, bagan garis atau kolom memerlukan konfigurasi kolom sumbu X dan sumbu Y; bagan pai memerlukan konfigurasi kolom kategori dan kolom nilai.
-Disarankan untuk menjalankan "Jalankan kueri" terlebih dahulu untuk memverifikasi apakah data sudah sesuai harapan. Secara default, pemetaan kolom bagan akan dicocokkan secara otomatis.
+## Pertanyaan Opsi Chart
+### Bagaimana cara mengkonfigurasi field Chart?
+Jawaban: pada konfigurasi visualisasi, pilih field data yang sesuai berdasarkan jenis Chart. Misalnya, line chart/bar chart memerlukan konfigurasi field sumbu X dan sumbu Y, pie chart memerlukan konfigurasi field kategori dan field nilai.
+Disarankan untuk menjalankan "Jalankan Query" terlebih dahulu untuk melihat apakah data sesuai harapan; secara default akan otomatis mencocokkan field Chart.
 
-## Pratinjau dan Simpan
-### Apakah saya perlu mempratinjau perubahan secara manual setelah mengonfigurasi?
-Jawab: Dalam mode visualisasi, perubahan akan dipratinjau secara otomatis. Dalam mode SQL dan mode kustom, untuk menghindari pembaruan yang sering, selesaikan penulisan dan klik "Pratinjau" secara manual.
+## Pertanyaan Preview/Simpan
+### Apakah perlu preview manual setelah perubahan konfigurasi?
+Jawaban: pada mode konfigurasi visualisasi, preview akan otomatis muncul setelah perubahan konfigurasi. Pada mode SQL dan konfigurasi kustom, untuk menghindari refresh yang sering, klik "Preview" secara manual setelah selesai menulis.
 
-### Mengapa pratinjau hilang setelah menutup dialog?
-Jawab: Efek pratinjau hanya untuk tampilan sementara. Setelah melakukan perubahan konfigurasi, harap simpan terlebih dahulu sebelum menutup. Perubahan yang belum disimpan tidak akan dipertahankan.
+### Mengapa efek preview Chart hilang setelah menutup popup?
+Jawaban: efek preview hanya untuk tampilan sementara. Simpan terlebih dahulu sebelum menutup setelah perubahan konfigurasi; perubahan yang belum disimpan tidak akan dipertahankan.

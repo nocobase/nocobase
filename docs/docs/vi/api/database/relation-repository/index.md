@@ -1,18 +1,19 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "RelationRepository"
+description: "Repository quan hệ của NocoBase: thao tác dữ liệu quan hệ mà không cần load quan hệ, các triển khai BelongsTo/HasMany/BelongsToMany."
+keywords: "RelationRepository,BelongsTo,HasMany,BelongsToMany,Repository quan hệ,NocoBase"
+---
 
 # RelationRepository
 
-`RelationRepository` là một đối tượng `Repository` dành cho các kiểu quan hệ. `RelationRepository` cho phép bạn thao tác với dữ liệu liên quan mà không cần tải toàn bộ mối quan hệ. Dựa trên `RelationRepository`, mỗi kiểu quan hệ sẽ có một triển khai phái sinh tương ứng, bao gồm:
+`RelationRepository` là đối tượng `Repository` kiểu quan hệ. `RelationRepository` có thể thực hiện thao tác dữ liệu quan hệ mà không cần load quan hệ. Dựa trên `RelationRepository`, mỗi loại quan hệ có triển khai tương ứng:
 
 - [`HasOneRepository`](#has-one-repository)
 - `HasManyRepository`
 - `BelongsToRepository`
 - `BelongsToManyRepository`
 
-## Hàm khởi tạo
+## Constructor
 
 **Chữ ký**
 
@@ -20,34 +21,34 @@ Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin kh
 
 **Tham số**
 
-| Tên tham số        | Kiểu               | Giá trị mặc định | Mô tả                                                                   |
-| :----------------- | :----------------- | :--------------- | :---------------------------------------------------------------------- |
-| `sourceCollection` | `Collection`       | -                | Đối tượng `bộ sưu tập` tương ứng với quan hệ tham chiếu trong mối quan hệ |
-| `association`      | `string`           | -                | Tên mối quan hệ                                                         |
-| `sourceKeyValue`   | `string \| number` | -                | Giá trị khóa tương ứng trong quan hệ tham chiếu                         |
+| Tên tham số        | Kiểu               | Giá trị mặc định | Mô tả                                                          |
+| ------------------ | ------------------ | ---------------- | -------------------------------------------------------------- |
+| `sourceCollection` | `Collection`       | -                | Collection tương ứng với quan hệ tham chiếu (referencing relation) trong quan hệ |
+| `association`      | `string`           | -                | Tên quan hệ                                                    |
+| `sourceKeyValue`   | `string \| number` | -                | Giá trị key tương ứng trong quan hệ tham chiếu                 |
 
-## Thuộc tính của lớp cơ sở
+## Thuộc tính lớp cơ sở
 
 ### `db: Database`
 
-Đối tượng cơ sở dữ liệu
+Đối tượng cơ sở dữ liệu.
 
 ### `sourceCollection`
 
-Đối tượng `bộ sưu tập` tương ứng với quan hệ tham chiếu trong mối quan hệ
+Collection tương ứng với quan hệ tham chiếu (referencing relation) trong quan hệ.
 
 ### `targetCollection`
 
-Đối tượng `bộ sưu tập` tương ứng với quan hệ được tham chiếu trong mối quan hệ
+Collection tương ứng với quan hệ được tham chiếu (referenced relation) trong quan hệ.
 
 ### `association`
 
-Đối tượng mối quan hệ trong Sequelize tương ứng với mối quan hệ hiện tại
+Đối tượng association của sequelize tương ứng với quan hệ hiện tại.
 
 ### `associationField`
 
-Trường trong `bộ sưu tập` tương ứng với mối quan hệ hiện tại
+Field trong collection tương ứng với quan hệ hiện tại.
 
 ### `sourceKeyValue`
 
-Giá trị khóa tương ứng trong quan hệ tham chiếu
+Giá trị key tương ứng trong quan hệ tham chiếu.

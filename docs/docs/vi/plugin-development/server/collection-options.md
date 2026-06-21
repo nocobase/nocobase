@@ -1,9 +1,11 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tham số cấu hình Collection"
+description: "Cấu hình defineCollection NocoBase: name, title, migrationRules, inherits, fields, timestamps, autoGenId, v.v."
+keywords: "CollectionOptions,defineCollection,name,fields,migrationRules,inherits,NocoBase"
+---
 
 
-## Tham số cấu hình bộ sưu tập
+## Mô tả tham số cấu hình Collection
 
 ```ts
 export type MigrationRule =
@@ -33,33 +35,33 @@ export interface CollectionOptions {
 }
 ```
 
-### `name` - Tên bộ sưu tập
-- **Kiểu**: `string`
+### `name` - Tên bảng dữ liệu
+- **Loại**: `string`
 - **Bắt buộc**: ✅
-- **Mô tả**: Mã định danh duy nhất cho bộ sưu tập, phải là duy nhất trong toàn bộ ứng dụng.
+- **Mô tả**: Định danh duy nhất của bảng dữ liệu, phải duy nhất trong toàn ứng dụng
 - **Ví dụ**:
 ```typescript
 {
-  name: 'users'  // Bộ sưu tập người dùng
+  name: 'users'  // Bảng dữ liệu users
 }
 ```
 
-### `title` - Tiêu đề bộ sưu tập
-- **Kiểu**: `string`
+### `title` - Tiêu đề bảng dữ liệu
+- **Loại**: `string`
 - **Bắt buộc**: ❌
-- **Mô tả**: Tiêu đề hiển thị của bộ sưu tập, dùng để hiển thị trên giao diện người dùng.
+- **Mô tả**: Tiêu đề hiển thị của bảng dữ liệu, dùng để hiển thị trên giao diện front-end
 - **Ví dụ**:
 ```typescript
 {
   name: 'users',
-  title: 'Quản lý người dùng'  // Hiển thị là "Quản lý người dùng" trên giao diện
+  title: 'Quản lý người dùng'  // Hiển thị trên giao diện là "Quản lý người dùng"
 }
 ```
 
-### `migrationRules` - Quy tắc di chuyển
-- **Kiểu**: `MigrationRule[]`
+### `migrationRules` - Quy tắc migration
+- **Loại**: `MigrationRule[]`
 - **Bắt buộc**: ❌
-- **Mô tả**: Các quy tắc xử lý khi di chuyển dữ liệu.
+- **Mô tả**: Quy tắc xử lý khi migration dữ liệu
 - **Ví dụ**:
 ```typescript
 {
@@ -69,17 +71,17 @@ export interface CollectionOptions {
 }
 ```
 
-### `inherits` - Kế thừa bộ sưu tập
-- **Kiểu**: `string[] | string`
+### `inherits` - Kế thừa bảng dữ liệu
+- **Loại**: `string[] | string`
 - **Bắt buộc**: ❌
-- **Mô tả**: Kế thừa định nghĩa trường từ các bộ sưu tập khác. Hỗ trợ kế thừa từ một hoặc nhiều bộ sưu tập.
+- **Mô tả**: Kế thừa định nghĩa Field từ các bảng dữ liệu khác, hỗ trợ kế thừa từ một hoặc nhiều bảng
 - **Ví dụ**:
 
 ```typescript
-// Kế thừa đơn lẻ
+// Kế thừa đơn
 {
   name: 'admin_users',
-  inherits: 'users',  // Kế thừa tất cả các trường từ bộ sưu tập người dùng
+  inherits: 'users',  // Kế thừa tất cả Field của bảng users
   fields: [
     {
       type: 'string',
@@ -91,36 +93,36 @@ export interface CollectionOptions {
 // Kế thừa nhiều
 {
   name: 'super_admin_users',
-  inherits: ['users', 'admin_users'],  // Kế thừa từ nhiều bộ sưu tập
+  inherits: ['users', 'admin_users'],  // Kế thừa nhiều bảng dữ liệu
   fields: [...]
 }
 ```
 
-### `filterTargetKey` - Khóa mục tiêu lọc
-- **Kiểu**: `string | string[]`
+### `filterTargetKey` - Khóa target để filter
+- **Loại**: `string | string[]`
 - **Bắt buộc**: ❌
-- **Mô tả**: Khóa mục tiêu dùng để lọc truy vấn. Hỗ trợ một hoặc nhiều khóa.
+- **Mô tả**: Khóa target dùng để filter truy vấn, hỗ trợ một hoặc nhiều khóa
 - **Ví dụ**:
 ```typescript
 {
   name: 'user_posts',
-  filterTargetKey: 'userId',  // Lọc theo ID người dùng
+  filterTargetKey: 'userId',  // Filter theo userId
   fields: [...]
 }
 
-// Nhiều khóa lọc
+// Nhiều khóa filter
 {
   name: 'user_category_posts',
-  filterTargetKey: ['userId', 'categoryId'],  // Lọc theo ID người dùng và ID danh mục
+  filterTargetKey: ['userId', 'categoryId'],  // Filter theo userId và categoryId
   fields: [...]
 }
 ```
 
-### `fields` - Định nghĩa trường
-- **Kiểu**: `FieldOptions[]`
+### `fields` - Định nghĩa Field
+- **Loại**: `FieldOptions[]`
 - **Bắt buộc**: ❌
 - **Giá trị mặc định**: `[]`
-- **Mô tả**: Mảng định nghĩa trường cho bộ sưu tập. Mỗi trường bao gồm thông tin như kiểu, tên và cấu hình.
+- **Mô tả**: Mảng định nghĩa Field của bảng dữ liệu, mỗi Field bao gồm thông tin về kiểu, tên, cấu hình, v.v.
 - **Ví dụ**:
 ```typescript
 {
@@ -152,20 +154,20 @@ export interface CollectionOptions {
 }
 ```
 
-### `model` - Mô hình tùy chỉnh
-- **Kiểu**: `string | ModelStatic<Model>`
+### `model` - Model tùy chỉnh
+- **Loại**: `string | ModelStatic<Model>`
 - **Bắt buộc**: ❌
-- **Mô tả**: Chỉ định lớp mô hình Sequelize tùy chỉnh, có thể là tên lớp hoặc chính lớp mô hình đó.
+- **Mô tả**: Chỉ định lớp Sequelize Model tùy chỉnh, có thể là tên lớp hoặc bản thân lớp Model
 - **Ví dụ**:
 ```typescript
-// Sử dụng chuỗi để chỉ định tên lớp mô hình
+// Dùng chuỗi để chỉ định tên lớp Model
 {
   name: 'users',
   model: 'UserModel',
   fields: [...]
 }
 
-// Sử dụng lớp mô hình
+// Dùng lớp Model
 import { UserModel } from './models/UserModel';
 {
   name: 'users',
@@ -174,20 +176,20 @@ import { UserModel } from './models/UserModel';
 }
 ```
 
-### `repository` - Kho lưu trữ tùy chỉnh
-- **Kiểu**: `string | RepositoryType`
+### `repository` - Repository tùy chỉnh
+- **Loại**: `string | RepositoryType`
 - **Bắt buộc**: ❌
-- **Mô tả**: Chỉ định lớp kho lưu trữ (repository) tùy chỉnh để xử lý logic truy cập dữ liệu.
+- **Mô tả**: Chỉ định lớp Repository tùy chỉnh, dùng để xử lý logic truy cập dữ liệu
 - **Ví dụ**:
 ```typescript
-// Sử dụng chuỗi để chỉ định tên lớp kho lưu trữ
+// Dùng chuỗi để chỉ định tên lớp Repository
 {
   name: 'users',
   repository: 'UserRepository',
   fields: [...]
 }
 
-// Sử dụng lớp kho lưu trữ
+// Dùng lớp Repository
 import { UserRepository } from './repositories/UserRepository';
 {
   name: 'users',
@@ -196,20 +198,20 @@ import { UserRepository } from './repositories/UserRepository';
 }
 ```
 
-### `autoGenId` - Tự động tạo ID
-- **Kiểu**: `boolean`
+### `autoGenId` - Tự sinh ID
+- **Loại**: `boolean`
 - **Bắt buộc**: ❌
 - **Giá trị mặc định**: `true`
-- **Mô tả**: Có tự động tạo ID khóa chính hay không.
+- **Mô tả**: Có tự động sinh primary key ID hay không
 - **Ví dụ**:
 ```typescript
 {
   name: 'users',
-  autoGenId: true,  // Tự động tạo ID khóa chính
+  autoGenId: true,  // Tự động sinh primary key ID
   fields: [...]
 }
 
-// Tắt tự động tạo ID (cần chỉ định khóa chính thủ công)
+// Tắt sinh ID tự động (cần chỉ định primary key thủ công)
 {
   name: 'external_data',
   autoGenId: false,
@@ -223,96 +225,96 @@ fields: [
 }
 ```
 
-### `timestamps` - Bật dấu thời gian
-- **Kiểu**: `boolean`
+### `timestamps` - Bật timestamp
+- **Loại**: `boolean`
 - **Bắt buộc**: ❌
 - **Giá trị mặc định**: `true`
-- **Mô tả**: Có bật các trường thời gian tạo (`createdAt`) và thời gian cập nhật (`updatedAt`) hay không.
+- **Mô tả**: Có bật Field thời gian tạo và thời gian cập nhật hay không
 - **Ví dụ**:
 ```typescript
 {
   name: 'users',
-  timestamps: true,  // Bật dấu thời gian
+  timestamps: true,  // Bật timestamp
   fields: [...]
 }
 ```
 
-### `createdAt` - Trường thời gian tạo
-- **Kiểu**: `boolean | string`
+### `createdAt` - Field thời gian tạo
+- **Loại**: `boolean | string`
 - **Bắt buộc**: ❌
 - **Giá trị mặc định**: `true`
-- **Mô tả**: Cấu hình cho trường thời gian tạo (`createdAt`).
+- **Mô tả**: Cấu hình của Field thời gian tạo
 - **Ví dụ**:
 ```typescript
 {
   name: 'users',
-  createdAt: 'created_at',  // Tên trường thời gian tạo tùy chỉnh
+  createdAt: 'created_at',  // Tên Field thời gian tạo tùy chỉnh
   fields: [...]
 }
 ```
 
-### `updatedAt` - Trường thời gian cập nhật
-- **Kiểu**: `boolean | string`
+### `updatedAt` - Field thời gian cập nhật
+- **Loại**: `boolean | string`
 - **Bắt buộc**: ❌
 - **Giá trị mặc định**: `true`
-- **Mô tả**: Cấu hình cho trường thời gian cập nhật (`updatedAt`).
+- **Mô tả**: Cấu hình của Field thời gian cập nhật
 - **Ví dụ**:
 ```typescript
 {
   name: 'users',
-  updatedAt: 'updated_at',  // Tên trường thời gian cập nhật tùy chỉnh
+  updatedAt: 'updated_at',  // Tên Field thời gian cập nhật tùy chỉnh
   fields: [...]
 }
 ```
 
-### `deletedAt` - Trường xóa mềm
-- **Kiểu**: `boolean | string`
+### `deletedAt` - Field soft-delete
+- **Loại**: `boolean | string`
 - **Bắt buộc**: ❌
 - **Giá trị mặc định**: `false`
-- **Mô tả**: Cấu hình cho trường xóa mềm (`deletedAt`).
+- **Mô tả**: Cấu hình của Field soft-delete
 - **Ví dụ**:
 ```typescript
 {
   name: 'users',
-  deletedAt: 'deleted_at',  // Bật xóa mềm
+  deletedAt: 'deleted_at',  // Bật soft-delete
   paranoid: true,
   fields: [...]
 }
 ```
 
-### `paranoid` - Chế độ xóa mềm
-- **Kiểu**: `boolean`
+### `paranoid` - Chế độ soft-delete
+- **Loại**: `boolean`
 - **Bắt buộc**: ❌
 - **Giá trị mặc định**: `false`
-- **Mô tả**: Có bật chế độ xóa mềm hay không.
+- **Mô tả**: Có bật chế độ soft-delete hay không
 - **Ví dụ**:
 ```typescript
 {
   name: 'users',
-  paranoid: true,  // Bật xóa mềm
+  paranoid: true,  // Bật soft-delete
   deletedAt: 'deleted_at',
   fields: [...]
 }
 ```
 
-### `underscored` - Quy tắc đặt tên dùng dấu gạch dưới
-- **Kiểu**: `boolean`
+### `underscored` - Đặt tên dấu gạch dưới
+- **Loại**: `boolean`
 - **Bắt buộc**: ❌
 - **Giá trị mặc định**: `false`
-- **Mô tả**: Có sử dụng kiểu đặt tên dấu gạch dưới (`underscored`) hay không.
+- **Mô tả**: Có dùng phong cách đặt tên với dấu gạch dưới hay không
 - **Ví dụ**:
 ```typescript
 {
   name: 'users',
-  underscored: true,  // Sử dụng kiểu đặt tên dấu gạch dưới
+  underscored: true,  // Dùng phong cách đặt tên với dấu gạch dưới
   fields: [...]
 }
 ```
 
-### `indexes` - Cấu hình chỉ mục
-- **Kiểu**: `ModelIndexesOptions[]`
+### `indexes` - Cấu hình index
+- **Loại**: `ModelIndexesOptions[]`
 - **Bắt buộc**: ❌
-- **Mô tả**: Cấu hình chỉ mục cơ sở dữ liệu.
+- **Mô tả**: Cấu hình index database
 - **Ví dụ**:
 ```typescript
 {
@@ -330,22 +332,22 @@ fields: [
 }
 ```
 
-## Cấu hình tham số trường
+## Mô tả cấu hình tham số Field
 
-NocoBase hỗ trợ nhiều loại trường, tất cả đều được định nghĩa dựa trên kiểu liên hợp `FieldOptions`. Cấu hình trường bao gồm các thuộc tính cơ bản, thuộc tính dành riêng cho kiểu dữ liệu, thuộc tính quan hệ và thuộc tính hiển thị giao diện người dùng.
+NocoBase hỗ trợ nhiều kiểu Field, tất cả Field đều dựa trên union type `FieldOptions` để định nghĩa. Cấu hình Field bao gồm thuộc tính cơ bản, thuộc tính riêng theo kiểu dữ liệu, thuộc tính quan hệ và thuộc tính render front-end.
 
-### Các tùy chọn trường cơ bản
+### Tùy chọn Field cơ bản
 
-Tất cả các kiểu trường đều kế thừa từ `BaseFieldOptions`, cung cấp khả năng cấu hình trường chung:
+Tất cả các kiểu Field đều kế thừa từ `BaseFieldOptions`, cung cấp năng lực cấu hình Field chung:
 
 ```typescript
 interface BaseFieldOptions<T extends BasicType = BasicType> {
   // Tham số chung
-  name?: string;                    // Tên trường
+  name?: string;                    // Tên Field
   hidden?: boolean;                 // Có ẩn hay không
-  validation?: ValidationOptions<T>; // Quy tắc xác thực
+  validation?: ValidationOptions<T>; // Quy tắc validation
 
-  // Thuộc tính trường cột phổ biến
+  // Thuộc tính column thường dùng
   allowNull?: boolean;
   defaultValue?: any;
   unique?: boolean;
@@ -354,7 +356,7 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
   field?: string;
   comment?: string;
 
-  // Liên quan đến giao diện người dùng
+  // Liên quan front-end
   title?: string;
   description?: string;
   interface?: string;
@@ -368,50 +370,50 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
 {
   type: 'string',
   name: 'username',
-  allowNull: false,        // Không cho phép giá trị null
+  allowNull: false,        // Không cho phép null
   unique: true,           // Ràng buộc duy nhất
-  defaultValue: '',       // Mặc định là chuỗi rỗng
-  index: true,            // Tạo chỉ mục
-  comment: 'Tên đăng nhập người dùng'    // Chú thích cơ sở dữ liệu
+  defaultValue: '',       // Mặc định chuỗi rỗng
+  index: true,            // Tạo index
+  comment: 'Tên đăng nhập của người dùng'    // Comment database
 }
 ```
 
-### `name` - Tên trường
+### `name` - Tên Field
 
-- **Kiểu**: `string`
+- **Loại**: `string`
 - **Bắt buộc**: ❌
-- **Mô tả**: Tên cột của trường trong cơ sở dữ liệu, phải là duy nhất trong bộ sưu tập.
+- **Mô tả**: Tên column của Field trong database, phải duy nhất trong collection
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
-  name: 'username',  // Tên trường
+  name: 'username',  // Tên Field
   title: 'Tên người dùng'
 }
 ```
 
-### `hidden` - Ẩn trường
+### `hidden` - Field ẩn
 
-- **Kiểu**: `boolean`
+- **Loại**: `boolean`
 - **Giá trị mặc định**: `false`
-- **Mô tả**: Có ẩn trường này theo mặc định trong danh sách/biểu mẫu hay không.
+- **Mô tả**: Có mặc định ẩn Field này trong danh sách/form hay không
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
   name: 'internalId',
-  hidden: true,  // Ẩn trường ID nội bộ
-  title: 'ID nội bộ'
+  hidden: true,  // Ẩn Field internalId
+  title: 'Internal ID'
 }
 ```
 
-### `validation` - Quy tắc xác thực
+### `validation` - Quy tắc validation
 
 ```typescript
 interface ValidationOptions<T extends BasicType = BasicType> {
-  type: T;                          // Kiểu xác thực
-  rules: FieldValidationRule<T>[];  // Mảng quy tắc xác thực
-  [key: string]: any;              // Các tùy chọn xác thực khác
+  type: T;                          // Kiểu validation
+  rules: FieldValidationRule<T>[];  // Mảng quy tắc validation
+  [key: string]: any;              // Tùy chọn validation khác
 }
 
 interface FieldValidationRule<T extends BasicType> {
@@ -424,8 +426,8 @@ interface FieldValidationRule<T extends BasicType> {
 }
 ```
 
-- **Kiểu**: `ValidationOptions<T>`
-- **Mô tả**: Sử dụng Joi để định nghĩa các quy tắc xác thực phía máy chủ.
+- **Loại**: `ValidationOptions<T>`
+- **Mô tả**: Dùng Joi để định nghĩa quy tắc validation phía server
 - **Ví dụ**:
 ```typescript
 {
@@ -441,133 +443,133 @@ interface FieldValidationRule<T extends BasicType> {
 }
 ```
 
-### `allowNull` - Cho phép giá trị null
+### `allowNull` - Cho phép null
 
-- **Kiểu**: `boolean`
+- **Loại**: `boolean`
 - **Giá trị mặc định**: `true`
-- **Mô tả**: Kiểm soát xem cơ sở dữ liệu có cho phép ghi giá trị `NULL` hay không.
+- **Mô tả**: Kiểm soát database có cho phép ghi giá trị `NULL` hay không
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  allowNull: false,  // Không cho phép giá trị null
+  allowNull: false,  // Không cho phép null
   title: 'Tên người dùng'
 }
 ```
 
 ### `defaultValue` - Giá trị mặc định
 
-- **Kiểu**: `any`
-- **Mô tả**: Giá trị mặc định cho trường, sẽ được sử dụng khi tạo bản ghi mà không cung cấp giá trị cho trường này.
+- **Loại**: `any`
+- **Mô tả**: Giá trị mặc định của Field, sẽ được dùng khi tạo record mà không cung cấp giá trị Field này
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
   name: 'status',
-  defaultValue: 'draft',  // Mặc định là trạng thái nháp
+  defaultValue: 'draft',  // Mặc định trạng thái nháp
   title: 'Trạng thái'
 }
 ```
 
 ### `unique` - Ràng buộc duy nhất
 
-- **Kiểu**: `boolean | string`
+- **Loại**: `boolean | string`
 - **Giá trị mặc định**: `false`
-- **Mô tả**: Có phải là duy nhất hay không; có thể chỉ định tên ràng buộc bằng một chuỗi.
+- **Mô tả**: Có duy nhất hay không; chuỗi có thể chỉ định tên ràng buộc
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
   name: 'email',
-  unique: true,  // Email phải là duy nhất
+  unique: true,  // Email phải duy nhất
   title: 'Email'
 }
 ```
 
-### `primaryKey` - Khóa chính
+### `primaryKey` - Primary key
 
-- **Kiểu**: `boolean`
+- **Loại**: `boolean`
 - **Giá trị mặc định**: `false`
-- **Mô tả**: Khai báo trường này là khóa chính.
+- **Mô tả**: Khai báo Field này là primary key
 - **Ví dụ**:
 ```typescript
 {
   type: 'integer',
   name: 'id',
-  primaryKey: true,  // Đặt làm khóa chính
+  primaryKey: true,  // Đặt làm primary key
   autoIncrement: true
 }
 ```
 
-### `autoIncrement` - Tự động tăng
+### `autoIncrement` - Tự tăng
 
-- **Kiểu**: `boolean`
+- **Loại**: `boolean`
 - **Giá trị mặc định**: `false`
-- **Mô tả**: Bật tự động tăng (chỉ áp dụng cho các trường kiểu số).
+- **Mô tả**: Bật tự tăng (chỉ áp dụng cho Field kiểu số)
 - **Ví dụ**:
 ```typescript
 {
   type: 'integer',
   name: 'id',
-  autoIncrement: true,  // Tự động tăng dần
+  autoIncrement: true,  // Tự động tăng
   primaryKey: true
 }
 ```
 
-### `field` - Tên cột cơ sở dữ liệu
+### `field` - Tên column trong database
 
-- **Kiểu**: `string`
-- **Mô tả**: Chỉ định tên cột cơ sở dữ liệu thực tế (nhất quán với `field` của Sequelize).
+- **Loại**: `string`
+- **Mô tả**: Chỉ định tên column thực tế trong database (giống `field` của Sequelize)
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
   name: 'userId',
-  field: 'user_id',  // Tên cột trong cơ sở dữ liệu
-  title: 'ID người dùng'
+  field: 'user_id',  // Tên column trong database
+  title: 'User ID'
 }
 ```
 
-### `comment` - Chú thích cơ sở dữ liệu
+### `comment` - Comment database
 
-- **Kiểu**: `string`
-- **Mô tả**: Chú thích cho trường cơ sở dữ liệu, dùng cho mục đích tài liệu.
+- **Loại**: `string`
+- **Mô tả**: Ghi chú Field database, dùng để mô tả tài liệu
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  comment: 'Tên đăng nhập người dùng, dùng để đăng nhập hệ thống',  // Chú thích cơ sở dữ liệu
+  comment: 'Tên đăng nhập của người dùng, dùng để đăng nhập vào hệ thống',  // Comment database
   title: 'Tên người dùng'
 }
 ```
 
 ### `title` - Tiêu đề hiển thị
 
-- **Kiểu**: `string`
-- **Mô tả**: Tiêu đề hiển thị cho trường, thường dùng để hiển thị trên giao diện người dùng.
+- **Loại**: `string`
+- **Mô tả**: Tiêu đề hiển thị của Field, thường dùng để hiển thị trên giao diện front-end
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  title: 'Tên người dùng',  // Tiêu đề hiển thị trên giao diện người dùng
+  title: 'Tên người dùng',  // Tiêu đề hiển thị front-end
   allowNull: false
 }
 ```
 
-### `description` - Mô tả trường
+### `description` - Mô tả Field
 
-- **Kiểu**: `string`
-- **Mô tả**: Thông tin mô tả về trường, dùng để giúp người dùng hiểu mục đích của trường.
+- **Loại**: `string`
+- **Mô tả**: Thông tin mô tả Field, giúp người dùng hiểu công dụng Field
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
   name: 'email',
   title: 'Email',
-  description: 'Vui lòng nhập địa chỉ email hợp lệ',  // Mô tả trường
+  description: 'Vui lòng nhập địa chỉ email hợp lệ',  // Mô tả Field
   validation: {
     type: 'string',
     rules: [{ key: 'email', name: 'email' }]
@@ -575,38 +577,38 @@ interface FieldValidationRule<T extends BasicType> {
 }
 ```
 
-### `interface` - Thành phần giao diện
+### `interface` - Component giao diện
 
-- **Kiểu**: `string`
-- **Mô tả**: Thành phần giao diện người dùng (frontend) được khuyến nghị sử dụng cho trường.
+- **Loại**: `string`
+- **Mô tả**: Component giao diện Field front-end được khuyến nghị
 - **Ví dụ**:
 ```typescript
 {
   type: 'string',
   name: 'content',
   title: 'Nội dung',
-  interface: 'textarea',  // Khuyến nghị sử dụng thành phần vùng văn bản (textarea)
+  interface: 'textarea',  // Khuyến nghị dùng component textarea
   uiSchema: {
     'x-component': 'Input.TextArea'
   }
 }
 ```
 
-### Các giao diện kiểu trường
+### Interface kiểu Field
 
-### `type: 'string'` - Trường chuỗi
+### `type: 'string'` - Field chuỗi
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu văn bản ngắn. Hỗ trợ giới hạn độ dài và tự động cắt khoảng trắng.
-- **Kiểu cơ sở dữ liệu**: `VARCHAR`
-- **Thuộc tính đặc trưng**:
+- **Mô tả**: Dùng để lưu dữ liệu văn bản ngắn, hỗ trợ giới hạn độ dài và tự động trim
+- **Loại database**: `VARCHAR`
+- **Thuộc tính riêng**:
   - `length`: Giới hạn độ dài chuỗi
-  - `trim`: Có tự động xóa khoảng trắng ở đầu và cuối hay không
+  - `trim`: Có tự động xóa khoảng trắng đầu cuối hay không
 
 ```ts
 interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
   type: 'string';
   length?: number;    // Giới hạn độ dài chuỗi
-  trim?: boolean;     // Có tự động xóa khoảng trắng ở đầu và cuối hay không
+  trim?: boolean;     // Có tự động xóa khoảng trắng đầu cuối hay không
 }
 ```
 
@@ -630,17 +632,17 @@ interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
 }
 ```
 
-### `type: 'text'` - Trường văn bản
+### `type: 'text'` - Field text
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu văn bản dài. Hỗ trợ các kiểu văn bản có độ dài khác nhau trong MySQL.
-- **Kiểu cơ sở dữ liệu**: `TEXT`, `MEDIUMTEXT`, `LONGTEXT`
-- **Thuộc tính đặc trưng**:
-  - `length`: Kiểu độ dài văn bản MySQL (`tiny`/`medium`/`long`)
+- **Mô tả**: Dùng để lưu dữ liệu văn bản dài, hỗ trợ các kiểu text độ dài khác nhau của MySQL
+- **Loại database**: `TEXT`, `MEDIUMTEXT`, `LONGTEXT`
+- **Thuộc tính riêng**:
+  - `length`: Kiểu độ dài text MySQL (tiny/medium/long)
 
 ```ts
 interface TextFieldOptions extends BaseColumnFieldOptions {
   type: 'text';
-  length?: 'tiny' | 'medium' | 'long';  // Kiểu độ dài văn bản MySQL
+  length?: 'tiny' | 'medium' | 'long';  // Kiểu độ dài text MySQL
 }
 ```
 
@@ -650,22 +652,22 @@ interface TextFieldOptions extends BaseColumnFieldOptions {
   type: 'text',
   name: 'content',
   title: 'Nội dung',
-  length: 'medium',     // Sử dụng MEDIUMTEXT
+  length: 'medium',     // Dùng MEDIUMTEXT
   allowNull: true
 }
 ```
 
-### Các kiểu số
+### Kiểu số
 
-### `type: 'integer'` - Trường số nguyên
+### `type: 'integer'` - Field số nguyên
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu số nguyên. Hỗ trợ tự động tăng và khóa chính.
-- **Kiểu cơ sở dữ liệu**: `INTEGER`
+- **Mô tả**: Dùng để lưu dữ liệu số nguyên, hỗ trợ tự tăng và primary key
+- **Loại database**: `INTEGER`
 
 ```ts
 interface IntegerFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'integer';
-  // Kế thừa tất cả các tùy chọn từ kiểu INTEGER của Sequelize
+  // Kế thừa tất cả tùy chọn của kiểu Sequelize INTEGER
 }
 ```
 
@@ -681,10 +683,10 @@ interface IntegerFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'bigInt'` - Trường số nguyên lớn
+### `type: 'bigInt'` - Field số nguyên lớn
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu số nguyên lớn, có phạm vi lớn hơn `integer`.
-- **Kiểu cơ sở dữ liệu**: `BIGINT`
+- **Mô tả**: Dùng để lưu dữ liệu số nguyên lớn, phạm vi lớn hơn integer
+- **Loại database**: `BIGINT`
 
 ```ts
 interface BigIntFieldOptions extends BaseColumnFieldOptions<'number'> {
@@ -697,17 +699,17 @@ interface BigIntFieldOptions extends BaseColumnFieldOptions<'number'> {
 {
   type: 'bigInt',
   name: 'userId',
-  title: 'ID người dùng',
+  title: 'User ID',
   allowNull: false,
   unique: true
 }
 ```
 
-### `type: 'float'` - Trường số thực (float)
+### `type: 'float'` - Field số thực
 
-- **Mô tả**: Dùng để lưu trữ số thực dấu phẩy động độ chính xác đơn.
-- **Kiểu cơ sở dữ liệu**: `FLOAT`
-- **Thuộc tính đặc trưng**:
+- **Mô tả**: Dùng để lưu số thực độ chính xác đơn
+- **Loại database**: `FLOAT`
+- **Thuộc tính riêng**:
   - `precision`: Độ chính xác (tổng số chữ số)
   - `scale`: Số chữ số thập phân
 
@@ -732,11 +734,11 @@ interface FloatFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'double'` - Trường số thực độ chính xác kép (double)
+### `type: 'double'` - Field số thực độ chính xác kép
 
-- **Mô tả**: Dùng để lưu trữ số thực dấu phẩy động độ chính xác kép, có độ chính xác cao hơn `float`.
-- **Kiểu cơ sở dữ liệu**: `DOUBLE`
-- **Thuộc tính đặc trưng**:
+- **Mô tả**: Dùng để lưu số thực độ chính xác kép, độ chính xác cao hơn float
+- **Loại database**: `DOUBLE`
+- **Thuộc tính riêng**:
   - `precision`: Độ chính xác (tổng số chữ số)
   - `scale`: Số chữ số thập phân
 
@@ -761,11 +763,11 @@ interface DoubleFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'real'` - Trường số thực (real)
+### `type: 'real'` - Field số thực
 
-- **Mô tả**: Dùng để lưu trữ số thực; phụ thuộc vào cơ sở dữ liệu.
-- **Kiểu cơ sở dữ liệu**: `REAL`
-- **Thuộc tính đặc trưng**:
+- **Mô tả**: Dùng để lưu số thực, phụ thuộc vào database
+- **Loại database**: `REAL`
+- **Thuộc tính riêng**:
   - `precision`: Độ chính xác (tổng số chữ số)
   - `scale`: Số chữ số thập phân
 
@@ -789,11 +791,11 @@ interface RealFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'decimal'` - Trường số thập phân chính xác
+### `type: 'decimal'` - Field số thập phân chính xác
 
-- **Mô tả**: Dùng để lưu trữ số thập phân chính xác, phù hợp cho các tính toán tài chính.
-- **Kiểu cơ sở dữ liệu**: `DECIMAL`
-- **Thuộc tính đặc trưng**:
+- **Mô tả**: Dùng để lưu số thập phân chính xác, phù hợp cho tính toán tài chính
+- **Loại database**: `DECIMAL`
+- **Thuộc tính riêng**:
   - `precision`: Độ chính xác (tổng số chữ số)
   - `scale`: Số chữ số thập phân
 
@@ -824,12 +826,12 @@ interface DecimalFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### Các kiểu Boolean
+### Kiểu Boolean
 
-### `type: 'boolean'` - Trường Boolean
+### `type: 'boolean'` - Field Boolean
 
-- **Mô tả**: Dùng để lưu trữ giá trị đúng/sai, thường dùng cho trạng thái bật/tắt.
-- **Kiểu cơ sở dữ liệu**: `BOOLEAN` hoặc `TINYINT(1)`
+- **Mô tả**: Dùng để lưu giá trị đúng/sai, thường dùng cho trạng thái bật/tắt
+- **Loại database**: `BOOLEAN` hoặc `TINYINT(1)`
 
 ```typescript
 interface BooleanFieldOptions extends BaseColumnFieldOptions<'boolean'> {
@@ -842,16 +844,16 @@ interface BooleanFieldOptions extends BaseColumnFieldOptions<'boolean'> {
 {
   type: 'boolean',
   name: 'isActive',
-  title: 'Đang hoạt động',
+  title: 'Có hoạt động không',
   defaultValue: true,
   allowNull: false
 }
 ```
 
-### `type: 'radio'` - Trường chọn một (radio)
+### `type: 'radio'` - Field radio
 
-- **Mô tả**: Dùng để lưu trữ giá trị được chọn duy nhất, thường dùng cho các lựa chọn nhị phân.
-- **Kiểu cơ sở dữ liệu**: `BOOLEAN` hoặc `TINYINT(1)`
+- **Mô tả**: Dùng để lưu giá trị radio, thường dùng cho trường hợp chọn 1 trong 2
+- **Loại database**: `BOOLEAN` hoặc `TINYINT(1)`
 
 ```typescript
 interface RadioFieldOptions extends BaseColumnFieldOptions<'boolean'> {
@@ -864,25 +866,25 @@ interface RadioFieldOptions extends BaseColumnFieldOptions<'boolean'> {
 {
   type: 'radio',
   name: 'isDefault',
-  title: 'Là mặc định',
+  title: 'Có mặc định không',
   defaultValue: false,
   allowNull: false
 }
 ```
 
-### Các kiểu ngày giờ
+### Kiểu ngày giờ
 
-### `type: 'date'` - Trường ngày
+### `type: 'date'` - Field ngày
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu ngày, không bao gồm thông tin thời gian.
-- **Kiểu cơ sở dữ liệu**: `DATE`
-- **Thuộc tính đặc trưng**:
-  - `timezone`: Có bao gồm thông tin múi giờ hay không
+- **Mô tả**: Dùng để lưu dữ liệu ngày, không bao gồm thông tin giờ
+- **Loại database**: `DATE`
+- **Thuộc tính riêng**:
+  - `timezone`: Có bao gồm thông tin timezone hay không
 
 ```typescript
 interface DateFieldOptions extends BaseColumnFieldOptions<'date'> {
   type: 'date';
-  timezone?: boolean;  // Có bao gồm thông tin múi giờ hay không
+  timezone?: boolean;  // Có bao gồm thông tin timezone hay không
 }
 ```
 
@@ -897,12 +899,12 @@ interface DateFieldOptions extends BaseColumnFieldOptions<'date'> {
 }
 ```
 
-### `type: 'time'` - Trường giờ
+### `type: 'time'` - Field giờ
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu thời gian, không bao gồm thông tin ngày.
-- **Kiểu cơ sở dữ liệu**: `TIME`
-- **Thuộc tính đặc trưng**:
-  - `timezone`: Có bao gồm thông tin múi giờ hay không
+- **Mô tả**: Dùng để lưu dữ liệu giờ, không bao gồm thông tin ngày
+- **Loại database**: `TIME`
+- **Thuộc tính riêng**:
+  - `timezone`: Có bao gồm thông tin timezone hay không
 
 ```ts
 interface TimeFieldOptions extends BaseColumnFieldOptions<'time'> {
@@ -922,12 +924,12 @@ interface TimeFieldOptions extends BaseColumnFieldOptions<'time'> {
 }
 ```
 
-### `type: 'datetimeTz'` - Trường ngày giờ có múi giờ
+### `type: 'datetimeTz'` - Field ngày giờ có timezone
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu ngày giờ có thông tin múi giờ.
-- **Kiểu cơ sở dữ liệu**: `TIMESTAMP WITH TIME ZONE`
-- **Thuộc tính đặc trưng**:
-  - `timezone`: Có bao gồm thông tin múi giờ hay không
+- **Mô tả**: Dùng để lưu dữ liệu ngày giờ có timezone
+- **Loại database**: `TIMESTAMP WITH TIME ZONE`
+- **Thuộc tính riêng**:
+  - `timezone`: Có bao gồm thông tin timezone hay không
 
 ```ts
 interface DatetimeTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
@@ -949,12 +951,12 @@ interface DatetimeTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 }
 ```
 
-### `type: 'datetimeNoTz'` - Trường ngày giờ không có múi giờ
+### `type: 'datetimeNoTz'` - Field ngày giờ không timezone
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu ngày giờ không có thông tin múi giờ.
-- **Kiểu cơ sở dữ liệu**: `TIMESTAMP` hoặc `DATETIME`
-- **Thuộc tính đặc trưng**:
-  - `timezone`: Có bao gồm thông tin múi giờ hay không
+- **Mô tả**: Dùng để lưu dữ liệu ngày giờ không có timezone
+- **Loại database**: `TIMESTAMP` hoặc `DATETIME`
+- **Thuộc tính riêng**:
+  - `timezone`: Có bao gồm thông tin timezone hay không
 
 ```ts
 interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
@@ -976,31 +978,31 @@ interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 }
 ```
 
-### `type: 'dateOnly'` - Trường chỉ ngày
+### `type: 'dateOnly'` - Field chỉ ngày
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu chỉ bao gồm ngày, không bao gồm thời gian.
-- **Kiểu cơ sở dữ liệu**: `DATE`
+- **Mô tả**: Dùng để lưu dữ liệu chỉ chứa ngày, không bao gồm giờ
+- **Loại database**: `DATE`
 - **Ví dụ**:
 ```typescript
 {
   type: 'dateOnly',
   name: 'publishDate',
-  title: 'Ngày xuất bản',
+  title: 'Ngày phát hành',
   allowNull: true
 }
 ```
 
-### `type: 'unixTimestamp'` - Trường dấu thời gian Unix
+### `type: 'unixTimestamp'` - Field Unix timestamp
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu dấu thời gian Unix.
-- **Kiểu cơ sở dữ liệu**: `BIGINT`
-- **Thuộc tính đặc trưng**:
-  - `epoch`: Thời gian kỷ nguyên
+- **Mô tả**: Dùng để lưu dữ liệu Unix timestamp
+- **Loại database**: `BIGINT`
+- **Thuộc tính riêng**:
+  - `epoch`: Thời gian epoch
 
 ```typescript
 interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestamp'> {
   type: 'unixTimestamp';
-  epoch?: number;  // Thời gian kỷ nguyên
+  epoch?: number;  // Thời gian epoch
 }
 ```
 
@@ -1015,27 +1017,27 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 }
 ```
 
-### Các kiểu JSON
+### Kiểu JSON
 
-### `type: 'json'` - Trường JSON
+### `type: 'json'` - Field JSON
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu định dạng JSON, hỗ trợ các cấu trúc dữ liệu phức tạp.
-- **Kiểu cơ sở dữ liệu**: `JSON` hoặc `TEXT`
+- **Mô tả**: Dùng để lưu dữ liệu định dạng JSON, hỗ trợ cấu trúc dữ liệu phức tạp
+- **Loại database**: `JSON` hoặc `TEXT`
 - **Ví dụ**:
 ```typescript
 {
   type: 'json',
   name: 'metadata',
-  title: 'Siêu dữ liệu',
+  title: 'Metadata',
   allowNull: true,
   defaultValue: {}
 }
 ```
 
-### `type: 'jsonb'` - Trường JSONB
+### `type: 'jsonb'` - Field JSONB
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu định dạng JSONB (đặc trưng của PostgreSQL), hỗ trợ lập chỉ mục và truy vấn.
-- **Kiểu cơ sở dữ liệu**: `JSONB` (PostgreSQL)
+- **Mô tả**: Dùng để lưu dữ liệu định dạng JSONB (riêng PostgreSQL), hỗ trợ index và truy vấn
+- **Loại database**: `JSONB` (PostgreSQL)
 - **Ví dụ**:
 ```typescript
 {
@@ -1047,15 +1049,15 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 }
 ```
 
-### Các kiểu mảng
+### Kiểu mảng
 
-### `type: 'array'` - Trường mảng
+### `type: 'array'` - Field mảng
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu mảng, hỗ trợ nhiều kiểu phần tử khác nhau.
-- **Kiểu cơ sở dữ liệu**: `JSON` hoặc `ARRAY`
-- **Thuộc tính đặc trưng**:
-  - `dataType`: Kiểu lưu trữ (`json`/`array`)
-  - `elementType`: Kiểu phần tử (`STRING`/`INTEGER`/`BOOLEAN`/`JSON`)
+- **Mô tả**: Dùng để lưu dữ liệu mảng, hỗ trợ nhiều kiểu phần tử
+- **Loại database**: `JSON` hoặc `ARRAY`
+- **Thuộc tính riêng**:
+  - `dataType`: Kiểu lưu trữ (json/array)
+  - `elementType`: Kiểu phần tử (STRING/INTEGER/BOOLEAN/JSON)
 
 ```ts
 interface ArrayFieldOptions extends BaseColumnFieldOptions<'array'> {
@@ -1070,7 +1072,7 @@ interface ArrayFieldOptions extends BaseColumnFieldOptions<'array'> {
 {
   type: 'array',
   name: 'tags',
-  title: 'Thẻ',
+  title: 'Tag',
   dataType: 'json',
   elementType: 'STRING',
   allowNull: true,
@@ -1078,13 +1080,13 @@ interface ArrayFieldOptions extends BaseColumnFieldOptions<'array'> {
 }
 ```
 
-### `type: 'set'` - Trường tập hợp
+### `type: 'set'` - Field set
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu tập hợp, tương tự mảng nhưng có ràng buộc duy nhất.
-- **Kiểu cơ sở dữ liệu**: `JSON` hoặc `ARRAY`
-- **Thuộc tính đặc trưng**:
-  - `dataType`: Kiểu lưu trữ (`json`/`array`)
-  - `elementType`: Kiểu phần tử (`STRING`/`INTEGER`/`BOOLEAN`/`JSON`)
+- **Mô tả**: Dùng để lưu dữ liệu set, giống mảng nhưng có ràng buộc duy nhất
+- **Loại database**: `JSON` hoặc `ARRAY`
+- **Thuộc tính riêng**:
+  - `dataType`: Kiểu lưu trữ (json/array)
+  - `elementType`: Kiểu phần tử (STRING/INTEGER/BOOLEAN/JSON)
 
 ```ts
 interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
@@ -1099,7 +1101,7 @@ interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
 {
   type: 'set',
   name: 'categories',
-      title: 'Danh mục',
+      title: 'Phân loại',
   dataType: 'json',
   elementType: 'STRING',
   allowNull: true,
@@ -1107,19 +1109,19 @@ interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
 }
 ```
 
-### Các kiểu định danh
+### Kiểu định danh
 
-### `type: 'uuid'` - Trường UUID
+### `type: 'uuid'` - Field UUID
 
-- **Mô tả**: Dùng để lưu trữ mã định danh duy nhất theo định dạng UUID.
-- **Kiểu cơ sở dữ liệu**: `UUID` hoặc `VARCHAR(36)`
-- **Thuộc tính đặc trưng**:
-  - `autoFill`: Tự động điền
+- **Mô tả**: Dùng để lưu định danh duy nhất định dạng UUID
+- **Loại database**: `UUID` hoặc `VARCHAR(36)`
+- **Thuộc tính riêng**:
+  - `autoFill`: Tự động fill
 
 ```ts
 interface UUIDFieldOptions extends BaseColumnFieldOptions<'uuid'> {
   type: 'uuid';
-  autoFill?: boolean;  // Tự động điền
+  autoFill?: boolean;  // Tự động fill
 }
 ```
 
@@ -1135,20 +1137,20 @@ interface UUIDFieldOptions extends BaseColumnFieldOptions<'uuid'> {
 }
 ```
 
-### `type: 'nanoid'` - Trường Nanoid
+### `type: 'nanoid'` - Field Nanoid
 
-- **Mô tả**: Dùng để lưu trữ mã định danh duy nhất ngắn theo định dạng Nanoid.
-- **Kiểu cơ sở dữ liệu**: `VARCHAR`
-- **Thuộc tính đặc trưng**:
+- **Mô tả**: Dùng để lưu định danh duy nhất ngắn định dạng Nanoid
+- **Loại database**: `VARCHAR`
+- **Thuộc tính riêng**:
   - `size`: Độ dài ID
-  - `customAlphabet`: Bộ ký tự tùy chỉnh
-  - `autoFill`: Tự động điền
+  - `customAlphabet`: Tập ký tự tùy chỉnh
+  - `autoFill`: Tự động fill
 
 ```ts
 interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
   type: 'nanoid';
   size?: number;  // Độ dài ID
-  customAlphabet?: string;  // Bộ ký tự tùy chỉnh
+  customAlphabet?: string;  // Tập ký tự tùy chỉnh
   autoFill?: boolean;
 }
 ```
@@ -1158,7 +1160,7 @@ interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
 {
   type: 'nanoid',
   name: 'shortId',
-  title: 'ID ngắn',
+  title: 'Short ID',
   size: 12,
   customAlphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
   autoFill: true,
@@ -1167,19 +1169,19 @@ interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
 }
 ```
 
-### `type: 'uid'` - Trường UID tùy chỉnh
+### `type: 'uid'` - Field UID tùy chỉnh
 
-- **Mô tả**: Dùng để lưu trữ mã định danh duy nhất theo định dạng tùy chỉnh.
-- **Kiểu cơ sở dữ liệu**: `VARCHAR`
-- **Thuộc tính đặc trưng**:
+- **Mô tả**: Dùng để lưu định danh duy nhất định dạng tùy chỉnh
+- **Loại database**: `VARCHAR`
+- **Thuộc tính riêng**:
   - `prefix`: Tiền tố
-  - `pattern`: Mẫu xác thực
+  - `pattern`: Mẫu validation
 
 ```ts
 interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
   type: 'uid';
   prefix?: string;  // Tiền tố
-  pattern?: string; // Mẫu xác thực
+  pattern?: string; // Mẫu validation
 }
 ```
 
@@ -1196,35 +1198,35 @@ interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
 }
 ```
 
-### `type: 'snowflakeId'` - Trường ID Snowflake
+### `type: 'snowflakeId'` - Field Snowflake ID
 
-- **Mô tả**: Dùng để lưu trữ mã định danh duy nhất được tạo bằng thuật toán Snowflake.
-- **Kiểu cơ sở dữ liệu**: `BIGINT`
+- **Mô tả**: Dùng để lưu định danh duy nhất sinh bởi thuật toán Snowflake
+- **Loại database**: `BIGINT`
 - **Ví dụ**:
 ```typescript
 {
   type: 'snowflakeId',
   name: 'snowflakeId',
-  title: 'ID Snowflake',
+  title: 'Snowflake ID',
   allowNull: false,
   unique: true
 }
 ```
 
-### Các trường chức năng
+### Field chức năng
 
-### `type: 'password'` - Trường mật khẩu
+### `type: 'password'` - Field mật khẩu
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu mật khẩu đã mã hóa.
-- **Kiểu cơ sở dữ liệu**: `VARCHAR`
-- **Thuộc tính đặc trưng**:
-  - `length`: Độ dài hàm băm (hash)
+- **Mô tả**: Dùng để lưu dữ liệu mật khẩu đã mã hóa
+- **Loại database**: `VARCHAR`
+- **Thuộc tính riêng**:
+  - `length`: Độ dài hash
   - `randomBytesSize`: Kích thước byte ngẫu nhiên
 
 ```ts
 interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
   type: 'password';
-  length?: number;  // Độ dài hàm băm
+  length?: number;  // Độ dài hash
   randomBytesSize?: number;  // Kích thước byte ngẫu nhiên
 }
 ```
@@ -1242,10 +1244,10 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 }
 ```
 
-### `type: 'encryption'` - Trường mã hóa
+### `type: 'encryption'` - Field mã hóa
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu nhạy cảm đã mã hóa.
-- **Kiểu cơ sở dữ liệu**: `VARCHAR`
+- **Mô tả**: Dùng để lưu dữ liệu nhạy cảm đã mã hóa
+- **Loại database**: `VARCHAR`
 - **Ví dụ**:
 ```typescript
 {
@@ -1257,10 +1259,10 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 }
 ```
 
-### `type: 'virtual'` - Trường ảo
+### `type: 'virtual'` - Field ảo
 
-- **Mô tả**: Dùng để lưu trữ dữ liệu ảo được tính toán, không lưu trữ trong cơ sở dữ liệu.
-- **Kiểu cơ sở dữ liệu**: Không có (trường ảo)
+- **Mô tả**: Dùng để lưu dữ liệu ảo được tính toán, không lưu trong database
+- **Loại database**: Không (Field ảo)
 - **Ví dụ**:
 ```typescript
 {
@@ -1270,21 +1272,21 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 }
 ```
 
-### `type: 'context'` - Trường ngữ cảnh
+### `type: 'context'` - Field Context
 
-- **Mô tả**: Dùng để đọc dữ liệu từ ngữ cảnh thực thi (ví dụ: thông tin người dùng hiện tại).
-- **Kiểu cơ sở dữ liệu**: Được xác định bởi `dataType`
-- **Thuộc tính đặc trưng**:
-  - `dataIndex`: Đường dẫn chỉ mục dữ liệu
+- **Mô tả**: Dùng để đọc dữ liệu từ ngữ cảnh runtime (như thông tin user hiện tại)
+- **Loại database**: Xác định bởi dataType
+- **Thuộc tính riêng**:
+  - `dataIndex`: Đường dẫn index dữ liệu
   - `dataType`: Kiểu dữ liệu
-  - `createOnly`: Chỉ đặt khi tạo
+  - `createOnly`: Chỉ set khi tạo
 
 ```ts
 interface ContextFieldOptions extends BaseFieldOptions {
   type: 'context';
-  dataIndex?: string;  // Đường dẫn chỉ mục dữ liệu
+  dataIndex?: string;  // Đường dẫn index dữ liệu
   dataType?: string;   // Kiểu dữ liệu
-  createOnly?: boolean; // Chỉ đặt khi tạo
+  createOnly?: boolean; // Chỉ set khi tạo
 }
 ```
 
@@ -1293,7 +1295,7 @@ interface ContextFieldOptions extends BaseFieldOptions {
 {
   type: 'context',
   name: 'currentUserId',
-  title: 'ID người dùng hiện tại',
+  title: 'ID user hiện tại',
   dataIndex: 'user.id',
   dataType: 'integer',
   createOnly: true,
@@ -1301,29 +1303,29 @@ interface ContextFieldOptions extends BaseFieldOptions {
 }
 ```
 
-### Các trường quan hệ
+### Field quan hệ
 
-### `type: 'belongsTo'` - Quan hệ thuộc về (belongsTo)
+### `type: 'belongsTo'` - Quan hệ thuộc về
 
-- **Mô tả**: Biểu thị quan hệ nhiều-một, trong đó bản ghi hiện tại thuộc về một bản ghi khác.
-- **Kiểu cơ sở dữ liệu**: Trường khóa ngoại
-- **Thuộc tính đặc trưng**:
-  - `target`: Tên bộ sưu tập đích
-  - `foreignKey`: Tên trường khóa ngoại
-  - `targetKey`: Tên trường khóa đích trong bảng đích
-  - `onDelete`: Thao tác cascade khi xóa
-  - `onUpdate`: Thao tác cascade khi cập nhật
-  - `constraints`: Có bật ràng buộc khóa ngoại hay không
+- **Mô tả**: Biểu thị quan hệ nhiều-một, record hiện tại thuộc về một record khác
+- **Loại database**: Field foreign key
+- **Thuộc tính riêng**:
+  - `target`: Tên bảng dữ liệu đích
+  - `foreignKey`: Tên Field foreign key
+  - `targetKey`: Tên Field key bảng đích
+  - `onDelete`: Hành vi cascade khi xóa
+  - `onUpdate`: Hành vi cascade khi cập nhật
+  - `constraints`: Có bật ràng buộc foreign key hay không
 
 ```ts
 interface BelongsToFieldOptions extends BaseRelationFieldOptions {
   type: 'belongsTo';
-  target: string;  // Tên bộ sưu tập đích
-  foreignKey?: string;  // Tên trường khóa ngoại
-  targetKey?: string;   // Tên trường khóa đích trong bảng đích
+  target: string;  // Tên bảng dữ liệu đích
+  foreignKey?: string;  // Tên Field foreign key
+  targetKey?: string;   // Tên Field key bảng đích
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
-  constraints?: boolean;  // Có bật ràng buộc khóa ngoại hay không
+  constraints?: boolean;  // Có bật ràng buộc foreign key hay không
 }
 ```
 
@@ -1342,24 +1344,24 @@ interface BelongsToFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'hasOne'` - Quan hệ có một (hasOne)
+### `type: 'hasOne'` - Quan hệ sở hữu một
 
-- **Mô tả**: Biểu thị quan hệ một-một, trong đó bản ghi hiện tại có một bản ghi liên quan.
-- **Kiểu cơ sở dữ liệu**: Trường khóa ngoại
-- **Thuộc tính đặc trưng**:
-  - `target`: Tên bộ sưu tập đích
-  - `foreignKey`: Tên trường khóa ngoại
-  - `sourceKey`: Tên trường khóa nguồn trong bảng nguồn
-  - `onDelete`: Thao tác cascade khi xóa
-  - `onUpdate`: Thao tác cascade khi cập nhật
-  - `constraints`: Có bật ràng buộc khóa ngoại hay không
+- **Mô tả**: Biểu thị quan hệ một-một, record hiện tại sở hữu một record liên quan
+- **Loại database**: Field foreign key
+- **Thuộc tính riêng**:
+  - `target`: Tên bảng dữ liệu đích
+  - `foreignKey`: Tên Field foreign key
+  - `sourceKey`: Tên Field key bảng nguồn
+  - `onDelete`: Hành vi cascade khi xóa
+  - `onUpdate`: Hành vi cascade khi cập nhật
+  - `constraints`: Có bật ràng buộc foreign key hay không
 
 ```ts
 interface HasOneFieldOptions extends BaseRelationFieldOptions {
   type: 'hasOne';
   target: string;
   foreignKey?: string;
-  sourceKey?: string;  // Tên trường khóa nguồn
+  sourceKey?: string;  // Tên Field key bảng nguồn
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   constraints?: boolean;
@@ -1371,7 +1373,7 @@ interface HasOneFieldOptions extends BaseRelationFieldOptions {
 {
   type: 'hasOne',
   name: 'profile',
-  title: 'Hồ sơ người dùng',
+  title: 'Hồ sơ user',
   target: 'user_profiles',
   foreignKey: 'userId',
   sourceKey: 'id',
@@ -1381,19 +1383,19 @@ interface HasOneFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'hasMany'` - Quan hệ có nhiều (hasMany)
+### `type: 'hasMany'` - Quan hệ sở hữu nhiều
 
-- **Mô tả**: Biểu thị quan hệ một-nhiều, trong đó bản ghi hiện tại có nhiều bản ghi liên quan.
-- **Kiểu cơ sở dữ liệu**: Trường khóa ngoại
-- **Thuộc tính đặc trưng**:
-  - `target`: Tên bộ sưu tập đích
-  - `foreignKey`: Tên trường khóa ngoại
-  - `sourceKey`: Tên trường khóa nguồn trong bảng nguồn
-  - `sortBy`: Trường sắp xếp
-  - `sortable`: Có thể sắp xếp được hay không
-  - `onDelete`: Thao tác cascade khi xóa
-  - `onUpdate`: Thao tác cascade khi cập nhật
-  - `constraints`: Có bật ràng buộc khóa ngoại hay không
+- **Mô tả**: Biểu thị quan hệ một-nhiều, record hiện tại sở hữu nhiều record liên quan
+- **Loại database**: Field foreign key
+- **Thuộc tính riêng**:
+  - `target`: Tên bảng dữ liệu đích
+  - `foreignKey`: Tên Field foreign key
+  - `sourceKey`: Tên Field key bảng nguồn
+  - `sortBy`: Field sắp xếp
+  - `sortable`: Có thể sắp xếp hay không
+  - `onDelete`: Hành vi cascade khi xóa
+  - `onUpdate`: Hành vi cascade khi cập nhật
+  - `constraints`: Có bật ràng buộc foreign key hay không
 
 ```ts
 interface HasManyFieldOptions extends BaseRelationFieldOptions {
@@ -1401,8 +1403,8 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
   target: string;
   foreignKey?: string;
   sourceKey?: string;
-  sortBy?: string[];  // Trường sắp xếp
-  sortable?: boolean; // Có thể sắp xếp được hay không
+  sortBy?: string[];  // Field sắp xếp
+  sortable?: boolean; // Có thể sắp xếp hay không
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   constraints?: boolean;
@@ -1426,20 +1428,20 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'belongsToMany'` - Quan hệ nhiều-nhiều (belongsToMany)
+### `type: 'belongsToMany'` - Quan hệ nhiều-nhiều
 
-- **Mô tả**: Biểu thị quan hệ nhiều-nhiều, kết nối hai bộ sưu tập thông qua một bảng trung gian.
-- **Kiểu cơ sở dữ liệu**: Bảng trung gian
-- **Thuộc tính đặc trưng**:
-  - `target`: Tên bộ sưu tập đích
+- **Mô tả**: Biểu thị quan hệ nhiều-nhiều, kết nối hai bảng dữ liệu thông qua bảng trung gian
+- **Loại database**: Bảng trung gian
+- **Thuộc tính riêng**:
+  - `target`: Tên bảng dữ liệu đích
   - `through`: Tên bảng trung gian
-  - `foreignKey`: Tên trường khóa ngoại
-  - `otherKey`: Khóa ngoại khác ở phía bên kia của bảng trung gian
-  - `sourceKey`: Tên trường khóa nguồn trong bảng nguồn
-  - `targetKey`: Tên trường khóa đích trong bảng đích
-  - `onDelete`: Thao tác cascade khi xóa
-  - `onUpdate`: Thao tác cascade khi cập nhật
-  - `constraints`: Có bật ràng buộc khóa ngoại hay không
+  - `foreignKey`: Tên Field foreign key
+  - `otherKey`: Foreign key của đầu kia bảng trung gian
+  - `sourceKey`: Tên Field key bảng nguồn
+  - `targetKey`: Tên Field key bảng đích
+  - `onDelete`: Hành vi cascade khi xóa
+  - `onUpdate`: Hành vi cascade khi cập nhật
+  - `constraints`: Có bật ràng buộc foreign key hay không
 
 ```ts
 interface BelongsToManyFieldOptions extends BaseRelationFieldOptions {
@@ -1447,7 +1449,7 @@ interface BelongsToManyFieldOptions extends BaseRelationFieldOptions {
   target: string;
   through: string;  // Tên bảng trung gian
   foreignKey?: string;
-  otherKey?: string;  // Khóa ngoại khác ở phía bên kia của bảng trung gian
+  otherKey?: string;  // Foreign key của đầu kia bảng trung gian
   sourceKey?: string;
   targetKey?: string;
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
@@ -1461,7 +1463,7 @@ interface BelongsToManyFieldOptions extends BaseRelationFieldOptions {
 {
   type: 'belongsToMany',
   name: 'tags',
-  title: 'Thẻ',
+  title: 'Tag',
   target: 'article_tags',
   through: 'article_tag_relations',
   foreignKey: 'articleId',

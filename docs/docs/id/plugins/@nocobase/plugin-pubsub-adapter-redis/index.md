@@ -1,15 +1,17 @@
 ---
-displayName: "Redis pub sub adapter"
+displayName: "Adapter Pub/Sub Redis"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
+title: "Adapter Pub/Sub Redis"
+keywords: "Adapter Pub/Sub Redis,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding pub/sub messages with Redis.
+  Memproses pesan publish/subscribe aplikasi berbasis Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis pub sub adapter
+# Adapter Pub/Sub Redis

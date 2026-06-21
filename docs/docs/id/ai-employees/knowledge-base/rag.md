@@ -1,30 +1,33 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: "@nocobase/plugin-ai-knowledge-base"
+title: "RAG Retrieval Augmented Generation"
+description: "Pada pengaturan Karyawan AI aktifkan RAG, konfigurasi Knowledge Base Prompt, pemilihan Basis Pengetahuan, Top K, threshold Score, AI membalas berdasarkan dokumen retrieval."
+keywords: "RAG,Retrieval Augmented,Retrieval Basis Pengetahuan,Top K,NocoBase"
+---
 
-# Pencarian RAG
+# Retrieval RAG
 
-## Pendahuluan
+## Pengantar
 
-Setelah mengkonfigurasi basis pengetahuan, Anda dapat mengaktifkan fitur RAG di pengaturan karyawan AI.
+Setelah mengonfigurasi Basis Pengetahuan, dapat mengaktifkan fungsi RAG di pengaturan Karyawan AI.
 
-Ketika RAG diaktifkan, saat pengguna berinteraksi dengan karyawan AI, karyawan AI akan menggunakan pencarian RAG untuk mengambil dokumen dari basis pengetahuan berdasarkan pesan pengguna dan membalas berdasarkan dokumen yang ditemukan.
+Setelah RAG diaktifkan, saat Pengguna berdialog dengan Karyawan AI, Karyawan AI akan menggunakan retrieval RAG, menggunakan pesan Pengguna untuk mendapatkan dokumen dari Basis Pengetahuan dan membalas berdasarkan dokumen yang ditemukan.
 
 ## Mengaktifkan RAG
 
-Buka halaman konfigurasi plugin karyawan AI, klik tab `AI employees` untuk masuk ke halaman manajemen karyawan AI.
+Masuk ke halaman konfigurasi Plugin Karyawan AI, klik tab `AI employees`, masuk ke halaman manajemen Karyawan AI.
 
 ![20251023010811](https://static-docs.nocobase.com/20251023010811.png)
 
-Pilih karyawan AI yang ingin Anda aktifkan RAG-nya, klik tombol `Edit` untuk masuk ke halaman pengeditan karyawan AI.
+Pilih Karyawan AI yang akan diaktifkan RAG, klik tombol `Edit`, masuk ke halaman edit Karyawan AI.
 
-Di tab `Knowledge base`, aktifkan sakelar `Enable`.
+Pada tab `Knowledge base`, buka switch `Enable`.
 
-- Pada `Knowledge Base Prompt`, masukkan prompt untuk mereferensikan basis pengetahuan. `{knowledgeBaseData}` adalah placeholder tetap dan tidak boleh diubah;
-- Pada `Knowledge Base`, pilih basis pengetahuan yang telah dikonfigurasi. Lihat: [Basis Pengetahuan](/ai-employees/knowledge-base/knowledge-base);
-- Pada kolom input `Top K`, masukkan jumlah dokumen yang akan diambil, nilai defaultnya adalah 3;
-- Pada kolom input `Score`, masukkan ambang batas relevansi dokumen untuk pencarian.
+- Pada `Knowledge Base Prompt` masukkan prompt referensi Basis Pengetahuan, `{knowledgeBaseData}` adalah placeholder tetap, jangan dimodifikasi;
+- Pada `Knowledge Base` pilih Basis Pengetahuan yang sudah dikonfigurasi, rujuk: [Basis Pengetahuan](./knowledge-base/);
+- Pada kotak input `Top K` masukkan jumlah dokumen yang akan di-retrieve, default 3;
+- Pada kotak input `Score` threshold relevansi dokumen saat retrieval;
 
-Klik tombol `Submit` untuk menyimpan pengaturan karyawan AI.
+Klik tombol `Submit` untuk menyimpan pengaturan Karyawan AI.
 
 ![20251023010844](https://static-docs.nocobase.com/20251023010844.png)

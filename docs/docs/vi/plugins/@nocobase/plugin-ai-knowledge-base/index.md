@@ -1,14 +1,16 @@
 ---
-displayName: "AI: Knowledge base"
+displayName: "AI: Cơ sở tri thức"
 packageName: '@nocobase/plugin-ai-knowledge-base'
+title: "AI: Cơ sở tri thức"
+keywords: "AI: Cơ sở tri thức,Plugin,NocoBase"
 supportedVersions:
   - 2.x
 description: |
-  Supports integration with vector databases to vectorize documents, providing AI employees with intelligent search and knowledge support.
+  Hỗ trợ tích hợp cơ sở dữ liệu vector, vector hóa tài liệu, cung cấp khả năng tìm kiếm thông minh và hỗ trợ tri thức cho nhân viên AI.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# AI: Knowledge base
+# AI: Cơ sở tri thức

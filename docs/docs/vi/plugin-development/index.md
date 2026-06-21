@@ -1,86 +1,96 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tổng quan phát triển Plugin NocoBase"
+description: "Kiến trúc microkernel của NocoBase, vòng đời Plugin, cấu trúc thư mục, plug-and-play, tích hợp front-end và back-end, mã nguồn client/server, metadata package.json."
+keywords: "phát triển plugin,Plugin NocoBase,microkernel,vòng đời plugin,front-end và back-end,mở rộng NocoBase"
+---
 
+# Tổng quan phát triển Plugin
 
-# Tổng quan về phát triển plugin
+NocoBase sử dụng **kiến trúc microkernel** — phần lõi chỉ chịu trách nhiệm điều phối vòng đời Plugin, quản lý dependency và đóng gói các năng lực cơ bản, trong khi tất cả chức năng nghiệp vụ đều được cung cấp dưới dạng Plugin. Hiểu cấu trúc tổ chức, vòng đời và cách quản lý Plugin là bước đầu tiên để bạn bắt đầu phát triển tùy chỉnh trên NocoBase.
 
-NocoBase áp dụng **kiến trúc vi nhân (microkernel)**, trong đó phần lõi chỉ chịu trách nhiệm điều phối vòng đời plugin, quản lý các phụ thuộc và đóng gói các khả năng cơ bản. Tất cả các chức năng nghiệp vụ đều được cung cấp dưới dạng plugin. Do đó, việc hiểu rõ cấu trúc tổ chức, vòng đời và cách quản lý plugin là bước đầu tiên để tùy chỉnh NocoBase.
+## Triết lý cốt lõi
 
-## Các khái niệm cốt lõi
+- **Plug-and-play**: Bạn có thể cài đặt, kích hoạt hoặc vô hiệu hóa Plugin theo nhu cầu, kết hợp linh hoạt các chức năng nghiệp vụ mà không cần sửa code.
+- **Tích hợp front-end và back-end**: Plugin thường bao gồm cả implementation phía server và client, đặt logic dữ liệu và tương tác giao diện chung một chỗ để quản lý.
 
-- **Cắm và chạy (Plug and Play)**: Bạn có thể cài đặt, kích hoạt hoặc vô hiệu hóa plugin theo nhu cầu, cho phép kết hợp linh hoạt các chức năng nghiệp vụ mà không cần sửa đổi mã nguồn.
-- **Tích hợp toàn diện (Full-stack Integration)**: Plugin thường bao gồm cả triển khai phía máy chủ (server-side) và phía máy khách (client-side), đảm bảo tính nhất quán giữa logic dữ liệu và tương tác giao diện người dùng.
+## Cấu trúc cơ bản của Plugin
 
-## Cấu trúc cơ bản của plugin
-
-Mỗi plugin là một gói npm độc lập, thường có cấu trúc thư mục như sau:
+Mỗi Plugin là một npm package độc lập, thường có cấu trúc thư mục như sau:
 
 ```bash
 plugin-hello/
-├─ package.json          # Tên plugin, các phụ thuộc và siêu dữ liệu plugin của NocoBase
-├─ client.js             # Sản phẩm biên dịch phía frontend, dùng để tải khi chạy
-├─ server.js             # Sản phẩm biên dịch phía server, dùng để tải khi chạy
+├─ package.json          # Tên Plugin, dependency và metadata Plugin NocoBase
+├─ client-v2.js          # Sản phẩm biên dịch front-end, dùng để load lúc runtime
+├─ server.js             # Sản phẩm biên dịch server, dùng để load lúc runtime
 ├─ src/
-│  ├─ client/            # Mã nguồn phía client, có thể đăng ký các khối (block), hành động (action), trường (field), v.v.
-│  └─ server/            # Mã nguồn phía server, có thể đăng ký các tài nguyên (resource), sự kiện (event), lệnh dòng lệnh (command), v.v.
+│  ├─ client-v2/         # Mã nguồn client, có thể đăng ký Block, Action, Field, v.v.
+│  └─ server/            # Mã nguồn server, có thể đăng ký resource, event, command line, v.v.
 ```
 
-## Quy ước thư mục và thứ tự tải
+## Quy ước thư mục và thứ tự load
 
-NocoBase mặc định sẽ quét các thư mục sau để tải plugin:
+Khi khởi động, NocoBase sẽ quét các thư mục sau để load Plugin:
 
 ```bash
 my-nocobase-app/
 ├── packages/
-│   └── plugins/          # Các plugin đang trong quá trình phát triển (ưu tiên cao nhất)
+│   └── plugins/          # Plugin đang phát triển từ source (ưu tiên cao nhất)
 └── storage/
-    └── plugins/          # Các plugin đã được biên dịch, ví dụ: plugin đã tải lên hoặc đã phát hành
+    └── plugins/          # Plugin đã biên dịch, ví dụ Plugin được upload hoặc phát hành
 ```
 
-- `packages/plugins`: Thư mục chứa các plugin dùng để phát triển cục bộ, hỗ trợ biên dịch và gỡ lỗi theo thời gian thực.
-- `storage/plugins`: Nơi lưu trữ các plugin đã được biên dịch, chẳng hạn như các phiên bản thương mại hoặc plugin của bên thứ ba.
+- `packages/plugins`: Thư mục Plugin phát triển local, hỗ trợ biên dịch và debug realtime.
+- `storage/plugins`: Lưu Plugin đã biên dịch, ví dụ Plugin thương mại hoặc Plugin của bên thứ ba.
 
-## Vòng đời và trạng thái của plugin
+## Vòng đời và trạng thái Plugin
 
-Một plugin thường trải qua các giai đoạn sau:
+Một Plugin thường trải qua các giai đoạn sau:
 
-1. **Tạo (create)**: Tạo một mẫu plugin thông qua CLI.
-2. **Kéo (pull)**: Tải gói plugin về máy cục bộ, nhưng chưa ghi vào cơ sở dữ liệu.
-3. **Kích hoạt (enable)**: Lần đầu tiên kích hoạt sẽ thực hiện "đăng ký + khởi tạo"; các lần kích hoạt sau chỉ tải logic.
-4. **Vô hiệu hóa (disable)**: Dừng plugin hoạt động.
-5. **Gỡ bỏ (remove)**: Xóa plugin hoàn toàn khỏi hệ thống.
+1. **Tạo (create)**: Tạo template Plugin qua CLI.
+2. **Pull (pull)**: Tải Plugin package về local, nhưng chưa ghi vào database.
+3. **Kích hoạt (enable)**: Lần kích hoạt đầu tiên sẽ thực hiện "đăng ký + khởi tạo"; những lần kích hoạt sau chỉ load logic.
+4. **Vô hiệu hóa (disable)**: Dừng Plugin chạy.
+5. **Gỡ cài đặt (remove)**: Xóa hoàn toàn Plugin khỏi NocoBase.
 
-:::tip
+:::tip Mẹo
 
-- Lệnh `pull` chỉ chịu trách nhiệm tải gói plugin; quá trình cài đặt thực sự được kích hoạt bởi lệnh `enable` lần đầu tiên.
-- Nếu một plugin chỉ được `pull` nhưng chưa được kích hoạt, nó sẽ không được tải.
+- `pull` chỉ chịu trách nhiệm tải Plugin package về, quá trình cài đặt thực sự được kích hoạt bởi lần `enable` đầu tiên.
+- Nếu Plugin chỉ được `pull` mà không kích hoạt thì sẽ không được load.
 
 :::
 
-### Ví dụ về lệnh CLI
+### Ví dụ lệnh CLI
 
 ```bash
-# 1. Tạo cấu trúc plugin cơ bản
+# 1. Tạo bộ khung Plugin
 yarn pm create @my-project/plugin-hello
 
-# 2. Kéo gói plugin (tải xuống hoặc liên kết)
+# 2. Pull Plugin package (download hoặc link)
 yarn pm pull @my-project/plugin-hello
 
-# 3. Kích hoạt plugin (tự động cài đặt khi kích hoạt lần đầu)
+# 3. Kích hoạt Plugin (lần đầu kích hoạt sẽ tự động cài đặt)
 yarn pm enable @my-project/plugin-hello
 
-# 4. Vô hiệu hóa plugin
+# 4. Vô hiệu hóa Plugin
 yarn pm disable @my-project/plugin-hello
 
-# 5. Gỡ bỏ plugin
+# 5. Gỡ cài đặt Plugin
 yarn pm remove @my-project/plugin-hello
 ```
 
-## Giao diện quản lý plugin
+## Giao diện quản lý Plugin
 
-Truy cập trình quản lý plugin trong trình duyệt để xem và quản lý plugin một cách trực quan:
+Truy cập "Plugin Manager" trên trình duyệt, bạn có thể xem và quản lý Plugin trực quan:
 
 **Địa chỉ mặc định:** [http://localhost:13000/admin/settings/plugin-manager](http://localhost:13000/admin/settings/plugin-manager)
 
-![Trình quản lý plugin](https://static-docs.nocobase.com/20251030195350.png)
+![Plugin Manager](https://static-docs.nocobase.com/20251030195350.png)
+
+## Liên kết liên quan
+
+- [Viết Plugin đầu tiên](./write-your-first-plugin.md) — Tạo một Plugin Block từ đầu, làm quen nhanh với quy trình phát triển
+- [Cấu trúc thư mục dự án](./project-structure.md) — Tìm hiểu quy ước thư mục và thứ tự load Plugin của dự án NocoBase
+- [Tổng quan phát triển server](./server/index.md) — Giới thiệu tổng thể và các khái niệm cốt lõi của Plugin server
+- [Tổng quan phát triển client](./client/index.md) — Giới thiệu tổng thể và các khái niệm cốt lõi của Plugin client
+- [Build và đóng gói](./build.md) — Quy trình build và đóng gói Plugin
+- [Quản lý dependency](./dependency-management.md) — Cách khai báo và quản lý dependency của Plugin

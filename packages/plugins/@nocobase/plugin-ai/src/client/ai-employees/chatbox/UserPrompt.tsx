@@ -13,7 +13,7 @@ import { useT } from '../../locale';
 import { Button, Popover, Card, App, Typography, Tooltip, Input, Space, Modal } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useChatBoxStore } from './stores/chat-box';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 
 export const UserPrompt: React.FC = () => {
   const t = useT();
@@ -23,7 +23,7 @@ export const UserPrompt: React.FC = () => {
   const api = useAPIClient();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
-  const { refresh } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
   const [desktopOpen, setDesktopOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -57,7 +57,7 @@ export const UserPrompt: React.FC = () => {
           prompt,
         },
       });
-      await refresh();
+      await aiConfigRepository.refreshAIEmployees();
       setCurrentEmployee((prev) => ({
         ...prev,
         userConfig: {

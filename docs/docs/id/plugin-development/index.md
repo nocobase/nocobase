@@ -1,85 +1,96 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ikhtisar Plugin Development NocoBase"
+description: "Arsitektur microkernel NocoBase, siklus hidup plugin, struktur direktori, plug-and-play, integrasi front-back end, source code client/server, metadata package.json."
+keywords: "plugin development,plugin NocoBase,microkernel,siklus hidup plugin,front-back end,ekstensi NocoBase"
+---
 
-# Ikhtisar Pengembangan Plugin
+# Ikhtisar Plugin Development
 
-NocoBase mengadopsi **arsitektur mikrokernel**, di mana inti sistem hanya bertanggung jawab untuk penjadwalan siklus hidup plugin, manajemen dependensi, dan enkapsulasi kemampuan dasar. Semua fungsi bisnis disediakan dalam bentuk plugin. Oleh karena itu, memahami struktur organisasi, siklus hidup, dan cara pengelolaan plugin adalah langkah pertama dalam menyesuaikan NocoBase.
+NocoBase menggunakan **arsitektur microkernel** — kernel hanya bertanggung jawab atas penjadwalan siklus hidup plugin, manajemen dependensi, dan enkapsulasi kapabilitas dasar, semua fungsi bisnis disediakan dalam bentuk plugin. Memahami struktur organisasi, siklus hidup, dan cara manajemen plugin adalah langkah pertama untuk memulai pengembangan kustom NocoBase.
 
 ## Konsep Inti
 
-- **Pasang dan Pakai (Plug and Play)**: Plugin dapat diinstal, diaktifkan, atau dinonaktifkan sesuai kebutuhan, memungkinkan kombinasi fungsi bisnis yang fleksibel tanpa perlu mengubah kode.
-- **Integrasi Penuh (Full-stack Integration)**: Plugin biasanya mencakup implementasi sisi server dan sisi klien secara bersamaan, memastikan konsistensi antara logika data dan interaksi antarmuka pengguna.
+- **Plug-and-Play**: Anda dapat menginstal, mengaktifkan, atau menonaktifkan plugin sesuai kebutuhan, tanpa perlu mengubah kode untuk menggabungkan fungsi bisnis secara fleksibel.
+- **Front-Back End Terintegrasi**: Plugin biasanya mencakup implementasi server dan client sekaligus, sehingga logika data dan interaksi antarmuka dikelola bersama.
 
 ## Struktur Dasar Plugin
 
-Setiap plugin adalah paket `npm` independen, yang biasanya memiliki struktur direktori sebagai berikut:
+Setiap plugin adalah package npm independen, biasanya berisi struktur direktori sebagai berikut:
 
 ```bash
 plugin-hello/
 ├─ package.json          # Nama plugin, dependensi, dan metadata plugin NocoBase
-├─ client.js             # Hasil kompilasi frontend, dimuat saat runtime
-├─ server.js             # Hasil kompilasi sisi server, dimuat saat runtime
+├─ client-v2.js          # Hasil compile front-end, dimuat saat runtime
+├─ server.js             # Hasil compile server, dimuat saat runtime
 ├─ src/
-│  ├─ client/            # Kode sumber sisi klien, dapat mendaftarkan blok, aksi, bidang, dll.
-│  └─ server/            # Kode sumber sisi server, dapat mendaftarkan sumber daya, event, perintah, dll.
+│  ├─ client-v2/         # Source code client, dapat mendaftarkan Block, Action, Field, dll.
+│  └─ server/            # Source code server, dapat mendaftarkan resource, event, command line, dll.
 ```
 
-## Konvensi Direktori dan Urutan Pemuatan
+## Konvensi Direktori dan Urutan Loading
 
-NocoBase secara default akan memindai direktori berikut untuk memuat plugin:
+Saat NocoBase dijalankan, sistem akan memindai direktori berikut untuk memuat plugin:
 
 ```bash
 my-nocobase-app/
 ├── packages/
-│   └── plugins/          # Plugin dalam pengembangan kode sumber (prioritas tertinggi)
+│   └── plugins/          # Plugin yang sedang dikembangkan dari source code (prioritas tertinggi)
 └── storage/
-    └── plugins/          # Plugin yang sudah dikompilasi, misalnya plugin yang diunggah atau dipublikasikan
+    └── plugins/          # Plugin yang sudah dicompile, misalnya plugin yang diupload atau dirilis
 ```
 
-- `packages/plugins`: Direktori ini digunakan untuk pengembangan plugin lokal, mendukung kompilasi dan debugging secara real-time.
-- `storage/plugins`: Menyimpan plugin yang sudah dikompilasi, seperti edisi komersial atau plugin pihak ketiga.
+- `packages/plugins`: Direktori plugin yang dikembangkan secara lokal, mendukung kompilasi dan debug real-time.
+- `storage/plugins`: Menyimpan plugin yang sudah dicompile, seperti versi commercial atau plugin pihak ketiga.
 
 ## Siklus Hidup dan Status Plugin
 
-Sebuah plugin biasanya melalui tahapan-tahapan berikut:
+Sebuah plugin biasanya melewati tahapan berikut:
 
-1.  **Buat (create)**: Membuat template plugin melalui `CLI`.
-2.  **Tarik (pull)**: Mengunduh paket plugin ke lokal, namun belum ditulis ke dalam database.
-3.  **Aktifkan (enable)**: Saat pertama kali diaktifkan, ia akan menjalankan proses "registrasi + inisialisasi"; pengaktifan berikutnya hanya akan memuat logikanya.
-4.  **Nonaktifkan (disable)**: Menghentikan jalannya plugin.
-5.  **Hapus (remove)**: Menghapus plugin sepenuhnya dari sistem.
+1. **Create**: Membuat template plugin melalui CLI.
+2. **Pull**: Mengunduh paket plugin ke lokal, tetapi belum ditulis ke database.
+3. **Enable**: Saat pertama kali diaktifkan akan menjalankan "registrasi + inisialisasi"; aktivasi berikutnya hanya memuat logikanya saja.
+4. **Disable**: Menghentikan plugin yang sedang berjalan.
+5. **Remove**: Menghapus plugin sepenuhnya dari NocoBase.
 
-:::tip
+:::tip Tips
 
--   `pull` hanya bertanggung jawab untuk mengunduh paket plugin; proses instalasi yang sebenarnya dipicu oleh `enable` pertama kali.
--   Jika sebuah plugin hanya di-`pull` tetapi tidak diaktifkan, maka plugin tersebut tidak akan dimuat.
+- `pull` hanya bertanggung jawab mengunduh paket plugin, proses instalasi sebenarnya dipicu oleh `enable` pertama kali.
+- Jika plugin hanya di-`pull` tetapi tidak diaktifkan, plugin tidak akan dimuat.
 
 :::
 
 ### Contoh Perintah CLI
 
 ```bash
-# 1. Buat kerangka plugin
+# 1. Membuat skeleton plugin
 yarn pm create @my-project/plugin-hello
 
-# 2. Tarik paket plugin (unduh atau tautkan)
+# 2. Mengambil paket plugin (download atau link)
 yarn pm pull @my-project/plugin-hello
 
-# 3. Aktifkan plugin (instalasi otomatis pada pengaktifan pertama)
+# 3. Mengaktifkan plugin (aktivasi pertama akan otomatis menginstal)
 yarn pm enable @my-project/plugin-hello
 
-# 4. Nonaktifkan plugin
+# 4. Menonaktifkan plugin
 yarn pm disable @my-project/plugin-hello
 
-# 5. Hapus plugin
+# 5. Menghapus plugin
 yarn pm remove @my-project/plugin-hello
 ```
 
 ## Antarmuka Manajemen Plugin
 
-Akses manajer plugin di browser untuk melihat dan mengelola plugin secara intuitif:
+Akses "Plugin Manager" melalui browser untuk melihat dan mengelola plugin secara intuitif:
 
-**URL Default:** [http://localhost:13000/admin/settings/plugin-manager](http://localhost:13000/admin/settings/plugin-manager)
+**Alamat default:** [http://localhost:13000/admin/settings/plugin-manager](http://localhost:13000/admin/settings/plugin-manager)
 
-![Manajer Plugin](https://static-docs.nocobase.com/20251030195350.png)
+![Plugin Manager](https://static-docs.nocobase.com/20251030195350.png)
+
+## Tautan Terkait
+
+- [Menulis Plugin Pertama](./write-your-first-plugin.md) — Membuat Block plugin dari nol untuk memulai alur pengembangan dengan cepat
+- [Struktur Direktori Proyek](./project-structure.md) — Memahami konvensi direktori NocoBase dan urutan loading plugin
+- [Ikhtisar Pengembangan Server](./server/index.md) — Pengantar menyeluruh dan konsep inti plugin server
+- [Ikhtisar Pengembangan Client](./client/index.md) — Pengantar menyeluruh dan konsep inti plugin client
+- [Build & Packaging](./build.md) — Alur build dan packaging plugin
+- [Manajemen Dependensi](./dependency-management.md) — Cara deklarasi dan manajemen dependensi plugin

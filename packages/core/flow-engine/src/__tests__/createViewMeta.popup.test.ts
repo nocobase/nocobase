@@ -11,7 +11,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { FlowContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type { FlowView } from '../views/FlowView';
-import { createPopupMeta } from '../views/createViewMeta';
+import { buildPopupRuntime, createPopupMeta } from '../views/createViewMeta';
 
 describe('createPopupMeta - popup variables', () => {
   function makeCtx() {
@@ -21,6 +21,62 @@ describe('createPopupMeta - popup variables', () => {
     // 简化 i18n：直接返回 key
     ctx.defineProperty('t', { value: (s: string) => s });
     return { engine, ctx };
+  }
+
+  function makeNestedPopupView(viewUid: string, filterByTk: number): FlowView {
+    return {
+      type: 'drawer',
+      inputArgs: {
+        viewUid,
+        filterByTk,
+        sourceId: 13,
+      },
+      Header: null,
+      Footer: null,
+      close: () => void 0,
+      update: () => void 0,
+      navigation: {
+        viewStack: [
+          { viewUid: 'base-page-uid' },
+          { viewUid: 'parent-popup-uid', filterByTk: 13, sourceId: 13 },
+          { viewUid: 'child-popup-uid', filterByTk: 24, sourceId: 13 },
+        ],
+      } as any,
+    } as any;
+  }
+
+  function mockNestedPopupModels(engine: FlowEngine) {
+    vi.spyOn(engine as any, 'getModel').mockImplementation((uid: string) => {
+      if (uid === 'parent-popup-uid') {
+        return {
+          getStepParams: vi.fn((_fk: string, sk: string) =>
+            sk === 'openView'
+              ? {
+                  collectionName: 'users',
+                  dataSourceKey: 'main',
+                  associationName: 'users.orgs',
+                }
+              : undefined,
+          ),
+        };
+      }
+      if (uid === 'child-popup-uid') {
+        return {
+          getStepParams: vi.fn((_fk: string, sk: string) =>
+            sk === 'openView'
+              ? {
+                  collectionName: 'orgs',
+                  dataSourceKey: 'main',
+                  associationName: 'users.orgs',
+                }
+              : undefined,
+          ),
+        };
+      }
+      return {
+        getStepParams: vi.fn(() => undefined),
+      };
+    });
   }
 
   it('buildVariablesParams(record) uses anchor view instead of ctx.view', async () => {
@@ -106,6 +162,64 @@ describe('createPopupMeta - popup variables', () => {
 
     // 确认没有误用 ctx.view（settings-uid）的集合
     expect(vars.record.collection).not.toBe('comments');
+  });
+
+  it('buildPopupRuntime anchors current popup even when the navigation stack already has a child popup', async () => {
+    const { engine, ctx } = makeCtx();
+    const parentView = makeNestedPopupView('parent-popup-uid', 13);
+    mockNestedPopupModels(engine);
+
+    const popup = await buildPopupRuntime(ctx, parentView);
+
+    expect(popup?.uid).toBe('parent-popup-uid');
+    expect(popup?.resource).toEqual({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      associationName: 'users.orgs',
+      filterByTk: 13,
+      sourceId: 13,
+    });
+  });
+
+  it('buildVariablesParams(record) keeps the parent view record when a child popup is open', async () => {
+    const { engine, ctx } = makeCtx();
+    const parentView = makeNestedPopupView('parent-popup-uid', 13);
+    mockNestedPopupModels(engine);
+
+    const meta = (await createPopupMeta(ctx, parentView)())!;
+    const vars = (await meta.buildVariablesParams!(ctx)) as any;
+
+    expect(vars.record).toEqual({
+      collection: 'users',
+      dataSourceKey: 'main',
+      filterByTk: 13,
+      associationName: 'users.orgs',
+      sourceId: 13,
+    });
+  });
+
+  it('buildVariablesParams(parent.record) is still relative to the child popup view', async () => {
+    const { engine, ctx } = makeCtx();
+    const childView = makeNestedPopupView('child-popup-uid', 24);
+    mockNestedPopupModels(engine);
+
+    const meta = (await createPopupMeta(ctx, childView)())!;
+    const vars = (await meta.buildVariablesParams!(ctx)) as any;
+
+    expect(vars.record).toEqual({
+      collection: 'orgs',
+      dataSourceKey: 'main',
+      filterByTk: 24,
+      associationName: 'users.orgs',
+      sourceId: 13,
+    });
+    expect(vars.parent.record).toEqual({
+      collection: 'users',
+      dataSourceKey: 'main',
+      filterByTk: 13,
+      sourceId: 13,
+      associationName: 'users.orgs',
+    });
   });
 
   it('properties() provides a record factory node (lazy) with title', async () => {

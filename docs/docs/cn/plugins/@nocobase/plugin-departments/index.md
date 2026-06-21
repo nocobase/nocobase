@@ -1,4 +1,6 @@
 ---
+title: "部门"
+keywords: "部门,插件,NocoBase"
 displayName: "部门"
 packageName: '@nocobase/plugin-departments'
 description: |

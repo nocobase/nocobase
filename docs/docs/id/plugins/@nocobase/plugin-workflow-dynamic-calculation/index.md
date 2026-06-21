@@ -1,8 +1,10 @@
 ---
-displayName: "Workflow: Dynamic calculation node"
+displayName: "Workflow: Node Kalkulasi Ekspresi Dinamis"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
+title: "Workflow: Node Kalkulasi Ekspresi Dinamis"
+keywords: "Workflow: Node Kalkulasi Ekspresi Dinamis,Plugin,NocoBase"
 description: |
-  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
+  Digunakan untuk melakukan kalkulasi ekspresi dinamis berbasis baris data dalam workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Workflow: Dynamic calculation node
+# Workflow: Node Kalkulasi Ekspresi Dinamis
 
-> Note: This plugin is deprecated.
+> Perhatian: Plugin ini sudah usang (deprecated).

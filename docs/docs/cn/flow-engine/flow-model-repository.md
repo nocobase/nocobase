@@ -1,3 +1,9 @@
+---
+title: "FlowModel 持久化与 Repository"
+description: "FlowModel 持久化与 Repository 模式：数据加载、保存、与数据源交互，支持 CRUD 操作，FlowEngine 数据管理。"
+keywords: "FlowModel 持久化,Repository,数据加载,CRUD,数据源交互,FlowEngine,NocoBase"
+---
+
 # FlowModel 持久化
 
 FlowEngine 提供了完整的持久化体系
@@ -55,7 +61,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### 本地方法
 
 ```ts
-flowEngine.createModel(options); // 创建本地模型实例
+await flowEngine.createModelAsync(options); // 创建本地模型实例
 flowEngine.getModel(uid);        // 获取本地模型实例
 flowEngine.removeModel(uid);     // 移除本地模型实例
 ```
@@ -71,7 +77,7 @@ await flowEngine.destroyModel(uid);  // 从远程删除模型
 ## model 实例方法
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // 保存到远程

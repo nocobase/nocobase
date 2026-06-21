@@ -1,4 +1,6 @@
 ---
+title: "操作：导入记录 Pro"
+keywords: "操作：导入记录 Pro,插件,NocoBase"
 displayName: "操作：导入记录 Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

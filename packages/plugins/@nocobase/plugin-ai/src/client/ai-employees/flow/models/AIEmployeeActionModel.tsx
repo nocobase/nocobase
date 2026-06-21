@@ -13,6 +13,7 @@ import {
   ActionSceneEnum,
   CollectionActionGroupModel,
   FormActionGroupModel,
+  PopupSubTableFormActionGroupModel,
   RecordActionGroupModel,
 } from '@nocobase/client';
 import { FlowModelContext, escapeT } from '@nocobase/flow-engine';
@@ -38,7 +39,7 @@ export class AIEmployeeActionModel extends ActionModel {
   static scene = ActionSceneEnum.all;
 
   static async defineChildren(ctx: FlowModelContext) {
-    const { aiEmployees } = ctx.aiEmployeesData;
+    const aiEmployees = await ctx.aiConfigRepository.getAIEmployees();
 
     return aiEmployees
       ?.filter((aiEmployee: AIEmployee) => !isHide(aiEmployee))
@@ -75,5 +76,9 @@ RecordActionGroupModel.registerActionModels({
 });
 
 FormActionGroupModel.registerActionModels({
+  AIEmployeeActionModel,
+});
+
+PopupSubTableFormActionGroupModel.registerActionModels({
   AIEmployeeActionModel,
 });

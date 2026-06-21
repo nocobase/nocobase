@@ -1,39 +1,39 @@
 ---
 pkg: '@nocobase/plugin-notification-manager'
+title: "Tổng quan Quản lý Thông báo"
+description: "Quản lý Thông báo NocoBase: trung tâm thông báo đa kênh, hỗ trợ in-app message, Email, WeCom, cấu hình kênh thống nhất, quản lý gửi, log thông báo, có thể mở rộng các kênh SMS, DingTalk, Lark."
+keywords: "Quản lý thông báo,in-app message,thông báo email,WeCom,cấu hình kênh,log thông báo,thông báo workflow,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Quản lý Thông báo
 
 ## Giới thiệu
 
-Quản lý Thông báo là một dịch vụ tập trung tích hợp nhiều kênh thông báo, cung cấp cấu hình kênh, quản lý gửi và ghi nhật ký thống nhất, đồng thời hỗ trợ mở rộng linh hoạt.
+Quản lý Thông báo là dịch vụ tập trung tích hợp nhiều phương thức thông báo qua các kênh, cung cấp cấu hình kênh thống nhất, quản lý gửi và ghi log, hỗ trợ mở rộng linh hoạt.
 
 ![20240928112556](https://static-docs.nocobase.com/20240928112556.png)
 
-- **Phần màu tím**: Quản lý Thông báo cung cấp dịch vụ quản lý toàn diện, bao gồm cấu hình kênh và ghi nhật ký, với tùy chọn mở rộng sang các kênh thông báo bổ sung.
-- **Phần màu xanh lá**: Tin nhắn trong ứng dụng (In-App Message), một kênh tích hợp sẵn, cho phép người dùng nhận thông báo trực tiếp trong ứng dụng.
-- **Phần màu đỏ**: Email, một kênh có thể mở rộng, cho phép người dùng nhận thông báo qua email.
+- Phần màu tím: Quản lý thông báo, cung cấp dịch vụ quản lý thống nhất, bao gồm cấu hình kênh, ghi log và các tính năng khác, các kênh thông báo có thể mở rộng;
+- Phần màu xanh: In-App Message, kênh tích hợp sẵn, hỗ trợ người dùng nhận thông báo trong ứng dụng;
+- Phần màu đỏ: Email, kênh mở rộng, hỗ trợ người dùng nhận thông báo qua Email.
 
-## Quản lý Kênh
+## Quản lý kênh
 
 ![20240928181752](https://static-docs.nocobase.com/20240928181752.png)
 
-Các kênh hiện được hỗ trợ bao gồm:
+Hiện tại các kênh đã được hỗ trợ:
 
-- [Tin nhắn trong ứng dụng](/notification-manager/notification-in-app-message)
-- [Email](/notification-manager/notification-email) (sử dụng giao thức SMTP tích hợp sẵn)
+- [In-App Message](/notification-manager/notification-in-app-message)
+- [Email](/notification-manager/notification-email) (tích hợp sẵn phương thức truyền tải SMTP)
 
-Bạn cũng có thể mở rộng sang nhiều kênh thông báo hơn, tham khảo tài liệu [Mở rộng Kênh](/notification-manager/development/extension).
+Cũng có thể mở rộng thêm các kênh thông báo khác, tham khảo tài liệu [Mở rộng kênh](/notification-manager/development/extension)
 
-## Nhật ký Thông báo
+## Log thông báo
 
-Hệ thống ghi lại chi tiết thông tin gửi và trạng thái của từng thông báo, giúp dễ dàng phân tích và khắc phục sự cố.
+Ghi lại chi tiết và trạng thái gửi của từng thông báo, thuận tiện cho việc phân tích và xử lý sự cố.
 
 ![20240928181649](https://static-docs.nocobase.com/20240928181649.png)
 
-## Nút Thông báo trong Luồng Công việc
+## Node thông báo workflow
 
 ![20240928181726](https://static-docs.nocobase.com/20240928181726.png)

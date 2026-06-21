@@ -3,36 +3,45 @@ set -e
 
 echo "COMMIT_HASH: $(cat /app/commit_hash.txt)"
 
-export NOCOBASE_RUNNING_IN_DOCKER=true
-
-if [ -f /opt/libreoffice24.8.zip ] && [ ! -d /opt/libreoffice24.8 ]; then
-  echo "Unzipping /opt/libreoffice24.8.zip..."
-  unzip /opt/libreoffice24.8.zip -d /opt/
-fi
-
-if [ -f /opt/instantclient_19_25.zip ] && [ ! -d /opt/instantclient_19_25 ]; then
-  echo "Unzipping /opt/instantclient_19_25.zip..."
-  unzip /opt/instantclient_19_25.zip -d /opt/
-  echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf
-  ldconfig
-fi
-
 if [ ! -d "/app/nocobase" ]; then
   mkdir nocobase
 fi
 
 if [ ! -f "/app/nocobase/package.json" ]; then
-  echo 'copying...'
-  tar -zxf /app/nocobase.tar.gz --absolute-names -C /app/nocobase
-  touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html
+  echo "Missing /app/nocobase/package.json; the image is expected to include a pre-extracted app directory."
+  exit 1
 fi
 
 cd /app/nocobase && yarn nocobase postinstall
+case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
+  1|true|TRUE|yes|YES)
+    echo 'NOCOBASE_EXTRACT_CLIENT_ASSETS is enabled; extracting client assets...'
+    cd /app/nocobase && yarn nocobase client:extract
+    ;;
+esac
+
+if [ -z "${CDN_BASE_URL:-}" ]; then
+  ACTIVE_VERSION_FILE='/app/nocobase/storage/dist-client/active-version'
+  if [ -f "${ACTIVE_VERSION_FILE}" ]; then
+    ACTIVE_VERSION="$(tr -d '\r\n' < "${ACTIVE_VERSION_FILE}")"
+    if [ -n "${ACTIVE_VERSION}" ]; then
+      APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH:-/}"
+      case "${APP_PUBLIC_PATH_VALUE}" in
+        /*) ;;
+        *) APP_PUBLIC_PATH_VALUE="/${APP_PUBLIC_PATH_VALUE}" ;;
+      esac
+      APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH_VALUE%/}/"
+      export CDN_BASE_URL="${APP_PUBLIC_PATH_VALUE%/}/dist/${ACTIVE_VERSION}/"
+      echo "CDN_BASE_URL is not set; defaulting to ${CDN_BASE_URL}"
+    fi
+  fi
+fi
+
 cd /app/nocobase && yarn nocobase db:auth
 cd /app/nocobase && yarn nocobase create-nginx-conf
 cd /app/nocobase && yarn nocobase generate-instance-id
-rm -rf /etc/nginx/sites-enabled/nocobase.conf
-ln -s /app/nocobase/storage/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
+rm -f /etc/nginx/conf.d/nocobase.conf
+ln -s /app/nocobase/storage/nocobase.conf /etc/nginx/conf.d/nocobase.conf
 
 nginx
 echo 'nginx started';

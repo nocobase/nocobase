@@ -1,4 +1,6 @@
 ---
+title: "工作流：SQL 节点"
+keywords: "工作流：SQL 节点,插件,NocoBase"
 displayName: "工作流：SQL 节点"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |

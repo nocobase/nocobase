@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "ICollection"
+description: "Interface ICollection NocoBase: interface model data, mencakup repository, getFields, setField, dll."
+keywords: "ICollection,interface,model data,Collection,NocoBase"
+---
 
 # ICollection
 
-`ICollection` adalah antarmuka untuk model data, yang berisi informasi seperti nama model, bidang, dan asosiasi.
+`ICollection` adalah interface dari model data, yang mencakup informasi seperti nama model, field, asosiasi, dll.
 
 ```typescript
 export interface ICollection {
@@ -28,46 +30,46 @@ export interface ICollection {
 
 ### repository
 
-Instans `Repository` tempat `ICollection` berada.
+Instance `Repository` yang dimiliki oleh `ICollection`
 
 ## API
 
 ### updateOptions()
 
-Memperbarui properti `koleksi`.
+Memperbarui properti `Collection`
 
-#### Tanda Tangan
+#### Signature
 
 - `updateOptions(options: any): void`
 
 ### setField()
 
-Mengatur bidang untuk `koleksi`.
+Mengatur field `Collection`
 
-#### Tanda Tangan
+#### Signature
 
 - `setField(name: string, options: any): IField`
 
 ### removeField()
 
-Menghapus bidang dari `koleksi`.
+Menghapus field `Collection`
 
-#### Tanda Tangan
+#### Signature
 
 - `removeField(name: string): void`
 
 ### getFields()
 
-Mendapatkan semua bidang dari `koleksi`.
+Mengambil semua field `Collection`
 
-#### Tanda Tangan
+#### Signature
 
 - `getFields(): Array<IField>`
 
 ### getField()
 
-Mendapatkan bidang `koleksi` berdasarkan namanya.
+Mengambil field `Collection` berdasarkan nama
 
-#### Tanda Tangan
+#### Signature
 
 - `getField(name: string): IField`

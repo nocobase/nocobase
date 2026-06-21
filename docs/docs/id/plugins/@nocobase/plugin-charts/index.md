@@ -1,8 +1,10 @@
 ---
-displayName: "Charts (deprecated)"
+displayName: "Charts (Deprecated)"
 packageName: '@nocobase/plugin-charts'
+title: "Charts (Deprecated)"
+keywords: "Charts (Deprecated),plugin,NocoBase"
 description: |
-  The plugin has been deprecated, please use the data visualization plugin instead.
+  Plugin yang sudah deprecated, gunakan plugin Data Visualization sebagai gantinya.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Charts (deprecated)
+# Charts (Deprecated)
 
-> Note: This plugin is deprecated.
+> Perhatian: Plugin ini sudah deprecated.

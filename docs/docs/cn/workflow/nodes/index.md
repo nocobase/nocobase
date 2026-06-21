@@ -1,3 +1,9 @@
+---
+title: "工作流节点概述"
+description: "工作流节点：流程控制、计算、数据操作、人工智能等 30 种节点类型，条件判断、循环、人工处理、LLM。"
+keywords: "工作流节点,流程控制,条件判断,循环,人工处理,数据操作,NocoBase"
+---
+
 # 概述
 
 一个工作流通常由若干个操作步骤连接而成，每个节点代表一个操作步骤，是流程中的基本逻辑单元。正如编程语言，不同类型的节点代表不同的指令，决定了节点的行为。当流程运行时，系统会依次进入每个节点并执行节点的指令。
@@ -6,7 +12,7 @@
 工作流的触发器不属于节点，只是以入口节点的形式展示在流程图中，但与节点是不同的概念，详情请参考[触发器](../triggers/index.md)的内容。
 :::
 
-从功能角度，目前已实现的节点可以分为几大类（共 29 种节点）：
+从功能角度，目前已实现的节点可以分为几大类（共 30 种节点）：
 
 - 人工智能
   - [大语言模型](../../ai-employees/workflow/nodes/llm/chat.md)（插件 @nocobase/plugin-workflow-llm 提供）
@@ -32,6 +38,7 @@
   - [查询数据](./query.md)
   - [聚合查询](./aggregate.md)（插件 @nocobase/plugin-workflow-aggregate 提供）
   - [SQL 操作](./sql.md)（插件 @nocobase/plugin-workflow-sql 提供）
+  - [数据库事务](./transaction.md)（插件 @nocobase/plugin-workflow-transaction 提供）
 - 人工处理
   - [人工处理](./manual.md)（插件 @nocobase/plugin-workflow-manual 提供）
   - [审批](./approval.md)（插件 @nocobase/plugin-workflow-approval 提供）

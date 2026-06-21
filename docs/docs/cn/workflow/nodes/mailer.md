@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-mailer'
+title: "工作流节点 - 邮件发送"
+description: "邮件发送节点：发送电子邮件，支持文本和 HTML 格式。"
+keywords: "工作流,邮件发送,Mailer,Email,通知,NocoBase"
 ---
 
 # 邮件发送

@@ -1,16 +1,18 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "ICollectionManager"
+description: "Interface ICollectionManager NocoBase: interface untuk mengelola instance Collection dari data source."
+keywords: "ICollectionManager,interface,Collection,data source,NocoBase"
+---
 
 # ICollectionManager
 
-Antarmuka `ICollectionManager` digunakan untuk mengelola instans `koleksi` dari sebuah `sumber data`.
+Interface `ICollectionManager`, digunakan untuk mengelola instance `Collection` dari data source.
 
 ## API
 
 ### registerFieldTypes()
 
-Mendaftarkan tipe bidang (field types) dalam sebuah `koleksi`.
+Mendaftarkan tipe field di `Collection`.
 
 #### Signature
 
@@ -18,7 +20,7 @@ Mendaftarkan tipe bidang (field types) dalam sebuah `koleksi`.
 
 ### registerFieldInterfaces()
 
-Mendaftarkan `Interface` dari sebuah `koleksi`.
+Mendaftarkan `Interface` dari `Collection`.
 
 #### Signature
 
@@ -50,7 +52,7 @@ Mendaftarkan `Repository`.
 
 ### getRegisteredRepository()
 
-Mendapatkan instans `Repository` yang terdaftar.
+Mendapatkan instance repository yang terdaftar.
 
 #### Signature
 
@@ -58,7 +60,7 @@ Mendapatkan instans `Repository` yang terdaftar.
 
 ### defineCollection()
 
-Mendefinisikan sebuah `koleksi`.
+Mendefinisikan satu `Collection`.
 
 #### Signature
 
@@ -66,7 +68,7 @@ Mendefinisikan sebuah `koleksi`.
 
 ### extendCollection()
 
-Memodifikasi properti dari `koleksi` yang sudah ada.
+Memodifikasi properti `Collection` yang sudah ada.
 
 #### Signature
 
@@ -74,15 +76,16 @@ Memodifikasi properti dari `koleksi` yang sudah ada.
 
 ### hasCollection()
 
-Memeriksa apakah sebuah `koleksi` ada.
+Memeriksa apakah `Collection` ada.
 
 #### Signature
+
 
 - `hasCollection(name: string): boolean`
 
 ### getCollection()
 
-Mendapatkan instans `koleksi`.
+Mendapatkan instance `Collection`.
 
 #### Signature
 
@@ -90,7 +93,7 @@ Mendapatkan instans `koleksi`.
 
 ### getCollections()
 
-Mendapatkan semua instans `koleksi`.
+Mendapatkan semua instance `Collection`.
 
 #### Signature
 
@@ -98,7 +101,7 @@ Mendapatkan semua instans `koleksi`.
 
 ### getRepository()
 
-Mendapatkan instans `Repository`.
+Mendapatkan instance `Repository`.
 
 #### Signature
 
@@ -106,8 +109,10 @@ Mendapatkan instans `Repository`.
 
 ### sync()
 
-Melakukan sinkronisasi `sumber data`. Logika implementasinya dilakukan oleh subkelas.
+Sinkronisasi data source, logika diimplementasikan oleh subclass.
 
 #### Signature
 
 - `sync(): Promise<void>`
+
+

@@ -52,6 +52,7 @@ export async function testPkgConnection() {
 
 export async function testPkgLogin(keyData: KeyData | Record<string, any>) {
   try {
+    const timeout = 10000;
     const NOCOBASE_PKG_URL = getNocoBasePkgUrl();
     const { accessKeyId, accessKeySecret } = keyData || {};
     if (!accessKeyId || !accessKeySecret) {
@@ -60,6 +61,7 @@ export async function testPkgLogin(keyData: KeyData | Record<string, any>) {
     const credentials = { username: accessKeyId, password: accessKeySecret };
     const res1 = await axios.post(`${NOCOBASE_PKG_URL}-/verdaccio/sec/login`, credentials, {
       responseType: 'json',
+      timeout,
     });
     const token = res1.data.token;
     if (!token) {

@@ -1,22 +1,23 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Định nghĩa Collections"
+description: "Định nghĩa Collection trong Plugin NocoBase: defineCollection, extendCollection, fields, quy ước thư mục src/server/collections."
+keywords: "Collections,defineCollection,extendCollection,bảng dữ liệu,định nghĩa Collection,NocoBase"
+---
 
+# Collections
 
-# Bộ sưu tập (Collections)
+Trong phát triển Plugin NocoBase, **Collection (bảng dữ liệu)** là một trong những khái niệm cốt lõi nhất. Bạn có thể thêm hoặc sửa cấu trúc bảng dữ liệu trong Plugin bằng cách định nghĩa hoặc mở rộng Collection. Khác với bảng dữ liệu được tạo qua giao diện "Quản lý nguồn dữ liệu", **Collection định nghĩa bằng code thường là bảng metadata cấp hệ thống**, sẽ không xuất hiện trong danh sách quản lý nguồn dữ liệu.
 
-Trong quá trình phát triển **plugin** NocoBase, **Bộ sưu tập (Collection)** là một trong những khái niệm cốt lõi nhất. Bạn có thể thêm mới hoặc sửa đổi cấu trúc bảng dữ liệu trong các **plugin** bằng cách định nghĩa hoặc mở rộng các Bộ sưu tập. Khác với các bảng dữ liệu được tạo thông qua giao diện quản lý **nguồn dữ liệu**, **các Bộ sưu tập được định nghĩa bằng mã thường là các bảng siêu dữ liệu cấp hệ thống** và sẽ không xuất hiện trong danh sách quản lý **nguồn dữ liệu**.
+## Định nghĩa bảng dữ liệu
 
-## Định nghĩa Bộ sưu tập
-
-Theo cấu trúc thư mục theo quy ước, các tệp Bộ sưu tập nên được đặt trong thư mục `./src/server/collections`. Để tạo bảng mới, bạn sử dụng `defineCollection()`, và để mở rộng bảng hiện có, bạn sử dụng `extendCollection()`.
+Theo cấu trúc thư mục quy ước, file Collection nên đặt trong thư mục `./src/server/collections`. Tạo bảng mới dùng `defineCollection()`, mở rộng bảng hiện có dùng `extendCollection()`.
 
 ```ts
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'articles',
-  title: 'Bài viết mẫu',
+  title: 'Bài viết ví dụ',
   fields: [
     { type: 'string', name: 'title', interface: 'input', uiSchema: { title: 'Tiêu đề', required: true } },
     { type: 'text', name: 'content', interface: 'textarea', uiSchema: { title: 'Nội dung' } },
@@ -34,11 +35,11 @@ export default defineCollection({
 
 Trong ví dụ trên:
 
-- `name`: Tên bảng (một bảng có cùng tên sẽ tự động được tạo trong cơ sở dữ liệu).
-- `title`: Tên hiển thị của bảng này trong giao diện.
-- `fields`: Tập hợp các trường, mỗi trường chứa các thuộc tính như `type`, `name`, v.v.
+- `name`: Tên bảng (database sẽ tự động tạo bảng cùng tên).
+- `title`: Tên hiển thị của bảng trong giao diện.
+- `fields`: Tập hợp các Field, mỗi Field có các thuộc tính `type`, `name`, v.v.
 
-Khi bạn cần thêm trường hoặc sửa đổi cấu hình cho các Bộ sưu tập của các **plugin** khác, bạn có thể sử dụng `extendCollection()`:
+Khi cần thêm Field hoặc sửa cấu hình cho Collection của Plugin khác, bạn có thể dùng `extendCollection()`:
 
 ```ts
 import { extendCollection } from '@nocobase/database';
@@ -55,26 +56,175 @@ export default extendCollection({
 });
 ```
 
-Sau khi kích hoạt **plugin**, hệ thống sẽ tự động thêm trường `isPublished` vào bảng `articles` hiện có.
+Sau khi kích hoạt Plugin, hệ thống sẽ tự động thêm Field `isPublished` vào bảng `articles` hiện có.
 
-:::tip
-Thư mục theo quy ước sẽ hoàn tất quá trình tải trước khi tất cả các phương thức `load()` của các **plugin** được thực thi, nhờ đó tránh được các vấn đề phụ thuộc do một số bảng dữ liệu chưa được tải.
+:::tip Mẹo
+
+Thư mục quy ước sẽ được load xong trước khi phương thức `load()` của tất cả Plugin được thực thi, từ đó tránh các vấn đề phụ thuộc do một số bảng dữ liệu chưa được load.
+
 :::
 
-## Đồng bộ hóa cấu trúc cơ sở dữ liệu
+## Tra cứu nhanh kiểu Field
 
-Khi **plugin** được kích hoạt lần đầu, hệ thống sẽ tự động đồng bộ hóa cấu hình **Bộ sưu tập** với cấu trúc cơ sở dữ liệu. Nếu **plugin** đã được cài đặt và đang chạy, sau khi thêm mới hoặc sửa đổi **Bộ sưu tập**, bạn cần thực hiện lệnh nâng cấp thủ công:
+Trong `fields` của `defineCollection`, `type` quyết định loại column trong database. Dưới đây là tất cả các kiểu Field tích hợp sẵn:
+
+### Văn bản
+
+| type | Loại database | Mô tả | Tham số riêng |
+|------|---------------|-------|---------------|
+| `string` | VARCHAR(255) | Văn bản ngắn | `length?: number` (độ dài tùy chỉnh), `trim?: boolean` |
+| `text` | TEXT | Văn bản dài | `length?: 'tiny' \| 'medium' \| 'long'` (chỉ MySQL) |
+
+### Số
+
+| type | Loại database | Mô tả | Tham số riêng |
+|------|---------------|-------|---------------|
+| `integer` | INTEGER | Số nguyên | — |
+| `bigInt` | BIGINT | Số nguyên lớn | — |
+| `float` | FLOAT | Số thực | — |
+| `double` | DOUBLE | Số thực độ chính xác kép | — |
+| `decimal` | DECIMAL(p,s) | Số dấu chấm cố định | `precision: number`, `scale: number` |
+
+### Boolean
+
+| type | Loại database | Mô tả |
+|------|---------------|-------|
+| `boolean` | BOOLEAN | Giá trị Boolean |
+
+### Ngày giờ
+
+| type | Loại database | Mô tả | Tham số riêng |
+|------|---------------|-------|---------------|
+| `date` | DATE(3) | Ngày giờ (có mili giây) | `defaultToCurrentTime?`, `onUpdateToCurrentTime?` |
+| `dateOnly` | DATEONLY | Chỉ ngày, không giờ | — |
+| `time` | TIME | Chỉ giờ | — |
+| `unixTimestamp` | BIGINT | Unix timestamp | `accuracy?: 'second' \| 'millisecond'` |
+
+:::tip Mẹo
+
+`date` là kiểu ngày tháng được dùng nhiều nhất. Nếu cần phân biệt cách xử lý timezone, còn có `datetimeTz` (có timezone) và `datetimeNoTz` (không timezone).
+
+:::
+
+### Dữ liệu cấu trúc
+
+| type | Loại database | Mô tả | Tham số riêng |
+|------|---------------|-------|---------------|
+| `json` | JSON / JSONB | Dữ liệu JSON | `jsonb?: boolean` (dùng JSONB trên PostgreSQL) |
+| `jsonb` | JSONB / JSON | Ưu tiên dùng JSONB | — |
+| `array` | ARRAY / JSON | Mảng | Có thể dùng kiểu ARRAY native trên PostgreSQL |
+
+### Sinh ID
+
+| type | Loại database | Mô tả | Tham số riêng |
+|------|---------------|-------|---------------|
+| `uid` | VARCHAR(255) | Tự động sinh ID ngắn | `prefix?: string` |
+| `uuid` | UUID | UUID v4 | `autoFill?: boolean` (mặc định true) |
+| `nanoid` | VARCHAR(255) | NanoID | `size?: number` (mặc định 12), `customAlphabet?: string` |
+| `snowflakeId` | BIGINT | Snowflake ID | `autoFill?: boolean` (mặc định true) |
+
+### Kiểu đặc biệt
+
+| type | Loại database | Mô tả |
+|------|---------------|-------|
+| `password` | VARCHAR(255) | Tự động hash với salt |
+| `virtual` | Không có column thực | Field ảo, không tạo column trong database |
+| `context` | Có thể cấu hình | Tự động fill từ ngữ cảnh request (ví dụ `currentUser.id`) |
+
+### Kiểu liên kết
+
+Field liên kết không tạo column trong database mà thiết lập quan hệ giữa các bảng ở tầng ORM:
+
+| type | Mô tả | Tham số chính |
+|------|-------|---------------|
+| `belongsTo` | Nhiều-một | `target` (bảng đích), `foreignKey` (Field khóa ngoại) |
+| `hasOne` | Một-một | `target`, `foreignKey` |
+| `hasMany` | Một-nhiều | `target`, `foreignKey` |
+| `belongsToMany` | Nhiều-nhiều | `target`, `through` (bảng trung gian), `foreignKey`, `otherKey` |
+
+Ví dụ cách dùng Field liên kết:
+
+```ts
+export default defineCollection({
+  name: 'articles',
+  fields: [
+    { type: 'string', name: 'title' },
+    // Nhiều-một: bài viết thuộc về một tác giả
+    {
+      type: 'belongsTo',
+      name: 'author',
+      target: 'users',
+      foreignKey: 'authorId',
+    },
+    // Một-nhiều: bài viết có nhiều bình luận
+    {
+      type: 'hasMany',
+      name: 'comments',
+      target: 'comments',
+      foreignKey: 'articleId',
+    },
+    // Nhiều-nhiều: bài viết có nhiều tag
+    {
+      type: 'belongsToMany',
+      name: 'tags',
+      target: 'tags',
+      through: 'articlesTags',  // Tên bảng trung gian
+    },
+  ],
+});
+```
+
+### Tham số chung
+
+Tất cả Field column đều hỗ trợ các tham số sau:
+
+| Tham số | Loại | Mô tả |
+|---------|------|-------|
+| `name` | `string` | Tên Field (bắt buộc) |
+| `defaultValue` | `any` | Giá trị mặc định |
+| `allowNull` | `boolean` | Có cho phép null không |
+| `unique` | `boolean` | Có duy nhất không |
+| `primaryKey` | `boolean` | Có phải primary key không |
+| `autoIncrement` | `boolean` | Có tự tăng không |
+| `index` | `boolean` | Có tạo index không |
+| `comment` | `string` | Comment cho Field |
+
+## Đồng bộ cấu trúc database
+
+Lần đầu kích hoạt Plugin, hệ thống sẽ tự động đồng bộ cấu hình Collection với cấu trúc database. Nếu Plugin đã được cài đặt và đang chạy, sau khi thêm hoặc sửa Collection cần chạy lệnh upgrade thủ công:
 
 ```bash
 yarn nocobase upgrade
 ```
 
-Nếu xảy ra lỗi hoặc dữ liệu không nhất quán trong quá trình đồng bộ hóa, bạn có thể xây dựng lại cấu trúc bảng bằng cách cài đặt lại ứng dụng:
+Nếu trong quá trình đồng bộ có lỗi hoặc dữ liệu rác, có thể tái cài đặt ứng dụng để dựng lại cấu trúc bảng:
 
 ```bash
 yarn nocobase install -f
 ```
 
-## Tự động tạo tài nguyên (Resource)
+Nếu khi nâng cấp Plugin cần migration dữ liệu hiện có — như đổi tên Field, tách bảng, fill ngược giá trị mặc định, v.v. — nên dùng [Migration script nâng cấp](./migration.md) thay vì sửa database thủ công.
 
-Sau khi định nghĩa **Bộ sưu tập**, hệ thống sẽ tự động tạo một tài nguyên (Resource) tương ứng cho nó. Bạn có thể trực tiếp thực hiện các thao tác CRUD (thêm, sửa, xóa, truy vấn) trên tài nguyên đó thông qua API. Xem chi tiết tại [Quản lý tài nguyên](./resource-manager.md).
+## Để Collection xuất hiện trong danh sách bảng dữ liệu UI
+
+Bảng được định nghĩa qua `defineCollection` là bảng nội bộ phía server, mặc định **sẽ không xuất hiện** trong danh sách "Quản lý nguồn dữ liệu", cũng không xuất hiện trong danh sách lựa chọn bảng dữ liệu khi "Thêm Block".
+
+**Cách làm khuyến nghị**: Trong giao diện NocoBase, vào "[Quản lý nguồn dữ liệu](../../data-sources/data-source-main/index.md)" để thêm bảng dữ liệu tương ứng, sau khi cấu hình Field và kiểu interface, bảng sẽ tự động xuất hiện trong danh sách lựa chọn bảng dữ liệu của Block.
+
+![Có thể chọn bảng của mình khi thêm Block](https://static-docs.nocobase.com/20260409143839.png)
+
+Nếu thực sự cần đăng ký trong code Plugin (ví dụ trong kịch bản demo của Plugin mẫu), bạn có thể đăng ký thủ công qua `addCollection` trong Plugin client. Lưu ý phải đăng ký theo mẫu `eventBus`, không thể gọi trực tiếp trong `load()` — `ensureLoaded()` sẽ xóa và set lại tất cả collection sau `load()`. Xem ví dụ đầy đủ tại [Tạo Plugin quản lý dữ liệu kết hợp front-end và back-end](../client/examples/fullstack-plugin.md).
+
+## Tự động sinh Resource
+
+Sau khi định nghĩa Collection, NocoBase sẽ tự động tạo resource REST API tương ứng cho nó, các API CRUD (`list`, `get`, `create`, `update`, `destroy`) sẵn sàng dùng ngay không cần viết thêm. Nếu các Action CRUD tích hợp sẵn không đủ — ví dụ bạn cần API "import hàng loạt" hoặc "tổng hợp thống kê" — bạn có thể đăng ký Action tùy chỉnh qua `resourceManager`. Xem chi tiết tại [ResourceManager](./resource-manager.md).
+
+## Liên kết liên quan
+
+- [Database](./database.md) — CRUD, Repository, transaction và sự kiện database
+- [DataSourceManager](./data-source-manager.md) — Quản lý nhiều nguồn dữ liệu và Collection của chúng
+- [Migration](./migration.md) — Script migration dữ liệu khi nâng cấp Plugin
+- [Plugin](./plugin.md) — Vòng đời lớp Plugin, các phương thức thành viên và đối tượng `app`
+- [ResourceManager](./resource-manager.md) — REST API tùy chỉnh và handler Action
+- [Tạo Plugin quản lý dữ liệu kết hợp front-end và back-end](../client/examples/fullstack-plugin.md) — Ví dụ đầy đủ về defineCollection + addCollection
+- [Cấu trúc thư mục dự án](../project-structure.md) — Mô tả quy ước thư mục `src/server/collections`

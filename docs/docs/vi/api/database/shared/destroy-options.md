@@ -1,9 +1,10 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "DestroyOptions"
+description: "Tham số phương thức destroy của Repository NocoBase: filter, filterByTk, truncate, transaction."
+keywords: "DestroyOptions,Repository,destroy,filter,NocoBase"
+---
 
-
-**Kiểu dữ liệu**
+**Kiểu**
 
 ```typescript
 interface DestroyOptions extends SequelizeDestroyOptions {
@@ -14,9 +15,9 @@ interface DestroyOptions extends SequelizeDestroyOptions {
 }
 ```
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-- ``filter``: Điều kiện lọc để xóa các bản ghi. Để biết cách sử dụng chi tiết của Filter, vui lòng tham khảo phương thức [`find()`](#find).
-- ``filterByTk``: Điều kiện lọc để xóa các bản ghi theo `TargetKey`.
-- ``truncate``: Có xóa sạch dữ liệu của **bộ sưu tập** hay không. Tham số này chỉ có hiệu lực khi không truyền các tham số `filter` hoặc `filterByTk`.
-- ``transaction``: Đối tượng giao dịch. Nếu không truyền tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.
+- `filter`: Chỉ định điều kiện lọc của bản ghi cần xóa. Cách dùng chi tiết Filter có thể tham khảo phương thức [`find()`](#find).
+- `filterByTk`: Chỉ định điều kiện lọc của bản ghi cần xóa theo TargetKey.
+- `truncate`: Có làm sạch dữ liệu bảng hay không, có hiệu lực khi không truyền tham số `filter` hoặc `filterByTk`.
+- `transaction`: Đối tượng transaction. Nếu không truyền tham số transaction, phương thức sẽ tự động tạo một transaction nội bộ.

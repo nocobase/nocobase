@@ -12,6 +12,7 @@ import {
   getT,
   isInheritedFrom,
   resolveDefaultParams,
+  shouldHideEventInSettings,
   resolveStepUiSchema,
   resolveStepDisabledInSettings,
   shouldHideStepInSettings,
@@ -27,6 +28,7 @@ import type {
   FlowDefinitionOptions,
   ActionDefinition,
   DeepPartial,
+  EventDefinition,
   ModelConstructor,
   StepParams,
   StepDefinition,
@@ -999,6 +1001,66 @@ describe('Utils', () => {
 
         consoleSpy.mockRestore();
       });
+    });
+  });
+
+  // ==================== shouldHideEventInSettings() FUNCTION ====================
+  describe('shouldHideEventInSettings()', () => {
+    let mockFlow: any;
+    let mockEvent: EventDefinition;
+
+    beforeEach(() => {
+      mockFlow = {
+        key: 'testFlow',
+        title: 'Test Flow',
+        steps: {},
+      };
+
+      mockEvent = {
+        name: 'close',
+        title: 'Close',
+        handler: vi.fn(),
+      };
+    });
+
+    test('returns true for static hideInSettings=true', async () => {
+      mockEvent.hideInSettings = true;
+
+      const result = await shouldHideEventInSettings(mockModel, mockFlow, mockEvent);
+
+      expect(result).toBe(true);
+    });
+
+    test('returns false for static hideInSettings=false', async () => {
+      mockEvent.hideInSettings = false;
+
+      const result = await shouldHideEventInSettings(mockModel, mockFlow, mockEvent);
+
+      expect(result).toBe(false);
+    });
+
+    test('evaluates function hideInSettings with FlowRuntimeContext and can read ctx.view.preventClose', async () => {
+      mockModel.context.defineProperty('view', { value: { preventClose: true } });
+      const hideFn = vi.fn().mockImplementation((ctx) => !!ctx.view?.preventClose);
+      mockEvent.hideInSettings = hideFn as any;
+
+      const result = await shouldHideEventInSettings(mockModel, mockFlow, mockEvent);
+
+      expect(hideFn).toHaveBeenCalledTimes(1);
+      const ctx = hideFn.mock.calls[0][0] as FlowRuntimeContext;
+      expect(ctx).toBeInstanceOf(FlowRuntimeContext);
+      expect(result).toBe(true);
+    });
+
+    test('returns false and logs warning when event hideInSettings throws', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockEvent.hideInSettings = vi.fn().mockRejectedValue(new Error('boom')) as any;
+
+      const result = await shouldHideEventInSettings(mockModel, mockFlow, mockEvent);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(result).toBe(false);
+      consoleSpy.mockRestore();
     });
   });
 

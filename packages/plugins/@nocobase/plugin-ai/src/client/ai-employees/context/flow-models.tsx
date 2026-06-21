@@ -19,6 +19,7 @@ import { CollectionBlockModel, FormBlockModel, FormItemModel } from '@nocobase/c
 import { FlowUtils } from '../flow';
 import { Space } from 'antd';
 import { dialogController } from '../stores/dialog-controller';
+import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 
 type SimplifyComponentNode = {
   uid: string;
@@ -42,12 +43,41 @@ const parseFlowModel = async (model: FlowModel) => {
   }
 };
 
+const getRelationFieldPrompt = (collectionField: FormItemModel['collectionField']) => {
+  if (!collectionField.targetCollection) {
+    return undefined;
+  }
+
+  const isToMany = ['hasMany', 'belongsToMany', 'belongsToArray'].includes(collectionField.type);
+  const requiredPropertyNames = _.uniq([collectionField.targetKey]).filter(Boolean);
+  const exampleObject = `{ ${requiredPropertyNames.map((name) => `"${name}": <${name}>`).join(', ')} }`;
+  const exampleValue = isToMany ? `[${exampleObject}]` : exampleObject;
+
+  return `This field must be filled with ${
+    isToMany ? 'an array of related record objects' : 'a related record object'
+  } from collection [${collectionField.targetCollection.name}]. Use [${
+    collectionField.targetKey
+  }] as the identity field. The value for [${collectionField.name}] must be ${
+    isToMany ? 'an array' : 'an object'
+  }. Each item must contain only [${requiredPropertyNames.join(', ')}]. Example: "${
+    collectionField.name
+  }": ${exampleValue}. Never output indexed or path-style keys such as "${collectionField.name}[0]" or "${
+    collectionField.name
+  }[1]", and never return only a primitive id.`;
+};
+
 const toSimplifyForm = (model: FormBlockModel) => {
-  const result = {
+  const result: {
+    uid: string;
+    fields: any[];
+    value: any;
+  } = {
     uid: model.uid,
     fields: [],
+    value: undefined,
   };
   const duplicateFields = new Set();
+  const excludeFieldValues = new Set();
   FlowUtils.walkthrough(model, (model) => {
     if (model instanceof FormItemModel && !duplicateFields.has(model.collectionField.name)) {
       const collectionField = model.collectionField;
@@ -58,12 +88,18 @@ const toSimplifyForm = (model: FormBlockModel) => {
         enum: collectionField.enum,
         readonly: collectionField.readonly,
         defaultValue: collectionField.defaultValue,
+        prompt: getRelationFieldPrompt(collectionField),
       });
       duplicateFields.add(collectionField.name);
     }
+    if (model instanceof UploadFieldModel && model.props?.value?.length && typeof model.props.value !== 'string') {
+      excludeFieldValues.add(model.props.name);
+    }
   });
   if (model.form) {
-    result['value'] = model.form.getFieldsValue();
+    result['value'] = model.form.getFieldsValue(true, (meta) => {
+      return !excludeFieldValues.has(meta.name[0]);
+    });
   }
   return result;
 };
@@ -78,10 +114,11 @@ const toCollection = async (model: CollectionBlockModel) => {
       collection: {
         ...collection,
       },
-      prompt: `You can use the tools dataSource-dataSourceQuery to query data from a data source and dataSource-dataSourceCounting to get record counts.
+      prompt: `Before querying, first call getSkill with skillName="data-query" to load the data-query skill and make dataSourceQuery and dataSourceCounting available.
+After the skill is loaded, use dataSourceQuery to query data from a data source and dataSourceCounting to get record counts.
 When analyzing user messages, if any words or phrases are related or similar to a known collectionName, prioritize retrieving relevant data before responding.
-When the user asks about quantities, totals, or record counts, you must first call dataSource-dataSourceCounting to obtain accurate numbers before answering.
-Always apply dataScope.filter when calling dataSource-dataSourceQuery or dataSource-dataSourceCounting. Ensure that the filter structure is properly transformed to match the tools’ input format.
+When the user asks about quantities, totals, or record counts, you must first call dataSourceCounting to obtain accurate numbers before answering.
+Always apply dataScope.filter when calling dataSourceQuery or dataSourceCounting. Ensure that the filter structure is properly transformed to match the tools’ input format.
 Do not mention or reveal any details about tools, data sources, or internal processes in your reply.
 Unless the user explicitly requests it, do not directly output large amounts of raw data—summarize, filter, or aggregate the results naturally in your response.`,
     };

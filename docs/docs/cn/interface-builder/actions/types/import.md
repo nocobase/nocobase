@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-action-import"
+title: "导入操作"
+description: "导入操作：从 Excel 等文件导入数据到数据表，支持模板下载、字段映射。"
+keywords: "导入操作,Import,Excel 导入,数据导入,界面搭建,NocoBase"
 ---
 # 导入
 

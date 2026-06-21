@@ -3,7 +3,14 @@
   "Execute a SQL statement in database.": "Esegui un'istruzione SQL nel database.",
   "Include meta information of this query in result": "Includi meta informazioni di questa query nel risultato",
   "SQL action": "Azione SQL",
-  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "Il risultato della query SQL potrebbe essere utilizzato tramite il <1>nodo JSON query</1>（plugin commerciale).",
+  "SQL query result could be used through <1>JSON query node</1>.": "Il risultato della query SQL potrebbe essere utilizzato tramite il <1>nodo JSON query</1>.",
   "Select a data source to execute SQL.": "Seleziona un origine dati per eseguire SQL.",
-  "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet."
+  "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet.",
+  "Current node is using unsafe injection mode (legacy), which has SQL injection risks.": "Il nodo corrente utilizza la modalità di iniezione non sicura (legacy), che comporta rischi di SQL injection.",
+  "Migrate to safe mode": "Migra alla modalità sicura",
+  "Parameters": "Parametri",
+  "SQL parameters. Use :name as placeholders in SQL and provide values here.": "Parametri SQL. Usa :name come segnaposto in SQL e fornisci i valori qui.",
+  "Name": "Nome",
+  "Value": "Valore",
+  "Add parameter": "Aggiungi parametro"
 }

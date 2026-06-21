@@ -1,4 +1,6 @@
 ---
+title: "数据源：REST API"
+keywords: "数据源：REST API,插件,NocoBase"
 displayName: "数据源：REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:

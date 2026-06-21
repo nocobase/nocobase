@@ -1,38 +1,39 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Sub-Form"
+description: "Field Sub-Form: Form lồng nhau, dùng cho thêm chỉnh sửa dữ liệu liên kết một-nhiều, hỗ trợ chỉnh sửa nội dòng hoặc qua Popup."
+keywords: "Sub-Form,SubForm,Form lồng nhau,một-nhiều,Interface Builder,NocoBase"
+---
 
-
-# Biểu mẫu con
+# Sub-Form
 
 ## Giới thiệu
 
-Biểu mẫu con phù hợp cho các trường hợp bạn tạo dữ liệu liên kết mới trước khi liên kết chúng. Dữ liệu liên kết đa cấp được hiển thị rõ ràng dưới dạng biểu mẫu lồng nhau. So với bộ chọn dữ liệu (Data Selector) và bộ chọn thả xuống (Dropdown), biểu mẫu con cho phép bạn quản lý trực tiếp các trường của bộ sưu tập liên kết trong khối trang hiện tại, và dữ liệu liên kết được gửi cùng với biểu mẫu chính.
+Sub-Form phù hợp với trường hợp tạo dữ liệu quan hệ trước rồi liên kết dữ liệu, dữ liệu quan hệ nhiều cấp được hiển thị rõ ràng dưới dạng Form lồng nhau, so với Data Picker và Select dropdown, Sub-Form duy trì trực tiếp Field Table quan hệ trên Block Trang hiện tại, và dữ liệu quan hệ được gửi cùng với Table chính.
 
 ## Hướng dẫn sử dụng
 
-### Biểu mẫu con cho trường liên kết một-nhiều
+### Sub-Form Field quan hệ đến nhiều
 
 ![20251029205655](https://static-docs.nocobase.com/20251029205655.png)
 
-### Biểu mẫu con cho trường liên kết một-một
+### Sub-Form Field quan hệ đến một
 
 ![20251027202218](https://static-docs.nocobase.com/20251027202218.png)
 
-### Hỗ trợ cấu hình lồng nhau cho các trường liên kết đa cấp.
+### Hỗ trợ cấu hình lồng nhau của Field quan hệ nhiều cấp.
 
 ![20251027201218](https://static-docs.nocobase.com/20251027201218.png)
 
-## Tùy chọn cấu hình trường
+## Tùy chọn cấu hình Field
 
-### Thành phần trường
+### Component Field
 
 ![20251030150601](https://static-docs.nocobase.com/20251030150601.png)
 
-[Thành phần trường](/interface-builder/fields/association-field): Chuyển sang các thành phần trường liên kết khác, ví dụ như bộ chọn thả xuống (Dropdown), bộ chọn dữ liệu (Data Selector), v.v.
+[Component Field](/interface-builder/fields/association-field): chuyển sang component Field quan hệ khác, như Select dropdown, Data Picker, v.v.;
 
 ### Quy tắc liên kết
 
-[Quy tắc liên kết](/interface-builder/linkage-rule): Cấu hình các quy tắc liên kết cho các trường biểu mẫu con.
+[Quy tắc liên kết](/interface-builder/linkage-rule): cấu hình Quy tắc liên kết Field của Sub-Form;
 
 ![20251027202439](https://static-docs.nocobase.com/20251027202439.png)

@@ -1,32 +1,34 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Test Plugin Server"
+description: "Unit test, integration test, Mock, alat test untuk plugin server NocoBase."
+keywords: "test plugin,unit test,integration test,test server,NocoBase"
+---
 
-## Pengujian
+# Test Pengujian
 
-NocoBase menyediakan seperangkat alat pengujian lengkap untuk membantu pengembang memverifikasi kebenaran logika basis data, antarmuka API, dan implementasi fitur dengan cepat selama pengembangan **plugin**. Panduan ini akan menjelaskan cara menulis, menjalankan, dan mengelola pengujian tersebut.
+NocoBase menyediakan toolset test yang lengkap, untuk membantu Anda dengan cepat memvalidasi kebenaran logika database, API endpoint, dan implementasi fitur selama pengembangan plugin.
 
-## Mengapa Menulis Pengujian
+## Mengapa Menulis Test
 
-Manfaat menulis pengujian otomatis dalam pengembangan **plugin**:
+Manfaat menulis automated test dalam pengembangan plugin:
 
-- Memverifikasi model basis data, API, dan logika bisnis dengan cepat
-- Menghindari kesalahan regresi (secara otomatis mendeteksi kompatibilitas **plugin** setelah pembaruan inti)
-- Mendukung lingkungan integrasi berkelanjutan (CI) untuk menjalankan pengujian secara otomatis
-- Mendukung pengujian fungsionalitas **plugin** tanpa memulai layanan lengkap
+- Validasi cepat apakah model database, API, logika bisnis benar  
+- Menghindari error regresi (otomatis mendeteksi kompatibilitas plugin setelah upgrade core)  
+- Mendukung continuous integration (CI) menjalankan test otomatis di environment  
+- Mendukung testing fungsionalitas plugin tanpa menjalankan service lengkap  
 
-## Dasar-dasar Lingkungan Pengujian
+## Dasar Environment Test
 
-NocoBase menyediakan dua alat pengujian inti:
+NocoBase menyediakan dua tools test inti:
 
-| Alat | Deskripsi | Tujuan |
-|------|-----------|--------|
-| `createMockDatabase` | Membuat instans basis data dalam memori | Menguji model dan logika basis data |
-| `createMockServer` | Membuat instans aplikasi lengkap (termasuk basis data, **plugin**, API, dll.) | Menguji proses bisnis dan perilaku antarmuka |
+| Tool | Penjelasan | Tujuan |
+|------|------|------|
+| `createMockDatabase` | Membuat instance database memori | Test model dan logika database |
+| `createMockServer` | Membuat instance aplikasi lengkap (termasuk database, plugin, API, dll.) | Test alur bisnis dan perilaku endpoint |
 
-## Menggunakan `createMockDatabase` untuk Pengujian Basis Data
+## Test Database Menggunakan `createMockDatabase`
 
-`createMockDatabase` cocok untuk menguji fungsionalitas yang berhubungan langsung dengan basis data, seperti definisi model, tipe bidang, relasi, operasi CRUD, dan lain-lain.
+`createMockDatabase` cocok untuk test fungsi yang langsung terkait dengan database, seperti definisi model, tipe field, relasi, operasi CRUD, dll.
 
 ### Contoh Dasar
 
@@ -69,7 +71,7 @@ describe('Database test', () => {
 });
 ```
 
-### Menguji Operasi CRUD
+### Test Operasi CRUD
 
 ```ts
 const Posts = db.collection({
@@ -91,7 +93,7 @@ const updated = await db.getRepository('posts').findOne({ filterByTk: post.get('
 expect(updated.get('title')).toBe('Updated Title');
 ```
 
-### Menguji Asosiasi Model
+### Test Asosiasi Model
 
 ```ts
 const Users = db.collection({
@@ -123,9 +125,9 @@ const result = await db.getRepository('users').findOne({
 expect(result.get('posts')).toHaveLength(1);
 ```
 
-## Menggunakan `createMockServer` untuk Pengujian API
+## Test API Menggunakan `createMockServer`
 
-`createMockServer` secara otomatis membuat instans aplikasi lengkap yang mencakup basis data, **plugin**, dan rute API, sehingga sangat ideal untuk menguji antarmuka **plugin**.
+`createMockServer` akan otomatis membuat instance aplikasi lengkap yang berisi database, plugin, route API, cocok untuk test endpoint plugin.
 
 ### Contoh Dasar
 
@@ -154,21 +156,21 @@ describe('User API test', () => {
 });
 ```
 
-### Menguji Kueri dan Pembaruan API
+### Test Query dan Update Endpoint
 
 ```ts
-// Query user list
+// Query daftar pengguna
 const list = await app.agent().get('/users:list');
 expect(list.body.rows.length).toBeGreaterThan(0);
 
-// Update user
+// Update pengguna
 const update = await app.agent().post(`/users:update/${id}`).send({ username: 'newname' });
 expect(update.body.username).toBe('newname');
 ```
 
-### Mensimulasikan Status Login atau Pengujian Izin
+### Mensimulasikan Status Login atau Test Hak Akses
 
-Anda dapat mengaktifkan **plugin** `auth` saat membuat `MockServer`, lalu menggunakan antarmuka login untuk mendapatkan token atau sesi:
+Anda dapat mengaktifkan plugin `auth` saat membuat `MockServer`, kemudian gunakan endpoint login untuk mendapatkan token atau session:
 
 ```ts
 const res = await app
@@ -187,30 +189,38 @@ await app
   .get('/protected-endpoint');
 ```
 
-Anda juga bisa menggunakan metode `login()` yang lebih sederhana
+Juga dapat menggunakan method `login()` yang lebih sederhana:
 
 ```ts
 await app.agent().login(userOrId);
 ```
 
-## Mengelola Berkas Pengujian dalam **Plugin**
+## Mengorganisir File Test dalam Plugin
 
-Disarankan untuk menyimpan berkas pengujian yang terkait dengan logika sisi server di folder `./src/server/__tests__` pada **plugin**.
+Disarankan menyimpan file test yang terkait dengan logika server di folder `./src/server/__tests__` plugin.
 
 ```bash
 packages/plugins/@my-project/plugin-hello/
-├── src/                     # Source code directory
-│   └── server/              # Server-side code
-│       ├── __tests__/       # Test files directory
-│       │   ├── db.test.ts   # Database related tests (using createMockDatabase)
-│       │   └── api.test.ts  # API related tests
+├── src/                     # Direktori source code
+│   └── server/              # Kode server
+│       ├── __tests__/       # Direktori file test
+│       │   ├── db.test.ts   # Test terkait database (menggunakan createMockDatabase)
+│       │   └── api.test.ts  # Test terkait API
 ```
 
-## Menjalankan Pengujian
+## Menjalankan Test
 
 ```bash
 # Tentukan direktori
 yarn test packages/plugins/@my-project/plugin-hello/src/server
-# Tentukan berkas
+# Tentukan file
 yarn test packages/plugins/@my-project/plugin-hello/src/server/__tests__/db.test.ts
 ```
+
+## Tautan Terkait
+
+- [Plugin](./plugin.md) — Siklus hidup plugin dan API inti
+- [Collections Tabel Data](./collections.md) — Definisi dan konfigurasi tabel data
+- [Database](./database.md) — Operasi database dan API Repository
+- [Ikhtisar Pengembangan Server](./index.md) — Ringkasan setiap modul server
+- [Ikhtisar Plugin Development](../index.md) — Pengantar menyeluruh tentang plugin development

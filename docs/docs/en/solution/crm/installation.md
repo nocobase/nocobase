@@ -1,83 +1,90 @@
-# Installation Guide
+# Installation
 
-> **Backup files and SQL files are being prepared and will be available soon. Stay tuned!**
+> The current version is deployed via **backup and restore**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing systems.
 
-> **Note**: The current CRM solution runs on NocoBase 2.0 beta, but the business logic still follows version 1.x. It is for preview only. Future versions will be completely rebuilt.
-
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
-
-To help you quickly experience the CRM solution, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> **The Backup Manager plugin is now open-source**: The "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" plugin needed to restore the solution is now open-source and available to all editions (including the Community Edition). We recommend restoring directly via this plugin.
 
 Before you begin, please ensure:
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0 or above**
-- You have downloaded the corresponding CRM files:
-  - **Backup file**: nocobase_crm.nbdata - For Method 1 (Coming soon)
-  - **SQL file**: nocobase_crm.zip - For Method 2 (Coming soon)
+- You have a basic NocoBase running environment. For main system installation, please refer to the [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
+- NocoBase version **v2.1.0-beta.2 or above**.
+- You have downloaded the CRM system backup file: [nocobase_crm_v2_backup_260523.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260523.nbdata)
 
 **Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
+- This solution is built on **PostgreSQL 16**. Please ensure your environment uses PostgreSQL 16.
 - **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Restore Using Backup Manager
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation.
+This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" plugin for one-click restoration. It is the simplest operation. This plugin is now open-source and available to all editions (including the Community Edition).
+
+### Key Characteristics
+
+* **Advantages**:
+  1. **Convenient operation**: Completed within the UI, allowing for full restoration of all configurations including plugins.
+  2. **Complete restoration**: **Able to restore all system files**, including print template files and files uploaded via file fields in collections, ensuring full functional integrity.
+* **Limitations**:
+  1. **Strict environment requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with the environment where the backup was created.
+  2. **Plugin dependency**: If the solution includes commercial plugins not present in your local environment, the restoration will fail.
 
 ### Steps
 
-**Step 1: Enable the "Backup Manager" plugin**
+**Step 1: [Strongly Recommended] Start the application using the `full` image**
+
+To avoid restoration failures caused by a missing database client, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, so no additional configuration is required.
+
+Example command to pull the image:
+
+```bash
+docker pull nocobase/nocobase:beta-full
+```
+
+Then use this image to start your NocoBase service.
+
+> **Note**: If you do not use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is a tedious and unstable process.
+
+**Step 2: Enable the "Backup Manager" plugin**
 
 1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
+2. Go to **`Plugin Manager`**.
 3. Find and enable the **`Backup Manager`** plugin.
 
-**Step 2: Restore from local backup file**
+**Step 3: Restore from local backup file**
 
 1. After enabling the plugin, refresh the page.
 2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration.
+3. Click the **`Restore from local backup`** button in the upper right corner.
+4. Drag the downloaded backup file into the upload area.
+5. Click **`Submit`** and wait for the system to complete the restoration. This process may take anywhere from a few dozen seconds to several minutes.
 
 ### Notes
 
-* **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled the commercial plugins required by the solution.
+* **Database compatibility**: This is the most critical point. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. Specifically, the `schema` name must be consistent.
+* **Commercial plugin matching**: Please ensure you have and have enabled all commercial plugins required by the solution; otherwise, the restoration will be interrupted.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal)
+## FAQ
 
-This method restores data by directly operating the database, applicable to all NocoBase users.
+### Can Pro Edition users install this? Will it cause errors?
 
-### Steps
+Yes, it works directly without errors. The demo uses some Enterprise Edition plugins (e.g., email management, audit logs). When Pro Edition lacks these plugins, the corresponding menu entries simply won't appear — **other features are not affected**. For example, the email entry disappears, but leads, opportunities, orders, and all other core modules work normally.
 
-**Step 1: Prepare a clean database**
+### Which version should I use?
 
-Prepare a brand new, empty database for the data you're about to import.
+We recommend the latest `beta-full` image (e.g., `nocobase/nocobase:beta-full`). The `full` image includes database client tools and other dependencies, preventing restoration failures caused by missing tools.
 
-**Step 2: Import the `.sql` file into the database**
+### Logo not showing after restoration?
 
-* **Via command line (Docker example)**:
+The demo's logo is configured with a domain restriction and cannot load on local domains. Go to **System Settings** and re-upload your own logo.
 
-  ```bash
-  # Copy the sql file into the container
-  docker cp crm_demo.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
-  docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/crm_demo.sql
-  ```
+### What about incremental upgrades?
 
-* **Via database client**: Use tools like DBeaver, Navicat, pgAdmin to connect to the database and execute the SQL file.
+Currently, version upgrades are full replacements — your custom modifications will be overwritten. Always back up before upgrading. An incremental migration solution is being planned and will prioritize Pro/Enterprise editions. Community edition support is more difficult due to the lack of the migration management plugin.
 
-**Step 3: Connect to the database and start the application**
-
-Configure NocoBase startup parameters to point to the database with imported data, then start the service.
-
+We hope this tutorial helps you successfully deploy the CRM 2.0 system. If you encounter any problems during the process, please feel free to contact us!
 ---
 
-## More Help
-
-For detailed restoration tutorial, please refer to: [NocoBase CRM Demo Deployment Guide](https://www.nocobase.com/cn/tutorials/nocobase-crm-demo-deployment-guide)
+*Last updated: 2026-04-02*

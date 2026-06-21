@@ -1,15 +1,17 @@
 ---
-displayName: "Comments"
+displayName: "Bình luận"
 packageName: '@nocobase/plugin-comments'
+title: "Bình luận"
+keywords: "Bình luận,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides comment collection template and block to add commenting functionality for any collection.
-isFree: false
-builtIn: false
+  Cung cấp mẫu Collection và Block bình luận, thêm chức năng bình luận cho dữ liệu của Collection bất kỳ.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 0
+editionLevel: 0
 ---
 
-# Comments
+# Bình luận

@@ -1,4 +1,6 @@
 ---
+title: "应用监管器"
+keywords: "应用监管器,插件,NocoBase"
 displayName: "应用监管器"
 packageName: '@nocobase/plugin-app-supervisor'
 supportedVersions:

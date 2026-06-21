@@ -1,12 +1,14 @@
 ---
-displayName: "UI schema storage"
+displayName: "Layanan Penyimpanan UI Schema"
 packageName: '@nocobase/plugin-ui-schema-storage'
+title: "Layanan Penyimpanan UI Schema"
+keywords: "Layanan Penyimpanan UI Schema,Plugin,NocoBase"
 description: |
-  Provides centralized UI schema storage service.
+  Menyediakan layanan penyimpanan UI Schema yang terpusat.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI schema storage
+# Layanan Penyimpanan UI Schema

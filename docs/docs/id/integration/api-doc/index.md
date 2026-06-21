@@ -1,27 +1,24 @@
 ---
-pkg: "@nocobase/plugin-api-doc"
+title: "Plugin Dokumentasi API"
+description: "Dokumentasi API NocoBase berbasis Swagger: alamat akses, dokumentasi keseluruhan/kernel/Plugin/collections, aturan penulisan swagger, spesifikasi OpenAPI."
+keywords: "dokumentasi API,Swagger,OpenAPI,dokumentasi antarmuka,swagger:get,pengembangan plugin,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-
 
 # Dokumentasi API
 
+<PluginInfo name="api-doc"></PluginInfo>
 
+## Pengenalan
 
-## Pengantar
-
-Plugin ini menghasilkan dokumentasi API HTTP NocoBase berdasarkan Swagger.
+Menghasilkan dokumentasi HTTP API NocoBase berbasis Swagger.
 
 ## Instalasi
 
-Ini adalah plugin bawaan, tidak perlu instalasi. Cukup aktifkan untuk menggunakannya.
+Plugin bawaan, tidak perlu instalasi. Dapat digunakan setelah diaktifkan.
 
 ## Petunjuk Penggunaan
 
-### Mengakses Halaman Dokumentasi API
+### Akses Halaman Dokumentasi API
 
 http://localhost:13000/admin/settings/api-doc/documentation
 
@@ -31,18 +28,18 @@ http://localhost:13000/admin/settings/api-doc/documentation
 
 ![](https://static-docs.nocobase.com/5bb4d3e5bba6c6fdfcd830592e72385b.png)
 
-- Dokumentasi API Total: `/api/swagger:get`
-- Dokumentasi API Inti: `/api/swagger:get?ns=core`
-- Dokumentasi API Semua plugin: `/api/swagger:get?ns=plugins`
-- Dokumentasi Setiap plugin: `/api/swagger:get?ns=plugins/{name}`
-- Dokumentasi API untuk koleksi kustom: `/api/swagger:get?ns=collections`
-- Sumber daya `${collection}` yang ditentukan dan terkait `${collection}.${association}`: `/api/swagger:get?ns=collections/{name}`
+- Dokumentasi API keseluruhan: `/api/swagger:get`
+- Dokumentasi API kernel: `/api/swagger:get?ns=core`
+- Dokumentasi API semua Plugin: `/api/swagger:get?ns=plugins`
+- Dokumentasi setiap Plugin: `/api/swagger:get?ns=plugins/{name}`
+- Dokumentasi API collections kustom pengguna: `/api/swagger:get?ns=collections`
+- Sumber daya `${collection}` dan `${collection}.${association}` terkait: `/api/swagger:get?ns=collections/{name}`
 
-## Panduan Pengembang
+## Panduan Pengembangan
 
-### Cara Menulis Dokumentasi Swagger untuk Plugin
+### Cara Menulis Dokumentasi swagger untuk Plugin
 
-Tambahkan file `swagger/index.ts` di folder `src` plugin dengan konten sebagai berikut:
+Tambahkan file `swagger/index.ts` pada folder `src` Plugin, dengan konten sebagai berikut:
 
 ```typescript
 export default {
@@ -57,4 +54,4 @@ export default {
 };
 ```
 
-Untuk aturan penulisan yang lebih detail, silakan merujuk ke [Dokumentasi Resmi Swagger](https://swagger.io/docs/specification/about/).
+Untuk aturan penulisan rinci, lihat [Dokumentasi Resmi Swagger](https://swagger.io/docs/specification/about/)

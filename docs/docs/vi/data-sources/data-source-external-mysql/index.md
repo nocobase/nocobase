@@ -1,25 +1,19 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-mysql"
+title: "External Data Source - MySQL"
+description: "Tích hợp database MySQL (>=5.7) bên ngoài làm Data Source, kết nối read-only đến database có sẵn, đồng bộ Collection và cấu hình Field."
+keywords: "External MySQL,MySQL Data Source,External database,Đồng bộ Collection,NocoBase"
 ---
-
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-
-
-# Nguồn dữ liệu ngoài - MySQL
+# External Data Source - MySQL
 
 ## Giới thiệu
 
-Sử dụng cơ sở dữ liệu MySQL bên ngoài làm nguồn dữ liệu. Các phiên bản hiện được hỗ trợ: MySQL >= 5.7.
+Sử dụng database MySQL bên ngoài làm Data Source. Phiên bản hiện được hỗ trợ: MySQL >= 5.7
 
 ## Cài đặt
 
-Plugin này là một plugin thương mại, cần được tải lên và kích hoạt thông qua trình quản lý plugin.
-
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+Plugin này là plugin thương mại, để biết chi tiết cách kích hoạt vui lòng tham khảo: [Hướng dẫn kích hoạt plugin thương mại](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
 ## Hướng dẫn sử dụng
 
-Tham khảo phần [Nguồn dữ liệu / Cơ sở dữ liệu ngoài](/data-sources/data-source-manager/external-database).
+Xem chương [Data Source / External Database](/data-sources/data-source-manager/external-database)

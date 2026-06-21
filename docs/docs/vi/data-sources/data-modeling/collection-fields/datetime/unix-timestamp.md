@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Unix Timestamp"
+description: "Field Unix timestamp, lưu trữ timestamp ở cấp giây."
+keywords: "Unix timestamp,unix timestamp,timestamp,cấp giây,NocoBase"
+---
 
-
-# Dấu thời gian Unix
+# Unix Timestamp
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512180432](https://static-docs.nocobase.com/20240512180432.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung

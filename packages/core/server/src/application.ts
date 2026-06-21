@@ -43,7 +43,6 @@ import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
-import { nanoid } from 'nanoid';
 import { RecordableHistogram } from 'node:perf_hooks';
 import path, { basename, resolve } from 'path';
 import semver from 'semver';
@@ -83,6 +82,7 @@ import { RedisConfig, RedisConnectionManager } from './redis-connection-manager'
 import { ServiceContainer } from './service-container';
 import { setupSnowflakeIdField } from './snowflake-id-field';
 import { WorkerIdAllocator } from './worker-id-allocator';
+import { serving } from './worker-mode';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -477,32 +477,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   /**
-   * Check if the application is serving as a specific worker.
-   * @experimental
+   * @deprecated use {@link serving} from './worker-mode' instead.
    */
   public serving(key?: string): boolean {
-    const { WORKER_MODE = '' } = process.env;
-    if (!WORKER_MODE) {
-      return true;
-    }
-    if (WORKER_MODE === '-') {
-      return false;
-    }
-    const topics = WORKER_MODE.trim().split(',');
-    if (key) {
-      if (WORKER_MODE === '*') {
-        return true;
-      }
-      if (topics.includes(key)) {
-        return true;
-      }
-      return false;
-    } else {
-      if (topics.includes('!')) {
-        return true;
-      }
-      return false;
-    }
+    return serving(key);
   }
 
   /**

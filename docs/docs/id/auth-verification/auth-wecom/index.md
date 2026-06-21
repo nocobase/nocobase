@@ -1,46 +1,45 @@
 ---
 pkg: '@nocobase/plugin-auth-wecom'
+title: "Autentikasi: WeCom"
+description: "Login WeCom NocoBase: mendukung otorisasi OAuth aplikasi mandiri WeCom, konfigurasi Company ID, AgentId, Secret, authorized callback domain, automatic login."
+keywords: "WeCom,login WeCom,OAuth,aplikasi mandiri,AgentId,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Autentikasi: WeCom
 
-## Pendahuluan
+## Pengantar
 
-**Plugin WeCom** mendukung pengguna untuk masuk ke NocoBase menggunakan akun WeCom mereka.
+Plugin **WeCom** mendukung pengguna untuk login ke NocoBase menggunakan akun WeCom.
 
 ## Mengaktifkan Plugin
 
 ![](https://static-docs.nocobase.com/202406272056962.png)
 
-## Membuat dan Mengonfigurasi Aplikasi Buatan Sendiri WeCom
+## Membuat dan Mengkonfigurasi Aplikasi Mandiri WeCom
 
-Buka konsol admin WeCom untuk membuat aplikasi buatan sendiri.
+Masuk ke admin backend WeCom, buat aplikasi mandiri WeCom.
 
 ![](https://static-docs.nocobase.com/202406272101321.png)
 
 ![](https://static-docs.nocobase.com/202406272102087.png)
 
-Klik aplikasi untuk masuk ke halaman detailnya, gulir ke bawah, lalu klik "Login Resmi WeCom".
+Klik aplikasi untuk masuk ke halaman detail, scroll ke bawah, klik "WeCom Authorized Login".
 
 ![](https://static-docs.nocobase.com/202406272104655.png)
 
-Atur domain *callback* resmi ke domain aplikasi NocoBase Anda.
+Atur authorized callback domain ke domain aplikasi NocoBase.
 
 ![](https://static-docs.nocobase.com/202406272105662.png)
 
-Kembali ke halaman detail aplikasi dan klik "Otorisasi Web dan JS-SDK".
+Kembali ke halaman detail aplikasi, klik "Web Authorization & JS-SDK".
 
 ![](https://static-docs.nocobase.com/202406272107063.png)
 
-Atur dan verifikasi domain *callback* untuk fitur otorisasi web OAuth2.0 aplikasi.
+Atur dan verifikasi domain callback yang dapat digunakan sebagai fungsi otorisasi web aplikasi OAuth2.0.
 
 ![](https://static-docs.nocobase.com/202406272107899.png)
 
-Pada halaman detail aplikasi, klik "IP Tepercaya Perusahaan".
+Pada halaman detail aplikasi, klik "Trusted IP".
 
 ![](https://static-docs.nocobase.com/202406272108834.png)
 
@@ -48,23 +47,23 @@ Konfigurasi IP aplikasi NocoBase.
 
 ![](https://static-docs.nocobase.com/202406272109805.png)
 
-## Mendapatkan Kredensial dari Konsol Admin WeCom
+## Mendapatkan Kunci dari Admin Backend WeCom
 
-Di konsol admin WeCom, di bawah "Perusahaan Saya", salin "ID Perusahaan".
+Pada admin backend WeCom - My Company, salin "Company ID".
 
 ![](https://static-docs.nocobase.com/202406272111637.png)
 
-Di konsol admin WeCom, di bawah "Manajemen Aplikasi", buka halaman detail aplikasi yang dibuat pada langkah sebelumnya dan salin AgentId serta Secret.
+Pada admin backend WeCom - Application Management, masuk ke halaman detail aplikasi yang dibuat di langkah sebelumnya, salin AgentId dan Secret.
 
 ![](https://static-docs.nocobase.com/202406272122322.png)
 
 ## Menambahkan Autentikasi WeCom di NocoBase
 
-Buka halaman manajemen plugin autentikasi pengguna.
+Masuk ke halaman manajemen plugin autentikasi pengguna.
 
 ![](https://static-docs.nocobase.com/202406272115044.png)
 
-Tambah - WeCom
+Tambahkan - WeCom
 
 ![](https://static-docs.nocobase.com/202406272115805.png)
 
@@ -72,26 +71,26 @@ Tambah - WeCom
 
 ![](https://static-docs.nocobase.com/202412041459250.png)
 
-| Opsi Konfigurasi                                                                                      | Deskripsi                                                                                                                                                                                     | Persyaratan Versi |
-| :---------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------- |
-| Saat nomor telepon tidak cocok dengan pengguna yang sudah ada, <br />apakah pengguna baru harus dibuat secara otomatis | Saat nomor telepon tidak cocok dengan pengguna yang sudah ada, apakah akan membuat pengguna baru secara otomatis.                                                                             | -                 |
-| ID Perusahaan                                                                                         | ID Perusahaan, didapatkan dari konsol admin WeCom.                                                                                                                                            | -                 |
-| AgentId                                                                                               | Didapatkan dari konfigurasi aplikasi buatan sendiri di konsol admin WeCom.                                                                                                                    | -                 |
-| Secret                                                                                                | Didapatkan dari konfigurasi aplikasi buatan sendiri di konsol admin WeCom.                                                                                                                    | -                 |
-| Origin                                                                                                | Domain aplikasi saat ini.                                                                                                                                                                     | -                 |
-| Tautan pengalihan aplikasi *workbench*                                                                | Jalur aplikasi untuk dialihkan setelah berhasil masuk.                                                                                                                                        | `v1.4.0`          |
-| Login otomatis                                                                                        | Otomatis masuk saat tautan aplikasi dibuka di peramban WeCom. Jika ada beberapa autentikator WeCom yang dikonfigurasi, hanya satu yang dapat mengaktifkan opsi ini.                            | `v1.4.0`          |
-| Tautan beranda aplikasi *workbench*                                                                   | Tautan beranda aplikasi *workbench*.                                                                                                                                                          | -                 |
+| Item Konfigurasi                                                                                      | Keterangan                                                                                                | Versi    |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------- |
+| When a phone number does not match an existing user, <br />should a new user be created automatically | Apakah secara otomatis membuat pengguna baru ketika nomor telepon tidak cocok dengan pengguna yang ada.   | -        |
+| Company ID                                                                                            | Company ID, didapat dari admin backend WeCom.                                                              | -        |
+| AgentId                                                                                               | Didapat dari konfigurasi aplikasi mandiri di admin backend WeCom.                                          | -        |
+| Secret                                                                                                | Didapat dari konfigurasi aplikasi mandiri di admin backend WeCom.                                          | -        |
+| Origin                                                                                                | Domain aplikasi saat ini.                                                                                  | -        |
+| Workbench application redirect link                                                                   | Path aplikasi yang akan dituju setelah login berhasil.                                                     | `v1.4.0` |
+| Automatic login                                                                                       | Saat membuka link aplikasi di browser WeCom, login otomatis. Ketika ada beberapa authenticator WeCom yang dikonfigurasi, hanya satu yang dapat mengaktifkan opsi ini. | `v1.4.0` |
+| Workbench application homepage link                                                                   | Link halaman utama aplikasi workbench.                                                                     | -        |
 
-## Mengonfigurasi Beranda Aplikasi WeCom
+## Mengkonfigurasi Halaman Utama Aplikasi WeCom
 
 :::info
-Untuk versi `v1.4.0` dan di atasnya, saat opsi "Login otomatis" diaktifkan, tautan beranda aplikasi dapat disederhanakan menjadi: `https://<url>/<path>`, contohnya `https://example.nocobase.com/admin`.
+Pada versi `v1.4.0` ke atas, jika opsi "Automatic login" diaktifkan, link halaman utama aplikasi dapat disederhanakan menjadi: `https://<url>/<path>`, misalnya `https://example.nocobase.com/admin`.
 
-Anda juga dapat mengonfigurasi tautan terpisah untuk seluler dan desktop, contohnya `https://example.nocobase.com/m` dan `https://example.nocobase.com/admin`.
+Anda juga dapat mengkonfigurasi mobile dan desktop secara terpisah, misalnya `https://example.nocobase.com/m` dan `https://example.nocobase.com/admin`.
 :::
 
-Buka konsol admin WeCom dan tempel tautan beranda aplikasi *workbench* yang telah disalin ke kolom alamat beranda aplikasi yang sesuai.
+Masuk ke admin backend WeCom, isi link halaman utama aplikasi workbench yang disalin ke kolom alamat halaman utama aplikasi terkait.
 
 ![](https://static-docs.nocobase.com/202406272123631.png)
 
@@ -99,16 +98,16 @@ Buka konsol admin WeCom dan tempel tautan beranda aplikasi *workbench* yang tela
 
 ## Login
 
-Kunjungi halaman login dan klik tombol di bawah formulir login untuk memulai login pihak ketiga.
+Akses halaman login, klik tombol di bawah formulir login untuk memulai login pihak ketiga.
 
 ![](https://static-docs.nocobase.com/202406272124608.png)
 
 :::warning
-Karena batasan izin WeCom pada informasi sensitif seperti nomor telepon, otorisasi hanya dapat diselesaikan di dalam klien WeCom. Saat login dengan WeCom untuk pertama kalinya, ikuti langkah-langkah di bawah ini untuk menyelesaikan otorisasi login awal di dalam klien WeCom.
+Karena pembatasan izin WeCom terhadap informasi sensitif seperti nomor telepon, otorisasi hanya dapat diselesaikan di klien WeCom. Saat pertama kali menggunakan login WeCom, ikuti langkah-langkah di bawah untuk menyelesaikan otorisasi login pertama di klien WeCom.
 :::
 
 ## Login Pertama Kali
 
-Dari klien WeCom, buka *Workbench*, gulir ke bawah, dan klik aplikasi untuk masuk ke beranda yang telah Anda konfigurasikan sebelumnya. Ini akan menyelesaikan otorisasi awal. Setelah itu, Anda dapat menggunakan WeCom untuk login ke aplikasi NocoBase Anda.
+Dari klien WeCom, masuk ke workbench, scroll ke bawah, klik aplikasi untuk masuk ke halaman utama aplikasi yang sebelumnya diisi, lalu otorisasi login pertama dapat diselesaikan. Setelah itu, Anda dapat menggunakan login WeCom di aplikasi NocoBase.
 
 <img src="https://static-docs.nocobase.com/202406272131113.png" width="400" />

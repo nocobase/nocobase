@@ -1,49 +1,52 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+---
+title: "Ikhtisar Node Workflow"
+description: "Node Workflow: 30 tipe Node seperti kontrol alur, komputasi, operasi data, kecerdasan buatan, kondisi, loop, pemrosesan manual, LLM."
+keywords: "Node Workflow,kontrol alur,kondisi,loop,pemrosesan manual,operasi data,NocoBase"
+---
+
+# Ikhtisar
+
+Sebuah workflow biasanya tersusun dari beberapa langkah operasi yang saling terhubung. Setiap Node mewakili satu langkah operasi dan merupakan unit logika dasar dalam alur. Seperti dalam bahasa pemrograman, tipe Node yang berbeda mewakili instruksi yang berbeda, yang menentukan perilaku Node tersebut. Saat alur dijalankan, sistem akan masuk ke setiap Node secara berurutan dan mengeksekusi instruksi pada Node tersebut.
+
+:::info{title=Tips}
+Trigger pada workflow bukan termasuk Node, hanya ditampilkan dalam diagram alur sebagai Node entry, tetapi merupakan konsep yang berbeda dari Node. Untuk detailnya silakan merujuk ke dokumentasi [Trigger](../triggers/index.md).
 :::
 
-# Gambaran Umum
-
-Sebuah alur kerja biasanya terdiri dari beberapa langkah operasional yang saling terhubung. Setiap node merepresentasikan satu langkah operasional dan berfungsi sebagai unit logis dasar dalam proses. Sama seperti dalam bahasa pemrograman, berbagai jenis node merepresentasikan instruksi yang berbeda, yang menentukan perilaku node tersebut. Ketika alur kerja berjalan, sistem akan masuk ke setiap node secara berurutan dan menjalankan instruksinya.
-
-:::info{title=Catatan}
-Pemicu alur kerja bukanlah sebuah node. Pemicu hanya ditampilkan sebagai titik masuk dalam diagram alur, tetapi merupakan konsep yang berbeda dari node. Untuk detail lebih lanjut, silakan lihat konten [Pemicu](../triggers/index.md).
-:::
-
-Dari perspektif fungsional, node yang saat ini telah diimplementasikan dapat dibagi menjadi beberapa kategori utama (total 29 jenis node):
+Dari sudut pandang fungsi, Node yang sudah diimplementasikan saat ini dapat dibagi menjadi beberapa kategori (total 30 tipe Node):
 
 - Kecerdasan Buatan
-  - [Model Bahasa Besar](../../ai-employees/workflow/nodes/llm/chat.md) (disediakan oleh plugin @nocobase/plugin-workflow-llm)
+  - [Large Language Model](../../ai-employees/workflow/nodes/llm/chat.md) (disediakan oleh plugin @nocobase/plugin-workflow-llm)
 - Kontrol Alur
   - [Kondisi](./condition.md)
-  - [Multi-kondisi](./multi-conditions.md)
-  - [Perulangan](./loop.md) (disediakan oleh plugin @nocobase/plugin-workflow-loop)
-  - [Variabel](./variable.md) (disediakan oleh plugin @nocobase/plugin-workflow-variable)
+  - [Cabang Multi-Kondisi](./multi-conditions.md)
+  - [Loop](./loop.md) (disediakan oleh plugin @nocobase/plugin-workflow-loop)
+  - [Variable](./variable.md) (disediakan oleh plugin @nocobase/plugin-workflow-variable)
   - [Cabang Paralel](./parallel.md) (disediakan oleh plugin @nocobase/plugin-workflow-parallel)
-  - [Panggil Alur Kerja](./subflow.md) (disediakan oleh plugin @nocobase/plugin-workflow-subflow)
-  - [Output Alur Kerja](./output.md) (disediakan oleh plugin @nocobase/plugin-workflow-subflow)
-  - [Pemetaan Variabel JSON](./json-variable-mapping.md) (disediakan oleh plugin @nocobase/plugin-workflow-json-variable-mapping)
+  - [Panggil Workflow](./subflow.md) (disediakan oleh plugin @nocobase/plugin-workflow-subflow)
+  - [Output Alur](./output.md) (disediakan oleh plugin @nocobase/plugin-workflow-subflow)
+  - [Pemetaan Variable JSON](./json-variable-mapping.md) (disediakan oleh plugin @nocobase/plugin-workflow-json-variable-mapping)
   - [Penundaan](./delay.md) (disediakan oleh plugin @nocobase/plugin-workflow-delay)
-  - [Akhiri Alur Kerja](./end.md)
-- Perhitungan
-  - [Perhitungan](./calculation.md)
-  - [Perhitungan Tanggal](./date-calculation.md) (disediakan oleh plugin @nocobase/plugin-workflow-date-calculation)
-  - [Perhitungan JSON](./json-query.md) (disediakan oleh plugin @nocobase/plugin-workflow-json-query)
-- Aksi Koleksi
-  - [Buat Data](./create.md)
-  - [Perbarui Data](./update.md)
+  - [Akhiri Alur](./end.md)
+- Komputasi
+  - [Komputasi](./calculation.md)
+  - [Komputasi Tanggal](./date-calculation.md) (disediakan oleh plugin @nocobase/plugin-workflow-date-calculation)
+  - [Komputasi JSON](./json-query.md) (disediakan oleh plugin @nocobase/plugin-workflow-json-query)
+- Operasi Tabel Data
+  - [Tambah Data](./create.md)
+  - [Update Data](./update.md)
   - [Hapus Data](./destroy.md)
-  - [Kueri Data](./query.md)
-  - [Kueri Agregat](./aggregate.md) (disediakan oleh plugin @nocobase/plugin-workflow-aggregate)
-  - [Aksi SQL](./sql.md) (disediakan oleh plugin @nocobase/plugin-workflow-sql)
-- Penanganan Manual
-  - [Penanganan Manual](./manual.md) (disediakan oleh plugin @nocobase/plugin-workflow-manual)
+  - [Query Data](./query.md)
+  - [Query Agregasi](./aggregate.md) (disediakan oleh plugin @nocobase/plugin-workflow-aggregate)
+  - [Operasi SQL](./sql.md) (disediakan oleh plugin @nocobase/plugin-workflow-sql)
+  - [Transaksi Database](./transaction.md) (disediakan oleh plugin @nocobase/plugin-workflow-transaction)
+- Pemrosesan Manual
+  - [Pemrosesan Manual](./manual.md) (disediakan oleh plugin @nocobase/plugin-workflow-manual)
   - [Persetujuan](./approval.md) (disediakan oleh plugin @nocobase/plugin-workflow-approval)
   - [CC](./cc.md) (disediakan oleh plugin @nocobase/plugin-workflow-cc)
 - Ekstensi Lainnya
-  - [Permintaan HTTP](./request.md) (disediakan oleh plugin @nocobase/plugin-workflow-request)
+  - [HTTP Request](./request.md) (disediakan oleh plugin @nocobase/plugin-workflow-request)
   - [JavaScript](./javascript.md) (disediakan oleh plugin @nocobase/plugin-workflow-javascript)
   - [Kirim Email](./mailer.md) (disediakan oleh plugin @nocobase/plugin-workflow-mailer)
   - [Notifikasi](../../notification-manager/index.md#工作流通知节点) (disediakan oleh plugin @nocobase/plugin-workflow-notification)
-  - [Respons](./response.md) (disediakan oleh plugin @nocobase/plugin-workflow-webhook)
-  - [Pesan Respons](./response-message.md) (disediakan oleh plugin @nocobase/plugin-workflow-response-message)
+  - [Response](./response.md) (disediakan oleh plugin @nocobase/plugin-workflow-webhook)
+  - [Pesan Response](./response-message.md) (disediakan oleh plugin @nocobase/plugin-workflow-response-message)

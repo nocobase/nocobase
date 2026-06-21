@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Request"
+description: "Request client NocoBase: api.request, APIClient, HTTP request, memanggil API backend."
+keywords: "Request,api.request,APIClient,HTTP request,panggilan API,NocoBase"
+---
 
-# Permintaan
+# Request
 
-NocoBase menyediakan `APIClient` yang dibangun di atas [Axios](https://axios-http.com/). Anda bisa menggunakannya untuk membuat permintaan HTTP dari mana saja Anda bisa mendapatkan `Context`.
+NocoBase menyediakan `APIClient` yang berbasis enkapsulasi [Axios](https://axios-http.com/), untuk melakukan HTTP request di tempat mana pun yang dapat memperoleh `Context`.
 
-Lokasi umum di mana Anda bisa mendapatkan `Context` meliputi:
+Lokasi umum yang dapat memperoleh `Context` termasuk:
 
 - `app.context`
 - `engine.context`
@@ -15,7 +17,7 @@ Lokasi umum di mana Anda bisa mendapatkan `Context` meliputi:
 
 ## ctx.api.request()
 
-`ctx.api.request()` adalah metode yang paling sering digunakan untuk membuat permintaan. Parameter dan nilai kembaliannya sama persis dengan [axios.request()](https://axios-http.com/docs/req_config).
+`ctx.api.request()` adalah method yang paling sering digunakan untuk membuat request, parameter dan return value-nya sepenuhnya konsisten dengan [axios.request()](https://axios-http.com/docs/req_config).
 
 ```ts
 request<T = any, R = AxiosResponse<T>, D = any>(
@@ -32,7 +34,7 @@ await ctx.api.request({
 });
 ```
 
-Anda bisa langsung menggunakan konfigurasi permintaan Axios standar:
+Anda dapat langsung menggunakan konfigurasi request Axios standar:
 
 ```ts
 await ctx.api.request({
@@ -46,25 +48,25 @@ await ctx.api.request({
 
 ## ctx.api.axios
 
-`ctx.api.axios` adalah sebuah instans `AxiosInstance`. Melalui instans ini, Anda dapat mengubah konfigurasi default global atau menambahkan *interceptor* permintaan.
+`ctx.api.axios` adalah instance `AxiosInstance`, dapat digunakan untuk memodifikasi konfigurasi default global atau menambahkan request interceptor.
 
-Mengubah Konfigurasi Default
+Memodifikasi Konfigurasi Default
 
 ```ts
 axios.defaults.headers.common['Authorization'] = AUTH_TOKEN;
 axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 ```
 
-Untuk konfigurasi yang lebih lengkap, lihat [Konfigurasi Default Axios](https://axios-http.com/docs/config_defaults).
+Untuk lebih banyak konfigurasi yang tersedia lihat [Konfigurasi Default Axios](https://axios-http.com/docs/config_defaults).
 
-## Interceptor Permintaan dan Respons
+## Request dan Response Interceptor
 
-*Interceptor* dapat memproses permintaan sebelum dikirim atau respons setelah diterima. Misalnya, untuk menambahkan *header* permintaan secara seragam, melakukan serialisasi parameter, atau menampilkan notifikasi kesalahan yang terpadu.
+Melalui interceptor dapat memproses sebelum request dikirim atau setelah response dikembalikan. Misalnya, secara terpadu menambahkan request header, serialize parameter, atau secara terpadu memberikan notifikasi error.
 
-### Contoh Interceptor Permintaan
+### Contoh Request Interceptor
 
 ```ts
-// Menggunakan qs untuk melakukan serialisasi parameter
+// Menggunakan qs untuk serialize parameter params
 axios.interceptors.request.use((config) => {
   config.paramsSerializer = (params) =>
     qs.stringify(params, {
@@ -74,7 +76,7 @@ axios.interceptors.request.use((config) => {
   return config;
 });
 
-// Header permintaan kustom
+// Custom request header
 axios.interceptors.request.use((config) => {
   config.headers['Authorization'] = `Bearer token123`;
   config.headers['X-Hostname'] = 'localhost';
@@ -87,43 +89,43 @@ axios.interceptors.request.use((config) => {
 });
 ```
 
-### Contoh Interceptor Respons
+### Contoh Response Interceptor
 
 ```ts
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Menampilkan notifikasi terpadu saat permintaan gagal
+    // Saat request error, tampilkan notifikasi terpadu
     ctx.notification.error({
-      message: 'Permintaan respons error',
+      message: 'Request response error',
     });
     return Promise.reject(error);
   },
 );
 ```
 
-## Header Permintaan Kustom NocoBase Server
+## Custom Request Header NocoBase Server
 
-Berikut adalah *header* permintaan kustom yang didukung oleh NocoBase Server, yang dapat digunakan untuk skenario multi-aplikasi, internasionalisasi, multi-peran, atau multi-autentikasi.
+Berikut adalah custom request header yang didukung NocoBase Server, dapat digunakan untuk skenario multi aplikasi, internasionalisasi, multi role atau multi autentikasi.
 
-| Header | Deskripsi |
-|--------|-----------|
+| Header | Penjelasan |
+|--------|------|
 | `X-App` | Menentukan aplikasi yang sedang diakses dalam skenario multi-aplikasi |
-| `X-Locale` | Bahasa saat ini (misalnya: `zh-CN`, `en-US`) |
-| `X-Hostname` | *Hostname* klien |
-| `X-Timezone` | Zona waktu klien (misalnya: `+08:00`) |
-| `X-Role` | Peran saat ini |
-| `X-Authenticator` | Metode autentikasi pengguna saat ini |
+| `X-Locale` | Bahasa saat ini (seperti: `zh-CN`, `en-US`) |
+| `X-Hostname` | Hostname client |
+| `X-Timezone` | Zona waktu client (seperti: `+08:00`) |
+| `X-Role` | Role saat ini |
+| `X-Authenticator` | Cara autentikasi pengguna saat ini |
 
-> 💡 **Tips**  
-> *Header* permintaan ini biasanya disuntikkan secara otomatis oleh *interceptor* dan tidak perlu diatur secara manual. Anda hanya perlu menambahkannya secara manual dalam skenario khusus (seperti lingkungan pengujian atau skenario multi-instans).
+> Tips  
+> Request header ini biasanya disuntikkan otomatis oleh interceptor, tidak perlu diatur secara manual. Hanya dalam skenario khusus (seperti environment test atau skenario multi instance) perlu ditambahkan secara manual.
 
-## Penggunaan dalam Komponen
+## Penggunaan dalam Component
 
-Dalam komponen React, Anda bisa mendapatkan objek konteks melalui `useFlowContext()` dan kemudian memanggil `ctx.api` untuk membuat permintaan.
+Dalam Component React, dapat memperoleh objek konteks melalui `useFlowContext()`, sehingga dapat memanggil `ctx.api` untuk membuat request.
 
 ```ts
-import { useFlowContext } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 
 const MyComponent = () => {
   const ctx = useFlowContext();
@@ -140,16 +142,16 @@ const MyComponent = () => {
     fetchData();
   }, []);
 
-  return <div>Memuat...</div>;
+  return <div>Loading...</div>;
 };
 ```
 
-### Menggunakan dengan `useRequest` dari ahooks
+### Menggunakan Bersama useRequest dari ahooks
 
-Dalam pengembangan nyata, Anda dapat menggunakan *Hook* `useRequest` yang disediakan oleh [ahooks](https://ahooks.js.org/hooks/use-request/index) untuk menangani siklus hidup dan status permintaan dengan lebih mudah.
+Dalam pengembangan aktual, dapat dikombinasikan dengan Hook `useRequest` yang disediakan oleh [ahooks](https://ahooks.js.org/hooks/use-request/index), untuk lebih mudah menangani siklus hidup dan status request.
 
 ```ts
-import { useFlowContext } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 
 const MyComponent = () => {
@@ -162,16 +164,16 @@ const MyComponent = () => {
     }),
   );
 
-  if (loading) return <div>Memuat...</div>;
-  if (error) return <div>Permintaan gagal: {error.message}</div>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Request error: {error.message}</div>;
 
   return (
     <div>
-      <button onClick={refresh}>Segarkan</button>
+      <button onClick={refresh}>Refresh</button>
       <pre>{JSON.stringify(data?.data, null, 2)}</pre>
     </div>
   );
 };
 ```
 
-Pendekatan ini membuat logika permintaan lebih deklaratif, secara otomatis mengelola status pemuatan, penanganan kesalahan, dan logika penyegaran, sehingga sangat cocok untuk digunakan dalam komponen.
+Cara ini membuat logika request lebih deklaratif, otomatis mengelola status loading, notifikasi error, dan logika refresh, sangat cocok digunakan dalam Component.

@@ -1,51 +1,51 @@
 ---
-pkg: "@nocobase/plugin-ai-ee"
+pkg: "@nocobase/plugin-ai"
+title: "Node LLM Workflow - Output Terstruktur"
+description: "Output terstruktur LLM Workflow: konfigurasi JSON Schema mendefinisikan struktur respons, mendukung mode text/json_object/json_schema, parameter format model lokal Ollama."
+keywords: "Workflow,Node LLM,Output Terstruktur,JSON Schema,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-
 
 # Output Terstruktur
 
-## Pendahuluan
+<PluginInfo name="ai-ee" licenseBundled="true"></PluginInfo>
 
-Dalam beberapa skenario aplikasi, pengguna mungkin ingin model LLM merespons dengan konten terstruktur dalam format JSON. Hal ini dapat dicapai dengan mengonfigurasi "Output Terstruktur".
+## Pengantar
+
+Pada beberapa skenario aplikasi, Pengguna mungkin berharap model LLM merespons konten terstruktur dalam format JSON, dapat diimplementasikan dengan mengonfigurasi "Output Terstruktur".
 
 ![](https://static-docs.nocobase.com/202503041306405.png)
 
-## Konfigurasi
+## Penjelasan Konfigurasi
 
-- **JSON Schema** - Pengguna dapat menentukan struktur respons yang diharapkan dari model dengan mengonfigurasi [JSON Schema](https://json-schema.org/).
-- **Nama** - _Opsional_, digunakan untuk membantu model memahami objek yang direpresentasikan oleh JSON Schema dengan lebih baik.
-- **Deskripsi** - _Opsional_, digunakan untuk membantu model memahami tujuan JSON Schema dengan lebih baik.
-- **Strict** - Meminta model untuk menghasilkan respons secara ketat sesuai dengan struktur JSON Schema. Saat ini, hanya beberapa model baru dari OpenAI yang mendukung parameter ini. Harap konfirmasi apakah model Anda kompatibel sebelum mengaktifkannya.
+- **JSON Schema** - Pengguna dapat mendefinisikan struktur respons model yang diharapkan dengan mengonfigurasi [JSON Schema](https://json-schema.org/).
+- **Nama (Name)** - _Tidak wajib_, digunakan untuk membantu model lebih memahami objek yang direpresentasikan JSON Schema.
+- **Deskripsi (Description)** - _Tidak wajib_, digunakan untuk membantu model lebih memahami penggunaan JSON Schema.
+- **Strict** - Mengharuskan model menghasilkan respons secara ketat sesuai struktur JSON Schema. Saat ini, hanya sebagian model baru OpenAI yang mendukung parameter ini, harap konfirmasi apakah model kompatibel sebelum mencentang.
 
-## Metode Pembuatan Konten Terstruktur
+## Cara Menghasilkan Konten Terstruktur
 
-Cara model menghasilkan konten terstruktur bergantung pada **model** yang digunakan dan konfigurasi **format Respons**-nya:
+Cara menghasilkan konten terstruktur model, tergantung pada **model** yang digunakan dan konfigurasi **Response format**-nya:
 
-1. Model yang format Respons-nya hanya mendukung `text`
+1. Model yang Response format-nya hanya mendukung `text`
 
-   - Saat dipanggil, node akan mengikat sebuah Tool yang menghasilkan konten berformat JSON berdasarkan JSON Schema, memandu model untuk menghasilkan respons terstruktur dengan memanggil Tool ini.
+   - Saat dipanggil, Node akan mengikat satu Tools yang menghasilkan konten format JSON berdasarkan JSON Schema, memandu model menghasilkan respons terstruktur dengan memanggil Tools tersebut.
 
-2. Model yang format Respons-nya mendukung mode JSON (`json_object`)
+2. Model yang Response format-nya mendukung mode JSON (`json_object`)
 
-   - Jika mode JSON dipilih saat dipanggil, pengguna perlu secara eksplisit menginstruksikan model dalam Prompt untuk mengembalikan dalam format JSON dan memberikan deskripsi untuk bidang respons.
-   - Dalam mode ini, JSON Schema hanya digunakan untuk mengurai string JSON yang dikembalikan oleh model dan mengubahnya menjadi objek JSON target.
+   - Jika memilih mode JSON saat dipanggil, Pengguna perlu secara eksplisit menginstruksikan model dalam Prompt untuk mengembalikan dalam format JSON, dan menyediakan penjelasan Field respons.
+   - Dalam mode ini, JSON Schema hanya digunakan untuk parsing string JSON yang dikembalikan model, mengkonversinya menjadi objek JSON target.
 
-3. Model yang format Respons-nya mendukung JSON Schema (`json_schema`)
+3. Model yang Response format-nya mendukung JSON Schema (`json_schema`)
 
-   - JSON Schema secara langsung digunakan untuk menentukan struktur respons target untuk model.
-   - Parameter **Strict** opsional meminta model untuk secara ketat mengikuti JSON Schema saat menghasilkan respons.
+   - JSON Schema langsung digunakan untuk menentukan struktur respons target model.
+   - Parameter **Strict** opsional, mengharuskan model mengikuti JSON Schema secara ketat untuk menghasilkan respons.
 
 4. Model lokal Ollama
-   - Jika JSON Schema dikonfigurasi, node akan meneruskannya sebagai parameter `format` ke model saat dipanggil.
+   - Jika dikonfigurasi JSON Schema, saat dipanggil, Node akan mengirimkannya sebagai parameter `format` ke model.
 
 ## Menggunakan Hasil Output Terstruktur
 
-Konten terstruktur dari respons model disimpan sebagai objek JSON di bidang "Structured content" pada node dan dapat digunakan oleh node-node berikutnya.
+Konten terstruktur yang direspons model disimpan dalam Field Structured content Node dalam bentuk objek JSON, dapat digunakan oleh Node selanjutnya.
 
 ![](https://static-docs.nocobase.com/202503041330291.png)
 

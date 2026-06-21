@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "Manajemen Rute",
+    "label": "Manajemen Route",
     "link": "/routes/"
   }
 ]

@@ -1,4 +1,6 @@
 ---
+title: "数据源管理"
+keywords: "数据源管理,插件,NocoBase"
 displayName: "数据源管理"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |

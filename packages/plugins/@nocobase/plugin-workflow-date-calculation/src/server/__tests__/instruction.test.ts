@@ -938,4 +938,38 @@ describe('workflow-date-calculation', () => {
       expect(res1.body.data.result).toBe(0);
     });
   });
+
+  describe('validation', () => {
+    let agent;
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      agent = app.agent();
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should reject when inputType is invalid', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'dateCalculation', config: { inputType: 'invalid' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept with valid inputType', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'dateCalculation', config: { inputType: 'date' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept with empty config', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'dateCalculation', config: {} },
+      });
+      expect(status).toBe(200);
+    });
+  });
 });

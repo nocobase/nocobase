@@ -1,63 +1,65 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Apa itu FlowEngine"
+description: "FlowEngine adalah engine pengembangan no-code/low-code frontend NocoBase 2.0 yang menggabungkan Model dan Flow untuk menyederhanakan logika frontend dan orkestrasi yang dapat dikonfigurasi, memahami konsep inti Flow, Step, dan Engine."
+keywords: "FlowEngine,no-code,low-code,FlowModel,Flow,Step,frontend engine,orkestrasi,NocoBase"
+---
 
 # Apa itu FlowEngine?
 
-FlowEngine adalah mesin pengembangan *no-code/low-code* *front-end* terbaru yang diperkenalkan di NocoBase 2.0. Mesin ini menggabungkan Model dan Flow untuk menyederhanakan logika *front-end* serta meningkatkan *reusability* dan *maintainability*. Selain itu, dengan memanfaatkan kemampuan konfigurasi Flow, FlowEngine memberikan kemampuan konfigurasi dan orkestrasi *no-code* untuk komponen *front-end* dan logika bisnis.
+FlowEngine adalah engine pengembangan frontend no-code dan low-code yang baru diperkenalkan pada NocoBase 2.0. Engine ini menggabungkan Model dan Flow untuk menyederhanakan logika frontend serta meningkatkan reusabilitas dan kemudahan pemeliharaan. Pada saat yang sama, dengan kemampuan konfigurasi Flow, FlowEngine memberikan kemampuan konfigurasi dan orkestrasi tanpa kode kepada komponen frontend dan logika bisnis.
 
 ## Mengapa disebut FlowEngine?
 
-Karena di FlowEngine, properti dan logika komponen tidak lagi didefinisikan secara statis, melainkan didorong dan dikelola oleh **Flow**.
+Karena di dalam FlowEngine, properti dan logika komponen tidak lagi didefinisikan secara statis, melainkan didorong dan dikelola melalui **Flow**.
 
-*   **Flow**, seperti aliran data, memecah logika menjadi langkah-langkah (Step) yang berurutan dan diterapkan secara progresif pada komponen.
-*   **Engine** menunjukkan bahwa ini adalah mesin yang mendorong logika dan interaksi *front-end*.
+* **Flow** seperti aliran data yang memecah logika menjadi langkah-langkah berurutan (Step), yang secara bertahap memengaruhi komponen;
+* **Engine** menyatakan bahwa ini adalah engine yang menggerakkan logika frontend dan interaksi.
 
-Jadi, **FlowEngine = Mesin logika *front-end* yang didorong oleh Flow**.
+Jadi, **FlowEngine = engine logika frontend yang digerakkan oleh flow**.
 
 ## Apa itu Model?
 
-Di FlowEngine, Model adalah model abstrak dari sebuah komponen, yang bertanggung jawab untuk:
+Di dalam FlowEngine, Model adalah model abstrak dari komponen, yang bertanggung jawab untuk:
 
-*   Mengelola **properti (Props) dan status** komponen;
-*   Mendefinisikan **metode *rendering*** komponen;
-*   Menampung dan mengeksekusi **Flow**;
-*   Menangani **pengiriman *event*** dan **siklus hidup** secara terpadu.
+* Mengelola **Props dan state** komponen;
+* Mendefinisikan **cara render** komponen;
+* Membawa dan menjalankan **Flow**;
+* Menangani **dispatch event** dan **lifecycle** secara terpadu.
 
-Dengan kata lain, **Model adalah otak logis dari sebuah komponen**, mengubahnya dari unit statis menjadi unit dinamis yang dapat dikonfigurasi dan diorkestrasi.
+Dengan kata lain, **Model adalah otak logika dari komponen**, yang membuat komponen berubah dari statis menjadi unit dinamis yang dapat dikonfigurasi dan diorkestrasi.
 
 ## Apa itu Flow?
 
-Di FlowEngine, **Flow adalah aliran logika yang melayani Model**.
-Tujuannya adalah untuk:
+Di dalam FlowEngine, **Flow adalah aliran logika yang melayani Model**.
+Fungsinya adalah:
 
-*   Memecah logika properti atau *event* menjadi langkah-langkah (Step) dan mengeksekusinya secara berurutan dalam sebuah aliran;
-*   Mengelola perubahan properti serta respons *event*;
-*   Membuat logika menjadi **dinamis, dapat dikonfigurasi, dan dapat digunakan kembali**.
+* Memecah logika properti atau event menjadi langkah-langkah (Step), yang dieksekusi secara berurutan dalam bentuk flow;
+* Dapat mengelola perubahan properti, juga dapat mengelola respons event;
+* Membuat logika menjadi **dinamis, dapat dikonfigurasi, dan dapat digunakan ulang**.
 
 ## Bagaimana memahami konsep-konsep ini?
 
-Anda bisa membayangkan **Flow** sebagai **aliran air**:
+Anda dapat membayangkan **Flow** sebagai **aliran air**:
 
-*   **Step seperti titik di sepanjang aliran air**
-    Setiap Step menjalankan tugas kecil (misalnya, mengatur properti, memicu *event*, memanggil API), sama seperti aliran air yang memiliki efek saat melewati pintu air atau kincir air.
+* **Step seperti node yang dilalui aliran air**
+  Setiap Step menjalankan tugas kecil (misalnya mengatur properti, memicu event, memanggil API), seperti aliran air yang menggerakkan pintu air atau kincir air saat melewatinya.
 
-*   **Aliran bersifat berurutan**
-    Aliran air mengikuti jalur yang telah ditentukan dari hulu ke hilir, melewati semua Step secara berurutan; demikian pula, logika dalam Flow dieksekusi sesuai urutan yang didefinisikan.
+* **Aliran bersifat berurutan**
+  Aliran air mengikuti jalur yang telah ditentukan dari hulu ke hilir, melewati semua Step secara berurutan; demikian pula, logika dalam Flow akan dieksekusi sesuai urutan yang didefinisikan.
 
-*   **Aliran dapat bercabang dan digabungkan**
-    Satu aliran air dapat terbagi menjadi beberapa aliran kecil atau bergabung kembali; Flow juga dapat dipecah menjadi beberapa sub-Flow atau digabungkan menjadi rantai logika yang lebih kompleks.
+* **Aliran dapat bercabang dan digabungkan**
+  Satu aliran air dapat terbagi menjadi beberapa aliran kecil, atau dapat menyatu kembali; Flow juga dapat dipecah menjadi beberapa sub-flow, atau digabungkan menjadi rantai logika yang lebih kompleks.
 
-*   **Aliran dapat dikonfigurasi dan dikendalikan**
-    Arah dan volume aliran air dapat diatur dengan pintu air; metode eksekusi dan parameter Flow juga dapat dikendalikan melalui konfigurasi (*stepParams*).
+* **Aliran dapat dikonfigurasi dan dikendalikan**
+  Arah dan debit aliran air dapat diatur melalui pintu air; cara eksekusi dan parameter Flow juga dapat dikontrol melalui konfigurasi (stepParams).
 
-Ringkasan Analogi
+Ringkasan analogi
 
-*   **Komponen** seperti kincir air yang membutuhkan aliran air untuk berputar;
-*   **Model** adalah dasar dan pengontrol kincir air ini, bertanggung jawab untuk menerima aliran air dan mendorong operasinya;
-*   **Flow** adalah aliran air itu sendiri, melewati setiap Step secara berurutan, mendorong komponen untuk terus berubah dan merespons.
+* **Komponen** seperti kincir air yang membutuhkan dorongan aliran air untuk berputar;
+* **Model** adalah dudukan dan pengontrol kincir air ini, yang bertanggung jawab menerima aliran dan menggerakkan operasi;
+* **Flow** adalah aliran air itu sendiri, yang melewati setiap Step secara berurutan, mendorong komponen agar terus berubah dan merespons.
 
-Jadi, di FlowEngine:
+Jadi di dalam FlowEngine:
 
-*   **Flow memungkinkan logika bergerak secara alami seperti aliran air**;
-*   **Model memungkinkan komponen menjadi pembawa dan pelaksana aliran ini**.
+* **Flow membuat logika mengalir secara alami seperti aliran air**;
+* **Model membuat komponen menjadi pembawa dan pelaksana aliran**.

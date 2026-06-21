@@ -1,36 +1,37 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tổng quan Field"
+description: "Field trong Interface Builder của NocoBase: component Field là vật mang dữ liệu đơn vị, gắn với Block, hỗ trợ Field Form, Field Table, Field Filter, có thể cấu hình bố cục và quy tắc xác thực."
+keywords: "Field,Fields,Field Form,Field Table,Field Filter,component Field,Interface Builder,NocoBase"
+---
 
+# Field
 
-# Trường
+Trong UI, Field chính là component Field, là vật mang dữ liệu đơn vị, các loại dữ liệu khác nhau được hiển thị bằng các component Field khác nhau. Field chỉ có thể gắn với Block, không thể sử dụng độc lập.
 
-Trong giao diện người dùng (UI), trường là một thành phần trường, đóng vai trò là phương tiện chứa dữ liệu đơn vị. Các loại dữ liệu khác nhau sẽ được hiển thị bằng các thành phần trường khác nhau. Trường chỉ có thể gắn vào khối và không thể sử dụng độc lập.
+## Field trong Block
 
-## Trường trong một khối
-
-Các trường thường không được sử dụng độc lập mà tồn tại dưới dạng các phần tử con của các khối kiểu dữ liệu. Các khối kiểu dữ liệu thường có tùy chọn "Cấu hình trường", và danh sách các trường được cung cấp bởi bộ sưu tập hiện tại.
+Field thường không được sử dụng đơn lẻ, mà tồn tại như một phần tử con của Block dữ liệu. Các Block dữ liệu thường có "Cấu hình Field", danh sách Field do Table dữ liệu hiện tại cung cấp.
 
 ![20251029204240](https://static-docs.nocobase.com/20251029204240.png)
 
-## Trình thiết kế trường (Thanh công cụ)
+## Designer (thanh công cụ) của Field
 
-Tương tự như các khối, góc trên bên phải của một thành phần trường cũng có ba biểu tượng, bao gồm:
+Giống như Block, góc trên bên phải của component Field cũng có ba biểu tượng, lần lượt là:
 
-- Kéo để bố cục
-- [Luồng sự kiện](/interface-builder/event-flow)
-- Cấu hình
+- Kéo thả bố cục
+- [Event Flow](/interface-builder/event-flow)
+- Cấu hình tham số
 
 ![20251025165432](https://static-docs.nocobase.com/20251025165432.png)
 
-## Bố cục trường
+## Bố cục của Field
 
-Bạn có thể tùy chỉnh bố cục của các trường trong một khối bằng cách kéo và thả.
+Bằng cách kéo thả di chuyển, bạn có thể tùy chỉnh bố cục của Field trong Block.
 
 ![20251025165605](https://static-docs.nocobase.com/20251025165605.gif)
 
-## Tùy chọn cấu hình trường
+## Tùy chọn cấu hình Field
 
-Ngoài các tùy chọn cấu hình trường chung, các loại trường khác nhau còn hỗ trợ các tùy chọn cấu hình cụ thể.
+Ngoài các tùy chọn cấu hình Field chung, các loại Field khác nhau hỗ trợ các tùy chọn cấu hình cụ thể.
 
 ![20251025170120](https://static-docs.nocobase.com/20251025170120.png)

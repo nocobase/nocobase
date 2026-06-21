@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "EventDefinition Definisi Event"
+description: "EventDefinition mendefinisikan logika pemrosesan event dalam Flow, merespons trigger event, adalah alias dari ActionDefinition, digunakan untuk konfigurasi event Flow."
+keywords: "EventDefinition,Definisi event,Event Flow,ActionDefinition,Pemrosesan event,FlowEngine,NocoBase"
+---
 
 # EventDefinition
 
-`EventDefinition` mendefinisikan logika penanganan *event* dalam sebuah alur kerja, yang digunakan untuk merespons pemicu *event* tertentu. *Event* adalah mekanisme penting dalam *FlowEngine* untuk memicu eksekusi alur kerja.
+EventDefinition mendefinisikan logika pemrosesan event dalam Flow, digunakan untuk merespons trigger event tertentu. Event adalah mekanisme penting dalam Flow Engine untuk memicu eksekusi Flow.
 
 ## Definisi Tipe
 
@@ -12,9 +14,9 @@ Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat 
 type EventDefinition<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext> = ActionDefinition<TModel, TCtx>;
 ```
 
-`EventDefinition` sebenarnya adalah alias untuk `ActionDefinition`, sehingga memiliki properti dan metode yang sama.
+EventDefinition pada dasarnya adalah alias dari ActionDefinition, sehingga memiliki properti dan metode yang sama.
 
-## Metode Pendaftaran
+## Cara Pendaftaran
 
 ```ts
 // Pendaftaran global (melalui FlowEngine)
@@ -23,21 +25,21 @@ engine.registerEvent({
   name: 'clickEvent',
   title: 'Click Event',
   handler: async (ctx, params) => {
-    // Logika penanganan event
+    // Logika pemrosesan event
   }
 });
 
-// Pendaftaran tingkat model (melalui FlowModel)
+// Pendaftaran level model (melalui FlowModel)
 class MyModel extends FlowModel {}
 MyModel.registerEvent({
   name: 'submitEvent',
   title: 'Submit Event',
   handler: async (ctx, params) => {
-    // Logika penanganan event
+    // Logika pemrosesan event
   }
 });
 
-// Penggunaan dalam alur kerja
+// Penggunaan dalam Flow
 MyModel.registerFlow({
   key: 'formFlow',
   on: 'submitEvent',  // Mereferensikan event yang sudah terdaftar
@@ -49,15 +51,15 @@ MyModel.registerFlow({
 });
 ```
 
-## Deskripsi Properti
+## Penjelasan Properti
 
 ### name
 
 **Tipe**: `string`  
 **Wajib**: Ya  
-**Deskripsi**: Pengidentifikasi unik untuk *event*.
+**Deskripsi**: Identifier unik event
 
-Digunakan untuk mereferensikan *event* dalam sebuah alur kerja melalui properti `on`.
+Digunakan untuk mereferensikan event dalam Flow melalui properti `on`.
 
 **Contoh**:
 ```ts
@@ -70,9 +72,9 @@ name: 'customEvent'
 
 **Tipe**: `string`  
 **Wajib**: Tidak  
-**Deskripsi**: Judul tampilan untuk *event*.
+**Deskripsi**: Judul tampilan event
 
-Digunakan untuk tampilan UI dan *debugging*.
+Digunakan untuk tampilan UI dan debugging.
 
 **Contoh**:
 ```ts
@@ -85,9 +87,9 @@ title: 'Data Change'
 
 **Tipe**: `(ctx: TCtx, params: any) => Promise<any> | any`  
 **Wajib**: Ya  
-**Deskripsi**: Fungsi *handler* untuk *event*.
+**Deskripsi**: Fungsi handler event
 
-Logika inti dari *event*, yang menerima konteks dan parameter, lalu mengembalikan hasil pemrosesan.
+Logika inti dari event, menerima context dan parameter, mengembalikan hasil pemrosesan.
 
 **Contoh**:
 ```ts
@@ -95,10 +97,10 @@ handler: async (ctx, params) => {
   const { model, flowEngine } = ctx;
   
   try {
-    // Jalankan logika penanganan event
+    // Eksekusi logika pemrosesan event
     const result = await handleEvent(params);
     
-    // Kembalikan hasil
+    // Mengembalikan hasil
     return {
       success: true,
       data: result,
@@ -117,9 +119,9 @@ handler: async (ctx, params) => {
 
 **Tipe**: `Record<string, any> | ((ctx: TCtx) => Record<string, any> | Promise<Record<string, any>>)`  
 **Wajib**: Tidak  
-**Deskripsi**: Parameter *default* untuk *event*.
+**Deskripsi**: Parameter default event
 
-Mengisi parameter dengan nilai *default* saat *event* dipicu.
+Saat event terpicu, mengisi nilai default untuk parameter.
 
 **Contoh**:
 ```ts
@@ -138,7 +140,7 @@ defaultParams: (ctx) => {
   }
 }
 
-// Parameter default asinkron
+// Parameter default asynchronous
 defaultParams: async (ctx) => {
   const userInfo = await getUserInfo();
   return {
@@ -152,9 +154,9 @@ defaultParams: async (ctx) => {
 
 **Tipe**: `Record<string, ISchema> | ((ctx: TCtx) => Record<string, ISchema> | Promise<Record<string, ISchema>>)`  
 **Wajib**: Tidak  
-**Deskripsi**: Skema konfigurasi UI untuk *event*.
+**Deskripsi**: Mode konfigurasi UI event
 
-Mendefinisikan cara tampilan dan konfigurasi formulir untuk *event* di UI.
+Mendefinisikan cara tampilan event di UI dan konfigurasi form.
 
 **Contoh**:
 ```ts
@@ -202,9 +204,9 @@ uiSchema: {
 
 **Tipe**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Wajib**: Tidak  
-**Deskripsi**: Fungsi *hook* yang dieksekusi sebelum menyimpan parameter.
+**Deskripsi**: Hook function sebelum parameter disimpan
 
-Dieksekusi sebelum parameter *event* disimpan, dapat digunakan untuk validasi atau transformasi parameter.
+Dieksekusi sebelum parameter event disimpan, dapat digunakan untuk validasi atau konversi parameter.
 
 **Contoh**:
 ```ts
@@ -214,10 +216,10 @@ beforeParamsSave: (ctx, params, previousParams) => {
     throw new Error('Event type is required');
   }
   
-  // Transformasi parameter
+  // Konversi parameter
   params.eventType = params.eventType.toLowerCase();
   
-  // Catat perubahan
+  // Mencatat perubahan
   console.log('Event params changed:', {
     from: previousParams,
     to: params
@@ -229,24 +231,24 @@ beforeParamsSave: (ctx, params, previousParams) => {
 
 **Tipe**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Wajib**: Tidak  
-**Deskripsi**: Fungsi *hook* yang dieksekusi setelah menyimpan parameter.
+**Deskripsi**: Hook function setelah parameter disimpan
 
-Dieksekusi setelah parameter *event* disimpan, dapat digunakan untuk memicu tindakan lain.
+Dieksekusi setelah parameter event disimpan, dapat digunakan untuk memicu operasi lainnya.
 
 **Contoh**:
 ```ts
 afterParamsSave: (ctx, params, previousParams) => {
-  // Catat log
+  // Mencatat log
   console.log('Event params saved:', params);
   
-  // Picu event
+  // Memicu event
   ctx.model.emitter.emit('eventConfigChanged', {
     eventName: 'clickEvent',
     params,
     previousParams
   });
   
-  // Perbarui cache
+  // Memperbarui cache
   ctx.model.updateCache('eventConfig', params);
 }
 ```
@@ -255,14 +257,14 @@ afterParamsSave: (ctx, params, previousParams) => {
 
 **Tipe**: `StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>)`  
 **Wajib**: Tidak  
-**Deskripsi**: Mode tampilan UI untuk *event*.
+**Deskripsi**: Mode tampilan UI event
 
-Mengontrol bagaimana *event* ditampilkan di UI.
+Mengontrol cara tampilan event di UI.
 
 **Mode yang didukung**:
 - `'dialog'` - Mode dialog
-- `'drawer'` - Mode *drawer*
-- `'embed'` - Mode *embed*
+- `'drawer'` - Mode drawer
+- `'embed'` - Mode embed
 - Atau objek konfigurasi kustom
 
 **Contoh**:
@@ -285,27 +287,27 @@ uiMode: (ctx) => {
 }
 ```
 
-## Tipe *Event* Bawaan
+## Tipe Event Built-in
 
-*FlowEngine* memiliki tipe *event* umum berikut yang sudah terpasang:
+Flow Engine memiliki tipe event umum berikut yang sudah built-in:
 
-- `'click'` - *Event* klik
-- `'submit'` - *Event* kirim
-- `'reset'` - *Event* reset
-- `'remove'` - *Event* hapus
-- `'openView'` - *Event* buka tampilan
-- `'dropdownOpen'` - *Event* buka *dropdown*
-- `'popupScroll'` - *Event* gulir *popup*
-- `'search'` - *Event* cari
-- `'customRequest'` - *Event* permintaan kustom
-- `'collapseToggle'` - *Event* alih *collapse*
+- `'click'` - Event klik
+- `'submit'` - Event submit
+- `'reset'` - Event reset
+- `'remove'` - Event hapus
+- `'openView'` - Event buka view
+- `'dropdownOpen'` - Event dropdown terbuka
+- `'popupScroll'` - Event scroll popup
+- `'search'` - Event search
+- `'customRequest'` - Event request kustom
+- `'collapseToggle'` - Event toggle collapse
 
 ## Contoh Lengkap
 
 ```ts
 class FormModel extends FlowModel {}
 
-// Daftarkan event kirim formulir
+// Mendaftarkan event submit form
 FormModel.registerEvent({
   name: 'formSubmitEvent',
   title: 'Form Submit Event',
@@ -313,12 +315,12 @@ FormModel.registerEvent({
     const { formData, validation } = params;
     
     try {
-      // Validasi data formulir
+      // Validasi data form
       if (validation && !validateFormData(formData)) {
         throw new Error('Form validation failed');
       }
       
-      // Proses pengiriman formulir
+      // Memproses submit form
       const result = await submitForm(formData);
       
       return {
@@ -396,7 +398,7 @@ FormModel.registerEvent({
   uiMode: 'dialog'
 });
 
-// Daftarkan event perubahan data
+// Mendaftarkan event perubahan data
 FormModel.registerEvent({
   name: 'dataChangeEvent',
   title: 'Data Change Event',
@@ -404,7 +406,7 @@ FormModel.registerEvent({
     const { field, oldValue, newValue } = params;
     
     try {
-      // Catat perubahan data
+      // Mencatat perubahan data
       await logDataChange({
         field,
         oldValue,
@@ -413,7 +415,7 @@ FormModel.registerEvent({
         userId: ctx.model.uid
       });
       
-      // Picu tindakan terkait
+      // Memicu operasi terkait
       ctx.model.emitter.emit('dataChanged', {
         field,
         oldValue,
@@ -439,7 +441,7 @@ FormModel.registerEvent({
   uiMode: 'embed'
 });
 
-// Menggunakan event dalam alur kerja
+// Menggunakan event dalam Flow
 FormModel.registerFlow({
   key: 'formProcessing',
   title: 'Form Processing',

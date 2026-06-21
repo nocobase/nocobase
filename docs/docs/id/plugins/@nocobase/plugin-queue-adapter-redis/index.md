@@ -1,15 +1,17 @@
 ---
-displayName: "Redis queue adapter"
+displayName: "Adapter Antrian Pesan Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
+title: "Adapter Antrian Pesan Redis"
+keywords: "Adapter Antrian Pesan Redis,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with Redis.
+  Memproses antrian pesan aplikasi berbasis Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis queue adapter
+# Adapter Antrian Pesan Redis

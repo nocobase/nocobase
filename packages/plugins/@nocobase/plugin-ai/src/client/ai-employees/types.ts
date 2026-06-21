@@ -27,14 +27,35 @@ export type AIEmployee = {
     prompt?: string;
   };
   skillSettings?: {
-    skills?: { name: string }[];
+    tools?: { name: string; autoCall?: boolean }[];
+    skills?: string[];
+  };
+  chatSettings?: {
+    systemPromptMode?: 'default' | 'raw' | 'none';
+    enableSkills?: boolean;
+    enableTools?: boolean;
+    [key: string]: unknown;
   };
   builtIn?: boolean;
   webSearch?: boolean;
   toolsConflict?: boolean;
+  category?: string;
+  deprecated?: boolean;
+  modelSettings?: {
+    enabled?: boolean;
+    llmService?: string;
+    model?: string;
+    models?: {
+      llmService?: string;
+      model?: string;
+    }[];
+  };
 };
 
 export type SkillSettings = {
+  toolsVersion?: number;
+  skillsVersion?: number;
+  tools?: string[];
   skills?: string[];
 };
 
@@ -43,6 +64,14 @@ export type Conversation = {
   title: string;
   updatedAt: string;
   aiEmployee: AIEmployee;
+  read: boolean;
+  options?: {
+    modelSettings?: {
+      llmService?: string;
+      model?: string;
+    };
+    [key: string]: any;
+  };
 };
 
 export type ContextItem = {
@@ -67,6 +96,7 @@ export type MessageType = 'text' | 'greeting';
 export type Message = Omit<BubbleProps, 'content'> & {
   key?: string | number;
   role?: string;
+  createdAt?: string | Date;
   content: {
     content: any;
     ref?: React.MutableRefObject<any>;
@@ -78,6 +108,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
     metadata?: {
       model: string;
       provider: string;
+      llmService?: string;
       usage_metadata?: {
         input_tokens: number;
         output_tokens: number;
@@ -89,12 +120,32 @@ export type Message = Omit<BubbleProps, 'content'> & {
       title: string;
       url: string;
     }[];
+    reasoning?: { status: string; content: string };
+    subAgentConversations?: {
+      sessionId: string;
+      toolCallId?: string;
+      status?: 'pending' | 'completed';
+      messages: Message[];
+    }[];
+    from?: 'main-agent' | 'sub-agent';
   };
 };
 export type Action = {
   icon?: React.ReactNode;
   content: string;
   onClick: (content: string) => void;
+};
+
+export type ClearOptions = {
+  sender?: boolean;
+  systemMessage?: boolean;
+  attachments?: boolean;
+  contextItems?: boolean;
+  taskVariables?: boolean;
+  toolModal?: boolean;
+  activeTool?: boolean;
+  activeMessageId?: boolean;
+  skillSettings?: boolean;
 };
 
 export type SendOptions = {
@@ -134,9 +185,7 @@ export type Task = {
   title?: string;
   message: TaskMessage;
   autoSend?: boolean;
-  skillSettings?: {
-    skills?: string[];
-  };
+  skillSettings?: SkillSettings;
   webSearch?: boolean;
   model?: {
     llmService: string;

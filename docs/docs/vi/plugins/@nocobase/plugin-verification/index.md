@@ -1,12 +1,14 @@
 ---
-displayName: "Verification"
+displayName: "Xác minh"
 packageName: '@nocobase/plugin-verification'
+title: "Xác minh"
+keywords: "Xác minh,Plugin,NocoBase"
 description: |
-  User identity verification management, including SMS, TOTP authenticator, with extensibility.
+  Quản lý xác thực danh tính người dùng, bao gồm SMS, TOTP authenticator, v.v., có thể mở rộng.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Verification
+# Xác minh

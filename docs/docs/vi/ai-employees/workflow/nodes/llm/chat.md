@@ -1,65 +1,65 @@
 ---
 pkg: "@nocobase/plugin-ai"
+title: "Node LLM trong Workflow - Hội thoại văn bản"
+description: "Node hội thoại văn bản LLM trong Workflow: chọn mô hình, thiết lập tham số gọi, Response format, các loại tin nhắn System/User/Assistant, tham chiếu biến."
+keywords: "Workflow,Node LLM,Hội thoại văn bản,Workflow AI,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Hội thoại văn bản
 
-
-# Đối thoại văn bản
+<PluginInfo name="ai"></PluginInfo>
 
 ## Giới thiệu
 
-Sử dụng nút LLM trong một luồng công việc, bạn có thể bắt đầu một cuộc đối thoại với dịch vụ LLM trực tuyến, tận dụng khả năng của các mô hình lớn để hỗ trợ hoàn thành một loạt các quy trình nghiệp vụ.
+Sử dụng Node LLM của Workflow có thể khởi tạo hội thoại với dịch vụ LLM trực tuyến, tận dụng năng lực của mô hình lớn để hỗ trợ hoàn thành một loạt các quy trình nghiệp vụ.
 
 ![](https://static-docs.nocobase.com/202503041012091.png)
 
-## Tạo nút LLM
+## Tạo Node LLM mới
 
-Vì việc đối thoại với các dịch vụ LLM thường tốn thời gian, nút LLM chỉ có thể được sử dụng trong các luồng công việc không đồng bộ.
+Do hội thoại với dịch vụ LLM thường khá tốn thời gian, Node LLM chỉ có thể được sử dụng trong Workflow bất đồng bộ.
 
 ![](https://static-docs.nocobase.com/202503041013363.png)
 
 ## Chọn mô hình
 
-Đầu tiên, hãy chọn một dịch vụ LLM đã được kết nối. Nếu chưa có dịch vụ LLM nào được kết nối, bạn cần thêm cấu hình dịch vụ LLM trước. Tham khảo: [Quản lý dịch vụ LLM](/ai-employees/quick-start/llm-service)
+Trước tiên chọn dịch vụ LLM đã được tích hợp, nếu chưa tích hợp dịch vụ LLM, cần thêm cấu hình dịch vụ LLM trước. Tham khảo: [Quản lý dịch vụ LLM](/ai-employees/features/llm-service)
 
-Sau khi chọn dịch vụ, ứng dụng sẽ cố gắng lấy danh sách các mô hình khả dụng từ dịch vụ LLM để bạn lựa chọn. Một số dịch vụ LLM trực tuyến có thể có API để lấy mô hình không tuân thủ các giao thức API tiêu chuẩn; trong những trường hợp như vậy, người dùng cũng có thể nhập thủ công ID mô hình.
+Sau khi chọn dịch vụ, ứng dụng sẽ cố gắng lấy danh sách mô hình khả dụng từ dịch vụ LLM để chọn. Một số API lấy mô hình của dịch vụ LLM trực tuyến có thể không tuân theo giao thức API chuẩn, người dùng cũng có thể nhập thủ công id mô hình.
 
 ![](https://static-docs.nocobase.com/202503041013084.png)
 
 ## Thiết lập tham số gọi
 
-Bạn có thể điều chỉnh các tham số để gọi mô hình LLM theo nhu cầu.
+Có thể điều chỉnh tham số gọi mô hình LLM theo nhu cầu.
 
 ![](https://static-docs.nocobase.com/202503041014778.png)
 
-### Định dạng phản hồi
+### Response format
 
-Một điểm đáng chú ý là cài đặt **Định dạng phản hồi** (Response format). Tùy chọn này được sử dụng để gợi ý cho mô hình lớn về định dạng nội dung phản hồi của nó, có thể là văn bản hoặc JSON. Nếu bạn chọn chế độ JSON, hãy lưu ý những điều sau:
+Trong đó đáng chú ý là cài đặt **Response format**, tùy chọn cài đặt này được dùng để gợi ý định dạng nội dung phản hồi của mô hình lớn, có thể là văn bản hoặc JSON. Nếu chọn chế độ JSON, cần lưu ý:
 
-- Mô hình LLM tương ứng phải hỗ trợ được gọi ở chế độ JSON. Ngoài ra, người dùng cần gợi ý rõ ràng cho LLM phản hồi ở định dạng JSON trong Prompt, ví dụ: "Tell me a joke about cats, respond in JSON with \`setup\` and \`punchline\` keys". Nếu không, có thể không có phản hồi, dẫn đến lỗi `400 status code (no body)`.
-- Kết quả phản hồi sẽ là một chuỗi JSON. Người dùng cần phân tích cú pháp nó bằng cách sử dụng khả năng của các nút luồng công việc khác trước khi có thể sử dụng nội dung có cấu trúc bên trong. Bạn cũng có thể sử dụng tính năng [Đầu ra có cấu trúc](/ai-employees/workflow/nodes/llm/structured-output).
+- Mô hình LLM tương ứng cần hỗ trợ gọi ở chế độ JSON, đồng thời người dùng cần gợi ý rõ ràng trong Prompt rằng LLM phản hồi định dạng JSON, ví dụ: "Tell me a joke about cats, respond in JSON with \`setup\` and \`punchline\` keys". Nếu không có thể không có kết quả phản hồi, báo lỗi `400 status code (no body)`.
+- Kết quả phản hồi là một chuỗi JSON, người dùng cần sử dụng năng lực của các Node Workflow khác để phân tích, mới có thể sử dụng nội dung có cấu trúc trong đó. Cũng có thể sử dụng tính năng [Đầu ra có cấu trúc](/ai-employees/workflow/nodes/llm/structured-output).
 
 ## Tin nhắn
 
-Mảng tin nhắn được gửi đến mô hình LLM có thể bao gồm một tập hợp các tin nhắn lịch sử. Tin nhắn hỗ trợ ba loại:
+Mảng tin nhắn gửi cho mô hình LLM, có thể bao gồm một nhóm tin nhắn lịch sử. Trong đó tin nhắn hỗ trợ ba loại:
 
-- System - Thường được sử dụng để định nghĩa vai trò và hành vi của mô hình LLM trong cuộc đối thoại.
+- System - Thường được dùng để định nghĩa vai trò và hành vi mà mô hình LLM đóng vai trong hội thoại.
 - User - Nội dung do người dùng nhập.
-- Assistant - Nội dung phản hồi của mô hình.
+- Assistant - Nội dung do mô hình phản hồi.
 
-Đối với tin nhắn người dùng, với điều kiện mô hình hỗ trợ, bạn có thể thêm nhiều nội dung trong một lời nhắc duy nhất, tương ứng với tham số `content`. Nếu mô hình bạn đang sử dụng chỉ hỗ trợ tham số `content` dưới dạng chuỗi (điều này đúng với hầu hết các mô hình không hỗ trợ đối thoại đa phương thức), vui lòng chia tin nhắn thành nhiều lời nhắc, với mỗi lời nhắc chỉ chứa một nội dung. Bằng cách này, nút sẽ gửi nội dung dưới dạng chuỗi.
+Đối với tin nhắn người dùng, với tiền đề mô hình hỗ trợ, có thể thêm nhiều mục nội dung trong một Prompt, tương ứng với tham số `content`. Nếu mô hình được sử dụng chỉ hỗ trợ tham số `content` dưới dạng chuỗi (đại đa số mô hình không hỗ trợ hội thoại đa phương thức thuộc loại này), vui lòng chia tin nhắn thành nhiều Prompt, mỗi Prompt chỉ giữ lại một mục nội dung, như vậy Node sẽ gửi nội dung dưới dạng chuỗi.
 
 ![](https://static-docs.nocobase.com/202503041016140.png)
 
-Bạn có thể sử dụng các biến trong nội dung tin nhắn để tham chiếu ngữ cảnh của luồng công việc.
+Trong nội dung tin nhắn có thể sử dụng biến để tham chiếu ngữ cảnh của Workflow.
 
 ![](https://static-docs.nocobase.com/202503041017879.png)
 
-## Sử dụng nội dung phản hồi của nút LLM
+## Sử dụng nội dung phản hồi của Node LLM
 
-Bạn có thể sử dụng nội dung phản hồi của nút LLM làm biến trong các nút khác.
+Có thể sử dụng nội dung phản hồi của Node LLM làm biến trong các Node khác.
 
 ![](https://static-docs.nocobase.com/202503041018508.png)

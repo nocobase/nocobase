@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-source-manager",
-  "version": "2.1.0-beta.5",
+  "version": "2.2.0-beta.5",
   "main": "dist/server/index.js",
   "displayName": "Data source manager",
   "displayName.ru-RU": "Менеджер управления источниками данных",
@@ -13,6 +13,8 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-manager",
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/flow-engine": "2.x",
     "@nocobase/plugin-acl": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"

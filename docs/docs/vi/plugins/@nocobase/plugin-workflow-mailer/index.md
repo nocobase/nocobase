@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: mailer node"
+displayName: "Workflow: Node gửi email"
 packageName: '@nocobase/plugin-workflow-mailer'
+title: "Workflow: Node gửi email"
+keywords: "Workflow: Node gửi email,Plugin,NocoBase"
 description: |
-  Send email in workflow.
+  Có thể được sử dụng để gửi email trong workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: mailer node
+# Workflow: Node gửi email

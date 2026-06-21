@@ -1,12 +1,14 @@
 ---
-displayName: "Notification: Email"
+displayName: "Thông báo: Email"
 packageName: '@nocobase/plugin-notification-email'
+title: "Thông báo: Email"
+keywords: "Thông báo: Email,Plugin,NocoBase"
 description: |
-  Used for sending email notifications with built-in SMTP transport.
+  Gửi thông báo qua kênh email, hiện chỉ hỗ trợ phương thức truyền tải SMTP.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Notification: Email
+# Thông báo: Email

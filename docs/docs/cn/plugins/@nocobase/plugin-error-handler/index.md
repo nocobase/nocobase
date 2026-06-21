@@ -1,4 +1,6 @@
 ---
+title: "错误处理器"
+keywords: "错误处理器,插件,NocoBase"
 displayName: "错误处理器"
 packageName: '@nocobase/plugin-error-handler'
 description: |

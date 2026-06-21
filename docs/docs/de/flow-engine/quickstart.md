@@ -40,7 +40,7 @@ class MyModel extends FlowModel {
 #### 2. Eine Modellinstanz erstellen
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -57,10 +57,6 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 ## Schritt 2: PropsFlow hinzufügen, um Schaltflächeneigenschaften konfigurierbar zu machen
 
@@ -140,7 +136,7 @@ MyModel.registerFlow(buttonSettings);
 #### 2. `stepParams` anstelle von statischen `props` verwenden
 
 ```diff
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
 - props: {
@@ -248,7 +244,7 @@ MyModel.registerFlow(myEventFlow);
 Beim Erstellen des Modells können Sie die Standardparameter für den Ereignis-Flow über `stepParams` konfigurieren:
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   stepParams: {

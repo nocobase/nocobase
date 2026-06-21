@@ -1,4 +1,6 @@
 ---
+title: "Markdown"
+keywords: "Markdown,插件,NocoBase"
 displayName: "Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |

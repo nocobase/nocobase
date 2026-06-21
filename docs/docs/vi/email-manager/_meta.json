@@ -20,7 +20,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Cấu hình email Microsoft",
+        "label": "Cấu hình Outlook",
         "link": "/email-manager/configuration/outlook"
       },
       {
@@ -36,18 +36,23 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Trung tâm email",
+        "label": "Trung tâm Email",
         "link": "/email-manager/usage/guide"
       },
       {
         "type": "custom-link",
-        "label": "Khối email",
+        "label": "Block Email",
         "link": "/email-manager/usage/configuration"
       },
       {
         "type": "custom-link",
         "label": "Chữ ký email",
         "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bí danh email",
+        "link": "/email-manager/usage/alias"
       },
       {
         "type": "custom-link",
@@ -67,7 +72,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Tác vụ email",
+        "label": "Việc cần làm",
         "link": "/email-manager/advanced/todo"
       },
       {

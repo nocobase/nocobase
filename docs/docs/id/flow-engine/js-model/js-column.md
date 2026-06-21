@@ -1,5 +1,7 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "JSColumn JS Kolom Tabel"
+description: "JSColumn JS Kolom Tabel: menyematkan rendering dan logika kustom di kolom tabel, mendukung React, ctx, data baris, JS Model FlowEngine."
+keywords: "JSColumn,JS Kolom Tabel,kolom tabel,rendering kustom,data baris,JS Model FlowEngine,NocoBase"
+---
 
-# Kolom Tabel JS
+# JS Kolom Tabel

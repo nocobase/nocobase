@@ -1,15 +1,16 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Tài liệu tham khảo API Quản lý Thông báo"
+description: "Tài liệu tham khảo API Quản lý Thông báo: BaseNotificationChannel, registerChannelType, PluginNotificationManagerServer, gửi thông báo, đăng ký kênh, cấu hình template và đăng ký người dùng."
+keywords: "API quản lý thông báo,BaseNotificationChannel,registerChannelType,kênh thông báo,gửi thông báo,NocoBase"
+---
 
 # Tài liệu tham khảo API
 
-## Phía máy chủ
+## Server
 
 ### `BaseNotificationChannel`
 
-Đây là một lớp trừu tượng cơ sở cho các loại kênh thông báo, định nghĩa các giao diện cần thiết để triển khai kênh. Để mở rộng một loại kênh thông báo mới, bạn cần kế thừa lớp này và triển khai các phương thức của nó.
+Là class trừu tượng cho loại kênh người dùng, định nghĩa các interface mà kênh thông báo cần. Để mở rộng loại kênh thông báo mới, cần kế thừa class này và triển khai các phương thức trong đó.
 
 ```ts
 export abstract class BaseNotificationChannel<Message = any> {
@@ -23,11 +24,11 @@ export abstract class BaseNotificationChannel<Message = any> {
 
 ### `PluginNotificationManagerServer`
 
-Plugin quản lý thông báo phía máy chủ này cung cấp các phương thức để đăng ký loại kênh thông báo và gửi thông báo.
+Plugin server quản lý thông báo, cung cấp phương thức đăng ký loại kênh thông báo và phương thức gửi thông báo.
 
 #### `registerChannelType()`
 
-Phương thức này dùng để đăng ký một loại kênh mới ở phía máy chủ. Tham khảo ví dụ dưới đây.
+Đăng ký server cho loại kênh, ví dụ tham khảo
 
 ```ts
 import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
@@ -43,50 +44,39 @@ export class PluginNotificationExampleServer extends Plugin {
 export default PluginNotificationExampleServer;
 ```
 
-##### Cú pháp
+##### Signature
 
 `registerChannelType({ type, Channel }: {type: string, Channel: BaseNotificationChannel })`
 
 #### `send()`
 
-Phương thức `send` được sử dụng để gửi thông báo qua một kênh đã chỉ định.
+Phương thức gửi thông báo, gọi phương thức này để gửi thông báo
 
 ```ts
-// Tin nhắn nội bộ
-send({
-  channelName: 'in-app-message',
-  message: {
-    title: 'Tiêu đề tin nhắn nội bộ thử nghiệm',
-    content: 'Tin nhắn nội bộ thử nghiệm'
-  },
-  receivers: {
-    type: 'userId',
-    value: [1, 2, 3]
-  },
-  triggerFrom: 'workflow'
-});
+send('in-app-message', 
+  message:[
+    receivers: [1,2,3],
+    receiverType: 'userId',
+    content: 'Test in-app message',
+    title: 'Title test in-app message'
+  ],
+  triggerFrom: 'workflow')
 
-// Email
-send({
-  channelName: 'email',
-  message: {
-    title: 'Tiêu đề email thử nghiệm',
-    content: 'Email thử nghiệm'
-  },
-  receivers: {
-    type: 'channel-self-defined',
-    channelType: 'email',
-    value: ['a@163.com', 'b@163.com']
-  },
-  triggerFrom: 'workflow'
-});
+  send('email', 
+  message:[
+    receivers: ['a@163.com', 'b@163.com'],
+    receiverType: 'email',
+    content: 'Email test',
+    title: 'Title email test'
+  ],
+  triggerFrom: 'workflow')
 ```
 
-##### Cú pháp
+##### Signature
 
 `send(sendConfig: {channelName:String, message: Object, receivers: ReceiversType, triggerFrom: String })`
 
-Trường `receivers` hiện tại chỉ hỗ trợ hai định dạng: ID người dùng NocoBase `userId` hoặc cấu hình kênh tùy chỉnh `channel-self-defined`.
+Người nhận `receivers` hiện tại chỉ hỗ trợ hai định dạng: ID người dùng nội bộ NocoBase `userId` và cấu hình riêng của kênh `channel-self-defined`
 
 ```ts
 type ReceiversType = 
@@ -94,34 +84,34 @@ type ReceiversType =
   | { value: any; type: 'channel-self-defined'; channelType: string };
 ```
 
-##### Thông tin chi tiết
+##### Chi tiết
 
-`sendConfig`
+sendConfig
 
 | Thuộc tính         | Kiểu         |  Mô tả       |
 | ------------ | ------------ | --------- |
 | `channelName`    | `string` | Định danh kênh   |
-| `message`   | `object`   | Đối tượng tin nhắn      |
+| `message`   | `object`   | Object tin nhắn      |
 | `receivers`     | `ReceiversType`  | Người nhận |
 | `triggerFrom`     | `string`  | Nguồn kích hoạt |
 
-## Phía máy khách
+## Client
 
 ### `PluginNotificationManagerClient`
 
 #### `channelTypes`
 
-Thư viện các loại kênh đã đăng ký.
+Thư viện các loại kênh đã đăng ký
 
-##### Cú pháp
+##### Signature
 
 `channelTypes: Registry<registerTypeOptions>`
 
 #### `registerChannelType()`
 
-Đăng ký một loại kênh phía máy khách.
+Đăng ký loại kênh phía client
 
-##### Cú pháp
+##### Signature
 
 `registerChannelType(params: registerTypeOptions)`
 
@@ -132,14 +122,14 @@ type registerTypeOptions = {
   title: string; // Tiêu đề hiển thị của kênh
   type: string;  // Định danh kênh
   components: {
-    ChannelConfigForm?: ComponentType // Thành phần biểu mẫu cấu hình kênh;
-    MessageConfigForm?: ComponentType<{ variableOptions: any }>; // Thành phần biểu mẫu cấu hình tin nhắn;
-    ContentConfigForm?: ComponentType<{ variableOptions: any }>; // Thành phần biểu mẫu cấu hình nội dung (chỉ nội dung tin nhắn, không bao gồm cấu hình người nhận);
+    ChannelConfigForm?: ComponentType // Component form cấu hình kênh;
+    MessageConfigForm?: ComponentType<{ variableOptions: any }> // Component form cấu hình tin nhắn;
+    ContentConfigForm?: ComponentType<{ variableOptions: any }> // Component form cấu hình nội dung (chỉ là nội dung tin nhắn, không bao gồm cấu hình người nhận);
   };
-  meta?: { // Siêu dữ liệu cấu hình kênh
-    createable?: boolean; // Có hỗ trợ thêm kênh mới không;
-    editable?: boolean;  // Thông tin cấu hình kênh có thể chỉnh sửa không;
-    deletable?: boolean; // Thông tin cấu hình kênh có thể xóa không;
+  meta?: { // Meta thông tin cấu hình kênh
+    createable?: boolean // Có hỗ trợ thêm kênh mới hay không;
+    editable?: boolean  // Thông tin cấu hình kênh có thể chỉnh sửa hay không;
+    deletable?: boolean // Thông tin cấu hình kênh có thể xóa hay không;
   };
 };
 

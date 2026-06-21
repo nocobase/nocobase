@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: CC"
+displayName: "Workflow: Sao chép"
 packageName: '@nocobase/plugin-workflow-cc'
+title: "Workflow: Sao chép"
+keywords: "Workflow: Sao chép,Plugin,NocoBase"
 description: |
-  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
+  Cung cấp chức năng sao chép trong workflow, gửi bản sao của phê duyệt hoặc bất kỳ thông tin nào khác đến những người dùng cụ thể.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: CC
+# Workflow: Sao chép

@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "UUID"
+description: "Field UUID, lưu trữ định danh duy nhất toàn cục."
+keywords: "UUID,Định danh duy nhất,uuid,Unique ID,NocoBase"
+---
 
 # UUID
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512173354](https://static-docs.nocobase.com/20240512173354.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung.
+Sẽ được bổ sung sau

@@ -1,12 +1,14 @@
 ---
-displayName: "License settings"
+displayName: "Cấu hình giấy phép"
 packageName: '@nocobase/plugin-license'
+title: "Cấu hình giấy phép"
+keywords: "Cấu hình giấy phép,Plugin,NocoBase"
 description: |
-  Instance ID and license key settings
+  Cấu hình ID phiên bản và khóa giấy phép
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# License settings
+# Cấu hình giấy phép

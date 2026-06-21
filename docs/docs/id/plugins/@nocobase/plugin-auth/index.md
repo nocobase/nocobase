@@ -1,12 +1,14 @@
 ---
-displayName: "Authentication"
+displayName: "User Authentication"
 packageName: '@nocobase/plugin-auth'
+title: "User Authentication"
+keywords: "User Authentication,plugin,NocoBase"
 description: |
-  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
+  Manajemen autentikasi pengguna, termasuk autentikasi password dasar, autentikasi SMS, autentikasi protokol SSO, dan lain-lain. Dapat diperluas.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Authentication
+# User Authentication

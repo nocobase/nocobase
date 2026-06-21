@@ -1,32 +1,33 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Field tiêu đề"
+description: "Field tiêu đề: hiển thị tiêu đề bản ghi, thường dùng để hiển thị tiêu đề trong Chi tiết, danh sách, hỗ trợ Field liên kết."
+keywords: "Field tiêu đề,Title,tiêu đề bản ghi,Interface Builder,NocoBase"
+---
 
 # Tiêu đề
 
 ## Giới thiệu
 
-Ở chế độ xem, các trường liên kết mặc định được hiển thị bằng **thành phần trường tiêu đề**, giúp nhận diện bản ghi liên kết hiện tại bằng cách hiển thị giá trị của trường tiêu đề.
-Hệ thống sẽ tự động khớp và hiển thị thành phần trường tiêu đề tương ứng dựa trên loại trường tiêu đề.
+Ở trạng thái đọc, Field quan hệ mặc định sử dụng **component Field tiêu đề** để hiển thị, bằng cách hiển thị giá trị của Field tiêu đề để xác định bản ghi liên kết hiện tại.
+Hệ thống sẽ tự động khớp và render component Field tiêu đề tương ứng theo các loại Field tiêu đề khác nhau.
 
-## Tùy chọn cấu hình trường
+## Tùy chọn cấu hình Field
 
-### Trường tiêu đề
+### Field tiêu đề
 
-Khi loại trường tiêu đề là "Số":
+Khi loại Field tiêu đề là "số":
 
 ![20251028155817](https://static-docs.nocobase.com/20251028155817.png)
 
-Thành phần trường là thành phần số.
+Component Field là component số.
 
 ![20251028155837](https://static-docs.nocobase.com/20251028155837.png)
 
-Khi loại trường tiêu đề là "Ngày & Giờ":
+Khi loại Field tiêu đề là "ngày giờ":
 
 ![20251029213244](https://static-docs.nocobase.com/20251029213244.png)
 
-Thành phần trường chuyển sang thành phần ngày.
+Component Field chuyển sang component ngày tháng.
 
 ![20251029213320](https://static-docs.nocobase.com/20251029213320.png)
 
@@ -34,10 +35,10 @@ Thành phần trường chuyển sang thành phần ngày.
 
 ![20251028155644](https://static-docs.nocobase.com/20251028155644.png)
 
-### Bật tính năng nhấp để mở (mặc định được bật)
+### Bật mở khi nhấp (mặc định bật)
 
-Nhấp vào để mở một cửa sổ bật lên, tại đó bạn có thể tùy chỉnh các khối để quản lý dữ liệu.
+Nhấp để mở Popup có thể tùy chỉnh cấu hình Block để quản lý dữ liệu.
 
 ![20251028160742](https://static-docs.nocobase.com/20251028160742.png)
 
-Để biết thêm chi tiết, hãy xem [Thành phần trường](/interface-builder/fields/association-field).
+Xem thêm tại [Component Field](/interface-builder/fields/association-field);

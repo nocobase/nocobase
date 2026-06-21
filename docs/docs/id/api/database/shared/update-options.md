@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "UpdateOptions"
+description: "Parameter method update Repository NocoBase: values, filter, filterByTk, whitelist, blacklist, transaction."
+keywords: "UpdateOptions,Repository,update,values,NocoBase"
+---
 
 **Tipe**
 
@@ -18,11 +20,11 @@ interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
 
 **Detail**
 
-- `values`: Objek data untuk rekaman yang akan diperbarui.
-- `filter`: Menentukan kondisi filter untuk rekaman yang akan diperbarui. Untuk penggunaan `Filter` secara detail, lihat metode [`find()`](#find).
-- `filterByTk`: Menentukan kondisi filter untuk rekaman yang akan diperbarui berdasarkan `TargetKey`.
-- `whitelist`: Daftar putih (whitelist) untuk bidang `values`. Hanya bidang dalam daftar ini yang akan ditulis.
-- `blacklist`: Daftar hitam (blacklist) untuk bidang `values`. Bidang dalam daftar ini tidak akan ditulis.
-- `transaction`: Objek transaksi. Jika parameter transaksi tidak diteruskan, metode ini akan secara otomatis membuat transaksi internal.
+- `values`: Objek data dari record yang akan diperbarui.
+- `filter`: Menentukan kondisi filter untuk record yang akan diperbarui. Untuk penggunaan detail Filter, lihat method [`find()`](#find).
+- `filterByTk`: Menentukan kondisi filter berdasarkan TargetKey untuk record yang akan diperbarui.
+- `whitelist`: Whitelist field `values`, hanya field di dalam whitelist yang akan ditulis.
+- `blacklist`: Blacklist field `values`, field di dalam blacklist tidak akan ditulis.
+- `transaction`: Objek transaction. Jika tidak ada parameter transaction yang dimasukkan, method ini akan otomatis membuat transaction internal.
 
-Setidaknya salah satu dari `filterByTk` atau `filter` harus diteruskan.
+`filterByTk` dan `filter` minimal salah satu harus dimasukkan.

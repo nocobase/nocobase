@@ -1,48 +1,45 @@
 ---
 pkg: "@nocobase/plugin-field-m2m-array"
+title: "Many to Many (Array)"
+description: "Menggunakan field array untuk menyimpan beberapa unique key dari Collection target, membangun relasi Many to Many, seperti artikel-tag many to many, tanpa perlu tabel perantara."
+keywords: "many to many array,M2M Array,relasi array,BelongsToMany,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Many to Many (Array)
 
+## Pengantar
 
-# Banyak-ke-Banyak (Array)
-
-## Pendahuluan
-
-Fitur ini memungkinkan Anda menggunakan kolom array dalam koleksi data untuk menyimpan beberapa kunci unik dari tabel target, sehingga menciptakan relasi banyak-ke-banyak antara kedua tabel. Sebagai contoh, pertimbangkan entitas Artikel dan Tag. Sebuah artikel dapat dihubungkan ke beberapa tag, dengan tabel artikel menyimpan ID dari catatan yang sesuai dari tabel tag dalam sebuah kolom array.
+Mendukung penggunaan field array dalam Collection untuk menyimpan beberapa unique key dari Collection target, sehingga membangun relasi Many to Many dengan Collection target. Contohnya: ada dua entitas artikel dan tag, satu artikel dapat terhubung ke beberapa tag. Dalam Collection artikel, gunakan satu field array untuk menyimpan ID record yang sesuai dari Collection tag.
 
 :::warning{title=Perhatian}
 
-- Sebisa mungkin, disarankan untuk menggunakan koleksi perantara untuk membangun relasi [banyak-ke-banyak](../data-modeling/collection-fields/associations/m2m/index.md) standar, daripada mengandalkan metode ini.
-- Saat ini, hanya PostgreSQL yang mendukung pemfilteran data koleksi sumber menggunakan kolom dari tabel target untuk relasi banyak-ke-banyak yang dibuat dengan kolom array. Sebagai contoh, dalam skenario di atas, Anda dapat memfilter artikel berdasarkan kolom lain di tabel tag, seperti judul.
-
+- Sebisa mungkin gunakan tabel perantara untuk membangun relasi [Many to Many](../data-modeling/collection-fields/associations/m2m/index.md) standar, hindari penggunaan tipe relasi ini.
+- Untuk relasi Many to Many yang dibangun menggunakan field array, saat ini hanya dengan menggunakan PostgreSQL yang mendukung filter data Collection sumber menggunakan field Collection target. Contohnya: pada contoh di atas, menggunakan field lain dari Collection tag, seperti judul, untuk memfilter artikel.
   :::
 
-### Konfigurasi Kolom
+### Konfigurasi Field
 
-![konfigurasi kolom banyak-ke-banyak (array)](https://static-docs.nocobase.com/202407051108180.png)
+![many-to-many(array) field configuration](https://static-docs.nocobase.com/202407051108180.png)
 
-## Deskripsi Parameter
+## Penjelasan Parameter
 
-### Koleksi sumber
+### Source collection
 
-Koleksi sumber, yaitu koleksi tempat kolom ini berada.
+Collection sumber, yaitu Collection tempat field saat ini berada.
 
-### Koleksi target
+### Target collection
 
-Koleksi target, yaitu koleksi yang memiliki relasi.
+Collection target, dengan Collection mana akan dihubungkan.
 
-### Kunci asing (Foreign key)
+### Foreign key
 
-Kolom array di koleksi sumber yang menyimpan kunci target dari tabel target.
+Field array, field di Collection sumber yang menyimpan Target key dari Collection target.
 
-Hubungan yang sesuai untuk tipe kolom array adalah sebagai berikut:
+Korespondensi tipe field array:
 
 | NocoBase | PostgreSQL | MySQL  | SQLite |
 | -------- | ---------- | ------ | ------ |
 | `set`    | `array`    | `JSON` | `JSON` |
 
-### Kunci target (Target key)
+### Target key
 
-Kolom di koleksi target yang sesuai dengan nilai yang disimpan dalam kolom array koleksi sumber. Kolom ini harus unik.
+Field yang sesuai dengan nilai yang disimpan oleh field array Collection sumber, harus memiliki keunikan.

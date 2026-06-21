@@ -1,17 +1,19 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Template Print - Format Array"
+description: "Formatter Format Array Template Print: arrayJoin menggabungkan array menjadi string, mendukung parameter delimiter, indeks, jumlah."
+keywords: "Template Print,Format Array,arrayJoin,NocoBase"
+---
 
-### Pemformatan Array
+### Format Array
 
 #### 1. :arrayJoin(separator, index, count)
 
-##### Penjelasan Sintaksis
-Menggabungkan array berisi string atau angka menjadi satu string.  
+##### Penjelasan Sintaks
+Menggabungkan array string atau angka menjadi satu string.  
 Parameter:
-- **separator:** Pemisah (nilai default adalah koma `,`).
-- **index:** Opsional; indeks awal untuk memulai penggabungan.
-- **count:** Opsional; jumlah item yang akan digabungkan mulai dari `index` (bisa berupa angka negatif untuk menghitung dari akhir).
+- separator: Delimiter (default koma `,`)
+- index: Opsional, mulai bergabung dari indeks ini
+- count: Opsional, jumlah item yang digabung dimulai dari index (dapat negatif, berarti dihitung dari akhir)
 
 ##### Contoh
 ```
@@ -31,16 +33,17 @@ undefined:arrayJoin()                             // Output undefined
 ```
 
 ##### Hasil
-Hasilnya adalah string yang dibuat dengan menggabungkan elemen array sesuai dengan parameter yang ditentukan.
+Output adalah string setelah digabungkan berdasarkan parameter.
+
 
 #### 2. :arrayMap(objSeparator, attSeparator, attributes)
 
-##### Penjelasan Sintaksis
-Mengubah array objek menjadi string. Fungsi ini tidak memproses objek atau array bertingkat (nested).  
+##### Penjelasan Sintaks
+Mengkonversi array objek menjadi string, tidak memproses objek atau array bersarang.  
 Parameter:
-- **objSeparator:** Pemisah antar objek (nilai default adalah `, `).
-- **attSeparator:** Pemisah antar atribut objek (nilai default adalah `:`).
-- **attributes:** Opsional; daftar atribut objek yang akan ditampilkan.
+- objSeparator: Delimiter antar objek (default `, `)
+- attSeparator: Delimiter antar properti objek (default `:`)
+- attributes: Opsional, menentukan daftar properti objek yang akan di-output
 
 ##### Contoh
 ```
@@ -69,21 +72,24 @@ undefined:arrayMap()                  // Output undefined
 ```
 
 ##### Hasil
-Hasilnya adalah string yang dihasilkan dengan memetakan dan menggabungkan elemen array, mengabaikan konten objek bertingkat.
+Output adalah string yang digabungkan, mengabaikan konten bersarang dalam objek.
+
 
 #### 3. :count(start)
 
-##### Penjelasan Sintaksis
-Menghitung nomor baris dalam sebuah array dan menampilkan nomor baris saat ini.  
+##### Penjelasan Sintaks
+Menghitung nomor baris dalam array, dan output nomor baris saat ini.  
 Contoh:
 ```
 {d[i].id:count()}
 ```  
-Terlepas dari nilai `id`, ini akan menampilkan hitungan baris saat ini.  
-Mulai dari v4.0.0, pemformat ini secara internal telah digantikan oleh `:cumCount`.
+Tidak peduli nilai `id`, semua output hitungan baris saat ini.  
+Sejak v4.0.0, formatter ini secara internal telah diganti dengan `:cumCount`.
 
 Parameter:
-- **start:** Opsional; nilai awal untuk hitungan.
+- start: Opsional, nilai awal hitungan
 
 ##### Contoh dan Hasil
-Saat digunakan, nomor baris yang ditampilkan akan sesuai dengan urutan elemen array.
+Saat penggunaan spesifik, nomor baris yang di-output akan ditampilkan sesuai urutan elemen array.
+
+

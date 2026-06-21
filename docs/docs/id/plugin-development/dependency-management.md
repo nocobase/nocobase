@@ -1,23 +1,25 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Manajemen Dependensi Plugin"
+description: "Dependensi plugin NocoBase: package.json, peerDependencies, versi paket @nocobase, deklarasi dependensi antar plugin."
+keywords: "manajemen dependensi,peerDependencies,package.json,dependensi plugin,NocoBase"
+---
 
 # Manajemen Dependensi
 
-Dalam pengembangan **plugin** NocoBase, dependensi dibagi menjadi dua kategori: **dependensi mandiri** dan **dependensi global**.
+Dalam pengembangan plugin NocoBase, dependensi dibagi menjadi dua kategori: **dependensi sendiri** dan **dependensi global**.
 
--   **Dependensi Global**: Disediakan oleh `@nocobase/server` dan `@nocobase/client`. **Plugin** tidak perlu membundelnya secara terpisah.
--   **Dependensi Mandiri**: Dependensi unik **plugin** (termasuk dependensi sisi server) akan dibundel ke dalam artefak **plugin**.
+- **Dependensi global**: Disediakan oleh `@nocobase/server` dan `@nocobase/client-v2`, tidak perlu di-package secara terpisah dalam plugin.
+- **Dependensi sendiri**: Dependensi yang khusus dimiliki plugin (termasuk dependensi server), akan di-package ke dalam hasil produksi plugin.
 
 ## Prinsip Pengembangan
 
-Karena dependensi mandiri akan dibundel ke dalam artefak **plugin** (termasuk dependensi server yang akan dibundel ke `dist/node_modules`), maka saat mengembangkan **plugin**, Anda dapat mendeklarasikan semua dependensi di `devDependencies` daripada di `dependencies`. Hal ini dapat menghindari perbedaan antara lingkungan pengembangan dan lingkungan produksi.
+Karena dependensi sendiri akan di-package ke dalam hasil produksi plugin (dependensi server akan di-package ke `dist/node_modules`), Anda dapat mendeklarasikan semua dependensi di `devDependencies` daripada `dependencies`. Cara ini menghindari perbedaan antara environment development dengan production.
 
-Ketika sebuah **plugin** perlu menginstal dependensi berikut, pastikan **nomor versi** sesuai dengan dependensi global di `@nocobase/server` dan `@nocobase/client`, jika tidak, dapat menyebabkan konflik saat runtime.
+Ketika plugin perlu menggunakan dependensi berikut, pastikan **nomor versi** sama dengan dependensi global di `@nocobase/server` dan `@nocobase/client-v2`, jika tidak dapat menyebabkan konflik runtime.
 
 ## Dependensi Global
 
-Dependensi berikut disediakan oleh NocoBase dan tidak perlu dibundel dalam **plugin**. Jika memang diperlukan, dependensi tersebut harus sesuai dengan versi framework.
+Dependensi berikut disediakan oleh NocoBase, tidak perlu di-package dalam plugin. Jika memang perlu digunakan, harus menjaga konsistensi dengan versi NocoBase.
 
 ``` js
 // nocobase core
@@ -25,7 +27,7 @@ Dependensi berikut disediakan oleh NocoBase dan tidak perlu dibundel dalam **plu
 '@nocobase/actions',
 '@nocobase/auth',
 '@nocobase/cache',
-'@nocobase/client',
+'@nocobase/client-v2',
 '@nocobase/database',
 '@nocobase/evaluators',
 '@nocobase/logger',
@@ -102,7 +104,7 @@ Dependensi berikut disediakan oleh NocoBase dan tidak perlu dibundel dalam **plu
 '@formily/reactive',
 '@formily/reactive-react',
 
-// Common utilities
+// Utility umum
 'dayjs',
 'mysql2',
 'pg',
@@ -114,13 +116,20 @@ Dependensi berikut disediakan oleh NocoBase dan tidak perlu dibundel dalam **plu
 'lodash',
 ```
 
-## Rekomendasi Pengembangan
+## Saran Pengembangan
 
-1.  **Pertahankan Konsistensi Dependensi**
-    Jika Anda perlu menggunakan paket yang sudah ada dalam dependensi global, hindari menginstal versi yang berbeda, dan gunakan langsung dependensi global tersebut.
+1.  **Menjaga Konsistensi Dependensi**\
+    Jika dependensi global sudah memiliki suatu paket, gunakan versi global secara langsung, jangan menginstal versi yang berbeda.
 
-2.  **Minimalkan Ukuran Bundel**
-    Untuk pustaka UI umum (seperti `antd`), pustaka utilitas (seperti `lodash`), driver basis data (seperti `pg`, `mysql2`), Anda harus mengandalkan versi yang disediakan secara global untuk menghindari pembundelan ganda.
+2.  **Meminimalkan Ukuran Package**\
+    Library UI yang umum (seperti `antd`), library utility (seperti `lodash`), driver database (seperti `pg`, `mysql2`), semuanya harus menggunakan versi yang disediakan secara global, untuk menghindari packaging berulang.
 
-3.  **Konsistensi antara Lingkungan Debug dan Produksi**
-    Menggunakan `devDependencies` dapat memastikan konsistensi antara pengembangan dan artefak akhir, menghindari perbedaan lingkungan yang disebabkan oleh konfigurasi `dependencies` dan `peerDependencies` yang tidak tepat.
+3.  **Konsistensi Debug dan Production**\
+    Menggunakan `devDependencies` cukup untuk memastikan konsistensi antara development dan hasil akhir, menghindari perbedaan environment akibat konfigurasi `dependencies` dan `peerDependencies` yang tidak tepat.
+
+## Tautan Terkait
+
+- [Build & Packaging](./build.md) — Konfigurasi build dan packaging plugin
+- [Struktur Direktori Proyek](./project-structure.md) — Cara organisasi file plugin
+- [Menulis Plugin Pertama](./write-your-first-plugin.md) — Membuat plugin dari nol
+- [Ikhtisar Plugin Development](./index.md) — Pengantar menyeluruh tentang plugin development

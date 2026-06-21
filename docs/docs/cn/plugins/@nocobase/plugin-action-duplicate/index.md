@@ -1,4 +1,6 @@
 ---
+title: "操作：复制记录"
+keywords: "操作：复制记录,插件,NocoBase"
 displayName: "操作：复制记录"
 packageName: '@nocobase/plugin-action-duplicate'
 supportedVersions:

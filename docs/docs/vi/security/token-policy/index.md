@@ -1,68 +1,68 @@
 ---
 pkg: '@nocobase/plugin-auth'
+title: "Chính sách bảo mật Token"
+description: "Chính sách bảo mật Token: cấu hình thời hạn session, chu kỳ hiệu lực Token, thời hạn refresh Token đã hết hạn, xác thực JWT, cơ chế tự động refresh, điểm vào cài đặt plugin - Bảo mật."
+keywords: "Chính sách bảo mật Token,thời hạn session,thời hạn Token,JWT,tự động refresh,cấu hình bảo mật,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Chính sách bảo mật Token
 
 ## Giới thiệu
 
-Chính sách bảo mật Token là một cấu hình chức năng được thiết kế để bảo vệ an toàn hệ thống và nâng cao trải nghiệm người dùng. Chính sách này bao gồm ba mục cấu hình chính: "Thời hạn hiệu lực phiên", "Thời hạn hiệu lực Token" và "Thời gian giới hạn làm mới Token hết hạn".
+Chính sách bảo mật Token là một cấu hình tính năng dùng để bảo vệ bảo mật hệ thống và trải nghiệm. Bao gồm ba mục cấu hình chính: "Thời hạn session", "Chu kỳ hiệu lực Token" và "Thời hạn refresh Token đã hết hạn".
 
-## Vị trí cấu hình
+## Điểm vào cấu hình
 
-Bạn có thể tìm thấy cấu hình này tại Cài đặt plugin - Bảo mật - Chính sách Token:
+Điểm vào cấu hình ở Cài đặt plugin - Bảo mật - Chính sách Token:
 
 ![20250105111821-2025-01-05-11-18-24](https://static-docs.nocobase.com/20250105111821-2025-01-05-11-18-24.png)
 
-## Thời hạn hiệu lực phiên
+## Thời hạn session
 
 **Định nghĩa:**
 
-Thời hạn hiệu lực phiên là khoảng thời gian tối đa mà hệ thống cho phép người dùng duy trì phiên hoạt động sau khi đăng nhập.
+Thời hạn session là thời gian tối đa hệ thống cho phép người dùng giữ session hoạt động sau khi đăng nhập.
 
 **Tác dụng:**
 
-Khi vượt quá thời hạn hiệu lực phiên, người dùng sẽ nhận được phản hồi lỗi 401 khi truy cập lại hệ thống. Sau đó, hệ thống sẽ chuyển hướng người dùng đến trang đăng nhập để xác thực lại.
+Sau khi vượt quá thời hạn session, khi người dùng truy cập lại hệ thống sẽ nhận được lỗi 401, sau đó hệ thống sẽ chuyển hướng người dùng đến trang đăng nhập để xác thực lại.
 Ví dụ:
-Nếu thời hạn hiệu lực phiên được đặt là 8 giờ, tính từ thời điểm người dùng đăng nhập và không có tương tác bổ sung nào, phiên sẽ hết hạn sau 8 giờ.
+Nếu thời hạn session được đặt là 8 giờ, người dùng từ khi đăng nhập bắt đầu tính, trong trường hợp không có tương tác bổ sung, session sẽ hết hiệu lực sau 8 giờ.
 
-**Cài đặt đề xuất:**
+**Khuyến nghị cài đặt:**
 
-- Đối với các kịch bản thao tác ngắn hạn: Nên đặt từ 1-2 giờ để tăng cường bảo mật.
-- Đối với các kịch bản làm việc dài hạn: Có thể đặt là 8 giờ để phù hợp với nhu cầu kinh doanh.
+- Tình huống thao tác ngắn hạn: Khuyến nghị 1-2 giờ để tăng cường bảo mật.
+- Tình huống làm việc dài hạn: Có thể đặt thành 8 giờ để phù hợp với nhu cầu nghiệp vụ.
 
-## Thời hạn hiệu lực Token
+## Thời hạn Token
 
 **Định nghĩa:**
 
-Thời hạn hiệu lực Token là vòng đời của mỗi Token được hệ thống cấp trong phiên hoạt động của người dùng.
+Thời hạn Token là vòng đời của mỗi Token được hệ thống cấp phát trong session hoạt động của người dùng.
 
 **Tác dụng:**
 
-Khi Token hết hạn, hệ thống sẽ tự động cấp một Token mới để duy trì phiên hoạt động.
-Mỗi Token đã hết hạn chỉ được phép làm mới một lần.
+Khi Token hết hạn, hệ thống sẽ tự động cấp phát Token mới để duy trì session hoạt động.
+Mỗi Token đã hết hạn chỉ cho phép refresh một lần.
 
-**Cài đặt đề xuất:**
+**Khuyến nghị cài đặt:**
 
-Vì lý do bảo mật, nên đặt trong khoảng từ 15 đến 30 phút.
-Có thể điều chỉnh tùy theo yêu cầu của kịch bản. Ví dụ:
-- Các kịch bản bảo mật cao: Thời hạn hiệu lực Token có thể rút ngắn xuống 10 phút hoặc ít hơn.
-- Các kịch bản rủi ro thấp: Thời hạn hiệu lực Token có thể kéo dài hợp lý đến 1 giờ.
+Vì lý do bảo mật, khuyến nghị đặt từ 15 đến 30 phút.
+Có thể điều chỉnh theo nhu cầu tình huống. Ví dụ:
+Tình huống bảo mật cao: Thời hạn Token có thể rút ngắn xuống 10 phút hoặc thấp hơn.
+Tình huống rủi ro thấp: Thời hạn Token có thể kéo dài thích hợp lên 1 giờ.
 
-## Thời gian giới hạn làm mới Token hết hạn
+## Thời hạn refresh Token đã hết hạn
 
 **Định nghĩa:**
 
-Thời gian giới hạn làm mới Token hết hạn là khoảng thời gian tối đa cho phép người dùng lấy lại Token mới thông qua thao tác làm mới sau khi Token đã hết hạn.
+Thời hạn refresh Token đã hết hạn là khoảng thời gian tối đa cho phép người dùng lấy Token mới thông qua thao tác refresh sau khi Token hết hạn.
 
 **Đặc điểm:**
 
-- Nếu vượt quá thời gian giới hạn làm mới, người dùng phải đăng nhập lại để lấy Token mới.
-- Thao tác làm mới sẽ không kéo dài thời hạn hiệu lực phiên, mà chỉ tạo lại Token.
+Nếu vượt quá thời hạn refresh, người dùng phải đăng nhập lại để lấy Token mới.
+Thao tác refresh sẽ không kéo dài thời hạn session, chỉ tạo lại Token.
 
-**Cài đặt đề xuất:**
+**Khuyến nghị cài đặt:**
 
-Vì lý do bảo mật, nên đặt trong khoảng từ 5 đến 10 phút.
+Vì lý do bảo mật, khuyến nghị đặt từ 5 đến 10 phút.

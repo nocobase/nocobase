@@ -74,7 +74,7 @@ interface FlowSQLRepository {
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `bind` | `Record<string, any>` \| `any[]` | Bound variables. Object with `:name`, array with `?` |
+| `bind` | `Record<string, any>` | Bound variables. Use `$name` in SQL and pass object `{ name: value }` |
 | `type` | `'selectRows'` \| `'selectRow'` \| `'selectVar'` | Result type: multiple rows, single row, single value; default `selectRows` |
 | `dataSourceKey` | `string` | Data source key; default is main data source |
 | `filter` | `Record<string, any>` | Extra filter (if supported) |
@@ -84,7 +84,7 @@ interface FlowSQLRepository {
 | Option | Type | Description |
 |--------|------|-------------|
 | `uid` | `string` | Template unique id; use with `runById(uid, ...)` |
-| `sql` | `string` | SQL text; supports `{{ctx.xxx}}` and `:name` / `?` placeholders |
+| `sql` | `string` | SQL text; supports `{{ctx.xxx}}` and `$name` placeholders |
 | `dataSourceKey` | `string` | Optional data source key |
 
 ## Template Variables and Parameter Binding
@@ -105,20 +105,12 @@ Variable sources are the same as for `ctx.getVar()` (e.g. `ctx.user.*`, `ctx.rec
 
 ### Parameter binding
 
-- **Named**: use `:name` in SQL and pass `bind: { name: value }`
-- **Positional**: use `?` in SQL and pass `bind: [value1, value2]`
+- Use `$name` in SQL and pass `bind: { name: value }`
 
 ```js
-// Named
 const users = await ctx.sql.run(
-  'SELECT * FROM users WHERE status = :status AND age > :minAge',
+  'SELECT * FROM users WHERE status = $status AND age > $minAge',
   { bind: { status: 'active', minAge: 18 }, type: 'selectRows' }
-);
-
-// Positional
-const count = await ctx.sql.run(
-  'SELECT COUNT(*) AS total FROM users WHERE city = ? AND status = ?',
-  { bind: ['Beijing', 'active'], type: 'selectVar' }
 );
 ```
 
@@ -132,7 +124,7 @@ const rows = await ctx.sql.run('SELECT * FROM users LIMIT 10');
 
 // Single row
 const user = await ctx.sql.run(
-  'SELECT * FROM users WHERE id = :id',
+  'SELECT * FROM users WHERE id = $id',
   { bind: { id: 1 }, type: 'selectRow' }
 );
 
@@ -160,7 +152,7 @@ const rows = await ctx.sql.run(
 // Save (requires SQL config permission)
 await ctx.sql.save({
   uid: 'active-users-report',
-  sql: 'SELECT * FROM users WHERE status = :status ORDER BY created_at DESC',
+  sql: 'SELECT * FROM users WHERE status = $status ORDER BY created_at DESC',
 });
 
 // Any logged-in user can run
@@ -197,7 +189,7 @@ const meta = ctx.resource.getMeta();  // page, pageSize, etc.
 
 ## Notes
 
-- Use parameter binding (`:name` / `?`) instead of string concatenation to avoid SQL injection.
+- Use parameter binding (`$name`) instead of string concatenation to avoid SQL injection.
 - With `type: 'selectVar'` the result is a scalar (e.g. for `COUNT`, `SUM`).
 - Template variables `{{ctx.xxx}}` are resolved before execution; ensure the context defines them.
 

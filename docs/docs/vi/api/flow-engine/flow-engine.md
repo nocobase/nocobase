@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "FlowEngine"
+description: "API FlowEngine của NocoBase: tạo model với createModel, instance FlowModel."
+keywords: "FlowEngine,createModel,FlowModel,frontend,NocoBase"
+---
 
 # FlowEngine
 
-## createModel()
+## createModelAsync()
 
 * **Kiểu**: `string`
 * **Giá trị mặc định**: `docs`

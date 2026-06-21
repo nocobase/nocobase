@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "ActionDefinition Định nghĩa Action"
+description: "ActionDefinition định nghĩa các Action có thể tái sử dụng, có thể được tham chiếu trong nhiều Flow và Step, đóng gói handler, uiSchema, defaultParams, là đơn vị thực thi cốt lõi của FlowEngine."
+keywords: "ActionDefinition,định nghĩa Action,handler,uiSchema,defaultParams,Flow Step,FlowEngine,NocoBase"
+---
 
 # ActionDefinition
 
-ActionDefinition định nghĩa các hành động có thể tái sử dụng, những hành động này có thể được tham chiếu trong nhiều luồng công việc và bước khác nhau. Một hành động là đơn vị thực thi cốt lõi trong FlowEngine, đóng gói logic nghiệp vụ cụ thể.
+ActionDefinition định nghĩa các Action có thể tái sử dụng, các Action này có thể được tham chiếu trong nhiều Flow và Step. Action là đơn vị thực thi cốt lõi trong Flow engine, đóng gói logic nghiệp vụ cụ thể.
 
 ## Định nghĩa kiểu
 
@@ -25,7 +26,7 @@ interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx extends Fl
 }
 ```
 
-## Cách thức đăng ký
+## Cách đăng ký
 
 ```ts
 // Đăng ký toàn cục (qua FlowEngine)
@@ -38,7 +39,7 @@ engine.registerAction({
   }
 });
 
-// Đăng ký cấp mô hình (qua FlowModel)
+// Đăng ký cấp Model (qua FlowModel)
 class MyModel extends FlowModel {}
 MyModel.registerAction({
   name: 'processDataAction',
@@ -48,15 +49,15 @@ MyModel.registerAction({
   }
 });
 
-// Sử dụng trong một luồng công việc
+// Sử dụng trong Flow
 MyModel.registerFlow({
   key: 'dataFlow',
   steps: {
     step1: {
-      use: 'loadDataAction',  // Tham chiếu hành động toàn cục
+      use: 'loadDataAction',  // Tham chiếu Action toàn cục
     },
     step2: {
-      use: 'processDataAction', // Tham chiếu hành động cấp mô hình
+      use: 'processDataAction', // Tham chiếu Action cấp Model
     }
   }
 });
@@ -68,9 +69,9 @@ MyModel.registerFlow({
 
 **Kiểu**: `string`  
 **Bắt buộc**: Có  
-**Mô tả**: Định danh duy nhất cho hành động
+**Mô tả**: Định danh duy nhất của Action
 
-Dùng để tham chiếu hành động trong một bước thông qua thuộc tính `use`.
+Dùng để tham chiếu Action trong Step thông qua thuộc tính `use`.
 
 **Ví dụ**:
 ```ts
@@ -83,9 +84,9 @@ name: 'saveDataAction'
 
 **Kiểu**: `string`  
 **Bắt buộc**: Không  
-**Mô tả**: Tiêu đề hiển thị của hành động
+**Mô tả**: Tiêu đề hiển thị của Action
 
-Dùng cho việc hiển thị trên giao diện người dùng và gỡ lỗi.
+Dùng để hiển thị trên giao diện và debug.
 
 **Ví dụ**:
 ```ts
@@ -98,9 +99,9 @@ title: 'Save Results'
 
 **Kiểu**: `(ctx: TCtx, params: any) => Promise<any> | any`  
 **Bắt buộc**: Có  
-**Mô tả**: Hàm xử lý cho hành động
+**Mô tả**: Hàm xử lý của Action
 
-Đây là logic cốt lõi của hành động, nhận vào ngữ cảnh và các tham số, sau đó trả về kết quả xử lý.
+Logic cốt lõi của Action, nhận ctx và params, trả về kết quả xử lý.
 
 **Ví dụ**:
 ```ts
@@ -130,9 +131,9 @@ handler: async (ctx, params) => {
 
 **Kiểu**: `Record<string, any> | ((ctx: TCtx) => Record<string, any> | Promise<Record<string, any>>)`  
 **Bắt buộc**: Không  
-**Mô tả**: Các tham số mặc định cho hành động
+**Mô tả**: Tham số mặc định của Action
 
-Điền các giá trị mặc định cho tham số trước khi hành động được thực thi.
+Trước khi Action thực thi, điền giá trị mặc định cho tham số.
 
 **Ví dụ**:
 ```ts
@@ -167,9 +168,9 @@ defaultParams: async (ctx) => {
 
 **Kiểu**: `Record<string, ISchema> | ((ctx: TCtx) => Record<string, ISchema> | Promise<Record<string, ISchema>>)`  
 **Bắt buộc**: Không  
-**Mô tả**: Schema cấu hình giao diện người dùng (UI) cho hành động
+**Mô tả**: Schema cấu hình UI của Action
 
-Định nghĩa cách hành động được hiển thị trong UI và cấu hình biểu mẫu của nó.
+Định nghĩa cách Action hiển thị trên giao diện và cấu hình form.
 
 **Ví dụ**:
 ```ts
@@ -211,9 +212,9 @@ uiSchema: {
 
 **Kiểu**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Bắt buộc**: Không  
-**Mô tả**: Hàm hook được thực thi trước khi lưu tham số
+**Mô tả**: Hook trước khi lưu tham số
 
-Được thực thi trước khi các tham số của hành động được lưu, có thể dùng để xác thực hoặc chuyển đổi tham số.
+Thực thi trước khi lưu tham số Action, có thể dùng để xác thực hoặc chuyển đổi tham số.
 
 **Ví dụ**:
 ```ts
@@ -229,7 +230,7 @@ beforeParamsSave: (ctx, params, previousParams) => {
     params.url = 'https://' + params.url;
   }
   
-  // Ghi lại thay đổi
+  // Ghi nhận thay đổi
   console.log('Parameters changed:', {
     from: previousParams,
     to: params
@@ -241,24 +242,24 @@ beforeParamsSave: (ctx, params, previousParams) => {
 
 **Kiểu**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Bắt buộc**: Không  
-**Mô tả**: Hàm hook được thực thi sau khi lưu tham số
+**Mô tả**: Hook sau khi lưu tham số
 
-Được thực thi sau khi các tham số của hành động được lưu, có thể dùng để kích hoạt các thao tác khác.
+Thực thi sau khi lưu tham số Action, có thể dùng để kích hoạt các thao tác khác.
 
 **Ví dụ**:
 ```ts
 afterParamsSave: (ctx, params, previousParams) => {
-  // Ghi nhật ký
+  // Ghi log
   console.log('Action params saved:', params);
   
-  // Kích hoạt sự kiện
+  // Kích hoạt event
   ctx.model.emitter.emit('actionParamsChanged', {
     actionName: 'loadDataAction',
     params,
     previousParams
   });
   
-  // Cập nhật bộ nhớ đệm
+  // Cập nhật cache
   ctx.model.updateCache('actionParams', params);
 }
 ```
@@ -267,9 +268,9 @@ afterParamsSave: (ctx, params, previousParams) => {
 
 **Kiểu**: `boolean | ((ctx: TCtx) => boolean | Promise<boolean>)`  
 **Bắt buộc**: Không  
-**Mô tả**: Có sử dụng tham số thô hay không
+**Mô tả**: Có sử dụng tham số gốc hay không
 
-Nếu là `true`, các tham số thô sẽ được truyền trực tiếp đến hàm xử lý mà không qua bất kỳ quá trình xử lý nào.
+Nếu là `true`, sẽ truyền tham số gốc trực tiếp cho hàm xử lý mà không qua bất kỳ xử lý nào.
 
 **Ví dụ**:
 ```ts
@@ -286,15 +287,15 @@ useRawParams: (ctx) => {
 
 **Kiểu**: `StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>)`  
 **Bắt buộc**: Không  
-**Mô tả**: Chế độ hiển thị UI cho hành động
+**Mô tả**: Chế độ hiển thị UI của Action
 
-Kiểm soát cách hành động được hiển thị trong UI.
+Điều khiển cách hiển thị Action trên giao diện.
 
-**Các chế độ được hỗ trợ**:
+**Các chế độ hỗ trợ**:
 - `'dialog'` - Chế độ hộp thoại
-- `'drawer'` - Chế độ ngăn kéo
+- `'drawer'` - Chế độ drawer
 - `'embed'` - Chế độ nhúng
-- hoặc một đối tượng cấu hình tùy chỉnh
+- Hoặc đối tượng cấu hình tùy chỉnh
 
 **Ví dụ**:
 ```ts
@@ -321,34 +322,34 @@ uiMode: (ctx) => {
 
 **Kiểu**: `ActionScene | ActionScene[]`  
 **Bắt buộc**: Không  
-**Mô tả**: Các kịch bản sử dụng cho hành động
+**Mô tả**: Kịch bản sử dụng của Action
 
-Giới hạn hành động chỉ được sử dụng trong các kịch bản cụ thể.
+Giới hạn Action chỉ được sử dụng trong các kịch bản nhất định.
 
-**Các kịch bản được hỗ trợ**:
-- `'settings'` - Kịch bản cài đặt
-- `'runtime'` - Kịch bản thời gian chạy
-- `'design'` - Kịch bản thời gian thiết kế
+**Các kịch bản hỗ trợ**:
+- `'settings'` - Kịch bản cấu hình
+- `'runtime'` - Kịch bản runtime
+- `'design'` - Kịch bản thiết kế
 
 **Ví dụ**:
 ```ts
-scene: 'settings'  // Chỉ sử dụng trong kịch bản cài đặt
-scene: ['settings', 'runtime']  // Sử dụng trong kịch bản cài đặt và thời gian chạy
+scene: 'settings'  // Chỉ dùng trong kịch bản cấu hình
+scene: ['settings', 'runtime']  // Dùng trong kịch bản cấu hình và runtime
 ```
 
 ### sort
 
 **Kiểu**: `number`  
 **Bắt buộc**: Không  
-**Mô tả**: Trọng số sắp xếp cho hành động
+**Mô tả**: Trọng số sắp xếp của Action
 
-Dùng để kiểm soát thứ tự hiển thị của hành động trong danh sách. Giá trị càng nhỏ thì vị trí càng cao (hiển thị trước).
+Dùng để điều khiển thứ tự hiển thị của Action trong danh sách, giá trị càng nhỏ càng đứng trước.
 
 **Ví dụ**:
 ```ts
-sort: 0  // Vị trí cao nhất
-sort: 10 // Vị trí trung bình
-sort: 100 // Vị trí thấp hơn
+sort: 0  // Đứng đầu
+sort: 10 // Vị trí giữa
+sort: 100 // Đứng sau
 ```
 
 ## Ví dụ đầy đủ
@@ -356,7 +357,7 @@ sort: 100 // Vị trí thấp hơn
 ```ts
 class DataProcessingModel extends FlowModel {}
 
-// Đăng ký hành động tải dữ liệu
+// Đăng ký Action tải dữ liệu
 DataProcessingModel.registerAction({
   name: 'loadDataAction',
   title: 'Load Data',
@@ -433,7 +434,7 @@ DataProcessingModel.registerAction({
   sort: 0
 });
 
-// Đăng ký hành động xử lý dữ liệu
+// Đăng ký Action xử lý dữ liệu
 DataProcessingModel.registerAction({
   name: 'processDataAction',
   title: 'Process Data',

@@ -1,7 +1,8 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Plugin (Client)"
+description: "API Plugin phía client của NocoBase: instance Plugin frontend, engine, v.v."
+keywords: "Plugin,Plugin client,engine,API Plugin frontend,NocoBase"
+---
 
 # Plugin
 

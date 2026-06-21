@@ -1,14 +1,16 @@
 ---
-displayName: "Custom variables"
+displayName: "Biến tùy chỉnh"
 packageName: '@nocobase/plugin-custom-variables'
+title: "Biến tùy chỉnh"
+keywords: "Biến tùy chỉnh,Plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Support for adding and using custom variables
-isFree: false
-builtIn: false
+  Hỗ trợ thêm và sử dụng biến tùy chỉnh.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Custom variables
+# Biến tùy chỉnh

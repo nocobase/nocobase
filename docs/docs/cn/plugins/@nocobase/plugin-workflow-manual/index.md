@@ -1,4 +1,6 @@
 ---
+title: "工作流：人工处理节点"
+keywords: "工作流：人工处理节点,插件,NocoBase"
 displayName: "工作流：人工处理节点"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |

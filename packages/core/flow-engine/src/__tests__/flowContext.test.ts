@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import axios from 'axios';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import { FlowContext, FlowRuntimeContext, FlowRunJSContext, type PropertyMetaFactory } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
@@ -157,6 +158,23 @@ describe('FlowContext properties and methods', () => {
     const ctx = new FlowContext();
     ctx.addDelegate(delegate);
     expect(ctx.shared).toBe('from delegate');
+  });
+
+  it('should expose current language as a top-level variable', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
+    ctx.defineProperty('i18n', { value: { language: 'en-US' } });
+
+    expect(ctx.locale).toBe('zh-CN');
+    await expect(ctx.resolveJsonTemplate('{{ ctx.locale }}')).resolves.toBe('zh-CN');
+
+    const localeNode = ctx.getPropertyMetaTree().find((node) => node.name === 'locale');
+    expect(localeNode).toMatchObject({
+      name: 'locale',
+      title: '{{t("Current language")}}',
+      paths: ['locale'],
+    });
   });
 
   it('should throw sync error in get', () => {
@@ -776,6 +794,29 @@ describe('FlowContext.getApiInfos', () => {
     const infos = await ctx.getApiInfos();
     expect((infos.bar as any)?.completion).toBeUndefined();
     expect((infos.bar?.ref as any)?.url).toBe('https://example.com');
+  });
+
+  it('should include completion only when requested by getApiInfos()', async () => {
+    const ctx = new FlowContext();
+    ctx.defineMethod('bar', () => 2, {
+      description: 'Bar',
+      completion: { insertText: 'ctx.bar()' },
+    });
+    ctx.defineProperty('token', {
+      value: 't',
+      info: {
+        description: 'Token string',
+        completion: { insertText: 'ctx.token' },
+      },
+    });
+
+    const compact = await ctx.getApiInfos();
+    expect((compact.bar as any)?.completion).toBeUndefined();
+    expect((compact.token as any)?.completion).toBeUndefined();
+
+    const editorInfos = await ctx.getApiInfos({ includeCompletion: true });
+    expect((editorInfos.bar as any)?.completion?.insertText).toBe('ctx.bar()');
+    expect((editorInfos.token as any)?.completion?.insertText).toBe('ctx.token');
   });
 
   it('should return property infos with completion/ref/examples', async () => {
@@ -1627,6 +1668,69 @@ describe('runAction delegation from runtime context', () => {
     const res = await ctx.runAction('echo', { x: '{{ ctx.model.uid }}' });
     expect(res.mode).toBe('runtime');
     expect(res.x).toBe(model.uid);
+  });
+});
+
+describe('FlowContext request defaults', () => {
+  class RequestModel extends FlowModel {}
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const createRequestContext = () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RequestModel });
+
+    const apiRequest = vi.fn(async (options) => options);
+    const app = {
+      getApiUrl(pathname = '') {
+        return 'https://app.example.com/api/'.replace(/\/$/g, '') + '/' + pathname.replace(/^\//g, '');
+      },
+    };
+
+    engine.context.defineProperty('api', { value: { request: apiRequest } as any });
+    engine.context.defineProperty('app', { value: app });
+
+    const model = engine.createModel({ use: 'RequestModel' });
+    const ctx = new FlowRuntimeContext(model, 'flow');
+    const directAxiosRequest = vi.spyOn(axios, 'request').mockResolvedValue({ data: {} } as any);
+
+    return { ctx, apiRequest, directAxiosRequest };
+  };
+
+  it.each([
+    ['apiClient', 'users:list', 'api'],
+    ['apiClient', '/api/users:list', 'api'],
+    ['apiClient', 'https://app.example.com/api/users:list', 'api'],
+    ['direct axios', 'https://app.example.com/custom-api/users', 'axios'],
+  ])('should use %s for %s', async (_target, url, expected) => {
+    const { ctx, apiRequest, directAxiosRequest } = createRequestContext();
+
+    await ctx.request({ url, method: 'get' });
+
+    if (expected === 'api') {
+      expect(apiRequest).toHaveBeenCalledTimes(1);
+      expect(directAxiosRequest).not.toHaveBeenCalled();
+      return;
+    }
+
+    expect(directAxiosRequest).toHaveBeenCalledTimes(1);
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it('should use direct axios for cross-origin absolute urls', async () => {
+    const { ctx, apiRequest, directAxiosRequest } = createRequestContext();
+
+    await ctx.request({ url: 'https://api.example.com/users', method: 'get', skipAuth: false });
+
+    expect(directAxiosRequest).toHaveBeenCalledTimes(1);
+    expect(apiRequest).not.toHaveBeenCalled();
+    expect(directAxiosRequest.mock.calls[0][0]).toMatchObject({
+      url: 'https://api.example.com/users',
+      method: 'get',
+      skipAuth: false,
+    });
   });
 });
 

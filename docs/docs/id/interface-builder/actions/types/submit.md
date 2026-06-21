@@ -1,27 +1,30 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Submit"
+description: "Action Submit: submit data Form, simpan ke data source, mendukung validasi Form, refresh setelah submit."
+keywords: "Action Submit, Submit, submit Form, simpan data, interface builder, NocoBase"
+---
 
 # Submit
 
-## Pendahuluan
+## Pengantar
 
-Tindakan Submit digunakan untuk menyimpan data formulir (khusus untuk blok formulir). Tindakan ini juga dapat digabungkan dengan **alur kerja** untuk menerapkan proses data otomatis.
+Action Submit digunakan untuk menyimpan data Form (khusus Block Form), juga dapat dikombinasikan dengan workflow untuk mengimplementasikan alur otomasi data.
 
 ![20251029190938](https://static-docs.nocobase.com/20251029190938.png)
-
-## Konfigurasi Tindakan
+## Konfigurasi Action
 
 ![20251029190958](https://static-docs.nocobase.com/20251029190958.png)
 
-### Mengikatkan ke alur kerja
 
-**Alur kerja** yang terikat akan terpicu hanya setelah data berhasil di-submit.
+### Bind Workflow
+
+Workflow yang di-bind hanya akan trigger setelah submit data berhasil.
 
 ![20251029191045](https://static-docs.nocobase.com/20251029191045.png)
 
-Untuk detail lebih lanjut, lihat [Mengikatkan ke alur kerja](/interface-builder/actions/action-settings/bind-workflow)
+Untuk informasi lebih lanjut, silakan lihat [Bind Workflow](/interface-builder/actions/action-settings/bind-workflow)
 
-- [Tombol Edit](/interface-builder/actions/action-settings/edit-button)
-- [Konfirmasi Ulang](/interface-builder/actions/action-settings/double-check)
-- [Aturan Keterkaitan](/interface-builder/linkage-rule): Mengontrol status tombol secara dinamis;
+
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button)
+- [Konfirmasi Ganda](/interface-builder/actions/action-settings/double-check)
+- [Aturan Linkage](/interface-builder/linkage-rule): kontrol status tombol secara dinamis;

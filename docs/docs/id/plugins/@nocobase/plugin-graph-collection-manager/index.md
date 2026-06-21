@@ -1,12 +1,14 @@
 ---
-displayName: "Graph collection manager"
+displayName: "Manajemen Collection Visual"
 packageName: '@nocobase/plugin-graph-collection-manager'
+title: "Manajemen Collection Visual"
+keywords: "Manajemen Collection Visual,Plugin,NocoBase"
 description: |
-  An ER diagram-like tool. Currently only the Master database is supported.
+  Alat seperti diagram ER, saat ini hanya mendukung database utama.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Graph collection manager
+# Manajemen Collection Visual

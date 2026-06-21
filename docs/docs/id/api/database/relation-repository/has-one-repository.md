@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "HasOneRepository"
+description: "Repository relasi HasOne NocoBase: menangani CRUD untuk relasi one-to-one, antarmukanya konsisten dengan BelongsToRepository."
+keywords: "HasOneRepository,HasOne,one-to-one,Repository,NocoBase"
+---
 
 # HasOneRepository
 
-## Gambaran Umum
+## Ikhtisar
 
-`HasOneRepository` adalah repository untuk asosiasi tipe `HasOne`.
+`HasOneRepository` adalah Repository asosiasi tipe `HasOne`.
 
 ```typescript
 const User = db.collection({
@@ -26,22 +28,22 @@ const user = await User.repository.create({
   values: { name: 'u1' },
 });
 
-// Mendapatkan repository asosiasi
+// Mendapatkan Repository asosiasi
 const userProfileRepository = User.repository
   .relation('profile')
   .of(user.get('id'));
 
-// Dapat juga diinisialisasi secara langsung
+// Atau dapat langsung diinisialisasi
 new HasOneRepository(User, 'profile', user.get('id'));
 ```
 
-## Metode Kelas
+## Method Class
 
 ### `find()`
 
 Mencari objek terkait
 
-**Tanda Tangan**
+**Signature**
 
 - `async find(options?: SingleRelationFindOption): Promise<Model<any> | null>`
 
@@ -58,20 +60,20 @@ interface SingleRelationFindOption extends Transactionable {
 
 **Detail**
 
-Parameter kueri sama dengan [`Repository.find()`](../repository.md#find).
+Parameter query konsisten dengan [`Repository.find()`](../repository.md#find).
 
 **Contoh**
 
 ```typescript
 const profile = await UserProfileRepository.find();
-// Mengembalikan null jika objek terkait tidak ada
+// Saat objek terkait tidak ada, mengembalikan null
 ```
 
 ### `create()`
 
 Membuat objek terkait
 
-**Tanda Tangan**
+**Signature**
 
 - `async create(options?: CreateOptions): Promise<Model>`
 
@@ -100,7 +102,7 @@ console.log(profile.toJSON());
 
 Memperbarui objek terkait
 
-**Tanda Tangan**
+**Signature**
 
 - `async update(options: UpdateOptions): Promise<Model>`
 
@@ -118,15 +120,15 @@ profile.get('avatar'); // 'avatar2'
 
 ### `remove()`
 
-Menghapus objek terkait. Ini hanya melepaskan asosiasi, tidak menghapus objek terkait.
+Menghapus objek terkait, hanya melepaskan asosiasi, tidak menghapus objek terkait
 
-**Tanda Tangan**
+**Signature**
 
 - `async remove(options?: Transactionable): Promise<void>`
 
 **Detail**
 
-- `transaction`: Objek transaksi. Jika parameter transaksi tidak diberikan, metode ini akan secara otomatis membuat transaksi internal.
+- `transaction`: Objek transaction. Jika tidak ada parameter transaction yang dimasukkan, method ini akan otomatis membuat transaction internal.
 
 **Contoh**
 
@@ -141,13 +143,13 @@ await UserProfileRepository.remove();
 
 Menghapus objek terkait
 
-**Tanda Tangan**
+**Signature**
 
 - `async destroy(options?: Transactionable): Promise<Boolean>`
 
 **Detail**
 
-- `transaction`: Objek transaksi. Jika parameter transaksi tidak diberikan, metode ini akan secara otomatis membuat transaksi internal.
+- `transaction`: Objek transaction. Jika tidak ada parameter transaction yang dimasukkan, method ini akan otomatis membuat transaction internal.
 
 **Contoh**
 
@@ -161,7 +163,7 @@ await UserProfileRepository.destroy();
 
 Mengatur objek terkait
 
-**Tanda Tangan**
+**Signature**
 
 - `async set(options: TargetKey | SetOption): Promise<void>`
 
@@ -175,8 +177,8 @@ interface SetOption extends Transactionable {
 
 **Detail**
 
-- `tk`: `targetKey` dari objek terkait yang akan diatur.
-- `transaction`: Objek transaksi. Jika parameter transaksi tidak diberikan, metode ini akan secara otomatis membuat transaksi internal.
+- tk: Mengatur targetKey dari objek terkait
+- transaction: Objek transaction. Jika tidak ada parameter transaction yang dimasukkan, method ini akan otomatis membuat transaction internal.
 
 **Contoh**
 

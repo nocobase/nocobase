@@ -1,18 +1,20 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "HTTP API File Manager"
+description: "Field Lampiran dan Collection File mengupload file melalui HTTP API, upload sisi server (S3/OSS/COS), upload langsung sisi klien, mendukung autentikasi JWT dan penentuan storage engine."
+keywords: "HTTP API upload file,attachments create,upload sisi server,upload langsung sisi klien,NocoBase"
+---
 
 # HTTP API
 
-Unggahan berkas untuk kolom lampiran dan koleksi berkas dapat ditangani melalui HTTP API. Cara pemanggilan berbeda-beda tergantung pada mesin penyimpanan yang digunakan oleh lampiran atau koleksi berkas.
+Upload file Field Lampiran dan Collection File mendukung pemrosesan melalui HTTP API. Berdasarkan storage engine berbeda yang digunakan oleh field lampiran atau Collection File, ada cara pemanggilan yang berbeda.
 
-## Unggahan Sisi Server
+## Upload Sisi Server
 
-Untuk mesin penyimpanan sumber terbuka bawaan seperti S3, OSS, dan COS, panggilan HTTP API sama dengan fitur unggahan antarmuka pengguna, di mana berkas diunggah melalui server. Panggilan API memerlukan token JWT berbasis pengguna yang diteruskan dalam header permintaan `Authorization`; jika tidak, akses akan ditolak.
+Untuk storage engine open-source bawaan dalam proyek seperti S3, OSS, COS, dan lainnya, HTTP API sama dengan fungsi upload antarmuka pengguna, file diupload melalui server. Pemanggilan endpoint perlu meneruskan token JWT berbasis login pengguna melalui header request `Authorization`, atau akan ditolak aksesnya.
 
-### Kolom Lampiran
+### Field Lampiran
 
-Mulai tindakan `create` pada sumber daya lampiran (`attachments`) dengan mengirimkan permintaan POST dan mengunggah konten biner melalui kolom `file`. Setelah panggilan, berkas akan diunggah ke mesin penyimpanan bawaan.
+Lakukan operasi `create` ke resource Collection lampiran (`attachments`), kirim request dalam bentuk POST, dan upload konten biner melalui field `file`. Setelah dipanggil, file akan diupload ke storage engine default.
 
 ```shell
 curl -X POST \
@@ -21,7 +23,7 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create"
 ```
 
-Untuk mengunggah berkas ke mesin penyimpanan yang berbeda, Anda dapat menggunakan parameter `attachmentField` untuk menentukan mesin penyimpanan yang dikonfigurasi untuk kolom koleksi. Jika tidak dikonfigurasi, berkas akan diunggah ke mesin penyimpanan bawaan.
+Jika perlu mengupload file ke storage engine berbeda, dapat ditentukan storage engine yang sudah dikonfigurasi pada field Collection terkait melalui parameter `attachmentField` (jika tidak dikonfigurasi, akan diupload ke storage engine default).
 
 ```shell
 curl -X POST \
@@ -30,9 +32,9 @@ curl -X POST \
     "http://localhost:3000/api/attachments:create?attachmentField=<collection_name>.<field_name>"
 ```
 
-### koleksi Berkas
+### Collection File
 
-Mengunggah ke koleksi berkas akan secara otomatis membuat catatan berkas. Mulai tindakan `create` pada sumber daya koleksi berkas dengan mengirimkan permintaan POST dan mengunggah konten biner melalui kolom `file`.
+Upload ke Collection File akan otomatis menghasilkan record file. Lakukan operasi `create` ke resource Collection File, kirim request dalam bentuk POST, dan upload konten biner melalui field `file`.
 
 ```shell
 curl -X POST \
@@ -41,24 +43,24 @@ curl -X POST \
     "http://localhost:3000/api/<file_collection_name>:create"
 ```
 
-Saat mengunggah ke koleksi berkas, tidak perlu menentukan mesin penyimpanan; berkas akan diunggah ke mesin penyimpanan yang dikonfigurasi untuk koleksi tersebut.
+Upload ke Collection File tidak perlu menentukan storage engine, file akan diupload ke storage engine yang dikonfigurasi pada Collection tersebut.
 
-## Unggahan Sisi Klien
+## Upload Sisi Klien
 
-Untuk mesin penyimpanan yang kompatibel dengan S3 yang disediakan melalui plugin S3-Pro komersial, unggahan HTTP API memerlukan beberapa langkah.
+Untuk storage engine yang kompatibel S3 yang disediakan oleh plugin komersial S3-Pro, upload HTTP API perlu dipanggil dalam beberapa langkah.
 
-### Kolom Lampiran
+### Field Lampiran
 
-1.  Dapatkan informasi mesin penyimpanan
+1.  Mendapatkan informasi storage engine
 
-    Mulai tindakan `getBasicInfo` pada koleksi penyimpanan (`storages`), termasuk nama penyimpanan, untuk meminta informasi konfigurasi mesin penyimpanan.
+    Lakukan operasi `getBasicInfo` pada Collection storage (`storages`), sambil membawa identifier storage space (storage name), untuk meminta informasi konfigurasi storage engine
 
     ```shell
     curl 'http://localhost:13000/api/storages:getBasicInfo/<storage_name>' \
       -H 'Authorization: Bearer <JWT>'
     ```
 
-    Contoh informasi konfigurasi mesin penyimpanan yang dikembalikan:
+    Contoh informasi konfigurasi storage engine yang dikembalikan:
 
     ```json
     {
@@ -70,9 +72,9 @@ Untuk mesin penyimpanan yang kompatibel dengan S3 yang disediakan melalui plugin
     }
     ```
 
-2.  Dapatkan URL pra-tanda tangan dari penyedia layanan
+2.  Mendapatkan informasi pre-signed dari penyedia layanan
 
-    Mulai tindakan `createPresignedUrl` pada sumber daya `fileStorageS3` dengan mengirimkan permintaan POST yang membawa informasi terkait berkas di dalam body untuk mendapatkan informasi unggahan pra-tanda tangan.
+    Lakukan operasi `createPresignedUrl` pada resource `fileStorageS3`, kirim request dalam bentuk POST, dan bawa informasi terkait file dalam body, untuk mendapatkan informasi upload pre-signed
 
     ```shell
     curl 'http://localhost:13000/api/fileStorageS3:createPresignedUrl' \
@@ -83,21 +85,21 @@ Untuk mesin penyimpanan yang kompatibel dengan S3 yang disediakan melalui plugin
       --data-raw '{"name":<name>,"size":<size>,"type":<type>,"storageId":<storageId>,"storageType":<storageType>}'
     ```
 
-    > Catatan:
-    >
-    > *   `name`: Nama berkas
-    > *   `size`: Ukuran berkas (dalam byte)
-    > *   `type`: Tipe MIME berkas. Anda dapat merujuk ke [Tipe MIME Umum](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
-    > *   `storageId`: ID mesin penyimpanan (kolom `id` yang dikembalikan pada langkah 1).
-    > *   `storageType`: Tipe mesin penyimpanan (kolom `type` yang dikembalikan pada langkah 1).
-    >
-    > Contoh data permintaan:
-    >
+    > Penjelasan:
+    > 
+    > * name: Nama file
+    > * size: Ukuran file (dalam bytes)
+    > * type: Tipe MIME file, dapat merujuk ke: [Tipe MIME Umum](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
+    > * storageId: id storage engine (field `id` yang dikembalikan pada langkah pertama)
+    > * storageType: Tipe storage engine (field `type` yang dikembalikan pada langkah pertama)
+    > 
+    > Contoh data request:
+    > 
     > ```
     > --data-raw '{"name":"a.png","size":4405,"type":"image/png","storageId":2,"storageType":"s3-compatible"}'
     > ```
 
-    Struktur data informasi pra-tanda tangan yang diperoleh adalah sebagai berikut:
+    Struktur data informasi pre-signed yang didapatkan sebagai berikut
 
     ```json
     {
@@ -115,32 +117,29 @@ Untuk mesin penyimpanan yang kompatibel dengan S3 yang disediakan melalui plugin
     }
     ```
 
-3.  Unggah berkas
+3.  Upload File
 
-    Gunakan `putUrl` yang dikembalikan untuk membuat permintaan `PUT`, mengunggah berkas sebagai body.
+    Gunakan `putUrl` yang dikembalikan untuk melakukan request `PUT`, mengupload file sebagai body.
 
     ```shell
     curl '<putUrl>' \
       -X 'PUT' \
       -T <file_path>
     ```
-
-    > Catatan:
-    >
-    > *   `putUrl`: Kolom `putUrl` yang dikembalikan pada langkah sebelumnya.
-    > *   `file_path`: Jalur lokal berkas yang akan diunggah.
-    >
-    > Contoh data permintaan:
-    >
+    > Penjelasan:
+    > * putUrl: Field `putUrl` yang dikembalikan pada langkah sebelumnya
+    > * file_path: Path file lokal yang akan diupload
+    > 
+    > Contoh data request:
     > ```
     > curl 'https://xxxxxxx' \
     >  -X 'PUT' \
     >  -T /Users/Downloads/a.png
     > ```
 
-4.  Buat catatan berkas
+4.  Membuat Record Baris File
 
-    Setelah unggahan berhasil, buat catatan berkas dengan memulai tindakan `create` pada sumber daya lampiran (`attachments`) dengan permintaan POST.
+    Setelah upload berhasil, lakukan operasi `create` pada resource Collection lampiran (`attachments`), kirim request dalam bentuk POST, untuk membuat record file.
 
     ```shell
     curl 'http://localhost:13000/api/attachments:create?attachmentField=<collection_name>.<field_name>' \
@@ -151,27 +150,25 @@ Untuk mesin penyimpanan yang kompatibel dengan S3 yang disediakan melalui plugin
       --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
     ```
 
-    > Penjelasan data dependen dalam `data-raw`:
-    >
-    > *   `title`: Kolom `fileInfo.title` yang dikembalikan pada langkah sebelumnya.
-    > *   `filename`: Kolom `fileInfo.key` yang dikembalikan pada langkah sebelumnya.
-    > *   `extname`: Kolom `fileInfo.extname` yang dikembalikan pada langkah sebelumnya.
-    > *   `path`: Kosong secara bawaan.
-    > *   `size`: Kolom `fileInfo.size` yang dikembalikan pada langkah sebelumnya.
-    > *   `url`: Kosong secara bawaan.
-    > *   `mimetype`: Kolom `fileInfo.mimetype` yang dikembalikan pada langkah sebelumnya.
-    > *   `meta`: Kolom `fileInfo.meta` yang dikembalikan pada langkah sebelumnya.
-    > *   `storageId`: Kolom `id` yang dikembalikan pada langkah 1.
-    >
-    > Contoh data permintaan:
-    >
+    > Penjelasan data dependency dalam data-raw:
+    > * title: Field `fileInfo.title` yang dikembalikan pada langkah sebelumnya
+    > * filename: Field `fileInfo.key` yang dikembalikan pada langkah sebelumnya
+    > * extname: Field `fileInfo.extname` yang dikembalikan pada langkah sebelumnya
+    > * path: Default kosong
+    > * size: Field `fileInfo.size` yang dikembalikan pada langkah sebelumnya
+    > * url: Default kosong
+    > * mimetype: Field `fileInfo.mimetype` yang dikembalikan pada langkah sebelumnya
+    > * meta: Field `fileInfo.meta` yang dikembalikan pada langkah sebelumnya
+    > * storageId: Field `id` yang dikembalikan pada langkah pertama
+    > 
+    > Contoh data request:
     > ```
     >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
     > ```
 
-### koleksi Berkas
+### Collection File
 
-Tiga langkah pertama sama dengan unggahan ke kolom lampiran. Namun, pada langkah keempat, Anda perlu membuat catatan berkas dengan memulai tindakan `create` pada sumber daya koleksi berkas dengan permintaan POST, mengunggah informasi berkas di dalam body.
+Tiga langkah pertama sama dengan upload field lampiran, tetapi pada langkah keempat perlu membuat record file. Lakukan operasi create pada resource Collection File, kirim request dalam bentuk POST, dan upload informasi file melalui body.
 
 ```shell
 curl 'http://localhost:13000/api/<file_collection_name>:create' \
@@ -180,20 +177,18 @@ curl 'http://localhost:13000/api/<file_collection_name>:create' \
   --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
 ```
 
-> Penjelasan data dependen dalam `data-raw`:
->
-> *   `title`: Kolom `fileInfo.title` yang dikembalikan pada langkah sebelumnya.
-> *   `filename`: Kolom `fileInfo.key` yang dikembalikan pada langkah sebelumnya.
-> *   `extname`: Kolom `fileInfo.extname` yang dikembalikan pada langkah sebelumnya.
-> *   `path`: Kosong secara bawaan.
-> *   `size`: Kolom `fileInfo.size` yang dikembalikan pada langkah sebelumnya.
-> *   `url`: Kosong secara bawaan.
-> *   `mimetype`: Kolom `fileInfo.mimetype` yang dikembalikan pada langkah sebelumnya.
-> *   `meta`: Kolom `fileInfo.meta` yang dikembalikan pada langkah sebelumnya.
-> *   `storageId`: Kolom `id` yang dikembalikan pada langkah 1.
->
-> Contoh data permintaan:
->
+> Penjelasan data dependency dalam data-raw:
+> * title: Field `fileInfo.title` yang dikembalikan pada langkah sebelumnya
+> * filename: Field `fileInfo.key` yang dikembalikan pada langkah sebelumnya
+> * extname: Field `fileInfo.extname` yang dikembalikan pada langkah sebelumnya
+> * path: Default kosong
+> * size: Field `fileInfo.size` yang dikembalikan pada langkah sebelumnya
+> * url: Default kosong
+> * mimetype: Field `fileInfo.mimetype` yang dikembalikan pada langkah sebelumnya
+> * meta: Field `fileInfo.meta` yang dikembalikan pada langkah sebelumnya
+> * storageId: Field `id` yang dikembalikan pada langkah pertama
+> 
+> Contoh data request:
 > ```
 >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
 > ```

@@ -1,20 +1,22 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Memperluas Tipe Node"
+description: "Memperluas Tipe Node: pengembangan Node kustom, konfigurasi Node, logika eksekusi, API dan siklus hidup."
+keywords: "Workflow,memperluas Node,Node kustom,pengembangan Node,NocoBase"
+---
 
 # Memperluas Tipe Node
 
-Tipe node pada dasarnya adalah instruksi operasional. Instruksi yang berbeda merepresentasikan operasi yang berbeda yang dijalankan dalam alur kerja.
+Tipe Node pada dasarnya adalah instruksi operasi. Instruksi yang berbeda mewakili operasi yang berbeda yang dieksekusi dalam alur.
 
-Mirip dengan pemicu, memperluas tipe node juga dibagi menjadi dua bagian: sisi server dan sisi klien. Sisi server perlu mengimplementasikan logika untuk instruksi yang terdaftar, sementara sisi klien perlu menyediakan konfigurasi antarmuka untuk parameter node tempat instruksi berada.
+Mirip dengan Trigger, ekstensi tipe Node juga terbagi menjadi dua bagian frontend dan backend. Server perlu mengimplementasikan logika untuk instruksi yang diregistrasi, client perlu menyediakan konfigurasi UI untuk parameter terkait Node tersebut.
 
-## Sisi Server
+## Server
 
 ### Instruksi Node Paling Sederhana
 
-Inti dari sebuah instruksi adalah sebuah fungsi, yang berarti metode `run` dalam kelas instruksi harus diimplementasikan untuk menjalankan logika instruksi. Operasi apa pun yang diperlukan dapat dilakukan di dalam fungsi, seperti operasi basis data, operasi file, memanggil API pihak ketiga, dan sebagainya.
+Inti dari instruksi adalah sebuah fungsi, yaitu method `run` pada class instruksi yang harus diimplementasikan, digunakan untuk mengeksekusi logika instruksi. Pada fungsi tersebut dapat dieksekusi operasi apa pun yang dibutuhkan, contoh operasi database, operasi file, panggilan API pihak ketiga, dll.
 
-Semua instruksi perlu diturunkan dari kelas dasar `Instruction`. Instruksi paling sederhana hanya perlu mengimplementasikan fungsi `run`:
+Semua instruksi harus diturunkan dari base class `Instruction`. Instruksi paling sederhana hanya perlu mengimplementasikan satu fungsi `run`:
 
 ```ts
 import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
@@ -29,7 +31,7 @@ export class MyInstruction extends Instruction {
 }
 ```
 
-Dan daftarkan instruksi ini ke plugin alur kerja:
+Dan registrasikan instruksi tersebut ke plugin Workflow:
 
 ```ts
 export default class MyPlugin extends Plugin {
@@ -43,11 +45,11 @@ export default class MyPlugin extends Plugin {
 }
 ```
 
-Nilai status (`status`) dalam objek kembalian instruksi adalah wajib dan harus berupa nilai dari konstanta `JOB_STATUS`. Nilai ini akan menentukan alur pemrosesan selanjutnya untuk node ini dalam alur kerja. Biasanya, `JOB_STATUS.RESOVLED` digunakan, yang menunjukkan bahwa node telah berhasil dieksekusi dan eksekusi akan berlanjut ke node berikutnya. Jika ada nilai hasil yang perlu disimpan terlebih dahulu, Anda juga dapat memanggil metode `processor.saveJob` dan mengembalikan objek kembaliannya. Eksekutor akan menghasilkan catatan hasil eksekusi berdasarkan objek ini.
+Status (`status`) pada return object dari instruksi adalah field yang wajib diisi, dan harus merupakan value dari konstanta `JOB_STATUS`. Value tersebut akan menentukan arah pemrosesan selanjutnya pada Node tersebut dalam alur. Biasanya cukup menggunakan `JOB_STATUS.RESOVLED`, mewakili Node berhasil dieksekusi sampai selesai dan akan melanjutkan eksekusi Node berikutnya. Jika ada nilai hasil yang perlu disimpan terlebih dahulu, dapat memanggil method `processor.saveJob`, dan return object dari method tersebut. Eksekutor akan menghasilkan record hasil eksekusi berdasarkan object tersebut.
 
-### Nilai Hasil Node
+### Result Value Node
 
-Jika ada hasil eksekusi tertentu, terutama data yang disiapkan untuk digunakan oleh node selanjutnya, data tersebut dapat dikembalikan melalui properti `result` dan disimpan dalam objek tugas node:
+Jika ada hasil eksekusi spesifik, terutama menyiapkan data yang dapat digunakan oleh Node berikutnya, dapat dikembalikan melalui properti `result`, dan disimpan dalam object task Node:
 
 ```ts
 import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
@@ -68,11 +70,11 @@ export class RandomStringInstruction extends Instruction {
 };
 ```
 
-Di sini, `node.config` adalah item konfigurasi node, yang bisa berupa nilai apa pun yang diperlukan. Ini akan disimpan sebagai bidang tipe `JSON` dalam catatan node yang sesuai di basis data.
+`node.config` di sini adalah konfigurasi Node, dapat berupa value apa pun yang dibutuhkan, akan disimpan sebagai field tipe `JSON` pada record Node yang sesuai di database.
 
-### Penanganan Kesalahan Instruksi
+### Penanganan Error pada Instruksi
 
-Jika pengecualian mungkin terjadi selama eksekusi, Anda dapat menangkapnya terlebih dahulu dan mengembalikan status gagal:
+Jika dalam proses eksekusi mungkin terjadi exception, dapat di-catch terlebih dahulu dan return status gagal:
 
 ```ts
 import { JOB_STATUS } from '@nocobase/plugin-workflow';
@@ -91,86 +93,159 @@ export const errorInstruction = {
 };
 ```
 
-Jika pengecualian yang dapat diprediksi tidak ditangkap, mesin alur kerja akan secara otomatis menangkapnya dan mengembalikan status kesalahan untuk mencegah pengecualian yang tidak tertangkap menyebabkan program macet.
+Jika exception yang dapat diprediksi tidak di-catch, maka engine alur akan otomatis catch dan return status error, untuk menghindari uncaught exception yang dapat menyebabkan crash program.
 
-### Node Asinkron
+### Node Async
 
-Ketika kontrol alur atau operasi I/O asinkron (memakan waktu) diperlukan, metode `run` dapat mengembalikan objek dengan `status` `JOB_STATUS.PENDING`, yang meminta eksekutor untuk menunggu (menangguhkan) hingga beberapa operasi asinkron eksternal selesai, dan kemudian memberi tahu mesin alur kerja untuk melanjutkan eksekusi. Jika nilai status tertunda dikembalikan dalam fungsi `run`, instruksi harus mengimplementasikan metode `resume`; jika tidak, eksekusi alur kerja tidak dapat dilanjutkan:
+Saat Node perlu menunggu operasi eksternal selesai sebelum dapat melanjutkan alur (seperti HTTP request, callback pembayaran pihak ketiga, atau operasi yang memakan waktu atau tidak langsung return), task harus disimpan terlebih dahulu sebagai status `JOB_STATUS.PENDING` untuk menggantung eksekusi saat ini, kemudian setelah operasi selesai dipulihkan kembali melalui `resume`. Setiap instruksi yang menggunakan logika menggantung, harus juga mengimplementasikan method `resume`, jika tidak alur tidak akan dapat dipulihkan.
+
+Pola implementasi yang direkomendasikan adalah sebagai berikut:
 
 ```ts
-import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 
-export class PayInstruction extends Instruction {
-  async run(node, input, processor) {
-    // job could be create first via processor
-    const job = await processor.saveJob({
+export class AsyncInstruction extends Instruction {
+  async run(node: FlowNodeModel, prevJob, processor) {
+    // 1. Simpan task dengan status menggantung, catat id
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
+      nodeId: node.id,
+      nodeKey: node.key,
+      upstreamId: prevJob?.id ?? null,
     });
 
-    const { workflow } = processor;
-    // do payment asynchronously
-    paymentService.pay(node.config, (result) => {
-      // notify processor to resume the job
-      return workflow.resume(job.id, result);
-    });
+    // 2. Panggil exit() secara aktif, segera flush task ke database dan commit transaction
+    await processor.exit();
 
-    // return created job instance
-    return job;
+    // 3. Memulai operasi async (saat ini transaction sudah di-commit, tidak lagi memakai connection database)
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
+    try {
+      const result = await someAsyncOperation(node.config);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = result;
+    } catch (error) {
+      jobDone.status = JOB_STATUS.FAILED;
+      jobDone.result = { message: error.message };
+    } finally {
+      // 4. Query ulang task dari database, jangan gunakan cached object di memory
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
+      });
+      job.set(jobDone);
+
+      // 5. Notifikasi engine workflow untuk memulihkan eksekusi, masuk ke alur resume
+      this.workflow.resume(job);
+    }
+    // 6. Tidak return value apa pun (void), eksekutor akan langsung exit setelah menerima
   }
 
-  resume(node, job, processor) {
-    // check payment status
-    job.set('status', job.result.status === 'ok' ? JOB_STATUS.RESOVLED : JOB_STATUS.REJECTED);
+  async resume(node: FlowNodeModel, job, processor) {
+    // job sudah diset status finalnya pada run, langsung return saja
     return job;
-  },
-};
+  }
+}
 ```
 
-Di sini, `paymentService` mengacu pada layanan pembayaran. Dalam _callback_ layanan, alur kerja dipicu untuk melanjutkan eksekusi tugas yang sesuai, dan proses saat ini keluar terlebih dahulu. Kemudian, mesin alur kerja membuat prosesor baru dan meneruskannya ke metode `resume` node untuk melanjutkan eksekusi node yang sebelumnya ditangguhkan.
+Berikut beberapa detail penting penjelasan:
 
-:::info{title=Catatan}
-"Operasi asinkron" yang disebutkan di sini tidak mengacu pada fungsi `async` dalam JavaScript, melainkan operasi yang tidak langsung mengembalikan hasil saat berinteraksi dengan sistem eksternal lainnya, seperti layanan pembayaran yang perlu menunggu notifikasi lain untuk mengetahui hasilnya.
-:::
+**Mengapa harus memanggil `processor.exit()` secara aktif daripada return object task yang menggantung?**  
+`return { status: PENDING }` akan langsung mengakhiri fungsi `run`, setelah itu tidak dapat lagi mengeksekusi kode apa pun. Memanggil `await processor.exit()` secara aktif hanya commit transaction dan exit context database, fungsi itu sendiri masih lanjut dieksekusi, dengan demikian dapat `await` operasi yang memakan waktu pada body fungsi yang sama, dan setelah selesai memanggil `resume`. Jika tidak memanggil `exit()` terlebih dahulu, melainkan langsung `await` operasi panjang lalu return, di satu sisi akan memegang transaction database dalam waktu lama menyebabkan kontensi lock, di sisi lain transaction tidak ter-commit sebelum operasi selesai, record task tidak akan masuk ke database.
+
+**Mengapa harus query ulang task, bukan langsung gunakan object yang dikembalikan oleh `saveJob`?**  
+`saveJob` mengembalikan model instance memory yang terikat pada transaction asli. Setelah `processor.exit()` dipanggil, transaction tersebut sudah di-commit dan ditutup. Memodifikasi instance ini secara langsung dan memanggil `resume` akan menyebabkan anomali state ORM (referensi transaction tidak valid, status tidak konsisten, dll.). Query ulang dari database melalui `id` memastikan mendapatkan instance baru yang bersih, tidak terkait transaction apa pun.
+
+**Mengapa fungsi `run` tidak return value apa pun (`void`)?**  
+`processor.exit()` sudah dipanggil secara manual. Setelah eksekutor menerima `void`, akan memanggil `exit(true)` untuk segera exit, tidak melakukan pemrosesan ulang. Jika saat ini return `IJob`, eksekutor akan kembali mencoba untuk save dan commit, menyebabkan error. Untuk detail lihat bagian return value `run`/`resume`.
+
+**Untuk skenario yang membutuhkan callback eksternal** (seperti hasil pembayaran dari notifikasi webhook), juga harus memanggil `processor.exit()` terlebih dahulu sebelum register callback, memastikan record task sudah masuk ke database sebelum sistem eksternal melakukan callback. Pada callback kemudian query ulang task berdasarkan `id` lalu memanggil `this.workflow.resume(job)`.
+
+Contoh lengkap pada project nyata dapat merujuk ke: [RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts) (Node HTTP Request, menggunakan pola ini pada workflow non-sinkron)
 
 ### Status Hasil Node
 
-Status eksekusi sebuah node memengaruhi keberhasilan atau kegagalan seluruh alur kerja. Umumnya, tanpa cabang, kegagalan sebuah node akan secara langsung menyebabkan seluruh alur kerja gagal. Skenario paling umum adalah jika sebuah node berhasil dieksekusi, ia akan melanjutkan ke node berikutnya dalam tabel node hingga tidak ada lagi node selanjutnya, di mana seluruh eksekusi alur kerja selesai dengan status berhasil.
+Status eksekusi Node akan mempengaruhi sukses atau gagalnya keseluruhan alur. Biasanya pada kasus tanpa cabang, kegagalan suatu Node akan langsung menyebabkan keseluruhan alur gagal. Kasus paling umum adalah, jika Node berhasil dieksekusi maka akan melanjutkan ke Node berikutnya pada list Node, sampai tidak ada Node berikutnya, maka eksekusi keseluruhan workflow akan selesai dengan status sukses.
 
-Jika sebuah node mengembalikan status eksekusi gagal selama eksekusi, mesin akan menanganinya secara berbeda tergantung pada dua situasi berikut:
+Jika dalam eksekusi suatu Node mengembalikan status eksekusi gagal, maka berdasarkan dua kondisi berikut engine akan memberikan pemrosesan yang berbeda:
 
-1.  Node yang mengembalikan status gagal berada dalam alur kerja utama, artinya tidak berada dalam alur kerja cabang mana pun yang dibuka oleh node hulu. Dalam kasus ini, seluruh alur kerja utama dianggap gagal, dan proses keluar.
+1.  Node yang mengembalikan status gagal berada pada alur utama, yaitu tidak berada dalam alur cabang yang dimulai oleh Node upstream mana pun, maka keseluruhan alur utama akan dinilai gagal, dan keluar dari alur.
 
-2.  Node yang mengembalikan status gagal berada dalam alur kerja cabang. Dalam kasus ini, tanggung jawab untuk menentukan status langkah selanjutnya dari alur kerja diserahkan kepada node yang membuka cabang. Logika internal node tersebut akan memutuskan status alur kerja selanjutnya, dan keputusan ini akan menyebar secara rekursif ke alur kerja utama.
+2.  Node yang mengembalikan status gagal berada dalam suatu alur cabang. Saat ini tanggung jawab untuk menentukan status langkah selanjutnya alur diserahkan ke Node yang memulai cabang. Logika internal Node tersebut yang menentukan status alur selanjutnya, dan secara rekursif diteruskan ke alur utama.
 
-Pada akhirnya, status langkah selanjutnya dari seluruh alur kerja ditentukan pada node-node alur kerja utama. Jika sebuah node dalam alur kerja utama mengembalikan kegagalan, seluruh alur kerja berakhir dengan status gagal.
+Pada akhirnya pada Node alur utama akan dihasilkan status langkah selanjutnya dari keseluruhan alur. Jika pada Node alur utama yang dikembalikan adalah gagal, maka keseluruhan alur akan berakhir dengan status gagal.
 
-Jika ada node yang mengembalikan status "tertunda" setelah eksekusi, seluruh proses eksekusi akan diinterupsi sementara dan ditangguhkan, menunggu peristiwa yang ditentukan oleh node yang sesuai untuk memicu kelanjutan eksekusi alur kerja. Misalnya, Node Manual, ketika dieksekusi, akan berhenti pada node tersebut dengan status "tertunda", menunggu intervensi manual untuk memutuskan apakah akan menyetujui. Jika status yang dimasukkan secara manual adalah persetujuan, node alur kerja selanjutnya akan dilanjutkan; jika tidak, akan ditangani sesuai dengan logika kegagalan yang dijelaskan sebelumnya.
+Jika ada Node yang setelah dieksekusi mengembalikan status "stop wait", maka keseluruhan alur eksekusi akan dihentikan sementara dan menggantung, menunggu event yang didefinisikan oleh Node yang sesuai untuk memulihkan eksekusi alur. Misalnya Node manual, setelah eksekusi mencapai Node ini akan berhenti dengan status "stop wait" dari Node tersebut, menunggu intervensi manual pada alur, untuk memutuskan apakah lulus. Jika status input manual adalah lulus, maka melanjutkan Node alur berikutnya, sebaliknya akan diproses sesuai logika kegagalan sebelumnya.
 
-Untuk status pengembalian instruksi lainnya, silakan lihat bagian Referensi API Alur Kerja.
+Untuk lebih banyak status return instruksi, dapat merujuk ke bagian Referensi API Workflow.
 
-### Keluar Lebih Awal
+### Tipe Return Value `run`/`resume` dan Perilaku Eksekutor
 
-Dalam beberapa alur kerja khusus, mungkin perlu untuk mengakhiri alur kerja secara langsung di dalam sebuah node. Anda dapat mengembalikan `null`, yang menunjukkan keluar dari alur kerja saat ini, dan node selanjutnya tidak akan dieksekusi.
+Definisi tipe return value lengkap dari method `run` dan `resume` adalah:
 
-Situasi ini umum terjadi pada node tipe kontrol alur, seperti Node Cabang Paralel ([referensi kode](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)), di mana alur kerja node saat ini keluar, tetapi alur kerja baru dimulai untuk setiap sub-cabang dan terus dieksekusi.
+```ts
+type InstructionResult = IJob | Promise<IJob> | Promise<void> | Promise<null> | null | void;
+```
 
-:::warn{title=Peringatan}
-Penjadwalan alur kerja cabang dengan node yang diperluas memiliki kompleksitas tertentu dan memerlukan penanganan yang hati-hati serta pengujian menyeluruh.
+Eksekutor (`Processor`) setelah memanggil instruksi, akan mengeksekusi logika pemrosesan yang berbeda berdasarkan tipe return value, ada tiga kondisi.
+
+#### 1. Mengembalikan Object Task `IJob`
+
+Ini adalah kasus paling umum, mengembalikan sebuah object yang berisi field `status` (wajib) dan optional `result`. Eksekutor akan menyimpannya sebagai record task Node, dan menentukan arah selanjutnya berdasarkan value `status`:
+
+- `JOB_STATUS.RESOLVED`: Node berhasil dieksekusi, jika ada Node downstream maka lanjutkan, jika tidak alur berakhir
+- `JOB_STATUS.PENDING`: Node masuk status menggantung, eksekusi context saat ini berhenti, menunggu event eksternal untuk memicu `resume`
+- Status gagal lainnya (`FAILED`, `ERROR`, dll.): diteruskan ke atas ke Node parent cabang atau langsung mengakhiri keseluruhan alur
+
+Path ini adalah path commit transaction lengkap—eksekutor akan menyimpan record task, write database dan commit transaction.
+
+Contoh referensi: [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts) (langsung mengembalikan object `job` saat tidak ada cabang, untuk kasus ada cabang lihat penjelasan `void` di bawah)
+
+#### 2. Mengembalikan `null`
+
+Saat mengembalikan `null`, eksekutor memanggil `processor.exit()` (tanpa parameter), efeknya adalah: **flush task yang menunggu untuk ditulis ke database dan commit transaction, tetapi tidak meng-update status eksekusi keseluruhan**.
+
+Penggunaan ini biasanya pada method `resume` Node kontrol cabang: suatu cabang sudah selesai, perlu meng-update dan menyimpan status task Node parent (misalnya mencatat "cabang ke-N sudah selesai"), tetapi cabang lain masih berjalan, eksekusi keseluruhan harus tetap dalam status `STARTED` menunggu cabang lainnya—saat ini mengembalikan `null` untuk exit dari context resume saat ini tanpa mempengaruhi status eksekusi keseluruhan.
+
+Contoh referensi: [ParallelInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts)
+
+- Baris [117](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L117): Node paralel sudah selesai lebih awal (resolved/rejected), abaikan resume cabang berikutnya, langsung mengembalikan `null`
+- Baris [135](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L135): masih ada cabang yang belum selesai (`PENDING`), setelah menyimpan progress saat ini mengembalikan `null`, melanjutkan menunggu cabang lain
+
+#### 3. Mengembalikan `void` (tidak return, yaitu implicit `undefined`)
+
+Saat mengembalikan `void` (fungsi tidak memiliki statement return eksplisit, atau saat path eksekusi berakhir tidak ada return value), eksekutor memanggil `processor.exit(true)`, efeknya adalah **langsung return, tidak mengeksekusi operasi database apa pun**.
+
+Pola ini khusus untuk skenario di mana **instruksi sudah mengambil alih scheduling eksekusi sendiri**: instruksi memulai sub-alur secara manual melalui `processor.run()`, eksekusi chain sub-alur tersebut akan bertanggung jawab pada penulisan database dan commit transaction saat selesai, eksekutor tidak boleh memprosesnya lagi.
+
+Contoh khas:
+
+- [ConditionInstruction.ts#L67](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts#L67): saat ada cabang, panggil `processor.run(branchNode, savedJob)` secara manual lalu fungsi berakhir, implicit return `void`
+- [ParallelInstruction.ts#L108](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L108): iterasi semua cabang dan panggil `processor.run(branch, job)` satu per satu lalu fungsi berakhir, implicit return `void`
+
+:::warn{title=Tips}
+Sebelum return `void`, jika `processor.saveJob()` dipanggil, record task tersebut tidak akan ditulis ke database oleh eksekutor saat ini. Mereka di-cache pada list task eksekutor (di memory), akan di-flush ke database secara seragam oleh `exit()` yang di-trigger saat `processor.run()` yang dipanggil manual berikutnya menyelesaikan eksekusinya. Oleh karena itu saat menggunakan pola ini, harus dipastikan ada path eksekusi sub yang akan berakhir normal untuk menyelesaikan persistensi record-record tersebut. Scheduling alur cabang memiliki kompleksitas tertentu, perlu didesain dengan hati-hati dan diuji secara menyeluruh.
 :::
 
-### Pelajari Lebih Lanjut
+Ringkasan perbandingan tiga return value:
 
-Definisi berbagai parameter untuk mendefinisikan tipe node dapat dilihat pada bagian Referensi API Alur Kerja.
+| Return Value | Perilaku Eksekutor | Skenario Penggunaan Khas |
+|--------|-----------|------------|
+| `IJob` | Simpan task, lanjutkan/akhiri/gantung alur berdasarkan `status` | Node eksekusi normal, dengan hasil dan status |
+| `null` | Simpan task yang menunggu untuk ditulis dan commit transaction, tidak update status eksekusi | Cabang masih menunggu, exit sementara dari context eksekusi saat ini |
+| `void` | Langsung return, tidak melakukan operasi DB apa pun | Node sudah scheduling sub-alur sendiri, biarkan sub-alur mengambil alih pemrosesan selanjutnya |
 
-## Sisi Klien
+### Untuk Mengetahui Lebih Banyak
 
-Mirip dengan pemicu, formulir konfigurasi untuk instruksi (tipe node) perlu diimplementasikan di sisi klien.
+Definisi setiap parameter untuk mendefinisikan tipe Node, lihat bagian Referensi API Workflow.
+
+## Client
+
+Mirip dengan Trigger, form konfigurasi instruksi (tipe Node) perlu diimplementasikan di frontend.
 
 ### Instruksi Node Paling Sederhana
 
-Semua instruksi perlu diturunkan dari kelas dasar `Instruction`. Properti dan metode terkait digunakan untuk mengonfigurasi dan menggunakan node.
+Semua instruksi harus diturunkan dari base class `Instruction`, properti dan method yang sesuai digunakan untuk konfigurasi dan penggunaan Node.
 
-Misalnya, jika kita perlu menyediakan antarmuka konfigurasi untuk node tipe _string_ angka acak (`randomString`) yang didefinisikan di sisi server di atas, yang memiliki item konfigurasi `digit` yang merepresentasikan jumlah digit untuk angka acak, kita akan menggunakan kotak input angka dalam formulir konfigurasi untuk menerima masukan pengguna.
+Misalnya kita perlu menyediakan UI konfigurasi untuk Node tipe random number string (`randomString`) yang didefinisikan di server di atas. Ada satu opsi konfigurasi `digit` yang mewakili jumlah digit angka random. Pada form konfigurasi kita menggunakan number input untuk menerima input user.
 
 ```tsx pure
 import WorkflowPlugin, { Instruction, VariableOption } from '@nocobase/workflow/client';
@@ -207,20 +282,20 @@ export default class MyPlugin extends Plugin {
     const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
 
     // register instruction
-    workflowPlugin.registerInstruction('randomString', MyInstruction);
+    workflowPlugin.registerInstruction('log', LogInstruction);
   }
 }
 ```
 
-:::info{title=Catatan}
-Pengidentifikasi tipe node yang terdaftar di sisi klien harus konsisten dengan yang ada di sisi server, jika tidak akan menyebabkan kesalahan.
+:::info{title=Tips}
+Identifier tipe Node yang diregistrasi di client harus konsisten dengan yang di server, jika tidak akan menyebabkan error.
 :::
 
-### Menyediakan Hasil Node sebagai Variabel
+### Menyediakan Hasil Node Sebagai Variable
 
-Anda mungkin memperhatikan metode `useVariables` pada contoh di atas. Jika Anda perlu menggunakan hasil node (bagian `result`) sebagai variabel untuk node selanjutnya, Anda perlu mengimplementasikan metode ini dalam kelas instruksi yang diwarisi dan mengembalikan objek yang sesuai dengan tipe `VariableOption`. Objek ini berfungsi sebagai deskripsi struktural dari hasil eksekusi node, menyediakan pemetaan nama variabel untuk pemilihan dan penggunaan di node selanjutnya.
+Anda dapat memperhatikan method `useVariables` pada contoh di atas. Jika perlu menyediakan hasil Node (bagian `result`) sebagai variable untuk digunakan oleh Node berikutnya, perlu mengimplementasikan method ini pada class instruksi yang di-extend, dan return sebuah object yang sesuai dengan tipe `VariableOption`. Object tersebut sebagai deskripsi struktur dari hasil eksekusi Node, menyediakan mapping nama variable, untuk dipilih dan digunakan pada Node berikutnya.
 
-Tipe `VariableOption` didefinisikan sebagai berikut:
+Definisi tipe `VariableOption` adalah sebagai berikut:
 
 ```ts
 export type VariableOption = {
@@ -231,11 +306,11 @@ export type VariableOption = {
 };
 ```
 
-Intinya adalah properti `value`, yang merepresentasikan nilai jalur tersegmentasi dari nama variabel. `label` digunakan untuk tampilan di antarmuka, dan `children` digunakan untuk merepresentasikan struktur variabel multi-level, yang digunakan ketika hasil node adalah objek yang bersarang dalam.
+Inti adalah properti `value`, mewakili value path tersegmen dari nama variable. `label` digunakan untuk ditampilkan pada UI, `children` digunakan untuk mewakili struktur variable multi-level, digunakan saat hasil Node berupa object level dalam.
 
-Variabel yang dapat digunakan direpresentasikan secara internal dalam sistem sebagai _string_ templat jalur yang dipisahkan oleh `.`, misalnya, `{{jobsMapByNodeKey.2dw92cdf.abc}}`. Di sini, `jobsMapByNodeKey` merepresentasikan kumpulan hasil dari semua node (didefinisikan secara internal, tidak perlu ditangani), `2dw92cdf` adalah `key` node, dan `abc` adalah properti kustom dalam objek hasil node.
+Sebuah variable yang dapat digunakan pada representasi internal sistem adalah string template path yang dipisahkan dengan `.`, contoh `{{jobsMapByNodeKey.2dw92cdf.abc}}`. `$jobsMapByNodeKey` mewakili result set dari semua Node (sudah didefinisikan secara internal, tidak perlu diproses), `2dw92cdf` adalah `key` Node, `abc` adalah suatu properti kustom pada object hasil Node.
 
-Selain itu, karena hasil node juga bisa berupa nilai sederhana, saat menyediakan variabel node, level pertama **harus** berupa deskripsi node itu sendiri:
+Selain itu, karena hasil Node juga bisa berupa value sederhana, sehingga saat menyediakan variable Node, level pertama **harus** merupakan deskripsi Node itu sendiri:
 
 ```ts
 {
@@ -244,11 +319,11 @@ Selain itu, karena hasil node juga bisa berupa nilai sederhana, saat menyediakan
 }
 ```
 
-Artinya, level pertama adalah `key` dan judul node. Misalnya, pada [referensi kode](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L77) node perhitungan, saat menggunakan hasil node perhitungan, opsi antarmuka adalah sebagai berikut:
+Yaitu level pertama adalah `key` Node dan judul. Misalnya pada Node komputasi, [referensi kode](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L77), maka saat menggunakan hasil Node komputasi, opsi pada UI adalah sebagai berikut:
 
-![Hasil Node Perhitungan](https://static-docs.nocobase.com/20240514230014.png)
+![Hasil Node Komputasi](https://static-docs.nocobase.com/20240514230014.png)
 
-Ketika hasil node adalah objek kompleks, Anda dapat menggunakan `children` untuk terus menjelaskan properti yang bersarang. Misalnya, instruksi kustom mungkin mengembalikan data JSON berikut:
+Saat hasil Node berupa object kompleks, dapat menggambarkan properti level dalam melalui `children`. Misalnya sebuah instruksi kustom akan mengembalikan data JSON berikut:
 
 ```json
 {
@@ -260,7 +335,7 @@ Ketika hasil node adalah objek kompleks, Anda dapat menggunakan `children` untuk
 }
 ```
 
-Kemudian Anda dapat mengembalikannya melalui metode `useVariables` sebagai berikut:
+Maka dapat dikembalikan melalui method `useVariables` berikut:
 
 ```ts
 useVariables(node, options): VariableOption {
@@ -291,39 +366,39 @@ useVariables(node, options): VariableOption {
 }
 ```
 
-Dengan cara ini, di node selanjutnya, Anda dapat menggunakan antarmuka berikut untuk memilih variabel darinya:
+Dengan demikian pada Node berikutnya dapat menggunakan UI berikut untuk memilih variable di dalamnya:
 
-![Variabel Hasil yang Dipetakan](https://static-docs.nocobase.com/20240514230103.png)
+![Variable Hasil Setelah Mapping](https://static-docs.nocobase.com/20240514230103.png)
 
-:::info{title="Catatan"}
-Ketika sebuah struktur dalam hasil adalah _array_ objek yang bersarang dalam, Anda juga dapat menggunakan `children` untuk menjelaskan jalur, tetapi tidak dapat menyertakan indeks _array_. Ini karena dalam penanganan variabel alur kerja NocoBase, deskripsi jalur variabel untuk _array_ objek secara otomatis diratakan menjadi _array_ nilai yang dalam saat digunakan, dan Anda tidak dapat mengakses nilai tertentu berdasarkan indeksnya.
+:::info{title="Tips"}
+Saat suatu struktur dalam hasil adalah array object level dalam, dapat juga menggunakan `children` untuk menggambarkan path, tetapi tidak dapat menyertakan index array. Karena pada penanganan variable workflow NocoBase, untuk deskripsi path variable terhadap array object, saat digunakan akan otomatis di-flatten menjadi array dari value level dalam, dan tidak dapat mengakses value ke-N melalui index.
 :::
 
-### Ketersediaan Node
+### Apakah Node Tersedia
 
-Secara _default_, node apa pun dapat ditambahkan ke alur kerja. Namun, dalam beberapa kasus, sebuah node mungkin tidak berlaku dalam tipe alur kerja atau cabang tertentu. Dalam situasi seperti itu, Anda dapat mengonfigurasi ketersediaan node menggunakan `isAvailable`:
+Secara default, Node mana pun dapat ditambahkan ke dalam workflow. Namun pada beberapa kondisi, Node tidak cocok pada beberapa tipe workflow tertentu atau di dalam cabang. Saat itu dapat dikonfigurasi ketersediaan Node melalui `isAvailable`:
 
 ```ts
-// Definisi tipe
+// definisi tipe
 export abstract class Instruction {
   isAvailable?(ctx: NodeAvailableContext): boolean;
 }
 
 export type NodeAvailableContext = {
-  // Instans plugin alur kerja
+  // instance plugin workflow
   engine: WorkflowPlugin;
-  // Instans alur kerja
+  // instance workflow
   workflow: object;
-  // Node hulu
+  // Node upstream
   upstream: object;
-  // Apakah ini node cabang (nomor cabang)
+  // apakah Node cabang (nomor cabang)
   branchIndex: number;
 };
 ```
 
-Metode `isAvailable` mengembalikan `true` jika node tersedia, dan `false` jika tidak. Parameter `ctx` berisi informasi konteks node saat ini, yang dapat digunakan untuk menentukan ketersediaannya.
+Method `isAvailable` mengembalikan `true` berarti Node tersedia, `false` berarti tidak tersedia. Parameter `ctx` berisi informasi konteks Node saat ini, dapat dievaluasi apakah Node tersedia berdasarkan informasi tersebut.
 
-Jika tidak ada persyaratan khusus, Anda tidak perlu mengimplementasikan metode `isAvailable`, karena node tersedia secara _default_. Skenario paling umum yang memerlukan konfigurasi adalah ketika sebuah node mungkin merupakan operasi yang memakan waktu dan tidak cocok untuk dieksekusi dalam alur kerja sinkron. Anda dapat menggunakan metode `isAvailable` untuk membatasi penggunaannya. Contohnya:
+Pada kasus tanpa kebutuhan khusus, tidak perlu mengimplementasikan method `isAvailable`, Node secara default tersedia. Kasus paling umum yang perlu dikonfigurasi, adalah Node mungkin merupakan operasi yang sangat memakan waktu, tidak cocok untuk dieksekusi pada alur sinkron, dapat dibatasi penggunaan Node melalui method `isAvailable`. Contoh:
 
 ```ts
 isAvailable({ engine, workflow, upstream, branchIndex }) {
@@ -331,6 +406,6 @@ isAvailable({ engine, workflow, upstream, branchIndex }) {
 }
 ```
 
-### Pelajari Lebih Lanjut
+### Untuk Mengetahui Lebih Banyak
 
-Definisi berbagai parameter untuk mendefinisikan tipe node dapat dilihat pada bagian Referensi API Alur Kerja.
+Definisi setiap parameter untuk mendefinisikan tipe Node, lihat bagian Referensi API Workflow.

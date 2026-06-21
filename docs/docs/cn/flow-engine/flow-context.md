@@ -1,3 +1,9 @@
+---
+title: "FlowEngine 上下文体系"
+description: "FlowEngine 上下文体系：FlowContext、DataSourceManager、资源管理，理解 FlowEngine 运行时上下文与数据源。"
+keywords: "FlowContext,上下文体系,DataSourceManager,资源管理,FlowEngine 运行时,NocoBase"
+---
+
 # 上下文体系概览
 
 NocoBase 流引擎的上下文体系分为三层，分别对应不同的作用域，合理使用可实现服务、配置、数据的灵活共享与隔离，提升业务可维护性和可扩展性。

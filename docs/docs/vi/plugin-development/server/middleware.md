@@ -1,29 +1,30 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Middleware"
+description: "Middleware phía server NocoBase: app.use, Middleware Koa, chặn request, middleware resource."
+keywords: "Middleware,app.use,Koa,Chặn request,Middleware resource,NocoBase"
+---
 
 # Middleware
 
-Middleware của NocoBase Server về cơ bản là **Koa middleware**. Bạn có thể thao tác đối tượng `ctx` để xử lý yêu cầu và phản hồi giống như trong Koa. Tuy nhiên, vì NocoBase cần quản lý logic ở nhiều tầng nghiệp vụ khác nhau, nếu tất cả middleware được đặt chung, việc bảo trì và quản lý sẽ rất phức tạp.
+Middleware của NocoBase Server về bản chất là **middleware Koa**, bạn có thể thao tác đối tượng `ctx` để xử lý request và response giống như trong Koa. Tuy nhiên do NocoBase cần quản lý logic của các tầng nghiệp vụ khác nhau, nếu tất cả middleware đặt cùng nhau sẽ rất khó bảo trì.
 
-Để giải quyết vấn đề này, NocoBase chia middleware thành **bốn tầng**:
+Để giải quyết, NocoBase chia middleware thành **bốn cấp**:
 
-1.  **Middleware cấp nguồn dữ liệu**: `app.dataSourceManager.use()`  
-    Chỉ áp dụng cho các yêu cầu của **một nguồn dữ liệu** cụ thể, thường được sử dụng cho các logic như kết nối cơ sở dữ liệu, xác thực trường hoặc xử lý giao dịch của nguồn dữ liệu đó.
+1. **Middleware cấp nguồn dữ liệu**: `app.dataSourceManager.use()`
+   Chỉ tác động lên request của một nguồn dữ liệu nào đó, thường được dùng cho logic kết nối database, validate Field hoặc xử lý transaction của nguồn dữ liệu đó.
 
-2.  **Middleware cấp tài nguyên**: `app.resourceManager.use()`  
-    Chỉ áp dụng cho các tài nguyên (Resource) đã được định nghĩa, phù hợp để xử lý logic ở cấp tài nguyên, như quyền truy cập dữ liệu, định dạng, v.v.
+2. **Middleware cấp resource**: `app.resourceManager.use()`
+   Chỉ có hiệu lực với resource đã được định nghĩa, phù hợp để xử lý logic cấp resource, như quyền dữ liệu, format, v.v.
 
-3.  **Middleware cấp quyền**: `app.acl.use()`  
-    Được thực thi trước khi kiểm tra quyền, được sử dụng để xác minh quyền hoặc vai trò của người dùng.
+3. **Middleware cấp quyền**: `app.acl.use()`
+   Thực thi trước khi đánh giá quyền, dùng để xác minh quyền hoặc role của người dùng.
 
-4.  **Middleware cấp ứng dụng**: `app.use()`  
-    Được thực thi cho mọi yêu cầu, phù hợp cho các tác vụ như ghi nhật ký, xử lý lỗi chung, xử lý phản hồi, v.v.
+4. **Middleware cấp ứng dụng**: `app.use()`
+   Thực thi cho mỗi request, phù hợp để ghi log, xử lý lỗi chung, xử lý response, v.v.
 
-## Đăng ký Middleware
+## Đăng ký middleware
 
-Middleware thường được đăng ký trong phương thức `load` của plugin, ví dụ:
+Middleware thường được đăng ký trong phương thức `load` của Plugin, ví dụ:
 
 ```ts
 export class MyPlugin extends Plugin {
@@ -46,7 +47,7 @@ export class MyPlugin extends Plugin {
       await next();
     });
 
-    // Middleware tài nguyên
+    // Middleware resource
     this.app.resourceManager.use(async (ctx, next) => {
       console.log('Resource middleware');
       await next();
@@ -60,44 +61,44 @@ export class MyPlugin extends Plugin {
 
 Thứ tự thực thi middleware như sau:
 
-1.  Đầu tiên thực thi middleware quyền do `acl.use()` thêm vào
-2.  Sau đó thực thi middleware tài nguyên do `resourceManager.use()` thêm vào
-3.  Tiếp theo thực thi middleware nguồn dữ liệu do `dataSourceManager.use()` thêm vào
-4.  Cuối cùng thực thi middleware ứng dụng do `app.use()` thêm vào
+1. Trước tiên thực thi middleware quyền được thêm bởi `acl.use()`
+2. Tiếp theo thực thi middleware resource được thêm bởi `resourceManager.use()`
+3. Tiếp theo thực thi middleware nguồn dữ liệu được thêm bởi `dataSourceManager.use()`
+4. Cuối cùng thực thi middleware ứng dụng được thêm bởi `app.use()`
 
 ## Cơ chế chèn before / after / tag
 
 Để kiểm soát thứ tự middleware linh hoạt hơn, NocoBase cung cấp các tham số `before`, `after` và `tag`:
 
--   **tag**: Gán một thẻ (tag) cho middleware, để các middleware tiếp theo tham chiếu.
--   **before**: Chèn trước middleware có tag được chỉ định.
--   **after**: Chèn sau middleware có tag được chỉ định.
+- **tag**: Đánh dấu cho middleware, dùng để middleware sau tham chiếu đến
+- **before**: Chèn vào trước middleware có tag đã chỉ định
+- **after**: Chèn vào sau middleware có tag đã chỉ định
 
 Ví dụ:
 
 ```ts
 // Middleware thông thường
 app.use(m1, { tag: 'restApi' });
-app.resourceManager.use(m2, { tag: 'parseToken' });
-app.resourceManager.use(m3, { tag: 'checkRole' });
+app.resourcer.use(m2, { tag: 'parseToken' });
+app.resourcer.use(m3, { tag: 'checkRole' });
 
-// m4 sẽ được đặt trước m1
+// m4 sẽ được sắp xếp trước m1
 app.use(m4, { before: 'restApi' });
 
-// m5 sẽ được chèn giữa m2 và m3
-app.resourceManager.use(m5, { after: 'parseToken', before: 'checkRole' });
+// m5 sẽ được chèn vào giữa m2 và m3
+app.resourcer.use(m5, { after: 'parseToken', before: 'checkRole' });
 ```
 
-:::tip
+:::tip Mẹo
 
-Nếu không chỉ định vị trí, thứ tự thực thi mặc định cho middleware mới được thêm vào là:  
-`acl.use()` -> `resourceManager.use()` -> `dataSourceManager.use()` -> `app.use()`  
+Nếu không chỉ định vị trí, thứ tự thực thi mặc định của middleware mới thêm là:
+`acl.use()` -> `resourceManager.use()` -> `dataSourceManager.use()` -> `app.use()`
 
 :::
 
-## Ví dụ về mô hình Onion
+## Ví dụ mô hình củ hành
 
-Thứ tự thực thi middleware tuân theo **mô hình Onion** của Koa, tức là vào stack middleware trước và thoát ra sau cùng.
+Thứ tự thực thi middleware tuân theo **mô hình củ hành** của Koa, tức là vào stack middleware trước, ra stack cuối cùng.
 
 ```ts
 app.use(async (ctx, next) => {
@@ -107,7 +108,7 @@ app.use(async (ctx, next) => {
   ctx.body.push(2);
 });
 
-app.resourceManager.use(async (ctx, next) => {
+app.resourcer.use(async (ctx, next) => {
   ctx.body = ctx.body || [];
   ctx.body.push(3);
   await next();
@@ -121,7 +122,7 @@ app.acl.use(async (ctx, next) => {
   ctx.body.push(6);
 });
 
-app.resourceManager.define({
+app.resourcer.define({
   name: 'test',
   actions: {
     async list(ctx, next) {
@@ -134,19 +135,28 @@ app.resourceManager.define({
 });
 ```
 
-Ví dụ về thứ tự xuất ra khi truy cập các API khác nhau:
+Truy cập các interface khác nhau, ví dụ thứ tự đầu ra:
 
--   **Yêu cầu thông thường**: `/api/hello`  
-    Đầu ra: `[1,2]` (tài nguyên không được định nghĩa, không thực thi middleware `resourceManager` và `acl`)
+- **Request thông thường**: `/api/hello`
+  Đầu ra: `[1,2]` (không có resource được định nghĩa, không thực thi middleware `resourceManager` và `acl`)
 
--   **Yêu cầu tài nguyên**: `/api/test:list`  
-    Đầu ra: `[5,3,7,1,2,8,4,6]`  
-    Middleware thực thi theo thứ tự tầng và mô hình Onion.
+- **Request resource**: `/api/test:list`
+  Đầu ra: `[5,3,7,1,2,8,4,6]`
+  Middleware thực thi theo phân cấp và mô hình củ hành
 
 ## Tóm tắt
 
--   NocoBase Middleware là một phần mở rộng của Koa Middleware.
--   Bốn tầng: Ứng dụng -> Nguồn dữ liệu -> Tài nguyên -> Quyền
--   Có thể sử dụng `before` / `after` / `tag` để kiểm soát linh hoạt thứ tự thực thi.
--   Tuân theo mô hình Onion của Koa, đảm bảo middleware có thể kết hợp và lồng nhau.
--   Middleware cấp nguồn dữ liệu chỉ áp dụng cho các yêu cầu của nguồn dữ liệu cụ thể, middleware cấp tài nguyên chỉ áp dụng cho các yêu cầu của tài nguyên đã được định nghĩa.
+- Middleware NocoBase là mở rộng của Middleware Koa
+- Bốn cấp: ứng dụng -> nguồn dữ liệu -> resource -> quyền
+- Có thể dùng `before` / `after` / `tag` để kiểm soát thứ tự thực thi linh hoạt
+- Tuân theo mô hình củ hành Koa, đảm bảo middleware có thể kết hợp, có thể lồng nhau
+- Middleware cấp nguồn dữ liệu chỉ tác động lên request của nguồn dữ liệu đã chỉ định, middleware cấp resource chỉ tác động lên request của resource đã định nghĩa
+
+## Liên kết liên quan
+
+- [Context Request](./context.md) — Tìm hiểu API đầy đủ của đối tượng `ctx` trong middleware
+- [ResourceManager](./resource-manager.md) — Đăng ký middleware cấp resource và định nghĩa resource
+- [ACL](./acl.md) — Sử dụng middleware cấp quyền và logic xác minh quyền
+- [Plugin](./plugin.md) — Đăng ký middleware trong phương thức `load` của Plugin
+- [DataSourceManager](./data-source-manager.md) — Tình huống sử dụng middleware cấp nguồn dữ liệu
+- [Tổng quan phát triển server](./index.md) — Kiến trúc tổng thể server và vị trí của middleware

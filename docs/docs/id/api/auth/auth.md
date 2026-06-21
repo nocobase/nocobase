@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Auth"
+description: "API autentikasi NocoBase: class Auth, memverifikasi identitas user, menerbitkan token."
+keywords: "Auth API,autentikasi,login,logout,penerbitan token,NocoBase"
+---
 
 # Auth
 
-## Gambaran Umum
+## Ikhtisar
 
-`Auth` adalah kelas abstrak untuk tipe autentikasi pengguna. Kelas ini mendefinisikan antarmuka yang diperlukan untuk menyelesaikan autentikasi pengguna. Untuk memperluas tipe autentikasi pengguna baru, Anda perlu mewarisi kelas `Auth` dan mengimplementasikan metodenya. Untuk implementasi dasar, lihat: [BaseAuth](./base-auth.md).
+`Auth` adalah abstract class untuk tipe autentikasi user, mendefinisikan interface yang diperlukan untuk menyelesaikan autentikasi user. Untuk memperluas tipe autentikasi user baru perlu extends class `Auth`, dan mengimplementasikan method-methodnya. Implementasi dasar dapat dilihat di: [BaseAuth](./base-auth.md).
 
 ```ts
 interface IAuth {
@@ -25,28 +27,28 @@ export abstract class Auth implements IAuth {
 }
 
 class CustomAuth extends Auth {
-  // check: authentication
+  // check: autentikasi
   async check() {
     // ...
   }
 }
 ```
 
-## Properti Instans
+## Properti Instance
 
 ### `user`
 
-Informasi pengguna yang terautentikasi.
+Informasi user yang terautentikasi.
 
 #### Signature
 
 - `abstract user: Model`
 
-## Metode Kelas
+## Method Class
 
 ### `constructor()`
 
-Konstruktor, membuat sebuah instans `Auth`.
+Constructor, membuat instance `Auth`.
 
 #### Signature
 
@@ -68,15 +70,15 @@ export type AuthConfig = {
 
 ##### AuthConfig
 
-| Properti        | Tipe                                            | Deskripsi                                                                                                   |
-| --------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `authenticator` | [`Authenticator`](./auth-manager#authenticator) | Model data autentikator. Tipe sebenarnya dalam aplikasi NocoBase adalah [AuthModel](/auth-verification/auth/dev/api#authmodel). |
-| `options`       | `Record<string, any>`                           | Konfigurasi terkait autentikator.                                                                          |
-| `ctx`           | `Context`                                       | Konteks permintaan.                                                                                              |
+| Properti | Tipe | Deskripsi |
+| --------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `authenticator` | [`Authenticator`](./auth-manager#authenticator) | Model data authenticator, di aplikasi NocoBase tipe aktualnya adalah [AuthModel](/auth-verification/auth/dev/api#authmodel) |
+| `options` | `Record<string, any>` | Konfigurasi terkait authenticator |
+| `ctx` | `Context` | Konteks request |
 
 ### `check()`
 
-Autentikasi pengguna. Metode ini mengembalikan informasi pengguna dan merupakan metode abstrak yang harus diimplementasikan oleh semua tipe autentikasi.
+Autentikasi user, mengembalikan informasi user, abstract method yang harus diimplementasikan oleh semua tipe autentikasi.
 
 #### Signature
 
@@ -84,7 +86,7 @@ Autentikasi pengguna. Metode ini mengembalikan informasi pengguna dan merupakan 
 
 ### `signIn()`
 
-Masuk pengguna.
+User login.
 
 #### Signature
 
@@ -92,7 +94,7 @@ Masuk pengguna.
 
 ### `signUp()`
 
-Daftar pengguna.
+User registrasi.
 
 #### Signature
 
@@ -100,7 +102,7 @@ Daftar pengguna.
 
 ### `signOut()`
 
-Keluar pengguna.
+User logout.
 
 #### Signature
 

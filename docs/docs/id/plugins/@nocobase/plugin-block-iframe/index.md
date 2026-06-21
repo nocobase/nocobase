@@ -1,8 +1,10 @@
 ---
 displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
+title: "Block: iframe"
+keywords: "Block: iframe,plugin,NocoBase"
 description: |
-  Create an iframe block on the page to embed and display external web pages or content.
+  Membuat dan mengelola iframe pada halaman, untuk menyematkan dan menampilkan halaman web atau konten eksternal.
 isFree: true
 builtIn: true
 defaultEnabled: false

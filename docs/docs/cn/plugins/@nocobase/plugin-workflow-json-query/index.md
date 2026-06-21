@@ -1,4 +1,6 @@
 ---
+title: "工作流：JSON 计算"
+keywords: "工作流：JSON 计算,插件,NocoBase"
 displayName: "工作流：JSON 计算"
 packageName: '@nocobase/plugin-workflow-json-query'
 description: |

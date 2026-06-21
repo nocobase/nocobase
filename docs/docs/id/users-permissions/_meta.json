@@ -6,11 +6,11 @@
   },
   {
     "type": "custom-link",
-    "label": "Peran dan Izin",
+    "label": "Role dan Izin",
     "items": [
       {
         "type": "custom-link",
-        "label": "Konfigurasi Peran",
+        "label": "Konfigurasi Role",
         "link": "/users-permissions/acl/role"
       },
       {
@@ -20,22 +20,22 @@
       },
       {
         "type": "custom-link",
-        "label": "Terapkan di UI",
+        "label": "Penerapan dalam UI",
         "link": "/users-permissions/acl/ui"
       },
       {
         "type": "custom-link",
-        "label": "Gabungan Peran",
+        "label": "Gabungan Role",
         "link": "/users-permissions/acl/union"
       },
       {
         "type": "dir",
-        "label": "Panduan Pengembang",
+        "label": "Panduan Pengembangan",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Perluas Bar Konfigurasi Izin",
+            "label": "Memperluas Tab Konfigurasi Izin",
             "link": "/users-permissions/acl/dev/permission-tab"
           }
         ]
@@ -49,11 +49,11 @@
       {
         "type": "custom-link",
         "label": "Manajemen Departemen",
-        "link": "/users-permissions/departments"
+        "link": "/users-permissions/departments/"
       },
       {
         "type": "custom-link",
-        "label": "Manajemen Peran Departemen",
+        "label": "Manajemen Role Departemen",
         "link": "/users-permissions/departments/role"
       }
     ]
@@ -73,7 +73,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "WeChat Work",
+            "label": "WeCom",
             "link": "/users-permissions/sync/sources/wecom"
           },
           {
@@ -85,17 +85,17 @@
       },
       {
         "type": "dir",
-        "label": "Panduan Pengembang",
+        "label": "Panduan Pengembangan",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Perluas Sumber Data Sinkronisasi",
+            "label": "Memperluas Sumber Data Sinkronisasi",
             "link": "/users-permissions/sync/dev/source"
           },
           {
             "type": "custom-link",
-            "label": "Perluas Sumber Daya Target Sinkronisasi",
+            "label": "Memperluas Resource Target Sinkronisasi",
             "link": "/users-permissions/sync/dev/resource"
           }
         ]

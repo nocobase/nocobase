@@ -1,62 +1,66 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "conditionals"
+description: "Pernyataan kondisi memungkinkan pengontrolan dinamis tampilan atau penyembunyian konten dalam dokumen berdasarkan nilai data. Tersedia tiga cara penulisan kondisi utama: - **Kondisi Inline**: Output teks langsung (atau diganti dengan teks lain). - **Blok Kondisi**: Menampilkan atau menyembunyikan area dalam dokumen, cocok untuk beberapa tag, paragraf, tabel, dll."
+keywords: "conditionals,NocoBase"
+---
 
-## Pernyataan Kondisional
+## Pernyataan Kondisi
 
-Pernyataan kondisional memungkinkan Anda untuk mengontrol tampilan atau penyembunyian konten dalam dokumen secara dinamis berdasarkan nilai data. Ada tiga cara utama untuk menulis kondisi:
+Pernyataan kondisi memungkinkan pengontrolan dinamis tampilan atau penyembunyian konten dalam dokumen berdasarkan nilai data. Tersedia tiga cara penulisan kondisi utama:
 
-- **Kondisi Sebaris (Inline)**: Langsung menampilkan teks (atau menggantinya dengan teks lain).
-- **Blok Kondisional**: Menampilkan atau menyembunyikan bagian dokumen, cocok untuk beberapa tag, paragraf, tabel, dan lainnya.
-- **Kondisi Cerdas**: Langsung menghapus atau mempertahankan elemen target (seperti baris, paragraf, gambar, dll.) dengan satu tag, untuk sintaks yang lebih ringkas.
+- **Kondisi Inline**: Output teks langsung (atau diganti dengan teks lain).
+- **Blok Kondisi**: Menampilkan atau menyembunyikan area dalam dokumen, cocok untuk beberapa tag, paragraf, tabel, dll.
+- **Kondisi Cerdas**: Menghapus atau mempertahankan elemen target (seperti baris, paragraf, gambar, dll.) langsung melalui satu tag, sintaks lebih ringkas.
 
-Semua kondisi dimulai dengan *formatter* evaluasi logis (misalnya, `ifEQ`, `ifGT`, dll.), diikuti oleh *formatter* aksi (seperti `show`, `elseShow`, `drop`, `keep`, dll.).
+Semua kondisi dimulai dengan formatter logika (contoh ifEQ, ifGT, dll.), diikuti dengan formatter Action (seperti show, elseShow, drop, keep, dll.).
+
 
 ### Ikhtisar
 
-Operator logis dan *formatter* aksi yang didukung dalam pernyataan kondisional meliputi:
+Operator logika dan formatter Action yang didukung dalam pernyataan kondisi termasuk:
 
-- **Operator Logis**
-  - **ifEQ(value)**: Memeriksa apakah data sama dengan nilai yang ditentukan.
-  - **ifNE(value)**: Memeriksa apakah data tidak sama dengan nilai yang ditentukan.
-  - **ifGT(value)**: Memeriksa apakah data lebih besar dari nilai yang ditentukan.
-  - **ifGTE(value)**: Memeriksa apakah data lebih besar dari atau sama dengan nilai yang ditentukan.
-  - **ifLT(value)**: Memeriksa apakah data lebih kecil dari nilai yang ditentukan.
-  - **ifLTE(value)**: Memeriksa apakah data lebih kecil dari atau sama dengan nilai yang ditentukan.
-  - **ifIN(value)**: Memeriksa apakah data terkandung dalam sebuah *array* atau *string*.
-  - **ifNIN(value)**: Memeriksa apakah data tidak terkandung dalam sebuah *array* atau *string*.
-  - **ifEM()**: Memeriksa apakah data kosong (misalnya, `null`, `undefined`, *string* kosong, *array* kosong, atau objek kosong).
-  - **ifNEM()**: Memeriksa apakah data tidak kosong.
-  - **ifTE(type)**: Memeriksa apakah tipe data sama dengan tipe yang ditentukan (misalnya, "string", "number", "boolean", dll.).
-  - **and(value)**: Logika "dan", digunakan untuk menghubungkan beberapa kondisi.
-  - **or(value)**: Logika "atau", digunakan untuk menghubungkan beberapa kondisi.
+- **Operator Logika**
+  - **ifEQ(value)**: Menentukan apakah data sama dengan nilai yang ditentukan
+  - **ifNE(value)**: Menentukan apakah data tidak sama dengan nilai yang ditentukan
+  - **ifGT(value)**: Menentukan apakah data lebih besar dari nilai yang ditentukan
+  - **ifGTE(value)**: Menentukan apakah data lebih besar dari atau sama dengan nilai yang ditentukan
+  - **ifLT(value)**: Menentukan apakah data lebih kecil dari nilai yang ditentukan
+  - **ifLTE(value)**: Menentukan apakah data lebih kecil dari atau sama dengan nilai yang ditentukan
+  - **ifIN(value)**: Menentukan apakah data terdapat dalam array atau string
+  - **ifNIN(value)**: Menentukan apakah data tidak terdapat dalam array atau string
+  - **ifEM()**: Menentukan apakah data kosong (seperti null, undefined, string kosong, array kosong, atau objek kosong)
+  - **ifNEM()**: Menentukan apakah data tidak kosong
+  - **ifTE(type)**: Menentukan apakah tipe data sama dengan tipe yang ditentukan (contoh "string", "number", "boolean", dll.)
+  - **and(value)**: Logika "AND", digunakan untuk menghubungkan beberapa kondisi
+  - **or(value)**: Logika "OR", digunakan untuk menghubungkan beberapa kondisi
 
-- **Formatter Aksi**
-  - **:show(text) / :elseShow(text)**: Digunakan dalam kondisi sebaris untuk langsung menampilkan teks yang ditentukan.
-  - **:hideBegin / :hideEnd** dan **:showBegin / :showEnd**: Digunakan dalam blok kondisional untuk menyembunyikan atau menampilkan bagian dokumen.
-  - **:drop(element) / :keep(element)**: Digunakan dalam kondisi cerdas untuk menghapus atau mempertahankan elemen dokumen yang ditentukan.
+- **Formatter Action**
+  - **:show(text) / :elseShow(text)**: Digunakan untuk kondisi inline, output teks langsung
+  - **:hideBegin / :hideEnd** dan **:showBegin / :showEnd**: Digunakan untuk blok kondisi, menyembunyikan atau menampilkan blok dokumen
+  - **:drop(element) / :keep(element)**: Digunakan untuk kondisi cerdas, menghapus atau mempertahankan elemen dokumen yang ditentukan
 
-Bagian-bagian berikut akan memperkenalkan sintaksis terperinci, contoh, dan hasil untuk setiap penggunaan.
+Selanjutnya akan dijelaskan sintaks detail, contoh, dan hasil dari setiap penggunaan.
 
-### Kondisi Sebaris
+
+### Kondisi Inline
 
 #### 1. :show(text) / :elseShow(text)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:kondisi:show(teks)}
 {data:kondisi:show(teks):elseShow(teks alternatif)}
 ```
 
 ##### Contoh
-Asumsikan data adalah:
+Misalkan datanya adalah:
 ```json
 {
   "val2": 2,
   "val5": 5
 }
 ```
-Templatnya adalah sebagai berikut:
+Template sebagai berikut:
 ```
 val2 = {d.val2:ifGT(3):show('high')}
 val2 = {d.val2:ifGT(3):show('high'):elseShow('low')}
@@ -70,14 +74,15 @@ val2 = low
 val5 = high
 ```
 
-#### 2. Switch Case (Pernyataan Kondisional Berganda)
 
-##### Sintaksis
-Gunakan *formatter* kondisi berurutan untuk membangun struktur yang mirip dengan *switch-case*:
+#### 2. Switch Case (Pernyataan Kondisi Multi-level)
+
+##### Sintaks
+Gunakan formatter kondisi yang berurutan untuk membangun struktur seperti switch-case:
 ```
 {data:ifEQ(nilai1):show(hasil1):ifEQ(nilai2):show(hasil2):elseShow(hasil default)}
 ```
-Atau capai hal yang sama dengan operator `or`:
+Atau diimplementasikan dengan operator or:
 ```
 {data:ifEQ(nilai1):show(hasil1):or(data):ifEQ(nilai2):show(hasil2):elseShow(hasil default)}
 ```
@@ -91,7 +96,7 @@ Data:
   "val3": 3
 }
 ```
-Templat:
+Template:
 ```
 val1 = {d.val1:ifEQ(1):show(A):ifEQ(2):show(B):elseShow(C)}
 val2 = {d.val2:ifEQ(1):show(A):ifEQ(2):show(B):elseShow(C)}
@@ -105,10 +110,11 @@ val2 = B
 val3 = C
 ```
 
-#### 3. Pernyataan Kondisional Multivariabel
 
-##### Sintaksis
-Gunakan operator logis `and`/`or` untuk menguji beberapa variabel:
+#### 3. Pernyataan Kondisi Multi-variabel
+
+##### Sintaks
+Menggunakan operator logika and/or dapat menguji beberapa variabel:
 ```
 {data1:ifEQ(kondisi1):and(.data2):ifEQ(kondisi2):show(hasil):elseShow(hasil alternatif)}
 {data1:ifEQ(kondisi1):or(.data2):ifEQ(kondisi2):show(hasil):elseShow(hasil alternatif)}
@@ -122,7 +128,7 @@ Data:
   "val5": 5
 }
 ```
-Templat:
+Template:
 ```
 and = {d.val2:ifEQ(1):and(.val5):ifEQ(5):show(OK):elseShow(KO)}
 or = {d.val2:ifEQ(1):or(.val5):ifEQ(5):show(OK):elseShow(KO)}
@@ -134,18 +140,19 @@ and = KO
 or = OK
 ```
 
-### Operator Logis dan Formatter
 
-Dalam bagian-bagian berikut, *formatter* yang dijelaskan menggunakan sintaksis kondisi sebaris dengan format berikut:
+### Operator Logika dan Formatter
+
+Formatter yang diperkenalkan di setiap bagian berikut menggunakan bentuk kondisi inline, format sintaksnya:
 ```
 {data:formatter(parameter):show(teks):elseShow(teks alternatif)}
 ```
 
 #### 1. :and(value)
 
-##### Sintaksis
+##### Sintaks
 ```
-{data:ifEQ(nilai):and(data baru atau kondisi):ifGT(nilai lain):show(teks):elseShow(teks alternatif)}
+{data:ifEQ(nilai):and(data atau kondisi baru):ifGT(nilai lain):show(teks):elseShow(teks alternatif)}
 ```
 
 ##### Contoh
@@ -154,13 +161,14 @@ Dalam bagian-bagian berikut, *formatter* yang dijelaskan menggunakan sintaksis k
 ```
 
 ##### Hasil
-Jika `d.car` sama dengan `'delorean'` dan `d.speed` lebih besar dari 80, hasilnya adalah `TravelInTime`; jika tidak, hasilnya adalah `StayHere`.
+Jika `d.car` sama dengan `'delorean'` dan `d.speed` lebih besar dari 80, maka output `TravelInTime`; jika tidak output `StayHere`.
+
 
 #### 2. :or(value)
 
-##### Sintaksis
+##### Sintaks
 ```
-{data:ifEQ(nilai):or(data baru atau kondisi):ifGT(nilai lain):show(teks):elseShow(teks alternatif)}
+{data:ifEQ(nilai):or(data atau kondisi baru):ifGT(nilai lain):show(teks):elseShow(teks alternatif)}
 ```
 
 ##### Contoh
@@ -169,11 +177,12 @@ Jika `d.car` sama dengan `'delorean'` dan `d.speed` lebih besar dari 80, hasilny
 ```
 
 ##### Hasil
-Jika `d.car` sama dengan `'delorean'` atau `d.speed` lebih besar dari 80, hasilnya adalah `TravelInTime`; jika tidak, hasilnya adalah `StayHere`.
+Jika `d.car` sama dengan `'delorean'` atau `d.speed` lebih besar dari 80, maka output `TravelInTime`; jika tidak output `StayHere`.
+
 
 #### 3. :ifEM()
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifEM():show(teks):elseShow(teks alternatif)}
 ```
@@ -185,11 +194,12 @@ null:ifEM():show('Result true'):elseShow('Result false')
 ```
 
 ##### Hasil
-Untuk `null` atau *array* kosong, hasilnya adalah `Result true`; jika tidak, hasilnya adalah `Result false`.
+Untuk `null` atau array kosong, output `Result true`; jika tidak output `Result false`.
+
 
 #### 4. :ifNEM()
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifNEM():show(teks):elseShow(teks alternatif)}
 ```
@@ -201,11 +211,12 @@ Untuk `null` atau *array* kosong, hasilnya adalah `Result true`; jika tidak, has
 ```
 
 ##### Hasil
-Untuk data yang tidak kosong (seperti angka 0 atau *string* 'homer'), hasilnya adalah `Result true`; untuk data kosong, hasilnya adalah `Result false`.
+Untuk data tidak kosong (seperti angka 0 atau string 'homer'), output `Result true`; data kosong output `Result false`.
+
 
 #### 5. :ifEQ(value)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifEQ(nilai):show(teks):elseShow(teks alternatif)}
 ```
@@ -217,11 +228,12 @@ Untuk data yang tidak kosong (seperti angka 0 atau *string* 'homer'), hasilnya a
 ```
 
 ##### Hasil
-Jika data sama dengan nilai yang ditentukan, hasilnya adalah `Result true`; jika tidak, hasilnya adalah `Result false`.
+Jika data sama dengan nilai yang ditentukan output `Result true`, jika tidak output `Result false`.
+
 
 #### 6. :ifNE(value)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifNE(nilai):show(teks):elseShow(teks alternatif)}
 ```
@@ -233,11 +245,12 @@ Jika data sama dengan nilai yang ditentukan, hasilnya adalah `Result true`; jika
 ```
 
 ##### Hasil
-Contoh pertama menghasilkan `Result false`, sedangkan contoh kedua menghasilkan `Result true`.
+Contoh pertama output `Result false`, contoh kedua output `Result true`.
+
 
 #### 7. :ifGT(value)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifGT(nilai):show(teks):elseShow(teks alternatif)}
 ```
@@ -249,11 +262,12 @@ Contoh pertama menghasilkan `Result false`, sedangkan contoh kedua menghasilkan 
 ```
 
 ##### Hasil
-Contoh pertama menghasilkan `Result true`, dan contoh kedua menghasilkan `Result false`.
+Contoh pertama output `Result true`, contoh kedua output `Result false`.
+
 
 #### 8. :ifGTE(value)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifGTE(nilai):show(teks):elseShow(teks alternatif)}
 ```
@@ -265,11 +279,12 @@ Contoh pertama menghasilkan `Result true`, dan contoh kedua menghasilkan `Result
 ```
 
 ##### Hasil
-Contoh pertama menghasilkan `Result true`, sedangkan contoh kedua menghasilkan `Result false`.
+Contoh pertama output `Result true`, contoh kedua output `Result false`.
+
 
 #### 9. :ifLT(value)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifLT(nilai):show(teks):elseShow(teks alternatif)}
 ```
@@ -281,11 +296,12 @@ Contoh pertama menghasilkan `Result true`, sedangkan contoh kedua menghasilkan `
 ```
 
 ##### Hasil
-Contoh pertama menghasilkan `Result true`, dan contoh kedua menghasilkan `Result false`.
+Contoh pertama output `Result true`, contoh kedua output `Result false`.
+
 
 #### 10. :ifLTE(value)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifLTE(nilai):show(teks):elseShow(teks alternatif)}
 ```
@@ -297,11 +313,12 @@ Contoh pertama menghasilkan `Result true`, dan contoh kedua menghasilkan `Result
 ```
 
 ##### Hasil
-Contoh pertama menghasilkan `Result true`, dan contoh kedua menghasilkan `Result false`.
+Contoh pertama output `Result true`, contoh kedua output `Result false`.
+
 
 #### 11. :ifIN(value)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifIN(nilai):show(teks):elseShow(teks alternatif)}
 ```
@@ -313,11 +330,12 @@ Contoh pertama menghasilkan `Result true`, dan contoh kedua menghasilkan `Result
 ```
 
 ##### Hasil
-Kedua contoh menghasilkan `Result true` (karena *string* tersebut mengandung 'is', dan *array* tersebut mengandung 2).
+Kedua contoh menghasilkan `Result true` (karena string berisi 'is', array berisi 2).
+
 
 #### 12. :ifNIN(value)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifNIN(nilai):show(teks):elseShow(teks alternatif)}
 ```
@@ -329,11 +347,12 @@ Kedua contoh menghasilkan `Result true` (karena *string* tersebut mengandung 'is
 ```
 
 ##### Hasil
-Contoh pertama menghasilkan `Result false` (karena *string* tersebut mengandung 'is'), dan contoh kedua menghasilkan `Result false` (karena *array* tersebut mengandung 2).
+Contoh pertama output `Result false` (karena string berisi 'is'), contoh kedua output `Result false` (karena array berisi 2).
+
 
 #### 13. :ifTE(type)
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifTE('tipe'):show(teks):elseShow(teks alternatif)}
 ```
@@ -345,15 +364,16 @@ Contoh pertama menghasilkan `Result false` (karena *string* tersebut mengandung 
 ```
 
 ##### Hasil
-Contoh pertama menghasilkan `Result true` (karena 'homer' adalah *string*), dan contoh kedua menghasilkan `Result true` (karena 10.5 adalah angka).
+Contoh pertama output `Result true` ('homer' adalah string), contoh kedua output `Result true` (10.5 adalah angka).
 
-### Blok Kondisional
 
-Blok kondisional digunakan untuk menampilkan atau menyembunyikan bagian dokumen, biasanya untuk menyertakan beberapa tag atau seluruh blok teks.
+### Blok Kondisi
+
+Blok kondisi digunakan untuk menampilkan atau menyembunyikan area dalam dokumen, sering digunakan untuk membungkus beberapa tag atau seluruh paragraf teks.
 
 #### 1. :showBegin / :showEnd
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifEQ(kondisi):showBegin}
 Konten blok dokumen
@@ -367,7 +387,7 @@ Data:
   "toBuy": true
 }
 ```
-Templat:
+Template:
 ```
 Banana{d.toBuy:ifEQ(true):showBegin}
 Apple
@@ -376,7 +396,7 @@ Pineapple
 ```
 
 ##### Hasil
-Ketika kondisi terpenuhi, konten di antaranya ditampilkan:
+Saat kondisi terpenuhi, konten di tengah ditampilkan:
 ```
 Banana
 Apple
@@ -384,9 +404,10 @@ Pineapple
 Grapes
 ```
 
+
 #### 2. :hideBegin / :hideEnd
 
-##### Sintaksis
+##### Sintaks
 ```
 {data:ifEQ(kondisi):hideBegin}
 Konten blok dokumen
@@ -400,7 +421,7 @@ Data:
   "toBuy": true
 }
 ```
-Templat:
+Template:
 ```
 Banana{d.toBuy:ifEQ(true):hideBegin}
 Apple
@@ -409,8 +430,10 @@ Pineapple
 ```
 
 ##### Hasil
-Ketika kondisi terpenuhi, konten di antaranya disembunyikan, menghasilkan:
+Saat kondisi terpenuhi, konten di tengah disembunyikan, output:
 ```
 Banana
 Grapes
 ```
+
+

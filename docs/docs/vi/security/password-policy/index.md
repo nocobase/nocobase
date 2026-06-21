@@ -1,16 +1,15 @@
 ---
 pkg: '@nocobase/plugin-password-policy'
+title: "Chính sách mật khẩu"
+description: "Chính sách mật khẩu: quy tắc mật khẩu (độ dài tối thiểu, độ phức tạp, số mật khẩu lịch sử), thời hạn mật khẩu, khóa khi đăng nhập thử, quản lý khóa người dùng, tính năng phiên bản chuyên nghiệp."
+keywords: "chính sách mật khẩu,quy tắc mật khẩu,độ phức tạp mật khẩu,thời hạn mật khẩu,khóa người dùng,bảo mật đăng nhập,phiên bản chuyên nghiệp,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
 
 # Chính sách mật khẩu
 
 ## Giới thiệu
 
-Thiết lập các quy tắc mật khẩu, thời hạn hiệu lực mật khẩu và chính sách bảo mật đăng nhập mật khẩu cho tất cả người dùng, đồng thời quản lý các tài khoản người dùng bị khóa.
+Đặt quy tắc mật khẩu, thời hạn mật khẩu và chính sách bảo mật đăng nhập mật khẩu cho tất cả người dùng, quản lý người dùng bị khóa.
 
 ## Quy tắc mật khẩu
 
@@ -18,68 +17,68 @@ Thiết lập các quy tắc mật khẩu, thời hạn hiệu lực mật khẩ
 
 ### Độ dài mật khẩu tối thiểu
 
-Thiết lập yêu cầu độ dài mật khẩu tối thiểu, với độ dài tối đa là 64 ký tự.
+Đặt yêu cầu độ dài tối thiểu của mật khẩu, độ dài tối đa là 64.
 
-### Yêu cầu độ phức tạp của mật khẩu
+### Yêu cầu độ phức tạp mật khẩu
 
 Hỗ trợ các tùy chọn sau:
 
-- Phải chứa cả chữ cái và số
-- Phải chứa cả chữ cái, số và ký hiệu
-- Phải chứa cả số, chữ cái viết hoa và chữ cái viết thường
-- Phải chứa cả số, chữ cái viết hoa, chữ cái viết thường và ký hiệu
-- Phải chứa ít nhất 3 trong số các loại ký tự sau: số, chữ cái viết hoa, chữ cái viết thường và ký tự đặc biệt
+- Phải chứa chữ cái và số
+- Phải chứa chữ cái, số và ký tự đặc biệt
+- Phải chứa số, chữ hoa và chữ thường
+- Phải chứa số, chữ hoa, chữ thường và ký tự đặc biệt
+- Phải chứa 3 trong các ký tự sau: số, chữ hoa, chữ thường và ký tự đặc biệt
 - Không giới hạn
 
 ![](https://static-docs.nocobase.com/202412281331649.png)
 
-### Mật khẩu không được chứa tên người dùng
+### Mật khẩu không thể chứa username
 
-Thiết lập xem mật khẩu có được phép chứa tên người dùng hiện tại hay không.
+Đặt mật khẩu có thể chứa username của người dùng hiện tại hay không.
 
-### Số lượng mật khẩu đã dùng gần đây
+### Số lượng mật khẩu lịch sử
 
-Lưu lại số lượng mật khẩu mà người dùng đã sử dụng gần đây. Người dùng không thể sử dụng lại các mật khẩu này khi thay đổi mật khẩu. Giá trị 0 có nghĩa là không giới hạn, số lượng tối đa là 24.
+Ghi nhớ số lượng mật khẩu gần đây nhất của người dùng, người dùng không thể sử dụng lại khi đổi mật khẩu. 0 đại diện cho không giới hạn, số lượng tối đa là 24.
 
-## Cấu hình thời hạn mật khẩu
+## Cấu hình hết hạn mật khẩu
 
 ![](https://static-docs.nocobase.com/202412281335588.png)
 
-### Thời hạn hiệu lực của mật khẩu
+### Thời hạn mật khẩu
 
-Thời hạn hiệu lực của mật khẩu người dùng. Người dùng phải thay đổi mật khẩu trước khi hết hạn để thời hạn hiệu lực được tính lại. Nếu không thay đổi mật khẩu trước khi hết hạn, người dùng sẽ không thể đăng nhập bằng mật khẩu cũ và cần quản trị viên hỗ trợ đặt lại. Nếu có cấu hình các phương thức đăng nhập khác, người dùng vẫn có thể sử dụng các phương thức đó để đăng nhập.
+Thời hạn của mật khẩu người dùng. Người dùng phải đổi mật khẩu trước khi mật khẩu hết hạn thì thời hạn mới được tính lại. Nếu không đổi mật khẩu trước khi hết hạn, sẽ không thể sử dụng mật khẩu cũ để đăng nhập, cần quản trị viên hỗ trợ đặt lại. Nếu đã cấu hình các phương thức đăng nhập khác, người dùng có thể sử dụng phương thức khác để đăng nhập.
 
 ### Kênh thông báo nhắc nhở mật khẩu hết hạn
 
-Trong vòng 10 ngày trước khi mật khẩu người dùng hết hạn, một thông báo nhắc nhở sẽ được gửi mỗi khi người dùng đăng nhập. Theo mặc định, thông báo sẽ được gửi qua kênh tin nhắn nội bộ "Nhắc nhở mật khẩu hết hạn", bạn có thể quản lý kênh này trong phần quản lý thông báo.
+Trong vòng 10 ngày trước khi mật khẩu của người dùng hết hạn, mỗi lần đăng nhập sẽ gửi nhắc nhở. Mặc định gửi đến kênh in-app message "Nhắc nhở mật khẩu hết hạn", có thể quản lý kênh trong Quản lý thông báo.
 
 ### Khuyến nghị cấu hình
 
-Vì mật khẩu hết hạn có thể dẫn đến việc không thể đăng nhập vào tài khoản, bao gồm cả tài khoản quản trị viên, vui lòng thay đổi mật khẩu kịp thời và thiết lập nhiều tài khoản trong hệ thống có quyền sửa đổi mật khẩu người dùng.
+Vì mật khẩu hết hạn có thể dẫn đến việc tài khoản không thể đăng nhập, bao gồm cả tài khoản quản trị viên, vui lòng đổi mật khẩu kịp thời và thiết lập nhiều tài khoản có thể đổi mật khẩu người dùng trong hệ thống.
 
 ## Bảo mật đăng nhập mật khẩu
 
-Thiết lập giới hạn số lần thử đăng nhập bằng mật khẩu không hợp lệ.
+Đặt giới hạn thử đăng nhập với mật khẩu không hợp lệ.
 
 ![](https://static-docs.nocobase.com/202412281339724.png)
 
-### Số lần thử đăng nhập bằng mật khẩu không hợp lệ tối đa
+### Số lần thử đăng nhập với mật khẩu không hợp lệ tối đa
 
-Thiết lập số lần đăng nhập tối đa mà người dùng có thể thử trong một khoảng thời gian quy định.
+Đặt số lần đăng nhập tối đa người dùng có thể thử trong khoảng thời gian quy định.
 
-### Khoảng thời gian tối đa cho các lần thử đăng nhập bằng mật khẩu không hợp lệ (giây)
+### Khoảng thời gian đăng nhập với mật khẩu không hợp lệ tối đa (giây)
 
-Thiết lập khoảng thời gian (tính bằng giây) để tính toán số lần đăng nhập không hợp lệ tối đa của người dùng.
+Đặt khoảng thời gian tính số lần đăng nhập không hợp lệ tối đa của người dùng, đơn vị giây.
 
-### Thời gian khóa tài khoản (giây)
+### Thời gian khóa (giây)
 
-Thiết lập thời gian khóa tài khoản người dùng sau khi vượt quá giới hạn đăng nhập bằng mật khẩu không hợp lệ (0 có nghĩa là không giới hạn). Trong thời gian bị khóa, người dùng sẽ bị cấm truy cập hệ thống bằng bất kỳ phương thức xác thực nào, bao gồm cả API keys. Nếu cần mở khóa người dùng thủ công, vui lòng tham khảo [Khóa người dùng](./lockout.md).
+Đặt thời gian khóa người dùng sau khi vượt quá giới hạn đăng nhập với mật khẩu không hợp lệ (0 đại diện cho không giới hạn). Trong thời gian người dùng bị khóa, sẽ bị cấm truy cập hệ thống bằng bất kỳ phương thức xác thực nào, bao gồm cả API keys. Nếu cần chủ động mở khóa người dùng, có thể tham khảo [Khóa người dùng](./lockout.md).
 
-### Các trường hợp sử dụng
+### Tình huống
 
 #### Không giới hạn
 
-Không giới hạn số lần người dùng thử mật khẩu không hợp lệ.
+Không giới hạn số lần thử mật khẩu không hợp lệ của người dùng.
 
 ![](https://static-docs.nocobase.com/202412281343226.png)
 
@@ -91,12 +90,12 @@ Ví dụ: Người dùng có thể thử đăng nhập tối đa 5 lần mỗi 5
 
 #### Khóa người dùng sau khi vượt quá giới hạn
 
-Ví dụ: Nếu người dùng thực hiện 5 lần đăng nhập bằng mật khẩu không hợp lệ liên tiếp trong vòng 5 phút, tài khoản người dùng sẽ bị khóa trong 2 giờ.
+Ví dụ: Người dùng đăng nhập với mật khẩu không hợp lệ 5 lần liên tiếp trong 5 phút, khóa người dùng 2 giờ.
 
 ![](https://static-docs.nocobase.com/202412281344952.png)
 
 ### Khuyến nghị cấu hình
 
-- Cấu hình số lần đăng nhập bằng mật khẩu không hợp lệ và khoảng thời gian thường được sử dụng để giới hạn các lần thử đăng nhập mật khẩu tần suất cao trong thời gian ngắn, nhằm ngăn chặn tấn công vét cạn (brute-force).
-- Việc có nên khóa người dùng sau khi vượt quá giới hạn hay không cần được xem xét dựa trên các trường hợp sử dụng thực tế. Cài đặt thời gian khóa có thể bị lợi dụng một cách độc hại, khi kẻ tấn công có thể cố tình nhập sai mật khẩu nhiều lần cho một tài khoản mục tiêu, buộc tài khoản đó bị khóa và không thể sử dụng bình thường. Có thể kết hợp các biện pháp như giới hạn IP, giới hạn tần suất API để phòng ngừa loại tấn công này.
-- Vì việc khóa tài khoản sẽ ngăn chặn truy cập vào hệ thống, bao gồm cả tài khoản quản trị viên, nên bạn có thể thiết lập nhiều tài khoản trong hệ thống có quyền mở khóa người dùng.
+- Cấu hình số lần và khoảng thời gian đăng nhập với mật khẩu không hợp lệ thường được dùng để giới hạn các thử đăng nhập tần suất cao trong thời gian ngắn, ngăn chặn brute force.
+- Việc khóa người dùng sau khi vượt quá giới hạn cần xem xét kết hợp với tình huống sử dụng thực tế. Cài đặt thời gian khóa có thể bị lợi dụng độc hại, kẻ tấn công có thể cố tình nhập sai mật khẩu nhiều lần đối với tài khoản mục tiêu, buộc tài khoản bị khóa, không thể sử dụng bình thường. Có thể kết hợp với hạn chế IP, hạn chế tần suất API và các phương pháp khác để phòng chống các loại tấn công này.
+- Vì tài khoản bị khóa sẽ không thể vào hệ thống, bao gồm cả tài khoản quản trị viên, có thể thiết lập nhiều tài khoản có quyền mở khóa người dùng trong hệ thống.

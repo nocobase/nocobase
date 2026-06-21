@@ -1,18 +1,20 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+---
+title: "Panduan Upgrade Instalasi Docker"
+description: "Upgrade NocoBase untuk instalasi Docker: update versi image, docker compose up, image Aliyun, versi hanya bisa naik tidak bisa turun."
+keywords: "Upgrade Docker,Versi Image,docker compose up,Image Aliyun,nocobase/nocobase,NocoBase"
+---
+
+# Upgrade Instalasi Docker
+
+:::warning Persiapan Sebelum Upgrade
+
+- Pastikan untuk membackup database terlebih dahulu
+
 :::
 
-# Peningkatan Instalasi Docker
+## 1. Pindah ke Direktori docker-compose.yml
 
-:::warning Sebelum Melakukan Peningkatan
-
-- Pastikan untuk mencadangkan basis data Anda terlebih dahulu.
-
-:::
-
-## 1. Beralih ke Direktori docker-compose.yml
-
-Contoh:
+Misalnya
 
 ```bash
 # MacOS, Linux...
@@ -21,14 +23,14 @@ cd /your/path/my-project/
 cd C:\your\path\my-project
 ```
 
-## 2. Perbarui Nomor Versi Image
+## 2. Update Versi Image
 
-:::tip Tentang Nomor Versi
+:::tip Penjelasan Versi
 
-- Versi alias, seperti `latest`, `latest-full`, `beta`, `beta-full`, `alpha`, `alpha-full`, umumnya tidak perlu diubah.
-- Nomor versi numerik, seperti `1.7.14`, `1.7.14-full`, perlu diubah ke nomor versi target.
-- Hanya peningkatan yang didukung; penurunan versi tidak didukung!!!
-- Di lingkungan produksi, disarankan untuk menggunakan versi numerik spesifik untuk menghindari peningkatan otomatis yang tidak disengaja. [Lihat semua versi](https://hub.docker.com/r/nocobase/nocobase/tags)
+- Versi alias seperti `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full`, umumnya tidak perlu dimodifikasi
+- Versi numerik seperti `1.7.14` `1.7.14-full` perlu dimodifikasi ke versi target
+- Versi hanya mendukung upgrade, tidak mendukung downgrade!!!
+- Untuk lingkungan produksi disarankan menggunakan versi numerik tetap untuk menghindari upgrade otomatis yang tidak disengaja. [Lihat semua versi](https://hub.docker.com/r/nocobase/nocobase/tags)
 
 :::
 
@@ -36,47 +38,47 @@ cd C:\your\path\my-project
 # ...
 services:
   app:
-    # Direkomendasikan menggunakan mirror Aliyun (jaringan di Indonesia mungkin lebih stabil)
-    image: nocobase/nocobase:1.7.14-full
-    # Anda juga bisa menggunakan versi alias (mungkin otomatis diperbarui, gunakan dengan hati-hati di lingkungan produksi)
-    # image: nocobase/nocobase:latest-full
-    # image: nocobase/nocobase:beta-full
-    # Docker Hub (di Indonesia mungkin lambat/gagal)
+    # Disarankan menggunakan image Aliyun (lebih stabil di jaringan domestik)
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    # Bisa juga menggunakan versi alias (mungkin upgrade otomatis, gunakan dengan hati-hati untuk produksi)
+    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
+    # Docker Hub (mungkin lambat/gagal di jaringan domestik)
     # image: nocobase/nocobase:1.7.14-full
 # ...
 ```
 
-## 3. Mulai Ulang Kontainer
+## 3. Restart Container
 
 ```bash
 # Tarik image terbaru
 docker compose pull app
 
-# Buat ulang kontainer
+# Bangun ulang container
 docker compose up -d app
 
-# Periksa status proses aplikasi
+# Lihat status proses app
 docker compose logs -f app
 ```
 
-## 4. Peningkatan Plugin Pihak Ketiga
+## 4. Upgrade Plugin Pihak Ketiga
 
-Lihat [Instalasi dan Peningkatan Plugin](../install-upgrade-plugins.mdx)
+Lihat [Instalasi dan Upgrade Plugin](../install-upgrade-plugins.mdx)
 
-## 5. Instruksi Rollback
+## 5. Penjelasan Rollback
 
-NocoBase tidak mendukung penurunan versi. Jika Anda perlu melakukan rollback, harap pulihkan cadangan basis data dari sebelum peningkatan dan ubah kembali versi image ke versi semula.
+NocoBase tidak mendukung downgrade. Jika perlu rollback, kembalikan backup database sebelum upgrade dan ubah versi image kembali ke versi sebelumnya.
 
 ## 6. Pertanyaan yang Sering Diajukan (FAQ)
 
-**Q: Penarikan image lambat atau gagal**
+**Q: Tarik image lambat atau gagal**
 
-Gunakan akselerator mirror, atau gunakan mirror Aliyun `nocobase/nocobase:<tag>`. Ini sering disebabkan oleh masalah jaringan.
+Gunakan akselerasi mirror, atau gunakan image Aliyun `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`
 
-**Q: Versi belum berubah**
+**Q: Versi tidak berubah**
 
-Pastikan Anda telah mengubah `image` ke nomor versi baru dan berhasil menjalankan `docker compose pull app` serta `up -d app`.
+Pastikan `image` sudah dimodifikasi ke versi baru, dan `docker compose pull app` serta `up -d app` berhasil dijalankan
 
-**Q: Pengunduhan atau pembaruan plugin komersial gagal**
+**Q: Download atau update Plugin komersial gagal**
 
-Untuk plugin komersial, harap verifikasi kunci lisensi di sistem, lalu mulai ulang kontainer Docker. Untuk detailnya, lihat [Panduan Aktivasi Lisensi Komersial NocoBase](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide).
+Untuk Plugin komersial, verifikasi kode lisensi di sistem, kemudian restart container Docker. Lihat detail di [Panduan Aktivasi Lisensi Komersial NocoBase](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide).

@@ -1,7 +1,8 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Storage (SDK)"
+description: "Storage trong SDK frontend của NocoBase: bao bọc lưu trữ cục bộ, sessionStorage."
+keywords: "Storage SDK,lưu trữ cục bộ,sessionStorage,lưu trữ frontend,NocoBase"
+---
 
 # Storage
 
@@ -9,7 +10,7 @@ Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin kh
 
 Lớp `Storage` được dùng để lưu trữ thông tin phía client, mặc định sử dụng `localStorage`.
 
-### Cách sử dụng cơ bản
+### Cách dùng cơ bản
 
 ```ts
 export abstract class Storage {
@@ -24,7 +25,7 @@ export class CustomStorage extends Storage {
 }
 ```
 
-## Các phương thức của lớp
+## Phương thức của lớp
 
 ### `setItem()`
 
@@ -52,7 +53,7 @@ Xóa nội dung.
 
 ### `clear()`
 
-Xóa tất cả nội dung.
+Xóa toàn bộ nội dung.
 
 #### Chữ ký
 

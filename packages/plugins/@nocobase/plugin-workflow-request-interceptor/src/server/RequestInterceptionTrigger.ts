@@ -17,9 +17,17 @@
  */
 
 import { pick } from 'lodash';
+import Joi from 'joi';
 
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
-import { EventOptions, EXECUTION_STATUS, Trigger, WorkflowModel } from '@nocobase/plugin-workflow';
+import {
+  EventOptions,
+  EXECUTION_STATUS,
+  Trigger,
+  validateCollectionField,
+  WorkflowModel,
+  getWorkflowExecutionLogMeta,
+} from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 import { INTERCEPTABLE_ACTIONS } from '../common/constants';
 
@@ -34,6 +42,35 @@ class RequestInterceptionError extends Error {
 
 export default class RequestInterceptionTrigger extends Trigger {
   static TYPE = 'request-interception';
+
+  configSchema = Joi.object({
+    collection: Joi.string().required(),
+    global: Joi.boolean().optional(),
+    actions: Joi.when('global', {
+      is: true,
+      then: Joi.array()
+        .items(
+          Joi.string().valid(
+            INTERCEPTABLE_ACTIONS.CREATE,
+            INTERCEPTABLE_ACTIONS.UPDATE,
+            INTERCEPTABLE_ACTIONS.UPSERT,
+            INTERCEPTABLE_ACTIONS.DESTROY,
+          ),
+        )
+        .min(1)
+        .required()
+        .messages({ 'array.min': 'At least one action is required in global mode' }),
+      otherwise: Joi.array().items(Joi.string()).optional(),
+    }),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
 
   sync = true;
 
@@ -94,10 +131,23 @@ export default class RequestInterceptionTrigger extends Trigger {
         return aIndex - bIndex;
       });
 
-    for (const workflow of localWorkflows.concat(globalWorkflows)) {
-      if (!workflow.config.global && !triggerWorkflowsMap.has(workflow.key)) {
-        continue;
-      }
+    const syncWorkflows = localWorkflows
+      .filter((workflow) => triggerWorkflowsMap.has(workflow.key))
+      .concat(globalWorkflows);
+
+    for (const [index, workflow] of syncWorkflows.entries()) {
+      const syncLogMeta = {
+        workflowId: workflow.id,
+        workflowKey: workflow.key,
+        workflowTitle: workflow.title,
+        resourceName,
+        actionName,
+        currentSyncOrder: index + 1,
+        totalSyncWorkflows: syncWorkflows.length,
+        remainingSyncWorkflows: syncWorkflows.length - index - 1,
+      };
+
+      context.logger.debug('[Workflow pre-action]: executing sync workflow', syncLogMeta);
 
       const processor = await this.workflow.trigger(
         workflow,
@@ -114,7 +164,11 @@ export default class RequestInterceptionTrigger extends Trigger {
       );
       // NOTE: workflow trigger failed
       if (!processor) {
-        return context.throw(500);
+        context.logger.error(
+          '[Workflow pre-action]: sync workflow trigger failed before execution created',
+          syncLogMeta,
+        );
+        return context.throw(500, 'Workflow on your action failed, please contact the administrator');
       }
 
       const { lastSavedJob, nodesMap } = processor;
@@ -122,22 +176,42 @@ export default class RequestInterceptionTrigger extends Trigger {
       // NOTE: passthrough
       if (processor.execution.status === EXECUTION_STATUS.RESOLVED) {
         if (lastNode?.type === 'end') {
+          context.logger.debug('[Workflow pre-action]: sync workflow ended request chain on end node', {
+            ...syncLogMeta,
+            ...getWorkflowExecutionLogMeta(workflow, processor),
+          });
           return;
         }
+        context.logger.debug('[Workflow pre-action]: sync workflow finished successfully', {
+          ...syncLogMeta,
+          ...getWorkflowExecutionLogMeta(workflow, processor),
+        });
         continue;
       }
       // NOTE: intercept
       if (processor.execution.status < EXECUTION_STATUS.STARTED) {
         if (lastNode?.type !== 'end') {
+          context.logger.error('[Workflow pre-action]: sync workflow failed', {
+            ...syncLogMeta,
+            ...getWorkflowExecutionLogMeta(workflow, processor),
+          });
           return context.throw(500, 'Workflow on your action failed, please contact the administrator');
         }
 
+        context.logger.warn('[Workflow pre-action]: sync workflow intercepted request on end node', {
+          ...syncLogMeta,
+          ...getWorkflowExecutionLogMeta(workflow, processor),
+        });
         const err = new RequestInterceptionError('Request is intercepted by workflow');
         err.status = 400;
         err.messages = context.state.messages;
         return context.throw(err.status, err);
       }
       // NOTE: should not be pending
+      context.logger.error('[Workflow pre-action]: sync workflow is still pending after trigger', {
+        ...syncLogMeta,
+        ...getWorkflowExecutionLogMeta(workflow, processor),
+      });
       return context.throw(500, 'Workflow on your action hangs, please contact the administrator');
     }
 
@@ -200,11 +274,18 @@ export default class RequestInterceptionTrigger extends Trigger {
       });
     }
     const params = values.action === INTERCEPTABLE_ACTIONS.DESTROY ? { filterByTk } : { values: target };
+    const { userId } = values;
+    if (userId == null) {
+      throw new Error('user is not provided');
+    }
     const UserRepo = this.workflow.app.db.getRepository('users');
     const actor = await UserRepo.findOne({
-      filterByTk: values.userId,
+      filterByTk: typeof userId === 'object' ? userId['id'] : userId,
       appends: ['roles'],
     });
+    if (!actor) {
+      throw new Error('user not found');
+    }
     if (!actor) {
       throw new Error('user not found');
     }

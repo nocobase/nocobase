@@ -32,7 +32,9 @@ export const selectedMessageListObs = observable.computed(() => {
   if (selectedChannelNameObs.value) {
     const filteredMessages = messageListObs.value.filter(
       (message) =>
-        message.channelName === selectedChannelNameObs.value && filterMessageByStatus(message) && filterMessageByUserId,
+        message.channelName === selectedChannelNameObs.value &&
+        filterMessageByStatus(message) &&
+        filterMessageByUserId(message),
     );
     return filteredMessages;
   } else {
@@ -63,7 +65,7 @@ export const updateMessage = async (params: { filterByTk: any; values: Record<an
   const apiClient = getAPIClient();
   await apiClient.request({
     resource: InAppMessagesDefinition.name,
-    action: 'update',
+    action: 'updateMyOwn',
     method: 'post',
     params,
   });

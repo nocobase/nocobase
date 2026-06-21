@@ -1,69 +1,68 @@
 ---
 pkg: "@nocobase/plugin-comments"
+title: "Collection Comment"
+description: "Collection Comment menyimpan komentar dan umpan balik pengguna, mendukung rich text, terhubung ke Collection mana pun, komentar berjenjang, dan pelacakan pengguna, menambahkan kemampuan diskusi pada record data."
+keywords: "collection comment,fitur komentar,komentar rich text,komentar berjenjang,Collection Comment,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Collection Comment
 
+## Pengantar
 
-# Koleksi Komentar
-
-## Pendahuluan
-
-Koleksi komentar adalah template tabel data khusus yang dirancang untuk menyimpan komentar dan umpan balik pengguna. Dengan fitur komentar, Anda dapat menambahkan kemampuan berkomentar ke tabel data mana pun, memungkinkan pengguna untuk berdiskusi, memberikan umpan balik, atau membuat anotasi pada catatan tertentu. Koleksi komentar mendukung pengeditan teks kaya (rich text editing), menyediakan kemampuan pembuatan konten yang fleksibel.
+Collection Comment adalah template Collection khusus untuk menyimpan komentar dan umpan balik pengguna. Melalui fitur komentar, Anda dapat menambahkan fungsi komentar ke Collection mana pun, sehingga pengguna dapat berdiskusi, memberikan umpan balik, atau menandai record tertentu. Collection Comment mendukung edit rich text, menyediakan kemampuan kreasi konten yang fleksibel.
 
 ![comment-collection-2025-11-01-00-39-01](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-39-01.png)
 
-## Fitur
+## Karakteristik Fitur
 
-- **Pengeditan Teks Kaya**: Secara default menyertakan editor Markdown (vditor), mendukung pembuatan konten teks kaya.
-- **Terkait dengan Tabel Data Apa Pun**: Dapat mengaitkan komentar dengan catatan di tabel data mana pun melalui kolom relasi.
-- **Komentar Bertingkat**: Mendukung balasan komentar, membangun struktur pohon komentar.
-- **Pelacakan Pengguna**: Secara otomatis mencatat pembuat komentar dan waktu pembuatan.
+- **Edit Rich Text**: Secara default menyertakan editor Markdown (vditor), mendukung kreasi konten rich text
+- **Terhubung ke Collection mana pun**: Dapat menghubungkan komentar ke record Collection mana pun melalui field relasi
+- **Komentar Berjenjang**: Mendukung balasan terhadap komentar, membentuk struktur tree komentar
+- **Pelacakan Pengguna**: Otomatis mencatat pembuat komentar dan waktu pembuatan
 
-## Panduan Pengguna
+## Panduan Penggunaan
 
-### Membuat Koleksi Komentar
+### Membuat Collection Comment
 
 ![comment-collection-2025-11-01-00-37-10](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-37-10.png)
 
-1. Buka halaman manajemen tabel data.
-2. Klik tombol "Buat Koleksi".
-3. Pilih template "Koleksi Komentar".
-4. Masukkan nama tabel (misalnya, "Komentar Tugas", "Komentar Artikel", dll.).
-5. Sistem akan secara otomatis membuat tabel komentar dengan kolom default berikut:
+1. Masuk ke halaman manajemen Collection
+2. Klik tombol "Buat Collection Baru"
+3. Pilih template "Collection Comment"
+4. Masukkan nama Collection (misalnya: "Komentar Task", "Komentar Artikel", dan lainnya)
+5. Sistem akan otomatis membuat Collection Comment dengan field default berikut:
    - Konten komentar (tipe Markdown vditor)
-   - Dibuat oleh (terhubung ke tabel pengguna)
-   - Dibuat pada (tipe tanggal dan waktu)
+   - Pembuat (terhubung ke Collection user)
+   - Waktu pembuatan (tipe datetime)
 
-### Mengonfigurasi Relasi
+### Konfigurasi Relasi
 
-Agar komentar dapat terhubung ke tabel data target, Anda perlu mengonfigurasi kolom relasi:
+Agar komentar dapat terhubung ke Collection target, Anda perlu mengonfigurasi field relasi:
 
 ![](https://static-docs.nocobase.com/Solution/demoE3v1-19N.gif)
 
-1. Tambahkan kolom relasi "Banyak-ke-Satu" di tabel komentar.
-2. Pilih tabel data target yang akan dihubungkan (misalnya: tabel tugas, tabel artikel, dll.).
-3. Atur nama kolom (misalnya: "Milik Tugas", "Milik Artikel", dll.).
+1. Tambahkan field relasi "Many to One" pada Collection Comment
+2. Pilih Collection target yang akan dihubungkan (misalnya: Collection task, Collection artikel, dan lainnya)
+3. Atur nama field (misalnya: "Task Terkait", "Artikel Terkait", dan lainnya)
 
-### Menggunakan Blok Komentar di Halaman
+### Menggunakan Block Komentar di Halaman
 
 ![Enable Comments Collection](https://static-docs.nocobase.com/Solution/demoE3v1-20.gif)
 
-1. Buka halaman tempat Anda ingin menambahkan fungsionalitas komentar.
-2. Tambahkan blok di detail atau pop-up catatan target.
-3. Pilih tipe blok "Komentar".
-4. Pilih koleksi komentar yang baru saja Anda buat.
+1. Masuk ke halaman tempat fungsi komentar perlu ditambahkan
+2. Tambahkan block pada detail atau popup record target
+3. Pilih tipe block "Komentar"
+4. Pilih Collection comment yang baru saja dibuat
 
-### Skenario Penggunaan Umum
 
-- **Sistem Manajemen Tugas**: Anggota tim berdiskusi dan memberikan umpan balik tentang tugas.
-- **Sistem Manajemen Konten**: Pembaca berkomentar dan berinteraksi dengan artikel.
-- **Alur Kerja Persetujuan**: Pemberi persetujuan membuat anotasi dan memberikan pendapat pada formulir aplikasi.
-- **Umpan Balik Pelanggan**: Mengumpulkan ulasan pelanggan tentang produk atau layanan.
+### Skenario Aplikasi Tipikal
 
-## Catatan Penting
+- **Sistem Manajemen Task**: Anggota tim mendiskusikan dan memberikan umpan balik terhadap task
+- **Sistem Manajemen Konten**: Pembaca berkomentar dan berinteraksi dengan artikel
+- **Alur Approval**: Approver memberikan catatan dan opini terhadap formulir aplikasi
+- **Umpan Balik Pelanggan**: Mengumpulkan evaluasi pelanggan terhadap produk atau layanan
 
-- Koleksi komentar adalah fitur **plugin** komersial dan memerlukan **plugin** komentar untuk diaktifkan agar dapat digunakan.
-- Disarankan untuk mengatur izin yang sesuai untuk tabel komentar guna mengontrol siapa yang dapat melihat, membuat, dan menghapus komentar.
-- Untuk skenario dengan jumlah komentar yang banyak, disarankan untuk mengaktifkan pemuatan berhalaman (pagination) untuk meningkatkan kinerja.
+## Perhatian
+
+- Collection Comment adalah fitur plugin komersial, plugin komentar perlu diaktifkan untuk digunakan
+- Disarankan untuk mengatur izin yang sesuai pada Collection Comment, untuk mengontrol siapa yang dapat melihat, membuat, dan menghapus komentar
+- Untuk skenario komentar dalam jumlah besar, disarankan untuk mengaktifkan paginasi guna meningkatkan performa

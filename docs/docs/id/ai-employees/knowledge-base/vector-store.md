@@ -1,28 +1,31 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: "@nocobase/plugin-ai-knowledge-base"
+title: "Vector Store"
+description: "Vector Store adalah pengikatan Embedding model dan vector database, digunakan untuk vektorisasi dan retrieval dokumen. Konfigurasi Vector store, LLM service, Embedding model."
+keywords: "Vector Store,Embedding model,Vector Database,NocoBase"
+---
 
-# Penyimpanan Vektor
+# Vector Store
 
-## Pendahuluan
+## Pengantar
 
-Dalam basis pengetahuan, saat menyimpan dokumen, dokumen akan diubah menjadi vektor. Demikian pula, saat mengambil dokumen, istilah pencarian juga akan diubah menjadi vektor. Kedua proses ini memerlukan `Embedding model` untuk memvektorisasi teks asli.
+Pada Basis Pengetahuan, saat menyimpan dokumen melakukan vektorisasi terhadap dokumen, saat me-retrieve dokumen melakukan vektorisasi terhadap kata pencarian, semua perlu menggunakan `Embedding model` untuk memproses vektorisasi terhadap teks asli.
 
-Dalam plugin Basis Pengetahuan AI, penyimpanan vektor adalah gabungan antara `Embedding model` dan database vektor.
+Pada Plugin Basis Pengetahuan AI, Vector Store adalah pengikatan `Embedding model` dan vector database.
 
-## Manajemen Penyimpanan Vektor
+## Manajemen Vector Store
 
-Buka halaman konfigurasi plugin Karyawan AI, klik tab `Vector store`, lalu pilih `Vector store` untuk masuk ke halaman manajemen penyimpanan vektor.
+Masuk ke halaman konfigurasi Plugin Karyawan AI, klik tab `Vector store`, pilih `Vector store` masuk ke halaman manajemen Vector Store.
 
 ![20251023003023](https://static-docs.nocobase.com/20251023003023.png)
 
-Klik tombol `Add new` di pojok kanan atas untuk menambahkan penyimpanan vektor baru:
+Klik tombol `Add new` di pojok kanan atas untuk menambah Vector Store baru:
 
-- Pada kolom input `Name`, masukkan nama penyimpanan vektor;
-- Pada `Vector store`, pilih database vektor yang sudah dikonfigurasi. Lihat: [Database Vektor](/ai-employees/knowledge-base/vector-database);
-- Pada `LLM service`, pilih layanan LLM yang sudah dikonfigurasi. Lihat: [Manajemen Layanan LLM](/ai-employees/quick-start/llm-service);
-- Pada kolom input `Embedding model`, masukkan nama model `Embedding` yang akan digunakan;
-
-Klik tombol `Submit` untuk menyimpan informasi penyimpanan vektor.
+- Pada kotak input `Name` masukkan nama Vector Store;
+- Pada `Vector store` pilih vector database yang sudah dikonfigurasi, rujuk: [Vector Database](/ai-employees/knowledge-base/vector-database);
+- Pada `LLM service` pilih LLM Service yang sudah dikonfigurasi, rujuk: [Manajemen LLM Service](/ai-employees/features/llm-service);
+- Pada kotak input `Embedding model` masukkan nama model `Embedding` yang akan digunakan;
+  
+Klik tombol `Submit` untuk menyimpan informasi Vector Store.
 
 ![20251023003121](https://static-docs.nocobase.com/20251023003121.png)

@@ -1,33 +1,33 @@
 ---
 pkg: '@nocobase/plugin-workflow-mailer'
+title: "Node Workflow - Gửi email"
+description: "Node gửi email: gửi email, hỗ trợ định dạng text và HTML."
+keywords: "workflow,gửi email,Mailer,Email,thông báo,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Gửi email
 
 ## Giới thiệu
 
-Dùng để gửi email, hỗ trợ nội dung ở định dạng văn bản và HTML.
+Được dùng để gửi email, hỗ trợ nội dung email định dạng text và HTML.
 
-## Tạo nút
+## Tạo Node
 
-Trong giao diện cấu hình luồng công việc, nhấp vào nút dấu cộng (“+”) trong luồng để thêm nút "Gửi email":
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Gửi email":
 
 ![20251031130522](https://static-docs.nocobase.com/20251031130522.png)
 
-## Cấu hình nút
+## Cấu hình Node
 
 ![20251031131125](https://static-docs.nocobase.com/20251031131125.png)
 
-Mỗi tùy chọn có thể sử dụng các biến từ ngữ cảnh của luồng công việc. Đối với thông tin nhạy cảm, quý vị cũng có thể sử dụng các biến toàn cục và khóa bí mật.
+Các tùy chọn đều có thể sử dụng biến trong ngữ cảnh quy trình, đối với thông tin nhạy cảm, cũng có thể sử dụng biến toàn cục và khóa bí mật.
 
 ## Câu hỏi thường gặp
 
-### Giới hạn tần suất gửi email của Gmail
+### Giới hạn tần suất kích hoạt khi gửi qua Gmail
 
-Khi gửi một số email, quý vị có thể gặp lỗi sau:
+Một số khi gửi email sẽ gặp lỗi như sau:
 
 ```json
 {
@@ -38,13 +38,13 @@ Khi gửi một số email, quý vị có thể gặp lỗi sau:
 }
 ```
 
-Điều này là do Gmail giới hạn tần suất các yêu cầu gửi từ các miền chưa được chỉ định. Khi triển khai ứng dụng, quý vị cần cấu hình hostname của máy chủ thành miền đã liên kết trong Gmail. Ví dụ, khi triển khai bằng Docker:
+Đây là do Gmail giới hạn tần suất với các yêu cầu gửi không có gắn nhãn tên miền gửi, cần cấu hình hostname của server thành tên miền gửi đã liên kết với Gmail khi triển khai ứng dụng. Ví dụ khi triển khai bằng Docker:
 
 ```yaml
 services:
   app:
     image: nocobase/nocobase
-    hostname: <your-custom-hostname> # Đặt thành miền gửi đã liên kết của quý vị
+    hostname: <your-custom-hostname> # Đặt thành tên miền gửi đã liên kết
 ```
 
 Tham khảo: [Google SMTP Relay - Intermittent problems](https://forum.nocobase.com/t/google-smtp-relay-intermittent-problems/5483/6)

@@ -12,7 +12,7 @@ import { Select, Spin, Empty } from 'antd';
 import { useForm } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
 
-export const RemoteTableSelect = memo((props:any) => {
+export const RemoteTableSelect = memo((props: any) => {
   const { remoteServerName, onChange, disabled } = props;
   const [options, setOptions] = useState([]);
   const [value, setValue] = useState(props.value);
@@ -33,6 +33,10 @@ export const RemoteTableSelect = memo((props:any) => {
               }),
             );
             setValue(props.value);
+            setLoading(false);
+          })
+          .catch((error) => {
+            console.error(error);
             setLoading(false);
           });
       } else {

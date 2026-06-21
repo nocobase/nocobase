@@ -1,4 +1,6 @@
 ---
+title: "文本复制"
+keywords: "文本复制,插件,NocoBase"
 displayName: "文本复制"
 packageName: '@nocobase/plugin-text-copy'
 description: |

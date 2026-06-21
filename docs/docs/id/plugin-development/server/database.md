@@ -1,42 +1,44 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Database"
+description: "NocoBase Database: Collection, Model, Repository, FieldType, FilterOperator, dataSource.db, app.db."
+keywords: "Database,Collection,Model,Repository,Sequelize,dataSource.db,NocoBase"
+---
 
 # Database
 
-`Database` adalah komponen penting dari `sumber data` bertipe database (`DataSource`). Setiap `sumber data` bertipe database memiliki instance `Database` yang sesuai, yang dapat diakses melalui `dataSource.db`. Instance database dari `sumber data` utama juga menyediakan alias `app.db` yang mudah digunakan. Memahami metode umum `db` adalah dasar untuk menulis `plugin` sisi server.
+`Database` adalah komponen inti dari data source tipe database (`DataSource`). Setiap data source tipe database memiliki instance `Database` yang sesuai, dapat diakses melalui `dataSource.db`. Instance database data source utama juga memiliki alias yang lebih singkat `app.db`. Memahami method umum dari `db` adalah dasar untuk menulis plugin server.
 
 ## Komponen Database
 
-`Database` yang umum terdiri dari bagian-bagian berikut:
+Sebuah `Database` tipikal terdiri dari komponen berikut:
 
 - **Collection**: Mendefinisikan struktur tabel data.
-- **Model**: Sesuai dengan model ORM (umumnya dikelola oleh Sequelize).
-- **Repository**: Lapisan repositori yang merangkum logika akses data, menyediakan metode operasi tingkat lebih tinggi.
-- **FieldType**: Tipe `field`.
-- **FilterOperator**: Operator yang digunakan untuk pemfilteran.
+- **Model**: Sesuai dengan model ORM (biasanya dikelola oleh Sequelize).
+- **Repository**: Layer repository yang mengenkapsulasi logika akses data, menyediakan method operasi tingkat lebih tinggi.
+- **FieldType**: Tipe field.
+- **FilterOperator**: Operator yang digunakan untuk filter.
 - **Event**: Event siklus hidup dan event database.
 
 ## Waktu Penggunaan dalam Plugin
 
-### Hal-hal yang Cocok untuk Tahap `beforeLoad`
+### Hal yang Cocok Dilakukan pada Tahap beforeLoad
 
-Pada tahap ini, operasi database tidak diizinkan. Cocok untuk pendaftaran kelas statis atau mendengarkan event.
+Pada tahap ini operasi database belum dapat dilakukan, cocok untuk registrasi class statis atau listen event.
 
-- `db.registerFieldTypes()` — Tipe `field` kustom
-- `db.registerModels()` — Mendaftarkan kelas model kustom
-- `db.registerRepositories()` — Mendaftarkan kelas repositori kustom
+- `db.registerFieldTypes()` — Mendaftarkan tipe field kustom
+- `db.registerModels()` — Mendaftarkan class model kustom
+- `db.registerRepositories()` — Mendaftarkan class repository kustom
 - `db.registerOperators()` — Mendaftarkan operator filter kustom
 - `db.on()` — Mendengarkan event terkait database
 
-### Hal-hal yang Cocok untuk Tahap `load`
+### Hal yang Cocok Dilakukan pada Tahap load
 
-Pada tahap ini, semua definisi kelas dan event sebelumnya telah dimuat, sehingga pemuatan tabel data tidak akan mengalami kekurangan atau kelalaian.
+Pada tahap ini semua definisi class dan event prasyarat sudah selesai dimuat, kemudian memuat tabel data tidak akan ada yang terlewat atau hilang.
 
 - `db.defineCollection()` — Mendefinisikan tabel data baru
-- `db.extendCollection()` — Memperluas konfigurasi tabel data yang sudah ada
+- `db.extendCollection()` — Memperluas konfigurasi tabel data yang ada
 
-Untuk mendefinisikan tabel bawaan `plugin`, lebih disarankan untuk menempatkannya di direktori `./src/server/collections`. Lihat [koleksi](./collections.md).
+Namun jika untuk mendefinisikan tabel built-in plugin, lebih disarankan ditempatkan di direktori `./src/server/collections`, lihat [Collections Tabel Data](./collections.md).
 
 ## Operasi Data
 
@@ -49,7 +51,7 @@ const repo = db.getRepository('users');
 const user = await repo.findOne({ filter: { id: 1 } });
 ```
 
-Lapisan Repository umumnya digunakan untuk merangkum logika bisnis, seperti paginasi, pemfilteran, pemeriksaan izin, dll.
+Layer Repository biasanya digunakan untuk mengenkapsulasi logika bisnis, seperti pagination, filter, pemeriksaan hak akses, dll.
 
 ### Operasi melalui Model
 
@@ -58,68 +60,76 @@ const UserModel = db.getModel('users');
 const user = await UserModel.findByPk(1);
 ```
 
-Lapisan Model secara langsung sesuai dengan entitas ORM, cocok untuk menjalankan operasi database tingkat lebih rendah.
+Layer Model langsung sesuai dengan entitas ORM, cocok untuk operasi database tingkat lebih rendah.
 
-## Tahap Mana yang Mengizinkan Operasi Database?
+## Pada Tahap Apa Operasi Database Dapat Dilakukan?
 
 ### Siklus Hidup Plugin
 
-| Tahap                | Operasi Database Diizinkan |
-| -------------------- | -------------------------- |
-| `staticImport`       | Tidak                      |
-| `afterAdd`           | Tidak                      |
-| `beforeLoad`         | Tidak                      |
-| `load`               | Tidak                      |
-| `install`            | Ya                         |
-| `beforeEnable`       | Ya                         |
-| `afterEnable`        | Ya                         |
-| `beforeDisable`      | Ya                         |
-| `afterDisable`       | Ya                         |
-| `remove`             | Ya                         |
-| `handleSyncMessage`  | Ya                         |
+| Tahap | Dapat Operasi Database |
+|------|----------------|
+| `staticImport` | No |
+| `afterAdd` | No |
+| `beforeLoad` | No |
+| `load` | No |
+| `install` | Yes |
+| `beforeEnable` | Yes |
+| `afterEnable` | Yes |
+| `beforeDisable` | Yes |
+| `afterDisable` | Yes |
+| `remove` | Yes |
+| `handleSyncMessage` | Yes |
 
-### Event Aplikasi
+### Event App
 
-| Tahap                 | Operasi Database Diizinkan |
-| --------------------- | -------------------------- |
-| `beforeLoad`          | Tidak                      |
-| `afterLoad`           | Tidak                      |
-| `beforeStart`         | Ya                         |
-| `afterStart`          | Ya                         |
-| `beforeInstall`       | Tidak                      |
-| `afterInstall`        | Ya                         |
-| `beforeStop`          | Ya                         |
-| `afterStop`           | Tidak                      |
-| `beforeDestroy`       | Ya                         |
-| `afterDestroy`        | Tidak                      |
-| `beforeLoadPlugin`    | Tidak                      |
-| `afterLoadPlugin`     | Tidak                      |
-| `beforeEnablePlugin`  | Ya                         |
-| `afterEnablePlugin`   | Ya                         |
-| `beforeDisablePlugin` | Ya                         |
-| `afterDisablePlugin`  | Ya                         |
-| `afterUpgrade`        | Ya                         |
+| Tahap | Dapat Operasi Database |
+|------|----------------|
+| `beforeLoad` | No |
+| `afterLoad` | No |
+| `beforeStart` | Yes |
+| `afterStart` | Yes |
+| `beforeInstall` | No |
+| `afterInstall` | Yes |
+| `beforeStop` | Yes |
+| `afterStop` | No |
+| `beforeDestroy` | Yes |
+| `afterDestroy` | No |
+| `beforeLoadPlugin` | No |
+| `afterLoadPlugin` | No |
+| `beforeEnablePlugin` | Yes |
+| `afterEnablePlugin` | Yes |
+| `beforeDisablePlugin` | Yes |
+| `afterDisablePlugin` | Yes |
+| `afterUpgrade` | Yes |
 
 ### Event/Hook Database
 
-| Tahap                         | Operasi Database Diizinkan |
-| ----------------------------- | -------------------------- |
-| `beforeSync`                  | Tidak                      |
-| `afterSync`                   | Ya                         |
-| `beforeValidate`              | Ya                         |
-| `afterValidate`               | Ya                         |
-| `beforeCreate`                | Ya                         |
-| `afterCreate`                 | Ya                         |
-| `beforeUpdate`                | Ya                         |
-| `afterUpdate`                 | Ya                         |
-| `beforeSave`                  | Ya                         |
-| `afterSave`                   | Ya                         |
-| `beforeDestroy`               | Ya                         |
-| `afterDestroy`                | Ya                         |
-| `afterCreateWithAssociations` | Ya                         |
-| `afterUpdateWithAssociations` | Ya                         |
-| `afterSaveWithAssociations`   | Ya                         |
-| `beforeDefineCollection`      | Tidak                      |
-| `afterDefineCollection`       | Tidak                      |
-| `beforeRemoveCollection`      | Tidak                      |
-| `afterRemoveCollection`       | Tidak                      |
+| Tahap | Dapat Operasi Database |
+|------|----------------|
+| `beforeSync` | No |
+| `afterSync` | Yes |
+| `beforeValidate` | Yes |
+| `afterValidate` | Yes |
+| `beforeCreate` | Yes |
+| `afterCreate` | Yes |
+| `beforeUpdate` | Yes |
+| `afterUpdate` | Yes |
+| `beforeSave` | Yes |
+| `afterSave` | Yes |
+| `beforeDestroy` | Yes |
+| `afterDestroy` | Yes |
+| `afterCreateWithAssociations` | Yes |
+| `afterUpdateWithAssociations` | Yes |
+| `afterSaveWithAssociations` | Yes |
+| `beforeDefineCollection` | No |
+| `afterDefineCollection` | No |
+| `beforeRemoveCollection` | No |
+| `afterRemoveCollection` | No |
+
+## Tautan Terkait
+
+- [Collections Tabel Data](./collections.md) — Mendefinisikan atau memperluas struktur tabel data dengan kode
+- [DataSourceManager Manajemen Data Source](./data-source-manager.md) — Mengelola beberapa data source dan instance database-nya
+- [Context Konteks Request](./context.md) — Mendapatkan instance `db` dalam request
+- [Plugin](./plugin.md) — Siklus hidup class plugin, member method, dan objek `app`
+- [Event](./event.md) — Listen dan handle event level aplikasi dan database

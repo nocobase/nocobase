@@ -1,102 +1,110 @@
 ---
 pageType: home
-
 pageName: guide
-
+title: "Panduan Fitur NocoBase"
+description: "Panduan fitur inti NocoBase: data source, pembuatan antarmuka, AI Employee, izin pengguna, autentikasi dan verifikasi, Workflow, notifikasi, multi-aplikasi, integrasi, keamanan, operasi."
+keywords: "NocoBase,Panduan Fitur,Data Source,Pembuatan Antarmuka,Workflow,Dokumentasi NocoBase"
 features:
   - title: Fitur Inti
-    details: Pahami secara mendalam konsep inti NocoBase dan kuasai kemampuan utama dalam pengembangan serta konfigurasi.
+    details: Memahami konsep inti NocoBase secara mendalam, menguasai kemampuan inti dari konfigurasi pengembangan.
     items:
-      - title: Sumber Data
-        details: Hubungkan dan kelola sumber data internal atau eksternal untuk membangun model data sistem.
+      - title: Data Source
+        details: Menghubungkan dan mengelola data source internal atau eksternal, membangun model data sistem.
         link: /data-sources
         showOnHome: true
-      - title: Pembangun Antarmuka
-        details: Kuasai konfigurasi halaman, blok, dan aksi untuk menyesuaikan antarmuka interaktif dan logika tampilan.
+      - title: Pembuatan Antarmuka
+        details: Menguasai cara konfigurasi halaman, Block, dan Action, kustomisasi antarmuka interaksi dan logika tampilan.
         link: /interface-builder
         showOnHome: true
-      - title: Karyawan AI
-        details: Berkolaborasi dengan karyawan AI dan libatkan mereka dalam skenario bisnis seperti pembangunan sistem, analisis data, penerjemahan, dan pengambilan keputusan.
+      - title: AI Employee
+        details: Berkolaborasi dengan AI Employee, biarkan mereka berpartisipasi dalam pembuatan sistem, analisis data, terjemahan, pengambilan keputusan, dan skenario bisnis lainnya.
         link: /ai-employees
         showOnHome: true
-      - title: Pengguna & Izin
-        details: Definisikan peran, izin, dan kontrol akses untuk memastikan keamanan dan kepatuhan sistem.
+      - title: Pengguna dan Izin
+        details: Mendefinisikan role, izin, dan kontrol akses untuk memastikan keamanan dan kepatuhan sistem.
         link: /users-permissions/user
         showOnHome: true
-      - title: Autentikasi & Verifikasi
-        details: Mendukung berbagai metode login dan mekanisme verifikasi untuk memastikan keamanan dan konsistensi identitas.
+      - title: Autentikasi dan Verifikasi
+        details: Mendukung berbagai metode login dan mekanisme verifikasi, memastikan keamanan dan konsistensi identitas.
         link: /auth-verification/auth
         showOnHome: true
-      - title: Alur Kerja
-        details: Rancang alur kerja otomatis untuk mencapai orkestrasi logis dan operasi bisnis otomatis.
+      - title: Workflow
+        details: Mendesain Workflow otomasi, mengimplementasikan orkestrasi logika dan otomatisasi bisnis.
         link: /workflow
         showOnHome: true
       - title: Notifikasi
-        details: Konfigurasikan saluran notifikasi seperti email, SMS, dan pesan dalam aplikasi untuk mengaktifkan pengiriman pesan otomatis.
+        details: Mengonfigurasi saluran notifikasi seperti email, SMS, pesan internal, dan lainnya untuk push pesan otomatis.
         link: /notification-manager
         showOnHome: true
-      - title: Multi-aplikasi dan Multi-ruang Kerja
-        details: Buat beberapa instans aplikasi yang terisolasi secara fisik atau ruang kerja bisnis yang terisolasi secara logis untuk mendukung skenario multi-penyewa.
-        link: /multi-app
+      - title: Multi-Aplikasi dan Multi-Workspace
+        details: Membuat beberapa instans aplikasi yang terisolasi secara fisik atau workspace bisnis yang terisolasi secara logis, mendukung skenario multi-tenant.
+        link: /multi-app/multi-app/
+        showOnHome: true
+      - title: Integrasi
+        details: Terhubung secara mulus dengan sistem eksternal, layanan pihak ketiga, dan berbagai data source untuk memperluas fungsi NocoBase.
+        link: /integration/
         showOnHome: true
   - title: Operasi dan Keamanan
-    details: Manajemen operasi sistem, keamanan data, dan kemampuan pemantauan.
+    details: Manajemen operasi sistem, kemampuan keamanan dan monitoring data.
     items:
-      - title: Variabel dan Rahasia
-        details: Konfigurasikan dan kelola variabel lingkungan serta rahasia secara terpusat untuk penyimpanan data sensitif, penggunaan kembali data konfigurasi, dan isolasi konfigurasi lingkungan.
+      - title: Variabel dan Secret
+        details: Konfigurasi terpusat dan manajemen variabel lingkungan dan secret, untuk penyimpanan data sensitif, reuse data konfigurasi, isolasi konfigurasi lingkungan, dan lainnya.
         link: /ops-management/variables-and-secrets
-      - title: Manajer Cadangan
-        details: Menyediakan fungsionalitas pencadangan dan pemulihan data.
+      - title: Manajemen Backup
+        details: Menyediakan fungsi backup dan pemulihan data.
         link: /ops-management/backup-manager
-      - title: Manajer Rilis
+      - title: Manajemen Rilis
         details: Digunakan untuk memigrasikan konfigurasi aplikasi dari satu lingkungan aplikasi ke lingkungan lainnya.
         link: /ops-management/release-management
       - title: Keamanan
-        details: Menerapkan strategi perlindungan yang mencakup lapisan data, API, dan akses untuk memastikan keamanan dan stabilitas platform.
+        details: Mencakup strategi perlindungan di tingkat data, antarmuka, dan akses untuk memastikan operasi platform yang aman.
         link: /security/guide
         showOnHome: true
-      - title: Pencatatan dan Pemantauan
-        details: Mencatat operasi sistem dan tindakan pengguna.
+      - title: Log dan Monitoring
+        details: Mencatat operasi sistem dan operasi pengguna.
         link: /log-and-monitor/logger/
-      - title: Mode Klaster
-        details: Mendukung deployment multi-node dan penyeimbangan beban untuk memastikan stabilitas dan skalabilitas sistem dalam skenario konkurensi tinggi.
+      - title: Mode Cluster
+        details: Mendukung deployment multi-node dan load balancing untuk memastikan stabilitas dan skalabilitas sistem dalam skenario konkurensi tinggi.
         link: /cluster-mode
   - title: Manajemen Sistem
-    details: Konfigurasi sistem, manajemen plugin, dan kustomisasi antarmuka.
+    details: Konfigurasi sistem, manajemen Plugin, dan kustomisasi antarmuka.
     items:
-      - title: Manajer Plugin
-        details: Lihat, instal, aktifkan, dan nonaktifkan plugin.
+      - title: Manajemen Plugin
+        details: Melihat, instal, mengaktifkan, menonaktifkan Plugin.
         link: /system-management/plugin-manager
       - title: Pengaturan Sistem
-        details: Atur informasi sistem global, seperti nama sistem, LOGO utama, dan bahasa yang diaktifkan.
+        details: Mengatur informasi global sistem seperti nama sistem, LOGO utama, bahasa yang diaktifkan, dan lainnya.
         link: /system-management/system-settings
-      - title: Merek Kustom
-        details: Sesuaikan nama merek dan informasi terkait merek lainnya.
+      - title: Brand Kustom
+        details: Dapat menyesuaikan nama brand dan informasi terkait brand lainnya.
         link: /system-management/custom-brand
-      - title: Editor Tema
-        details: Sesuaikan tema antarmuka sistem, termasuk warna, gaya, dan tata letak, untuk meningkatkan pengalaman merek.
+      - title: Theme Editor
+        details: Menyesuaikan tema antarmuka sistem termasuk warna, gaya, dan layout untuk meningkatkan pengalaman brand.
         link: /system-management/theme-editor
       - title: Manajemen Lokalisasi
-        details: Kelola pengaturan bahasa dan regional untuk mengaktifkan tampilan konten multi-bahasa dan dukungan internasionalisasi.
+        details: Mengelola pengaturan bahasa dan wilayah untuk menampilkan konten multi-bahasa dan dukungan internasionalisasi.
         link: /system-management/localization
   - title: Fitur Lainnya
-    details: Aktifkan modul kemampuan umum sesuai kebutuhan, mencakup file, visualisasi, email, pencetakan template, dan lainnya.
+    details: Aktifkan modul kemampuan yang sering digunakan sesuai kebutuhan, mencakup file, visualisasi, email, template printing, dan lainnya.
     items:
-      - title: Manajer File
-        details: Unggah dan kelola file untuk mencapai penyimpanan file terpadu dan kontrol akses.
+      - title: File Manager
+        details: Upload dan kelola file, mengimplementasikan penyimpanan file dan kontrol akses yang terpadu.
         link: /file-manager
       - title: Visualisasi Data
-        details: Tampilkan wawasan data melalui bagan dan dasbor, mendukung analisis dan presentasi multi-dimensi.
+        details: Menampilkan insight data melalui chart dan dashboard, mendukung analisis dan tampilan multi-dimensi.
         link: /data-visualization
         showOnHome: true
-      - title: Manajer Email
-        details: Integrasikan kotak surat Google dan Microsoft ke dalam sistem untuk integrasi mendalam antara email dan data bisnis.
+      - title: Email Manager
+        details: Mengintegrasikan Google dan Microsoft Email di sistem untuk integrasi mendalam antara email dan data bisnis.
         link: /email-manager
         showOnHome: true
-      - title: Cetak Template
-        details: Hasilkan dokumen yang dapat dicetak berdasarkan template kustom, seperti pesanan, kontrak, atau faktur.
+      - title: Template Print
+        details: Menghasilkan dokumen yang dapat dicetak berdasarkan template kustom, seperti pesanan, kontrak, atau invoice.
         link: /template-print
-      - title: Riwayat Catatan
-        details: Melacak dan menyimpan riwayat perubahan catatan koleksi.
+      - title: Riwayat
+        details: Melacak dan menyimpan riwayat perubahan record tabel data.
         link: /record-history/
+      - title: Mesin Kalkulasi
+        details: Mesin kalkulasi memainkan peran kunci dalam field formula, aturan linkage, dan Workflow, menyediakan tool kalkulasi umum.
+        link: /calculation-engine
 ---

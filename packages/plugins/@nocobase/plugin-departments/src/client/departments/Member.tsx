@@ -210,7 +210,11 @@ export const Member: React.FC = () => {
 
   return (
     <>
-      {!user ? <h2>{t(department?.title || 'All users')}</h2> : <h2>{t('Search results')}</h2>}
+      {!user ? (
+        <h2 style={{ margin: '0 0 16px' }}>{t(department?.title || 'All users')}</h2>
+      ) : (
+        <h2 style={{ margin: '0 0 16px' }}>{t('Search results')}</h2>
+      )}
       <SchemaComponent
         scope={{
           useBulkRemoveMembersAction,

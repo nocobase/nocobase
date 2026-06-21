@@ -1,3 +1,9 @@
+---
+title: "扩展短信服务商"
+description: "通过插件扩展 NocoBase 短信验证服务商：客户端注册 AdminSettingsForm、服务端实现 SMSProvider.send、registerProvider 注册。"
+keywords: "扩展短信服务商,SMSProvider,registerProvider,短信插件,阿里云,腾讯云,NocoBase"
+---
+
 # 扩展短信服务商
 
 本文主要介绍如何通过插件的形式扩展 [验证：短信](../sms) 功能中的短信服务商。

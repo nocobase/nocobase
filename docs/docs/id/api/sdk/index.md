@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "APIClient"
+description: "APIClient SDK frontend NocoBase: HTTP request, Auth, Storage, memanggil API backend."
+keywords: "APIClient,SDK,HTTP request,API frontend,Auth,Storage,NocoBase"
+---
 
 # APIClient
 
-## Gambaran Umum
+## Ikhtisar
 
-`APIClient` adalah *wrapper* berbasis <a href="https://axios-http.com/" target="_blank">`axios`</a>, yang digunakan untuk meminta tindakan sumber daya NocoBase di sisi klien melalui HTTP.
+`APIClient` di-wrap berdasarkan <a href="https://axios-http.com/" target="_blank">`axios`</a>, digunakan untuk melakukan request operasi resource NocoBase melalui HTTP di sisi client.
 
 ### Penggunaan Dasar
 
@@ -20,27 +22,27 @@ class PluginSampleAPIClient extends Plugin {
 }
 ```
 
-## Properti Instans
+## Properti Instance
 
 ### `axios`
 
-Instans `axios`, yang dapat digunakan untuk mengakses API `axios`, contohnya `apiClient.axios.interceptors`.
+Instance `axios`, dapat mengakses API `axios`, contoh `apiClient.axios.interceptors`.
 
 ### `auth`
 
-Kelas autentikasi sisi klien, lihat [Auth](./auth.md).
+Class autentikasi client, lihat [Auth](./auth.md).
 
 ### `storage`
 
-Kelas penyimpanan sisi klien, lihat [Storage](./storage.md).
+Class storage client, lihat [Storage](./storage.md).
 
-## Metode Kelas
+## Method Class
 
 ### `constructor()`
 
-*Constructor*, membuat sebuah instans `APIClient`.
+Constructor, membuat instance `APIClient`.
 
-#### Tanda Tangan
+#### Signature
 
 - `constructor(instance?: APIClientOptions)`
 
@@ -59,9 +61,9 @@ export type APIClientOptions =
 
 ### `request()`
 
-Memulai permintaan HTTP.
+Melakukan HTTP request.
 
-#### Tanda Tangan
+#### Signature
 
 - `request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R>`
 
@@ -80,7 +82,7 @@ type ResourceActionOptions<P = any> = {
 
 ##### AxiosRequestConfig
 
-Parameter permintaan axios umum. Lihat <a href="https://axios-http.com/docs/req_config" target="_blank">Request Config</a>.
+Parameter request axios umum. Lihat <a href="https://axios-http.com/docs/req_config" target="_blank">Request Config</a>.
 
 ```ts
 const res = await apiClient.request({ url: '' });
@@ -88,7 +90,7 @@ const res = await apiClient.request({ url: '' });
 
 ##### ResourceActionOptions
 
-Parameter permintaan tindakan sumber daya NocoBase.
+Parameter request operasi resource NocoBase.
 
 ```ts
 const res = await apiClient.request({
@@ -102,15 +104,15 @@ const res = await apiClient.request({
 
 | Properti | Tipe | Deskripsi |
 | --------------- | -------- | ------------------------------------------------------------------------------------ |
-| `resource` | `string` | 1. Nama sumber daya, contohnya `a`<br />2. Nama objek terkait dari sumber daya, contohnya `a.b` |
-| `resourceOf` | `any` | Ketika `resource` adalah nama objek terkait dari sumber daya, ini adalah nilai *primary key* dari sumber daya tersebut. Contohnya, untuk `a.b`, ini mewakili nilai *primary key* dari `a`. |
-| `action` | `string` | Nama tindakan |
-| `params` | `any` | Objek parameter permintaan, terutama parameter URL. *Request body* ditempatkan di `params.values`. |
-| `params.values` | `any` | Objek *request body* |
+| `resource` | `string` | 1. Nama resource, contoh `a`<br />2. Nama objek asosiasi resource, contoh `a.b` |
+| `resourceOf` | `any` | Saat `resource` adalah nama objek asosiasi, primary key dari resource. Contoh saat `a.b`, mewakili primary key dari `a` |
+| `action` | `string` | Nama operasi |
+| `params` | `any` | Objek parameter request, terutama parameter URL, request body diletakkan di `params.values` |
+| `params.values` | `any` | Objek request body |
 
 ### `resource()`
 
-Mendapatkan objek metode tindakan sumber daya NocoBase.
+Mendapatkan objek method operasi resource NocoBase.
 
 ```ts
 const resource = apiClient.resource('users');
@@ -127,7 +129,7 @@ const res = await resource.list({
 });
 ```
 
-#### Tanda Tangan
+#### Signature
 
 - `resource(name: string, of?: any, headers?: AxiosRequestHeaders): IResource`
 
@@ -148,8 +150,8 @@ export type IResource = {
 
 #### Detail
 
-| Parameter | Tipe | Deskripsi |
+| Nama Parameter | Tipe | Deskripsi |
 | --------- | --------------------- | ------------------------------------------------------------------------------------ |
-| `name` | `string` | 1. Nama sumber daya, contohnya `a`<br />2. Nama objek terkait dari sumber daya, contohnya `a.b` |
-| `of` | `any` | Ketika `name` adalah nama objek terkait dari sumber daya, ini adalah nilai *primary key* dari sumber daya tersebut. Contohnya, untuk `a.b`, ini mewakili nilai *primary key* dari `a`. |
-| `headers` | `AxiosRequestHeaders` | *Header* HTTP yang akan disertakan dalam permintaan tindakan sumber daya berikutnya. |
+| `name` | `string` | 1. Nama resource, contoh `a`<br />2. Nama objek asosiasi resource, contoh `a.b` |
+| `of` | `any` | Saat `resource` adalah nama objek asosiasi, primary key dari resource. Contoh saat `a.b`, mewakili primary key dari `a` |
+| `headers` | `AxiosRequestHeaders` | HTTP request header yang dibawa saat melakukan request operasi resource selanjutnya |

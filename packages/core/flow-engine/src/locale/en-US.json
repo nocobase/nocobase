@@ -34,6 +34,7 @@
   "Failed to destroy model after creation error": "Failed to destroy model after creation error",
   "Failed to get action {{action}}": "Failed to get action {{action}}",
   "Failed to get configurable flows for model {{model}}": "Failed to get configurable flows for model {{model}}",
+  "Attributes are unavailable before selecting a record": "Attributes are unavailable before selecting a record",
   "Failed to import FormDialog": "Failed to import FormDialog",
   "Failed to import FormDialog or FormStep": "Failed to import FormDialog or FormStep",
   "Failed to import Formily components": "Failed to import Formily components",

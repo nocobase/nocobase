@@ -1,17 +1,18 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Action liên kết"
+description: "Action liên kết: chuyển đến URL hoặc Trang chỉ định, hỗ trợ mở trong cửa sổ mới, truyền biến."
+keywords: "Action liên kết,Link,chuyển hướng Trang,URL,Interface Builder,NocoBase"
+---
 
 # Liên kết
 
 ## Giới thiệu
 
-Thao tác liên kết sử dụng điều hướng tuyến đường (route navigation), hỗ trợ truyền các biến URL. Trang đích có thể điều chỉnh nội dung một cách linh hoạt dựa trên dữ liệu được truyền vào. Bạn có thể cấu hình và sử dụng thao tác này trong các khối dữ liệu.
+Action liên kết dưới dạng chuyển hướng route, hỗ trợ truyền biến URL, Trang đích có thể điều chỉnh nội dung động theo dữ liệu được truyền vào, hỗ trợ cấu hình sử dụng trong Block dữ liệu.
 
 ![20251029174546](https://static-docs.nocobase.com/20251029174546.png)
 
-## Cài đặt thao tác
+## Tùy chọn cấu hình Action
 
 ![20251029174617](https://static-docs.nocobase.com/20251029174617.png)
 
@@ -21,9 +22,9 @@ Thao tác liên kết sử dụng điều hướng tuyến đường (route navi
 
 ### Mở trong cửa sổ mới
 
-Sau khi chọn "Mở trong cửa sổ mới", liên kết sẽ được mở trong một cửa sổ mới.
+Sau khi đánh dấu "Mở trong cửa sổ mới", liên kết sẽ được mở trong cửa sổ mới.
 
 ![20251029175327](https://static-docs.nocobase.com/20251029175327.png)
 
-- [Chỉnh sửa nút](/interface-builder/actions/action-settings/edit-button): Chỉnh sửa tiêu đề, loại và biểu tượng của nút;
-- [Quy tắc liên kết](/interface-builder/linkage-rule): Điều khiển trạng thái nút một cách linh hoạt;
+- [Chỉnh sửa nút bấm](/interface-builder/actions/action-settings/edit-button): chỉnh sửa tiêu đề, loại, biểu tượng của nút bấm;
+- [Quy tắc liên kết](/interface-builder/linkage-rule): kiểm soát trạng thái nút bấm động;

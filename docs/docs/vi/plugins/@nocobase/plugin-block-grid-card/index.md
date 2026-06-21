@@ -1,12 +1,14 @@
 ---
-displayName: "Block: GridCard"
+displayName: "Block: Thẻ lưới"
 packageName: '@nocobase/plugin-block-grid-card'
+title: "Block: Thẻ lưới"
+keywords: "Block: Thẻ lưới,Plugin,NocoBase"
 description: |
-  Display data in a grid list with pagination support.
+  Hiển thị dữ liệu dưới dạng danh sách lưới, hỗ trợ cấu hình phân trang.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: GridCard
+# Block: Thẻ lưới

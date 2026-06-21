@@ -1,3 +1,9 @@
+---
+title: "编写第一个区块插件"
+description: "NocoBase 区块扩展开发：编写第一个区块插件"
+keywords: "write,a,block,plugin,NocoBase"
+---
+
 # 编写第一个区块插件
 
 在开始之前，建议先阅读「[编写第一个插件](../plugin-development/write-your-first-plugin.md)」，了解如何快速创建基础插件。接下来，我们将在此基础上扩展一个简单的区块（Block）功能。

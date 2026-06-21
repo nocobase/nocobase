@@ -1,12 +1,14 @@
 ---
-displayName: "Graph collection manager"
+displayName: "Quản lý bảng dữ liệu trực quan"
 packageName: '@nocobase/plugin-graph-collection-manager'
+title: "Quản lý bảng dữ liệu trực quan"
+keywords: "Quản lý bảng dữ liệu trực quan,Plugin,NocoBase"
 description: |
-  An ER diagram-like tool. Currently only the Master database is supported.
+  Công cụ tương tự sơ đồ ER, hiện chỉ hỗ trợ cơ sở dữ liệu chính.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Graph collection manager
+# Quản lý bảng dữ liệu trực quan

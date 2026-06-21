@@ -1,3 +1,9 @@
+---
+title: "阿里云 OSS"
+description: "阿里云 OSS 存储引擎配置：Bucket、Endpoint、AccessKey，支持公网与内网访问。"
+keywords: "阿里云 OSS,阿里云对象存储,OSS 存储,云存储,NocoBase"
+---
+
 # 阿里云 OSS
 
 基于阿里云 OSS 的存储引擎，使用前需要准备相关账号和权限。

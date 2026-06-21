@@ -1,26 +1,29 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Memperluas Tipe Trigger"
+description: "Memperluas tipe Trigger: pengembangan Trigger kustom, antarmuka konfigurasi, logika pemicuan, referensi API."
+keywords: "Workflow,memperluas Trigger,Trigger kustom,pengembangan Trigger,NocoBase"
+---
 
-# Memperluas Tipe Pemicu
+# Memperluas Tipe Trigger
 
-Setiap alur kerja harus dikonfigurasi dengan pemicu spesifik, yang berfungsi sebagai titik masuk untuk memulai eksekusi proses.
+Setiap Workflow harus mengonfigurasi Trigger tertentu sebagai pintu masuk untuk memulai eksekusi alur.
 
-Tipe pemicu biasanya merepresentasikan suatu kejadian lingkungan sistem yang spesifik. Selama siklus hidup aplikasi berjalan, setiap bagian yang menyediakan kejadian yang dapat di-subscribe dapat digunakan untuk mendefinisikan tipe pemicu. Contohnya, menerima permintaan, operasi koleksi, tugas terjadwal, dan lain-lain.
+Tipe Trigger biasanya merepresentasikan event lingkungan sistem tertentu. Selama siklus runtime aplikasi, setiap titik yang menyediakan event yang dapat di-subscribe dapat digunakan untuk mendefinisikan tipe Trigger. Misalnya menerima request, operasi tabel data, tugas terjadwal, dll.
 
-Tipe pemicu didaftarkan dalam tabel pemicu plugin berdasarkan pengidentifikasi string. Plugin alur kerja memiliki beberapa pemicu bawaan:
+Tipe Trigger didaftarkan pada tabel Trigger plugin berdasarkan identifier string. Plugin Workflow memiliki beberapa Trigger bawaan:
 
-- `'collection'`: Dipicu oleh operasi koleksi;
-- `'schedule'`: Dipicu oleh tugas terjadwal;
-- `'action'`: Dipicu oleh kejadian setelah operasi;
+- `'collection'`: Trigger operasi tabel data;
+- `'schedule'`: Trigger tugas terjadwal;
+- `'action'`: Trigger event setelah action;
 
-Tipe pemicu yang diperluas perlu memastikan pengidentifikasinya unik. Implementasi untuk berlangganan/berhenti berlangganan pemicu didaftarkan di sisi server, dan implementasi untuk antarmuka konfigurasi didaftarkan di sisi klien.
 
-## Sisi Server
+Tipe Trigger yang diperluas perlu memastikan identifier unik, mendaftarkan implementasi subscribe/unsubscribe Trigger di server, dan mendaftarkan implementasi konfigurasi antarmuka di client.
 
-Setiap pemicu perlu mewarisi dari kelas dasar `Trigger` dan mengimplementasikan metode `on`/`off`, yang masing-masing digunakan untuk berlangganan dan berhenti berlangganan kejadian lingkungan spesifik. Dalam metode `on`, Anda perlu memanggil `this.workflow.trigger()` di dalam fungsi callback kejadian spesifik untuk akhirnya memicu kejadian tersebut. Selain itu, dalam metode `off`, Anda perlu melakukan pekerjaan pembersihan terkait untuk berhenti berlangganan.
+## Server
 
-Di sini, `this.workflow` adalah instans plugin alur kerja yang diteruskan ke konstruktor kelas dasar `Trigger`.
+Setiap Trigger perlu di-extend dari kelas dasar `Trigger`, dan mengimplementasikan method `on`/`off`, masing-masing untuk subscribe dan unsubscribe event lingkungan tertentu. Pada method `on`, perlu memanggil `this.workflow.trigger()` di dalam fungsi callback event tertentu untuk akhirnya memicu event. Selain itu, pada method `off`, perlu melakukan pekerjaan pembersihan unsubscribe terkait.
+
+Di mana `this.workflow` adalah instance plugin Workflow yang diteruskan dalam konstruktor kelas dasar `Trigger`.
 
 ```ts
 import { Trigger } from '@nocobase/plugin-workflow';
@@ -43,7 +46,7 @@ class MyTrigger extends Trigger {
 }
 ```
 
-Kemudian, dalam plugin yang memperluas alur kerja, daftarkan instans pemicu ke mesin alur kerja:
+Kemudian pada plugin yang memperluas Workflow, daftarkan instance Trigger ke engine Workflow:
 
 ```ts
 import WorkflowPlugin from '@nocobase/plugin-workflow';
@@ -59,13 +62,13 @@ export default class MyPlugin extends Plugin {
 }
 ```
 
-Setelah server dimulai dan dimuat, pemicu tipe `'interval'` dapat ditambahkan dan dieksekusi.
+Setelah server di-load saat startup, Trigger dengan tipe `'interval'` dapat ditambahkan dan dieksekusi.
 
-## Sisi Klien
+## Client
 
-Bagian sisi klien utamanya menyediakan antarmuka konfigurasi berdasarkan item konfigurasi yang diperlukan oleh tipe pemicu. Setiap tipe pemicu juga perlu mendaftarkan konfigurasi tipenya yang sesuai dengan plugin alur kerja.
+Bagian client terutama menyediakan antarmuka konfigurasi sesuai item konfigurasi yang dibutuhkan tipe Trigger. Setiap tipe Trigger juga perlu mendaftarkan konfigurasi tipe yang sesuai ke plugin Workflow.
 
-Sebagai contoh, untuk pemicu eksekusi terjadwal yang disebutkan di atas, definisikan item konfigurasi waktu interval (`interval`) yang diperlukan dalam formulir antarmuka konfigurasi:
+Misalnya untuk Trigger eksekusi terjadwal di atas, definisikan item konfigurasi waktu interval (`interval`) yang dibutuhkan dalam form antarmuka konfigurasi:
 
 ```ts
 import { Trigger } from '@nocobase/workflow/client';
@@ -86,7 +89,7 @@ class MyTrigger extends Trigger {
 }
 ```
 
-Kemudian, daftarkan tipe pemicu ini ke instans plugin alur kerja di dalam plugin yang diperluas:
+Kemudian di plugin yang diperluas, daftarkan tipe Trigger ini ke instance plugin Workflow:
 
 ```ts
 import { Plugin } from '@nocobase/client';
@@ -103,10 +106,10 @@ export default class extends Plugin {
 }
 ```
 
-Setelah itu, tipe pemicu baru akan terlihat di antarmuka konfigurasi alur kerja.
+Setelah itu, tipe Trigger baru akan terlihat di antarmuka konfigurasi Workflow.
 
-:::info{title=Catatan}
-Pengidentifikasi tipe pemicu yang didaftarkan di sisi klien harus konsisten dengan yang ada di sisi server, jika tidak akan menyebabkan kesalahan.
+:::info{title=Tips}
+Identifier tipe Trigger yang didaftarkan di client harus konsisten dengan yang ada di server, jika tidak akan menyebabkan error.
 :::
 
-Untuk detail lain tentang mendefinisikan tipe pemicu, silakan lihat bagian [Referensi API Alur Kerja](./api#pluginregisterTrigger).
+Untuk konten lain dari pendefinisian tipe Trigger, lihat bagian [Referensi API Workflow](./api#pluginregisterTrigger).

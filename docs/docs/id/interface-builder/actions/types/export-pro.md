@@ -1,27 +1,25 @@
 ---
 pkg: "@nocobase/plugin-action-export-pro"
+title: "Action Ekspor Pro"
+description: "Action Ekspor Pro: fitur ekspor lanjutan, mendukung template kustom, ekspor multi-table, format kompleks."
+keywords: "Ekspor Pro, ExportPro, ekspor lanjutan, template kustom, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-
 # Ekspor Pro
 
-## Pendahuluan
+## Pengantar
 
-Plugin Ekspor Pro menyediakan fitur yang ditingkatkan di atas fungsionalitas ekspor standar.
+Plugin Ekspor Pro menyediakan fitur tambahan di atas fitur ekspor biasa.
 
 ## Instalasi
 
-Plugin ini bergantung pada plugin Manajemen Tugas Asinkron. Anda perlu mengaktifkan plugin Manajemen Tugas Asinkron sebelum menggunakannya.
+Plugin ini bergantung pada Plugin Manajemen Tugas Asynchronous, sebelum digunakan harus mengaktifkan Plugin Manajemen Tugas Asynchronous terlebih dahulu.
 
 ## Peningkatan Fitur
 
-- Mendukung operasi ekspor asinkron, dieksekusi dalam thread terpisah, untuk mengekspor data dalam jumlah besar.
+- Mendukung Action ekspor asynchronous, dieksekusi di thread independen, mendukung ekspor data dalam jumlah besar.
 - Mendukung ekspor lampiran.
 
-## Panduan Pengguna
+## Panduan Penggunaan
 
 ### Konfigurasi Mode Ekspor
 
@@ -29,52 +27,54 @@ Plugin ini bergantung pada plugin Manajemen Tugas Asinkron. Anda perlu mengaktif
 
 ![20251029172914](https://static-docs.nocobase.com/20251029172914.png)
 
-Pada tombol ekspor, Anda dapat mengonfigurasi mode ekspor. Ada tiga mode ekspor yang dapat dipilih:
 
-- Otomatis: Mode ekspor ditentukan oleh volume data. Jika jumlah data kurang dari 1000 baris (atau 100 baris untuk ekspor lampiran), ekspor sinkron akan digunakan. Jika jumlah data lebih dari 1000 baris (atau 100 baris untuk ekspor lampiran), ekspor asinkron akan digunakan.
-- Sinkron: Menggunakan ekspor sinkron, yang berjalan di thread utama. Mode ini cocok untuk data skala kecil. Mengekspor data dalam jumlah besar dalam mode sinkron dapat menyebabkan sistem terblokir, macet, dan tidak dapat menangani permintaan pengguna lain.
-- Asinkron: Menggunakan ekspor asinkron, yang berjalan di thread latar belakang terpisah dan tidak akan memblokir operasi sistem saat ini.
+Pada tombol ekspor, Anda dapat mengkonfigurasi mode ekspor. Tiga mode ekspor yang tersedia:
 
-### Ekspor Asinkron
+- Otomatis: Menentukan mode ekspor berdasarkan jumlah data saat ekspor. Jika jumlah data kurang dari 1000 record (100 record untuk ekspor lampiran), gunakan ekspor sinkron. Jika jumlah data lebih dari 1000 record (100 record untuk ekspor lampiran), gunakan ekspor asynchronous.
+- Sinkron: Menggunakan ekspor sinkron, akan dijalankan di thread utama saat ekspor, cocok untuk data skala kecil. Jika dieksekusi ekspor data skala besar dalam mode sinkron, mungkin akan menyebabkan sistem terblokir, lag, dan tidak dapat menangani request pengguna lain.
+- Asynchronous: Menggunakan ekspor asynchronous, akan dieksekusi di thread background independen saat ekspor, tidak akan memblokir penggunaan sistem saat ini.
 
-Setelah memulai ekspor, proses akan berjalan di thread latar belakang terpisah tanpa memerlukan konfigurasi manual dari pengguna. Di antarmuka pengguna, setelah memulai operasi ekspor, tugas ekspor yang sedang berjalan akan ditampilkan di sudut kanan atas, menunjukkan progres tugas secara real-time.
+### Ekspor Asynchronous
+
+Setelah ekspor dieksekusi, alur ekspor akan dieksekusi di thread background independen tanpa konfigurasi manual pengguna. Di antarmuka pengguna, setelah Action ekspor dieksekusi, di bagian kanan atas akan ditampilkan tugas ekspor yang sedang dieksekusi, dan progress tugas akan ditampilkan secara real-time.
 
 ![20251029173028](https://static-docs.nocobase.com/20251029173028.png)
 
-Setelah ekspor selesai, Anda dapat mengunduh file hasil ekspor dari tugas ekspor.
+Setelah ekspor selesai, Anda dapat mendownload file yang diekspor di tugas ekspor.
 
-#### Ekspor Konkuren
-Banyaknya tugas ekspor konkuren dapat dipengaruhi oleh konfigurasi server, yang menyebabkan respons sistem melambat. Oleh karena itu, disarankan agar pengembang sistem mengonfigurasi jumlah maksimum tugas ekspor konkuren (standar adalah 3). Ketika jumlah tugas konkuren melebihi batas yang dikonfigurasi, tugas baru akan masuk dalam antrean.
+#### Ekspor Concurrent
+Ketika ada banyak tugas ekspor concurrent, akan terpengaruh oleh konfigurasi server, sehingga menyebabkan respons sistem melambat. Oleh karena itu, disarankan kepada developer sistem untuk mengkonfigurasi jumlah maksimum konkurensi ekspor tugas (default 3). Ketika melebihi jumlah konkurensi yang dikonfigurasi, akan masuk ke status antrian.
 ![20250505171706](https://static-docs.nocobase.com/20250505171706.png)
 
-Cara konfigurasi konkurensi: Variabel lingkungan ASYNC_TASK_MAX_CONCURRENCY=jumlah_konkurensi
+Cara konfigurasi konkurensi: Variabel lingkungan ASYNC_TASK_MAX_CONCURRENCY=jumlah konkurensi
 
-Berdasarkan pengujian komprehensif dengan berbagai konfigurasi dan kompleksitas data, jumlah konkurensi yang direkomendasikan adalah:
-- CPU 2-core, jumlah konkurensi 3.
-- CPU 4-core, jumlah konkurensi 5.
+Dalam pengujian komprehensif konfigurasi yang berbeda dan kompleksitas data, jumlah konkurensi yang direkomendasikan:
+- 2 core CPU, jumlah konkurensi 3.
+- 4 core CPU, jumlah konkurensi 5.
 
 #### Tentang Performa
-Jika Anda menemukan bahwa proses ekspor sangat lambat (lihat referensi di bawah), kemungkinan ada masalah performa yang disebabkan oleh struktur koleksi.
+Ketika Anda menemukan proses ekspor sangat lambat (referensi sebagai berikut), mungkin disebabkan oleh masalah performa karena struktur Collection.
 
-| Karakteristik Data | Tipe Indeks | Volume Data | Durasi Ekspor |
+| Karakteristik Data | Tipe Index | Jumlah Data | Durasi Ekspor |
 |---------|---------|--------|---------|
-| Tanpa Kolom Relasi | Kunci Primer / Batasan Unik | 1 juta | 3～6 menit |
-| Tanpa Kolom Relasi | Indeks Biasa | 1 juta | 6～10 menit |
-| Tanpa Kolom Relasi | Indeks Komposit (non-unik) | 1 juta | 30 menit |
-| Kolom Relasi<br>(Satu-ke-Satu, Satu-ke-Banyak,<br>Banyak-ke-Satu, Banyak-ke-Banyak) | Kunci Primer / Batasan Unik | 500 ribu | 15～30 menit | Kolom relasi mengurangi performa |
+| Tanpa Field relasi | Primary key/unique constraint | 1 juta | 3-6 menit |
+| Tanpa Field relasi | Index biasa | 1 juta | 6-10 menit |
+| Tanpa Field relasi | Index gabungan (non-unique) | 1 juta | 30 menit |
+| Field relasi<br>(one-to-one, one-to-many,<br>many-to-one, many-to-many) | Primary key/unique constraint | 500 ribu | 15-30 menit | Field relasi menyebabkan penurunan performa |
 
-Untuk memastikan ekspor yang efisien, kami merekomendasikan Anda untuk:
-1. Koleksi harus memenuhi kondisi berikut:
+Untuk memastikan ekspor yang efisien, Anda disarankan:
+1. Collection harus memenuhi kondisi berikut:
 
-| Tipe Kondisi | Kondisi Wajib | Catatan Lain |
+| Tipe Kondisi | Kondisi Wajib | Penjelasan Lainnya |
 |---------|------------------------|------|
-| Struktur Koleksi (penuhi setidaknya satu) | Memiliki Kunci Primer<br>Memiliki Batasan Unik<br>Memiliki Indeks (unik, biasa, komposit) | Prioritas: Kunci Primer > Batasan Unik > Indeks
-| Karakteristik Kolom | Kunci Primer / Batasan Unik / Indeks (salah satunya) harus memiliki karakteristik yang dapat diurutkan, seperti: ID auto-increment, Snowflake ID, UUID v1, timestamp, angka, dll.<br>(Catatan: Kolom yang tidak dapat diurutkan seperti UUID v3/v4/v5, string biasa, dll., akan memengaruhi performa) | Tidak Ada |
+| Struktur Table (minimal memenuhi salah satu) | Memiliki primary key<br>Memiliki unique constraint<br>Memiliki index (unique, biasa, gabungan) | Prioritas: primary key > unique constraint > index
+| Karakteristik Field | Primary key/unique constraint/index (salah satu) harus memiliki karakteristik yang dapat di-sort, seperti: auto-increment ID, snowflake ID, UUID v1, timestamp, angka, dll.<br>(Perhatian: UUID v3/v4/v5, string biasa, dan Field yang tidak dapat di-sort lainnya akan mempengaruhi performa) | Tidak ada |
 
-2. Kurangi jumlah kolom yang tidak perlu diekspor, terutama kolom relasi (masalah performa yang disebabkan oleh kolom relasi masih dalam tahap optimasi).
+2. Kurangi Field yang tidak perlu diekspor, terutama Field relasi (masalah performa Field relasi masih dalam optimasi)
 ![20250506215940](https://static-docs.nocobase.com/20250506215940.png)
-3. Jika ekspor masih lambat setelah memenuhi kondisi di atas, Anda dapat menganalisis log atau memberikan masukan kepada tim resmi.
+3. Jika sudah memenuhi kondisi di atas tetapi masih ada fenomena ekspor lambat, dapat melakukan analisis log atau memberikan feedback ke tim resmi.
 ![20250505182122](https://static-docs.nocobase.com/20250505182122.png)
 
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule): Menampilkan/menyembunyikan tombol secara dinamis;
-- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Mengedit judul, tipe, dan ikon tombol;
+
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule): tampilan/sembunyi tombol secara dinamis;
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, ikon tombol;

@@ -1,4 +1,6 @@
 ---
+title: "UI schema 存储服务"
+keywords: "UI schema 存储服务,插件,NocoBase"
 displayName: "UI schema 存储服务"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

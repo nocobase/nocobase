@@ -403,6 +403,7 @@ describe('acl', () => {
         resourceName: 'test',
         actionName: 'create',
       },
+      permission: {},
       throw: () => {},
     });
     const ctx1 = newConext() as Context;

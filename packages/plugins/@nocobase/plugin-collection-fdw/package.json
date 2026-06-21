@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-fdw",
-  "version": "2.1.0-beta.5",
+  "version": "2.2.0-beta.5",
   "main": "./dist/server/index.js",
   "keywords": [
     "Collections"
@@ -30,7 +30,10 @@
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-data-source-manager": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },

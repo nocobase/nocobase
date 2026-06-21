@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "DataSourceManager (FlowEngine)"
+description: "API DataSourceManager của NocoBase FlowEngine: quản lý nguồn dữ liệu frontend, đăng ký và lấy instance nguồn dữ liệu."
+keywords: "DataSourceManager,FlowEngine,quản lý nguồn dữ liệu,nguồn dữ liệu frontend,NocoBase"
+---
 
-
-# Trình quản lý nguồn dữ liệu
+# DataSourceManager

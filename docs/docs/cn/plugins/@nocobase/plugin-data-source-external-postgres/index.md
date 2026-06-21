@@ -1,4 +1,6 @@
 ---
+title: "数据源：外部 PostgreSQL"
+keywords: "数据源：外部 PostgreSQL,插件,NocoBase"
 displayName: "数据源：外部 PostgreSQL"
 packageName: '@nocobase/plugin-data-source-external-postgres'
 supportedVersions:

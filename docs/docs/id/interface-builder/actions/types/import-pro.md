@@ -1,101 +1,125 @@
 ---
 pkg: "@nocobase/plugin-action-import-pro"
+title: "Action Impor Pro"
+description: "Action Impor Pro: fitur impor lanjutan, mendukung template kustom, impor multi-table, validasi data."
+keywords: "Impor Pro, ImportPro, impor lanjutan, template kustom, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Impor Pro
 
-# Import Pro
+## Pengantar
 
-## Pendahuluan
-
-Plugin Import Pro menyediakan fitur-fitur yang disempurnakan di atas fungsionalitas import standar.
+Plugin Impor Pro menyediakan fitur tambahan di atas fitur impor biasa.
 
 ## Instalasi
 
-Plugin ini bergantung pada plugin Manajemen Tugas Asinkron. Anda perlu mengaktifkan plugin Manajemen Tugas Asinkron sebelum menggunakannya.
+Plugin ini bergantung pada Plugin Manajemen Tugas Asynchronous, sebelum digunakan harus mengaktifkan Plugin Manajemen Tugas Asynchronous terlebih dahulu.
 
 ## Peningkatan Fitur
 
 ![20251029172052](https://static-docs.nocobase.com/20251029172052.png)
 
-- Mendukung operasi import asinkron, dieksekusi dalam thread terpisah, dan mendukung import data dalam jumlah besar.
+
+
+- Mendukung Action impor asynchronous, dieksekusi di thread independen, mendukung impor data dalam jumlah besar.
 
 ![20251029172129](https://static-docs.nocobase.com/20251029172129.png)
 
-- Mendukung opsi import lanjutan.
+- Mendukung opsi impor lanjutan.
 
-## Panduan Pengguna
 
-### Import Asinkron
+## Panduan Penggunaan
 
-Setelah Anda menjalankan import, proses import akan berjalan di thread latar belakang terpisah tanpa memerlukan konfigurasi manual dari pengguna. Di antarmuka pengguna, setelah memulai operasi import, tugas import yang sedang berjalan akan ditampilkan di sudut kanan atas, menunjukkan progres tugas secara real-time.
+### Impor Asynchronous
+
+Setelah impor dieksekusi, alur impor akan dieksekusi di thread background independen tanpa konfigurasi manual pengguna. Di antarmuka pengguna, setelah Action impor dieksekusi, di bagian kanan atas akan ditampilkan tugas impor yang sedang dieksekusi, dan progress tugas akan ditampilkan secara real-time.
 
 ![index-2024-12-30-09-21-05](https://static-docs.nocobase.com/index-2024-12-30-09-21-05.png)
 
-Setelah import selesai, Anda dapat melihat hasilnya di tugas import.
+Setelah impor selesai, Anda dapat melihat hasil impor di tugas impor.
+
+#### Tentang Konkurensi
+
+Jika ingin membatasi penggunaan resource sistem saat tugas asynchronous dieksekusi secara concurrent, dapat menggunakan beberapa variabel lingkungan berikut untuk mengontrol
+
+- `ASYNC_TASK_MAX_CONCURRENCY`
+
+Membatasi jumlah eksekusi concurrent tugas asynchronous, default 3
+
+- `ASYNC_TASK_CONCURRENCY_MODE`
+
+Menentukan mode batas eksekusi concurrent, nilai yang tersedia adalah `app` dan `process`, default `app`.
+
+Ketika nilai variabel lingkungan ini diatur ke `app`, jumlah maksimum eksekusi concurrent tugas asynchronous untuk setiap sub-aplikasi dibatasi sebesar nilai yang ditentukan oleh `ASYNC_TASK_MAX_CONCURRENCY`.
+
+Ketika nilai variabel lingkungan ini diatur ke `process`, total jumlah eksekusi concurrent tugas dari semua sub-aplikasi dalam proses tidak boleh melebihi nilai yang ditentukan oleh `ASYNC_TASK_MAX_CONCURRENCY`.
+
+- `ASYNC_TASK_WORKER_MAX_OLD` dan `ASYNC_TASK_WORKER_MAX_YOUNG`
+
+Membatasi memori heap old generation maksimum (Mb) dan memori heap young generation (Mb) yang dapat dialokasikan oleh thread worker yang menjalankan tugas asynchronous
 
 #### Tentang Performa
 
-Untuk mengevaluasi performa import data skala besar, kami melakukan uji perbandingan di berbagai skenario, tipe bidang, dan konfigurasi pemicu (hasil dapat bervariasi tergantung pada konfigurasi server dan database, hanya sebagai referensi):
+Untuk mengevaluasi performa impor data skala besar, kami melakukan pengujian perbandingan dalam skenario, tipe Field, dan konfigurasi trigger yang berbeda (mungkin berbeda di server dan konfigurasi database yang berbeda, hanya untuk referensi):
 
-| Volume Data | Tipe Bidang | Konfigurasi Import | Waktu Pemrosesan |
+| Jumlah Data | Tipe Field | Konfigurasi Impor | Durasi Pemrosesan |
 |------|---------|---------|---------|
-| 1 juta catatan | String, Angka, Tanggal, Email, Teks Panjang | • Pemicu Alur Kerja: Tidak<br>• Pengidentifikasi Duplikat: Tidak Ada | Sekitar 1 menit |
-| 500.000 catatan | String, Angka, Tanggal, Email, Teks Panjang, Banyak-ke-Banyak | • Pemicu Alur Kerja: Tidak<br>• Pengidentifikasi Duplikat: Tidak Ada | Sekitar 16 menit|
-| 500.000 catatan | String, Angka, Tanggal, Email, Teks Panjang, Banyak-ke-Banyak, Banyak-ke-Satu | • Pemicu Alur Kerja: Tidak<br>• Pengidentifikasi Duplikat: Tidak Ada | Sekitar 22 menit |
-| 500.000 catatan | String, Angka, Tanggal, Email, Teks Panjang, Banyak-ke-Banyak, Banyak-ke-Satu | • Pemicu Alur Kerja: Notifikasi pemicu asinkron<br>• Pengidentifikasi Duplikat: Tidak Ada | Sekitar 22 menit |
-| 500.000 catatan | String, Angka, Tanggal, Email, Teks Panjang, Banyak-ke-Banyak, Banyak-ke-Satu | • Pemicu Alur Kerja: Notifikasi pemicu asinkron<br>• Pengidentifikasi Duplikat: Perbarui duplikat, dengan 50.000 catatan duplikat | Sekitar 3 jam |
+| 1 juta record | string, number, date, email, long text | • Trigger workflow: tidak<br>• Identifikasi duplikat: tidak ada | Sekitar 1 menit |
+| 500 ribu record | string, number, date, email, long text, many-to-many | • Trigger workflow: tidak<br>• Identifikasi duplikat: tidak ada | Sekitar 16 menit|
+| 500 ribu record | string, number, date, email, long text, many-to-many, many-to-one | • Trigger workflow: tidak<br>• Identifikasi duplikat: tidak ada | Sekitar 22 menit |
+| 500 ribu record | string, number, date, email, long text, many-to-many, many-to-one | • Trigger workflow: trigger notifikasi asynchronous<br>• Identifikasi duplikat: tidak ada | Sekitar 22 menit |
+| 500 ribu record | string, number, date, email, long text, many-to-many, many-to-one | • Trigger workflow: trigger notifikasi asynchronous<br>• Identifikasi duplikat: update duplikat, dengan 50 ribu data duplikat | Sekitar 3 jam |
 
-Berdasarkan hasil uji performa di atas dan beberapa desain yang ada, berikut adalah beberapa penjelasan dan saran mengenai faktor-faktor yang memengaruhi:
+Berdasarkan hasil pengujian performa di atas dan beberapa desain yang ada, berikut penjelasan dan rekomendasi untuk faktor pengaruh:
 
-1.  **Mekanisme Penanganan Catatan Duplikat**: Saat memilih opsi **Perbarui catatan duplikat** atau **Hanya perbarui catatan duplikat**, sistem akan melakukan operasi kueri dan pembaruan baris demi baris, yang secara signifikan mengurangi efisiensi import. Jika file Excel Anda berisi data duplikat yang tidak perlu, ini akan semakin memengaruhi kecepatan import. Disarankan untuk membersihkan data duplikat yang tidak perlu di file Excel (misalnya, menggunakan alat deduplikasi profesional) sebelum mengimportnya ke sistem untuk menghindari pemborosan waktu.
+1. **Mekanisme Pemrosesan Record Duplikat**: Saat memilih opsi **Update Record Duplikat** atau **Hanya Update Record Duplikat**, sistem akan menjalankan operasi query dan update satu per satu, yang akan secara signifikan menurunkan efisiensi impor. Jika di Excel Anda terdapat data duplikat yang tidak berguna, hal ini akan lebih lanjut secara signifikan mempengaruhi kecepatan impor. Disarankan untuk membersihkan data duplikat yang tidak berguna di Excel sebelum impor (misalnya dengan menggunakan tool profesional untuk dedup), kemudian baru impor ke sistem, sehingga dapat menghindari pemborosan waktu yang tidak perlu.
 
-2.  **Efisiensi Pemrosesan Bidang Relasi**: Sistem memproses bidang relasi dengan mengueri asosiasi baris demi baris, yang dapat menjadi hambatan performa dalam skenario data besar. Untuk struktur relasi sederhana (seperti asosiasi satu-ke-banyak antara dua koleksi), strategi import multi-langkah disarankan: pertama import data dasar koleksi utama, lalu bangun relasi antar koleksi setelah selesai. Jika kebutuhan bisnis mengharuskan import data relasi secara bersamaan, silakan merujuk pada hasil uji performa di tabel di atas untuk merencanakan waktu import Anda secara wajar.
+2. **Efisiensi Pemrosesan Field Relasi**: Sistem memproses Field relasi dengan cara query asosiasi satu per satu, yang akan menjadi bottleneck performa dalam skenario data dalam jumlah besar. Untuk struktur relasi sederhana (seperti asosiasi one-to-many dua Table), disarankan untuk mengadopsi strategi impor bertahap: impor data dasar Table utama terlebih dahulu, setelah selesai baru bangun relasi antar Table. Jika kebutuhan bisnis mengharuskan impor data relasi secara bersamaan, silakan merujuk ke hasil pengujian performa di tabel di atas untuk merencanakan waktu impor secara wajar.
 
-3.  **Mekanisme Pemicu Alur Kerja**: Tidak disarankan untuk mengaktifkan pemicu alur kerja dalam skenario import data skala besar, terutama berdasarkan dua pertimbangan berikut:
-    -   Meskipun status tugas import menunjukkan 100%, tugas tersebut tidak segera berakhir. Sistem masih memerlukan waktu tambahan untuk membuat rencana eksekusi alur kerja. Selama fase ini, sistem menghasilkan rencana eksekusi alur kerja yang sesuai untuk setiap catatan yang diimport, yang akan menggunakan thread import tetapi tidak memengaruhi penggunaan data yang sudah diimport.
-    -   Setelah tugas import selesai sepenuhnya, eksekusi bersamaan dari sejumlah besar alur kerja dapat membebani sumber daya sistem, memengaruhi kecepatan respons sistem secara keseluruhan dan pengalaman pengguna.
+3. **Mekanisme Pemrosesan Workflow**: Tidak disarankan untuk mengaktifkan trigger workflow dalam skenario impor data skala besar, terutama berdasarkan dua pertimbangan berikut:
+   - Status tugas impor menunjukkan 100%, tetapi tidak akan langsung selesai. Sistem masih memerlukan waktu tambahan untuk memproses pembuatan rencana eksekusi workflow. Pada tahap ini, sistem akan menghasilkan rencana eksekusi workflow yang sesuai untuk setiap data yang diimpor, menempati thread impor, tetapi tidak akan mempengaruhi penggunaan data yang sudah diimpor.
+   - Setelah tugas impor sepenuhnya selesai, eksekusi concurrent dari banyak workflow dapat menyebabkan resource sistem tegang, mempengaruhi kecepatan respons sistem secara keseluruhan dan pengalaman pengguna.
 
-Ketiga faktor yang memengaruhi di atas akan dipertimbangkan untuk optimasi lebih lanjut di masa mendatang.
+3 faktor pengaruh di atas akan dipertimbangkan untuk optimasi lebih lanjut nantinya.
 
-### Konfigurasi Import
+### Konfigurasi Impor
 
-#### Opsi Import - Pemicu Alur Kerja
+#### Opsi Impor - Apakah Trigger Workflow
 
 ![20251029172235](https://static-docs.nocobase.com/20251029172235.png)
 
-Anda dapat memilih apakah akan memicu alur kerja saat import. Jika opsi ini dicentang dan koleksi tersebut terikat pada alur kerja (event koleksi), import akan memicu eksekusi alur kerja untuk setiap baris.
+Saat impor, dapat memilih apakah akan trigger workflow. Jika dicentang opsi ini dan Collection ini terikat workflow (event Collection), impor akan trigger eksekusi workflow per baris.
 
-#### Opsi Import - Identifikasi Catatan Duplikat
+#### Opsi Impor - Identifikasi Record Duplikat
 
 ![20251029172421](https://static-docs.nocobase.com/20251029172421.png)
 
-Centang opsi ini dan pilih mode yang sesuai untuk mengidentifikasi dan memproses catatan duplikat selama import.
+Centang opsi ini, pilih mode yang sesuai, maka saat impor akan mengidentifikasi record duplikat, dan memprosesnya.
 
-Opsi dalam konfigurasi import akan diterapkan sebagai nilai default. Administrator dapat mengontrol apakah pengunggah diizinkan untuk mengubah opsi-opsi ini (kecuali untuk opsi pemicu alur kerja).
+Opsi dalam konfigurasi impor akan diterapkan sebagai nilai default, admin dapat mengontrol apakah uploader diizinkan untuk memodifikasi opsi ini (kecuali opsi trigger workflow).
 
-**Pengaturan Izin Pengunggah**
+**Pengaturan Izin Uploader**
 
 ![20251029172516](https://static-docs.nocobase.com/20251029172516.png)
 
-- Izinkan pengunggah mengubah opsi import
+
+- Izinkan uploader memodifikasi opsi impor
 
 ![20251029172617](https://static-docs.nocobase.com/20251029172617.png)
 
-- Nonaktifkan pengunggah mengubah opsi import
+- Nonaktifkan uploader memodifikasi opsi impor
 
 ![20251029172655](https://static-docs.nocobase.com/20251029172655.png)
 
-##### Deskripsi Mode
+##### Penjelasan Mode
 
-- Lewati catatan duplikat: Mengueri catatan yang ada berdasarkan konten "bidang pengidentifikasi". Jika catatan sudah ada, baris ini dilewati; jika tidak ada, diimport sebagai catatan baru.
-- Perbarui catatan duplikat: Mengueri catatan yang ada berdasarkan konten "bidang pengidentifikasi". Jika catatan sudah ada, catatan ini diperbarui; jika tidak ada, diimport sebagai catatan baru.
-- Hanya perbarui catatan duplikat: Mengueri catatan yang ada berdasarkan konten "bidang pengidentifikasi". Jika catatan sudah ada, catatan ini diperbarui; jika tidak ada, dilewati.
+- Lewati Record Duplikat: Berdasarkan konten "Field rujukan" untuk query record yang sudah ada. Jika record sudah ada, langsung lewati baris ini; jika tidak ada, impor sebagai record baru.
+- Update Record Duplikat: Berdasarkan konten "Field rujukan" untuk query record yang sudah ada. Jika record sudah ada, update record baris ini; jika tidak ada, impor sebagai record baru.
+- Hanya Update Record Duplikat: Berdasarkan konten "Field rujukan" untuk query record yang sudah ada. Jika record sudah ada, update record ini; jika tidak ada, lewati.
 
-##### Bidang Pengidentifikasi
+##### Field Rujukan
 
-Sistem mengidentifikasi apakah suatu baris adalah catatan duplikat berdasarkan nilai bidang ini.
+Sistem mengidentifikasi apakah baris adalah record duplikat berdasarkan nilai Field ini.
 
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule): Menampilkan/menyembunyikan tombol secara dinamis;
-- [Tombol Edit](/interface-builder/actions/action-settings/edit-button): Mengedit judul, tipe, dan ikon tombol;
+
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule): tampilan/sembunyi tombol secara dinamis;
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, ikon tombol;

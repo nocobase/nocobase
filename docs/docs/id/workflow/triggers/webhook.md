@@ -1,85 +1,84 @@
 ---
 pkg: '@nocobase/plugin-workflow-webhook'
+title: "Trigger Workflow - Webhook"
+description: "Trigger Webhook: menyediakan URL HTTP untuk dipanggil pihak ketiga, callback pembayaran, push pesan, dan sistem eksternal lainnya untuk memicu Workflow."
+keywords: "Workflow,Webhook,Trigger HTTP,callback pembayaran,panggilan sistem eksternal,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Webhook
 
-## Pendahuluan
+## Pengantar
 
-Pemicu Webhook menyediakan URL yang dapat dipanggil oleh sistem pihak ketiga melalui permintaan HTTP. Ketika suatu peristiwa pihak ketiga terjadi, permintaan HTTP akan dikirim ke URL ini untuk memicu eksekusi alur kerja. Ini cocok untuk notifikasi yang diprakarsai oleh sistem eksternal, seperti callback pembayaran, pesan, dll.
+Trigger Webhook digunakan untuk menyediakan URL yang dapat dipanggil sistem pihak ketiga melalui HTTP request. Saat event pihak ketiga terjadi, ia mengirimkan HTTP request ke URL tersebut dan memicu eksekusi alur. Cocok untuk notifikasi yang diinisiasi sistem eksternal, seperti callback pembayaran, pesan, dll.
 
-## Membuat Alur Kerja
+## Membuat Workflow
 
-Saat membuat alur kerja, pilih jenis "Webhook event":
+Saat membuat Workflow, pilih tipe "Event Webhook":
 
 ![20241210105049](https://static-docs.nocobase.com/20241210105049.png)
 
-:::info{title="Catatan"}
-Perbedaan antara alur kerja "sinkron" dan "asinkron" adalah bahwa alur kerja sinkron akan menunggu hingga eksekusi alur kerja selesai sebelum mengembalikan respons, sedangkan alur kerja asinkron akan segera mengembalikan respons yang telah dikonfigurasi dalam pemicu dan mengantrekan eksekusi di latar belakang.
+:::info{title="Tips"}
+Perbedaan antara Workflow "Sinkron" dan "Asinkron" adalah, Workflow sinkron akan menunggu eksekusi Workflow selesai sebelum mengembalikan respons, sedangkan Workflow asinkron langsung mengembalikan respons yang sudah dikonfigurasi pada konfigurasi Trigger, dan dieksekusi secara antrian di latar belakang.
 :::
 
-## Konfigurasi Pemicu
+## Konfigurasi Trigger
 
 ![20241210105441](https://static-docs.nocobase.com/20241210105441.png)
 
 ### URL Webhook
 
-URL untuk pemicu Webhook secara otomatis dihasilkan oleh sistem dan terikat pada alur kerja ini. Anda dapat mengeklik tombol di sebelah kanan untuk menyalinnya dan menempelkannya ke sistem pihak ketiga.
+URL Trigger Webhook dihasilkan otomatis oleh sistem, dan terikat dengan Workflow ini. Anda dapat mengklik tombol di sebelah kanan untuk menyalin, dan mempaste-nya ke sistem pihak ketiga.
 
-Hanya metode HTTP POST yang didukung; metode lain akan mengembalikan kesalahan `405`.
+Di mana metode HTTP hanya mendukung POST, metode lainnya akan mengembalikan error `405`.
 
 ### Keamanan
 
-Saat ini, Otentikasi Dasar HTTP didukung. Anda dapat mengaktifkan opsi ini dan mengatur nama pengguna serta kata sandi. Sertakan nama pengguna dan kata sandi dalam URL Webhook di sistem pihak ketiga untuk mengimplementasikan otentikasi keamanan untuk Webhook (untuk detail standar, lihat: [MDN: HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication#basic_authentication_scheme)).
+Saat ini mendukung HTTP Basic Authentication. Anda dapat mengaktifkan opsi ini dan mengatur username dan password, dalam URL Webhook sistem pihak ketiga sertakan bagian username dan password, untuk mewujudkan autentikasi keamanan untuk Webhook (lihat standar di: [MDN: HTTP authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication#basic_authentication_scheme)).
 
-Ketika nama pengguna dan kata sandi telah diatur, sistem akan memverifikasi apakah nama pengguna dan kata sandi dalam permintaan cocok. Jika tidak disediakan atau tidak cocok, kesalahan `401` akan dikembalikan.
+Saat sudah mengatur username dan password, sistem akan memvalidasi apakah username dan password dalam request cocok. Jika tidak disediakan atau tidak cocok akan mengembalikan error `401`.
 
-### Mengurai Data Permintaan
+### Parsing Data Request
 
-Ketika pihak ketiga memanggil Webhook, data yang dibawa dalam permintaan perlu diurai sebelum dapat digunakan dalam alur kerja. Setelah diurai, data tersebut akan menjadi variabel pemicu yang dapat direferensikan di node-node berikutnya.
+Saat pihak ketiga memanggil Webhook, data yang dibawa dalam request perlu di-parsing terlebih dahulu sebelum dapat digunakan dalam Workflow. Setelah di-parsing akan menjadi variabel Trigger, dapat dirujuk pada Node berikutnya.
 
-Penguraian permintaan HTTP dibagi menjadi tiga bagian:
+Parsing HTTP request dibagi menjadi tiga bagian:
 
-1.  Header Permintaan
+1.  Header Request
 
-    Header permintaan biasanya berupa pasangan kunci-nilai bertipe string sederhana. Bidang header yang perlu digunakan dapat dikonfigurasi secara langsung, seperti `Date`, `X-Request-Id`, dll.
+    Header request biasanya merupakan key-value pair tipe string sederhana, field header yang perlu digunakan dapat langsung dikonfigurasi. Seperti `Date`, `X-Request-Id`, dll.
 
-2.  Parameter Permintaan
+2.  Parameter Request
 
-    Parameter permintaan adalah bagian parameter kueri dalam URL, seperti parameter `query` dalam `http://localhost:13000/api/webhook:trigger/1hfmkioou0d?query=1`. Anda dapat menempelkan contoh URL lengkap atau hanya bagian parameter kueri, lalu mengeklik tombol urai untuk secara otomatis mengurai pasangan kunci-nilai di dalamnya.
+    Parameter request yaitu bagian query parameter dalam URL, seperti parameter `query` dalam `http://localhost:13000/api/webhook:trigger/1hfmkioou0d?query=1`. Anda dapat mempaste contoh URL lengkap atau hanya bagian contoh query parameter, klik tombol parsing untuk parsing otomatis key-value pair di dalamnya.
 
     ![20241210111155](https://static-docs.nocobase.com/20241210111155.png)
 
-    Penguraian otomatis akan mengubah bagian parameter URL menjadi struktur JSON dan menghasilkan jalur seperti `query[0]`, `query[0].a` berdasarkan hierarki parameter. Nama jalur ini dapat dimodifikasi secara manual jika tidak sesuai dengan kebutuhan Anda, tetapi biasanya tidak perlu diubah. Alias adalah nama tampilan variabel saat digunakan, yang bersifat opsional. Pada saat yang sama, penguraian akan menghasilkan daftar lengkap parameter dari contoh; Anda dapat menghapus parameter apa pun yang tidak Anda perlukan.
+    Parsing otomatis akan mengonversi bagian parameter dalam URL menjadi struktur JSON, dan menghasilkan path seperti `query[0]`, `query[0].a`, dll. berdasarkan level parameter. Nama path tersebut dapat dimodifikasi manual saat tidak memenuhi kebutuhan, tetapi biasanya tidak perlu dimodifikasi. Alias adalah nama tampilan variabel saat digunakan sebagai variabel, opsional. Sambil parsing akan menghasilkan tabel parameter lengkap dalam contoh, jika ada parameter yang tidak perlu digunakan, dapat dihapus.
 
-3.  Body Permintaan
+3.  Body Request
 
-    Body permintaan adalah bagian Body dari permintaan HTTP. Saat ini, hanya body permintaan dengan format `Content-Type` `application/json` yang didukung. Anda dapat langsung mengonfigurasi jalur yang akan diurai, atau Anda dapat memasukkan contoh JSON dan mengeklik tombol urai untuk penguraian otomatis.
+    Body request yaitu bagian Body HTTP request, saat ini hanya mendukung body request format `Content-Type` `application/json`. Dapat langsung mengonfigurasi path yang perlu di-parsing, atau memasukkan contoh JSON, klik tombol parsing untuk parsing otomatis.
 
     ![20241210112529](https://static-docs.nocobase.com/20241210112529.png)
 
-    Penguraian otomatis akan mengubah pasangan kunci-nilai dalam struktur JSON menjadi jalur. Misalnya, `{"a": 1, "b": {"c": 2}}` akan menghasilkan jalur seperti `a`, `b`, dan `b.c`. Alias adalah nama tampilan variabel saat digunakan, yang bersifat opsional. Pada saat yang sama, penguraian akan menghasilkan daftar lengkap parameter dari contoh; Anda dapat menghapus parameter apa pun yang tidak Anda perlukan.
+    Parsing otomatis akan mengonversi key-value pair dalam struktur JSON menjadi path, seperti `{"a": 1, "b": {"c": 2}}` akan menghasilkan path seperti `a`, `b`, `b.c`, dll. Alias adalah nama tampilan variabel saat digunakan sebagai variabel, opsional. Sambil parsing akan menghasilkan tabel parameter lengkap dalam contoh, jika ada parameter yang tidak perlu digunakan, dapat dihapus.
 
 ### Pengaturan Respons
 
-Konfigurasi bagian respons Webhook berbeda antara alur kerja sinkron dan asinkron. Untuk alur kerja asinkron, respons dikonfigurasi langsung di pemicu. Setelah menerima permintaan Webhook, sistem akan segera mengembalikan respons yang dikonfigurasi dalam pemicu ke sistem pihak ketiga, lalu mengeksekusi alur kerja. Sementara itu, alur kerja sinkron perlu ditangani dengan menambahkan node respons dalam alur sesuai dengan kebutuhan bisnis (untuk detail, lihat: [Node Respons](#node-respons)).
+Bagian respons Webhook memiliki cara konfigurasi yang berbeda pada Workflow sinkron dan asinkron. Workflow asinkron langsung dikonfigurasi pada Trigger, setelah menerima Webhook request, akan langsung mengembalikan ke sistem pihak ketiga dengan konfigurasi respons pada Trigger, kemudian baru mengeksekusi Workflow; sedangkan Workflow sinkron perlu menambahkan Node response dalam alur sesuai kebutuhan bisnis untuk memprosesnya (lihat detail: [Node Response](#node-response)).
 
-Biasanya, respons untuk peristiwa Webhook yang dipicu secara asinkron memiliki kode status `200` dan body respons `ok`. Anda juga dapat menyesuaikan kode status respons, header respons, dan body respons sesuai kebutuhan.
+Biasanya status code respons event Webhook yang dipicu asinkron adalah `200`, dengan body respons `ok`. Anda juga dapat menyesuaikan status code respons, header respons, dan body respons sesuai situasi.
 
 ![20241210114312](https://static-docs.nocobase.com/20241210114312.png)
 
-## Node Respons
+## Node Response
 
-Referensi: [Node Respons](../nodes/response.md)
+Referensi: [Node Response](../nodes/response.md)
 
 ## Contoh
 
-Dalam alur kerja Webhook, Anda dapat mengembalikan respons yang berbeda berdasarkan kondisi bisnis yang berbeda, seperti yang ditunjukkan pada gambar di bawah ini:
+Pada Workflow Webhook, Anda dapat mengembalikan respons yang berbeda berdasarkan kondisi bisnis yang berbeda, seperti gambar di bawah:
 
 ![20241210120655](https://static-docs.nocobase.com/20241210120655.png)
 
-Gunakan node cabang bersyarat untuk menentukan apakah suatu status bisnis terpenuhi. Jika terpenuhi, kembalikan respons sukses; jika tidak, kembalikan respons gagal.
+Melalui Node cabang kondisi, menentukan apakah suatu status bisnis terpenuhi, jika terpenuhi mengembalikan sukses, jika tidak mengembalikan gagal.

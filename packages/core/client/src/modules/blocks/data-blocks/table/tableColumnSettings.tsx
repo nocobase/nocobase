@@ -26,6 +26,31 @@ import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Tabl
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
 import { isPatternDisabled } from '../../../../schema-settings/isPatternDisabled';
+
+/**
+ * 按 x-uid 在本地 schema 树中就地同步 x-component-props。
+ * 设计器里同一个列可能存在多个 schema 实例，服务端 patch 之前需要先把当前渲染树也同步。
+ */
+function patchSchemaComponentPropsByUid(
+  schema: ISchema | undefined,
+  uid: string,
+  componentProps: Record<string, any>,
+): boolean {
+  if (!schema) {
+    return false;
+  }
+  if (schema['x-uid'] === uid) {
+    schema['x-component-props'] = componentProps;
+    return true;
+  }
+  for (const child of Object.values(schema.properties || {})) {
+    if (patchSchemaComponentPropsByUid(child as ISchema, uid, componentProps)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
   items: [
@@ -433,7 +458,10 @@ export const tableColumnSettings = new SchemaSettings({
             const field: any = useField();
             const { t } = useTranslation();
             const columnSchema = useFieldSchema();
+            const { columnSchema: tableColumnSchema } = useColumnSchema();
+            const { fieldSchema: associationFieldSchema } = useAssociationFieldContext<any>() || {};
             const { dn } = useDesignable();
+            const targetColumnSchema = tableColumnSchema || columnSchema;
 
             return {
               title: (
@@ -451,18 +479,30 @@ export const tableColumnSettings = new SchemaSettings({
               checked: field.componentProps.columnHidden,
               onChange: (v) => {
                 const schema: ISchema = {
-                  ['x-uid']: columnSchema['x-uid'],
+                  ['x-uid']: targetColumnSchema['x-uid'],
                 };
+                const nextComponentProps = {
+                  ...targetColumnSchema['x-component-props'],
+                  columnHidden: v,
+                };
+                // 子表格场景里菜单项所在 schema 与真实列 schema 可能不是同一个对象，二者都要同步更新。
+                targetColumnSchema['x-component-props'] = nextComponentProps;
                 columnSchema['x-component-props'] = {
                   ...columnSchema['x-component-props'],
                   columnHidden: v,
                 };
-                schema['x-component-props'] = columnSchema['x-component-props'];
+                patchSchemaComponentPropsByUid(
+                  associationFieldSchema as unknown as ISchema,
+                  targetColumnSchema['x-uid'],
+                  nextComponentProps,
+                );
+                schema['x-component-props'] = nextComponentProps;
                 field.componentProps.columnHidden = v;
                 dn.emit('patch', {
                   schema,
                 });
-                dn.refresh();
+                // 子表格列由父级表格 schema 统一渲染，需要连同父级一起刷新才能立即生效。
+                dn.refresh({ refreshParentSchema: true });
               },
             };
           },

@@ -1,4 +1,6 @@
 ---
+title: "数据源：主数据库"
+keywords: "数据源：主数据库,插件,NocoBase"
 displayName: "数据源：主数据库"
 packageName: '@nocobase/plugin-data-source-main'
 description: |

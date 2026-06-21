@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "IField"
+description: "Interface IField của NocoBase: interface field cần triển khai, định nghĩa thuộc tính và phương thức của field."
+keywords: "IField,interface,field,Field,NocoBase"
+---
 
 # IField
 
-`IField` định nghĩa giao diện mà một trường cần triển khai.
+`IField` định nghĩa interface mà field cần triển khai.
 
 ```typescript
 export type FieldOptions = {
@@ -30,8 +31,10 @@ export interface IField {
 }
 ```
 
+
 ## Thuộc tính
 
 ### options
 
 - **Kiểu**: `FieldOptions`
+

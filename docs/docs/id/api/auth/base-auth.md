@@ -1,23 +1,25 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "BaseAuth"
+description: "Class dasar autentikasi NocoBase: BaseAuth sebagai class dasar untuk memperluas tipe autentikasi."
+keywords: "BaseAuth,autentikasi,perluas autentikasi,NocoBase"
+---
 
 # BaseAuth
 
-## Gambaran Umum
+## Ikhtisar
 
-`BaseAuth` mewarisi dari [Auth](./auth) kelas abstrak dan merupakan implementasi dasar untuk tipe autentikasi pengguna, menggunakan JWT sebagai metode autentikasi. Dalam kebanyakan kasus, Anda dapat memperluas tipe autentikasi pengguna dengan mewarisi dari `BaseAuth`, dan tidak perlu mewarisi secara langsung dari `Auth` kelas abstrak.
+`BaseAuth` extends dari abstract class [Auth](./auth), adalah implementasi dasar tipe autentikasi user, menggunakan JWT sebagai metode autentikasi. Pada sebagian besar kasus, untuk memperluas tipe autentikasi user dapat extends `BaseAuth`, tidak perlu langsung extends abstract class `Auth`.
 
 ```ts
 class BasicAuth extends BaseAuth {
   constructor(config: AuthConfig) {
-    // Atur koleksi pengguna
+    // Mengatur tabel data user
     const userCollection = config.ctx.db.getCollection('users');
     super({ ...config, userCollection });
   }
 
-  // Logika autentikasi pengguna, dipanggil oleh `auth.signIn`
-  // Mengembalikan data pengguna
+  // Logika autentikasi user, dipanggil oleh `auth.signIn`
+  // Mengembalikan data user
   async validate() {
     const ctx = this.ctx;
     const { values } = ctx.action.params;
@@ -27,48 +29,48 @@ class BasicAuth extends BaseAuth {
 }
 ```
 
-## Metode Kelas
+## Method Class
 
 ### `constructor()`
 
-Konstruktor, membuat sebuah instans `BaseAuth`.
+Constructor, membuat instance `BaseAuth`.
 
-#### Tanda Tangan
+#### Signature
 
 - `constructor(config: AuthConfig & { userCollection: Collection })`
 
 #### Detail
 
-| Parameter        | Tipe         | Deskripsi                                                                                                 |
-| ---------------- | ------------ | --------------------------------------------------------------------------------------------------------- |
-| `config`         | `AuthConfig` | Lihat [Auth - AuthConfig](./auth#authconfig)                                                              |
-| `userCollection` | `Collection` | Koleksi pengguna, contohnya: `db.getCollection('users')`. Lihat [DataBase - Collection](../database/collection) |
+| Parameter | Tipe | Deskripsi |
+| ---------------- | ------------ | --------------------------------------------------------------------------------------------------- |
+| `config` | `AuthConfig` | Lihat [Auth - AuthConfig](./auth#authconfig) |
+| `userCollection` | `Collection` | Tabel data user, contoh: `db.getCollection('users')`, lihat [DataBase - Collection](../database/collection) |
 
 ### `user()`
 
-Pengakses, mengatur dan mendapatkan informasi pengguna. Secara default, ia menggunakan objek `ctx.state.currentUser` untuk akses.
+Accessor, mengatur dan mengambil informasi user, secara default menggunakan objek `ctx.state.currentUser` untuk akses.
 
-#### Tanda Tangan
+#### Signature
 
 - `set user()`
 - `get user()`
 
 ### `check()`
 
-Melakukan autentikasi melalui token permintaan dan mengembalikan informasi pengguna.
+Autentikasi melalui token request, mengembalikan informasi user.
 
 ### `signIn()`
 
-Masuk pengguna, menghasilkan token.
+User login, menghasilkan token.
 
 ### `signUp()`
 
-Daftar pengguna.
+User registrasi.
 
 ### `signOut()`
 
-Keluar pengguna, mengakhiri masa berlaku token.
+User logout, token expired.
 
-### `validate()` *
+### `validate()` \*
 
-Logika inti autentikasi, dipanggil oleh antarmuka `signIn`, untuk menentukan apakah pengguna dapat berhasil masuk.
+Logika inti autentikasi, dipanggil oleh interface `signIn`, menentukan apakah user dapat berhasil login.

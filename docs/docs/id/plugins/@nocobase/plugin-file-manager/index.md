@@ -1,12 +1,14 @@
 ---
-displayName: "File manager"
+displayName: "File Manager"
 packageName: '@nocobase/plugin-file-manager'
+title: "File Manager"
+keywords: "File Manager,Plugin,NocoBase"
 description: |
-  Provides files storage services with files collection template and attachment field.
+  Menyediakan layanan penyimpanan file, serta menyediakan template tabel file dan Field lampiran.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# File manager
+# File Manager

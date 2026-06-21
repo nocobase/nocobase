@@ -1,109 +1,111 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Integrasi Webhook Workflow"
+description: "Trigger Webhook menerima panggilan HTTP eksternal untuk memicu Workflow: pengiriman formulir, notifikasi pesan, sinkronisasi data, event GitHub/GitLab, konfigurasi validasi tanda tangan, mode sinkron/asinkron, praktik keamanan."
+keywords: "Webhook Workflow,trigger Webhook,integrasi sistem eksternal,pengiriman formulir,GitHub Webhook,validasi tanda tangan,NocoBase"
+---
 
-# Integrasi Webhook Alur Kerja
+# Integrasi Webhook Workflow
 
-Melalui pemicu Webhook, NocoBase dapat menerima panggilan HTTP dari sistem pihak ketiga dan secara otomatis memicu alur kerja, memungkinkan integrasi tanpa hambatan dengan sistem eksternal.
+Melalui trigger Webhook, NocoBase dapat menerima panggilan HTTP dari sistem pihak ketiga dan secara otomatis memicu Workflow, mencapai integrasi yang mulus dengan sistem eksternal.
 
-## Gambaran Umum
+## Ikhtisar
 
-Webhook adalah mekanisme "API terbalik" yang memungkinkan sistem eksternal secara proaktif mengirim data ke NocoBase ketika terjadi peristiwa tertentu. Dibandingkan dengan *polling* aktif, Webhook menawarkan pendekatan integrasi yang lebih *real-time* dan efisien.
+Webhook adalah mekanisme "API terbalik" yang memungkinkan sistem eksternal secara aktif mengirim data ke NocoBase saat event tertentu terjadi. Dibandingkan dengan polling aktif, Webhook menyediakan cara integrasi yang lebih real-time dan efisien.
 
-## Skenario Penggunaan Umum
+## Skenario Aplikasi Tipikal
 
 ### Pengiriman Data Formulir
 
-Sistem survei eksternal, formulir pendaftaran, dan formulir umpan balik pelanggan dapat mengirimkan data ke NocoBase melalui Webhook setelah pengguna mengirimkan data. Ini secara otomatis membuat catatan dan memicu proses lanjutan (seperti mengirim email konfirmasi, menetapkan tugas, dll.).
+Sistem survei eksternal, formulir pendaftaran, formulir feedback pelanggan, dll. setelah pengguna mengirim data, push data ke NocoBase melalui Webhook, secara otomatis membuat record dan memicu alur pemrosesan berikutnya (seperti mengirim email konfirmasi, menugaskan task, dll.).
 
 ### Notifikasi Pesan
 
-Peristiwa dari platform pesan pihak ketiga (seperti WeCom, DingTalk, Slack) seperti pesan baru, @sebutan, atau penyelesaian persetujuan dapat memicu proses otomatisasi di NocoBase melalui Webhook.
+Event pada platform pesan pihak ketiga (seperti WeCom, DingTalk, Slack) (seperti pesan baru, mention, persetujuan selesai) dapat memicu alur pemrosesan otomatis pada NocoBase melalui Webhook.
 
 ### Sinkronisasi Data
 
-Ketika data di sistem eksternal (seperti CRM, ERP) berubah, Webhook akan mengirimkan pembaruan ke NocoBase secara *real-time* untuk menjaga sinkronisasi data.
+Saat data pada sistem eksternal (seperti CRM, ERP) berubah, push secara real-time ke NocoBase melalui Webhook untuk menjaga data tetap sinkron.
 
 ### Integrasi Layanan Pihak Ketiga
 
-- **GitHub**: Peristiwa seperti *code push* dan pembuatan PR memicu alur kerja otomatisasi.
-- **GitLab**: Notifikasi status *pipeline* CI/CD.
-- **Pengiriman Formulir**: Sistem formulir eksternal mengirimkan data ke NocoBase.
-- **Perangkat IoT**: Perubahan status perangkat, pelaporan data sensor.
+- **GitHub**: event seperti code push, PR creation memicu alur otomasi
+- **GitLab**: notifikasi status alur CI/CD
+- **Pengiriman formulir**: sistem formulir eksternal mengirim data ke NocoBase
+- **Perangkat IoT**: perubahan status perangkat, pelaporan data sensor
 
-## Fitur-fitur
+## Karakteristik Fitur
 
 ### Mekanisme Pemicu yang Fleksibel
 
-- Mendukung metode HTTP seperti GET, POST, PUT, DELETE.
-- Secara otomatis mengurai JSON, data formulir, dan format umum lainnya.
-- Validasi permintaan yang dapat dikonfigurasi untuk memastikan sumber data tepercaya.
+- Mendukung metode HTTP termasuk GET, POST, PUT, DELETE
+- Secara otomatis mem-parse JSON, form data, dan format umum lainnya
+- Dapat mengkonfigurasi validasi request untuk memastikan sumber tepercaya
 
 ### Kemampuan Pemrosesan Data
 
-- Data yang diterima dapat digunakan sebagai variabel dalam alur kerja.
-- Mendukung logika transformasi dan pemrosesan data yang kompleks.
-- Dapat digabungkan dengan *node* alur kerja lainnya untuk mengimplementasikan logika bisnis yang kompleks.
+- Data yang diterima dapat digunakan sebagai variabel pada Workflow
+- Mendukung transformasi dan logika pemrosesan data yang kompleks
+- Dapat dikombinasikan dengan node Workflow lainnya untuk mengimplementasikan logika bisnis kompleks
 
 ### Jaminan Keamanan
 
-- Mendukung verifikasi tanda tangan untuk mencegah permintaan palsu.
-- *Whitelist* IP yang dapat dikonfigurasi.
-- Transmisi terenkripsi HTTPS.
+- Mendukung validasi tanda tangan untuk mencegah request palsu
+- Dapat mengkonfigurasi whitelist IP
+- Transmisi terenkripsi HTTPS
 
-## Langkah-langkah Penggunaan
+## Langkah Penggunaan
 
 ### 1. Instal Plugin
 
-Temukan dan instal **[Alur Kerja: Pemicu Webhook](/plugins/@nocobase/plugin-workflow-webhook/)** plugin di pengelola plugin.
+Temukan dan instal Plugin **[Workflow: Trigger Webhook](/plugins/@nocobase/plugin-workflow-webhook/index.md)** pada plugin manager.
 
-> Catatan: Plugin ini adalah plugin komersial yang memerlukan pembelian atau langganan terpisah.
+> Perhatian: Plugin ini adalah Plugin komersial yang perlu dibeli atau dilanggan secara terpisah.
 
-### 2. Buat Alur Kerja Webhook
+### 2. Buat Workflow Webhook
 
-1. Masuk ke halaman **Manajemen Alur Kerja**.
-2. Klik **Buat Alur Kerja**.
-3. Pilih **Pemicu Webhook** sebagai jenis pemicu.
+1. Masuk ke halaman **Manajemen Workflow**
+2. Klik **Buat Workflow**
+3. Pilih **Trigger Webhook** sebagai cara pemicu
 
-![Buat Alur Kerja Webhook](https://static-docs.nocobase.com/20241210105049.png)
+![Buat Workflow Webhook](https://static-docs.nocobase.com/20241210105049.png)
 
-4. Konfigurasi parameter Webhook.
+4. Konfigurasikan parameter Webhook
 
-![Konfigurasi Pemicu Webhook](https://static-docs.nocobase.com/20241210105441.png)
-   - **Jalur Permintaan**: Jalur URL Webhook kustom.
-   - **Metode Permintaan**: Pilih metode HTTP yang diizinkan (GET/POST/PUT/DELETE).
-   - **Sinkron/Asinkron**: Pilih apakah akan menunggu alur kerja selesai dieksekusi sebelum mengembalikan hasil.
-   - **Validasi**: Konfigurasi verifikasi tanda tangan atau mekanisme keamanan lainnya.
+![Konfigurasi Trigger Webhook](https://static-docs.nocobase.com/20241210105441.png)
+   - **Path Request**: path URL Webhook kustom
+   - **Metode Request**: pilih metode HTTP yang diizinkan (GET/POST/PUT/DELETE)
+   - **Sinkron/Asinkron**: pilih apakah akan menunggu hingga eksekusi Workflow selesai sebelum mengembalikan hasil
+   - **Metode Validasi**: konfigurasikan validasi tanda tangan atau mekanisme keamanan lainnya
 
-### 3. Konfigurasi Node Alur Kerja
+### 3. Konfigurasikan Node Workflow
 
-Tambahkan *node* alur kerja berdasarkan kebutuhan bisnis, seperti:
+Tambahkan node Workflow sesuai kebutuhan bisnis, misalnya:
 
-- **Operasi Koleksi**: Membuat, memperbarui, menghapus catatan.
-- **Logika Kondisional**: Percabangan berdasarkan data yang diterima.
-- **Permintaan HTTP**: Memanggil API lain.
-- **Notifikasi**: Mengirim email, SMS, dll.
-- **Kode Kustom**: Mengeksekusi kode JavaScript.
+- **Operasi tabel data**: buat, update, hapus data
+- **Kondisi**: percabangan kondisional berdasarkan data yang diterima
+- **HTTP Request**: panggil API lain
+- **Notifikasi pesan**: kirim email, SMS, dll.
+- **Kode kustom**: jalankan kode JavaScript
 
 ### 4. Dapatkan URL Webhook
 
-Setelah alur kerja dibuat, sistem akan menghasilkan URL Webhook unik, biasanya dalam format:
+Setelah Workflow dibuat, sistem akan menghasilkan URL Webhook unik dengan format umumnya:
 
 ```
 https://your-nocobase-domain.com/api/webhooks/your-workflow-key
 ```
 
-### 5. Konfigurasi di Sistem Pihak Ketiga
+### 5. Konfigurasikan pada Sistem Pihak Ketiga
 
-Konfigurasi URL Webhook yang dihasilkan di sistem pihak ketiga:
+Konfigurasikan URL Webhook yang dihasilkan ke sistem pihak ketiga:
 
-- Atur alamat *callback* pengiriman data di sistem formulir.
-- Konfigurasi Webhook di GitHub/GitLab.
-- Konfigurasi alamat *push* peristiwa di WeCom/DingTalk.
+- Atur alamat callback pengiriman data pada sistem formulir
+- Konfigurasikan Webhook pada GitHub/GitLab
+- Konfigurasikan alamat push event pada WeCom/DingTalk
 
-### 6. Uji Webhook
+### 6. Pengujian Webhook
 
-Uji Webhook menggunakan alat seperti Postman atau cURL:
+Gunakan tools (seperti Postman, cURL) untuk menguji Webhook:
 
 ```bash
 curl -X POST https://your-nocobase-domain.com/api/webhooks/your-workflow-key \
@@ -111,18 +113,18 @@ curl -X POST https://your-nocobase-domain.com/api/webhooks/your-workflow-key \
   -d '{"event":"test","data":{"message":"Hello NocoBase"}}'
 ```
 
-## Mengakses Data Permintaan
+## Akses Data Request
 
-Dalam alur kerja, Anda dapat mengakses data yang diterima Webhook melalui variabel:
+Pada Workflow, Anda dapat mengakses data yang diterima Webhook melalui variabel:
 
-- `{{$context.data}}`: Data *body* permintaan.
-- `{{$context.headers}}`: Informasi *header* permintaan.
-- `{{$context.query}}`: Parameter *query* URL.
-- `{{$context.params}}`: Parameter jalur.
+- `{{$context.data}}`: data body request
+- `{{$context.headers}}`: informasi headers request
+- `{{$context.query}}`: parameter query URL
+- `{{$context.params}}`: parameter path
 
-![Penguraian Parameter Permintaan](https://static-docs.nocobase.com/20241210111155.png)
+![Parsing Parameter Request](https://static-docs.nocobase.com/20241210111155.png)
 
-![Penguraian Body Permintaan](https://static-docs.nocobase.com/20241210112529.png)
+![Parsing Body Request](https://static-docs.nocobase.com/20241210112529.png)
 
 ## Konfigurasi Respons
 
@@ -130,28 +132,28 @@ Dalam alur kerja, Anda dapat mengakses data yang diterima Webhook melalui variab
 
 ### Mode Sinkron
 
-Mengembalikan hasil setelah eksekusi alur kerja selesai, dapat dikonfigurasi:
+Setelah Workflow selesai dieksekusi, hasil dikembalikan; dapat dikonfigurasi:
 
-- **Kode Status Respons**: 200, 201, dll.
-- **Data Respons**: Data JSON respons kustom.
-- **Header Respons**: *Header* HTTP kustom.
+- **Kode status respons**: 200, 201, dll.
+- **Data respons**: data JSON yang dikembalikan secara kustom
+- **Headers respons**: HTTP Header kustom
 
 ### Mode Asinkron
 
-Segera mengembalikan konfirmasi respons, alur kerja dieksekusi di latar belakang. Cocok untuk:
+Segera kembalikan respons konfirmasi, Workflow berjalan di background, cocok untuk:
 
-- Alur kerja yang berjalan lama.
-- Skenario yang tidak memerlukan hasil eksekusi.
-- Skenario dengan konkurensi tinggi.
+- Workflow yang berjalan lama
+- Skenario yang tidak perlu mengembalikan hasil eksekusi
+- Skenario konkurensi tinggi
 
 ## Praktik Terbaik Keamanan
 
-### 1. Aktifkan Verifikasi Tanda Tangan
+### 1. Aktifkan Validasi Tanda Tangan
 
 Sebagian besar layanan pihak ketiga mendukung mekanisme tanda tangan:
 
 ```javascript
-// Contoh: Verifikasi tanda tangan Webhook GitHub
+// Contoh: validasi tanda tangan GitHub Webhook
 const crypto = require('crypto');
 const signature = context.headers['x-hub-signature-256'];
 const payload = JSON.stringify(context.data);
@@ -168,85 +170,85 @@ if (signature !== expectedSignature) {
 
 ### 2. Gunakan HTTPS
 
-Pastikan NocoBase di-*deploy* dalam lingkungan HTTPS untuk melindungi transmisi data.
+Pastikan NocoBase di-deploy di lingkungan HTTPS untuk melindungi keamanan transmisi data.
 
-### 3. Batasi Sumber Data Permintaan
+### 3. Batasi Sumber Request
 
-Konfigurasi *whitelist* IP untuk hanya mengizinkan permintaan dari sumber data tepercaya.
+Konfigurasikan whitelist IP, hanya izinkan request dari sumber tepercaya.
 
 ### 4. Validasi Data
 
-Tambahkan logika validasi data dalam alur kerja untuk memastikan format data yang diterima benar dan kontennya sah.
+Tambahkan logika validasi data pada Workflow untuk memastikan data yang diterima memiliki format yang benar dan konten yang valid.
 
-### 5. Pencatatan Audit
+### 5. Log Audit
 
-Catat semua permintaan Webhook untuk memudahkan pelacakan dan pemecahan masalah.
+Catat semua request Webhook untuk memudahkan pelacakan dan pemecahan masalah.
 
-## Pemecahan Masalah
+## Pertanyaan Umum
 
-### Webhook Tidak Terpicu?
+### Webhook tidak terpicu?
 
-1. Verifikasi URL Webhook sudah benar.
-2. Konfirmasi status alur kerja adalah "Diaktifkan".
-3. Periksa log pengiriman sistem pihak ketiga.
-4. Tinjau konfigurasi *firewall* dan jaringan.
+1. Periksa apakah URL Webhook benar
+2. Konfirmasikan apakah status Workflow adalah "Aktif"
+3. Lihat log pengiriman pada sistem pihak ketiga
+4. Periksa konfigurasi firewall dan jaringan
 
-### Bagaimana Cara Melakukan *Debug* Webhook?
+### Bagaimana cara debug Webhook?
 
-1. Periksa catatan eksekusi alur kerja untuk informasi detail tentang permintaan dan hasilnya.
-2. Gunakan alat pengujian Webhook (seperti Webhook.site) untuk memverifikasi permintaan.
-3. Tinjau data kunci dan pesan kesalahan dalam catatan eksekusi.
+1. Lihat record eksekusi Workflow untuk informasi rinci request dan hasil panggilan
+2. Gunakan tools pengujian Webhook (seperti Webhook.site) untuk validasi request
+3. Periksa data kunci dan informasi error pada record eksekusi
 
-### Bagaimana Cara Menangani Percobaan Ulang (*Retry*)?
+### Bagaimana cara menangani retry?
 
-Beberapa layanan pihak ketiga akan mencoba mengirim ulang jika tidak menerima respons yang berhasil:
+Beberapa layanan pihak ketiga akan retry pengiriman saat tidak menerima respons sukses:
 
-- Pastikan alur kerja memiliki sifat *idempotent*.
-- Gunakan pengidentifikasi unik untuk *deduplication*.
-- Catat ID permintaan yang telah diproses.
+- Pastikan Workflow bersifat idempotent
+- Gunakan identifier unik untuk deduplikasi
+- Catat ID request yang sudah diproses
 
-### Tips Optimasi Kinerja
+### Saran Optimasi Performa
 
-- Gunakan mode asinkron untuk operasi yang memakan waktu.
-- Tambahkan logika kondisional untuk menyaring permintaan yang tidak perlu diproses.
-- Pertimbangkan untuk menggunakan antrean pesan (*message queue*) untuk skenario konkurensi tinggi.
+- Gunakan mode asinkron untuk menangani operasi yang memakan waktu
+- Tambahkan kondisi untuk memfilter request yang tidak perlu diproses
+- Pertimbangkan menggunakan message queue untuk menangani skenario konkurensi tinggi
 
 ## Skenario Contoh
 
 ### Pemrosesan Pengiriman Formulir Eksternal
 
 ```javascript
-// 1. Verifikasi sumber data
-// 2. Urai data formulir
+// 1. Validasi sumber data
+// 2. Parse data formulir
 const formData = context.data;
 
-// 3. Buat catatan pelanggan
-// 4. Tetapkan kepada penanggung jawab terkait
-// 5. Kirim email konfirmasi kepada pengirim
+// 3. Buat record pelanggan
+// 4. Tetapkan ke person in charge yang relevan
+// 5. Kirim email konfirmasi ke pengirim
 if (formData.email) {
   // Kirim notifikasi email
 }
 ```
 
-### Notifikasi *Code Push* GitHub
+### Notifikasi Push Code GitHub
 
 ```javascript
-// 1. Urai data push
+// 1. Parse data push
 const commits = context.data.commits;
 const branch = context.data.ref.replace('refs/heads/', '');
 
-// 2. Jika ini adalah branch utama
+// 2. Jika branch utama
 if (branch === 'main') {
-  // 3. Picu proses deployment
+  // 3. Picu alur deploy
   // 4. Beri tahu anggota tim
 }
 ```
 
-![Contoh Alur Kerja Webhook](https://static-docs.nocobase.com/20241210120655.png)
+![Contoh Workflow Webhook](https://static-docs.nocobase.com/20241210120655.png)
 
 ## Sumber Daya Terkait
 
-- [Dokumentasi Plugin Alur Kerja](/plugins/@nocobase/plugin-workflow/)
-- [Alur Kerja: Pemicu Webhook](/workflow/triggers/webhook)
-- [Alur Kerja: Node Permintaan HTTP](/integration/workflow-http-request/)
-- [Autentikasi Kunci API](/integration/api-keys/)
+- [Dokumentasi Plugin Workflow](/plugins/@nocobase/plugin-workflow/index.md)
+- [Workflow: Trigger Webhook](/workflow/triggers/webhook)
+- [Workflow: Node HTTP Request](/integration/workflow-http-request/index.md)
+- [Autentikasi API Key](/integration/api-keys/index.md)

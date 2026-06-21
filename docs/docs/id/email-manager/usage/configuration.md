@@ -1,65 +1,98 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Konfigurasi Email Block"
+description: "Email table block: tambah block, konfigurasi field, data range (semua/user saat ini), filter berdasarkan alamat email atau suffix."
+keywords: "email block,email table,data range,filter email,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Konfigurasi Block
 
+## Email Message Block
 
-# Konfigurasi Blok
+### Tambah Block
 
-## Blok Pesan Email
+Di halaman konfigurasi klik tombol **Create block**, pilih block **Email table** untuk menambahkan email message block.
 
-### Menambahkan Blok
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_09_56_PM.png)
 
-Pada halaman konfigurasi, klik tombol **Buat blok**, lalu pilih blok **Pesan email (Semua)** atau **Pesan email (Pribadi)** untuk menambahkan blok pesan email.
+### Konfigurasi Field
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_03_58_PM.png)
+Klik tombol **Field** di block untuk memilih field yang perlu ditampilkan. Untuk operasi detail, lihat konfigurasi field tabel.
 
-### Konfigurasi Bidang
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_09_58_PM.png)
 
-Klik tombol **Bidang** pada blok untuk memilih bidang yang ingin ditampilkan. Untuk operasi lebih lanjut, Anda bisa merujuk pada metode konfigurasi bidang untuk tabel.
+### Atur Data Range
+Konfigurasi di sebelah kanan block dapat memilih data range: semua email atau email user yang sedang login.
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_37_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_09_58_PM%20(1).png)
 
-### Konfigurasi Filter Data
+### Filter Data Berdasarkan Alamat Email
 
-Klik ikon konfigurasi di sisi kanan tabel dan pilih **Cakupan data** untuk mengatur rentang data penyaringan email.
+Klik tombol konfigurasi di sebelah kanan email message block, pilih **Data range**, atur data range untuk filter email.
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_39_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
 
-Anda dapat menyaring email dengan sufiks yang sama melalui variabel:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_41_PM.png)
+Konfigurasikan kondisi filter, pilih field alamat email yang perlu di-filter, klik **Confirm** untuk save.
 
-## Blok Detail Email
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_26_PM.png)
 
-Pertama, aktifkan fitur **Aktifkan klik untuk membuka** pada bidang di blok pesan email:
+Email message block akan menampilkan email yang sesuai dengan kondisi filter.
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_45_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_29_PM.png)
 
-Pada jendela pop-up, tambahkan blok **Detail email**:
+> Filter berdasarkan alamat email tidak case sensitive
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_46_PM.png)
+### Filter Data Berdasarkan Suffix Email
 
-Anda dapat melihat konten detail email:
+Buat field di tabel bisnis untuk menyimpan suffix email (tipe JSON), untuk mempermudah filter email message selanjutnya.
 
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_04_49_PM.png)
+![](https://static-docs.nocobase.com/email-manager/data-source-manager-main-NocoBase-12-02-2025_04_36_PM.png)
 
-Di bagian bawah, Anda dapat mengonfigurasi tombol yang diperlukan.
+Pelihara informasi suffix email.
 
-## Blok Kirim Email
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_38_PM.png)
 
-Ada dua cara untuk membuat formulir kirim email:
+Klik tombol konfigurasi di sebelah kanan email message block, pilih **Data range**, atur data range untuk filter email.
 
-1. Tambahkan tombol **Kirim email** di bagian atas tabel:
-   ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_52_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
 
-2. Tambahkan blok **Kirim email**:
-   ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_53_PM.png)
+Konfigurasikan kondisi filter, pilih field suffix email yang perlu di-filter, klik **Confirm** untuk save.
 
-Kedua metode ini dapat membuat formulir kirim email yang lengkap:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_53_PM%20(1).png)
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_41_PM.png)
 
-Setiap bidang dalam formulir email konsisten dengan formulir biasa dan dapat dikonfigurasi dengan **Nilai default** atau **Aturan keterkaitan**, dll.
+Tabel email message akan menampilkan email yang sesuai dengan kondisi filter.
 
-> Formulir balasan dan penerusan email yang ada di bagian bawah detail email secara default membawa beberapa pemrosesan data, yang dapat dimodifikasi melalui **Alur Peristiwa**.
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_48_PM.png)
+
+## Email Detail Block
+
+Pertama aktifkan fitur **Enable click to open** di field email message block.
+
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_10_01_PM.png)
+
+Tambahkan block **Email detail** di popup.
+
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_10_02_PM.png)
+
+Anda dapat melihat detail konten email.
+
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_10_03_PM.png)
+
+Tombol yang dibutuhkan dapat dikonfigurasi secara kustom di bagian bawah.
+
+> Jika email saat ini berstatus draft, default akan menampilkan form editing draft.
+
+## Email Send Block
+
+Ada dua cara untuk membuat form pengiriman email:
+
+1. Tambahkan tombol **Send email** di bagian atas tabel:  
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_04_PM.png)
+
+2. Tambahkan block **Email send**:  
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_05_PM.png)
+
+Kedua cara dapat membuat form pengiriman email yang lengkap.
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_05_PM%20(1).png)
+
+Setiap field di form email konsisten dengan form biasa, dapat dikonfigurasi **default value** atau **linkage rule**, dll.

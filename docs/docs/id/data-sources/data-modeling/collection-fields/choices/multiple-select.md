@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Dropdown (Multi Pilihan)"
+description: "Field dropdown multi pilihan, memilih beberapa item dari opsi yang sudah ditentukan."
+keywords: "dropdown multi pilihan,multiple-select,multi pilihan,field opsi,NocoBase"
+---
 
-# Dropdown (Pilihan Ganda)
+# Dropdown (Multi Pilihan)
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512180236](https://static-docs.nocobase.com/20240512180236.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

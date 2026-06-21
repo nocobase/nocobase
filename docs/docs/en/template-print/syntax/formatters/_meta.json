@@ -33,5 +33,10 @@
     "type": "custom-link",
     "label": "Array Formatting",
     "link": "/template-print/syntax/formatters/array-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Media Field Formatting",
+    "link": "/template-print/syntax/formatters/media-field-formatting"
   }
 ]

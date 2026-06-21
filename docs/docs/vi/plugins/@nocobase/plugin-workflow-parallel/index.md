@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Parallel node"
+displayName: "Workflow: Node nhánh song song"
 packageName: '@nocobase/plugin-workflow-parallel'
+title: "Workflow: Node nhánh song song"
+keywords: "Workflow: Node nhánh song song,Plugin,NocoBase"
 description: |
-  Could be used for parallel execution of branch processes in the workflow.
+  Dùng cho các quy trình nhánh cần thực thi song song trong workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Parallel node
+# Workflow: Node nhánh song song

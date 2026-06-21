@@ -1,12 +1,14 @@
 ---
-displayName: "Multi-app manager (deprecated)"
+displayName: "Manajer Multi Aplikasi (Deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
+title: "Manajer Multi Aplikasi (Deprecated)"
+keywords: "Manajer Multi Aplikasi (Deprecated),Plugin,NocoBase"
 description: |
-  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
+  Multi aplikasi berjalan dengan model berbagi proses, hanya cocok untuk lingkungan pengujian dan demo, jangan gunakan di lingkungan produksi.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Multi-app manager (deprecated)
+# Manajer Multi Aplikasi (Deprecated)

@@ -1,5 +1,7 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Panduan Upgrade Plugin NocoBase"
+description: "Upgrade versi plugin: kompatibilitas versi mayor NocoBase, perubahan API plugin, langkah migrasi, saran pengujian."
+keywords: "upgrade plugin,kompatibilitas versi,perubahan API,migrasi plugin,upgrade NocoBase"
+---
 
-# Panduan Peningkatan Plugin
+# Panduan Upgrade Plugin

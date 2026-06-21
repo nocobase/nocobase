@@ -1,15 +1,17 @@
 ---
-displayName: "HTTP request encryption"
+displayName: "Mã hóa HTTP Request"
 packageName: '@nocobase/plugin-request-encryption'
+title: "Mã hóa HTTP Request"
+keywords: "Mã hóa HTTP Request,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Encrypts request parameters (Query Parameters) before sending an HTTP request.
+  Dùng để mã hóa các tham số request (Query Parameters) trước khi gửi HTTP request.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# HTTP request encryption
+# Mã hóa HTTP Request

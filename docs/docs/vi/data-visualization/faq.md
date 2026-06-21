@@ -1,36 +1,37 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Câu hỏi thường gặp về Trực quan hóa Dữ liệu"
+description: "Các câu hỏi thường gặp về lựa chọn biểu đồ, sự tương tác giữa Builder/SQL trong truy vấn dữ liệu, ánh xạ field, preview và lưu, các loại biểu đồ ECharts, v.v."
+keywords: "FAQ trực quan hóa dữ liệu,lựa chọn biểu đồ,line chart,bar chart,pie chart,Builder,SQL mode,preview save,NocoBase"
+---
 
 # Câu hỏi thường gặp
 
-## Vấn đề chọn biểu đồ
-### Làm thế nào để chọn biểu đồ phù hợp?
-Trả lời: Hãy chọn dựa trên mục tiêu dữ liệu của bạn:
-- Xu hướng và sự thay đổi: biểu đồ đường hoặc biểu đồ vùng
-- So sánh giá trị: biểu đồ cột hoặc biểu đồ thanh
-- Cấu trúc tỷ lệ: biểu đồ tròn hoặc biểu đồ vành khuyên
-- Tương quan và phân phối: biểu đồ phân tán
-- Cấu trúc phân cấp và tiến độ: biểu đồ phễu
+## Vấn đề lựa chọn biểu đồ
+### Tôi nên chọn biểu đồ phù hợp như thế nào?
+Trả lời: Chọn dựa trên mục tiêu dữ liệu:
+- Xu hướng và biến động: line chart hoặc area chart
+- So sánh giá trị: bar chart hoặc column chart
+- Cấu trúc tỷ lệ: pie chart hoặc doughnut chart
+- Tương quan và phân bố: scatter chart
+- Cấu trúc phân cấp và tiến trình: funnel chart
 
-Để biết thêm các loại biểu đồ, vui lòng tham khảo [ví dụ ECharts](https://echarts.apache.org/examples).
+Để xem thêm các loại biểu đồ, vui lòng tham khảo [ECharts Examples](https://echarts.apache.org/examples).
 
-### NocoBase hỗ trợ những loại biểu đồ nào?
-Trả lời: Chế độ cấu hình trực quan tích hợp sẵn các biểu đồ phổ biến (biểu đồ đường, biểu đồ vùng, biểu đồ cột, biểu đồ thanh, biểu đồ tròn, biểu đồ vành khuyên, biểu đồ phễu, biểu đồ phân tán, v.v.); chế độ cấu hình tùy chỉnh cho phép sử dụng tất cả các loại biểu đồ của ECharts.
+### NocoBase hỗ trợ những biểu đồ nào?
+Trả lời: Cấu hình trực quan có sẵn các biểu đồ thông dụng (line, area, bar, column, pie, doughnut, funnel, scatter, v.v.); cấu hình tùy chỉnh có thể sử dụng tất cả các loại biểu đồ của ECharts.
 
 ## Vấn đề truy vấn dữ liệu
-### Chế độ cấu hình trực quan và chế độ cấu hình SQL có tương thích với nhau không?
-Trả lời: Không tương thích. Các cấu hình được lưu trữ độc lập. Chế độ cấu hình được sử dụng khi bạn lưu lần cuối sẽ có hiệu lực.
+### Cấu hình trực quan và cấu hình SQL có tương thích với nhau không?
+Trả lời: Không tương thích, các cấu hình được lưu trữ độc lập. Chế độ cấu hình tại lần lưu cuối cùng sẽ có hiệu lực.
 
 ## Vấn đề tùy chọn biểu đồ
-### Làm thế nào để cấu hình các trường dữ liệu cho biểu đồ?
-Trả lời: Trong chế độ cấu hình trực quan, hãy chọn các trường dữ liệu tương ứng với loại biểu đồ. Ví dụ, biểu đồ đường/biểu đồ cột cần cấu hình trường trục X và trục Y, biểu đồ tròn cần cấu hình trường danh mục và trường giá trị.
-Chúng tôi khuyên bạn nên chạy "Truy vấn" trước để kiểm tra xem dữ liệu có đúng như mong đợi không, vì mặc định các trường dữ liệu biểu đồ sẽ được tự động khớp.
+### Tôi nên cấu hình field biểu đồ như thế nào?
+Trả lời: Trong cấu hình trực quan, chọn các field dữ liệu tương ứng theo loại biểu đồ. Ví dụ, line chart/bar chart cần cấu hình field trục X và trục Y, pie chart cần cấu hình field phân loại và field giá trị.
+Khuyến nghị thực hiện "Chạy truy vấn" trước để xem dữ liệu có đúng như mong đợi không, mặc định sẽ tự động khớp các field biểu đồ.
 
-## Vấn đề xem trước/lưu
-### Sau khi sửa đổi cấu hình có cần xem trước thủ công không?
-Trả lời: Ở chế độ cấu hình trực quan, sau khi sửa đổi cấu hình sẽ tự động xem trước. Đối với chế độ SQL và cấu hình tùy chỉnh, để tránh làm mới liên tục, vui lòng hoàn tất việc chỉnh sửa và nhấp vào "Xem trước" thủ công.
+## Vấn đề preview/lưu
+### Có cần preview thủ công sau khi sửa cấu hình không?
+Trả lời: Trong chế độ cấu hình trực quan, sau khi sửa cấu hình sẽ tự động preview. Trong chế độ SQL, cấu hình tùy chỉnh, để tránh refresh thường xuyên, hãy click "Preview" thủ công sau khi viết xong.
 
-### Tại sao hiệu ứng xem trước biểu đồ bị mất sau khi đóng cửa sổ bật lên?
-Trả lời: Hiệu ứng xem trước chỉ dùng để xem tạm thời. Sau khi sửa đổi cấu hình, vui lòng lưu trước khi đóng. Các thay đổi chưa được lưu sẽ không được giữ lại.
+### Hiệu quả preview biểu đồ bị mất sau khi đóng popup?
+Trả lời: Hiệu quả preview chỉ dùng để xem tạm thời, sau khi sửa cấu hình vui lòng lưu trước khi đóng, các thay đổi chưa lưu sẽ không được giữ lại.

@@ -1,24 +1,26 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Referensi API Ekstensi Autentikasi"
+description: "API ekstensi autentikasi NocoBase: Auth, BaseAuth, AuthModel (findUser, newUser, findOrCreateUser), antarmuka klien registerType, konfigurasi route."
+keywords: "API ekstensi autentikasi,Auth,BaseAuth,AuthModel,registerType,findUser,NocoBase"
+---
 
 # Referensi API
 
-## Sisi Server
+## Server
 
 ### Auth
 
-API inti, referensi: [Auth](/api/auth/auth)
+API kernel, lihat: [Auth](/api/auth/auth)
 
 ### BaseAuth
 
-API inti, referensi: [BaseAuth](/api/auth/base-auth)
+API kernel, lihat: [BaseAuth](/api/auth/base-auth)
 
 ### AuthModel
 
-#### Gambaran Umum
+#### Ikhtisar
 
-`AuthModel` adalah model data autentikator (`Authenticator`, referensi: [AuthManager - setStorer](/api/auth/auth-manager#setstorer) dan [Auth - constructor](/api/auth/auth#constructor)) yang digunakan dalam aplikasi NocoBase. Model ini menyediakan beberapa metode untuk berinteraksi dengan **koleksi** data pengguna. Selain itu, Anda juga dapat menggunakan metode yang disediakan oleh Sequelize Model.
+`AuthModel` adalah model data authenticator (`Authenticator`, lihat: [AuthManager - setStorer](/api/auth/auth-manager#setstorer) dan [Auth - constructor](/api/auth/auth#constructor)) yang digunakan dalam aplikasi NocoBase, menyediakan beberapa metode untuk berinteraksi dengan tabel data pengguna. Selain itu, Anda juga dapat menggunakan metode yang disediakan oleh Sequelize Model.
 
 ```ts
 import { AuthModel } from '@nocobase/plugin-auth';
@@ -35,24 +37,24 @@ class CustomAuth extends BaseAuth {
 }
 ```
 
-#### Metode Kelas
+#### Metode Class
 
 - `findUser(uuid: string): UserModel` - Mencari pengguna berdasarkan `uuid`.
-  - `uuid` - Pengidentifikasi unik pengguna dari tipe autentikasi saat ini.
+  - `uuid` - Identifier unik pengguna dari tipe autentikasi saat ini
 
-- `newUser(uuid: string, userValues?: any): UserModel` - Membuat pengguna baru, mengikat pengguna ke autentikator saat ini melalui `uuid`.
-  - `uuid` - Pengidentifikasi unik pengguna dari tipe autentikasi saat ini.
-  - `userValues` - Opsional. Informasi pengguna lainnya. Jika tidak diberikan, `uuid` akan digunakan sebagai nama panggilan pengguna.
+- `newUser(uuid: string, userValues?: any): UserModel` - Membuat pengguna baru, mengikat pengguna dengan authenticator saat ini melalui `uuid`.
+  - `uuid` - Identifier unik pengguna dari tipe autentikasi saat ini
+  - `userValues` - Opsional. Informasi pengguna lainnya. Jika tidak diberikan, `uuid` akan digunakan sebagai nickname pengguna.
 
-- `findOrCreateUser(uuid: string, userValues?: any): UserModel` - Mencari atau membuat pengguna baru, dengan aturan pembuatan yang sama seperti di atas.
-  - `uuid` - Pengidentifikasi unik pengguna dari tipe autentikasi saat ini.
+- `findOrCreateUser(uuid: string, userValues?: any): UserModel` - Mencari atau membuat pengguna baru, aturan pembuatan sama seperti di atas.
+  - `uuid` - Identifier unik pengguna dari tipe autentikasi saat ini
   - `userValues` - Opsional. Informasi pengguna lainnya.
 
-## Sisi Klien
+## Klien
 
 ### `plugin.registerType()`
 
-Mendaftarkan klien untuk tipe autentikasi.
+Mendaftarkan klien dari tipe autentikasi.
 
 ```ts
 import AuthPlugin from '@nocobase/plugin-auth/client';
@@ -72,7 +74,7 @@ class CustomAuthPlugin extends Plugin {
 }
 ```
 
-#### Sintaks
+#### Signature
 
 - `registerType(authType: string, options: AuthOptions)`
 
@@ -91,26 +93,26 @@ export type AuthOptions = {
 
 #### Detail
 
-- `SignInForm` - Formulir Masuk (Sign In)
-- `SignInButton` - Tombol Masuk (pihak ketiga), dapat digunakan sebagai alternatif dari formulir masuk.
-- `SignUpForm` - Formulir Daftar (Sign Up)
-- `AdminSettingsForm` - Formulir Pengaturan Admin
+- `SignInForm` - Formulir login
+- `SignInButton` - Tombol login (pihak ketiga), dapat dipilih salah satu dengan formulir login
+- `SignUpForm` - Formulir pendaftaran
+- `AdminSettingsForm` - Formulir konfigurasi backend
 
-### Rute
+### Route
 
-Rute *frontend* untuk mendaftarkan **plugin** autentikasi adalah sebagai berikut:
+Plugin auth mendaftarkan route frontend sebagai berikut:
 
-- Tata Letak Autentikasi (Auth Layout)
+- Auth Layout
   - name: `auth`
   - path: `-`
   - component: `AuthLayout`
 
-- Halaman Masuk (Sign In)
+- Halaman Login
   - name: `auth.signin`
   - path: `/signin`
   - component: `SignInPage`
 
-- Halaman Daftar (Sign Up)
+- Halaman Pendaftaran
   - name: `auth.signup`
   - path: `/signup`
   - component: `SignUpPage`

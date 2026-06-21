@@ -1,6 +1,8 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Berbagi Collection Multi Aplikasi"
 packageName: '@nocobase/plugin-multi-app-share-collection'
+title: "Berbagi Collection Multi Aplikasi"
+keywords: "Berbagi Collection Multi Aplikasi,Plugin,NocoBase"
 description: |
   
 isFree: true
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+# Berbagi Collection Multi Aplikasi
 
-> Note: This plugin is deprecated.
+> Perhatian: Plugin ini sudah usang (deprecated).

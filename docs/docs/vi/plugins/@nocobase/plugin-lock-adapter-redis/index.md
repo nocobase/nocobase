@@ -1,15 +1,17 @@
 ---
-displayName: "Redis lock adapter"
+displayName: "Bộ chuyển đổi khóa phân tán Redis"
 packageName: '@nocobase/plugin-lock-adapter-redis'
+title: "Bộ chuyển đổi khóa phân tán Redis"
+keywords: "Bộ chuyển đổi khóa phân tán Redis,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Distributed lock implemention based on Redis.
+  Triển khai khóa phân tán dựa trên Redis
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis lock adapter
+# Bộ chuyển đổi khóa phân tán Redis

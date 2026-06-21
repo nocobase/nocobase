@@ -1,24 +1,26 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Variabel Konteks"
+description: "Gunakan kembali variabel konteks seperti ctx.user, ctx.page, nilai filter pada query data, konfigurasi Chart, dan event interaksi untuk merender dan terhubung berdasarkan konteks."
+keywords: "variabel konteks,ctx.user,ctx.page,variabel filter,{{variabel}},data visualization,NocoBase"
+---
 
 # Menggunakan Variabel Konteks
 
-Dengan variabel konteks, Anda dapat menggunakan kembali informasi dari halaman saat ini, pengguna, waktu, atau kondisi filter untuk merender bagan dan mengaktifkan tautan berdasarkan konteks.
+Melalui variabel konteks, Anda dapat langsung menggunakan kembali informasi seperti halaman/pengguna/waktu/kondisi filter saat ini, untuk merender Chart dan linkage berdasarkan konteks.
 
-## Cakupan Aplikasi
-- Kondisi filter dalam mode Builder untuk kueri data: pilih variabel untuk digunakan.
+## Cakupan Penggunaan
+- Pada kondisi filter mode Builder query data, pilih variabel untuk digunakan.
 ![clipboard-image-1761486073](https://static-docs.nocobase.com/clipboard-image-1761486073.png)
 
-- Penulisan pernyataan dalam mode SQL untuk kueri data: pilih variabel dan sisipkan ekspresi (misalnya, `{{ ctx.user.id }}`).
+- Pada penulisan statement mode SQL query data, pilih variabel, sisipkan ekspresi (misalnya `{{ ctx.user.id }}`).
 ![clipboard-image-1761486145](https://static-docs.nocobase.com/clipboard-image-1761486145.png)
 
-- Opsi bagan dalam mode Kustom: tulis ekspresi JS secara langsung.
+- Pada mode Custom opsi Chart, langsung tulis ekspresi JS.
 ![clipboard-image-1761486604](https://static-docs.nocobase.com/clipboard-image-1761486604.png)
 
-- Event interaksi (misalnya, klik untuk membuka dialog *drill-down* dan meneruskan data): tulis ekspresi JS secara langsung.
+- Pada event interaksi (misalnya klik drill-down untuk membuka popup dan meneruskan data), langsung tulis ekspresi JS.
 ![clipboard-image-1761486683](https://static-docs.nocobase.com/clipboard-image-1761486683.png)
 
-**Catatan:**
-- Jangan membungkus `{{ ... }}` dengan tanda kutip tunggal atau ganda; sistem akan menangani *binding* dengan aman berdasarkan tipe variabel (string, angka, waktu, NULL).
-- Ketika variabel bernilai `NULL` atau tidak terdefinisi, tangani nilai kosong secara eksplisit dalam SQL menggunakan `COALESCE(...)` atau `IS NULL`.
+**Perhatian:**
+- Jangan menambahkan tanda petik tunggal/ganda pada `{{ ... }}`; saat binding, sistem akan menangani dengan aman berdasarkan tipe variabel (string, number, time, NULL).
+- Saat variabel adalah `NULL` atau tidak terdefinisi, gunakan `COALESCE(...)` atau `IS NULL` pada SQL untuk menangani logika nilai null secara eksplisit.

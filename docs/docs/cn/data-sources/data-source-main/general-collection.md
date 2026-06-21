@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-main"
+title: "普通表"
+description: "普通数据表内置常用系统字段（创建人、修改人、创建时间、修改时间等），适用于常规业务数据建模。"
+keywords: "普通表,General Collection,系统字段,数据表,NocoBase"
 ---
-
 # 普通表
 
 ## 介绍

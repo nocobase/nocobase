@@ -1,17 +1,43 @@
 [
   {
     "type": "custom-link",
-    "label": "Обзор",
-    "link": "/multi-app/"
+    "label": "Мульти-приложения",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Обзор",
+        "link": "/multi-app/multi-app/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Режим общей памяти",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Режим мультисреды",
+        "link": "/multi-app/multi-app/remote"
+      },
+      {
+        "type": "custom-link",
+        "label": "Блок приложений и переключатель",
+        "link": "/multi-app/multi-app/app-block-and-switcher"
+      },
+      {
+        "type": "custom-link",
+        "label": "SSO приложений",
+        "link": "/multi-app/multi-app/app-sso"
+      },
+      {
+        "type": "custom-link",
+        "label": "Вызов API дочерних приложений",
+        "link": "/multi-app/multi-app/sub-app-api"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Мульти-приложение",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "Мульти-пространство",
-    "link": "/multi-app/multi-space"
+    "label": "Мультипространство",
+    "link": "/multi-app/multi-space/"
   }
 ]

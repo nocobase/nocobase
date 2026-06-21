@@ -1,29 +1,30 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Quy tắc liên kết Action"
+description: "Cấu hình Action: cài đặt Quy tắc liên kết của Action, kiểm soát hiển thị/ẩn, vô hiệu hóa/kích hoạt Action."
+keywords: "Quy tắc liên kết Action,Quy tắc liên kết,hiển thị Action,cấu hình Action,Interface Builder,NocoBase"
+---
 
-
-# Quy tắc Liên kết Thao tác
+# Quy tắc liên kết của Action
 
 ## Giới thiệu
 
-Quy tắc liên kết thao tác cho phép người dùng kiểm soát trạng thái của một thao tác (như hiển thị, bật, ẩn, tắt, v.v.) một cách linh hoạt dựa trên các điều kiện cụ thể. Bằng cách cấu hình các quy tắc này, người dùng có thể liên kết hành vi của các nút thao tác với bản ghi hiện tại, vai trò người dùng hoặc dữ liệu ngữ cảnh.
+Quy tắc liên kết Action cho phép bạn kiểm soát động trạng thái Action (như hiển thị, kích hoạt, ẩn, vô hiệu hóa, v.v.) theo điều kiện cụ thể. Bằng cách cấu hình các quy tắc này, bạn có thể thực hiện liên kết hành vi nút Action với bản ghi hiện tại, vai trò người dùng hoặc dữ liệu ngữ cảnh.
 
 ![20251029150224](https://static-docs.nocobase.com/20251029150224.png)
 
 ## Hướng dẫn sử dụng
 
-Khi điều kiện được đáp ứng (mặc định sẽ được thông qua nếu không có điều kiện nào được đặt), hệ thống sẽ kích hoạt việc thực thi các cài đặt thuộc tính hoặc JavaScript. Hỗ trợ sử dụng hằng số và biến trong phần đánh giá điều kiện.
+Khi đáp ứng điều kiện (không có điều kiện mặc định là pass), kích hoạt thực thi cài đặt thuộc tính/thực thi JavaScript, hỗ trợ sử dụng hằng số/biến trong điều kiện đánh giá.
 
 ![20251030224601](https://static-docs.nocobase.com/20251030224601.png)
 
-Quy tắc này hỗ trợ sửa đổi các thuộc tính của nút.
+Hỗ trợ sửa đổi thuộc tính nút bấm.
 
 ![20251029150452](https://static-docs.nocobase.com/20251029150452.png)
 
 ## Hằng số
 
-Ví dụ: Không cho phép chỉnh sửa các đơn hàng đã thanh toán.
+Ví dụ: Đơn hàng đã thanh toán không cho phép chỉnh sửa.
 
 ![20251029150638](https://static-docs.nocobase.com/20251029150638.png)
 
@@ -33,20 +34,20 @@ Ví dụ: Không cho phép chỉnh sửa các đơn hàng đã thanh toán.
 
 ![20251029150014](https://static-docs.nocobase.com/20251029150014.png)
 
-Ví dụ 1: Kiểm soát hiển thị của nút dựa trên loại thiết bị hiện tại.
+Ví dụ 1: Kiểm soát hiển thị nút bấm theo loại thiết bị hiện tại.
 
 ![20251029151057](https://static-docs.nocobase.com/20251029151057.png)
 
-Ví dụ 2: Nút cập nhật hàng loạt trên tiêu đề bảng của khối đơn hàng chỉ dành cho vai trò Quản trị viên; các vai trò khác không thể thực hiện thao tác này.
+Ví dụ 2: Nút Cập nhật hàng loạt trên đầu Table của Block đơn hàng chỉ giới hạn cho vai trò admin sử dụng, các vai trò khác không thể thực hiện Action này.
 
 ![20251029151209](https://static-docs.nocobase.com/20251029151209.png)
 
 ### Biến ngữ cảnh
 
-Ví dụ: Nút Thêm trên cơ hội đơn hàng (khối liên kết) chỉ được bật khi trạng thái đơn hàng là "Chờ thanh toán" hoặc "Bản nháp". Trong các trạng thái khác, nút sẽ bị tắt.
+Ví dụ: Nút Thêm trên cơ hội đơn hàng (Block quan hệ) chỉ kích hoạt khi trạng thái đơn hàng là "Chờ thanh toán" và "Bản nháp", trong các trạng thái khác nút sẽ bị vô hiệu hóa.
 
 ![20251029151520](https://static-docs.nocobase.com/20251029151520.png)
 
 ![20251029152200](https://static-docs.nocobase.com/20251029152200.png)
 
-Để biết thêm thông tin về biến, vui lòng tham khảo [Biến](/interface-builder/variables).
+Xem thêm về biến tại [Biến](/interface-builder/variables).

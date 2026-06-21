@@ -1,34 +1,38 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Kustomisasi Event Interaksi"
+description: "Daftarkan event interaksi ECharts melalui chart.on: highlight klik, navigasi halaman, analisis drill-down, buka popup, mendukung parameter params dan dispatchAction."
+keywords: "event interaksi chart,chart.on,highlight klik,navigasi,drill-down,dispatchAction,NocoBase"
+---
 
-# Event Interaksi Kustom
+# Kustomisasi Event Interaksi
 
-Di editor event, Anda dapat menulis kode JS dan mendaftarkan perilaku interaksi melalui instance ECharts `chart` untuk mengaktifkan keterkaitan. Contohnya, navigasi ke halaman baru atau membuka dialog untuk analisis mendalam (drill-down).
+Pada editor event, tulis JS dan daftarkan perilaku interaksi melalui instance ECharts `chart` untuk mengimplementasikan linkage. Misalnya navigasi ke halaman baru, buka popup untuk analisis drill-down, dll.
 
 ![clipboard-image-1761489617](https://static-docs.nocobase.com/clipboard-image-1761489617.png)
 
-## Registrasi dan Pembatalan Registrasi Event
-- Registrasi: `chart.on(eventName, handler)`
-- Pembatalan Registrasi: `chart.off(eventName, handler)` atau `chart.off(eventName)` untuk menghapus event dengan nama yang sama.
+## Pendaftaran dan Pelepasan Event
+- Daftar: `chart.on(eventName, handler)`
+- Lepas: `chart.off(eventName, handler)` atau `chart.off(eventName)` untuk membersihkan event dengan nama yang sama
 
-**Catatan:**
-Untuk alasan keamanan, sangat disarankan untuk membatalkan registrasi event sebelum mendaftarkannya kembali!
+**Perhatian:**
+Untuk alasan keamanan, sangat disarankan untuk melepas event sebelum mendaftarkannya!
 
-## Struktur Data Parameter `params` pada Fungsi Handler
+
+## Struktur Data Parameter params dari Fungsi handler
 
 ![20251026222859](https://static-docs.nocobase.com/20251026222859.png)
 
-Field yang umum digunakan meliputi `params.data` dan `params.name`.
+Yang umum digunakan adalah `params.data`, `params.name`, dll.
 
-## Contoh: Klik untuk Menyorot Pilihan
+
+## Contoh: Highlight saat Klik
 ```js
 chart.off('click');
 chart.on('click', (params) => {
   const { seriesIndex, dataIndex } = params;
-  // Sorot titik data saat ini
+  // Highlight titik data saat ini
   chart.dispatchAction({ type: 'highlight', seriesIndex, dataIndex });
-  // Batalkan sorotan lainnya
+  // Batalkan highlight lainnya
   chart.dispatchAction({ type: 'downplay', seriesIndex });
 });
 ```
@@ -39,39 +43,40 @@ chart.off('click');
 chart.on('click', (params) => {
   const order_date = params.data[0]
   
-  // Opsi 1: Navigasi internal aplikasi, tidak memaksa refresh halaman, pengalaman lebih baik (direkomendasikan), hanya memerlukan path relatif
+  // Cara 1: navigasi internal aplikasi, tidak memaksa refresh halaman, pengalaman lebih baik (direkomendasikan), hanya butuh path relatif
   ctx.router.navigate(`/new-path/orders?order_date=${order_date}`)
 
-  // Opsi 2: Navigasi ke halaman eksternal, memerlukan URL lengkap
+  // Cara 2: navigasi ke halaman eksternal, butuh URL lengkap
   window.location.href = `https://www.host.com/new-path/orders?order_date=${order_date}`
 
-  // Opsi 3: Buka halaman eksternal di tab baru, memerlukan URL lengkap
+  // Cara 3: buka halaman eksternal di tab baru, butuh URL lengkap
   window.open(`https://www.host.com/new-path/orders?order_date=${order_date}`)
 });
 ```
 
-## Contoh: Klik untuk Membuka Dialog Detail (Drill-down)
+## Contoh: Klik untuk Menampilkan Popup Detail (Drill-Down)
 ```js
 chart.off('click');
 chart.on('click', (params) => {
   ctx.openView(ctx.model.uid + '-1', {
     mode: 'dialog',
     size: 'large',
-    defineProperties: {}, // daftarkan variabel konteks untuk dialog baru
+    defineProperties: {}, // Daftarkan variabel konteks untuk digunakan oleh popup baru
   });
 });
 ```
 
 ![clipboard-image-1761490321](https://static-docs.nocobase.com/clipboard-image-1761490321.png)
 
-Dalam dialog yang baru dibuka, gunakan variabel konteks `ctx.view.inputArgs.XXX` yang dideklarasikan oleh grafik.
+Pada popup yang baru dibuka, gunakan variabel konteks yang dideklarasikan oleh Chart `ctx.view.inputArgs.XXX`
 
-## Pratinjau dan Simpan
-- Klik "Pratinjau" untuk memuat dan menjalankan kode event.
-- Klik "Simpan" untuk menyimpan konfigurasi event saat ini.
-- Klik "Batal" untuk kembali ke status terakhir yang disimpan.
 
-**Rekomendasi:**
-- Selalu gunakan `chart.off('event')` sebelum melakukan binding untuk menghindari eksekusi ganda atau peningkatan penggunaan memori.
-- Dalam handler event, usahakan untuk menggunakan operasi ringan (misalnya, `dispatchAction`, `setOption`) untuk menghindari pemblokiran proses rendering.
-- Lakukan validasi terhadap opsi grafik dan kueri data untuk memastikan bahwa field yang ditangani dalam event konsisten dengan data saat ini.
+## Preview dan Simpan
+- Klik "Preview" untuk memuat dan menjalankan kode event.
+- Klik "Simpan" untuk menyimpan konten konfigurasi event saat ini.
+- Klik "Batal" untuk kembali ke status simpan sebelumnya.
+
+**Saran:**
+- Sebelum setiap binding, lakukan `chart.off('event')` untuk menghindari binding berulang yang menyebabkan eksekusi duplikat atau peningkatan memori.
+- Gunakan operasi ringan dalam event (`dispatchAction`, `setOption`), hindari pemblokiran rendering.
+- Verifikasi bersama opsi Chart dan query data untuk memastikan field yang ditangani event konsisten dengan data saat ini.

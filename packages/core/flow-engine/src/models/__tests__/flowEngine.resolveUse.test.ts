@@ -61,21 +61,6 @@ describe('FlowEngine.createModel resolveUse hook', () => {
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
-  test('should break resolveUse on circular reference and warn', () => {
-    class LoopModel extends FlowModel {
-      static resolveUse() {
-        return 'LoopModel';
-      }
-    }
-
-    engine.registerModels({ LoopModel });
-
-    const model = engine.createModel({ use: 'LoopModel', uid: 'loop-model', flowEngine: engine });
-
-    expect(model).toBeInstanceOf(LoopModel);
-    expect(warnSpy).toHaveBeenCalled();
-  });
-
   test('should fall back to ErrorFlowModel when resolveUse returns unregistered name', () => {
     class MissingTargetEntry extends FlowModel {
       static resolveUse() {

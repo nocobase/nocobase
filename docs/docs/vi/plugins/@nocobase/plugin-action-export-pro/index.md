@@ -1,15 +1,17 @@
 ---
-displayName: "Action: Export records Pro"
+displayName: "Action: Xuất bản ghi Pro"
 packageName: '@nocobase/plugin-action-export-pro'
+title: "Action: Xuất bản ghi Pro"
+keywords: "Action: Xuất bản ghi Pro,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Enhance data export capabilities with asynchronous exports for handling large volumes. Supports exporting attachments.
+  Tăng cường chức năng xuất dữ liệu. Xuất bất đồng bộ, hỗ trợ khối lượng dữ liệu lớn. Hỗ trợ xuất tệp đính kèm.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Action: Export records Pro
+# Action: Xuất bản ghi Pro

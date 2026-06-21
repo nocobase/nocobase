@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-sort"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Sortierfeld
 

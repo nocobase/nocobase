@@ -1,62 +1,62 @@
 ---
 pkg: '@nocobase/plugin-workflow-subflow'
+title: "Node Workflow - Gọi Workflow"
+description: "Node gọi Workflow: gọi quy trình con, truyền biến, tái sử dụng logic quy trình, tách quy trình."
+keywords: "workflow,gọi workflow,Subflow,quy trình con,tái sử dụng quy trình,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Gọi luồng công việc
+# Gọi Workflow
 
 ## Giới thiệu
 
-Dùng để gọi các luồng công việc khác từ bên trong một luồng công việc. Bạn có thể sử dụng các biến từ luồng công việc hiện tại làm đầu vào cho luồng công việc con, và sử dụng đầu ra của luồng công việc con làm biến trong luồng công việc hiện tại để dùng ở các nút tiếp theo.
+Được dùng để gọi các quy trình khác trong một Workflow, có thể sử dụng biến của quy trình hiện tại làm đầu vào cho quy trình con và sử dụng đầu ra của quy trình con làm biến của quy trình hiện tại trong các Node tiếp theo.
 
-Quy trình gọi luồng công việc được minh họa như hình dưới đây:
+Quá trình xử lý của việc gọi Workflow như hình dưới đây:
 
 ![20241230134634](https://static-docs.nocobase.com/20241230134634.png)
 
-Bằng cách gọi luồng công việc, bạn có thể tái sử dụng các logic quy trình chung, ví dụ như gửi email, SMS, v.v., hoặc chia một luồng công việc phức tạp thành nhiều luồng công việc con để dễ quản lý và bảo trì hơn.
+Thông qua việc gọi Workflow có thể tái sử dụng một số logic quy trình thông dụng, ví dụ gửi email, SMS..., hoặc tách một quy trình phức tạp thành nhiều quy trình con để dễ quản lý và bảo trì.
 
-Về bản chất, một luồng công việc không phân biệt liệu nó có phải là luồng công việc con hay không. Bất kỳ luồng công việc nào cũng có thể được gọi làm luồng công việc con bởi các luồng công việc khác, và nó cũng có thể gọi các luồng công việc khác. Tất cả các luồng công việc đều bình đẳng, chỉ tồn tại mối quan hệ gọi và được gọi.
+Về bản chất, Workflow không phân biệt một quy trình có phải là quy trình con hay không, bất kỳ Workflow nào cũng có thể được gọi làm quy trình con bởi các quy trình khác và cũng có thể gọi các quy trình khác. Tất cả các Workflow đều bình đẳng, chỉ tồn tại mối quan hệ gọi và được gọi.
 
-Tương tự, việc sử dụng tính năng gọi luồng công việc diễn ra ở hai vị trí:
+Tương tự, việc sử dụng gọi Workflow được chia thành hai vị trí:
 
-- Trong luồng công việc chính: Với vai trò là bên gọi, bạn gọi các luồng công việc khác thông qua nút "Gọi luồng công việc".
-- Trong luồng công việc con: Với vai trò là bên được gọi, bạn lưu các biến cần xuất từ luồng công việc hiện tại thông qua nút "Đầu ra luồng công việc". Các biến này có thể được sử dụng bởi các nút tiếp theo trong luồng công việc đã gọi nó.
+1. Trong quy trình chính: với tư cách là bên gọi, qua Node "Gọi Workflow" gọi các Workflow khác.
+2. Trong quy trình con: với tư cách là bên được gọi, qua Node "Đầu ra luồng" lưu biến cần xuất ra trong quy trình hiện tại để có thể được các Node tiếp theo sử dụng trong Workflow gọi quy trình hiện tại.
 
-## Tạo nút
+## Tạo Node
 
-Trong giao diện cấu hình luồng công việc, bạn nhấp vào nút dấu cộng (“+”) trong luồng công việc để thêm nút "Gọi luồng công việc":
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Gọi Workflow":
 
-![Add Invoke Workflow Node](https://static-docs.nocobase.com/20241230001323.png)
+![Thêm Node gọi Workflow](https://static-docs.nocobase.com/20241230001323.png)
 
-## Cấu hình nút
+## Cấu hình Node
 
-### Chọn luồng công việc
+### Chọn Workflow
 
-Chọn luồng công việc bạn muốn gọi. Bạn có thể sử dụng hộp tìm kiếm để tìm nhanh chóng:
+Chọn Workflow cần gọi, có thể qua ô tìm kiếm để tìm nhanh:
 
-![Select Workflow](https://static-docs.nocobase.com/20241230001534.png)
+![Chọn Workflow](https://static-docs.nocobase.com/20241230001534.png)
 
 :::info{title=Mẹo}
-* Các luồng công việc chưa được kích hoạt cũng có thể được gọi làm luồng công việc con.
-* Khi luồng công việc hiện tại ở chế độ đồng bộ, nó chỉ có thể gọi các luồng công việc con cũng ở chế độ đồng bộ.
+* Workflow chưa được bật cũng có thể được gọi làm quy trình con.
+* Khi Workflow hiện tại ở chế độ đồng bộ thì cũng chỉ có thể gọi quy trình con ở chế độ đồng bộ.
 :::
 
-### Cấu hình biến kích hoạt của luồng công việc
+### Cấu hình biến Trigger của Workflow
 
-Sau khi chọn luồng công việc, bạn cần cấu hình các biến kích hoạt làm dữ liệu đầu vào để kích hoạt luồng công việc con. Bạn có thể chọn trực tiếp dữ liệu tĩnh hoặc chọn các biến từ luồng công việc hiện tại:
+Sau khi chọn Workflow, còn cần cấu hình biến của Trigger làm dữ liệu đầu vào để kích hoạt quy trình con. Có thể trực tiếp chọn dữ liệu tĩnh hoặc chọn biến trong quy trình hiện tại:
 
-![Configure Trigger Variables](https://static-docs.nocobase.com/20241230162722.png)
+![Cấu hình biến Trigger](https://static-docs.nocobase.com/20241230162722.png)
 
-Các loại trình kích hoạt khác nhau yêu cầu các biến khác nhau, bạn có thể hoàn tất cấu hình trên biểu mẫu tùy theo nhu cầu.
+Các loại Trigger khác nhau có biến cần thiết khác nhau, có thể tùy theo nhu cầu hoàn tất cấu hình trên form.
 
-## Nút Đầu ra luồng công việc
+## Node đầu ra luồng
 
-Tham khảo nội dung của nút [Đầu ra luồng công việc](./output.md) để cấu hình các biến đầu ra của luồng công việc con.
+Tham khảo nội dung Node [Đầu ra luồng](./output.md) để cấu hình biến đầu ra của quy trình con.
 
-## Sử dụng đầu ra luồng công việc
+## Sử dụng đầu ra luồng
 
-Trở lại luồng công việc chính, tại các nút khác bên dưới nút Gọi luồng công việc, khi bạn muốn sử dụng giá trị đầu ra của luồng công việc con, bạn có thể chọn kết quả của nút Gọi luồng công việc. Nếu luồng công việc con xuất ra một giá trị đơn giản, như chuỗi, số, giá trị logic, ngày (ngày ở định dạng chuỗi UTC), v.v., bạn có thể sử dụng trực tiếp; nếu đó là một đối tượng phức tạp (ví dụ: một đối tượng từ một bộ sưu tập), bạn cần ánh xạ nó thông qua nút phân tích cú pháp JSON trước khi có thể sử dụng các thuộc tính của nó, nếu không, bạn chỉ có thể sử dụng nó như một đối tượng hoàn chỉnh.
+Quay lại quy trình chính, trong các Node khác bên dưới Node gọi Workflow, khi muốn sử dụng giá trị đầu ra của quy trình con, có thể chọn kết quả của Node gọi Workflow. Nếu đầu ra của quy trình con là một giá trị đơn giản như chuỗi, số, giá trị logic, ngày (ngày là chuỗi định dạng UTC)..., có thể trực tiếp sử dụng; nếu là đối tượng phức tạp (như đối tượng trong bảng dữ liệu), cần qua Node phân tích JSON để ánh xạ trước rồi mới có thể sử dụng các thuộc tính trong đó, ngược lại chỉ có thể được sử dụng theo toàn bộ đối tượng.
 
-Nếu luồng công việc con không cấu hình nút Đầu ra luồng công việc, hoặc không có giá trị đầu ra, thì khi sử dụng kết quả của nút Gọi luồng công việc trong luồng công việc chính, bạn sẽ chỉ nhận được một giá trị rỗng (`null`).
+Nếu quy trình con không cấu hình Node đầu ra luồng hoặc không có giá trị đầu ra, thì khi sử dụng kết quả của Node gọi Workflow trong quy trình chính, chỉ có thể nhận được giá trị rỗng (`null`).

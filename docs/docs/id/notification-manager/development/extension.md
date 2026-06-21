@@ -1,16 +1,18 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ekstensi Tipe Channel Notifikasi"
+description: "Ekstensi tipe channel notifikasi: plugin channel notifikasi kustom, inherit BaseNotificationChannel, registerChannelType untuk registrasi, implementasi notifikasi pihak ketiga seperti SMS, DingTalk, Feishu."
+keywords: "ekstensi channel notifikasi,BaseNotificationChannel,registerChannelType,notifikasi SMS,DingTalk Feishu,channel kustom,NocoBase"
+---
 
-# Memperluas Tipe Saluran Notifikasi
+# Ekstensi Tipe Channel Notifikasi
 
-NocoBase mendukung perluasan tipe saluran notifikasi sesuai kebutuhan, seperti notifikasi SMS dan notifikasi push aplikasi.
+NocoBase mendukung ekstensi tipe channel notifikasi sesuai kebutuhan, seperti notifikasi SMS, push aplikasi, dan lainnya.
 
-## Klien
+## Client-side
 
-### Registrasi Tipe Saluran
+### Registrasi Tipe Channel
 
-Antarmuka konfigurasi saluran dan konfigurasi pesan klien didaftarkan melalui metode `registerChannelType` yang disediakan oleh klien plugin manajemen notifikasi:
+Konfigurasi channel client-side dan interface konfigurasi pesan didaftarkan melalui interface `registerChannelType` yang disediakan client-side notification manager:
 
 ```ts
 import PluginNotificationManagerClient from '@nocobase/plugin-notification-manager/client';
@@ -23,11 +25,11 @@ class PluginNotificationExampleClient extends Plugin {
   async load() {
     const notification = this.pm.get(PluginNotificationManagerClient);
     notification.registerChannelType({
-      title: 'Example SMS', // Nama tipe saluran
-      type: 'example-sms', // Pengidentifikasi tipe saluran
+      title: 'Example SMS', // Nama tipe channel
+      type: 'example-sms', // Identifier tipe channel
       components: {
-        ChannelConfigForm, // Formulir konfigurasi saluran
-        MessageConfigForm, // Formulir konfigurasi pesan
+        ChannelConfigForm, // Form konfigurasi channel
+        MessageConfigForm, // Form konfigurasi pesan
       },
     });
   }
@@ -36,11 +38,11 @@ class PluginNotificationExampleClient extends Plugin {
 export default PluginNotificationExampleClient;
 ```
 
-## Server
+## Server-side
 
-### Mewarisi Kelas Abstrak
+### Inherit Abstract Class
 
-Inti dari pengembangan server adalah mewarisi kelas abstrak `BaseNotificationChannel` dan mengimplementasikan metode `send`. Metode `send` berisi logika bisnis untuk pengiriman notifikasi melalui plugin yang diperluas.
+Inti pengembangan server-side adalah perlu meng-inherit abstract class `BaseNotificationChannel` dan mengimplementasikan method `send`. Di dalam method `send` adalah logika bisnis ekstensi plugin untuk mengirim notifikasi
 
 ```ts
 import { BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
@@ -53,9 +55,9 @@ export class ExampleSever extends BaseNotificationChannel {
 }
 ```
 
-### Registrasi Server
+### Registrasi Server-side
 
-Selanjutnya, Anda perlu memanggil metode `registerChannelType` dari inti server notifikasi untuk mendaftarkan kelas implementasi server yang telah dikembangkan ke dalam inti:
+Selanjutnya perlu memanggil method `registerChannelType` di kernel notification server-side, untuk mendaftarkan class implementasi server-side yang sudah dikembangkan ke kernel:
 
 ```ts
 import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
@@ -73,20 +75,20 @@ export default PluginNotificationExampleServer;
 
 ## Contoh Lengkap
 
-Berikut adalah contoh plugin perluasan notifikasi untuk menjelaskan secara rinci cara mengembangkan sebuah plugin perluasan.
-Misalnya, kita ingin menambahkan fungsionalitas notifikasi SMS ke NocoBase menggunakan gateway SMS dari suatu platform.
+Berikut adalah contoh plugin ekstensi notifikasi untuk menjelaskan secara detail cara mengembangkan plugin ekstensi.
+Asumsikan kita ingin menggunakan SMS gateway suatu platform untuk menambahkan fitur notifikasi SMS ke NocoBase.
 
 ### Pembuatan Plugin
 
-1.  Jalankan perintah untuk membuat plugin: `yarn pm add @nocobase/plugin-notification-example`
+1. Jalankan command pembuatan plugin `yarn pm add @nocobase/plugin-notification-example`
 
-### Pengembangan Klien
+### Pengembangan Client-side
 
-Untuk bagian klien, kita perlu mengembangkan dua komponen formulir: `ChannelConfigForm` (Formulir Konfigurasi Saluran) dan `MessageConfigForm` (Formulir Konfigurasi Pesan).
+Pada bagian client-side, kita perlu mengembangkan dua komponen form, ChannelConfigForm (form konfigurasi channel) dan MessageConfigForm (form konfigurasi pesan)
 
-#### ChannelConfigForm
+#### ChannelConfigFrom
 
-Untuk mengirim pesan SMS, diperlukan API key dan secret. Oleh karena itu, isi formulir saluran kita akan mencakup kedua item ini. Buat file baru bernama `ChannelConfigForm.tsx` di direktori `src/client`, dengan isi sebagai berikut:
+Saat mengirim SMS dari platform tertentu memerlukan APIkey dan secret, jadi konten form channel kita terutama mencakup kedua hal di atas. Buat file baru `ChannelConfigForm.tsx` di direktori `src/client`, konten file sebagai berikut:
 
 ```ts
 import React from 'react';
@@ -124,7 +126,7 @@ export default ChannelConfigForm;
 
 #### MessageConfigForm
 
-Formulir konfigurasi pesan, terutama mencakup konfigurasi untuk penerima (`receivers`) dan konten pesan (`content`). Buat file baru bernama `MessageConfigForm.tsx` di direktori `src/client`. Komponen ini menerima `variableOptions` sebagai parameter variabel. Formulir konten saat ini akan dikonfigurasi di node alur kerja, dan umumnya perlu mengonsumsi variabel node alur kerja. Isi file spesifiknya adalah sebagai berikut:
+Form konfigurasi pesan, terutama mencakup konfigurasi penerima `receivers` dan konten pesan `content`. Buat file baru `MessageConfigForm.tsx` di direktori `src/client`, komponen menerima `variableOptions` sebagai parameter variable. Saat ini form content akan dikonfigurasi di node workflow, biasanya perlu meng-consume variable node workflow. Konten file sebagai berikut:
 
 ```ts
 import React from 'react';
@@ -142,7 +144,7 @@ const MessageConfigForm = ({ variableOptions }) => {
           to: {
             type: 'array',
             required: true,
-            title: `{{t("Penerima")}}`,
+            title: `{{t("Receivers")}}`,
             'x-decorator': 'FormItem',
             'x-component': 'ArrayItems',
             items: {
@@ -161,7 +163,7 @@ const MessageConfigForm = ({ variableOptions }) => {
                   'x-component-props': {
                     scope: variableOptions,
                     useTypedConstant: ['string'],
-                    placeholder: `{{t("Nomor telepon")}}`,
+                    placeholder: `{{t("Phone number")}}`,
                   },
                 },
                 remove: {
@@ -174,7 +176,7 @@ const MessageConfigForm = ({ variableOptions }) => {
             properties: {
               add: {
                 type: 'void',
-                title: `{{t("Tambah nomor telepon")}}`,
+                title: `{{t("Add phone number")}}`,
                 'x-component': 'ArrayItems.Addition',
               },
             },
@@ -182,7 +184,7 @@ const MessageConfigForm = ({ variableOptions }) => {
           content: {
             type: 'string',
             required: true,
-            title: `{{t("Konten")}}`,
+            title: `{{t("Content")}}`,
             'x-decorator': 'FormItem',
             'x-component': 'Variable.RawTextArea',
             'x-component-props': {
@@ -202,9 +204,9 @@ const MessageConfigForm = ({ variableOptions }) => {
 export default MessageConfigForm
 ```
 
-#### Registrasi Komponen Klien
+#### Registrasi Komponen Client-side
 
-Setelah komponen konfigurasi formulir selesai dikembangkan, Anda perlu memanggil inti manajemen notifikasi untuk mendaftarkannya. Misalkan nama platform kita adalah Example, maka isi file `src/client/index.tsx` yang telah diedit adalah sebagai berikut:
+Setelah komponen konfigurasi form selesai dikembangkan, perlu memanggil kernel notification manager untuk registrasi. Asumsikan nama platform kita adalah Example, maka konten file `src/client/index.tsx` setelah diedit sebagai berikut:
 
 ```ts
 import { Plugin } from '@nocobase/client';
@@ -234,11 +236,11 @@ class PluginNotificationExampleClient extends Plugin {
 export default PluginNotificationExampleClient;
 ```
 
-Dengan demikian, pengembangan klien telah selesai.
+Sampai di sini, pengembangan client-side sudah selesai
 
-### Pengembangan Server
+### Pengembangan Server-side
 
-Inti dari pengembangan server adalah mewarisi kelas abstrak `BaseNotificationChannel` dan mengimplementasikan metode `send`. Metode `send` berisi logika bisnis untuk plugin perluasan dalam mengirim notifikasi. Karena ini adalah contoh, kita hanya akan mencetak argumen yang diterima. Di direktori `src/server`, tambahkan file `example-server.ts` dengan isi sebagai berikut:
+Inti pengembangan server-side adalah perlu meng-inherit abstract class `BaseNotificationChannel` dan mengimplementasikan method `send`. Di dalam method `send` adalah logika bisnis ekstensi plugin untuk mengirim notifikasi. Karena ini adalah contoh, hanya menampilkan parameter yang diterima. Tambahkan file baru `example-server.ts` di direktori `src/server`, konten file sebagai berikut:
 
 ```ts
 import { BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
@@ -251,7 +253,7 @@ export class ExampleSever extends BaseNotificationChannel {
 }
 ```
 
-Selanjutnya, Anda perlu memanggil metode `registerChannelType` dari inti server notifikasi untuk mendaftarkan plugin perluasan server. Isi file `src/server/plugin.ts` yang telah diedit adalah sebagai berikut:
+Selanjutnya perlu memanggil method `registerChannelType` di kernel notification server-side untuk mendaftarkan plugin ekstensi server-side. Konten file `src/clinet/plugin.ts` setelah diedit sebagai berikut:
 
 ```ts
 import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
@@ -267,21 +269,21 @@ export class PluginNotificationExampleServer extends Plugin {
 export default PluginNotificationExampleServer;
 ```
 
-### Registrasi dan Peluncuran Plugin
+### Registrasi dan Aktivasi Plugin
 
-1.  Jalankan perintah registrasi: `yarn pm add @nocobase/plugin-notification-example`
-2.  Jalankan perintah pengaktifan: `yarn pm enable @nocobase/plugin-notification-example`
+1. Jalankan command registrasi `yarn p add @nocobase/plugin-notification-example`
+2. Jalankan command aktivasi `yarn pm enable @nocobase/plugin-notification-example`
 
-### Konfigurasi Saluran
+### Konfigurasi Channel
 
-Saat ini, jika Anda mengunjungi halaman saluran manajemen notifikasi, Anda dapat melihat bahwa `Example SMS` telah diaktifkan.
+Pada saat ini akses halaman channel notification manager, Anda dapat melihat `Example SMS` sudah diaktifkan
 ![20241009164207-2024-10-09-16-42-08](https://static-docs.nocobase.com/20241009164207-2024-10-09-16-42-08.png)
 
-Tambahkan saluran contoh.
+Tambahkan contoh channel
 ![20250418074409-2025-04-18-07-44-09](https://static-docs.nocobase.com/20250418074409-2025-04-18-07-44-09.png)
 
-Buat alur kerja baru dan konfigurasikan node notifikasi.
+Buat workflow baru dan konfigurasikan node notifikasi
 ![20250418074832-2025-04-18-07-48-32](https://static-docs.nocobase.com/20250418074832-2025-04-18-07-48-32.png)
 
-Picu eksekusi alur kerja, dan Anda akan melihat informasi berikut ditampilkan di konsol.
+Trigger eksekusi workflow, Anda dapat melihat informasi berikut di console
 ![20250418081746-2025-04-18-08-17-48](https://static-docs.nocobase.com/20250418081746-2025-04-18-08-17-48.png)

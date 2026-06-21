@@ -1,14 +1,16 @@
 ---
-displayName: "Action: Custom request"
+displayName: "Action: Yêu cầu tùy chỉnh"
 packageName: '@nocobase/plugin-action-custom-request'
+title: "Action: Yêu cầu tùy chỉnh"
+keywords: "Action: Yêu cầu tùy chỉnh,Plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Sending a request to any HTTP service supports sending context data to the target service.
+  Gửi yêu cầu đến dịch vụ HTTP bất kỳ, hỗ trợ gửi dữ liệu ngữ cảnh đến dịch vụ đích.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Custom request
+# Action: Yêu cầu tùy chỉnh

@@ -1,4 +1,6 @@
 ---
+title: "主题编辑器"
+keywords: "主题编辑器,插件,NocoBase"
 displayName: "主题编辑器"
 packageName: '@nocobase/plugin-theme-editor'
 description: |

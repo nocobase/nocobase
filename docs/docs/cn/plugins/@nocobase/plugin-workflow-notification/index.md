@@ -1,4 +1,6 @@
 ---
+title: "工作流：通知节点"
+keywords: "工作流：通知节点,插件,NocoBase"
 displayName: "工作流：通知节点"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |

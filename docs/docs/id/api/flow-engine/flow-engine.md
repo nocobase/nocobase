@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "FlowEngine"
+description: "API FlowEngine NocoBase: createModel untuk membuat model, instance FlowModel."
+keywords: "FlowEngine,createModel,FlowModel,frontend,NocoBase"
+---
 
 # FlowEngine
 
-## createModel()
+## createModelAsync()
 
-*   **Tipe**: `string`
-*   **Nilai bawaan**: `docs`
+* **Tipe**: `string`
+* **Default**: `docs`

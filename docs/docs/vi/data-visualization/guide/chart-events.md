@@ -1,78 +1,82 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Sự kiện Tương tác Tùy chỉnh"
+description: "Đăng ký sự kiện tương tác ECharts qua chart.on: highlight khi click, chuyển trang, drill-down phân tích, mở popup, hỗ trợ tham số params và dispatchAction."
+keywords: "sự kiện tương tác biểu đồ,chart.on,highlight click,chuyển trang,drill-down,dispatchAction,NocoBase"
+---
 
+# Sự kiện Tương tác Tùy chỉnh
 
-# Sự kiện tương tác tùy chỉnh
-
-Viết mã JS trong trình chỉnh sửa sự kiện và đăng ký các tương tác thông qua thể hiện ECharts `chart` để kích hoạt liên kết. Ví dụ, bạn có thể điều hướng đến một trang mới hoặc mở hộp thoại chi tiết (drill-down).
+Trong event editor viết JS, đăng ký các hành vi tương tác qua instance `chart` của ECharts để thực hiện liên kết. Ví dụ chuyển sang trang mới, mở popup drill-down phân tích, v.v.
 
 ![clipboard-image-1761489617](https://static-docs.nocobase.com/clipboard-image-1761489617.png)
 
-## Đăng ký và Hủy đăng ký sự kiện
+## Đăng ký và hủy đăng ký sự kiện
 - Đăng ký: `chart.on(eventName, handler)`
-- Hủy đăng ký: `chart.off(eventName, handler)` hoặc `chart.off(eventName)` để xóa các sự kiện cùng tên.
+- Hủy đăng ký: `chart.off(eventName, handler)` hoặc `chart.off(eventName)` để xóa các sự kiện cùng tên
 
 **Lưu ý:**
-Vì lý do an toàn, chúng tôi đặc biệt khuyến nghị bạn nên hủy đăng ký một sự kiện trước khi đăng ký lại!
+Vì lý do bảo mật, khuyến nghị mạnh mẽ hãy hủy đăng ký trước khi đăng ký sự kiện!
 
-## Cấu trúc dữ liệu của tham số `params` trong hàm handler
+
+## Cấu trúc dữ liệu params truyền vào hàm handler
 
 ![20251026222859](https://static-docs.nocobase.com/20251026222859.png)
 
-Các trường thường dùng bao gồm `params.data` và `params.name`.
+Các giá trị thường dùng có `params.data`, `params.name`, v.v.
 
-## Ví dụ: Nhấp để đánh dấu lựa chọn
+
+## Ví dụ: Highlight khi click
 ```js
 chart.off('click');
 chart.on('click', (params) => {
   const { seriesIndex, dataIndex } = params;
-  // Đánh dấu điểm dữ liệu hiện tại
+  // Highlight điểm dữ liệu hiện tại
   chart.dispatchAction({ type: 'highlight', seriesIndex, dataIndex });
-  // Hủy đánh dấu các điểm khác
+  // Hủy highlight các điểm khác
   chart.dispatchAction({ type: 'downplay', seriesIndex });
 });
 ```
 
-## Ví dụ: Nhấp để điều hướng trang
+## Ví dụ: Click chuyển trang
 ```js
 chart.off('click');
 chart.on('click', (params) => {
   const order_date = params.data[0]
   
-  // Cách 1: Điều hướng nội bộ ứng dụng, không buộc làm mới trang, mang lại trải nghiệm tốt hơn (khuyến nghị), chỉ cần đường dẫn tương đối
+  // Cách 1: Chuyển nội bộ trong ứng dụng, không bắt buộc refresh trang, trải nghiệm tốt hơn (khuyến nghị), chỉ cần đường dẫn tương đối path
   ctx.router.navigate(`/new-path/orders?order_date=${order_date}`)
 
-  // Cách 2: Điều hướng đến trang bên ngoài, yêu cầu liên kết đầy đủ
+  // Cách 2: Chuyển sang trang ngoài, cần liên kết đầy đủ
   window.location.href = `https://www.host.com/new-path/orders?order_date=${order_date}`
 
-  // Cách 3: Mở trang bên ngoài trong một tab mới, yêu cầu liên kết đầy đủ
+  // Cách 3: Mở trang ngoài trong tab mới, cần liên kết đầy đủ
   window.open(`https://www.host.com/new-path/orders?order_date=${order_date}`)
 });
 ```
 
-## Ví dụ: Nhấp để mở hộp thoại chi tiết (phân tích drill-down)
+## Ví dụ: Click hiển thị popup chi tiết (Drill-down phân tích)
 ```js
 chart.off('click');
 chart.on('click', (params) => {
   ctx.openView(ctx.model.uid + '-1', {
     mode: 'dialog',
     size: 'large',
-    defineProperties: {}, // đăng ký các biến ngữ cảnh cho hộp thoại mới
+    defineProperties: {}, // Đăng ký biến context để popup mới sử dụng
   });
 });
 ```
 
 ![clipboard-image-1761490321](https://static-docs.nocobase.com/clipboard-image-1761490321.png)
 
-Trong hộp thoại vừa mở, bạn có thể sử dụng các biến ngữ cảnh của biểu đồ thông qua `ctx.view.inputArgs.XXX`.
+Trong popup mới mở, sử dụng biến context được khai báo trong biểu đồ `ctx.view.inputArgs.XXX`
 
-## Xem trước và Lưu
-- Nhấp vào "Xem trước" để tải và thực thi mã sự kiện.
-- Nhấp vào "Lưu" để lưu cấu hình sự kiện hiện tại.
-- Nhấp vào "Hủy" để quay lại trạng thái đã lưu gần nhất.
+
+## Preview và Lưu
+- Click "Preview" để load và thực thi code sự kiện.
+- Click "Lưu" sẽ lưu nội dung cấu hình sự kiện hiện tại.
+- Click "Hủy" để quay về trạng thái lưu lần trước.
 
 **Khuyến nghị:**
-- Luôn sử dụng `chart.off('event')` trước khi liên kết để tránh việc thực thi trùng lặp hoặc tăng mức sử dụng bộ nhớ.
-- Trong các hàm xử lý sự kiện, hãy cố gắng sử dụng các thao tác nhẹ (ví dụ: `dispatchAction`, `setOption`) để tránh làm tắc nghẽn quá trình hiển thị.
-- Xác thực với các tùy chọn biểu đồ và truy vấn dữ liệu để đảm bảo rằng các trường được xử lý trong sự kiện nhất quán với dữ liệu hiện tại.
+- Trước mỗi lần binding hãy `chart.off('event')` trước, tránh nhiều lần binding dẫn đến thực thi lặp hoặc tăng bộ nhớ.
+- Trong sự kiện cố gắng sử dụng các thao tác nhẹ (`dispatchAction`, `setOption`), tránh chặn render.
+- Phối hợp với tùy chọn biểu đồ và truy vấn dữ liệu để xác minh, đảm bảo các field xử lý sự kiện nhất quán với dữ liệu hiện tại.

@@ -7,45 +7,231 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Cache } from '@nocobase/cache';
-import { uid } from '@nocobase/utils';
+import { storagePathJoin, uid } from '@nocobase/utils';
+import crypto from 'crypto';
 import fs from 'fs';
 import fse from 'fs-extra';
 import path from 'path';
 import Application from '../../application';
 import PluginManager from '../plugin-manager';
+import { assertSafePluginPackageName, pmListSummary } from '../utils';
 
-class PackageUrls {
-  static items = {};
-  static async get(packageName: string) {
-    if (!this.items[packageName]) {
-      this.items[packageName] = await this.fetch(packageName);
-    }
-    return this.items[packageName];
+import packageJson from '../../../package.json';
+
+export type PluginClientLane = 'client' | 'client-v2';
+
+const PLUGIN_CLIENT_ENTRY_FILES: Record<PluginClientLane, string> = {
+  client: 'dist/client/index.js',
+  'client-v2': 'dist/client-v2/index.js',
+};
+
+const PLUGIN_CLIENT_MARKER_FILES: Record<PluginClientLane, string> = {
+  client: 'client.js',
+  'client-v2': 'client-v2.js',
+};
+
+function getAppDevPluginUrls(): Record<string, Partial<Record<PluginClientLane, string>>> {
+  if (process.env.NOCOBASE_APP_DEV !== 'true' || !process.env.NOCOBASE_APP_DEV_PLUGIN_URLS) {
+    return {};
   }
-  static async fetch(packageName: string) {
-    const PLUGIN_CLIENT_ENTRY_FILE = 'dist/client/index.js';
+  try {
+    return JSON.parse(process.env.NOCOBASE_APP_DEV_PLUGIN_URLS);
+  } catch (error) {
+    return {};
+  }
+}
+
+function getAppDevPluginDependencies(packageJson: any, lane: PluginClientLane): string[] {
+  const appDevPluginUrls = getAppDevPluginUrls();
+  const deps = {
+    ...packageJson.dependencies,
+    ...packageJson.peerDependencies,
+    ...packageJson.devDependencies,
+  };
+  return Object.keys(deps).filter(
+    (packageName) =>
+      appDevPluginUrls[packageName]?.[lane] ||
+      packageName.startsWith('@nocobase/plugin-') ||
+      packageName.startsWith('@nocobase/preset-'),
+  );
+}
+
+export class PackageUrls {
+  static items: Record<string, string | undefined> = {};
+
+  static clear() {
+    this.items = {};
+  }
+
+  static getCacheKey(packageName: string, lane: PluginClientLane) {
+    return `${lane}:${packageName}`;
+  }
+
+  static async get(packageName: string, lane: PluginClientLane = 'client') {
+    const appDevUrl = this.getAppDevUrl(packageName, lane);
+    if (appDevUrl) {
+      return appDevUrl;
+    }
+
+    const cacheKey = this.getCacheKey(packageName, lane);
+    const cached = this.items[cacheKey];
+    if (cached) {
+      return cached;
+    }
+
+    const nextUrl = await this.fetch(packageName, lane);
+
+    if (nextUrl?.includes('?hash=')) {
+      this.items[cacheKey] = nextUrl;
+    } else {
+      delete this.items[cacheKey];
+    }
+
+    return nextUrl;
+  }
+
+  static getAppDevUrl(packageName: string, lane: PluginClientLane) {
+    return getAppDevPluginUrls()[packageName]?.[lane];
+  }
+
+  static async hasClientEntry(packageName: string, lane: PluginClientLane) {
+    if (this.getAppDevUrl(packageName, lane)) {
+      return true;
+    }
+
     const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, packageName);
-    const r = await fse.exists(pkgPath);
-    if (r) {
-      let t = '';
-      const dist = path.resolve(pkgPath, PLUGIN_CLIENT_ENTRY_FILE);
-      const distExists = await fse.exists(dist);
-      if (distExists) {
-        const fsState = await fse.stat(distExists ? dist : pkgPath);
-        t = `?t=${fsState.mtime.getTime()}`;
+    if (!(await fse.exists(pkgPath))) {
+      return false;
+    }
+    return await fse.exists(path.resolve(pkgPath, PLUGIN_CLIENT_MARKER_FILES[lane]));
+  }
+
+  static async fetch(packageName: string, lane: PluginClientLane = 'client') {
+    const pluginClientEntryFile = PLUGIN_CLIENT_ENTRY_FILES[lane];
+    const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, packageName);
+    const pkgExists = await fse.exists(pkgPath);
+    if (!pkgExists) {
+      return;
+    }
+
+    let t = '';
+    const dist = path.resolve(pkgPath, pluginClientEntryFile);
+    const distExists = await fse.exists(dist);
+    if (distExists) {
+      const fsState = await fse.stat(dist);
+      const appKey = process.env.APP_KEY || '';
+      let version = '';
+      try {
+        const pkgJson = await fse.readJson(path.resolve(pkgPath, 'package.json'));
+        if (pkgJson && typeof pkgJson.version === 'string') {
+          version = pkgJson.version;
+        }
+      } catch (error) {
+        // Ignore errors reading package.json and fall back to empty version
       }
-      const cdnBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
-      const url = `${cdnBaseUrl}${'/static/plugins/'}${packageName}/${PLUGIN_CLIENT_ENTRY_FILE}${t}`;
-      return url;
+      const appVersion = packageJson.version;
+      const salt = process.env.PLUGIN_URL_HASH_SALT || '';
+      const hash = crypto
+        .createHash('sha256')
+        .update(fsState.mtime.getTime() + appKey + version + appVersion + salt)
+        .digest('hex')
+        .slice(0, 8);
+      t = `?hash=${hash}`;
+    }
+
+    const cdnBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
+    const url = `${cdnBaseUrl}${'/static/plugins/'}${packageName}/${pluginClientEntryFile}${t}`;
+    return url;
+  }
+}
+
+async function listEnabledPlugins(ctx, lane: PluginClientLane = 'client') {
+  const pm = ctx.db.getRepository('applicationPlugins');
+  const items = await pm.find({
+    filter: {
+      enabled: true,
+    },
+  });
+  const arr = [];
+  for (const item of items) {
+    if (lane === 'client-v2' && !(await PackageUrls.hasClientEntry(item.packageName, lane))) {
+      continue;
+    }
+
+    const url = await PackageUrls.get(item.packageName, lane);
+    const { name, packageName, options } = item.toJSON();
+    if (url) {
+      const entry: {
+        name: string;
+        packageName: string;
+        options: unknown;
+        url: string;
+        clientV2Url?: string;
+        devMode?: 'esm';
+        appDevDependencies?: string[];
+      } = {
+        name,
+        packageName,
+        options,
+        url,
+      };
+      if (PackageUrls.getAppDevUrl(packageName, lane)) {
+        const packageJson = await PluginManager.getPackageJson(packageName);
+        entry.devMode = 'esm';
+        entry.appDevDependencies = getAppDevPluginDependencies(packageJson, lane);
+      }
+      // 让 v1 lane 的前端 PluginManager 能精准注册跨 lane 的 paths,而不必猜 URL。
+      if (lane === 'client' && (await PackageUrls.hasClientEntry(packageName, 'client-v2'))) {
+        const clientV2Url = await PackageUrls.get(packageName, 'client-v2');
+        if (clientV2Url) {
+          entry.clientV2Url = clientV2Url;
+        }
+      }
+      arr.push(entry);
     }
   }
+  return arr;
+}
+
+function normalizePmPluginKeys(filterByTk: unknown): string[] {
+  if (typeof filterByTk === 'string') {
+    return filterByTk
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean);
+  }
+
+  if (!Array.isArray(filterByTk) || filterByTk.some((item) => typeof item !== 'string')) {
+    return [];
+  }
+
+  return filterByTk.flatMap((item) =>
+    item
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean),
+  );
+}
+
+/** Query/body values often arrive as strings (`"true"`, `"1"`). */
+function coerceAwaitResponse(value: unknown): boolean {
+  if (value === true || value === 1) {
+    return true;
+  }
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    return v === 'true' || v === '1' || v === 'yes';
+  }
+  return false;
 }
 
 export default {
   name: 'pm',
   actions: {
     async add(ctx, next) {
+      if (process.env.DISABLE_PM_ADD === 'true') {
+        ctx.throw(403, 'The current environment does not allow adding plugins online');
+      }
       const app = ctx.app as Application;
       const { values = {} } = ctx.action.params;
       if (values?.packageName) {
@@ -61,13 +247,13 @@ export default {
         }
         app.runAsCLI(['pm', 'add', values.packageName, ...args], { from: 'user' });
       } else if (ctx.file) {
-        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        const tmpDir = storagePathJoin('tmp');
         try {
           await fs.promises.mkdir(tmpDir, { recursive: true });
         } catch (error) {
           // empty
         }
-        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        const tempFile = path.join(tmpDir, uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
         app.runAsCLI(['pm', 'add', tempFile], { from: 'user' });
       } else if (values.compressedFileUrl) {
@@ -77,6 +263,9 @@ export default {
       await next();
     },
     async update(ctx, next) {
+      if (process.env.DISABLE_PM_ADD === 'true') {
+        ctx.throw(403, 'The current environment does not allow adding plugins online');
+      }
       const app = ctx.app as Application;
       const values = ctx.action.params.values || {};
       const args = [];
@@ -94,13 +283,13 @@ export default {
       // }
       if (ctx.file) {
         values.packageName = ctx.request.body.packageName;
-        const tmpDir = path.resolve(process.cwd(), 'storage', 'tmp');
+        const tmpDir = storagePathJoin('tmp');
         try {
           await fs.promises.mkdir(tmpDir, { recursive: true });
         } catch (error) {
           // empty
         }
-        const tempFile = path.join(process.cwd(), 'storage/tmp', uid() + path.extname(ctx.file.originalname));
+        const tempFile = path.join(tmpDir, uid() + path.extname(ctx.file.originalname));
         await fs.promises.writeFile(tempFile, ctx.file.buffer, 'binary');
         // args.push(`--url=${tempFile}`);
         values.compressedFileUrl = tempFile;
@@ -119,23 +308,47 @@ export default {
       await next();
     },
     async enable(ctx, next) {
-      const { filterByTk } = ctx.action.params;
+      const { filterByTk, awaitResponse: awaitResponseRaw } = ctx.action.params;
       const app = ctx.app as Application;
-      if (!filterByTk) {
+      const keys = normalizePmPluginKeys(filterByTk);
+      if (!keys.length) {
         ctx.throw(400, 'plugin name invalid');
       }
-      const keys = Array.isArray(filterByTk) ? filterByTk : [filterByTk];
-      app.runAsCLI(['pm', 'enable', ...keys], { from: 'user' });
+      for (const key of keys) {
+        try {
+          assertSafePluginPackageName(key);
+        } catch (error) {
+          ctx.throw(400, 'plugin name invalid');
+        }
+      }
+      const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
+      const argv = ['pm', 'enable', ...keys];
+      if (awaitResponse) {
+        await app.runAsCLI(argv, { from: 'user', throwError: true });
+      } else {
+        app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+          app.log.error(err);
+        });
+      }
       ctx.body = filterByTk;
       await next();
     },
     async disable(ctx, next) {
-      const { filterByTk } = ctx.action.params;
-      if (!filterByTk) {
+      const { filterByTk, awaitResponse: awaitResponseRaw } = ctx.action.params;
+      const app = ctx.app as Application;
+      const keys = normalizePmPluginKeys(filterByTk);
+      if (!keys.length) {
         ctx.throw(400, 'plugin name invalid');
       }
-      const app = ctx.app as Application;
-      app.runAsCLI(['pm', 'disable', filterByTk], { from: 'user' });
+      const awaitResponse = coerceAwaitResponse(awaitResponseRaw);
+      const argv = ['pm', 'disable', ...keys];
+      if (awaitResponse) {
+        await app.runAsCLI(argv, { from: 'user', throwError: true });
+      } else {
+        app.runAsCLI(argv, { from: 'user' }).catch((err) => {
+          app.log.error(err);
+        });
+      }
       ctx.body = filterByTk;
       await next();
     },
@@ -150,37 +363,34 @@ export default {
       await next();
     },
     async list(ctx, next) {
+      const { mode, v2 } = ctx.action.params;
+      if (mode === 'summary') {
+        ctx.body = await pmListSummary(ctx.app);
+        return next();
+      }
       const locale = ctx.getCurrentLocale();
       const pm = ctx.app.pm as PluginManager;
       // ctx.body = await pm.list({ locale, isPreset: false });
       const plugin = pm.get('nocobase') as any;
-      ctx.body = await plugin.getAllPlugins(locale);
+      const plugins = await plugin.getAllPlugins(locale);
+      ctx.body = plugins.filter((item: any) => {
+        if (process.env.NOCOBASE_SHOW_DEPRECATED_PLUGINS === 'true') {
+          return true;
+        }
+        if (!v2) {
+          return true;
+        }
+        const nocobaseConfig = item?.packageJson?.nocobase || {};
+        return nocobaseConfig.internal !== true && nocobaseConfig.deprecated !== true;
+      });
       await next();
     },
     async listEnabled(ctx, next) {
-      const toArr = async () => {
-        const pm = ctx.db.getRepository('applicationPlugins');
-        const items = await pm.find({
-          filter: {
-            enabled: true,
-          },
-        });
-        const arr = [];
-        for (const item of items) {
-          const url = await PackageUrls.get(item.packageName);
-          const { name, packageName, options } = item.toJSON();
-          if (url) {
-            arr.push({
-              name,
-              packageName,
-              options,
-              url,
-            });
-          }
-        }
-        return arr;
-      };
-      ctx.body = await toArr();
+      ctx.body = await listEnabledPlugins(ctx, 'client');
+      await next();
+    },
+    async listEnabledV2(ctx, next) {
+      ctx.body = await listEnabledPlugins(ctx, 'client-v2');
       await next();
     },
     async get(ctx, next) {

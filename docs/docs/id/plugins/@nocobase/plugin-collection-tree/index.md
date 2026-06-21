@@ -1,8 +1,10 @@
 ---
 displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
+title: "Collection: Tree"
+keywords: "Collection: Tree,plugin,NocoBase"
 description: |
-  Provides tree collection template
+  Menyediakan template Collection tree.
 isFree: true
 builtIn: true
 defaultEnabled: false

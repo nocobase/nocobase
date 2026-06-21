@@ -1,45 +1,66 @@
 ---
 pageType: home
-
 pageName: home
-
+title: Dokumentasi NocoBase
+description: 'Dokumentasi platform no-code/low-code open-source NocoBase: panduan memulai, sumber data, pembuatan antarmuka, Karyawan AI, workflow, izin pengguna, autentikasi & verifikasi, pengembangan plugin.'
+keywords: 'NocoBase,no-code,low-code,dokumentasi,open-source'
 hero:
   name: Dokumentasi NocoBase
   text: Pelajari dan kuasai NocoBase dengan cepat
   actions:
     - theme: brand
-      text: Mulai Sekarang
-      link: /get-started/how-nocobase-works
+      text: Mulai Cepat
+      link: /ai/how-nocobase-works
     - theme: alt
       text: GitHub
-      link: https://github.com/nocobase/nocobase
-
+      link: 'https://github.com/nocobase/nocobase'
 features:
-  - title: Memulai
-    details: Pelajari cara menggunakan NocoBase serta selesaikan instalasi dan deployment.
+  - title: Mulai
+    details: 'Cara tradisional untuk memulai NocoBase — instalasi, konfigurasi, dan eksplorasi langkah demi langkah.'
     items:
-      - title: Memulai dengan NocoBase
+      - title: Memulai NocoBase
         details: Pahami konsep inti dan operasi dasar NocoBase.
-        link: /get-started/how-nocobase-works
-      - title: Instalasi, Upgrade & Deployment
-        details: Instal NocoBase dari awal, selesaikan peningkatan versi, dan deployment di lingkungan produksi.
-        link: /get-started/quickstart
-      - title: Instal & Upgrade Plugin
-        details: Pelajari cara menambah, mengelola, dan memperbarui plugin untuk memperluas kapabilitas sistem.
-        link: /get-started/install-upgrade-plugins
-
+        link: /ai/how-nocobase-works
+      - title: Instal aplikasi NocoBase
+        details: Gunakan NocoBase CLI untuk memasang aplikasi dengan cepat.
+        link: /ai/install-nocobase-app
+      - title: Tutorial
+        details: 'Mulai dari nol, ikuti tutorial untuk membangun proyek nyata langkah demi langkah.'
+        link: /tutorials/v2/
+  - title: AI
+    details: 'Cara baru memulai dengan dukungan AI — selesaikan pembangunan, penggunaan, dan pengembangan dengan bahasa alami.'
+    items:
+      - title: AI Builder
+        details: 'Bangun aplikasi NocoBase dari nol dengan AI, mencakup seluruh alur dari pemodelan data, konfigurasi antarmuka, workflow hingga manajemen publikasi.'
+        link: /ai-builder
+      - title: Karyawan AI
+        details: 'Berkolaborasi dengan Karyawan AI dan biarkan mereka terlibat dalam skenario bisnis seperti pembangunan sistem, analisis data, terjemahan, dan pengambilan keputusan.'
+        link: /ai-employees
+      - title: Pengembangan Plugin AI
+        details: 'Gunakan AI untuk membantu pengembangan Plugin NocoBase, mencakup seluruh alur dari scaffold, kode komponen hingga logika bisnis.'
+        link: /ai-dev
+      - title: Lainnya...
+        details: Lihat lebih banyak kemampuan AI.
+        link: /ai
   - title: Lanjutan
-    details: Selami lebih dalam konsep inti NocoBase dan kuasai kapabilitas konfigurasi serta pengembangan.
+    details: Pahami konsep inti NocoBase secara mendalam dan kuasai kemampuan utama untuk pengembangan dan konfigurasi.
     items:
       - title: Lainnya...
-        details: Jelajahi modul fitur lainnya.
+        details: Lihat penggunaan modul fungsional lainnya.
         link: /guide
-
   - title: Pengembangan
-    details: Menyediakan kapabilitas ekstensi dan integrasi yang kaya bagi developer NocoBase.
+    details: Sediakan kemampuan ekstensi dan integrasi yang kaya bagi pengembang NocoBase.
     items:
       - title: Lainnya...
-        details: Jelajahi tutorial pengembangan plugin lainnya.
+        details: Lihat lebih banyak tutorial pengembangan Plugin.
         link: /development
-
+  - title: Solusi
+    details: Template solusi industri yang dibangun di atas NocoBase.
+    items:
+      - title: Solusi Ticket System
+        details: 'Platform manajemen ticket cerdas berbasis AI dengan dukungan integrasi multi-channel, manajemen SLA, basis pengetahuan, dan lainnya.'
+        link: /solution/ticket-system/
+      - title: CRM (Preview)
+        details: 'Fondasi CRM yang fleksibel dan no-code, mencakup pelanggan, lead, peluang, pesanan, dan lainnya.'
+        link: /solution/crm/
 ---

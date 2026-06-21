@@ -1,8 +1,10 @@
 ---
-displayName: "Collection field: Snapshot"
+displayName: "Trường dữ liệu: Snapshot quan hệ"
 packageName: '@nocobase/plugin-snapshot-field'
+title: "Trường dữ liệu: Snapshot quan hệ"
+keywords: "Trường dữ liệu: Snapshot quan hệ,Plugin,NocoBase"
 description: |
-  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
+  Khi thêm dữ liệu, tạo snapshot cho dữ liệu quan hệ của nó và lưu trong dữ liệu hiện tại. Khi dữ liệu quan hệ được cập nhật, snapshot sẽ không được cập nhật.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Collection field: Snapshot
+# Trường dữ liệu: Snapshot quan hệ
 
-> Note: This plugin is deprecated.
+> Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

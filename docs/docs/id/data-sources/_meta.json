@@ -6,25 +6,25 @@
   },
   {
     "type": "custom-link",
-    "label": "Sumber Data",
+    "label": "Data Source",
     "items": [
       {
         "type": "custom-link",
-        "label": "Manajemen Sumber Data",
+        "label": "Manajemen Data Source",
         "link": "/data-sources/data-source-manager/"
       },
       {
         "type": "custom-link",
-        "label": "Sumber Data Utama",
+        "label": "Data Source Utama",
         "link": "/data-sources/data-source-main/"
       },
       {
         "type": "custom-link",
-        "label": "Sumber Data Eksternal (Database)",
+        "label": "Data Source Eksternal (Database)",
         "items": [
           {
             "type": "custom-link",
-            "label": "Pengenalan",
+            "label": "Pengantar",
             "link": "/data-sources/data-source-manager/external-database"
           },
           {
@@ -56,24 +56,29 @@
       },
       {
         "type": "custom-link",
-        "label": "Perbandingan Database Utama & Eksternal",
+        "label": "Perbandingan Database Utama dan Eksternal",
         "link": "/data-sources/data-modeling/main-vs-external-data-sources"
       },
       {
         "type": "custom-link",
-        "label": "Sumber Data REST API",
+        "label": "Data Source REST API",
         "link": "/data-sources/data-source-rest-api/"
       },
       {
         "type": "custom-link",
-        "label": "Sumber Data KingbaseES",
+        "label": "NocoBase Eksternal",
+        "link": "/data-sources/data-source-external-nocobase/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Data Source KingbaseES",
         "link": "/data-sources/data-source-kingbase/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Tabel Data",
+    "label": "Collection",
     "items": [
       {
         "type": "custom-link",
@@ -82,63 +87,63 @@
       },
       {
         "type": "custom-link",
-        "label": "Tabel Biasa",
+        "label": "Collection Umum",
         "link": "/data-sources/data-source-main/general-collection"
       },
       {
         "type": "custom-link",
-        "label": "Tabel Turunan",
+        "label": "Collection Inheritance",
         "link": "/data-sources/data-source-main/inheritance-collection"
       },
       {
         "type": "custom-link",
-        "label": "Tabel File",
+        "label": "Collection File",
         "link": "/data-sources/file-manager/file-collection"
       },
       {
         "type": "custom-link",
-        "label": "Tabel Pohon",
+        "label": "Collection Tree",
         "link": "/data-sources/collection-tree/"
       },
       {
         "type": "custom-link",
-        "label": "Tabel Kalender",
+        "label": "Collection Calendar",
         "link": "/data-sources/calendar/calendar-collection"
       },
       {
         "type": "custom-link",
-        "label": "Tabel Komentar",
+        "label": "Collection Comment",
         "link": "/data-sources/collection-comment/"
       },
       {
         "type": "custom-link",
-        "label": "Tabel Ekspresi",
+        "label": "Collection Expression",
         "link": "/data-sources/collection-expression/collection"
       },
       {
         "type": "custom-link",
-        "label": "Tabel SQL",
+        "label": "Collection SQL",
         "link": "/data-sources/collection-sql/"
       },
       {
         "type": "custom-link",
-        "label": "View Database",
+        "label": "Database View",
         "link": "/data-sources/collection-view/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Kolom Tabel Data",
+    "label": "Field Collection",
     "items": [
       {
         "type": "custom-link",
         "label": "Ikhtisar",
-        "link": "/data-sources/data-modeling/collection-fields"
+        "link": "/data-sources/data-modeling/collection-fields/"
       },
       {
         "type": "custom-link",
-        "label": "Validasi Kolom",
+        "label": "Validasi Field",
         "link": "/data-sources/data-modeling/collection-fields/validation"
       },
       {
@@ -152,7 +157,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Teks Multi-baris",
+            "label": "Teks Multi Baris",
             "link": "/data-sources/data-modeling/collection-fields/basic/textarea"
           },
           {
@@ -177,17 +182,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Angka",
+            "label": "Number",
             "link": "/data-sources/data-modeling/collection-fields/basic/number"
           },
           {
             "type": "custom-link",
-            "label": "Persentase",
+            "label": "Persen",
             "link": "/data-sources/data-modeling/collection-fields/basic/percent"
           },
           {
             "type": "custom-link",
-            "label": "Kata Sandi",
+            "label": "Password",
             "link": "/data-sources/data-modeling/collection-fields/basic/password"
           },
           {
@@ -218,17 +223,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Dropdown (Pilihan Ganda)",
+            "label": "Dropdown (Multi Pilihan)",
             "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
           },
           {
             "type": "custom-link",
-            "label": "Tombol Radio",
+            "label": "Radio Button",
             "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
           },
           {
             "type": "custom-link",
-            "label": "Kotak Centang",
+            "label": "Checkbox Group",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
           }
         ]
@@ -244,7 +249,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Markdown (Vditor)",
+            "label": "Markdown(Vditor)",
             "link": "/data-sources/field-markdown-vditor/"
           },
           {
@@ -261,6 +266,11 @@
             "type": "custom-link",
             "label": "Lampiran (URL)",
             "link": "/data-sources/field-attachment-url/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tanda Tangan",
+            "link": "/data-sources/field-signature/"
           }
         ]
       },
@@ -271,16 +281,16 @@
           {
             "type": "custom-link",
             "label": "Ikhtisar",
-            "link": "/data-sources/data-modeling/collection-fields/datetime"
+            "link": "/data-sources/data-modeling/collection-fields/datetime/"
           },
           {
             "type": "custom-link",
-            "label": "Waktu Tanggal (dengan Zona Waktu)",
+            "label": "Datetime (dengan Timezone)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime"
           },
           {
             "type": "custom-link",
-            "label": "Waktu Tanggal (tanpa Zona Waktu)",
+            "label": "Datetime (tanpa Timezone)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime-without-tz"
           },
           {
@@ -302,7 +312,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Geometris",
+        "label": "Bentuk Geometri",
         "items": [
           {
             "type": "custom-link",
@@ -321,7 +331,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Poligon",
+            "label": "Polygon",
             "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
           }
         ]
@@ -330,6 +340,11 @@
         "type": "custom-link",
         "label": "Tipe Lanjutan",
         "items": [
+          {
+            "type": "custom-link",
+            "label": "Snowflake ID (53-bit)",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/snowflake-id"
+          },
           {
             "type": "custom-link",
             "label": "UUID",
@@ -342,17 +357,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Urutan",
+            "label": "Sort",
             "link": "/data-sources/field-sort/"
           },
           {
             "type": "custom-link",
-            "label": "Rumus Perhitungan",
+            "label": "Formula",
             "link": "/data-sources/field-formula/"
           },
           {
             "type": "custom-link",
-            "label": "Kode Otomatis",
+            "label": "Auto Sequence",
             "link": "/data-sources/field-sequence/"
           },
           {
@@ -362,13 +377,18 @@
           },
           {
             "type": "custom-link",
-            "label": "Pemilih Tabel Data",
+            "label": "Collection Selector",
             "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
           },
           {
             "type": "custom-link",
             "label": "Enkripsi",
             "link": "/data-sources/field-encryption/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Wilayah Administratif Tiongkok",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/china-region"
           }
         ]
       },
@@ -378,27 +398,27 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Tanggal Dibuat",
+            "label": "Tanggal Pembuatan",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
           },
           {
             "type": "custom-link",
-            "label": "Tanggal Terakhir Diubah",
+            "label": "Tanggal Modifikasi Terakhir",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
           },
           {
             "type": "custom-link",
-            "label": "Dibuat oleh",
+            "label": "Pembuat",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
           },
           {
             "type": "custom-link",
-            "label": "Terakhir Diubah oleh",
+            "label": "Modifikator Terakhir",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
           },
           {
             "type": "custom-link",
-            "label": "Ruang",
+            "label": "Space",
             "link": "/data-sources/data-modeling/collection-fields/system-info/space"
           },
           {
@@ -415,31 +435,31 @@
           {
             "type": "custom-link",
             "label": "Ikhtisar",
-            "link": "/data-sources/data-modeling/collection-fields/associations"
+            "link": "/data-sources/data-modeling/collection-fields/associations/"
           },
           {
             "type": "custom-link",
-            "label": "Satu-ke-Satu",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
+            "label": "One to One",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
           },
           {
             "type": "custom-link",
-            "label": "Satu-ke-Banyak",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
+            "label": "One to Many",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
           },
           {
             "type": "custom-link",
-            "label": "Banyak-ke-Satu",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
+            "label": "Many to One",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
           },
           {
             "type": "custom-link",
-            "label": "Banyak-ke-Banyak",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
+            "label": "Many to Many",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
           },
           {
             "type": "custom-link",
-            "label": "Banyak-ke-Banyak (Array)",
+            "label": "Many to Many (Array)",
             "link": "/data-sources/field-m2m-array/"
           }
         ]
@@ -453,7 +473,7 @@
       {
         "type": "custom-link",
         "label": "Ikhtisar",
-        "link": "/data-sources/development"
+        "link": "/data-sources/development/"
       }
     ]
   }

@@ -1,53 +1,55 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "JSColumn JS Table Column"
+description: "JSColumn JS Table Column: menyematkan render kustom dan logika di kolom Table, mendukung React, ctx, data baris."
+keywords: "JSColumn, JS Table Column, kolom kustom, render Table, interface builder, NocoBase"
+---
 
-# Kolom JS
+# JS Column
 
-## Pendahuluan
+## Pengantar
 
-Kolom JS digunakan untuk "kolom kustom" dalam tabel, merender konten sel setiap baris melalui JavaScript. Kolom ini tidak terikat pada bidang tertentu dan cocok untuk skenario seperti kolom turunan, tampilan gabungan antar bidang, lencana status, tombol aksi, dan agregasi data jarak jauh.
+JS Column digunakan untuk "kolom kustom" di Table, merender konten cell setiap baris melalui JavaScript. Tidak terikat Field tertentu, cocok untuk skenario seperti kolom turunan, tampilan kombinasi cross-Field, badge status, Action tombol, agregasi data remote, dll.
 
 ![jscolumn-add-20251029](https://static-docs.nocobase.com/jscolumn-add-20251029.png)
 
 ## API Konteks Runtime
 
-Saat setiap sel Kolom JS dirender, Anda dapat menggunakan API konteks berikut:
+Setiap cell JS Column dapat menggunakan kemampuan konteks berikut saat di-render:
 
-- `ctx.element`: Kontainer DOM sel saat ini (ElementProxy), mendukung `innerHTML`, `querySelector`, `addEventListener`, dan lainnya;
-- `ctx.record`: Objek catatan baris saat ini (hanya-baca);
-- `ctx.recordIndex`: Indeks baris dalam halaman saat ini (dimulai dari 0, dapat dipengaruhi oleh paginasi);
-- `ctx.collection`: Metadata koleksi yang terikat pada tabel (hanya-baca);
-- `ctx.requireAsync(url)`: Memuat pustaka AMD/UMD secara asinkron berdasarkan URL;
-- `ctx.importAsync(url)`: Mengimpor modul ESM secara dinamis berdasarkan URL;
-- `ctx.openView(options)`: Membuka tampilan yang telah dikonfigurasi (modal/drawer/halaman);
-- `ctx.i18n.t()` / `ctx.t()`: Internasionalisasi;
-- `ctx.onRefReady(ctx.ref, cb)`: Merender setelah kontainer siap;
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Pustaka umum bawaan seperti React, ReactDOM, Ant Design, ikon Ant Design, dan dayjs, digunakan untuk rendering JSX dan penanganan waktu. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` tetap dipertahankan untuk kompatibilitas.)
-- `ctx.render(vnode)`: Merender elemen React/HTML/DOM ke kontainer default `ctx.element` (sel saat ini). Beberapa rendering akan menggunakan kembali Root dan menimpa konten kontainer yang ada.
+- `ctx.element`: container DOM cell saat ini (ElementProxy), mendukung `innerHTML`, `querySelector`, `addEventListener`, dll.;
+- `ctx.record`: objek record baris saat ini (read-only);
+- `ctx.recordIndex`: index baris di halaman saat ini (mulai dari 0, mungkin dipengaruhi pagination);
+- `ctx.collection`: meta info collection yang di-bind Table (read-only);
+- `ctx.requireAsync(url)`: load library AMD/UMD secara asynchronous berdasarkan URL;
+- `ctx.importAsync(url)`: import modul ESM secara dinamis berdasarkan URL;
+- `ctx.openView(options)`: membuka view yang sudah dikonfigurasi (Popup/drawer/page);
+- `ctx.i18n.t()` / `ctx.t()`: internasionalisasi;
+- `ctx.onRefReady(ctx.ref, cb)`: render setelah container siap;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: library umum bawaan seperti React / ReactDOM / Ant Design / icon Ant Design / dayjs / lodash / math.js / formula.js, dll., digunakan untuk render JSX, pemrosesan waktu, operasi data, dan operasi matematika. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` masih dipertahankan untuk kompatibilitas.)
+- `ctx.render(vnode)`: render React element/HTML/DOM ke container default `ctx.element` (cell saat ini), render berulang akan menggunakan kembali Root, dan menimpa konten container yang ada.
 
-## Editor dan Cuplikan Kode
+## Editor dan Snippet
 
-Editor skrip untuk Kolom JS mendukung penyorotan sintaks, petunjuk kesalahan, dan cuplikan kode bawaan (Snippets).
+Editor script JS Column mendukung syntax highlighting, error prompt, dan snippet kode bawaan (Snippets).
 
-- `Snippets`: Membuka daftar cuplikan kode bawaan, Anda dapat mencari dan memasukkannya ke posisi kursor saat ini dengan satu klik.
-- `Run`: Menjalankan kode saat ini secara langsung. Log eksekusi akan ditampilkan di panel `Logs` di bagian bawah, mendukung `console.log/info/warn/error` dan penyorotan lokasi kesalahan.
+- `Snippets`: Membuka daftar snippet kode bawaan, dapat dicari dan dengan satu klik menyisipkan ke posisi cursor saat ini.
+- `Run`: Langsung menjalankan kode saat ini, log eksekusi output ke panel `Logs` di bawah, mendukung `console.log/info/warn/error` dan highlight lokasi error.
 
 ![jscolumn-toolbars-20251029](https://static-docs.nocobase.com/jscolumn-toolbars-20251029.png)
 
-Anda juga dapat menggunakan Karyawan AI untuk menghasilkan kode:
+Dapat dikombinasikan dengan AI Employee untuk generate kode:
 
-- [Karyawan AI · Nathan: Insinyur Frontend](/ai-employees/built-in/ai-coding)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Penggunaan Umum
 
-### 1) Rendering Dasar (Membaca Catatan Baris Saat Ini)
+### 1) Render Dasar (Membaca Record Baris Saat Ini)
 
 ```js
 ctx.render(<span className="nb-js-col-name">{ctx.record?.name ?? '-'}</span>);
 ```
 
-### 2) Menggunakan JSX untuk Merender Komponen React
+### 2) Menggunakan JSX untuk Render Komponen React
 
 ```js
 const { Tag } = ctx.libs.antd;
@@ -60,7 +62,7 @@ ctx.render(
 );
 ```
 
-### 3) Membuka Modal/Drawer dari Sel (Lihat/Edit)
+### 3) Membuka Popup/Drawer di Cell (Lihat/Edit)
 
 ```js
 const tk = ctx.collection?.getFilterByTK?.(ctx.record);
@@ -77,7 +79,7 @@ ctx.render(
 );
 ```
 
-### 4) Memuat Pustaka Pihak Ketiga (AMD/UMD atau ESM)
+### 4) Load Library Pihak Ketiga (AMD/UMD atau ESM)
 
 ```js
 // AMD/UMD
@@ -90,9 +92,9 @@ const { default: dayjs } = await ctx.importAsync('https://cdn.jsdelivr.net/npm/d
 ctx.render(<span>{dayjs().format('YYYY-MM-DD')}</span>);
 ```
 
-## Catatan Penting
+## Perhatian
 
-- Disarankan untuk menggunakan CDN tepercaya untuk memuat pustaka eksternal dan memiliki mekanisme fallback untuk skenario kegagalan (misalnya, `if (!lib) return;`).
-- Disarankan untuk memprioritaskan penggunaan selektor `class` atau `[name=...]`, hindari penggunaan `id` tetap untuk mencegah duplikasi `id` di beberapa blok atau modal.
-- Pembersihan Event: Baris tabel dapat berubah secara dinamis dengan paginasi atau refresh, menyebabkan sel dirender berkali-kali. Anda harus membersihkan atau menghilangkan duplikasi event listener sebelum mengikatnya untuk menghindari pemicuan berulang.
-- Saran Performa: Hindari memuat pustaka besar secara berulang di setiap sel. Sebaliknya, cache pustaka di tingkat yang lebih tinggi (misalnya, menggunakan variabel global atau variabel tingkat tabel) dan gunakan kembali.
+- Disarankan menggunakan CDN terpercaya untuk load library eksternal, dan siapkan fallback untuk skenario kegagalan (seperti `if (!lib) return;`).
+- Saran selector prioritaskan menggunakan `class` atau `[name=...]`, hindari menggunakan `id` tetap, untuk mencegah duplikasi `id` di beberapa Block/Popup.
+- Pembersihan event: baris Table mungkin berubah dinamis dengan pagination/refresh, cell akan di-render berulang kali. Sebelum bind event harus melakukan pembersihan atau dedup, hindari trigger berulang.
+- Saran performa: hindari memuat library besar berulang di setiap cell; harus melakukan cache library di lapisan atas (seperti melalui variabel global atau variabel level table) kemudian digunakan kembali.

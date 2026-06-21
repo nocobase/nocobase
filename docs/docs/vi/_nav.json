@@ -1,10 +1,18 @@
 [
   {
     "text": "Bắt đầu",
-    "link": "/get-started/how-nocobase-works"
+    "link": "/ai/how-nocobase-works"
+  },
+  {
+    "text": "AI",
+    "link": "/ai/"
   },
   {
     "text": "Hướng dẫn",
+    "link": "/tutorials/v2/"
+  },
+  {
+    "text": "Sổ tay",
     "link": "/guide/"
   },
   {

@@ -1,71 +1,74 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Ikhtisar Storage Engine"
+description: "Storage engine menyimpan file ke local atau cloud storage, mendukung Local, Amazon S3, Aliyun OSS, Tencent COS, S3 Pro, mengkonfigurasi path, akses URL, batasan ukuran, tipe MIME, dll."
+keywords: "storage engine,Storage,local storage,S3,OSS,COS,batasan ukuran file,tipe MIME,NocoBase"
+---
 
 # Ikhtisar
 
-## Pendahuluan
+## Pengantar
 
-Mesin penyimpanan digunakan untuk menyimpan berkas ke layanan tertentu, termasuk penyimpanan lokal (disimpan ke hard drive server), penyimpanan cloud, dan lainnya.
+Storage engine digunakan untuk menyimpan file ke service tertentu, termasuk local storage (disimpan ke hard disk server), cloud storage, dll.
 
-Sebelum mengunggah berkas apa pun, Anda perlu mengonfigurasi mesin penyimpanan terlebih dahulu. Sistem akan secara otomatis menambahkan mesin penyimpanan lokal saat instalasi, yang dapat langsung Anda gunakan. Anda juga dapat menambahkan mesin baru atau mengedit parameter mesin yang sudah ada.
+Sebelum menggunakan upload file apa pun, perlu mengkonfigurasi storage engine terlebih dahulu. Sistem akan otomatis menambahkan satu local storage engine saat instalasi, yang dapat langsung digunakan. Anda juga dapat menambahkan engine baru atau mengedit parameter engine yang sudah ada.
 
-## Jenis Mesin Penyimpanan
+## Tipe Storage Engine
 
-Saat ini, NocoBase mendukung jenis mesin berikut secara bawaan:
+Saat ini tipe engine yang didukung built-in oleh NocoBase adalah sebagai berikut:
 
-- [Penyimpanan Lokal](./local)
+- [Local Storage](./local)
 - [Amazon S3](./amazon-s3)
 - [Aliyun OSS](./aliyun-oss)
-- [Tencent COS](./tencent-cos)
+- [Tencent Cloud COS](./tencent-cos)
 - [S3 Pro](./s3-pro)
 
-Sistem akan secara otomatis menambahkan mesin penyimpanan lokal saat instalasi, yang dapat langsung Anda gunakan. Anda juga dapat menambahkan mesin baru atau mengedit parameter mesin yang sudah ada.
+Sistem akan otomatis menambahkan satu local storage engine saat instalasi, yang dapat langsung digunakan. Anda juga dapat menambahkan engine baru atau mengedit parameter engine yang sudah ada.
 
-## Parameter Umum
+## Parameter Umum Engine
 
-Selain parameter khusus untuk setiap jenis mesin, berikut adalah parameter umum (menggunakan penyimpanan lokal sebagai contoh):
+Selain parameter spesifik untuk setiap kategori engine, bagian berikut adalah parameter umum (contoh dengan local storage):
 
-![Contoh konfigurasi mesin penyimpanan berkas](https://static-docs.nocobase.com/20240529115151.png)
+![Contoh konfigurasi storage engine file](https://static-docs.nocobase.com/20240529115151.png)
 
-### Judul
+### Title
 
-Nama mesin penyimpanan, digunakan untuk identifikasi manual.
+Nama storage engine, untuk identifikasi manual.
 
-### Nama Sistem
+### System Name
 
-Nama sistem mesin penyimpanan, digunakan untuk identifikasi oleh sistem. Nama ini harus unik dalam sistem. Jika dikosongkan, sistem akan secara otomatis menghasilkan nama acak.
+System name storage engine, untuk identifikasi sistem. Harus unik di sistem. Jika kosong akan otomatis dihasilkan secara random oleh sistem.
 
-### Prefiks URL Akses Publik
+### Access URL Prefix
 
-Bagian prefiks dari alamat URL yang dapat diakses publik untuk berkas. Ini bisa berupa URL dasar CDN, seperti: "`https://cdn.nocobase.com/app`" (tidak perlu menyertakan tanda garis miring "/" di akhir).
+Prefix alamat URL yang dapat diakses untuk file ini, dapat berupa basis URL akses CDN, seperti: "`https://cdn.nocobase.com/app`" (tanpa "`/`" di akhir).
 
-### Jalur
+### Path
 
-Jalur relatif yang digunakan saat menyimpan berkas. Bagian ini juga akan secara otomatis ditambahkan ke URL akhir saat diakses. Contoh: "`user/avatar`" (tidak perlu menyertakan tanda garis miring "/" di awal atau akhir).
+Relative path yang digunakan saat menyimpan file, bagian ini juga akan otomatis di-concat ke URL akhir saat akses. Seperti: "`user/avatar`" (tanpa "`/`" di awal dan akhir).
 
-### Batas Ukuran Berkas
+### Batasan Ukuran File
 
-Batas ukuran untuk berkas yang diunggah ke mesin penyimpanan ini. Berkas yang melebihi ukuran yang ditetapkan tidak akan dapat diunggah. Batas default sistem adalah 20MB, dan dapat disesuaikan hingga maksimum 1GB.
+Batasan ukuran saat upload file di storage engine ini. File yang melebihi setting ukuran ini tidak akan dapat di-upload. Sistem default membatasi 20MB, dapat disesuaikan ke batasan maksimum 1GB.
 
-### Jenis Berkas
+### Tipe File
 
-Anda dapat membatasi jenis berkas yang dapat diunggah, menggunakan format deskripsi sintaks [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types). Contoh: `image/*` mewakili berkas gambar. Beberapa jenis dapat dipisahkan dengan koma, seperti: `image/*, application/pdf` yang berarti mengizinkan berkas gambar dan PDF.
+Dapat membatasi tipe file yang di-upload, menggunakan syntax [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types) untuk mendeskripsikan format. Contohnya: `image/*` mewakili file tipe gambar. Beberapa tipe dapat dipisahkan dengan koma, seperti: `image/*, application/pdf` mewakili mengizinkan file tipe gambar dan PDF.
 
-### Mesin Penyimpanan Default
+### Default Storage Engine
 
-Setelah dicentang, ini akan diatur sebagai mesin penyimpanan default sistem. Ketika bidang lampiran atau **koleksi** berkas tidak menentukan mesin penyimpanan, berkas yang diunggah akan disimpan ke mesin penyimpanan default. Mesin penyimpanan default tidak dapat dihapus.
+Setelah dicentang, diatur sebagai storage engine default sistem. Saat field attachment atau file collection tidak menentukan storage engine, file yang di-upload semua akan disimpan ke default storage engine. Default storage engine tidak dapat dihapus.
 
-### Pertahankan Berkas Saat Rekaman Dihapus
+### Pertahankan File Saat Hapus Record
 
-Setelah dicentang, berkas yang sudah diunggah di mesin penyimpanan akan tetap dipertahankan meskipun rekaman data di tabel lampiran atau **koleksi** berkas dihapus. Secara default, opsi ini tidak dicentang, yang berarti berkas di mesin penyimpanan akan dihapus bersamaan dengan rekaman.
+Setelah dicentang, saat record data attachment atau file collection dihapus, file yang sudah di-upload di storage engine tetap dipertahankan. Default tidak dicentang, yaitu saat hapus record akan sekaligus menghapus file di storage engine.
 
 :::info{title=Tips}
-Setelah berkas diunggah, jalur akses akhirnya akan terbentuk dari gabungan beberapa bagian:
+Setelah file di-upload, akses path akhir akan terdiri dari beberapa bagian yang di-concat:
 
 ```
-<Prefiks URL Akses Publik>/<Jalur>/<Nama Berkas><Ekstensi>
+<basis akses URL>/<path>/<nama file><extension>
 ```
 
-Contoh: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
+Seperti: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
 :::

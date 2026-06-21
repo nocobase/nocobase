@@ -1,18 +1,16 @@
 ---
 pkg: "@nocobase/plugin-multi-space"
+title: "Space"
+description: "Field sistem Space, digunakan untuk isolasi data multi tenant."
+keywords: "field space,space,multi space,field sistem,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Space
 
-
-# Ruang
-
-## Pendahuluan
+## Pengantar
 
 Akan ditambahkan
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![index-2025-11-01-00-50-45](https://static-docs.nocobase.com/index-2025-11-01-00-50-45.png)
 

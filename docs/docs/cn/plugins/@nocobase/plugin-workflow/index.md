@@ -1,4 +1,6 @@
 ---
+title: "工作流"
+keywords: "工作流,插件,NocoBase"
 displayName: "工作流"
 packageName: '@nocobase/plugin-workflow'
 description: |

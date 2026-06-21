@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Cache"
+description: "API cache NocoBase: method dasar instance Cache seperti get/set/del."
+keywords: "Cache API,cache,get,set,del,instance cache,NocoBase"
+---
 
 # Cache
 
-## Metode Dasar
+## Method Dasar
 
-Anda bisa merujuk ke dokumentasi <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>.
+Lihat dokumentasi <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>.
 
 - `get()`
 - `set()`
@@ -19,20 +21,20 @@ Anda bisa merujuk ke dokumentasi <a href="https://github.com/node-cache-manager/
 - `keys()`
 - `ttl()`
 
-## Metode Lain
+## Method Lainnya
 
 ### `wrapWithCondition()`
 
-Mirip dengan `wrap()`, namun memungkinkan Anda untuk secara kondisional memutuskan apakah akan menggunakan cache atau tidak.
+Fungsinya mirip dengan wrap(), tetapi dapat menentukan apakah menggunakan cache berdasarkan kondisi.
 
 ```ts
 async wrapWithCondition<T>(
   key: string,
   fn: () => T | Promise<T>,
   options?: {
-    // Parameter eksternal untuk mengontrol apakah akan menggunakan hasil cache
+    // Parameter eksternal yang mengontrol apakah menggunakan hasil cache
     useCache?: boolean;
-    // Menentukan apakah akan melakukan cache berdasarkan hasil data
+    // Menentukan apakah meng-cache berdasarkan hasil data
     isCacheable?: (val: unknown) => boolean | Promise<boolean>;
     ttl?: Milliseconds;
   },
@@ -41,7 +43,7 @@ async wrapWithCondition<T>(
 
 ### `setValueInObject()`
 
-Ketika konten cache adalah objek, ubah nilai dari kunci (key) tertentu.
+Saat konten cache adalah objek, mengubah value dari key tertentu.
 
 ```ts
 async setValueInObject(key: string, objectKey: string, value: unknown)
@@ -49,7 +51,7 @@ async setValueInObject(key: string, objectKey: string, value: unknown)
 
 ### `getValueInObject()`
 
-Ketika konten cache adalah objek, dapatkan nilai dari kunci (key) tertentu.
+Saat konten cache adalah objek, mengambil value dari key tertentu.
 
 ```ts
 async getValueInObject(key: string, objectKey: string)
@@ -57,7 +59,7 @@ async getValueInObject(key: string, objectKey: string)
 
 ### `delValueInObject()`
 
-Ketika konten cache adalah objek, hapus kunci (key) tertentu.
+Saat konten cache adalah objek, menghapus key tertentu.
 
 ```ts
 async delValueInObject(key: string, objectKey: string)

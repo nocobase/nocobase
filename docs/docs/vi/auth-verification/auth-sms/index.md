@@ -1,21 +1,21 @@
 ---
 pkg: '@nocobase/plugin-auth-sms'
+title: "Xác thực SMS"
+description: "Xác thực SMS NocoBase: đăng ký và đăng nhập bằng mã SMS, cần kết hợp với SMS verifier của plugin-verification, hỗ trợ tự động đăng ký khi user không tồn tại."
+keywords: "xác thực SMS,đăng nhập SMS,đăng nhập bằng mã,tự động đăng ký,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Xác thực bằng SMS
+# Xác thực SMS
 
 ## Giới thiệu
 
-Plugin xác thực bằng SMS hỗ trợ người dùng đăng ký và đăng nhập vào NocoBase thông qua tin nhắn SMS.
+Plugin xác thực SMS hỗ trợ người dùng đăng ký và đăng nhập NocoBase qua SMS.
 
-> Lưu ý: Plugin này cần được sử dụng kết hợp với chức năng mã xác minh SMS do [`plugin @nocobase/plugin-verification`](/auth-verification/verification/) cung cấp.
+> Cần kết hợp với chức năng SMS code do [plugin `@nocobase/plugin-verification`](/auth-verification/verification/index.md) cung cấp
 
-## Thêm xác thực bằng SMS
+## Thêm xác thực SMS
 
-Truy cập trang quản lý plugin xác thực người dùng.
+Vào trang quản lý plugin xác thực người dùng.
 
 ![](https://static-docs.nocobase.com/202502282112517.png)
 
@@ -25,27 +25,27 @@ Thêm - SMS
 
 ## Cấu hình phiên bản mới
 
-:::info{title=Lưu ý}
-Cấu hình mới được giới thiệu từ phiên bản `1.6.0-alpha.30` và dự kiến sẽ được hỗ trợ ổn định từ `1.7.0`.
+:::info{title=Mẹo}
+Cấu hình phiên bản mới được giới thiệu từ `1.6.0-alpha.30` và dự kiến hỗ trợ ổn định từ `1.7.0`.
 :::
 
 ![](https://static-docs.nocobase.com/202502282114821.png)
 
-**Trình xác minh (Verificator):** Liên kết một trình xác minh SMS để gửi mã xác minh SMS. Nếu không có trình xác minh nào khả dụng, bạn cần truy cập trang quản lý xác minh để tạo trình xác minh SMS trước.
-Xem thêm:
+**Verificator:** Gắn một SMS verifier để gửi mã SMS. Nếu chưa có verifier khả dụng, bạn cần truy cập trang quản lý kiểm tra trước để tạo SMS verifier.
+Tham khảo:
 
-- [Xác minh](../verification/index.md)
-- [Xác minh: SMS](../verification/sms/index.md)
+- [Kiểm tra](../verification/index.md)
+- [Kiểm tra: SMS](../verification/sms/index.md)
 
-**Tự động đăng ký khi người dùng không tồn tại (Sign up automatically when the user does not exist):** Khi tùy chọn này được chọn, nếu số điện thoại của người dùng không tồn tại, một người dùng mới sẽ được đăng ký với số điện thoại làm biệt danh.
+Sign up automatically when the user does not exist: Khi tick chọn tùy chọn này, nếu số điện thoại người dùng nhập không tồn tại, hệ thống sẽ dùng số điện thoại làm nickname để đăng ký người dùng mới.
 
 ## Cấu hình phiên bản cũ
 
 ![](https://static-docs.nocobase.com/a4d35ec63ba22ae2ea9e3e8e1cbb783d.png)
 
-Tính năng xác thực đăng nhập SMS sẽ sử dụng Nhà cung cấp (Provider) mã xác minh SMS đã được cấu hình và đặt làm mặc định để gửi tin nhắn.
+Tính năng xác thực đăng nhập SMS sẽ sử dụng SMS Provider đã cấu hình và đặt làm mặc định để gửi SMS.
 
-**Tự động đăng ký khi người dùng không tồn tại (Sign up automatically when the user does not exist):** Khi tùy chọn này được chọn, nếu số điện thoại của người dùng không tồn tại, một người dùng mới sẽ được đăng ký với số điện thoại làm biệt danh.
+Sign up automatically when the user does not exist: Khi tick chọn tùy chọn này, nếu số điện thoại người dùng nhập không tồn tại, hệ thống sẽ dùng số điện thoại làm nickname để đăng ký người dùng mới.
 
 ## Đăng nhập
 

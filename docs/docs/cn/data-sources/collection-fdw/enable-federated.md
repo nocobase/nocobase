@@ -1,3 +1,9 @@
+---
+title: "MySQL 如何启用 federated 引擎"
+description: "MySQL 启用 federated 存储引擎：修改 my.cnf、Docker volumes 配置，用于 FDW 连接远程 MySQL/MariaDB 表。"
+keywords: "MySQL federated,federated 引擎,FDW,远程表连接,NocoBase"
+---
+
 # MySQL 如何启用 federated 引擎
 
 MySQL 数据库默认没有开启 federated 模块，需要修改 my.cnf 配置，如果是 docker 版本，可以通过 volumes 来处理扩展的情况：

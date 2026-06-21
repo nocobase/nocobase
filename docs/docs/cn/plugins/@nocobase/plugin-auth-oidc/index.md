@@ -1,4 +1,6 @@
 ---
+title: "认证：OIDC"
+keywords: "认证：OIDC,插件,NocoBase"
 displayName: "认证：OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:

@@ -1,32 +1,34 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Wajib Diisi"
+description: "Konfigurasi Field: mengkonfigurasi Field wajib diisi, validasi non-empty saat submit, mendukung prompt error kustom."
+keywords: "wajib diisi, required, validasi Field, validasi Form, interface builder, NocoBase"
+---
 
 # Wajib Diisi
 
-## Pendahuluan
+## Pengantar
 
-"Wajib Diisi" adalah aturan umum untuk validasi formulir. Anda dapat mengaktifkannya langsung di konfigurasi kolom, atau secara dinamis menetapkan kolom sebagai wajib diisi melalui aturan keterkaitan formulir.
+Wajib diisi adalah aturan validasi Form yang umum. Anda dapat langsung mengaktifkan wajib diisi di item konfigurasi Field, atau dapat secara dinamis mengatur Field wajib diisi melalui aturan linkage Form.
 
-## Di Mana Mengatur Kolom sebagai Wajib Diisi
+## Di Mana Dapat Mengatur Field Wajib Diisi
 
-### Pengaturan Kolom Koleksi
+### Pengaturan Field Collection
 
-Ketika sebuah kolom koleksi diatur sebagai wajib diisi, ini akan memicu validasi *backend*, dan *frontend* juga akan menampilkannya sebagai wajib diisi secara *default* (tidak dapat diubah).
+Saat wajib diisi diatur di Field Collection, akan memicu validasi backend. Frontend juga secara default ditampilkan sebagai wajib diisi (tidak dapat dimodifikasi).
 ![20251025175418](https://static-docs.nocobase.com/20251025175418.png)
 
-### Pengaturan Kolom
+### Pengaturan Field
 
-Atur langsung kolom sebagai wajib diisi. Ini cocok untuk kolom yang selalu harus diisi oleh pengguna, seperti nama pengguna, kata sandi, dll.
+Langsung mengatur Field sebagai wajib diisi, cocok untuk Field yang selalu memerlukan input pengguna, seperti username, password, dll.
 
 ![20251028222818](https://static-docs.nocobase.com/20251028222818.png)
 
-### Aturan Keterkaitan
+### Aturan Linkage
 
-Atur kolom sebagai wajib diisi berdasarkan kondisi melalui aturan keterkaitan kolom pada blok formulir.
+Mengatur wajib diisi sesuai kondisi melalui aturan linkage Field di Block Form.
 
-Contoh: Nomor pesanan wajib diisi ketika tanggal pesanan tidak kosong.
+Contoh: Saat tanggal pesanan tidak kosong, nomor pesanan wajib diisi.
 
 ![20251028223004](https://static-docs.nocobase.com/20251028223004.png)
 
-### Alur Kerja
+### Event Flow

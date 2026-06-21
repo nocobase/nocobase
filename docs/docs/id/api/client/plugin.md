@@ -1,8 +1,10 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Plugin (Client)"
+description: "API Plugin client NocoBase: instance plugin frontend, engine, dll."
+keywords: "Plugin,plugin client,engine,API plugin frontend,NocoBase"
+---
 
-# plugin
+# Plugin
 
 ## engine
 

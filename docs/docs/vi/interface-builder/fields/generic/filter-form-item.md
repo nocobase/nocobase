@@ -1,28 +1,30 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Field Form Bộ lọc"
+description: "Field Form Bộ lọc: Field điều kiện lọc trong Block Bộ lọc, hỗ trợ các điều khiển lọc như nhập, chọn, ngày tháng."
+keywords: "Field Form Bộ lọc,FilterFormItem,điều kiện lọc,Block Bộ lọc,Interface Builder,NocoBase"
+---
 
-
-# Trường Biểu mẫu Lọc
+# Field Form Bộ lọc
 
 ## Giới thiệu
 
-Biểu mẫu lọc hỗ trợ chọn các trường từ **bộ sưu tập** hiện tại và các trường từ các **bộ sưu tập liên kết** (các trường của các liên kết lồng nhau) làm trường lọc.
+Form Bộ lọc hỗ trợ chọn Field của Table hiện tại và Field của Table quan hệ (Field quan hệ của quan hệ) làm Field lọc.
 
 ![20251029120214](https://static-docs.nocobase.com/20251029120214.png)
 
-## Cấu hình Trường
+
+## Tùy chọn cấu hình Field
+
 
 ![20251029120523](https://static-docs.nocobase.com/20251029120523.png)
 
-## Trường Liên kết
+## Field kết nối
 
 ![20251029120352](https://static-docs.nocobase.com/20251029120352.png)
-
 ### Toán tử
 
-Hãy chọn toán tử phù hợp dựa trên loại trường để cải thiện độ chính xác và hiệu quả của việc lọc. Đối với các trường kiểu chuỗi, mặc định sẽ là khớp mờ (fuzzy matching).
+Chọn toán tử phù hợp theo loại Field để lọc, nhằm nâng cao tính chính xác và hiệu quả của bộ lọc, đối với Field kiểu chuỗi mặc định là khớp mờ.
 
-- [Chỉnh sửa tiêu đề trường](/interface-builder/fields/field-settings/edit-title)
-- [Chỉnh sửa mô tả trường](/interface-builder/fields/field-settings/edit-description)
-- [Chỉnh sửa chú giải công cụ trường](/interface-builder/fields/field-settings/edit-tooltip)
+- [Chỉnh sửa tiêu đề Field](/interface-builder/fields/field-settings/edit-title)
+- [Chỉnh sửa mô tả Field](/interface-builder/fields/field-settings/edit-description)
+- [Chỉnh sửa thông tin gợi ý Field](/interface-builder/fields/field-settings/edit-tooltip)

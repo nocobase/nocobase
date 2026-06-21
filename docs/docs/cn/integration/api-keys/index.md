@@ -1,3 +1,9 @@
+---
+title: "API 密钥配置"
+description: "NocoBase API 密钥：为当前用户添加 API 密钥用于编程访问，需配置 APP_KEY 环境变量，Docker 与源码安装的配置方式。"
+keywords: "API 密钥,APP_KEY,API 认证,编程访问,Bearer token,NocoBase"
+---
+
 # API 密钥
 
 ## 介绍
@@ -6,7 +12,7 @@
 
 ## 使用说明
 
-http://localhost:13000/admin/settings/api-keys/configuration
+https://example.com/admin/settings/api-keys
 
 ![](https://static-docs.nocobase.com/d64ccbdc8a512a0224e9f81dfe14a0a8.png)
 

@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "CreateOptions"
+description: "Parameter method create Repository NocoBase: values, whitelist, blacklist, updateAssociationValues, transaction."
+keywords: "CreateOptions,Repository,create,values,NocoBase"
+---
 
 **Tipe**
 
@@ -20,7 +22,7 @@ interface CreateOptions extends SequelizeCreateOptions {
 
 **Detail**
 
-- `values`: Objek data untuk catatan yang akan dibuat.
-- `whitelist`: Menentukan kolom mana dalam objek data catatan yang akan dibuat **yang dapat ditulis**. Jika parameter ini tidak diberikan, secara default semua kolom diizinkan untuk ditulis.
-- `blacklist`: Menentukan kolom mana dalam objek data catatan yang akan dibuat **yang tidak diizinkan untuk ditulis**. Jika parameter ini tidak diberikan, secara default semua kolom diizinkan untuk ditulis.
-- `transaction`: Objek transaksi. Jika parameter transaksi tidak diberikan, metode ini akan secara otomatis membuat transaksi internal.
+- `values`: Objek data dari record yang akan dibuat.
+- `whitelist`: Menentukan field mana yang **diizinkan untuk ditulis** pada objek data record yang akan dibuat. Jika parameter ini tidak dimasukkan, secara default semua field diizinkan untuk ditulis.
+- `blacklist`: Menentukan field mana yang **tidak diizinkan untuk ditulis** pada objek data record yang akan dibuat. Jika parameter ini tidak dimasukkan, secara default semua field diizinkan untuk ditulis.
+- `transaction`: Objek transaction. Jika tidak ada parameter transaction yang dimasukkan, method ini akan otomatis membuat transaction internal.

@@ -1,42 +1,42 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Câu hỏi thường gặp về quản lý Email"
+description: "Các câu hỏi thường gặp: đăng nhập ủy quyền Outlook/Gmail, sự khác biệt giữa tài khoản Microsoft và Google, hủy ủy quyền, không nhận được Email."
+keywords: "Email FAQ,ủy quyền Outlook,ủy quyền Gmail,hủy ủy quyền,quản lý Email,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
 # Câu hỏi thường gặp
 
-## Không nhận được email sau khi ủy quyền bằng tài khoản Microsoft
+## Sau khi đăng nhập ủy quyền tài khoản Microsoft, không nhận được Email
 
-Hiện tại, NocoBase chỉ hỗ trợ ủy quyền đăng nhập bằng tài khoản email Outlook và Gmail. Các tài khoản Microsoft và Google thông thường hiện chưa được hỗ trợ. Bạn có thể tham khảo thêm tại: [answers.microsoft.com](https://answers.microsoft.com/zh-hans/outlook_com/forum/all/%E7%8E%B0%E6%9C%89%E5%BE%AE%E8%BD%AF%E8%B4%A6/dba12dda-a7c7-4346-8263-53f4a6d9dc68)
+**Trả lời:** Hiện tại chỉ hỗ trợ đăng nhập ủy quyền cho tài khoản Email Outlook và Gmail, không hỗ trợ tài khoản Microsoft và tài khoản Google. Có thể tham khảo: [answers.microsoft.com](https://answers.microsoft.com/zh-hans/outlook_com/forum/all/%E7%8E%B0%E6%9C%89%E5%BE%AE%E8%BD%AF%E8%B4%A6/dba12dda-a7c7-4346-8263-53f4a6d9dc68)
 
-**Mẹo nhỏ**: Nếu bạn không chắc mình có phải đang sử dụng "email Outlook.com thực sự" hay "email Gmail" hay không, bạn có thể thử truy cập Outlook.com hoặc Gmail.com qua trình duyệt web. Hãy kiểm tra xem bạn có thể đăng nhập trực tiếp và gửi email bình thường đến các địa chỉ khác được không. Nếu không, điều đó có nghĩa là bạn có thể chưa sở hữu dịch vụ email tương ứng và cần kích hoạt hoặc sử dụng một email khác.
+**Mẹo:** Nếu không chắc chắn liệu bạn có "Email Outlook.com thật sự" hay "Email Gmail" hay không, có thể thử truy cập Outlook.com hoặc Gmail.com qua web để kiểm tra xem có thể đăng nhập trực tiếp và gửi Email bình thường hay không. Nếu không được, có thể bạn chưa kích hoạt dịch vụ Email tương ứng, cần kích hoạt trước hoặc đổi sang Email khác.
+
 
 ## Hủy ủy quyền
 
-Nếu tài khoản email của bạn đã được ủy quyền nhưng bạn muốn xóa hoặc ủy quyền lại, bạn có thể thực hiện theo các bước sau:
+Nếu cần xóa hoặc ủy quyền lại tài khoản Email đã được ủy quyền, có thể thực hiện như sau:
 
-#### **Gmail**
+#### **Email Gmail**
 
-1. Mở https://myaccount.google.com/u/0/connections và đăng nhập.
+1. Mở https://myaccount.google.com/u/0/connections và đăng nhập
 
 ![](https://static-docs.nocobase.com/mail-1735634131347.png)
 
-2. Nhấp vào ứng dụng tương ứng, sau đó nhấp vào Xóa.
+2. Click vào ứng dụng tương ứng, sau đó click xóa
 
 ![](https://static-docs.nocobase.com/mail-1735634131518.png)
 
 ![](https://static-docs.nocobase.com/mail-1735634131697.png)
 
-#### **Email Microsoft**
+#### **Email Outlook**
 
-1. Mở https://account.microsoft.com/ và đăng nhập.
+1. Mở https://account.microsoft.com/ và đăng nhập
     
-2. Nhấp vào nút "Ứng dụng và dịch vụ có thể truy cập dữ liệu của bạn".
+2. Click vào nút "Apps and services that can access your data"
 
 ![](https://static-docs.nocobase.com/mail-1735634131870.png)
 
-3. Nhấp vào Chỉnh sửa, sau đó nhấp vào Xóa.
+3. Click chỉnh sửa và xóa
 
 ![](https://static-docs.nocobase.com/mail-1735634132052.png)

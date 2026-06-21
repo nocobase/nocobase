@@ -1,4 +1,6 @@
 ---
+title: "工作流：循环节点"
+keywords: "工作流：循环节点,插件,NocoBase"
 displayName: "工作流：循环节点"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |

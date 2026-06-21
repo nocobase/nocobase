@@ -1,58 +1,70 @@
 ---
 pkg: '@nocobase/plugin-workflow-cc'
+title: "Node Workflow - Sao gửi"
+description: "Node sao gửi: gửi nội dung ngữ cảnh quy trình đến người dùng được chỉ định, hiển thị trong 'Sao gửi cho tôi' ở trung tâm Task."
+keywords: "workflow,sao gửi,CC,trung tâm Task,sao gửi cho tôi,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Sao Chép (CC) <Badge>v1.8.2+</Badge>
+# Sao gửi <Badge>v1.8.2+</Badge>
 
 ## Giới thiệu
 
-Nút Sao Chép (CC) dùng để gửi một số nội dung ngữ cảnh từ quá trình thực thi của luồng công việc đến những người dùng được chỉ định, để họ nắm bắt và tham khảo. Ví dụ, trong quy trình phê duyệt hoặc các quy trình khác, bạn có thể gửi kèm thông tin liên quan đến những người tham gia khác để họ kịp thời nắm bắt tiến độ công việc.
+Node sao gửi được dùng để gửi một số nội dung ngữ cảnh trong quá trình thực thi Workflow đến người dùng được chỉ định để họ hiểu và tham khảo. Ví dụ trong quy trình phê duyệt hoặc các quy trình khác, có thể sao gửi thông tin liên quan đến các bên tham gia khác để họ kịp thời nắm bắt tiến độ công việc.
 
-Bạn có thể thiết lập nhiều nút Sao Chép (CC) trong một luồng công việc. Khi luồng công việc thực thi đến nút này, thông tin liên quan sẽ được gửi đến người nhận được chỉ định.
+Có thể đặt nhiều Node sao gửi trong Workflow để khi Workflow thực thi đến Node đó, sẽ gửi thông tin liên quan đến người nhận được chỉ định.
 
-Nội dung được gửi kèm sẽ hiển thị trong menu "CC cho tôi" của Trung tâm Việc cần làm. Tại đây, người dùng có thể xem tất cả nội dung được gửi kèm cho mình. Hệ thống cũng sẽ hiển thị thông báo về các nội dung chưa đọc, và sau khi xem, người dùng có thể chủ động đánh dấu là đã đọc.
+Nội dung sao gửi sẽ được hiển thị trong menu "Sao gửi cho tôi" của trung tâm Task, người dùng có thể xem tất cả nội dung được sao gửi cho mình ở đây. Và sẽ nhắc người dùng các nội dung sao gửi chưa xem dựa trên trạng thái chưa đọc, sau khi xem người dùng có thể chủ động đánh dấu là đã đọc.
 
-## Tạo Nút
+## Tạo Node
 
-Trong giao diện cấu hình luồng công việc, nhấp vào nút dấu cộng ("+") trong luồng để thêm nút "Sao Chép (CC)":
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Sao gửi":
 
-![Thêm Sao Chép (CC)](https://static-docs.nocobase.com/20250710222842.png)
+![Sao gửi_thêm](https://static-docs.nocobase.com/20250710222842.png)
 
-## Cấu hình Nút
+## Cấu hình Node
 
-![Cấu hình Nút](https://static-docs.nocobase.com/20250710224041.png)
+![Cấu hình Node](https://static-docs.nocobase.com/20250710224041.png)
 
-Trong giao diện cấu hình nút, bạn có thể thiết lập các tham số sau:
+Trong giao diện cấu hình Node, có thể đặt các tham số sau:
 
 ### Người nhận
 
-Người nhận là tập hợp các người dùng được gửi kèm (CC), có thể là một hoặc nhiều người dùng. Nguồn lựa chọn có thể là giá trị tĩnh được chọn từ danh sách người dùng, giá trị động được chỉ định bởi một biến, hoặc kết quả của một truy vấn trên bảng người dùng.
+Người nhận là tập hợp người dùng đối tượng sao gửi, có thể là một hoặc nhiều người dùng. Nguồn được chọn có thể là giá trị tĩnh được chọn từ danh sách người dùng, cũng có thể là giá trị động được chỉ định bởi biến, còn có thể là kết quả truy vấn bảng người dùng.
 
-![Cấu hình Người nhận](https://static-docs.nocobase.com/20250710224421.png)
+![Cấu hình người nhận](https://static-docs.nocobase.com/20250710224421.png)
 
-### Giao diện Người dùng
+### Giao diện người dùng
 
-Người nhận cần xem nội dung được gửi kèm trong menu "CC cho tôi" của Trung tâm Việc cần làm. Bạn có thể cấu hình kết quả của trình kích hoạt và bất kỳ nút nào trong ngữ cảnh luồng công việc làm khối nội dung.
+Người nhận cần xem nội dung sao gửi trong menu "Sao gửi cho tôi" của trung tâm Task. Có thể cấu hình kết quả của Trigger và Node bất kỳ trong ngữ cảnh quy trình làm Block nội dung.
 
-![Giao diện Người dùng](https://static-docs.nocobase.com/20250710225400.png)
+![Giao diện người dùng](https://static-docs.nocobase.com/20250710225400.png)
 
-### Tiêu đề Nhiệm vụ
+### Thẻ Task chờ làm <Badge>2.0+</Badge>
 
-Tiêu đề nhiệm vụ là tiêu đề hiển thị trong Trung tâm Việc cần làm. Bạn có thể sử dụng các biến từ ngữ cảnh luồng công việc để tạo tiêu đề một cách động.
+Có thể được dùng để cấu hình thẻ Task trong danh sách "Sao gửi cho tôi" ở trung tâm Task.
 
-![Tiêu đề Nhiệm vụ](https://static-docs.nocobase.com/20250710225603.png)
+![20260213010947](https://static-docs.nocobase.com/20260213010947.png)
 
-## Trung tâm Việc cần làm
+Trong thẻ có thể tự do cấu hình các trường nghiệp vụ muốn hiển thị (trừ trường quan hệ).
 
-Người dùng có thể xem và quản lý tất cả nội dung được gửi kèm cho mình trong Trung tâm Việc cần làm, đồng thời lọc và xem theo trạng thái đã đọc.
+Sau khi Task sao gửi Workflow được tạo, trong danh sách trung tâm Task có thể thấy thẻ Task tùy chỉnh:
+
+![20260214124325](https://static-docs.nocobase.com/20260214124325.png)
+
+### Tiêu đề Task
+
+Tiêu đề Task là tiêu đề được hiển thị trong trung tâm Task, có thể sử dụng biến trong ngữ cảnh quy trình để sinh tiêu đề một cách động.
+
+![Tiêu đề Task](https://static-docs.nocobase.com/20250710225603.png)
+
+## Trung tâm Task
+
+Người dùng có thể xem và quản lý tất cả nội dung được sao gửi cho mình trong trung tâm Task và lọc, xem theo trạng thái đã đọc.
 
 ![20250710232932](https://static-docs.nocobase.com/20250710232932.png)
 
 ![20250710233032](https://static-docs.nocobase.com/20250710233032.png)
 
-Sau khi xem, bạn có thể đánh dấu là đã đọc, và số lượng mục chưa đọc sẽ giảm đi tương ứng.
+Sau khi xem có thể đánh dấu là đã đọc, số lượng chưa đọc sẽ giảm theo.
 
 ![20250710233102](https://static-docs.nocobase.com/20250710233102.png)

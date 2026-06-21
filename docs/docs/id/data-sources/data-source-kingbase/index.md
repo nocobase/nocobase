@@ -1,33 +1,31 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
+title: "Data Source - KingbaseES"
+description: "Menggunakan KingbaseES sebagai database utama atau database eksternal, mendukung mode pg, konfigurasi environment variable, dan deployment Docker."
+keywords: "KingbaseES,KingbaseES,database utama,database eksternal,database lokal Tiongkok,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Data Source - KingbaseES
 
+## Pengantar
 
-# Sumber Data - KingbaseES
-
-## Pendahuluan
-
-KingbaseES dapat digunakan sebagai sumber data, baik sebagai basis data utama maupun basis data eksternal.
+Menggunakan database KingbaseES sebagai data source, dapat digunakan baik sebagai database utama maupun sebagai database eksternal.
 
 :::warning
-Saat ini, hanya basis data KingbaseES yang berjalan dalam mode pg yang didukung.
+Saat ini hanya mendukung database KingbaseES yang berjalan dalam mode pg.
 :::
 
 ## Instalasi
 
-### Menggunakan sebagai Basis Data Utama
+### Penggunaan sebagai Database Utama
 
-Prosedur instalasi merujuk pada dokumentasi instalasi. Perbedaannya terutama terletak pada variabel lingkungan.
+Alur instalasi mengacu pada dokumentasi instalasi, perbedaan utama terletak pada environment variable.
 
-#### Variabel Lingkungan
+#### Environment Variable
 
-Edit file .env untuk menambahkan atau memodifikasi konfigurasi variabel lingkungan berikut:
+Modifikasi file .env untuk menambahkan atau mengubah konfigurasi environment variable terkait berikut
 
 ```bash
-# Sesuaikan parameter DB sesuai kebutuhan
+# Sesuaikan parameter DB sesuai dengan situasi aktual
 DB_DIALECT=kingbase
 DB_HOST=localhost
 DB_PORT=54321
@@ -93,7 +91,7 @@ services:
     command: ["/usr/sbin/init"]
 ```
 
-#### Instalasi Menggunakan create-nocobase-app
+#### Instalasi dengan create-nocobase-app
 
 ```bash
 yarn create nocobase-app my-nocobase-app -d kingbase \
@@ -105,9 +103,9 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e TZ=Asia/Shanghai
 ```
 
-### Menggunakan sebagai Basis Data Eksternal
+### Penggunaan sebagai Database Eksternal
 
-Jalankan perintah instalasi atau peningkatan
+Jalankan perintah instalasi atau upgrade
 
 ```bash
 yarn nocobase install
@@ -119,7 +117,7 @@ Aktifkan plugin
 
 ![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
 
-## Panduan Pengguna
+## Panduan Penggunaan
 
-- Basis Data Utama: Lihat [sumber data utama](/data-sources/data-source-main/)
-- Basis Data Eksternal: Lihat [Sumber Data / Basis Data Eksternal](/data-sources/data-source-manager/external-database)
+- Database Utama: Lihat data source utama
+- Database Eksternal: Lihat [Data Source / Database Eksternal](/data-sources/data-source-manager/external-database) 

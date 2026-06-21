@@ -1,15 +1,14 @@
 ---
-pkg: "@nocobase/plugin-collection-view"
+title: "Database View"
+description: "Menghubungkan database view yang sudah ada sebagai data source, mengonfigurasi field dan tampilan di NocoBase, cocok untuk manajemen visualisasi hasil kueri kompleks."
+keywords: "database view,Collection View,koneksi view,data source,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Database View
 
+<PluginInfo name="collection-view"></PluginInfo>
 
-# Tampilan Database
-
-## Pendahuluan
+## Pengantar
 
 ## Panduan Penggunaan
 

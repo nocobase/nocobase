@@ -1,3 +1,9 @@
+---
+title: "ctx.logger"
+description: "ctx.logger RunJS 日志实例，用于 debug、info、warn、error 等分级日志输出。"
+keywords: "ctx.logger,日志,debug,info,warn,error,RunJS,NocoBase"
+---
+
 # ctx.logger
 
 基于 [pino](https://github.com/pinojs/pino) 的日志封装，提供高性能结构化 JSON 日志。推荐使用 `ctx.logger` 代替 `console` 以便于日志采集与分析。

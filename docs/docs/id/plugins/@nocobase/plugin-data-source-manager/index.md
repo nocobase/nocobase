@@ -1,12 +1,14 @@
 ---
-displayName: "Data source manager"
+displayName: "Data Source Manager"
 packageName: '@nocobase/plugin-data-source-manager'
+title: "Data Source Manager"
+keywords: "Data Source Manager,plugin,NocoBase"
 description: |
-  Manage data sources, including the built-in Master database, external databases, APIs, etc.
+  Mengelola data source, termasuk database Master bawaan serta database dan API eksternal.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Data source manager
+# Data Source Manager

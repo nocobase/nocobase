@@ -1,39 +1,42 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Storage Engine: Aliyun OSS"
+description: "Konfigurasi storage engine Aliyun OSS built-in NocoBase: region, AccessKey, bucket, timeout, cocok untuk Aliyun Object Storage Service."
+keywords: "Aliyun OSS,Aliyun Storage,AccessKey,bucket,object storage,konfigurasi OSS,NocoBase"
+---
 
-# Mesin Penyimpanan: Aliyun OSS
+# Storage Engine: Aliyun OSS
 
-Mesin penyimpanan ini berbasis Aliyun OSS. Sebelum menggunakannya, Anda perlu menyiapkan akun dan izin yang relevan.
+Storage engine berdasarkan Aliyun OSS, perlu menyiapkan akun dan permission terkait sebelum digunakan.
 
 ## Parameter Konfigurasi
 
-![Contoh Konfigurasi Mesin Penyimpanan Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)
+![Contoh konfigurasi storage engine Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)
 
-:::info{title=Catatan}
-Bagian ini hanya menjelaskan parameter khusus untuk mesin penyimpanan Aliyun OSS. Untuk parameter umum, silakan lihat [Parameter Mesin Umum](./index#引擎通用参数).
+:::info{title=Tips}
+Hanya memperkenalkan parameter spesifik untuk Aliyun OSS storage engine. Untuk parameter umum lihat [Parameter Umum Engine](./index#parameter-umum-engine).
 :::
 
-### Wilayah
+### Region
 
-Masukkan wilayah penyimpanan OSS, contohnya: `oss-cn-hangzhou`.
+Isi region storage OSS, contohnya: `oss-cn-hangzhou`.
 
-:::info{title=Catatan}
-Anda dapat melihat informasi wilayah bucket Anda di [Konsol Aliyun OSS](https://oss.console.aliyun.com/), dan Anda hanya perlu menggunakan bagian prefiks wilayahnya (tidak perlu nama domain lengkap).
+:::info{title=Tips}
+Anda dapat melihat informasi region storage space di [Aliyun OSS Console](https://oss.console.aliyun.com/), dan hanya perlu mengambil bagian prefix region saja (tidak perlu domain lengkap).
 :::
 
 ### AccessKey ID
 
-Masukkan ID kunci akses Aliyun Anda.
+Isi ID Aliyun access key.
 
 ### AccessKey Secret
 
-Masukkan Secret kunci akses Aliyun Anda.
+Isi Secret Aliyun access key.
 
 ### Bucket
 
-Masukkan nama bucket OSS.
+Isi nama bucket OSS storage.
 
-### Batas Waktu
+### Timeout
 
-Masukkan batas waktu untuk mengunggah ke Aliyun OSS, dalam milidetik. Nilai bawaannya adalah `60000` milidetik (yaitu 60 detik).
+Isi timeout untuk upload ke Aliyun OSS, satuan milisecond, default `60000` milisecond (atau 60 detik).

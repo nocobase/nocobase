@@ -1,4 +1,6 @@
 ---
+title: "操作：打印"
+keywords: "操作：打印,插件,NocoBase"
 displayName: "操作：打印"
 packageName: '@nocobase/plugin-action-print'
 description: |

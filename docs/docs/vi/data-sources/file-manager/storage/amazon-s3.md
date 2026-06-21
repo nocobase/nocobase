@@ -1,15 +1,16 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Amazon S3"
+description: "Cấu hình Amazon S3 storage engine: Bucket, Region, AccessKey, object storage tương thích với giao thức S3."
+keywords: "Amazon S3,S3 Object Storage,Cloud storage,Object storage,NocoBase"
+---
 
 # Amazon S3
 
 :::warning
-Tài liệu đang được bổ sung
+Tài liệu sẽ được bổ sung sau
 :::
 
 <!--
-## 介绍
+## Giới thiệu
 
-## 使用手册 -->
+## Hướng dẫn sử dụng -->

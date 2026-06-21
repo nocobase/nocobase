@@ -1,15 +1,17 @@
 ---
-displayName: "Data source: REST API"
+displayName: "Nguồn dữ liệu: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
+title: "Nguồn dữ liệu: REST API"
+keywords: "Nguồn dữ liệu: REST API,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external REST API data sources.
+  Sử dụng nguồn dữ liệu REST API bên ngoài.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Data source: REST API
+# Nguồn dữ liệu: REST API

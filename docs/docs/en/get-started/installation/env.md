@@ -243,14 +243,6 @@ Options:
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-File-based log storage path, default is `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Output log level. Default is `debug` in development and `info` in production. Options:
@@ -302,7 +294,7 @@ Log print format. Default is `console` in development and `json` in production. 
 LOGGER_FORMAT=json
 ```
 
-Reference: [Log Format](/log-and-monitor/logger/index.md#log-format)
+Reference: [Log Format](/log-and-monitor/logger/index.md#log-formats)
 
 ### CACHE_DEFAULT_STORE
 
@@ -355,6 +347,27 @@ Enabled trace data processors. Default is `console`. Other values should refer t
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
+### SERVER_REQUEST_WHITELIST
+
+Whitelist of allowed targets for server-initiated outbound HTTP requests, used to prevent SSRF (Server-Side Request Forgery) attacks. Accepts a comma-separated list of exact IPs, CIDR ranges, exact hostnames, and single-level wildcard subdomains.
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**Applies to**: Workflow "HTTP Request" nodes and Custom Request action buttons. Relative-path requests (calls to the NocoBase API itself) are not affected.
+
+**When not set**: All `http`/`https` outbound requests are allowed (existing behaviour). **When set**: Only requests whose host matches a whitelist entry are permitted; non-matching requests will raise an error.
+
+Supported formats:
+
+| Format | Example | Matches |
+| --- | --- | --- |
+| Exact IPv4 | `1.2.3.4` | That IP only |
+| IPv4 CIDR | `10.0.0.0/8` | All IPs in the subnet |
+| Exact hostname | `api.example.com` | That hostname only |
+| Wildcard subdomain | `*.example.com` | One subdomain level, e.g. `foo.example.com`; does **not** match `example.com` or `a.b.example.com` |
+
 ## Experimental Environment Variables
 
 ### APPEND_PRESET_LOCAL_PLUGINS
@@ -362,8 +375,10 @@ TELEMETRY_TRACE_PROCESSOR=console
 Used to append preset local plugins. The value is the package name (the `name` parameter in `package.json`), with multiple plugins separated by commas.
 
 :::info
+
 1. Ensure the plugin is downloaded locally and can be found in the `node_modules` directory. For more details, see [Plugin Organization](/plugin-development/project-structure).
 2. After adding the environment variable, the plugin will appear on the plugin manager page only after an initial installation (`nocobase install`) or upgrade (`nocobase upgrade`).
+
 :::
 
 ```bash
@@ -375,8 +390,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Used to append built-in plugins that are installed by default. The value is the package name (the `name` parameter in `package.json`), with multiple plugins separated by commas.
 
 :::info
+
 1. Ensure the plugin is downloaded locally and can be found in the `node_modules` directory. For more details, see [Plugin Organization](/plugin-development/project-structure).
 2. After adding the environment variable, the plugin will be automatically installed or upgraded during the initial installation (`nocobase install`) or upgrade (`nocobase upgrade`).
+
 :::
 
 ```bash
@@ -459,7 +476,7 @@ yarn cross-env \
 
 ### WORKFLOW_SCRIPT_MODULES
 
-Workflow JavaScript node available modules list. For details, see "[JavaScript Node: Using External Modules](/workflow/nodes/javascript#using-external-modules)".
+Workflow JavaScript node available modules list. For details, see "[JavaScript Node: Using External Modules](/workflow/nodes/javascript#unsafe-mode-module-support)".
 
 ### WORKFLOW_LOOP_LIMIT
 

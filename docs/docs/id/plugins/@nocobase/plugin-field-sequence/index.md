@@ -1,12 +1,14 @@
 ---
-displayName: "Collection field: Sequence"
+displayName: "Collection Field: Auto Code"
 packageName: '@nocobase/plugin-field-sequence'
+title: "Collection Field: Auto Code"
+keywords: "Collection Field: Auto Code,plugin,NocoBase"
 description: |
-  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
+  Membuat kode secara otomatis berdasarkan aturan yang dikonfigurasi, mendukung kombinasi tanggal, angka, dan teks.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sequence
+# Collection Field: Auto Code

@@ -1,10 +1,12 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
+---
+title: "FlowDefinition Définition de flux"
+description: "FlowDefinition définit la structure de base et la configuration d'un flux : key, on, steps, defaultParams, décrit les méta-informations du flux, les conditions de déclenchement, les étapes d'exécution, type central de FlowEngine."
+keywords: "FlowDefinition, définition de flux, configuration Flow, on, steps, defaultParams, type FlowEngine, NocoBase"
+---
 
 # FlowDefinition
 
-`FlowDefinition` définit la structure et la configuration de base d'un **flux de travail** et constitue l'un des concepts fondamentaux du moteur de **flux de travail**. Il décrit les métadonnées, les conditions de déclenchement et les étapes d'exécution du **flux de travail**.
+FlowDefinition définit la structure de base et la configuration d'un flux. C'est l'un des concepts centraux du moteur de flux. Elle décrit les méta-informations du flux, les conditions de déclenchement, les étapes d'exécution, etc.
 
 ## Définition du type
 
@@ -20,12 +22,34 @@ interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
 }
 ```
 
+Le type de `on` est le suivant :
+
+```ts
+type FlowEventPhase =
+  | 'beforeAllFlows'
+  | 'afterAllFlows'
+  | 'beforeFlow'
+  | 'afterFlow'
+  | 'beforeStep'
+  | 'afterStep';
+
+type FlowEvent<TModel extends FlowModel = FlowModel> =
+  | string
+  | {
+      eventName: string;
+      defaultParams?: Record<string, any>;
+      phase?: FlowEventPhase;
+      flowKey?: string;
+      stepKey?: string;
+    };
+```
+
 ## Méthode d'enregistrement
 
 ```ts
 class MyModel extends FlowModel {}
 
-// Enregistrez un flux de travail via la classe de modèle
+// Enregistrer un flux via la classe du modèle
 MyModel.registerFlow({
   key: 'pageSettings',
   title: 'Page settings',
@@ -48,11 +72,11 @@ MyModel.registerFlow({
 
 ### key
 
-**Type**: `string`  
-**Obligatoire**: Oui  
-**Description**: L'identifiant unique du **flux de travail**.
+**Type** : `string`  
+**Requis** : Oui  
+**Description** : Identifiant unique du flux
 
-Nous vous recommandons d'utiliser un style de nommage cohérent `xxxSettings`, par exemple :
+Il est recommandé d'adopter une convention de nommage uniforme du style `xxxSettings`, par exemple :
 - `pageSettings`
 - `tableSettings` 
 - `cardSettings`
@@ -64,9 +88,9 @@ Nous vous recommandons d'utiliser un style de nommage cohérent `xxxSettings`, p
 - `datetimeSettings`
 - `numberSettings`
 
-Cette convention de nommage facilite l'identification et la maintenance, et nous vous conseillons de l'appliquer de manière cohérente sur l'ensemble du projet.
+Cette convention facilite l'identification et la maintenance, et il est recommandé de l'unifier globalement.
 
-**Exemple**:
+**Exemple** :
 ```ts
 key: 'pageSettings'
 key: 'tableSettings'
@@ -75,11 +99,11 @@ key: 'deleteSettings'
 
 ### title
 
-**Type**: `string`  
-**Obligatoire**: Non  
-**Description**: Le titre lisible par l'utilisateur du **flux de travail**.
+**Type** : `string`  
+**Requis** : Non  
+**Description** : Titre lisible par un humain pour le flux
 
-Nous vous recommandons de maintenir un style cohérent avec la clé, en utilisant le nommage `Xxx settings`, par exemple :
+Il est recommandé de garder un style cohérent avec la key, en adoptant la convention `Xxx settings`, par exemple :
 - `Page settings`
 - `Table settings`
 - `Card settings`
@@ -91,9 +115,9 @@ Nous vous recommandons de maintenir un style cohérent avec la clé, en utilisan
 - `Datetime settings`
 - `Number settings`
 
-Cette convention de nommage est plus claire et plus facile à comprendre, ce qui facilite l'affichage dans l'interface utilisateur et la collaboration en équipe.
+Cette convention rend le titre plus clair et compréhensible, ce qui facilite l'affichage dans l'interface et la collaboration en équipe.
 
-**Exemple**:
+**Exemple** :
 ```ts
 title: 'Page settings'
 title: 'Table settings'
@@ -102,15 +126,15 @@ title: 'Delete settings'
 
 ### manual
 
-**Type**: `boolean`  
-**Obligatoire**: Non  
-**Valeur par défaut**: `false`  
-**Description**: Indique si le **flux de travail** ne peut être exécuté que manuellement.
+**Type** : `boolean`  
+**Requis** : Non  
+**Valeur par défaut** : `false`  
+**Description** : Indique si le flux ne s'exécute que manuellement
 
-- `true`: Le **flux de travail** ne peut être déclenché que manuellement et ne s'exécutera pas automatiquement.
-- `false`: Le **flux de travail** peut s'exécuter automatiquement (il s'exécute par défaut automatiquement si la propriété `on` n'est pas présente).
+- `true` : le flux ne peut être déclenché que manuellement et ne s'exécute pas automatiquement
+- `false` : le flux peut s'exécuter automatiquement (s'exécute automatiquement par défaut lorsqu'il n'a pas de propriété `on`)
 
-**Exemple**:
+**Exemple** :
 ```ts
 manual: true  // Exécution manuelle uniquement
 manual: false // Peut s'exécuter automatiquement
@@ -118,57 +142,89 @@ manual: false // Peut s'exécuter automatiquement
 
 ### sort
 
-**Type**: `number`  
-**Obligatoire**: Non  
-**Valeur par défaut**: `0`  
-**Description**: L'ordre d'exécution du **flux de travail**. Plus la valeur est petite, plus l'exécution est prioritaire.
+**Type** : `number`  
+**Requis** : Non  
+**Valeur par défaut** : `0`  
+**Description** : Ordre d'exécution du flux ; plus la valeur est faible, plus le flux est exécuté tôt
 
-Des nombres négatifs peuvent être utilisés pour contrôler l'ordre d'exécution de plusieurs **flux de travail**.
+Peut être négatif, pour contrôler l'ordre d'exécution de plusieurs flux.
 
-**Exemple**:
+**Exemple** :
 ```ts
-sort: -1  // Exécution prioritaire
+sort: -1  // Exécuté en priorité
 sort: 0   // Ordre par défaut
-sort: 1   // Exécution ultérieure
+sort: 1   // Exécuté plus tard
 ```
 
 ### on
 
-**Type**: `FlowEvent<TModel>`  
-**Obligatoire**: Non  
-**Description**: La configuration d'événement qui permet à ce **flux de travail** d'être déclenché par `dispatchEvent`.
+**Type** : `FlowEvent<TModel>`  
+**Requis** : Non  
+**Description** : Configuration de l'événement qui permet de déclencher ce flux via `dispatchEvent`
 
-Utilisé uniquement pour déclarer le nom de l'événement déclencheur (une chaîne de caractères ou `{ eventName }`), sans inclure de fonction de gestionnaire.
+Sert à déclarer le nom de l'événement déclencheur (chaîne ou `{ eventName }`), ainsi que le moment d'exécution facultatif (`phase`). Ne contient pas de fonction de traitement (la logique de traitement se trouve dans `steps`).
 
-**Types d'événements pris en charge**:
+**Types d'événements pris en charge** :
+- `'beforeRender'` - Événement avant rendu, déclenché automatiquement lors du premier rendu du composant
 - `'click'` - Événement de clic
 - `'submit'` - Événement de soumission
-- - `'reset'` - Événement de réinitialisation
+- `'reset'` - Événement de réinitialisation
 - `'remove'` - Événement de suppression
 - `'openView'` - Événement d'ouverture de vue
-- `'dropdownOpen'` - Événement d'ouverture de liste déroulante
+- `'dropdownOpen'` - Événement d'ouverture du menu déroulant
 - `'popupScroll'` - Événement de défilement de fenêtre contextuelle
 - `'search'` - Événement de recherche
 - `'customRequest'` - Événement de requête personnalisée
-- `'collapseToggle'` - Événement de bascule de pliage
-- Ou toute chaîne de caractères personnalisée
+- `'collapseToggle'` - Événement de basculement de réduction
+- Ou n'importe quelle chaîne personnalisée
 
-**Exemple**:
+**Exemple** :
 ```ts
 on: 'click'  // Déclenché au clic
 on: 'submit' // Déclenché à la soumission
 on: { eventName: 'customEvent', defaultParams: { param1: 'value1' } }
 ```
 
+#### Moment d'exécution (phase)
+
+Lorsque plusieurs flux d'événements existent pour un même événement (par exemple `click`), vous pouvez utiliser `phase / flowKey / stepKey` pour spécifier à quel emplacement de la chaîne de flux statiques intégrés ce flux doit être inséré :
+
+| phase | Signification | Champs requis |
+| --- | --- | --- |
+| `beforeAllFlows` (par défaut) | S'exécute avant tous les flux statiques intégrés | - |
+| `afterAllFlows` | S'exécute après tous les flux statiques intégrés | - |
+| `beforeFlow` | S'exécute avant le démarrage d'un flux statique intégré spécifique | `flowKey` |
+| `afterFlow` | S'exécute après la fin d'un flux statique intégré spécifique | `flowKey` |
+| `beforeStep` | S'exécute avant le démarrage d'une step spécifique d'un flux statique intégré | `flowKey` + `stepKey` |
+| `afterStep` | S'exécute après la fin d'une step spécifique d'un flux statique intégré | `flowKey` + `stepKey` |
+
+**Exemple** :
+
+```ts
+// 1) Par défaut : avant tous les flux statiques intégrés (pas besoin d'écrire phase)
+on: { eventName: 'click' }
+
+// 2) Après tous les flux statiques intégrés
+on: { eventName: 'click', phase: 'afterAllFlows' }
+
+// 3) Avant le démarrage / après la fin d'un flux statique intégré spécifique
+on: { eventName: 'click', phase: 'beforeFlow', flowKey: 'buttonSettings' }
+on: { eventName: 'click', phase: 'afterFlow', flowKey: 'buttonSettings' }
+
+// 4) Avant le démarrage / après la fin d'une étape spécifique d'un flux statique intégré
+on: { eventName: 'click', phase: 'beforeStep', flowKey: 'buttonSettings', stepKey: 'general' }
+on: { eventName: 'click', phase: 'afterStep', flowKey: 'buttonSettings', stepKey: 'general' }
+```
+
 ### steps
 
-**Type**: `Record<string, StepDefinition<TModel>>`  
-**Obligatoire**: Oui  
-**Description**: La définition des étapes du **flux de travail**.
+**Type** : `Record<string, StepDefinition<TModel>>`  
+**Requis** : Oui  
+**Description** : Définition des étapes du flux
 
-Définit toutes les étapes contenues dans le **flux de travail**, chaque étape ayant une clé unique.
+Définit toutes les étapes contenues dans le flux ; chaque étape possède un nom de clé unique.
 
-**Exemple**:
+**Exemple** :
 ```ts
 steps: {
   step1: {
@@ -186,13 +242,13 @@ steps: {
 
 ### defaultParams
 
-**Type**: `Record<string, any> | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>)`  
-**Obligatoire**: Non  
-**Description**: Paramètres par défaut au niveau du **flux de travail**.
+**Type** : `Record<string, any> | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>)`  
+**Requis** : Non  
+**Description** : Paramètres par défaut au niveau du flux
 
-Lors de l'instanciation du modèle (`createModel`), cette propriété remplit les valeurs initiales des paramètres d'étape du "**flux de travail** actuel". Elle ne fait que compléter les valeurs manquantes et ne écrase pas celles qui existent déjà. La forme de retour fixe est : `{ [stepKey]: params }`.
+Lors de l'instanciation du modèle (createModel), permet de remplir les valeurs initiales des paramètres des étapes du « flux courant ». Ne complète que ce qui est manquant, sans écraser ce qui existe déjà. Renvoie toujours la forme : `{ [stepKey]: params }`
 
-**Exemple**:
+**Exemple** :
 ```ts
 // Paramètres par défaut statiques
 defaultParams: {

@@ -1,13 +1,15 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Checkbox Group"
+description: "Field Checkbox Group, opsi boolean multi pilihan."
+keywords: "checkbox group,checkbox-group,multi pilihan,field opsi,NocoBase"
+---
 
-# Kotak Centang
+# Checkbox Group
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Kolom
+## Konfigurasi Field
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

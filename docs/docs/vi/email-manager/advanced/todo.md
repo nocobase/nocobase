@@ -1,16 +1,15 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Email cần làm"
+description: "Đánh dấu Email là cần làm ở phía bên phải chi tiết Email, xem Email có gắn nhãn cần làm trong danh sách Email."
+keywords: "Email cần làm,nhãn cần làm,quản lý Email,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+# Email cần làm
 
-# Email chờ xử lý
-
-Trong chi tiết email, ở phía bên phải, bạn có thể **đánh dấu email là chờ xử lý**:
+Phía bên phải chi tiết Email có thể **đánh dấu là cần làm**.
 
 ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_03_PM.png)
 
-Trong danh sách email, bạn có thể xem các email được đánh dấu là chờ xử lý:
+Trong danh sách Email có thể xem các Email có gắn nhãn cần làm.
 
 ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_04_PM.png)

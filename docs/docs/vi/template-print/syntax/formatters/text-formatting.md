@@ -1,320 +1,344 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Template In ấn - Định dạng văn bản"
+description: "Formatter Định dạng văn bản Template In ấn: lowerCase, upperCase, trim, replace... và các chuyển đổi và xử lý văn bản."
+keywords: "Template In ấn,Định dạng văn bản,lowerCase,upperCase,NocoBase"
+---
 
+### Định dạng văn bản
 
-### Định dạng Văn bản
-
-Phần này cung cấp nhiều bộ định dạng khác nhau cho dữ liệu văn bản. Các phần dưới đây sẽ lần lượt giới thiệu cú pháp, ví dụ và kết quả của từng bộ định dạng.
+Cung cấp nhiều Formatter cho dữ liệu văn bản, dưới đây lần lượt giới thiệu cú pháp, ví dụ và kết quả của từng Formatter.
 
 #### 1. :lowerCase
 
-##### Giải thích Cú pháp
-Chuyển đổi tất cả các chữ cái thành chữ thường.
+##### Mô tả cú pháp
+Chuyển tất cả chữ cái thành chữ thường.
 
 ##### Ví dụ
 ```
-'My Car':lowerCase()   // Outputs "my car"
-'my car':lowerCase()   // Outputs "my car"
-null:lowerCase()       // Outputs null
-1203:lowerCase()       // Outputs 1203
+'My Car':lowerCase()   // Output "my car"
+'my car':lowerCase()   // Output "my car"
+null:lowerCase()       // Output null
+1203:lowerCase()       // Output 1203
 ```
 
 ##### Kết quả
-Kết quả đầu ra của mỗi ví dụ được hiển thị như trong phần chú thích.
+Kết quả đầu ra của các ví dụ như được chỉ ra trong các comment.
+
 
 #### 2. :upperCase
 
-##### Giải thích Cú pháp
-Chuyển đổi tất cả các chữ cái thành chữ hoa.
+##### Mô tả cú pháp
+Chuyển tất cả chữ cái thành chữ hoa.
 
 ##### Ví dụ
 ```
-'My Car':upperCase()   // Outputs "MY CAR"
-'my car':upperCase()   // Outputs "MY CAR"
-null:upperCase()       // Outputs null
-1203:upperCase()       // Outputs 1203
+'My Car':upperCase()   // Output "MY CAR"
+'my car':upperCase()   // Output "MY CAR"
+null:upperCase()       // Output null
+1203:upperCase()       // Output 1203
 ```
 
 ##### Kết quả
-Kết quả đầu ra của mỗi ví dụ được hiển thị như trong phần chú thích.
+Kết quả đầu ra của các ví dụ như được chỉ ra trong các comment.
+
 
 #### 3. :ucFirst
 
-##### Giải thích Cú pháp
-Chỉ viết hoa chữ cái đầu tiên của chuỗi, các phần còn lại giữ nguyên.
+##### Mô tả cú pháp
+Chỉ chuyển chữ cái đầu tiên của chuỗi thành chữ hoa, các chữ còn lại giữ nguyên.
 
 ##### Ví dụ
 ```
-'My Car':ucFirst()     // Outputs "My Car"
-'my car':ucFirst()     // Outputs "My car"
-null:ucFirst()         // Outputs null
-undefined:ucFirst()    // Outputs undefined
-1203:ucFirst()         // Outputs 1203
+'My Car':ucFirst()     // Output "My Car"
+'my car':ucFirst()     // Output "My car"
+null:ucFirst()         // Output null
+undefined:ucFirst()    // Output undefined
+1203:ucFirst()         // Output 1203
 ```
 
 ##### Kết quả
-Kết quả đầu ra được mô tả trong phần chú thích.
+Kết quả đầu ra xem mô tả comment.
+
 
 #### 4. :ucWords
 
-##### Giải thích Cú pháp
-Viết hoa chữ cái đầu tiên của mỗi từ trong chuỗi.
+##### Mô tả cú pháp
+Chuyển chữ cái đầu của mỗi từ trong chuỗi thành chữ hoa.
 
 ##### Ví dụ
 ```
-'my car':ucWords()     // Outputs "My Car"
-'My cAR':ucWords()     // Outputs "My CAR"
-null:ucWords()         // Outputs null
-undefined:ucWords()    // Outputs undefined
-1203:ucWords()         // Outputs 1203
+'my car':ucWords()     // Output "My Car"
+'My cAR':ucWords()     // Output "My CAR"
+null:ucWords()         // Output null
+undefined:ucWords()    // Output undefined
+1203:ucWords()         // Output 1203
 ```
 
 ##### Kết quả
-Kết quả đầu ra được hiển thị như trong các ví dụ.
+Kết quả đầu ra như ví dụ.
+
 
 #### 5. :print(message)
 
-##### Giải thích Cú pháp
-Luôn trả về thông báo được chỉ định, bất kể dữ liệu gốc là gì, hữu ích như một bộ định dạng dự phòng.
+##### Mô tả cú pháp
+Luôn trả về thông điệp chỉ định, bất kể dữ liệu gốc là gì, dùng làm Formatter dự phòng.
 Tham số:
-- **message:** Văn bản cần in.
+- message: Văn bản cần in
 
 ##### Ví dụ
 ```
-'My Car':print('hello!')   // Outputs "hello!"
-'my car':print('hello!')   // Outputs "hello!"
-null:print('hello!')       // Outputs "hello!"
-1203:print('hello!')       // Outputs "hello!"
+'My Car':print('hello!')   // Output "hello!"
+'my car':print('hello!')   // Output "hello!"
+null:print('hello!')       // Output "hello!"
+1203:print('hello!')       // Output "hello!"
 ```
 
 ##### Kết quả
-Trong tất cả các trường hợp, trả về chuỗi "hello!" được chỉ định.
+Đều trả về chuỗi "hello!" chỉ định.
+
 
 #### 6. :printJSON
 
-##### Giải thích Cú pháp
-Chuyển đổi một đối tượng hoặc mảng thành chuỗi định dạng JSON.
+##### Mô tả cú pháp
+Chuyển object hoặc mảng thành chuỗi định dạng JSON xuất ra.
 
 ##### Ví dụ
 ```
 [{'id':2,'name':'homer'},{'id':3,'name':'bart'}]:printJSON()
-// Outputs "[
+// Output "[
   {"id": 2, "name": "homer"},
   {"id": 3, "name": "bart"}
 ]"
-'my car':printJSON()   // Outputs ""my car""
+'my car':printJSON()   // Output ""my car""
 ```
 
 ##### Kết quả
-Kết quả đầu ra là chuỗi định dạng JSON đã được chuyển đổi từ dữ liệu đã cho.
+Kết quả đầu ra trong ví dụ là chuỗi JSON sau khi chuyển đổi.
+
 
 #### 7. :unaccent
 
-##### Giải thích Cú pháp
-Loại bỏ các dấu phụ (dấu trọng âm) khỏi văn bản, chuyển đổi nó thành định dạng không dấu.
+##### Mô tả cú pháp
+Loại bỏ dấu trong văn bản, làm cho văn bản trở thành định dạng không dấu.
 
 ##### Ví dụ
 ```
-'crÃ¨me brulÃ©e':unaccent()   // Outputs "creme brulee"
-'CRÃˆME BRULÃ‰E':unaccent()   // Outputs "CREME BRULEE"
-'Ãªtre':unaccent()           // Outputs "etre"
-'Ã©Ã¹Ã¯ÃªÃ¨Ã ':unaccent()       // Outputs "euieea"
+'crÃ¨me brulÃ©e':unaccent()   // Output "creme brulee"
+'CRÃME BRULÃE':unaccent()   // Output "CREME BRULEE"
+'Ãªtre':unaccent()           // Output "etre"
+'Ã©Ã¹Ã¯ÃªÃ¨Ã ':unaccent()       // Output "euieea"
 ```
 
 ##### Kết quả
-Tất cả các ví dụ đều cho ra văn bản đã loại bỏ dấu phụ.
+Kết quả đầu ra của các ví dụ đều đã loại bỏ dấu.
+
 
 #### 8. :convCRLF
 
-##### Giải thích Cú pháp
-Chuyển đổi các ký tự xuống dòng và về đầu dòng (`\r\n` hoặc `\n`) trong văn bản thành các thẻ ngắt dòng dành riêng cho tài liệu. Điều này hữu ích cho các định dạng như DOCX, PPTX, ODT, ODP và ODS.
-**Lưu ý:** Khi sử dụng `:html` trước bộ định dạng `:convCRLF`, `\r\n` sẽ được chuyển đổi thành thẻ `<br>`.
+##### Mô tả cú pháp
+Chuyển ký tự xuống dòng (`
+` hoặc `
+`) trong văn bản thành dấu xuống dòng trong tài liệu, áp dụng cho các định dạng như DOCX, PPTX, ODT, ODP và ODS.
+Lưu ý: Khi sử dụng `:html` trước Formatter `:convCRLF`, `
+` sẽ được chuyển thành thẻ `<br>`.
 
 ##### Ví dụ
 ```
-// For ODT format:
+// Đối với định dạng ODT:
 'my blue 
- car':convCRLF()    // Outputs "my blue <text:line-break/> car"
+ car':convCRLF()    // Output "my blue <text:line-break/> car"
 'my blue 
- car':convCRLF()    // Outputs "my blue <text:line-break/> car"
+ car':convCRLF()    // Output "my blue <text:line-break/> car"
 
-// For DOCX format:
+// Đối với định dạng DOCX:
 'my blue 
- car':convCRLF()    // Outputs "my blue </w:t><w:br/><w:t> car"
+ car':convCRLF()    // Output "my blue </w:t><w:br/><w:t> car"
 'my blue 
- car':convCRLF()    // Outputs "my blue </w:t><w:br/><w:t> car"
+ car':convCRLF()    // Output "my blue </w:t><w:br/><w:t> car"
 ```
 
 ##### Kết quả
-Kết quả đầu ra hiển thị các ký hiệu ngắt dòng phù hợp với định dạng tài liệu đích.
+Kết quả đầu ra hiển thị dấu xuống dòng theo các định dạng tài liệu khác nhau.
+
 
 #### 9. :substr(begin, end, wordMode)
 
-##### Giải thích Cú pháp
-Thực hiện các thao tác cắt chuỗi, bắt đầu từ chỉ mục `begin` (dựa trên 0) và kết thúc ngay trước chỉ mục `end`.
-Tham số tùy chọn `wordMode` (giá trị boolean hoặc `last`) dùng để kiểm soát việc có giữ nguyên từ hay không, tránh cắt ngang giữa chừng.
+##### Mô tả cú pháp
+Cắt chuỗi, bắt đầu từ index `begin` (dựa trên 0), kết thúc trước index `end`.
+Tham số tùy chọn `wordMode` (boolean hoặc `last`) dùng để kiểm soát có giữ nguyên từ hay không, không ngắt giữa từ.
 
 ##### Ví dụ
 ```
-'foobar':substr(0, 3)            // Outputs "foo"
-'foobar':substr(1)               // Outputs "oobar"
-'foobar':substr(-2)              // Outputs "ar"
-'foobar':substr(2, -1)           // Outputs "oba"
-'abcd efg hijklm':substr(0, 11, true)  // Outputs "abcd efg "
-'abcd efg hijklm':substr(1, 11, true)  // Outputs "abcd efg "
+'foobar':substr(0, 3)            // Output "foo"
+'foobar':substr(1)               // Output "oobar"
+'foobar':substr(-2)              // Output "ar"
+'foobar':substr(2, -1)           // Output "oba"
+'abcd efg hijklm':substr(0, 11, true)  // Output "abcd efg "
+'abcd efg hijklm':substr(1, 11, true)  // Output "abcd efg "
 ```
 
 ##### Kết quả
-Kết quả đầu ra là chuỗi con được trích xuất theo các tham số đã cho.
+Theo các tham số khác nhau, đầu ra đoạn chuỗi tương ứng.
+
 
 #### 10. :split(delimiter)
 
-##### Giải thích Cú pháp
-Tách một chuỗi thành một mảng bằng cách sử dụng ký tự phân tách `delimiter` được chỉ định.
+##### Mô tả cú pháp
+Tách chuỗi thành mảng bằng dấu phân cách `delimiter` chỉ định.
 Tham số:
-- **delimiter:** Chuỗi ký tự phân tách.
+- delimiter: Chuỗi phân cách
 
 ##### Ví dụ
 ```
-'abcdefc12':split('c')    // Outputs ["ab", "def", "12"]
-1222.1:split('.')         // Outputs ["1222", "1"]
-'ab/cd/ef':split('/')      // Outputs ["ab", "cd", "ef"]
+'abcdefc12':split('c')    // Output ["ab", "def", "12"]
+1222.1:split('.')         // Output ["1222", "1"]
+'ab/cd/ef':split('/')      // Output ["ab", "cd", "ef"]
 ```
 
 ##### Kết quả
-Kết quả ví dụ là một mảng đã được tách bởi ký tự phân tách đã cho.
+Kết quả ví dụ là mảng sau khi tách.
+
 
 #### 11. :padl(targetLength, padString)
 
-##### Giải thích Cú pháp
-Đệm các ký tự được chỉ định vào bên trái của chuỗi cho đến khi chuỗi cuối cùng đạt độ dài `targetLength`.
-Nếu độ dài mục tiêu nhỏ hơn độ dài chuỗi gốc, chuỗi gốc sẽ được trả về.
+##### Mô tả cú pháp
+Điền ký tự chỉ định vào bên trái chuỗi, làm cho chiều dài chuỗi cuối đạt `targetLength`.
+Nếu chiều dài đích nhỏ hơn chiều dài chuỗi gốc, thì trả về chuỗi gốc.
 Tham số:
-- **targetLength:** Tổng độ dài mong muốn.
-- **padString:** Chuỗi dùng để đệm (mặc định là một khoảng trắng).
+- targetLength: Tổng chiều dài đích
+- padString: Chuỗi dùng để điền, mặc định là khoảng trắng
 
 ##### Ví dụ
 ```
-'abc':padl(10)              // Outputs "       abc"
-'abc':padl(10, 'foo')       // Outputs "foofoofabc"
-'abc':padl(6, '123465')     // Outputs "123abc"
-'abc':padl(8, '0')          // Outputs "00000abc"
-'abc':padl(1)               // Outputs "abc"
+'abc':padl(10)              // Output "       abc"
+'abc':padl(10, 'foo')       // Output "foofoofabc"
+'abc':padl(6, '123465')     // Output "123abc"
+'abc':padl(8, '0')          // Output "00000abc"
+'abc':padl(1)               // Output "abc"
 ```
 
 ##### Kết quả
-Mỗi ví dụ đều cho ra chuỗi đã được đệm bên trái tương ứng.
+Đầu ra của các ví dụ là chuỗi sau khi điền.
+
 
 #### 12. :padr(targetLength, padString)
 
-##### Giải thích Cú pháp
-Đệm các ký tự được chỉ định vào bên phải của chuỗi cho đến khi chuỗi cuối cùng đạt độ dài `targetLength`.
-Các tham số tương tự như đối với `:padl`.
+##### Mô tả cú pháp
+Điền ký tự chỉ định vào bên phải chuỗi, làm cho chiều dài chuỗi cuối đạt `targetLength`.
+Tham số như trên.
 
 ##### Ví dụ
 ```
-'abc':padr(10)              // Outputs "abc       "
-'abc':padr(10, 'foo')       // Outputs "abcfoofoof"
-'abc':padr(6, '123465')     // Outputs "abc123"
-'abc':padr(8, '0')          // Outputs "abc00000"
-'abc':padr(1)               // Outputs "abc"
+'abc':padr(10)              // Output "abc       "
+'abc':padr(10, 'foo')       // Output "abcfoofoof"
+'abc':padr(6, '123465')     // Output "abc123"
+'abc':padr(8, '0')          // Output "abc00000"
+'abc':padr(1)               // Output "abc"
 ```
 
 ##### Kết quả
-Kết quả đầu ra hiển thị chuỗi đã được đệm bên phải.
+Đầu ra là chuỗi sau khi điền bên phải.
+
 
 #### 13. :ellipsis(maximum)
 
-##### Giải thích Cú pháp
-Nếu văn bản vượt quá số ký tự được chỉ định, dấu ba chấm ("...") sẽ được thêm vào cuối.
+##### Mô tả cú pháp
+Nếu văn bản vượt quá số ký tự chỉ định, thêm dấu chấm lửng "..." ở cuối.
 Tham số:
-- **maximum:** Số ký tự tối đa được phép.
+- maximum: Số ký tự tối đa cho phép
 
 ##### Ví dụ
 ```
-'abcdef':ellipsis(3)      // Outputs "abc..."
-'abcdef':ellipsis(6)      // Outputs "abcdef"
-'abcdef':ellipsis(10)     // Outputs "abcdef"
+'abcdef':ellipsis(3)      // Output "abc..."
+'abcdef':ellipsis(6)      // Output "abcdef"
+'abcdef':ellipsis(10)     // Output "abcdef"
 ```
 
 ##### Kết quả
-Các ví dụ hiển thị văn bản đã được cắt bớt và thêm dấu ba chấm nếu cần.
+Kết quả ví dụ là văn bản bị cắt ngắn và thêm dấu chấm lửng.
+
 
 #### 14. :prepend(textToPrepend)
 
-##### Giải thích Cú pháp
-Thêm văn bản tiền tố được chỉ định vào đầu chuỗi.
+##### Mô tả cú pháp
+Thêm prefix chỉ định vào trước văn bản.
 Tham số:
-- **textToPrepend:** Văn bản tiền tố.
+- textToPrepend: Văn bản prefix
 
 ##### Ví dụ
 ```
-'abcdef':prepend('123')     // Outputs "123abcdef"
+'abcdef':prepend('123')     // Output "123abcdef"
 ```
 
 ##### Kết quả
-Kết quả đầu ra hiển thị văn bản đã được thêm tiền tố.
+Đầu ra là chuỗi sau khi thêm prefix.
+
 
 #### 15. :append(textToAppend)
 
-##### Giải thích Cú pháp
-Thêm văn bản hậu tố được chỉ định vào cuối chuỗi.
+##### Mô tả cú pháp
+Thêm suffix chỉ định vào sau văn bản.
 Tham số:
-- **textToAppend:** Văn bản hậu tố.
+- textToAppend: Văn bản suffix
 
 ##### Ví dụ
 ```
-'abcdef':append('123')      // Outputs "abcdef123"
+'abcdef':append('123')      // Output "abcdef123"
 ```
 
 ##### Kết quả
-Kết quả đầu ra hiển thị văn bản đã được thêm hậu tố.
+Đầu ra là chuỗi sau khi thêm suffix.
+
 
 #### 16. :replace(oldText, newText)
 
-##### Giải thích Cú pháp
-Thay thế tất cả các lần xuất hiện của `oldText` trong văn bản bằng `newText`.
+##### Mô tả cú pháp
+Thay thế tất cả `oldText` khớp trong văn bản thành `newText`.
 Tham số:
-- **oldText:** Văn bản cần thay thế.
-- **newText:** Văn bản mới để thay thế.
-  **Lưu ý:** Nếu `newText` là `null`, điều đó có nghĩa là mục khớp sẽ bị xóa.
+- oldText: Văn bản cũ cần thay thế
+- newText: Văn bản mới được thay thế bằng
+  Lưu ý: Nếu newText là null, nghĩa là xóa các mục khớp.
 
 ##### Ví dụ
 ```
-'abcdef abcde':replace('cd', 'OK')    // Outputs "abOKef abOKe"
-'abcdef abcde':replace('cd')          // Outputs "abef abe"
-'abcdef abcde':replace('cd', null)      // Outputs "abef abe"
-'abcdef abcde':replace('cd', 1000)      // Outputs "ab1000ef ab1000e"
+'abcdef abcde':replace('cd', 'OK')    // Output "abOKef abOKe"
+'abcdef abcde':replace('cd')          // Output "abef abe"
+'abcdef abcde':replace('cd', null)      // Output "abef abe"
+'abcdef abcde':replace('cd', 1000)      // Output "ab1000ef ab1000e"
 ```
 
 ##### Kết quả
-Kết quả đầu ra là chuỗi sau khi đã thay thế các đoạn được chỉ định.
+Kết quả đầu ra là chuỗi sau khi thay thế.
+
 
 #### 17. :len
 
-##### Giải thích Cú pháp
-Trả về độ dài của một chuỗi hoặc một mảng.
+##### Mô tả cú pháp
+Trả về chiều dài của chuỗi hoặc mảng.
 
 ##### Ví dụ
 ```
-'Hello World':len()     // Outputs 11
-'':len()                // Outputs 0
-[1,2,3,4,5]:len()       // Outputs 5
-[1,'Hello']:len()       // Outputs 2
+'Hello World':len()     // Output 11
+'':len()                // Output 0
+[1,2,3,4,5]:len()       // Output 5
+[1,'Hello']:len()       // Output 2
 ```
 
 ##### Kết quả
-Kết quả đầu ra là giá trị độ dài tương ứng.
+Đầu ra là giá trị chiều dài tương ứng.
+
 
 #### 18. :t
 
-##### Giải thích Cú pháp
-Dịch văn bản bằng cách sử dụng từ điển dịch.
-Các ví dụ và kết quả phụ thuộc vào cấu hình từ điển dịch thực tế.
+##### Mô tả cú pháp
+Dịch văn bản theo từ điển dịch.
+Ví dụ và kết quả tùy thuộc vào cấu hình từ điển dịch thực tế.
+
 
 #### 19. :preserveCharRef
 
-##### Giải thích Cú pháp
-Theo mặc định, một số ký tự không hợp lệ trong XML (như `&`, `>`, `<`, v.v.) sẽ bị xóa. Bộ định dạng này có thể giữ nguyên các tham chiếu ký tự (ví dụ: `&#xa7;` vẫn giữ nguyên), phù hợp cho các kịch bản tạo XML cụ thể.
-Các ví dụ và kết quả phụ thuộc vào trường hợp sử dụng cụ thể.
+##### Mô tả cú pháp
+Mặc định, sẽ loại bỏ một số ký tự bất hợp pháp trong XML (như &, >, <...), Formatter này có thể giữ tham chiếu ký tự (ví dụ `&#xa7;` giữ nguyên), áp dụng cho kịch bản sinh XML cụ thể.
+Ví dụ và kết quả tùy thuộc vào kịch bản sử dụng cụ thể.
+
+

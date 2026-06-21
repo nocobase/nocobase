@@ -1,19 +1,18 @@
 ---
 pkg: '@nocobase/plugin-two-factor-authentication'
+title: "Two-Factor Authentication (2FA)"
+description: "Two-Factor Authentication NocoBase: verifikasi tambahan saat login password (OTP, TOTP), administrator mengaktifkan 2FA, mengikat authenticator, alur pengikatan dan verifikasi pengguna."
+keywords: "2FA,Two-Factor Authentication,MFA,OTP,TOTP,pengikatan authenticator,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Two-Factor Authentication (2FA)
 
-# Autentikasi Dua Faktor (2FA)
+## Pengantar
 
-## Pendahuluan
+Two-Factor Authentication (2FA) adalah langkah verifikasi identitas tambahan yang digunakan saat login ke aplikasi. Ketika 2FA diaktifkan pada aplikasi, pengguna harus menyediakan metode verifikasi identitas lain saat login dengan password, seperti: kode verifikasi OTP, TOTP, dan lain-lain.
 
-Autentikasi Dua Faktor (2FA) adalah langkah keamanan tambahan yang digunakan saat login ke aplikasi. Ketika 2FA diaktifkan, pengguna diwajibkan untuk menyediakan bentuk autentikasi lain—seperti kode OTP, TOTP, dan lain-lain—selain kata sandi mereka.
-
-:::info{title=Catatan}
-Saat ini, proses 2FA hanya berlaku untuk login berbasis kata sandi. Jika aplikasi Anda telah mengaktifkan SSO atau metode autentikasi lainnya, harap gunakan perlindungan autentikasi multifaktor (MFA) yang disediakan oleh IdP terkait.
+:::info{title=Tips}
+Saat ini alur 2FA hanya berlaku untuk login dengan password. Jika aplikasi Anda mengaktifkan metode autentikasi lain seperti SSO, harap gunakan langkah-langkah perlindungan Multi-Factor Authentication (MFA) yang disediakan oleh IdP terkait.  
 :::
 
 ## Mengaktifkan Plugin
@@ -22,24 +21,24 @@ Saat ini, proses 2FA hanya berlaku untuk login berbasis kata sandi. Jika aplikas
 
 ## Konfigurasi Administrator
 
-Setelah mengaktifkan plugin, halaman konfigurasi 2FA akan ditambahkan ke halaman manajemen autentikator.
+Setelah plugin diaktifkan, halaman konfigurasi 2FA akan ditambahkan pada halaman manajemen authenticator.
 
-Administrator perlu mencentang opsi "Terapkan autentikasi dua faktor (2FA) untuk semua pengguna" dan memilih jenis autentikator yang tersedia untuk diikat. Jika tidak ada autentikator yang tersedia, harap buat autentikator baru terlebih dahulu di halaman manajemen verifikasi. Lihat: [Verifikasi](../verification/index.md)
+Administrator perlu mencentang opsi "Aktifkan Two-Factor Authentication (2FA) untuk semua pengguna", dan juga perlu memilih authenticator dengan tipe yang tersedia untuk diikat. Jika tidak ada authenticator yang tersedia, Anda perlu pergi ke halaman manajemen verifikasi terlebih dahulu untuk membuat authenticator baru. Lihat: [Verifikasi](../verification/index.md)
 
 ![](https://static-docs.nocobase.com/202502282109802.png)
 
 ## Login Pengguna
 
-Setelah 2FA diaktifkan di aplikasi, saat pengguna login menggunakan kata sandi, mereka akan masuk ke proses verifikasi 2FA.
+Setelah 2FA diaktifkan pada aplikasi, ketika pengguna login dengan password, mereka akan masuk ke alur verifikasi 2FA.
 
-Jika pengguna belum mengikat autentikator yang ditentukan, mereka akan diminta untuk mengikatnya. Setelah pengikatan berhasil, mereka dapat mengakses aplikasi.
+Jika pengguna belum mengikat salah satu dari authenticator yang ditentukan, pengguna akan diminta untuk melakukan pengikatan. Setelah pengikatan berhasil, pengguna dapat masuk ke aplikasi.
 
 ![](https://static-docs.nocobase.com/202502282110829.png)
 
-Jika pengguna telah mengikat salah satu autentikator yang ditentukan, mereka akan diminta untuk memverifikasi identitas mereka menggunakan autentikator yang telah diikat. Setelah verifikasi berhasil, mereka dapat mengakses aplikasi.
+Jika pengguna telah mengikat salah satu authenticator yang ditentukan, pengguna akan diminta untuk melakukan verifikasi identitas melalui authenticator yang telah diikat. Setelah verifikasi berhasil, pengguna dapat masuk ke aplikasi.
 
 ![](https://static-docs.nocobase.com/202502282110148.png)
 
-Setelah login berhasil, pengguna dapat mengikat autentikator tambahan di halaman manajemen verifikasi di pusat pribadi mereka.
+Setelah berhasil login, pengguna dapat mengikat authenticator lain di halaman manajemen verifikasi pada pusat profil.
 
 ![](https://static-docs.nocobase.com/202502282110024.png)

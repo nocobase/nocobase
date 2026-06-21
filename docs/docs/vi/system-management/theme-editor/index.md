@@ -1,62 +1,63 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Theme Editor"
+description: "Theme Editor: tùy chỉnh SeedToken/MapToken/AliasToken dựa trên Ant Design 5.x, hỗ trợ chế độ dark/compact, thêm/sửa/xóa theme, đặt theme mặc định và theme người dùng có thể chọn."
+keywords: "Theme Editor,Ant Design theme,dark mode,compact mode,SeedToken,MapToken,AliasToken,theme tùy chỉnh,Quản lý hệ thống,NocoBase"
+---
 
+# Theme Editor
 
-# Trình chỉnh sửa chủ đề
-
-> Tính năng chủ đề hiện tại được triển khai dựa trên Ant Design 5.x. Chúng tôi khuyến nghị bạn nên tìm hiểu về các khái niệm liên quan đến [tùy chỉnh chủ đề](https://ant.design/docs/react/customize-theme-cn#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%BB%E9%A2%98) trước khi đọc tài liệu này.
+> Tính năng theme hiện tại được triển khai dựa trên Ant Design phiên bản 5.x. Khuyến nghị tìm hiểu các khái niệm liên quan đến [Tùy chỉnh theme](https://ant.design/docs/react/customize-theme-cn#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%BB%E9%A2%98) trước khi đọc tài liệu này.
 
 ## Giới thiệu
 
-Plugin Trình chỉnh sửa chủ đề được dùng để sửa đổi kiểu dáng của toàn bộ trang giao diện người dùng (frontend). Hiện tại, plugin này hỗ trợ chỉnh sửa các [SeedToken](https://ant.design/docs/react/customize-theme-cn#seedtoken), [MapToken](https://ant.design/docs/react/customize-theme-cn#maptoken) và [AliasToken](https://ant.design/docs/react/customize-theme-cn#aliastoken) ở phạm vi toàn cục, đồng thời cho phép [chuyển đổi](https://ant.design/docs/react/customize-theme-cn#%E4%BD%BF%E7%94%A8%E9%A2%84%E8%AE%BE%E7%AE%97%E6%B3%95) sang `Chế độ tối` và `Chế độ nhỏ gọn`. Trong tương lai, plugin có thể hỗ trợ tùy chỉnh chủ đề ở [cấp độ thành phần](https://ant.design/docs/react/customize-theme-cn#%E4%BF%AE%E6%94%B9%E7%BB%84%E4%BB%B6%E5%8F%98%E9%87%8F-component-token).
+Plugin Theme Editor dùng để chỉnh sửa style của toàn bộ trang frontend. Hiện tại hỗ trợ chỉnh sửa [SeedToken](https://ant.design/docs/react/customize-theme-cn#seedtoken), [MapToken](https://ant.design/docs/react/customize-theme-cn#maptoken), [AliasToken](https://ant.design/docs/react/customize-theme-cn#aliastoken) ở phạm vi toàn cục, và hỗ trợ [chuyển đổi](https://ant.design/docs/react/customize-theme-cn#%E4%BD%BF%E7%94%A8%E9%A2%84%E8%AE%BE%E7%AE%97%E6%B3%95) sang `dark mode` và `compact mode`. Sau này có thể hỗ trợ tùy chỉnh theme ở [cấp component](https://ant.design/docs/react/customize-theme-cn#%E4%BF%AE%E6%94%B9%E7%BB%84%E4%BB%B6%E5%8F%98%E9%87%8F-component-token).
 
 ## Hướng dẫn sử dụng
 
-### Bật plugin Trình chỉnh sửa chủ đề
+### Kích hoạt plugin theme
 
-Đầu tiên, hãy cập nhật NocoBase lên phiên bản mới nhất (v0.11.1 trở lên). Sau đó, tìm kiếm thẻ `Trình chỉnh sửa chủ đề` trên trang Quản lý plugin. Nhấp vào nút `Bật` ở góc dưới bên phải của thẻ và chờ trang tải lại.
+Trước tiên cập nhật NocoBase lên phiên bản mới nhất (v0.11.1 trở lên), sau đó tìm card `Theme Editor` trong trang quản lý plugin, click nút `Kích hoạt` ở góc dưới bên phải card, đợi trang refresh.
 
 ![20240409132838](https://static-docs.nocobase.com/20240409132838.png)
 
-### Truy cập trang cấu hình chủ đề
+### Vào trang cấu hình theme
 
-Sau khi bật plugin, hãy nhấp vào nút cài đặt ở góc dưới bên trái của thẻ để truy cập trang chỉnh sửa chủ đề. Theo mặc định, có bốn tùy chọn chủ đề: `Chủ đề mặc định`, `Chủ đề tối`, `Chủ đề nhỏ gọn` và `Chủ đề tối nhỏ gọn`.
+Sau khi kích hoạt plugin, click nút cài đặt ở góc dưới bên trái card để chuyển đến trang chỉnh sửa theme. Mặc định cung cấp bốn tùy chọn theme: `Theme mặc định`, `Theme tối`, `Theme compact` và `Theme compact tối`.
 
 ![20240409133020](https://static-docs.nocobase.com/20240409133020.png)
 
-### Thêm chủ đề mới
+### Thêm theme mới
 
-Nhấp vào nút `Thêm chủ đề mới` và chọn `Tạo một chủ đề hoàn toàn mới`. Trình chỉnh sửa chủ đề sẽ hiện ra ở phía bên phải trang, cho phép bạn chỉnh sửa các tùy chọn như `Màu sắc`, `Kích thước`, `Kiểu dáng`, v.v. Sau khi chỉnh sửa, hãy nhập tên chủ đề và nhấp vào lưu để hoàn tất việc tạo chủ đề.
+Click nút `Thêm theme mới`, chọn `Thêm một theme hoàn toàn mới`, theme editor sẽ xuất hiện ở phía bên phải trang, hỗ trợ chỉnh sửa các tùy chọn `Màu sắc`, `Kích thước`, `Phong cách`, v.v. Sau khi chỉnh sửa xong, nhập tên theme và click lưu để hoàn tất việc thêm theme.
 
 ![20240409133147](https://static-docs.nocobase.com/20240409133147.png)
 
-### Áp dụng chủ đề mới
+### Áp dụng theme mới
 
-Di chuyển chuột đến góc trên bên phải của trang, bạn sẽ thấy tùy chọn chuyển đổi chủ đề. Nhấp vào đó để chuyển sang các chủ đề khác, chẳng hạn như chủ đề vừa được thêm.
+Đưa chuột đến góc trên bên phải trang, có thể thấy mục chuyển đổi theme, click để chuyển sang theme khác, ví dụ theme vừa thêm.
 
 ![20240409133247](https://static-docs.nocobase.com/20240409133247.png)
 
-### Chỉnh sửa chủ đề hiện có
+### Chỉnh sửa theme đã có
 
-Nhấp vào nút `Chỉnh sửa` ở góc dưới bên trái của thẻ. Trình chỉnh sửa chủ đề sẽ hiện ra ở phía bên phải trang (tương tự như khi thêm chủ đề mới). Sau khi chỉnh sửa, hãy nhấp vào lưu để hoàn tất việc sửa đổi chủ đề.
+Click nút `Chỉnh sửa` ở góc dưới bên trái card, theme editor sẽ xuất hiện ở phía bên phải trang (giống với thêm theme mới), sau khi chỉnh sửa xong click lưu để hoàn tất chỉnh sửa theme.
 
 ![20240409134413](https://static-docs.nocobase.com/20240409134413.png)
 
-### Cài đặt chủ đề người dùng có thể chọn
+### Đặt theme người dùng có thể chọn
 
-Các chủ đề mới được thêm vào mặc định cho phép người dùng chuyển đổi. Nếu bạn không muốn người dùng chuyển sang một chủ đề cụ thể, bạn có thể tắt công tắc `Người dùng có thể chọn` ở góc dưới bên phải của thẻ chủ đề. Khi đó, người dùng sẽ không thể chuyển sang chủ đề đó.
+Theme mới được thêm mặc định cho phép người dùng chuyển đổi. Nếu không muốn cho người dùng chuyển sang một theme nào đó, có thể tắt công tắc `Có thể được người dùng chọn` ở góc dưới bên phải card theme, người dùng sẽ không thể chuyển sang theme đó.
 
 ![20240409133331](https://static-docs.nocobase.com/20240409133331.png)
 
-### Đặt làm chủ đề mặc định
+### Đặt làm theme mặc định
 
-Ban đầu, chủ đề mặc định là `Chủ đề mặc định`. Nếu bạn muốn đặt một chủ đề cụ thể làm chủ đề mặc định, bạn có thể bật công tắc `Chủ đề mặc định` ở góc dưới bên phải của thẻ chủ đề đó. Điều này đảm bảo rằng khi người dùng mở trang lần đầu tiên, họ sẽ thấy chủ đề này. Lưu ý: Không thể xóa chủ đề mặc định.
+Ở trạng thái ban đầu, theme mặc định là `Theme mặc định`. Nếu cần đặt một theme nào đó làm theme mặc định, có thể bật công tắc `Theme mặc định` ở góc dưới bên phải card theme, người dùng sẽ thấy theme này khi mở trang lần đầu. Lưu ý: theme mặc định không thể xóa.
 
 ![20240409133409](https://static-docs.nocobase.com/20240409133409.png)
 
-### Xóa chủ đề
+### Xóa theme
 
-Nhấp vào nút `Xóa` bên dưới thẻ, sau đó nhấp vào xác nhận trong hộp thoại bật lên để xóa chủ đề.
+Click nút `Xóa` ở phía dưới card, click xác nhận trong popup xác nhận để xóa theme.
 
 ![20240409133435](https://static-docs.nocobase.com/20240409133435.png)

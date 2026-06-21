@@ -1,73 +1,72 @@
 ---
 pkg: '@nocobase/plugin-workflow-aggregate'
+title: "Node Workflow - Kueri Agregasi"
+description: "Node kueri agregasi: melakukan kueri fungsi agregasi pada tabel data, mengembalikan hasil statistik untuk digunakan Node berikutnya, sering digunakan untuk laporan."
+keywords: "Workflow,kueri agregasi,Aggregate,statistik,laporan,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Kueri Agregasi
 
-# Kueri Agregat
+## Pengantar
 
-## Pendahuluan
+Digunakan untuk melakukan kueri fungsi agregasi terhadap data dari tabel data tertentu yang memenuhi kondisi, dan mengembalikan hasil statistik yang sesuai. Sering digunakan untuk memproses data statistik terkait laporan.
 
-Digunakan untuk menjalankan fungsi kueri agregat pada data dalam sebuah koleksi yang memenuhi kondisi tertentu, lalu mengembalikan hasil statistik yang sesuai. Ini sering dipakai untuk memproses data statistik terkait laporan.
-
-Implementasi node ini didasarkan pada fungsi agregat database. Saat ini, node hanya mendukung statistik pada satu bidang dari sebuah koleksi. Hasil numerik statistik akan disimpan dalam output node untuk digunakan oleh node berikutnya.
+Implementasi Node berbasis fungsi agregasi database, saat ini hanya mendukung statistik untuk satu field dari satu tabel data, nilai hasil statistik akan disimpan dalam hasil Node untuk digunakan oleh Node lainnya.
 
 ## Instalasi
 
-Plugin bawaan, tidak perlu instalasi.
+Plugin bawaan, tidak perlu diinstal.
 
 ## Membuat Node
 
-Di antarmuka konfigurasi alur kerja, klik tombol plus (“+”) di alur untuk menambahkan node “Kueri Agregat”:
+Pada antarmuka konfigurasi Workflow, klik tombol plus ("+") di alur, tambahkan Node "Kueri Agregasi":
 
-![Membuat Node Kueri Agregat](https://static-docs.nocobase.com/7f9d806ebf5064f80c30f8b67f316f0f.png)
+![Buat Node kueri agregasi](https://static-docs.nocobase.com/7f9d806ebf5064f80c30f8b67f316f0f.png)
 
 ## Konfigurasi Node
 
-![Konfigurasi Node Kueri Agregat](https://static-docs.nocobase.com/57362f747b9992230567c6bb5e986fd2.png)
+![Node kueri agregasi_konfigurasi Node](https://static-docs.nocobase.com/57362f747b9992230567c6bb5e986fd2.png)
 
-### Fungsi Agregat
+### Fungsi Agregasi
 
-Mendukung 5 fungsi agregat dari SQL: `COUNT`, `SUM`, `AVG`, `MIN`, dan `MAX`. Pilih salah satunya untuk menjalankan kueri agregat pada data.
+Mendukung 5 fungsi agregasi dalam SQL: `COUNT`, `SUM`, `AVG`, `MIN`, dan `MAX`. Pilih salah satunya untuk melakukan kueri agregasi pada data.
 
 ### Tipe Target
 
-Target kueri agregat dapat dipilih dalam dua mode. Pertama, dengan langsung memilih koleksi target dan salah satu bidangnya. Kedua, dengan memilih koleksi terkait relasi satu-ke-banyak dan bidangnya melalui objek data yang sudah ada dalam konteks alur kerja untuk menjalankan kueri agregat.
+Target kueri agregasi dapat dipilih melalui dua mode, satu adalah langsung memilih tabel data target dan salah satu field di dalamnya, lainnya adalah melalui objek data yang sudah ada di konteks alur, memilih tabel data relasi to-many dan field-nya, untuk melakukan kueri agregasi.
 
 ### Distinct
 
-Ini adalah `DISTINCT` dalam SQL. Bidang untuk deduplikasi sama dengan bidang koleksi yang dipilih. Saat ini, memilih bidang yang berbeda untuk keduanya belum didukung.
+Yaitu `DISTINCT` dalam SQL, field distinct sama dengan field tabel data yang dipilih, sementara belum mendukung pilihan field yang berbeda untuk keduanya.
 
 ### Kondisi Filter
 
-Mirip dengan kondisi filter dalam kueri koleksi biasa, Anda dapat menggunakan variabel konteks dari alur kerja.
+Mirip dengan kondisi filter pada kueri tabel data biasa, dapat menggunakan variabel konteks alur.
 
 ## Contoh
 
-Target agregat “data koleksi” relatif mudah dipahami. Di sini, kami akan menggunakan contoh “menghitung total jumlah artikel dalam sebuah kategori setelah artikel baru ditambahkan” untuk memperkenalkan penggunaan target agregat “data koleksi terkait”.
+Target agregasi "Data Tabel Data" relatif mudah dipahami, di sini diambil contoh "menghitung total artikel kategori artikel setelah penambahan artikel" untuk memperkenalkan penggunaan target agregasi sebagai "Data Tabel Data Relasi".
 
-Pertama, buat dua koleksi: “Artikel” dan “Kategori”. Koleksi Artikel memiliki bidang relasi banyak-ke-satu yang menunjuk ke koleksi Kategori, dan bidang relasi terbalik satu-ke-banyak juga dibuat dari Kategori ke Artikel:
+Pertama, buat dua tabel data: "Artikel" dan "Kategori", di mana artikel memiliki satu field relasi many-to-one yang menunjuk ke tabel kategori, sambil membuat field relasi balik kategori one-to-many artikel:
 
-| Nama Bidang    | Tipe                   |
-| -------------- | ---------------------- |
-| Judul          | Teks Satu Baris        |
-| Kategori       | Banyak-ke-Satu (Kategori) |
+| Nama Field      | Tipe              |
+| --------------- | ----------------- |
+| Judul           | Single Line Text  |
+| Kategori        | Many-to-One (Kategori) |
 
-| Nama Bidang    | Tipe                 |
-| -------------- | -------------------- |
-| Nama Kategori  | Teks Satu Baris      |
-| Artikel        | Satu-ke-Banyak (Artikel) |
+| Nama Field      | Tipe                |
+| --------------- | ------------------- |
+| Nama Kategori   | Single Line Text    |
+| Mengandung Artikel | One-to-Many (Artikel) |
 
-Selanjutnya, buat alur kerja yang dipicu oleh peristiwa koleksi. Pilih untuk memicunya setelah data baru ditambahkan ke koleksi Artikel.
+Selanjutnya buat sebuah Workflow yang dipicu event tabel data, pilih tabel artikel "Setelah Penambahan Data" untuk memicu.
 
-Kemudian, tambahkan node kueri agregat dan konfigurasikan seperti berikut:
+Kemudian tambahkan Node kueri agregasi, konfigurasi seperti di bawah:
 
-![Konfigurasi Node Kueri Agregat_Contoh](https://static-docs.nocobase.com/542272e638c6c0a567373d1b37ddda78.png)
+![Node kueri agregasi_contoh_konfigurasi Node](https://static-docs.nocobase.com/542272e638c6c0a567373d1b37ddda78.png)
 
-Dengan demikian, setelah alur kerja dipicu, node kueri agregat akan menghitung jumlah semua artikel dalam kategori artikel yang baru ditambahkan dan menyimpannya sebagai hasil node.
+Dengan demikian setelah Workflow dipicu, Node kueri agregasi akan menghitung jumlah semua artikel di kategori artikel yang baru ditambahkan, dan disimpan sebagai hasil Node.
 
 :::info{title=Tips}
-Jika Anda perlu menggunakan data relasi dari pemicu peristiwa koleksi, Anda harus mengonfigurasi bidang terkait di bagian “Muat data terkait terlebih dahulu” pada pemicu, jika tidak, data tersebut tidak dapat dipilih.
+Jika perlu menggunakan data relasi dari Trigger event tabel data, perlu mengonfigurasi field terkait "Pre-load Data Relasi" pada Trigger, jika tidak tidak akan dapat dipilih.
 :::

@@ -1,85 +1,83 @@
 ---
 pkg: '@nocobase/plugin-workflow-variable'
+title: "Node Workflow - Variable"
+description: "Node Variable: mendeklarasikan variable atau melakukan assignment, menyimpan data sementara untuk digunakan dalam alur."
+keywords: "Workflow,Variable,variable alur,data sementara,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Variable
 
+## Pengantar
 
-# Variabel
-
-## Pendahuluan
-
-Anda dapat mendeklarasikan variabel dalam sebuah alur kerja atau menetapkan nilai ke variabel yang sudah dideklarasikan. Ini biasanya digunakan untuk menyimpan data sementara dalam alur kerja.
+Dapat mendeklarasikan variable dalam alur, atau melakukan assignment kepada variable yang sudah dideklarasikan, biasanya digunakan untuk menyimpan data sementara dalam alur.
 
 ## Membuat Node
 
-Pada antarmuka konfigurasi alur kerja, klik tombol plus ("+") di alur kerja untuk menambahkan node "Variabel":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Variable":
 
-![Menambahkan Node Variabel](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Tambahkan Node Variable](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
 
-## Mengonfigurasi Node
+## Konfigurasi Node
 
 ### Mode
 
-Node variabel mirip dengan variabel dalam pemrograman; node ini harus dideklarasikan terlebih dahulu sebelum dapat digunakan dan diberi nilai. Oleh karena itu, saat membuat node variabel, Anda perlu memilih modenya. Ada dua mode yang dapat dipilih:
+Node Variable mirip dengan variable dalam program, perlu dideklarasikan terlebih dahulu, baru dapat digunakan dan di-assign. Sehingga saat membuat Node Variable, Anda perlu memilih mode variable, ada dua mode yang dapat dipilih:
 
-![Memilih Mode](https://static-docs.nocobase.com/49d8b7b501de6faef6f303262aa14550.png)
+![Pilih Mode](https://static-docs.nocobase.com/49d8b7b501de6faef6f303262aa14550.png)
 
-- Mendeklarasikan variabel baru: Membuat variabel baru.
-- Menetapkan nilai ke variabel yang sudah ada: Menetapkan nilai ke variabel yang telah dideklarasikan sebelumnya dalam alur kerja, yang setara dengan memodifikasi nilai variabel tersebut.
+- Mendeklarasikan variable baru: membuat sebuah variable baru.
+- Assign ke variable yang sudah ada: melakukan assignment kepada variable yang sudah dideklarasikan dalam alur sebelumnya, setara dengan memodifikasi nilai variable.
 
-Ketika node yang dibuat adalah node variabel pertama dalam alur kerja, Anda hanya dapat memilih mode deklarasi, karena belum ada variabel yang tersedia untuk penetapan nilai.
+Saat Node Variable yang dibuat adalah Node Variable pertama dalam alur, hanya dapat memilih mode deklarasi, karena saat itu belum ada variable yang dapat di-assign.
 
-Saat Anda memilih untuk menetapkan nilai ke variabel yang sudah dideklarasikan, Anda juga perlu memilih variabel target, yaitu node tempat variabel tersebut dideklarasikan:
+Saat memilih untuk assign ke variable yang sudah dideklarasikan, perlu juga memilih variable target, yaitu Node yang mendeklarasikan variable:
 
-![Memilih variabel yang akan diberi nilai](https://static-docs.nocobase.com/1ce8911548d7347e693d8cc8ac1953eb.png)
+![Pilih Variable yang Akan Di-assign](https://static-docs.nocobase.com/1ce8911548d7347e693d8cc8ac1953eb.png)
 
-### Nilai
+### Value
 
-Nilai variabel dapat berupa tipe apa pun. Ini bisa berupa konstanta, seperti string, angka, nilai boolean, atau tanggal, atau bisa juga variabel lain dari alur kerja.
+Nilai variable dapat berupa tipe apa pun, dapat berupa konstanta seperti string, angka, boolean dan tanggal, dll., dapat juga berupa variable lain dalam alur.
 
-Dalam mode deklarasi, menetapkan nilai variabel setara dengan memberinya nilai awal.
+Pada mode deklarasi, mengatur value variable setara dengan memberikan nilai awal kepada variable.
 
-![Mendeklarasikan nilai awal](https://static-docs.nocobase.com/4ce2c50896565ad537343013758c6a4.png)
+![Deklarasi Nilai Awal](https://static-docs.nocobase.com/4ce2c508986565ad537343013758c6a4.png)
 
-Dalam mode penetapan nilai, menetapkan nilai variabel setara dengan memodifikasi nilai variabel target yang sudah dideklarasikan menjadi nilai baru. Penggunaan selanjutnya akan mengambil nilai baru ini.
+Pada mode assign, mengatur value variable setara dengan memodifikasi value variable target yang sudah dideklarasikan menjadi nilai baru. Saat digunakan selanjutnya, value yang diambil juga akan menjadi nilai baru tersebut.
 
-![Menetapkan variabel pemicu ke variabel yang sudah dideklarasikan](https://static-docs.nocobase.com/858bae180712ad279ae6a964a77a7659.png)
+![Assign Variable yang Sudah Dideklarasikan ke Variable Trigger](https://static-docs.nocobase.com/858bae180712ad279ae6a964a77a7659.png)
 
-## Menggunakan Nilai Variabel
+## Menggunakan Value Variable
 
-Pada node-node selanjutnya setelah node variabel, Anda dapat menggunakan nilai variabel dengan memilih variabel yang sudah dideklarasikan dari grup "Variabel Node". Misalnya, dalam node kueri, gunakan nilai variabel sebagai kondisi kueri:
+Pada Node berikutnya dari Node Variable, pilih variable yang sudah dideklarasikan dari grup "Variable Node", maka Anda dapat menggunakan value variable tersebut. Misalnya pada Node Query, menggunakan value variable sebagai kondisi query:
 
-![Menggunakan nilai variabel sebagai kondisi filter kueri](https://static-docs.nocobase.com/1ca91c295254ff85999a1751499f14bc.png)
+![Gunakan Value Variable Sebagai Kondisi Filter Query](https://static-docs.nocobase.com/1ca91c295254ff85999a1751499f14bc.png)
 
 ## Contoh
 
-Skenario yang lebih berguna untuk node variabel adalah dalam cabang, di mana nilai-nilai baru dihitung atau digabungkan dengan nilai-nilai sebelumnya (mirip dengan `reduce`/`concat` dalam pemrograman), dan kemudian digunakan setelah cabang berakhir. Berikut adalah contoh penggunaan cabang perulangan dan node variabel untuk menggabungkan string penerima.
+Skenario yang lebih berguna untuk Node Variable adalah pada beberapa cabang, mengkomputasi atau menggabungkan nilai baru dengan nilai sebelumnya (mirip `reduce`/`concat` dll. dalam pemrograman), dan kemudian digunakan setelah cabang berakhir. Berikut adalah contoh implementasi penggabungan string penerima menggunakan cabang Loop dan Node Variable.
 
-Pertama, buat alur kerja yang dipicu oleh koleksi yang aktif saat data "Artikel" diperbarui, dan muat data relasi "Penulis" terkait (untuk mendapatkan penerima):
+Pertama buat workflow yang di-trigger oleh tabel data, di-trigger saat data "Artikel" diupdate, dan pre-load data relasi "penulis" terkait (digunakan untuk mendapatkan penerima):
 
-![Mengonfigurasi Pemicu](https://static-docs.nocobase.com/93327530a93c695c637d74cdfdcd5cde.png)
+![Konfigurasi Trigger](https://static-docs.nocobase.com/93327530a93c695c637d74cdfdcd5cde.png)
 
-Kemudian, buat node variabel untuk menyimpan string penerima:
+Kemudian buat sebuah Node Variable, untuk menyimpan string penerima:
 
-![Node variabel penerima](https://static-docs.nocobase.com/d26fa4a7e7ee4f34e0d8392a51c6666e.png)
+![Node Variable Penerima](https://static-docs.nocobase.com/d26fa4a7e7ee4f34e0d8392a51c6666e.png)
 
-Selanjutnya, buat node cabang perulangan untuk mengulang penulis artikel dan menggabungkan informasi penerima mereka ke dalam variabel penerima:
+Selanjutnya buat sebuah Node cabang Loop, untuk iterasi penulis artikel, untuk menambahkan penerimanya ke variable penerima:
 
-![Mengulang penulis dalam artikel](https://static-docs.nocobase.com/083fe62c943c17a643dc47ec2872e07c.png)
+![Loop Penulis dalam Artikel](https://static-docs.nocobase.com/083fe62c943c17a643dc47ec2872e07c.png)
 
-Di dalam cabang perulangan, pertama buat node perhitungan untuk menggabungkan penulis saat ini dengan string penulis yang sudah tersimpan:
+Pada cabang Loop, buat dulu sebuah Node komputasi, untuk menggabungkan penulis saat ini dengan string penulis yang sudah disimpan:
 
-![Menggabungkan string penerima](https://static-docs.nocobase.com/5d21a990162f32cb8818d27b16fd1bcd.png)
+![Gabungkan String Penerima](https://static-docs.nocobase.com/5d21a990162f32cb8818d27b16fd1bcd.png)
 
-Setelah node perhitungan, buat node variabel lain. Pilih mode penetapan nilai, pilih node variabel penerima sebagai target penetapan nilai, dan pilih hasil dari node perhitungan sebagai nilainya:
+Setelah Node komputasi buat lagi sebuah Node Variable, pilih mode assign, target assignment pilih Node Variable penerima, value pilih hasil Node komputasi:
 
-![Menetapkan string penerima yang digabungkan ke node penerima](https://static-docs.nocobase.com/fc40ed95dd9b61d924b7ca11b23f9482.png)
+![Assign String Penerima yang Sudah Digabung ke Node Penerima](https://static-docs.nocobase.com/fc40ed95dd9b61d924b7ca11b23f9482.png)
 
-Dengan demikian, setelah cabang perulangan selesai, variabel penerima akan menyimpan string penerima dari semua penulis artikel. Kemudian, setelah perulangan, Anda dapat menggunakan node Permintaan HTTP untuk memanggil API pengiriman email, meneruskan nilai variabel penerima sebagai parameter penerima ke API tersebut:
+Dengan demikian setelah cabang Loop berakhir, variable penerima akan menyimpan string penerima dari semua penulis artikel. Lalu setelah loop, dapat menggunakan Node HTTP Request untuk memanggil interface kirim email, meneruskan value variable penerima sebagai parameter penerima ke interface:
 
-![Mengirim email ke penerima melalui node permintaan](https://static-docs.nocobase.com/37f71aa1a63e172bcb2dce10a250947e.png)
+![Mengirim Email ke Penerima Melalui Node Request](https://static-docs.nocobase.com/37f71aa1a63e172bcb2dce10a250947e.png)
 
-Dengan demikian, fitur pengiriman email massal sederhana telah diimplementasikan menggunakan perulangan dan node variabel.
+Sampai di sini, fitur sederhana pengiriman email massal sudah diimplementasikan melalui Node Loop dan Variable.

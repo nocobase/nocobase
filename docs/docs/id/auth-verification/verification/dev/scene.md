@@ -1,17 +1,19 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Memperluas Skenario Verifikasi"
+description: "Memperluas skenario verifikasi NocoBase: mendaftarkan aksi verifikasi, mendaftarkan skenario verifikasi, mengikat skenario dan tipe verifikasi, verifikasi otomatis dan verifikasi manual."
+keywords: "memperluas skenario verifikasi,aksi verifikasi,skenario verifikasi,verifikasi otomatis,verifikasi manual,NocoBase"
+---
 
-# Memperluas Skenario Validasi
+# Memperluas Skenario Verifikasi
 
 ## Konsep Dasar
 
-## Mendaftarkan Aksi Validasi
+## Mendaftarkan Aksi Verifikasi
 
-## Mendaftarkan Skenario Validasi
+## Mendaftarkan Skenario Verifikasi
 
-## Mengikat Skenario dan Tipe Validasi
+## Mengikat Skenario dan Tipe Verifikasi
 
-## Validasi Otomatis
+## Verifikasi Otomatis
 
-## Validasi Manual
+## Verifikasi Manual

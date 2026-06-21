@@ -81,6 +81,32 @@ describe('FlowExecutor', () => {
     expect(result.step2).toBe('step2-ok');
   });
 
+  it('runFlow silently skips steps without use or handler', async () => {
+    const flows = {
+      referenceSettings: {
+        steps: {
+          target: {},
+        },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+    const model = createModelWithFlows('m-empty-step', flows);
+    const loggerChildSpy = vi.spyOn(engine.logger, 'child').mockReturnValue(engine.logger);
+    const loggerWarnSpy = vi.spyOn(engine.logger, 'warn').mockImplementation(() => {});
+    const loggerErrorSpy = vi.spyOn(engine.logger, 'error').mockImplementation(() => {});
+
+    try {
+      const result = await engine.executor.runFlow(model, 'referenceSettings');
+
+      expect(result).toEqual({});
+      expect(loggerWarnSpy).not.toHaveBeenCalled();
+      expect(loggerErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      loggerChildSpy.mockRestore();
+      loggerWarnSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
+    }
+  });
+
   it("dispatchEvent('beforeRender') executes flows in sort order and caches result (when options specify)", async () => {
     const calls: string[] = [];
     const mkFlow = (key: string, sort: number) => ({
@@ -232,6 +258,37 @@ describe('FlowExecutor', () => {
     expect(calls.sort()).toEqual(['a', 'b']);
   });
 
+  it('dispatchEvent sequential exposes abortedByExitAll metadata on result array', async () => {
+    const flows = {
+      stopClose: {
+        on: { eventName: 'close' },
+        steps: {
+          only: {
+            handler: vi.fn().mockImplementation((ctx) => {
+              ctx.exit();
+            }),
+          },
+        },
+      },
+      afterClose: {
+        on: { eventName: 'close', phase: 'afterAllFlows' },
+        steps: {
+          only: {
+            handler: vi.fn(),
+          },
+        },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const model = createModelWithFlows('m-close-meta', flows);
+
+    const result = await engine.executor.dispatchEvent(model, 'close', {}, { sequential: true });
+
+    expect(Array.isArray(result)).toBe(true);
+    expect((result as any).__abortedByExitAll).toBe(true);
+    expect(flows.afterClose.steps.only.handler).not.toHaveBeenCalled();
+  });
+
   it('dispatchEvent sequential respects sort order and stops on errors', async () => {
     const calls: string[] = [];
     const mkFlow = (key: string, sort: number, opts?: { throw?: boolean }) => ({
@@ -286,6 +343,32 @@ describe('FlowExecutor', () => {
 
     // 两次触发但步骤处理只执行一次（命中缓存）
     expect(handler).toHaveBeenCalledTimes(2); // 每个 flow 各 1 次，共 2 次
+  });
+
+  it("dispatchEvent('beforeRender') keeps aborted flag on end event when cache hits", async () => {
+    const handler = vi.fn().mockImplementation((ctx) => {
+      ctx.exitAll();
+    });
+    const flows = {
+      abortFlow: { steps: { s: { handler } } },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+    const model = createModelWithFlows('m-br-cache-aborted', flows);
+
+    const endEvents: any[] = [];
+    const onEnd = (payload: any) => {
+      endEvents.push(payload);
+    };
+    engine.emitter.on('model:event:beforeRender:end', onEnd);
+
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+
+    engine.emitter.off('model:event:beforeRender:end', onEnd);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(endEvents).toHaveLength(2);
+    expect(endEvents[0]?.aborted).toBe(true);
+    expect(endEvents[1]?.aborted).toBe(true);
   });
 
   it('dispatchEvent supports sequential execution order and exitAll break', async () => {

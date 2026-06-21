@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth'
+title: "密码认证"
+description: "NocoBase 密码认证：允许注册、注册表单设置、忘记密码（邮箱验证重置）、管理员配置与用户使用流程。"
+keywords: "密码认证,用户注册,忘记密码,邮箱验证重置,重置密码,NocoBase"
 ---
 
 # 密码认证

@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Last Updated At"
+description: "Field hệ thống Updated At, tự động ghi nhận thời gian chỉnh sửa cuối cùng."
+keywords: "updatedAt,Thời gian chỉnh sửa,Field hệ thống,Field audit,NocoBase"
+---
 
-
-# Ngày cập nhật cuối cùng
+# Last Updated At
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512174826](https://static-docs.nocobase.com/20240512174826.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung sau

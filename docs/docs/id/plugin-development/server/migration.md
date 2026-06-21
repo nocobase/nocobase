@@ -1,30 +1,32 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Migration Migrasi Database"
+description: "Migrasi database plugin NocoBase: Class Migration, up/down, upgrade versi, perubahan schema."
+keywords: "Migration,migrasi database,up,down,skrip upgrade,perubahan schema,NocoBase"
+---
 
-# Migration
+# Migration Skrip Upgrade
 
-Selama proses pengembangan dan pembaruan **plugin** NocoBase, struktur basis data atau konfigurasi **plugin** mungkin mengalami perubahan yang tidak kompatibel. Untuk memastikan peningkatan berjalan lancar, NocoBase menyediakan mekanisme **Migration** yang menangani perubahan ini dengan menulis berkas migration. Artikel ini akan memandu Anda memahami penggunaan dan **alur kerja** pengembangan Migration secara sistematis.
+Selama proses pengembangan dan update plugin NocoBase, struktur database atau konfigurasi plugin mungkin mengalami perubahan yang tidak kompatibel. Untuk memastikan upgrade berjalan dengan mulus, NocoBase menyediakan mekanisme **Migration** — menangani perubahan tersebut dengan menulis file migration.
 
 ## Konsep Migration
 
-Migration adalah skrip yang dieksekusi secara otomatis saat **plugin** ditingkatkan, berfungsi untuk mengatasi masalah berikut:
+Migration adalah skrip yang dieksekusi otomatis saat plugin di-upgrade, untuk menyelesaikan masalah berikut:
 
-- Penyesuaian struktur tabel data (misalnya, menambahkan kolom, mengubah tipe kolom, dll.)
-- Migrasi data (seperti pembaruan massal nilai kolom)
-- Pembaruan konfigurasi **plugin** atau logika internal
+- Penyesuaian struktur tabel data (menambah field, memodifikasi tipe field, dll.)
+- Migrasi data (seperti update batch nilai field)
+- Update konfigurasi plugin atau logika internal
 
 Waktu eksekusi Migration dibagi menjadi tiga jenis:
 
-| Tipe | Waktu Pemicu | Skenario Eksekusi |
+| Tipe | Waktu Trigger | Skenario Eksekusi |
 |------|----------|----------|
-| `beforeLoad` | Sebelum semua konfigurasi **plugin** dimuat | |
-| `afterSync`  | Setelah konfigurasi **koleksi** disinkronkan dengan basis data (struktur **koleksi** sudah berubah) | |
-| `afterLoad`  | Setelah semua konfigurasi **plugin** dimuat | |
+| `beforeLoad` | Sebelum semua konfigurasi plugin dimuat |
+| `afterSync`  | Setelah konfigurasi tabel data disinkronkan ke database (struktur tabel sudah berubah) |
+| `afterLoad`  | Setelah semua konfigurasi plugin dimuat |
 
-## Membuat Berkas Migration
+## Membuat File Migration
 
-Berkas migration harus ditempatkan di `src/server/migrations/*.ts` dalam direktori **plugin**. NocoBase menyediakan perintah `create-migration` untuk menghasilkan berkas migration dengan cepat.
+File Migration ditempatkan di `src/server/migrations/*.ts` di direktori plugin. NocoBase menyediakan command `create-migration` untuk dengan cepat menggenerate file migration.
 
 ```bash
 yarn nocobase create-migration [options] <name>
@@ -32,10 +34,10 @@ yarn nocobase create-migration [options] <name>
 
 Parameter Opsional
 
-| Parameter | Deskripsi |
-|------|----------|
-| `--pkg <pkg>` | Menentukan nama paket **plugin** |
-| `--on [on]`  | Menentukan waktu eksekusi, opsi: `beforeLoad`, `afterSync`, `afterLoad` |
+| Parameter | Penjelasan |
+|------|------|
+| `--pkg <pkg>` | Menentukan nama paket plugin |
+| `--on [on]`  | Menentukan waktu eksekusi, opsional `beforeLoad`, `afterSync`, `afterLoad` |
 
 Contoh
 
@@ -43,13 +45,13 @@ Contoh
 $ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
 ```
 
-Jalur berkas migration yang dihasilkan adalah sebagai berikut:
+Path file migration yang dihasilkan adalah sebagai berikut:
 
 ```
 /nocobase/packages/plugins/@nocobase/plugin-client/src/server/migrations/20240107173313-update-ui.ts
 ```
 
-Konten awal berkas:
+Konten awal file:
 
 ```ts
 import { Migration } from '@nocobase/server';
@@ -59,47 +61,51 @@ export default class extends Migration {
   appVersion = '<0.19.0-alpha.3';
 
   async up() {
-    // Tulis logika peningkatan di sini
+    // Tulis logika upgrade di sini
   }
 }
 ```
 
-> ⚠️ `appVersion` digunakan untuk mengidentifikasi versi yang ditargetkan oleh peningkatan. Lingkungan dengan versi kurang dari versi yang ditentukan akan mengeksekusi migration ini.
+:::tip Tips
+
+`appVersion` digunakan untuk menandai versi yang ditargetkan upgrade, environment dengan versi yang lebih kecil dari yang ditentukan akan mengeksekusi migration ini.
+
+:::
 
 ## Menulis Migration
 
-Dalam berkas Migration, Anda dapat mengakses properti umum dan API berikut melalui `this` untuk mengoperasikan basis data, **plugin**, dan instans aplikasi dengan mudah:
+Dalam file Migration, Anda dapat mengakses property dan API umum berikut melalui `this`, untuk memudahkan operasi database, plugin, dan instance aplikasi:
 
-Properti Umum
+Property Umum
 
-- **`this.app`**  
-  Instans aplikasi NocoBase saat ini. Dapat digunakan untuk mengakses layanan global, **plugin**, atau konfigurasi.  
+- **`this.app`**
+  Instance aplikasi NocoBase saat ini, dapat digunakan untuk mengakses service global, plugin, atau konfigurasi.
   ```ts
   const config = this.app.config.get('database');
   ```
 
-- **`this.db`**  
-  Instans layanan basis data, menyediakan antarmuka untuk mengoperasikan model (**koleksi**).  
+- **`this.db`**
+  Instance service database, menyediakan interface untuk operasi pada model (Tables).
   ```ts
   const users = await this.db.getRepository('users').findAll();
   ```
 
-- **`this.plugin`**  
-  Instans **plugin** saat ini, dapat digunakan untuk mengakses metode kustom **plugin**.  
+- **`this.plugin`**
+  Instance plugin saat ini, dapat digunakan untuk mengakses method kustom plugin.
   ```ts
   const settings = this.plugin.customMethod();
   ```
 
-- **`this.sequelize`**  
-  Instans Sequelize, dapat mengeksekusi SQL mentah atau operasi transaksi secara langsung.  
+- **`this.sequelize`**
+  Instance Sequelize, dapat langsung mengeksekusi SQL native atau operasi transaksi.
   ```ts
   await this.sequelize.transaction(async (transaction) => {
     await this.sequelize.query('UPDATE users SET active = 1', { transaction });
   });
   ```
 
-- **`this.queryInterface`**  
-  QueryInterface dari Sequelize, sering digunakan untuk memodifikasi struktur tabel, seperti menambahkan kolom, menghapus tabel, dll.  
+- **`this.queryInterface`**
+  QueryInterface Sequelize, sering digunakan untuk memodifikasi struktur tabel, seperti menambah field, menghapus tabel, dll.
   ```ts
   await this.queryInterface.addColumn('users', 'age', {
     type: this.sequelize.Sequelize.INTEGER,
@@ -117,40 +123,40 @@ export default class extends Migration {
   appVersion = '<0.19.0-alpha.3';
 
   async up() {
-    // Menggunakan queryInterface untuk menambahkan kolom
+    // Menambahkan field menggunakan queryInterface
     await this.queryInterface.addColumn('users', 'nickname', {
       type: this.sequelize.Sequelize.STRING,
       allowNull: true,
     });
 
-    // Menggunakan db untuk mengakses model data
+    // Mengakses model data menggunakan db
     const users = await this.db.getRepository('users').findAll();
     for (const user of users) {
       user.nickname = user.username;
       await user.save();
     }
 
-    // Mengeksekusi metode kustom plugin
+    // Memanggil method kustom plugin
     await this.plugin.customMethod();
   }
 }
 ```
 
-Selain properti umum yang tercantum di atas, Migration juga menyediakan API yang kaya. Untuk dokumentasi terperinci, silakan lihat [Migration API](/api/server/migration).
+Selain property umum yang tercantum di atas, Migration juga menyediakan lebih banyak API, untuk penggunaan detail lihat [Migration API](../../api/server/migration.md).
 
 ## Memicu Migration
 
-Eksekusi Migration dipicu oleh perintah `nocobase upgrade`:
+Eksekusi Migration dipicu oleh command `nocobase upgrade`:
 
 ```bash
 $ yarn nocobase upgrade
 ```
 
-Selama peningkatan, sistem akan menentukan urutan eksekusi berdasarkan tipe Migration dan `appVersion`.
+Saat upgrade, sistem akan menentukan urutan eksekusi berdasarkan tipe Migration dan `appVersion`.
 
-## Menguji Migration
+## Test Migration
 
-Dalam pengembangan **plugin**, disarankan untuk menggunakan **Mock Server** untuk menguji apakah migration dieksekusi dengan benar, guna menghindari kerusakan pada data nyata.
+Dalam pengembangan plugin, disarankan menggunakan **Mock Server** untuk menguji apakah migration dieksekusi dengan benar, untuk menghindari kerusakan pada data nyata.
 
 ```ts
 import { createMockServer, MockServer } from '@nocobase/test';
@@ -161,7 +167,7 @@ describe('Migration Test', () => {
   beforeEach(async () => {
     app = await createMockServer({
       plugins: ['my-plugin'], // Nama plugin
-      version: '0.18.0-alpha.5', // Versi sebelum peningkatan
+      version: '0.18.0-alpha.5', // Versi sebelum upgrade
     });
   });
 
@@ -171,20 +177,33 @@ describe('Migration Test', () => {
 
   test('run upgrade migration', async () => {
     await app.runCommand('upgrade');
-    // Tulis logika verifikasi, misalnya memeriksa apakah kolom ada, apakah migrasi data berhasil
+    // Tulis logika validasi, seperti memeriksa apakah field ada, apakah migrasi data berhasil
   });
 });
 ```
 
-> Tip: Menggunakan Mock Server dapat dengan cepat mensimulasikan skenario peningkatan dan memverifikasi urutan eksekusi Migration serta perubahan data.
+:::tip Tips
 
-## Rekomendasi Praktik Pengembangan
+Menggunakan Mock Server dapat dengan cepat mensimulasikan skenario upgrade, dan memvalidasi urutan eksekusi Migration dan perubahan data.
 
-1. **Pisahkan Migration**  
-   Usahakan untuk menghasilkan satu berkas migration per peningkatan, untuk menjaga atomisitas dan menyederhanakan pemecahan masalah.
-2. **Tentukan Waktu Eksekusi**  
-   Pilih `beforeLoad`, `afterSync`, atau `afterLoad` berdasarkan objek operasi, hindari bergantung pada modul yang belum dimuat.
-3. **Perhatikan Kontrol Versi**  
-   Gunakan `appVersion` untuk menentukan dengan jelas versi yang berlaku untuk migration guna mencegah eksekusi berulang.
-4. **Cakupan Pengujian**  
-   Verifikasi migration di Mock Server sebelum mengeksekusi peningkatan di lingkungan nyata.
+:::
+
+## Saran Praktik Pengembangan
+
+1. **Memecah Migration**
+   Setiap upgrade sebaiknya menghasilkan satu file migration, menjaga atomisitas, untuk memudahkan troubleshooting.
+2. **Menentukan Waktu Eksekusi**
+   Pilih `beforeLoad`, `afterSync`, atau `afterLoad` berdasarkan target operasi, untuk menghindari ketergantungan pada modul yang belum dimuat.
+3. **Perhatikan Kontrol Versi**
+   Gunakan `appVersion` untuk memperjelas versi yang berlaku untuk migration, mencegah eksekusi berulang.
+4. **Cakupan Test**
+   Validasi migration di Mock Server terlebih dahulu, baru eksekusi upgrade di environment nyata.
+
+## Tautan Terkait
+
+- [Collections Tabel Data](./collections.md) — Definisi struktur tabel data yang sering perlu disesuaikan dalam Migration
+- [Database Operasi Database](./database.md) — API operasi data melalui `this.db` dalam Migration
+- [Plugin](./plugin.md) — Organisasi dan cara loading file Migration dalam plugin
+- [Command Command Line](./command.md) — Memicu migrasi melalui command `nocobase upgrade` dan `create-migration`
+- [Test Pengujian](./test.md) — Menggunakan Mock Server untuk menguji hasil eksekusi Migration
+- [Migration API](../../api/server/migration.md) — Referensi API lengkap class Migration

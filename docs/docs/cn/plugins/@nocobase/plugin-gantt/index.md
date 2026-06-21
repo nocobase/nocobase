@@ -1,4 +1,6 @@
 ---
+title: "区块：甘特图"
+keywords: "区块：甘特图,插件,NocoBase"
 displayName: "区块：甘特图"
 packageName: '@nocobase/plugin-gantt'
 description: |

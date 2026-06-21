@@ -22,6 +22,7 @@ import { deepseekProviderOptions } from './llm-providers/deepseek';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { ollamaProviderOptions } from './llm-providers/ollama';
 import { kimiProviderOptions } from './llm-providers/kimi';
+import { xaiProviderOptions } from './llm-providers/xai';
 import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
 import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
@@ -31,8 +32,7 @@ import {
   AIEmployeeButtonModel,
 } from './ai-employees/flow/models';
 import './ai-employees/flow/events';
-import { aiEmployeesData } from './ai-employees/flow/context';
-import { LLMServicesRepository } from './llm-services/LLMServicesRepository';
+import { AIConfigRepository } from './repositories/AIConfigRepository';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { DatasourceContext } from './ai-employees/context/datasource';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
@@ -40,20 +40,29 @@ import { chartConfigWorkContext } from './ai-employees/data-visualization/contex
 import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
 import { formFillerTool } from './ai-employees/form-filler/tools';
 import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
+import { businessReportGeneratorTool } from './ai-employees/business-report/tools';
 import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
 import {
   getContextApisTool,
   getContextEnvsTool,
   getContextVarsTool,
   lintAndTestJSTool,
+  patchJSCodeTool,
+  readJSCodeTool,
+  writeJSCodeTool,
 } from './ai-employees/ai-coding/tools/context-tools';
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
 import { suggestionsTool } from './ai-employees/suggestions/tools';
+import { dispatchSubAgentTaskTool } from './ai-employees/sub-agents/tools';
+import { aiEmployeeWorkflowTaskOutputTool } from './ai-employees/workflow-tasks/tools';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
+import { AIEmployeeInstruction } from './workflow/nodes/employee';
+import { mimoProviderOptions } from './llm-providers/mimo';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
+const { MCPSettings } = lazy(() => import('./ai-employees/admin/mcp/MCPSettings'), 'MCPSettings');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
 const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
 const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
@@ -116,6 +125,12 @@ export class PluginAIClient extends Plugin {
       aclSnippet: 'pm.ai.llm-services',
       Component: LLMServices,
     });
+    this.app.pluginSettingsManager.add('ai.mcp-settings', {
+      icon: 'ApiOutlined',
+      title: tval('MCP settings', { ns: namespace }),
+      aclSnippet: 'pm.ai.mcp-settings',
+      Component: MCPSettings,
+    });
     this.app.pluginSettingsManager.add('ai.datasource', {
       sort: 99,
       icon: 'CloudServerOutlined',
@@ -138,10 +153,10 @@ export class PluginAIClient extends Plugin {
   }
 
   async setupAIFeatures() {
-    this.app.flowEngine.context.defineProperty(...aiEmployeesData);
-
-    const llmServicesRepository = new LLMServicesRepository(this.app.apiClient);
-    this.app.flowEngine.context.defineProperty('llmServicesRepository', { value: llmServicesRepository });
+    const aiConfigRepository = new AIConfigRepository(this.app.apiClient, {
+      toolsManager: this.app.aiManager.toolsManager,
+    });
+    this.app.flowEngine.context.defineProperty('aiConfigRepository', { value: aiConfigRepository });
 
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
@@ -151,7 +166,8 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
-    // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
+    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
+    this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
       Component: MessagesSettings,
@@ -172,12 +188,18 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...defineCollectionsTool);
     this.ai.toolsManager.registerTools(...formFillerTool);
     this.ai.toolsManager.registerTools(...chartGeneratorTool);
+    this.ai.toolsManager.registerTools(...businessReportGeneratorTool);
     this.ai.toolsManager.registerTools(...listCodeSnippetTool);
     this.ai.toolsManager.registerTools(...getCodeSnippetTool);
     this.ai.toolsManager.registerTools(...suggestionsTool);
+    this.ai.toolsManager.registerTools(...dispatchSubAgentTaskTool);
+    this.ai.toolsManager.registerTools(...aiEmployeeWorkflowTaskOutputTool);
     this.ai.toolsManager.registerTools(...getContextApisTool);
     this.ai.toolsManager.registerTools(...getContextEnvsTool);
     this.ai.toolsManager.registerTools(...getContextVarsTool);
+    this.ai.toolsManager.registerTools(...readJSCodeTool);
+    this.ai.toolsManager.registerTools(...writeJSCodeTool);
+    this.ai.toolsManager.registerTools(...patchJSCodeTool);
     this.ai.toolsManager.registerTools(...lintAndTestJSTool);
   }
 
@@ -186,19 +208,22 @@ export class PluginAIClient extends Plugin {
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstructionGroup('ai', { label: tval('AI', { ns: namespace }) });
     workflow.registerInstruction('llm', LLMInstruction);
-    // workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
+    workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
   }
 }
 
 export default PluginAIClient;
 export { ModelSelect, Chat };
 export type { LLMProviderOptions, ToolOptions } from './manager/ai-manager';
-export type { ToolCall } from './ai-employees/types';
+export type { AIEmployee, ToolCall } from './ai-employees/types';
 export * from './features';
+export { defaultVectorStorePropForm } from './features/components';
 export { AIEmployeeActionModel } from './ai-employees/flow/models/AIEmployeeActionModel';
-export { useAIEmployeesData } from './ai-employees/hooks/useAIEmployeesData';
 export { useChatMessagesStore } from './ai-employees/chatbox/stores/chat-messages';
+export { useChat } from './ai-employees/chatbox/hooks/useChat';
 export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';
 export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
+export { useChatConversationsStore } from './ai-employees/chatbox/stores/chat-conversations';
+export { useAIConfigRepository } from './repositories/hooks/useAIConfigRepository';
 export { ProfileCard } from './ai-employees/ProfileCard';
 export { avatars } from './ai-employees/avatars';

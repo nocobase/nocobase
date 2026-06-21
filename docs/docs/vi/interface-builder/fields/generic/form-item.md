@@ -1,48 +1,49 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Field Form"
+description: "Field Form: component Field trong Block Form, hỗ trợ các điều khiển Form như nhập, chọn, ngày tháng."
+keywords: "Field Form,FormItem,điều khiển Form,Block Form,Interface Builder,NocoBase"
+---
 
-
-# Trường Biểu Mẫu
+# Field Form
 
 ## Giới thiệu
 
-Các loại trường khác nhau trong một biểu mẫu sẽ có các tùy chọn cấu hình khác nhau. NocoBase cho phép người dùng mở rộng các tùy chọn cấu hình của trường thông qua các plugin để đáp ứng nhiều nhu cầu cá nhân hóa hơn.
+Các loại Field khác nhau trong Form có các tùy chọn cấu hình khác nhau, hỗ trợ bạn mở rộng các tùy chọn cấu hình Field thông qua Plugin để đáp ứng nhiều nhu cầu cá nhân hóa hơn.
 
 ![20251025174555](https://static-docs.nocobase.com/20251025174555.png)
 
-## Tùy chọn Cấu hình Trường
+## Tùy chọn cấu hình Field
 
-### Giá trị Mặc định
+### Giá trị mặc định
 
-Bạn có thể cấu hình hằng số/biến số làm giá trị mặc định cho các trường (chỉ áp dụng cho biểu mẫu mới).
+Hỗ trợ cấu hình hằng số/biến làm giá trị mặc định cho Field (chỉ Form thêm mới hỗ trợ).
 
 ![20251025174724](https://static-docs.nocobase.com/20251025174724.png)
 
-Để biết thêm chi tiết, hãy xem [Thiết lập Giá trị Mặc định](/interface-builder/fields/field-settings/default-value)
+Xem thêm tại [Cài đặt giá trị mặc định](/interface-builder/fields/field-settings/default-value)
 
-### Quy tắc Xác thực
+### Quy tắc xác thực
 
 ![20251025174908](https://static-docs.nocobase.com/20251025174908.png)
 
 ![20251025175031](https://static-docs.nocobase.com/20251025175031.png)
 
-Để biết thêm chi tiết, hãy xem [Quy tắc Xác thực](/interface-builder/fields/field-settings/validation-rules)
+Xem thêm tại [Quy tắc xác thực](/interface-builder/fields/field-settings/validation-rules)
 
 ### Bắt buộc
 
 ![20251025175118](https://static-docs.nocobase.com/20251025175118.png)
 
-Để biết thêm chi tiết, hãy xem [Bắt buộc](/interface-builder/fields/field-settings/required)
+Xem thêm tại [Bắt buộc](/interface-builder/fields/field-settings/required)
 
-- [Chỉnh sửa tiêu đề trường](/interface-builder/fields/field-settings/edit-title)
+- [Chỉnh sửa tiêu đề Field](/interface-builder/fields/field-settings/edit-title)
 - [Hiển thị nhãn](/interface-builder/fields/field-settings/show-label)
-- [Chỉnh sửa mô tả trường](/interface-builder/fields/field-settings/edit-description)
-- [Chỉnh sửa thông tin gợi ý trường](/interface-builder/fields/field-settings/edit-tooltip)
-- [Mẫu](/interface-builder/fields/field-settings/pattern)
+- [Chỉnh sửa mô tả Field](/interface-builder/fields/field-settings/edit-description)
+- [Chỉnh sửa thông tin gợi ý Field](/interface-builder/fields/field-settings/edit-tooltip)
+- [Chế độ](/interface-builder/fields/field-settings/pattern)
 
-### Thành phần Trường
+### Component Field
 
-Một số trường, ví dụ như trường quan hệ, hỗ trợ chuyển đổi sang các thành phần khác.
+Một số Field hỗ trợ chuyển sang component khác, như Field quan hệ.
 ![20251029122626](https://static-docs.nocobase.com/20251029122626.png)
-Để biết thêm chi tiết, hãy xem [Thành phần Trường](/interface-builder/fields/field-settings/field-component)
+Xem thêm tại [Component Field](/interface-builder/fields/field-settings/field-component)

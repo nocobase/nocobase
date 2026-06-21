@@ -1,32 +1,33 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Cấu hình Biểu đồ Tùy chỉnh"
+description: "Chế độ Custom viết JS để trả về option ECharts, dựa trên ctx.data hỗ trợ dataset, hợp nhất nhiều series, tooltip phức tạp và style động, đầy đủ khả năng ECharts."
+keywords: "biểu đồ tùy chỉnh,Custom mode,ECharts option,ctx.data,dataset,NocoBase"
+---
 
+# Cấu hình Biểu đồ Tùy chỉnh
 
-# Cấu hình biểu đồ tùy chỉnh
-
-Ở chế độ tùy chỉnh, bạn có thể cấu hình biểu đồ bằng cách viết mã JS trong trình chỉnh sửa. Dựa trên `ctx.data`, bạn sẽ trả về một đối tượng `option` hoàn chỉnh của ECharts. Chế độ này phù hợp cho việc kết hợp nhiều chuỗi dữ liệu, tạo các gợi ý phức tạp và kiểu dáng động. Về lý thuyết, nó hỗ trợ đầy đủ tất cả các tính năng và loại biểu đồ của ECharts.
+Cấu hình biểu đồ ở chế độ tùy chỉnh, có thể viết JS trong code editor, dựa trên `ctx.data` để trả về `option` ECharts đầy đủ, phù hợp cho việc hợp nhất nhiều series, tooltip phức tạp và style động. Về lý thuyết có thể hỗ trợ đầy đủ các tính năng và tất cả các loại biểu đồ của Echarts.
 
 ![clipboard-image-1761524637](https://static-docs.nocobase.com/clipboard-image-1761524637.png)
 
-## Ngữ cảnh dữ liệu
-- `ctx.data.objects`: Mảng các đối tượng (mỗi đối tượng là một hàng dữ liệu)
-- `ctx.data.rows`: Mảng hai chiều (bao gồm tiêu đề cột)
-- `ctx.data.columns`: Mảng hai chiều được nhóm theo cột
+## Context dữ liệu
+- `ctx.data.objects`: Mảng object (mỗi hàng bản ghi)
+- `ctx.data.rows`: Mảng hai chiều (kèm header)
+- `ctx.data.columns`: Mảng hai chiều theo cột
 
-**Cách sử dụng đề xuất:**
-Bạn nên tập trung dữ liệu vào `dataset.source`. Để biết chi tiết cách sử dụng, vui lòng tham khảo tài liệu ECharts:
+**Cách sử dụng khuyến nghị:**
+Tập trung dữ liệu thống nhất vào `dataset.resource`, để biết cách sử dụng chi tiết, vui lòng tham khảo tài liệu Echarts
 
  [Dataset](https://echarts.apache.org/handbook/en/concepts/dataset/#map-row-or-column-of-dataset-to-series)
 
- [Trục](https://echarts.apache.org/handbook/en/concepts/axis) 
+ [Trục tọa độ](https://echarts.apache.org/handbook/en/concepts/axis) 
  
  [Ví dụ](https://echarts.apache.org/examples/en/index.html)
 
 
-Hãy cùng xem một ví dụ đơn giản nhất:
+Trước tiên hãy xem một ví dụ đơn giản nhất:
 
-## Ví dụ 1: Biểu đồ cột số lượng đơn hàng theo tháng
+## Ví dụ 1: Bar chart số lượng đơn hàng theo tháng
 
 ![20251027082816](https://static-docs.nocobase.com/20251027082816.png)
 
@@ -148,22 +149,22 @@ return {
 ```
 
 **Khuyến nghị:**
-- Giữ phong cách hàm thuần túy: chỉ tạo `option` từ `ctx.data` và tránh các tác dụng phụ.
-- Việc điều chỉnh tên cột truy vấn có thể ảnh hưởng đến việc lập chỉ mục; hãy chuẩn hóa tên và xác nhận trong "Xem dữ liệu" trước khi sửa đổi mã.
-- Đối với tập dữ liệu lớn, tránh thực hiện các phép tính đồng bộ phức tạp trong JS; hãy tổng hợp dữ liệu trong giai đoạn truy vấn khi cần thiết.
+- Giữ phong cách hàm thuần túy, chỉ tạo `option` dựa trên `ctx.data`, tránh các side effect.
+- Việc thay đổi tên cột truy vấn sẽ ảnh hưởng đến chỉ số, hãy đặt tên thống nhất và xác nhận trong "Xem dữ liệu" trước khi sửa code.
+- Khi dữ liệu lớn, tránh thực hiện các tính toán đồng bộ phức tạp trong JS, khi cần thiết hãy tổng hợp ở giai đoạn truy vấn.
 
 
-## Các ví dụ khác
+## Thêm ví dụ
 
-Để xem thêm các ví dụ sử dụng, bạn có thể tham khảo [ứng dụng Demo](https://demo3.sg.nocobase.com/admin/5xrop8s0bui) của NocoBase.
+Để xem thêm các ví dụ sử dụng, có thể tham khảo [ứng dụng Demo](https://demo3.sg.nocobase.com/admin/5xrop8s0bui) của Nocobase
 
-Bạn cũng có thể xem các [ví dụ](https://echarts.apache.org/examples/en/index.html) chính thức của ECharts để chọn hiệu ứng biểu đồ mong muốn, sau đó tham khảo và sao chép mã cấu hình JS. 
+Cũng có thể xem [Ví dụ chính thức](https://echarts.apache.org/examples/en/index.html) của Echarts để chọn hiệu quả biểu đồ bạn muốn, tham khảo và sao chép code cấu hình JS.
  
 
-## Xem trước và Lưu
+## Preview và Lưu
 
 ![20251027083938](https://static-docs.nocobase.com/20251027083938.png)
 
-- Nhấp vào "Xem trước" ở phía bên phải hoặc phía dưới để làm mới biểu đồ và xác thực nội dung cấu hình JS.
-- Nhấp vào "Lưu" để lưu nội dung cấu hình JS hiện tại vào cơ sở dữ liệu.
-- Nhấp vào "Hủy" để quay lại trạng thái đã lưu gần nhất.
+- Click "Preview" ở bên phải hoặc "Preview" ở phía dưới để refresh biểu đồ và xác minh nội dung cấu hình JS.
+- Click "Lưu" sẽ lưu nội dung cấu hình JS hiện tại vào database.
+- Click "Hủy" sẽ quay về trạng thái lưu lần trước.

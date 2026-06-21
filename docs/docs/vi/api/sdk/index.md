@@ -1,15 +1,16 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "APIClient"
+description: "APIClient trong SDK frontend của NocoBase: HTTP request, Auth, Storage, gọi API backend."
+keywords: "APIClient,SDK,HTTP request,API frontend,Auth,Storage,NocoBase"
+---
 
 # APIClient
 
 ## Tổng quan
 
-`APIClient` là một lớp bao bọc (wrapper) dựa trên <a href="https://axios-http.com/" target="_blank">`axios`</a>, được sử dụng để gửi các yêu cầu thao tác tài nguyên của NocoBase từ phía client thông qua HTTP.
+`APIClient` được đóng gói trên nền <a href="https://axios-http.com/" target="_blank">`axios`</a>, dùng để gửi các thao tác tài nguyên đến NocoBase qua HTTP từ phía client.
 
-### Cách sử dụng cơ bản
+### Cách dùng cơ bản
 
 ```ts
 class PluginSampleAPIClient extends Plugin {
@@ -21,11 +22,11 @@ class PluginSampleAPIClient extends Plugin {
 }
 ```
 
-## Thuộc tính của thể hiện (Instance Properties)
+## Thuộc tính của instance
 
 ### `axios`
 
-Thể hiện `axios`, cho phép truy cập các API của `axios`, ví dụ như `apiClient.axios.interceptors`.
+Instance `axios`, có thể truy cập API của `axios`, ví dụ `apiClient.axios.interceptors`.
 
 ### `auth`
 
@@ -35,17 +36,17 @@ Lớp xác thực phía client, tham khảo [Auth](./auth.md).
 
 Lớp lưu trữ phía client, tham khảo [Storage](./storage.md).
 
-## Phương thức của lớp (Class Methods)
+## Phương thức của lớp
 
 ### `constructor()`
 
-Hàm khởi tạo, dùng để tạo một thể hiện `APIClient`.
+Constructor, tạo một instance `APIClient`.
 
 #### Chữ ký
 
 - `constructor(instance?: APIClientOptions)`
 
-#### Kiểu dữ liệu
+#### Kiểu
 
 ```ts
 interface ExtendedOptions {
@@ -60,13 +61,13 @@ export type APIClientOptions =
 
 ### `request()`
 
-Gửi một yêu cầu HTTP.
+Gửi HTTP request.
 
 #### Chữ ký
 
 - `request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R>`
 
-#### Kiểu dữ liệu
+#### Kiểu
 
 ```ts
 type ResourceActionOptions<P = any> = {
@@ -77,11 +78,11 @@ type ResourceActionOptions<P = any> = {
 };
 ```
 
-#### Chi tiết
+#### Thông tin chi tiết
 
 ##### AxiosRequestConfig
 
-Các tham số yêu cầu `axios` chung. Tham khảo <a href="https://axios-http.com/docs/req_config" target="_blank">Request Config</a>.
+Tham số request thông thường của axios. Tham khảo <a href="https://axios-http.com/docs/req_config" target="_blank">Request Config</a>.
 
 ```ts
 const res = await apiClient.request({ url: '' });
@@ -89,7 +90,7 @@ const res = await apiClient.request({ url: '' });
 
 ##### ResourceActionOptions
 
-Các tham số yêu cầu thao tác tài nguyên của NocoBase.
+Tham số request thao tác tài nguyên của NocoBase.
 
 ```ts
 const res = await apiClient.request({
@@ -101,4 +102,56 @@ const res = await apiClient.request({
 });
 ```
 
-| Thuộc tính      | Kiểu dữ liệu | Mô tả
+| Thuộc tính      | Kiểu     | Mô tả                                                                                                       |
+| --------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `resource`      | `string` | 1. Tên tài nguyên, ví dụ `a`<br />2. Tên đối tượng quan hệ của tài nguyên, ví dụ `a.b`                       |
+| `resourceOf`    | `any`    | Khi `resource` là tên đối tượng quan hệ của tài nguyên, đây là khóa chính của tài nguyên. Ví dụ với `a.b`, đây là khóa chính của `a` |
+| `action`        | `string` | Tên thao tác                                                                                                 |
+| `params`        | `any`    | Đối tượng tham số request, chủ yếu là tham số URL. Body request đặt trong `params.values`                   |
+| `params.values` | `any`    | Đối tượng body request                                                                                      |
+
+### `resource()`
+
+Lấy đối tượng phương thức thao tác tài nguyên của NocoBase.
+
+```ts
+const resource = apiClient.resource('users');
+
+await resource.create({
+  values: {
+    username: 'admin',
+  },
+});
+
+const res = await resource.list({
+  page: 2,
+  pageSize: 20,
+});
+```
+
+#### Chữ ký
+
+- `resource(name: string, of?: any, headers?: AxiosRequestHeaders): IResource`
+
+#### Kiểu
+
+```ts
+export interface ActionParams {
+  filterByTk?: any;
+  [key: string]: any;
+}
+
+type ResourceAction = (params?: ActionParams) => Promise<any>;
+
+export type IResource = {
+  [key: string]: ResourceAction;
+};
+```
+
+#### Thông tin chi tiết
+
+| Tên tham số | Kiểu                  | Mô tả                                                                                                       |
+| ----------- | --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `name`      | `string`              | 1. Tên tài nguyên, ví dụ `a`<br />2. Tên đối tượng quan hệ của tài nguyên, ví dụ `a.b`                       |
+| `of`        | `any`                 | Khi `resource` là tên đối tượng quan hệ của tài nguyên, đây là khóa chính của tài nguyên. Ví dụ với `a.b`, đây là khóa chính của `a` |
+| `headers`   | `AxiosRequestHeaders` | HTTP request header sẽ được mang theo trong các request thao tác tài nguyên sau này                          |

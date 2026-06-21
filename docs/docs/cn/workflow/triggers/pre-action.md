@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-workflow-request-interceptor'
+title: "操作前事件"
+description: "操作前事件触发器：在操作执行前触发工作流，如提交前校验、批量操作前处理，可阻断或修改操作。"
+keywords: "工作流,操作前事件,Pre Action,提交前校验,请求拦截,NocoBase"
 ---
-
 # 操作前事件
 
 ## 介绍

@@ -1,5 +1,7 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Field Extension"
+description: "Pengembangan Field Extension: extend tipe field kustom berbasis FieldModel, mendukung form, table, dan filter."
+keywords: "Field Extension,FieldModel,plugin field,NocoBase"
+---
 
-# Ekstensi Bidang
+# Field Extension

@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Email"
+description: "Field email, lưu trữ địa chỉ email, hỗ trợ xác thực định dạng."
+keywords: "email,email,Field email,thông tin liên lạc,NocoBase"
+---
 
 # Email
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512175609](https://static-docs.nocobase.com/20240512175609.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung.
+Sẽ được bổ sung

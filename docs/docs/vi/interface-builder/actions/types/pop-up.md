@@ -1,24 +1,25 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Action mở Popup"
+description: "Action mở Popup: mở hộp thoại hoặc Drawer, hiển thị nội dung Block chỉ định."
+keywords: "mở Popup,PopUp,Popup,Drawer,Interface Builder,NocoBase"
+---
 
-
-# Mở cửa sổ bật lên
+# Mở Popup
 
 ## Giới thiệu
 
-**Thao tác Mở cửa sổ bật lên** tương tự như các thao tác Xem và Chỉnh sửa. Người dùng có thể cấu hình nút **Mở cửa sổ bật lên** trong các hàng hoặc tiêu đề của bảng. Khi nhấp vào nút này, một cửa sổ bật lên tương ứng sẽ hiển thị, và các khối bên trong cửa sổ bật lên này sẽ hiển thị dữ liệu dựa trên bản ghi ngữ cảnh hiện tại.
+**Action mở Popup** tương tự với Action xem và chỉnh sửa. Bạn có thể cấu hình nút **Mở Popup** trong hàng hoặc đầu Table, sau khi nhấp nút sẽ xuất hiện Popup tương ứng, và Block trong Popup sẽ hiển thị dữ liệu theo bản ghi ngữ cảnh hiện tại.
 
 ![20251029182351](https://static-docs.nocobase.com/20251029182351.png)
 
-Cấu hình các khối trong cửa sổ bật lên theo nhu cầu.
+Cấu hình Block trong Popup theo nhu cầu.
 
 ![20251029190208](https://static-docs.nocobase.com/20251029190208.png)
 
-## Cài đặt thao tác
+## Tùy chọn cấu hình Action
 
 ![20251029190352](https://static-docs.nocobase.com/20251029190352.png)
 
-- [Chỉnh sửa nút](/interface-builder/actions/action-settings/edit-button): Chỉnh sửa tiêu đề, loại và biểu tượng của nút.
-- [Quy tắc liên kết](/interface-builder/linkage-rule): Kiểm soát trạng thái của nút một cách linh hoạt (hiển thị/vô hiệu hóa).
-- [Chỉnh sửa cửa sổ bật lên](/interface-builder/actions/action-settings/edit-popup): Đặt chế độ mở (cửa sổ bật lên hoặc ngăn kéo) và kích thước.
+- [Chỉnh sửa nút bấm](/interface-builder/actions/action-settings/edit-button): chỉnh sửa tiêu đề, loại, biểu tượng của nút bấm
+- [Quy tắc liên kết](/interface-builder/linkage-rule): kiểm soát trạng thái nút bấm động (hiển thị/vô hiệu hóa)
+- [Chỉnh sửa Popup](/interface-builder/actions/action-settings/edit-popup): cách mở, kích thước

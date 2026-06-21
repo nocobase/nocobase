@@ -1,15 +1,17 @@
 ---
-displayName: "Action: Batch update"
+displayName: "Action: Bulk Update"
 packageName: '@nocobase/plugin-action-bulk-update'
+title: "Action: Bulk Update"
+keywords: "Action: Bulk Update,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Batch update all records or selected records.
+  Lakukan update massal pada semua data atau data yang dipilih.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Batch update
+# Action: Bulk Update

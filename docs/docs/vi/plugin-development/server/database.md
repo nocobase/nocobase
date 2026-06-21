@@ -1,126 +1,135 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Database"
+description: "Database NocoBase: Collection, Model, Repository, FieldType, FilterOperator, dataSource.db, app.db."
+keywords: "Database,Collection,Model,Repository,Sequelize,dataSource.db,NocoBase"
+---
 
 # Database
 
-`Database` là một thành phần quan trọng của các nguồn dữ liệu (`DataSource`) thuộc loại cơ sở dữ liệu. Mỗi nguồn dữ liệu loại cơ sở dữ liệu sẽ có một thể hiện `Database` tương ứng, có thể truy cập thông qua `dataSource.db`. Thể hiện cơ sở dữ liệu của nguồn dữ liệu chính cũng cung cấp bí danh tiện lợi `app.db`. Việc làm quen với các phương thức phổ biến của `db` là nền tảng để viết các plugin phía máy chủ.
+`Database` là thành phần cốt lõi của nguồn dữ liệu kiểu database (`DataSource`). Mỗi nguồn dữ liệu kiểu database đều có một instance `Database` tương ứng, có thể truy cập qua `dataSource.db`. Instance database của nguồn dữ liệu chính còn có alias tiện lợi là `app.db`. Làm quen với các phương thức thường dùng của `db` là nền tảng để viết Plugin server.
 
-## Các Thành Phần của Database
+## Các thành phần của Database
 
 Một `Database` điển hình bao gồm các phần sau:
 
-- **Bộ sưu tập**: Định nghĩa cấu trúc bảng dữ liệu.
-- **Model**: Tương ứng với các model của ORM (thường được quản lý bởi Sequelize).
-- **Repository**: Lớp kho lưu trữ đóng gói logic truy cập dữ liệu, cung cấp các phương thức thao tác cấp cao hơn.
-- **FieldType**: Các kiểu trường.
-- **FilterOperator**: Các toán tử dùng để lọc.
-- **Event**: Các sự kiện vòng đời và sự kiện cơ sở dữ liệu.
+- **Collection**: Định nghĩa cấu trúc bảng dữ liệu.
+- **Model**: Tương ứng với model của ORM (thường được Sequelize quản lý).
+- **Repository**: Tầng repository đóng gói logic truy cập dữ liệu, cung cấp các phương thức thao tác cấp cao hơn.
+- **FieldType**: Kiểu Field.
+- **FilterOperator**: Toán tử dùng cho filter.
+- **Event**: Sự kiện vòng đời và sự kiện database.
 
-## Thời Điểm Sử Dụng trong Plugin
+## Thời điểm sử dụng trong Plugin
 
-### Những việc nên làm trong giai đoạn beforeLoad
+### Việc nên làm trong giai đoạn beforeLoad
 
-Ở giai đoạn này, không được phép thực hiện các thao tác cơ sở dữ liệu. Nó phù hợp để đăng ký các lớp tĩnh hoặc lắng nghe sự kiện.
+Giai đoạn này chưa thể thao tác database, phù hợp để đăng ký lớp tĩnh hoặc lắng nghe event.
 
-- `db.registerFieldTypes()` — Các kiểu trường tùy chỉnh
-- `db.registerModels()` — Đăng ký các lớp model tùy chỉnh
-- `db.registerRepositories()` — Đăng ký các lớp repository tùy chỉnh
-- `db.registerOperators()` — Đăng ký các toán tử lọc tùy chỉnh
-- `db.on()` — Lắng nghe các sự kiện liên quan đến cơ sở dữ liệu
+- `db.registerFieldTypes()` — Đăng ký kiểu Field tùy chỉnh
+- `db.registerModels()` — Đăng ký lớp Model tùy chỉnh
+- `db.registerRepositories()` — Đăng ký lớp Repository tùy chỉnh
+- `db.registerOperators()` — Đăng ký toán tử filter tùy chỉnh
+- `db.on()` — Lắng nghe các sự kiện liên quan đến database
 
-### Những việc nên làm trong giai đoạn load
+### Việc nên làm trong giai đoạn load
 
-Ở giai đoạn này, tất cả các định nghĩa lớp và sự kiện đã được tải trước đó, vì vậy việc tải các bảng dữ liệu sẽ không bị thiếu hoặc bỏ sót.
+Giai đoạn này tất cả các định nghĩa lớp và sự kiện đầu vào đã được load xong, lúc này load bảng dữ liệu sẽ không bị thiếu hoặc sót.
 
-- `db.defineCollection()` — Định nghĩa các bảng dữ liệu mới
+- `db.defineCollection()` — Định nghĩa bảng dữ liệu mới
 - `db.extendCollection()` — Mở rộng cấu hình bảng dữ liệu hiện có
 
-Nếu dùng để định nghĩa các bảng tích hợp của plugin, bạn nên đặt chúng trong thư mục `./src/server/collections`. Xem chi tiết tại [Bộ sưu tập](./collections.md).
+Tuy nhiên nếu định nghĩa bảng tích hợp sẵn của Plugin, khuyến khích đặt trong thư mục `./src/server/collections` hơn, xem chi tiết tại [Collections](./collections.md).
 
-## Thao Tác Dữ Liệu
+## Thao tác dữ liệu
 
 `Database` cung cấp hai cách chính để truy cập và thao tác dữ liệu:
 
-### Thao tác thông qua Repository
+### Thao tác qua Repository
 
 ```ts
 const repo = db.getRepository('users');
 const user = await repo.findOne({ filter: { id: 1 } });
 ```
 
-Lớp Repository thường được dùng để đóng gói logic nghiệp vụ, ví dụ như phân trang, lọc, kiểm tra quyền, v.v.
+Tầng Repository thường dùng để đóng gói logic nghiệp vụ như phân trang, filter, kiểm tra quyền, v.v.
 
-### Thao tác thông qua Model
+### Thao tác qua Model
 
 ```ts
 const UserModel = db.getModel('users');
 const user = await UserModel.findByPk(1);
 ```
 
-Lớp Model tương ứng trực tiếp với các thực thể ORM, phù hợp để thực hiện các thao tác cơ sở dữ liệu cấp thấp hơn.
+Tầng Model trực tiếp tương ứng với entity ORM, phù hợp để thực hiện các thao tác database ở mức thấp hơn.
 
-## Những Giai Đoạn Nào Có Thể Thực Hiện Thao Tác Cơ Sở Dữ Liệu?
+## Các giai đoạn nào có thể thao tác database?
 
 ### Vòng đời Plugin
 
-| Giai đoạn | Cho phép thao tác cơ sở dữ liệu |
-|------|----------------|
-| `staticImport` | Không |
-| `afterAdd` | Không |
-| `beforeLoad` | Không |
-| `load` | Không |
-| `install` | Có |
-| `beforeEnable` | Có |
-| `afterEnable` | Có |
-| `beforeDisable` | Có |
-| `afterDisable` | Có |
-| `remove` | Có |
-| `handleSyncMessage` | Có |
+| Giai đoạn | Có thể thao tác database |
+|-----------|--------------------------|
+| `staticImport` | No |
+| `afterAdd` | No |
+| `beforeLoad` | No |
+| `load` | No |
+| `install` | Yes |
+| `beforeEnable` | Yes |
+| `afterEnable` | Yes |
+| `beforeDisable` | Yes |
+| `afterDisable` | Yes |
+| `remove` | Yes |
+| `handleSyncMessage` | Yes |
 
 ### Sự kiện App
 
-| Giai đoạn | Cho phép thao tác cơ sở dữ liệu |
-|------|----------------|
-| `beforeLoad` | Không |
-| `afterLoad` | Không |
-| `beforeStart` | Có |
-| `afterStart` | Có |
-| `beforeInstall` | Không |
-| `afterInstall` | Có |
-| `beforeStop` | Có |
-| `afterStop` | Không |
-| `beforeDestroy` | Có |
-| `afterDestroy` | Không |
-| `beforeLoadPlugin` | Không |
-| `afterLoadPlugin` | Không |
-| `beforeEnablePlugin` | Có |
-| `afterEnablePlugin` | Có |
-| `beforeDisablePlugin` | Có |
-| `afterDisablePlugin` | Có |
-| `afterUpgrade` | Có |
+| Giai đoạn | Có thể thao tác database |
+|-----------|--------------------------|
+| `beforeLoad` | No |
+| `afterLoad` | No |
+| `beforeStart` | Yes |
+| `afterStart` | Yes |
+| `beforeInstall` | No |
+| `afterInstall` | Yes |
+| `beforeStop` | Yes |
+| `afterStop` | No |
+| `beforeDestroy` | Yes |
+| `afterDestroy` | No |
+| `beforeLoadPlugin` | No |
+| `afterLoadPlugin` | No |
+| `beforeEnablePlugin` | Yes |
+| `afterEnablePlugin` | Yes |
+| `beforeDisablePlugin` | Yes |
+| `afterDisablePlugin` | Yes |
+| `afterUpgrade` | Yes |
 
-### Sự kiện/Hook của Database
+### Sự kiện/Hook Database
 
-| Giai đoạn | Cho phép thao tác cơ sở dữ liệu |
-|------|----------------|
-| `beforeSync` | Không |
-| `afterSync` | Có |
-| `beforeValidate` | Có |
-| `afterValidate` | Có |
-| `beforeCreate` | Có |
-| `afterCreate` | Có |
-| `beforeUpdate` | Có |
-| `afterUpdate` | Có |
-| `beforeSave` | Có |
-| `afterSave` | Có |
-| `beforeDestroy` | Có |
-| `afterDestroy` | Có |
-| `afterCreateWithAssociations` | Có |
-| `afterUpdateWithAssociations` | Có |
-| `afterSaveWithAssociations` | Có |
-| `beforeDefineCollection` | Không |
-| `afterDefineCollection` | Không |
-| `beforeRemoveCollection` | Không |
-| `afterRemoveCollection` | Không |
+| Giai đoạn | Có thể thao tác database |
+|-----------|--------------------------|
+| `beforeSync` | No |
+| `afterSync` | Yes |
+| `beforeValidate` | Yes |
+| `afterValidate` | Yes |
+| `beforeCreate` | Yes |
+| `afterCreate` | Yes |
+| `beforeUpdate` | Yes |
+| `afterUpdate` | Yes |
+| `beforeSave` | Yes |
+| `afterSave` | Yes |
+| `beforeDestroy` | Yes |
+| `afterDestroy` | Yes |
+| `afterCreateWithAssociations` | Yes |
+| `afterUpdateWithAssociations` | Yes |
+| `afterSaveWithAssociations` | Yes |
+| `beforeDefineCollection` | No |
+| `afterDefineCollection` | No |
+| `beforeRemoveCollection` | No |
+| `afterRemoveCollection` | No |
+
+## Liên kết liên quan
+
+- [Collections](./collections.md) — Định nghĩa hoặc mở rộng cấu trúc bảng dữ liệu bằng code
+- [DataSourceManager](./data-source-manager.md) — Quản lý nhiều nguồn dữ liệu và instance database của chúng
+- [Context (Ngữ cảnh request)](./context.md) — Lấy instance `db` trong request
+- [Plugin](./plugin.md) — Vòng đời lớp Plugin, các phương thức thành viên và đối tượng `app`
+- [Event](./event.md) — Lắng nghe và xử lý sự kiện cấp ứng dụng và database

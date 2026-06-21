@@ -8,7 +8,7 @@
  */
 
 // @ts-nocheck
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Button, Dropdown } from 'antd';
 import { useT } from '../locale';
 import { AppstoreAddOutlined } from '@ant-design/icons';
@@ -16,7 +16,8 @@ import { Schema } from '@formily/react';
 import { usePlugin } from '@nocobase/client';
 import PluginAIClient from '..';
 import { ContextItem, WorkContextOptions } from './types';
-import { FlowModelContext, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
+import { FlowModelContext, useFlowContext } from '@nocobase/flow-engine';
+import { useChatMessageActions } from './chatbox/hooks/useChatMessageActions';
 
 const walkthrough = (
   workContexts: WorkContextOptions[],
@@ -48,6 +49,7 @@ export const AddContextButton: React.FC<{
   const ctx = useFlowContext<FlowModelContext>();
   const plugin = usePlugin('ai') as PluginAIClient;
   const workContext = plugin.aiManager.workContext;
+  const { syncContextAttachments } = useChatMessageActions();
 
   const [items, onClick] = useMemo(() => {
     const context = Array.from(workContext.getValues());
@@ -89,11 +91,16 @@ export const AddContextButton: React.FC<{
       workContextItem?.menu?.onClick?.({
         ctx,
         contextItems,
-        onAdd: (contextItem) =>
+        onAdd: (contextItem) => {
+          syncContextAttachments({
+            type: e.key,
+            ...contextItem,
+          });
           onAdd({
             type: e.key,
             ...contextItem,
-          }),
+          });
+        },
         onRemove: (uid: string) => {
           onRemove(e.key, uid);
         },
@@ -101,7 +108,7 @@ export const AddContextButton: React.FC<{
     };
 
     return [menuItems, onClick];
-  }, [ctx, t, workContext, onAdd, onRemove, ignore]);
+  }, [ctx, t, workContext, contextItems, onAdd, onRemove, ignore, syncContextAttachments]);
 
   return (
     <Dropdown

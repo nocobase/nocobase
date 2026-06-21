@@ -1,5 +1,7 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "DataSourceManager (FlowEngine)"
+description: "API DataSourceManager FlowEngine NocoBase: manajemen data source frontend, mendaftarkan dan mendapatkan instance data source."
+keywords: "DataSourceManager,FlowEngine,manajemen data source,data source frontend,NocoBase"
+---
 
-# Manajer Sumber Data
+# DataSourceManager

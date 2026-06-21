@@ -3,7 +3,15 @@
   "Execute a SQL statement in database.": "Execute a SQL statement in database.",
   "Include meta information of this query in result": "Include meta information of this query in result",
   "SQL action": "SQL action",
-  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).",
+  "Parameters": "Parameters",
+  "SQL parameters. Use $1, $2, etc. as placeholders in SQL and provide values here in order.": "SQL parameters. Use $1, $2, etc. as placeholders in SQL and provide values here in order.",
+  "Current node is using unsafe injection mode (legacy), which has SQL injection risks.": "Current node is using unsafe injection mode (legacy), which has SQL injection risks.",
+  "Migrate to safe mode": "Migrate to safe mode",
+  "SQL parameters. Use :name as placeholders in SQL and provide values here.": "SQL parameters. Use :name as placeholders in SQL and provide values here.",
+  "Name": "Name",
+  "Value": "Value",
+  "Add parameter": "Add parameter",
+  "SQL query result could be used through <1>JSON query node</1>.": "SQL query result could be used through <1>JSON query node</1>.",
   "Select a data source to execute SQL.": "Select a data source to execute SQL.",
   "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet."
 }

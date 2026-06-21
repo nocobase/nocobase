@@ -1,14 +1,16 @@
 ---
-displayName: "UI templates"
+displayName: "UI Template"
 packageName: '@nocobase/plugin-ui-templates'
+title: "UI Template"
+keywords: "UI Template,Plugin,NocoBase"
 supportedVersions:
   - 2.x
 description: |
-  Provides block templates and popup templates for UI reuse.
+  Cung cấp khả năng tái sử dụng template Block và template popup.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI templates
+# UI Template

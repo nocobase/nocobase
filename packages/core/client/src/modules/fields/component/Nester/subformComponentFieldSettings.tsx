@@ -14,9 +14,11 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFormBlockType } from '../../../../block-provider/FormBlockProvider';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollectionField } from '../../../../data-source';
-import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
+import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
+import { useFieldModeOptions } from '../../../../schema-component/hooks/useFieldModeOptions';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import {
+  useIsAddNewForm,
   useIsFieldReadPretty,
   useIsFormReadPretty,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';

@@ -1,3 +1,9 @@
+---
+title: "附件字段"
+description: "附件字段，关联文件表，存储图片、文档等文件。"
+keywords: "附件字段,field-attachment,文件关联,图片,文档,NocoBase"
+---
+
 # 附件字段
 
 ## 介绍

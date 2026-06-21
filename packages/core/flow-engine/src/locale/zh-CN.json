@@ -31,6 +31,7 @@
   "Failed to destroy model after creation error": "创建错误后销毁模型失败",
   "Failed to get action {{action}}": "获取 action '{{action}}' 失败",
   "Failed to get configurable flows for model {{model}}": "获取模型 '{{model}}' 的可配置 flows 失败",
+  "Attributes are unavailable before selecting a record": "选择记录之前，当前项属性不可用",
   "Failed to import FormDialog": "导入 FormDialog 失败",
   "Failed to import FormDialog or FormStep": "导入 FormDialog 或 FormStep 失败",
   "Failed to import Formily components": "导入 Formily 组件失败",

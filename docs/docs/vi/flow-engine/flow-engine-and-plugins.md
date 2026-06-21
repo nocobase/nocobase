@@ -1,32 +1,33 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "FlowEngine và Plugin"
+description: "FlowEngine và Plugin: Cách Plugin đăng ký FlowModel, mở rộng năng lực, tích hợp với hệ thống Plugin NocoBase, cách dùng registerFlowModel."
+keywords: "FlowEngine,Plugin,registerFlowModel,Mở rộng Plugin,Hệ thống Plugin NocoBase,NocoBase"
+---
 
+# Mối quan hệ giữa FlowEngine và Plugin
 
-# Mối quan hệ giữa FlowEngine và các plugin
-
-**FlowEngine** không phải là một plugin, mà là một **API cốt lõi** được cung cấp cho các plugin sử dụng, nhằm kết nối các khả năng cốt lõi với các tiện ích mở rộng nghiệp vụ.
-Trong NocoBase 2.0, tất cả các API đều được tập trung tại FlowEngine, và các plugin có thể truy cập FlowEngine thông qua `this.engine`.
+**FlowEngine** không phải là Plugin, mà được cung cấp dưới dạng **API kernel** cho Plugin sử dụng, dùng để kết nối năng lực kernel với mở rộng nghiệp vụ.
+Trong NocoBase 2.0, tất cả các API đều tập trung tại FlowEngine, Plugin có thể truy cập FlowEngine thông qua `this.engine`.
 
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    this.engine.registerModels({ ... });
+    this.engine.registerModelLoaders({ ... });
   }
 }
 ```
 
-## Context: Các khả năng toàn cục được quản lý tập trung
+## Context: Năng lực toàn cục được quản lý tập trung
 
-FlowEngine cung cấp một **Context** tập trung, tập hợp các API cần thiết cho nhiều tình huống khác nhau, ví dụ:
+FlowEngine cung cấp một **Context** tập trung, tổng hợp các API cần cho các tình huống khác nhau, ví dụ:
 
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    // Mở rộng định tuyến
+    // Mở rộng route
     this.engine.context.router;
 
-    // Thực hiện yêu cầu
+    // Gửi request
     this.engine.context.api.request();
 
     // Liên quan đến i18n
@@ -36,25 +37,25 @@ class PluginHello extends Plugin {
 }
 ```
 
-> **Lưu ý**:
-> Context trong 2.0 đã giải quyết các vấn đề sau từ 1.x:
+> **Ghi chú**:
+> Context trong 2.0 đã giải quyết các vấn đề sau của 1.x:
 >
-> *   Context phân tán, việc gọi không nhất quán
-> *   Context bị mất giữa các cây kết xuất React khác nhau
-> *   Chỉ có thể sử dụng bên trong các component React
+> * Context phân tán, gọi không thống nhất
+> * Mất context giữa các cây render React khác nhau
+> * Chỉ có thể dùng trong component React
 >
-> Xem thêm chi tiết trong **chương FlowContext**.
+> Xem thêm chi tiết tại **chương FlowContext**.
 
 ---
 
-## Các bí danh rút gọn trong plugin
+## Bí danh tắt trong Plugin
 
-Để đơn giản hóa việc gọi, FlowEngine cung cấp một số bí danh trên thể hiện của plugin:
+Để đơn giản hóa việc gọi, FlowEngine cung cấp một số bí danh trên instance Plugin:
 
-*   `this.context` → tương đương với `this.engine.context`
-*   `this.router` → tương đương với `this.engine.context.router`
+* `this.context` → tương đương với `this.engine.context`
+* `this.router` → tương đương với `this.engine.context.router`
 
-## Ví dụ: Mở rộng định tuyến
+## Ví dụ: Mở rộng route
 
 ```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
@@ -70,7 +71,7 @@ class PluginHelloModel extends Plugin {
   }
 }
 
-// Dành cho các tình huống ví dụ và thử nghiệm
+// Dùng cho ví dụ và tình huống test
 const app = createMockClient({
   plugins: [PluginHelloModel],
 });
@@ -80,6 +81,6 @@ export default app.getRootComponent();
 
 Trong ví dụ này:
 
-*   Plugin đã mở rộng định tuyến cho đường dẫn `/` bằng phương thức `this.router.add`;
-*   `createMockClient` cung cấp một ứng dụng Mock sạch, thuận tiện cho việc minh họa và thử nghiệm;
-*   `app.getRootComponent()` trả về component gốc, có thể gắn trực tiếp vào trang.
+* Plugin mở rộng route đường dẫn `/` thông qua phương thức `this.router.add`;
+* `createMockClient` cung cấp một ứng dụng Mock sạch, tiện cho ví dụ và test;
+* `app.getRootComponent()` trả về root component, có thể mount trực tiếp lên trang.

@@ -1,3 +1,9 @@
+---
+title: "ctx.setValue()"
+description: "ctx.setValue() 设置表单字段或变量值，支持 path、scope、silent，用于联动、预填、动态更新。"
+keywords: "ctx.setValue,表单字段,path,scope,silent,联动,预填,RunJS,NocoBase"
+---
+
 # ctx.setValue()
 
 在 JSField、JSItem 等可编辑字段场景中，设置当前字段的值。与 `ctx.getValue()` 配合可实现与表单的双向绑定。

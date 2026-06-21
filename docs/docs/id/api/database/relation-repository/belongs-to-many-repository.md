@@ -1,33 +1,35 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "BelongsToManyRepository"
+description: "Repository relasi BelongsToMany NocoBase: menangani CRUD untuk relasi many-to-many."
+keywords: "BelongsToManyRepository,BelongsToMany,many-to-many,Repository,NocoBase"
+---
 
 # BelongsToManyRepository
 
-`BelongsToManyRepository` adalah sebuah `Relation Repository` yang digunakan untuk menangani hubungan `BelongsToMany`.
+`BelongsToManyRepository` adalah `Relation Repository` yang digunakan untuk menangani relasi `BelongsToMany`.
 
-Berbeda dengan jenis hubungan lainnya, hubungan `BelongsToMany` perlu dicatat melalui tabel perantara (junction table).
-Saat mendefinisikan hubungan asosiasi di NocoBase, tabel perantara dapat dibuat secara otomatis, atau Anda dapat menentukannya secara eksplisit.
+Berbeda dari tipe relasi lainnya, relasi tipe `BelongsToMany` perlu dicatat melalui tabel perantara.
+Saat mendefinisikan asosiasi di NocoBase, tabel perantara dapat dibuat secara otomatis, atau ditentukan secara eksplisit.
 
-## Metode Kelas
+## Method Class
 
 ### `find()`
 
-Mencari objek terkait (associated objects).
+Mencari objek terkait
 
-**Tanda Tangan**
+**Signature**
 
 - `async find(options?: FindOptions): Promise<M[]>`
 
 **Detail**
 
-Parameter kueri (query parameters) konsisten dengan [`Repository.find()`](../repository.md#find).
+Parameter query konsisten dengan [`Repository.find()`](../repository.md#find).
 
 ### `findOne()`
 
-Mencari objek terkait, hanya mengembalikan satu rekaman.
+Mencari objek terkait, hanya mengembalikan satu record
 
-**Tanda Tangan**
+**Signature**
 
 - `async findOne(options?: FindOneOptions): Promise<M>`
 
@@ -35,9 +37,9 @@ Mencari objek terkait, hanya mengembalikan satu rekaman.
 
 ### `count()`
 
-Mengembalikan jumlah rekaman yang sesuai dengan kondisi kueri.
+Mengembalikan jumlah record yang sesuai dengan kondisi query
 
-**Tanda Tangan**
+**Signature**
 
 - `async count(options?: CountOptions)`
 
@@ -53,9 +55,9 @@ interface CountOptions
 
 ### `findAndCount()`
 
-Mengkueri basis data untuk mendapatkan kumpulan data (dataset) dan jumlah total (count) berdasarkan kondisi tertentu.
+Query data set dan jumlah hasil dari database berdasarkan kondisi tertentu.
 
-**Tanda Tangan**
+**Signature**
 
 - `async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]>`
 
@@ -67,9 +69,9 @@ type FindAndCountOptions = CommonFindOptions;
 
 ### `create()`
 
-Membuat objek terkait.
+Membuat objek terkait
 
-**Tanda Tangan**
+**Signature**
 
 - `async create(options?: CreateOptions): Promise<M>`
 
@@ -77,9 +79,9 @@ Membuat objek terkait.
 
 ### `update()`
 
-Memperbarui objek terkait yang memenuhi kondisi.
+Memperbarui objek terkait yang sesuai dengan kondisi
 
-**Tanda Tangan**
+**Signature**
 
 - `async update(options?: UpdateOptions): Promise<M>`
 
@@ -87,9 +89,9 @@ Memperbarui objek terkait yang memenuhi kondisi.
 
 ### `destroy()`
 
-Menghapus objek terkait yang memenuhi kondisi.
+Menghapus objek terkait yang sesuai dengan kondisi
 
-**Tanda Tangan**
+**Signature**
 
 - `async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<Boolean>`
 
@@ -97,9 +99,9 @@ Menghapus objek terkait yang memenuhi kondisi.
 
 ### `add()`
 
-Menambahkan objek terkait baru.
+Menambahkan objek asosiasi baru
 
-**Tanda Tangan**
+**Signature**
 
 - `async add(
 options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions
@@ -121,7 +123,7 @@ interface AssociatedOptions extends Transactionable {
 
 **Detail**
 
-Anda dapat langsung meneruskan `targetKey` dari objek terkait, atau meneruskan `targetKey` beserta nilai-nilai kolom dari tabel perantara.
+Anda dapat memasukkan `targetKey` dari objek terkait secara langsung, atau memasukkan `targetKey` bersama dengan nilai field tabel perantara.
 
 **Contoh**
 
@@ -140,10 +142,10 @@ const p1 = await Post.repository.create({
 
 const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
-// Meneruskan targetKey
+// Memasukkan targetKey
 PostTagRepository.add([t1.id, t2.id]);
 
-// Meneruskan kolom tabel perantara
+// Memasukkan field tabel perantara
 PostTagRepository.add([
   [t1.id, { tagged_at: '123' }],
   [t2.id, { tagged_at: '456' }],
@@ -152,9 +154,9 @@ PostTagRepository.add([
 
 ### `set()`
 
-Mengatur objek terkait.
+Mengatur objek terkait
 
-**Tanda Tangan**
+**Signature**
 
 - async set(
   options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions,
@@ -162,13 +164,13 @@ Mengatur objek terkait.
 
 **Detail**
 
-Parameter sama dengan [add()](#add).
+Parameter sama dengan [add()](#add)
 
 ### `remove()`
 
-Menghapus hubungan asosiasi dengan objek yang diberikan.
+Menghapus asosiasi dengan objek yang diberikan
 
-**Tanda Tangan**
+**Signature**
 
 - `async remove(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
@@ -182,14 +184,14 @@ interface AssociatedOptions extends Transactionable {
 
 ### `toggle()`
 
-Mengubah status objek terkait (toggle associated objects).
+Toggle objek terkait.
 
-Dalam beberapa skenario bisnis, seringkali diperlukan untuk mengubah status objek terkait. Misalnya, pengguna dapat memfavoritkan suatu produk, membatalkan favorit, dan memfavoritkan kembali. Metode `toggle` dapat digunakan untuk mengimplementasikan fungsionalitas serupa dengan cepat.
+Pada beberapa skenario bisnis, sering kali perlu toggle objek terkait, contohnya user menyimpan produk, user dapat membatalkan favorit, atau menambahkannya kembali ke favorit. Menggunakan method `toggle` dapat dengan cepat mengimplementasikan fungsi serupa.
 
-**Tanda Tangan**
+**Signature**
 
 - `async toggle(options: TargetKey | { tk?: TargetKey; transaction?: Transaction }): Promise<void>`
 
 **Detail**
 
-Metode `toggle` secara otomatis memeriksa apakah objek terkait sudah ada. Jika ada, objek akan dihapus; jika tidak ada, objek akan ditambahkan.
+Method `toggle` akan otomatis menentukan apakah objek terkait sudah ada, jika ada maka dihapus, jika tidak ada maka ditambahkan.

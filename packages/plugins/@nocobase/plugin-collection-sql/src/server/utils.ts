@@ -22,6 +22,13 @@ export const checkSQL = (sql: string) => {
     'pg_reload_conf',
     'pg_sleep',
     'generate_series',
+    'pg_catalog',
+    'pg_shadow',
+    'pg_authid',
+    'pg_auth_members',
+    'pg_roles',
+    'pg_stat_activity',
+    'information_schema',
 
     // MySQL
     'LOAD_FILE',
@@ -33,7 +40,7 @@ export const checkSQL = (sql: string) => {
     'sqlite3_load_extension',
     'load_extension',
   ];
-  sql = sql.trim().split(';').shift();
+  sql = sql.trim().split(';').shift() || '';
   if (!/^select/i.test(sql) && !/^with([\s\S]+)select([\s\S]+)/i.test(sql)) {
     throw new Error('Only supports SELECT statements or WITH clauses');
   }

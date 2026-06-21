@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useRecord } from '@nocobase/client';
 import { NAMESPACE } from '../../locale';
 
-export const UnSupportFields = ({dataSource}) => {
+export const UnSupportFields = ({ dataSource }) => {
   const { t } = useTranslation();
   const columns = [
     {

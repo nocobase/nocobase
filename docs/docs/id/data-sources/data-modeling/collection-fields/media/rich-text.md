@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Rich Text"
+description: "Field Rich Text, mendukung edit rich text dan konten yang diformat."
+keywords: "rich text,rich-text,field rich text,konten yang diformat,NocoBase"
+---
 
-# Teks Kaya
+# Rich Text
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512181002](https://static-docs.nocobase.com/20240512181002.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

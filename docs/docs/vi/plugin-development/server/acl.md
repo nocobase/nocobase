@@ -1,61 +1,62 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Kiểm soát quyền ACL (Server)"
+description: "ACL phía server NocoBase: registerSnippet, allow/deny, đoạn quyền, quyền role, middleware, đánh giá điều kiện."
+keywords: "ACL,Kiểm soát quyền,registerSnippet,allow,deny,Đoạn quyền,Quyền role,NocoBase"
+---
 
 # Kiểm soát quyền ACL
 
-ACL (Access Control List) được sử dụng để kiểm soát quyền thao tác tài nguyên. Bạn có thể cấp quyền cho các vai trò, hoặc bỏ qua các ràng buộc vai trò để trực tiếp giới hạn quyền. Hệ thống ACL cung cấp một cơ chế quản lý quyền linh hoạt, hỗ trợ các đoạn quyền (snippet), middleware, đánh giá điều kiện và nhiều phương pháp khác.
+ACL (Access Control List) dùng để kiểm soát quyền thao tác resource. Bạn có thể gán quyền cho role, hoặc bỏ qua giới hạn role để ràng buộc quyền trực tiếp. Hệ thống ACL cung cấp cơ chế quản lý quyền linh hoạt, hỗ trợ nhiều cách như đoạn quyền, middleware, đánh giá điều kiện.
 
-:::tip Lưu ý
+:::tip Mẹo
 
-Các đối tượng ACL thuộc về nguồn dữ liệu (`dataSource.acl`). ACL của nguồn dữ liệu chính có thể được truy cập nhanh chóng qua `app.acl`. Để biết cách sử dụng ACL của các nguồn dữ liệu khác, vui lòng xem chương [Quản lý nguồn dữ liệu](./data-source-manager.md).
+Đối tượng ACL thuộc về nguồn dữ liệu (`dataSource.acl`), ACL của nguồn dữ liệu chính có thể truy cập nhanh thông qua `app.acl`. Cách dùng ACL của các nguồn dữ liệu khác xem chi tiết tại [DataSourceManager](./data-source-manager.md).
 
 :::
 
 ## Đăng ký đoạn quyền (Snippet)
 
-Đoạn quyền (Snippet) cho phép bạn đăng ký các tổ hợp quyền thường dùng thành các đơn vị quyền có thể tái sử dụng. Sau khi một vai trò được liên kết với một đoạn quyền, nó sẽ có được tập hợp các quyền tương ứng, giúp giảm cấu hình lặp lại và nâng cao hiệu quả quản lý quyền.
+Đoạn quyền (Snippet) có thể đăng ký các tổ hợp quyền phổ biến thành đơn vị quyền có thể tái sử dụng. Sau khi role được gắn Snippet, sẽ có được tổ hợp quyền tương ứng, giảm cấu hình lặp lại.
 
 ```ts
 acl.registerSnippet({
-  name: 'ui.customRequests', // Tiền tố ui.* cho biết các quyền có thể cấu hình trên giao diện
-  actions: ['customRequests:*'], // Các thao tác tài nguyên tương ứng, hỗ trợ ký tự đại diện
+  name: 'ui.customRequests', // Tiền tố ui.* biểu thị quyền có thể cấu hình trên giao diện
+  actions: ['customRequests:*'], // Thao tác resource tương ứng, hỗ trợ wildcard
 });
 ```
 
-## Quyền bỏ qua ràng buộc vai trò (allow)
+## Quyền bỏ qua ràng buộc role (allow)
 
-`acl.allow()` được sử dụng để cho phép một số thao tác bỏ qua ràng buộc vai trò. Điều này phù hợp với các API công khai, các tình huống yêu cầu đánh giá quyền động, hoặc các trường hợp cần đánh giá quyền dựa trên ngữ cảnh yêu cầu.
+`acl.allow()` được dùng để cho một số thao tác bỏ qua ràng buộc role, áp dụng cho API công khai, các tình huống cần đánh giá quyền động, hoặc cần đánh giá quyền dựa trên context request.
 
 ```ts
-// Truy cập công khai, không yêu cầu đăng nhập
+// Truy cập công khai, không cần đăng nhập
 acl.allow('app', 'getLang', 'public');
 
-// Chỉ người dùng đã đăng nhập mới có thể truy cập
+// Người dùng đã đăng nhập là có thể truy cập
 acl.allow('app', 'getInfo', 'loggedIn');
 
-// Dựa trên điều kiện tùy chỉnh
+// Đánh giá dựa trên điều kiện tùy chỉnh
 acl.allow('orders', ['create', 'update'], (ctx) => {
   return ctx.auth.user?.isAdmin ?? false;
 });
 ```
 
-**Mô tả tham số `condition`:**
+**Mô tả tham số condition:**
 
-- `'public'`：Bất kỳ người dùng nào (bao gồm cả người dùng chưa đăng nhập) đều có thể truy cập, không cần bất kỳ xác thực nào.
-- `'loggedIn'`：Chỉ người dùng đã đăng nhập mới có thể truy cập, yêu cầu danh tính người dùng hợp lệ.
-- `(ctx) => Promise<boolean>` hoặc `(ctx) => boolean`：Hàm tùy chỉnh, động xác định xem có cho phép truy cập hay không dựa trên ngữ cảnh yêu cầu, có thể triển khai logic quyền phức tạp.
+- `'public'`: Bất kỳ người dùng nào (bao gồm người dùng chưa đăng nhập) đều có thể truy cập, không cần xác thực
+- `'loggedIn'`: Chỉ người dùng đã đăng nhập có thể truy cập, cần định danh người dùng hợp lệ
+- `(ctx) => Promise<boolean>` hoặc `(ctx) => boolean`: Hàm tùy chỉnh, đánh giá động có cho phép truy cập hay không dựa trên context request, có thể triển khai logic quyền phức tạp
 
 ## Đăng ký middleware quyền (use)
 
-`acl.use()` được sử dụng để đăng ký middleware quyền tùy chỉnh, cho phép chèn logic tùy chỉnh vào luồng kiểm tra quyền. Thường được sử dụng kết hợp với `ctx.permission` để định nghĩa các quy tắc quyền tùy chỉnh. Điều này phù hợp với các tình huống yêu cầu kiểm soát quyền phi truyền thống, chẳng hạn như biểu mẫu công khai cần xác minh mật khẩu tùy chỉnh, kiểm tra quyền động dựa trên tham số yêu cầu, v.v.
+`acl.use()` được dùng để đăng ký middleware quyền tùy chỉnh, có thể chèn logic tùy chỉnh vào quy trình kiểm tra quyền. Thường được dùng kết hợp với `ctx.permission`, dùng cho quy tắc quyền tùy chỉnh. Áp dụng cho các tình huống cần triển khai kiểm soát quyền không thông thường, ví dụ form công khai cần xác minh mật khẩu tùy chỉnh, đánh giá quyền động dựa trên tham số request, v.v.
 
-**Các tình huống ứng dụng điển hình:**
+**Tình huống áp dụng điển hình:**
 
-- Tình huống biểu mẫu công khai: Không có người dùng, không có vai trò, nhưng cần ràng buộc quyền thông qua mật khẩu tùy chỉnh.
-- Kiểm soát quyền dựa trên tham số yêu cầu, địa chỉ IP và các điều kiện khác.
-- Các quy tắc quyền tùy chỉnh, bỏ qua hoặc sửa đổi luồng kiểm tra quyền mặc định.
+- Tình huống form công khai: Không có user, không có role, nhưng cần ràng buộc quyền qua mật khẩu tùy chỉnh
+- Kiểm soát quyền dựa trên tham số request, địa chỉ IP, v.v.
+- Quy tắc quyền tùy chỉnh, bỏ qua hoặc sửa đổi quy trình kiểm tra quyền mặc định
 
 **Kiểm soát quyền thông qua `ctx.permission`:**
 
@@ -63,7 +64,7 @@ acl.allow('orders', ['create', 'update'], (ctx) => {
 acl.use(async (ctx, next) => {
   const { resourceName, actionName } = ctx.action;
   
-  // Ví dụ: Biểu mẫu công khai cần xác minh mật khẩu để bỏ qua kiểm tra quyền
+  // Ví dụ: Form công khai cần xác minh mật khẩu rồi bỏ qua kiểm tra quyền
   if (resourceName === 'publicForms' && actionName === 'submit') {
     const password = ctx.request.body?.password;
     if (password === 'your-secret-password') {
@@ -76,19 +77,19 @@ acl.use(async (ctx, next) => {
     }
   }
   
-  // Thực hiện kiểm tra quyền (tiếp tục luồng ACL)
+  // Thực thi kiểm tra quyền (tiếp tục quy trình ACL)
   await next();
 });
 ```
 
 **Mô tả thuộc tính `ctx.permission`:**
 
-- `skip: true`：Bỏ qua các kiểm tra quyền ACL tiếp theo, trực tiếp cho phép truy cập.
-- Có thể được thiết lập động trong middleware dựa trên logic tùy chỉnh để đạt được kiểm soát quyền linh hoạt.
+- `skip: true`: Bỏ qua kiểm tra quyền ACL tiếp theo, cho phép truy cập trực tiếp
+- Có thể đặt động trong middleware dựa trên logic tùy chỉnh, triển khai kiểm soát quyền linh hoạt
 
-## Thêm ràng buộc dữ liệu cố định cho các thao tác cụ thể (addFixedParams)
+## Thêm ràng buộc dữ liệu cố định cho thao tác cụ thể (addFixedParams)
 
-`addFixedParams` có thể thêm các ràng buộc phạm vi dữ liệu (filter) cố định cho các thao tác của một số tài nguyên. Các ràng buộc này sẽ bỏ qua hạn chế vai trò và được áp dụng trực tiếp, thường được sử dụng để bảo vệ dữ liệu hệ thống quan trọng.
+`addFixedParams` có thể thêm ràng buộc phạm vi dữ liệu cố định (filter) cho thao tác của một số resource, các ràng buộc này sẽ bỏ qua giới hạn role và có hiệu lực trực tiếp, thường dùng để bảo vệ dữ liệu quan trọng của hệ thống.
 
 ```ts
 acl.addFixedParams('roles', 'destroy', () => {
@@ -103,69 +104,85 @@ acl.addFixedParams('roles', 'destroy', () => {
   };
 });
 
-// Ngay cả khi người dùng có quyền xóa vai trò, họ cũng không thể xóa các vai trò hệ thống như root, admin, member.
+// Ngay cả khi user có quyền xóa role, cũng không thể xóa các role hệ thống root, admin, member
 ```
 
-> **Mẹo:** `addFixedParams` có thể được sử dụng để ngăn dữ liệu nhạy cảm bị xóa hoặc sửa đổi do nhầm lẫn, chẳng hạn như các vai trò hệ thống tích hợp sẵn, tài khoản quản trị viên, v.v. Các ràng buộc này sẽ có hiệu lực kết hợp với quyền vai trò, đảm bảo rằng ngay cả khi có quyền, dữ liệu được bảo vệ cũng không thể bị thao tác.
+:::tip Mẹo
 
-## Kiểm tra quyền (can)
+`addFixedParams` có thể dùng để ngăn dữ liệu nhạy cảm bị xóa hoặc sửa nhầm, ví dụ role tích hợp sẵn của hệ thống, tài khoản admin, v.v. Các ràng buộc này sẽ chồng lên quyền role và có hiệu lực, đảm bảo ngay cả khi có quyền cũng không thể thao tác lên dữ liệu được bảo vệ.
 
-`acl.can()` được sử dụng để kiểm tra xem một vai trò có quyền thực hiện thao tác được chỉ định hay không, trả về đối tượng kết quả quyền hoặc `null`. Thường được sử dụng trong logic nghiệp vụ để động kiểm tra quyền, ví dụ như trong middleware hoặc trình xử lý thao tác để quyết định xem có cho phép thực hiện một số thao tác hay không dựa trên vai trò.
+:::
+
+## Đánh giá quyền (can)
+
+`acl.can()` được dùng để đánh giá role nào đó có quyền thực thi thao tác đã chỉ định không, trả về đối tượng kết quả quyền hoặc `null`. Thường được dùng trong middleware hoặc Handler của thao tác, để đánh giá động có cho phép thực thi một số thao tác hay không dựa trên role.
 
 ```ts
 const result = acl.can({
-  roles: ['admin', 'manager'], // Có thể truyền một vai trò hoặc một mảng vai trò
+  roles: ['admin', 'manager'], // Có thể truyền một role hoặc mảng role
   resource: 'orders',
   action: 'delete',
 });
 
 if (result) {
-  console.log(`Vai trò ${result.role} có thể thực hiện thao tác ${result.action}`);
-  // result.params chứa các tham số cố định được thiết lập thông qua addFixedParams
+  console.log(`Role ${result.role} có thể thực thi thao tác ${result.action}`);
+  // result.params chứa các tham số cố định được đặt qua addFixedParams
   console.log('Tham số cố định:', result.params);
 } else {
-  console.log('Không có quyền thực hiện thao tác này');
+  console.log('Không có quyền thực thi thao tác này');
 }
 ```
 
-> **Mẹo:** Nếu truyền nhiều vai trò, hệ thống sẽ kiểm tra từng vai trò tuần tự và trả về kết quả của vai trò đầu tiên có quyền.
+:::tip Mẹo
+
+Nếu truyền nhiều role, sẽ kiểm tra từng role, trả về kết quả hợp của các role.
+
+:::
 
 **Định nghĩa kiểu:**
 
 ```ts
 interface CanArgs {
-  role?: string;      // Một vai trò
-  roles?: string[];   // Nhiều vai trò (sẽ kiểm tra tuần tự, trả về vai trò đầu tiên có quyền)
-  resource: string;   // Tên tài nguyên
+  role?: string;      // Một role
+  roles?: string[];   // Nhiều role (sẽ kiểm tra từng cái, trả về role có quyền đầu tiên)
+  resource: string;   // Tên resource
   action: string;    // Tên thao tác
 }
 
 interface CanResult {
-  role: string;       // Vai trò có quyền
-  resource: string;   // Tên tài nguyên
+  role: string;       // Role có quyền
+  resource: string;   // Tên resource
   action: string;    // Tên thao tác
-  params?: any;       // Thông tin tham số cố định (nếu được thiết lập thông qua addFixedParams)
+  params?: any;       // Thông tin tham số cố định (nếu được đặt qua addFixedParams)
 }
 ```
 
 ## Đăng ký thao tác có thể cấu hình (setAvailableAction)
 
-Nếu bạn muốn các thao tác tùy chỉnh có thể được cấu hình trên giao diện (ví dụ: hiển thị trong trang quản lý vai trò), bạn cần sử dụng `setAvailableAction` để đăng ký chúng. Các thao tác đã đăng ký sẽ xuất hiện trong giao diện cấu hình quyền, nơi quản trị viên có thể cấu hình quyền thao tác cho các vai trò khác nhau.
+Nếu bạn muốn thao tác tùy chỉnh có thể cấu hình quyền trên giao diện (ví dụ hiển thị trong trang "Quản lý role"), cần đăng ký bằng `setAvailableAction`. Thao tác đã đăng ký sẽ xuất hiện trong giao diện cấu hình quyền, admin có thể cấu hình quyền thao tác cho các role khác nhau trên giao diện.
 
 ```ts
 acl.setAvailableAction('importXlsx', {
-  displayName: '{{t("Import")}}', // Tên hiển thị trên giao diện, hỗ trợ quốc tế hóa
+  displayName: '{{t("Import")}}', // Tên hiển thị giao diện, hỗ trợ i18n
   type: 'new-data',               // Loại thao tác
-  onNewRecord: true,              // Có hiệu lực khi tạo bản ghi mới hay không
+  onNewRecord: true,              // Có hiệu lực khi tạo bản ghi mới
 });
 ```
 
 **Mô tả tham số:**
 
-- **displayName**: Tên hiển thị trong giao diện cấu hình quyền, hỗ trợ quốc tế hóa (sử dụng định dạng `{{t("key")}}`).
-- **type**: Loại thao tác, quyết định phân loại thao tác này trong cấu hình quyền.
-  - `'new-data'`：Các thao tác tạo dữ liệu mới (ví dụ: nhập, thêm mới, v.v.).
-  - `'existing-data'`：Các thao tác sửa đổi dữ liệu hiện có (ví dụ: cập nhật, xóa, v.v.).
-- **onNewRecord**: Có hiệu lực khi tạo bản ghi mới hay không, chỉ có giá trị đối với loại `'new-data'`.
+- **displayName**: Tên hiển thị trong giao diện cấu hình quyền, hỗ trợ i18n (dùng định dạng `{{t("key")}}`)
+- **type**: Loại thao tác, quyết định phân loại của thao tác này trong cấu hình quyền
+  - `'new-data'`: Thao tác tạo dữ liệu mới (như import, thêm mới, v.v.)
+  - `'existing-data'`: Thao tác sửa dữ liệu đã có (như cập nhật, xóa, v.v.)
+- **onNewRecord**: Có hiệu lực khi tạo bản ghi mới, chỉ có hiệu lực với loại `'new-data'`
 
-Sau khi đăng ký, thao tác này sẽ xuất hiện trong giao diện cấu hình quyền, nơi quản trị viên có thể cấu hình quyền của thao tác này trong trang quản lý vai trò.
+Sau khi đăng ký, thao tác sẽ xuất hiện trong giao diện cấu hình quyền, admin có thể cấu hình quyền của thao tác này trong trang "Quản lý role".
+
+## Liên kết liên quan
+
+- [ResourceManager](./resource-manager.md) — Đăng ký interface tùy chỉnh và thao tác resource
+- [Plugin](./plugin.md) — Đăng ký quyền trong vòng đời Plugin
+- [Context Request](./context.md) — Lấy thông tin role và quyền hiện tại trong request
+- [Middleware](./middleware.md) — Đăng ký và sử dụng middleware ACL
+- [DataSourceManager](./data-source-manager.md) — Mỗi nguồn dữ liệu có instance ACL độc lập riêng

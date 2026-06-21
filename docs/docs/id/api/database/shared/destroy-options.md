@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "DestroyOptions"
+description: "Parameter method destroy Repository NocoBase: filter, filterByTk, truncate, transaction."
+keywords: "DestroyOptions,Repository,destroy,filter,NocoBase"
+---
 
 **Tipe**
 
@@ -15,7 +17,7 @@ interface DestroyOptions extends SequelizeDestroyOptions {
 
 **Detail**
 
-- `filter`: Menentukan kondisi filter untuk catatan yang akan dihapus. Untuk penggunaan detail Filter, silakan lihat metode [`find()`](#find).
-- `filterByTk`: Menentukan kondisi filter untuk catatan yang akan dihapus berdasarkan TargetKey.
-- `truncate`: Apakah akan mengosongkan data koleksi. Ini hanya berlaku jika parameter `filter` atau `filterByTk` tidak disediakan.
-- `transaction`: Objek transaksi. Jika parameter transaksi tidak diteruskan, metode ini akan secara otomatis membuat transaksi internal.
+- `filter`: Menentukan kondisi filter untuk record yang akan dihapus. Untuk penggunaan detail Filter, lihat method [`find()`](#find).
+- `filterByTk`: Menentukan kondisi filter berdasarkan TargetKey untuk record yang akan dihapus.
+- `truncate`: Apakah mengosongkan data tabel, berlaku saat tidak ada parameter `filter` atau `filterByTk` yang dimasukkan.
+- `transaction`: Objek transaction. Jika tidak ada parameter transaction yang dimasukkan, method ini akan otomatis membuat transaction internal.

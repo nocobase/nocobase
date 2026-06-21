@@ -84,6 +84,7 @@ export class BaseAuth extends Auth {
       this.ctx.throw(401, {
         message: this.ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }),
         code: AuthErrorCode.EMPTY_TOKEN,
+        logLevel: 'trace',
       });
     }
 
@@ -162,7 +163,7 @@ export class BaseAuth extends Auth {
       tokenStatus = 'expired';
     }
 
-    if (tokenStatus === 'valid' && user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
+    if (user.passwordChangeTz && iat * 1000 < user.passwordChangeTz) {
       this.ctx.throw(401, {
         message: this.ctx.t('User password changed, please signin again.', { ns: localeNamespace }),
         code: AuthErrorCode.INVALID_TOKEN,
@@ -268,7 +269,7 @@ export class BaseAuth extends Auth {
   }
 
   async signNewToken(userId: number) {
-    const tokenInfo = await this.tokenController.add({ userId });
+    const tokenInfo = await this.tokenController.add({ userId, authenticator: this.authenticator?.name });
     const expiresIn = Math.floor((await this.tokenController.getConfig()).tokenExpirationTime / 1000);
     const token = this.jwt.sign(
       {

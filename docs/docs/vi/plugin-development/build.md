@@ -1,35 +1,91 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+---
+title: "Build và đóng gói"
+description: "Build và đóng gói Plugin NocoBase: yarn build, yarn nocobase tar, cấu hình tùy chỉnh build.config.ts, đóng gói client với Rsbuild, đóng gói server với tsup."
+keywords: "build plugin,đóng gói plugin,yarn build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
+---
+
+# Build và đóng gói
+
+Sau khi phát triển Plugin xong, bạn cần qua hai bước build (biên dịch source code) và đóng gói (tạo `.tar.gz`) thì mới có thể phân phối sang ứng dụng NocoBase khác để sử dụng.
+
+## Build Plugin
+
+Build sẽ biên dịch source code TypeScript trong `src/` thành JavaScript — code client được đóng gói bằng Rsbuild, code server được đóng gói bằng tsup:
+
+```bash
+yarn build @my-project/plugin-hello
+```
+
+Sản phẩm build sẽ được output vào thư mục `dist/` ở thư mục gốc của Plugin.
+
+:::tip Mẹo
+
+Nếu Plugin được tạo trong repo source code, lần build đầu tiên sẽ kích hoạt type check toàn repo, có thể mất khá nhiều thời gian. Hãy đảm bảo dependency đã được cài đặt và repo ở trạng thái build được.
+
 :::
 
+## Đóng gói Plugin
 
-# Xây dựng
+Đóng gói sẽ nén sản phẩm build thành một file `.tar.gz`, thuận tiện cho việc upload sang môi trường khác:
 
-## Cấu hình đóng gói tùy chỉnh
+```bash
+yarn nocobase tar @my-project/plugin-hello
+```
 
-Nếu bạn muốn tùy chỉnh cấu hình đóng gói, bạn có thể tạo một tệp `build.config.ts` trong thư mục gốc của plugin với nội dung như sau:
+File đóng gói mặc định được output vào `storage/tar/@my-project/plugin-hello.tar.gz`.
 
-```js
+Bạn cũng có thể dùng tham số `--tar` để gộp build và đóng gói thành một bước:
+
+```bash
+yarn build @my-project/plugin-hello --tar
+```
+
+## Upload sang ứng dụng NocoBase khác
+
+Upload và giải nén file `.tar.gz` vào thư mục `./storage/plugins` của ứng dụng đích. Các bước chi tiết xem tại [Cài đặt và nâng cấp Plugin](../get-started/install-upgrade-plugins.mdx).
+
+### Tự động kích hoạt Plugin sau khi upload
+
+Sau khi upload, Plugin mặc định sẽ không được tự động kích hoạt — nó sẽ xuất hiện trong "Trình quản lý Plugin" và cần bạn bật thủ công. Nếu bạn đang duy trì ứng dụng NocoBase của riêng mình và muốn Plugin được kích hoạt mặc định cùng với ứng dụng, bạn có thể dùng biến môi trường `APPEND_PRESET_BUILT_IN_PLUGINS` (Thêm Plugin tích hợp mặc định) để kiểm soát, xem cách dùng tại [Đặt Plugin thành mặc định hoặc tự động kích hoạt](./write-your-first-plugin.md#đặt-plugin-thành-mặc-định-hoặc-tự-động-kích-hoạt-tùy-chọn).
+
+## Cấu hình build tùy chỉnh
+
+Thường thì cấu hình build mặc định là đủ dùng. Nếu bạn cần tùy chỉnh — như sửa entry đóng gói, thêm alias, điều chỉnh tùy chọn nén, v.v. — bạn có thể tạo file `build.config.ts` trong thư mục gốc Plugin:
+
+```ts
 import { defineConfig } from '@nocobase/build';
 
 export default defineConfig({
-  modifyViteConfig: (config) => {
-    // vite được sử dụng để đóng gói mã nguồn phía client (src/client)
-
-    // Để sửa đổi cấu hình Vite, bạn có thể tham khảo tại: https://vitejs.dev/guide/
-    return config
+  modifyRsbuildConfig: (config) => {
+    // Sửa cấu hình đóng gói Rsbuild của client (src/client-v2)
+    // Tham khảo: https://rsbuild.rs/guide/configuration/rsbuild
+    return config;
   },
   modifyTsupConfig: (config) => {
-    // tsup được sử dụng để đóng gói mã nguồn phía server (src/server)
-
-    // Để sửa đổi cấu hình tsup, bạn có thể tham khảo tại: https://tsup.egoist.dev/#using-custom-configuration
-    return config
+    // Sửa cấu hình đóng gói tsup của server (src/server)
+    // Tham khảo: https://tsup.egoist.dev/#using-custom-configuration
+    return config;
   },
   beforeBuild: (log) => {
-    // Hàm callback này sẽ chạy trước khi quá trình đóng gói bắt đầu, cho phép bạn thực hiện một số thao tác tiền đóng gói.
+    // Callback trước khi bắt đầu build, ví dụ dọn file tạm, sinh code, v.v.
   },
-  afterBuild: (log: PkgLog) => {
-    // Hàm callback này sẽ chạy sau khi quá trình đóng gói hoàn tất, cho phép bạn thực hiện một số thao tác hậu đóng gói.
-  };
+  afterBuild: (log) => {
+    // Callback sau khi build hoàn tất, ví dụ copy thêm tài nguyên, output thông tin thống kê, v.v.
+  },
 });
 ```
+
+Một vài điểm chính:
+
+- `modifyRsbuildConfig` — Dùng để điều chỉnh đóng gói client, ví dụ thêm Rsbuild plugin, sửa resolve alias, điều chỉnh chiến lược code splitting, v.v. Tham số cấu hình tham khảo [tài liệu Rsbuild](https://rsbuild.rs/guide/configuration/rsbuild)
+- `modifyTsupConfig` — Dùng để điều chỉnh đóng gói server, ví dụ sửa target, externals, entry, v.v. Tham số cấu hình tham khảo [tài liệu tsup](https://tsup.egoist.dev/#using-custom-configuration)
+- `beforeBuild` / `afterBuild` — Hook trước và sau build, nhận một hàm `log` để output log. Ví dụ trong `beforeBuild` sinh một số file code, trong `afterBuild` copy tài nguyên tĩnh sang thư mục sản phẩm
+
+## Liên kết liên quan
+
+- [Viết Plugin đầu tiên](./write-your-first-plugin.md) — Tạo Plugin từ đầu, bao gồm quy trình build và đóng gói hoàn chỉnh
+- [Cấu trúc thư mục dự án](./project-structure.md) — Tìm hiểu chức năng của các thư mục `packages/plugins`, `storage/tar`, v.v.
+- [Quản lý dependency](./dependency-management.md) — Khai báo dependency của Plugin và dependency toàn cục
+- [Tổng quan phát triển Plugin](./index.md) — Giới thiệu tổng thể về phát triển Plugin
+- [Cài đặt và nâng cấp Plugin](../get-started/install-upgrade-plugins.mdx) — Upload file đóng gói sang môi trường đích
+- [Biến môi trường](../get-started/installation/env.md) — Cấu hình biến môi trường cho Plugin preset, Plugin tích hợp, v.v.

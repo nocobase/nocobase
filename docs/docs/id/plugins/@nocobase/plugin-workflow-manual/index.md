@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Manual node"
+displayName: "Workflow: Node Pemrosesan Manual"
 packageName: '@nocobase/plugin-workflow-manual'
+title: "Workflow: Node Pemrosesan Manual"
+keywords: "Workflow: Node Pemrosesan Manual,Plugin,NocoBase"
 description: |
-  Could be used for workflows which some of decisions are made by users.
+  Digunakan untuk proses dengan keputusan yang sebagian dikontrol secara manual.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Manual node
+# Workflow: Node Pemrosesan Manual

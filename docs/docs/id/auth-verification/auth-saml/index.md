@@ -1,16 +1,15 @@
 ---
 pkg: '@nocobase/plugin-auth-saml'
+title: "Autentikasi: SAML 2.0"
+description: "Autentikasi SSO SAML 2.0 NocoBase: mengikuti protokol SAML, mengintegrasikan IdP (seperti Google Workspace), mengkonfigurasi SSO URL, public key, dan field mapping."
+keywords: "SAML 2.0,SSO,Single Sign-On,IdP,Google Workspace,field mapping,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Autentikasi: SAML 2.0
 
-## Pendahuluan
+## Pengantar
 
-Plugin Autentikasi: SAML 2.0 mengikuti standar protokol SAML 2.0 (Security Assertion Markup Language 2.0), memungkinkan pengguna untuk masuk ke NocoBase menggunakan akun yang disediakan oleh penyedia layanan autentikasi identitas pihak ketiga (IdP).
+Plugin Autentikasi: SAML 2.0 mengikuti standar protokol SAML 2.0 (Security Assertion Markup Language 2.0), memungkinkan pengguna login ke NocoBase menggunakan akun yang disediakan oleh penyedia layanan autentikasi identitas pihak ketiga (IdP).
 
 ## Mengaktifkan Plugin
 
@@ -22,7 +21,7 @@ Masuk ke halaman manajemen plugin autentikasi pengguna.
 
 ![](https://static-docs.nocobase.com/202411130004459.png)
 
-Tambah - SAML
+Tambahkan - SAML
 
 ![](https://static-docs.nocobase.com/5076fe56086b7799be308bbaf7c4425d.png)
 
@@ -30,33 +29,33 @@ Tambah - SAML
 
 ![](https://static-docs.nocobase.com/976b66e589973c322d81dcddd22c6146.png)
 
--   **URL SSO** - Disediakan oleh IdP, digunakan untuk *single sign-on*.
--   **Sertifikat Publik (*Public Certificate*)** - Disediakan oleh IdP.
--   **ID Entitas (*IdP Issuer*)** - Opsional, disediakan oleh IdP.
--   **HTTP** - Centang jika aplikasi NocoBase Anda menggunakan protokol HTTP.
--   **Gunakan kolom ini untuk mengikat pengguna** - Kolom yang digunakan untuk mencocokkan dan mengikat dengan pengguna yang sudah ada. Dapat memilih email atau nama pengguna, defaultnya adalah email. Informasi pengguna yang dibawa oleh IdP perlu menyertakan kolom `email` atau `username`.
--   **Daftar otomatis jika pengguna tidak ada** - Apakah akan membuat pengguna baru secara otomatis jika tidak ditemukan pengguna yang cocok.
--   **Penggunaan** - `SP Issuer / EntityID` dan `ACS URL` digunakan untuk disalin dan diisi ke dalam konfigurasi yang sesuai di IdP.
+- SSO URL - URL untuk Single Sign-On yang disediakan oleh IdP
+- Public Certificate - Disediakan oleh IdP
+- IdP Issuer (Entity ID) - Opsional, disediakan oleh IdP
+- http - Centang jika aplikasi NocoBase Anda menggunakan protokol http
+- Use this field to bind the user - Field yang digunakan untuk mencocokkan dan mengikat pengguna yang ada, dapat dipilih email atau username, default email. Informasi pengguna yang dibawa IdP harus berisi field `email` atau `username`.
+- Sign up automatically when the user does not exist - Apakah secara otomatis membuat pengguna baru ketika tidak ditemukan pengguna yang dapat dicocokkan dan diikat.
+- Usage - `SP Issuer / EntityID` dan `ACS URL` digunakan untuk disalin dan diisi pada konfigurasi IdP terkait.
 
-## Pemetaan Kolom
+## Field Mapping
 
-Pemetaan kolom perlu dikonfigurasi pada platform konfigurasi IdP. Anda dapat merujuk ke [contoh](./examples/google.md).
+Field mapping perlu dikonfigurasi pada platform konfigurasi IdP. Lihat [contoh](./examples/google.md).
 
-Kolom yang tersedia untuk pemetaan di NocoBase adalah:
+Field yang dapat dipetakan oleh NocoBase:
 
--   email (wajib)
--   phone (hanya berlaku untuk platform yang mendukung `phone` dalam cakupannya, seperti Alibaba Cloud, Feishu)
--   nickname
--   username
--   firstName
--   lastName
+- email (wajib)
+- phone (hanya berlaku pada platform yang scope-nya mendukung `phone`, seperti Alibaba Cloud, Feishu)
+- nickname
+- username
+- firstName
+- lastName
 
-`nameID` dibawa oleh protokol SAML dan tidak perlu dipetakan; ini akan disimpan sebagai pengidentifikasi pengguna yang unik.
-Prioritas aturan penggunaan nama panggilan pengguna baru: `nickname` > `firstName lastName` > `username` > `nameID`
-Saat ini, pemetaan organisasi dan peran pengguna belum didukung.
+`nameID` dibawa oleh protokol SAML, tidak perlu dipetakan, dan akan disimpan sebagai identifier unik pengguna.
+Aturan prioritas nickname pengguna baru: `nickname` > `firstName lastName` > `username` > `nameID`
+Saat ini belum mendukung pemetaan organisasi dan role pengguna.
 
-## Masuk
+## Login
 
-Kunjungi halaman masuk, lalu klik tombol di bawah formulir masuk untuk memulai masuk pihak ketiga.
+Akses halaman login, klik tombol di bawah formulir login untuk memulai login pihak ketiga.
 
 ![](https://static-docs.nocobase.com/74963865c9d36a294948e6adeb5b24bc.png)

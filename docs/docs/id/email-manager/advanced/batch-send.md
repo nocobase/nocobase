@@ -1,36 +1,41 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Batch Send"
+description: "Kirim email batch ke beberapa penerima, setiap penerima menerima email independen. Anda dapat mengkonfigurasi batch send pilihan, field penerima, tracking pengiriman di tabel."
+keywords: "batch send,email batch,batch send tabel,tracking pengiriman email,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Batch Send
 
+## Ikhtisar Batch Send
+Mendukung batch send email ke beberapa penerima, setiap penerima akan menerima email independen.
 
-# Pengiriman Massal
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_15_PM.png)
 
-## Gambaran Umum Pengiriman Massal
-Anda bisa mengirim email secara massal ke banyak orang (setiap penerima akan menerima email terpisah).
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_10_PM.png)
+## Batch Send Melalui Tabel
 
-## Pengiriman Massal Melalui Tabel
-Anda juga bisa mengirim email secara massal melalui tabel:
+Anda dapat mengkonfigurasi fitur batch send email pilihan di tabel.
 
-1.  Tambahkan tombol kirim email ke tabel.
-    ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_14_PM.png)
+1. Tambahkan tombol kirim email di tabel
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_04_PM.png)
 
-2.  Konfigurasi kolom email di tabel (digunakan untuk mengurai alamat email setelah memilih baris tabel).
-    ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_13_PM.png)
+2. Konfigurasikan field penerima (sistem akan mengekstrak alamat email dari data tabel yang dipilih).
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_17_PM%20(1).png)
 
-3.  Centang data tabel untuk mengirim email.
-    ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_15_PM.png)
+3. Pilih data baris tabel yang perlu dikirim.
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
 
-Jika Anda perlu mengirim email ke semua alamat di seluruh tabel, Anda bisa mengaktifkan fitur **Pilih semua catatan di tabel saat ini sebagai penerima secara default**:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_16_PM.png)
+Jika perlu mengirim ke semua record di tabel, Anda dapat mengatur range penerima ke **All records**.
 
-Setelah mengedit konten email, klik tombol kirim massal untuk mengirim:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_17_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_18_PM%20(1).png)
 
-## Pelacakan Pengiriman Email
-Anda bisa melihat dan melacak status pengiriman email tertentu di Pusat Manajemen Email:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM%20(1).png)
+Setelah mengedit konten email, klik tombol **Batch send** untuk menyelesaikan pengiriman.
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
+
+## Tracking Pengiriman Email
+
+Setelah pengiriman selesai, Anda dapat melihat status pengiriman dan informasi email di email management center.
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_20_PM.png)
+
 ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM.png)

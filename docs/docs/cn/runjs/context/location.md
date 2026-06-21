@@ -1,3 +1,9 @@
+---
+title: "ctx.location"
+description: "ctx.location 当前页面 URL 信息，只读，支持安全导航，用于获取 query、hash 等。"
+keywords: "ctx.location,URL,query,hash,页面导航,RunJS,NocoBase"
+---
+
 # ctx.location
 
 当前路由位置信息，与 React Router 的 `location` 对象等价。通常与 `ctx.router`、`ctx.route` 配合使用，用于读取当前路径、查询字符串、hash 以及通过路由传递的 state。

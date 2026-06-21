@@ -1,36 +1,38 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Storage engine: Tencent COS"
+description: "Cấu hình storage engine Tencent COS tích hợp sẵn của NocoBase: Region, SecretId, SecretKey, Bucket, dùng cho Tencent Cloud Object Storage."
+keywords: "Tencent COS,Tencent Cloud,SecretId,SecretKey,Bucket,Object Storage,NocoBase"
+---
 
+# Tencent COS
 
-# Tencent Cloud COS
-
-Công cụ lưu trữ dựa trên Tencent Cloud COS. Trước khi sử dụng, bạn cần chuẩn bị tài khoản và các quyền liên quan.
+Storage engine dựa trên Tencent COS, cần chuẩn bị tài khoản và quyền liên quan trước khi sử dụng.
 
 ## Tham số cấu hình
 
-![Ví dụ cấu hình công cụ lưu trữ Tencent COS](https://static-docs.nocobase.com/20240712222125.png)
+![Ví dụ cấu hình storage engine Tencent COS](https://static-docs.nocobase.com/20240712222125.png)
 
-:::info{title=Lưu ý}
-Phần này chỉ giới thiệu các tham số dành riêng cho công cụ lưu trữ Tencent Cloud COS. Để biết các tham số chung, vui lòng tham khảo [Tham số chung của công cụ](./index.md#tham-số-chung-của-công-cụ).
+:::info{title=Mẹo}
+Chỉ giới thiệu các tham số dành riêng cho storage engine Tencent COS. Đối với các tham số chung, vui lòng tham khảo [Tham số chung của engine](./index.md#tham-số-chung).
 :::
 
-### Khu vực
+### Region
 
-Nhập khu vực lưu trữ COS, ví dụ: `ap-chengdu`.
+Điền Region của COS, ví dụ: `ap-chengdu`.
 
-:::info{title=Lưu ý}
-Bạn có thể xem thông tin khu vực của bộ chứa trong [Bảng điều khiển Tencent Cloud COS](https://console.cloud.tencent.com/cos). Bạn chỉ cần sử dụng tiền tố khu vực (không cần tên miền đầy đủ).
+:::info{title=Mẹo}
+Có thể xem thông tin Region của Bucket lưu trữ tại [Tencent Cloud COS Console](https://console.cloud.tencent.com/cos), chỉ cần lấy phần tiền tố Region (không cần tên miền đầy đủ).
 :::
 
 ### SecretId
 
-Nhập ID của khóa truy cập được ủy quyền của Tencent Cloud.
+Điền ID của khóa truy cập được ủy quyền của Tencent Cloud.
 
 ### SecretKey
 
-Nhập Secret của khóa truy cập được ủy quyền của Tencent Cloud.
+Điền Secret của khóa truy cập được ủy quyền của Tencent Cloud.
 
-### Bộ chứa
+### Bucket
 
-Nhập tên bộ chứa lưu trữ COS, ví dụ: `qing-cdn-1234189398`.
+Điền tên Bucket của COS, ví dụ: `qing-cdn-1234189398`.

@@ -1,330 +1,346 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: "@nocobase/plugin-ai"
+title: "Panduan Konfigurasi Administrator Karyawan AI"
+description: "Konfigurasi Karyawan AI dalam 5 langkah: layanan model, membuat karyawan, mengonfigurasi Skills, Basis Pengetahuan, validasi efek; konfigurasi tugas tingkat halaman dan tingkat Block; praktik terbaik dan pertanyaan umum."
+keywords: "Konfigurasi Karyawan AI,Panduan Administrator,LLM Service,Konfigurasi Tugas,Konfigurasi Skills,NocoBase"
+---
 
 # Karyawan AI · Panduan Konfigurasi Administrator
 
-> Dokumen ini akan membantu Anda memahami cara mengonfigurasi dan mengelola Karyawan AI dengan cepat, memandu Anda langkah demi langkah melalui seluruh proses, mulai dari layanan model hingga penugasan tugas.
+> Dokumentasi ini membantu Anda memahami dengan cepat cara mengonfigurasi dan mengelola Karyawan AI, dari layanan model hingga deployment tugas, memandu Anda melalui seluruh proses.
 
-## I. Sebelum Memulai
+
+## Satu. Sebelum Mulai
 
 ### 1. Persyaratan Sistem
 
-Sebelum melakukan konfigurasi, pastikan lingkungan Anda memenuhi kondisi berikut:
+Sebelum konfigurasi, harap pastikan lingkungan Anda memenuhi kondisi berikut:
 
-*   **NocoBase 2.0 atau versi lebih tinggi** sudah terinstal
-*   **Plugin Karyawan AI** sudah diaktifkan
-*   Setidaknya satu **layanan Model Bahasa Besar** yang tersedia (misalnya, OpenAI, Claude, DeepSeek, GLM, dll.)
+* Telah memasang **NocoBase 2.0 atau versi yang lebih tinggi**
+* Telah mengaktifkan **Plugin Karyawan AI**
+* Memiliki setidaknya satu **layanan model bahasa besar** yang tersedia (seperti OpenAI, Claude, DeepSeek, GLM, dll)
+
 
 ### 2. Memahami Desain Dua Lapisan Karyawan AI
 
-Karyawan AI dibagi menjadi dua lapisan: **"Definisi Peran"** dan **"Kustomisasi Tugas"**.
+Karyawan AI dibagi menjadi dua lapisan: **"Definisi Role"** dan **"Kustomisasi Tugas"**.
 
-| Lapisan            | Deskripsi                               | Karakteristik                     | Fungsi                        |
-| :----------------- | :-------------------------------------- | :-------------------------------- | :---------------------------- |
-| **Definisi Peran** | Kepribadian dasar dan kemampuan inti karyawan | Stabil dan tidak berubah, seperti "CV" | Memastikan konsistensi peran |
-| **Kustomisasi Tugas** | Konfigurasi untuk skenario bisnis yang berbeda  | Fleksibel dan dapat disesuaikan   | Beradaptasi dengan tugas tertentu |
+| Tingkat | Penjelasan | Karakteristik | Fungsi |
+| ------- | ---------- | ------------- | ------ |
+| **Definisi Role** | Persona dasar dan kemampuan inti karyawan | Stabil tidak berubah, seperti "CV" | Memastikan konsistensi role |
+| **Kustomisasi Tugas** | Konfigurasi untuk skenario bisnis berbeda | Penyesuaian fleksibel | Beradaptasi dengan tugas spesifik |
 
-**Sederhananya:**
+**Pemahaman Sederhana:**
 
-> "Definisi Peran" menentukan siapa karyawan ini,
-> "Kustomisasi Tugas" menentukan apa yang sedang mereka lakukan saat ini.
+> "Definisi Role" menentukan siapa karyawan ini,
+> "Kustomisasi Tugas" menentukan apa yang harus dilakukannya saat ini.
 
-Manfaat dari desain ini adalah:
+Manfaat desain seperti ini:
 
-*   Peran tetap konstan, tetapi dapat menangani skenario yang berbeda
-*   Peningkatan atau penggantian tugas tidak memengaruhi karyawan itu sendiri
-*   Latar belakang dan tugas bersifat independen, membuat pemeliharaan lebih mudah
+* Role tidak berubah, namun dapat menangani skenario berbeda
+* Upgrade atau penggantian tugas tidak akan memengaruhi karyawan itu sendiri
+* Latar belakang dan tugas saling independen, pemeliharaan lebih mudah
 
-## II. Proses Konfigurasi (5 Langkah Mudah)
+
+## Dua. Alur Konfigurasi (Selesai dalam 5 Langkah)
 
 ### Langkah 1: Konfigurasi Layanan Model
 
-Layanan model adalah seperti otak bagi Karyawan AI dan harus diatur terlebih dahulu.
+Layanan model setara dengan otak Karyawan AI, harus diatur terlebih dahulu.
 
-> 💡 Untuk instruksi konfigurasi terperinci, silakan lihat: [Konfigurasi Layanan LLM](/ai-employees/quick-start/llm-service)
+> 💡 Penjelasan konfigurasi detail silakan rujuk: [Konfigurasi LLM Service](/ai-employees/features/llm-service)
 
-**Jalur:**
-`Pengaturan Sistem → Karyawan AI → Layanan Model`
+**Path:**
+`Pengaturan Sistem → Karyawan AI → LLM service`
 
-![Masuk halaman konfigurasi](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
+![Masuk ke Halaman Konfigurasi](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
 
-Klik **Tambah**, lalu isi informasi berikut:
+Klik **Tambah**, isi informasi berikut:
 
-| Item          | Deskripsi                                 | Catatan                                       |
-| :------------ | :---------------------------------------- | :-------------------------------------------- |
-| Tipe Antarmuka | Misalnya, OpenAI, Claude, dll.            | Kompatibel dengan layanan yang menggunakan spesifikasi yang sama |
-| Kunci API     | Kunci yang disediakan oleh penyedia layanan | Jaga kerahasiaannya dan ganti secara berkala |
-| Alamat Layanan | API Endpoint                              | Perlu dimodifikasi saat menggunakan proxy     |
-| Nama Model    | Nama model spesifik (misalnya, gpt-4, claude-opus) | Memengaruhi kemampuan dan biaya               |
+| Item | Penjelasan | Catatan |
+| ---- | ---------- | ------- |
+| Provider | Seperti OpenAI, Claude, Gemini, Kimi, dll | Layanan yang kompatibel dengan standar yang sama |
+| API Key | Key yang disediakan oleh penyedia layanan | Rahasiakan dan ganti secara berkala |
+| Base URL | API Endpoint (opsional) | Perlu dimodifikasi saat menggunakan proxy |
+| Enabled Models | Model rekomendasi / pilih model / input manual | Menentukan cakupan model yang dapat diganti dalam sesi |
 
-![Buat layanan model besar](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
+![Membuat Layanan Model Besar](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
 
-Setelah konfigurasi, silakan **uji koneksi**.
-Jika gagal, periksa jaringan, kunci API, atau nama model Anda.
+Setelah konfigurasi harap gunakan `Test flight` untuk **menguji koneksi**.
+Jika gagal, periksa jaringan, key, atau nama model.
 
-![Uji koneksi](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
+![Test Koneksi](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
+
 
 ### Langkah 2: Buat Karyawan AI
 
-> 💡 Untuk instruksi terperinci, silakan lihat: [Buat Karyawan AI](/ai-employees/quick-start/ai-employees)
+> 💡 Penjelasan detail silakan rujuk: [Buat Karyawan AI](/ai-employees/features/new-ai-employees)
 
-Jalur: `Manajemen Karyawan AI → Buat Karyawan`
+Path: `Manajemen Karyawan AI → Buat Karyawan`
 
 Isi informasi dasar:
 
-| Bidang            | Wajib | Contoh             |
-| :---------------- | :-- | :----------------- |
-| Nama              | ✓   | viz, dex, cole     |
-| Nama Panggilan    | ✓   | Viz, Dex, Cole     |
-| Status Aktif      | ✓   | Aktif              |
-| Bio               | -   | "Pakar Analisis Data" |
-| Prompt Utama      | ✓   | Lihat Panduan Rekayasa Prompt |
-| Pesan Selamat Datang | -   | "Halo, saya Viz…"   |
+| Field | Wajib | Contoh |
+| ----- | ----- | ------ |
+| Nama | ✓ | viz, dex, cole |
+| Nickname | ✓ | Viz, Dex, Cole |
+| Status Aktif | ✓ | Aktif |
+| Pengantar | - | "Pakar Analisis Data" |
+| Prompt Utama | ✓ | Lihat panduan prompt engineering |
+| Pesan Sambutan | - | "Halo, saya Viz…" |
 
-![Konfigurasi informasi dasar](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
+![Konfigurasi Informasi Dasar](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
 
-Kemudian, ikat **layanan model** yang baru saja Anda konfigurasikan.
-
-![Ikat layanan model besar](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-22-27.png)
+Tahap pembuatan karyawan terutama menyelesaikan konfigurasi role dan Skills. Model yang sebenarnya digunakan dapat dipilih dalam sesi melalui `Model Switcher`.
 
 **Saran Penulisan Prompt:**
 
-*   Jelaskan dengan jelas peran, nada, dan tanggung jawab karyawan
-*   Gunakan kata-kata seperti "harus" dan "tidak pernah" untuk menekankan aturan
-*   Sertakan contoh jika memungkinkan untuk menghindari deskripsi abstrak
-*   Batasi antara 500–1000 karakter
+* Jelaskan dengan jelas role, gaya bahasa, dan tanggung jawab karyawan
+* Gunakan kata-kata seperti "harus", "tidak boleh" untuk menekankan aturan
+* Sertakan contoh sebanyak mungkin, hindari penjelasan abstrak
+* Kontrol antara 500-1000 karakter
 
 > Semakin jelas prompt, semakin stabil kinerja AI.
-> Anda dapat merujuk ke [Panduan Rekayasa Prompt](./prompt-engineering-guide.md).
+> Dapat merujuk [Panduan Prompt Engineering](./prompt-engineering-guide.md).
 
-### Langkah 3: Konfigurasi Keterampilan
 
-Keterampilan menentukan apa yang "bisa dilakukan" oleh seorang karyawan.
+### Langkah 3: Konfigurasi Skills
 
-> 💡 Untuk instruksi terperinci, silakan lihat: [Keterampilan](/ai-employees/advanced/skill)
+Skills menentukan "apa yang dapat dilakukan" karyawan.
 
-| Tipe       | Lingkup Kemampuan        | Contoh                        | Tingkat Risiko      |
-| :--------- | :----------------------- | :---------------------------- | :------------------ |
-| Frontend   | Interaksi halaman        | Membaca data blok, mengisi formulir | Rendah              |
-| Model Data | Kueri dan analisis data  | Statistik agregat             | Sedang              |
-| Alur Kerja | Menjalankan proses bisnis | Alat kustom                   | Tergantung pada alur kerja |
-| Lainnya    | Ekstensi eksternal       | Pencarian web, operasi file   | Bervariasi          |
+> 💡 Penjelasan detail silakan rujuk: [Skills](/ai-employees/features/tools)
+
+| Tipe | Cakupan Kemampuan | Contoh | Tingkat Risiko |
+| ---- | ----------------- | ------ | -------------- |
+| Frontend | Interaksi halaman | Membaca data Block, mengisi formulir | Rendah |
+| Model Data | Query dan analisis data | Statistik agregasi | Sedang |
+| Workflow | Menjalankan proses bisnis | Tools kustom | Tergantung Workflow |
+| Lainnya | Ekstensi eksternal | Pencarian web, operasi file | Tergantung situasi |
 
 **Saran Konfigurasi:**
 
-*   3–5 keterampilan per karyawan adalah yang paling sesuai
-*   Tidak disarankan untuk memilih semua keterampilan, karena dapat menyebabkan kebingungan
-*   Nonaktifkan penggunaan otomatis (Auto usage) sebelum operasi penting
+* Setiap karyawan paling cocok 3-5 Skills
+* Tidak disarankan memilih semua, mudah membingungkan
+* Operasi penting disarankan menggunakan Permission `Ask`, bukan `Allow`
 
-![Konfigurasi keterampilan](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
+![Konfigurasi Skills](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
+
 
 ### Langkah 4: Konfigurasi Basis Pengetahuan (Opsional)
 
-Jika Karyawan AI Anda perlu mengingat atau merujuk banyak materi, seperti manual produk, FAQ, dll., Anda dapat mengonfigurasi basis pengetahuan.
+Jika Karyawan AI Anda perlu mengingat atau mereferensikan banyak materi, seperti manual produk, FAQ, dll, Anda dapat mengonfigurasi Basis Pengetahuan.
 
-> 💡 Untuk instruksi terperinci, silakan lihat:
+> 💡 Penjelasan detail silakan rujuk:
 > - [Ikhtisar Basis Pengetahuan AI](/ai-employees/knowledge-base/index)
-> - [Database Vektor](/ai-employees/knowledge-base/vector-database)
+> - [Vector Database](/ai-employees/knowledge-base/vector-database)
 > - [Konfigurasi Basis Pengetahuan](/ai-employees/knowledge-base/knowledge-base)
-> - [RAG (Retrieval-Augmented Generation)](/ai-employees/knowledge-base/rag)
+> - [RAG Retrieval Augmented Generation](/ai-employees/knowledge-base/rag)
 
-Ini memerlukan instalasi plugin database vektor tambahan.
+Ini memerlukan instalasi tambahan Plugin vector database.
 
-![Konfigurasi basis pengetahuan](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
+![Konfigurasi Basis Pengetahuan](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
 
-**Skenario yang Berlaku:**
+**Skenario Penggunaan:**
 
-*   Agar AI memahami pengetahuan perusahaan
-*   Untuk mendukung tanya jawab dan pengambilan dokumen
-*   Untuk melatih asisten khusus domain
+* Membuat AI memahami pengetahuan perusahaan
+* Mendukung Q&A dan retrieval dokumen
+* Melatih asisten domain khusus
 
-### Langkah 5: Verifikasi Hasil
 
-Setelah selesai, Anda akan melihat avatar karyawan baru di sudut kanan bawah halaman.
+### Langkah 5: Validasi Efek
 
-![Verifikasi konfigurasi](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-36-54.png)
+Setelah selesai, Anda akan melihat avatar karyawan baru di pojok kanan bawah halaman.
 
-Harap periksa setiap item:
+![Validasi Konfigurasi](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-36-54.png)
 
-*   ✅ Apakah ikon ditampilkan dengan benar?
-*   ✅ Bisakah ia melakukan percakapan dasar?
-*   ✅ Bisakah keterampilan dipanggil dengan benar?
+Harap periksa item demi item:
 
-Jika semua berhasil, berarti konfigurasi sukses 🎉
+* ✅ Apakah ikon ditampilkan normal
+* ✅ Apakah dapat melakukan dialog dasar
+* ✅ Apakah Skills dapat dipanggil dengan benar
 
-## III. Konfigurasi Tugas: Membuat AI Benar-benar Bekerja
+Jika semuanya lulus, berarti konfigurasi berhasil 🎉
 
-Yang telah kita lakukan sejauh ini adalah "membuat karyawan".
-Selanjutnya adalah membuat mereka "bekerja".
 
-Tugas AI mendefinisikan perilaku karyawan pada halaman atau blok tertentu.
+## Tiga. Konfigurasi Tugas: Membuat AI Benar-benar Bekerja
 
-> 💡 Untuk instruksi terperinci, silakan lihat: [Tugas](/ai-employees/advanced/task)
+Yang diselesaikan sebelumnya adalah "membuat karyawan",
+selanjutnya membuat mereka "bekerja".
+
+Tugas AI mendefinisikan perilaku karyawan di halaman atau Block tertentu.
+
+> 💡 Penjelasan detail silakan rujuk: [Tugas](/ai-employees/features/task)
+
 
 ### 1. Tugas Tingkat Halaman
 
-Berlaku untuk seluruh cakupan halaman, seperti "Analisis data di halaman ini".
+Cocok untuk seluruh cakupan halaman, seperti "menganalisis data halaman ini".
 
-**Entri Konfigurasi:**
+**Entry Konfigurasi:**
 `Pengaturan Halaman → Karyawan AI → Tambah Tugas`
 
-| Bidang          | Deskripsi                    | Contoh                    |
-| :-------------- | :--------------------------- | :------------------------ |
-| Judul           | Nama tugas                   | Analisis Konversi Tahap   |
-| Konteks         | Konteks halaman saat ini     | Halaman daftar Leads      |
-| Pesan Default   | Pembuka percakapan prasetel  | "Harap analisis tren bulan ini" |
-| Blok Default    | Otomatis terkait dengan koleksi | tabel leads               |
-| Keterampilan    | Alat yang tersedia           | Kueri data, buat bagan    |
+| Field | Penjelasan | Contoh |
+| ----- | ---------- | ------ |
+| Judul | Nama tugas | Analisis Konversi Tahap |
+| Latar Belakang | Konteks halaman saat ini | Halaman daftar Leads |
+| Pesan Default | Dialog preset | "Tolong analisis tren bulan ini" |
+| Block Default | Tabel data terkait otomatis | Tabel leads |
+| Skills | Tools yang tersedia | Query data, hasilkan grafik |
 
-![Konfigurasi tugas tingkat halaman](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
+![Konfigurasi Tugas Tingkat Halaman](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
 
-**Dukungan Multi-tugas:**
-Satu Karyawan AI dapat dikonfigurasi dengan beberapa tugas, yang disajikan sebagai opsi untuk dipilih pengguna:
+**Dukungan Multi-Tugas:**
+Karyawan AI yang sama dapat dikonfigurasi dengan beberapa tugas, dalam bentuk opsi untuk dipilih Pengguna:
 
-![Dukungan multi-tugas](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
+![Dukungan Multi-Tugas](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
 
 Saran:
 
-*   Satu tugas harus fokus pada satu tujuan
-*   Nama harus jelas dan mudah dimengerti
-*   Batasi jumlah tugas antara 5–7
+* Satu tugas fokus pada satu tujuan
+* Nama jelas dan mudah dipahami
+* Jumlah tugas dikontrol dalam 5-7
 
-### 2. Tugas Tingkat Blok
+### 2. Tugas Tingkat Block
 
-Cocok untuk beroperasi pada blok tertentu, seperti "Terjemahkan formulir saat ini".
+Cocok untuk mengoperasikan Block tertentu, seperti "menerjemahkan formulir saat ini".
 
-**Metode Konfigurasi:**
+**Cara Konfigurasi:**
 
-1.  Buka konfigurasi tindakan blok
-2.  Tambahkan "Karyawan AI"
+1. Buka konfigurasi action Block
+2. Tambah "Karyawan AI"
 
 ![Tombol Tambah Karyawan AI](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-51-06.png)
 
-3.  Ikat karyawan target
+3. Ikat karyawan target
 
 ![Pilih Karyawan AI](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-52-26.png)
 
-![Konfigurasi tugas tingkat blok](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
+![Konfigurasi Tugas Tingkat Block](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
 
-| Perbandingan  | Tingkat Halaman | Tingkat Blok            |
-| :------------ | :-------------- | :---------------------- |
-| Cakupan Data  | Seluruh halaman | Blok saat ini           |
-| Granularitas  | Analisis global | Pemrosesan detail       |
-| Penggunaan Umum | Analisis tren   | Terjemahan formulir, ekstraksi bidang |
+| Item Perbandingan | Tingkat Halaman | Tingkat Block |
+| ----------------- | --------------- | ------------- |
+| Cakupan Data | Seluruh halaman | Block saat ini |
+| Granularitas | Analisis global | Pemrosesan detail |
+| Penggunaan Tipikal | Analisis tren | Terjemahan formulir, ekstraksi Field |
 
-## IV. Praktik Terbaik
+
+## Empat. Praktik Terbaik
 
 ### 1. Saran Konfigurasi
 
-| Item               | Saran                           | Alasan                          |
-| :----------------- | :------------------------------ | :------------------------------ |
-| Jumlah Keterampilan | 3–5                             | Akurasi tinggi, respons cepat   |
-| Penggunaan otomatis | Aktifkan dengan hati-hati       | Mencegah operasi yang tidak disengaja |
-| Panjang Prompt     | 500–1000 karakter               | Menyeimbangkan kecepatan dan kualitas |
-| Tujuan Tugas       | Tunggal dan jelas               | Menghindari kebingungan AI      |
-| Alur kerja         | Gunakan setelah mengemas tugas kompleks | Tingkat keberhasilan lebih tinggi |
+| Item | Saran | Alasan |
+| ---- | ----- | ------ |
+| Jumlah Skills | 3-5 | Akurasi tinggi, respon cepat |
+| Mode Permission (Ask / Allow) | Modifikasi data disarankan Ask | Mencegah operasi keliru |
+| Panjang Prompt | 500-1000 karakter | Menyeimbangkan kecepatan dan kualitas |
+| Tujuan Tugas | Tunggal dan jelas | Hindari AI bingung |
+| Workflow | Bungkus tugas kompleks sebelum digunakan | Tingkat keberhasilan lebih tinggi |
 
-### 2. Saran Praktis
 
-**Mulai dari kecil, optimalkan secara bertahap:**
+### 2. Saran Praktik
 
-1.  Pertama, buat karyawan dasar (misalnya, Viz, Dex)
-2.  Aktifkan 1–2 keterampilan inti untuk pengujian
-3.  Konfirmasikan bahwa tugas dapat dijalankan dengan normal
-4.  Kemudian, secara bertahap perluas dengan lebih banyak keterampilan dan tugas
+**Dari Kecil ke Besar, Optimalkan Bertahap:**
 
-**Proses optimasi berkelanjutan:**
+1. Pertama buat karyawan dasar (seperti Viz, Dex)
+2. Aktifkan 1-2 Skills inti untuk pengujian
+3. Konfirmasi dapat menjalankan tugas dengan normal
+4. Kemudian secara bertahap memperluas lebih banyak Skills dan tugas
 
-1.  Jalankan versi awal
-2.  Kumpulkan umpan balik pengguna
-3.  Optimalkan prompt dan konfigurasi tugas
-4.  Uji dan tingkatkan secara berulang
+**Alur Optimasi Berkelanjutan:**
 
-## V. Pertanyaan yang Sering Diajukan (FAQ)
+1. Versi awal dapat berjalan
+2. Kumpulkan feedback penggunaan
+3. Optimalkan prompt dan konfigurasi tugas
+4. Test dan perbaikan berulang
+
+
+## Lima. Pertanyaan Umum
 
 ### 1. Tahap Konfigurasi
 
-**T: Bagaimana jika penyimpanan gagal?**
-J: Periksa apakah semua bidang wajib sudah diisi, terutama layanan model dan prompt.
+**Q: Apa yang harus dilakukan jika save gagal?**
+A: Periksa apakah semua item wajib telah diisi, terutama layanan model dan prompt.
 
-**T: Model mana yang harus saya pilih?**
+**Q: Model mana yang harus dipilih?**
 
-*   Terkait kode → Claude, GPT-4
-*   Terkait analisis → Claude, DeepSeek
-*   Sensitif biaya → Qwen, GLM
-*   Teks panjang → Gemini, Claude
+* Tipe kode → Claude, GPT-4
+* Tipe analisis → Claude, DeepSeek
+* Sensitif biaya → Qwen, GLM
+* Teks panjang → Gemini, Claude
+
 
 ### 2. Tahap Penggunaan
 
-**T: Respons AI terlalu lambat?**
+**Q: Respon AI terlalu lambat?**
 
-*   Kurangi jumlah keterampilan
-*   Optimalkan prompt
-*   Periksa latensi layanan model
-*   Pertimbangkan untuk mengganti model
+* Kurangi jumlah Skills
+* Optimalkan prompt
+* Periksa latensi layanan model
+* Dapat mempertimbangkan ganti model
 
-**T: Eksekusi tugas tidak akurat?**
+**Q: Eksekusi tugas tidak akurat?**
 
-*   Prompt tidak cukup jelas
-*   Terlalu banyak keterampilan menyebabkan kebingungan
-*   Pecah tugas menjadi bagian yang lebih kecil, tambahkan contoh
+* Prompt tidak cukup jelas
+* Terlalu banyak Skills menyebabkan kebingungan
+* Pecah tugas menjadi lebih kecil, tambahkan contoh
 
-**T: Kapan penggunaan otomatis (Auto usage) harus diaktifkan?**
+**Q: Kapan memilih Ask / Allow?**
 
-*   Dapat diaktifkan untuk tugas-tugas bertipe kueri
-*   Disarankan untuk menonaktifkannya untuk tugas-tugas modifikasi data
+* Tugas tipe query dapat menggunakan `Allow`
+* Tugas tipe modifikasi data disarankan menggunakan `Ask`
 
-**T: Bagaimana cara membuat AI memproses formulir tertentu?**
+**Q: Bagaimana membuat AI menangani formulir tertentu?**
 
-J: Jika ini adalah konfigurasi tingkat halaman, Anda perlu memilih blok secara manual.
+A: Jika konfigurasi tingkat halaman, perlu mengklik Block secara manual.
 
-![Pilih blok secara manual](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
+![Klik Block Secara Manual](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
 
-Untuk konfigurasi tugas tingkat blok, konteks data secara otomatis terikat.
+Jika konfigurasi tugas tingkat Block, otomatis mengikat konteks data.
 
-## VI. Bacaan Lebih Lanjut
 
-Untuk membuat Karyawan AI Anda lebih kuat, Anda dapat melanjutkan membaca dokumen berikut:
+## Enam. Bacaan Lanjutan
+
+Untuk membuat Karyawan AI lebih kuat, dapat melanjutkan membaca dokumentasi berikut:
 
 **Terkait Konfigurasi:**
 
-*   [Panduan Rekayasa Prompt](./prompt-engineering-guide.md) - Teknik dan praktik terbaik untuk menulis prompt berkualitas tinggi
-*   [Konfigurasi Layanan LLM](/ai-employees/quick-start/llm-service) - Instruksi konfigurasi terperinci untuk layanan model besar
-*   [Buat Karyawan AI](/ai-employees/quick-start/ai-employees) - Pembuatan dan konfigurasi dasar Karyawan AI
-*   [Berkolaborasi dengan Karyawan AI](/ai-employees/quick-start/collaborate) - Cara melakukan percakapan yang efektif dengan Karyawan AI
+* [Panduan Prompt Engineering](./prompt-engineering-guide.md) - Teknik dan praktik terbaik untuk menulis prompt berkualitas tinggi
+* [Konfigurasi LLM Service](/ai-employees/features/llm-service) - Penjelasan detail konfigurasi layanan model besar
+* [Buat Karyawan AI](/ai-employees/features/new-ai-employees) - Pembuatan dan konfigurasi dasar Karyawan AI
+* [Berkolaborasi dengan Karyawan AI](/ai-employees/features/collaborate) - Bagaimana melakukan dialog efektif dengan Karyawan AI
 
 **Fitur Lanjutan:**
 
-*   [Keterampilan](/ai-employees/advanced/skill) - Pemahaman mendalam tentang konfigurasi dan penggunaan berbagai keterampilan
-*   [Tugas](/ai-employees/advanced/task) - Teknik lanjutan untuk konfigurasi tugas
-*   [Pilih Blok](/ai-employees/advanced/pick-block) - Cara menentukan blok data untuk Karyawan AI
-*   [Sumber Data](/ai-employees/advanced/datasource) - Konfigurasi dan manajemen sumber data
-*   [Pencarian Web](/ai-employees/advanced/web-search) - Mengonfigurasi kemampuan pencarian web untuk Karyawan AI
+* [Skills](/ai-employees/features/tools) - Pelajari secara mendalam konfigurasi dan penggunaan berbagai jenis Skills
+* [Tugas](/ai-employees/features/task) - Teknik lanjutan konfigurasi tugas
+* [Pilih Block](/ai-employees/features/pick-block) - Bagaimana menentukan Block data untuk Karyawan AI
+* Data Source - Silakan rujuk dokumentasi konfigurasi data source dari Plugin terkait
+* [Pencarian Web](/ai-employees/features/web-search) - Konfigurasi kemampuan pencarian web Karyawan AI
 
-**Basis Pengetahuan & RAG:**
+**Basis Pengetahuan dan RAG:**
 
-*   [Ikhtisar Basis Pengetahuan AI](/ai-employees/knowledge-base/index) - Pengantar fitur basis pengetahuan
-*   [Database Vektor](/ai-employees/knowledge-base/vector-database) - Konfigurasi database vektor
-*   [Basis Pengetahuan](/ai-employees/knowledge-base/knowledge-base) - Cara membuat dan mengelola basis pengetahuan
-*   [RAG (Retrieval-Augmented Generation)](/ai-employees/knowledge-base/rag) - Aplikasi teknologi RAG
+* [Ikhtisar Basis Pengetahuan AI](/ai-employees/knowledge-base/index) - Pengantar fitur Basis Pengetahuan
+* [Vector Database](/ai-employees/knowledge-base/vector-database) - Konfigurasi vector database
+* [Basis Pengetahuan](/ai-employees/knowledge-base/knowledge-base) - Bagaimana membuat dan mengelola Basis Pengetahuan
+* [RAG Retrieval Augmented Generation](/ai-employees/knowledge-base/rag) - Aplikasi teknologi RAG
 
-**Integrasi Alur Kerja:**
+**Integrasi Workflow:**
 
-*   [Node LLM - Obrolan Teks](/ai-employees/workflow/nodes/llm/chat) - Menggunakan obrolan teks dalam alur kerja
-*   [Node LLM - Obrolan Multimodal](/ai-employees/workflow/nodes/llm/multimodal-chat) - Menangani input multimodal seperti gambar dan file
-*   [Node LLM - Output Terstruktur](/ai-employees/workflow/nodes/llm/structured-output) - Mendapatkan respons AI terstruktur
+* [Node LLM - Dialog Teks](/ai-employees/workflow/nodes/llm/chat) - Menggunakan dialog teks dalam Workflow
+* [Node LLM - Dialog Multimodal](/ai-employees/workflow/nodes/llm/multimodal-chat) - Memproses input multimodal seperti gambar, file
+* [Node LLM - Output Terstruktur](/ai-employees/workflow/nodes/llm/structured-output) - Mendapatkan respons AI terstruktur
 
-## Kesimpulan
 
-Hal terpenting saat mengonfigurasi Karyawan AI adalah: **jalankan dulu, lalu optimalkan**.
-Pertama, pastikan karyawan pertama Anda berhasil bekerja, lalu secara bertahap perluas dan sesuaikan.
+## Penutup
 
-Anda dapat melakukan pemecahan masalah dengan urutan berikut:
+Hal terpenting saat mengonfigurasi Karyawan AI adalah: **jalankan dulu, optimalkan kemudian**.
+Pertama buat karyawan pertama berhasil bekerja, kemudian secara bertahap perluas dan fine-tune.
 
-1.  Apakah layanan model terhubung?
-2.  Apakah jumlah keterampilan terlalu banyak?
-3.  Apakah prompt sudah jelas?
-4.  Apakah tujuan tugas sudah terdefinisi dengan baik?
+Arah troubleshooting dapat dilakukan dalam urutan berikut:
 
-Selama Anda melangkah selangkah demi selangkah, Anda dapat membangun tim AI yang benar-benar efisien.
+1. Apakah layanan model terhubung
+2. Apakah jumlah Skills terlalu banyak
+3. Apakah prompt jelas
+4. Apakah tujuan tugas jelas
+
+Selama dilakukan secara bertahap, Anda dapat membangun tim AI yang benar-benar efisien.

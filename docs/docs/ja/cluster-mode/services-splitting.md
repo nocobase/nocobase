@@ -1,6 +1,9 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "サービス分割"
+description: "ワークフローや非同期タスクなどの処理を専用ノードに分割。WORKER_MODE によるリクエストノードとタスクノード、水平スケール。"
+keywords: "サービス分割,WORKER_MODE,非同期ワークフロー,async-task,水平スケール,リクエストノード,タスクノード,NocoBase"
+---
 
 # サービスの分割 <Badge>v1.9.0+</Badge>
 
@@ -65,12 +68,14 @@ NocoBaseをクラスターにデプロイする際、異なるサービスを分
 ビジネスプラグインを開発する際、要件に応じて、リソース消費の大きいサービスを分割することができます。これは以下の方法で実現できます。
 
 1. 環境変数設定のために、例えば `my-plugin:process` のような新しいサービス識別子を定義し、そのドキュメントを提供します。
-2. プラグインのサーバーサイドのビジネスロジックで、`app.serving()` インターフェースを使用して環境を判断し、現在のノードが環境変数に基づいて特定のサービスを提供すべきかを決定します。
+2. プラグインのサーバーサイドのビジネスロジックで、`serving()` のインターフェースを使用して環境を判断し、現在のノードが環境変数に基づいて特定のサービスを提供すべきかを決定します。
 
 ```javascript
+import { serving } from '@nocobase/server';
+
 const MY_PLUGIN_SERVICE_KEY = 'my-plugin:process';
 // プラグインのサーバーサイドコード内
-if (this.app.serving(MY_PLUGIN_SERVICE_KEY)) {
+if (serving(MY_PLUGIN_SERVICE_KEY)) {
   // このサービスのビジネスロジックを処理
 } else {
   // このサービスのビジネスロジックは処理しない

@@ -1,24 +1,27 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Chữ ký Email"
+description: "Cấu hình chữ ký Email: tạo chữ ký, đặt chữ ký mặc định, chọn chữ ký để chèn trong khung soạn thảo nội dung Email."
+keywords: "chữ ký Email,quản lý chữ ký,chữ ký mặc định,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
 # Chữ ký Email
 
 ## Cấu hình chữ ký
 
-Truy cập Trung tâm quản lý Email, sau đó nhấp vào nút cài đặt:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_34_PM.png)
+Vào Email Center, click nút Cài đặt.
 
-Chuyển sang bảng chữ ký:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_51_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
 
-Tại đây, bạn có thể quản lý chữ ký. Đánh dấu vào tùy chọn trước một chữ ký để đặt nó làm chữ ký mặc định:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_37_PM.png)
+Chuyển sang panel chữ ký.
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM%20(1).png)
+
+Tại đây có thể quản lý chữ ký, tích chọn ô trước chữ ký để đặt làm chữ ký mặc định.
+
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_09_PM.png)
 
 ## Sử dụng chữ ký
 
-Trong khung nội dung email, nhấp vào biểu tượng chữ ký để chọn chữ ký mong muốn:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_40_PM.png)
+Trong khung soạn thảo nội dung Email, click icon chữ ký để chọn chữ ký cần dùng.
+
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_11_PM.png)

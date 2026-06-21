@@ -1,8 +1,10 @@
 ---
 displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
+title: "Block: List"
+keywords: "Block: List,plugin,NocoBase"
 description: |
-  Display data in a list with pagination support.
+  Menampilkan data dalam bentuk list, mendukung pengaturan paginasi.
 isFree: true
 builtIn: true
 defaultEnabled: false

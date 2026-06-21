@@ -1,3 +1,9 @@
+---
+title: "模板打印 - 货币格式化"
+description: "模板打印货币格式化器：formatC 格式化货币数字，支持小数位数、目标货币、多种输出格式。"
+keywords: "模板打印,货币格式化,formatC,NocoBase"
+---
+
 ### 货币格式化
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "JSColumn - Cột bảng JS"
+description: "JSColumn cột bảng JS: nhúng render và logic tùy chỉnh trong cột bảng, hỗ trợ React, ctx, dữ liệu hàng, JS Model của FlowEngine."
+keywords: "JSColumn,Cột bảng JS,Cột bảng,Render tùy chỉnh,Dữ liệu hàng,JS Model FlowEngine,NocoBase"
+---
 
 # Cột bảng JS

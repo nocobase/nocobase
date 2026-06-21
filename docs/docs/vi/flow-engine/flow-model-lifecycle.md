@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Vòng đời FlowModel"
+description: "Vòng đời FlowModel: mount, init, thực thi Flow, unmount, hiểu quy trình mount và destroy của component FlowModel."
+keywords: "Vòng đời FlowModel,mount,init,unmount,Thực thi Flow,Vòng đời component,FlowEngine,NocoBase"
+---
 
+# Vòng đời FlowModel
 
-# Vòng đời của FlowModel
+## Phương thức model
 
-## Các phương thức của model
-
-Được gọi nội bộ
+Gọi nội bộ
 
 ```ts
 class MyModel extends FlowModel {
@@ -34,20 +35,21 @@ Dùng để kích hoạt từ bên ngoài
 
 1. Xây dựng model
     - onInit
-2. Hiển thị (render) model
+2. Render model
     - onDispatchEventStart
     - dispatchEvent('beforeRender')
     - onDispatchEventEnd
     - render
     - onMount
-3. Gỡ bỏ (unmount) component
+3. Unmount component
     - onUnMount
-4. Kích hoạt luồng
+4. Kích hoạt Flow
     - onDispatchEventStart
     - onDispatchEventEnd
-5. Hiển thị lại (re-render)
+5. Re-render
   - onUnMount
   - onDispatchEventStart
   - dispatchEvent('beforeRender')
   - onDispatchEventEnd
   - onUnMount
+

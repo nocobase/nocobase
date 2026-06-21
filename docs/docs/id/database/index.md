@@ -1,9 +1,11 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Database"
+description: "Dokumentasi terkait database NocoBase: konfigurasi, koneksi, model data."
+keywords: "database,konfigurasi,koneksi,model data,NocoBase"
+---
 
-# Basis Data
+# Database
 
 :::tip
-Konten akan ditambahkan
+Konten akan ditambahkan kemudian.
 :::

@@ -1,79 +1,83 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "FlowModelRenderer - Render FlowModel"
+description: "FlowModelRenderer render FlowModel thành component React, cách dùng và cấu hình render FlowModel, lối vào render của FlowEngine."
+keywords: "FlowModelRenderer,Render FlowModel,Component React,Render FlowEngine,NocoBase"
+---
 
+# Render FlowModel
 
-# Hiển thị FlowModel
+FlowModelRenderer là component React cốt lõi dùng để render FlowModel, nó chịu trách nhiệm chuyển đổi instance FlowModel thành component React trực quan.
 
-`FlowModelRenderer` là một component React cốt lõi dùng để hiển thị một `FlowModel`. Component này có nhiệm vụ chuyển đổi một thể hiện (instance) của `FlowModel` thành một component React trực quan.
-
-## Cách sử dụng cơ bản
+## Cách dùng cơ bản
 
 ### FlowModelRenderer
 
 ```tsx pure
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 
-// Cách sử dụng cơ bản
+// Cách dùng cơ bản
 <FlowModelRenderer model={myModel} />
+```
+
+```tsx file="./_demos/flow-model-renderer.tsx" preview
 ```
 
 ### FieldModelRenderer
 
-Đối với các Field Model được kiểm soát (controlled), bạn hãy sử dụng `FieldModelRenderer` để hiển thị:
+Đối với Field Model có kiểm soát, dùng FieldModelRenderer để render:
 
 ```tsx pure
 import { FieldModelRenderer } from '@nocobase/flow-engine';
 
-// Hiển thị trường được kiểm soát
+// Render Field có kiểm soát
 <FieldModelRenderer model={fieldModel} />
 ```
 
-## Các thuộc tính (Props)
+## Tham số Props
 
 ### FlowModelRendererProps
 
-| Tham số | Kiểu dữ liệu | Giá trị mặc định | Mô tả |
+| Tham số | Kiểu | Mặc định | Mô tả |
 |------|------|--------|------|
-| `model` | `FlowModel` | - | Thể hiện FlowModel cần hiển thị |
-| `uid` | `string` | - | Mã định danh duy nhất cho model luồng công việc |
-| `fallback` | `React.ReactNode` | `<Skeleton.Button size="small" />` | Nội dung dự phòng hiển thị khi quá trình hiển thị thất bại |
-| `showFlowSettings` | `boolean \| object` | `false` | Có hiển thị lối vào cài đặt luồng công việc hay không |
-| `flowSettingsVariant` | `'dropdown' \| 'contextMenu' \| 'modal' \| 'drawer'` | `'dropdown'` | Kiểu tương tác cho cài đặt luồng công việc |
-| `hideRemoveInSettings` | `boolean` | `false` | Có ẩn nút xóa trong cài đặt hay không |
-| `showTitle` | `boolean` | `false` | Có hiển thị tiêu đề model ở góc trên bên trái của khung hay không |
-| `skipApplyAutoFlows` | `boolean` | `false` | Có bỏ qua việc áp dụng các luồng công việc tự động hay không |
-| `inputArgs` | `Record<string, any>` | - | Ngữ cảnh bổ sung được truyền tới `useApplyAutoFlows` |
-| `showErrorFallback` | `boolean` | `true` | Có bọc component `FlowErrorFallback` ở lớp ngoài cùng hay không |
-| `settingsMenuLevel` | `number` | - | Cấp độ menu cài đặt: 1=chỉ model hiện tại, 2=bao gồm cả model con |
-| `extraToolbarItems` | `ToolbarItemConfig[]` | - | Các mục bổ sung trên thanh công cụ |
+| `model` | `FlowModel` | - | Instance FlowModel cần render |
+| `uid` | `string` | - | Định danh duy nhất của model luồng |
+| `fallback` | `React.ReactNode` | `<Skeleton.Button size="small" />` | Nội dung fallback khi render thất bại |
+| `showFlowSettings` | `boolean \| object` | `false` | Có hiển thị lối vào cài đặt Flow |
+| `flowSettingsVariant` | `'dropdown' \| 'contextMenu' \| 'modal' \| 'drawer'` | `'dropdown'` | Phong cách tương tác của cài đặt Flow |
+| `hideRemoveInSettings` | `boolean` | `false` | Có ẩn nút xóa trong cài đặt |
+| `showTitle` | `boolean` | `false` | Có hiển thị tiêu đề model ở góc trên bên trái viền |
+| `skipApplyAutoFlows` | `boolean` | `false` | Có bỏ qua tự động áp dụng Flow |
+| `inputArgs` | `Record<string, any>` | - | Context bổ sung được truyền cho useApplyAutoFlows |
+| `showErrorFallback` | `boolean` | `true` | Có bọc component FlowErrorFallback ở lớp ngoài cùng |
+| `settingsMenuLevel` | `number` | - | Cấp menu cài đặt: 1=chỉ model hiện tại, 2=bao gồm subModel |
+| `extraToolbarItems` | `ToolbarItemConfig[]` | - | Các mục thanh công cụ bổ sung |
 
-### Cấu hình chi tiết cho `showFlowSettings`
+### Cấu hình chi tiết showFlowSettings
 
-Khi `showFlowSettings` là một đối tượng, các cấu hình sau được hỗ trợ:
+Khi `showFlowSettings` là một object, hỗ trợ các cấu hình sau:
 
 ```tsx pure
 showFlowSettings={{
   showBackground: true,    // Hiển thị nền
   showBorder: true,        // Hiển thị viền
   showDragHandle: true,    // Hiển thị tay cầm kéo
-  style: {},              // Kiểu dáng thanh công cụ tùy chỉnh
+  style: {},              // Kiểu thanh công cụ tùy chỉnh
   toolbarPosition: 'inside' // Vị trí thanh công cụ: 'inside' | 'above' | 'below'
 }}
 ```
 
-## Vòng đời hiển thị
+## Vòng đời render
 
-Toàn bộ chu trình hiển thị sẽ gọi các phương thức sau theo thứ tự:
+Toàn bộ chu kỳ render sẽ gọi các phương thức sau theo thứ tự:
 
-1.  **model.dispatchEvent('beforeRender')** - Sự kiện trước khi hiển thị
-2.  **model.render()** - Thực thi phương thức hiển thị của model
-3.  **model.onMount()** - Hook khi component được gắn kết (mount)
-4.  **model.onUnmount()** - Hook khi component được gỡ bỏ (unmount)
+1. **model.dispatchEvent('beforeRender')** - Sự kiện trước khi render
+2. **model.render()** - Thực thi phương thức render của model
+3. **model.onMount()** - Hook khi component mount
+4. **model.onUnmount()** - Hook khi component unmount
 
 ## Ví dụ sử dụng
 
-### Hiển thị cơ bản
+### Render cơ bản
 
 ```tsx pure
 import { FlowModelRenderer } from '@nocobase/flow-engine';
@@ -90,7 +94,7 @@ function MyComponent() {
 }
 ```
 
-### Hiển thị kèm cài đặt luồng công việc
+### Render kèm cài đặt Flow
 
 ```tsx pure
 // Hiển thị cài đặt nhưng ẩn nút xóa
@@ -107,7 +111,7 @@ function MyComponent() {
   showTitle={true}
 />
 
-// Sử dụng chế độ menu chuột phải
+// Dùng chế độ menu chuột phải
 <FlowModelRenderer
   model={myModel}
   showFlowSettings={true}
@@ -135,7 +139,7 @@ function MyComponent() {
 />
 ```
 
-### Bỏ qua các luồng công việc tự động
+### Bỏ qua Flow tự động
 
 ```tsx pure
 <FlowModelRenderer
@@ -145,7 +149,7 @@ function MyComponent() {
 />
 ```
 
-### Hiển thị Field Model
+### Render Field model
 
 ```tsx pure
 import { FieldModelRenderer } from '@nocobase/flow-engine';
@@ -163,25 +167,25 @@ function FormField({ model, onChange, ...props }) {
 
 ## Xử lý lỗi
 
-`FlowModelRenderer` tích hợp sẵn cơ chế xử lý lỗi toàn diện:
+FlowModelRenderer tích hợp sẵn cơ chế xử lý lỗi hoàn thiện:
 
--   **Ranh giới lỗi tự động**: Mặc định bật `showErrorFallback={true}`
--   **Lỗi luồng công việc tự động**: Bắt và xử lý các lỗi trong quá trình thực thi luồng công việc tự động
--   **Lỗi hiển thị**: Hiển thị nội dung dự phòng khi model không thể hiển thị
+- **Error boundary tự động**: Mặc định bật `showErrorFallback={true}`
+- **Lỗi Flow tự động**: Bắt và xử lý lỗi trong khi thực thi Flow tự động
+- **Lỗi render**: Hiển thị nội dung fallback khi model render thất bại
 
 ```tsx pure
 <FlowModelRenderer
   model={myModel}
   showErrorFallback={true}
-  fallback={<div>Hiển thị thất bại, vui lòng thử lại</div>}
+  fallback={<div>Render thất bại, vui lòng thử lại</div>}
 />
 ```
 
-## Tối ưu hiệu suất
+## Tối ưu hiệu năng
 
-### Bỏ qua các luồng công việc tự động
+### Bỏ qua Flow tự động
 
-Đối với các trường hợp không cần luồng công việc tự động, bạn có thể bỏ qua chúng để cải thiện hiệu suất:
+Đối với các tình huống không cần Flow tự động, có thể bỏ qua để nâng cao hiệu năng:
 
 ```tsx pure
 <FlowModelRenderer
@@ -190,13 +194,13 @@ function FormField({ model, onChange, ...props }) {
 />
 ```
 
-### Cập nhật phản ứng (Reactive Updates)
+### Cập nhật phản ứng
 
-`FlowModelRenderer` sử dụng `observer` từ `@formily/reactive-react` để thực hiện cập nhật phản ứng, đảm bảo component tự động hiển thị lại khi trạng thái của model thay đổi.
+FlowModelRenderer dùng `observer` của `@formily/reactive-react` để cập nhật phản ứng, đảm bảo component có thể tự động render lại khi trạng thái model thay đổi.
 
 ## Lưu ý
 
-1.  **Xác thực Model**: Đảm bảo `model` được truyền vào có phương thức `render` hợp lệ.
-2.  **Quản lý vòng đời**: Các hook vòng đời của model sẽ được gọi vào thời điểm thích hợp.
-3.  **Ranh giới lỗi**: Nên bật ranh giới lỗi trong môi trường sản xuất để mang lại trải nghiệm người dùng tốt hơn.
-4.  **Cân nhắc hiệu suất**: Đối với các trường hợp hiển thị nhiều model, hãy cân nhắc sử dụng tùy chọn `skipApplyAutoFlows`.
+1. **Validate model**: Đảm bảo `model` được truyền vào có phương thức `render` hợp lệ
+2. **Quản lý vòng đời**: Các hook vòng đời của model sẽ được gọi vào thời điểm thích hợp
+3. **Error boundary**: Khuyến nghị bật error boundary trong môi trường sản xuất để cung cấp trải nghiệm người dùng tốt hơn
+4. **Cân nhắc hiệu năng**: Đối với các tình huống render nhiều model, cân nhắc dùng tùy chọn `skipApplyAutoFlows`

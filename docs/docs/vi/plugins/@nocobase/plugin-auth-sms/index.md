@@ -1,12 +1,14 @@
 ---
-displayName: "Auth: SMS"
+displayName: "Xác thực: SMS"
 packageName: '@nocobase/plugin-auth-sms'
+title: "Xác thực: SMS"
+keywords: "Xác thực: SMS,Plugin,NocoBase"
 description: |
-  SMS authentication.
+  Xác thực danh tính bằng mã xác minh SMS.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Auth: SMS
+# Xác thực: SMS

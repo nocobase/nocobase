@@ -1,48 +1,49 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Tổng quan về xây dựng giao diện"
+description: "Xây dựng giao diện NocoBase: chế độ cấu hình what-you-see-is-what-you-get, mẫu bố cục, Trang, Block, Action, cấu hình cột Table, tùy chỉnh giao diện không cần lập trình, hỗ trợ chuyển đổi giữa chế độ cấu hình và chế độ sử dụng."
+keywords: "xây dựng giao diện, what-you-see-is-what-you-get, Block, cấu hình Trang, mẫu bố cục, cấu hình Action, cột Table, NocoBase"
+---
 
 # Xây dựng giao diện
 
-## Trực quan (WYSIWYG)
+## What-you-see-is-what-you-get
 
-NocoBase cung cấp trải nghiệm xây dựng giao diện trực quan (WYSIWYG). Nhấp vào nút Xây dựng giao diện để chuyển đổi giữa chế độ chỉnh sửa và chế độ xem.
+NocoBase sử dụng chế độ xây dựng giao diện what-you-see-is-what-you-get. Nhấp vào nút xây dựng giao diện, bạn có thể chuyển đổi giữa chế độ cấu hình và chế độ sử dụng.
 
-Chế độ xem:
+Chế độ sử dụng:
 
 ![20251023215845](https://static-docs.nocobase.com/20251023215845.png)
 
-Chế độ chỉnh sửa:
+Chế độ cấu hình:
 
 ![20251023215951](https://static-docs.nocobase.com/20251023215951.png)
 
 ## Mẫu bố cục
 
-NocoBase tích hợp sẵn một mẫu bố cục mặc định: khu vực điều hướng ở trên cùng và bên trái, cùng với khu vực nội dung ở bên phải.
+NocoBase tích hợp sẵn một mẫu bố cục, phía trên và bên trái là khu vực điều hướng, bên phải là khu vực nội dung.
 
 ![未命名.002](https://static-docs.nocobase.com/未命名.002.jpeg)
 
-## Tùy chọn cấu hình
+## Cấu hình
 
-Khi vào chế độ chỉnh sửa, các điểm đánh dấu màu cam sẽ xuất hiện trên giao diện để chỉ ra các phần tử có thể cấu hình. Thông thường, điểm truy cập các tùy chọn cấu hình của mỗi phần tử nằm ở góc trên bên phải của phần tử đó. Hầu hết các phần tử đều hỗ trợ cấu hình theo thời gian thực và xem trước kết quả ngay lập tức. Dưới đây là một vài ví dụ:
+Sau khi vào chế độ xây dựng giao diện, các mục có thể cấu hình màu cam sẽ xuất hiện trên giao diện. Thông thường, lối vào cấu hình của mỗi phần tử có thể cấu hình nằm ở góc trên bên phải của phần tử đó. Hầu hết các phần tử đều có thể được cấu hình và xem hiệu ứng theo thời gian thực trên giao diện, dưới đây là một vài ví dụ:
 
-Tùy chọn cấu hình menu:
+Cấu hình Menu:
 
 ![20251023221617](https://static-docs.nocobase.com/20251023221617.png)
 
-Tùy chọn cấu hình trang:
+Cấu hình Trang:
 
 ![20251023221649](https://static-docs.nocobase.com/20251023221649.png)
 
-Tùy chọn cấu hình khối:
+Cấu hình Block:
 
 ![20251023221748](https://static-docs.nocobase.com/20251023221748.png)
 
-Tùy chọn cấu hình thao tác:
+Cấu hình Action:
 
 ![20251023222109](https://static-docs.nocobase.com/20251023222109.png)
 
-Tùy chọn cấu hình cột bảng:
+Cấu hình cột Table:
 
 ![20251023221814](https://static-docs.nocobase.com/20251023221814.png)

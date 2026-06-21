@@ -1,66 +1,70 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Select dropdown"
+description: "Field Select dropdown: dropdown chọn đơn/đa, hỗ trợ liên kết nguồn dữ liệu, tìm kiếm từ xa, cấu hình tùy chọn."
+keywords: "select dropdown,Select,chọn đơn đa,liên kết nguồn dữ liệu,Interface Builder,NocoBase"
+---
 
-
-# Trình chọn thả xuống
+# Select dropdown
 
 ## Giới thiệu
 
-Trình chọn thả xuống hỗ trợ liên kết dữ liệu bằng cách chọn từ dữ liệu hiện có trong bộ sưu tập mục tiêu, hoặc bằng cách thêm dữ liệu mới vào đó để liên kết. Các tùy chọn thả xuống hỗ trợ tìm kiếm mờ.
+Select dropdown hỗ trợ chọn dữ liệu hiện có của Table mục tiêu để liên kết hoặc thêm dữ liệu cho Table mục tiêu rồi liên kết, các tùy chọn dropdown hỗ trợ tìm kiếm mờ.
 
 ![20251029205901](https://static-docs.nocobase.com/20251029205901.png)
 
-## Cấu hình trường
+## Tùy chọn cấu hình Field
 
-### Thiết lập phạm vi dữ liệu
+### Cài đặt phạm vi dữ liệu
 
-Kiểm soát phạm vi dữ liệu của danh sách thả xuống.
+Kiểm soát phạm vi dữ liệu của danh sách dropdown.
 
 ![20251029210025](https://static-docs.nocobase.com/20251029210025.png)
 
-Để biết thêm thông tin, xem [Thiết lập phạm vi dữ liệu](/interface-builder/fields/field-settings/data-scope)
+Xem thêm tại [Cài đặt phạm vi dữ liệu](/interface-builder/fields/field-settings/data-scope)
 
-### Thiết lập quy tắc sắp xếp
+### Cài đặt quy tắc Sắp xếp
 
-Kiểm soát việc sắp xếp dữ liệu trong trình chọn thả xuống.
+Kiểm soát Sắp xếp dữ liệu của Select dropdown.
 
-Ví dụ: Sắp xếp theo ngày dịch vụ giảm dần.
+Ví dụ: Sắp xếp giảm dần theo ngày dịch vụ.
 
 ![20251029210105](https://static-docs.nocobase.com/20251029210105.png)
 
 ### Cho phép thêm/liên kết nhiều bản ghi
 
-Giới hạn mối quan hệ nhiều-nhiều chỉ cho phép liên kết một bản ghi.
+Giới hạn dữ liệu quan hệ đến nhiều chỉ cho phép liên kết một bản ghi.
 
 ![20251029210145](https://static-docs.nocobase.com/20251029210145.png)
 
-### Trường tiêu đề
+### Field tiêu đề
 
-Trường tiêu đề là trường nhãn được hiển thị trong các tùy chọn.
+Field tiêu đề là Field nhãn được hiển thị của tùy chọn.
 
 ![20251029210507](https://static-docs.nocobase.com/20251029210507.gif)
 
-> Hỗ trợ tìm kiếm nhanh dựa trên trường tiêu đề
+> Hỗ trợ tìm kiếm nhanh theo Field tiêu đề
 
-Để biết thêm thông tin, xem [Trường tiêu đề](/interface-builder/fields/field-settings/title-field)
+Xem thêm tại [Field tiêu đề](/interface-builder/fields/field-settings/title-field)
 
-### Tạo nhanh: Thêm dữ liệu trước, sau đó chọn dữ liệu đó
+
+### Tạo nhanh: thêm dữ liệu rồi chọn dữ liệu đó
 
 ![20251125220046](https://static-docs.nocobase.com/20251125220046.png)
 
-#### Thêm qua trình thả xuống
+#### Thêm trong menu dropdown
 
-Sau khi tạo bản ghi mới trong bộ sưu tập mục tiêu, hệ thống tự động chọn bản ghi đó và liên kết khi biểu mẫu được gửi.
+Sau khi tạo dữ liệu mới cho Table mục tiêu sẽ tự động chọn dữ liệu đó và liên kết khi gửi Form.
 
-Bảng Đơn hàng có trường mối quan hệ nhiều-một là **“Account.”**
+Table đơn hàng có Field quan hệ nhiều-một "Account".
 
 ![20251125220447](https://static-docs.nocobase.com/20251125220447.gif)
 
-#### Thêm qua cửa sổ bật lên
+#### Thêm qua Popup
 
-Việc thêm qua cửa sổ bật lên phù hợp với các kịch bản nhập liệu phức tạp hơn và cho phép cấu hình một biểu mẫu tùy chỉnh để tạo bản ghi mới.
+Thêm qua Popup phù hợp với các trường hợp nhập liệu phức tạp hơn, có thể cấu hình Form thêm mới.
+
 
 ![20251125220607](https://static-docs.nocobase.com/20251125220607.gif)
 
-[Thành phần trường](/interface-builder/fields/association-field)
+
+[Component Field](/interface-builder/fields/association-field);

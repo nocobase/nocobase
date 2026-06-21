@@ -1,12 +1,11 @@
 ---
 pkg: '@nocobase/plugin-api-keys'
+title: "API Keys"
+description: "API Keys NocoBase: menambahkan API Key untuk pengguna saat ini, digunakan untuk autentikasi panggilan API, perlu mengkonfigurasi variabel environment APP_KEY."
+keywords: "API Keys,APP_KEY,autentikasi API,autentikasi panggilan antarmuka,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-# Kunci API
+# API Keys
 
 ## Pengantar
 
@@ -16,18 +15,18 @@ http://localhost:13000/admin/settings/api-keys/configuration
 
 ![](https://static-docs.nocobase.com/d64ccbdc8a512a0224e9f81dfe14a0a8.png)
 
-### Menambahkan Kunci API
+### Menambahkan API Key
 
-![](https://static-docs.nocobase.com/461872fc0ad9a96fa5b14e97fcba12.png)
+![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
 
-**Catatan**
+**Hal yang Perlu Diperhatikan**
 
-- Kunci API dibuat untuk pengguna saat ini dan mewarisi peran pengguna tersebut.
-- Pastikan variabel lingkungan `APP_KEY` telah dikonfigurasi dan dijaga kerahasiaannya. Jika `APP_KEY` berubah, semua kunci API yang telah ditambahkan akan menjadi tidak valid.
+- API Key yang ditambahkan adalah milik pengguna saat ini, dan rolenya adalah role yang dimiliki pengguna saat ini
+- Pastikan variabel environment `APP_KEY` telah dikonfigurasi dan tidak bocor. Jika APP_KEY berubah, semua API Key yang telah ditambahkan akan menjadi tidak valid.
 
-### Cara Mengonfigurasi APP_KEY
+### Cara Mengkonfigurasi APP_KEY
 
-Untuk versi Docker, ubah file docker-compose.yml
+Untuk versi docker, ubah file docker-compose.yml
 
 ```diff
 services:
@@ -37,7 +36,7 @@ services:
 +     - APP_KEY=4jAokvLKTJgM0v_JseUkJ
 ```
 
-Untuk instalasi dari kode sumber atau `create-nocobase-app`, Anda dapat langsung mengubah `APP_KEY` di file .env.
+Untuk instalasi source code atau create-nocobase-app, langsung ubah APP_KEY pada file .env
 
 ```bash
 APP_KEY=4jAokvLKTJgM0v_JseUkJ

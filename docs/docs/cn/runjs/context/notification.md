@@ -1,3 +1,9 @@
+---
+title: "ctx.notification"
+description: "ctx.notification 通知 API，用于右上角通知提醒，支持 duration、placement 等配置。"
+keywords: "ctx.notification,通知,提醒,duration,placement,RunJS,NocoBase"
+---
+
 # ctx.notification
 
 基于 Ant Design Notification 的全局通知 API，用于在页面**右上角**显示通知面板。与 `ctx.message` 相比，通知可带标题与描述，适合较长时间展示、需用户留意的内容。

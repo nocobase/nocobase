@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-aggregate'
+title: "工作流节点 - 聚合查询"
+description: "聚合查询节点：对数据表执行聚合函数统计，返回统计结果供后续节点使用，常用于报表。"
+keywords: "工作流,聚合查询,Aggregate,统计,报表,NocoBase"
 ---
 
 # 聚合查询

@@ -1,65 +1,70 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Dropdown Select"
+description: "Field Dropdown Select: dropdown single select/multi-select, mendukung asosiasi data source, pencarian remote, konfigurasi opsi."
+keywords: "Dropdown Select, Select, single select multi-select, asosiasi data source, interface builder, NocoBase"
+---
 
-# Dropdown
+# Dropdown Select
 
-## Pendahuluan
+## Pengantar
 
-Dropdown mendukung pengaitan data dengan memilih dari data yang sudah ada di tabel target, atau dengan menambahkan data baru ke tabel tersebut untuk pengaitan. Opsi dropdown mendukung pencarian fuzzy.
+Dropdown Select mendukung pemilihan data dari data yang sudah ada di Table target untuk diasosiasikan atau menambahkan data ke Table target kemudian diasosiasikan. Opsi dropdown mendukung pencarian fuzzy.
 
 ![20251029205901](https://static-docs.nocobase.com/20251029205901.png)
 
-## Konfigurasi Kolom
+## Konfigurasi Field
 
-### Mengatur Cakupan Data
+### Atur Cakupan Data
 
-Mengontrol cakupan data dari daftar dropdown.
+Mengontrol cakupan data dropdown list.
 
 ![20251029210025](https://static-docs.nocobase.com/20251029210025.png)
 
-Untuk informasi lebih lanjut, lihat [Mengatur Cakupan Data](/interface-builder/fields/field-settings/data-scope)
+Untuk informasi lebih lanjut, lihat [Atur Cakupan Data](/interface-builder/fields/field-settings/data-scope)
 
-### Mengatur Aturan Pengurutan
+### Atur Aturan Sort
 
-Mengontrol pengurutan data dalam dropdown.
+Mengontrol sort data Dropdown Select.
 
-Contoh: Urutkan berdasarkan tanggal layanan secara menurun.
+Contoh: Sort secara descending berdasarkan tanggal layanan.
 
 ![20251029210105](https://static-docs.nocobase.com/20251029210105.png)
 
-### Mengizinkan Penambahan/Pengaitan Beberapa Data
+### Izinkan Tambah/Asosiasi Beberapa
 
-Membatasi relasi banyak-ke-banyak agar hanya mengizinkan pengaitan satu data.
+Membatasi data relasi to-many hanya diizinkan untuk diasosiasikan satu data.
 
 ![20251029210145](https://static-docs.nocobase.com/20251029210145.png)
 
-### Kolom Judul
+### Field Judul
 
-Kolom judul adalah kolom label yang ditampilkan dalam opsi.
+Field Judul adalah Field label yang ditampilkan di opsi.
 
 ![20251029210507](https://static-docs.nocobase.com/20251029210507.gif)
 
-> Mendukung pencarian cepat berdasarkan kolom judul.
+> Mendukung pencarian cepat berdasarkan Field Judul
 
-Untuk informasi lebih lanjut, lihat [Kolom Judul](/interface-builder/fields/field-settings/title-field)
+Untuk informasi lebih lanjut, lihat [Field Judul](/interface-builder/fields/field-settings/title-field)
 
-### Pembuatan Cepat: Tambahkan Dulu, Lalu Pilih
+
+### Buat Cepat: Tambah Data Terlebih Dahulu Kemudian Pilih Data Tersebut
 
 ![20251125220046](https://static-docs.nocobase.com/20251125220046.png)
 
-#### Tambahkan via Dropdown
+#### Tambah dari Dropdown Menu
 
-Setelah membuat data baru di tabel target, sistem secara otomatis memilihnya dan mengaitkannya saat formulir dikirimkan.
+Setelah menambahkan data baru ke Table target, otomatis memilih data tersebut dan diasosiasikan setelah Form di-submit.
 
-Tabel Pesanan memiliki kolom relasi banyak-ke-satu "Account".
+Tabel pesanan memiliki Field relasi many-to-one "Account".
 
 ![20251125220447](https://static-docs.nocobase.com/20251125220447.gif)
 
-#### Tambahkan via Modal
+#### Tambah dari Popup
 
-Penambahan via modal cocok untuk skenario entri data yang lebih kompleks dan memungkinkan konfigurasi formulir khusus untuk membuat data baru.
+Tambah dari Popup cocok untuk skenario input yang lebih kompleks, dapat dikonfigurasi Form tambah baru.
+
 
 ![20251125220607](https://static-docs.nocobase.com/20251125220607.gif)
 
-[Komponen Kolom](/interface-builder/fields/association-field)
+
+[Komponen Field](/interface-builder/fields/association-field);

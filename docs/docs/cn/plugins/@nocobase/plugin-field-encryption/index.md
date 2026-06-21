@@ -1,4 +1,6 @@
 ---
+title: "数据表字段：加密"
+keywords: "数据表字段：加密,插件,NocoBase"
 displayName: "数据表字段：加密"
 packageName: '@nocobase/plugin-field-encryption'
 supportedVersions:

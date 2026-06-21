@@ -1,8 +1,10 @@
 ---
-displayName: "Mobile client(Deprecated)"
+displayName: "Mobile (Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
+title: "Mobile (Deprecated)"
+keywords: "Mobile (Deprecated),Plugin,NocoBase"
 description: |
-  Provides the ability to configure mobile pages.
+  Menyediakan kemampuan konfigurasi halaman mobile.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Mobile client(Deprecated)
+# Mobile (Deprecated)
 
-> Note: This plugin is deprecated.
+> Perhatian: Plugin ini sudah usang (deprecated).

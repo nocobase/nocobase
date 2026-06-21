@@ -1,35 +1,33 @@
 ---
 pkg: "@nocobase/plugin-action-export"
+title: "Action Ekspor"
+description: "Action Ekspor: mengekspor data ke format Excel dan lainnya, mendukung ekspor halaman saat ini/semua data."
+keywords: "Action Ekspor, Export, ekspor Excel, ekspor data, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Ekspor#
 
-# Ekspor
+## Pengantar
 
-## Pendahuluan
+Fitur ekspor memungkinkan ekspor record yang difilter ke format **Excel**, mendukung konfigurasi Field yang akan diekspor. Pengguna dapat memilih Field yang akan diekspor sesuai kebutuhan untuk analisis data, pemrosesan, atau pengarsipan selanjutnya. Fitur ini meningkatkan fleksibilitas operasi data, terutama cocok untuk skenario di mana data perlu ditransfer ke platform lain atau diproses lebih lanjut.
 
-Fitur ekspor memungkinkan catatan yang telah difilter untuk diekspor dalam format **Excel**, serta mendukung konfigurasi bidang yang akan diekspor. Pengguna dapat memilih bidang yang mereka perlukan untuk diekspor, guna analisis data, pemrosesan, atau pengarsipan selanjutnya. Fitur ini meningkatkan fleksibilitas operasi data, terutama dalam skenario di mana data perlu ditransfer ke platform lain atau diproses lebih lanjut.
+### Highlight Fitur:
+- **Pemilihan Field**: Pengguna dapat mengkonfigurasi Field yang akan diekspor untuk memastikan data yang diekspor akurat dan ringkas.
+- **Mendukung Format Excel**: Data yang diekspor akan disimpan sebagai file Excel standar, mudah diintegrasikan dengan data lain untuk analisis.
 
-### Sorotan Fitur:
-- **Pemilihan Bidang**: Pengguna dapat mengonfigurasi dan memilih bidang yang akan diekspor, memastikan data yang diekspor akurat dan ringkas.
-- **Dukungan Format Excel**: Data yang diekspor akan disimpan sebagai file Excel standar, memudahkan integrasi dan analisis dengan data lain.
-
-Dengan fitur ini, pengguna dapat dengan mudah mengekspor data penting dari pekerjaan mereka untuk penggunaan eksternal, sehingga meningkatkan efisiensi kerja.
+Melalui fitur ini, pengguna dapat dengan mudah mengekspor data penting dalam pekerjaan untuk digunakan secara eksternal, meningkatkan efisiensi kerja.
 
 ![20251029170811](https://static-docs.nocobase.com/20251029170811.png)
-
-## Konfigurasi Aksi
+## Konfigurasi Action
 
 ![20251029171452](https://static-docs.nocobase.com/20251029171452.png)
 
-### Bidang yang Dapat Diekspor
+### Field yang Dapat Diekspor
 
-- Tingkat pertama: Semua bidang dari koleksi saat ini;
-- Tingkat kedua: Jika itu adalah bidang relasi, Anda perlu memilih bidang dari koleksi terkait;
-- Tingkat ketiga: Hanya tiga tingkat yang diproses; bidang relasi pada tingkat terakhir tidak ditampilkan;
+- Level pertama: semua Field dari collection saat ini;
+- Level kedua: jika Field relasi, perlu memilih Field dari Table yang terkait;
+- Level ketiga: hanya menangani tiga level, Field relasi level terakhir tidak ditampilkan;
 
 ![20251029171557](https://static-docs.nocobase.com/20251029171557.png)
 
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule): Menampilkan/menyembunyikan tombol secara dinamis;
-- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Mengedit judul, warna, dan ikon tombol;
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule): tampilan/sembunyi tombol secara dinamis;
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, ikon tombol;

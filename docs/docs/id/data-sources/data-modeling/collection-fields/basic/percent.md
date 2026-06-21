@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Persen"
+description: "Field Persen, menyimpan nilai rasio, mendukung tampilan persentase."
+keywords: "persen,percent,field rasio,field numerik,NocoBase"
+---
 
-# Persentase
+# Persen
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512175847](https://static-docs.nocobase.com/20240512175847.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

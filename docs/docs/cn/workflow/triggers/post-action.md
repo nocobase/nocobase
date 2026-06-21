@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-workflow-action-trigger'
+title: "操作后事件"
+description: "操作后事件触发器：在操作执行后触发工作流，如保存后自动创建关联、发送通知、数据同步。"
+keywords: "工作流,操作后事件,Post Action,保存后触发,数据同步,NocoBase"
 ---
-
 # 操作后事件
 
 ## 介绍

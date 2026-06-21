@@ -16,10 +16,11 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useT } from '../../locale';
 import { AddLLMModal } from './AddLLMModal';
 import { useLLMServiceCatalog } from '../../llm-services/hooks/useLLMServiceCatalog';
-import { isSameModel, isValidModel, MODEL_PREFERENCE_STORAGE_KEY, resolveModel } from './model';
+import { getAIEmployeeModels, isSameModel, isValidModel, MODEL_PREFERENCE_STORAGE_KEY, resolveModel } from './model';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
-export const ModelSwitcher: React.FC = observer(
-  () => {
+export const ModelSwitcher: React.FC<{ disabled?: boolean }> = observer(
+  ({ disabled }) => {
     const t = useT();
     const app = useApp();
     const api = useAPIClient();
@@ -28,6 +29,7 @@ export const ModelSwitcher: React.FC = observer(
     const [isOpen, setIsOpen] = useState(false);
     const currentEmployee = useChatBoxStore.use.currentEmployee();
     const currentEmployeeUsername = currentEmployee?.username;
+    const currentConversation = useChatConversationsStore.use.currentConversation();
     const model = useChatBoxStore.use.model();
     const setModel = useChatBoxStore.use.setModel();
 
@@ -37,42 +39,61 @@ export const ModelSwitcher: React.FC = observer(
 
     const { repo, services: llmServices, loading, allModelsWithLabel, allModels } = useLLMServiceCatalog();
 
+    const scopedModels = useMemo(() => getAIEmployeeModels(currentEmployee, allModels), [allModels, currentEmployee]);
+    const scopedModelKeys = useMemo(
+      () => new Set(scopedModels.map((model) => `${model.llmService}:${model.model}`)),
+      [scopedModels],
+    );
+    const servicesWithModels = llmServices
+      .map((service) => ({
+        ...service,
+        enabledModels: service.enabledModels.filter((model) =>
+          scopedModelKeys.has(`${service.llmService}:${model.value}`),
+        ),
+      }))
+      .filter((service) => Array.isArray(service.enabledModels) && service.enabledModels.length > 0);
+
+    const scopedModelsWithLabel = allModelsWithLabel.filter((model) =>
+      scopedModelKeys.has(`${model.llmService}:${model.model}`),
+    );
+
     // Initialize: cache >> first model
     useEffect(() => {
-      if (!currentEmployeeUsername || !allModels.length) return;
+      if (!currentEmployeeUsername) return;
+      if (currentConversation) return;
 
-      const resolved = resolveModel(api, currentEmployeeUsername, allModels, model);
+      const resolved = resolveModel(api, currentEmployee, allModels, model);
       if (isSameModel(resolved, model)) {
         return;
       }
       setModel(resolved);
-    }, [api, currentEmployeeUsername, allModels, model, setModel]);
+    }, [api, currentConversation, currentEmployee, currentEmployeeUsername, allModels, model, setModel]);
 
     // Current selected model value
     const selectedModel = useMemo(() => {
-      if (isValidModel(model, allModels)) {
+      if (isValidModel(model, scopedModels)) {
         return model;
       }
-      if (allModels.length) {
-        return { llmService: allModels[0].llmService, model: allModels[0].model };
+      if (scopedModels.length) {
+        return { llmService: scopedModels[0].llmService, model: scopedModels[0].model };
       }
       return undefined;
-    }, [model, allModels]);
+    }, [model, scopedModels]);
 
     // Current display label
     const selectedLabel = useMemo(() => {
       if (selectedModel) {
-        const found = allModelsWithLabel.find(
+        const found = scopedModelsWithLabel.find(
           (m) => m.llmService === selectedModel.llmService && m.model === selectedModel.model,
         );
         return found?.label || selectedModel.model;
       }
       return undefined;
-    }, [selectedModel, allModelsWithLabel]);
+    }, [selectedModel, scopedModelsWithLabel]);
 
     // Handle selection
     const handleSelect = (llmService: string, modelValue: string) => {
-      const target = allModelsWithLabel.find((m) => m.llmService === llmService && m.value === modelValue);
+      const target = scopedModelsWithLabel.find((m) => m.llmService === llmService && m.value === modelValue);
       if (target) {
         const newValue = { llmService: target.llmService, model: target.model };
         setModel(newValue);
@@ -101,12 +122,12 @@ export const ModelSwitcher: React.FC = observer(
     if (!currentEmployee) return null;
     if (loading && !llmServices.length) return <Spin size="small" />;
 
-    const hasModels = allModels.length > 0;
+    const hasModels = servicesWithModels.length > 0;
 
     // Build dropdown menu items
     const menuItems: any[] = [];
 
-    llmServices.forEach((service, sIndex) => {
+    servicesWithModels.forEach((service, sIndex) => {
       if (sIndex > 0) {
         menuItems.push({ type: 'divider', key: `divider-${sIndex}` });
       }
@@ -202,6 +223,7 @@ export const ModelSwitcher: React.FC = observer(
     return (
       <>
         <Dropdown
+          disabled={disabled}
           menu={{ items: menuItems, style: { maxHeight: 400, overflow: 'auto' } }}
           trigger={['hover']}
           open={isOpen}
@@ -211,7 +233,11 @@ export const ModelSwitcher: React.FC = observer(
           {dropdownContent}
         </Dropdown>
         {hasConfigPermission && (
-          <AddLLMModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onSuccess={() => repo.refresh()} />
+          <AddLLMModal
+            open={addModalOpen}
+            onClose={() => setAddModalOpen(false)}
+            onSuccess={() => repo.refreshLLMServices()}
+          />
         )}
       </>
     );

@@ -1,42 +1,45 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Many to One"
+description: "Field relasi Many to One (M2O), beberapa entitas terhubung ke satu entitas parent, seperti siswa-kelas."
+keywords: "Many to One,M2O,BelongsTo,terkait,NocoBase"
+---
 
-# Banyak-ke-Satu
 
-Dalam sebuah basis data perpustakaan, terdapat dua entitas: buku dan penulis. Seorang penulis dapat menulis beberapa buku, tetapi setiap buku biasanya hanya memiliki satu penulis. Dalam kasus ini, hubungan antara penulis dan buku adalah banyak-ke-satu. Beberapa buku dapat dikaitkan dengan penulis yang sama, tetapi setiap buku hanya dapat memiliki satu penulis.
+# Many to One
 
-Diagram ER:
+Sebuah database perpustakaan, dengan dua entitas: buku dan penulis. Seorang penulis dapat menulis banyak buku, tetapi setiap buku hanya memiliki satu penulis (dalam kebanyakan kasus). Dalam situasi ini, hubungan antara penulis dan buku adalah Many to One. Banyak buku dapat terhubung ke penulis yang sama, tetapi setiap buku hanya bisa memiliki satu penulis.
+
+Relasi ER seperti berikut
 
 ![alt text](https://static-docs.nocobase.com/eaeeac974844db05c75cf0deeedf3652.png)
 
-Konfigurasi Kolom:
+Konfigurasi field
 
 ![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
 
-## Deskripsi Parameter
+## Penjelasan Parameter
 
-### Koleksi Sumber
+### Source collection
 
-Koleksi sumber, yaitu koleksi tempat kolom saat ini berada.
+Collection sumber, yaitu Collection tempat field saat ini berada.
 
-### Koleksi Target
+### Target collection
 
-Koleksi target, yaitu koleksi yang akan dikaitkan.
+Collection target, dengan Collection mana akan dihubungkan.
 
-### Kunci Asing
+### Foreign key
 
-Kolom di koleksi sumber yang digunakan untuk membangun kaitan antara kedua koleksi.
+Field Collection sumber, digunakan untuk membangun relasi antar dua Collection.
 
-### Kunci Target
+### Target key
 
-Kolom di koleksi target yang direferensikan oleh kunci asing. Kolom ini harus unik.
+Field yang dirujuk oleh constraint foreign key, harus memiliki keunikan.
 
 ### ON DELETE
 
-ON DELETE mengacu pada aturan yang diterapkan pada referensi kunci asing di koleksi anak terkait ketika catatan di koleksi induk dihapus. Ini adalah opsi yang digunakan saat mendefinisikan batasan kunci asing. Opsi ON DELETE yang umum meliputi:
+ON DELETE merujuk pada aturan operasi terhadap referensi foreign key di tabel anak yang terkait saat menghapus record di tabel parent. Ini adalah opsi yang digunakan saat mendefinisikan constraint foreign key. Opsi ON DELETE yang umum meliputi:
 
-- **CASCADE**: Ketika sebuah catatan di koleksi induk dihapus, semua catatan terkait di koleksi anak akan otomatis dihapus.
-- **SET NULL**: Ketika sebuah catatan di koleksi induk dihapus, nilai kunci asing di catatan koleksi anak yang terkait akan diatur menjadi NULL.
-- **RESTRICT**: Opsi bawaan, ini mencegah penghapusan catatan koleksi induk jika ada catatan terkait di koleksi anak.
-- **NO ACTION**: Serupa dengan RESTRICT, ini mencegah penghapusan catatan koleksi induk jika ada catatan terkait di koleksi anak.
+- CASCADE: Ketika record di tabel parent dihapus, semua record yang terkait di tabel anak akan otomatis dihapus.
+- SET NULL: Ketika record di tabel parent dihapus, nilai foreign key di tabel anak yang terkait akan diatur menjadi NULL.
+- RESTRICT: Opsi default. Ketika mencoba menghapus record di tabel parent, jika ada record di tabel anak yang terkait, penghapusan record tabel parent akan ditolak.
+- NO ACTION: Mirip dengan RESTRICT, jika ada record di tabel anak yang terkait, penghapusan record tabel parent akan ditolak.

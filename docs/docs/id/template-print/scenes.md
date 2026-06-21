@@ -1,349 +1,353 @@
+---
+title: "Contoh Generate \"Kontrak Pasokan dan Pembelian\" dengan Fitur \"Template Print\""
+description: "NocoBase Template Print: Contoh generate \"Kontrak Pasokan dan Pembelian\" dengan fitur \"Template Print\""
+keywords: "scenes,NocoBase"
+---
 
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Contoh Generate "Kontrak Pasokan dan Pembelian" dengan Fitur "Template Print"
 
-
-# Menggunakan Fitur "Cetak Template" untuk Membuat Contoh Kontrak Pengadaan dan Pembelian
-
-Dalam skenario rantai pasok atau perdagangan, seringkali diperlukan untuk dengan cepat membuat "Kontrak Pengadaan dan Pembelian" yang terstandardisasi dan mengisi konten secara dinamis berdasarkan informasi dari sumber data seperti pembeli, penjual, detail produk, dan lainnya. Berikut ini, kami akan menggunakan contoh kasus penggunaan "Kontrak" yang disederhanakan untuk menunjukkan kepada Anda cara mengonfigurasi dan menggunakan fitur "Cetak Template" untuk memetakan informasi data ke *placeholder* dalam template kontrak, sehingga dokumen kontrak akhir dapat dibuat secara otomatis.
+Dalam skenario supply chain atau perdagangan, sering kali perlu dengan cepat menghasilkan satu "Kontrak Pasokan dan Pembelian" yang terstandarisasi, dan secara dinamis mengisi konten berdasarkan informasi pembeli, penjual, detail Produk, dll. dari sumber data. Berikut ini akan mengambil contoh kasus penggunaan "kontrak" yang disederhanakan, untuk menunjukkan bagaimana mengonfigurasi dan menggunakan fitur "Template Print", memetakan informasi data ke placeholder pada Template kontrak, sehingga otomatis menghasilkan dokumen kontrak akhir.
 
 ---
 
-## 1. Latar Belakang dan Gambaran Umum Struktur Data
+## 1. Latar Belakang dan Ikhtisar Struktur Data
 
-Dalam contoh ini, secara garis besar terdapat koleksi-koleksi utama berikut (dengan mengabaikan kolom lain yang tidak relevan):
+Dalam contoh kami, kira-kira ada beberapa tabel data utama berikut (mengabaikan field lain yang tidak terkait):
 
-- **parties**: menyimpan informasi unit atau individu Pihak A/Pihak B, termasuk nama, alamat, kontak, telepon, dll.
-- **contracts**: menyimpan catatan kontrak spesifik, termasuk nomor kontrak, *foreign key* pembeli/penjual, informasi penandatangan, tanggal mulai/akhir, rekening bank, dll.
-- **contract_line_items**: digunakan untuk menyimpan beberapa item di bawah kontrak tersebut (nama produk, spesifikasi, kuantitas, harga satuan, tanggal pengiriman, dll.)
+- **parties**: Menyimpan informasi unit atau individu pihak A/B, termasuk nama, alamat, kontak, telepon, dll.
+- **contracts**: Menyimpan record kontrak spesifik, termasuk nomor kontrak, foreign key pembeli/penjual, informasi penanda tangan, tanggal mulai dan selesai, rekening bank, dll.
+- **contract_line_items**: Digunakan untuk menyimpan beberapa item di bawah kontrak ini (nama Produk, spesifikasi, jumlah, harga satuan, tanggal pengiriman, dll.)
 
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
 
-Karena sistem saat ini hanya mendukung pencetakan satu catatan, kami akan mengeklik "Cetak" pada halaman "Detail Kontrak", dan sistem akan secara otomatis mengambil catatan `contracts` yang sesuai, serta informasi `parties` terkait dan lainnya, lalu mengisinya ke dalam dokumen Word atau PDF.
+Karena sistem saat ini hanya mendukung print tunggal, kami akan klik "Print" pada halaman "Detail Kontrak", sistem otomatis mengambil record contracts yang sesuai, serta informasi parties terkait, mengisinya ke dokumen Word atau PDF.
+
+---
 
 ## 2. Persiapan
 
 ### 2.1 Persiapan Plugin
 
-Perlu diketahui, `plugin` "Cetak Template" kami adalah `plugin` komersial yang perlu dibeli dan diaktifkan sebelum operasi pencetakan dapat dilakukan.
+Perhatikan, "Template Print" kami adalah plugin komersial, perlu dibeli dan diaktifkan sebelum dapat melakukan operasi print.
 
 ![template_print-2025-11-01-17-31-51](https://static-docs.nocobase.com/template_print-2025-11-01-17-31-51.png)
 
 **Konfirmasi Aktivasi Plugin:**
 
-Pada halaman mana pun, buat blok detail (misalnya `users`), dan periksa apakah ada opsi konfigurasi template yang sesuai dalam konfigurasi aksi:
+Pada halaman apa pun, buat Block Detail (misalnya users), lihat apakah ada opsi konfigurasi Template yang sesuai di konfigurasi Action:
 
 ![template_print-2025-11-01-17-32-09](https://static-docs.nocobase.com/template_print-2025-11-01-17-32-09.png)
 
 ![template_print-2025-11-01-17-32-30](https://static-docs.nocobase.com/template_print-2025-11-01-17-32-30.png)
 
-### 2.2 Pembuatan Koleksi
+### 2.2 Pembuatan Tabel Data
 
-Buat koleksi entitas utama, koleksi kontrak, dan koleksi item produk yang dirancang di atas (cukup pilih kolom inti).
+Buat tabel pihak utama, tabel kontrak, dan tabel item Produk yang dirancang di atas (pilih field inti saja).
 
-#### Koleksi Kontrak (`Contracts`)
+#### Tabel Kontrak (Contracts)
 
-| Kategori Kolom | Nama Tampilan Kolom | Nama Kolom | Antarmuka Kolom |
+| Kategori Field | Field Display Name | Field Name | Field Interface |
 |---------|-------------------|------------|-----------------|
-| **Kolom PK & FK** | | | |
-| | ID | id | Bilangan Bulat |
-| | ID Pembeli | buyer_id | Bilangan Bulat |
-| | ID Penjual | seller_id | Bilangan Bulat |
-| **Kolom Asosiasi** | | | |
-| | Item Kontrak | contract_items | Satu ke Banyak |
-| | Pembeli (Pihak A) | buyer | Banyak ke Satu |
-| | Penjual (Pihak B) | seller | Banyak ke Satu |
-| **Kolom Umum** | | | |
-| | Nomor Kontrak | contract_no | Teks Satu Baris |
-| | Tanggal Mulai Pengiriman | start_date | Tanggal Waktu (dengan zona waktu) |
-| | Tanggal Akhir Pengiriman | end_date | Tanggal Waktu (dengan zona waktu) |
-| | Rasio Deposit (%) | deposit_ratio | Persen |
-| | Hari Pembayaran Setelah Pengiriman | payment_days_after | Bilangan Bulat |
-| | Nama Rekening Bank (Penerima) | bank_account_name | Teks Satu Baris |
-| | Nama Bank | bank_name | Teks Satu Baris |
-| | Nomor Rekening Bank (Penerima) | bank_account_number | Teks Satu Baris |
-| | Jumlah Total | total_amount | Angka |
-| | Kode Mata Uang | currency_codes | Pilihan Tunggal |
-| | Rasio Saldo (%) | balance_ratio | Persen |
-| | Hari Saldo Setelah Pengiriman | balance_days_after | Bilangan Bulat |
-| | Tempat Pengiriman | delivery_place | Teks Panjang |
-| | Nama Penandatangan Pihak A | party_a_signatory_name | Teks Satu Baris |
-| | Jabatan Penandatangan Pihak A | party_a_signatory_title | Teks Satu Baris |
-| | Nama Penandatangan Pihak B | party_b_signatory_name | Teks Satu Baris |
-| | Jabatan Penandatangan Pihak B | party_b_signatory_title | Teks Satu Baris |
-| **Kolom Sistem** | | | |
-| | Dibuat Pada | createdAt | Dibuat pada |
-| | Dibuat Oleh | createdBy | Dibuat oleh |
-| | Terakhir Diperbarui Pada | updatedAt | Terakhir diperbarui pada |
-| | Terakhir Diperbarui Oleh | updatedBy | Terakhir diperbarui oleh |
+| **PK & FK Fields** | | | |
+| | ID | id | Integer |
+| | Buyer ID | buyer_id | Integer |
+| | Seller ID | seller_id | Integer |
+| **Association Fields** | | | |
+| | Contract Items | contract_items | One to many |
+| | Buyer (Party A) | buyer | Many to one |
+| | Seller (Party B) | seller | Many to one |
+| **General Fields** | | | |
+| | Contract Number | contract_no | Single line text |
+| | Delivery Start Date | start_date | Datetime (with time zone) |
+| | Delivery End Date | end_date | Datetime (with time zone) |
+| | Deposit Ratio (%) | deposit_ratio | Percent |
+| | Payment Days After Delivery | payment_days_after | Integer |
+| | Bank Account Name (Beneficiary) | bank_account_name | Single line text |
+| | Bank Name | bank_name | Single line text |
+| | Bank Account Number (Beneficiary) | bank_account_number | Single line text |
+| | Total Amount | total_amount | Number |
+| | Currency Codes | currency_codes | Single select |
+| | Balance Ratio (%) | balance_ratio | Percent |
+| | Balance Days After Delivery | balance_days_after | Integer |
+| | Delivery Place | delivery_place | Long text |
+| | Party A Signatory Name | party_a_signatory_name | Single line text |
+| | Party A Signatory Title | party_a_signatory_title | Single line text |
+| | Party B Signatory Name | party_b_signatory_name | Single line text |
+| | Party B Signatory Title | party_b_signatory_title | Single line text |
+| **System Fields** | | | |
+| | Created At | createdAt | Created at |
+| | Created By | createdBy | Created by |
+| | Last Updated At | updatedAt | Last updated at |
+| | Last Updated By | updatedBy | Last updated by |
 
-#### Koleksi Pihak (`Parties`)
+#### Tabel Pihak (Parties)
 
-| Kategori Kolom | Nama Tampilan Kolom | Nama Kolom | Antarmuka Kolom |
+| Kategori Field | Field Display Name | Field Name | Field Interface |
 |---------|-------------------|------------|-----------------|
-| **Kolom PK & FK** | | | |
-| | ID | id | Bilangan Bulat |
-| **Kolom Umum** | | | |
-| | Nama Pihak | party_name | Teks Satu Baris |
-| | Alamat | address | Teks Satu Baris |
-| | Kontak Person | contact_person | Teks Satu Baris |
-| | Telepon Kontak | contact_phone | Telepon |
-| | Jabatan | position | Teks Satu Baris |
+| **PK & FK Fields** | | | |
+| | ID | id | Integer |
+| **General Fields** | | | |
+| | Party Name | party_name | Single line text |
+| | Address | address | Single line text |
+| | Contact Person | contact_person | Single line text |
+| | Contact Phone | contact_phone | Phone |
+| | Position | position | Single line text |
 | | Email | email | Email |
-| | Situs Web | website | URL |
-| **Kolom Sistem** | | | |
-| | Dibuat Pada | createdAt | Dibuat pada |
-| | Dibuat Oleh | createdBy | Dibuat oleh |
-| | Terakhir Diperbarui Pada | updatedAt | Terakhir diperbarui pada |
-| | Terakhir Diperbarui Oleh | updatedBy | Terakhir diperbarui oleh |
+| | Website | website | URL |
+| **System Fields** | | | |
+| | Created At | createdAt | Created at |
+| | Created By | createdBy | Created by |
+| | Last Updated At | updatedAt | Last updated at |
+| | Last Updated By | updatedBy | Last updated by |
 
-#### Koleksi Item Baris Kontrak (`Contract Line Items`)
+#### Tabel Item Produk (Contract Line Items)
 
-| Kategori Kolom | Nama Tampilan Kolom | Nama Kolom | Antarmuka Kolom |
+| Kategori Field | Field Display Name | Field Name | Field Interface |
 |---------|-------------------|------------|-----------------|
-| **Kolom PK & FK** | | | |
-| | ID | id | Bilangan Bulat |
-| | ID Kontrak | contract_id | Bilangan Bulat |
-| **Kolom Asosiasi** | | | |
-| | Kontrak | contract | Banyak ke Satu |
-| **Kolom Umum** | | | |
-| | Nama Produk | product_name | Teks Satu Baris |
-| | Spesifikasi / Model | spec | Teks Satu Baris |
-| | Kuantitas | quantity | Bilangan Bulat |
-| | Harga Satuan | unit_price | Angka |
-| | Jumlah Total | total_amount | Angka |
-| | Tanggal Pengiriman | delivery_date | Tanggal Waktu (dengan zona waktu) |
-| | Catatan | remark | Teks Panjang |
-| **Kolom Sistem** | | | |
-| | Dibuat Pada | createdAt | Dibuat pada |
-| | Dibuat Oleh | createdBy | Dibuat oleh |
-| | Terakhir Diperbarui Pada | updatedAt | Terakhir diperbarui pada |
-| | Terakhir Diperbarui Oleh | updatedBy | Terakhir diperbarui oleh |
+| **PK & FK Fields** | | | |
+| | ID | id | Integer |
+| | Contract ID | contract_id | Integer |
+| **Association Fields** | | | |
+| | Contract | contract | Many to one |
+| **General Fields** | | | |
+| | Product Name | product_name | Single line text |
+| | Specification / Model | spec | Single line text |
+| | Quantity | quantity | Integer |
+| | Unit Price | unit_price | Number |
+| | Total Amount | total_amount | Number |
+| | Delivery Date | delivery_date | Datetime (with time zone) |
+| | Remark | remark | Long text |
+| **System Fields** | | | |
+| | Created At | createdAt | Created at |
+| | Created By | createdBy | Created by |
+| | Last Updated At | updatedAt | Last updated at |
+| | Last Updated By | updatedBy | Last updated by |
 
 ### 2.3 Konfigurasi Antarmuka
 
-**Masukkan Data Contoh:**
+**Input data contoh:**
 
 ![template_print-2025-11-01-17-32-59](https://static-docs.nocobase.com/template_print-2025-11-01-17-32-59.png)
 
 ![template_print-2025-11-01-17-33-11](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-11.png)
 
-**Konfigurasikan aturan keterkaitan sebagai berikut, untuk secara otomatis menghitung total harga dan pembayaran sisa:**
+**Konfigurasi reaction rules sebagai berikut, otomatis menghitung total dan pembayaran setelahnya:**
 
 ![template_print-2025-11-01-17-33-21](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-21.png)
 
-**Buat blok tampilan, setelah mengonfirmasi data, aktifkan aksi "Cetak Template":**
+**Buat Block lihat, setelah konfirmasi data, aktifkan operasi "Template Print":**
 
 ![template_print-2025-11-01-17-33-33](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-33.png)
 
-### 2.4 Konfigurasi Plugin Cetak Template
+### 2.4 Konfigurasi Plugin Template Print
 
 ![template_print-2025-11-01-17-33-45](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-45.png)
 
-Tambahkan konfigurasi template baru, misalnya "Kontrak Pengadaan dan Pembelian":
+Tambahkan satu konfigurasi Template, contoh "Kontrak Pasokan dan Pembelian":
 
 ![template_print-2025-11-01-17-33-57](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-57.png)
 
 ![template_print-2025-11-01-17-34-08](https://static-docs.nocobase.com/template_print-2025-11-01-17-34-08.png)
 
-Selanjutnya, kita akan masuk ke tab daftar kolom, di mana kita dapat melihat semua kolom dari objek saat ini. Setelah mengeklik "Salin", kita dapat mulai mengisi template.
+Selanjutnya kita masuk ke Tab Field List, dapat melihat semua field objek saat ini. Setelah klik "Copy", kita dapat mulai mengisi Template.
 
 ![template_print-2025-11-01-17-35-19](https://static-docs.nocobase.com/template_print-2025-11-01-17-35-19.png)
 
-### 2.5 Persiapan Berkas Kontrak
+### 2.5 Persiapan File Kontrak
 
-**Berkas Template Kontrak Word**
+**File Template Kontrak Word**
 
-Siapkan template kontrak (.docx) terlebih dahulu, contohnya: `SUPPLY AND PURCHASE CONTRACT.docx`
+Persiapkan template kontrak terlebih dahulu (file .docx), contoh: `SUPPLY AND PURCHASE CONTRACT.docx`
 
-Dalam contoh ini, kami menyajikan versi sederhana dari "Kontrak Pengadaan dan Pembelian", yang berisi *placeholder* contoh:
+Dalam contoh artikel ini, kami memberikan versi sederhana dari "Kontrak Pasokan dan Pembelian", yang berisi placeholder contoh:
 
 - `{d.contract_no}`: Nomor kontrak
-- `{d.buyer.party_name}`, `{d.seller.party_name}`: Nama pembeli, nama penjual
-- `{d.total_amount}`: Jumlah total kontrak
-- Serta *placeholder* lain seperti "kontak person", "alamat", "telepon", dll.
+- `{d.buyer.party_name}`, `{d.seller.party_name}`: Nama pembeli, penjual
+- `{d.total_amount}`: Total kontrak
+- Serta placeholder lain seperti "kontak", "alamat", "telepon", dll.
 
-Selanjutnya, Anda dapat menyalin kolom dari koleksi yang telah Anda buat dan menempelkannya ke dalam Word.
+Selanjutnya Anda dapat menyalin berdasarkan field tabel yang Anda buat dan menimpanya ke Word.
 
 ---
 
 ## 3. Tutorial Variabel Template
 
-### 3.1 Pengisian Variabel Dasar dan Properti Objek Terkait
+### 3.1 Pengisian Variabel Dasar, Properti Objek Relasi
 
-**Pengisian Kolom Dasar:**
+**Pengisian Field Dasar:**
 
-Misalnya, nomor kontrak di bagian atas, atau objek entitas penandatangan kontrak. Kita cukup mengeklik "Salin" dan menempelkannya langsung ke ruang kosong yang sesuai di kontrak.
+Misalnya nomor kontrak di paling atas, atau objek pihak penanda tangan kontrak. Klik copy, langsung paste ke posisi kosong yang sesuai di kontrak.
 
 ![template_print-2025-11-01-17-31-11](https://static-docs.nocobase.com/template_print-2025-11-01-17-31-11.gif)
 
 ![template_print-2025-11-01-17-30-51](https://static-docs.nocobase.com/template_print-2025-11-01-17-30-51.png)
 
-### 3.2 Pemformatan Data
+### 3.2 Format Data
 
-#### Pemformatan Tanggal
+#### Format Tanggal
 
-Dalam template, kita sering perlu memformat kolom, terutama kolom tanggal. Format tanggal yang disalin langsung biasanya panjang (misalnya Wed Jan 01 2025 00:00:00 GMT), dan perlu diformat untuk menampilkan gaya yang kita inginkan.
+Pada Template, kita sering perlu memformat field, terutama field tanggal. Format tanggal yang langsung disalin biasanya panjang (seperti Wed Jan 01 2025 00:00:00 GMT), perlu Format untuk menampilkan style yang kita inginkan.
 
-Untuk kolom tanggal, Anda dapat menggunakan fungsi `formatD()` untuk menentukan format keluaran:
+Untuk field tanggal, dapat menggunakan fungsi `formatD()` untuk menentukan format output:
 
 ```
-{nama_kolom:formatD(gaya_format)}
+{nama_field:formatD(style format)}
 ```
 
 **Contoh:**
 
-Misalnya, jika kolom asli yang kita salin adalah `{d.created_at}`, dan kita perlu memformat tanggal menjadi format `2025-01-01`, maka ubah kolom ini menjadi:
+Misalnya field asli yang kita salin adalah `{d.created_at}`, dan kita perlu memformat tanggal menjadi format `2025-01-01`, maka modifikasi field ini menjadi:
 
 ```
-{d.created_at:formatD(YYYY-MM-DD)}  // Keluaran: 2025-01-01
+{d.created_at:formatD(YYYY-MM-DD)}  // Output: 2025-01-01
 ```
 
-**Gaya Pemformatan Tanggal Umum:**
+**Style Format Tanggal Umum:**
 
-- `YYYY` - Tahun (empat digit)
-- `MM` - Bulan (dua digit)
-- `DD` - Tanggal (dua digit)
-- `HH` - Jam (format 24 jam)
+- `YYYY` - Tahun (4 digit)
+- `MM` - Bulan (2 digit)
+- `DD` - Tanggal (2 digit)
+- `HH` - Jam (24 jam)
 - `mm` - Menit
 - `ss` - Detik
 
 **Contoh 2:**
 
 ```
-{d.created_at:formatD(YYYY-MM-DD HH:mm:ss)}  // Keluaran: 2025-01-01 14:30:00
+{d.created_at:formatD(YYYY-MM-DD HH:mm:ss)}  // Output: 2025-01-01 14:30:00
 ```
 
-#### Pemformatan Nominal
+#### Format Jumlah
 
-Misalkan ada kolom nominal, seperti `{d.total_amount}` dalam kontrak. Kita dapat menggunakan fungsi `formatN()` untuk memformat angka, menentukan jumlah desimal dan pemisah ribuan.
+Misalkan ada satu field jumlah, contoh `{d.total_amount}` di kontrak. Kita dapat menggunakan fungsi `formatN()` untuk memformat angka, menentukan jumlah desimal dan thousand separator.
 
 **Sintaks:**
 
 ```
-{nama_kolom:formatN(jumlah_desimal, pemisah_ribuan)}
+{nama_field:formatN(jumlah desimal, thousand separator)}
 ```
 
-- **Jumlah desimal**: Anda dapat menentukan berapa banyak angka desimal yang akan dipertahankan. Misalnya, `2` berarti mempertahankan dua angka desimal.
-- **Pemisah ribuan**: Tentukan apakah akan menggunakan pemisah ribuan, biasanya `true` atau `false`.
+- **Jumlah Desimal**: Anda dapat menentukan berapa banyak desimal yang dipertahankan. Contoh, `2` berarti pertahankan 2 desimal
+- **Thousand Separator**: Tentukan apakah akan menggunakan thousand separator, biasanya `true` atau `false`
 
-**Contoh 1: Memformat nominal dengan pemisah ribuan dan dua angka desimal**
-
-```
-{d.amount:formatN(2, true)}  // Keluaran: 1,234.56
-```
-
-Ini akan memformat `d.amount` menjadi dua angka desimal dan menambahkan pemisah ribuan.
-
-**Contoh 2: Memformat nominal menjadi bilangan bulat tanpa angka desimal**
+**Contoh 1: Format jumlah dengan thousand separator dan dua desimal**
 
 ```
-{d.amount:formatN(0, true)}  // Keluaran: 1,235
+{d.amount:formatN(2, true)}  // Output: 1,234.56
 ```
 
-Ini akan memformat `d.amount` menjadi bilangan bulat dan menambahkan pemisah ribuan.
+Ini akan memformat `d.amount` menjadi dua desimal dan menambahkan thousand separator.
 
-**Contoh 3: Memformat nominal dengan dua angka desimal tetapi tanpa pemisah ribuan**
+**Contoh 2: Format jumlah sebagai integer tanpa desimal**
 
 ```
-{d.amount:formatN(2, false)}  // Keluaran: 1234.56
+{d.amount:formatN(0, true)}  // Output: 1,235
 ```
 
-Di sini, pemisah ribuan dinonaktifkan, dan hanya dua angka desimal yang dipertahankan.
+Ini akan memformat `d.amount` menjadi integer, dan menambahkan thousand separator.
 
-**Kebutuhan Pemformatan Nominal Lainnya:**
+**Contoh 3: Format jumlah dengan dua desimal tanpa thousand separator**
 
-- **Simbol Mata Uang**: Carbone sendiri tidak secara langsung menyediakan fungsi pemformatan simbol mata uang, tetapi Anda dapat menambahkannya melalui data langsung atau di template. Misalnya:
+```
+{d.amount:formatN(2, false)}  // Output: 1234.56
+```
+
+Di sini thousand separator dinonaktifkan, hanya mempertahankan dua desimal.
+
+**Kebutuhan Format Jumlah Lainnya:**
+
+- **Simbol Mata Uang**: Carbone sendiri tidak langsung menyediakan fungsi Format simbol mata uang, tetapi Anda dapat mengimplementasikannya melalui data langsung atau menambahkan simbol mata uang di Template. Contoh:
   ```
-  {d.amount:formatN(2, true)} IDR  // Keluaran: 1,234.56 IDR
+  {d.amount:formatN(2, true)} Yuan  // Output: 1,234.56 Yuan
   ```
 
-#### Pemformatan String
+#### Format String
 
-Untuk kolom string, Anda dapat menggunakan `:upperCase` untuk menentukan format teks, seperti konversi huruf besar/kecil.
+Untuk field string, dapat menggunakan `:upperCase` untuk menentukan format teks, contoh konversi case.
 
 **Sintaks:**
 
 ```
-{nama_kolom:upperCase:perintah_lain}
+{nama_field:upperCase:perintah lain}
 ```
 
-**Metode Konversi Umum:**
+**Cara Konversi Umum:**
 
-- `upperCase` - Mengonversi ke huruf besar semua
-- `lowerCase` - Mengonversi ke huruf kecil semua
-- `upperCase:ucFirst` - Mengkapitalisasi huruf pertama
+- `upperCase` - Konversi ke huruf besar semua
+- `lowerCase` - Konversi ke huruf kecil semua
+- `upperCase:ucFirst` - Huruf pertama besar
 
 **Contoh:**
 
 ```
-{d.party_a_signatory_name:upperCase}  // Keluaran: JOHN DOE
+{d.party_a_signatory_name:upperCase}  // Output: JOHN DOE
 ```
 
-### 3.3 Pencetakan Berulang
+### 3.3 Print Loop
 
-#### Cara Mencetak Daftar Objek Anak (misalnya Detail Produk)
+#### Cara Print Daftar Sub-objek (seperti Detail Produk)
 
-Ketika kita perlu mencetak tabel yang berisi beberapa sub-item (misalnya detail produk), biasanya diperlukan metode pencetakan berulang. Dengan cara ini, sistem akan menghasilkan satu baris konten untuk setiap item dalam daftar, hingga semua item selesai diproses.
+Saat kita perlu print tabel yang berisi beberapa sub-item (contoh detail Produk), biasanya perlu mengadopsi cara print loop. Dengan begitu, sistem akan menghasilkan satu baris konten berdasarkan setiap item dalam list, hingga semua item terlewati.
 
-Misalkan kita memiliki daftar produk (misalnya `contract_items`), yang berisi beberapa objek produk. Setiap objek produk memiliki beberapa atribut, seperti nama produk, spesifikasi, kuantitas, harga satuan, jumlah total, dan catatan.
+Misalkan kita memiliki daftar Produk (contoh `contract_items`), yang berisi beberapa objek Produk. Setiap objek Produk memiliki beberapa properti, seperti nama Produk, spesifikasi, jumlah, harga satuan, total, dan catatan.
 
-**Langkah 1: Isi Kolom pada Baris Pertama Tabel**
+**Langkah 1: Isi Field di Baris Pertama Tabel**
 
-Pertama, pada baris pertama tabel (bukan *header*), kita langsung menyalin dan mengisi variabel template. Variabel-variabel ini akan diganti dengan data yang sesuai dan ditampilkan dalam keluaran.
+Pertama, di baris pertama tabel (bukan header), kita langsung salin dan isi variabel Template. Variabel ini akan diganti dengan data yang sesuai, ditampilkan di output.
 
-Misalnya, baris pertama tabel adalah sebagai berikut:
+Contoh, baris pertama tabel sebagai berikut:
 
 | Product Name | Specification / Model | Quantity | Unit Price | Total Amount | Remark |
 |--------------|----------------------|----------|------------|--------------|--------|
 | {d.contract_items[i].product_name} | {d.contract_items[i].spec} | {d.contract_items[i].quantity} | {d.contract_items[i].unit_price} | {d.contract_items[i].total_amount} | {d.contract_items[i].remark} |
 
-Di sini, `d.contract_items[i]` mewakili item ke-i dalam daftar produk, dan `i` adalah indeks yang mewakili urutan produk saat ini.
+Di sini, `d.contract_items[i]` mewakili item ke-i dalam daftar Produk, `i` adalah indeks, mewakili urutan Produk saat ini.
 
-**Langkah 2: Ubah Indeks pada Baris Kedua**
+**Langkah 2: Modifikasi Indeks di Baris Kedua**
 
-Selanjutnya, pada baris kedua tabel, kita akan mengubah indeks kolom menjadi `i+1`, dan cukup mengisi atribut pertama. Ini karena saat pencetakan berulang, kita perlu mengambil data item berikutnya dari daftar dan menampilkannya di baris berikutnya.
+Selanjutnya, di tabel baris kedua, kita modifikasi indeks field menjadi `i+1`, dan isi properti pertama saja. Ini karena saat print loop, kita ingin mengambil item data berikutnya dari list, dan menampilkannya di baris berikutnya.
 
-Misalnya, baris kedua diisi sebagai berikut:
+Contoh, baris kedua diisi sebagai berikut:
 | Product Name | Specification / Model | Quantity | Unit Price | Total Amount | Remark |
 |--------------|----------------------|----------|------------|--------------|--------|
 | {d.contract_items[i+1].product_name} | | |  | |  |
 
-Dalam contoh ini, kita mengubah `[i]` menjadi `[i+1]`, sehingga kita bisa mendapatkan data produk berikutnya dalam daftar.
 
-**Langkah 3: Pencetakan Berulang Otomatis Saat *Rendering* Template**
+Dalam contoh ini, kita mengubah `[i]` menjadi `[i+1]`, dengan begitu dapat mendapatkan data Produk berikutnya dalam list.
 
-Ketika sistem memproses template ini, ia akan beroperasi sesuai dengan logika berikut:
+**Langkah 3: Sistem Otomatis Loop Print Saat Render Template**
 
-1. Baris pertama akan diisi sesuai dengan kolom yang Anda atur di template.
-2. Kemudian, sistem akan secara otomatis menghapus baris kedua, dan mulai mengekstrak data dari `d.contract_items`, mengisi setiap baris secara berulang dalam format tabel hingga semua detail produk selesai dicetak.
+Saat sistem memproses Template ini, akan beroperasi sesuai logika berikut:
 
-Nilai `i` di setiap baris akan bertambah, memastikan bahwa setiap baris menampilkan informasi produk yang berbeda.
+1. Baris pertama akan diisi sesuai field yang Anda atur di Template
+2. Lalu, sistem akan otomatis menghapus baris kedua, dan mulai mengekstrak data dari `d.contract_items`, mengisi setiap baris berulang sesuai format tabel, hingga semua detail Produk diprint
+
+`i` di setiap baris akan bertambah, memastikan setiap baris menampilkan informasi Produk yang berbeda.
 
 ---
 
-## 4. Mengunggah dan Mengonfigurasi Template Kontrak
+## 4. Upload dan Konfigurasi Template Kontrak
 
-### 4.1 Mengunggah Template
+### 4.1 Upload Template
 
-1. Klik tombol "Tambah template", dan masukkan nama template, misalnya "Template Kontrak Pengadaan dan Pembelian".
-2. Unggah [berkas kontrak Word (.docx)](https://static-docs.nocobase.com/template_print-2025-11-01-17-37-11.docx) yang telah disiapkan, yang sudah berisi semua *placeholder*.
+1. Klik tombol "Add Template", input nama Template, contoh "Template Kontrak Pasokan dan Pembelian"
+2. Upload [file kontrak Word (.docx)](https://static-docs.nocobase.com/template_print-2025-11-01-17-37-11.docx) yang sudah disiapkan, yang sudah berisi semua placeholder
+
 
 ![template_print-2025-11-01-17-36-06](https://static-docs.nocobase.com/template_print-2025-11-01-17-36-06.png)
 
-3. Setelah selesai, sistem akan mencantumkan template tersebut dalam daftar template yang tersedia untuk penggunaan di masa mendatang.
-4. Kita mengeklik "Gunakan" untuk mengaktifkan template ini.
+3. Setelah selesai, sistem akan menampilkan Template ini di daftar Template yang dapat dipilih, untuk penggunaan selanjutnya
+4. Kita klik "Use" untuk mengaktifkan Template ini
 
 ![template_print-2025-11-01-17-36-13](https://static-docs.nocobase.com/template_print-2025-11-01-17-36-13.png)
 
-Pada titik ini, keluar dari *popup* saat ini dan klik "Unduh template" untuk mendapatkan template lengkap yang telah dibuat.
+Saat ini keluar dari popup, klik download Template, dapat memperoleh Template lengkap yang dihasilkan.
 
 **Tips:**
 
-- Jika template menggunakan format `.doc` atau format lain, mungkin perlu dikonversi ke `.docx`, tergantung pada dukungan `plugin`.
-- Dalam berkas Word, perhatikan agar tidak memisahkan *placeholder* ke dalam beberapa paragraf atau kotak teks, untuk menghindari anomali *rendering*.
+- Jika Template menggunakan format `.doc` atau lainnya, mungkin perlu dikonversi ke `.docx`, tergantung dukungan plugin
+- Pada file Word, perhatikan jangan memisahkan placeholder ke beberapa paragraf atau text box, untuk menghindari render abnormal
 
 ---
 
-Selamat menggunakan! Dengan fitur "Cetak Template", Anda dapat sangat menghemat pekerjaan berulang dalam manajemen kontrak, menghindari kesalahan penyalinan manual, dan mencapai standardisasi serta keluaran kontrak otomatis.
+Selamat menggunakan! Melalui fitur "Template Print", Anda dapat menghemat banyak pekerjaan berulang dalam manajemen kontrak, menghindari kesalahan copy paste manual, mengimplementasikan output kontrak yang terstandarisasi dan otomatis.

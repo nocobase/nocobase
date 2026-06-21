@@ -1,36 +1,37 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Quy tắc liên kết Block"
+description: "Cấu hình Block: cài đặt Quy tắc liên kết Block, thực hiện liên kết dữ liệu giữa các Block, liên kết lọc, liên kết hiển thị/ẩn."
+keywords: "Quy tắc liên kết Block,liên kết Block,liên kết dữ liệu,cấu hình Block,Interface Builder,NocoBase"
+---
 
-
-# Quy tắc Liên kết Khối
+# Quy tắc liên kết Block
 
 ## Giới thiệu
 
-Quy tắc liên kết khối cho phép người dùng kiểm soát động việc hiển thị của các khối, quản lý tổng thể việc trình bày các phần tử ở cấp độ khối. Khối đóng vai trò là nơi chứa các trường và nút thao tác, thông qua các quy tắc này, người dùng có thể linh hoạt kiểm soát việc hiển thị của toàn bộ chế độ xem từ góc độ khối.
+Quy tắc liên kết Block cho phép bạn kiểm soát động hiển thị Block, quản lý tổng thể việc hiển thị các phần tử từ cấp Block. Block là vật mang Field và nút Action, thông qua các quy tắc này, bạn có thể linh hoạt kiểm soát toàn bộ view hiển thị từ chiều Block.
 
 ![20251029112218](https://static-docs.nocobase.com/20251029112218.png)
 
 ![20251029112338](https://static-docs.nocobase.com/20251029112338.png)
 
-> **Lưu ý**: Trước khi thực thi các quy tắc liên kết khối, việc hiển thị của khối trước tiên cần trải qua **kiểm tra quyền ACL**. Chỉ khi người dùng có quyền truy cập tương ứng, logic đánh giá của quy tắc liên kết khối mới được thực hiện. Nói cách khác, các quy tắc liên kết khối chỉ có hiệu lực sau khi đáp ứng yêu cầu quyền xem ACL. Khi không có quy tắc liên kết khối, khối sẽ hiển thị mặc định.
+> **Lưu ý**: Trước khi thực thi Quy tắc liên kết Block, hiển thị Block trước tiên cần qua **đánh giá quyền ACL**, chỉ khi bạn có quyền truy cập tương ứng, mới có thể vào logic đánh giá Quy tắc liên kết Block. Nói cách khác, Quy tắc liên kết Block chỉ có hiệu lực sau khi đáp ứng yêu cầu quyền xem ACL, khi không có Quy tắc liên kết Block, Block mặc định hiển thị.
 
-### Kiểm soát Khối bằng Biến Toàn cục
+### Biến toàn cục kiểm soát Block
 
-**Quy tắc liên kết khối** hỗ trợ sử dụng các biến toàn cục để kiểm soát động nội dung hiển thị trong các khối, giúp người dùng với các vai trò và quyền hạn khác nhau có thể xem và thao tác với các chế độ xem dữ liệu tùy chỉnh. Ví dụ, trong một hệ thống quản lý đơn hàng, mặc dù các vai trò khác nhau (như quản trị viên, nhân viên bán hàng, nhân viên tài chính, v.v.) đều có quyền xem đơn hàng, nhưng các trường và nút thao tác mà mỗi vai trò cần xem có thể khác nhau. Bằng cách cấu hình các biến toàn cục, bạn có thể dựa trên vai trò, quyền hạn hoặc các điều kiện khác của người dùng để linh hoạt điều chỉnh các trường hiển thị, nút thao tác, và thậm chí cả các quy tắc sắp xếp và lọc dữ liệu.
+**Quy tắc liên kết Block** hỗ trợ kiểm soát động nội dung hiển thị của Block thông qua biến toàn cục, cho phép người dùng có vai trò và quyền khác nhau xem và thao tác view dữ liệu được tùy chỉnh. Ví dụ, trong hệ thống quản lý đơn hàng, mặc dù các vai trò khác nhau (như admin, nhân viên bán hàng, nhân viên tài chính, v.v.) đều có quyền xem đơn hàng, nhưng các Field và nút Action mỗi vai trò cần xem có thể khác nhau. Bằng cách cấu hình biến toàn cục, có thể linh hoạt điều chỉnh các Field hiển thị, nút Action, thậm chí cả quy tắc Sắp xếp và lọc dữ liệu theo vai trò người dùng, quyền hoặc các điều kiện khác.
 
-#### Các trường hợp sử dụng cụ thể:
+#### Trường hợp ứng dụng cụ thể:
 
-- **Kiểm soát quyền theo vai trò**: Dựa trên quyền hạn của các vai trò khác nhau, kiểm soát liệu một số trường có hiển thị hoặc có thể chỉnh sửa được hay không. Ví dụ, nhân viên bán hàng chỉ có thể xem thông tin cơ bản của đơn hàng, trong khi nhân viên tài chính có thể xem chi tiết thanh toán.
-- **Chế độ xem cá nhân hóa**: Tùy chỉnh các chế độ xem khối khác nhau cho các phòng ban hoặc nhóm khác nhau, đảm bảo mỗi người dùng chỉ thấy nội dung liên quan đến công việc của họ, từ đó nâng cao hiệu quả công việc.
-- **Quản lý quyền thao tác**: Kiểm soát việc hiển thị các nút thao tác thông qua các biến toàn cục. Ví dụ, một số vai trò có thể chỉ được xem dữ liệu, trong khi các vai trò khác có thể thực hiện các thao tác như sửa đổi hoặc xóa.
+- **Kiểm soát quyền vai trò**: Theo quyền của các vai trò khác nhau, kiểm soát các Field nhất định có hiển thị hoặc có thể chỉnh sửa hay không. Ví dụ, nhân viên bán hàng chỉ có thể xem thông tin cơ bản của đơn hàng, trong khi nhân viên tài chính có thể xem chi tiết thanh toán đơn hàng.
+- **View cá nhân hóa**: Tùy chỉnh các view Block khác nhau cho các phòng ban hoặc đội nhóm khác nhau, đảm bảo mỗi người dùng chỉ thấy nội dung liên quan đến công việc của họ, nâng cao hiệu suất làm việc.
+- **Quản lý quyền Action**: Kiểm soát hiển thị nút Action thông qua biến toàn cục, ví dụ, một số vai trò có thể chỉ có thể xem dữ liệu, các vai trò khác có thể thực hiện các thao tác như sửa đổi, xóa.
 
-### Kiểm soát Khối bằng Biến Ngữ cảnh
+### Biến ngữ cảnh kiểm soát Block
 
-Các khối cũng có thể được kiểm soát hiển thị thông qua các biến trong ngữ cảnh. Ví dụ, bạn có thể sử dụng các biến ngữ cảnh như "Bản ghi hiện tại", "Biểu mẫu hiện tại", "Bản ghi cửa sổ bật lên hiện tại" để hiển thị hoặc ẩn khối một cách động.
+Block còn có thể được kiểm soát hiển thị thông qua biến trong ngữ cảnh. Ví dụ, có thể sử dụng các biến ngữ cảnh như "Bản ghi hiện tại", "Form hiện tại", "Bản ghi Popup hiện tại" để hiển thị hoặc ẩn động Block.
 
-Ví dụ: Khối "Thông tin cơ hội đơn hàng" chỉ hiển thị khi trạng thái của đơn hàng là "Đã thanh toán".
+Ví dụ: Chỉ khi trạng thái đơn hàng là "Đã thanh toán", mới hiển thị Block "Thông tin cơ hội đơn hàng".
 
 ![20251029114022](https://static-docs.nocobase.com/20251029114022.png)
 
-Để biết thêm thông tin về quy tắc liên kết, tham khảo [Quy tắc Liên kết](/interface-builder/linkage-rule)
+Xem thêm giải thích về Quy tắc liên kết tại [Quy tắc liên kết](/interface-builder/linkage-rule)

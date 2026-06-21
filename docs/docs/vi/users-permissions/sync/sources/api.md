@@ -1,22 +1,24 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "Đồng bộ dữ liệu người dùng qua HTTP API"
+description: "Đồng bộ dữ liệu người dùng NocoBase qua HTTP API: POST /api/userData:push, định dạng UserData/DepartmentData, API key, Bearer token."
+keywords: "HTTP API,đồng bộ dữ liệu người dùng,userData:push,API key,Bearer token,NocoBase"
+---
 
 # Đồng bộ dữ liệu người dùng qua HTTP API
 
-## Lấy API Key
+## Lấy API key
 
-Tham khảo [API Key](/auth-verification/api-keys). Đảm bảo rằng vai trò được gán cho API Key có các quyền cần thiết để đồng bộ dữ liệu người dùng.
+Tham khảo [API keys](/auth-verification/api-keys), cần đảm bảo vai trò được gán cho API key có quyền đồng bộ dữ liệu người dùng.
 
-## Tổng quan về API
+## Mô tả API
 
 ### Ví dụ
 
 ```bash
 curl 'https://localhost:13000/api/userData:push' \
   -H 'Authorization: Bearer <token>' \
-  --data-raw '{"dataType":"user","records":[]}' # Xem chi tiết phần thân yêu cầu bên dưới
+  --data-raw '{"dataType":"user","records":[]}' # request body xem mô tả chi tiết bên dưới
 ```
 
 ### Endpoint
@@ -29,51 +31,51 @@ POST /api/userData:push
 
 #### UserData
 
-| Tham số    | Kiểu                               | Mô tả                                                                     |
-| ---------- | ---------------------------------- | ------------------------------------------------------------------------- |
-| `dataType` | `'user' \| 'department'`           | Bắt buộc. Kiểu dữ liệu được đẩy lên. Dùng `user` để đẩy dữ liệu người dùng. |
-| `matchKey` | `'username' \| 'email' \| 'phone'` | Tùy chọn. Dùng để tìm và khớp với người dùng hiện có trong hệ thống dựa trên trường đã chỉ định. |
-| `records`  | `UserRecord[]`                     | Bắt buộc. Mảng các bản ghi dữ liệu người dùng.                            |
+| Tên tham số | Kiểu                               | Mô tả                                                                     |
+| ---------- | ---------------------------------- | ------------------------------------------------------------------------ |
+| `dataType` | `'user' \| 'department'`           | Bắt buộc, loại dữ liệu được đẩy, đẩy dữ liệu người dùng điền `user`                              |
+| `matchKey` | `'username' \| 'email' \| 'phone'` | Tùy chọn, sẽ dựa trên field được cung cấp và giá trị field tương ứng trong dữ liệu đẩy để truy vấn người dùng đã có trong hệ thống nhằm khớp |
+| `records`  | `UserRecord[]`                     | Bắt buộc, mảng các bản ghi dữ liệu người dùng                                                   |
 
 #### UserRecord
 
-| Tham số       | Kiểu       | Mô tả                                                                                 |
-| ------------- | ---------- | ------------------------------------------------------------------------------------- |
-| `uid`         | `string`   | Bắt buộc. Mã định danh duy nhất cho dữ liệu người dùng nguồn, dùng để liên kết dữ liệu nguồn với người dùng trong hệ thống. Không thay đổi được đối với một người dùng. |
-| `nickname`    | `string`   | Tùy chọn. Biệt danh của người dùng.                                                   |
-| `username`    | `string`   | Tùy chọn. Tên người dùng.                                                             |
-| `email`       | `string`   | Tùy chọn. Địa chỉ email của người dùng.                                               |
-| `phone`       | `string`   | Tùy chọn. Số điện thoại của người dùng.                                               |
-| `departments` | `string[]` | Tùy chọn. Mảng các UID của bộ phận mà người dùng thuộc về.                            |
-| `isDeleted`   | `boolean`  | Tùy chọn. Cho biết bản ghi đã bị xóa hay chưa.                                        |
-| `<field>`     | `any`      | Tùy chọn. Dữ liệu của các trường tùy chỉnh khác trong bảng người dùng.                |
+| Tên tham số      | Kiểu       | Mô tả                                                                                 |
+| ------------- | ---------- | ------------------------------------------------------------------------------------ |
+| `uid`         | `string`   | Bắt buộc, định danh duy nhất của dữ liệu người dùng nguồn, dùng để liên kết dữ liệu gốc nguồn và người dùng hệ thống. Không thay đổi đối với cùng một người dùng. |
+| `nickname`    | `string`   | Tùy chọn, nickname người dùng                                                                       |
+| `username`    | `string`   | Tùy chọn, username                                                                         |
+| `email`       | `string`   | Tùy chọn, email người dùng                                                                       |
+| `phone`       | `string`   | Tùy chọn, số điện thoại                                                                         |
+| `departments` | `string[]` | Tùy chọn, mảng uid phòng ban mà người dùng thuộc về                                                          |
+| `isDeleted`   | `boolean`  | Tùy chọn, bản ghi có bị xóa hay không                                                                   |
+| `<field>`     | `any`      | Tùy chọn, dữ liệu các field tự tạo khác trong bảng người dùng                                                     |
 
-### Định dạng dữ liệu bộ phận
+### Định dạng dữ liệu phòng ban
 
 :::info
-Để đẩy dữ liệu bộ phận, cần cài đặt và bật [plugin Bộ phận](../../departments).
+Điều kiện đẩy dữ liệu phòng ban là phải cài đặt và kích hoạt plugin [Phòng ban](../../departments).
 :::
 
 #### DepartmentData
 
-| Tham số    | Kiểu                     | Mô tả                                                                |
-| ---------- | ------------------------ | -------------------------------------------------------------------- |
-| `dataType` | `'user' \| 'department'` | Bắt buộc. Kiểu dữ liệu được đẩy lên. Dùng `department` để đẩy dữ liệu bộ phận. |
-| `records`  | `DepartmentRecord[]`     | Bắt buộc. Mảng các bản ghi dữ liệu bộ phận.                         |
+| Tên tham số     | Kiểu                     | Mô tả                                              |
+| ---------- | ------------------------ | ------------------------------------------------- |
+| `dataType` | `'user' \| 'department'` | Bắt buộc, loại dữ liệu được đẩy, đẩy dữ liệu phòng ban điền `department` |
+| `records`  | `DepartmentRecord[]`     | Bắt buộc, mảng các bản ghi dữ liệu phòng ban                            |
 
 #### DepartmentRecord
 
-| Tham số     | Kiểu      | Mô tả                                                                                 |
-| ----------- | --------- | ------------------------------------------------------------------------------------- |
-| `uid`       | `string`  | Bắt buộc. Mã định danh duy nhất cho dữ liệu bộ phận nguồn, dùng để liên kết dữ liệu nguồn với bộ phận trong hệ thống. Không thay đổi được đối với một bộ phận. |
-| `title`     | `string`  | Bắt buộc. Tiêu đề của bộ phận.                                                        |
-| `parentUid` | `string`  | Tùy chọn. UID của bộ phận cấp trên.                                                   |
-| `isDeleted` | `boolean` | Tùy chọn. Cho biết bản ghi đã bị xóa hay chưa.                                        |
-| `<field>`   | `any`     | Tùy chọn. Dữ liệu của các trường tùy chỉnh khác trong bảng bộ phận.                   |
+| Tên tham số      | Kiểu      | Mô tả                                                                                 |
+| ----------- | --------- | ------------------------------------------------------------------------------------ |
+| `uid`       | `string`  | Bắt buộc, định danh duy nhất của dữ liệu phòng ban nguồn, dùng để liên kết dữ liệu gốc nguồn và phòng ban hệ thống. Không thay đổi đối với cùng một phòng ban. |
+| `title`     | `string`  | Bắt buộc, tiêu đề phòng ban                                                                       |
+| `parentUid` | `string`  | Tùy chọn, uid phòng ban cấp trên                                                                   |
+| `isDeleted` | `boolean` | Tùy chọn, bản ghi có bị xóa hay không                                                                   |
+| `<field>`   | `any`     | Tùy chọn, dữ liệu các field tự tạo khác trong bảng phòng ban                                                     |
 
 :::info
 
-1. Việc đẩy dữ liệu nhiều lần là một thao tác bất biến (idempotent).
-2. Nếu bộ phận cấp trên chưa được tạo khi đẩy dữ liệu bộ phận, việc liên kết sẽ không thực hiện được. Bạn có thể đẩy lại dữ liệu sau khi bộ phận cấp trên đã được tạo.
-3. Nếu bộ phận của người dùng chưa được tạo khi đẩy dữ liệu người dùng, người dùng sẽ không thể được liên kết với bộ phận đó. Bạn có thể đẩy lại dữ liệu người dùng sau khi dữ liệu bộ phận đã được đẩy.
-:::
+1. Đẩy dữ liệu nhiều lần là idempotent.
+2. Nếu khi đẩy phòng ban, phòng ban cha chưa được tạo, sẽ không thể liên kết được. Bạn có thể đẩy lại dữ liệu.
+3. Nếu khi đẩy người dùng, phòng ban chưa được tạo, sẽ không thể liên kết được phòng ban thuộc về. Bạn có thể đẩy lại dữ liệu người dùng sau khi đã đẩy dữ liệu phòng ban.
+   :::

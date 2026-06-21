@@ -16,10 +16,72 @@ export interface JSRunnerOptions {
   version?: string;
   /**
    * Enable RunJS template compatibility preprocessing for `{{ ... }}`.
-   * When enabled via `ctx.runjs(code, vars, { preprocessTemplates: true })` (default),
+   * When enabled (or falling back to version default),
    * the code will be rewritten to call `ctx.resolveJsonTemplate(...)` at runtime.
    */
   preprocessTemplates?: boolean;
+}
+
+/**
+ * Decide whether RunJS `{{ ... }}` compatibility preprocessing should run.
+ *
+ * Priority:
+ * 1. Explicit `preprocessTemplates` option always wins.
+ * 2. Otherwise, `version === 'v2'` disables preprocessing.
+ * 3. Fallback keeps v1-compatible behavior (enabled).
+ */
+export function shouldPreprocessRunJSTemplates(
+  options?: Pick<JSRunnerOptions, 'preprocessTemplates' | 'version'>,
+): boolean {
+  if (typeof options?.preprocessTemplates === 'boolean') {
+    return options.preprocessTemplates;
+  }
+  return options?.version !== 'v2';
+}
+
+// Heuristic: detect likely bare `{{ctx.xxx}}` usage in executable positions (not quoted string literals).
+const BARE_CTX_TEMPLATE_RE = /(^|[=(:,[\s)])(\{\{\s*(ctx(?:\.|\[|\?\.)[^}]*)\s*\}\})/m;
+
+function extractDeprecatedCtxTemplateUsage(code: string): { placeholder: string; expression: string } | null {
+  const src = String(code || '');
+  const m = src.match(BARE_CTX_TEMPLATE_RE);
+  if (!m) return null;
+  const placeholder = String(m[2] || '').trim();
+  const expression = String(m[3] || '').trim();
+  if (!placeholder || !expression) return null;
+  return { placeholder, expression };
+}
+
+function shouldHintCtxTemplateSyntax(err: any, usage: { placeholder: string; expression: string } | null): boolean {
+  const isSyntaxError = err instanceof SyntaxError || String((err as any)?.name || '') === 'SyntaxError';
+  if (!isSyntaxError) return false;
+  if (!usage) return false;
+  const msg = String((err as any)?.message || err || '');
+  return /unexpected token/i.test(msg);
+}
+
+function toCtxTemplateSyntaxHintError(
+  err: any,
+  usage: {
+    placeholder: string;
+    expression: string;
+  },
+): Error {
+  const hint = `"${usage.placeholder}" has been deprecated and cannot be used as executable RunJS syntax. Use await ctx.getVar("${usage.expression}") instead, or keep "${usage.placeholder}" as a plain string.`;
+  const out = new SyntaxError(hint);
+  try {
+    (out as any).cause = err;
+  } catch (_) {
+    // ignore
+  }
+  try {
+    // Hint-only error: avoid leaking internal bundle line numbers from stack parsers in preview UI.
+    (out as any).__runjsHideLocation = true;
+    out.stack = `${out.name}: ${out.message}`;
+  } catch (_) {
+    // ignore
+  }
+  return out;
 }
 
 export class JSRunner {
@@ -118,11 +180,13 @@ export class JSRunner {
       if (err instanceof FlowExitAllException) {
         throw err;
       }
-      console.error(err);
+      const usage = extractDeprecatedCtxTemplateUsage(code);
+      const outErr = shouldHintCtxTemplateSyntax(err, usage) && usage ? toCtxTemplateSyntaxHintError(err, usage) : err;
+      console.error(outErr);
       return {
         success: false,
-        error: err,
-        timeout: err.message === 'Execution timed out',
+        error: outErr,
+        timeout: (outErr as any)?.message === 'Execution timed out',
       };
     }
   }

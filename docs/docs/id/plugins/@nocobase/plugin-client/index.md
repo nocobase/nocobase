@@ -1,12 +1,14 @@
 ---
-displayName: "WEB client"
+displayName: "Web Client"
 packageName: '@nocobase/plugin-client'
+title: "Web Client"
+keywords: "Web Client,plugin,NocoBase"
 description: |
-  Provides a client interface for the NocoBase server
+  Menyediakan UI client untuk server NocoBase.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# WEB client
+# Web Client

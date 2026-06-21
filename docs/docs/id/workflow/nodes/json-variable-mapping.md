@@ -1,26 +1,25 @@
 ---
 pkg: '@nocobase/plugin-workflow-json-variable-mapping'
+title: "Node Workflow - Pemetaan Variable JSON"
+description: "Node Pemetaan Variable JSON: memetakan struktur JSON menjadi variable, untuk digunakan oleh Node berikutnya."
+keywords: "Workflow,Pemetaan Variable JSON,Pemetaan JSON,ekstraksi variable,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-# Pemetaan Variabel JSON
+# Pemetaan Variable JSON
 
 > v1.6.0
 
-## Pendahuluan
+## Pengantar
 
-Digunakan untuk memetakan struktur JSON kompleks dari hasil node hulu menjadi variabel, agar dapat digunakan di node selanjutnya. Misalnya, hasil dari node Aksi SQL dan Permintaan HTTP, setelah dipetakan, nilai propertinya dapat digunakan di node selanjutnya.
+Digunakan untuk memetakan struktur JSON kompleks dari hasil Node upstream menjadi variable, untuk digunakan oleh Node berikutnya. Misalnya hasil dari Node Operasi SQL dan Node HTTP Request, setelah dipetakan dapat menggunakan nilai propertinya pada Node berikutnya.
 
 :::info{title=Tips}
-Berbeda dengan node Perhitungan JSON, node Pemetaan Variabel JSON tidak mendukung ekspresi kustom dan tidak berbasis pada mesin pihak ketiga. Node ini hanya digunakan untuk memetakan nilai properti dalam struktur JSON, namun lebih mudah digunakan.
+Berbeda dengan Node Komputasi JSON, Node Pemetaan Variable JSON tidak mendukung expression kustom, dan tidak berbasis engine pihak ketiga. Hanya digunakan untuk memetakan nilai properti dari struktur JSON, tetapi penggunaannya lebih sederhana.
 :::
 
 ## Membuat Node
 
-Pada antarmuka konfigurasi alur kerja, klik tombol plus ('+') pada alur kerja untuk menambahkan node 'Pemetaan Variabel JSON'.
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Pemetaan Variable JSON":
 
 ![Membuat Node](https://static-docs.nocobase.com/20250113173635.png)
 
@@ -28,25 +27,25 @@ Pada antarmuka konfigurasi alur kerja, klik tombol plus ('+') pada alur kerja un
 
 ### Sumber Data
 
-Sumber data dapat berupa hasil dari node hulu, atau objek data dalam konteks proses. Biasanya, ini adalah objek data yang tidak terstruktur secara bawaan, misalnya hasil dari node SQL atau node Permintaan HTTP.
+Sumber data dapat berupa hasil Node upstream, atau objek data dari konteks alur, biasanya berupa objek data yang tidak terstruktur secara built-in, seperti hasil Node SQL, atau hasil Node HTTP Request.
 
 ![Sumber Data](https://static-docs.nocobase.com/20250113173720.png)
 
-### Memasukkan Data Contoh
+### Input Data Sample
 
-Dengan menempelkan data contoh dan mengklik tombol 'Parse' (Urai), daftar variabel akan secara otomatis dihasilkan.
+Dengan paste sebuah data sample, dan klik tombol parse, akan otomatis menghasilkan list variable:
 
-![Memasukkan Data Contoh](https://static-docs.nocobase.com/20250113182327.png)
+![Input Data Sample](https://static-docs.nocobase.com/20250113182327.png)
 
-Jika ada variabel yang tidak diperlukan dalam daftar yang dihasilkan secara otomatis, Anda dapat mengklik tombol 'Hapus' untuk menghapusnya.
+Pada list yang dihasilkan otomatis, jika ada variable yang tidak diperlukan, dapat diklik tombol hapus untuk menghapusnya.
 
 :::info{title=Tips}
-Data contoh bukanlah hasil eksekusi akhir; data ini hanya digunakan untuk membantu menghasilkan daftar variabel.
+Data sample bukan hasil eksekusi final, hanya digunakan untuk membantu menghasilkan list variable.
 :::
 
-### Jalur Mencakup Indeks Array
+### Path Mengandung Index Array
 
-Jika tidak dicentang, konten array akan dipetakan sesuai dengan metode penanganan variabel default alur kerja NocoBase. Misalnya, masukkan contoh berikut:
+Jika tidak dicentang, akan memetakan konten array berdasarkan cara default penanganan variable workflow NocoBase. Misalnya input sample berikut:
 
 ```json
 {
@@ -62,18 +61,18 @@ Jika tidak dicentang, konten array akan dipetakan sesuai dengan metode penangana
 }
 ```
 
-Dalam variabel yang dihasilkan, `b.c` akan merepresentasikan array `[2, 3]`.
+Pada variable yang dihasilkan `b.c` akan mewakili array `[2, 3]`.
 
-Jika opsi ini dicentang, jalur variabel akan mencakup indeks array, misalnya `b.0.c` dan `b.1.c`.
+Jika opsi ini dicentang, akan menyertakan index array pada path variable, misalnya `b.0.c` dan `b.1.c`.
 
 ![20250113184056](https://static-docs.nocobase.com/20250113184056.png)
 
-Saat menyertakan indeks array, Anda perlu memastikan bahwa indeks array dalam data masukan konsisten; jika tidak, akan menyebabkan kesalahan penguraian.
+Saat menyertakan index array, harus dipastikan index array pada data input konsisten, jika tidak akan menyebabkan error parsing.
 
-## Penggunaan di Node Selanjutnya
+## Penggunaan pada Node Berikutnya
 
-Dalam konfigurasi node selanjutnya, Anda dapat menggunakan variabel yang dihasilkan oleh node Pemetaan Variabel JSON:
+Pada konfigurasi Node berikutnya, dapat digunakan variable yang dihasilkan oleh Node Pemetaan Variable JSON:
 
 ![20250113203658](https://static-docs.nocobase.com/20250113203658.png)
 
-Meskipun struktur JSON bisa sangat kompleks, namun setelah dipetakan, Anda hanya perlu memilih variabel untuk jalur yang sesuai.
+Meskipun struktur JSON mungkin sangat kompleks, setelah dipetakan, Anda hanya perlu memilih variable dari path yang sesuai.

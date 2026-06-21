@@ -1,25 +1,28 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Template Print - Pemrosesan Loop"
+description: "Sintaks loop Template Print: traversal array atau objek untuk render berulang, gunakan {d.array[i]} dan {d.array[i+1]} untuk menandai area loop."
+keywords: "Template Print,Loop,loops,Traversal Array,NocoBase"
+---
 
-## Pemrosesan Perulangan
+## Pemrosesan Loop
 
-Pemrosesan perulangan digunakan untuk merender data berulang kali dari array atau objek, dengan mendefinisikan penanda awal dan akhir perulangan untuk mengidentifikasi konten yang perlu diulang. Berikut adalah beberapa skenario umum.
+Pemrosesan loop digunakan untuk render berulang data dalam array atau objek, dengan mendefinisikan tag awal dan akhir loop untuk mengidentifikasi konten yang perlu diulang. Berikut diperkenalkan beberapa kasus umum.
 
-### Mengulang Array
 
-#### 1. Penjelasan Sintaksis
+### Traversal Array
 
-- Gunakan tag `{d.array[i].properti}` untuk mendefinisikan item perulangan saat ini, dan gunakan `{d.array[i+1].properti}` untuk menentukan item berikutnya guna menandai area perulangan.
-- Saat perulangan, baris pertama (bagian `[i]`) akan secara otomatis digunakan sebagai template untuk pengulangan; Anda hanya perlu menulis contoh perulangan sekali dalam template.
+#### 1. Penjelasan Sintaks
 
-Format sintaksis contoh:
+- Gunakan tag `{d.array[i].properti}` untuk mendefinisikan item loop saat ini, dan `{d.array[i+1].properti}` untuk menentukan item berikutnya untuk menandai area loop.
+- Saat loop, baris pertama (bagian `[i]`) akan otomatis digunakan sebagai Template untuk pengulangan; di Template hanya perlu menulis satu kali contoh loop.
+
+Format sintaks contoh:
 ```
 {d.namaArray[i].properti}
 {d.namaArray[i+1].properti}
 ```
 
-#### 2. Contoh: Perulangan Array Sederhana
+#### 2. Contoh: Loop Array Sederhana
 
 ##### Data
 ```json
@@ -49,9 +52,10 @@ BMW3
 Peugeot4
 ```
 
-#### 3. Contoh: Perulangan Array Bertingkat
 
-Cocok untuk kasus di mana sebuah array berisi array bertingkat; penumpukan bisa dilakukan pada level tak terbatas.
+#### 3. Contoh: Loop Array Bersarang
+
+Cocok untuk situasi array di dalam array, dapat bersarang tanpa batas level.
 
 ##### Data
 ```json
@@ -95,9 +99,10 @@ Prius 5 - 139
 Kia
 ```
 
-#### 4. Contoh: Perulangan Dua Arah (Fitur Lanjutan, v4.8.0+)
 
-Perulangan dua arah memungkinkan iterasi pada baris dan kolom secara bersamaan, cocok untuk menghasilkan tabel perbandingan dan tata letak kompleks lainnya (catatan: saat ini, beberapa format hanya didukung secara resmi pada template DOCX, HTML, dan MD).
+#### 4. Contoh: Loop Dua Arah (Fitur Lanjutan, v4.8.0+)
+
+Loop dua arah dapat melakukan iterasi pada baris dan kolom secara bersamaan, cocok untuk menghasilkan layout kompleks seperti tabel perbandingan (catatan: beberapa format saat ini hanya didukung resmi oleh Template DOCX, HTML, MD).
 
 ##### Data
 ```json
@@ -130,31 +135,33 @@ EV4Prius 2
 EV6Prius 3
 ```
 
-#### 5. Contoh: Mengakses Nilai Iterator Perulangan (v4.0.0+)
 
-Dalam perulangan, Anda dapat langsung mengakses nilai indeks iterasi saat ini, yang membantu memenuhi persyaratan format khusus.
+#### 5. Contoh: Mengakses Nilai Iterator Loop (v4.0.0+)
+
+Pada loop dapat langsung mengakses nilai indeks iterasi saat ini, memudahkan implementasi kebutuhan format khusus.
 
 ##### Contoh Template
 ```
 {d[i].cars[i].other.wheels[i].tire.subObject:add(.i):add(..i):add(...i)}
 ```
 
-> Catatan: Jumlah titik menunjukkan level indeks yang berbeda (misalnya, `.i` mewakili level saat ini, sedangkan `..i` mewakili level sebelumnya). Saat ini ada masalah dengan urutan terbalik; silakan lihat dokumentasi resmi untuk detailnya.
+> Catatan: Jumlah titik digunakan untuk mewakili nilai indeks pada level yang berbeda (contoh, `.i` mewakili level saat ini, `..i` mewakili level di atas), saat ini ada masalah urutan terbalik, untuk detail silakan lihat penjelasan resmi.
 
-### Mengulang Objek
 
-#### 1. Penjelasan Sintaksis
+### Traversal Objek
 
-- Untuk properti dalam objek, Anda dapat menggunakan `.att` untuk mendapatkan nama properti dan `.val` untuk mendapatkan nilai properti.
-- Selama iterasi, setiap item properti akan dilalui satu per satu.
+#### 1. Penjelasan Sintaks
 
-Format sintaksis contoh:
+- Untuk properti dalam objek, dapat menggunakan `.att` untuk mendapatkan nama properti, dan `.val` untuk mendapatkan nilai properti.
+- Saat iterasi, setiap kali akan men-traverse satu item properti.
+
+Format sintaks contoh:
 ```
-{d.namaObjek[i].att}  // nama properti
-{d.namaObjek[i].val}  // nilai properti
+{d.namaObjek[i].att}  // Nama properti
+{d.namaObjek[i].val}  // Nilai properti
 ```
 
-#### 2. Contoh: Iterasi Properti Objek
+#### 2. Contoh: Traversal Properti Objek
 
 ##### Data
 ```json
@@ -182,20 +189,21 @@ jack20
 bob30
 ```
 
-### Pengurutan
 
-Dengan fitur pengurutan, Anda dapat langsung mengurutkan data array dalam template.
+### Pemrosesan Sorting
 
-#### 1. Penjelasan Sintaksis: Pengurutan Urutan Menaik
+Memanfaatkan fitur sorting dapat langsung melakukan sorting pada data array dalam Template.
 
-- Gunakan atribut sebagai kriteria pengurutan dalam tag perulangan. Format sintaksisnya adalah:
+#### 1. Penjelasan Sintaks: Sorting Ascending
+
+- Gunakan properti dalam tag loop sebagai dasar sorting, format sintaksnya:
   ```
-  {d.array[atributPengurutan, i].properti}
-  {d.array[atributPengurutan+1, i+1].properti}
+  {d.array[properti sorting, i].properti}
+  {d.array[properti sorting+1, i+1].properti}
   ```
-- Jika Anda memerlukan beberapa kriteria pengurutan, pisahkan atribut dengan koma di dalam tanda kurung siku.
+- Jika perlu sorting multi-level, dapat memisahkan beberapa properti sorting dengan koma di dalam kurung siku.
 
-#### 2. Contoh: Pengurutan Berdasarkan Atribut Numerik
+#### 2. Contoh: Sorting Berdasarkan Properti Angka
 
 ##### Data
 ```json
@@ -225,7 +233,7 @@ BMW
 Ferrari
 ```
 
-#### 3. Contoh: Pengurutan Multi-Atribut
+#### 3. Contoh: Sorting Multi-properti
 
 ##### Data
 ```json
@@ -257,18 +265,19 @@ BMW
 Ferrari
 ```
 
-### Pemfilteran
 
-Pemfilteran digunakan untuk menyaring baris data dalam perulangan berdasarkan kondisi tertentu.
+### Pemrosesan Filter
 
-#### 1. Penjelasan Sintaksis: Pemfilteran Numerik
+Pemrosesan filter digunakan untuk memfilter baris data dalam loop berdasarkan kondisi tertentu.
 
-- Tambahkan kondisi dalam tag perulangan (misalnya, `age > 19`). Format sintaksisnya:
+#### 1. Penjelasan Sintaks: Filter Angka
+
+- Tambahkan kondisi pada tag loop (contoh `age > 19`), format sintaks:
   ```
   {d.array[i, kondisi].properti}
   ```
 
-#### 2. Contoh: Pemfilteran Numerik
+#### 2. Contoh: Filter Angka
 
 ##### Data
 ```json
@@ -294,14 +303,15 @@ John
 Bob
 ```
 
-#### 3. Penjelasan Sintaksis: Pemfilteran String
 
-- Tentukan kondisi string menggunakan tanda kutip tunggal. Contoh format:
+#### 3. Penjelasan Sintaks: Filter String
+
+- Gunakan tanda kutip tunggal untuk menandai kondisi string, contoh format:
   ```
   {d.array[i, type='rocket'].name}
   ```
 
-#### 4. Contoh: Pemfilteran String
+#### 4. Contoh: Filter String
 
 ##### Data
 ```json
@@ -327,14 +337,15 @@ Falcon 9
 Falcon Heavy
 ```
 
-#### 5. Penjelasan Sintaksis: Memfilter N Item Pertama
 
-- Anda dapat menggunakan indeks perulangan `i` untuk memfilter N elemen pertama. Contoh sintaksis:
+#### 5. Penjelasan Sintaks: Filter N Item Pertama
+
+- Dapat menggunakan indeks loop `i` untuk memfilter N elemen pertama, contoh sintaks:
   ```
   {d.array[i, i < N].properti}
   ```
 
-#### 6. Contoh: Memfilter Dua Item Pertama
+#### 6. Contoh: Filter Dua Item Pertama
 
 ##### Data
 ```json
@@ -360,13 +371,14 @@ Falcon 9
 Model S
 ```
 
-#### 7. Penjelasan Sintaksis: Mengecualikan N Item Terakhir
 
-- Gunakan pengindeksan negatif `i` untuk merepresentasikan item dari akhir. Misalnya:
-  - `{d.array[i=-1].properti}` mengambil item terakhir.
-  - `{d.array[i, i!=-1].properti}` mengecualikan item terakhir.
+#### 7. Penjelasan Sintaks: Mengecualikan N Item Terakhir
 
-#### 8. Contoh: Mengecualikan Satu dan Dua Item Terakhir
+- Melalui indeks negatif `i` mewakili item terbalik, contoh:
+  - `{d.array[i=-1].properti}` mendapatkan item terakhir
+  - `{d.array[i, i!=-1].properti}` mengecualikan item terakhir
+
+#### 8. Contoh: Mengecualikan Item Terakhir dan Dua Item Terakhir
 
 ##### Data
 ```json
@@ -405,46 +417,12 @@ Falcon 9
 Model S
 ```
 
-#### 9. Penjelasan Sintaksis: Pemfilteran Cerdas
 
-- Menggunakan blok kondisi cerdas, Anda dapat menyembunyikan seluruh baris berdasarkan kondisi kompleks. Contoh format:
-  ```
-  {d.array[i].properti:ifIN('kataKunci'):drop(row)}
-  ```
+### Pemrosesan Deduplikasi
 
-#### 10. Contoh: Pemfilteran Cerdas
+#### 1. Penjelasan Sintaks
 
-##### Data
-```json
-[
-  { "name": "Falcon 9" },
-  { "name": "Model S" },
-  { "name": "Model 3" },
-  { "name": "Falcon Heavy" }
-]
-```
-
-##### Template
-```
-People
-{d[i].name}
-{d[i].name:ifIN('Falcon'):drop(row)}
-{d[i+1].name}
-```
-
-##### Hasil
-```
-People
-Model S
-Model 3
-```
-(Catatan: Baris yang berisi "Falcon" dalam template dihapus oleh kondisi pemfilteran cerdas.)
-
-### Penghapusan Duplikasi
-
-#### 1. Penjelasan Sintaksis
-
-- Menggunakan iterator kustom, Anda dapat memperoleh item unik (tidak duplikat) berdasarkan nilai properti. Sintaksisnya mirip dengan perulangan biasa tetapi secara otomatis mengabaikan item duplikat.
+- Melalui iterator kustom, dapat memperoleh item unik (tidak duplikat) berdasarkan nilai properti tertentu. Sintaksnya mirip dengan loop biasa, tetapi akan otomatis mengabaikan item duplikat.
 
 Format contoh:
 ```
@@ -477,3 +455,5 @@ Vehicles
 Hyundai
 Airbus
 ```
+
+

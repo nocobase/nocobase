@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI 员工提示词工程指南"
+description: "编写高质量 AI 员工提示词：九要素黄金公式、Viz 实战示例、XML 标签、模块化复用、MUST/ALWAYS/NEVER 规则、五步迭代优化。"
+keywords: "提示词工程,System Prompt,Role setting,AI 提示词,NocoBase"
+---
+
 # AI 员工 · 提示词工程指南
 
 > 从"怎么写"到"写得好"，这篇指南教你用简单、稳定、可复用的方式编写高质量提示词。

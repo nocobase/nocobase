@@ -1,4 +1,6 @@
 ---
+title: "工作流：并行分支节点"
+keywords: "工作流：并行分支节点,插件,NocoBase"
 displayName: "工作流：并行分支节点"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |

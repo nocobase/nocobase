@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "存储引擎：本地存储"
+description: "本地存储将文件保存至服务器硬盘，适用于小规模或试验场景，配置路径、访问 URL、大小限制等参数。"
+keywords: "本地存储,Local Storage,服务器硬盘,存储路径,文件存储,NocoBase"
+---
+
 # 存储引擎：本地存储
 
 上传文件将保存在服务器本地硬盘目录中，适用于系统管理的上传文件总量较少或试验性的场景。

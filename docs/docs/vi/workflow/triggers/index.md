@@ -1,28 +1,29 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Tổng quan Trigger Workflow"
+description: "Trigger Workflow: các cổng vào thực thi như sự kiện bảng dữ liệu, tác vụ định kỳ, sự kiện trước/sau Action, Action tùy chỉnh, phê duyệt, Webhook..."
+keywords: "trigger workflow,sự kiện bảng dữ liệu,tác vụ định kỳ,Webhook,sự kiện action,phê duyệt,NocoBase"
+---
 
 # Tổng quan
 
-Bộ kích hoạt là điểm khởi đầu để thực thi một luồng công việc. Khi một sự kiện thỏa mãn các điều kiện của bộ kích hoạt xảy ra trong quá trình ứng dụng đang chạy, luồng công việc sẽ được kích hoạt và thực thi. Loại bộ kích hoạt cũng chính là loại luồng công việc, được chọn khi tạo luồng công việc và không thể thay đổi sau khi tạo. Các loại bộ kích hoạt hiện được hỗ trợ bao gồm:
+Trigger là cổng vào thực thi của Workflow. Trong quá trình ứng dụng đang chạy, khi sự kiện thỏa mãn điều kiện của Trigger được sinh ra, Workflow sẽ được kích hoạt thực thi. Loại Trigger cũng chính là loại của Workflow, được chọn khi tạo Workflow và không thể thay đổi sau khi tạo. Các loại Trigger hiện đã được hỗ trợ như sau:
 
-- [Sự kiện bộ sưu tập](./collection) (Tích hợp sẵn)
-- [Lịch trình](./schedule) (Tích hợp sẵn)
-- [Trước hành động](./pre-action) (Được cung cấp bởi plugin @nocobase/plugin-workflow-request-interceptor)
-- [Sau hành động](./post-action) (Được cung cấp bởi plugin @nocobase/plugin-workflow-action-trigger)
-- [Hành động tùy chỉnh](./custom-action) (Được cung cấp bởi plugin @nocobase/plugin-workflow-custom-action-trigger)
-- [Phê duyệt](./approval) (Được cung cấp bởi plugin @nocobase/plugin-workflow-approval)
-- [Webhook](./webhook) (Được cung cấp bởi plugin @nocobase/plugin-workflow-webhook)
+- [Sự kiện bảng dữ liệu](./collection) (tích hợp sẵn)
+- [Tác vụ định kỳ](./schedule) (tích hợp sẵn)
+- [Sự kiện trước Action](./pre-action) (do plugin @nocobase/plugin-workflow-request-interceptor cung cấp)
+- [Sự kiện sau Action](./post-action) (do plugin @nocobase/plugin-workflow-action-trigger cung cấp)
+- [Sự kiện Action tùy chỉnh](./custom-action) (do plugin @nocobase/plugin-workflow-custom-action-trigger cung cấp)
+- [Phê duyệt](./approval) (do plugin @nocobase/plugin-workflow-approval cung cấp)
+- [Webhook](./webhook) (do plugin @nocobase/plugin-workflow-webhook cung cấp)
 
-Thời điểm kích hoạt của từng sự kiện được thể hiện trong hình dưới đây:
+Thời điểm kích hoạt của các sự kiện như hình dưới đây:
 
-![Các sự kiện của luồng công việc](https://static-docs.nocobase.com/20251029221709.png)
+![Sự kiện của Workflow](https://static-docs.nocobase.com/20251029221709.png)
 
-Ví dụ, khi người dùng gửi một biểu mẫu, hoặc khi dữ liệu trong một bộ sưu tập thay đổi do hành động của người dùng hoặc lệnh gọi chương trình, hoặc khi một tác vụ theo lịch trình đến thời gian thực thi, một luồng công việc đã cấu hình có thể được kích hoạt.
+Ví dụ khi người dùng gửi một form, hoặc dữ liệu trong bảng dữ liệu phát sinh thay đổi do thao tác của người dùng hoặc gọi từ chương trình, hoặc tác vụ định kỳ đến thời gian thực thi, đều có thể kích hoạt Workflow đã được cấu hình thực thi.
 
-Các bộ kích hoạt liên quan đến dữ liệu (chẳng hạn như hành động, sự kiện bộ sưu tập) thường mang theo dữ liệu ngữ cảnh kích hoạt. Dữ liệu này hoạt động như các biến và có thể được các nút trong luồng công việc sử dụng làm tham số xử lý để đạt được quá trình xử lý dữ liệu tự động. Ví dụ, khi người dùng gửi một biểu mẫu, nếu nút gửi được liên kết với một luồng công việc, luồng công việc đó sẽ được kích hoạt và thực thi. Dữ liệu đã gửi sẽ được đưa vào môi trường ngữ cảnh của kế hoạch thực thi để các nút tiếp theo sử dụng làm biến.
+Các Trigger liên quan đến dữ liệu (như Action, sự kiện bảng dữ liệu) thường mang theo dữ liệu ngữ cảnh kích hoạt, các dữ liệu này sẽ được dùng làm biến để Node trong Workflow sử dụng làm tham số xử lý nhằm triển khai xử lý tự động dữ liệu. Ví dụ khi người dùng gửi một form, nếu nút gửi được liên kết với Workflow thì sẽ kích hoạt và thực thi Workflow đó, dữ liệu được gửi sẽ được inject vào môi trường ngữ cảnh của kế hoạch thực thi để các Node sau dùng làm biến.
 
-Sau khi tạo một luồng công việc, trên trang xem luồng công việc, bộ kích hoạt sẽ được hiển thị dưới dạng một nút đầu vào ở vị trí bắt đầu của quy trình. Nhấp vào thẻ này sẽ mở ngăn cấu hình. Tùy thuộc vào loại bộ kích hoạt, bạn có thể cấu hình các điều kiện liên quan của nó.
+Sau khi tạo Workflow, trong trang xem Workflow, Trigger sẽ được hiển thị ở vị trí bắt đầu của quy trình theo dạng Node cổng vào, bấm vào thẻ đó sẽ mở ngăn cấu hình. Tùy theo loại Trigger khác nhau, có thể cấu hình các điều kiện liên quan của Trigger.
 
-![Bộ kích hoạt_Nút đầu vào](https://static-docs.nocobase.com/20251029222231.png)
+![Trigger_Node cổng vào](https://static-docs.nocobase.com/20251029222231.png)

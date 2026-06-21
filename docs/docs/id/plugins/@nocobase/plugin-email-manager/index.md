@@ -1,15 +1,17 @@
 ---
-displayName: "Email manager"
+displayName: "Email Manager"
 packageName: '@nocobase/plugin-email-manager'
+title: "Email Manager"
+keywords: "Email Manager,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Connect NocoBase to corporate email accounts like Gmail and Outlook, and be able to receive and send emails just like in other CRM products.
+  Terintegrasi dengan email enterprise seperti Gmail, Outlook, dan lainnya. Terima dan kirim email di NocoBase, sebagaimana pada produk CRM lainnya.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Email manager
+# Email Manager

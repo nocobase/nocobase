@@ -49,10 +49,11 @@ export const selectedChannelObs = observable.computed(() => {
 export const fetchChannels = async (params: any) => {
   const apiClient = getAPIClient();
   isFetchingChannelsObs.value = true;
+  const requestParams = merge({ filter: { status: channelStatusFilterObs.value } }, params ?? {});
   const res = await apiClient.request({
     url: 'myInAppChannels:list',
     method: 'get',
-    params: merge({ filter: { status: channelStatusFilterObs.value } }, params ?? {}),
+    params: requestParams,
   });
   const channels = res.data?.data;
   if (Array.isArray(channels)) {
@@ -60,19 +61,9 @@ export const fetchChannels = async (params: any) => {
       channelMapObs.value[channel.name] = channel;
     });
   }
-  await countChannels();
-  isFetchingChannelsObs.value = false;
-};
-
-export const countChannels = async () => {
-  const apiClient = getAPIClient();
-  const res = await apiClient.request({
-    url: 'myInAppChannels:list',
-    method: 'get',
-    params: { filter: { status: channelStatusFilterObs.value } },
-  });
   const count = res.data?.meta?.count;
-  if (count >= 0) channelCountObs.value = count;
+  if (!requestParams?.filter?.name && count >= 0) channelCountObs.value = count;
+  isFetchingChannelsObs.value = false;
 };
 
 autorun(() => {

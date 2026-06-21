@@ -1,24 +1,23 @@
 ---
 pkg: '@nocobase/plugin-verification'
+title: "Verifikasi: SMS"
+description: "Kode verifikasi SMS: tipe verifikasi SMS OTP, mendukung provider SMS Alibaba Cloud dan Tencent Cloud, pengikatan nomor telepon pengguna, konfigurasi administrator, dan alur pelepasan ikatan."
+keywords: "kode verifikasi SMS,SMS OTP,Alibaba Cloud SMS,Tencent Cloud SMS,pengikatan nomor telepon,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Verifikasi: SMS
 
-## Pendahuluan
+## Pengantar
 
-Kode verifikasi SMS adalah tipe verifikasi bawaan yang digunakan untuk menghasilkan kata sandi dinamis satu kali (OTP) dan mengirimkannya kepada pengguna melalui SMS.
+Kode verifikasi SMS adalah tipe verifikasi bawaan, digunakan untuk menghasilkan one-time password (OTP) dan mengirimkannya ke pengguna melalui SMS.
 
 ## Menambahkan Verifier SMS
 
-Buka halaman manajemen verifikasi.
+Masuk ke halaman manajemen verifikasi.
 
 ![](https://static-docs.nocobase.com/202502271726791.png)
 
-Tambahkan - OTP SMS
+Tambahkan - SMS OTP
 
 ![](https://static-docs.nocobase.com/202502271726056.png)
 
@@ -26,22 +25,22 @@ Tambahkan - OTP SMS
 
 ![](https://static-docs.nocobase.com/202502271727711.png)
 
-Penyedia layanan SMS yang saat ini didukung adalah:
+Provider SMS yang saat ini didukung:
 
-- <a href="https://www.aliyun.com/product/sms" target="_blank">Aliyun SMS</a>
+- <a href="https://www.aliyun.com/product/sms" target="_blank">Alibaba Cloud SMS</a>
 - <a href="https://cloud.tencent.com/product/sms" target="_blank">Tencent Cloud SMS</a>
 
-Saat mengonfigurasi template SMS di panel admin penyedia layanan, Anda perlu menyediakan parameter untuk kode verifikasi.
+Saat mengkonfigurasi template SMS pada admin backend provider, perlu menyiapkan parameter untuk kode verifikasi SMS.
 
-- Contoh konfigurasi Aliyun: `Kode verifikasi Anda adalah: ${code}`
+- Contoh konfigurasi Alibaba Cloud: `Kode verifikasi Anda adalah: ${code}`
 
 - Contoh konfigurasi Tencent Cloud: `Kode verifikasi Anda adalah: {1}`
 
-Pengembang juga dapat memperluas dukungan untuk penyedia layanan SMS lainnya dalam bentuk plugin. Lihat: [Memperluas Penyedia Layanan SMS](./dev/sms-type)
+Developer juga dapat memperluas provider SMS lain dalam bentuk plugin. Lihat: [Memperluas Provider SMS](./dev/sms-type)
 
-## Penautan Pengguna
+## Pengikatan Pengguna
 
-Setelah menambahkan verifier, pengguna dapat menautkan nomor telepon di manajemen verifikasi pribadi mereka.
+Setelah verifier ditambahkan, pengguna dapat mengikat nomor telepon verifikasi pada manajemen verifikasi pribadi.
 
 ![](https://static-docs.nocobase.com/202502271737016.png)
 
@@ -49,12 +48,12 @@ Setelah menambahkan verifier, pengguna dapat menautkan nomor telepon di manajeme
 
 ![](https://static-docs.nocobase.com/202502271738515.png)
 
-Setelah penautan berhasil, verifikasi identitas dapat dilakukan di skenario verifikasi mana pun yang menggunakan verifier ini.
+Setelah pengikatan berhasil, Anda dapat melakukan verifikasi identitas pada skenario verifikasi yang terikat dengan verifier tersebut.
 
 ![](https://static-docs.nocobase.com/202502271739607.png)
 
-## Melepaskan Tautan Pengguna
+## Pelepasan Ikatan Pengguna
 
-Melepaskan tautan nomor telepon memerlukan verifikasi melalui metode yang sudah tertaut.
+Pelepasan ikatan nomor telepon perlu dilakukan dengan verifikasi melalui metode verifikasi yang telah diikat.
 
 ![](https://static-docs.nocobase.com/202502282103205.png)

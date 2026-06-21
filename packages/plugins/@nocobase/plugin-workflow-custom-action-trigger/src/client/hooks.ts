@@ -36,6 +36,29 @@ import {
 import { isURL } from '@nocobase/utils/client';
 import { lang } from './locale';
 
+const VARIABLE_RE = /\{\{.+?\}\}/;
+
+/**
+ * Recursively resolve variable references ({{...}}) in a JSON-compatible value.
+ * Plain strings without variable syntax are returned as-is.
+ */
+async function resolveContextData(value: any, scopes: { variables: any; localVariables: any }): Promise<any> {
+  if (typeof value === 'string') {
+    return VARIABLE_RE.test(value) ? getVariableValue(value, scopes) : value;
+  }
+  if (Array.isArray(value)) {
+    return Promise.all(value.map((item) => resolveContextData(item, scopes)));
+  }
+  if (value !== null && typeof value === 'object') {
+    const result: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value)) {
+      result[k] = await resolveContextData(v, scopes);
+    }
+    return result;
+  }
+  return value;
+}
+
 export function useGlobalTriggerWorkflowCustomActionProps() {
   const apiClient = useAPIClient();
   const { setVisible } = useActionContext();
@@ -49,7 +72,7 @@ export function useGlobalTriggerWorkflowCustomActionProps() {
 
   return {
     async onClick(e, callback) {
-      const { onSuccess, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
+      const { onSuccess, triggerWorkflows, contextData } = actionSchema?.['x-action-settings'] ?? {};
       const {
         manualClose,
         redirecting,
@@ -66,8 +89,18 @@ export function useGlobalTriggerWorkflowCustomActionProps() {
       actionField.data = actionField.data || {};
       actionField.data.loading = true;
       try {
+        const scopes = { variables, localVariables };
+        let values: any;
+        if (contextData) {
+          try {
+            const parsed = typeof contextData === 'string' ? JSON.parse(contextData) : contextData;
+            values = await resolveContextData(parsed, scopes);
+          } catch (e) {
+            // contextData is not valid JSON, skip
+          }
+        }
         const data = await apiClient.resource('workflows').trigger({
-          // values,
+          values,
           triggerWorkflows: triggerWorkflows
             .map((row) => [row.workflowKey, row.context].filter(Boolean).join('!'))
             .join(','),

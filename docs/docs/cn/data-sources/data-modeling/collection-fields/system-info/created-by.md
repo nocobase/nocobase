@@ -1,3 +1,9 @@
+---
+title: "创建人"
+description: "创建人系统字段，自动记录创建者。"
+keywords: "创建人,createdBy,系统字段,审计字段,NocoBase"
+---
+
 # 创建人
 
 ## 介绍

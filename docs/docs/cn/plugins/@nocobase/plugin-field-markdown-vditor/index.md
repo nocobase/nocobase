@@ -1,4 +1,6 @@
 ---
+title: "数据表字段：Markdown(Vditor)"
+keywords: "数据表字段：Markdown(Vditor),插件,NocoBase"
 displayName: "数据表字段：Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |

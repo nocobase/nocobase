@@ -1,40 +1,41 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Node Workflow - Xóa dữ liệu"
+description: "Node xóa dữ liệu: xóa bản ghi bảng dữ liệu theo điều kiện, hỗ trợ xóa hàng loạt, trả về số dòng đã xóa."
+keywords: "workflow,xóa dữ liệu,Destroy,thao tác bảng dữ liệu,xóa hàng loạt,NocoBase"
+---
 
 # Xóa dữ liệu
 
-Dùng để xóa dữ liệu từ một bộ sưu tập thỏa mãn các điều kiện nhất định.
+Được dùng để xóa dữ liệu thỏa mãn điều kiện của một bảng dữ liệu nào đó.
 
-Cách sử dụng cơ bản của nút xóa tương tự như nút cập nhật, chỉ khác là nút xóa không yêu cầu gán giá trị cho trường. Bạn chỉ cần chọn bộ sưu tập và các điều kiện lọc. Kết quả của nút xóa sẽ trả về số hàng dữ liệu đã được xóa thành công, chỉ có thể xem trong lịch sử thực thi và không thể dùng làm biến trong các nút tiếp theo.
+Cách sử dụng cơ bản của Node xóa tương tự Node cập nhật, chỉ khác là Node xóa không cần gán giá trị trường, chỉ cần chọn bảng dữ liệu và điều kiện lọc. Kết quả của Node xóa sẽ trả về số dòng dữ liệu xóa thành công, chỉ có thể xem trong lịch sử thực thi, không thể được dùng làm biến trong các Node tiếp theo.
 
 :::info{title=Lưu ý}
-Hiện tại, nút xóa không hỗ trợ xóa từng hàng mà thực hiện xóa hàng loạt. Do đó, nó sẽ không kích hoạt các sự kiện khác cho từng lần xóa dữ liệu riêng lẻ.
+Hiện Node xóa không hỗ trợ xóa từng cái một, đều là xóa hàng loạt, vì vậy sẽ không kích hoạt các sự kiện xóa cho từng dữ liệu.
 :::
 
-## Tạo nút
+## Tạo Node
 
-Trong giao diện cấu hình luồng công việc, nhấp vào nút dấu cộng (“+”) trong luồng để thêm nút “Xóa dữ liệu”:
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Xóa dữ liệu":
 
-![Tạo nút xóa dữ liệu](https://static-docs.nocobase.com/e1d6b8728251fcdbed6c7f50e5570da2.png)
+![Tạo Node xóa dữ liệu](https://static-docs.nocobase.com/e1d6b8728251fcdbed6c7f50e5570da2.png)
 
-## Cấu hình nút
+## Cấu hình Node
 
-![Nút xóa_Cấu hình nút](https://static-docs.nocobase.com/580600c2b13ef4e01dfa48b23539648e.png)
+![Node xóa_cấu hình Node](https://static-docs.nocobase.com/580600c2b13ef4e01dfa48b23539648e.png)
 
-### Bộ sưu tập
+### Bảng dữ liệu
 
-Chọn bộ sưu tập mà bạn muốn xóa dữ liệu.
+Chọn bảng dữ liệu cần xóa dữ liệu.
 
 ### Điều kiện lọc
 
-Tương tự như các điều kiện lọc khi truy vấn bộ sưu tập thông thường, bạn có thể sử dụng các biến ngữ cảnh của luồng công việc.
+Tương tự điều kiện lọc khi truy vấn bảng dữ liệu thông thường, có thể sử dụng biến ngữ cảnh của quy trình.
 
 ## Ví dụ
 
-Ví dụ, để định kỳ dọn dẹp dữ liệu đơn hàng lịch sử đã hủy và không hợp lệ, bạn có thể sử dụng nút xóa để thực hiện:
+Ví dụ định kỳ dọn dẹp dữ liệu đơn hàng lịch sử không hợp lệ đã hủy, có thể sử dụng Node xóa để triển khai:
 
-![Nút xóa_Ví dụ_Cấu hình nút](https://static-docs.nocobase.com/b94b75077a17252f8523c3f13ce5f320.png)
+![Node xóa_ví dụ_cấu hình Node](https://static-docs.nocobase.com/b94b75077a17252f8523c3f13ce5f320.png)
 
-Luồng công việc sẽ được kích hoạt định kỳ và thực hiện xóa tất cả dữ liệu đơn hàng lịch sử đã hủy và không hợp lệ.
+Workflow sẽ được kích hoạt định kỳ và thực thi xóa tất cả dữ liệu đơn hàng lịch sử không hợp lệ đã hủy.

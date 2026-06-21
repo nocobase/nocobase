@@ -1,27 +1,29 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Mở rộng loại Trigger"
+description: "Mở rộng loại Trigger: phát triển Trigger tùy chỉnh, giao diện cấu hình, logic kích hoạt, tham chiếu API."
+keywords: "workflow,mở rộng trigger,trigger tùy chỉnh,phát triển trigger,NocoBase"
+---
+
+# Mở rộng loại Trigger
+
+Mỗi Workflow đều bắt buộc phải cấu hình một Trigger cụ thể làm cổng vào để khởi động việc thực thi quy trình.
+
+Loại Trigger thường đại diện cho một sự kiện môi trường hệ thống cụ thể. Trong vòng đời ứng dụng đang chạy, bất kỳ liên kết sự kiện nào có thể được subscribe đều có thể dùng để định nghĩa loại Trigger. Ví dụ nhận request, thao tác bảng dữ liệu, tác vụ định kỳ...
+
+Loại Trigger được đăng ký trong bảng Trigger của plugin dựa trên định danh chuỗi, plugin Workflow tích hợp sẵn một số loại Trigger sau:
+
+- `'collection'`: kích hoạt thao tác bảng dữ liệu;
+- `'schedule'`: kích hoạt tác vụ định kỳ;
+- `'action'`: kích hoạt sự kiện sau Action;
 
 
-# Mở rộng các loại trình kích hoạt
+Loại Trigger mở rộng cần đảm bảo định danh là duy nhất, đăng ký phía server các implementation subscribe/unsubscribe của Trigger và đăng ký phía client implementation cấu hình giao diện.
 
-Mỗi luồng công việc cần được cấu hình với một trình kích hoạt cụ thể, đóng vai trò là điểm khởi đầu để thực thi quy trình.
+## Phía Server
 
-Một loại trình kích hoạt thường đại diện cho một sự kiện môi trường hệ thống cụ thể. Trong vòng đời hoạt động của ứng dụng, bất kỳ phần nào cung cấp các sự kiện có thể đăng ký đều có thể được sử dụng để định nghĩa một loại trình kích hoạt. Ví dụ: nhận yêu cầu, thao tác trên bộ sưu tập, tác vụ theo lịch trình, v.v.
+Bất kỳ Trigger nào cần kế thừa từ class cơ sở `Trigger` và triển khai các phương thức `on`/`off`, lần lượt dùng để subscribe và unsubscribe các sự kiện môi trường cụ thể. Trong phương thức `on`, bạn cần gọi `this.workflow.trigger()` trong hàm callback của sự kiện cụ thể để cuối cùng kích hoạt sự kiện. Ngoài ra trong phương thức `off`, bạn cần thực hiện công việc dọn dẹp liên quan đến việc unsubscribe.
 
-Các loại trình kích hoạt được đăng ký trong bảng trình kích hoạt của plugin dựa trên một định danh chuỗi. Plugin luồng công việc đã tích hợp sẵn một số trình kích hoạt:
-
-- `'collection'` : Kích hoạt bởi các thao tác trên bộ sưu tập;
-- `'schedule'` : Kích hoạt bởi các tác vụ theo lịch trình;
-- `'action'` : Kích hoạt bởi các sự kiện sau thao tác;
-
-Các loại trình kích hoạt mở rộng cần đảm bảo định danh là duy nhất. Việc triển khai đăng ký/hủy đăng ký trình kích hoạt được thực hiện ở phía máy chủ, và việc triển khai giao diện cấu hình được thực hiện ở phía máy khách.
-
-## Phía máy chủ
-
-Bất kỳ trình kích hoạt nào cũng cần kế thừa từ lớp cơ sở `Trigger` và triển khai các phương thức `on`/`off`, được sử dụng để đăng ký và hủy đăng ký các sự kiện môi trường cụ thể tương ứng. Trong phương thức `on`, quý vị cần gọi `this.workflow.trigger()` bên trong hàm callback sự kiện cụ thể để cuối cùng kích hoạt sự kiện. Ngoài ra, trong phương thức `off`, quý vị cần thực hiện các công việc dọn dẹp liên quan đến việc hủy đăng ký.
-
-`this.workflow` là thể hiện của plugin luồng công việc được truyền vào hàm tạo của lớp cơ sở `Trigger`.
+Trong đó `this.workflow` là instance plugin Workflow được class cơ sở `Trigger` truyền vào trong constructor.
 
 ```ts
 import { Trigger } from '@nocobase/plugin-workflow';
@@ -44,7 +46,7 @@ class MyTrigger extends Trigger {
 }
 ```
 
-Sau đó, trong plugin mở rộng luồng công việc, hãy đăng ký thể hiện trình kích hoạt với engine luồng công việc:
+Sau đó trong plugin mở rộng cho Workflow, đăng ký instance Trigger lên engine Workflow:
 
 ```ts
 import WorkflowPlugin from '@nocobase/plugin-workflow';
@@ -60,13 +62,13 @@ export default class MyPlugin extends Plugin {
 }
 ```
 
-Sau khi máy chủ khởi động và tải, trình kích hoạt loại `'interval'` có thể được thêm và thực thi.
+Sau khi server khởi động và load xong, Trigger loại `'interval'` đã có thể được thêm vào và thực thi.
 
-## Phía máy khách
+## Phía Client
 
-Phần phía máy khách chủ yếu cung cấp giao diện cấu hình dựa trên các mục cấu hình mà loại trình kích hoạt yêu cầu. Mỗi loại trình kích hoạt cũng cần đăng ký cấu hình loại tương ứng với plugin luồng công việc.
+Phần phía client chủ yếu cung cấp giao diện cấu hình dựa trên các mục cấu hình mà loại Trigger cần. Mỗi loại Trigger cũng cần đăng ký cấu hình loại tương ứng với plugin Workflow.
 
-Ví dụ, đối với trình kích hoạt thực thi theo lịch trình đã đề cập ở trên, hãy định nghĩa mục cấu hình thời gian khoảng cách (`interval`) cần thiết trong biểu mẫu giao diện cấu hình:
+Ví dụ với Trigger thực thi định kỳ ở trên, định nghĩa mục cấu hình thời gian khoảng (`interval`) cần thiết trong form giao diện cấu hình:
 
 ```ts
 import { Trigger } from '@nocobase/workflow/client';
@@ -87,7 +89,7 @@ class MyTrigger extends Trigger {
 }
 ```
 
-Sau đó, trong plugin mở rộng, hãy đăng ký loại trình kích hoạt này với thể hiện của plugin luồng công việc:
+Sau đó trong plugin mở rộng đăng ký loại Trigger này với instance plugin Workflow:
 
 ```ts
 import { Plugin } from '@nocobase/client';
@@ -104,10 +106,10 @@ export default class extends Plugin {
 }
 ```
 
-Sau đó, quý vị sẽ thấy loại trình kích hoạt mới trong giao diện cấu hình của luồng công việc.
+Sau đó trong giao diện cấu hình Workflow đã có thể thấy loại Trigger mới.
 
-:::info{title=Lưu ý}
-Định danh của loại trình kích hoạt được đăng ký ở phía máy khách phải nhất quán với định danh ở phía máy chủ, nếu không sẽ gây ra lỗi.
+:::info{title=Mẹo}
+Định danh loại Trigger được đăng ký phía client phải nhất quán với phía server, nếu không sẽ dẫn đến lỗi.
 :::
 
-Để biết thêm chi tiết về việc định nghĩa các loại trình kích hoạt, vui lòng tham khảo phần [Tham chiếu API luồng công việc](./api#pluginregisterTrigger).
+Các nội dung khác về việc định nghĩa loại Trigger, xem chi tiết tại phần [Tham chiếu API Workflow](./api#pluginregisterTrigger).

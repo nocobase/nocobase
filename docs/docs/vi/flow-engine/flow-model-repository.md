@@ -1,30 +1,31 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Lưu trữ FlowModel và Repository"
+description: "Lưu trữ FlowModel và mô hình Repository: tải dữ liệu, lưu, tương tác với nguồn dữ liệu, hỗ trợ thao tác CRUD, quản lý dữ liệu FlowEngine."
+keywords: "Lưu trữ FlowModel,Repository,Tải dữ liệu,CRUD,Tương tác nguồn dữ liệu,FlowEngine,NocoBase"
+---
 
 # Lưu trữ FlowModel
 
-FlowEngine cung cấp một hệ thống lưu trữ dữ liệu hoàn chỉnh.
+FlowEngine cung cấp một hệ thống lưu trữ đầy đủ
 
 ![20251008231338](https://static-docs.nocobase.com/20251008231338.png)
 
 ## IFlowModelRepository
 
-`IFlowModelRepository` là giao diện (interface) để lưu trữ các mô hình (model) của FlowEngine. Giao diện này định nghĩa các thao tác như tải, lưu và xóa mô hình từ xa. Bằng cách triển khai giao diện này, dữ liệu mô hình có thể được lưu trữ vào cơ sở dữ liệu backend, API hoặc các phương tiện lưu trữ khác, giúp đồng bộ hóa dữ liệu giữa frontend và backend.
+`IFlowModelRepository` là interface lưu trữ model của FlowEngine, định nghĩa các thao tác như tải, lưu và xóa từ xa của model. Bằng cách triển khai interface này, có thể lưu trữ dữ liệu model vào database backend, API hoặc các phương tiện lưu trữ khác, đồng bộ dữ liệu frontend-backend.
 
-### Các phương thức chính
+### Phương thức chính
 
 - **findOne(query: Query): Promise<FlowModel \| null>**  
-  Tải dữ liệu mô hình từ xa dựa trên định danh duy nhất `uid`.
+  Tải dữ liệu model từ xa dựa trên định danh duy nhất uid.
 
 - **save(model: FlowModel): Promise<any\>**  
-  Lưu dữ liệu mô hình vào bộ nhớ từ xa.
+  Lưu dữ liệu model vào lưu trữ từ xa.
 
 - **destroy(uid: string): Promise<boolean\>**  
-  Xóa mô hình khỏi bộ nhớ từ xa dựa trên `uid`.
+  Xóa model khỏi lưu trữ từ xa dựa trên uid.
 
-### Ví dụ về FlowModelRepository
+### Ví dụ FlowModelRepository
 
 ```ts
 class FlowModelRepository implements IFlowModelRepository<FlowModel> {
@@ -32,53 +33,53 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
 
   async findOne(query) {
     const { uid, parentId } = query;
-    // Triển khai: Lấy mô hình theo uid
+    // Triển khai: Lấy model dựa trên uid
     return null;
   }
 
   async save(model: FlowModel) {
     console.log('Saving model:', model);
-    // Triển khai: Lưu mô hình
+    // Triển khai: Lưu model
     return model;
   }
 
   async destroy(uid: string) {
-    // Triển khai: Xóa mô hình theo uid
+    // Triển khai: Xóa model dựa trên uid
     return true;
   }
 }
 ```
 
-### Thiết lập FlowModelRepository
+### Đặt FlowModelRepository
 
 ```ts
 flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ```
 
-## Các phương thức quản lý mô hình do FlowEngine cung cấp
+## Phương thức quản lý model do FlowEngine cung cấp
 
-### Các phương thức cục bộ
+### Phương thức cục bộ
 
 ```ts
-flowEngine.createModel(options); // Tạo một thể hiện mô hình cục bộ
-flowEngine.getModel(uid);        // Lấy một thể hiện mô hình cục bộ
-flowEngine.removeModel(uid);     // Xóa một thể hiện mô hình cục bộ
+await flowEngine.createModelAsync(options); // Tạo instance model cục bộ
+flowEngine.getModel(uid);        // Lấy instance model cục bộ
+flowEngine.removeModel(uid);     // Xóa instance model cục bộ
 ```
 
-### Các phương thức từ xa (Được triển khai bởi ModelRepository)
+### Phương thức từ xa (do ModelRepository triển khai)
 
 ```ts
-await flowEngine.loadModel(uid);     // Tải mô hình từ xa
-await flowEngine.saveModel(model);   // Lưu mô hình vào bộ nhớ từ xa
-await flowEngine.destroyModel(uid);  // Xóa mô hình từ xa
+await flowEngine.loadModel(uid);     // Tải model từ xa
+await flowEngine.saveModel(model);   // Lưu model lên server
+await flowEngine.destroyModel(uid);  // Xóa model từ xa
 ```
 
-## Các phương thức của thể hiện mô hình
+## Phương thức instance model
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
-await model.save();     // Lưu vào bộ nhớ từ xa
-await model.destroy();  // Xóa khỏi bộ nhớ từ xa
+await model.save();     // Lưu lên server
+await model.destroy();  // Xóa từ xa
 ```

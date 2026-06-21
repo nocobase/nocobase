@@ -1,17 +1,17 @@
 ---
-pkg: "@nocobase/plugin-auth-ldap"
+pkg: '@nocobase/plugin-auth-ldap'
+title: "Xác thực: LDAP"
+description: "Xác thực LDAP NocoBase: tuân theo giao thức LDAP, đăng nhập bằng tài khoản và mật khẩu của LDAP server, cấu hình LDAP URL, Bind DN, Search DN, ánh xạ thuộc tính."
+keywords: "LDAP,directory service,xác thực doanh nghiệp,Bind DN,Search DN,ánh xạ thuộc tính,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-
 
 # Xác thực: LDAP
 
+<PluginInfo commercial="true" name="auth-ldap"></PluginInfo>
+
 ## Giới thiệu
 
-Plugin Xác thực: LDAP tuân thủ tiêu chuẩn giao thức LDAP (Lightweight Directory Access Protocol), cho phép người dùng đăng nhập vào NocoBase bằng tài khoản và mật khẩu từ máy chủ LDAP của họ.
+Plugin Xác thực: LDAP tuân theo chuẩn giao thức LDAP (Lightweight Directory Access Protocol), cho phép người dùng đăng nhập NocoBase bằng tài khoản và mật khẩu của LDAP server.
 
 ## Kích hoạt plugin
 
@@ -19,7 +19,7 @@ Plugin Xác thực: LDAP tuân thủ tiêu chuẩn giao thức LDAP (Lightweight
 
 ## Thêm xác thực LDAP
 
-Truy cập trang quản lý plugin xác thực người dùng.
+Vào trang quản lý plugin xác thực người dùng.
 
 <img src="https://static-docs.nocobase.com/202405101601510.png"/>
 
@@ -33,30 +33,30 @@ Thêm - LDAP
 
 <img src="https://static-docs.nocobase.com/202405101605728.png"/>
 
-- **Tự động đăng ký khi người dùng không tồn tại** - Tùy chọn tự động tạo người dùng mới nếu không tìm thấy người dùng hiện có phù hợp.
-- **URL LDAP** - Địa chỉ máy chủ LDAP.
-- **Bind DN** - DN dùng để kiểm tra kết nối máy chủ và tìm kiếm người dùng.
-- **Mật khẩu Bind** - Mật khẩu của Bind DN.
-- **Kiểm tra kết nối** - Nhấp vào nút để kiểm tra kết nối máy chủ và xác thực Bind DN.
+- Sign up automatically when the user does not exist - Khi không tìm thấy người dùng hiện có để match, có tự động tạo người dùng mới hay không.
+- LDAP URL - Địa chỉ LDAP server
+- Bind DN - DN dùng để test kết nối server và search người dùng
+- Bind password - Mật khẩu của Bind DN
+- Test connection - Click nút để test kết nối server và tính hợp lệ của Bind DN.
 
 ### Cấu hình tìm kiếm
 
 <img src="https://static-docs.nocobase.com/202405101609984.png"/>
 
-- **Search DN** - DN dùng để tìm kiếm người dùng.
-- **Bộ lọc tìm kiếm** - Điều kiện lọc để tìm kiếm người dùng, sử dụng `{{account}}` để đại diện cho tài khoản người dùng dùng khi đăng nhập.
-- **Phạm vi** - `Base`, `One level`, `Subtree`, mặc định là `Subtree`.
-- **Giới hạn kích thước** - Kích thước phân trang tìm kiếm.
+- Search DN - DN dùng để search người dùng
+- Search filter - Điều kiện filter search người dùng, dùng `{{account}}` để biểu thị tài khoản người dùng nhập khi đăng nhập
+- Scope - `Base`, `One level`, `Subtree`, mặc định `Subtree`
+- Size limit - Kích thước phân trang search
 
 ### Ánh xạ thuộc tính
 
 <img src="https://static-docs.nocobase.com/202405101612814.png"/>
 
-- **Sử dụng trường này để liên kết người dùng** - Trường dùng để liên kết với người dùng hiện có. Chọn 'tên người dùng' nếu tài khoản đăng nhập là tên người dùng, hoặc 'email' nếu đó là địa chỉ email. Mặc định là tên người dùng.
-- **Ánh xạ thuộc tính** - Ánh xạ các thuộc tính người dùng với các trường trong bảng người dùng của NocoBase.
+- Use this field to bind the user - Field dùng để gắn người dùng hiện có. Nếu tài khoản đăng nhập là username, chọn username; nếu là email thì chọn email. Mặc định là username.
+- Attribute map - Ánh xạ thuộc tính người dùng với field của bảng users NocoBase.
 
 ## Đăng nhập
 
-Truy cập trang đăng nhập và nhập tên người dùng cùng mật khẩu LDAP vào biểu mẫu đăng nhập.
+Truy cập trang đăng nhập, nhập username và mật khẩu LDAP để đăng nhập.
 
 <img src="https://static-docs.nocobase.com/202405101614300.png"/>

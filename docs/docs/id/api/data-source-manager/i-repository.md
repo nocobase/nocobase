@@ -1,16 +1,18 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "IRepository"
+description: "Interface IRepository NocoBase: interface method operasi model Repository, beradaptasi dengan CRUD data source."
+keywords: "IRepository,interface,Repository,CRUD,NocoBase"
+---
 
 # IRepository
 
-Antarmuka `Repository` mendefinisikan serangkaian metode operasi model untuk mengadaptasi operasi CRUD pada **sumber data**.
+Interface `Repository` mendefinisikan serangkaian method operasi model, yang digunakan untuk beradaptasi dengan operasi CRUD data source.
 
-## API
+## API 
 
 ### find()
 
-Mengembalikan daftar model yang sesuai dengan parameter kueri.
+Berdasarkan parameter query, mengembalikan list model yang sesuai dengan kondisi
 
 #### Signature
 
@@ -18,15 +20,16 @@ Mengembalikan daftar model yang sesuai dengan parameter kueri.
 
 ### findOne()
 
-Mengembalikan satu model yang sesuai dengan parameter kueri. Jika terdapat beberapa model yang cocok, hanya model pertama yang akan dikembalikan.
+Berdasarkan parameter query, mengembalikan model yang sesuai dengan kondisi, jika ada beberapa model yang sesuai, hanya mengembalikan yang pertama
 
-#### Signature
+#### Signature 
 
 - `findOne(options?: any): Promise<IModel>`
 
+
 ### count()
 
-Mengembalikan jumlah model yang sesuai dengan parameter kueri.
+Berdasarkan parameter query, mengembalikan jumlah model yang sesuai dengan kondisi
 
 #### Signature
 
@@ -34,7 +37,7 @@ Mengembalikan jumlah model yang sesuai dengan parameter kueri.
 
 ### findAndCount()
 
-Mengembalikan daftar dan jumlah model yang sesuai dengan parameter kueri.
+Berdasarkan parameter query, mengembalikan list dan jumlah model yang sesuai dengan kondisi
 
 #### Signature
 
@@ -42,7 +45,7 @@ Mengembalikan daftar dan jumlah model yang sesuai dengan parameter kueri.
 
 ### create()
 
-Membuat objek data model.
+Membuat objek data model
 
 #### Signature
 
@@ -50,7 +53,7 @@ Membuat objek data model.
 
 ### update()
 
-Memperbarui objek data model berdasarkan kondisi kueri.
+Berdasarkan kondisi query, memperbarui objek data model
 
 #### Signature
 
@@ -58,7 +61,7 @@ Memperbarui objek data model berdasarkan kondisi kueri.
 
 ### destroy()
 
-Menghapus objek data model berdasarkan kondisi kueri.
+Berdasarkan kondisi query, menghapus objek data model
 
 #### Signature
 

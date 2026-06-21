@@ -12,6 +12,7 @@ import { IncomingMessage, ServerResponse } from 'http';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from '../application';
+import { isTransient, serving } from '../worker-mode';
 import { MainOnlyAdapter } from './main-only-adapter';
 import type {
   AppDiscoveryAdapter,
@@ -26,6 +27,8 @@ import type {
   AppCommandAdapter,
   AppModel,
   BootstrapLock,
+  AppCondition,
+  GetAppsByConditionOptions,
 } from './types';
 import { getErrorLevel } from '../errors/handler';
 import { ConditionalRegistry, Predicate } from './condition-registry';
@@ -71,6 +74,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private processAdapterName: string;
   private commandAdapterName: string;
   private appDbCreator = new ConditionalRegistry<AppDbCreatorOptions, void>();
+  private appConditions = new Map<string, AppCondition>();
   public appOptionsFactory: AppOptionsFactory = appOptionsFactory;
 
   private environmentHeartbeatInterval = 2 * 60 * 1000;
@@ -365,6 +369,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async setAppStatus(appName: string, status: AppStatus, options = {}) {
+    if (isTransient()) {
+      this.logger.debug('App running as worker, status will not be set', { appName, status });
+      return;
+    }
     this.logger.debug('Setting app status', { appName, status });
     return this.discoveryAdapter.setAppStatus(appName, status, options);
   }
@@ -413,7 +421,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     const app = new Application(options);
 
-    if (hook !== false) {
+    if (hook ?? !isTransient()) {
       app.on('afterStart', async () => {
         await this.sendSyncMessage(mainApp, {
           type: 'app:started',
@@ -443,6 +451,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     const app = new Application(options);
     this.registerCommandHandler(app);
     app.on('afterStart', async (app: Application) => {
+      if (isTransient()) {
+        return;
+      }
       await app.syncMessageManager.subscribe(
         'app_supervisor:sync',
         async (message: { type: string; appName: string }) => {
@@ -473,6 +484,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
           }
         },
       );
+
       await this.registerEnvironment(app);
       if (process.env.APP_MODE === 'supervisor') {
         this.logger.info('Loading app models...');
@@ -480,6 +492,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       }
     });
     app.on('afterDestroy', async (app: Application) => {
+      if (isTransient()) {
+        return;
+      }
       await this.unregisterEnvironment();
     });
     return app;
@@ -504,6 +519,35 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getAppModel(appName);
   }
 
+  registerAppCondition(name: string, condition: AppCondition) {
+    this.appConditions.set(name, condition);
+  }
+
+  unregisterAppCondition(name: string) {
+    this.appConditions.delete(name);
+  }
+
+  getAppCondition(name: string) {
+    return this.appConditions.get(name);
+  }
+
+  getAppConditions() {
+    return Array.from(this.appConditions.entries());
+  }
+
+  async getAppsByCondition(conditionName: string, options: GetAppsByConditionOptions = {}) {
+    const condition = this.getAppCondition(conditionName);
+    if (!condition || typeof this.discoveryAdapter.getAppsByCondition !== 'function') {
+      return [];
+    }
+    return this.discoveryAdapter.getAppsByCondition(conditionName, condition, {
+      ...options,
+      environmentName: options.allEnvironments
+        ? options.environmentName
+        : options.environmentName ?? this.environmentName,
+    });
+  }
+
   async removeAppModel(appName: string) {
     if (typeof this.discoveryAdapter.removeAppModel !== 'function') {
       return;
@@ -518,25 +562,18 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getAppNameByCName(cname);
   }
 
-  async addAutoStartApps(environmentName: string, appNames: string[]) {
-    if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
+  async addAppsToCondition(conditionName: string, environmentName: string, appNames: string[]) {
+    if (typeof this.discoveryAdapter.addAppsToCondition !== 'function') {
       return;
     }
-    return this.discoveryAdapter.addAutoStartApps(environmentName, appNames);
+    return this.discoveryAdapter.addAppsToCondition(conditionName, environmentName, appNames);
   }
 
-  async getAutoStartApps() {
-    if (typeof this.discoveryAdapter.getAutoStartApps === 'function') {
-      return this.discoveryAdapter.getAutoStartApps(this.environmentName);
-    }
-    return [];
-  }
-
-  async removeAutoStartApps(environmentName: string, appNames: string[]) {
-    if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
+  async removeAppsFromCondition(conditionName: string, environmentName: string, appNames: string[]) {
+    if (typeof this.discoveryAdapter.removeAppsFromCondition !== 'function') {
       return;
     }
-    return this.discoveryAdapter.removeAutoStartApps(environmentName, appNames);
+    return this.discoveryAdapter.removeAppsFromCondition(conditionName, environmentName, appNames);
   }
 
   addApp(app: Application) {
@@ -579,6 +616,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   async upgradeApp(appName: string, context?: { requestId: string }) {
     await this.processAdapter.upgradeApp(appName, context);
+  }
+
+  async dispatchAppEvent(appName: string, event: string, payload?: any, context?: { requestId: string }) {
+    return this.processAdapter.dispatchAppEvent?.(appName, event, payload, context);
   }
 
   /**
@@ -722,6 +763,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private bindAppEvents(app: Application) {
+    if (isTransient()) {
+      return;
+    }
+
     app.on('afterDestroy', async () => {
       delete this.apps[app.name];
       delete this.appStatus[app.name];
@@ -833,6 +878,8 @@ export type {
   AppOptionsFactory,
   AppModel,
   AppModelOptions,
+  AppCondition,
+  GetAppsByConditionOptions,
   BootstrapLock,
 } from './types';
 export { MainOnlyAdapter } from './main-only-adapter';

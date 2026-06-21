@@ -12,7 +12,7 @@ import { Button, Space, App, Alert, Flex, Collapse, Typography, Tooltip } from '
 import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
-import { lazy, usePlugin, useToken, useTools, toToolsMap } from '@nocobase/client';
+import { lazy, usePlugin, useToken, toToolsMap } from '@nocobase/client';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
 import { Message, Task } from '../types';
@@ -21,9 +21,11 @@ import { ToolCard } from './generative-ui/ToolCard';
 import { useChatConversationsStore } from './stores/chat-conversations';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import _ from 'lodash';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { observer } from '@nocobase/flow-engine';
 
 const { Markdown } = lazy(() => import('./markdown/Markdown'), 'Markdown');
 
@@ -52,32 +54,67 @@ const MessageWrapper = React.forwardRef<
 const AITextMessageRenderer: React.FC<{
   msg: Message['content'];
   toolInlineActions?: React.ReactNode;
-}> = ({ msg, toolInlineActions }) => {
+}> = React.memo(({ msg, toolInlineActions }) => {
+  const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
+  const reasoningText = msg.reasoning?.content;
+  const reasoningStatus = msg.reasoning?.status;
+  const reasoningPanel =
+    reasoningText && reasoningStatus ? (
+      <Collapse
+        size="small"
+        bordered={false}
+        defaultActiveKey="thinking"
+        style={{
+          marginBottom: 14,
+        }}
+        items={[
+          {
+            key: 'thinking',
+            label: reasoningStatus === 'streaming' ? t('Thinking in progress') : t('Thinking completed'),
+            children: (
+              <div
+                className={css`
+                  white-space: pre-wrap;
+                  color: rgba(0, 0, 0, 0.65);
+                  font-size: 12px;
+                `}
+              >
+                {reasoningText}
+              </div>
+            ),
+          },
+        ]}
+      />
+    ) : null;
+
   if (!provider?.components?.MessageRenderer) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {typeof msg.content === 'string' && <Markdown message={msg} />}
-        {msg.tool_calls?.length ? (
-          <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} inlineActions={toolInlineActions} />
-        ) : null}
-      </div>
+      <>
+        {reasoningPanel}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {typeof msg.content === 'string' && <Markdown message={msg} />}
+          {msg.tool_calls?.length ? (
+            <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} inlineActions={toolInlineActions} />
+          ) : null}
+        </div>
+      </>
     );
   }
   const M = provider.components.MessageRenderer;
   return <M msg={msg} />;
-};
+});
 
 const AIMessageRenderer: React.FC<{
   msg: Message['content'];
   toolInlineActions?: React.ReactNode;
-}> = ({ msg, toolInlineActions }) => {
+}> = React.memo(({ msg, toolInlineActions }) => {
   switch (msg.type) {
     case 'greeting':
       return (
@@ -102,16 +139,22 @@ const AIMessageRenderer: React.FC<{
         />
       );
   }
-};
+});
 
 export const AIMessage: React.FC<{
   msg: Message['content'];
-}> = memo(({ msg }) => {
+}> = observer(({ msg }) => {
   const t = useT();
   const { token } = useToken();
   const { message } = App.useApp();
-  const { tools, loading: toolsLoading } = useTools();
+  const aiConfigRepository = useAIConfigRepository();
+  const toolsLoading = aiConfigRepository.aiToolsLoading;
+  const tools = aiConfigRepository.aiTools;
   const toolsMap = useMemo(() => toToolsMap(tools || []), [tools]);
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  useEffect(() => {
+    aiConfigRepository.getAITools(currentConversation);
+  }, [aiConfigRepository, currentConversation]);
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
   const hasCustomRenderer = !!provider?.components?.MessageRenderer;
@@ -131,8 +174,7 @@ export const AIMessage: React.FC<{
   };
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const readonly = useChatBoxStore.use.readonly();
 
   const { resendMessages } = useChatMessageActions();
   const usageMetadata = msg.metadata?.usage_metadata;
@@ -144,24 +186,26 @@ export const AIMessage: React.FC<{
   const messageActions =
     msg.type !== 'greeting' ? (
       <Space>
-        <Button
-          color="default"
-          variant="text"
-          size="small"
-          style={footerButtonStyle}
-          icon={
-            <ReloadOutlined
-              style={footerIconStyle}
-              onClick={() =>
-                resendMessages({
-                  sessionId: currentConversation,
-                  messageId: msg.messageId,
-                  aiEmployee: currentEmployee,
-                })
-              }
-            />
-          }
-        />
+        {msg.from === 'main-agent' && readonly !== true && (
+          <Button
+            color="default"
+            variant="text"
+            size="small"
+            style={footerButtonStyle}
+            icon={
+              <ReloadOutlined
+                style={footerIconStyle}
+                onClick={() =>
+                  resendMessages({
+                    sessionId: currentConversation,
+                    messageId: msg.messageId,
+                    aiEmployee: currentEmployee,
+                  })
+                }
+              />
+            }
+          />
+        )}
         {typeof msg.content === 'string' && msg.content && (
           <Button
             color="default"
@@ -175,7 +219,7 @@ export const AIMessage: React.FC<{
     ) : null;
   return (
     <MessageWrapper ref={msg.ref} footer={messageActions && !useInlineToolActions ? messageActions : null}>
-      {msg.reference?.length && <Reference references={msg.reference} />}
+      {msg.reference?.length ? <Reference references={msg.reference} /> : null}
       <AIMessageRenderer msg={msg} toolInlineActions={useInlineToolActions ? messageActions : null} />
     </MessageWrapper>
   );
@@ -244,6 +288,8 @@ export const UserMessage: React.FC<{
     ...item,
   }));
 
+  const readonly = useChatBoxStore.use.readonly();
+
   return (
     <MessageWrapper
       ref={msg.ref}
@@ -254,22 +300,24 @@ export const UserMessage: React.FC<{
       `)}
       footer={
         <Space>
-          <Button
-            color="default"
-            variant="text"
-            size="small"
-            style={footerButtonStyle}
-            icon={
-              <EditOutlined
-                style={footerIconStyle}
-                onClick={() => {
-                  startEditingMessage(msg);
-                  setSenderValue(msg.content);
-                  senderRef.current?.focus();
-                }}
-              />
-            }
-          />
+          {msg.from === 'main-agent' && readonly !== true && (
+            <Button
+              color="default"
+              variant="text"
+              size="small"
+              style={footerButtonStyle}
+              icon={
+                <EditOutlined
+                  style={footerIconStyle}
+                  onClick={() => {
+                    startEditingMessage(msg);
+                    setSenderValue(msg.content);
+                    senderRef.current?.focus();
+                  }}
+                />
+              }
+            />
+          )}
           {typeof msg.content === 'string' && msg.content && (
             <Button
               color="default"
@@ -327,11 +375,9 @@ export const ErrorMessage: React.FC<{
   msg: any;
 }> = memo(({ msg }) => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-
   const currentConversation = useChatConversationsStore.use.currentConversation();
-
-  const messages = useChatMessagesStore.use.messages();
-
+  const chat = useChat(currentConversation);
+  const messages = chat.use.messages();
   const { resendMessages } = useChatMessageActions();
 
   const showAlert = msg.content !== 'GraphRecursionError';

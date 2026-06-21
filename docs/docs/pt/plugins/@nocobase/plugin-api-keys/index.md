@@ -1,4 +1,6 @@
 ---
+title: "Auth: API keys"
+keywords: "Authentication"
 displayName: "Auth: API keys"
 packageName: '@nocobase/plugin-api-keys'
 description: |

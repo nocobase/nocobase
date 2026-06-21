@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "ActionDefinition Definisi Action"
+description: "ActionDefinition mendefinisikan action yang dapat digunakan ulang, dapat direferensikan di banyak Flow dan Step, merangkum handler, uiSchema, defaultParams, unit eksekusi inti FlowEngine."
+keywords: "ActionDefinition,Definisi action,handler,uiSchema,defaultParams,Flow Step,FlowEngine,NocoBase"
+---
 
 # ActionDefinition
 
-ActionDefinition mendefinisikan aksi yang dapat digunakan kembali, yang dapat direferensikan dalam berbagai alur kerja dan langkah. Sebuah aksi adalah unit eksekusi inti dalam FlowEngine, yang merangkum logika bisnis spesifik.
+ActionDefinition mendefinisikan action yang dapat digunakan ulang. Action ini dapat direferensikan di banyak Flow dan Step. Action adalah unit eksekusi inti dalam Flow Engine, yang merangkum logika bisnis spesifik.
 
 ## Definisi Tipe
 
@@ -24,7 +26,7 @@ interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx extends Fl
 }
 ```
 
-## Metode Pendaftaran
+## Cara Pendaftaran
 
 ```ts
 // Pendaftaran global (melalui FlowEngine)
@@ -37,7 +39,7 @@ engine.registerAction({
   }
 });
 
-// Pendaftaran tingkat model (melalui FlowModel)
+// Pendaftaran level model (melalui FlowModel)
 class MyModel extends FlowModel {}
 MyModel.registerAction({
   name: 'processDataAction',
@@ -47,29 +49,29 @@ MyModel.registerAction({
   }
 });
 
-// Penggunaan dalam alur kerja
+// Penggunaan dalam Flow
 MyModel.registerFlow({
   key: 'dataFlow',
   steps: {
     step1: {
-      use: 'loadDataAction',  // Mereferensikan aksi global
+      use: 'loadDataAction',  // Mereferensikan action global
     },
     step2: {
-      use: 'processDataAction', // Mereferensikan aksi tingkat model
+      use: 'processDataAction', // Mereferensikan action level model
     }
   }
 });
 ```
 
-## Deskripsi Properti
+## Penjelasan Properti
 
 ### name
 
 **Tipe**: `string`  
 **Wajib**: Ya  
-**Deskripsi**: Pengidentifikasi unik untuk aksi
+**Deskripsi**: Identifier unik untuk action
 
-Digunakan untuk mereferensikan aksi dalam sebuah langkah melalui properti `use`.
+Digunakan untuk mereferensikan action dalam step melalui properti `use`.
 
 **Contoh**:
 ```ts
@@ -82,7 +84,7 @@ name: 'saveDataAction'
 
 **Tipe**: `string`  
 **Wajib**: Tidak  
-**Deskripsi**: Judul tampilan untuk aksi
+**Deskripsi**: Judul tampilan action
 
 Digunakan untuk tampilan UI dan debugging.
 
@@ -97,9 +99,9 @@ title: 'Save Results'
 
 **Tipe**: `(ctx: TCtx, params: any) => Promise<any> | any`  
 **Wajib**: Ya  
-**Deskripsi**: Fungsi handler untuk aksi
+**Deskripsi**: Fungsi handler action
 
-Logika inti dari aksi, yang menerima konteks dan parameter, dan mengembalikan hasil pemrosesan.
+Logika inti dari action, menerima context dan parameter, mengembalikan hasil pemrosesan.
 
 **Contoh**:
 ```ts
@@ -107,10 +109,10 @@ handler: async (ctx, params) => {
   const { model, flowEngine } = ctx;
   
   try {
-    // Jalankan logika spesifik
+    // Eksekusi logika spesifik
     const result = await performAction(params);
     
-    // Kembalikan hasil
+    // Mengembalikan hasil
     return {
       success: true,
       data: result,
@@ -129,9 +131,9 @@ handler: async (ctx, params) => {
 
 **Tipe**: `Record<string, any> | ((ctx: TCtx) => Record<string, any> | Promise<Record<string, any>>)`  
 **Wajib**: Tidak  
-**Deskripsi**: Parameter default untuk aksi
+**Deskripsi**: Parameter default action
 
-Mengisi parameter dengan nilai default sebelum aksi dieksekusi.
+Sebelum action dieksekusi, mengisi nilai default untuk parameter.
 
 **Contoh**:
 ```ts
@@ -151,7 +153,7 @@ defaultParams: (ctx) => {
   }
 }
 
-// Parameter default asinkron
+// Parameter default asynchronous
 defaultParams: async (ctx) => {
   const config = await loadConfiguration();
   return {
@@ -166,9 +168,9 @@ defaultParams: async (ctx) => {
 
 **Tipe**: `Record<string, ISchema> | ((ctx: TCtx) => Record<string, ISchema> | Promise<Record<string, ISchema>>)`  
 **Wajib**: Tidak  
-**Deskripsi**: Skema konfigurasi UI untuk aksi
+**Deskripsi**: Mode konfigurasi UI action
 
-Mendefinisikan bagaimana aksi ditampilkan di UI dan konfigurasi formulirnya.
+Mendefinisikan cara tampilan action di UI dan konfigurasi form.
 
 **Contoh**:
 ```ts
@@ -210,9 +212,9 @@ uiSchema: {
 
 **Tipe**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Wajib**: Tidak  
-**Deskripsi**: Fungsi hook yang dieksekusi sebelum menyimpan parameter
+**Deskripsi**: Hook function sebelum parameter disimpan
 
-Dieksekusi sebelum parameter aksi disimpan, dapat digunakan untuk validasi atau transformasi parameter.
+Dieksekusi sebelum parameter action disimpan, dapat digunakan untuk validasi atau konversi parameter.
 
 **Contoh**:
 ```ts
@@ -222,13 +224,13 @@ beforeParamsSave: (ctx, params, previousParams) => {
     throw new Error('URL is required');
   }
   
-  // Transformasi parameter
+  // Konversi parameter
   params.url = params.url.trim();
   if (!params.url.startsWith('http')) {
     params.url = 'https://' + params.url;
   }
   
-  // Catat perubahan
+  // Mencatat perubahan
   console.log('Parameters changed:', {
     from: previousParams,
     to: params
@@ -240,24 +242,24 @@ beforeParamsSave: (ctx, params, previousParams) => {
 
 **Tipe**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Wajib**: Tidak  
-**Deskripsi**: Fungsi hook yang dieksekusi setelah menyimpan parameter
+**Deskripsi**: Hook function setelah parameter disimpan
 
-Dieksekusi setelah parameter aksi disimpan, dapat digunakan untuk memicu operasi lain.
+Dieksekusi setelah parameter action disimpan, dapat digunakan untuk memicu operasi lainnya.
 
 **Contoh**:
 ```ts
 afterParamsSave: (ctx, params, previousParams) => {
-  // Catat log
+  // Mencatat log
   console.log('Action params saved:', params);
   
-  // Picu event
+  // Memicu event
   ctx.model.emitter.emit('actionParamsChanged', {
     actionName: 'loadDataAction',
     params,
     previousParams
   });
   
-  // Perbarui cache
+  // Memperbarui cache
   ctx.model.updateCache('actionParams', params);
 }
 ```
@@ -266,7 +268,7 @@ afterParamsSave: (ctx, params, previousParams) => {
 
 **Tipe**: `boolean | ((ctx: TCtx) => boolean | Promise<boolean>)`  
 **Wajib**: Tidak  
-**Deskripsi**: Apakah akan menggunakan parameter mentah
+**Deskripsi**: Apakah menggunakan parameter mentah
 
 Jika `true`, parameter mentah akan langsung diteruskan ke fungsi handler tanpa pemrosesan apa pun.
 
@@ -285,15 +287,15 @@ useRawParams: (ctx) => {
 
 **Tipe**: `StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>)`  
 **Wajib**: Tidak  
-**Deskripsi**: Mode tampilan UI untuk aksi
+**Deskripsi**: Mode tampilan UI action
 
-Mengontrol bagaimana aksi ditampilkan di UI.
+Mengontrol cara tampilan action di UI.
 
 **Mode yang didukung**:
 - `'dialog'` - Mode dialog
 - `'drawer'` - Mode drawer
 - `'embed'` - Mode embed
-- atau objek konfigurasi kustom
+- Atau objek konfigurasi kustom
 
 **Contoh**:
 ```ts
@@ -320,14 +322,14 @@ uiMode: (ctx) => {
 
 **Tipe**: `ActionScene | ActionScene[]`  
 **Wajib**: Tidak  
-**Deskripsi**: Skenario penggunaan untuk aksi
+**Deskripsi**: Skenario penggunaan action
 
-Membatasi aksi untuk digunakan hanya dalam skenario tertentu.
+Membatasi action untuk digunakan dalam skenario tertentu saja.
 
 **Skenario yang didukung**:
 - `'settings'` - Skenario pengaturan
 - `'runtime'` - Skenario runtime
-- `'design'` - Skenario waktu desain
+- `'design'` - Skenario design
 
 **Contoh**:
 ```ts
@@ -339,15 +341,15 @@ scene: ['settings', 'runtime']  // Digunakan dalam skenario pengaturan dan runti
 
 **Tipe**: `number`  
 **Wajib**: Tidak  
-**Deskripsi**: Bobot pengurutan untuk aksi
+**Deskripsi**: Bobot sorting action
 
-Mengontrol urutan tampilan aksi dalam daftar. Nilai yang lebih kecil berarti posisi yang lebih tinggi.
+Digunakan untuk mengontrol urutan tampilan action di list. Semakin kecil nilai, semakin awal posisinya.
 
 **Contoh**:
 ```ts
-sort: 0  // Posisi teratas
+sort: 0  // Paling awal
 sort: 10 // Posisi tengah
-sort: 100 // Posisi terbawah
+sort: 100 // Lebih akhir
 ```
 
 ## Contoh Lengkap
@@ -355,7 +357,7 @@ sort: 100 // Posisi terbawah
 ```ts
 class DataProcessingModel extends FlowModel {}
 
-// Daftarkan aksi pemuatan data
+// Mendaftarkan action loading data
 DataProcessingModel.registerAction({
   name: 'loadDataAction',
   title: 'Load Data',
@@ -432,7 +434,7 @@ DataProcessingModel.registerAction({
   sort: 0
 });
 
-// Daftarkan aksi pemrosesan data
+// Mendaftarkan action pemrosesan data
 DataProcessingModel.registerAction({
   name: 'processDataAction',
   title: 'Process Data',

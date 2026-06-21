@@ -1,93 +1,94 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Trigger Workflow - Sự kiện bảng dữ liệu"
+description: "Trigger sự kiện bảng dữ liệu: lắng nghe các thao tác thêm/sửa/xóa/xem trên bảng dữ liệu, kích hoạt Workflow khi thỏa mãn điều kiện, như trừ tồn kho khi có đơn mới hay duyệt bình luận."
+keywords: "workflow,sự kiện bảng dữ liệu,trigger,thêm sửa xóa,sự kiện Collection,NocoBase"
+---
 
-
-# Sự kiện bộ sưu tập
+# Sự kiện bảng dữ liệu
 
 ## Giới thiệu
 
-Bộ kích hoạt (trigger) loại sự kiện bộ sưu tập sẽ lắng nghe các sự kiện thêm, sửa, xóa dữ liệu trên một bộ sưu tập. Khi một thao tác dữ liệu trên bộ sưu tập đó xảy ra và đáp ứng các điều kiện đã cấu hình, nó sẽ kích hoạt luồng công việc tương ứng. Ví dụ, các tình huống như trừ tồn kho sản phẩm sau khi tạo đơn hàng mới, hoặc chờ xét duyệt thủ công sau khi thêm một bình luận mới.
+Trigger loại sự kiện bảng dữ liệu sẽ lắng nghe các sự kiện thêm/sửa/xóa/xem của bảng dữ liệu, khi xảy ra thao tác dữ liệu trên bảng đó và thỏa mãn điều kiện được cấu hình thì sẽ kích hoạt Workflow tương ứng. Ví dụ trừ tồn kho sản phẩm sau khi có đơn hàng mới, chờ kiểm duyệt thủ công sau khi có bình luận mới...
 
-## Cách sử dụng cơ bản
+## Sử dụng cơ bản
 
-Có một số trường hợp thay đổi của bộ sưu tập:
+Có một số trường hợp biến động của bảng dữ liệu:
 
-1. Sau khi tạo dữ liệu.
+1. Sau khi thêm dữ liệu.
 2. Sau khi cập nhật dữ liệu.
-3. Sau khi tạo hoặc cập nhật dữ liệu.
+3. Sau khi thêm hoặc cập nhật dữ liệu.
 4. Sau khi xóa dữ liệu.
 
-![Sự kiện bộ sưu tập_Chọn thời điểm kích hoạt](https://static-docs.nocobase.com/81275602742deb71e0c830eb97aa612c.png)
+![Sự kiện bảng dữ liệu_chọn thời điểm kích hoạt](https://static-docs.nocobase.com/81275602742deb71e0c830eb97aa612c.png)
 
-Quý vị có thể chọn thời điểm kích hoạt dựa trên các nhu cầu nghiệp vụ khác nhau. Khi chọn trường hợp thay đổi bao gồm việc cập nhật bộ sưu tập, quý vị cũng có thể giới hạn các trường đã thay đổi. Điều kiện kích hoạt chỉ được đáp ứng khi các trường đã chọn thay đổi. Nếu không chọn trường nào, điều đó có nghĩa là bất kỳ thay đổi nào trong các trường đều có thể kích hoạt.
+Có thể chọn thời điểm kích hoạt khác nhau tùy theo nhu cầu nghiệp vụ. Khi trường hợp biến động được chọn bao gồm trường hợp cập nhật bảng dữ liệu, còn có thể giới hạn các trường có biến động, chỉ khi các trường được chọn có biến động thì mới thỏa mãn điều kiện kích hoạt, không chọn nghĩa là tất cả các trường có biến động đều có thể kích hoạt.
 
-![Sự kiện bộ sưu tập_Chọn trường đã thay đổi](https://static-docs.nocobase.com/874a1475f01298b3c00267b2b4674611.png)
+![Sự kiện bảng dữ liệu_chọn các trường có biến động](https://static-docs.nocobase.com/874a1475f01298b3c00267b2b4674611.png)
 
-Cụ thể hơn, quý vị có thể cấu hình các quy tắc điều kiện cho từng trường của hàng dữ liệu kích hoạt. Bộ kích hoạt sẽ chỉ hoạt động khi các trường đáp ứng các điều kiện tương ứng.
+Chi tiết hơn, có thể cấu hình các quy tắc điều kiện cho từng trường của dòng dữ liệu được kích hoạt, khi các trường thỏa mãn điều kiện tương ứng thì mới kích hoạt.
 
-![Sự kiện bộ sưu tập_Cấu hình điều kiện dữ liệu](https://static-docs.nocobase.com/264ae3835dcd75cee0eef7812c11fe0c.png)
+![Sự kiện bảng dữ liệu_cấu hình điều kiện dữ liệu thỏa mãn](https://static-docs.nocobase.com/264ae3835dcd75cee0eef7812c11fe0c.png)
 
-Sau khi một sự kiện bộ sưu tập được kích hoạt, hàng dữ liệu đã tạo ra sự kiện sẽ được đưa vào kế hoạch thực thi dưới dạng dữ liệu ngữ cảnh kích hoạt, để các nút trong luồng công việc tiếp theo sử dụng làm biến. Tuy nhiên, khi các nút tiếp theo cần sử dụng các trường quan hệ của dữ liệu này, quý vị cần cấu hình tải trước dữ liệu quan hệ. Dữ liệu quan hệ đã chọn sẽ được đưa vào ngữ cảnh cùng với bộ kích hoạt và có thể được chọn và sử dụng theo cấp bậc.
+Sau khi sự kiện bảng dữ liệu được kích hoạt, sẽ inject dòng dữ liệu sinh ra sự kiện vào kế hoạch thực thi làm dữ liệu ngữ cảnh kích hoạt để các Node trong quy trình tiếp theo gọi làm biến. Nhưng khi muốn sử dụng trường quan hệ của dữ liệu này trong các Node tiếp theo, cần cấu hình preload dữ liệu quan hệ trước, dữ liệu quan hệ được chọn sẽ được inject cùng vào ngữ cảnh sau khi kích hoạt và có thể được chọn theo cấp để sử dụng.
 
-## Lưu ý quan trọng
+## Mẹo liên quan
 
-### Hiện không hỗ trợ kích hoạt bởi các thao tác dữ liệu hàng loạt
+### Tạm thời chưa hỗ trợ kích hoạt thao tác dữ liệu hàng loạt
 
-Sự kiện bộ sưu tập hiện không hỗ trợ kích hoạt bởi các thao tác dữ liệu hàng loạt. Ví dụ, khi tạo một bài viết và đồng thời thêm nhiều thẻ cho bài viết đó (dữ liệu quan hệ một-nhiều), chỉ luồng công việc tạo bài viết mới được kích hoạt. Các thẻ được thêm đồng thời sẽ không kích hoạt luồng công việc tạo thẻ mới. Khi liên kết hoặc thêm dữ liệu quan hệ nhiều-nhiều, luồng công việc cho bộ sưu tập trung gian cũng sẽ không được kích hoạt.
+Sự kiện bảng dữ liệu tạm thời chưa hỗ trợ kích hoạt thao tác dữ liệu hàng loạt, ví dụ khi thêm dữ liệu bài viết và đồng thời thêm nhiều dữ liệu thẻ của bài viết đó (dữ liệu quan hệ một - nhiều), chỉ có thể kích hoạt Workflow thêm bài viết, còn nhiều thẻ được thêm cùng lúc sẽ không kích hoạt Workflow thêm thẻ. Khi liên kết và thêm dữ liệu quan hệ nhiều - nhiều, cũng sẽ không kích hoạt Workflow của bảng trung gian.
 
-### Các thao tác dữ liệu bên ngoài ứng dụng sẽ không kích hoạt sự kiện
+### Thao tác dữ liệu ngoài ứng dụng sẽ không kích hoạt
 
-Các thao tác trên bộ sưu tập thông qua các lệnh gọi API HTTP đến giao diện ứng dụng cũng có thể kích hoạt các sự kiện tương ứng. Tuy nhiên, nếu các thay đổi dữ liệu được thực hiện trực tiếp thông qua các thao tác cơ sở dữ liệu thay vì thông qua ứng dụng NocoBase, các sự kiện tương ứng sẽ không thể được kích hoạt. Ví dụ, các trigger gốc của cơ sở dữ liệu sẽ không được liên kết với các luồng công việc trong ứng dụng.
+Việc thao tác bảng dữ liệu thông qua việc gọi API ứng dụng qua HTTP cũng có thể kích hoạt sự kiện tương ứng, nhưng nếu không thông qua ứng dụng NocoBase mà trực tiếp thao tác cơ sở dữ liệu để gây ra biến động dữ liệu thì sẽ không kích hoạt sự kiện tương ứng. Ví dụ Trigger trong cơ sở dữ liệu sẽ không liên quan với Workflow trong ứng dụng.
 
-Ngoài ra, việc sử dụng nút hành động SQL để thao tác trên cơ sở dữ liệu tương đương với việc thao tác trực tiếp trên cơ sở dữ liệu và sẽ không kích hoạt các sự kiện bộ sưu tập.
+Ngoài ra, việc sử dụng Node thao tác SQL để thao tác cơ sở dữ liệu tương đương với việc thao tác trực tiếp cơ sở dữ liệu nên cũng sẽ không kích hoạt sự kiện bảng dữ liệu.
 
 ### Nguồn dữ liệu bên ngoài
 
-Luồng công việc đã hỗ trợ nguồn dữ liệu bên ngoài kể từ phiên bản `0.20`. Nếu quý vị đang sử dụng một plugin nguồn dữ liệu bên ngoài và sự kiện bộ sưu tập được cấu hình cho một nguồn dữ liệu bên ngoài, miễn là các thao tác dữ liệu trên nguồn dữ liệu đó được thực hiện trong ứng dụng (chẳng hạn như tạo mới, cập nhật của người dùng và các thao tác dữ liệu của luồng công việc), các sự kiện bộ sưu tập tương ứng đều có thể được kích hoạt. Tuy nhiên, nếu các thay đổi dữ liệu được thực hiện thông qua các hệ thống khác hoặc trực tiếp trong cơ sở dữ liệu bên ngoài, các sự kiện bộ sưu tập sẽ không thể được kích hoạt.
+Workflow từ phiên bản `0.20` đã hỗ trợ nguồn dữ liệu bên ngoài, nếu sử dụng plugin nguồn dữ liệu bên ngoài và sự kiện bảng dữ liệu được cấu hình là nguồn dữ liệu bên ngoài, chỉ cần thao tác dữ liệu trên nguồn dữ liệu đó được hoàn thành trong ứng dụng (người dùng thêm, cập nhật và Workflow thao tác dữ liệu...) thì đều có thể kích hoạt sự kiện bảng dữ liệu tương ứng. Nhưng nếu biến động dữ liệu được thực hiện thông qua hệ thống khác hoặc trực tiếp trong cơ sở dữ liệu bên ngoài thì sẽ không kích hoạt sự kiện bảng dữ liệu.
 
 ## Ví dụ
 
-Hãy lấy ví dụ về kịch bản tính tổng giá và trừ tồn kho sau khi tạo một đơn hàng mới.
+Lấy ví dụ tình huống tính tổng giá và trừ tồn kho sau khi thêm một đơn hàng.
 
-Đầu tiên, chúng ta tạo bộ sưu tập Sản phẩm và bộ sưu tập Đơn hàng, với mô hình dữ liệu như sau:
+Đầu tiên, chúng ta tạo bảng sản phẩm và bảng đơn hàng, mô hình dữ liệu như sau:
 
-| Tên trường      | Kiểu trường    |
-| --------------- | -------------- |
-| Tên sản phẩm    | Văn bản một dòng |
-| Giá             | Số             |
-| Tồn kho         | Số nguyên      |
+| Tên trường | Loại trường |
+| -------- | -------- |
+| Tên sản phẩm | Văn bản một dòng |
+| Giá     | Số     |
+| Tồn kho     | Số nguyên     |
 
-| Tên trường      | Kiểu trường       |
-| --------------- | ---------------- |
-| Mã đơn hàng     | Số tự động        |
-| Sản phẩm đơn hàng | Nhiều-một (Sản phẩm) |
-| Tổng giá đơn hàng | Số             |
+| Tên trường | Loại trường       |
+| -------- | -------------- |
+| Mã đơn hàng   | Tự động đánh số       |
+| Sản phẩm đặt | Nhiều - một (Sản phẩm) |
+| Tổng giá đơn hàng | Số           |
 
-Và thêm một số dữ liệu sản phẩm cơ bản:
+Và thêm dữ liệu sản phẩm cơ bản:
 
-| Tên sản phẩm  | Giá  | Tồn kho |
-| ------------- | ---- | ------- |
-| iPhone 14 Pro | 7999 | 10      |
-| iPhone 13 Pro | 5999 | 0       |
+| Tên sản phẩm      | Giá | Tồn kho |
+| ------------- | ---- | ---- |
+| iPhone 14 Pro | 7999 | 10   |
+| iPhone 13 Pro | 5999 | 0    |
 
-Sau đó, tạo một luồng công việc dựa trên sự kiện bộ sưu tập Đơn hàng:
+Sau đó tạo một Workflow dựa trên sự kiện bảng dữ liệu của đơn hàng:
 
-![Sự kiện bộ sưu tập_Ví dụ_Kích hoạt đơn hàng mới](https://static-docs.nocobase.com/094392a870dddc65aeb20357f62ddc08.png)
+![Sự kiện bảng dữ liệu_ví dụ_kích hoạt khi thêm đơn](https://static-docs.nocobase.com/094392a870dddc65aeb20357f62ddc08.png)
 
-Một số tùy chọn cấu hình bao gồm:
+Một số mục cấu hình trong đó:
 
-- Bộ sưu tập: Chọn bộ sưu tập "Đơn hàng".
-- Thời điểm kích hoạt: Chọn "Sau khi tạo dữ liệu".
-- Điều kiện kích hoạt: Để trống.
-- Tải trước dữ liệu quan hệ: Chọn "Sản phẩm".
+- Bảng dữ liệu: chọn bảng "Đơn hàng".
+- Thời điểm kích hoạt: chọn kích hoạt "Sau khi thêm dữ liệu".
+- Điều kiện kích hoạt: để trống.
+- Preload dữ liệu quan hệ: chọn "Sản phẩm".
 
-Sau đó, cấu hình các nút khác theo logic của luồng công việc: kiểm tra xem tồn kho sản phẩm có lớn hơn 0 hay không. Nếu lớn hơn 0, trừ tồn kho; ngược lại, đơn hàng không hợp lệ và cần được xóa.
+Sau đó cấu hình các Node khác theo logic của quy trình, kiểm tra tồn kho sản phẩm có lớn hơn 0 không, nếu lớn hơn 0 thì trừ tồn kho, ngược lại đơn hàng không hợp lệ thì xóa đơn hàng:
 
-![Sự kiện bộ sưu tập_Ví dụ_Sắp xếp luồng công việc đơn hàng mới](https://static-docs.nocobase.com/7713ea1aaa0f52a0dc3c92aba5e58f05.png)
+![Sự kiện bảng dữ liệu_ví dụ_điều phối quy trình thêm đơn](https://static-docs.nocobase.com/7713ea1aaa0f52a0dc3c92aba5e58f05.png)
 
-Cấu hình của các nút sẽ được giải thích chi tiết trong tài liệu giới thiệu về từng loại cụ thể.
+Cấu hình của các Node sẽ được mô tả chi tiết trong tài liệu giới thiệu loại cụ thể.
 
-Kích hoạt luồng công việc này và kiểm tra bằng cách tạo một đơn hàng mới thông qua giao diện. Sau khi đặt hàng "iPhone 14 Pro", tồn kho của sản phẩm tương ứng sẽ giảm xuống còn 9. Nếu đặt hàng "iPhone 13 Pro", đơn hàng sẽ bị xóa do không đủ tồn kho.
+Bật Workflow này và thêm đơn hàng qua giao diện để kiểm thử. Sau khi đặt hàng "iPhone 14 Pro", tồn kho của sản phẩm tương ứng sẽ giảm còn 9, còn nếu đặt "iPhone 13 Pro" thì do tồn kho không đủ, đơn hàng sẽ bị xóa.
 
-![Sự kiện bộ sưu tập_Ví dụ_Kết quả thực thi đơn hàng mới](https://static-docs.nocobase.com/24cbe51e24ba4804b3bd48d99415c54f.png)
+![Sự kiện bảng dữ liệu_ví dụ_kết quả thực thi thêm đơn](https://static-docs.nocobase.com/24cbe51e24ba4804b3bd48d99415c54f.png)

@@ -1,3 +1,9 @@
+---
+title: "ctx.collection"
+description: "ctx.collection 当前 RunJS 上下文关联的数据表实例，访问 name、getFields、filterTargetKey 等元数据。"
+keywords: "ctx.collection,Collection,数据表,getFields,filterTargetKey,元数据,RunJS,NocoBase"
+---
+
 # ctx.collection
 
 当前 RunJS 执行上下文关联的数据表（Collection）实例，用于访问数据表的元数据、字段定义及主键等配置。通常来自 `ctx.blockModel.collection` 或 `ctx.collectionField?.collection`。

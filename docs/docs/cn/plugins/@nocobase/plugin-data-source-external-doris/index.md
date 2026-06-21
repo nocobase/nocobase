@@ -1,4 +1,6 @@
 ---
+title: "数据源：外部 Doris"
+keywords: "数据源：外部 Doris,插件,NocoBase"
 displayName: "数据源：外部 Doris"
 packageName: '@nocobase/plugin-data-source-external-doris'
 supportedVersions:

@@ -1,18 +1,20 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Menulis Plugin Block Pertama"
+description: "Pengembangan Block Extension NocoBase: menulis plugin Block pertama"
+keywords: "write,a,block,plugin,NocoBase"
+---
 
-# Menulis Plugin Blok Pertama Anda
+# Menulis Plugin Block Pertama
 
-Sebelum memulai, disarankan untuk membaca "[Menulis Plugin Pertama Anda](../plugin-development/write-your-first-plugin.md)" untuk memahami cara cepat membuat plugin dasar. Selanjutnya, kita akan mengembangkan fungsionalitas **blok** sederhana berdasarkan itu.
+Sebelum memulai, disarankan membaca "[Menulis Plugin Pertama](../plugin-development/write-your-first-plugin.md)" terlebih dahulu, untuk memahami cara membuat plugin dasar dengan cepat. Selanjutnya, kita akan extend fitur Block sederhana berdasarkan dasar tersebut.
 
-## Langkah 1: Membuat Berkas Model Blok
+## Langkah 1: Membuat File Block Model
 
-Buat berkas baru di direktori plugin: `client/models/SimpleBlockModel.tsx`
+Buat file di direktori plugin: `client/models/SimpleBlockModel.tsx`
 
 ## Langkah 2: Menulis Konten Model
 
-Definisikan dan implementasikan model blok dasar dalam berkas, termasuk logika *rendering*-nya:
+Definisikan dan implementasikan base block model di file, termasuk logika rendering-nya:
 
 ```tsx
 import { BlockModel } from '@nocobase/client';
@@ -35,9 +37,9 @@ SimpleBlockModel.define({
 });
 ```
 
-## Langkah 3: Mendaftarkan Model Blok
+## Langkah 3: Mendaftarkan Block Model
 
-Ekspor model yang baru dibuat di berkas `client/models/index.ts`:
+Export model yang baru dibuat di file `client/models/index.ts`:
 
 ```ts
 import { ModelConstructor } from '@nocobase/flow-engine';
@@ -48,19 +50,19 @@ export default {
 } as Record<string, ModelConstructor>;
 ```
 
-## Langkah 4: Mengaktifkan dan Mencoba Blok
+## Langkah 4: Mengaktifkan dan Mencoba Block
 
-Setelah mengaktifkan plugin, Anda akan melihat opsi **Hello block** yang baru ditambahkan di menu *dropdown* "Tambah Blok".
+Setelah plugin diaktifkan, di dropdown menu "Add Block", Anda akan melihat opsi Block **Hello block** yang baru ditambahkan.
 
-Demonstrasi efek:
+Demo:
 
 ![20251102223200_rec_](https://static-docs.nocobase.com/20251102223200_rec_.gif)
 
-## Langkah 5: Menambahkan Kemampuan Konfigurasi ke Blok
+## Langkah 5: Menambahkan Kemampuan Konfigurasi pada Block
 
-Selanjutnya, kita akan menambahkan fungsionalitas yang dapat dikonfigurasi ke blok melalui **Alur** (Flow), memungkinkan pengguna untuk mengedit konten blok di antarmuka.
+Selanjutnya, kita akan menambahkan fitur yang dapat dikonfigurasi pada Block melalui **Flow**, sehingga user dapat mengedit konten Block di antarmuka.
 
-Lanjutkan mengedit berkas `SimpleBlockModel.tsx`:
+Lanjutkan mengedit file `SimpleBlockModel.tsx`:
 
 ```tsx
 import { BlockModel } from '@nocobase/client';
@@ -104,16 +106,16 @@ SimpleBlockModel.registerFlow({
 });
 ```
 
-Demonstrasi efek:
+Demo:
 
 ![20251102222856_rec_](https://static-docs.nocobase.com/20251102222856_rec_.gif)
 
 ## Ringkasan
 
-Artikel ini menjelaskan cara membuat plugin blok sederhana, meliputi:
+Artikel ini memperkenalkan cara membuat plugin Block sederhana, termasuk:
 
-- Cara mendefinisikan dan mengimplementasikan model blok
-- Cara mendaftarkan model blok
-- Cara menambahkan fungsionalitas yang dapat dikonfigurasi ke blok melalui Alur (Flow)
+- Cara mendefinisikan dan mengimplementasikan block model
+- Cara mendaftarkan block model
+- Cara menambahkan fitur yang dapat dikonfigurasi pada Block melalui Flow
 
-Referensi kode sumber lengkap: [Contoh Blok Sederhana](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)
+Referensi kode sumber lengkap: [Contoh Simple Block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)

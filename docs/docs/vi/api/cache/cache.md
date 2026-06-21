@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Cache"
+description: "API cache của NocoBase: các phương thức cơ bản get/set/del của instance Cache."
+keywords: "Cache API,cache,get,set,del,instance cache,NocoBase"
+---
 
 # Cache
 
-## Các phương thức cơ bản
+## Phương thức cơ bản
 
-Tham khảo tài liệu của <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>.
+Có thể tham khảo tài liệu <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>.
 
 - `get()`
 - `set()`
@@ -20,20 +21,20 @@ Tham khảo tài liệu của <a href="https://github.com/node-cache-manager/nod
 - `keys()`
 - `ttl()`
 
-## Các phương thức khác
+## Phương thức khác
 
 ### `wrapWithCondition()`
 
-Tương tự như `wrap()`, nhưng cho phép bạn quyết định có sử dụng bộ nhớ đệm hay không dựa trên một điều kiện.
+Chức năng tương tự wrap() nhưng có thể quyết định có dùng cache hay không qua điều kiện.
 
 ```ts
 async wrapWithCondition<T>(
   key: string,
   fn: () => T | Promise<T>,
   options?: {
-    // Tham số bên ngoài để kiểm soát việc sử dụng kết quả từ bộ nhớ đệm
+    // Tham số bên ngoài kiểm soát có dùng kết quả cache không
     useCache?: boolean;
-    // Quyết định có lưu vào bộ nhớ đệm hay không dựa trên kết quả dữ liệu
+    // Quyết định có cache hay không dựa trên kết quả dữ liệu
     isCacheable?: (val: unknown) => boolean | Promise<boolean>;
     ttl?: Milliseconds;
   },
@@ -42,7 +43,7 @@ async wrapWithCondition<T>(
 
 ### `setValueInObject()`
 
-Khi nội dung trong bộ nhớ đệm là một đối tượng, phương thức này thay đổi giá trị của một khóa cụ thể.
+Khi nội dung cache là đối tượng, thay đổi value của một key.
 
 ```ts
 async setValueInObject(key: string, objectKey: string, value: unknown)
@@ -50,7 +51,7 @@ async setValueInObject(key: string, objectKey: string, value: unknown)
 
 ### `getValueInObject()`
 
-Khi nội dung trong bộ nhớ đệm là một đối tượng, phương thức này lấy giá trị của một khóa cụ thể.
+Khi nội dung cache là đối tượng, lấy value của một key.
 
 ```ts
 async getValueInObject(key: string, objectKey: string)
@@ -58,7 +59,7 @@ async getValueInObject(key: string, objectKey: string)
 
 ### `delValueInObject()`
 
-Khi nội dung trong bộ nhớ đệm là một đối tượng, phương thức này xóa một khóa cụ thể.
+Khi nội dung cache là đối tượng, xóa một key.
 
 ```ts
 async delValueInObject(key: string, objectKey: string)

@@ -8,7 +8,7 @@ pkg: '@nocobase/plugin-workflow-javascript'
 
 The JavaScript Script node allows users to execute a custom server-side JavaScript script within a workflow. The script can use variables from upstream in the workflow as parameters, and its return value can be provided to downstream nodes.
 
-The script runs in a worker thread on the NocoBase application's server and supports most Node.js features, but there are some differences from the native execution environment. For details, see [Feature List](#feature-list).
+The script runs in a worker thread on the NocoBase application's server. By default, it uses a secure sandbox (QuickJS, powered by WebAssembly) that does not support `require` or Node.js built-in APIs. For details, see [Execution Engine](#execution-engine) and [Feature List](#feature-list).
 
 ## Create Node
 
@@ -44,15 +44,32 @@ If checked, subsequent nodes will still be executed even if the script encounter
 If the script errors out, it will have no return value, and the node's result will be populated with the error message. If subsequent nodes use the result variable from the script node, it should be handled with caution.
 :::
 
-## Feature List
+## Execution Engine
 
-### Node.js Version
+The JavaScript script node supports two execution engines, automatically selected based on whether the `WORKFLOW_SCRIPT_MODULES` environment variable is configured:
 
-Same as the Node.js version running the main application.
+### Safe Mode (Default)
 
-### Module Support
+When `WORKFLOW_SCRIPT_MODULES` is **not configured**, scripts run using the [QuickJS](https://bellard.org/quickjs/) engine compiled to WebAssembly. This engine executes code in an isolated JavaScript runtime with the following characteristics:
 
-Modules can be used in the script with limitations, consistent with CommonJS, using the `require()` directive to import modules.
+- **Does not support** `require` — no modules can be imported
+- **Does not support** Node.js built-in APIs (such as `process`, `Buffer`, `global`, etc.)
+- Only ECMAScript standard built-in objects are available (such as `JSON`, `Math`, `Promise`, `Date`, etc.)
+- Supports passing data via parameters, `console` for logging, and `async`/`await`
+
+This is the recommended default mode, suitable for pure computation and data processing logic, providing the highest level of security isolation.
+
+### Unsafe Mode (Module Support)
+
+When `WORKFLOW_SCRIPT_MODULES` **is configured**, scripts switch to the Node.js built-in `vm` engine to enable `require` capability.
+
+:::warning{title="Security Warning"}
+Unsafe mode uses Node.js `vm` only to provide CommonJS `require` support. The Node.js `vm` module is not a secure sandbox mechanism. Enabling this mode means trusting every user who can edit, test, or run workflow scripts as someone who can execute code with the NocoBase server's privileges.
+
+`WORKFLOW_SCRIPT_MODULES` is not a security boundary or a permission model. It only controls which module names are accepted by `require()` before script code runs.
+:::
+
+Modules can be used in the script consistent with CommonJS, using the `require()` directive to import modules.
 
 Supports native Node.js modules and modules installed in `node_modules` (including dependencies already used by NocoBase). Modules to be made available to the code must be declared in the application's environment variable `WORKFLOW_SCRIPT_MODULES`, with multiple package names separated by commas, for example:
 
@@ -61,7 +78,7 @@ WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
 :::info{title="Note"}
-Modules not declared in the `WORKFLOW_SCRIPT_MODULES` environment variable **cannot** be used in the script, even if they are native to Node.js or already installed in `node_modules`. This policy can be used at the operational level to control the list of modules available to users, preventing scripts from having excessive permissions in some scenarios.
+Modules not declared in the `WORKFLOW_SCRIPT_MODULES` environment variable **cannot** be imported directly with `require()`, even if they are native to Node.js or already installed in `node_modules`. This list is intended only to configure supported imports. Do not rely on it to reduce script permissions or to safely delegate script editing to less-trusted users.
 :::
 
 When in a non-source-deployed environment, if a module is not installed in `node_modules`, you can manually install the required package into the `storage` directory. For example, to use the `exceljs` package, you can perform the following steps:
@@ -83,6 +100,12 @@ You can then use the `exceljs` package in your script (as the name used in `requ
 const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
+
+## Feature List
+
+### Node.js Version
+
+Same as the Node.js version running the main application.
 
 ### Global Variables
 
@@ -129,7 +152,7 @@ return value;
 
 ### Timers
 
-To use methods like `setTimeout`, `setInterval`, or `setImmediate`, you need to import them from the Node.js `timers` package.
+To use methods like `setTimeout`, `setInterval`, or `setImmediate`, you need to import them from the Node.js `timers` package (only available in unsafe mode).
 
 ```js
 const { setTimeout, setInterval, setImmediate, clearTimeout, clearInterval, clearImmediate } = require('timers');

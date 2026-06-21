@@ -1,24 +1,26 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Action chỉnh sửa"
+description: "Action chỉnh sửa: mở Form để chỉnh sửa bản ghi hiện tại, hỗ trợ các cách mở như Popup, Drawer, chuyển hướng."
+keywords: "Action chỉnh sửa,Edit,chỉnh sửa bản ghi,chỉnh sửa Form,Interface Builder,NocoBase"
+---
 
 # Chỉnh sửa
 
 ## Giới thiệu
 
-Thao tác Chỉnh sửa là một nút trên hàng (row button) có ngữ cảnh là bản ghi hiện tại. Thao tác này được hiển thị dưới dạng cửa sổ bật lên (popup), cho phép người dùng tùy chỉnh và cấu hình các khối (block) bên trong.
+Action chỉnh sửa thuộc nút hàng, có bản ghi hiện tại làm ngữ cảnh, được hiển thị dưới dạng Popup, bạn có thể tùy chỉnh cấu hình Block trong Popup.
+
 
 ![20251029165442](https://static-docs.nocobase.com/20251029165442.png)
 
-Cấu hình các khối theo nhu cầu.
+Cấu hình Block theo nhu cầu.
 
 ![20251029165514](https://static-docs.nocobase.com/20251029165514.png)
 
-## Cài đặt Thao tác
+## Tùy chọn cấu hình Action
 
 ![20251029165620](https://static-docs.nocobase.com/20251029165620.png)
 
-- [Quy tắc Liên kết](/interface-builder/actions/action-settings/linkage-rule): Hiển thị/ẩn nút một cách linh hoạt;
-- [Nút Chỉnh sửa](/interface-builder/actions/action-settings/edit-button): Chỉnh sửa tiêu đề, loại và biểu tượng của nút;
-- [Cửa sổ bật lên Chỉnh sửa](/interface-builder/actions/action-settings/edit-popup): Đặt cách mở và kích thước.
+- [Quy tắc liên kết](/interface-builder/actions/action-settings/linkage-rule): hiển thị/ẩn nút bấm động;
+- [Chỉnh sửa nút bấm](/interface-builder/actions/action-settings/edit-button): chỉnh sửa tiêu đề, loại, biểu tượng của nút bấm;
+- [Chỉnh sửa Popup](/interface-builder/actions/action-settings/edit-popup): cách mở, kích thước

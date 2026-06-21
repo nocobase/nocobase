@@ -1,59 +1,61 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ikhtisar Data Source"
+description: "Data Source dan pemodelan data NocoBase: database utama, MySQL/PostgreSQL/Oracle/MSSQL eksternal, manajemen data source, diagram ER, collection umum, collection tree, collection SQL, FDW, collection file, REST API."
+keywords: "data source,pemodelan data,database utama,database eksternal,diagram ER,Collection,collection tree,collection SQL,FDW,NocoBase"
+---
 
 # Ikhtisar
 
-Pemodelan data adalah langkah kunci dalam merancang basis data, melibatkan proses analisis mendalam dan abstraksi berbagai jenis data di dunia nyata beserta hubungan timbal baliknya. Dalam proses ini, kita berupaya mengungkap koneksi intrinsik antar data dan memformalkannya menjadi model data, meletakkan dasar bagi struktur basis data sistem informasi. NocoBase adalah platform berbasis model data, dengan fitur-fitur berikut:
+Pemodelan data adalah langkah kunci dalam mendesain database, melibatkan analisis dan abstraksi mendalam terhadap berbagai jenis data dunia nyata serta hubungannya satu sama lain. Dalam proses ini, kami berusaha mengungkap hubungan internal antar data, lalu mendeskripsikannya secara formal sebagai model data, sehingga menjadi dasar struktur database untuk sistem informasi. NocoBase adalah platform yang digerakkan oleh model data, dengan karakteristik berikut:
 
-## Mendukung Akses Data dari Berbagai Sumber
+## Mendukung berbagai sumber data
 
-NocoBase mendukung sumber data dari berbagai asal, termasuk berbagai jenis basis data umum, platform API (SDK), dan berkas.
+Data Source NocoBase dapat berupa berbagai jenis database umum, platform API (SDK), dan file.
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-NocoBase menyediakan [plugin pengelola sumber data](/data-sources/data-source-manager) untuk mengelola berbagai sumber data dan koleksinya. Plugin pengelola sumber data ini hanya menyediakan antarmuka manajemen untuk semua sumber data dan tidak menyediakan kemampuan untuk mengakses sumber data secara langsung. Plugin ini perlu digunakan bersama dengan berbagai plugin sumber data lainnya. Sumber data yang saat ini didukung meliputi:
+NocoBase menyediakan [Plugin Manajemen Data Source](/data-sources/data-source-manager) untuk mengelola berbagai data source dan tabel datanya. Plugin manajemen data source hanya menyediakan antarmuka manajemen untuk semua data source, dan tidak menyediakan kemampuan untuk mengakses data source. Plugin ini perlu digunakan bersama dengan berbagai plugin data source. Data source yang saat ini didukung meliputi:
 
-- [Basis Data Utama](/data-sources/data-source-main): Basis data utama NocoBase, mendukung basis data relasional seperti MySQL, PostgreSQL, dan MariaDB.
-- [KingbaseES](/data-sources/data-source-kingbase): Menggunakan basis data KingbaseES sebagai sumber data, yang dapat digunakan sebagai basis data utama maupun basis data eksternal.
-- [MySQL Eksternal](/data-sources/data-source-external-mysql): Menggunakan basis data MySQL eksternal sebagai sumber data.
-- [MariaDB Eksternal](/data-sources/data-source-external-mariadb): Menggunakan basis data MariaDB eksternal sebagai sumber data.
-- [PostgreSQL Eksternal](/data-sources/data-source-external-postgres): Menggunakan basis data PostgreSQL eksternal sebagai sumber data.
-- [MSSQL Eksternal](/data-sources/data-source-external-mssql): Menggunakan basis data MSSQL (SQL Server) eksternal sebagai sumber data.
-- [Oracle Eksternal](/data-sources/data-source-external-oracle): Menggunakan basis data Oracle eksternal sebagai sumber data.
+- [Main Database](/data-sources/data-source-main): Database utama NocoBase, mendukung database relasional seperti MySQL, PostgreSQL, MariaDB, dan lainnya.
+- [KingbaseES](/data-sources/data-source-kingbase): Menggunakan database KingbaseES sebagai data source, dapat digunakan baik sebagai database utama maupun sebagai database eksternal.
+- [External MySQL](/data-sources/data-source-external-mysql): Menggunakan database MySQL eksternal sebagai data source.
+- [External MariaDB](/data-sources/data-source-external-mariadb): Menggunakan database MariaDB eksternal sebagai data source.
+- [External PostgreSQL](/data-sources/data-source-external-postgres): Menggunakan database PostgreSQL eksternal sebagai data source.
+- [External MSSQL](/data-sources/data-source-external-mssql): Menggunakan database MSSQL (SQL Server) eksternal sebagai data source.
+- [External Oracle](/data-sources/data-source-external-oracle): Menggunakan database Oracle eksternal sebagai data source.
 
 ![20240512083651](https://static-docs.nocobase.com/20240512083651.png)
 
-## Menyediakan Berbagai Alat Pemodelan Data
+## Menyediakan beragam alat pemodelan data
 
-**Antarmuka manajemen koleksi yang sederhana**: Digunakan untuk membuat berbagai model (koleksi) atau menghubungkan ke model yang sudah ada.
+**Antarmuka manajemen Collection yang sederhana**: Digunakan untuk membuat berbagai model (Collection) atau menghubungkan model (Collection) yang sudah ada.
 
 ![20240512090751](https://static-docs.nocobase.com/20240512090751.png)
 
-**Antarmuka visual bergaya ER**: Digunakan untuk mengekstrak entitas dan hubungannya dari kebutuhan pengguna dan bisnis. Antarmuka ini menyediakan cara yang intuitif dan mudah dipahami untuk menjelaskan model data. Melalui diagram ER, Anda dapat lebih jelas memahami entitas data utama dalam sistem dan hubungannya.
+**Antarmuka visual mirip diagram ER**: Digunakan untuk mengekstrak entitas dan hubungan di antara mereka dari kebutuhan pengguna dan bisnis. Antarmuka ini menyediakan cara yang intuitif dan mudah dipahami untuk mendeskripsikan model data. Melalui diagram ER, Anda dapat lebih jelas memahami entitas data utama dalam sistem dan hubungan di antara mereka.
 
 ![20240512091042](https://static-docs.nocobase.com/20240410075906.png)
 
-## Mendukung Berbagai Jenis Koleksi
+## Mendukung pembuatan berbagai Collection
 
-| Koleksi | Deskripsi |
+| Collection | Deskripsi |
 | - | - |
-| [Koleksi Umum](/data-sources/data-source-main/general-collection) | Dilengkapi dengan bidang sistem umum yang sering digunakan |
-| [Koleksi Kalender](/data-sources/calendar/calendar-collection) | Digunakan untuk membuat tabel kejadian terkait kalender |
-| Koleksi Komentar | Digunakan untuk menyimpan komentar atau umpan balik terhadap data |
-| [Koleksi Struktur Pohon](/data-sources/collection-tree) | Koleksi berstruktur pohon, saat ini hanya mendukung desain daftar adjacensi |
-| [Koleksi Berkas](/data-sources/file-manager/file-collection) | Digunakan untuk manajemen penyimpanan berkas |
-| [Koleksi SQL](/data-sources/collection-sql) | Bukan tabel basis data aktual, melainkan menampilkan kueri SQL secara terstruktur dengan cepat |
-| [Hubungkan ke Tampilan Basis Data](/data-sources/collection-view) | Menghubungkan ke tampilan basis data yang sudah ada |
-| Koleksi Ekspresi | Digunakan untuk skenario ekspresi dinamis dalam alur kerja |
-| [Hubungkan ke Data Eksternal](/data-sources/collection-fdw) | Menghubungkan tabel data jarak jauh yang diimplementasikan dengan teknologi FDW basis data |
+| [Collection Umum](/data-sources/data-source-main/general-collection) | Memiliki field sistem umum yang sudah terpasang |
+| [Collection Calendar](/data-sources/calendar/calendar-collection) | Digunakan untuk membuat tabel event terkait kalender |
+| Collection Comment | Digunakan untuk menyimpan komentar atau umpan balik terhadap data |
+| [Collection Tree](/data-sources/collection-tree) | Tabel struktur tree, saat ini hanya mendukung desain adjacency list |
+| [Collection File](/data-sources/file-manager/file-collection) | Digunakan untuk manajemen penyimpanan file |
+| [Collection SQL](/data-sources/collection-sql) | Bukan tabel database aktual, melainkan menampilkan kueri SQL secara cepat dan terstruktur |
+| [Database View Connection](/data-sources/collection-view) | Menghubungkan ke database view yang sudah ada |
+| Collection Expression | Digunakan untuk skenario expression dinamis pada workflow |
+| [Connect External Data](/data-sources/collection-fdw) | Menghubungkan ke tabel data remote berbasis teknologi FDW database |
 
 ![20240512102212](https://static-docs.nocobase.com/20240512102212.png)
 
-Untuk informasi lebih lanjut, lihat bagian "[Koleksi / Ikhtisar](/data-sources/data-modeling/collection)".
+Untuk lebih lanjut, lihat bagian "[Collection / Ikhtisar](/data-sources/data-modeling/collection)"
 
-## Menyediakan Berbagai Jenis Bidang yang Kaya
+## Menyediakan beragam tipe Field
 
 ![20240512110352](https://static-docs.nocobase.com/20240512110352.png)
 
-Untuk informasi lebih lanjut, lihat bagian "[Bidang Koleksi / Ikhtisar](/data-sources/data-modeling/collection-fields)".
+Untuk lebih lanjut, lihat bagian "[Field Collection / Ikhtisar](/data-sources/data-modeling/collection-fields)"

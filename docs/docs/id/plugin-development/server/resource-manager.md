@@ -1,14 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "ResourceManager Manajemen Resource"
+description: "Manajemen resource server NocoBase: app.resourceManager, registerActions, resource.use, registrasi Action."
+keywords: "ResourceManager,manajemen resource,registerActions,resource.use,Action,NocoBase"
+---
 
-# ResourceManager
+# ResourceManager Manajemen Resource
 
-Fungsi manajemen sumber daya NocoBase dapat secara otomatis mengubah `koleksi` dan `asosiasi` yang ada menjadi sumber daya, dengan tipe operasi bawaan untuk membantu pengembang membangun operasi sumber daya REST API dengan cepat. Sedikit berbeda dari REST API tradisional, operasi sumber daya NocoBase tidak bergantung pada metode permintaan HTTP, melainkan menentukan operasi spesifik yang akan dijalankan melalui definisi `:action` yang eksplisit.
+Fitur manajemen resource NocoBase secara otomatis mengkonversi tabel data (Collection) dan asosiasi (Association) menjadi resource, dan menyediakan beberapa tipe operasi bawaan, sehingga Anda dapat dengan cepat membangun REST API. Sedikit berbeda dengan REST API tradisional, operasi resource NocoBase tidak langsung bergantung pada method HTTP request, tetapi menentukan operasi spesifik yang dieksekusi melalui definisi `:action` secara eksplisit.
 
-## Membuat Sumber Daya Secara Otomatis
+## Resource yang Dihasilkan Otomatis
 
-NocoBase secara otomatis mengubah `koleksi` dan `asosiasi` yang didefinisikan dalam database menjadi sumber daya. Misalnya, mendefinisikan dua `koleksi`, yaitu `posts` dan `tags`:
+NocoBase secara otomatis akan mengkonversi Collection dan Association yang didefinisikan dalam database menjadi resource. Misalnya mendefinisikan dua collection `posts` dan `tags`:
 
 ```ts
 db.defineCollection({
@@ -24,94 +26,94 @@ db.defineCollection({
 });
 ```
 
-Ini akan secara otomatis menghasilkan sumber daya berikut:
+Sistem akan secara otomatis menghasilkan resource berikut:
 
-*   Sumber daya `posts`
-*   Sumber daya `tags`
-*   Sumber daya asosiasi `posts.tags`
+* Resource `posts`
+* Resource `tags`
+* Resource asosiasi `posts.tags`
 
-Contoh permintaan:
+Contoh request:
 
-| Metode   | Path                     | Operasi       |
-| -------- | ---------------------- | ------------- |
-| `GET`  | `/api/posts:list`      | Melihat daftar |
-| `GET`  | `/api/posts:get/1`     | Melihat satu data |
-| `POST` | `/api/posts:create`    | Menambah baru |
-| `POST` | `/api/posts:update/1`  | Memperbarui   |
-| `POST` | `/api/posts:destroy/1` | Menghapus     |
+| Method Request   | Path                     | Operasi   |
+| -------- | ---------------------- | ---- |
+| `GET`  | `/api/posts:list`      | Query list |
+| `GET`  | `/api/posts:get/1`     | Query single |
+| `POST` | `/api/posts:create`    | Create   |
+| `POST` | `/api/posts:update/1`  | Update   |
+| `POST` | `/api/posts:destroy/1` | Delete   |
 
-| Metode   | Path                     | Operasi       |
-| -------- | ---------------------- | ------------- |
-| `GET`  | `/api/tags:list`       | Melihat daftar |
-| `GET`  | `/api/tags:get/1`      | Melihat satu data |
-| `POST` | `/api/tags:create`     | Menambah baru |
-| `POST` | `/api/tags:update/1`   | Memperbarui   |
-| `POST` | `/api/tags:destroy/1`  | Menghapus     |
+| Method Request   | Path                        | Operasi   |
+| -------- | ------------------------- | ---- |
+| `GET`  | `/api/tags:list`      | Query list |
+| `GET`  | `/api/tags:get/1`     | Query single |
+| `POST` | `/api/tags:create`    | Create   |
+| `POST` | `/api/tags:update/1`  | Update   |
+| `POST` | `/api/tags:destroy/1` | Delete   |
 
-| Metode   | Path                             | Operasi                                     |
-| -------- | ------------------------------ | ------------------------------------------- |
-| `GET`  | `/api/posts/1/tags:list`       | Melihat semua `tags` yang terkait dengan `post` tertentu |
-| `GET`  | `/api/posts/1/tags:get/1`      | Melihat satu `tag` di bawah `post` tertentu |
-| `POST` | `/api/posts/1/tags:create`     | Menambah satu `tag` baru di bawah `post` tertentu |
-| `POST` | `/api/posts/1/tags:update/1`   | Memperbarui satu `tag` di bawah `post` tertentu |
-| `POST` | `/api/posts/1/tags:destroy/1`  | Menghapus satu `tag` di bawah `post` tertentu |
-| `POST` | `/api/posts/1/tags:add`        | Menambahkan `tags` terkait ke `post` tertentu |
-| `POST` | `/api/posts/1/tags:remove`     | Menghapus `tags` terkait dari `post` tertentu |
-| `POST` | `/api/posts/1/tags:set`        | Mengatur semua `tags` terkait untuk `post` tertentu |
-| `POST` | `/api/posts/1/tags:toggle`     | Mengalihkan asosiasi `tags` untuk `post` tertentu |
+| Method Request   | Path                             | Operasi                            |
+| -------- | ------------------------------ | ----------------------------- |
+| `GET`  | `/api/posts/1/tags:list`   | Query semua `tags` yang terkait dengan `post` tertentu   |
+| `GET`  | `/api/posts/1/tags:get/1`  | Query single `tags` di bawah `post` tertentu    |
+| `POST` | `/api/posts/1/tags:create`  | Membuat single `tags` di bawah `post` tertentu    |
+| `POST` | `/api/posts/1/tags:update/1`  | Update single `tags` di bawah `post` tertentu    |
+| `POST` | `/api/posts/1/tags:destroy/1`  | Delete single `tags` di bawah `post` tertentu    |
+| `POST` | `/api/posts/1/tags:add`    | Menambahkan `tags` terkait di bawah `post` tertentu   |
+| `POST` | `/api/posts/1/tags:remove` | Menghapus `tags` terkait dari `post` tertentu   |
+| `POST` | `/api/posts/1/tags:set`    | Mengatur semua `tags` terkait di bawah `post` tertentu |
+| `POST` | `/api/posts/1/tags:toggle` | Toggle asosiasi `tags` di bawah `post` tertentu   |
 
-:::tip Tip
+:::tip Tips
 
-Operasi sumber daya NocoBase tidak secara langsung bergantung pada metode permintaan, melainkan menentukan operasi melalui definisi `:action` yang eksplisit.
+Operasi resource NocoBase tidak langsung bergantung pada method HTTP request, tetapi menentukan operasi yang dieksekusi melalui definisi `:action` secara eksplisit.
 
 :::
 
-## Operasi Sumber Daya
+## Operasi Resource
 
-NocoBase menyediakan beragam tipe operasi bawaan untuk memenuhi berbagai kebutuhan bisnis.
+NocoBase memiliki beberapa tipe operasi bawaan, yang mencakup skenario bisnis umum.
 
 ### Operasi CRUD Dasar
 
-| Nama Operasi       | Deskripsi                             | Tipe Sumber Daya yang Berlaku | Metode Permintaan | Contoh Path                |
-| ---------------- | --------------------------------------- | ------------------------- | -------------- | --------------------------- |
-| `list`           | Melihat data daftar                     | Semua                     | GET/POST       | `/api/posts:list`           |
-| `get`            | Melihat satu data                       | Semua                     | GET/POST       | `/api/posts:get/1`          |
-| `create`         | Membuat catatan baru                    | Semua                     | POST           | `/api/posts:create`         |
-| `update`         | Memperbarui catatan                     | Semua                     | POST           | `/api/posts:update/1`       |
-| `destroy`        | Menghapus catatan                       | Semua                     | POST           | `/api/posts:destroy/1`      |
-| `firstOrCreate`  | Mencari catatan pertama, jika tidak ada maka buat | Semua                     | POST           | `/api/users:firstOrCreate`  |
-| `updateOrCreate` | Memperbarui catatan, jika tidak ada maka buat     | Semua                     | POST           | `/api/users:updateOrCreate` |
+| Nama Operasi | Penjelasan | Tipe Resource yang Berlaku | Method Request | Contoh Path |
+| --------- | ------ | ------ | -------- | ---------------------- |
+| `list`    | Query data list | Semua | GET/POST | `/api/posts:list`      |
+| `get`     | Query data tunggal | Semua | GET/POST | `/api/posts:get/1`     |
+| `create`  | Membuat record baru | Semua | POST     | `/api/posts:create`    |
+| `update`  | Update record   | Semua | POST     | `/api/posts:update/1`  |
+| `destroy` | Delete record   | Semua | POST     | `/api/posts:destroy/1` |
+| `firstOrCreate`  | Mencari record pertama, membuat jika tidak ada | Semua | POST     |  `/api/users:firstOrCreate`  |
+| `updateOrCreate` | Update record, membuat jika tidak ada    | Semua | POST     |  `/api/users:updateOrCreate` |
 
-### Operasi Asosiasi
+### Operasi Relasi
 
-| Nama Operasi | Deskripsi               | Tipe Asosiasi yang Berlaku                        | Contoh Path                   |
-| -------------- | ------------------------- | ------------------------------------------------- | ------------------------------ |
-| `add`          | Menambahkan asosiasi      | `hasMany`, `belongsToMany`                        | `/api/posts/1/tags:add`        |
-| `remove`       | Menghapus asosiasi        | `hasOne`, `hasMany`, `belongsToMany`, `belongsTo` | `/api/posts/1/comments:remove` |
-| `set`          | Mengatur ulang asosiasi   | `hasOne`, `hasMany`, `belongsToMany`, `belongsTo` | `/api/posts/1/comments:set`    |
-| `toggle`       | Menambahkan atau menghapus asosiasi | `belongsToMany`                                   | `/api/posts/1/tags:toggle`     |
+| Nama Operasi | Penjelasan | Tipe Relasi yang Berlaku | Contoh Path |
+| -------- | -------------- | ---------------------------------------- | ------------------------------ |
+| `add`    | Menambahkan asosiasi | `hasMany`, `belongsToMany` | `/api/posts/1/tags:add`    |
+| `remove` | Menghapus asosiasi | `hasOne`, `hasMany`, `belongsToMany`, `belongsTo` | `/api/posts/1/comments:remove` |
+| `set`    | Reset asosiasi | `hasOne`, `hasMany`, `belongsToMany`, `belongsTo` | `/api/posts/1/comments:set`    |
+| `toggle` | Menambah atau menghapus asosiasi | `belongsToMany` | `/api/posts/1/tags:toggle`     |
 
 ### Parameter Operasi
 
-Parameter operasi umum meliputi:
+Parameter operasi umum termasuk:
 
-*   `filter`: Kondisi kueri
-*   `values`: Nilai yang diatur
-*   `fields`: Menentukan bidang yang dikembalikan
-*   `appends`: Menyertakan data asosiasi
-*   `except`: Mengecualikan bidang
-*   `sort`: Aturan pengurutan
-*   `page`, `pageSize`: Parameter paginasi
-*   `paginate`: Apakah paginasi diaktifkan
-*   `tree`: Apakah mengembalikan struktur pohon
-*   `whitelist`, `blacklist`: Daftar putih/hitam bidang
-*   `updateAssociationValues`: Apakah memperbarui nilai asosiasi
+* `filter`: Kondisi query
+* `values`: Nilai yang diatur
+* `fields`: Menentukan field yang dikembalikan
+* `appends`: Menyertakan data terkait
+* `except`: Mengecualikan field
+* `sort`: Aturan sorting
+* `page`, `pageSize`: Parameter pagination
+* `paginate`: Apakah mengaktifkan pagination
+* `tree`: Apakah mengembalikan struktur tree
+* `whitelist`, `blacklist`: Whitelist/blacklist field
+* `updateAssociationValues`: Apakah memperbarui nilai asosiasi
 
 ---
 
-## Operasi Sumber Daya Kustom
+## Operasi Resource Kustom
 
-NocoBase memungkinkan pendaftaran operasi tambahan untuk sumber daya yang sudah ada. Anda dapat menggunakan `registerActionHandlers` untuk menyesuaikan operasi untuk semua atau sumber daya tertentu.
+Anda dapat menggunakan `registerActionHandlers` untuk mendaftarkan operasi tambahan untuk resource yang ada, mendukung operasi global dan operasi resource khusus.
 
 ### Mendaftarkan Operasi Global
 
@@ -123,7 +125,7 @@ resourceManager.registerActionHandlers({
 });
 ```
 
-### Mendaftarkan Operasi Spesifik Sumber Daya
+### Mendaftarkan Operasi Khusus Resource
 
 ```ts
 resourceManager.registerActionHandlers({
@@ -132,7 +134,7 @@ resourceManager.registerActionHandlers({
 });
 ```
 
-Contoh permintaan:
+Contoh request:
 
 ```
 POST /api/posts:customAction
@@ -140,11 +142,11 @@ POST /api/posts:publish
 POST /api/posts/1/comments:pin
 ```
 
-Aturan penamaan: `resourceName:actionName`, gunakan sintaks titik (`posts.comments`) saat menyertakan asosiasi.
+Aturan penamaan: `resourceName:actionName`, saat menyertakan asosiasi gunakan sintaks dot (`posts.comments`).
 
-## Sumber Daya Kustom
+## Resource Kustom
 
-Jika Anda perlu menyediakan sumber daya yang tidak terkait dengan `koleksi`, Anda dapat menggunakan metode `resourceManager.define` untuk mendefinisikannya:
+Jika Anda perlu menyediakan resource yang tidak terkait dengan tabel data, dapat menggunakan `resourceManager.define` untuk mendefinisikan:
 
 ```ts
 resourceManager.define({
@@ -157,16 +159,14 @@ resourceManager.define({
 });
 ```
 
-Metode permintaan konsisten dengan sumber daya yang dibuat secara otomatis:
+Method request sama dengan resource otomatis:
 
-*   `GET /api/app:getInfo`
-*   `POST /api/app:getInfo` (secara default mendukung GET/POST secara bersamaan)
+* `GET /api/app:getInfo`
+* `POST /api/app:getInfo` (default mendukung GET/POST sekaligus)
 
 ## Middleware Kustom
 
-Gunakan metode `resourceManager.use()` untuk mendaftarkan middleware global. Contohnya:
-
-Middleware pencatat global
+Menggunakan `resourceManager.use()` dapat mendaftarkan middleware global. Misalnya middleware logging global:
 
 ```ts
 resourceManager.use(async (ctx, next) => {
@@ -177,51 +177,60 @@ resourceManager.use(async (ctx, next) => {
 });
 ```
 
-## Properti Context Khusus
+## Property Khusus Context
 
-Kemampuan untuk masuk ke middleware atau `action` pada lapisan `resourceManager` berarti sumber daya tersebut pasti ada.
+Dapat memasuki middleware atau action di layer `resourceManager`, berarti resource tersebut pasti ada. Pada saat ini Anda dapat mengakses konteks request melalui property berikut:
 
 ### ctx.action
 
--   `ctx.action.actionName`: Nama operasi
--   `ctx.action.resourceName`: Bisa berupa `koleksi` atau `asosiasi`
--   `ctx.action.params`: Parameter operasi
+- `ctx.action.actionName`: Nama operasi
+- `ctx.action.resourceName`: Mungkin berupa collection atau association
+- `ctx.action.params`: Parameter operasi
 
 ### ctx.dataSource
 
-Objek `sumber data` saat ini.
+Objek data source saat ini
 
 ### ctx.getCurrentRepository()
 
-Objek repositori saat ini.
+Objek repository saat ini
 
-## Cara Mendapatkan Objek resourceManager untuk Sumber Data yang Berbeda
+## Cara Mendapatkan Objek resourceManager dari Data Source yang Berbeda
 
-`resourceManager` termasuk dalam `sumber data`, dan operasi dapat didaftarkan secara terpisah untuk `sumber data` yang berbeda.
+`resourceManager` milik data source, Anda dapat mendaftarkan operasi secara terpisah untuk data source yang berbeda.
 
-### Sumber Data Utama
+### Data Source Utama
 
-Untuk `sumber data` utama, Anda dapat langsung menggunakan `app.resourceManager` untuk melakukan operasi:
+Data source utama dapat langsung menggunakan `app.resourceManager`:
 
 ```ts
 app.resourceManager.registerActionHandlers();
 ```
 
-### Sumber Data Lainnya
+### Data Source Lain
 
-Untuk `sumber data` lainnya, Anda dapat memperoleh instance `sumber data` tertentu melalui `dataSourceManager` dan menggunakan `resourceManager` dari instance tersebut untuk melakukan operasi:
+Data source lain dapat memperoleh instance yang sesuai melalui `dataSourceManager`:
 
 ```ts
 const dataSource = dataSourceManager.get('external');
 dataSource.resourceManager.registerActionHandlers();
 ```
 
-### Mengiterasi Semua Sumber Data
+### Iterasi Semua Data Source
 
-Jika Anda perlu melakukan operasi yang sama pada semua `sumber data` yang telah ditambahkan, Anda dapat menggunakan metode `dataSourceManager.afterAddDataSource` untuk melakukan iterasi, memastikan `resourceManager` setiap `sumber data` dapat mendaftarkan operasi yang sesuai:
+Jika perlu mengeksekusi operasi yang sama untuk semua data source, dapat menggunakan `dataSourceManager.afterAddDataSource` untuk iterasi:
 
 ```ts
 dataSourceManager.afterAddDataSource((dataSource) => {
   dataSource.resourceManager.registerActionHandlers();
 });
 ```
+
+## Tautan Terkait
+
+- [Cheatsheet Resource API](../../api/flow-engine/resource.md) — Method signature lengkap dan penggunaan MultiRecordResource / SingleRecordResource client
+- [ACL Kontrol Hak Akses](./acl.md) — Mengkonfigurasi hak akses role dan kontrol akses untuk operasi resource
+- [Context Konteks Request](./context.md) — Mendapatkan informasi konteks dalam handler request
+- [Middleware](./middleware.md) — Menambahkan logika intersepsi dan pemrosesan untuk request
+- [DataSourceManager Manajemen Data Source](./data-source-manager.md) — Mengelola beberapa data source dan resource manager-nya
+- [Collections Tabel Data](./collections.md) — Hubungan mapping otomatis Collection dengan Resource

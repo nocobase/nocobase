@@ -1,24 +1,26 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Field Form"
+description: "Field Form: komponen Field yang digunakan dalam Block Form, mendukung berbagai control Form seperti input, select, tanggal, dll."
+keywords: "Field Form, FormItem, control Form, Block Form, interface builder, NocoBase"
+---
 
-# Bidang Formulir
+# Field Form
 
-## Pendahuluan
+## Pengantar
 
-Berbagai jenis bidang dalam formulir memiliki opsi konfigurasi yang berbeda, memungkinkan pengguna untuk memperluas opsi konfigurasi bidang melalui plugin guna memenuhi kebutuhan yang lebih personal.
+Tipe Field yang berbeda di Form memiliki item konfigurasi yang berbeda, mendukung pengguna untuk memperluas item konfigurasi Field melalui Plugin untuk memenuhi kebutuhan personal yang lebih banyak.
 
 ![20251025174555](https://static-docs.nocobase.com/20251025174555.png)
 
-## Opsi Konfigurasi Bidang
+## Konfigurasi Field
 
 ### Nilai Default
 
-Mendukung konfigurasi konstanta/variabel sebagai nilai default untuk bidang (hanya didukung untuk formulir baru).
+Mendukung konfigurasi konstanta/variabel sebagai nilai default untuk Field (hanya didukung di Form tambah baru).
 
 ![20251025174724](https://static-docs.nocobase.com/20251025174724.png)
 
-Untuk detail lebih lanjut, lihat [Mengatur Nilai Default](/interface-builder/fields/field-settings/default-value)
+Untuk informasi lebih lanjut, lihat [Atur Nilai Default](/interface-builder/fields/field-settings/default-value)
 
 ### Aturan Validasi
 
@@ -26,22 +28,22 @@ Untuk detail lebih lanjut, lihat [Mengatur Nilai Default](/interface-builder/fie
 
 ![20251025175031](https://static-docs.nocobase.com/20251025175031.png)
 
-Untuk detail lebih lanjut, lihat [Aturan Validasi](/interface-builder/fields/field-settings/validation-rules)
+Untuk informasi lebih lanjut, lihat [Aturan Validasi](/interface-builder/fields/field-settings/validation-rules)
 
 ### Wajib Diisi
 
 ![20251025175118](https://static-docs.nocobase.com/20251025175118.png)
 
-Untuk detail lebih lanjut, lihat [Wajib Diisi](/interface-builder/fields/field-settings/required)
+Untuk informasi lebih lanjut, lihat [Wajib Diisi](/interface-builder/fields/field-settings/required)
 
-- [Mengedit Judul Bidang](/interface-builder/fields/field-settings/edit-title)
-- [Menampilkan Label](/interface-builder/fields/field-settings/show-label)
-- [Mengedit Deskripsi Bidang](/interface-builder/fields/field-settings/edit-description)
-- [Mengedit Tooltip Bidang](/interface-builder/fields/field-settings/edit-tooltip)
-- [Pola](/interface-builder/fields/field-settings/pattern)
+- [Edit Judul Field](/interface-builder/fields/field-settings/edit-title)
+- [Tampilkan Label](/interface-builder/fields/field-settings/show-label)
+- [Edit Deskripsi Field](/interface-builder/fields/field-settings/edit-description)
+- [Edit Tooltip Field](/interface-builder/fields/field-settings/edit-tooltip)
+- [Mode](/interface-builder/fields/field-settings/pattern)
 
-### Komponen Bidang
+### Komponen Field
 
-Beberapa bidang mendukung pengalihan ke komponen lain, seperti bidang relasi.
+Beberapa Field mendukung peralihan ke komponen lain, seperti Field relasi.
 ![20251029122626](https://static-docs.nocobase.com/20251029122626.png)
-Untuk detail lebih lanjut, lihat [Komponen Bidang](/interface-builder/fields/field-settings/field-component)
+Untuk informasi lebih lanjut, lihat [Komponen Field](/interface-builder/fields/field-settings/field-component)

@@ -1,4 +1,6 @@
 ---
+title: "数据表字段：排序"
+keywords: "数据表字段：排序,插件,NocoBase"
 displayName: "数据表字段：排序"
 packageName: '@nocobase/plugin-field-sort'
 description: |

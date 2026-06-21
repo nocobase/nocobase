@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Approval"
+keywords: "Workflow"
 displayName: "Workflow: Approval"
 packageName: '@nocobase/plugin-workflow-approval'
 supportedVersions:

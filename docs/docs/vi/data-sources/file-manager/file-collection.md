@@ -1,36 +1,35 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "File Collection"
+description: "File collection lưu trữ metadata của file, bảng attachments tích hợp sẵn hoặc có thể tạo file collection tùy chỉnh, dùng để liên kết với field attachment."
+keywords: "File collection,File Collection,attachments,Metadata,Attachment,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# File Collection
 
-
-# Bộ sưu tập Tệp
+<PluginInfo name="file-manager"></PluginInfo>
 
 ## Giới thiệu
 
-Tệp là các bản ghi trong một bộ sưu tập có cấu trúc đặc biệt, được gọi là bộ sưu tập tệp. Bộ sưu tập này dùng để lưu trữ siêu dữ liệu của tệp và có thể được quản lý thông qua Trình quản lý Tệp.
+File là các bản ghi của bảng có cấu trúc đặc biệt, bảng có cấu trúc đặc biệt này được gọi là file collection, dùng để lưu trữ metadata của file, và có thể được quản lý thông qua file manager.
 
 ## Hướng dẫn sử dụng
 
-Tạo Bộ sưu tập Tệp
+Tạo file collection
 
 ![20240324090414](https://static-docs.nocobase.com/20240324090414.png)
 
-Các Trường Mặc định trong Bộ sưu tập Tệp
+Field tích hợp sẵn của file collection
 
 ![20240324090527](https://static-docs.nocobase.com/20240324090527.png)
 
-Sử dụng trong Khối
+Sử dụng trong block
 
 ![20240324090848](https://static-docs.nocobase.com/20240324090848.png)
 
-Trường Liên kết
+Field quan hệ
 
 ![20240324091529](https://static-docs.nocobase.com/20240324091529.png)
 
-Các Khối Liên kết
+Block quan hệ
 
 ![20240324091321](https://static-docs.nocobase.com/20240324091321.png)

@@ -1,3 +1,9 @@
+---
+title: "链接操作"
+description: "链接操作：跳转到指定 URL 或页面，支持新窗口打开、变量传递。"
+keywords: "链接操作,Link,页面跳转,URL,界面搭建,NocoBase"
+---
+
 # 链接
 
 ## 介绍

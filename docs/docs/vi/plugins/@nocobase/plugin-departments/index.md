@@ -1,12 +1,14 @@
 ---
-displayName: "Departments"
+displayName: "Phòng ban"
 packageName: '@nocobase/plugin-departments'
+title: "Phòng ban"
+keywords: "Phòng ban,Plugin,NocoBase"
 description: |
-  Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.
+  Tổ chức người dùng theo phòng ban, thiết lập quan hệ cấp trên/cấp dưới, gán vai trò để kiểm soát quyền hạn, và hỗ trợ làm biến trong workflow và biểu thức.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Departments
+# Phòng ban

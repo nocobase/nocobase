@@ -1,6 +1,8 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Chia sẻ bảng dữ liệu giữa nhiều ứng dụng"
 packageName: '@nocobase/plugin-multi-app-share-collection'
+title: "Chia sẻ bảng dữ liệu giữa nhiều ứng dụng"
+keywords: "Chia sẻ bảng dữ liệu giữa nhiều ứng dụng,Plugin,NocoBase"
 description: |
   
 isFree: true
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+# Chia sẻ bảng dữ liệu giữa nhiều ứng dụng
 
-> Note: This plugin is deprecated.
+> Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

@@ -1,12 +1,14 @@
 ---
-displayName: "Action: Print"
+displayName: "Action: In"
 packageName: '@nocobase/plugin-action-print'
+title: "Action: In"
+keywords: "Action: In,Plugin,NocoBase"
 description: |
-  Calls the browser's print function to print a record.
+  Sử dụng chức năng in của trình duyệt để in một bản ghi.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Print
+# Action: In

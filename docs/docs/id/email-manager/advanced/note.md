@@ -1,16 +1,16 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Email Note"
+description: "Edit note di sebelah kanan detail email. Setelah note ditambahkan, dapat dilihat di detail email."
+keywords: "email note,manajemen note,manajemen email,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Email Note
 
+Di sebelah kanan detail email Anda dapat **mengedit note**.
 
-# Catatan Email
-
-Di sisi kanan detail email, Anda dapat **mengedit catatan**:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_00_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_00_PM.png)  
 ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_01_PM.png)
 
-Setelah selesai menambahkan, Anda dapat melihat catatan yang telah ditambahkan di detail email:
+Setelah note ditambahkan, Anda dapat melihat note yang telah ditambahkan di detail email.
+
 ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_02_PM.png)

@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI 员工管理员配置指南"
+description: "5 步配置 AI 员工：模型服务、创建员工、配置技能、知识库、验证效果；页面级与区块级任务配置；最佳实践与常见问题。"
+keywords: "AI 员工配置,管理员指南,LLM 服务,任务配置,技能配置,NocoBase"
+---
+
 # AI 员工 · 管理员配置指南
 
 > 这篇文档帮你快速搞懂如何配置和管理 AI 员工，从模型服务到任务上岗，一步步带你走完整个流程。
@@ -101,7 +108,7 @@ AI 员工分为两层：**"角色定义"** 和 **"任务定制"**。
 
 技能决定员工能"做什么"。
 
-> 💡 详细说明请参考：[技能](/ai-employees/features/tool)
+> 💡 详细说明请参考：[技能](/ai-employees/features/tools)
 
 | 类型   | 能力范围    | 示例        | 风险等级   |
 | ---- | ------- | --------- | ------ |
@@ -305,7 +312,7 @@ A：如果是页面级的配置，需要手动点选区块。
 
 **进阶功能：**
 
-* [技能](/ai-employees/features/tool) - 深入了解各类技能的配置和使用
+* [技能](/ai-employees/features/tools) - 深入了解各类技能的配置和使用
 * [任务](/ai-employees/features/task) - 任务配置的高级技巧
 * [选择区块](/ai-employees/features/pick-block) - 如何为 AI 员工指定数据区块
 * 数据源 - 请参考对应插件的数据源配置文档

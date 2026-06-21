@@ -1,3 +1,9 @@
+---
+title: "模板打印 - 时间间隔格式化"
+description: "模板打印时间间隔格式化器：formatI 格式化时长，支持 human、second、minute 等输出格式。"
+keywords: "模板打印,时间间隔,formatI,NocoBase"
+---
+
 ### 时间间隔格式化
 
 #### 1. :formatI(patternOut, patternIn)

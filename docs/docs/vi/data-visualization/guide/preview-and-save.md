@@ -1,43 +1,40 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Preview và Lưu"
+description: "Preview render tạm thời cấu hình để xác minh hiệu quả, lưu ghi vào database để có hiệu lực; chế độ trực quan tự động preview, chế độ SQL/Custom cần preview thủ công; debounce và thông báo lỗi."
+keywords: "preview,lưu,cấu hình có hiệu lực,debounce,cấu hình biểu đồ,NocoBase"
+---
 
+# Preview và Lưu
 
-# Xem trước và Lưu
+* Preview: Render tạm thời các thay đổi trong panel cấu hình lên biểu đồ trên trang để xác minh hiệu quả.
+* Lưu: Thực sự lưu các thay đổi trong panel cấu hình vào database.
 
-*   **Xem trước**: Tạm thời hiển thị các thay đổi từ bảng cấu hình lên biểu đồ trang để xác minh kết quả.
-*   **Lưu**: Lưu các thay đổi từ bảng cấu hình vào cơ sở dữ liệu.
-
-## Điểm truy cập
+## Điểm vào thao tác
 
 ![clipboard-image-1761479218](https://static-docs.nocobase.com/clipboard-image-1761479218.png)
 
--   Trong chế độ cấu hình đồ họa (Basic), các thay đổi mặc định sẽ tự động được áp dụng để xem trước.
--   Trong chế độ SQL và Custom, sau khi thực hiện thay đổi, bạn có thể nhấp vào nút **Xem trước** ở bên phải để áp dụng các thay đổi vào phần xem trước.
--   Một nút **Xem trước** thống nhất có sẵn ở cuối toàn bộ bảng cấu hình.
+- Tất cả các thay đổi của chế độ cấu hình trực quan mặc định sẽ tự động thực hiện preview có hiệu lực.
+- Sau khi sửa chế độ SQL, chế độ Custom, có thể click nút Preview ở bên phải để thực hiện preview có hiệu lực.
+- Ở phía dưới toàn bộ panel cấu hình, cung cấp nút "Preview" thống nhất.
 
-## Hành vi xem trước
-
--   Cấu hình sẽ được hiển thị tạm thời trên trang mà không ghi vào cơ sở dữ liệu. Sau khi làm mới trang hoặc hủy thao tác, kết quả xem trước sẽ không được giữ lại.
--   Chức năng chống rung (debounce) tích hợp: Nhiều lần kích hoạt làm mới trong thời gian ngắn chỉ thực hiện lần cuối cùng, tránh các yêu cầu thường xuyên.
--   Nhấp lại vào **Xem trước** sẽ ghi đè kết quả xem trước trước đó.
+## Hành vi preview
+- Hiển thị cấu hình tạm thời lên trang nhưng không ghi vào database. Sau khi refresh trang hoặc hủy thao tác, kết quả preview sẽ không được giữ lại.
+- Có sẵn debounce: Trong thời gian ngắn kích hoạt nhiều lần refresh, chỉ thực hiện lần cuối cùng, tránh request thường xuyên.
+- Click "Preview" lại sẽ ghi đè kết quả preview lần trước.
 
 ## Thông báo lỗi
-
--   Lỗi truy vấn hoặc xác thực thất bại: Thông báo lỗi sẽ được hiển thị trong khu vực "Xem dữ liệu".
--   Lỗi cấu hình biểu đồ (thiếu ánh xạ Basic, lỗi từ Custom JS): Lỗi sẽ được hiển thị trong khu vực biểu đồ hoặc bảng điều khiển, đồng thời giữ cho trang vẫn có thể thao tác.
--   Để giảm thiểu lỗi hiệu quả, hãy xác nhận tên cột và kiểu dữ liệu trong "Xem dữ liệu" trước khi thực hiện ánh xạ trường hoặc viết mã Custom.
+- Lỗi truy vấn hoặc xác thực thất bại: Hiển thị thông tin lỗi trong khu vực "Xem dữ liệu".
+- Lỗi cấu hình biểu đồ (thiếu ánh xạ Basic, lỗi JS Custom): Hiển thị lỗi trong khu vực biểu đồ hoặc console, giữ trang có thể thao tác.
+- Trước tiên xác nhận tên cột và kiểu dữ liệu trong "Xem dữ liệu", sau đó tiến hành ánh xạ field hoặc viết code Custom có thể giảm hiệu quả các lỗi.
 
 ## Lưu và Hủy
+- Lưu: Ghi các thay đổi của panel hiện tại vào cấu hình block và lập tức có hiệu lực trên trang.
+- Hủy: Hoàn tác các thay đổi chưa lưu của panel hiện tại, khôi phục về trạng thái lưu lần trước.
+- Phạm vi lưu:
+  - Truy vấn dữ liệu: Tham số truy vấn của Builder; trong chế độ SQL đồng thời lưu cả văn bản SQL.
+  - Tùy chọn biểu đồ: Loại và ánh xạ field của Basic, các thuộc tính; văn bản JS của Custom.
+  - Sự kiện tương tác: Văn bản JS của sự kiện và logic binding.
+- Sau khi lưu, block sẽ có hiệu lực với tất cả người truy cập (tùy theo cài đặt quyền của trang).
 
--   **Lưu**: Ghi các thay đổi hiện tại của bảng điều khiển vào cấu hình khối và áp dụng chúng ngay lập tức cho trang.
--   **Hủy**: Hủy bỏ các thay đổi chưa lưu của bảng điều khiển hiện tại, khôi phục về trạng thái đã lưu gần nhất.
--   Phạm vi lưu:
-    -   Truy vấn dữ liệu: Các tham số truy vấn của Builder; trong chế độ SQL, văn bản SQL cũng sẽ được lưu.
-    -   Tùy chọn biểu đồ: Loại Basic, ánh xạ trường và thuộc tính; văn bản JS của Custom.
-    -   Sự kiện tương tác: Văn bản JS và logic ràng buộc của sự kiện.
--   Sau khi lưu, khối sẽ có hiệu lực đối với tất cả người truy cập (tùy thuộc vào cài đặt quyền trang).
-
-## Luồng thao tác khuyến nghị
-
--   Cấu hình truy vấn dữ liệu → Chạy truy vấn → Xem dữ liệu để xác nhận tên cột và kiểu dữ liệu → Cấu hình tùy chọn biểu đồ để ánh xạ các trường chính → Xem trước để xác thực → Lưu để áp dụng.
+## Đường dẫn thao tác khuyến nghị
+- Cấu hình truy vấn dữ liệu → Chạy truy vấn → Truy vấn dữ liệu xác nhận tên cột và kiểu → Cấu hình tùy chọn biểu đồ ánh xạ field cốt lõi → Preview xác minh → Lưu có hiệu lực.

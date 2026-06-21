@@ -1,43 +1,42 @@
 ---
 pkg: '@nocobase/plugin-verification-totp-authenticator'
+title: "Verifikasi: TOTP Authenticator"
+description: "TOTP authenticator NocoBase: time-based one-time password yang sesuai dengan RFC-6238, mendukung authenticator seperti Google Authenticator, pengikatan dan pelepasan ikatan pengguna."
+keywords: "TOTP,Google Authenticator,one-time password,OTP,RFC-6238,pengikatan authenticator,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Verifikasi: TOTP Authenticator
 
-# Verifikasi: Autentikator TOTP
+## Pengantar
 
-## Pendahuluan
-
-Autentikator TOTP memungkinkan pengguna untuk mengikat autentikator apa pun yang sesuai dengan spesifikasi TOTP (Time-based One-Time Password) (<a href="https://www.rfc-editor.org/rfc/rfc6238" target="_blank">RFC-6238</a>), dan melakukan verifikasi identitas menggunakan kata sandi satu kali berbasis waktu (TOTP).
+Verifikasi TOTP authenticator mendukung pengguna untuk mengikat authenticator yang sesuai dengan spesifikasi TOTP (Time-based One-Time Password) (<a href="https://www.rfc-editor.org/rfc/rfc6238" target="_blank">RFC-6238</a>), melakukan verifikasi identitas melalui time-based one-time password (TOTP).
 
 ## Konfigurasi Administrator
 
-Buka halaman Manajemen Verifikasi.
+Masuk ke halaman manajemen verifikasi.
 
 ![](https://static-docs.nocobase.com/202502271726791.png)
 
-Tambah - Autentikator TOTP
+Tambahkan - TOTP Authenticator
 
 ![](https://static-docs.nocobase.com/202502271745028.png)
 
-Selain pengenal unik dan judul, tidak ada konfigurasi tambahan yang diperlukan untuk autentikator TOTP.
+Selain identifier unik dan judul, TOTP authenticator tidak memerlukan konfigurasi lain.
 
 ![](https://static-docs.nocobase.com/202502271746034.png)
 
 ## Pengikatan Pengguna
 
-Setelah menambahkan autentikator, pengguna dapat mengikat autentikator TOTP di area manajemen verifikasi pribadi mereka.
+Setelah authenticator ditambahkan, pengguna dapat mengikat TOTP authenticator pada manajemen verifikasi di pusat profil.
 
 ![](https://static-docs.nocobase.com/202502272252324.png)
 
 :::warning
-Plugin saat ini belum menyediakan mekanisme kode pemulihan. Setelah autentikator TOTP terikat, pengguna disarankan untuk menyimpannya dengan aman. Jika autentikator tidak sengaja hilang, mereka dapat menggunakan metode verifikasi alternatif untuk memverifikasi identitas mereka, melepaskan ikatan autentikator, lalu mengikatnya kembali.
+Saat ini plugin belum menyediakan mekanisme recovery code, harap pengguna menyimpan dengan baik setelah mengikat TOTP authenticator. Jika authenticator hilang, Anda dapat menggunakan metode verifikasi lain untuk verifikasi identitas, atau melepas ikatan melalui metode verifikasi lain lalu mengikat ulang.
 :::
 
 ## Pelepasan Ikatan Pengguna
 
-Melepaskan ikatan autentikator memerlukan verifikasi menggunakan metode verifikasi yang sudah terikat.
+Pelepasan ikatan authenticator perlu dilakukan dengan verifikasi melalui metode verifikasi yang telah diikat.
 
 ![](https://static-docs.nocobase.com/202502282103205.png)

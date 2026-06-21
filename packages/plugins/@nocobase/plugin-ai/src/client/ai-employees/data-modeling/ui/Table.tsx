@@ -211,7 +211,7 @@ const useColumns = (
                 value: 'createdAt',
               },
               {
-                label: t('Last Updated at'),
+                label: t('Last updated at'),
                 value: 'updatedAt',
               },
               {

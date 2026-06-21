@@ -1,32 +1,33 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Quy tắc liên kết Field"
+description: "Cấu hình Block: cài đặt Quy tắc liên kết Field, thực hiện liên kết dữ liệu giữa các Field, hiển thị/ẩn, liên kết tùy chọn."
+keywords: "Quy tắc liên kết Field,liên kết Field,liên kết tùy chọn,cấu hình Block,Interface Builder,NocoBase"
+---
 
-
-# Quy tắc Liên kết Trường
+# Quy tắc liên kết Field
 
 ## Giới thiệu
 
-Quy tắc liên kết trường cho phép điều chỉnh trạng thái của các trường trong khối Biểu mẫu/Chi tiết một cách linh hoạt dựa trên hành động của người dùng. Hiện tại, các khối hỗ trợ quy tắc liên kết trường bao gồm:
+Quy tắc liên kết Field cho phép điều chỉnh động trạng thái Field của Block Form/Chi tiết theo hành vi của bạn, hiện các Block hỗ trợ Quy tắc liên kết Field bao gồm:
 
-- [Khối Biểu mẫu](/interface-builder/blocks/data-blocks/form)
-- [Khối Chi tiết](/interface-builder/blocks/data-blocks/details)
-- [Biểu mẫu con](/interface-builder/fields/specific/sub-form)
+- [Block Form](/interface-builder/blocks/data-blocks/form)
+- [Block Chi tiết](/interface-builder/blocks/data-blocks/details)
+- [Sub-Form](/interface-builder/fields/specific/sub-form)
 
 ## Hướng dẫn sử dụng
 
-### **Khối Biểu mẫu**
+### **Block Form**
 
-Trong khối Biểu mẫu, quy tắc liên kết có thể điều chỉnh linh hoạt hành vi của các trường dựa trên các điều kiện cụ thể:
+Trong Block Form, Quy tắc liên kết có thể điều chỉnh động hành vi Field theo điều kiện cụ thể:
 
-- **Kiểm soát hiển thị/ẩn trường**: Quyết định xem trường hiện tại có hiển thị hay không dựa trên giá trị của các trường khác.
-- **Đặt trường là bắt buộc**: Linh hoạt đặt trường là bắt buộc hoặc không bắt buộc trong các điều kiện cụ thể.
-- **Gán giá trị**: Tự động gán giá trị cho một trường dựa trên các điều kiện.
-- **Thực thi JavaScript được chỉ định**: Viết JavaScript theo yêu cầu nghiệp vụ.
+- **Kiểm soát hiển thị/ẩn Field**: Quyết định Field hiện tại có hiển thị hay không dựa trên giá trị của các Field khác.
+- **Cài đặt Field bắt buộc hay không**: Trong điều kiện cụ thể, cài đặt động Field thành bắt buộc hoặc không bắt buộc.
+- **Gán giá trị**: Tự động gán giá trị cho Field theo điều kiện.
+- **Thực thi javaScript chỉ định**: Viết javaScript theo nhu cầu nghiệp vụ.
 
-### **Khối Chi tiết**
+### **Block Chi tiết**
 
-Trong khối Chi tiết, quy tắc liên kết chủ yếu được sử dụng để kiểm soát linh hoạt việc hiển thị và ẩn các trường trên khối.
+Trong Block Chi tiết, Quy tắc liên kết chủ yếu được dùng để kiểm soát động hiển thị và ẩn Field trên Block Chi tiết.
 
 ![20251029114859](https://static-docs.nocobase.com/20251029114859.png)
 
@@ -34,19 +35,19 @@ Trong khối Chi tiết, quy tắc liên kết chủ yếu được sử dụng 
 
 ### Gán giá trị
 
-Ví dụ: Khi một đơn hàng được chọn là đơn hàng bổ sung, trạng thái đơn hàng sẽ tự động được gán giá trị "Chờ duyệt".
+Ví dụ: Khi đơn hàng được đánh dấu là đơn bổ sung, trạng thái đơn hàng tự động gán giá trị thành "Chờ phê duyệt".
 
 ![20251029115348](https://static-docs.nocobase.com/20251029115348.png)
 
 ### Bắt buộc
 
-Ví dụ: Khi trạng thái đơn hàng là "Đã thanh toán", trường số tiền đơn hàng là bắt buộc.
+Ví dụ: Khi trạng thái đơn hàng là "Đã thanh toán", số tiền đơn hàng bắt buộc.
 
 ![20251029115031](https://static-docs.nocobase.com/20251029115031.png)
 
 ### Hiển thị/Ẩn
 
-Ví dụ: Tài khoản thanh toán và tổng số tiền chỉ hiển thị khi trạng thái đơn hàng là "Chờ thanh toán".
+Ví dụ: Chỉ khi trạng thái đơn hàng là "Chờ thanh toán" mới hiển thị tài khoản thanh toán và tổng số tiền.
 
 ![20251030223710](https://static-docs.nocobase.com/20251030223710.png)
 

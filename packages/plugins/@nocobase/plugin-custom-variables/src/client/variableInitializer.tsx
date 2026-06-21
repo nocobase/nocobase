@@ -1,13 +1,25 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   ActionContextProvider,
   css,
+  DataSourceApplicationProvider,
   parseCollectionName,
   SchemaComponent,
+  SchemaComponentOptions,
   SchemaComponentContext,
   SchemaInitializer,
   SchemaInitializerItem,
   useActionContext,
   useAPIClient,
+  useApp,
   useCollectionFilterOptions,
   useCollectionManager_deprecated,
   useCompile,
@@ -31,6 +43,36 @@ function FilterDynamicComponent({ value, onChange, renderSchemaComponent }) {
 function defaultFilter() {
   return true;
 }
+
+/**
+ * 返回 body 容器，避免挂到带 transform 的应用容器后被外层配置弹窗遮挡。
+ *
+ * @returns 聚合变量抽屉的挂载节点
+ * @example
+ * ```typescript
+ * getDocumentBody();
+ * ```
+ */
+function getDocumentBody() {
+  return document.body;
+}
+
+const AggregateVariableSchemaRenderer = ({ initialValues, action }: { initialValues?: any; action: string }) => {
+  const app = useApp();
+  const schemaComponentContextValue = React.useContext(SchemaComponentContext);
+
+  return (
+    <DataSourceApplicationProvider dataSourceManager={app.dataSourceManager}>
+      <SchemaComponentOptions components={app.components} scope={app.scopes}>
+        <SchemaComponentContext.Provider value={{ ...schemaComponentContextValue, designable: false }}>
+          <SchemaComponent schema={getAggregateVariableSchema(initialValues, action)} />
+        </SchemaComponentContext.Provider>
+      </SchemaComponentOptions>
+    </DataSourceApplicationProvider>
+  );
+};
+
+AggregateVariableSchemaRenderer.displayName = 'AggregateVariableSchemaRenderer';
 
 const FieldsSelect = observer(
   (props: any) => {
@@ -69,6 +111,7 @@ const getAggregateVariableSchema = (initialValues: any, action: string) => {
         'x-component': 'Action.Drawer',
         'x-component-props': {
           zIndex: 9999,
+          getContainer: getDocumentBody,
         },
         type: 'void',
         title: titleMap[action],
@@ -367,9 +410,7 @@ export const variableInitializer = new SchemaInitializer({
           <>
             <SchemaInitializerItem title={t('Aggregate variable')} onClick={handleClick} />
             <ActionContextProvider value={{ visible, setVisible }}>
-              <SchemaComponentContext.Provider value={{ designable: false }}>
-                <SchemaComponent schema={getAggregateVariableSchema(undefined, 'create')} />
-              </SchemaComponentContext.Provider>
+              <AggregateVariableSchemaRenderer action="create" />
             </ActionContextProvider>
           </>
         );
@@ -385,9 +426,7 @@ export const VariableEditor: FC<{
 }> = ({ visible, setVisible, initialValues }) => {
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
-      <SchemaComponentContext.Provider value={{ designable: false }}>
-        <SchemaComponent schema={getAggregateVariableSchema(initialValues, 'update')} />
-      </SchemaComponentContext.Provider>
+      <AggregateVariableSchemaRenderer initialValues={initialValues} action="update" />
     </ActionContextProvider>
   );
 };

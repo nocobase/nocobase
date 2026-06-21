@@ -1,6 +1,8 @@
 ---
-displayName: "Workflow: test kit"
+displayName: "Workflow: Bộ công cụ kiểm thử"
 packageName: '@nocobase/plugin-workflow-test'
+title: "Workflow: Bộ công cụ kiểm thử"
+keywords: "Workflow: Bộ công cụ kiểm thử,Plugin,NocoBase"
 description: |
   
 isFree: true
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: test kit
+# Workflow: Bộ công cụ kiểm thử

@@ -1,7 +1,15 @@
 [
   {
     "text": "Mulai",
-    "link": "/get-started/how-nocobase-works"
+    "link": "/ai/how-nocobase-works"
+  },
+  {
+    "text": "AI",
+    "link": "/ai/"
+  },
+  {
+    "text": "Tutorial",
+    "link": "/tutorials/v2/"
   },
   {
     "text": "Panduan",

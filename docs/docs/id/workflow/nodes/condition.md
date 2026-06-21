@@ -1,39 +1,41 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Node Workflow - Kondisi"
+description: "Node kondisi: mirip statement if, menentukan arah alur berdasarkan hasil kondisi, mendukung mode 'Ya' lanjutkan / 'Ya' 'Tidak' lanjutkan terpisah."
+keywords: "Workflow,kondisi,Condition,cabang alur,if,NocoBase"
+---
 
 # Kondisi
 
-## Pendahuluan
+## Pengantar
 
-Mirip dengan pernyataan `if` dalam bahasa pemrograman, ini menentukan arah alur kerja selanjutnya berdasarkan hasil evaluasi kondisi yang telah dikonfigurasi.
+Mirip dengan statement `if` dalam bahasa pemrograman, menentukan arah alur selanjutnya berdasarkan hasil penilaian kondisi yang dikonfigurasi.
 
 ## Membuat Node
 
-Node Kondisi memiliki dua mode: "Lanjutkan jika benar" dan "Cabangkan jika benar/salah". Anda harus memilih salah satu mode ini saat membuat node, dan mode tersebut tidak dapat diubah setelahnya dalam konfigurasi node.
+Penilaian kondisi memiliki dua mode, yaitu "'Ya' lanjutkan" dan "'Ya' dan 'Tidak' lanjutkan terpisah". Saat membuat Node perlu memilih salah satu mode, setelah itu pada konfigurasi Node tidak dapat dimodifikasi.
 
-![Kondisi_Pilihan_Mode](https://static-docs.nocobase.com/3de27308c1179523d8606c66bf3a5fb4.png)
+![Penilaian kondisi_pemilihan mode](https://static-docs.nocobase.com/3de27308c1179523d8606c66bf3a5fb4.png)
 
-Dalam mode "Lanjutkan jika benar", ketika hasil kondisi adalah "benar", alur kerja akan terus mengeksekusi node-node berikutnya. Jika tidak, alur kerja akan berhenti dan keluar lebih awal dengan status gagal.
+Pada mode "'Ya' lanjutkan", ketika hasil penilaian kondisi adalah "Ya", alur akan melanjutkan eksekusi Node berikutnya, jika tidak alur akan dihentikan, dan keluar lebih awal dengan status gagal.
 
-!["Mode Lanjutkan jika benar"](https://static-docs.nocobase.com/0f6ae1afe61d501f8eb1f6dedb3d4ad7.png)
+!["Ya" lanjutkan mode](https://static-docs.nocobase.com/0f6ae1afe61d501f8eb1f6dedb3d4ad7.png)
 
-Mode ini cocok untuk skenario di mana alur kerja tidak boleh dilanjutkan jika kondisi tidak terpenuhi. Contohnya, tombol pengiriman formulir untuk mengirimkan pesanan terikat pada "Event sebelum aksi". Jika stok produk untuk pesanan tidak mencukupi, proses pembuatan pesanan tidak boleh dilanjutkan, melainkan harus gagal dan keluar.
+Mode ini cocok untuk skenario di mana alur tidak dilanjutkan jika kondisi tidak terpenuhi, misalnya tombol kirim formulir yang terikat "Event Sebelum Action" mengirimkan pesanan, namun ketika stok produk pesanan yang sesuai tidak mencukupi, tidak melanjutkan pembuatan pesanan, melainkan keluar dengan gagal.
 
-Dalam mode "Cabangkan jika benar/salah", node kondisi akan membuat dua cabang alur kerja berikutnya, yang masing-masing sesuai dengan hasil "benar" dan "salah" dari kondisi. Setiap cabang dapat dikonfigurasi dengan node-node berikutnya sendiri. Setelah salah satu cabang selesai dieksekusi, ia akan secara otomatis bergabung kembali ke cabang induk dari node kondisi untuk melanjutkan eksekusi node-node berikutnya.
+Pada mode "'Ya' dan 'Tidak' lanjutkan terpisah", setelah Node kondisi akan menghasilkan dua alur cabang, masing-masing sesuai dengan alur saat hasil penilaian kondisi adalah "Ya" dan "Tidak". Kedua alur cabang dapat dikonfigurasi Node selanjutnya secara terpisah, setelah cabang manapun selesai dieksekusi, akan otomatis bergabung kembali ke cabang induk Node kondisi, melanjutkan eksekusi Node setelahnya.
 
-!["Mode Cabangkan jika benar/salah"](https://static-docs.nocobase.com/974a1fcd8603629b64ffce6c55d59282.png)
+!["Ya" dan "Tidak" lanjutkan terpisah mode](https://static-docs.nocobase.com/974a1fcd8603629b64ffce6c55d59282.png)
 
-Mode ini cocok untuk skenario di mana tindakan berbeda perlu dilakukan tergantung pada apakah kondisi terpenuhi atau tidak. Contohnya, memeriksa apakah suatu data ada: jika tidak ada, buat data baru; jika ada, perbarui data tersebut.
+Mode ini cocok untuk skenario di mana ketika kondisi terpenuhi dan tidak terpenuhi, alur perlu mengeksekusi operasi yang berbeda, misalnya kueri apakah suatu data ada, jika tidak ada tambah, jika ada perbarui.
 
 ## Konfigurasi Node
 
-### Mesin Perhitungan
+### Engine Komputasi
 
-Saat ini, tiga mesin didukung:
+Saat ini mendukung tiga engine:
 
-- **Dasar**: Mendapatkan hasil logis melalui perhitungan biner sederhana dan pengelompokan "DAN"/"ATAU".
-- **Math.js**: Menghitung ekspresi yang didukung oleh mesin [Math.js](https://mathjs.org/) untuk mendapatkan hasil logis.
-- **Formula.js**: Menghitung ekspresi yang didukung oleh mesin [Formula.js](https://formulajs.info/) untuk mendapatkan hasil logis.
+- **Dasar**: melalui komputasi binary sederhana dan grup "AND", "OR", mendapatkan hasil logika.
+- **Math.js**: menghitung ekspresi yang didukung engine [Math.js](https://mathjs.org/) untuk mendapatkan hasil logika.
+- **Formula.js**: menghitung ekspresi yang didukung engine [Formula.js](https://formulajs.info/) untuk mendapatkan hasil logika.
 
-Dalam ketiga jenis perhitungan ini, variabel dari konteks alur kerja dapat digunakan sebagai parameter.
+Pada ketiga komputasi dapat menggunakan variabel konteks alur sebagai parameter.

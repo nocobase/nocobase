@@ -1,8 +1,10 @@
 ---
-displayName: "Audit logs (deprecated)"
+displayName: "Nhật ký kiểm toán (Đã ngừng sử dụng)"
 packageName: '@nocobase/plugin-audit-logs'
+title: "Nhật ký kiểm toán (Đã ngừng sử dụng)"
+keywords: "Nhật ký kiểm toán (Đã ngừng sử dụng),Plugin,NocoBase"
 description: |
-  This plugin is deprecated. There will be a new audit log plugin in the future.
+  Plugin này đã ngừng sử dụng, vui lòng không dùng, trong tương lai sẽ có plugin nhật ký kiểm toán mới.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Audit logs (deprecated)
+# Nhật ký kiểm toán (Đã ngừng sử dụng)
 
-> Note: This plugin is deprecated.
+> Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

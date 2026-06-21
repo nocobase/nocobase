@@ -6,7 +6,7 @@
   {
     "type": "custom-link",
     "label": "Überblick",
-    "link": "/workflow/index"
+    "link": "/workflow/"
   },
   {
     "type": "custom-link",
@@ -21,11 +21,11 @@
       {
         "type": "custom-link",
         "label": "Überblick",
-        "link": "/workflow/triggers/index"
+        "link": "/workflow/triggers/"
       },
       {
         "type": "custom-link",
-        "label": "Tabellen-Events",
+        "label": "Collection-Ereignisse",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -68,7 +68,7 @@
       {
         "type": "custom-link",
         "label": "Überblick",
-        "link": "/workflow/nodes/index"
+        "link": "/workflow/nodes/"
       },
       {
         "type": "custom-link",
@@ -76,8 +76,71 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Large Language Model (LLM)",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
+            "label": "LLM-Knoten",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Text-Chat",
+                "link": "/ai-employees/workflow/nodes/llm/chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Multimodaler Chat",
+                "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Strukturierte Ausgabe",
+                "link": "/ai-employees/workflow/nodes/llm/structured-output"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "KI-Mitarbeiter-Knoten",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Knotenkonfiguration",
+                "link": "/ai-employees/workflow/nodes/employee/configuration"
+              },
+              {
+                "type": "custom-link",
+                "label": "Knoten-Genehmigung",
+                "link": "/ai-employees/workflow/nodes/employee/approval"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "AI-Wissensdatenbank",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Überblick",
+                "link": "/ai-employees/workflow/nodes/knowledge/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Dokument erstellen",
+                "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Dokument aktualisieren",
+                "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Dokument löschen",
+                "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Dokument abrufen",
+                "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+              }
+            ]
           }
         ]
       },
@@ -164,7 +227,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Daten erstellen",
+            "label": "Daten hinzufügen",
             "link": "/workflow/nodes/create"
           },
           {
@@ -186,6 +249,11 @@
             "type": "custom-link",
             "label": "SQL-Operation",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Datenbanktransaktion",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },
@@ -255,8 +323,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Ausführungsprotokoll",
-    "link": "/workflow/advanced/execution"
+    "label": "Ausführungshistorie",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -275,7 +343,7 @@
       {
         "type": "custom-link",
         "label": "Überblick",
-        "link": "/workflow/development/index"
+        "link": "/workflow/development/"
       },
       {
         "type": "custom-link",

@@ -1,4 +1,6 @@
 ---
+title: "工作流：邮件发送节点"
+keywords: "工作流：邮件发送节点,插件,NocoBase"
 displayName: "工作流：邮件发送节点"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |

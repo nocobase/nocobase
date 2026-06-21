@@ -1,37 +1,34 @@
 ---
-pkg: "@nocobase/plugin-data-source-rest-api"
+title: "Data Source REST API"
+description: "Mengintegrasikan data dari sumber REST API, memetakan resource RESTful sebagai Collection, mengonfigurasi pemetaan endpoint List/Get/Create/Update/Destroy, mendukung operasi CRUD."
+keywords: "Data Source REST API,API eksternal,pemetaan endpoint,pemetaan Collection,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Data Source REST API
 
+<PluginInfo commercial="true" name="data-source-rest-api"></PluginInfo>
 
-# Sumber Data REST API
+## Pengantar
 
-## Pendahuluan
-
-Plugin ini memungkinkan Anda untuk mengintegrasikan data dari sumber REST API dengan mudah.
+Digunakan untuk mengintegrasikan data dari sumber REST API.
 
 ## Instalasi
 
-Sebagai plugin komersial, Anda perlu mengunggah dan mengaktifkan plugin ini melalui manajer plugin.
+Plugin ini adalah plugin komersial. Untuk cara aktivasi detail, harap lihat: [Panduan Aktivasi Plugin Komersial](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+## Menambahkan Sumber REST API
 
-## Menambahkan Sumber Data REST API
-
-Setelah mengaktifkan plugin, Anda dapat menambahkan sumber data REST API dengan memilihnya dari menu dropdown "Add new" di bagian manajemen sumber data.
+Setelah plugin diaktifkan, pilih REST API pada dropdown Add new di manajemen data source.
 
 ![20240721171420](https://static-docs.nocobase.com/20240721171420.png)
 
-Konfigurasikan sumber data REST API.
+Konfigurasi sumber REST API
 
 ![20240721171507](https://static-docs.nocobase.com/20240721171507.png)
 
-## Menambahkan koleksi
+## Menambahkan Collection
 
-Di NocoBase, sebuah sumber daya RESTful dipetakan ke sebuah koleksi, seperti sumber daya Pengguna (Users).
+Resource RESTful adalah Collection NocoBase, contohnya resource Users
 
 ```bash
 GET /users
@@ -41,7 +38,7 @@ PUT /users/1
 DELETE /users/1
 ```
 
-Endpoint API ini dipetakan di NocoBase sebagai berikut:
+Pemetaan ke konfigurasi NocoBase API adalah
 
 ```bash
 GET /users:list
@@ -51,182 +48,196 @@ POST /users:update?filterByTk=1
 POST /users:destroy?filterByTk=1
 ```
 
-Untuk panduan lengkap mengenai spesifikasi desain API NocoBase, silakan merujuk ke dokumentasi API.
+Spesifikasi desain NocoBase API lengkap dapat dilihat di dokumentasi API
 
 ![20240716213344](https://static-docs.nocobase.com/20240716213344.png)
 
-Periksa bab "NocoBase API - Core" untuk informasi lebih lanjut.
+Lihat bagian "NocoBase API - Core"
 
 ![20240716213258](https://static-docs.nocobase.com/20240716213258.png)
 
-Konfigurasi koleksi untuk sumber data REST API mencakup hal-hal berikut:
+Konfigurasi Collection data source REST API sebagai berikut
 
 ### List
 
-Petakan antarmuka untuk melihat daftar sumber daya.
+Konfigurasi pemetaan endpoint untuk melihat daftar resource
 
-![20240716211351](https://static-docs.nocobase.com/20240716211351.png)
+![20251201162457](https://static-docs.nocobase.com/20251201162457.png)
 
 ### Get
 
-Petakan antarmuka untuk melihat detail sumber daya.
+Konfigurasi pemetaan endpoint untuk melihat detail resource
 
-![20240716211532](https://static-docs.nocobase.com/20240716211532.png)
+![20251201162744](https://static-docs.nocobase.com/20251201162744.png)
 
 ### Create
 
-Petakan antarmuka untuk membuat sumber daya.
+Konfigurasi pemetaan endpoint untuk membuat resource
 
-![20240716211634](https://static-docs.nocobase.com/20240716211634.png)
+![20251201163000](https://static-docs.nocobase.com/20251201163000.png)
 
 ### Update
 
-Petakan antarmuka untuk memperbarui sumber daya.
-![20240716211733](https://static-docs.nocobase.com/20240716211733.png)
+Konfigurasi pemetaan endpoint untuk update resource
+![20251201163058](https://static-docs.nocobase.com/20251201163058.png)
 
 ### Destroy
 
-Petakan antarmuka untuk menghapus sumber daya.
+Konfigurasi pemetaan endpoint untuk menghapus resource
 
-![20240716211808](https://static-docs.nocobase.com/20240716211808.png)
+![20251201163204](https://static-docs.nocobase.com/20251201163204.png)
 
-Antarmuka List dan Get wajib dikonfigurasi.
+Di antaranya, List dan Get adalah dua endpoint yang wajib dikonfigurasi.
+## Debug API
 
-## Debugging API
+### Mapping Parameter Request
 
-### Integrasi Parameter Permintaan
+Contoh: Mengonfigurasi parameter pagination untuk endpoint List (jika API pihak ketiga sendiri tidak mendukung pagination, maka pagination dilakukan dengan data daftar yang diambil).
 
-Contoh: Konfigurasikan parameter paginasi untuk API List. Jika API pihak ketiga tidak mendukung paginasi secara native, NocoBase akan melakukan paginasi berdasarkan data daftar yang diambil.
+![20251201163500](https://static-docs.nocobase.com/20251201163500.png)
 
-![20241121205229](https://static-docs.nocobase.com/20241121205229.png)
+Perhatikan, hanya variabel yang sudah ditambahkan di endpoint yang akan berlaku.
 
-Harap dicatat bahwa hanya variabel yang telah ditambahkan di antarmuka yang akan berlaku.
+| Nama Parameter Integrasi API Pihak Ketiga | Parameter NocoBase               |
+| --------------------- | --------------------------- |
+| page                  | {{request.params.page}}     |
+| limit                 | {{request.params.pageSize}} |
 
-| Nama parameter API pihak ketiga | Parameter NocoBase                |
-| ------------------------------- | --------------------------------- |
-| page                            | {{request.params.page}}           |
-| limit                           | {{request.params.pageSize}}       |
+Anda dapat mengklik Try it out untuk debug, dan melihat hasil respons.
 
-Anda dapat mengklik "Try it out" untuk melakukan debugging dan melihat hasil respons.
-
-![20241121210320](https://static-docs.nocobase.com/20241121210320.png)
+![20251201163635](https://static-docs.nocobase.com/20251201163635.png)
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20241121211034.mp4" type="video/mp4">
 </video>
 
-### Transformasi Format Respons
+### Konversi Format Respons
 
-Format respons dari API pihak ketiga mungkin tidak sesuai dengan standar NocoBase, sehingga perlu diubah agar dapat ditampilkan dengan benar di antarmuka pengguna.
+Format respons API pihak ketiga mungkin tidak sesuai dengan standar NocoBase. Perlu dikonversi sebelum dapat ditampilkan dengan benar di front-end.
 
-![20241121214638](https://static-docs.nocobase.com/20241121214638.png)
+![20251201164529](https://static-docs.nocobase.com/20251201164529.png)
 
-Sesuaikan aturan konversi berdasarkan format respons API pihak ketiga untuk memastikan output sesuai dengan standar NocoBase.
+Sesuaikan aturan konversi sesuai format respons API pihak ketiga, agar sesuai dengan standar output NocoBase.
 
-![20241121215100](https://static-docs.nocobase.com/20241121215100.png)
+![20251201164629](https://static-docs.nocobase.com/20251201164629.png)
 
-Deskripsi proses debugging
+Penjelasan alur debug
 
 ![20240717110051](https://static-docs.nocobase.com/20240717110051.png)
 
+### Konversi Informasi Exception
+
+Saat API pihak ketiga mengalami exception, format informasi exception yang direspons mungkin tidak sesuai dengan standar NocoBase. Perlu dikonversi sebelum dapat ditampilkan dengan benar di front-end.
+
+![20251201170545](https://static-docs.nocobase.com/20251201170545.png)
+
+Saat konversi informasi exception belum dikonfigurasi, secara default akan dikonversi menjadi informasi exception yang berisi http status code.
+
+![20251201170732](https://static-docs.nocobase.com/20251201170732.png)
+
+Setelah konversi informasi exception dikonfigurasi, agar sesuai dengan standar output NocoBase, front-end dapat menampilkan informasi exception API pihak ketiga dengan benar.
+
+![20251201170946](https://static-docs.nocobase.com/20251201170946.png)
+![20251201171113](https://static-docs.nocobase.com/20251201171113.png)
+
 ## Variabel
 
-Sumber data REST API menyediakan tiga jenis variabel untuk integrasi API:
+Data Source REST API menyediakan tiga jenis variabel untuk integrasi endpoint
 
-- Variabel sumber data kustom
-- Permintaan NocoBase
-- Respons pihak ketiga
+- Variabel Custom Data Source
+- Request NocoBase
+- Respons Pihak Ketiga
 
-### Variabel Sumber Data Kustom
+### Variabel Custom Data Source
 
 ![20240716221937](https://static-docs.nocobase.com/20240716221937.png)
 
 ![20240716221858](https://static-docs.nocobase.com/20240716221858.png)
 
-### Permintaan NocoBase
+### Request NocoBase
 
-- Params: Parameter kueri URL (Search Params), yang bervariasi tergantung pada antarmuka.
-- Headers: Header permintaan kustom, terutama menyediakan informasi X- spesifik dari NocoBase.
-- Body: Isi permintaan (request body).
-- Token: Token API untuk permintaan NocoBase saat ini.
+- Params: Search Params (Query Parameter URL), Params untuk setiap endpoint berbeda;
+- Headers: Body request, terutama menyediakan beberapa informasi X- custom NocoBase;
+- Body: Body request;
+- Token: API token dari request NocoBase saat ini.
 
-![20240716222042](https://static-docs.nocobase.com/20240716222042.png)
+![20251201164833](https://static-docs.nocobase.com/20251201164833.png)
 
 ### Respons Pihak Ketiga
 
-Saat ini, hanya body respons yang tersedia.
+Saat ini hanya tersedia Body respons
 
-![20240716222303](https://static-docs.nocobase.com/20240716222303.png)
+![20251201164915](https://static-docs.nocobase.com/20251201164915.png)
 
-Berikut adalah variabel yang tersedia untuk setiap antarmuka:
+Variabel yang dapat digunakan saat integrasi setiap endpoint sebagai berikut:
 
 ### List
 
-| Parameter               | Deskripsi                                                  |
-| ----------------------- | ---------------------------------------------------------- |
-| request.params.page     | Halaman saat ini                                           |
-| request.params.pageSize | Jumlah item per halaman                                    |
-| request.params.filter   | Kriteria filter (harus sesuai format Filter NocoBase)      |
-| request.params.sort     | Kriteria pengurutan (harus sesuai format Sort NocoBase)    |
-| request.params.appends  | Bidang yang dimuat sesuai permintaan, biasanya untuk bidang relasi |
-| request.params.fields   | Bidang yang akan disertakan (daftar putih)                 |
-| request.params.except   | Bidang yang akan dikecualikan (daftar hitam)               |
+| Parameter                    | Deskripsi                                         |
+| ----------------------- | -------------------------------------------- |
+| request.params.page     | Halaman saat ini                                     |
+| request.params.pageSize | Jumlah per halaman                                     |
+| request.params.filter   | Kondisi filter (perlu sesuai format Filter NocoBase) |
+| request.params.sort     | Aturan sort (perlu sesuai format Sort NocoBase)   |
+| request.params.appends  | Field yang dimuat sesuai kebutuhan, biasanya untuk pemuatan field relasi sesuai kebutuhan   |
+| request.params.fields   | Field mana saja yang dikeluarkan endpoint (whitelist)                 |
+| request.params.except   | Field mana saja yang dikecualikan (blacklist)                       |
 
 ### Get
 
-| Parameter                 | Deskripsi                                                  |
-| ------------------------- | ---------------------------------------------------------- |
-| request.params.filterByTk | Wajib diisi, biasanya ID rekaman saat ini                  |
-| request.params.filter     | Kriteria filter (harus sesuai format Filter NocoBase)      |
-| request.params.appends    | Bidang yang dimuat sesuai permintaan, biasanya untuk bidang relasi |
-| request.params.fields     | Bidang yang akan disertakan (daftar putih)                 |
-| request.params.except     | Bidang yang akan dikecualikan (daftar hitam)               |
+| Parameter                      | Deskripsi                                         |
+| ------------------------- | -------------------------------------------- |
+| request.params.filterByTk | Wajib, biasanya berupa ID data saat ini                    |
+| request.params.filter     | Kondisi filter (perlu sesuai format Filter NocoBase) |
+| request.params.appends    | Field yang dimuat sesuai kebutuhan, biasanya untuk pemuatan field relasi sesuai kebutuhan   |
+| request.params.fields     | Field mana saja yang dikeluarkan endpoint (whitelist)                 |
+| request.params.except     | Field mana saja yang dikecualikan (blacklist)                       |
 
 ### Create
 
-| Parameter                | Deskripsi                      |
-| ------------------------ | ------------------------------ |
-| request.params.whiteList | Daftar putih                   |
-| request.params.blacklist | Daftar hitam                   |
-| request.body             | Data awal untuk pembuatan      |
+| Parameter                     | Deskripsi             |
+| ------------------------ | ---------------- |
+| request.params.whiteList | Whitelist           |
+| request.params.blacklist | Blacklist           |
+| request.body             | Data inisialisasi yang dibuat |
 
 ### Update
 
-| Parameter                 | Deskripsi                                          |
-| ------------------------- | -------------------------------------------------- |
-| request.params.filterByTk | Wajib diisi, biasanya ID rekaman saat ini          |
-| request.params.filter     | Kriteria filter (harus sesuai format Filter NocoBase) |
-| request.params.whiteList  | Daftar putih                                       |
-| request.params.blacklist  | Daftar hitam                                       |
-| request.body              | Data untuk pembaruan                               |
+| Parameter                      | Deskripsi                                         |
+| ------------------------- | -------------------------------------------- |
+| request.params.filterByTk | Wajib, biasanya berupa ID data saat ini                    |
+| request.params.filter     | Kondisi filter (perlu sesuai format Filter NocoBase) |
+| request.params.whiteList  | Whitelist                                       |
+| request.params.blacklist  | Blacklist                                       |
+| request.body              | Data yang diupdate                                   |
 
 ### Destroy
 
-| Parameter                 | Deskripsi                                          |
-| ------------------------- | -------------------------------------------------- |
-| request.params.filterByTk | Wajib diisi, biasanya ID rekaman saat ini          |
-| request.params.filter     | Kriteria filter (harus sesuai format Filter NocoBase) |
+| Parameter                      | Deskripsi                                         |
+| ------------------------- | -------------------------------------------- |
+| request.params.filterByTk | Wajib, biasanya berupa ID data saat ini                    |
+| request.params.filter     | Kondisi filter (perlu sesuai format Filter NocoBase) |
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
-Metadata bidang (Fields) diekstraksi dari data antarmuka CRUD sumber daya yang diadaptasi untuk berfungsi sebagai bidang koleksi.
+Dari data endpoint CRUD resource yang diadaptasi, ekstrak metadata field (Fields) sebagai field collection.
 
 ![20240716223636](https://static-docs.nocobase.com/20240716223636.png)
 
-Ekstrak metadata bidang.
+Ekstrak metadata field.
 
-![20241121230436](https://static-docs.nocobase.com/20241121230436.png)
+![20251201165133](https://static-docs.nocobase.com/20251201165133.png)
 
-Bidang dan pratinjau.
+Field dan pratinjau.
 
 ![20240716224403](https://static-docs.nocobase.com/20240716224403.png)
 
-Edit bidang (serupa dengan sumber data lainnya).
+Edit field (mirip dengan cara di data source lain).
 
 ![20240716224704](https://static-docs.nocobase.com/20240716224704.png)
 
-## Menambahkan Blok Sumber Data REST API
+## Menambahkan Block Data Source REST API
 
-Setelah koleksi dikonfigurasi, Anda dapat menambahkan blok ke antarmuka.
+Setelah Collection dikonfigurasi, Anda dapat pergi ke antarmuka untuk menambahkan block.
 
 ![20240716225120](https://static-docs.nocobase.com/20240716225120.png)

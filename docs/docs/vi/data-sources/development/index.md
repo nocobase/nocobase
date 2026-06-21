@@ -1,10 +1,11 @@
+---
+title: "Mở rộng Data Source"
+description: "Phát triển mở rộng plugin Data Source, tích hợp database tùy chỉnh hoặc nền tảng API, implement DataSource interface và quản lý Collection."
+keywords: "Mở rộng Data Source,DataSource development,Plugin development,Custom Data Source,NocoBase"
+---
+
+# Mở rộng Data Source
+
 :::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-
-# Mở rộng Nguồn Dữ liệu
-
-:::tip
-Nội dung sẽ được bổ sung.
+Nội dung sẽ được bổ sung sau
 :::

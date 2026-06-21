@@ -1,4 +1,6 @@
 ---
+title: "日志"
+keywords: "日志,插件,NocoBase"
 displayName: "日志"
 packageName: '@nocobase/plugin-logger'
 description: |

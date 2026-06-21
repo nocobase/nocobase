@@ -1,0 +1,117 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { TinyColor } from '@ctrl/tinycolor';
+import { useEffect } from 'react';
+import { theme } from 'antd';
+import { defaultTheme } from '../theme';
+import type { CustomToken } from '../theme';
+
+interface Result extends ReturnType<typeof theme.useToken> {
+  token: CustomToken;
+}
+
+export const CSSVariableProvider = ({ children }) => {
+  const { token } = theme.useToken() as Result;
+
+  const colorBgScrollTrack = token.colorFillTertiary;
+  const colorBgScrollBar = new TinyColor(token.colorFill).onBackground(token.colorFillSecondary).toHexShortString();
+  const colorBgScrollBarHover = new TinyColor(token.colorFill).onBackground(token.colorFill).toHexShortString();
+  const colorBgScrollBarActive = new TinyColor(token.colorFill)
+    .onBackground(token.colorFill)
+    .onBackground(token.colorFill)
+    .toHexShortString();
+
+  useEffect(() => {
+    document.body.style.setProperty('--nb-spacing', `${token.marginLG}px`);
+    document.body.style.setProperty('--nb-designer-offset', `${token.marginXS}px`);
+    document.body.style.setProperty('--nb-header-height', `${token.sizeXXL - 2}px`);
+    document.body.style.setProperty('--nb-box-bg', token.colorBgLayout);
+    document.body.style.setProperty('--colorBgLayout', token.colorBgLayout);
+    document.body.style.setProperty('--colorBgContainer', token.colorBgContainer);
+    document.body.style.setProperty('--controlHeightLG', `${token.controlHeightLG}px`);
+    document.body.style.setProperty('--paddingContentVerticalSM', `${token.paddingContentVerticalSM}px`);
+    document.body.style.setProperty('--marginSM', `${token.marginSM}px`);
+    document.body.style.setProperty('--colorInfoBg', token.colorInfoBg);
+    document.body.style.setProperty('--colorInfoBorder', token.colorInfoBorder);
+    document.body.style.setProperty('--colorWarningBg', token.colorWarningBg);
+    document.body.style.setProperty('--colorWarningBorder', token.colorWarningBorder);
+    document.body.style.setProperty('--colorText', token.colorText);
+    document.body.style.setProperty('--colorTextDescription', token.colorTextDescription);
+    document.body.style.setProperty('--colorBgTextHover', token.colorBgTextHover);
+    document.body.style.setProperty('--colorSplit', token.colorSplit);
+    document.body.style.setProperty('--borderRadiusOuter', `${token.borderRadiusOuter}px`);
+    document.body.style.setProperty('--colorTextHeaderMenu', token.colorTextHeaderMenu);
+    document.body.style.setProperty('--colorPrimaryText', token.colorPrimaryText);
+    document.body.style.setProperty('--colorPrimaryTextActive', token.colorPrimaryTextActive);
+    document.body.style.setProperty('--colorPrimaryTextHover', token.colorPrimaryTextHover);
+    // 侧边菜单栏相关CSS变量
+    document.body.style.setProperty('--colorBgSider', token.colorBgSider);
+    document.body.style.setProperty('--colorBgSiderMenuHover', token.colorBgSiderMenuHover);
+    document.body.style.setProperty('--colorBgSiderMenuActive', token.colorBgSiderMenuActive);
+    document.body.style.setProperty('--colorTextSiderMenu', token.colorTextSiderMenu);
+    document.body.style.setProperty('--colorTextSiderMenuHover', token.colorTextSiderMenuHover);
+    document.body.style.setProperty('--colorTextSiderMenuActive', token.colorTextSiderMenuActive);
+    document.body.style.setProperty('--colorBgScrollTrack', colorBgScrollTrack);
+    document.body.style.setProperty('--colorBgScrollBar', colorBgScrollBar);
+    document.body.style.setProperty('--colorBgScrollBarHover', colorBgScrollBarHover);
+    document.body.style.setProperty('--colorBgScrollBarActive', colorBgScrollBarActive);
+    document.body.style.setProperty('--colorSettings', token.colorSettings || defaultTheme.token.colorSettings);
+    document.body.style.setProperty('--colorBgSettingsHover', token.colorBgSettingsHover);
+    document.body.style.setProperty('--colorTemplateBgSettingsHover', token.colorTemplateBgSettingsHover);
+    document.body.style.setProperty('--colorBorderSettingsHover', token.colorBorderSettingsHover);
+    document.body.style.setProperty('--colorBgMenuItemSelected', token.colorBgHeaderMenuActive);
+
+    // 设置登录页面的背景色
+    document.body.style.setProperty('background-color', token.colorBgContainer);
+  }, [
+    colorBgScrollBar,
+    colorBgScrollBarActive,
+    colorBgScrollBarHover,
+    colorBgScrollTrack,
+    token.colorBgContainer,
+    token.colorBgLayout,
+    token.colorBgSettingsHover,
+    token.colorTemplateBgSettingsHover,
+    token.colorBorderSettingsHover,
+    token.colorInfoBg,
+    token.colorInfoBorder,
+    token.colorPrimaryText,
+    token.colorPrimaryTextActive,
+    token.colorPrimaryTextHover,
+    token.colorSettings,
+    token.colorBgTextHover,
+    token.colorSplit,
+    token.colorText,
+    token.colorTextDescription,
+    token.colorWarningBg,
+    token.colorWarningBorder,
+    token.borderRadiusOuter,
+    token.controlHeightLG,
+    token.marginLG,
+    token.marginSM,
+    token.marginXS,
+    token.paddingContentVerticalSM,
+    token.sizeXXL,
+    token.colorTextHeaderMenu,
+    token.colorBgSider,
+    token.colorBgSiderMenuHover,
+    token.colorBgSiderMenuActive,
+    token.colorTextSiderMenu,
+    token.colorTextSiderMenuHover,
+    token.colorTextSiderMenuActive,
+    token.colorBgHeaderMenuActive,
+  ]);
+
+  return children;
+};
+
+CSSVariableProvider.displayName = 'CSSVariableProvider';
+
+export default CSSVariableProvider;

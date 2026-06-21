@@ -10,17 +10,17 @@
       },
       {
         "type": "custom-link",
-        "label": "Hubungan FlowEngine & Plugin",
+        "label": "Hubungan FlowEngine dengan Plugin",
         "link": "/flow-engine/flow-engine-and-plugins"
       },
       {
         "type": "custom-link",
-        "label": "Mulai Cepat",
+        "label": "Memulai Cepat",
         "link": "/flow-engine/quickstart"
       },
       {
         "type": "custom-link",
-        "label": "Peta Jalan Belajar",
+        "label": "Roadmap Pembelajaran",
         "link": "/flow-engine/learning-roadmap"
       }
     ]
@@ -31,23 +31,28 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Registrasi FlowModel",
+        "label": "Mendaftarkan FlowModel",
         "link": "/flow-engine/register-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "Buat FlowModel",
+        "label": "Membuat FlowModel",
         "link": "/flow-engine/create-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "Render FlowModel",
+        "label": "Merender FlowModel",
         "link": "/flow-engine/flow-model-renderer"
       },
       {
         "type": "custom-link",
-        "label": "Alur Event & Konfigurasi FlowModel",
+        "label": "Event Flow & Konfigurasi FlowModel",
         "link": "/flow-engine/flow-model-settings"
+      },
+      {
+        "type": "custom-link",
+        "label": "AddSubModelButton",
+        "link": "/flow-engine/add-sub-model"
       },
       {
         "type": "custom-link",
@@ -66,13 +71,23 @@
       },
       {
         "type": "custom-link",
-        "label": "Mekanisme Responsif: Observable",
+        "label": "Mekanisme Reaktif: Observable",
         "link": "/flow-engine/observable"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel vs React.Component",
-        "link": "/flow-engine/flow-model-vs-react-component"
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Extension Point Plugin RunJS",
+        "link": "/flow-engine/runjs-extension-points"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI Schema",
+        "link": "/flow-engine/ui-schema"
       }
     ]
   },

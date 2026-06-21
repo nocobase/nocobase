@@ -1,4 +1,6 @@
 ---
+title: "企业微信"
+keywords: "企业微信,插件,NocoBase"
 displayName: "企业微信"
 packageName: '@nocobase/plugin-auth-wecom'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 3
+editionLevel: 2
 ---
 
 # 企业微信

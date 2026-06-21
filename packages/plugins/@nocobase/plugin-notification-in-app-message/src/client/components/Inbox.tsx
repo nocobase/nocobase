@@ -93,6 +93,10 @@ const InnerInbox = (props) => {
   const currUserId = ctx.data?.data?.id;
 
   const onMessageCreated = useCallback(({ detail }: CustomEvent) => {
+    messageMapObs.value[detail.id] = detail;
+    fetchChannels({ filter: { name: detail.channelName, status: 'all' } });
+    updateUnreadMsgsCount();
+
     notification.info({
       message: (
         <div
@@ -113,7 +117,6 @@ const InnerInbox = (props) => {
       },
       duration: detail.options.duration,
     });
-    unreadMsgsCountObs.value = (unreadMsgsCountObs.value ?? 0) + 1;
   }, []);
 
   const onMessageUpdated = useCallback(({ detail }: CustomEvent) => {
@@ -131,7 +134,6 @@ const InnerInbox = (props) => {
   }, [currUserId]);
   const onIconClick = useCallback(() => {
     inboxVisible.value = true;
-    fetchChannels({});
   }, []);
 
   useEffect(() => {
@@ -142,7 +144,7 @@ const InnerInbox = (props) => {
       app.eventBus.removeEventListener('ws:message:in-app-message:created', onMessageCreated);
       app.eventBus.removeEventListener('ws:message:in-app-message:updated', onMessageUpdated);
     };
-  }, [app.eventBus, onMessageUpdated]);
+  }, [app.eventBus, onMessageCreated, onMessageUpdated]);
 
   return (
     <ConfigProvider

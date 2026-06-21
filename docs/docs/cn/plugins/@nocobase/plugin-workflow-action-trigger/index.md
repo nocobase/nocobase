@@ -1,4 +1,6 @@
 ---
+title: "工作流：操作后事件"
+keywords: "工作流：操作后事件,插件,NocoBase"
 displayName: "工作流：操作后事件"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |

@@ -14,19 +14,21 @@ import { AIEmployee } from './ai-employee';
 export const convertAIMessage = ({
   aiEmployee,
   providerName: provider,
+  llmService,
   model,
   aiMessage,
 }: {
   aiEmployee: AIEmployee;
   providerName: string;
+  llmService?: string;
   model: string;
   aiMessage: AIMessage;
 }): AIMessageInput => {
   const message = aiMessage.content;
   const toolCalls = aiMessage.tool_calls;
-  const skills = aiEmployee.skillSettings?.skills;
+  const tools = aiEmployee.skillSettings?.tools;
 
-  if (!message && !toolCalls?.length) {
+  if (message == null && !toolCalls?.length) {
     return null;
   }
 
@@ -61,6 +63,7 @@ export const convertAIMessage = ({
       id: aiMessage.id,
       model,
       provider,
+      llmService,
       usage_metadata: {},
     },
     toolCalls: null,
@@ -70,7 +73,7 @@ export const convertAIMessage = ({
     values.toolCalls = toolCalls as any;
     values.metadata.autoCallTools = toolCalls
       .filter((tool: { name: string }) => {
-        return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
+        return tools?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
       })
       .map((tool: { name: string }) => tool.name);
   }
@@ -90,10 +93,12 @@ export const convertAIMessage = ({
 
 export const convertHumanMessage = ({
   providerName: provider,
+  llmService,
   model,
   humanMessage,
 }: {
   providerName: string;
+  llmService?: string;
   model: string;
   humanMessage: HumanMessage;
 }): AIMessageInput => {
@@ -108,6 +113,7 @@ export const convertHumanMessage = ({
       id: humanMessage.id,
       model,
       provider,
+      llmService,
     },
   };
 
@@ -119,10 +125,12 @@ export const convertHumanMessage = ({
 
 export const convertToolMessage = ({
   providerName: provider,
+  llmService,
   model,
   toolMessage,
 }: {
   providerName: string;
+  llmService?: string;
   model: string;
   toolMessage: ToolMessage;
 }): AIMessageInput => {
@@ -136,6 +144,7 @@ export const convertToolMessage = ({
       id: toolMessage.id,
       model,
       provider,
+      llmService,
       toolCallId: toolMessage.tool_call_id,
       toolName: toolMessage.name,
     },

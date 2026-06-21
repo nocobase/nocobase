@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Aggregate node"
+displayName: "Workflow: Node truy vấn tổng hợp"
 packageName: '@nocobase/plugin-workflow-aggregate'
+title: "Workflow: Node truy vấn tổng hợp"
+keywords: "Workflow: Node truy vấn tổng hợp,Plugin,NocoBase"
 description: |
-  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
+  Có thể được sử dụng để thực hiện truy vấn tổng hợp trên cơ sở dữ liệu trong workflow, chẳng hạn như: đếm số lượng, tính tổng, tính trung bình, v.v.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Aggregate node
+# Workflow: Node truy vấn tổng hợp

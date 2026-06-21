@@ -1,12 +1,12 @@
+---
+title: "Khởi đầu nhanh FlowEngine"
+description: "Khởi đầu nhanh FlowEngine: xây dựng component nút có thể điều phối, ví dụ đầy đủ từ define, registerFlow đến createModel, 5 bước làm quen FlowModel."
+keywords: "Khởi đầu nhanh FlowEngine,FlowModel,define,registerFlow,createModel,Component có thể điều phối,Component nút,NocoBase"
+---
 
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+# Khởi đầu nhanh: Xây dựng component nút có thể điều phối
 
-
-# Bắt đầu nhanh: Xây dựng thành phần nút có thể điều phối
-
-Trong React, chúng ta thường render một thành phần nút như sau:
+Trong React, chúng ta thường render một component nút như sau:
 
 ```tsx pure
 import { Button } from 'antd';
@@ -16,24 +16,24 @@ export default function App() {
 }
 ```
 
-Mặc dù đoạn mã trên đơn giản, nhưng nó là một **thành phần tĩnh**, không thể đáp ứng yêu cầu về khả năng cấu hình và điều phối của các nền tảng không mã (no-code).
+Code trên tuy đơn giản, nhưng thuộc về **component tĩnh**, không thể đáp ứng yêu cầu về khả năng cấu hình và khả năng điều phối của nền tảng no-code.
 
-Trong FlowEngine của NocoBase, chúng ta có thể nhanh chóng xây dựng các thành phần hỗ trợ cấu hình và điều khiển bằng sự kiện thông qua **FlowModel + FlowDefinition**, từ đó đạt được khả năng không mã mạnh mẽ hơn.
+Trong FlowEngine của NocoBase, chúng ta có thể thông qua **FlowModel + FlowDefinition** để nhanh chóng xây dựng component hỗ trợ cấu hình và điều khiển bằng sự kiện, đạt được khả năng no-code mạnh mẽ hơn.
 
 ---
 
-## Bước 1: Render thành phần bằng FlowModel
+## Bước 1: Dùng FlowModel để render component
 
 <code src="./demos/quickstart-1-basic.tsx"></code>
 
 ### 🧠 Khái niệm chính
 
-- `FlowModel` là mô hình thành phần cốt lõi trong FlowEngine, đóng gói logic, khả năng render và cấu hình của thành phần.
-- Mọi thành phần UI đều có thể được khởi tạo và quản lý thống nhất thông qua `FlowModel`.
+- `FlowModel` là model component cốt lõi trong FlowEngine, đóng gói logic, render và khả năng cấu hình của component.
+- Mỗi component UI có thể được khởi tạo và quản lý thống nhất thông qua `FlowModel`.
 
 ### 📌 Các bước triển khai
 
-#### 1. Tạo lớp mô hình tùy chỉnh
+#### 1. Tạo class model tùy chỉnh
 
 ```tsx pure
 class MyModel extends FlowModel {
@@ -43,10 +43,10 @@ class MyModel extends FlowModel {
 }
 ```
 
-#### 2. Tạo một thể hiện (instance) của mô hình
+#### 2. Tạo instance model
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -56,26 +56,28 @@ const model = this.flowEngine.createModel({
 });
 ```
 
-#### 3. Render bằng cách sử dụng `<FlowModelRenderer />`
+#### 3. Dùng `<FlowModelRenderer />` để render
 
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
 
-## Bước 2: Thêm PropsFlow để làm cho thuộc tính nút có thể cấu hình
+---
+
+## Bước 2: Thêm PropsFlow, làm cho thuộc tính nút có thể cấu hình
 
 <code src="./demos/quickstart-2-register-propsflow.tsx"></code>
 
-### 💡 Tại sao nên sử dụng PropsFlow?
+### 💡 Tại sao cần dùng PropsFlow?
 
-Sử dụng Flow thay vì các props tĩnh cho phép các thuộc tính có:
-- Cấu hình động
+Dùng Flow thay vì props tĩnh, có thể đạt được:
+- Cấu hình động của thuộc tính
 - Chỉnh sửa trực quan
-- Phát lại trạng thái và lưu trữ lâu dài
+- Phát lại trạng thái và lưu trữ
 
 ### 🛠 Các điểm cải tiến chính
 
-#### 1. Định nghĩa Flow cho các thuộc tính của nút
+#### 1. Định nghĩa Flow của thuộc tính nút
 
 ```tsx pure
 
@@ -84,7 +86,7 @@ const buttonSettings = defineFlow({
   
   title: 'Cài đặt nút',
   steps: {
-    general: {
+    setProps: {
       title: 'Cấu hình chung',
       uiSchema: {
         title: {
@@ -100,9 +102,9 @@ const buttonSettings = defineFlow({
           'x-component': 'Select',
           enum: [
             { label: 'Chính', value: 'primary' },
-            { label: 'Mặc định', value: 'default' },
+            { label: 'Phụ', value: 'default' },
             { label: 'Nguy hiểm', value: 'danger' },
-            { label: 'Nét đứt', value: 'dashed' },
+            { label: 'Đường nét đứt', value: 'dashed' },
             { label: 'Liên kết', value: 'link' },
             { label: 'Văn bản', value: 'text' },
           ],
@@ -124,7 +126,7 @@ const buttonSettings = defineFlow({
       defaultParams: {
         type: 'primary',
       },
-      // Hàm xử lý bước, thiết lập thuộc tính mô hình
+      // Hàm xử lý bước, đặt thuộc tính của model
       handler(ctx, params) {
         ctx.model.setProps('children', params.title);
         ctx.model.setProps('type', params.type);
@@ -137,10 +139,10 @@ const buttonSettings = defineFlow({
 MyModel.registerFlow(buttonSettings);
 ```
 
-#### 2. Sử dụng `stepParams` thay thế cho `props` tĩnh
+#### 2. Dùng `stepParams` thay cho `props` tĩnh
 
 ```diff
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
 - props: {
@@ -158,9 +160,9 @@ const model = this.flowEngine.createModel({
 });
 ```
 
-> ✅ Sử dụng `stepParams` là cách tiếp cận được khuyến nghị trong FlowEngine, vì nó tránh các vấn đề với dữ liệu không thể tuần tự hóa (như các thành phần React).
+> ✅ Dùng `stepParams` là cách được FlowEngine khuyến nghị, có thể tránh vấn đề dữ liệu không thể serialize (như component React).
 
-#### 3. Kích hoạt giao diện cấu hình thuộc tính
+#### 3. Bật giao diện cấu hình thuộc tính
 
 ```diff
 - <FlowModelRenderer model={model} />
@@ -173,20 +175,20 @@ const model = this.flowEngine.createModel({
 
 <code src="./demos/quickstart-3-register-eventflow.tsx"></code>
 
-### 🎯 Kịch bản: Hiển thị hộp thoại xác nhận sau khi nhấp vào nút
+### 🎯 Ngữ cảnh: Hiển thị hộp xác nhận sau khi click nút
 
 #### 1. Lắng nghe sự kiện onClick
 
-Thêm onClick theo cách không xâm lấn
+Dùng cách không xâm lấn, thêm onClick
 
 ```diff
 const myPropsFlow = defineFlow({
   key: 'buttonSettings',
   steps: {
     general: {
-      // ... bỏ qua
+      // ... lược bỏ
       handler(ctx, params) {
-        // ... bỏ qua
+        // ... lược bỏ
 +       ctx.model.setProps('onClick', (event) => {
 +         ctx.model.dispatchEvent('click', { event });
 +       });
@@ -205,33 +207,33 @@ const myEventFlow = defineFlow({
   title: 'Sự kiện nút',
   steps: {
     confirm: {
-      title: 'Cấu hình hành động xác nhận',
+      title: 'Cấu hình thao tác xác nhận',
       uiSchema: {
         title: {
           type: 'string',
-          title: 'Tiêu đề hộp thoại',
+          title: 'Tiêu đề thông báo dialog',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
         content: {
           type: 'string',
-          title: 'Nội dung hộp thoại',
+          title: 'Nội dung thông báo dialog',
           'x-decorator': 'FormItem',
           'x-component': 'Input.TextArea',
         },
       },
       defaultParams: {
-        title: 'Xác nhận hành động',
-        content: 'Bạn đã nhấp vào nút, bạn có chắc chắn không?',
+        title: 'Xác nhận thao tác',
+        content: 'Bạn đã click nút, có xác nhận không?',
       },
       async handler(ctx, params) {
-        // Hộp thoại
+        // Dialog
         const confirmed = await ctx.modal.confirm({
           title: params.title,
           content: params.content,
         });
         // Thông báo
-        await ctx.message.info(`Bạn đã nhấp vào nút, kết quả xác nhận: ${confirmed ? 'Đã xác nhận' : 'Đã hủy'}`);
+        await ctx.message.info(`Bạn đã click nút, kết quả xác nhận: ${confirmed ? 'Xác nhận' : 'Hủy'}`);
       },
     },
   },
@@ -239,16 +241,16 @@ const myEventFlow = defineFlow({
 MyModel.registerFlow(myEventFlow);
 ```
 
-**Lưu ý bổ sung:**
-- Luồng sự kiện (EventFlow) cho phép hành vi của nút được cấu hình linh hoạt thông qua một luồng công việc, ví dụ như hiển thị hộp thoại, thông báo, gọi API, v.v.
-- Bạn có thể đăng ký các luồng sự kiện khác nhau cho các sự kiện khác nhau (như `onClick`, `onMouseEnter`, v.v.) để đáp ứng các yêu cầu nghiệp vụ phức tạp.
+**Bổ sung:**
+- Luồng sự kiện (EventFlow) có thể cho phép hành vi của nút được cấu hình linh hoạt qua quy trình, ví dụ dialog, message, gọi API, v.v.
+- Bạn có thể đăng ký các luồng sự kiện khác nhau cho các sự kiện khác nhau (như `onClick`, `onMouseEnter`, v.v.), đáp ứng yêu cầu nghiệp vụ phức tạp.
 
-#### 3. Cấu hình các tham số của luồng sự kiện
+#### 3. Cấu hình tham số luồng sự kiện
 
-Khi tạo mô hình, bạn có thể cấu hình các tham số mặc định cho luồng sự kiện thông qua `stepParams`:
+Khi tạo model, có thể cấu hình tham số mặc định của luồng sự kiện thông qua `stepParams`:
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   stepParams: {
@@ -260,8 +262,8 @@ const model = this.flowEngine.createModel({
     },
     clickSettings: {
       confirm: {
-        title: 'Xác nhận hành động',
-        content: 'Bạn đã nhấp vào nút, bạn có chắc chắn không?',
+        title: 'Xác nhận thao tác',
+        content: 'Bạn đã click nút, có xác nhận không?',
       },
     },
   },
@@ -270,9 +272,9 @@ const model = this.flowEngine.createModel({
 
 ---
 
-## So sánh mô hình: ReactComponent và FlowModel
+## Sơ đồ so sánh model: ReactComponent vs FlowModel
 
-Flow không làm thay đổi cách triển khai các thành phần. Nó chỉ bổ sung hỗ trợ cho PropsFlow và EventFlow vào một ReactComponent, từ đó cho phép các thuộc tính và sự kiện của thành phần có thể được cấu hình và điều phối một cách trực quan.
+Flow không thay đổi cách triển khai của component. Nó chỉ thêm hỗ trợ PropsFlow và EventFlow cho ReactComponent, từ đó làm cho thuộc tính và sự kiện của component đều có thể được cấu hình và điều phối trực quan.
 
 ![](https://static-docs.nocobase.com/20250603132845.png)
 
@@ -304,10 +306,10 @@ graph TD
 
 ## Tóm tắt
 
-Qua ba bước trên, chúng ta đã hoàn thành một thành phần nút hỗ trợ cấu hình và điều phối sự kiện, với những ưu điểm sau:
+Qua ba bước trên, chúng ta đã hoàn thành một component nút hỗ trợ cấu hình và điều phối sự kiện, có các ưu điểm sau:
 
 - 🚀 Cấu hình thuộc tính trực quan (như tiêu đề, loại, biểu tượng)
-- 🔄 Phản hồi sự kiện có thể được quản lý bởi một luồng công việc (ví dụ: nhấp để hiển thị hộp thoại)
-- 🔧 Hỗ trợ mở rộng trong tương lai (như logic điều kiện, ràng buộc biến, v.v.)
+- 🔄 Phản hồi sự kiện có thể được tiếp quản bởi quy trình (như dialog click)
+- 🔧 Hỗ trợ mở rộng tiếp theo (như logic điều kiện, ràng buộc biến, v.v.)
 
-Mô hình này cũng có thể áp dụng cho bất kỳ thành phần UI nào khác như biểu mẫu, danh sách, biểu đồ. Trong FlowEngine của NocoBase, **mọi thứ đều có thể điều phối**.
+Mô hình này cũng áp dụng cho bất kỳ component UI nào như form, list, biểu đồ, v.v., trong FlowEngine của NocoBase, **mọi thứ đều có thể điều phối**.

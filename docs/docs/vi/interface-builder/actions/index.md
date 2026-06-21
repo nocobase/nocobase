@@ -1,31 +1,33 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tổng quan Action"
+description: "Action cấu hình nút bấm, liên kết, gửi, v.v., định nghĩa hành vi tương tác của Block và Form, hỗ trợ hơn 20 loại Action như thêm, sửa, xóa, xuất, nhập, kích hoạt workflow."
+keywords: "Action,Actions,Action nút bấm,thêm sửa xóa,xuất nhập,kích hoạt workflow,Interface Builder,NocoBase"
+---
 
+# Action
 
-# Thao tác
+Trong UI, Action là nút bấm dùng để kích hoạt một lệnh. Có thể đặt trực tiếp trên Trang, hộp thoại, Drawer, hoặc kết hợp với Block. Hiện tại, các Action có thể cấu hình động chủ yếu được sử dụng kết hợp với Block.
 
-Trong giao diện người dùng (UI), thao tác là một nút dùng để kích hoạt một tập hợp các lệnh. Nó có thể được đặt trực tiếp trên trang, trong hộp thoại, hoặc trong ngăn kéo, và cũng có thể được sử dụng kết hợp với các khối. Hiện tại, các thao tác có thể cấu hình động chủ yếu được sử dụng kết hợp với các khối.
-
-## Thao tác trong Khối
+## Action trong Block
 
 ![20251028231445](https://static-docs.nocobase.com/20251028231445.png)
 
-## Trình thiết kế (Thanh công cụ)
 
-- Kéo
-- [Luồng sự kiện](/interface-builder/event-flow)
+## Designer (thanh công cụ)
+
+- Kéo thả
+- [Event Flow](/interface-builder/event-flow)
 - Cấu hình tham số
 
 ![20251028231600](https://static-docs.nocobase.com/20251028231600.png)
 
-## Kéo để sắp xếp
+## Sắp xếp bằng kéo thả
 
-Nhấn giữ biểu tượng "Kéo" trong trình thiết kế nút để sắp xếp các nút.
+Giữ biểu tượng "Kéo thả" trong designer của nút bấm, bạn có thể sắp xếp các nút bấm.
 ![20251028231700](https://static-docs.nocobase.com/20251028231700.gif)
 
 ## Tùy chọn cấu hình
 
 ![20251028231823](https://static-docs.nocobase.com/20251028231823.png)
 
-## Luồng sự kiện
+## Event Flow

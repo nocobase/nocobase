@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Tanggal Pembuatan"
+description: "Field sistem waktu pembuatan, otomatis mencatat waktu pembuatan."
+keywords: "createdAt,waktu pembuatan,field sistem,field audit,NocoBase"
+---
 
-# Waktu Dibuat
+# Tanggal Pembuatan
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512174347](https://static-docs.nocobase.com/20240512174347.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

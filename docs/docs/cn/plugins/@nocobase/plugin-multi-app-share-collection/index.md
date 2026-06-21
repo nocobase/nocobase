@@ -1,4 +1,6 @@
 ---
+title: "多应用数据表共享"
+keywords: "多应用数据表共享,插件,NocoBase"
 displayName: "多应用数据表共享"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |

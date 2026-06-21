@@ -1,55 +1,67 @@
 ---
 pkg: '@nocobase/plugin-workflow-sql'
+title: "Node Workflow - Thao tác SQL"
+description: "Node thao tác SQL: thực thi câu lệnh SQL phức tạp, hỗ trợ biến ngữ cảnh quy trình làm tham số."
+keywords: "workflow,thao tác SQL,cơ sở dữ liệu,câu lệnh SQL,tham số biến,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Thao tác SQL
 
 ## Giới thiệu
 
-Trong một số trường hợp đặc biệt, các nút thao tác bộ sưu tập đơn giản ở trên có thể không đáp ứng được các hoạt động phức tạp. Khi đó, bạn có thể sử dụng trực tiếp nút SQL để cơ sở dữ liệu thực thi các câu lệnh SQL phức tạp nhằm thao tác dữ liệu.
+Trong một số tình huống đặc biệt, các Node thao tác bảng dữ liệu đơn giản phía trên có thể không xử lý được các thao tác phức tạp, thì có thể trực tiếp sử dụng Node SQL để cơ sở dữ liệu trực tiếp thực thi các câu lệnh SQL phức tạp để thao tác dữ liệu.
 
-Điểm khác biệt so với việc kết nối trực tiếp đến cơ sở dữ liệu để thực hiện các thao tác SQL bên ngoài ứng dụng là, trong một luồng công việc, bạn có thể sử dụng các biến từ ngữ cảnh của quy trình làm tham số trong câu lệnh SQL.
+Sự khác biệt với việc trực tiếp kết nối cơ sở dữ liệu để thực hiện thao tác SQL từ ngoài ứng dụng là, trong Workflow có thể sử dụng biến của ngữ cảnh quy trình làm một phần tham số trong câu lệnh SQL.
 
 ## Cài đặt
 
-Đây là một plugin tích hợp sẵn, không cần cài đặt.
+Plugin tích hợp sẵn, không cần cài đặt.
 
-## Tạo nút
+## Tạo Node
 
-Trong giao diện cấu hình luồng công việc, hãy nhấp vào nút dấu cộng (“+”) trong luồng để thêm nút “Thao tác SQL”:
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Thao tác SQL":
 
-![SQL 操作_添加](https://static-docs.nocobase.com/0ce40a226d7a5bf3717813e27da40e62.png)
+![Thao tác SQL_thêm](https://static-docs.nocobase.com/0ce40a226d7a5bf3717813e27da40e62.png)
 
-## Cấu hình nút
+## Cấu hình Node
 
-![SQL节点_节点配置](https://static-docs.nocobase.com/20240904002334.png)
+![Node SQL_cấu hình Node](https://static-docs.nocobase.com/20260414235136.png)
 
 ### Nguồn dữ liệu
 
-Chọn nguồn dữ liệu để thực thi câu lệnh SQL.
+Chọn nguồn dữ liệu thực thi SQL.
 
-Nguồn dữ liệu phải là loại cơ sở dữ liệu, ví dụ như nguồn dữ liệu chính, loại PostgreSQL hoặc các nguồn dữ liệu tương thích với Sequelize khác.
+Nguồn dữ liệu phải là loại cơ sở dữ liệu, ví dụ nguồn dữ liệu chính, loại PostgreSQL... các nguồn dữ liệu tương thích dựa trên Sequelize.
 
 ### Nội dung SQL
 
-Chỉnh sửa câu lệnh SQL. Hiện tại, chỉ hỗ trợ một câu lệnh SQL duy nhất.
+Soạn câu lệnh SQL. Hiện chỉ hỗ trợ một câu lệnh SQL.
 
-Chèn các biến cần thiết bằng nút biến ở góc trên bên phải của trình chỉnh sửa. Trước khi thực thi, các biến này sẽ được thay thế bằng giá trị tương ứng của chúng thông qua thay thế văn bản. Văn bản kết quả sau đó sẽ được sử dụng làm câu lệnh SQL cuối cùng và gửi đến cơ sở dữ liệu để truy vấn.
+:::info
+Từ phiên bản `v2.0.30`, vì lý do bảo mật, câu lệnh SQL không còn hỗ trợ trực tiếp sử dụng biến để thay thế text, cần đổi sang truy vấn tham số hóa.
+:::
 
-## Kết quả thực thi nút
+Trong câu lệnh SQL có thể sử dụng biến của ngữ cảnh quy trình nhưng cần sử dụng dạng `:variableName` để đặt chỗ, ví dụ:
 
-Kể từ `v1.3.15-beta`, kết quả thực thi của nút SQL là một mảng dữ liệu thuần túy. Trước đó, nó là cấu trúc trả về gốc của Sequelize chứa siêu dữ liệu truy vấn (xem thêm: [`sequelize.query()`](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-query)).
+```sql
+SELECT * FROM users WHERE id = :userId;
+```
 
-Ví dụ, truy vấn sau:
+### Danh sách tham số
+
+Trong câu lệnh SQL trên, `:userId` là một placeholder, việc thay thế placeholder cần được cấu hình trong "Danh sách tham số". Tên biến sử dụng tên trong placeholder, ví dụ `userId`, giá trị biến có thể sử dụng công cụ chọn biến để chọn biến của ngữ cảnh quy trình.
+
+## Kết quả thực thi Node
+
+Từ phiên bản `v1.3.15-beta`, kết quả thực thi của Node SQL là một mảng được tạo bởi dữ liệu thuần, trước đó là cấu trúc Sequelize trả về gốc chứa thông tin meta của truy vấn (xem chi tiết: [`sequelize.query()`](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-query)).
+
+Ví dụ truy vấn sau:
 
 ```sql
 select count(id) from posts;
 ```
 
-Kết quả trước `v1.3.15-beta`:
+Kết quả trước phiên bản `v1.3.15-beta`:
 
 ```json
 [
@@ -62,7 +74,7 @@ Kết quả trước `v1.3.15-beta`:
 ]
 ```
 
-Kết quả sau `v1.3.15-beta`:
+Kết quả sau phiên bản `v1.3.15-beta`:
 
 ```json
 [
@@ -72,10 +84,10 @@ Kết quả sau `v1.3.15-beta`:
 
 ## Câu hỏi thường gặp
 
-### Làm thế nào để sử dụng kết quả của nút SQL?
+### Cách sử dụng kết quả của Node SQL?
 
-Nếu sử dụng câu lệnh `SELECT`, kết quả truy vấn sẽ được lưu trong nút dưới định dạng JSON của Sequelize. Bạn có thể phân tích cú pháp và sử dụng nó với [plugin JSON-query](./json-query.md).
+Nếu sử dụng câu lệnh `SELECT`, kết quả truy vấn sẽ được lưu trong Node với định dạng JSON của Sequelize, có thể qua plugin [JSON-query](./json-query.md) để phân tích và sử dụng.
 
-### Thao tác SQL có kích hoạt sự kiện bộ sưu tập không?
+### Thao tác SQL có kích hoạt sự kiện bảng dữ liệu không?
 
-**Không**. Thao tác SQL trực tiếp gửi câu lệnh SQL đến cơ sở dữ liệu để xử lý. Các thao tác `CREATE` / `UPDATE` / `DELETE` liên quan đều diễn ra trong cơ sở dữ liệu, trong khi các sự kiện bộ sưu tập xảy ra ở lớp ứng dụng của Node.js (được xử lý bởi ORM). Vì vậy, các sự kiện bộ sưu tập sẽ không được kích hoạt.
+**Không**. Thao tác SQL trực tiếp gửi câu lệnh SQL đến cơ sở dữ liệu để xử lý, các thao tác `CREATE` / `UPDATE` / `DELETE` liên quan đều xảy ra trong cơ sở dữ liệu, còn sự kiện bảng dữ liệu xảy ra ở tầng ứng dụng Node.js (xử lý ORM), nên sẽ không kích hoạt sự kiện bảng dữ liệu.

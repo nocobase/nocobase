@@ -236,6 +236,37 @@ function normalizeSubPath(raw: string): { subPath: string; wildcard: boolean } {
   return { subPath: s, wildcard: false };
 }
 
+function extractCtxRootUsage(expr: string): { varName: string; subPath: string; wildcard: boolean } | null {
+  const raw = String(expr || '').trim();
+  if (!raw || raw === 'ctx') return null;
+
+  const dotMatch = raw.match(/^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*)([\s\S]*)$/);
+  if (dotMatch) {
+    const varName = dotMatch[1] || '';
+    const rest = dotMatch[2] || '';
+    const normalized = normalizeSubPath(rest);
+    return {
+      varName,
+      subPath: normalized.subPath,
+      wildcard: normalized.wildcard,
+    };
+  }
+
+  const bracketMatch = raw.match(/^ctx\s*\[\s*(['"])([a-zA-Z_$][a-zA-Z0-9_$]*)\1\s*\]([\s\S]*)$/);
+  if (bracketMatch) {
+    const varName = bracketMatch[2] || '';
+    const rest = bracketMatch[3] || '';
+    const normalized = normalizeSubPath(rest);
+    return {
+      varName,
+      subPath: normalized.subPath,
+      wildcard: normalized.wildcard,
+    };
+  }
+
+  return null;
+}
+
 /**
  * Heuristic extraction of ctx variable usage from RunJS code.
  *
@@ -256,27 +287,35 @@ export function extractUsedVariablePathsFromRunJS(code: string): Record<string, 
     usage.set(varName, set);
   };
 
+  const addCtxUsage = (expr: string) => {
+    const hit = extractCtxRootUsage(expr);
+    if (!hit?.varName) return;
+    add(hit.varName, hit.wildcard ? '' : hit.subPath);
+  };
+
   // dot form: ctx.foo.bar / ctx.foo[0].bar (excluding ctx.method(...))
   const dotRe = /ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*(?:(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)|(?:\[[^\]]+\]))*)(?!\s*\()/g;
   let match: RegExpExecArray | null;
   while ((match = dotRe.exec(src))) {
-    const pathAfterCtx = match[1] || '';
-    const firstKeyMatch = pathAfterCtx.match(/^([a-zA-Z_$][a-zA-Z0-9_$]*)/);
-    if (!firstKeyMatch) continue;
-    const firstKey = firstKeyMatch[1];
-    const rest = pathAfterCtx.slice(firstKey.length);
-    const { subPath, wildcard } = normalizeSubPath(rest);
-    add(firstKey, wildcard ? '' : subPath);
+    addCtxUsage(`ctx.${match[1] || ''}`);
   }
 
   // bracket root: ctx['foo'].bar / ctx["foo"][0] (excluding ctx['method'](...))
   const bracketRootRe =
     /ctx\s*\[\s*(['"])([a-zA-Z_$][a-zA-Z0-9_$]*)\1\s*\]((?:(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)|(?:\[[^\]]+\]))*)(?!\s*\()/g;
   while ((match = bracketRootRe.exec(srcWithStrings))) {
-    const varName = match[2] || '';
-    const rest = match[3] || '';
-    const { subPath, wildcard } = normalizeSubPath(rest);
-    add(varName, wildcard ? '' : subPath);
+    addCtxUsage(`ctx['${match[2] || ''}']${match[3] || ''}`);
+  }
+
+  // async-safe helper form: await ctx.getVar('ctx.foo.bar')
+  const getVarRe = /ctx\.getVar\s*\(\s*(['"])((?:\\.|(?!\1)[\s\S])*)\1\s*\)/g;
+  while ((match = getVarRe.exec(srcWithStrings))) {
+    const expr = String(match[2] || '')
+      .replace(/\\'/g, "'")
+      .replace(/\\"/g, '"')
+      .trim();
+    if (!expr.startsWith('ctx')) continue;
+    addCtxUsage(expr);
   }
 
   const out: Record<string, string[]> = {};

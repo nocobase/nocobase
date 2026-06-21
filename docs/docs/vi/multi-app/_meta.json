@@ -1,17 +1,43 @@
 [
   {
     "type": "custom-link",
-    "label": "Tổng quan",
-    "link": "/multi-app/"
+    "label": "Multi-app",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Tổng quan",
+        "link": "/multi-app/multi-app/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Chế độ chia sẻ bộ nhớ",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Chế độ đa môi trường",
+        "link": "/multi-app/multi-app/remote"
+      },
+      {
+        "type": "custom-link",
+        "label": "Khối ứng dụng và chuyển đổi ứng dụng",
+        "link": "/multi-app/multi-app/app-block-and-switcher"
+      },
+      {
+        "type": "custom-link",
+        "label": "SSO ứng dụng",
+        "link": "/multi-app/multi-app/app-sso"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gọi API ứng dụng con",
+        "link": "/multi-app/multi-app/sub-app-api"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Đa ứng dụng",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "Đa không gian",
-    "link": "/multi-app/multi-space"
+    "label": "Multi-space",
+    "link": "/multi-app/multi-space/"
   }
 ]

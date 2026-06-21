@@ -16,7 +16,7 @@ import { message } from 'antd';
 import { useActionContext, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import executionCollection from '../../common/collections/executions';
 
-import { ExecutionStatusOptions, EXECUTION_STATUS } from '../constants';
+import { ExecutionReasonOptionsMap, ExecutionStatusOptions, EXECUTION_STATUS } from '../constants';
 import { NAMESPACE } from '../locale';
 import { getWorkflowDetailPath } from '../utils';
 
@@ -83,10 +83,9 @@ export const executionSchema = {
           resource: 'executions',
           action: 'list',
           params: {
-            appends: ['workflow.id', 'workflow.title'],
             pageSize: 20,
-            sort: ['-createdAt'],
-            except: ['context', 'output'],
+            sort: ['-id'],
+            except: ['context', 'output', 'stack'],
             filter: {},
           },
         },
@@ -101,6 +100,21 @@ export const executionSchema = {
             },
           },
           properties: {
+            filter: {
+              type: 'void',
+              title: '{{ t("Filter") }}',
+              'x-action': 'filter',
+              'x-component': 'Filter.Action',
+              'x-use-component-props': 'useResourceFilterActionProps',
+              'x-component-props': {
+                icon: 'FilterOutlined',
+                nonfilterable: ['workflow'],
+              },
+              'x-align': 'left',
+              default: {
+                $and: [{ status: { $eq: undefined } }],
+              },
+            },
             refresher: {
               type: 'void',
               title: '{{ t("Refresh") }}',

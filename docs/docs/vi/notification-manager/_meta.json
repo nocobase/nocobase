@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "Tổng quan",
-    "link": "/notification-manager"
+    "link": "/notification-manager/"
   },
   {
     "type": "custom-link",
@@ -10,24 +10,24 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Tin nhắn nội bộ",
-        "link": "/notification-manager/notification-in-app-message"
+        "label": "Thông báo trong ứng dụng",
+        "link": "/notification-manager/notification-in-app-message/"
       },
       {
         "type": "custom-link",
         "label": "Email",
-        "link": "/notification-manager/notification-email"
+        "link": "/notification-manager/notification-email/"
       },
       {
         "type": "custom-link",
-        "label": "WeChat Work",
-        "link": "/notification-manager/wecom"
+        "label": "WeCom",
+        "link": "/notification-manager/wecom/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Hướng dẫn cho nhà phát triển",
+    "label": "Hướng dẫn phát triển",
     "items": [
       {
         "type": "custom-link",
@@ -36,7 +36,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Mở rộng API thông báo",
+        "label": "API mở rộng thông báo",
         "link": "/notification-manager/development/api"
       }
     ]

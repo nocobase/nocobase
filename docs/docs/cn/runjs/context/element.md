@@ -1,3 +1,9 @@
+---
+title: "ctx.element"
+description: "ctx.element 当前 RunJS 渲染的 DOM 容器节点，ctx.render() 默认渲染到此，用于 JSBlock、JSField 等。"
+keywords: "ctx.element,DOM 容器,ctx.render,JSBlock,JSField,RunJS,NocoBase"
+---
+
 # ctx.element
 
 指向沙箱 DOM 容器的 ElementProxy 实例，作为 `ctx.render()` 的默认渲染目标。在 JSBlock、JSField、JSItem、JSColumn 等有渲染容器的场景下可用。

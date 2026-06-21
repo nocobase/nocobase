@@ -260,7 +260,7 @@ export default class PluginMcpServer extends Plugin {
       this.mcpConnections.delete(mcpSessionId);
     };
     mcpServer.onerror = (e: any) => {
-      this.app.logger?.warn?.({ err: e }, '[plugin-mcp] mcpServer error');
+      this.app.logger?.warn?.('[plugin-mcp] mcpServer error', { err: e });
     };
 
     const tools = this.getToolDefinitions();

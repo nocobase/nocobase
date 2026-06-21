@@ -1,147 +1,149 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Persiapan Deployment Cluster"
+description: "Persiapan sebelum deployment cluster: lisensi plugin commercial (PubSub, Queue, Lock, adapter WorkerID), database, middleware Redis/RabbitMQ, shared storage, konfigurasi load balancing."
+keywords: "persiapan cluster,lisensi plugin commercial,middleware Redis,RabbitMQ,shared storage,load balancing,Nginx,NocoBase"
+---
 
 # Persiapan
 
-Sebelum menerapkan aplikasi klaster, Anda perlu menyelesaikan persiapan berikut.
+Sebelum men-deploy aplikasi cluster, persiapan berikut perlu diselesaikan.
 
-## Lisensi Plugin Komersial
+## Lisensi Plugin Commercial
 
-Menjalankan aplikasi NocoBase dalam mode klaster memerlukan dukungan dari plugin berikut:
+Aplikasi NocoBase yang berjalan dalam mode cluster memerlukan dukungan dari plugin berikut:
 
-| Fungsi                  | Plugin                                                                              |
-| ----------------------- | ----------------------------------------------------------------------------------- |
-| Adaptor cache           | Bawaan                                                                              |
-| Adaptor sinyal sinkronisasi | `@nocobase/plugin-pubsub-adapter-redis`                                             |
-| Adaptor antrean pesan   | `@nocobase/plugin-queue-adapter-redis` atau `@nocobase/plugin-queue-adapter-rabbitmq` |
-| Adaptor kunci terdistribusi | `@nocobase/plugin-lock-adapter-redis`                                               |
-| Alokator Worker ID      | `@nocobase/plugin-workerid-allocator-redis`                                         |
+| Fitur                | Plugin                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| Cache adapter        | Built-in                                                                            |
+| Sync signal adapter  | `@nocobase/plugin-pubsub-adapter-redis`                                             |
+| Message queue adapter | `@nocobase/plugin-queue-adapter-redis` atau `@nocobase/plugin-queue-adapter-rabbitmq` |
+| Distributed lock adapter | `@nocobase/plugin-lock-adapter-redis`                                           |
+| Worker ID allocator  | `@nocobase/plugin-workerid-allocator-redis`                                         |
 
-Pertama, pastikan Anda telah memperoleh lisensi untuk plugin di atas (Anda dapat membeli lisensi plugin yang sesuai melalui platform layanan plugin komersial).
+Pertama, pastikan Anda telah memperoleh lisensi untuk plugin di atas (Anda dapat membeli lisensi plugin yang sesuai melalui platform layanan plugin commercial).
 
 ## Komponen Sistem
 
-Komponen sistem lainnya, selain dari instans aplikasi itu sendiri, dapat dipilih oleh personel operasional berdasarkan kebutuhan operasional tim.
+Komponen sistem selain instance aplikasi itu sendiri, dapat dipilih sendiri oleh tim operasional sesuai dengan kebutuhan operasional masing-masing tim.
 
-### Basis Data
+### Database
 
-Karena mode klaster saat ini hanya menargetkan instans aplikasi, basis data sementara hanya mendukung satu node. Jika Anda memiliki arsitektur basis data seperti master-slave, Anda perlu mengimplementasikannya sendiri melalui middleware dan memastikan transparansi terhadap aplikasi NocoBase.
+Karena cluster mode saat ini hanya ditujukan untuk instance aplikasi, database sementara hanya mendukung single-node. Jika ada arsitektur database master-slave atau lainnya, Anda perlu mengimplementasikannya sendiri melalui middleware, dan memastikan transparan terhadap aplikasi NocoBase.
 
 ### Middleware
 
-Mode klaster NocoBase bergantung pada beberapa middleware untuk mencapai komunikasi dan koordinasi antar-klaster, termasuk:
+Cluster mode NocoBase membutuhkan beberapa middleware untuk komunikasi dan koordinasi antar cluster, termasuk:
 
-- **Cache**: Menggunakan middleware cache terdistribusi berbasis Redis untuk meningkatkan kecepatan akses data.
-- **Sinyal sinkronisasi**: Menggunakan fitur stream berbasis Redis untuk mengimplementasikan transmisi sinyal sinkronisasi antar-klaster.
-- **Antrean pesan**: Menggunakan middleware antrean pesan berbasis Redis atau RabbitMQ untuk mengimplementasikan pemrosesan pesan asinkron.
-- **Kunci terdistribusi**: Menggunakan kunci terdistribusi berbasis Redis untuk memastikan keamanan akses ke sumber daya bersama dalam klaster.
+- **Cache**: Menggunakan distributed cache middleware berbasis Redis untuk meningkatkan kecepatan akses data.
+- **Sync signal**: Menggunakan fitur stream Redis untuk implementasi transmisi sync signal antar cluster.
+- **Message queue**: Menggunakan message queue middleware berbasis Redis atau RabbitMQ untuk pemrosesan pesan asinkron.
+- **Distributed lock**: Menggunakan distributed lock berbasis Redis untuk menjamin keamanan akses ke shared resource dalam cluster.
 
-Ketika semua komponen middleware menggunakan Redis, Anda dapat memulai satu layanan Redis di dalam jaringan internal klaster (atau Kubernetes). Atau, Anda dapat mengaktifkan layanan Redis terpisah untuk setiap fungsi (cache, sinyal sinkronisasi, antrean pesan, dan kunci terdistribusi).
+Saat semua middleware menggunakan Redis, Anda dapat menjalankan satu service Redis tunggal dalam jaringan internal cluster (atau Kubernetes). Anda juga dapat mengaktifkan service Redis terpisah untuk setiap fitur (cache, sync signal, message queue, dan distributed lock).
 
 **Rekomendasi Versi**
 
-- Redis: >=8.0 atau versi redis-stack yang menyertakan fitur Bloom Filter.
+- Redis: >=8.0 atau gunakan versi redis-stack yang mencakup fitur Bloom Filter.
 - RabbitMQ: >=4.0
 
-### Penyimpanan Bersama
+### Shared Storage
 
-NocoBase perlu menggunakan direktori `storage` untuk menyimpan file terkait sistem. Dalam mode multi-node, Anda harus memasang disk cloud (atau NFS) untuk mendukung akses bersama antar-node. Jika tidak, penyimpanan lokal tidak akan disinkronkan secara otomatis, dan tidak akan berfungsi dengan baik.
+NocoBase membutuhkan direktori storage untuk menyimpan file terkait sistem. Dalam mode multi-node, harus melakukan mounting cloud disk (atau NFS) untuk mendukung akses bersama antar node. Jika tidak, local storage tidak akan disinkronkan secara otomatis dan tidak dapat digunakan dengan benar.
 
-Saat menerapkan dengan Kubernetes, silakan merujuk ke bagian [Penerapan Kubernetes: Penyimpanan Bersama](./kubernetes#shared-storage).
+Saat menggunakan deployment Kubernetes, silakan merujuk ke section [Deployment Kubernetes: Shared Storage](./kubernetes#shared-storage).
 
-### Penyeimbangan Beban
+### Load Balancing
 
-Mode klaster memerlukan penyeimbang beban untuk mendistribusikan permintaan, serta untuk pemeriksaan kesehatan dan failover instans aplikasi. Bagian ini harus dipilih dan dikonfigurasi sesuai dengan kebutuhan operasional tim.
+Cluster mode membutuhkan load balancer untuk distribusi request, serta health check dan failover instance aplikasi. Bagian ini dipilih dan dikonfigurasi sendiri sesuai kebutuhan operasional tim.
 
-Mengambil Nginx yang di-host sendiri sebagai contoh, tambahkan konten berikut ke file konfigurasi:
+Sebagai contoh dengan self-hosted Nginx, tambahkan konten berikut di file konfigurasi:
 
 ```
 upstream myapp {
-    # ip_hash; # Dapat digunakan untuk persistensi sesi. Saat diaktifkan, permintaan dari klien yang sama selalu dikirim ke server backend yang sama.
-    server 172.31.0.1:13000; # Node internal 1
-    server 172.31.0.2:13000; # Node internal 2
-    server 172.31.0.3:13000; # Node internal 3
+    # ip_hash; # Dapat digunakan untuk session persistence, jika diaktifkan request dari client yang sama selalu dikirim ke backend server yang sama.
+    server 172.31.0.1:13000; # Internal node 1
+    server 172.31.0.2:13000; # Internal node 2
+    server 172.31.0.3:13000; # Internal node 3
 }
 
 server {
     listen 80;
 
     location / {
-        # Gunakan upstream yang ditentukan untuk penyeimbangan beban
+        # Menggunakan upstream yang didefinisikan untuk load balancing
         proxy_pass http://myapp;
         # ... konfigurasi lainnya
     }
 }
 ```
 
-Ini berarti permintaan di-proxy balik dan didistribusikan ke node server yang berbeda untuk diproses.
+Yang berarti melakukan reverse proxy dan mendistribusikan request ke node server yang berbeda untuk diproses.
 
-Untuk middleware penyeimbangan beban yang disediakan oleh penyedia layanan cloud lainnya, silakan merujuk ke dokumentasi konfigurasi yang disediakan oleh penyedia tertentu.
+Middleware load balancing yang disediakan oleh cloud service provider lain dapat merujuk ke dokumentasi konfigurasi yang disediakan provider tersebut.
 
-## Konfigurasi Variabel Lingkungan
+## Konfigurasi Environment Variable
 
-Semua node dalam klaster harus menggunakan konfigurasi variabel lingkungan yang sama. Selain [variabel lingkungan](/api/cli/env) dasar NocoBase, variabel lingkungan terkait middleware berikut juga perlu dikonfigurasi.
+Semua node dalam cluster harus menggunakan konfigurasi environment variable yang sama. Selain [environment variable](../api/app/env) dasar NocoBase, environment variable berikut yang terkait dengan middleware juga perlu dikonfigurasi.
 
-### Mode Multi-core
+### Multi-Core Mode
 
-Ketika aplikasi berjalan pada node multi-core, Anda dapat mengaktifkan mode multi-core node:
+Saat aplikasi berjalan di node multi-core, multi-core mode pada node dapat diaktifkan:
 
 ```ini
-# Mengaktifkan mode multi-core PM2
-# CLUSTER_MODE=max # Dinonaktifkan secara default, memerlukan konfigurasi manual
+# Aktifkan PM2 multi-core mode
+# CLUSTER_MODE=max # Default tidak diaktifkan, perlu konfigurasi manual
 ```
 
-Jika Anda menerapkan pod aplikasi di Kubernetes, Anda dapat mengabaikan konfigurasi ini dan mengontrol jumlah instans aplikasi melalui jumlah replika pod.
+Jika men-deploy pod aplikasi di Kubernetes, Anda dapat mengabaikan konfigurasi ini, dan mengontrol jumlah instance aplikasi melalui jumlah replika pod.
 
 ### Cache
 
 ```ini
-# Adaptor cache, perlu diatur ke redis dalam mode klaster (defaultnya adalah in-memory jika tidak diatur)
+# Cache adapter, dalam cluster mode perlu diisi sebagai redis (default tidak diisi adalah memory)
 CACHE_DEFAULT_STORE=redis
 
-# URL koneksi adaptor cache Redis, perlu diisi
+# Alamat koneksi Redis cache adapter, perlu diisi secara aktif
 CACHE_REDIS_URL=
 ```
 
-### Sinyal Sinkronisasi
+### Sync Signal
 
 ```ini
-# URL koneksi adaptor sinkronisasi Redis, defaultnya adalah redis://localhost:6379/0 jika tidak diatur
+# Alamat koneksi Redis sync adapter, default tidak diisi adalah redis://localhost:6379/0
 PUBSUB_ADAPTER_REDIS_URL=
 ```
 
-### Kunci Terdistribusi
+### Distributed Lock
 
 ```ini
-# Adaptor kunci, perlu diatur ke redis dalam mode klaster (defaultnya adalah kunci lokal in-memory jika tidak diatur)
+# Lock adapter, dalam cluster mode perlu diisi sebagai redis (default tidak diisi adalah memory local lock)
 LOCK_ADAPTER_DEFAULT=redis
 
-# URL koneksi adaptor kunci Redis, defaultnya adalah redis://localhost:6379/0 jika tidak diatur
+# Alamat koneksi Redis lock adapter, default tidak diisi adalah redis://localhost:6379/0
 LOCK_ADAPTER_REDIS_URL=
 ```
 
-### Antrean Pesan
+### Message Queue
 
 ```ini
-# Mengaktifkan Redis sebagai adaptor antrean pesan, defaultnya adalah adaptor in-memory jika tidak diatur
+# Mengaktifkan Redis sebagai message queue adapter, default tidak diisi adalah memory adapter
 QUEUE_ADAPTER=redis
-# URL koneksi adaptor antrean pesan Redis, defaultnya adalah redis://localhost:6379/0 jika tidak diatur
+# Alamat koneksi Redis message queue adapter, default tidak diisi adalah redis://localhost:6379/0
 QUEUE_ADAPTER_REDIS_URL=
 ```
 
-### Alokator Worker ID
+### Worker ID Allocator
 
-Beberapa `koleksi` sistem di NocoBase menggunakan ID unik global sebagai kunci utama. Untuk mencegah konflik kunci utama di seluruh klaster, setiap instans aplikasi harus mendapatkan Worker ID yang unik melalui Alokator Worker ID. Rentang Worker ID saat ini adalah 0–31, yang berarti setiap aplikasi dapat menjalankan hingga 32 node secara bersamaan. Untuk detail tentang desain ID unik global, lihat [@nocobase/snowflake-id](https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id)
+Karena beberapa tabel sistem di NocoBase menggunakan globally unique ID sebagai primary key, Worker ID allocator diperlukan untuk memastikan setiap instance aplikasi dalam cluster mendapat Worker ID unik, sehingga menghindari masalah primary key conflict. Saat ini Worker ID dirancang dalam rentang 0-31, artinya aplikasi yang sama mendukung maksimal 32 node berjalan bersamaan. Tentang desain globally unique ID, lihat [@nocobase/snowflake-id](https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id)
 
 ```ini
-# URL koneksi Redis untuk Alokator Worker ID.
-# Jika dihilangkan, Worker ID acak akan ditetapkan.
+# Alamat koneksi Redis Worker ID allocator, default tidak diisi adalah random allocation
 REDIS_URL=
 ```
 
 :::info{title=Tips}
-Biasanya, adaptor terkait dapat menggunakan instans Redis yang sama, tetapi sebaiknya gunakan basis data yang berbeda untuk menghindari potensi masalah konflik kunci, misalnya:
+Biasanya, adapter terkait dapat menggunakan instance Redis yang sama, tetapi sebaiknya menggunakan database yang berbeda untuk menghindari kemungkinan key conflict, contohnya:
 
 ```ini
 CACHE_REDIS_URL=redis://localhost:6379/0
@@ -151,10 +153,10 @@ QUEUE_ADAPTER_REDIS_URL=redis://localhost:6379/3
 REDIS_URL=redis://localhost:6379/4
 ```
 
-Saat ini, setiap `plugin` menggunakan konfigurasi variabel lingkungan Redis-nya sendiri. Di masa mendatang, kami mungkin akan mempertimbangkan untuk menggunakan `REDIS_URL` secara terpadu sebagai konfigurasi cadangan.
+Pada tahap saat ini setiap plugin menggunakan konfigurasi environment variable Redis sendiri-sendiri, di masa depan akan dipertimbangkan untuk menggunakan `REDIS_URL` sebagai konfigurasi fallback secara terpadu.
 
 :::
 
-Jika Anda menggunakan Kubernetes untuk mengelola klaster, Anda dapat mengonfigurasi variabel lingkungan di atas dalam ConfigMap atau Secret. Untuk konten terkait lainnya, Anda dapat merujuk ke [Penerapan Kubernetes](./kubernetes).
+Jika menggunakan Kubernetes untuk mengelola cluster, environment variable di atas dapat dikonfigurasi di ConfigMap atau Secret. Untuk lebih banyak konten terkait, lihat [Deployment Kubernetes](./kubernetes).
 
-Setelah semua persiapan di atas selesai, Anda dapat melanjutkan ke [Operasi](./operations) untuk terus mengelola instans aplikasi.
+Setelah semua persiapan di atas selesai, Anda dapat melanjutkan ke [Alur Operasi](./operations) untuk terus mengelola instance aplikasi.

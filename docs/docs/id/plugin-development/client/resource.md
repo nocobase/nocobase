@@ -1,11 +1,13 @@
+---
+title: "Resource"
+description: "Resource client NocoBase: data resource, operasi CRUD, useResource, useCollection, data binding."
+keywords: "Resource,useResource,useCollection,CRUD,data resource,client,NocoBase"
+---
+
+# Resource
+
 :::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Sumber Daya
-
-:::tip
-
-Kami akan melengkapi contoh-contoh rinci dan praktik terbaik di versi mendatang.
+Kami akan melengkapi contoh detail dan best practice di versi berikutnya.
 
 :::

@@ -1,78 +1,83 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Pemisahan Service"
+description: "Dalam cluster mode, pisahkan workflow, asynchronous task, dan service yang memakan waktu lainnya ke node terpisah, konfigurasikan request node dan task node melalui WORKER_MODE, mendukung horizontal scaling dan resource isolation."
+keywords: "pemisahan service,WORKER_MODE,async workflow,async-task,horizontal scaling,request node,task node,deployment cluster,NocoBase"
+---
 
-# Pemisahan Layanan <Badge>v1.9.0+</Badge>
+# Pemisahan Service <Badge>v1.9.0+</Badge>
 
-## Pendahuluan
+## Pengantar
 
-Biasanya, semua layanan aplikasi NocoBase berjalan dalam satu instans Node.js yang sama. Seiring dengan semakin kompleksnya fungsionalitas dalam aplikasi karena pertumbuhan bisnis, beberapa layanan yang memakan waktu dapat memengaruhi kinerja keseluruhan.
+Biasanya, semua service aplikasi NocoBase berjalan di satu instance Node.js. Saat fitur dalam aplikasi semakin kompleks seiring dengan bisnis, beberapa service yang memakan waktu mungkin memengaruhi performa secara keseluruhan.
 
-Untuk meningkatkan kinerja aplikasi, NocoBase mendukung pemisahan layanan aplikasi agar berjalan di node yang berbeda dalam mode klaster. Hal ini bertujuan untuk mencegah masalah kinerja pada satu layanan memengaruhi seluruh aplikasi, yang dapat menyebabkan kegagalan dalam merespons permintaan pengguna secara normal.
+Untuk meningkatkan performa aplikasi, NocoBase mendukung pemisahan service aplikasi ke node yang berbeda dalam cluster mode untuk dijalankan, sehingga menghindari masalah performa pada satu service yang memengaruhi keseluruhan aplikasi dan menyebabkan tidak dapat merespons request user dengan benar.
 
-Di sisi lain, ini juga memungkinkan penskalaan horizontal yang ditargetkan untuk layanan tertentu, sehingga meningkatkan pemanfaatan sumber daya klaster.
+Di sisi lain, ini juga memungkinkan horizontal scaling secara terarah pada service tertentu, sehingga meningkatkan utilisasi resource cluster.
 
-Saat NocoBase di-deploy dalam klaster, berbagai layanan dapat dipisah dan di-deploy untuk berjalan di node yang berbeda. Diagram berikut mengilustrasikan struktur pemisahan tersebut:
+NocoBase dapat memisahkan deployment service yang berbeda untuk berjalan di node yang berbeda saat deployment cluster. Diagram berikut menunjukkan struktur pemisahan:
 
 ![20250803214857](https://static-docs.nocobase.com/20250803214857.png)
 
-## Layanan Apa Saja yang Dapat Dipisah
+## Service Mana yang Dapat Dipisahkan
 
-### Alur Kerja Asinkron
+### Async Workflow
 
-**KUNCI Layanan**: `workflow:process`
+**Service KEY**: `workflow:process`
 
-**Alur kerja** dalam mode asinkron akan masuk ke antrean untuk dieksekusi setelah dipicu. **Alur kerja** semacam ini dapat dianggap sebagai tugas latar belakang, dan pengguna biasanya tidak perlu menunggu hasil dikembalikan. Terutama untuk proses yang lebih kompleks dan memakan waktu, dengan volume pemicu yang tinggi, disarankan untuk memisahkannya agar berjalan di node independen.
+Workflow mode async, setelah dipicu akan masuk ke queue untuk dieksekusi. Workflow seperti ini dapat dianggap sebagai background task, biasanya tidak memerlukan user untuk menunggu hasil. Terutama untuk flow yang kompleks dan memakan waktu, dengan trigger yang banyak, disarankan untuk memisahkannya ke node terpisah untuk dijalankan.
 
-### Tugas Asinkron Tingkat Pengguna Lainnya
+### Async Task User-Level Lainnya
 
-**KUNCI Layanan**: `async-task:process`
+**Service KEY**: `async-task:process`
 
-Ini termasuk tugas yang dibuat oleh tindakan pengguna seperti impor dan ekspor asinkron. Dalam kasus volume data yang besar atau konkurensi yang tinggi, disarankan untuk memisahkannya agar berjalan di node independen.
+Termasuk task yang dibuat dari operasi user seperti async import, export, dll. Pada kasus data besar atau concurrency tinggi, disarankan untuk memisahkannya ke node terpisah untuk dijalankan.
 
-## Cara Memisah Layanan
+## Cara Memisahkan Service
 
-Pemisahan layanan yang berbeda ke node yang berbeda dapat dicapai dengan mengonfigurasi variabel lingkungan `WORKER_MODE`. Variabel lingkungan ini dapat dikonfigurasi berdasarkan aturan-aturan berikut:
+Pemisahan service ke node yang berbeda diimplementasikan melalui konfigurasi environment variable `WORKER_MODE`. Environment variable ini dapat dikonfigurasi dengan aturan berikut:
 
-- `WORKER_MODE=<kosong>`: Jika tidak dikonfigurasi, atau dikonfigurasi sebagai kosong, mode worker akan sama dengan mode instans tunggal saat ini, yaitu menerima semua permintaan dan juga memproses semua tugas. Ini kompatibel dengan aplikasi yang sebelumnya tidak dikonfigurasi.
-- `WORKER_MODE=!`:` Mode worker hanya memproses permintaan dan tidak memproses tugas apa pun.
-- `WORKER_MODE=workflow:process,async-task:process`:` Dikonfigurasi dengan satu atau lebih pengidentifikasi layanan (dipisahkan oleh koma), mode worker hanya memproses tugas untuk pengidentifikasi ini dan tidak memproses permintaan.
-- `WORKER_MODE=*`:` Mode worker memproses semua tugas latar belakang, tanpa memandang modul, tetapi tidak memproses permintaan.
-- `WORKER_MODE=!,workflow:process`:` Mode worker memproses permintaan, dan secara bersamaan hanya memproses tugas untuk pengidentifikasi tertentu.
-- `WORKER_MODE=-`:` Mode worker tidak memproses permintaan atau tugas apa pun (mode ini diperlukan dalam proses worker).
+- `WORKER_MODE=<kosong>`: Tidak dikonfigurasi, atau dikonfigurasi kosong, mode kerja sama dengan single instance saat ini, menerima semua request dan memproses semua task. Kompatibel dengan aplikasi yang sebelumnya tidak dikonfigurasi.
+- `WORKER_MODE=!`: Mode kerja hanya memproses request, tidak memproses task apa pun.
+- `WORKER_MODE=workflow:process,async-task:process`: Dikonfigurasi sebagai satu atau lebih service identifier (dipisahkan koma), mode kerja hanya memproses task dengan identifier tersebut, tidak memproses request.
+- `WORKER_MODE=*`: Mode kerja memproses semua background task tanpa membedakan modul, tetapi tidak memproses request.
+- `WORKER_MODE=!,workflow:process`: Mode kerja memproses request, sekaligus hanya memproses task dengan identifier tertentu.
+- `WORKER_MODE=-`: Mode kerja tidak memproses request maupun task apa pun (mode ini diperlukan dalam proses worker).
 
-Sebagai contoh, dalam lingkungan K8S, node dengan fungsionalitas pemisahan yang sama dapat menggunakan konfigurasi variabel lingkungan yang sama, sehingga memudahkan penskalaan horizontal untuk jenis layanan tertentu.
+Misalnya di environment K8S, Anda dapat menggunakan konfigurasi environment variable yang sama untuk node dengan fungsi pemisahan yang sama, sehingga memudahkan horizontal scaling untuk jenis service tertentu.
 
 ## Contoh Konfigurasi
 
-### Beberapa Node dengan Pemrosesan Terpisah
+### Multi-Node Pemrosesan Terpisah
 
-Misalkan ada tiga node: `node1`, `node2`, dan `node3`. Node-node tersebut dapat dikonfigurasi sebagai berikut:
+Asumsi ada tiga node, masing-masing `node1`, `node2`, dan `node3`, dapat dikonfigurasi sebagai berikut:
 
-- `node1`:` Hanya memproses permintaan UI pengguna, konfigurasikan `WORKER_MODE=!`.
-- `node2`:` Hanya memproses tugas **alur kerja**, konfigurasikan `WORKER_MODE=workflow:process`.
-- `node3`:` Hanya memproses tugas asinkron, konfigurasikan `WORKER_MODE=async-task:process`.
+- `node1`: Hanya memproses request UI user, konfigurasi `WORKER_MODE=!`.
+- `node2`: Hanya memproses task workflow, konfigurasi `WORKER_MODE=workflow:process`.
+- `node3`: Hanya memproses async task, konfigurasi `WORKER_MODE=async-task:process`.
 
-### Beberapa Node dengan Pemrosesan Campuran
+### Multi-Node Pemrosesan Campuran
 
-Misalkan ada empat node: `node1`, `node2`, `node3`, dan `node4`. Node-node tersebut dapat dikonfigurasi sebagai berikut:
+Asumsi ada empat node, masing-masing `node1`, `node2`, `node3`, dan `node4`, dapat dikonfigurasi sebagai berikut:
 
-- `node1` dan `node2`:` Memproses semua permintaan reguler, konfigurasikan `WORKER_MODE=!`, dan memiliki penyeimbang beban (load balancer) yang secara otomatis mendistribusikan permintaan ke kedua node ini.
-- `node3` dan `node4`:` Memproses semua tugas latar belakang lainnya, konfigurasikan `WORKER_MODE=*`.
+- `node1` dan `node2`: Memproses semua request reguler, konfigurasi `WORKER_MODE=!`, dan load balancer secara otomatis mendistribusikan request ke kedua node ini.
+- `node3` dan `node4`: Memproses semua background task lainnya, konfigurasi `WORKER_MODE=*`.
 
-## Referensi Pengembang
+## Referensi Pengembangan
 
-Saat mengembangkan **plugin** bisnis, Anda dapat memisah layanan yang mengonsumsi sumber daya signifikan berdasarkan skenario kebutuhan. Hal ini dapat dicapai dengan cara berikut:
+Saat mengembangkan plugin bisnis, Anda dapat memisahkan service yang menghabiskan resource lebih besar berdasarkan skenario kebutuhan. Anda dapat mengimplementasikannya dengan cara berikut:
 
-1. Definisikan pengidentifikasi layanan baru, misalnya `my-plugin:process`, untuk konfigurasi variabel lingkungan, dan sediakan dokumentasi untuknya.
-2. Dalam logika bisnis sisi server **plugin**, gunakan antarmuka `app.serving()` untuk memeriksa lingkungan dan menentukan apakah node saat ini harus menyediakan layanan tertentu berdasarkan variabel lingkungan.
+1. Definisikan service identifier baru, contohnya `my-plugin:process`, untuk konfigurasi environment variable, dan sediakan dokumentasi penjelasan.
+2. Dalam fitur bisnis di sisi server plugin, gunakan interface `serving()` untuk memeriksa environment, untuk menentukan apakah node saat ini menyediakan suatu fitur bisnis berdasarkan environment variable.
 
 ```javascript
+import { serving } from '@nocobase/server';
+
 const MY_PLUGIN_SERVICE_KEY = 'my-plugin:process';
-// Dalam kode sisi server plugin
-if (this.app.serving(MY_PLUGIN_SERVICE_KEY)) {
-  // Proses logika bisnis untuk layanan ini
+// Di kode sisi server plugin
+if (serving(MY_PLUGIN_SERVICE_KEY)) {
+  // Memproses logika bisnis untuk service ini
 } else {
-  // Jangan proses logika bisnis untuk layanan ini
+  // Tidak memproses logika bisnis untuk service ini
 }
 ```

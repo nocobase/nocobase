@@ -1,15 +1,17 @@
 ---
 displayName: "WeCom"
 packageName: '@nocobase/plugin-auth-wecom'
+title: "WeCom"
+keywords: "WeCom,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
+  Cung cấp khả năng tích hợp WeCom, bao gồm phương thức xác thực, kênh thông báo và nguồn đồng bộ dữ liệu người dùng.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 3
+editionLevel: 2
 ---
 
 # WeCom

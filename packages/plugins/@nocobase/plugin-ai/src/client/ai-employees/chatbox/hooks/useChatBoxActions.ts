@@ -8,10 +8,10 @@
  */
 
 import { useCallback } from 'react';
-import { AIEmployee, Message, SendOptions, TriggerTaskOptions } from '../../types';
+import { AIEmployee, Attachment, ClearOptions, Message, SendOptions, TriggerTaskOptions } from '../../types';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatMessagesStore } from '../stores/chat-messages';
+import { useChat } from '../hooks/useChat';
 import { useChatConversationActions } from './useChatConversationActions';
 import { useChatMessageActions } from './useChatMessageActions';
 import { useT } from '../../../locale';
@@ -19,17 +19,19 @@ import { parseTask } from '../utils';
 import { uid } from '@formily/shared';
 import { aiEmployeeRole } from '../roles';
 import { useChatToolsStore } from '../stores/chat-tools';
+import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 import { useAPIClient } from '@nocobase/client';
-import { useLLMServicesRepository } from '../../../llm-services/hooks/useLLMServicesRepository';
-import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { getAIEmployeeModels, getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
 
 export const useChatBoxActions = () => {
   const api = useAPIClient();
-  const llmServicesRepository = useLLMServicesRepository();
+  const aiConfigRepository = useAIConfigRepository();
   const t = useT();
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
+  const setReadonly = useChatBoxStore.use.setReadonly();
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const setTaskVariables = useChatBoxStore.use.setTaskVariables();
   const roles = useChatBoxStore.use.roles();
@@ -42,30 +44,57 @@ export const useChatBoxActions = () => {
   const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const setWebSearch = useChatConversationsStore.use.setWebSearch();
-
-  const setSystemMessage = useChatMessagesStore.use.setSystemMessage();
-  const setAttachments = useChatMessagesStore.use.setAttachments();
-  const setContextItems = useChatMessagesStore.use.setContextItems();
-  const setMessages = useChatMessagesStore.use.setMessages();
-  const setSkillSettings = useChatMessagesStore.use.setSkillSettings();
+  const chat = useChat(currentConversation);
+  const draftChat = useChat();
 
   const setOpenToolModal = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
+  const setCurrentWorkflowTask = useWorkflowTasksStore.use.setCurrentWorkflowTask();
 
-  const { conversationsService } = useChatConversationActions();
-  const { sendMessages } = useChatMessageActions();
+  const { refresh: refreshConversations } = useChatConversationActions();
+  const { sendMessages, syncContextAttachments } = useChatMessageActions();
 
-  const clear = () => {
-    setSenderValue('');
-    setSystemMessage('');
-    setAttachments([]);
-    setContextItems([]);
-    setTaskVariables({});
-    setOpenToolModal(false);
-    setActiveTool(null);
-    setActiveMessageId('');
-    setSkillSettings(undefined);
+  const clear = (options?: ClearOptions, sessionId: string | undefined = currentConversation) => {
+    const sessionChat = chat.for(sessionId);
+    const {
+      sender,
+      systemMessage,
+      attachments,
+      contextItems,
+      taskVariables,
+      toolModal,
+      activeTool,
+      activeMessageId,
+      skillSettings,
+    } = options ?? {};
+    if (sender !== false) {
+      setSenderValue('');
+    }
+    if (systemMessage !== false) {
+      sessionChat.setSystemMessage('');
+    }
+    if (attachments !== false) {
+      sessionChat.setAttachments([]);
+    }
+    if (contextItems !== false) {
+      sessionChat.setContextItems([]);
+    }
+    if (taskVariables !== false) {
+      setTaskVariables({});
+    }
+    if (toolModal !== false) {
+      setOpenToolModal(false);
+    }
+    if (activeTool !== false) {
+      setActiveTool(null);
+    }
+    if (activeMessageId !== false) {
+      setActiveMessageId('');
+    }
+    if (skillSettings !== false) {
+      sessionChat.setSkillSettings(undefined);
+    }
   };
 
   const send = (options: SendOptions) => {
@@ -73,7 +102,7 @@ export const useChatBoxActions = () => {
       ...options,
       onConversationCreate: (sessionId: string) => {
         setCurrentConversation(sessionId);
-        conversationsService.run();
+        refreshConversations();
       },
     };
     clear();
@@ -91,23 +120,29 @@ export const useChatBoxActions = () => {
 
   const ensureModel = useCallback(
     async (aiEmployee: AIEmployee) => {
-      await llmServicesRepository.load();
-      const allModels = getAllModels(llmServicesRepository.services);
+      const allModels = getAllModels(await aiConfigRepository.getLLMServices());
       const currentModel = useChatBoxStore.getState().model;
-      const resolvedModel = resolveModel(api, aiEmployee.username, allModels, currentModel);
+      const resolvedModel = resolveModel(api, aiEmployee, allModels, currentModel);
       if (!isSameModel(currentModel, resolvedModel)) {
         setModel(resolvedModel);
       }
       return resolvedModel;
     },
-    [api, llmServicesRepository, setModel],
+    [api, aiConfigRepository, setModel],
   );
 
   const resolveTaskModel = useCallback(
     async (aiEmployee: AIEmployee, taskModel?: { llmService: string; model: string } | null) => {
-      await llmServicesRepository.load();
-      const allModels = getAllModels(llmServicesRepository.services);
-      if (isValidModel(taskModel, allModels)) {
+      const allModels = getAllModels(await aiConfigRepository.getLLMServices());
+      const scopedModels = getAIEmployeeModels(aiEmployee, allModels);
+      if (!scopedModels.length) {
+        const currentModel = useChatBoxStore.getState().model;
+        if (currentModel) {
+          setModel(null);
+        }
+        return null;
+      }
+      if (!aiEmployee?.modelSettings?.enabled && isValidModel(taskModel, scopedModels)) {
         const currentModel = useChatBoxStore.getState().model;
         if (!isSameModel(currentModel, taskModel)) {
           setModel(taskModel);
@@ -115,13 +150,13 @@ export const useChatBoxActions = () => {
         return taskModel;
       }
       const currentModel = useChatBoxStore.getState().model;
-      const resolvedModel = resolveModel(api, aiEmployee.username, allModels, currentModel);
+      const resolvedModel = resolveModel(api, aiEmployee, allModels, currentModel);
       if (!isSameModel(currentModel, resolvedModel)) {
         setModel(resolvedModel);
       }
       return resolvedModel;
     },
-    [api, llmServicesRepository, setModel],
+    [api, aiConfigRepository, setModel],
   );
 
   const startNewConversation = useCallback(() => {
@@ -134,16 +169,18 @@ export const useChatBoxActions = () => {
       },
     };
     setCurrentConversation(undefined);
-    clear();
-    setMessages([greetingMsg]);
+    setCurrentWorkflowTask(undefined);
+    clear(undefined, undefined);
+    draftChat.setMessages([greetingMsg]);
     senderRef.current?.focus();
-  }, [currentEmployee]);
+  }, [currentEmployee, setCurrentWorkflowTask]);
 
   const switchAIEmployee = useCallback(
-    (aiEmployee: AIEmployee) => {
+    (aiEmployee: AIEmployee, options?: { clear?: ClearOptions }) => {
       setCurrentEmployee(aiEmployee);
       setCurrentConversation(undefined);
-      clear();
+      setCurrentWorkflowTask(undefined);
+      clear(options?.clear, undefined);
       setModel(null);
       if (aiEmployee) {
         const greetingMsg = {
@@ -155,25 +192,28 @@ export const useChatBoxActions = () => {
           },
         };
         senderRef.current?.focus();
-        setMessages([greetingMsg]);
+        draftChat.setMessages([greetingMsg]);
       } else {
-        setMessages([]);
+        draftChat.setMessages([]);
       }
     },
-    [currentConversation],
+    [currentConversation, setCurrentWorkflowTask],
   );
 
   const triggerTask = useCallback(
     async (options: TriggerTaskOptions) => {
-      clear();
+      clear(undefined, undefined);
       const { aiEmployee, tasks } = options;
       updateRole(aiEmployee);
+      setReadonly(false);
+      draftChat.setResponseLoading(false);
       if (!open) {
         setOpen(true);
       }
       if (currentConversation) {
         setCurrentConversation(undefined);
-        setMessages([]);
+        setCurrentWorkflowTask(undefined);
+        draftChat.setMessages([]);
       }
       setCurrentEmployee(aiEmployee);
       await ensureModel(aiEmployee);
@@ -189,11 +229,11 @@ export const useChatBoxActions = () => {
         },
       ];
       if (!tasks?.length) {
-        setMessages(msgs);
+        draftChat.setMessages(msgs);
         return;
       }
       if (tasks.length === 1 && options.auto !== false) {
-        setMessages(msgs);
+        draftChat.setMessages(msgs);
         const task = tasks[0];
         const {
           userMessage,
@@ -205,7 +245,9 @@ export const useChatBoxActions = () => {
           model: taskModel,
         } = await parseTask(task);
         const resolvedModel = await resolveTaskModel(aiEmployee, taskModel);
-        const service = llmServicesRepository.services.find((s) => s.llmService === resolvedModel?.llmService);
+        const service = (await aiConfigRepository.getLLMServices()).find(
+          (s) => s.llmService === resolvedModel?.llmService,
+        );
         const resolvedWebSearch =
           service?.supportWebSearch === false ? false : typeof webSearch === 'boolean' ? webSearch : false;
         setWebSearch(resolvedWebSearch);
@@ -214,24 +256,27 @@ export const useChatBoxActions = () => {
         } else {
           setSenderValue('');
         }
-        if (attachments) {
-          setAttachments(attachments);
-        }
+        let contextAttachments: Attachment[] = [];
         if (workContext) {
-          setContextItems(workContext);
+          draftChat.setContextItems(workContext);
+          contextAttachments = syncContextAttachments(workContext);
+        }
+        const resolvedAttachments = [...(attachments ?? []), ...contextAttachments];
+        if (resolvedAttachments.length) {
+          draftChat.setAttachments(resolvedAttachments);
         }
         if (systemMessage) {
-          setSystemMessage(systemMessage);
+          draftChat.setSystemMessage(systemMessage);
         }
         if (skillSettings) {
-          setSkillSettings(skillSettings);
+          draftChat.setSkillSettings(skillSettings);
         }
         if (task.autoSend) {
           send({
             aiEmployee,
             systemMessage,
             messages: [userMessage ?? { type: 'text', content: '' }],
-            attachments,
+            attachments: resolvedAttachments.length ? resolvedAttachments : undefined,
             workContext,
             skillSettings,
             webSearch: resolvedWebSearch,
@@ -247,9 +292,17 @@ export const useChatBoxActions = () => {
           content: tasks,
         },
       });
-      setMessages(msgs);
+      draftChat.setMessages(msgs);
     },
-    [open, currentConversation, ensureModel, llmServicesRepository, resolveTaskModel, setWebSearch],
+    [
+      open,
+      currentConversation,
+      ensureModel,
+      aiConfigRepository,
+      resolveTaskModel,
+      setCurrentWorkflowTask,
+      setWebSearch,
+    ],
   );
 
   return {

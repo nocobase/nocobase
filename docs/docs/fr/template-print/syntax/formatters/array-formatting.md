@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 ### Formatage des tableaux
 
 #### 1. :arrayJoin(separator, index, count)

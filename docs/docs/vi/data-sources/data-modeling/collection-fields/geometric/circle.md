@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Hình tròn"
+description: "Field hình học hình tròn, lưu trữ hình tròn (kiểu circle của PostgreSQL)."
+keywords: "hình tròn,circle,Field hình học,PostgreSQL,NocoBase"
+---
 
-
-# Vòng tròn
+# Hình tròn
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512181522](https://static-docs.nocobase.com/20240512181522.png)
 

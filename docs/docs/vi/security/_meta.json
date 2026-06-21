@@ -6,7 +6,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Chính sách token",
+    "label": "Chính sách Token",
     "link": "/security/token-policy/"
   },
   {
@@ -27,12 +27,12 @@
   },
   {
     "type": "custom-link",
-    "label": "Giới hạn IP",
+    "label": "Hạn chế IP",
     "link": "/security/ip-restriction/"
   },
   {
     "type": "custom-link",
-    "label": "Nhật ký kiểm toán",
+    "label": "Log kiểm toán",
     "link": "/security/audit-logger/"
   },
   {
@@ -43,6 +43,6 @@
   {
     "type": "custom-link",
     "label": "Mã hóa trường",
-    "link": "/data-sources/field-encryption"
+    "link": "/data-sources/field-encryption/"
   }
 ]

@@ -1,26 +1,37 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Tổng quan phát triển Plugin server"
+description: "Phát triển Plugin server NocoBase: lớp Plugin, app, db, resource, ACL, database, migration, middleware, event, command line."
+keywords: "Plugin server,Server Plugin,lớp Plugin,app,db,ACL,migration,NocoBase"
+---
 
 # Tổng quan
 
-Phát triển plugin phía máy chủ của NocoBase cung cấp nhiều chức năng và khả năng, giúp nhà phát triển tùy chỉnh và mở rộng các tính năng cốt lõi của NocoBase. Dưới đây là các khả năng chính và các chương liên quan trong quá trình phát triển plugin phía máy chủ của NocoBase:
+Plugin server của NocoBase có thể làm rất nhiều việc: định nghĩa bảng dữ liệu, viết API tùy chỉnh, quản lý quyền, lắng nghe sự kiện, đăng ký tác vụ định kỳ, thậm chí mở rộng lệnh CLI. Tất cả những năng lực này đều được tổ chức thông qua một lớp Plugin thống nhất.
 
-| Chức năng                  | Mô tả                                           | Chương liên quan                                      |
-|---------------------------|------------------------------------------------|-----------------------------------------------|
-| **Lớp Plugin**               | Tạo và quản lý các plugin phía máy chủ, mở rộng chức năng cốt lõi             | [plugin.md](plugin.md)                       |
-| **Thao tác cơ sở dữ liệu**             | Cung cấp các giao diện để thao tác với cơ sở dữ liệu, hỗ trợ các hoạt động CRUD và quản lý giao dịch | [database.md](database.md)                    |
-| **Bộ sưu tập tùy chỉnh**           | Tùy chỉnh cấu trúc bảng cơ sở dữ liệu (bộ sưu tập) theo nhu cầu kinh doanh để quản lý mô hình dữ liệu linh hoạt | [collections.md](collections.md)              |
-| **Xử lý tương thích dữ liệu khi nâng cấp plugin** | Đảm bảo việc nâng cấp plugin không ảnh hưởng đến dữ liệu hiện có bằng cách thực hiện di chuyển và xử lý tương thích dữ liệu | [migration.md](migration.md)                  |
-| **Quản lý nguồn dữ liệu bên ngoài**         | Tích hợp và quản lý các nguồn dữ liệu bên ngoài để cho phép tương tác dữ liệu             | [data-source-manager.md](data-source-manager.md) |
-| **API tùy chỉnh**             | Mở rộng quản lý tài nguyên API bằng cách viết các giao diện (API) tùy chỉnh               | [resource-manager.md](resource-manager.md)    |
-| **Quản lý quyền API**           | Tùy chỉnh quyền API để kiểm soát truy cập chi tiết             | [acl.md](acl.md)                              |
-| **Chặn và lọc yêu cầu/phản hồi API** | Thêm các bộ chặn (interceptor) hoặc middleware cho yêu cầu và phản hồi để xử lý các tác vụ như ghi nhật ký, xác thực, v.v. | [context.md](context.md) và [middleware.md](middleware.md) |
-| **Lắng nghe sự kiện**               | Lắng nghe các sự kiện hệ thống (ví dụ: từ ứng dụng hoặc cơ sở dữ liệu) và kích hoạt các trình xử lý tương ứng       | [event.md](event.md)                          |
-| **Quản lý bộ nhớ đệm**               | Quản lý bộ nhớ đệm để cải thiện hiệu suất ứng dụng và tốc độ phản hồi               | [cache.md](cache.md)                          |
-| **Tác vụ định kỳ**               | Tạo và quản lý các tác vụ định kỳ, chẳng hạn như dọn dẹp định kỳ, đồng bộ hóa dữ liệu, v.v.     | [cron-job-manager.md](cron-job-manager.md)    |
-| **Hỗ trợ đa ngôn ngữ**             | Tích hợp hỗ trợ đa ngôn ngữ để triển khai quốc tế hóa và bản địa hóa             | [i18n.md](i18n.md)                            |
-| **Xuất nhật ký**               | Tùy chỉnh định dạng và phương thức xuất nhật ký để nâng cao khả năng gỡ lỗi và giám sát   | [logger.md](logger.md)                        |
-| **Lệnh tùy chỉnh**             | Mở rộng NocoBase CLI bằng cách thêm các lệnh tùy chỉnh               | [command.md](command.md)                      |
-| **Viết trường hợp kiểm thử**           | Viết và chạy các trường hợp kiểm thử để đảm bảo tính ổn định và độ chính xác chức năng của plugin | [test.md](test.md)                            |
+| Tôi muốn… | Xem ở đâu |
+|-----------|-----------|
+| Tìm hiểu vòng đời lớp Plugin và thành viên `app` | [Plugin](./plugin.md) |
+| CRUD database, quản lý transaction | [Database](./database.md) |
+| Định nghĩa hoặc mở rộng bảng dữ liệu bằng code | [Collections](./collections.md) |
+| Migration dữ liệu khi nâng cấp Plugin | [Migration](./migration.md) |
+| Quản lý nhiều nguồn dữ liệu | [DataSourceManager](./data-source-manager.md) |
+| Đăng ký API tùy chỉnh và Action resource | [ResourceManager](./resource-manager.md) |
+| Cấu hình quyền API | [ACL](./acl.md) |
+| Thêm interceptor request/response hoặc middleware | [Context](./context.md) và [Middleware](./middleware.md) |
+| Lắng nghe sự kiện ứng dụng hoặc database | [Event](./event.md) |
+| Sử dụng cache để cải thiện hiệu năng | [Cache](./cache.md) |
+| Đăng ký tác vụ định kỳ | [CronJobManager](./cron-job-manager.md) |
+| Hỗ trợ đa ngôn ngữ | [I18n](./i18n.md) |
+| Tùy chỉnh log output | [Logger](./logger.md) |
+| Mở rộng lệnh CLI | [Command](./command.md) |
+| Viết test case | [Test](./test.md) |
+
+## Liên kết liên quan
+
+- [Plugin](./plugin.md) — Vòng đời lớp Plugin, các phương thức thành viên và đối tượng `app`
+- [Collections](./collections.md) — Định nghĩa hoặc mở rộng cấu trúc bảng dữ liệu bằng code
+- [Database](./database.md) — CRUD, Repository, transaction và sự kiện database
+- [ResourceManager](./resource-manager.md) — Đăng ký API tùy chỉnh và Action resource
+- [ACL](./acl.md) — Quyền role, đoạn quyền và kiểm soát truy cập
+- [Tổng quan phát triển Plugin](../index.md) — Giới thiệu tổng thể về phát triển Plugin
+- [Viết Plugin đầu tiên](../write-your-first-plugin.md) — Tạo Plugin hoàn chỉnh từ đầu

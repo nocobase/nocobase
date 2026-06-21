@@ -1,27 +1,28 @@
-
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
+---
+pkg: "@nocobase/preset-cluster"
+title: "Deployment Kubernetes"
+description: "Deploy cluster NocoBase di K8S/K3S: environment variable ConfigMap, Deployment, PVC shared storage, middleware Redis/PostgreSQL, load balancing dan health check."
+keywords: "deployment Kubernetes,K8S,K3S,ConfigMap,Deployment,PVC shared storage,deployment cluster,NocoBase"
+---
 
 # Deployment Kubernetes
 
-Artikel ini bertujuan untuk memandu pengguna dalam melakukan deployment NocoBase mode klaster dengan cepat di lingkungan Kubernetes (K8S). Diasumsikan pembaca sudah familiar dengan lingkungan K8S dan telah menyelesaikan langkah-langkah di [Persiapan](./preparations.md).
+Dokumen ini bertujuan untuk memandu pengguna agar dapat dengan cepat men-deploy NocoBase dalam cluster mode di environment K8S, mengasumsikan pembaca sudah familiar dengan environment K8S, dan telah menyelesaikan konten di [Persiapan](./preparations.md).
 
 :::info{title="Tips"}
-Untuk memverifikasi proses deployment K8S dengan cepat, lingkungan operasi dalam artikel ini adalah klaster K3S node tunggal (OS: Ubuntu). Panduan ini juga berlaku untuk klaster K8S standar. Jika Anda menemukan perbedaan saat melakukan deployment di klaster K8S standar, mohon informasikan kepada kami.
+Untuk verifikasi cepat alur deployment K8S, environment operasi dokumen ini adalah cluster K3S single-node (operating system Ubuntu). Panduan ini juga berlaku di cluster K8S standar. Jika terjadi situasi berbeda dari dokumen ini saat deployment di cluster K8S standar, mohon beri tahu kami.
 :::
 
-## Lingkungan Klaster
+## Environment Cluster
 
-Jika Anda sudah memiliki lingkungan klaster K8S, Anda bisa melewati langkah ini.
+Yang sudah memiliki environment cluster K8S dapat melewati langkah ini.
 
-Siapkan sebuah server dengan Debian / Ubuntu terinstal dan jalankan klaster K3S dalam mode node tunggal di atasnya. Untuk mempelajari lebih lanjut tentang K3S, kunjungi [situs web resmi K3S](https://docs.k3s.io/zh/).
+Siapkan satu server yang menginstal Debian / Ubuntu, dan jalankan cluster K3S dalam mode single-node di atasnya. Tentang apa itu K3S, Anda dapat mengakses [website resmi K3S](https://docs.k3s.io/).
 
-Langkah-langkahnya adalah sebagai berikut:
+Langkah-langkah:
 
-1. Lakukan SSH ke server.
-2. Gunakan skrip resmi untuk menginstal node master klaster K3S di server.
+1. SSH login ke server.
+2. Instal master node cluster K3S menggunakan script resmi di server.
 
 ```bash
 # Setelah instalasi, file kubeconfig default adalah /etc/rancher/k3s/k3s.yaml
@@ -29,19 +30,19 @@ curl -sfL https://get.k3s.io | sh -
 ```
 
 ```bash
-# Verifikasi apakah konfigurasi sudah benar
+# Verifikasi konfigurasi sudah benar
 kubectl get node
 ```
 
-## Deployment Aplikasi Klaster
+## Deployment Aplikasi Cluster
 
-Lakukan deployment aplikasi NocoBase dalam mode klaster di klaster K8S.
+Men-deploy aplikasi NocoBase dalam cluster mode di cluster K8S.
 
-### Variabel Lingkungan
+### Environment Variable
 
-Biasanya, variabel lingkungan harus dipisahkan dari file konfigurasi deployment aplikasi. Artikel ini menggunakan ConfigMap sebagai contoh orkestrasi. Dalam lingkungan produksi, Anda dapat menggunakan Secrets untuk memisahkan informasi sensitif lebih lanjut.
+Biasanya environment variable harus dipisahkan dari file konfigurasi deployment aplikasi. Dokumen ini menggunakan ConfigMap sebagai contoh orchestration. Production aktual dapat menambahkan Secrets untuk lebih memisahkan informasi sensitif.
 
-Langkah-langkahnya adalah sebagai berikut:
+Langkah-langkah:
 
 1. Buat file `nocobase-cm.yaml`.
 
@@ -52,14 +53,14 @@ metadata:
   name: nocobase-config
 data:
   TZ: Asia/Shanghai
-  # Konfigurasi database dan Redis di bawah ini menggunakan layanan PostgreSQL dan Redis di klaster dari dokumen "Deployment Middleware K8S".
-  # Jika lingkungan target sudah memiliki layanan database dan Redis yang ada, modifikasi konfigurasi database dan Redis yang sesuai di bawah ini.
+  # Konfigurasi database dan Redis berikut menggunakan service PostgreSQL dan Redis dari dokumen "Deployment Middleware K8S" di cluster
+  # Jika environment target sudah memiliki database dan service Redis lainnya, ubah konfigurasi terkait database dan Redis berikut sesuai
   CACHE_DEFAULT_STORE: redis
-  # Gunakan layanan Redis yang sudah ada atau yang Anda deploy sendiri.
+  # Gunakan service Redis yang sudah ada di environment atau yang Anda deploy sendiri
   CACHE_REDIS_URL: "redis://redis-0.redis-service:6379/0"
   PUBSUB_ADAPTER_REDIS_URL: "redis://redis-0.redis-service:6379/1"
   LOCK_ADAPTER_REDIS_URL: "redis:/redis-0.redis-service:6379/2"
-  # Gunakan layanan PostgreSQL yang sudah ada atau yang Anda deploy sendiri.
+  # Gunakan service PostgreSQL yang sudah ada di environment atau yang Anda deploy sendiri
   DB_DATABASE: nocobase
   DB_DIALECT: postgres
   DB_HOST: "postgres-0.postgres-service"
@@ -67,32 +68,32 @@ data:
   DB_PORT: "5432"
   DB_UNDERSCORED: "true"
   DB_USER: nocobase
-  # username platform layanan
+  # service platform username
   NOCOBASE_PKG_USERNAME: "<your user>"
-  # password platform layanan
+  # service platform password
   NOCOBASE_PKG_PASSWORD: "<your password>"
 
-  # ... variabel lingkungan lainnya
+  # ... environment variable lainnya
 ```
 
-2. Jalankan perintah `kubectl` untuk melakukan deployment ConfigMap.
+2. Jalankan command `kubectl` untuk men-deploy ConfigMap.
 
 ```bash
 kubectl apply -f nocobase-cm.yaml
 ```
 
-### Penyimpanan Bersama
+### Shared Storage
 
-Node-node berbeda dari aplikasi NocoBase yang di-deploy dalam mode klaster perlu me-mount direktori penyimpanan (`storage`) yang sama. Untuk itu, Anda perlu membuat Persistent Volume (PV) yang mendukung akses baca-tulis dari banyak node (ReadWriteMany). Biasanya, Anda perlu membuat *cloud disk* di platform penyedia layanan *cloud* dan mengikatnya sebagai PV, atau Anda dapat me-mount direktori penyimpanan bersama menggunakan metode lain seperti NFS.
+Node yang berbeda dari aplikasi NocoBase yang di-deploy dalam cluster mode perlu melakukan mounting direktori storage yang sama. Untuk itu, perlu membuat Persistent Volume yang mendukung baca/tulis multi-node. Biasanya perlu membuat cloud disk di platform cloud service provider dan binding sebagai PV. Anda juga dapat melakukan mounting direktori shared storage melalui cara lain seperti NFS.
 
 ### Deployment Aplikasi
 
-Untuk deployment awal, mulailah dengan satu node. Setelah selesai, Anda dapat melakukan *scale up* untuk menjalankan beberapa node.
+Deployment aplikasi pertama kali harus dimulai dari satu node. Setelah selesai, baru scale-up untuk menjalankan multiple node.
 
 1. Buat file `nocobase-apps.yaml`.
 
 ```yaml
-# Buat PVC. Beberapa Pod yang di-deploy oleh Deployment di bawah ini akan me-mount direktori penyimpanan persisten yang sama melalui PVC ini.
+# Buat PVC, multiple Pod yang di-deploy oleh Deployment berikut akan melakukan mounting direktori persistent storage yang sama melalui PVC ini
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -103,9 +104,9 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: "" # Contoh ini menggunakan layanan NFS node master, sehingga secara eksplisit diatur kosong untuk menghindari penggunaan StorageClass default.
+  storageClassName: "" # Contoh menggunakan service NFS master node sehingga ditentukan secara eksplisit kosong, untuk menghindari penggunaan default StorageClass
 ---
-# Service aplikasi, yang menyediakan layanan di luar klaster setelah diikat ke Ingress.
+# Service aplikasi, setelah binding Ingress menyediakan service ke luar cluster
 apiVersion: v1
 kind: Service
 metadata:
@@ -118,13 +119,14 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
-# Deployment aplikasi, yang dapat men-deploy beberapa kontainer aplikasi.
+---
+# Deployment aplikasi, dapat men-deploy multiple container aplikasi
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nocobase
 spec:
-  replicas: 1 # Deployment awal hanya dengan satu node.
+  replicas: 1 # Deployment pertama hanya satu node
   selector:
     matchLabels:
       app: nocobase
@@ -138,14 +140,14 @@ spec:
           image: nocobase/nocobase:1.6
           ports:
             - containerPort: 13000
-          # Muat variabel lingkungan dari ConfigMap yang telah di-deploy sebelumnya.
+          # Environment variable dimuat dari ConfigMap yang di-deploy sebelumnya
           envFrom:
             - configMapRef:
                 name: nocobase-config
           volumeMounts:
             - name: nocobase-data
               mountPath: /app/nocobase/storage
-          # Deklarasikan permintaan dan batasan sumber daya untuk layanan.
+          # Deklarasi requirement dan limit resource untuk menjalankan service
           resources:
             requests:
               memory: "512Mi"
@@ -153,117 +155,117 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
-          # Perintah *liveness probe*. Klaster menggunakan ini untuk menentukan apakah Pod perlu di-restart.
+          # Command liveness check service, cluster menentukan apakah perlu restart Pod melalui command ini
           livenessProbe:
             httpGet:
               path: /api/__health_check
               port: 13000
             initialDelaySeconds: 60
-          # Perintah *readiness probe*. Klaster menggunakan ini untuk menentukan apakah akan mengarahkan lalu lintas Service ke Pod.
+          # Command readiness check service, cluster menentukan apakah Service traffic dialihkan ke Pod melalui command ini
           readinessProbe:
             httpGet:
               path: /api/__health_check
               port: 13000
             initialDelaySeconds: 30
-      # Mount penyimpanan persisten melalui PVC.
+      # Mounting persistent storage melalui PVC
       volumes:
         - name: nocobase-data
           persistentVolumeClaim:
             claimName: nocobase-pvc
 ```
 
-2. Jalankan perintah `kubectl` untuk melakukan deployment layanan aplikasi NocoBase.
+2. Jalankan command `kubectl` untuk men-deploy service aplikasi NocoBase.
 
 ```bash
 kubectl apply -f nocobase-apps.yaml
 ```
 
-3. Verifikasi status layanan aplikasi NocoBase.
+3. Verifikasi status service aplikasi NocoBase.
 
 ```bash
-# Periksa status Pod layanan NocoBase
+# Lihat status Pod service NocoBase
 kubectl get pods -l app=nocobase
 ```
 
-Contoh output adalah sebagai berikut. `STATUS` `Running` menunjukkan bahwa layanan berhasil dimulai:
+Contoh output sebagai berikut. Saat `STATUS` adalah `Running` artinya service berhasil dijalankan:
 
 ```text
 NAME                        READY   STATUS    RESTARTS   AGE
 nocobase-5558b774d7-w6swf   1/1     Running   0          7h6m
 ```
 
-4. Pada startup pertama, Anda perlu mengaktifkan *plugin* berikut secara manual di antarmuka admin:
+4. Saat aplikasi pertama kali dijalankan, perlu mengaktifkan plugin berikut secara manual dari interface admin:
 
 - @nocobase/plugin-sync-adapter-redis
 - @nocobase/plugin-lock-adapter-redis
 
-Setelah itu, Anda dapat melakukan *scale up*. Misalnya, untuk *scale up* ke 4 node:
+Kemudian baru lakukan scaling. Misalnya scaling ke 4 node:
 
 ```bash
-kubectl scale deployment nocobase --replicas=4
+kubectl scale deployment nocobase-deployment --replicas=4
 ```
 
 ## Perubahan Aplikasi
 
-Perubahan aplikasi mengacu pada situasi berikut:
+Perubahan aplikasi mengacu pada beberapa situasi berikut:
 
-- Peningkatan versi aplikasi
-- Instalasi *plugin* baru
-- Aktivasi *plugin*
+- Upgrade versi aplikasi
+- Instalasi plugin baru
+- Aktivasi plugin
 
-NocoBase belum mendukung sinkronisasi otomatis perubahan di seluruh beberapa instans dalam klaster untuk skenario di atas. Oleh karena itu, Anda perlu menanganinya secara manual dengan mengikuti langkah-langkah di bawah ini. Langkah-langkah ini hanya melibatkan perubahan pada layanan aplikasi. Sebelum melakukan perubahan apa pun, harap cadangkan database dan penyimpanan persisten Anda sendiri.
+NocoBase belum mengimplementasikan auto-sync change untuk multi-instance cluster pada skenario di atas, sehingga perlu ditangani secara manual mengikuti langkah-langkah berikut. Langkah-langkah berikut hanya melibatkan perubahan service aplikasi. Sebelum melakukan perubahan, harap lakukan backup database dan persistent storage sendiri.
 
-### Peningkatan Versi Aplikasi Bergulir (*Rolling Upgrade*)
+### Rolling Upgrade Versi Aplikasi
 
-1. Jalankan perintah `kubectl set image` untuk mengubah versi *image* kontainer Deployment.
+1. Jalankan command `kubectl set image` untuk mengubah versi container image Deployment.
 
     ```bash
     kubectl set image deployment/nocobase nocobase=nocobase/nocobase:1.7
     ```
 
-2. Periksa status pembaruan bergulir (*rolling update*).
+2. Lihat status rolling update.
 
     ```bash
-    # Periksa progres pembaruan bergulir Deployment secara keseluruhan
+    # Lihat progress rolling update Deployment secara keseluruhan
     kubectl rollout status deployment/nocobase
 
-    # Periksa status setiap Pod
+    # Lihat status setiap Pod
     kubectl get pods -l app=nocobase
     ```
 
-Jika Anda menemukan masalah selama atau setelah peningkatan versi aplikasi dan perlu melakukan *rollback*, jalankan perintah berikut untuk mengembalikan versi *image* kontainer:
+Jika selama atau setelah upgrade versi aplikasi ditemukan anomali, perlu rollback versi, jalankan command berikut untuk rollback versi container image:
 
 ```bash
 kubectl rollout undo deployment/nocobase
 ```
 
-### Restart Aplikasi yang Lancar (*Graceful Restart*)
+### Smooth Restart Aplikasi
 
-Setelah menginstal atau mengaktifkan *plugin* baru, Anda perlu menyegarkan konfigurasi atau status aplikasi. Anda dapat menggunakan perintah berikut untuk me-restart setiap Pod secara lancar.
+Setelah instal plugin baru atau aktivasi plugin, perlu refresh konfigurasi atau status aplikasi. Anda dapat menggunakan command berikut untuk smooth restart setiap Pod.
 
-1. Jalankan perintah `kubectl rollout restart`.
+1. Jalankan command `kubectl rollout restart`.
 
     ```bash
     kubectl rollout restart deployment/nocobase
     ```
 
-2. Periksa status restart bergulir (*rolling restart*).
+2. Lihat status rolling restart.
 
     ```bash
-    # Periksa progres restart bergulir Deployment secara keseluruhan
+    # Lihat progress restart Deployment secara keseluruhan
     kubectl rollout status deployment/nocobase
 
-    # Periksa status setiap Pod
+    # Lihat status setiap Pod
     kubectl get pods -l app=nocobase
     ```
 
-## Gateway Aplikasi
+## Application Gateway
 
-Agar aplikasi yang di-deploy di klaster K8S dapat diakses dari luar, Anda perlu mengikat Ingress ke Service aplikasi. Lingkungan klaster yang digunakan dalam artikel ini adalah K3S, dan komponen Ingress Controller yang terinstal secara default di K3S adalah Traefik.
+Saat aplikasi yang di-deploy di cluster K8S perlu diakses dari luar, perlu binding Ingress untuk Service aplikasi. Environment cluster yang digunakan dokumen ini adalah K3S, komponen Ingress Controller default yang diinstal K3S adalah Traefik.
 
 ### Traefik IngressRoute
 
-Langkah-langkahnya adalah sebagai berikut:
+Langkah-langkah:
 
 1. Buat file `nocobase-ingress.yaml`.
 
@@ -276,18 +278,18 @@ Langkah-langkahnya adalah sebagai berikut:
       entryPoints:
         - web
       routes:
-        # Di sini, 'nocobase.local' harus diganti dengan nama domain nyata yang mengarah ke IP klaster.
-        # Jika Anda tidak memiliki domain untuk verifikasi, Anda dapat memodifikasi file host lokal Anda untuk menambahkan catatan nocobase.local yang mengarah ke IP klaster.
-        # Anda kemudian dapat mengakses aplikasi NocoBase di klaster dengan membuka http://nocobase.local di browser Anda.
+        # 'nocobase.local' di sini harus diganti dengan domain real yang mengarah ke IP cluster
+        # Jika tidak ada domain untuk verifikasi, modifikasi file host lokal, tambahkan record nocobase.local mengarah ke IP cluster
+        # Browser membuka http://nocobase.local untuk mengakses aplikasi NocoBase di cluster
         - match: Host(`nocobase.local`)
           kind: Rule
           services:
-            # Ini adalah Service yang dibuat saat melakukan deployment aplikasi nocobase di bagian "Deployment Aplikasi" di atas.
+            # Service ini adalah Service yang dibuat saat deployment aplikasi nocobase di section "Deployment Aplikasi" sebelumnya
             - name: nocobase
               port: 13000
     ```
 
-2. Jalankan perintah `kubectl` untuk melakukan deployment Ingress untuk aplikasi NocoBase.
+2. Jalankan command `kubectl` untuk men-deploy Ingress aplikasi NocoBase.
 
     ```bash
     kubectl apply -f nocobase-ingress.yaml
@@ -295,7 +297,7 @@ Langkah-langkahnya adalah sebagai berikut:
 
 ### Ingress-Nginx
 
-Sebagian besar klaster K8S menggunakan Ingress-Nginx sebagai Ingress Controller. Di bawah ini adalah file `nocobase-ingress.yaml` berdasarkan Ingress-Nginx:
+Sebagian besar cluster K8S menginstal komponen Ingress Controller adalah Ingress-Nginx, berikut adalah file `nocobase-ingress.yaml` berbasis Ingress-Nginx:
 
 ```yaml
 apiVersion: extensions/v1beta1
@@ -306,9 +308,9 @@ metadata:
   name: nocobase-ingress
 spec:
   rules:
-    # Di sini, 'nocobase.local' harus diganti dengan nama domain nyata yang mengarah ke IP klaster.
-    # Jika Anda tidak memiliki domain untuk verifikasi, Anda dapat memodifikasi file host lokal Anda untuk menambahkan catatan nocobase.local yang mengarah ke IP klaster.
-    # Anda kemudian dapat mengakses aplikasi NocoBase di klaster dengan membuka http://nocobase.local di browser Anda.
+    # 'nocobase.local' di sini harus diganti dengan domain real yang mengarah ke IP cluster
+    # Jika tidak ada domain untuk verifikasi, modifikasi file host lokal, tambahkan record nocobase.local mengarah ke IP cluster
+    # Browser membuka http://nocobase.local untuk mengakses aplikasi Nocobase di cluster
     - host: nocobase.local
       http:
         paths:
@@ -319,21 +321,21 @@ spec:
 
 ## Menggunakan Helm Charts
 
-Kami telah membuat Helm Charts untuk aplikasi NocoBase, yang memungkinkan Anda untuk melakukan deployment layanan aplikasi NocoBase di K8S menggunakan Helm CLI.
+Kami telah menulis Helm Charts aplikasi NocoBase, Anda dapat menggunakan Helm CLI untuk men-deploy service aplikasi NocoBase di K8S.
 
 ### Persiapan
 
-Pastikan klien seperti `kubectl` dan `helm` sudah terinstal di lingkungan operasi Anda dan bahwa `kubectl` dapat terhubung dengan benar ke klaster target.
+Pastikan client seperti `kubectl`, `helm` sudah terinstal di environment operasi, dan konfirmasi `kubectl` dapat terhubung dengan benar ke cluster target.
 
-### Menambahkan Repositori
+### Tambah Repository
 
-Tambahkan repositori NocoBase Helm Charts:
+Tambahkan repository Helm Charts NocoBase:
 
 ```bash
-# Tambahkan repositori Helm Charts NocoBase
+# Tambah repository Helm Charts NocoBase
 helm repo add nocobase https://nocobase.github.io/helm-charts
 
-# Perbarui indeks Helm
+# Update Helm index
 helm repo update
 ```
 
@@ -343,23 +345,23 @@ helm repo update
 
     ```yaml
     persistent:
-      # Ukuran yang diperlukan untuk penyimpanan bersama klaster NocoBase
+      # Ukuran shared storage yang dibutuhkan cluster NocoBase
       size: 10Gi
-      # Kelas penyimpanan yang disediakan oleh layanan Kubernetes cloud
-      # Sama seperti di bagian "Deployment Aplikasi", ini secara eksplisit diatur kosong karena menggunakan layanan NFS node master.
+      # Service class storage yang disediakan cloud service K8S
+      # Di sini sama seperti section "Deployment Aplikasi" menggunakan service NFS master node sehingga ditentukan secara eksplisit kosong
       storageClassName: ""
 
     configMap:
       data:
         TZ: Asia/Shanghai
-        # Konfigurasi database dan Redis di bawah ini menggunakan layanan PostgreSQL dan Redis di klaster dari dokumen "Deployment Middleware K8S".
-        # Jika lingkungan target sudah memiliki layanan database dan Redis yang ada, modifikasi konfigurasi database dan Redis yang sesuai di bawah ini.
+        # Konfigurasi database dan Redis berikut menggunakan service PostgreSQL dan Redis dari dokumen "Deployment Middleware K8S" di cluster
+        # Jika environment target sudah memiliki database dan service Redis lainnya, ubah konfigurasi terkait database dan Redis berikut sesuai
         CACHE_DEFAULT_STORE: redis
-        # Gunakan layanan Redis yang sudah ada atau yang Anda deploy sendiri.
+        # Gunakan service Redis yang sudah ada di environment atau yang Anda deploy sendiri
         CACHE_REDIS_URL: "redis://redis-0.redis-service:6379/0"
         PUBSUB_ADAPTER_REDIS_URL: "redis://redis-0.redis-service:6379/1"
         LOCK_ADAPTER_REDIS_URL: "redis:/redis-0.redis-service:6379/2"
-        # Gunakan layanan PostgreSQL yang sudah ada atau yang Anda deploy sendiri.
+        # Gunakan service PostgreSQL yang sudah ada di environment atau yang Anda deploy sendiri
         DB_DATABASE: nocobase
         DB_DIALECT: postgres
         DB_HOST: "postgres-0.postgres-service"
@@ -367,15 +369,15 @@ helm repo update
         DB_PORT: "5432"
         DB_UNDERSCORED: "true"
         DB_USER: nocobase
-        # username platform layanan
+        # service platform username
         NOCOBASE_PKG_USERNAME: "<your user>"
-        # password platform layanan
+        # service platform password
         NOCOBASE_PKG_PASSWORD: "<your password>"
 
-        # ... variabel lingkungan lainnya
+        # ... environment variable lainnya
     ```
 
-2.  Jalankan perintah `helm install` untuk memulai instalasi.
+2.  Jalankan command `helm install` untuk memulai instalasi.
 
     ```bash
     helm install nocobase nocobase/nocobase --values values.yaml

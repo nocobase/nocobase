@@ -1,3 +1,9 @@
+---
+title: "CreateOptions"
+description: "NocoBase Repository create 方法参数：values、whitelist、blacklist、updateAssociationValues、transaction。"
+keywords: "CreateOptions,Repository,create,values,NocoBase"
+---
+
 **类型**
 
 ```typescript

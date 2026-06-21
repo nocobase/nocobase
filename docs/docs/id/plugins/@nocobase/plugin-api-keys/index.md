@@ -1,12 +1,14 @@
 ---
-displayName: "Auth: API keys"
+displayName: "Authentication: API Keys"
 packageName: '@nocobase/plugin-api-keys'
+title: "Authentication: API Keys"
+keywords: "Authentication: API Keys,plugin,NocoBase"
 description: |
-  Allows users to use API key to access application's HTTP API
+  Memungkinkan pengguna mengakses HTTP API aplikasi dengan menggunakan API Key.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Auth: API keys
+# Authentication: API Keys

@@ -1,4 +1,6 @@
 ---
+title: "工作流：JSON 变量映射"
+keywords: "工作流：JSON 变量映射,插件,NocoBase"
 displayName: "工作流：JSON 变量映射"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 description: |

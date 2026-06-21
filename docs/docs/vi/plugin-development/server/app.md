@@ -1,18 +1,19 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Application"
+description: "Đối tượng app server NocoBase: logger, db, resourceManager, acl, cacheManager, cornJobManager, i18n, cli, dataSourceManager, pm."
+keywords: "Application,app,db,resourceManager,acl,cacheManager,server,NocoBase"
+---
 
+# Application
 
-# Ứng dụng
-
-Trong phát triển plugin, đối tượng `app` được sử dụng rất phổ biến. Các đối tượng thường dùng bao gồm:
+Trong phát triển Plugin, app là một đối tượng được dùng rất thường xuyên, các đối tượng thường dùng:
 
 ## logger
 ## db
 ## resourceManager
 ## acl
 ## cacheManager
-## cronJobManager
+## cornJobManager
 ## i18n
 ## cli
 ## dataSourceManager

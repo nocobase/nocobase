@@ -1,31 +1,33 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+pkg: "@nocobase/plugin-ai-knowledge-base"
+title: "RAG - Tăng cường truy xuất tạo sinh"
+description: "Kích hoạt RAG trong cài đặt Nhân viên AI, cấu hình Knowledge Base Prompt, chọn Knowledge Base, Top K, ngưỡng Score, AI phản hồi dựa trên tài liệu được truy xuất."
+keywords: "RAG,Tăng cường truy xuất,Truy xuất Knowledge Base,Top K,NocoBase"
+---
 
 # Truy xuất RAG
 
 ## Giới thiệu
 
-Sau khi cấu hình cơ sở tri thức, bạn có thể bật tính năng RAG trong cài đặt nhân viên AI.
+Sau khi cấu hình tốt Knowledge Base, bạn có thể kích hoạt tính năng RAG trong cài đặt Nhân viên AI.
 
-Khi RAG được bật, nhân viên AI sẽ sử dụng truy xuất RAG để lấy tài liệu từ cơ sở tri thức dựa trên tin nhắn của người dùng và phản hồi dựa trên các tài liệu đã truy xuất khi người dùng trò chuyện với họ.
+Sau khi kích hoạt RAG, khi người dùng trò chuyện với Nhân viên AI, Nhân viên AI sẽ sử dụng truy xuất RAG, dùng tin nhắn của người dùng để lấy tài liệu từ Knowledge Base và phản hồi dựa trên tài liệu được truy xuất.
 
-## Bật RAG
+## Kích hoạt RAG
 
-Truy cập trang cấu hình plugin nhân viên AI, nhấp vào tab `AI employees` để vào trang quản lý nhân viên AI.
+Vào trang cấu hình Plugin Nhân viên AI, nhấp vào tab `AI employees` để vào trang quản lý Nhân viên AI.
 
 ![20251023010811](https://static-docs.nocobase.com/20251023010811.png)
 
-Chọn nhân viên AI mà bạn muốn bật RAG, nhấp vào nút `Edit` để vào trang chỉnh sửa nhân viên AI.
+Chọn Nhân viên AI cần kích hoạt RAG, nhấp nút `Edit` để vào trang chỉnh sửa Nhân viên AI.
 
 Trong tab `Knowledge base`, bật công tắc `Enable`.
 
-- Trong `Knowledge Base Prompt`, nhập lời nhắc để tham chiếu cơ sở tri thức. `{knowledgeBaseData}` là một chỗ dành sẵn cố định và không được sửa đổi;
-- Trong `Knowledge Base`, chọn cơ sở tri thức đã cấu hình. Tham khảo: [Cơ sở tri thức](/ai-employees/knowledge-base/knowledge-base);
-- Trong ô nhập `Top K`, nhập số lượng tài liệu cần truy xuất, mặc định là 3;
-- Trong ô nhập `Score`, nhập ngưỡng liên quan của tài liệu khi truy xuất;
+- Trong `Knowledge Base Prompt` nhập câu Prompt trích dẫn Knowledge Base, `{knowledgeBaseData}` là placeholder cố định, không sửa đổi;
+- Trong `Knowledge Base` chọn Knowledge Base đã cấu hình, tham khảo: [Knowledge Base](./knowledge-base/);
+- Trong ô nhập `Top K` nhập số lượng tài liệu cần truy xuất, mặc định là 3;
+- Trong ô nhập `Score` ngưỡng độ liên quan tài liệu khi truy xuất;
 
-Nhấp vào nút `Submit` để lưu cài đặt nhân viên AI.
+Nhấp nút `Submit` để lưu cài đặt Nhân viên AI.
 
 ![20251023010844](https://static-docs.nocobase.com/20251023010844.png)

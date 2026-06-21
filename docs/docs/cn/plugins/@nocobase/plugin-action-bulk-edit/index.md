@@ -1,4 +1,6 @@
 ---
+title: "操作：批量编辑"
+keywords: "操作：批量编辑,插件,NocoBase"
 displayName: "操作：批量编辑"
 packageName: '@nocobase/plugin-action-bulk-edit'
 supportedVersions:

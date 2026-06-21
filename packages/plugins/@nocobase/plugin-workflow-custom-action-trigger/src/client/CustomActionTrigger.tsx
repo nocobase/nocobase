@@ -32,23 +32,21 @@ import {
   useGetDataSourceCollectionManager,
   TriggerCollectionRecordSelect,
   WorkflowVariableWrapper,
+  WorkflowVariableJSON,
   RadioWithTooltip,
   useWorkflowAnyExecuted,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, lang } from './locale';
-import { TriggerScopeProvider } from './components';
+import { TriggerDataInput, TriggerScopeProvider } from './components';
 import { CONTEXT_TYPE, CONTEXT_TYPE_OPTIONS } from '../common/constants';
 import { SubModelItem } from '@nocobase/flow-engine';
 
 function useVariables(config, options) {
-  const [dataSourceName] = parseCollectionName(config.collection);
   const compile = useCompile();
-  const collectionManager = useGetDataSourceCollectionManager(dataSourceName);
   const mainCollectionManager = useGetDataSourceCollectionManager();
-  if (config.global) {
-    return null;
-  }
+  const [dataSourceName] = config.collection ? parseCollectionName(config.collection) : [];
+  const collectionManager = useGetDataSourceCollectionManager(dataSourceName);
   const userFields = getCollectionFieldOptions({
     // depth,
     appends: ['user'],
@@ -67,6 +65,21 @@ function useVariables(config, options) {
     compile,
     collectionManager: mainCollectionManager,
   });
+
+  if (config.global || config.type === CONTEXT_TYPE.GLOBAL || !config.collection) {
+    return [
+      {
+        label: lang('Trigger data'),
+        value: 'data',
+      },
+      ...userFields,
+      {
+        label: lang('Role of user acted'),
+        value: 'roleName',
+      },
+    ];
+  }
+
   return [
     ...getCollectionFieldOptions({
       appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
@@ -96,6 +109,43 @@ function useVariables(config, options) {
 export default class extends Trigger {
   title = `{{t("Custom action event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t('When the "Trigger Workflow" button is clicked, the event is triggered based on different context where the button is located. For complex data processing that cannot be handled simply by built-in operations (CRUD) of NocoBase, you can define a series of operations through a workflow and trigger it with the "Trigger Workflow" button.', { ns: "${NAMESPACE}" })}}`;
+  presetFieldset = {
+    type: {
+      type: 'number',
+      title: `{{t("Context type", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'RadioWithTooltip',
+      'x-component-props': {
+        direction: 'vertical',
+        options: CONTEXT_TYPE_OPTIONS,
+      },
+      required: true,
+      default: CONTEXT_TYPE.GLOBAL,
+    },
+    collection: {
+      type: 'string',
+      title: '{{t("Collection")}}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'DataSourceCollectionCascader',
+      // 'x-component-props': {
+      //   dataSourceFilter(item) {
+      //     return item.options.key === 'main' || item.options.isDBInstance;
+      //   },
+      // },
+      ['x-reactions']: [
+        {
+          dependencies: ['.type'],
+          fulfill: {
+            state: {
+              visible: '{{Boolean($deps[0])}}',
+            },
+          },
+        },
+      ],
+    },
+  };
   fieldset = {
     type: {
       type: 'number',
@@ -104,10 +154,11 @@ export default class extends Trigger {
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
+        direction: 'vertical',
         options: CONTEXT_TYPE_OPTIONS,
       },
       default: CONTEXT_TYPE.GLOBAL,
-      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
+      'x-disabled': true,
     },
     collection: {
       type: 'string',
@@ -115,7 +166,7 @@ export default class extends Trigger {
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'DataSourceCollectionCascader',
-      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
+      'x-disabled': true,
       ['x-reactions']: [
         {
           target: 'appends',
@@ -166,17 +217,16 @@ export default class extends Trigger {
       type: 'void',
       'x-component': 'TriggerScopeProvider',
       'x-component-props': {
-        types: [CONTEXT_TYPE.SINGLE_RECORD],
+        types: [CONTEXT_TYPE.GLOBAL, CONTEXT_TYPE.SINGLE_RECORD],
       },
       properties: {
         data: {
           type: 'object',
           title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-          description: `{{t("Choose a record or primary key of a record in the collection to trigger.", { ns: "workflow" })}}`,
+          description: `{{t("Use JSON as trigger data for custom data context, or choose a record in single record context.", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
-          'x-component': 'TriggerCollectionRecordSelect',
+          'x-component': 'TriggerDataInput',
           default: null,
-          required: true,
         },
       },
     },
@@ -279,8 +329,10 @@ export default class extends Trigger {
   };
   components = {
     TriggerScopeProvider,
+    TriggerDataInput,
     TriggerCollectionRecordSelect,
     WorkflowVariableWrapper,
+    WorkflowVariableJSON,
     RadioWithTooltip,
   };
   isActionTriggerable_deprecated = (config, context) => {

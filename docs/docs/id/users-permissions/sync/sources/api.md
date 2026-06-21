@@ -1,21 +1,24 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "Sinkronisasi Data Pengguna melalui HTTP API"
+description: "Sinkronisasi data pengguna NocoBase melalui HTTP API: POST /api/userData:push, format UserData/DepartmentData, API Keys, Bearer token."
+keywords: "HTTP API,sinkronisasi data pengguna,userData:push,API Keys,Bearer token,NocoBase"
+---
 
-# Menyinkronkan Data Pengguna melalui HTTP API
+# Sinkronisasi Data Pengguna melalui HTTP API
 
-## Mendapatkan Kunci API
+## Mendapatkan API Key
 
-Lihat [Kunci API](/auth-verification/api-keys). Pastikan peran yang terkait dengan kunci API memiliki izin yang diperlukan untuk menyinkronkan data pengguna.
+Lihat [API Keys](/auth-verification/api-keys). Anda perlu memastikan role yang ditetapkan untuk API Key memiliki izin sinkronisasi data pengguna.
 
-## Ikhtisar API
+## Penjelasan API
 
 ### Contoh
 
 ```bash
 curl 'https://localhost:13000/api/userData:push' \
   -H 'Authorization: Bearer <token>' \
-  --data-raw '{"dataType":"user","records":[]}' # Lihat detail isi permintaan di bawah
+  --data-raw '{"dataType":"user","records":[]}' # Lihat penjelasan detail body request di bawah
 ```
 
 ### Endpoint
@@ -28,52 +31,51 @@ POST /api/userData:push
 
 #### UserData
 
-| Parameter  | Tipe                       | Deskripsi                                                                 |
-| ---------- | -------------------------- | ------------------------------------------------------------------------- |
-| `dataType` | `'user' \| 'department'`   | Wajib. Tipe data yang dikirim. Gunakan `user` untuk mengirim data pengguna. |
-| `matchKey` | `'username' \| 'email' \| 'phone'` | Opsional. Digunakan untuk mencocokkan pengguna sistem yang sudah ada berdasarkan bidang yang ditentukan. |
-| `records`  | `UserRecord[]`             | Wajib. Larik (array) catatan data pengguna.                               |
+| Nama Parameter | Tipe                               | Keterangan                                                                |
+| -------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| `dataType`     | `'user' \| 'department'`           | Wajib, tipe data yang di-push, untuk push data pengguna isi `user`        |
+| `matchKey`     | `'username' \| 'email' \| 'phone'` | Opsional, akan mencari pengguna yang sudah ada di sistem berdasarkan field yang disediakan dan nilai field yang sesuai dalam data yang di-push, untuk mencocokkan |
+| `records`      | `UserRecord[]`                     | Wajib, array record data pengguna                                          |
 
 #### UserRecord
 
-| Parameter     | Tipe       | Deskripsi                                                                                                 |
-| ------------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
-| `uid`         | `string`   | Wajib. Pengidentifikasi unik untuk data pengguna sumber, digunakan untuk mengaitkan data sumber dengan pengguna sistem. Tidak dapat diubah untuk satu pengguna. |
-| `nickname`    | `string`   | Opsional. Nama panggilan pengguna.                                                                         |
-| `username`    | `string`   | Opsional. Nama pengguna.                                                                                    |
-| `email`       | `string`   | Opsional. Alamat email pengguna.                                                                            |
-| `phone`       | `string`   | Opsional. Nomor telepon pengguna.                                                                           |
-| `departments` | `string[]` | Opsional. Larik (array) UID departemen tempat pengguna menjadi anggota.                                     |
-| `isDeleted`   | `boolean`  | Opsional. Menunjukkan apakah catatan dihapus.                                                               |
-| `<field>`     | `any`      | Opsional. Data bidang kustom dalam tabel pengguna.                                                          |
+| Nama Parameter | Tipe       | Keterangan                                                                                                |
+| -------------- | ---------- | --------------------------------------------------------------------------------------------------------- |
+| `uid`          | `string`   | Wajib, identifier unik dari sumber data pengguna, digunakan untuk mengaitkan data asli sumber dengan pengguna sistem. Tidak dapat berubah untuk pengguna yang sama. |
+| `nickname`     | `string`   | Opsional, nickname pengguna                                                                                |
+| `username`     | `string`   | Opsional, username                                                                                         |
+| `email`        | `string`   | Opsional, email pengguna                                                                                   |
+| `phone`        | `string`   | Opsional, nomor telepon                                                                                    |
+| `departments`  | `string[]` | Opsional, array uid departemen yang diikuti pengguna                                                       |
+| `isDeleted`    | `boolean`  | Opsional, apakah record dihapus                                                                            |
+| `<field>`     | `any`      | Opsional, data field kustom lain di tabel pengguna                                                          |
 
 ### Format Data Departemen
 
 :::info
-Mengirim data departemen memerlukan [plugin Departemen](../../departments) untuk diinstal dan diaktifkan.
+Prasyarat untuk push data departemen adalah menginstal dan mengaktifkan plugin [Departemen](../../departments).
 :::
 
 #### DepartmentData
 
-| Parameter  | Tipe                       | Deskripsi                                                                |
-| ---------- | -------------------------- | -------------------------------------------------------------------------- |
-| `dataType` | `'user' \| 'department'`   | Wajib. Tipe data yang dikirim. Gunakan `department` untuk data departemen. |
-| `records`  | `DepartmentRecord[]`       | Wajib. Larik (array) catatan data departemen.                              |
+| Nama Parameter | Tipe                     | Keterangan                                                  |
+| -------------- | ------------------------ | ----------------------------------------------------------- |
+| `dataType`     | `'user' \| 'department'` | Wajib, tipe data yang di-push, untuk push data departemen isi `department` |
+| `records`      | `DepartmentRecord[]`     | Wajib, array record data departemen                          |
 
 #### DepartmentRecord
 
-| Parameter   | Tipe      | Deskripsi                                                                                                       |
-| ----------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
-| `uid`       | `string`  | Wajib. Pengidentifikasi unik untuk data departemen sumber, digunakan untuk mengaitkan data sumber dengan departemen sistem. Tidak dapat diubah. |
-| `title`     | `string`  | Wajib. Judul departemen.                                                                                            |
-| `parentUid` | `string`  | Opsional. UID departemen induk.                                                                                     |
-| `isDeleted` | `boolean` | Opsional. Menunjukkan apakah catatan dihapus.                                                                       |
-| `<field>`   | `any`     | Opsional. Data bidang kustom dalam tabel departemen.                                                                |
+| Nama Parameter | Tipe      | Keterangan                                                                                                    |
+| -------------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| `uid`          | `string`  | Wajib, identifier unik dari sumber data departemen, digunakan untuk mengaitkan data asli sumber dengan departemen sistem. Tidak dapat berubah untuk departemen yang sama. |
+| `title`        | `string`  | Wajib, judul departemen                                                                                        |
+| `parentUid`    | `string`  | Opsional, uid departemen induk                                                                                 |
+| `isDeleted`    | `boolean` | Opsional, apakah record dihapus                                                                                |
+| `<field>`     | `any`     | Opsional, data field kustom lain di tabel departemen                                                            |
 
 :::info
 
-1.  Pengiriman data bersifat idempoten.
-2.  Jika departemen induk belum ada saat mengirim data departemen, asosiasi tidak dapat dibuat. Anda dapat mengirim ulang data setelah departemen induk dibuat.
-3.  Jika departemen pengguna belum ada saat mengirim data pengguna, pengguna tidak dapat dikaitkan dengan departemen tersebut. Anda dapat mengirim ulang data pengguna setelah data departemen dikirim.
-
-:::
+1. Push data idempoten saat dilakukan beberapa kali.
+2. Jika saat push departemen, departemen induk belum dibuat, maka tidak dapat dikaitkan. Anda dapat melakukan push ulang data.
+3. Jika saat push pengguna, departemen belum dibuat, maka tidak dapat dikaitkan dengan departemen yang diikuti. Setelah melakukan push data departemen, Anda dapat melakukan push data pengguna lagi.
+   :::

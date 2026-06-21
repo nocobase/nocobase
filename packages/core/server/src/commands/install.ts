@@ -10,7 +10,6 @@
 /* istanbul ignore file -- @preserve */
 
 import Application from '../application';
-import { createDocsIndex } from '../ai/create-docs-index';
 
 export default (app: Application) => {
   app
@@ -24,7 +23,6 @@ export default (app: Application) => {
       if (options.lang) {
         process.env.INIT_APP_LANG = options.lang;
       }
-      await createDocsIndex(app);
       await app.install(options);
       const reinstall = options.clean || options.force;
       app.log.info(`app ${reinstall ? 'reinstalled' : 'installed'} successfully [v${app.getVersion()}]`);

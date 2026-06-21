@@ -1,25 +1,27 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Manajemen Versi"
+description: "Manajemen versi: versi alur Workflow, rilis, rollback, perbandingan dan pemulihan versi historis, mendukung koeksistensi multi-versi."
+keywords: "Workflow,manajemen versi,Revisions,rilis rollback,versi historis,NocoBase"
+---
 
 # Manajemen Versi
 
-Setelah sebuah alur kerja yang telah dikonfigurasi terpicu setidaknya satu kali, jika Anda ingin mengubah konfigurasi alur kerja atau node di dalamnya, Anda perlu membuat versi baru sebelum melakukan perubahan. Hal ini juga memastikan bahwa saat meninjau riwayat eksekusi alur kerja yang telah terpicu sebelumnya, riwayat tersebut tidak akan terpengaruh oleh modifikasi di masa mendatang.
+Setelah Workflow yang dikonfigurasi dipicu setidaknya sekali, jika Anda ingin memodifikasi konfigurasi Workflow atau Node di dalamnya, Anda perlu membuat versi baru terlebih dahulu sebelum memodifikasi. Hal ini juga memastikan bahwa ketika meninjau riwayat eksekusi Workflow yang sudah dipicu, tidak terpengaruh oleh modifikasi di masa depan.
 
-Pada halaman konfigurasi alur kerja, Anda dapat melihat versi alur kerja yang sudah ada dari menu versi di sudut kanan atas:
+Pada halaman konfigurasi Workflow, Anda dapat melihat versi Workflow yang ada di menu versi pojok kanan atas:
 
-![Lihat versi alur kerja](https://static-docs.nocobase.com/ad93d2c08166b0e3e643fb148713a63f.png)
+![Lihat versi Workflow](https://static-docs.nocobase.com/ad93d2c08166b0e3e643fb148713a63f.png)
 
-Pada menu tindakan lainnya ("...") di sebelah kanannya, Anda dapat memilih untuk menyalin versi yang sedang dilihat ke versi baru:
+Pada menu operasi tambahan ("…") di sebelah kanannya, Anda dapat memilih untuk menyalin versi yang sedang dilihat ke versi baru:
 
-![Salin alur kerja ke versi baru](https://static-docs.nocobase.com/2805798e6caca2af004893390a744256.png)
+![Salin Workflow ke versi baru](https://static-docs.nocobase.com/2805798e6caca2af004893390a744256.png)
 
-Setelah menyalin ke versi baru, klik tombol "Aktifkan"/"Nonaktifkan" untuk mengalihkan versi yang sesuai ke status aktif, dan versi alur kerja yang baru akan berlaku.
+Setelah menyalin ke versi baru, klik sakelar "Aktifkan"/"Nonaktifkan", ubah versi tersebut ke status aktif, maka versi Workflow yang baru akan berlaku.
 
-Jika Anda perlu memilih kembali versi lama, alih ke versi tersebut dari menu versi, lalu klik kembali tombol "Aktifkan"/"Nonaktifkan" untuk mengalihkannya ke status aktif. Versi yang sedang dilihat akan berlaku, dan pemicu berikutnya akan menjalankan proses dari versi tersebut.
+Jika perlu memilih kembali versi lama, setelah berpindah dari menu versi, klik kembali sakelar "Aktifkan"/"Nonaktifkan" ke status aktif, versi yang sedang dilihat akan berlaku, dan pemicuan selanjutnya akan menjalankan alur dari versi yang sesuai.
 
-Saat Anda perlu menonaktifkan alur kerja, klik tombol "Aktifkan"/"Nonaktifkan" untuk mengalihkannya ke status nonaktif, dan alur kerja tersebut tidak akan lagi terpicu.
+Ketika perlu menonaktifkan Workflow, klik sakelar "Aktifkan"/"Nonaktifkan" ke status nonaktif, maka Workflow tersebut tidak akan dipicu lagi.
 
 :::info{title=Tips}
-Berbeda dengan "Menyalin" sebuah alur kerja dari daftar manajemen alur kerja, alur kerja yang "disalin ke versi baru" masih dikelompokkan dalam set alur kerja yang sama, hanya dibedakan berdasarkan versi. Namun, menyalin alur kerja diperlakukan sebagai alur kerja yang sepenuhnya baru, tidak terkait dengan versi alur kerja sebelumnya, dan jumlah eksekusinya juga akan diatur ulang menjadi nol.
+Berbeda dengan "Salin" Workflow di daftar manajemen Workflow, Workflow yang "Disalin ke versi baru" tetap dikumpulkan dalam grup Workflow yang sama, hanya dibedakan melalui versi. Sedangkan Workflow yang disalin akan dianggap sebagai Workflow baru, tidak terkait dengan versi Workflow sebelumnya, dan jumlah eksekusi juga akan direset ke nol.
 :::

@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Datetime (tanpa Timezone)"
+description: "Field Datetime (tanpa Timezone), menyimpan tanggal dan waktu lokal."
+keywords: "datetime,tanpa timezone,datetime without tz,waktu lokal,NocoBase"
+---
 
-# Tanggal dan Waktu (tanpa zona waktu)
+# Datetime (tanpa Timezone)
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Kolom
+## Konfigurasi Field
 
 ![20240512181142](https://static-docs.nocobase.com/20240512181142.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

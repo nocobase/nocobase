@@ -1,14 +1,16 @@
 ---
-displayName: "Block: Multi-step form"
+displayName: "Block: Biểu mẫu nhiều bước"
 packageName: '@nocobase/plugin-block-multi-step-form'
+title: "Block: Biểu mẫu nhiều bước"
+keywords: "Block: Biểu mẫu nhiều bước,Plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Break the form with many fields into multiple steps to ease the burden on users.
-isFree: false
-builtIn: false
+  Chia biểu mẫu có nhiều trường thành nhiều bước để điền, giảm tải cho người dùng.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Multi-step form
+# Block: Biểu mẫu nhiều bước

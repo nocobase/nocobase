@@ -1,106 +1,113 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Template Print - Fitur Lanjutan"
+description: "Fitur lanjutan Template Print: update nomor halaman, generate daftar isi, kontrol pagination, cara penyisipan Word dan LibreOffice."
+keywords: "Template Print,Fitur Lanjutan,Nomor Halaman,Daftar Isi,Pagination,NocoBase"
+---
 
 ## Fitur Lanjutan
 
-### Penomoran Halaman
+### Pagination
 
-#### 1. Pembaruan Nomor Halaman
-
-##### Sintaks
-Cukup sisipkan di perangkat lunak Office Anda.
-
-##### Contoh
-Di Microsoft Word:
-- Gunakan fungsi "Sisipkan → Nomor Halaman"
-Di LibreOffice:
-- Gunakan fungsi "Sisipkan → Bidang → Nomor Halaman"
-
-##### Hasil
-Dalam laporan yang dihasilkan, nomor halaman di setiap halaman akan diperbarui secara otomatis.
-
-#### 2. Pembuatan Daftar Isi
+#### 1. Update Nomor Halaman
 
 ##### Sintaks
-Cukup sisipkan di perangkat lunak Office Anda.
+Cukup sisipkan di software Office.
 
 ##### Contoh
-Di Microsoft Word:
-- Gunakan fungsi "Sisipkan → Indeks dan Tabel → Daftar Isi"
-Di LibreOffice:
-- Gunakan fungsi "Sisipkan → Daftar Isi dan Indeks → Daftar, Indeks, atau Bibliografi"
+Pada Microsoft Word:
+- Gunakan fitur "Insert → Page Number"  
+  Pada LibreOffice:
+- Gunakan fitur "Insert → Field → Page Number"
 
 ##### Hasil
-Daftar isi laporan yang dihasilkan akan diperbarui secara otomatis berdasarkan konten dokumen.
+Pada laporan yang dihasilkan, nomor halaman setiap halaman akan diupdate secara otomatis.
 
-#### 3. Pengulangan Header Tabel
+
+#### 2. Generate Daftar Isi
 
 ##### Sintaks
-Cukup sisipkan di perangkat lunak Office Anda.
+Cukup sisipkan di software Office.
 
 ##### Contoh
-Di Microsoft Word:
-- Klik kanan header tabel → Properti Tabel → Centang "Ulangi sebagai baris judul di bagian atas setiap halaman"
-Di LibreOffice:
-- Klik kanan header tabel → Properti Tabel → Tab Aliran Teks → Centang "Ulangi judul"
+Pada Microsoft Word:
+- Gunakan fitur "Insert → Index and Tables → Table of Contents"  
+  Pada LibreOffice:
+- Gunakan fitur "Insert → Table of Contents and Index → Table of Contents, Index, or Bibliography"
 
 ##### Hasil
-Ketika tabel membentang beberapa halaman, header akan secara otomatis diulang di bagian atas setiap halaman.
+Daftar isi laporan yang dihasilkan akan diupdate otomatis berdasarkan konten dokumen.
+
+
+#### 3. Repeat Header Tabel
+
+##### Sintaks
+Cukup sisipkan di software Office.
+
+##### Contoh
+Pada Microsoft Word:
+- Klik kanan header tabel → Table Properties → Centang "Repeat as header row at the top of each page"  
+  Pada LibreOffice:
+- Klik kanan header tabel → Table Properties → tab Text Flow → Centang "Repeat heading"
+
+##### Hasil
+Saat tabel melintasi halaman, header tabel otomatis ditampilkan ulang di bagian atas setiap halaman.
+
 
 ### Internasionalisasi (i18n)
 
 #### 1. Terjemahan Teks Statis
 
 ##### Sintaks
-Gunakan tag `{t(teks)}` untuk menginternasionalisasi teks statis:
+Gunakan tag `{t(text)}` untuk internasionalisasi teks statis:
 ```
 {t(meeting)}
 ```
 
 ##### Contoh
-Dalam templat:
+Pada Template:
 ```
 {t(meeting)} {t(apples)}
 ```
-Data JSON atau kamus lokalisasi eksternal (misalnya untuk "fr-fr") menyediakan terjemahan yang sesuai, seperti "meeting" → "rendez-vous", "apples" → "Pommes".
+Pada data JSON atau kamus localization eksternal (contoh untuk "fr-fr") menyediakan terjemahan yang sesuai, seperti "meeting" → "rendez-vous", "apples" → "Pommes".
 
 ##### Hasil
-Saat membuat laporan, teks akan diganti dengan terjemahan yang sesuai berdasarkan bahasa target.
+Saat menghasilkan laporan, teks akan diganti dengan terjemahan yang sesuai berdasarkan bahasa target.
+
 
 #### 2. Terjemahan Teks Dinamis
 
 ##### Sintaks
-Untuk konten data, gunakan pemformat `:t`, misalnya:
+Untuk konten data dapat menggunakan formatter `:t`, contoh:
 ```
 {d.id:ifEQ(2):show({t(monday)}):elseShow({t(tuesday)})}
 ```
 
 ##### Contoh
-Dalam templat:
+Pada Template:
 ```
 {d.id:ifEQ(2):show({t(monday)}):elseShow({t(tuesday)})}
 ```
-Data JSON dan kamus lokalisasi menyediakan terjemahan yang sesuai.
+Data JSON dan kamus localization menyediakan terjemahan yang sesuai.
 
 ##### Hasil
-Berdasarkan kondisi, hasilnya akan berupa "lundi" atau "mardi" (menggunakan bahasa target sebagai contoh).
+Berdasarkan pernyataan kondisi, output "lundi" atau "mardi" (dengan bahasa target sebagai contoh).
 
-### Pemetaan Kunci-Nilai
+
+### Mapping Key-Value
 
 #### 1. Konversi Enum (:convEnum)
 
 ##### Sintaks
 ```
-{data:convEnum(namaEnum)}
+{data:convEnum(nama enum)}
 ```
-Misalnya:
+Contoh:
 ```
 0:convEnum('ORDER_STATUS')
 ```
 
 ##### Contoh
-Dalam contoh opsi API, berikut adalah yang disediakan:
+Pada API options contoh diteruskan:
 ```json
 {
   "enum": {
@@ -108,49 +115,51 @@ Dalam contoh opsi API, berikut adalah yang disediakan:
   }
 }
 ```
-Dalam templat:
+Pada Template:
 ```
 0:convEnum('ORDER_STATUS')
 ```
 
 ##### Hasil
-Menghasilkan "pending"; jika indeks melebihi rentang enumerasi, nilai asli akan dihasilkan.
+Output "pending"; jika indeks melebihi rentang enum, maka output nilai asli.
+
 
 ### Gambar Dinamis
 :::info
-Saat ini mendukung tipe file XLSX dan DOCX
+Saat ini mendukung file tipe XLSX, DOCX
 :::
-Anda dapat menyisipkan "gambar dinamis" dalam templat dokumen, yang berarti gambar placeholder dalam templat akan secara otomatis diganti dengan gambar asli saat rendering berdasarkan data. Proses ini sangat sederhana dan hanya memerlukan:
+Anda dapat menyisipkan "gambar dinamis" pada Template dokumen, yang berarti gambar placeholder pada Template akan otomatis diganti dengan gambar nyata berdasarkan data saat render. Prosesnya sangat sederhana, hanya perlu:
 
-1. Sisipkan gambar sementara sebagai placeholder
+1. Menyisipkan gambar sementara sebagai placeholder
 
-2. Edit "Teks Alternatif (Alt Text)" gambar tersebut untuk mengatur label bidang
+2. Mengedit "alt text" gambar tersebut untuk mengatur label field
 
-3. Render dokumen, dan sistem akan secara otomatis menggantinya dengan gambar asli
+3. Render dokumen, sistem otomatis menggantinya dengan gambar aktual
 
-Di bawah ini kami akan menjelaskan metode operasi untuk DOCX dan XLSX melalui contoh-contoh spesifik.
+Berikut akan kami jelaskan cara operasi DOCX dan XLSX melalui contoh spesifik.
 
-#### Menyisipkan Gambar Dinamis dalam File DOCX
+
+#### Menyisipkan Gambar Dinamis di File DOCX
 ##### Penggantian Gambar Tunggal
 
-1. Buka templat DOCX Anda dan sisipkan gambar sementara (bisa berupa gambar placeholder apa pun, seperti [gambar biru solid](https://static-docs.nocobase.com/solid-color-image-2025-04-14-11-00-26.png))
+1. Buka Template DOCX Anda, sisipkan gambar sementara (bisa berupa gambar placeholder apa pun, misalnya [gambar biru solid](https://static-docs.nocobase.com/solid-color-image-2025-04-14-11-00-26.png))
 
 :::info
-**Instruksi Format Gambar**
+**Penjelasan Format Gambar**
 
-- Saat ini, gambar placeholder hanya mendukung format PNG. Kami merekomendasikan penggunaan contoh [gambar biru solid](https://static-docs.nocobase.com/solid-color-image-2025-04-14-11-00-26.png) yang kami sediakan.
-- Gambar yang akan dirender hanya mendukung format PNG, JPG, JPEG. Tipe gambar lain mungkin gagal dirender.
+- Saat ini gambar placeholder hanya mendukung tipe PNG, direkomendasikan menggunakan gambar contoh yang kami sediakan [gambar biru solid](https://static-docs.nocobase.com/solid-color-image-2025-04-14-11-00-26.png)
+- Gambar render target hanya mendukung gambar PNG, JPG, JPEG, gambar tipe lain mungkin gagal di-render.
 
-**Instruksi Ukuran Gambar**
+**Penjelasan Ukuran Gambar**
 
-Baik untuk DOCX maupun XLSX, ukuran gambar hasil render akhir akan mengikuti dimensi gambar sementara dalam templat. Artinya, gambar pengganti yang sebenarnya akan secara otomatis diskalakan agar sesuai dengan ukuran gambar placeholder yang Anda sisipkan. Jika Anda ingin ukuran gambar hasil render adalah 150×150, silakan gunakan gambar sementara dalam templat dan sesuaikan ukurannya.
+Baik DOCX maupun XLSX, ukuran gambar saat render akhir akan mengikuti ukuran gambar sementara di Template. Yaitu, gambar yang sebenarnya diganti akan otomatis di-scale ke ukuran yang sama dengan gambar placeholder yang Anda sisipkan. Jika Anda ingin ukuran gambar setelah render menjadi 150×150, silakan gunakan gambar sementara di Template dan sesuaikan ke ukuran tersebut.
 :::
 
-2. Klik kanan pada gambar ini, edit "Teks Alternatif (Alt Text)"-nya, dan isi label bidang gambar yang ingin Anda sisipkan, misalnya `{d.imageUrl}`:
+2. Klik kanan gambar ini, edit "Alt Text" -nya, isi label field gambar yang Anda inginkan, contoh `{d.imageUrl}`:
    
 ![20250414211130-2025-04-14-21-11-31](https://static-docs.nocobase.com/20250414211130-2025-04-14-21-11-31.png)
 
-3. Gunakan data contoh berikut untuk rendering:
+3. Gunakan data contoh berikut untuk render:
 ```json
 {
   "name": "Apple",
@@ -158,14 +167,14 @@ Baik untuk DOCX maupun XLSX, ukuran gambar hasil render akhir akan mengikuti dim
 }
 ```
 
-4. Dalam hasil rendering, gambar sementara akan diganti dengan gambar asli:
+4. Hasil setelah render, gambar sementara akan diganti dengan gambar aktual:
 
 ![20250414203444-2025-04-14-20-34-46](https://static-docs.nocobase.com/20250414203444-2025-04-14-20-34-46.png)
 
-##### Penggantian Gambar Berulang (Loop)
+##### Penggantian Loop Beberapa Gambar
 
-Jika Anda ingin menyisipkan sekelompok gambar dalam templat, misalnya daftar produk, Anda juga dapat mengimplementasikannya melalui perulangan. Langkah-langkah spesifiknya adalah sebagai berikut:
-1. Asumsikan data Anda adalah sebagai berikut:
+Jika Anda ingin menyisipkan sekelompok gambar pada Template, contoh daftar Produk, juga dapat diimplementasikan melalui loop, langkah-langkahnya sebagai berikut:
+1. Misalkan data Anda sebagai berikut:
 ```json
 {
   "products": [
@@ -181,45 +190,48 @@ Jika Anda ingin menyisipkan sekelompok gambar dalam templat, misalnya daftar pro
 }
 ```
 
-2. Atur area perulangan dalam templat DOCX, dan sisipkan gambar sementara di setiap item perulangan dengan Teks Alternatif diatur ke `{d.products[i].imageUrl}`, seperti yang ditunjukkan di bawah ini:
+2. Pada Template DOCX atur area loop, dan sisipkan gambar sementara di setiap item loop, alt text diatur sebagai `{d.products[i].imageUrl}`, sebagai berikut:
 
 ![20250414205418-2025-04-14-20-54-19](https://static-docs.nocobase.com/20250414205418-2025-04-14-20-54-19.png)
 
-3. Setelah rendering, semua gambar sementara akan diganti dengan gambar data masing-masing:
+3. Setelah render, semua gambar sementara akan diganti dengan gambar data masing-masing:
    
 ![20250414205503-2025-04-14-20-55-05](https://static-docs.nocobase.com/20250414205503-2025-04-14-20-55-05.png)
 
-#### Menyisipkan Gambar Dinamis dalam File XLSX
+#### Menyisipkan Gambar Dinamis di File XLSX
 
-Metode operasi dalam templat Excel (XLSX) pada dasarnya sama, hanya perlu diperhatikan beberapa poin berikut:
+Cara operasi pada Template Excel (XLSX) pada dasarnya sama, hanya perhatikan beberapa hal berikut:
 
-1. Setelah menyisipkan gambar, pastikan Anda memilih "gambar di dalam sel", bukan gambar yang mengambang di atas sel.
+1. Setelah menyisipkan gambar, pastikan yang dipilih adalah "gambar dalam sel", bukan gambar yang melayang di atas sel.
 
 ![20250414211643-2025-04-14-21-16-45](https://static-docs.nocobase.com/20250414211643-2025-04-14-21-16-45.png)
 
-2. Setelah memilih sel, klik untuk melihat "Teks Alternatif" untuk mengisi label bidang, seperti `{d.imageUrl}`.
+2. Setelah memilih sel klik untuk melihat "Alt Text" dan isi label field, contoh `{d.imageUrl}`.
 
-### Kode Batang
+### Barcode
 :::info
-Saat ini mendukung tipe file XLSX dan DOCX
+Saat ini mendukung file tipe XLSX, DOCX
 :::
 
-#### Membuat Kode Batang (seperti kode QR)
+#### Generate Barcode (seperti QR Code)
 
-Pembuatan kode batang bekerja dengan cara yang sama seperti Gambar Dinamis, hanya memerlukan tiga langkah:
+Cara generate barcode sama dengan gambar dinamis, hanya perlu tiga langkah:
 
-1. Sisipkan gambar sementara dalam templat untuk menandai posisi kode batang
+1. Sisipkan gambar sementara pada Template, untuk menandai posisi barcode
 
-2. Edit "Teks Alternatif" gambar dan tuliskan label bidang format kode batang, misalnya `{d.code:barcode(qrcode)}`, di mana `qrcode` adalah tipe kode batang (lihat daftar yang didukung di bawah)
+2. Edit "alt text" gambar, tulis label field format barcode, contoh `{d.code:barcode(qrcode)}`, di mana `qrcode` adalah tipe barcode (lihat daftar dukungan di bawah)
 
 ![20250414214626-2025-04-14-21-46-28](https://static-docs.nocobase.com/20250414214626-2025-04-14-21-46-28.png)
 
-3. Setelah rendering, gambar placeholder akan secara otomatis diganti dengan gambar kode batang yang sesuai:
+3. Setelah render, gambar placeholder akan diganti dengan gambar barcode yang sesuai:
    
 ![20250414214925-2025-04-14-21-49-26](https://static-docs.nocobase.com/20250414214925-2025-04-14-21-49-26.png)
 
-#### Tipe Kode Batang yang Didukung
+#### Tipe Barcode yang Didukung
 
-| Nama Kode Batang | Tipe   |
-| ---------------- | ------ |
-| Kode QR          | qrcode |
+| Nama Barcode | Tipe   |
+| -------- | ------ |
+| QR Code   | qrcode |
+
+
+

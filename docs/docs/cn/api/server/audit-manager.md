@@ -1,3 +1,9 @@
+---
+title: "AuditManager"
+description: "NocoBase 审计管理器：AuditManager 记录操作日志、审计追踪。"
+keywords: "AuditManager,审计,操作日志,NocoBase"
+---
+
 # AuditManager
 
 ## 概览

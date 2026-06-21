@@ -1,22 +1,21 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "Field Attachment"
+description: "Field attachment liên kết với bảng file, hỗ trợ cấu hình 'field kiểu attachment' hoặc 'field quan hệ', dùng để lưu trữ các file như hình ảnh, tài liệu."
+keywords: "Field attachment,Field Attachment,Field file,Liên kết file,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Field Attachment
 
-
-# Trường đính kèm
+<PluginInfo name="file-manager"></PluginInfo>
 
 ## Giới thiệu
 
-Trường đính kèm là một trường quan hệ chuyên biệt, liên kết trực tiếp với bộ sưu tập tệp.
+Field attachment là field quan hệ đặc biệt được liên kết với bảng file.
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512180916](https://static-docs.nocobase.com/20240512180916.png)
 
 ## Ví dụ
 
-(Ví dụ sẽ được bổ sung sau)
+Sẽ được bổ sung sau

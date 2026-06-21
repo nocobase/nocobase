@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Aturan Sort"
+description: "Konfigurasi Block: mengkonfigurasi aturan sort data, mendukung sort single-Field/multi-Field, ascending/descending."
+keywords: "aturan sort, sort data, ascending descending, konfigurasi Block, interface builder, NocoBase"
+---
 
-# Mengatur Aturan Pengurutan
+# Atur Aturan Sort
 
-## Pendahuluan
+## Pengantar
 
-Mengatur aturan pengurutan berarti mendefinisikan aturan pengurutan bawaan untuk sebuah blok data, sehingga data dalam blok tersebut akan ditampilkan dalam urutan tertentu.
+Mengatur aturan sort adalah mendefinisikan aturan sort default untuk Data Block. Data Block akan ditampilkan dalam urutan tertentu.
 
 ## Panduan Penggunaan
 
@@ -14,14 +16,16 @@ Mengatur aturan pengurutan berarti mendefinisikan aturan pengurutan bawaan untuk
 
 ![20251025164821](https://static-docs.nocobase.com/20251025164821.png)
 
-Saat ini, pengurutan hanya didukung berdasarkan kolom dari **koleksi** saat ini.
+Saat ini hanya mendukung sort berdasarkan Field Table ini.
 
-### Aturan Pengurutan Tunggal
+
+### Aturan Sort Tunggal
 
 ![20251025164919](https://static-docs.nocobase.com/20251025164919.png)
 
-### Aturan Pengurutan Berganda
 
-Ini cocok untuk kebutuhan pengurutan yang kompleks, seperti mengurutkan berdasarkan status pesanan terlebih dahulu, lalu mengurutkan berdasarkan waktu pesanan dalam status pesanan yang sama.
+### Beberapa Aturan Sort
+
+Cocok untuk kebutuhan sort yang kompleks, seperti sort berdasarkan status pesanan terlebih dahulu, kemudian dalam status pesanan yang sama sort berdasarkan waktu pesanan.
 
 ![20251025165000](https://static-docs.nocobase.com/20251025165000.png)

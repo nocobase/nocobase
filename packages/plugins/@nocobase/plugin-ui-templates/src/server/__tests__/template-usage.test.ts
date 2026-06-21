@@ -150,6 +150,65 @@ describe('ui templates and usages', () => {
     expect(destroyResp2.status).toBe(200);
   });
 
+  it('should remove target tree usages when template is destroyed', async () => {
+    const agent = app.agent();
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-block',
+        name: 'Block Template',
+        targetUid: 'target-block',
+      },
+    });
+
+    const savePopupTargetResp = await agent.resource('flowModels').save({
+      values: {
+        uid: 'popup-template-root',
+        use: 'PopupActionModel',
+        subModels: {
+          content: [
+            {
+              uid: 'popup-ref-block',
+              ...buildOptions('tpl-block'),
+            },
+          ],
+        },
+      },
+    });
+    expect(savePopupTargetResp.status).toBe(200);
+
+    expect(await countUsage({ templateUid: 'tpl-block', modelUid: 'popup-ref-block' })).toBe(1);
+    const blockTplResp = await agent.resource('flowModelTemplates').get({
+      filterByTk: 'tpl-block',
+    });
+    expect(blockTplResp.status).toBe(200);
+    const blockTpl = blockTplResp.body?.data || blockTplResp.body;
+    expect(blockTpl?.usageCount).toBe(1);
+
+    const popupTplResp = await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-popup',
+        name: 'Popup Template',
+        targetUid: 'popup-template-root',
+        type: 'popup',
+      },
+    });
+    expect(popupTplResp.status).toBe(200);
+
+    const destroyResp = await agent.resource('flowModelTemplates').destroy({
+      filterByTk: 'tpl-popup',
+    });
+    expect(destroyResp.status).toBe(200);
+
+    expect(await countUsage({ templateUid: 'tpl-block', modelUid: 'popup-ref-block' })).toBe(0);
+    expect(await flowRepo.findNodesById('popup-template-root', { includeAsyncNode: true })).toHaveLength(0);
+    const blockTplRespAfterDestroy = await agent.resource('flowModelTemplates').get({
+      filterByTk: 'tpl-block',
+    });
+    expect(blockTplRespAfterDestroy.status).toBe(200);
+    const blockTplAfterDestroy = blockTplRespAfterDestroy.body?.data || blockTplRespAfterDestroy.body;
+    expect(blockTplAfterDestroy?.usageCount).toBe(0);
+  });
+
   it('should sync template name/description to reference blocks on template update', async () => {
     const agent = app.agent();
     await agent.resource('flowModelTemplates').create({

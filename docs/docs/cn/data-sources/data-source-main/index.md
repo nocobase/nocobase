@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-main"
+title: "主数据库"
+description: "NocoBase 主数据库：存储业务数据与元数据，支持 MySQL/PostgreSQL/MariaDB，从数据库同步已有表、创建普通表/树表/SQL 表等。"
+keywords: "主数据库,MySQL,PostgreSQL,MariaDB,数据表同步,元数据存储,NocoBase"
 ---
-
 # 主数据库
 
 ## 介绍

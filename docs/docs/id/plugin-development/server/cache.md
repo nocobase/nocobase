@@ -1,36 +1,38 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Cache"
+description: "Cache server NocoBase: app.cacheManager, get/set/del, instance cache, akses cache di plugin."
+keywords: "Cache,cache,cacheManager,get,set,del,cache server,NocoBase"
+---
 
 # Cache
 
-Modul Cache NocoBase dibangun di atas <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> dan menyediakan fungsionalitas *caching* untuk pengembangan *plugin*. Sistem ini memiliki dua jenis *cache* bawaan:
+Modul Cache NocoBase berbasis pada <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>, menyediakan fungsionalitas cache untuk pengembangan plugin. Tersedia dua jenis cache bawaan:
 
-*   **memory** - *Cache* memori berbasis `lru-cache`, disediakan secara *default* oleh `node-cache-manager`.
-*   **redis** - *Cache* Redis berbasis `node-cache-manager-redis-yet`.
+- **memory** — Cache memori berbasis lru-cache, disediakan secara default oleh node-cache-manager
+- **redis** — Cache Redis berbasis node-cache-manager-redis-yet
 
-Jenis *cache* lainnya dapat diperluas dan didaftarkan melalui API.
+Lebih banyak jenis cache dapat didaftarkan melalui ekstensi API.
 
 ## Penggunaan Dasar
 
 ### app.cache
 
-`app.cache` adalah instans *cache* *default* tingkat aplikasi yang dapat langsung Anda gunakan.
+`app.cache` adalah instance cache default level aplikasi, dapat langsung digunakan.
 
 ```ts
-// Mengatur cache
+// Set cache
 await app.cache.set('key', 'value', { ttl: 3600 }); // Satuan TTL: detik
 
-// Mengambil cache
+// Get cache
 const value = await app.cache.get('key');
 
-// Menghapus cache
+// Delete cache
 await this.app.cache.del('key');
 ```
 
 ### ctx.cache
 
-Dalam *middleware* atau operasi sumber daya, Anda dapat mengakses *cache* melalui `ctx.cache`.
+Pada middleware atau operasi resource, dapat mengakses cache melalui `ctx.cache`.
 
 ```ts
 async (ctx, next) => {
@@ -38,7 +40,7 @@ async (ctx, next) => {
   if (!data) {
     // Cache miss, ambil dari database
     data = await this.getDataFromDatabase();
-    // Simpan ke cache, berlaku selama 1 jam
+    // Simpan ke cache, masa berlaku 1 jam
     await ctx.cache.set('custom:data', data, { ttl: 3600 });
   }
   await next();
@@ -47,19 +49,19 @@ async (ctx, next) => {
 
 ## Membuat Cache Kustom
 
-Jika Anda perlu membuat instans *cache* independen (misalnya, *namespace* atau konfigurasi yang berbeda), Anda dapat menggunakan metode `app.cacheManager.createCache()`.
+Jika perlu membuat instance cache independen (misalnya namespace atau konfigurasi yang berbeda), dapat menggunakan method `app.cacheManager.createCache()`.
 
 ```ts
 import { Plugin } from '@nocobase/server';
 
 export default class PluginCacheDemo extends Plugin {
   async load() {
-    // Membuat instans cache dengan prefix
+    // Membuat instance cache dengan prefix
     const myCache = await this.app.cacheManager.createCache({
       name: 'myPlugin',
       prefix: 'plugin:cache:', // Semua key akan otomatis ditambahkan prefix ini
-      store: 'memory', // Menggunakan cache memori, opsional, defaultnya menggunakan defaultStore
-      max: 1000, // Jumlah item cache maksimum
+      store: 'memory', // Menggunakan cache memori, opsional, default menggunakan defaultStore
+      max: 1000, // Jumlah maksimum item cache
     });
 
     await myCache.set('user:1', { name: 'John' });
@@ -68,52 +70,52 @@ export default class PluginCacheDemo extends Plugin {
 }
 ```
 
-### Deskripsi Parameter `createCache`
+### Penjelasan Parameter createCache
 
-| Parameter | Tipe | Deskripsi |
+| Parameter | Tipe | Penjelasan |
 | ---- | ---- | ---- |
-| `name` | `string` | Pengidentifikasi unik untuk *cache*, wajib diisi |
-| `prefix` | `string` | Opsional, *prefix* untuk *key cache*, digunakan untuk menghindari konflik *key* |
-| `store` | `string` | Opsional, pengidentifikasi tipe *store* (seperti `'memory'`, `'redis'`), *default*-nya menggunakan `defaultStore` |
-| `[key: string]` | `any` | Item konfigurasi kustom lain yang terkait dengan *store* |
+| `name` | `string` | Identifier unik cache, wajib |
+| `prefix` | `string` | Opsional, prefix key cache, untuk menghindari konflik key |
+| `store` | `string` | Opsional, identifier tipe store (seperti `'memory'`, `'redis'`), default menggunakan `defaultStore` |
+| `[key: string]` | `any` | Item konfigurasi kustom lainnya yang terkait store |
 
-### Mengambil Cache yang Sudah Dibuat
+### Mendapatkan Cache yang Sudah Dibuat
 
 ```ts
 const myCache = this.app.cacheManager.getCache('myPlugin');
 ```
 
-## Metode Dasar Cache
+## Method Dasar Cache
 
-Instans *Cache* menyediakan berbagai metode operasi *cache* yang kaya, sebagian besar diwarisi dari `node-cache-manager`.
+Instance Cache menyediakan method operasi cache umum, sebagian besar diwarisi dari node-cache-manager.
 
 ### get / set
 
 ```ts
-// Mengatur cache, dengan waktu kedaluwarsa (satuan: detik)
+// Set cache, dengan waktu kadaluarsa (satuan: detik)
 await cache.set('key', 'value', { ttl: 3600 });
 
-// Mengambil cache
+// Get cache
 const value = await cache.get('key');
 ```
 
 ### del / reset
 
 ```ts
-// Menghapus satu key
+// Delete satu key
 await cache.del('key');
 
-// Mengosongkan semua cache
+// Bersihkan semua cache
 await cache.reset();
 ```
 
 ### wrap
 
-Metode `wrap()` adalah alat yang sangat berguna. Metode ini akan mencoba mengambil data dari *cache* terlebih dahulu, dan jika *cache miss*, ia akan mengeksekusi fungsi dan menyimpan hasilnya ke dalam *cache*.
+`wrap()` akan terlebih dahulu mencoba mengambil data dari cache, jika cache miss, akan mengeksekusi callback function dan menyimpan hasilnya ke cache.
 
 ```ts
 const data = await cache.wrap('user:1', async () => {
-  // Fungsi ini hanya dieksekusi saat cache miss
+  // Function ini hanya dieksekusi saat cache miss
   return await this.fetchUserFromDatabase(1);
 }, { ttl: 3600 });
 ```
@@ -121,35 +123,35 @@ const data = await cache.wrap('user:1', async () => {
 ### Operasi Batch
 
 ```ts
-// Mengatur secara batch
+// Batch set
 await cache.mset([
   ['key1', 'value1'],
   ['key2', 'value2'],
   ['key3', 'value3'],
 ], { ttl: 3600 });
 
-// Mengambil secara batch
+// Batch get
 const values = await cache.mget(['key1', 'key2', 'key3']);
 
-// Menghapus secara batch
+// Batch delete
 await cache.mdel(['key1', 'key2', 'key3']);
 ```
 
 ### keys / ttl
 
 ```ts
-// Mengambil semua key (catatan: beberapa store mungkin tidak mendukung ini)
+// Mendapatkan semua key (perhatian: sebagian store mungkin tidak mendukung)
 const allKeys = await cache.keys();
 
-// Mengambil sisa waktu kedaluwarsa key (satuan: detik)
+// Mendapatkan sisa waktu kadaluarsa key (satuan: detik)
 const remainingTTL = await cache.ttl('key');
 ```
 
-## Penggunaan Lanjut
+## Penggunaan Lanjutan
 
 ### wrapWithCondition
 
-`wrapWithCondition()` mirip dengan `wrap()`, tetapi dapat memutuskan apakah akan menggunakan *cache* melalui kondisi.
+`wrapWithCondition()` mirip dengan `wrap()`, tetapi dapat menentukan apakah menggunakan cache melalui kondisi.
 
 ```ts
 const data = await cache.wrapWithCondition(
@@ -158,12 +160,12 @@ const data = await cache.wrapWithCondition(
     return await this.fetchUserFromDatabase(1);
   },
   {
-    // Parameter eksternal mengontrol apakah akan menggunakan hasil cache
-    useCache: true, // Jika diatur ke false, fungsi akan dieksekusi ulang meskipun ada cache
+    // Parameter eksternal mengontrol apakah menggunakan hasil cache
+    useCache: true, // Saat diset false, function akan dieksekusi ulang meskipun ada cache
 
-    // Memutuskan apakah akan melakukan cache berdasarkan hasil data
+    // Tentukan apakah cache berdasarkan hasil data
     isCacheable: (value) => {
-      // Contoh: hanya hasil yang berhasil yang akan di-cache
+      // Misalnya: hanya hasil yang berhasil yang di-cache
       return value && !value.error;
     },
 
@@ -174,23 +176,23 @@ const data = await cache.wrapWithCondition(
 
 ### Operasi Cache Objek
 
-Ketika konten yang di-*cache* adalah objek, Anda dapat menggunakan metode berikut untuk langsung mengoperasikan properti objek tanpa perlu mengambil seluruh objek.
+Ketika konten yang di-cache adalah objek, dapat menggunakan method berikut untuk langsung mengoperasikan property objek, tanpa perlu mengambil seluruh objek.
 
 ```ts
-// Mengatur properti tertentu dari sebuah objek
+// Set property objek
 await cache.setValueInObject('user:1', 'name', 'John');
 await cache.setValueInObject('user:1', 'age', 30);
 
-// Mengambil properti tertentu dari sebuah objek
+// Get property objek
 const name = await cache.getValueInObject('user:1', 'name');
 
-// Menghapus properti tertentu dari sebuah objek
+// Delete property objek
 await cache.delValueInObject('user:1', 'age');
 ```
 
 ## Mendaftarkan Store Kustom
 
-Jika Anda perlu menggunakan jenis *cache* lain (seperti Memcached, MongoDB, dll.), Anda dapat mendaftarkannya melalui `app.cacheManager.registerStore()`.
+Jika perlu menggunakan jenis cache lain (seperti Memcached, MongoDB, dll.), dapat mendaftarkan melalui `app.cacheManager.registerStore()`.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -198,7 +200,7 @@ import { redisStore, RedisStore } from 'cache-manager-redis-yet';
 
 export default class PluginCacheDemo extends Plugin {
   async load() {
-    // Mendaftarkan store Redis (jika sistem belum mendaftarkannya)
+    // Mendaftarkan Redis store (jika belum terdaftar)
     this.app.cacheManager.registerStore({
       name: 'redis',
       store: redisStore,
@@ -209,7 +211,7 @@ export default class PluginCacheDemo extends Plugin {
       url: 'redis://localhost:6379',
     });
 
-    // Membuat cache menggunakan store yang baru didaftarkan
+    // Membuat cache menggunakan store yang baru terdaftar
     const redisCache = await this.app.createCache({
       name: 'redisCache',
       store: 'redis',
@@ -219,10 +221,18 @@ export default class PluginCacheDemo extends Plugin {
 }
 ```
 
-## Catatan Penting
+## Perhatian
 
-1.  **Batasan Cache Memori**: Saat menggunakan *memory store*, perhatikan untuk mengatur parameter `max` yang wajar untuk menghindari *memory overflow*.
-2.  **Strategi Pembatalan Cache**: Saat memperbarui data, ingatlah untuk menghapus *cache* terkait untuk menghindari data kotor (*dirty data*).
-3.  **Konvensi Penamaan Key**: Disarankan untuk menggunakan *namespace* dan *prefix* yang bermakna, seperti `module:resource:id`.
-4.  **Pengaturan TTL**: Atur `TTL` secara wajar berdasarkan frekuensi pembaruan data untuk menyeimbangkan kinerja dan konsistensi.
-5.  **Koneksi Redis**: Saat menggunakan Redis, pastikan parameter koneksi dan kata sandi dikonfigurasi dengan benar di lingkungan produksi.
+1. **Batasan Cache Memori**: Saat menggunakan memory store, perhatikan untuk mengatur parameter `max` yang wajar, untuk menghindari memory overflow.
+2. **Strategi Pengosongan Cache**: Saat memperbarui data ingatlah untuk membersihkan cache terkait, untuk menghindari data kotor.
+3. **Konvensi Penamaan Key**: Disarankan menggunakan namespace dan prefix yang bermakna, seperti `module:resource:id`.
+4. **Pengaturan TTL**: Atur TTL secara wajar berdasarkan frekuensi update data, untuk menyeimbangkan performa dan konsistensi.
+5. **Koneksi Redis**: Saat menggunakan Redis, pastikan parameter koneksi dan password dikonfigurasi dengan benar di environment production.
+
+## Tautan Terkait
+
+- [Context](./context.md) — Mengakses cache melalui `ctx.cache` di middleware dan Action
+- [Plugin](./plugin.md) — Membuat dan mengelola instance cache kustom dalam plugin
+- [Ikhtisar Pengembangan Server](./index.md) — Arsitektur server menyeluruh dan posisi modul cache
+- [Middleware](./middleware.md) — Menggabungkan cache dengan middleware untuk menangani logika request
+- [Database Operasi Database](./database.md) — Cache sering digunakan bersama dengan query database untuk meningkatkan performa

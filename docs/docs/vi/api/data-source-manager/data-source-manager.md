@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "DataSourceManager"
+description: "API trình quản lý nguồn dữ liệu của NocoBase: quản lý nhiều instance DataSource, lớp trừu tượng DataSource."
+keywords: "DataSourceManager,DataSource,nhiều nguồn dữ liệu,quản lý nguồn dữ liệu,NocoBase"
+---
 
 # DataSourceManager
 
-`DataSourceManager` là lớp quản lý cho nhiều thể hiện (instance) của `dataSource`.
+`DataSourceManager` là lớp quản lý nhiều instance `dataSource`.
 
 ## API
 
 ### add()
-Thêm một thể hiện `dataSource`.
+Thêm một instance `dataSource`.
 
 #### Chữ ký
 
@@ -18,15 +19,15 @@ Thêm một thể hiện `dataSource`.
 
 ### use()
 
-Thêm middleware toàn cục vào thể hiện `dataSource`.
+Thêm middleware toàn cục cho instance `dataSource`.
 
 ### middleware()
 
-Lấy middleware của thể hiện `dataSourceManager` hiện tại, có thể dùng để phản hồi các yêu cầu HTTP.
+Lấy middleware của instance `dataSourceManager` hiện tại, có thể dùng để xử lý HTTP request.
 
 ### afterAddDataSource()
 
-Một hàm hook được gọi sau khi một `dataSource` mới được thêm vào.
+Hàm hook sau khi thêm `dataSource` mới.
 
 #### Chữ ký
 
@@ -38,7 +39,7 @@ type DataSourceHook = (dataSource: DataSource) => void;
 
 ### registerDataSourceType()
 
-Đăng ký một loại nguồn dữ liệu và lớp của nó.
+Đăng ký kiểu nguồn dữ liệu và lớp tương ứng.
 
 #### Chữ ký
 
@@ -54,7 +55,7 @@ Lấy lớp nguồn dữ liệu.
 
 ### buildDataSourceByType()
 
-Tạo một thể hiện nguồn dữ liệu dựa trên loại nguồn dữ liệu đã đăng ký và các tùy chọn của thể hiện.
+Tạo instance nguồn dữ liệu theo kiểu nguồn dữ liệu đã đăng ký và tham số instance.
 
 #### Chữ ký
 

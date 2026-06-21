@@ -156,6 +156,51 @@ describe('appendQueryStringToUrl', () => {
 
     expect(result).toBe('https://example.com?existingParam=value&param1=value1&param2=value2');
   });
+
+  it('should append query string into hash route', () => {
+    const url = 'https://example.com/pcEmpAppCenter/#/usermassage';
+    const queryString = 'emp=x';
+
+    const result = appendQueryStringToUrl(url, queryString);
+
+    expect(result).toBe('https://example.com/pcEmpAppCenter/#/usermassage?emp=x');
+  });
+
+  it('should append query string into hash route when query exists in path', () => {
+    const url = 'https://example.com/pcEmpAppCenter/?a=1#/usermassage';
+    const queryString = 'emp=x';
+
+    const result = appendQueryStringToUrl(url, queryString);
+
+    expect(result).toBe('https://example.com/pcEmpAppCenter/?a=1#/usermassage?emp=x');
+  });
+
+  it('should append query string to hash fragment when hash already has query', () => {
+    const url = 'https://example.com/pcEmpAppCenter/#/usermassage?a=1';
+    const queryString = 'emp=x';
+
+    const result = appendQueryStringToUrl(url, queryString);
+
+    expect(result).toBe('https://example.com/pcEmpAppCenter/#/usermassage?a=1&emp=x');
+  });
+
+  it('should append query string before normal anchor hash fragment', () => {
+    const url = 'https://example.com/page#section';
+    const queryString = 'emp=x';
+
+    const result = appendQueryStringToUrl(url, queryString);
+
+    expect(result).toBe('https://example.com/page?emp=x#section');
+  });
+
+  it('should preserve full hash fragment when it contains multiple #', () => {
+    const url = 'https://example.com/page#section#child';
+    const queryString = 'emp=x';
+
+    const result = appendQueryStringToUrl(url, queryString);
+
+    expect(result).toBe('https://example.com/page?emp=x#section#child');
+  });
 });
 
 describe('completeURL', () => {

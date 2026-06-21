@@ -1,3 +1,9 @@
+---
+title: "页面筛选器与联动"
+description: "筛选器块（Filter Block）统一输入筛选条件，自动合并到图表查询，实现多图一致筛选与联动刷新，支持 Builder/SQL 模式。"
+keywords: "页面筛选器,Filter Block,筛选联动,图表联动,多图筛选,NocoBase"
+---
+
 # 页面筛选器与联动
 
 页面筛选器（Filter Block）用于在页面级统一输入筛选条件，并将其合并到图表查询中，实现多图一致的筛选与联动。

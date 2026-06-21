@@ -1,153 +1,156 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "Panduan Konfigurasi Skenario Viz CRM"
+description: "Konfigurasi Viz Analis Insight dengan contoh CRM: engine analisis berbasis template Overall Analytics, analisis spesialisasi SQL Execution, tabel template data_analysis, keamanan dan praktik terbaik."
+keywords: "Viz,CRM,Overall Analytics,SQL Execution,Analisis Data,NocoBase"
+---
 
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Karyawan AI · Viz: Panduan Konfigurasi Skenario CRM
 
+> Mengambil contoh CRM, pelajari cara membuat AI Analis Insight Anda benar-benar memahami bisnis dan menggunakan seluruh potensinya.
 
-# Agen AI · Viz: Panduan Konfigurasi Skenario CRM
+## 1. Pendahuluan: Membuat Viz Beralih dari "Melihat Data" ke "Memahami Bisnis"
 
-> Menggunakan contoh CRM, pelajari cara membuat analis wawasan AI Anda benar-benar memahami bisnis dan mengeluarkan potensi penuhnya.
+Pada sistem NocoBase, **Viz** adalah AI Analis Insight preset.
+Ia dapat mengenali konteks halaman (seperti Leads, Opportunities, Accounts), menghasilkan grafik tren, grafik funnel, dan kartu KPI.
+Namun secara default, ia hanya memiliki kemampuan query paling dasar:
 
-## 1. Pendahuluan: Membuat Viz Beralih dari "Melihat Data" menjadi "Memahami Bisnis"
+| Tool | Penjelasan Fungsi | Keamanan |
+| ---- | ----------------- | -------- |
+| Get Collection Names | Mendapatkan daftar tabel data | ✅ Aman |
+| Get Collection Metadata | Mendapatkan struktur Field | ✅ Aman |
 
-Dalam sistem NocoBase, **Viz** adalah analis wawasan AI bawaan.
-Ia dapat mengenali konteks halaman (seperti Prospek, Peluang, Akun), dan menghasilkan grafik tren, grafik corong, serta kartu KPI.
-Namun secara _default_, ia hanya memiliki kemampuan kueri paling dasar:
+Tools ini hanya membuat Viz "mengenali struktur", masih tidak dapat benar-benar "memahami konten".
+Untuk membuatnya menghasilkan insight, menemukan anomali, menganalisis tren, Anda perlu **memperluas tools analisis yang lebih sesuai** untuknya.
 
-| Alat                      | Deskripsi Fungsi | Keamanan |
-| ----------------------- | ---------------- | -------- |
-| Get Collection Names    | Dapatkan Daftar Koleksi | ✅ Aman |
-| Get Collection Metadata | Dapatkan Struktur Bidang | ✅ Aman |
+Pada CRM Demo resmi, kami menggunakan dua cara:
 
-Alat-alat ini hanya memungkinkan Viz "mengenali struktur," tetapi belum benar-benar "memahami konten."
-Untuk memungkinkannya menghasilkan wawasan, mendeteksi anomali, dan menganalisis tren, Anda perlu **memperluasnya dengan alat analisis yang lebih sesuai**.
+* **Overall Analytics (Engine Analisis Umum)**: Solusi yang dapat digunakan kembali, terstandar, dan aman;
+* **SQL Execution (Engine Analisis Spesialisasi)**: Lebih fleksibel, namun risikonya lebih besar.
 
-Dalam Demo CRM resmi, kami menggunakan dua metode:
+Keduanya bukan satu-satunya pilihan, mereka lebih seperti **paradigma desain**:
 
-*   **Overall Analytics (mesin analisis serbaguna)**: Solusi bertemplate, aman, dan dapat digunakan kembali;
-*   **SQL Execution (mesin analisis khusus)**: Menawarkan lebih banyak fleksibilitas tetapi dengan risiko yang lebih besar.
-
-Keduanya bukanlah satu-satunya pilihan; mereka lebih seperti **paradigma desain**:
-
-> Anda dapat mengikuti prinsip-prinsipnya untuk membuat implementasi yang lebih sesuai dengan bisnis Anda sendiri.
+> Anda dapat menyalin prinsipnya, membuat implementasi yang lebih sesuai untuk bisnis Anda sendiri.
 
 ---
 
-## 2. Struktur Viz: Kepribadian Stabil + Tugas Fleksibel
+## 2. Struktur Viz: Persona Stabil + Tugas Fleksibel
 
-Untuk memahami cara memperluas Viz, Anda perlu memahami desain internalnya yang berlapis:
+Untuk memahami cara memperluas Viz, terlebih dahulu pahami bahwa internalnya dirancang berlapis:
 
-| Lapisan          | Deskripsi                                                               | Contoh       |
-| ---------------- | ----------------------------------------------------------------------- | ------------ |
-| **Definisi Peran** | Kepribadian dan metode analisis Viz: Memahami → Mengueri → Menganalisis → Memvisualisasikan | Tetap tidak berubah |
-| **Definisi Tugas** | _Prompt_ yang disesuaikan dan kombinasi alat untuk skenario bisnis tertentu             | Dapat dimodifikasi |
-| **Konfigurasi Alat** | Jembatan bagi Viz untuk memanggil sumber data eksternal atau alur kerja              | Dapat diganti secara bebas |
+| Tingkat | Penjelasan | Contoh |
+| ------- | ---------- | ------ |
+| **Definisi Role** | Persona dan metode analisis Viz: Pahami → Query → Analisis → Visualisasi | Tetap tidak berubah |
+| **Definisi Tugas** | Kombinasi prompt dan tools yang dikustomisasi untuk skenario bisnis tertentu | Dapat dimodifikasi |
+| **Konfigurasi Tool** | Jembatan Viz untuk memanggil data source eksternal atau Workflow | Dapat diganti dengan bebas |
 
-Desain berlapis ini memungkinkan Viz untuk mempertahankan kepribadian yang stabil (logika analisis yang konsisten),
-sekaligus dapat dengan cepat beradaptasi dengan berbagai skenario bisnis (CRM, manajemen rumah sakit, analisis saluran, operasi produksi...).
+Desain berlapis seperti ini, memungkinkan Viz mempertahankan kepribadian yang stabil (logika analisis konsisten),
+sekaligus dapat dengan cepat beradaptasi dengan skenario bisnis yang berbeda (CRM, manajemen rumah sakit, analisis channel, operasional produksi…).
 
-## 3. Pola Satu: Mesin Analisis Bertemplate (Direkomendasikan)
+---
+
+## 3. Mode Satu: Engine Analisis Berbasis Template (Disarankan)
 
 ### 3.1 Ikhtisar Prinsip
 
-**Overall Analytics** adalah mesin analisis inti dalam Demo CRM.
-Ia mengelola semua kueri SQL melalui **koleksi template analisis data (data_analysis)**.
-Viz tidak menulis SQL secara langsung, melainkan **memanggil template yang telah ditentukan** untuk menghasilkan hasil.
+**Overall Analytics** adalah engine analisis inti pada CRM Demo.
+Ia mengelola semua query SQL melalui **tabel template analisis data (data_analysis)**.
+Viz tidak menulis SQL secara langsung, tetapi **memanggil template yang sudah didefinisikan** untuk menghasilkan hasil.
 
-Alur eksekusi adalah sebagai berikut:
+Alur eksekusi sebagai berikut:
 
 ```mermaid
 flowchart TD
-    A[Viz menerima tugas] --> B[Memanggil alur kerja Overall Analytics]
-    B --> C[Mencocokkan template berdasarkan halaman/tugas saat ini]
-    C --> D[Mengeksekusi SQL template (hanya-baca)]
-    D --> E[Mengembalikan hasil data]
-    E --> F[Viz menghasilkan grafik + interpretasi singkat]
+    A[Viz Menerima Tugas] --> B[Memanggil Workflow Overall Analytics]
+    B --> C[Mencocokkan Template Berdasarkan Halaman/Tugas Saat Ini]
+    C --> D[Menjalankan Template SQL (Read-only)]
+    D --> E[Mengembalikan Hasil Data]
+    E --> F[Viz Menghasilkan Grafik + Penafsiran Singkat]
 ```
 
-Dengan cara ini, Viz dapat menghasilkan hasil analisis yang aman dan terstandarisasi dalam hitungan detik,
-dan administrator dapat mengelola serta meninjau semua template SQL secara terpusat.
+Dengan demikian, Viz dapat menghasilkan hasil analisis yang aman dan terstandar dalam beberapa detik,
+sementara administrator dapat secara terpadu mengelola dan meninjau semua template SQL.
 
 ---
 
-### 3.2 Struktur Koleksi Template (data_analysis)
+### 3.2 Struktur Tabel Template (data_analysis)
 
-| Nama Bidang                                       | Tipe     | Deskripsi                 | Contoh                                                 |
-| ------------------------------------------------- | -------- | ------------------------- | ------------------------------------------------------ |
-| **id**                                            | Integer  | Kunci Primer              | 1                                                      |
-| **name**                                          | Text     | Nama template analisis    | Leads Data Analysis                                    |
-| **collection**                                    | Text     | Koleksi terkait           | Lead                                                   |
-| **sql**                                           | Code     | Pernyataan SQL analisis (hanya-baca) | `SELECT stage, COUNT(*) FROM leads GROUP BY stage`     |
-| **description**                                   | Markdown | Deskripsi atau definisi template | "Menghitung jumlah prospek berdasarkan tahapan" |
-| **createdAt / createdBy / updatedAt / updatedBy** | Bidang Sistem | Informasi audit           | Dibuat secara otomatis                                 |
+| Nama Field | Tipe | Penjelasan | Contoh |
+| ---------- | ---- | ---------- | ------ |
+| **id** | Integer | Primary key | 1 |
+| **name** | Text | Nama template analisis | Leads Data Analysis |
+| **collection** | Text | Tabel data terkait | Lead |
+| **sql** | Code | Statement SQL analisis (read-only) | `SELECT stage, COUNT(*) FROM leads GROUP BY stage` |
+| **description** | Markdown | Penjelasan atau definisi template | "Hitung jumlah leads berdasarkan tahap" |
+| **createdAt / createdBy / updatedAt / updatedBy** | Field sistem | Informasi audit | Otomatis dihasilkan |
 
-#### Contoh Template dalam Demo CRM
+#### Contoh Template di CRM Demo
 
-| Nama                             | Koleksi     | Deskripsi                       |
-| -------------------------------- | ----------- | ------------------------------- |
-| Account Data Analysis            | Account     | Analisis Data Akun              |
-| Contact Data Analysis            | Contact     | Analisis Data Kontak            |
-| Leads Data Analysis              | Lead        | Analisis Tren Prospek           |
-| Opportunity Data Analysis        | Opportunity | Corong Tahapan Peluang          |
-| Task Data Analysis               | Todo Tasks  | Statistik Status Tugas yang Harus Dilakukan |
-| Users (Sales Reps) Data Analysis | Users       | Perbandingan Kinerja Perwakilan Penjualan |
+| Name | Collection | Description |
+| ---- | ---------- | ----------- |
+| Account Data Analysis | Account | Analisis data account |
+| Contact Data Analysis | Contact | Analisis kontak |
+| Leads Data Analysis | Lead | Analisis tren leads |
+| Opportunity Data Analysis | Opportunity | Funnel tahap opportunity |
+| Task Data Analysis | Todo Tasks | Statistik status to-do task |
+| Users (Sales Reps) Data Analysis | Users | Perbandingan kinerja sales rep |
 
 ---
 
-### 3.3 Keunggulan Pola Ini
+### 3.3 Keuntungan Mode Ini
 
-| Dimensi              | Keunggulan                                                              |
-| -------------------- | ----------------------------------------------------------------------- |
-| **Keamanan**         | Semua SQL disimpan dan ditinjau, menghindari pembuatan kueri langsung.  |
-| **Kemudahan Pemeliharaan** | Template dikelola secara terpusat, diperbarui secara seragam.           |
-| **Reusabilitas**     | Template yang sama dapat digunakan kembali oleh beberapa tugas.           |
-| **Portabilitas**     | Dapat dengan mudah dimigrasikan ke sistem lain, hanya memerlukan struktur koleksi yang sama. |
-| **Pengalaman Pengguna** | Pengguna bisnis tidak perlu khawatir tentang SQL; mereka hanya perlu memulai permintaan analisis. |
+| Dimensi | Keuntungan |
+| ------- | ---------- |
+| **Keamanan** | Semua SQL disimpan dan diaudit, menghindari pembuatan query langsung |
+| **Maintainability** | Manajemen template terpusat, update terpadu |
+| **Reusability** | Template yang sama dapat digunakan kembali oleh beberapa tugas |
+| **Portability** | Mudah dimigrasikan ke sistem lain, hanya membutuhkan struktur tabel yang sama |
+| **Pengalaman Pengguna** | Pengguna bisnis tidak perlu peduli SQL, hanya perlu mengirim request analisis |
 
-> 📘 Koleksi `data_analysis` ini tidak harus dinamai demikian.
-> Kuncinya adalah: **menyimpan logika analisis dalam bentuk template** dan memanggilnya secara seragam oleh alur kerja.
+> 📘 Tabel `data_analysis` ini tidak harus diberi nama seperti ini.
+> Yang penting adalah: **menyimpan logika analisis dalam bentuk template**, dipanggil secara terpadu oleh Workflow.
 
 ---
 
 ### 3.4 Cara Membuat Viz Menggunakannya
 
-Dalam definisi tugas, Anda dapat secara eksplisit memberi tahu Viz:
+Pada definisi tugas, dapat memberi tahu Viz dengan jelas:
 
 ```markdown
-Hai Viz,
+Hi Viz,
 
-Mohon analisis data modul saat ini.
+Tolong analisis data modul saat ini.
 
-**Prioritas:** Gunakan alat Overall Analytics untuk mendapatkan hasil analisis dari koleksi template.
-**Jika template yang cocok tidak ditemukan:** Nyatakan bahwa template hilang dan sarankan administrator untuk menambahkannya.
+**Prioritaskan menggunakan:** Tool Overall Analytics, dapatkan hasil analisis dari tabel template.
+**Jika tidak menemukan template yang cocok:** Jelaskan kekurangan template, dan sarankan administrator untuk melengkapi.
 
-Persyaratan keluaran:
-- Hasilkan grafik terpisah untuk setiap hasil;
-- Sertakan deskripsi singkat 2–3 kalimat di bawah grafik;
-- Jangan mengarang data atau membuat asumsi.
+Persyaratan output:
+- Setiap hasil menghasilkan grafik secara independen;
+- Di bawah grafik dilampirkan 2-3 kalimat penjelasan singkat;
+- Tidak mengarang data atau membuat asumsi.
 ```
 
-Dengan cara ini, Viz akan secara otomatis memanggil alur kerja, mencocokkan SQL yang paling sesuai dari koleksi template, dan menghasilkan grafik.
+Dengan demikian, Viz akan secara otomatis memanggil Workflow, mencocokkan SQL paling sesuai dari tabel template dan menghasilkan grafik.
 
 ---
 
-## 4. Pola Dua: Eksekutor SQL Khusus (Gunakan dengan hati-hati)
+## 4. Mode Dua: SQL Executor Spesialisasi (Hati-hati Digunakan)
 
-### 4.1 Skenario yang Berlaku
+### 4.1 Skenario Penggunaan
 
-Ketika Anda memerlukan analisis eksplorasi, kueri _ad-hoc_, atau agregasi JOIN multi-koleksi, Anda dapat meminta Viz memanggil alat **SQL Execution**.
+Saat Anda perlu analisis eksploratif, query sementara, atau agregasi JOIN multi-tabel, Anda dapat membiarkan Viz memanggil tool **SQL Execution**.
 
-Fitur alat ini adalah:
+Karakteristik tool ini:
 
-*   Viz dapat langsung menghasilkan kueri `SELECT`;
-*   Sistem mengeksekusinya dan mengembalikan hasilnya;
-*   Viz bertanggung jawab untuk analisis dan visualisasi.
+* Viz dapat langsung menghasilkan query `SELECT`;
+* Sistem mengeksekusi dan mengembalikan hasil;
+* Viz bertanggung jawab atas analisis dan visualisasi.
 
 Contoh tugas:
 
-> "Mohon analisis tren tingkat konversi prospek berdasarkan wilayah selama 90 hari terakhir."
+> "Tolong analisis tren perubahan tingkat konversi leads di setiap region dalam 90 hari terakhir."
 
-Dalam kasus ini, Viz mungkin menghasilkan:
+Dalam hal ini, Viz mungkin akan menghasilkan:
 
 ```sql
 SELECT region, COUNT(id) AS leads, SUM(converted)::float/COUNT(id) AS rate
@@ -158,100 +161,100 @@ GROUP BY region;
 
 ---
 
-### 4.2 Risiko dan Rekomendasi Perlindungan
+### 4.2 Risiko dan Saran Perlindungan
 
-| Titik Risiko            | Strategi Perlindungan                                   |
-| ----------------------- | ------------------------------------------------------- |
-| Menghasilkan operasi tulis | Batasi secara paksa ke `SELECT`                         |
-| Mengakses koleksi yang tidak terkait | Validasi apakah nama koleksi ada                        |
-| Risiko kinerja dengan koleksi besar | Batasi rentang waktu, gunakan LIMIT untuk jumlah baris |
-| Ketertelusuran operasi  | Aktifkan pencatatan kueri dan audit                     |
-| Kontrol izin pengguna   | Hanya administrator yang dapat menggunakan alat ini     |
+| Titik Risiko | Strategi Perlindungan |
+| ------------ | --------------------- |
+| Menghasilkan operasi tulis | Wajib dibatasi menjadi `SELECT` |
+| Akses tabel yang tidak terkait | Validasi apakah nama tabel ada |
+| Risiko performa tabel besar | Batasi rentang waktu, jumlah LIMIT |
+| Operasi dapat dilacak | Aktifkan log query dan audit |
+| Kontrol Permission Pengguna | Hanya administrator yang dapat menggunakan tool ini |
 
-> Rekomendasi umum:
+> Saran umum:
 >
-> *   Pengguna biasa hanya boleh mengaktifkan analisis bertemplate (Overall Analytics);
-> *   Hanya administrator atau analis senior yang boleh menggunakan SQL Execution.
+> * Pengguna umum hanya mengaktifkan analisis berbasis template (Overall Analytics);
+> * Hanya administrator atau analis lanjutan yang dapat menggunakan SQL Execution.
 
 ---
 
-## 5. Jika Anda Ingin Membangun "Overall Analytics" Anda Sendiri
+## 5. Jika Anda Ingin Membuat Sendiri "Overall Analytics"
 
-Berikut adalah pendekatan umum yang sederhana, yang dapat Anda replikasi di sistem apa pun (tidak bergantung pada NocoBase):
+Berikut adalah pemikiran umum yang sederhana, Anda dapat menyalinnya ke sistem mana pun (tidak bergantung pada NocoBase):
 
-### Langkah 1: Rancang Koleksi Template
+### Langkah 1: Rancang Tabel Template
 
-Nama koleksi bisa apa saja (misalnya, `analysis_templates`).
-Cukup perlu menyertakan bidang: `name`, `sql`, `collection`, dan `description`.
+Nama tabel bebas (seperti `analysis_templates`).
+Hanya perlu berisi Field: `name`, `sql`, `collection`, `description`.
 
-### Langkah 2: Tulis Layanan atau Alur Kerja "Ambil Template → Eksekusi"
+### Langkah 2: Tulis Layanan atau Workflow "Ambil Template → Eksekusi"
 
 Logika:
 
-1.  Menerima tugas atau konteks halaman (misalnya, koleksi saat ini);
-2.  Mencocokkan template;
-3.  Mengeksekusi SQL template (hanya-baca);
-4.  Mengembalikan struktur data standar (baris + bidang).
+1. Menerima tugas atau konteks halaman (seperti collection saat ini);
+2. Mencocokkan template;
+3. Menjalankan template SQL (read-only);
+4. Mengembalikan struktur data terstandar (rows + fields).
 
-### Langkah 3: Minta AI Memanggil Antarmuka Ini
+### Langkah 3: Biarkan AI Memanggil Antarmuka Ini
 
-_Prompt_ tugas dapat ditulis seperti ini:
+Prompt tugas dapat ditulis seperti ini:
 
 ```
-Pertama, coba panggil alat analisis template. Jika tidak ada analisis yang cocok ditemukan di template, maka gunakan eksekutor SQL.
-Pastikan semua kueri hanya-baca dan hasilkan grafik untuk menampilkan hasilnya.
+Tolong panggil tool analisis template terlebih dahulu, jika tidak ada analisis yang cocok di template, baru gunakan SQL executor.
+Pastikan semua query read-only, dan hasilkan grafik untuk menampilkan hasil.
 ```
 
-> Dengan cara ini, sistem agen AI Anda akan memiliki kemampuan analisis yang mirip dengan Demo CRM, tetapi akan sepenuhnya independen dan dapat disesuaikan.
+> Dengan demikian, sistem Karyawan AI Anda memiliki kemampuan analisis yang mirip dengan CRM Demo, tetapi sepenuhnya independen, dapat dikustomisasi.
 
 ---
 
-## 6. Praktik Terbaik dan Rekomendasi Desain
+## 6. Praktik Terbaik dan Saran Desain
 
-| Rekomendasi                   | Deskripsi                                                               |
-| ----------------------------- | ----------------------------------------------------------------------- |
-| **Prioritaskan analisis bertemplate** | Aman, stabil, dan dapat digunakan kembali                               |
-| **SQL Execution hanya sebagai pelengkap** | Terbatas untuk _debugging_ internal atau kueri _ad-hoc_                 |
-| **Satu grafik, satu poin utama** | Keluaran yang jelas, hindari kekacauan berlebihan                       |
-| **Penamaan template yang jelas** | Beri nama sesuai halaman/domain bisnis, misalnya `Leads-Stage-Conversion` |
-| **Penjelasan ringkas dan jelas** | Sertai setiap grafik dengan ringkasan 2–3 kalimat                        |
-| **Indikasikan jika template hilang** | Informasikan kepada pengguna "Template yang sesuai tidak ditemukan" daripada keluaran kosong |
-
----
-
-## 7. Dari Demo CRM ke Skenario Anda
-
-Baik Anda bekerja dengan CRM rumah sakit, manufaktur, logistik gudang, atau penerimaan pendidikan,
-selama Anda dapat menjawab tiga pertanyaan berikut, Viz dapat memberikan nilai pada sistem Anda:
-
-| Pertanyaan                  | Contoh                                  |
-| --------------------------- | --------------------------------------- |
-| **1. Apa yang ingin Anda analisis?** | Tren prospek / Tahapan kesepakatan / Tingkat operasi peralatan |
-| **2. Di mana datanya?**     | Koleksi mana, bidang mana               |
-| **3. Bagaimana Anda ingin menyajikannya?** | Grafik garis, corong, pie, tabel perbandingan |
-
-Setelah Anda mendefinisikan hal-hal ini, Anda hanya perlu:
-
-*   Menulis logika analisis ke dalam koleksi template;
-*   Melampirkan _prompt_ tugas ke halaman;
-*   Viz kemudian dapat "mengambil alih" analisis laporan Anda.
+| Saran | Penjelasan |
+| ----- | ---------- |
+| **Prioritaskan Analisis Berbasis Template** | Aman, stabil, dapat digunakan kembali |
+| **SQL Execution Hanya Sebagai Pelengkap** | Hanya untuk debugging internal atau query sementara |
+| **Satu Grafik Satu Fokus** | Output jelas, hindari kompleksitas berlebihan |
+| **Penamaan Template yang Jelas** | Sesuai halaman/domain bisnis, contohnya `Leads-Stage-Conversion` |
+| **Penjelasan Ringkas dan Jelas** | Setiap grafik dilengkapi 2-3 kalimat ringkasan |
+| **Jelaskan Jika Tidak Ada Template** | Beri tahu Pengguna "tidak ditemukan template terkait" daripada output kosong |
 
 ---
 
-## 8. Kesimpulan: Bawa Paradigma Ini Bersama Anda
+## 7. Dari CRM Demo ke Skenario Anda
+
+Baik Anda membuat CRM rumah sakit, manufaktur, gudang logistik, atau penerimaan pendidikan,
+selama Anda dapat menjawab tiga pertanyaan berikut, Viz dapat memberikan nilai dalam sistem Anda:
+
+| Pertanyaan | Contoh |
+| ---------- | ------ |
+| **1. Apa yang ingin Anda analisis?** | Tren leads / Tahap deal / Tingkat utilisasi peralatan |
+| **2. Di mana data?** | Tabel mana, Field apa saja |
+| **3. Bagaimana ingin menampilkan?** | Line chart, funnel, pie chart, tabel perbandingan |
+
+Setelah Anda mendefinisikan konten ini, hanya perlu:
+
+* Menulis logika analisis ke tabel template;
+* Mengaitkan prompt tugas pada halaman;
+* Viz dapat "mengambil alih" analisis laporan Anda.
+
+---
+
+## 8. Penutup: Bawalah Paradigma
 
 "Overall Analytics" dan "SQL Execution" hanyalah dua contoh implementasi.
-Yang lebih penting adalah ide di baliknya:
+Yang lebih penting adalah pemikiran di baliknya:
 
-> **Buat agen AI memahami logika bisnis Anda, bukan hanya mengeksekusi _prompt_.**
+> **Biarkan Karyawan AI memahami logika bisnis Anda, bukan hanya menjalankan prompt.**
 
-Baik Anda menggunakan NocoBase, sistem pribadi, atau alur kerja kustom Anda sendiri,
-Anda dapat mereplikasi struktur ini:
+Apa pun yang Anda gunakan, NocoBase, sistem private, atau Workflow yang Anda tulis sendiri,
+Anda dapat menyalin struktur ini:
 
-*   Template terpusat;
-*   Panggilan alur kerja;
-*   Eksekusi hanya-baca;
-*   Penyajian AI.
+* Template terpusat;
+* Pemanggilan Workflow;
+* Eksekusi read-only;
+* Penampilan AI.
 
-Dengan cara ini, Viz tidak lagi hanya "AI yang dapat menghasilkan grafik,"
-tetapi seorang analis sejati yang memahami data Anda, definisi Anda, dan bisnis Anda.
+Dengan demikian, Viz tidak lagi hanya "AI yang dapat menghasilkan grafik",
+tetapi seorang analis yang benar-benar memahami data Anda, memahami definisi Anda, dan memahami bisnis Anda.

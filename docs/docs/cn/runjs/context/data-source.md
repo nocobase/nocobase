@@ -1,3 +1,9 @@
+---
+title: "ctx.dataSource"
+description: "ctx.dataSource 当前数据源实例，用于访问 Collection、Repository，多数据源场景下指定数据源。"
+keywords: "ctx.dataSource,数据源,Collection,Repository,多数据源,RunJS 上下文,NocoBase"
+---
+
 # ctx.dataSource
 
 当前 RunJS 执行上下文绑定的数据源实例（`DataSource`），用于在**当前数据源内**访问数据表、字段元数据及管理数据表配置。通常对应当前页/区块选中的数据源（如主库 `main`）。

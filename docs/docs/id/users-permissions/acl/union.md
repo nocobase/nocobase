@@ -1,74 +1,72 @@
 ---
 pkg: '@nocobase/plugin-acl'
+title: "Gabungan Role"
+description: "Gabungan role NocoBase: tiga mode izin yaitu role independen, izinkan gabungan role, dan hanya gabungan role, strategi penggabungan izin multi-role."
+keywords: "gabungan role,role independen,penggabungan izin,multi-role,ACL,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Gabungan Role
 
-# Gabungan Peran
-
-Gabungan Peran adalah mode manajemen izin. Berdasarkan pengaturan sistem, pengembang sistem dapat memilih untuk menggunakan `Peran Independen`, `Izinkan Gabungan Peran`, atau `Gabungan Peran Saja`, untuk memenuhi kebutuhan izin yang berbeda.
+Gabungan role adalah mode manajemen izin. Berdasarkan pengaturan sistem, developer sistem dapat memilih untuk menggunakan role independen, mengizinkan gabungan role, atau hanya menggunakan gabungan role, untuk memenuhi kebutuhan izin yang berbeda.
 
 ![20250312184651](https://static-docs.nocobase.com/20250312184651.png)
 
-## Peran Independen
+## Role Independen
 
-Secara default, sistem menggunakan peran independen. Pengguna harus beralih di antara peran yang mereka miliki satu per satu.
+Sistem secara default menggunakan role independen: tidak menggunakan gabungan role, pengguna perlu beralih satu per satu antara role yang dimilikinya.
 
 ![20250312184729](https://static-docs.nocobase.com/20250312184729.png)
 ![20250312184826](https://static-docs.nocobase.com/20250312184826.png)
 
-## Izinkan Gabungan Peran
+## Izinkan Gabungan Role
 
-Pengembang sistem dapat mengaktifkan `Izinkan Gabungan Peran`, memungkinkan pengguna untuk secara bersamaan memiliki izin dari semua peran yang ditetapkan, sekaligus tetap mengizinkan pengguna untuk beralih peran secara individual.
+Mengizinkan developer sistem menggunakan gabungan role, yaitu dapat menggunakan izin dari semua role yang dimiliki secara bersamaan, sambil juga mengizinkan pengguna untuk beralih satu per satu antara role-rolenya.
 
 ![20250312185006](https://static-docs.nocobase.com/20250312185006.png)
 
-## Gabungan Peran Saja
+## Hanya Gabungan Role
 
-Pengguna diwajibkan untuk hanya menggunakan Gabungan Peran dan tidak dapat beralih peran secara individual.
+Memaksa pengguna untuk hanya dapat menggunakan gabungan role, tidak dapat beralih role satu per satu.
 
 ![20250312185105](https://static-docs.nocobase.com/20250312185105.png)
 
-## Aturan untuk Gabungan Peran
+## Aturan Gabungan Role
 
-Gabungan peran memberikan izin maksimum di seluruh peran. Berikut adalah penjelasan tentang bagaimana izin peran ditentukan ketika ada konflik pengaturan pada item yang sama di antara peran-peran.
+Gabungan role memberi pengguna izin maksimum dari semua role. Penjelasan berikut menjelaskan bagaimana izin role ditentukan ketika pengaturan role yang sama bertentangan.
 
 ### Penggabungan Izin Operasi
 
-Contoh:
-Peran 1 (role1) dikonfigurasi untuk `Mengizinkan konfigurasi antarmuka` dan Peran 2 (role2) dikonfigurasi untuk `Mengizinkan instalasi, aktivasi, penonaktifan plugin`.
+Contoh: Role 1 (role1) dikonfigurasi dengan izin antarmuka, Role 2 (role2) dikonfigurasi dengan izin instalasi, aktivasi, dan menonaktifkan plugin.
 
 ![20250312190133](https://static-docs.nocobase.com/20250312190133.png)
 
 ![20250312190352](https://static-docs.nocobase.com/20250312190352.png)
 
-Saat masuk dengan peran **Izin Penuh**, pengguna akan memiliki kedua izin tersebut secara bersamaan.
+Login dengan role **All Permissions**, akan memiliki kedua izin tersebut secara bersamaan.
 
 ![20250312190621](https://static-docs.nocobase.com/20250312190621.png)
 
-### Penggabungan Lingkup Data
+### Penggabungan Data Scope
 
 #### Baris Data
 
-Skenario 1: Beberapa peran mengatur kondisi pada bidang yang sama
+Skenario 1: Multi-role mengatur kondisi pada field yang sama
 
-Filter Peran A: Usia < 30
+Role A, kondisi konfigurasi: Age < 30
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 1      | Jack | 23  |
 | 2      | Lily | 29  |
 
-Filter Peran B: Usia > 25
+Role B, kondisi konfigurasi: Age > 25
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 2      | Lily | 29  |
 | 3      | Sam  | 32  |
 
-**Setelah digabungkan:**
+Setelah digabungkan:
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
@@ -76,23 +74,23 @@ Filter Peran B: Usia > 25
 | 2      | Lily | 29  |
 | 3      | Sam  | 32  |
 
-Skenario 2: Peran yang berbeda mengatur kondisi pada bidang yang berbeda
+Skenario 2: Role yang berbeda mengatur field yang berbeda sebagai kondisi
 
-Filter Peran A: Usia < 30
+Role A, kondisi konfigurasi: Age < 30
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 1      | Jack | 23  |
 | 2      | Lily | 29  |
 
-Filter Peran B: Nama mengandung "Ja"
+Role B, kondisi konfigurasi: Name mengandung "Ja"
 
 | UserID | Name   | Age |
 | ------ | ------ | --- |
 | 1      | Jack   | 23  |
 | 3      | Jasmin | 27  |
 
-**Setelah digabungkan:**
+Setelah digabungkan:
 
 | UserID | Name   | Age |
 | ------ | ------ | --- |
@@ -102,44 +100,44 @@ Filter Peran B: Nama mengandung "Ja"
 
 #### Kolom Data
 
-Kolom terlihat Peran A: Nama, Usia
+Role A, field terlihat yang dikonfigurasi: Name, Age
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 1      | Jack | 23  |
 | 2      | Lily | 29  |
 
-Kolom terlihat Peran B: Nama, Jenis Kelamin
+Role B, field terlihat yang dikonfigurasi: Name, Sex
 
 | UserID | Name | Sex   |
 | ------ | ---- | ----- |
 | 1      | Jack | Man   |
 | 2      | Lily | Woman |
 
-**Setelah digabungkan:**
+Setelah digabungkan:
 
 | UserID | Name | Age | Sex   |
 | ------ | ---- | --- | ----- |
 | 1      | Jack | 23  | Man   |
 | 2      | Lily | 29  | Woman |
 
-#### Baris dan Kolom Campuran
+#### Campuran Baris dan Kolom
 
-Filter Peran A: Usia < 30, kolom Nama, Usia
+Role A, kondisi konfigurasi Age < 30, field terlihat Name, Age
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 1      | Jack | 23  |
 | 2      | Lily | 29  |
 
-Filter Peran B: Nama mengandung "Ja", kolom Nama, Jenis Kelamin
+Role B, kondisi konfigurasi Name mengandung "Ja", field terlihat Name, Sex
 
 | UserID | Name  | Sex   |
 | ------ | ----- | ----- |
 | 3      | Jade  | Woman |
 | 4      | James | Man   |
 
-**Setelah digabungkan:**
+Setelah digabungkan:
 
 | UserID | Name  | Age                                              | Sex                                                 |
 | ------ | ----- | ------------------------------------------------ | --------------------------------------------------- |
@@ -148,12 +146,12 @@ Filter Peran B: Nama mengandung "Ja", kolom Nama, Jenis Kelamin
 | 3      | Jade  | <span style="background-color:#FFDDDD">27</span> | Woman                                               |
 | 4      | James | <span style="background-color:#FFDDDD">31</span> | Man                                                 |
 
-**Catatan:** Sel dengan latar belakang merah menunjukkan data yang tidak terlihat di peran individual tetapi terlihat di peran yang digabungkan.
+**Keterangan: Data yang ditandai sebagian tidak terlihat di role yang berbeda, tetapi terlihat pada role gabungan**
 
 #### Ringkasan
 
-Aturan penggabungan peran untuk lingkup data:
+Aturan gabungan role pada data scope:
 
-1.  Antara baris, jika salah satu kondisi terpenuhi, baris tersebut memiliki izin.
-2.  Antara kolom, bidang-bidang digabungkan.
-3.  Ketika baris dan kolom keduanya dikonfigurasi, baris dan kolom digabungkan secara terpisah, bukan berdasarkan kombinasi (baris + kolom) dengan (baris + kolom).
+1. Antar baris, jika salah satu kondisi terpenuhi maka memiliki izin
+2. Antar kolom, field saling ditambahkan
+3. Saat baris dan kolom diatur secara bersamaan, digabungkan secara terpisah baris-baris dan kolom-kolom, bukan digabungkan dengan kombinasi (baris+kolom) dan (baris+kolom)

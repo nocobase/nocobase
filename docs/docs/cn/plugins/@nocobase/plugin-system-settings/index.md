@@ -1,4 +1,6 @@
 ---
+title: "系统设置"
+keywords: "系统设置,插件,NocoBase"
 displayName: "系统设置"
 packageName: '@nocobase/plugin-system-settings'
 description: |

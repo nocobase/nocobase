@@ -1,74 +1,76 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "JSField JS Field"
+description: "JSField JS Field: menyematkan logika JavaScript kustom di Field Form, mendukung React, konteks ctx."
+keywords: "JSField, JS Field, Field kustom, JavaScript, interface builder, NocoBase"
+---
 
 # JS Field
 
-## Pendahuluan
+## Pengantar
 
-JS Field digunakan untuk merender konten secara kustom di posisi field menggunakan JavaScript. Ini umumnya digunakan di blok detail, item hanya-baca pada formulir, atau sebagai "Item kustom lainnya" di kolom tabel. Ini cocok untuk tampilan yang dipersonalisasi, kombinasi informasi turunan, rendering badge status, teks kaya, atau grafik.
+JS Field digunakan untuk merender konten kustom di posisi Field dengan JavaScript. Sering ditemui di Block Detail, item read-only di Form, atau "item kustom lainnya" di kolom Table. Cocok untuk tampilan personal, kombinasi informasi turunan, badge status, render rich text atau chart, dll.
 
 ![jsfield-readonly-add-20251029](https://static-docs.nocobase.com/jsfield-readonly-add-20251029.png)
 
 ## Tipe
 
--   **Hanya-Baca**: Digunakan untuk tampilan yang tidak dapat diedit, membaca `ctx.value` untuk merender output.
--   **Dapat Diedit**: Digunakan untuk interaksi input kustom, menyediakan `ctx.getValue()`/`ctx.setValue(v)` dan event kontainer `js-field:value-change` untuk memfasilitasi sinkronisasi dua arah dengan nilai formulir.
+- Read-only: digunakan untuk tampilan tidak dapat diedit, membaca `ctx.value` untuk render output.
+- Editable: digunakan untuk interaksi input kustom, menyediakan `ctx.getValue()`/`ctx.setValue(v)` dan event container `js-field:value-change`, memudahkan sinkronisasi dua arah dengan nilai Form.
 
-## Kasus Penggunaan
+## Skenario Penggunaan
 
--   **Hanya-Baca**
-    -   **Blok Detail**: Menampilkan konten hanya-baca seperti hasil perhitungan, badge status, fragmen teks kaya, grafik, dsb.
-    -   **Blok Tabel**: Digunakan sebagai "Kolom kustom lainnya > JS Field" untuk tampilan hanya-baca (jika Anda membutuhkan kolom yang tidak terikat ke field, silakan gunakan JS Column).
+- Read-only
+  - Block Detail: menampilkan hasil perhitungan, badge status, snippet rich text, chart, dan konten read-only lainnya;
+  - Block Table: digunakan sebagai "kolom kustom lainnya > JS Field" untuk tampilan read-only (jika perlu kolom yang tidak terikat Field, gunakan JS Column);
 
--   **Dapat Diedit**
-    -   **Blok Formulir (CreateForm/EditForm)**: Digunakan untuk kontrol input kustom atau input komposit, yang divalidasi dan disubmit bersama formulir.
-    -   **Cocok untuk skenario seperti**: komponen input dari pustaka eksternal, editor teks kaya/kode, komponen dinamis yang kompleks, dsb.
+- Editable
+  - Block Form (CreateForm/EditForm): digunakan untuk control input kustom atau input gabungan, mengikuti validasi dan submit Form;
+  - Skenario yang cocok: komponen input library eksternal, rich text/code editor, komponen dinamis kompleks, dll.;
 
 ## API Konteks Runtime
 
 Kode runtime JS Field dapat langsung menggunakan kemampuan konteks berikut:
 
--   `ctx.element`: Kontainer DOM field (ElementProxy), mendukung `innerHTML`, `querySelector`, `addEventListener`, dsb.
--   `ctx.value`: Nilai field saat ini (hanya-baca).
--   `ctx.record`: Objek record saat ini (hanya-baca).
--   `ctx.collection`: Metadata dari koleksi tempat field berada (hanya-baca).
--   `ctx.requireAsync(url)`: Memuat pustaka AMD/UMD secara asinkron berdasarkan URL.
--   `ctx.importAsync(url)`: Mengimpor modul ESM secara dinamis berdasarkan URL.
--   `ctx.openView(options)`: Membuka tampilan yang telah dikonfigurasi (pop-up/drawer/halaman).
--   `ctx.i18n.t()` / `ctx.t()`: Internasionalisasi.
--   `ctx.onRefReady(ctx.ref, cb)`: Merender setelah kontainer siap.
--   `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Pustaka bawaan React, ReactDOM, Ant Design, ikon Ant Design, dan dayjs untuk rendering JSX dan utilitas tanggal-waktu. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` tetap dipertahankan untuk kompatibilitas.)
--   `ctx.render(vnode)`: Merender elemen React, string HTML, atau node DOM ke dalam kontainer default `ctx.element`. Rendering berulang akan menggunakan kembali Root dan menimpa konten kontainer yang sudah ada.
+- `ctx.element`: container DOM Field (ElementProxy), mendukung `innerHTML`, `querySelector`, `addEventListener`, dll.;
+- `ctx.value`: nilai Field saat ini (read-only);
+- `ctx.record`: objek record saat ini (read-only);
+- `ctx.collection`: meta info collection tempat Field berada (read-only);
+- `ctx.requireAsync(url)`: load library AMD/UMD secara asynchronous berdasarkan URL;
+- `ctx.importAsync(url)`: import modul ESM secara dinamis berdasarkan URL;
+- `ctx.openView(options)`: membuka view yang sudah dikonfigurasi (Popup/drawer/page);
+- `ctx.i18n.t()` / `ctx.t()`: internasionalisasi;
+- `ctx.onRefReady(ctx.ref, cb)`: render setelah container siap;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: library umum bawaan seperti React / ReactDOM / Ant Design / icon Ant Design / dayjs / lodash / math.js / formula.js, dll., digunakan untuk render JSX, pemrosesan waktu, operasi data, dan operasi matematika. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` masih dipertahankan untuk kompatibilitas.)
+- `ctx.render(vnode)`: render React element, HTML string, atau DOM node ke container default `ctx.element`; render berulang akan menggunakan kembali Root, dan menimpa konten container yang ada.
 
-Khusus untuk tipe Dapat Diedit (JSEditableField):
+Khusus Editable (JSEditableField):
 
--   `ctx.getValue()`: Mendapatkan nilai formulir saat ini (memprioritaskan status formulir, lalu kembali ke prop field).
--   `ctx.setValue(v)`: Mengatur nilai formulir dan prop field, menjaga sinkronisasi dua arah.
--   Event kontainer `js-field:value-change`: Dipicu ketika nilai eksternal berubah, memudahkan skrip untuk memperbarui tampilan input.
+- `ctx.getValue()`: mendapatkan nilai Form saat ini (prioritas menggunakan state Form, kemudian fallback ke props Field).
+- `ctx.setValue(v)`: mengatur nilai Form dan props Field, menjaga sinkronisasi dua arah.
+- Event container `js-field:value-change`: dipicu saat nilai eksternal berubah, memudahkan script update tampilan input.
 
-## Editor dan Cuplikan Kode
+## Editor dan Snippet
 
-Editor skrip JS Field mendukung penyorotan sintaks, petunjuk kesalahan, dan cuplikan kode bawaan (Snippets).
+Editor script JS Field mendukung syntax highlighting, error prompt, dan snippet kode bawaan (Snippets).
 
--   `Snippets`: Membuka daftar cuplikan kode bawaan, yang dapat dicari dan disisipkan di posisi kursor saat ini dengan sekali klik.
--   `Run`: Langsung mengeksekusi kode saat ini. Log eksekusi ditampilkan di panel `Logs` di bagian bawah, mendukung `console.log/info/warn/error` dan penyorotan kesalahan untuk lokasi yang mudah.
+- `Snippets`: Membuka daftar snippet kode bawaan, dapat dicari dan dengan satu klik menyisipkan ke posisi cursor saat ini.
+- `Run`: Langsung menjalankan kode saat ini, log eksekusi output ke panel `Logs` di bawah, mendukung `console.log/info/warn/error` dan highlight lokasi error.
 
 ![jsfield-readonly-toolbars-20251029](https://static-docs.nocobase.com/jsfield-readonly-toolbars-20251029.png)
 
-Anda juga dapat menghasilkan kode dengan AI Employee:
+Dapat dikombinasikan dengan AI Employee untuk generate kode:
 
--   [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Penggunaan Umum
 
-### 1) Rendering Dasar (Membaca Nilai Field)
+### 1) Render Dasar (Membaca Nilai Field)
 
 ```js
 ctx.render(<span className="nb-js-field">{String(ctx.value ?? '')}</span>);
 ```
 
-### 2) Menggunakan JSX untuk Merender Komponen React
+### 2) Menggunakan JSX untuk Render Komponen React
 
 ```js
 const { Tag } = ctx.libs.antd;
@@ -79,7 +81,7 @@ ctx.render(
 );
 ```
 
-### 3) Memuat Pustaka Pihak Ketiga (AMD/UMD atau ESM)
+### 3) Load Library Pihak Ketiga (AMD/UMD atau ESM)
 
 ```js
 // AMD/UMD
@@ -91,7 +93,7 @@ const { default: he } = await ctx.importAsync('https://cdn.jsdelivr.net/npm/he/+
 ctx.render(<span>{he.encode(String(ctx.value ?? ''))}</span>);
 ```
 
-### 4) Mengklik untuk Membuka Pop-up/Drawer (openView)
+### 4) Klik untuk Membuka Popup/Drawer (openView)
 
 ```js
 ctx.element.innerHTML = `<a class="open-detail">Lihat Detail</a>`;
@@ -108,10 +110,10 @@ a?.addEventListener('click', async () => {
 });
 ```
 
-### 5) Input yang Dapat Diedit (JSEditableFieldModel)
+### 5) Input Editable (JSEditableFieldModel)
 
 ```js
-// Merender input sederhana menggunakan JSX dan menyinkronkan nilai formulir
+// Render input sederhana dengan JSX, dan sinkronisasi nilai Form
 function InputView() {
   return (
     <input
@@ -123,7 +125,7 @@ function InputView() {
   );
 }
 
-// Sinkronkan input ketika nilai eksternal berubah (opsional)
+// Sinkronisasi ke input saat nilai eksternal berubah (opsional)
 ctx.element.addEventListener('js-field:value-change', (ev) => {
   const el = ctx.element.querySelector('.nb-js-editable');
   if (el) el.value = ev.detail ?? '';
@@ -132,8 +134,8 @@ ctx.element.addEventListener('js-field:value-change', (ev) => {
 ctx.render(<InputView />);
 ```
 
-## Catatan
+## Perhatian
 
--   Disarankan untuk menggunakan CDN tepercaya untuk memuat pustaka eksternal dan memiliki mekanisme cadangan untuk skenario kegagalan (misalnya, `if (!lib) return;`).
--   Disarankan untuk memprioritaskan penggunaan `class` atau `[name=...]` untuk selektor, dan hindari penggunaan `id` tetap untuk mencegah duplikasi `id` di beberapa blok atau pop-up.
--   Pembersihan Event: Field mungkin dirender ulang beberapa kali karena perubahan data atau pergantian tampilan. Sebelum mengikat event, Anda harus membersihkannya atau menghilangkan duplikasi untuk menghindari pemicuan berulang. Dapat "menghapus lalu menambahkan".
+- Disarankan menggunakan CDN terpercaya untuk load library eksternal, dan siapkan fallback untuk skenario kegagalan (seperti `if (!lib) return;`).
+- Saran selector prioritaskan menggunakan `class` atau `[name=...]`, hindari menggunakan `id` tetap, untuk mencegah duplikasi `id` di beberapa Block/Popup.
+- Pembersihan event: Field mungkin di-render berulang kali karena perubahan data atau peralihan view. Sebelum bind event harus melakukan pembersihan atau dedup, hindari trigger berulang. Dapat menggunakan "remove dulu kemudian add".

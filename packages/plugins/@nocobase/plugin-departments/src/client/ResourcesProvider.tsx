@@ -72,6 +72,7 @@ export const ResourcesProvider: React.FC = (props) => {
     action: 'list',
     params: {
       paginate: false,
+      sort: ['sort'],
       filter: {
         parentId: null,
       },

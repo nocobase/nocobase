@@ -1,33 +1,32 @@
 ---
 pkg: '@nocobase/plugin-auth-wecom'
+title: "Notifikasi WeCom"
+description: "Channel notifikasi WeCom: mengirim notifikasi ke pengguna WeCom, mendukung text card, Markdown, template card, perlu mengkonfigurasi WeCom authenticator."
+keywords: "notifikasi WeCom,WeCom,WeCom Enterprise,text card,Markdown,template card,notification manager,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Notifikasi: WeCom
 
-## Pendahuluan
+## Pengantar
 
-Plugin **WeCom** memungkinkan aplikasi untuk mengirim pesan notifikasi kepada pengguna WeCom.
+Plugin **WeCom** mendukung aplikasi mengirim pesan notifikasi ke pengguna WeCom.
 
-## Menambahkan dan Mengonfigurasi Autentikator WeCom
+## Menambahkan dan Mengkonfigurasi WeCom Authenticator
 
-Pertama, Anda perlu menambahkan dan mengonfigurasi autentikator WeCom di NocoBase, lihat [Autentikasi Pengguna - WeCom](/auth-verification/auth-wecom). Hanya pengguna sistem yang telah masuk melalui WeCom yang dapat menerima notifikasi sistem melalui WeCom.
+Pertama Anda perlu menambahkan dan mengkonfigurasi WeCom authenticator di NocoBase, lihat [Autentikasi Pengguna - WeCom](/auth-verification/auth-wecom). Hanya pengguna sistem yang sudah login melalui WeCom yang dapat menerima notifikasi sistem melalui WeCom.
 
-## Menambahkan Saluran Notifikasi WeCom
+## Menambahkan Channel Notifikasi WeCom
 
 ![](https://static-docs.nocobase.com/202412041522365.png)
 
-## Mengonfigurasi Saluran Notifikasi WeCom
+## Mengkonfigurasi Channel Notifikasi WeCom
 
-Pilih autentikator yang baru saja Anda konfigurasikan.
+Pilih authenticator yang baru saja dikonfigurasi.
 
 ![](https://static-docs.nocobase.com/202412041525284.png)
 
-## Konfigurasi Node Notifikasi Alur Kerja
+## Konfigurasi Node Notifikasi Workflow
 
-Pilih saluran notifikasi WeCom yang telah dikonfigurasi. Ini mendukung tiga jenis pesan: Kartu Teks, Markdown, dan Kartu Templat.
+Pilih channel notifikasi WeCom yang sudah dikonfigurasi, mendukung tiga tipe pesan: text card, Markdown, template card.
 
 ![](https://static-docs.nocobase.com/202412041529319.png)

@@ -1,63 +1,62 @@
 ---
-pkg: "@nocobase/plugin-collection-sql"
+title: "Bảng SQL"
+description: "Lấy dữ liệu thông qua câu lệnh SQL và cấu hình metadata Field, sử dụng giống như bảng thông thường cho bảng, biểu đồ, workflow, phù hợp với các tình huống truy vấn liên kết, thống kê."
+keywords: "Bảng SQL,Collection SQL,truy vấn SQL,truy vấn liên kết,thống kê,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Bảng SQL
 
-
-# Bộ sưu tập SQL
+<PluginInfo name="collection-sql"></PluginInfo>
 
 ## Giới thiệu
 
-Bộ sưu tập SQL cung cấp một phương pháp mạnh mẽ để truy xuất dữ liệu bằng các truy vấn SQL. Bằng cách trích xuất các trường dữ liệu thông qua các truy vấn SQL và cấu hình siêu dữ liệu trường liên quan, người dùng có thể sử dụng các trường này như thể chúng là một bảng thông thường. Tính năng này đặc biệt hữu ích cho các kịch bản liên quan đến truy vấn kết nối phức tạp, phân tích thống kê và nhiều hơn nữa.
+SQL collection cung cấp một phương pháp lấy dữ liệu thông qua câu lệnh SQL. Bằng cách lấy các Field dữ liệu thông qua câu lệnh SQL và cấu hình metadata Field, bạn có thể sử dụng giống như bảng thông thường cho bảng, biểu đồ, workflow, v.v., phù hợp với các tình huống truy vấn liên kết, thống kê.
 
 ## Hướng dẫn sử dụng
 
-### Tạo mới bộ sưu tập SQL
+### Tạo mới
 
 <img src="https://static-docs.nocobase.com/202405191452918.png"/>
 
-<p>1. Nhập truy vấn SQL của bạn vào ô nhập liệu SQL và nhấp vào nút Thực thi (Execute). Hệ thống sẽ phân tích truy vấn để xác định các bảng và trường liên quan, tự động trích xuất siêu dữ liệu trường có liên quan từ các bảng nguồn.</p>
+<p>1. Sau khi nhập câu lệnh SQL vào ô SQL, nhấp Execute, hệ thống sẽ cố gắng phân tích các bảng và Field mà SQL đã sử dụng, trích xuất metadata Field từ bảng nguồn.</p>
 
 <img src="https://static-docs.nocobase.com/202405191453556.png"/>
 
-<p>2. Nếu phân tích của hệ thống về các bảng và trường nguồn không chính xác, bạn có thể chọn thủ công các bảng và trường phù hợp để đảm bảo siêu dữ liệu chính xác được sử dụng. Bắt đầu bằng cách chọn bảng nguồn, sau đó chọn các trường tương ứng trong phần nguồn trường bên dưới.</p>
+<p>2. Nếu bảng nguồn và Field do hệ thống tự động phân tích không đúng, bạn có thể chọn thủ công bảng và Field tương ứng để sử dụng metadata của Field tương ứng. Cần chọn bảng nguồn trước, sau đó mới có thể chọn Field của bảng đó trong nguồn Field bên dưới.</p>
 
 <img src="https://static-docs.nocobase.com/202405191453579.png"/>
 
-<p>3. Đối với các trường không có nguồn trực tiếp, hệ thống sẽ suy luận loại trường dựa trên kiểu dữ liệu. Nếu suy luận này không chính xác, bạn có thể chọn thủ công loại trường phù hợp.</p>
+<p>3. Nếu Field không có Field nguồn tương ứng, hệ thống sẽ suy luận kiểu Field dựa trên kiểu dữ liệu. Nếu kết quả suy luận không đúng, bạn có thể chọn kiểu Field thủ công.</p>
 
 <img src="https://static-docs.nocobase.com/202405191454703.png"/>
 
-<p>4. Khi bạn cấu hình từng trường, bạn có thể xem trước hiển thị của nó trong khu vực xem trước, cho phép bạn thấy ngay tác động của các cài đặt của mình.</p>
+<p>4. Trong khi cấu hình Field, bạn có thể xem hiệu ứng hiển thị tương ứng trong khu vực xem trước.</p>
 
 <img src="https://static-docs.nocobase.com/202405191455439.png"/>
 
-<p>5. Sau khi bạn đã hoàn tất cấu hình và xác nhận mọi thứ đều chính xác, hãy nhấp vào nút Xác nhận (Confirm) bên dưới ô nhập liệu SQL để hoàn tất việc gửi.</p>
+<p>5. Sau khi cấu hình hoàn tất và xác nhận không có vấn đề, cần nhấp vào nút Confirm bên dưới ô SQL để gửi cuối cùng.</p>
 
 <img src="https://static-docs.nocobase.com/202405191455302.png"/>
 
 ### Chỉnh sửa
 
-1. Nếu bạn cần sửa đổi truy vấn SQL, hãy nhấp vào nút Chỉnh sửa (Edit) để trực tiếp thay đổi câu lệnh SQL và cấu hình lại các trường theo yêu cầu.
+1. Khi câu lệnh SQL có thay đổi, bạn có thể nhấp vào nút Edit để chỉnh sửa trực tiếp câu lệnh SQL và cấu hình lại Field.
 
-2. Để điều chỉnh siêu dữ liệu trường, hãy sử dụng tùy chọn Cấu hình Trường (Configure fields), cho phép bạn cập nhật cài đặt trường giống như đối với một bảng thông thường.
+2. Khi cần sửa metadata Field, có thể thông qua Configure fields, chỉnh sửa các cấu hình liên quan đến Field giống như bảng thông thường.
 
-### Đồng bộ hóa
+### Đồng bộ
 
-Nếu truy vấn SQL không thay đổi nhưng cấu trúc bảng cơ sở dữ liệu cơ bản đã được sửa đổi, bạn có thể đồng bộ hóa và cấu hình lại các trường bằng cách chọn Cấu hình Trường (Configure fields) - Đồng bộ từ cơ sở dữ liệu (Sync from database).
+Khi câu lệnh SQL không thay đổi nhưng cấu trúc bảng database có thay đổi, có thể đồng bộ và cấu hình Field thông qua việc nhấp vào Configure fields - Sync from database.
 
 <img src="https://static-docs.nocobase.com/202405191456216.png"/>
 
-### Bộ sưu tập SQL so với Chế độ xem cơ sở dữ liệu được liên kết
+### So sánh Bảng SQL với Database View
 
-| Loại mẫu                       | Phù hợp nhất cho                                                                                             | Phương pháp triển khai      | Hỗ trợ thao tác CRUD |
-| :----------------------------- | :----------------------------------------------------------------------------------------------------------- | :-------------------------- | :------------------- |
-| SQL                            | Các mô hình đơn giản, trường hợp sử dụng nhẹ<br />Tương tác hạn chế với cơ sở dữ liệu<br />Tránh bảo trì các chế độ xem<br />Ưu tiên các thao tác dựa trên giao diện người dùng | Truy vấn con SQL            | Không hỗ trợ         |
-| Kết nối với chế độ xem cơ sở dữ liệu | Các mô hình phức tạp<br />Yêu cầu tương tác với cơ sở dữ liệu<br />Cần sửa đổi dữ liệu<br />Yêu cầu hỗ trợ cơ sở dữ liệu mạnh mẽ và ổn định hơn | Chế độ xem cơ sở dữ liệu | Hỗ trợ một phần      |
+| Loại mẫu | Tình huống áp dụng | Nguyên lý triển khai | Hỗ trợ thêm/xóa/sửa |
+| -------------- | -------------------------------------------------------------------------------------- | ---------- | ---------- |
+| SQL | Mô hình tương đối đơn giản, tình huống nhẹ<br />Không tiện thao tác database<br />Không muốn duy trì view<br />Muốn thao tác hoàn toàn qua UI | SQL subquery | Không hỗ trợ |
+| Database View | Mô hình tương đối phức tạp<br />Cần tương tác với database<br />Cần chỉnh sửa dữ liệu<br />Cần hỗ trợ database tốt hơn và ổn định hơn | Database view | Hỗ trợ một phần |
 
 :::warning
-Khi sử dụng bộ sưu tập SQL, hãy đảm bảo chọn các bảng có thể quản lý được trong NocoBase. Việc sử dụng các bảng từ cùng một cơ sở dữ liệu nhưng không được kết nối với NocoBase có thể dẫn đến việc phân tích truy vấn SQL không chính xác. Nếu đây là một mối lo ngại, hãy cân nhắc tạo và liên kết với một chế độ xem.
+Khi sử dụng Bảng SQL, vui lòng chọn các Collection có thể quản lý trong NocoBase. Nếu là các bảng khác chưa được tích hợp vào NocoBase trong cùng một database, có thể dẫn đến phân tích câu lệnh SQL không chính xác. Nếu có nhu cầu này, có thể xem xét việc tạo view và kết nối.
 :::

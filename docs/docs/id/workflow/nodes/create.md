@@ -1,45 +1,47 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Node Workflow - Tambah Data"
+description: "Node tambah data: menambah satu baris ke tabel data, mendukung variabel konteks alur, penugasan field relasi, referensi foreign key."
+keywords: "Workflow,tambah data,Create,operasi tabel data,penugasan variabel,NocoBase"
+---
 
-# Menambah Data
+# Tambah Data
 
-Digunakan untuk menambah data baru ke sebuah koleksi.
+Digunakan untuk menambah satu baris data ke tabel data tertentu.
 
-Nilai-nilai kolom untuk data baru dapat menggunakan variabel dari konteks alur kerja. Untuk menetapkan nilai ke kolom relasi, Anda dapat langsung mereferensikan variabel data yang sesuai dalam konteks, yang bisa berupa objek atau nilai kunci asing. Jika tidak menggunakan variabel, Anda perlu mengisi nilai kunci asing secara manual. Untuk beberapa nilai kunci asing dalam relasi banyak, nilai-nilai tersebut harus dipisahkan dengan koma.
+Nilai field baris data baru dapat menggunakan variabel konteks alur. Penugasan untuk field relasi dapat langsung merujuk variabel data yang sesuai dalam konteks, dapat berupa objek, atau juga nilai foreign key. Jika tidak menggunakan variabel, perlu mengisi nilai foreign key secara manual. Untuk beberapa nilai foreign key relasi to-many perlu menggunakan format yang dipisahkan koma.
 
 ## Membuat Node
 
-Di antarmuka konfigurasi alur kerja, klik tombol plus ("+") di alur untuk menambahkan node "Menambah Data":
+Pada antarmuka konfigurasi Workflow, klik tombol plus ("+") di alur, tambahkan Node "Tambah Data":
 
-![Membuat node Menambah Data](https://static-docs.nocobase.com/386c8c01c89b1eeab848510e77f4841a.png)
+![Buat Node tambah data](https://static-docs.nocobase.com/386c8c01c89b1eeab848510e77f4841a.png)
 
 ## Konfigurasi Node
 
-![Node Menambah Data_Contoh_Konfigurasi Node](https://static-docs.nocobase.com/5f7b97a51b64a1741cf82a4d4455b610.png)
+![Node tambah_contoh_konfigurasi Node](https://static-docs.nocobase.com/5f7b97a51b64a1741cf82a4d4455b610.png)
 
-### Koleksi
+### Tabel Data
 
-Pilih koleksi tempat Anda ingin menambah data baru.
+Pilih tabel data yang akan ditambah data.
 
-### Nilai Kolom
+### Nilai Field
 
-Tetapkan nilai ke kolom-kolom koleksi. Anda dapat menggunakan variabel dari konteks alur kerja atau mengisi nilai statis secara manual.
+Lakukan penugasan untuk field tabel data, dapat menggunakan variabel konteks alur, atau juga mengisi nilai statis secara manual.
 
-:::info{title="Catatan"}
-Data yang dibuat oleh node "Menambah Data" dalam alur kerja tidak secara otomatis menangani data pengguna seperti "Dibuat oleh" dan "Terakhir diubah oleh". Anda perlu mengonfigurasi nilai-nilai untuk kedua kolom ini sendiri sesuai kebutuhan.
+:::info{title="Tips"}
+Data yang ditambahkan oleh Node tambah dalam Workflow tidak akan secara otomatis menangani data pengguna seperti "Pembuat", "Pengubah Terakhir", dll., perlu mengonfigurasi nilai kedua field ini sendiri sesuai situasi.
 :::
 
-### Pra-muat Data Relasi
+### Pre-load Data Relasi
 
-Jika kolom-kolom data baru menyertakan kolom relasi dan Anda ingin menggunakan data relasi yang sesuai di langkah-langkah alur kerja berikutnya, Anda dapat mencentang kolom relasi yang sesuai di konfigurasi pra-muat. Dengan cara ini, setelah data baru dibuat, data relasi yang sesuai akan secara otomatis dimuat dan disimpan bersama dalam data hasil node.
+Jika field data baru mengandung field relasi, dan Anda ingin menggunakan data relasi yang sesuai dalam alur berikutnya, dapat mencentang field relasi yang sesuai pada konfigurasi pre-load. Dengan demikian setelah data baru ditambahkan, data relasi yang sesuai akan otomatis dimuat dan disimpan di data hasil Node.
 
 ## Contoh
 
-Misalnya, ketika data di koleksi "Artikel" dibuat atau diperbarui, data "Versi Artikel" perlu dibuat secara otomatis untuk mencatat riwayat perubahan artikel. Anda dapat menggunakan node "Menambah Data" untuk mencapai hal ini:
+Misalnya ketika data tabel "Artikel" ditambah atau diperbarui, perlu otomatis menambah satu data "Versi Artikel", mencatat satu riwayat perubahan artikel, dapat menggunakan Node tambah untuk implementasi:
 
-![Node Menambah Data_Contoh_Konfigurasi Alur Kerja](https://static-docs.nocobase.com/dfd4820d49c145fa331883fc09c9161f.png)
+![Node tambah_contoh_konfigurasi alur](https://static-docs.nocobase.com/dfd4820d49c145fa331883fc09c9161f.png)
 
-![Node Menambah Data_Contoh_Konfigurasi Node](https://static-docs.nocobase.com/1a0992e66170be12a068da6503298868.png)
+![Node tambah_contoh_konfigurasi Node](https://static-docs.nocobase.com/1a0992e66170be12a068da6503298868.png)
 
-Setelah mengaktifkan alur kerja dengan konfigurasi ini, ketika data di koleksi "Artikel" diubah, data "Versi Artikel" akan secara otomatis dibuat untuk mencatat riwayat perubahan artikel.
+Setelah Workflow diaktifkan dengan konfigurasi ini, ketika data tabel "Artikel" berubah, akan otomatis menambah satu data "Versi Artikel", mencatat riwayat perubahan artikel.

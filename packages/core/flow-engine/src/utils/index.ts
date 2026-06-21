@@ -22,7 +22,7 @@ export {
 export { escapeT, getT, tExpr } from './translation';
 
 // 异常类
-export { FlowCancelSaveException, FlowExitException } from './exceptions';
+export { FlowCancelSaveException, FlowExitAllException, FlowExitException } from './exceptions';
 
 // 流程定义相关
 export { defineAction } from './flow-definitions';
@@ -39,6 +39,7 @@ export {
   resolveStepUiSchema,
   resolveStepDisabledInSettings,
   resolveUiMode,
+  shouldHideEventInSettings,
   shouldHideStepInSettings,
 } from './schema-utils';
 
@@ -103,3 +104,6 @@ export { isBeforeRenderFlow } from './flows';
 
 // Module URL resolver
 export { resolveModuleUrl, isCssFile } from './resolveModuleUrl';
+
+// Random base36 identifier with optional semantic prefix
+export { randomId } from './randomId';

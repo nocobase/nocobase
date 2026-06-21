@@ -1,15 +1,17 @@
 ---
-displayName: "Auth: DingTalk"
+displayName: "Xác thực: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
+title: "Xác thực: DingTalk"
+keywords: "Xác thực: DingTalk,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  DingTalk authentication.
+  Xác thực danh tính bằng tài khoản DingTalk.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 3
+editionLevel: 2
 ---
 
-# Auth: DingTalk
+# Xác thực: DingTalk

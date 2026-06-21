@@ -1,12 +1,14 @@
 ---
-displayName: "Theme editor"
+displayName: "Trình chỉnh sửa giao diện"
 packageName: '@nocobase/plugin-theme-editor'
+title: "Trình chỉnh sửa giao diện"
+keywords: "Trình chỉnh sửa giao diện,Plugin,NocoBase"
 description: |
-  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
+  Tùy chỉnh màu sắc, kích thước, v.v. của UI và lưu kết quả thành giao diện, có thể chuyển đổi giữa nhiều giao diện.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Theme editor
+# Trình chỉnh sửa giao diện

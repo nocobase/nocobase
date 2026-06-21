@@ -1,18 +1,20 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Konfigurasi Environment Variable NocoBase"
+description: "Environment variable NocoBase: TZ timezone, APP_KEY, DB database, CACHE, FILE_STORAGE dan konfigurasi lainnya, cara setting Docker dan create-nocobase-app."
+keywords: "environment variable,APP_KEY,TZ,konfigurasi DB,CACHE,FILE_STORAGE,Docker environment variable,NocoBase"
+---
 
-# Variabel Lingkungan
+# Environment Variable
 
-## Bagaimana Cara Mengatur Variabel Lingkungan?
+## Bagaimana cara mengatur environment variable?
 
-### Metode Instalasi Kode Sumber Git atau `create-nocobase-app`
+### Instalasi Git source code atau create-nocobase-app
 
-Atur variabel lingkungan di berkas `.env` yang berada di direktori akar proyek. Setelah mengubah variabel lingkungan, Anda perlu menghentikan proses aplikasi dan memulainya kembali.
+Atur environment variable pada file `.env` di direktori root proyek. Setelah memodifikasi environment variable, Anda perlu menghentikan proses aplikasi dan memulainya kembali.
 
-### Metode Instalasi Docker
+### Instalasi Docker
 
-Ubah konfigurasi `docker-compose.yml` dan atur variabel lingkungan pada parameter `environment`. Contoh:
+Modifikasi konfigurasi `docker-compose.yml`, lalu atur environment variable di parameter `enviroment`. Contoh:
 
 ```yml
 services:
@@ -22,7 +24,7 @@ services:
       - APP_ENV=production
 ```
 
-Anda juga bisa menggunakan `env_file` untuk mengatur variabel lingkungan di berkas `.env`. Contoh:
+Anda juga dapat menggunakan `env_file`, yaitu mengatur environment variable di file `.env`. Contoh:
 
 ```yml
 services:
@@ -31,30 +33,30 @@ services:
     env_file: .env
 ```
 
-Setelah mengubah variabel lingkungan, Anda perlu membangun ulang kontainer aplikasi:
+Setelah memodifikasi environment variable, Anda perlu membangun ulang container app.
 
 ```yml
 docker compose up -d app
 ```
 
-## Variabel Lingkungan Global
+## Environment Variable Global
 
 ### TZ
 
-Digunakan untuk mengatur zona waktu aplikasi, nilai bawaannya adalah zona waktu sistem operasi.
+Digunakan untuk mengatur timezone aplikasi, default-nya adalah timezone sistem operasi.
 
 https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
 :::warning
-Operasi terkait waktu akan diproses berdasarkan zona waktu ini. Mengubah TZ dapat memengaruhi nilai tanggal di basis data. Untuk detail lebih lanjut, lihat [Ikhtisar Tanggal & Waktu](/data-sources/data-modeling/collection-fields/datetime).
+Operasi yang berkaitan dengan waktu akan diproses berdasarkan timezone ini. Mengubah TZ dapat memengaruhi nilai tanggal di database. Untuk detailnya lihat "[Ikhtisar Tanggal & Waktu](/data-sources/data-modeling/collection-fields/datetime)"
 :::
 
 ### APP_ENV
 
-Lingkungan aplikasi, nilai bawaannya adalah `development`, opsi yang tersedia meliputi:
+Environment aplikasi, nilai default-nya `development`. Opsi yang tersedia:
 
-- `production` lingkungan produksi
-- `development` lingkungan pengembangan
+- `production` Environment produksi
+- `development` Environment development
 
 ```bash
 APP_ENV=production
@@ -62,10 +64,10 @@ APP_ENV=production
 
 ### APP_KEY
 
-Kunci rahasia aplikasi, digunakan untuk menghasilkan token pengguna, dll. Ubah ke kunci aplikasi Anda sendiri dan pastikan tidak bocor ke pihak luar.
+Kunci rahasia aplikasi, digunakan untuk menghasilkan token user dan lain-lain. Ubah menjadi kunci rahasia milik Anda sendiri dan pastikan tidak bocor ke pihak luar.
 
 :::warning
-Jika APP_KEY diubah, token lama juga akan menjadi tidak valid.
+Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
 :::
 
 ```bash
@@ -74,7 +76,7 @@ APP_KEY=app-key-test
 
 ### APP_PORT
 
-Port aplikasi, nilai bawaannya adalah `13000`.
+Port aplikasi, nilai default `13000`
 
 ```bash
 APP_PORT=13000
@@ -82,7 +84,7 @@ APP_PORT=13000
 
 ### API_BASE_PATH
 
-Prefiks alamat API NocoBase, nilai bawaannya adalah `/api/`.
+Prefiks URL API NocoBase, nilai default `/api/`
 
 ```bash
 API_BASE_PATH=/api/
@@ -94,25 +96,25 @@ API_BASE_PATH=/api/
 
 > `v1.6.0+`
 
-Mode mulai multi-core (klaster). Jika variabel ini dikonfigurasi, variabel ini akan diteruskan ke perintah `pm2 start` sebagai parameter `-i <instances>`. Opsi-opsinya konsisten dengan parameter `-i` pm2 (lihat [PM2: Cluster Mode](https://pm2.keymetrics.io/docs/usage/cluster-mode/)), meliputi:
+Mode startup multi-core (cluster). Jika variable ini dikonfigurasi, nilainya akan diteruskan ke perintah `pm2 start` sebagai parameter `-i <instances>`. Opsi yang tersedia sama dengan parameter `-i` pada pm2 (lihat [PM2: Cluster Mode](https://pm2.keymetrics.io/docs/usage/cluster-mode/)), termasuk:
 
 - `max`: Menggunakan jumlah core CPU maksimum
-- `-1`: Menggunakan jumlah core CPU maksimum dikurangi satu
+- `-1`: Menggunakan jumlah core CPU maksimum dikurangi 1
 - `<number>`: Menentukan jumlah core
 
-Nilai bawaannya kosong, yang berarti tidak diaktifkan.
+Nilai default kosong, yang berarti tidak diaktifkan.
 
 :::warning{title="Perhatian"}
-Mode ini memerlukan penggunaan **plugin** terkait mode klaster. Jika tidak, fungsionalitas aplikasi mungkin mengalami masalah yang tidak terduga.
+Mode ini perlu digunakan bersama dengan plugin terkait cluster mode, jika tidak fungsi aplikasi mungkin mengalami anomali.
 :::
 
-Untuk informasi lebih lanjut, lihat [Mode Klaster](/cluster-mode).
+Untuk informasi lebih lanjut, lihat: [Cluster Mode](/cluster-mode).
 
 ### PLUGIN_PACKAGE_PREFIX
 
-Prefiks nama paket **plugin**, nilai bawaannya adalah: `@nocobase/plugin-,@nocobase/preset-`.
+Prefiks nama paket plugin, default-nya: `@nocobase/plugin-,@nocobase/preset-`.
 
-Misalnya, untuk menambahkan **plugin** `hello` ke proyek `my-nocobase-app`, nama paket lengkap **plugin** tersebut adalah `@my-nocobase-app/plugin-hello`.
+Contohnya, menambahkan plugin `hello` ke proyek `my-nocobase-app`, maka nama paket lengkap plugin tersebut adalah `@my-nocobase-app/plugin-hello`.
 
 PLUGIN_PACKAGE_PREFIX dapat dikonfigurasi sebagai:
 
@@ -120,15 +122,15 @@ PLUGIN_PACKAGE_PREFIX dapat dikonfigurasi sebagai:
 PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
 ```
 
-Maka, korespondensi antara nama **plugin** dan nama paket adalah sebagai berikut:
+Maka korespondensi antara nama plugin dan nama paket adalah sebagai berikut:
 
-- Nama paket **plugin** `users` adalah `@nocobase/plugin-users`
-- Nama paket **plugin** `nocobase` adalah `@nocobase/preset-nocobase`
-- Nama paket **plugin** `hello` adalah `@my-nocobase-app/plugin-hello`
+- Nama paket plugin `users` adalah `@nocobase/plugin-users`
+- Nama paket plugin `nocobase` adalah `@nocobase/preset-nocobase`
+- Nama paket plugin `hello` adalah `@my-nocobase-app/plugin-hello`
 
 ### DB_DIALECT
 
-Tipe basis data, opsi yang tersedia meliputi:
+Tipe database, opsi yang tersedia:
 
 - `mariadb`
 - `mysql`
@@ -140,9 +142,9 @@ DB_DIALECT=mysql
 
 ### DB_HOST
 
-Host basis data (diperlukan saat menggunakan basis data MySQL atau PostgreSQL).
+Host database (perlu dikonfigurasi saat menggunakan database MySQL atau PostgreSQL)
 
-Nilai bawaannya adalah `localhost`.
+Nilai default `localhost`
 
 ```bash
 DB_HOST=localhost
@@ -150,10 +152,10 @@ DB_HOST=localhost
 
 ### DB_PORT
 
-Port basis data (diperlukan saat menggunakan basis data MySQL atau PostgreSQL).
+Port database (perlu dikonfigurasi saat menggunakan database MySQL atau PostgreSQL)
 
-- Port bawaan untuk MySQL dan MariaDB adalah 3306
-- Port bawaan untuk PostgreSQL adalah 5432
+- Port default MySQL, MariaDB adalah 3306
+- Port default PostgreSQL adalah 5432
 
 ```bash
 DB_PORT=3306
@@ -161,7 +163,7 @@ DB_PORT=3306
 
 ### DB_DATABASE
 
-Nama basis data (diperlukan saat menggunakan basis data MySQL atau PostgreSQL).
+Nama database (perlu dikonfigurasi saat menggunakan database MySQL atau PostgreSQL)
 
 ```bash
 DB_DATABASE=nocobase
@@ -169,7 +171,7 @@ DB_DATABASE=nocobase
 
 ### DB_USER
 
-Pengguna basis data (diperlukan saat menggunakan basis data MySQL atau PostgreSQL).
+User database (perlu dikonfigurasi saat menggunakan database MySQL atau PostgreSQL)
 
 ```bash
 DB_USER=nocobase
@@ -177,7 +179,7 @@ DB_USER=nocobase
 
 ### DB_PASSWORD
 
-Kata sandi basis data (diperlukan saat menggunakan basis data MySQL atau PostgreSQL).
+Password database (perlu dikonfigurasi saat menggunakan database MySQL atau PostgreSQL)
 
 ```bash
 DB_PASSWORD=nocobase
@@ -185,7 +187,7 @@ DB_PASSWORD=nocobase
 
 ### DB_TABLE_PREFIX
 
-Prefiks tabel data.
+Prefiks tabel database
 
 ```bash
 DB_TABLE_PREFIX=nocobase_
@@ -193,18 +195,18 @@ DB_TABLE_PREFIX=nocobase_
 
 ### DB_UNDERSCORED
 
-Apakah nama tabel dan nama bidang basis data dikonversi ke gaya *snake case*. Nilai bawaannya adalah `false`. Jika menggunakan basis data MySQL (MariaDB) dan `lower_case_table_names=1`, maka DB_UNDERSCORED harus diatur ke `true`.
+Apakah nama tabel dan nama field di database dikonversi ke gaya snake case, default-nya `false`. Jika menggunakan database MySQL (MariaDB) dan `lower_case_table_names=1`, maka DB_UNDERSCORED harus `true`
 
 :::warning
-Ketika `DB_UNDERSCORED=true`, nama tabel dan nama bidang yang sebenarnya di basis data tidak akan cocok dengan yang terlihat di antarmuka pengguna. Misalnya, `orderDetails` akan disimpan sebagai `order_details` di basis data.
+Ketika `DB_UNDERSCORED=true`, nama tabel dan nama field aktual di database tidak konsisten dengan yang terlihat di antarmuka, misalnya `orderDetails` di database menjadi `order_details`
 :::
 
 ### DB_LOGGING
 
-Sakelar log basis data, nilai bawaannya adalah `off`, opsi yang tersedia meliputi:
+Switch log database, nilai default `off`. Opsi yang tersedia:
 
-- `on` aktif
-- `off` nonaktif
+- `on` Aktif
+- `off` Nonaktif
 
 ```bash
 DB_LOGGING=on
@@ -212,52 +214,44 @@ DB_LOGGING=on
 
 ### DB_POOL_MAX
 
-Jumlah koneksi maksimum dalam *pool* koneksi basis data, nilai bawaannya adalah `5`.
+Jumlah koneksi maksimum pada connection pool database, nilai default `5`.
 
 ### DB_POOL_MIN
 
-Jumlah koneksi minimum dalam *pool* koneksi basis data, nilai bawaannya adalah `0`.
+Jumlah koneksi minimum pada connection pool database, nilai default `0`.
 
 ### DB_POOL_IDLE
 
-Waktu idle *pool* koneksi basis data, nilai bawaannya adalah `10000` (10 detik).
+Waktu idle connection pool database, nilai default `10000` (10 detik).
 
 ### DB_POOL_ACQUIRE
 
-Waktu tunggu maksimum untuk mendapatkan koneksi dari *pool* koneksi basis data, nilai bawaannya adalah `60000` (60 detik).
+Waktu tunggu maksimum untuk mendapatkan koneksi dari connection pool database, nilai default `60000` (60 detik).
 
 ### DB_POOL_EVICT
 
-Waktu hidup maksimum koneksi *pool* basis data, nilai bawaannya adalah `1000` (1 detik).
+Waktu hidup maksimum koneksi pada connection pool database, nilai default `1000` (1 detik).
 
 ### DB_POOL_MAX_USES
 
-Jumlah penggunaan koneksi sebelum dibuang dan diganti, nilai bawaannya adalah `0` (tidak terbatas).
+Berapa kali sebuah koneksi dapat digunakan sebelum dibuang dan diganti, nilai default `0` (tidak terbatas).
 
 ### LOGGER_TRANSPORT
 
-Metode keluaran log, beberapa nilai dipisahkan dengan `,`. Nilai bawaannya adalah `console` di lingkungan pengembangan, dan `console,dailyRotateFile` di lingkungan produksi.
+Cara output log, beberapa cara dipisahkan dengan `,`. Nilai default environment development adalah `console`, environment produksi default-nya `console,dailyRotateFile`.
 Opsi yang tersedia:
 
 - `console` - `console.log`
-- `file` - Keluaran ke berkas
-- `dailyRotateFile` - Keluaran ke berkas yang berputar harian
+- `file` - `file`
+- `dailyRotateFile` - `file rolling harian`
 
 ```bash
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Jalur penyimpanan log berbasis berkas, nilai bawaannya adalah `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
-Tingkat keluaran log. Nilai bawaannya adalah `debug` di lingkungan pengembangan, dan `info` di lingkungan produksi. Opsi yang tersedia:
+Level output log, environment development default-nya `debug`, environment produksi default-nya `info`. Opsi yang tersedia:
 
 - `error`
 - `warn`
@@ -269,14 +263,14 @@ Tingkat keluaran log. Nilai bawaannya adalah `debug` di lingkungan pengembangan,
 LOGGER_LEVEL=info
 ```
 
-Tingkat keluaran log basis data adalah `debug`, dikendalikan oleh `DB_LOGGING` apakah akan dikeluarkan atau tidak, dan tidak terpengaruh oleh `LOGGER_LEVEL`.
+Level output log database adalah `debug`, dikontrol oleh `DB_LOGGING` apakah dioutput, tidak dipengaruhi oleh `LOGGER_LEVEL`.
 
 ### LOGGER_MAX_FILES
 
-Jumlah maksimum berkas log yang disimpan.
+Jumlah maksimum file log yang dipertahankan.
 
-- Ketika `LOGGER_TRANSPORT` adalah `file`: Nilai bawaannya adalah `10`.
-- Ketika `LOGGER_TRANSPORT` adalah `dailyRotateFile`, gunakan `[n]d` untuk merepresentasikan jumlah hari. Nilai bawaannya adalah `14d`.
+- Ketika `LOGGER_TRANSPORT` adalah `file`, nilai default-nya `10`.
+- Ketika `LOGGER_TRANSPORT` adalah `dailyRotateFile`, gunakan `[n]d` untuk mewakili jumlah hari. Nilai default-nya `14d`.
 
 ```bash
 LOGGER_MAX_FILES=14d
@@ -284,10 +278,10 @@ LOGGER_MAX_FILES=14d
 
 ### LOGGER_MAX_SIZE
 
-Rotasi log berdasarkan ukuran.
+Rolling log berdasarkan ukuran.
 
-- Ketika `LOGGER_TRANSPORT` adalah `file`: Unitnya adalah `byte`, nilai bawaannya adalah `20971520 (20 * 1024 * 1024)`.
-- Ketika `LOGGER_TRANSPORT` adalah `dailyRotateFile`, Anda dapat menggunakan `[n]k`, `[n]m`, `[n]g`. Nilai bawaannya tidak dikonfigurasi.
+- Ketika `LOGGER_TRANSPORT` adalah `file`, satuannya `byte`, nilai default-nya `20971520 (20 * 1024 * 1024)`.
+- Ketika `LOGGER_TRANSPORT` adalah `dailyRotateFile`, dapat menggunakan `[n]k`, `[n]m`, `[n]g`. Default-nya tidak dikonfigurasi.
 
 ```bash
 LOGGER_MAX_SIZE=20971520
@@ -295,7 +289,7 @@ LOGGER_MAX_SIZE=20971520
 
 ### LOGGER_FORMAT
 
-Format cetak log. Nilai bawaannya adalah `console` di lingkungan pengembangan, dan `json` di lingkungan produksi. Opsi yang tersedia:
+Format pencetakan log, environment development default-nya `console`, environment produksi default-nya `json`. Opsi yang tersedia:
 
 - `console`
 - `json`
@@ -306,11 +300,11 @@ Format cetak log. Nilai bawaannya adalah `console` di lingkungan pengembangan, d
 LOGGER_FORMAT=json
 ```
 
-Referensi: [Format Log](/log-and-monitor/logger/index.md#log-format)
+Referensi: [Format Log](/log-and-monitor/logger/index.md#format-log)
 
 ### CACHE_DEFAULT_STORE
 
-Pengidentifikasi unik untuk metode *caching*, menentukan metode *cache* bawaan server, nilai bawaannya adalah `memory`, opsi bawaan meliputi:
+Identifier unik untuk metode caching, menentukan metode caching default sisi server. Nilai default `memory`. Opsi bawaan:
 
 - `memory`
 - `redis`
@@ -321,7 +315,7 @@ CACHE_DEFAULT_STORE=memory
 
 ### CACHE_MEMORY_MAX
 
-Jumlah maksimum item dalam *cache* memori, nilai bawaannya adalah `2000`.
+Jumlah maksimum item cache memory, nilai default `2000`.
 
 ```bash
 CACHE_MEMORY_MAX=2000
@@ -329,7 +323,7 @@ CACHE_MEMORY_MAX=2000
 
 ### CACHE_REDIS_URL
 
-URL koneksi Redis, opsional. Contoh: `redis://localhost:6379`
+Koneksi Redis, opsional. Contoh: `redis://localhost:6379`
 
 ```bash
 CACHE_REDIS_URL=redis://localhost:6379
@@ -337,7 +331,7 @@ CACHE_REDIS_URL=redis://localhost:6379
 
 ### TELEMETRY_ENABLED
 
-Mengaktifkan pengumpulan data telemetri, nilai bawaannya adalah `off`.
+Mengaktifkan pengumpulan data telemetri, default-nya `off`.
 
 ```bash
 TELEMETRY_ENABLED=on
@@ -345,7 +339,7 @@ TELEMETRY_ENABLED=on
 
 ### TELEMETRY_METRIC_READER
 
-Kolektor metrik pemantauan yang diaktifkan, nilai bawaannya adalah `console`. Nilai lain harus merujuk pada nama yang terdaftar oleh **plugin** kolektor yang sesuai, seperti `prometheus`. Beberapa nilai dipisahkan dengan `,`.
+Metric reader monitoring yang diaktifkan, default-nya `console`. Nilai lain perlu merujuk pada nama yang didaftarkan oleh plugin metric reader yang sesuai, misalnya `prometheus`. Beberapa nilai dipisahkan dengan `,`.
 
 ```bash
 TELEMETRY_METRIC_READER=console,prometheus
@@ -353,21 +347,48 @@ TELEMETRY_METRIC_READER=console,prometheus
 
 ### TELEMETRY_TRACE_PROCESSOR
 
-Prosesor data jejak yang diaktifkan, nilai bawaannya adalah `console`. Nilai lain harus merujuk pada nama yang terdaftar oleh **plugin** prosesor yang sesuai. Beberapa nilai dipisahkan dengan `,`.
+Trace processor yang diaktifkan, default-nya `console`. Nilai lain perlu merujuk pada nama yang didaftarkan oleh plugin processor yang sesuai. Beberapa nilai dipisahkan dengan `,`.
 
 ```bash
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
-## Variabel Lingkungan Eksperimental
+### WORKER_MODE
+
+Digunakan untuk mengonfigurasi mode kerja node yang berbeda saat melakukan service splitting di mode cluster. Untuk detailnya lihat "[Service Splitting: Cara Membagi Service](/cluster-mode/services-splitting#cara-memisahkan-service)".
+
+### SERVER_REQUEST_WHITELIST
+
+Whitelist target untuk request HTTP yang dikirim sisi server ke luar, untuk mencegah serangan SSRF (Server-Side Request Forgery). Dipisahkan dengan koma, mendukung IP eksak, range CIDR, domain eksak, dan subdomain wildcard (satu level).
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**Cakupan**: Node "HTTP Request" pada workflow, "Custom Request" pada tombol Action kustom. Path relatif (memanggil API NocoBase sendiri) tidak terpengaruh oleh batasan ini.
+
+**Saat tidak dikonfigurasi**: Semua request `http`/`https` diizinkan (mempertahankan perilaku sebelumnya). **Setelah dikonfigurasi**: Hanya request yang cocok dengan whitelist yang diizinkan, request yang tidak cocok akan menghasilkan error.
+
+Format yang didukung:
+
+| Format | Contoh | Aturan Pencocokan |
+| --- | --- | --- |
+| IPv4 eksak | `1.2.3.4` | Hanya cocok dengan IP tersebut |
+| IPv4 CIDR | `10.0.0.0/8` | Cocok dengan semua IP dalam network tersebut |
+| Domain eksak | `api.example.com` | Hanya cocok dengan domain tersebut |
+| Subdomain wildcard | `*.example.com` | Cocok dengan subdomain satu level, misalnya `foo.example.com`, tidak cocok dengan `example.com` atau `a.b.example.com` |
+
+## Environment Variable Eksperimental
 
 ### APPEND_PRESET_LOCAL_PLUGINS
 
-Digunakan untuk menambahkan **plugin** lokal prasetel yang belum aktif. Nilainya adalah nama paket **plugin** (parameter `name` di `package.json`), dengan beberapa **plugin** dipisahkan oleh koma.
+Digunakan untuk menambahkan plugin preset yang belum diaktifkan, nilainya adalah nama paket plugin (parameter name dari package.json). Beberapa plugin dipisahkan dengan koma.
 
 :::info
-1. Pastikan **plugin** sudah diunduh secara lokal dan dapat ditemukan di direktori `node_modules`. Untuk detail lebih lanjut, lihat [Struktur Proyek Plugin](/plugin-development/project-structure).
-2. Setelah menambahkan variabel lingkungan, **plugin** akan muncul di halaman manajer **plugin** hanya setelah instalasi awal (`nocobase install`) atau peningkatan (`nocobase upgrade`).
+
+1. Pastikan plugin sudah diunduh ke lokal dan dapat ditemukan di direktori `node_modules`. Untuk informasi lebih lanjut lihat [Cara Pengorganisasian Plugin](/plugin-development/project-structure).
+2. Setelah menambahkan environment variable, plugin akan tampil di halaman plugin manager setelah instalasi awal `nocobase install` atau upgrade `nocobase upgrade`.
+
 :::
 
 ```bash
@@ -376,20 +397,22 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 
 ### APPEND_PRESET_BUILT_IN_PLUGINS
 
-Digunakan untuk menambahkan **plugin** bawaan yang diinstal secara default. Nilainya adalah nama paket **plugin** (parameter `name` di `package.json`), dengan beberapa **plugin** dipisahkan oleh koma.
+Digunakan untuk menambahkan plugin built-in yang diinstal secara default, nilainya adalah nama paket plugin (parameter name dari package.json). Beberapa plugin dipisahkan dengan koma.
 
 :::info
-1. Pastikan **plugin** sudah diunduh secara lokal dan dapat ditemukan di direktori `node_modules`. Untuk detail lebih lanjut, lihat [Struktur Proyek Plugin](/plugin-development/project-structure).
-2. Setelah menambahkan variabel lingkungan, **plugin** akan secara otomatis diinstal atau ditingkatkan selama instalasi awal (`nocobase install`) atau peningkatan (`nocobase upgrade`).
+
+1. Pastikan plugin sudah diunduh ke lokal dan dapat ditemukan di direktori `node_modules`. Untuk informasi lebih lanjut lihat [Cara Pengorganisasian Plugin](/plugin-development/project-structure).
+2. Setelah menambahkan environment variable, plugin akan diinstal atau di-upgrade secara otomatis saat instalasi awal `nocobase install` atau upgrade `nocobase upgrade`.
+
 :::
 
 ```bash
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 ```
 
-## Variabel Lingkungan Sementara
+## Environment Variable Sementara
 
-Saat menginstal NocoBase, Anda dapat mengatur variabel lingkungan sementara untuk membantu instalasi, seperti:
+Saat menginstal NocoBase, Anda dapat membantu instalasi dengan mengatur environment variable sementara, seperti:
 
 ```bash
 yarn cross-env \
@@ -412,7 +435,7 @@ yarn nocobase install -l zh-CN -e demo@nocobase.com -p admin123 -n "Super Admin"
 
 ### INIT_APP_LANG
 
-Bahasa saat instalasi. Nilai bawaannya adalah `en-US`. Opsi yang tersedia meliputi:
+Bahasa saat instalasi, nilai default `en-US`. Opsi yang tersedia:
 
 - `en-US`
 - `zh-CN`
@@ -425,7 +448,7 @@ yarn cross-env \
 
 ### INIT_ROOT_EMAIL
 
-Email pengguna *Root*.
+Email user Root
 
 ```bash
 yarn cross-env \
@@ -436,7 +459,7 @@ yarn cross-env \
 
 ### INIT_ROOT_PASSWORD
 
-Kata sandi pengguna *Root*.
+Password user Root
 
 ```bash
 yarn cross-env \
@@ -448,7 +471,7 @@ yarn cross-env \
 
 ### INIT_ROOT_NICKNAME
 
-Nama panggilan pengguna *Root*.
+Nickname user Root
 
 ```bash
 yarn cross-env \
@@ -458,3 +481,13 @@ yarn cross-env \
   INIT_ROOT_NICKNAME="Super Admin" \
   nocobase install
 ```
+
+## Environment Variable yang Disediakan oleh Plugin Lain
+
+### WORKFLOW_SCRIPT_MODULES
+
+Daftar modul yang dapat digunakan oleh node JavaScript pada workflow. Untuk detailnya lihat "[Node JavaScript: Menggunakan Modul Eksternal](/workflow/nodes/javascript#mode-tidak-aman-membutuhkan-dukungan-modul)".
+
+### WORKFLOW_LOOP_LIMIT
+
+Batas maksimum iterasi node loop pada workflow. Untuk detailnya lihat "[Node Loop](/workflow/nodes/loop#WORKFLOW_LOOP_LIMIT)".

@@ -1,32 +1,31 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
+title: "Data Source - KingbaseES"
+description: "Sử dụng KingbaseES làm Database chính hoặc External Database, hỗ trợ chế độ pg, cấu hình biến môi trường và triển khai Docker."
+keywords: "KingbaseES,KingbaseES,Database chính,External database,Domestic database,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Nguồn dữ liệu - KingbaseES
+# Data Source - KingbaseES
 
 ## Giới thiệu
 
-KingbaseES có thể được sử dụng làm nguồn dữ liệu, hoạt động như cơ sở dữ liệu chính hoặc cơ sở dữ liệu bên ngoài.
+Sử dụng database KingbaseES làm Data Source, có thể dùng làm Database chính, cũng có thể dùng làm External Database.
 
 :::warning
-Hiện tại, chỉ hỗ trợ cơ sở dữ liệu KingbaseES chạy ở chế độ pg.
+Hiện tại chỉ hỗ trợ database KingbaseES chạy ở chế độ pg.
 :::
 
 ## Cài đặt
 
-### Sử dụng làm cơ sở dữ liệu chính
+### Sử dụng làm Database chính
 
-Để biết quy trình cài đặt, vui lòng tham khảo tài liệu cài đặt. Điểm khác biệt chính nằm ở các biến môi trường.
+Quy trình cài đặt tham khảo tài liệu cài đặt, sự khác biệt chủ yếu nằm ở biến môi trường.
 
 #### Biến môi trường
 
-Chỉnh sửa tệp .env để thêm hoặc sửa đổi các cấu hình biến môi trường sau:
+Sửa file .env để thêm hoặc sửa các cấu hình biến môi trường liên quan sau
 
 ```bash
-# Điều chỉnh các tham số DB theo thực tế
+# Điều chỉnh các tham số DB liên quan theo tình huống thực tế
 DB_DIALECT=kingbase
 DB_HOST=localhost
 DB_PORT=54321
@@ -35,7 +34,7 @@ DB_USER=nocobase
 DB_PASSWORD=nocobase
 ```
 
-#### Cài đặt bằng Docker
+#### Cài đặt Docker
 
 ```yml
 networks:
@@ -92,7 +91,7 @@ services:
     command: ["/usr/sbin/init"]
 ```
 
-#### Cài đặt bằng create-nocobase-app
+#### Sử dụng create-nocobase-app để cài đặt
 
 ```bash
 yarn create nocobase-app my-nocobase-app -d kingbase \
@@ -104,9 +103,9 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e TZ=Asia/Shanghai
 ```
 
-### Sử dụng làm cơ sở dữ liệu bên ngoài
+### Sử dụng làm External Database
 
-Thực thi lệnh cài đặt hoặc nâng cấp:
+Chạy lệnh cài đặt hoặc nâng cấp
 
 ```bash
 yarn nocobase install
@@ -120,5 +119,5 @@ Kích hoạt plugin
 
 ## Hướng dẫn sử dụng
 
-- Cơ sở dữ liệu chính: Tham khảo [Nguồn dữ liệu chính](/data-sources/data-source-main/)
-- Cơ sở dữ liệu bên ngoài: Xem [Nguồn dữ liệu / Cơ sở dữ liệu bên ngoài](/data-sources/data-source-manager/external-database)
+- Database chính: Tham khảo Main Data Source
+- External Database: Tham khảo [Data Source / External Database](/data-sources/data-source-manager/external-database) 

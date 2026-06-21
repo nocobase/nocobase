@@ -1,15 +1,16 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Bố cục Block"
+description: "Cấu hình Block: cài đặt bố cục Block, hỗ trợ các cách bố cục như grid, flex, điều chỉnh sắp xếp và khoảng cách Block."
+keywords: "bố cục Block,cấu hình bố cục,bố cục grid,cấu hình Block,Interface Builder,NocoBase"
+---
 
 # Bố cục
 
 ## Giới thiệu
 
-Các khối dạng biểu mẫu như khối biểu mẫu, khối chi tiết và khối danh sách đều hỗ trợ cài đặt bố cục. Các tùy chọn bố cục bao gồm bố cục dọc (nhãn và trường nhập liệu được sắp xếp theo từng hàng) và bố cục ngang (nhãn và trường nhập liệu được đặt cạnh nhau). Người dùng có thể điều chỉnh bố cục trường của khối theo nhu cầu cụ thể để đảm bảo việc nhập hoặc xem thông tin vừa rõ ràng vừa hiệu quả.
+Các Block kiểu Form như Block Form, Block Chi tiết, Block danh sách, v.v., hỗ trợ cài đặt bố cục. Cách bố cục được chia thành bố cục dọc (nhãn và hộp nhập sắp xếp theo từng hàng) và bố cục ngang (nhãn và hộp nhập đặt cạnh nhau). Bạn có thể điều chỉnh bố cục Field Block theo nhu cầu cụ thể, đảm bảo việc nhập hoặc xem thông tin vừa rõ ràng vừa hiệu quả.
 
-### Dọc (Mặc định)
+### Dọc (mặc định)
 
 Bố cục mặc định là dọc.
 
@@ -17,24 +18,24 @@ Bố cục mặc định là dọc.
 
 ### Ngang
 
-Bố cục ngang hiển thị nhãn và trường nhập liệu cạnh nhau, giúp tiết kiệm không gian hiệu quả. Đối với các trường có tiêu đề dài, bạn có thể chọn cài đặt ngắt dòng hoặc hiển thị dấu ba chấm để đảm bảo giao diện gọn gàng và đẹp mắt.
+Bố cục ngang hiển thị nhãn và hộp nhập cạnh nhau, tiết kiệm không gian hiệu quả. Đối với Field tiêu đề dài, có thể chọn cài đặt rút gọn hoặc xuống dòng để đảm bảo giao diện gọn gàng và đẹp mắt.
 
 ![20251024120237](https://static-docs.nocobase.com/20251024120237.png)
 
-#### Căn chỉnh tiêu đề trường
+#### Cách căn chỉnh tiêu đề Field
 
 - **Căn trái** (mặc định)
 - **Căn phải**
 
-#### Chiều rộng tiêu đề trường
+#### Độ rộng tiêu đề Field
 
-- Chiều rộng mặc định là **120px**, với giới hạn chiều rộng tối thiểu là **50px**.
+- Độ rộng mặc định là **120px**, giới hạn độ rộng tối thiểu là **50px**.
 
-#### Xử lý tiêu đề trường khi vượt quá chiều rộng
+#### Cách xử lý khi tiêu đề Field vượt quá độ rộng
 
-- **Ngắt dòng**
-- **Dấu ba chấm**
+- **Xuống dòng**
+- **Rút gọn**
 
-#### Hiển thị dấu hai chấm
+#### Có hiển thị dấu hai chấm hay không
 
-Bạn có thể chọn có hiển thị dấu hai chấm sau tiêu đề trường hay không.
+Có thể chọn có hiển thị dấu hai chấm sau tiêu đề Field hay không.

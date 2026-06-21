@@ -10,18 +10,15 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
-import {
-  BlockContext,
-  CollectionFieldContext,
-  SortableItem,
-  useBlockContext,
-  useCollection_deprecated,
-  useCollectionManager_deprecated,
-  useCompile,
-  useDesigner,
-  useFlag,
-  useSchemaComponentContext,
-} from '../../../';
+import { BlockContext, useBlockContext } from '../../../block-provider/BlockProvider';
+import { useCollection_deprecated } from '../../../collection-manager/hooks/useCollection_deprecated';
+import { useCollectionManager_deprecated } from '../../../collection-manager/hooks/useCollectionManager_deprecated';
+import { CollectionFieldContext } from '../../../data-source/collection-field/CollectionFieldProvider';
+import { useFlag } from '../../../flag-provider/hooks/useFlag';
+import { SortableItem } from '../../common/sortable-item/SortableItem';
+import { useCompile } from '../../hooks/useCompile';
+import { useDesigner } from '../../hooks/useDesigner';
+import { useSchemaComponentContext } from '../../hooks/useSchemaComponentContext';
 import { useToken } from '../__builtins__';
 import { designerCss } from './Table.Column.ActionBar';
 import { isCollectionFieldComponent } from './utils';
@@ -86,8 +83,13 @@ export const TableColumnDecorator = (props) => {
 
   if (isInSubTable) {
     const path = field.path?.splice(field.path?.length - 1, 1);
-    const realField = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).take() as Field;
-    required = typeof realField?.required === 'boolean' ? realField.required : fieldSchema?.required;
+    const realField = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).take() as Field & {
+      schema?: {
+        required?: boolean;
+      };
+    };
+    // 子表格列头的星号只表示 schema 配置态的必填，不应跟随联动规则的运行时 required 校验态变化。
+    required = typeof realField?.schema?.required === 'boolean' ? realField.schema.required : fieldSchema?.required;
   }
 
   useEffect(() => {

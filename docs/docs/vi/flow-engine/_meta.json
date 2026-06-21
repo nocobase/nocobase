@@ -10,7 +10,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Mối quan hệ giữa FlowEngine và plugin",
+        "label": "Mối quan hệ giữa FlowEngine và Plugin",
         "link": "/flow-engine/flow-engine-and-plugins"
       },
       {
@@ -46,12 +46,17 @@
       },
       {
         "type": "custom-link",
-        "label": "Luồng sự kiện và cấu hình FlowModel",
+        "label": "Flow sự kiện và cấu hình của FlowModel",
         "link": "/flow-engine/flow-model-settings"
       },
       {
         "type": "custom-link",
-        "label": "Lưu trữ bền vững FlowModel",
+        "label": "AddSubModelButton",
+        "link": "/flow-engine/add-sub-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lưu trữ FlowModel",
         "link": "/flow-engine/flow-model-repository"
       },
       {
@@ -61,7 +66,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Hệ thống ngữ cảnh của FlowModel",
+        "label": "Hệ thống Context của FlowModel",
         "link": "/flow-engine/flow-context"
       },
       {
@@ -71,8 +76,18 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowModel vs React.Component",
-        "link": "/flow-engine/flow-model-vs-react-component"
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Điểm mở rộng Plugin RunJS",
+        "link": "/flow-engine/runjs-extension-points"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI Schema",
+        "link": "/flow-engine/ui-schema"
       }
     ]
   },

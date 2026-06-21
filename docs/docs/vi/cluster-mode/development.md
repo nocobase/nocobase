@@ -1,33 +1,35 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+pkg: "@nocobase/preset-cluster"
+title: "Phát triển plugin trong chế độ Cluster"
+description: "Phát triển plugin trong chế độ Cluster: Cache, SyncMessageManager (tín hiệu đồng bộ), PubSubManager (broadcast tin nhắn), Queue (hàng đợi), distributed lock, giải quyết tính nhất quán trạng thái, lập lịch tác vụ và race condition."
+keywords: "Phát triển plugin Cluster,Cache,SyncMessageManager,PubSubManager,Message queue,Distributed lock,Đồng bộ trạng thái,WORKER_MODE,NocoBase"
+---
 
 # Phát triển plugin
 
-## Vấn đề nền tảng
+## Vấn đề bối cảnh
 
-Trong môi trường đơn nút, các plugin thường có thể đáp ứng yêu cầu thông qua trạng thái, sự kiện hoặc tác vụ trong tiến trình. Tuy nhiên, trong chế độ cụm, cùng một plugin có thể chạy đồng thời trên nhiều phiên bản, đối mặt với các vấn đề điển hình sau:
+Trong môi trường node đơn, plugin thường có thể hoàn thành nhu cầu thông qua trạng thái trong tiến trình, sự kiện hoặc tác vụ. Còn trong chế độ Cluster, cùng một plugin có thể chạy đồng thời trên nhiều instance, đối mặt với các vấn đề điển hình sau:
 
-- **Tính nhất quán của trạng thái**: Nếu dữ liệu cấu hình hoặc dữ liệu thời gian chạy chỉ được lưu trữ trong bộ nhớ, rất khó để đồng bộ hóa giữa các phiên bản, dễ dẫn đến đọc sai (dirty reads) hoặc thực thi trùng lặp.
-- **Lập lịch tác vụ**: Nếu không có cơ chế xếp hàng và xác nhận rõ ràng, các tác vụ chạy dài có thể bị nhiều phiên bản thực thi đồng thời.
-- **Điều kiện tranh chấp**: Khi liên quan đến thay đổi schema hoặc phân bổ tài nguyên, cần tuần tự hóa các thao tác để tránh xung đột do ghi đồng thời.
+- **Tính nhất quán trạng thái**: Nếu cấu hình hoặc dữ liệu runtime chỉ lưu trong bộ nhớ, rất khó đồng bộ giữa các instance, dễ xảy ra dirty read hoặc thực thi trùng lặp.
+- **Lập lịch tác vụ**: Các tác vụ tốn thời gian nếu không có cơ chế xếp hàng và xác nhận rõ ràng, sẽ khiến nhiều instance thực thi đồng thời cùng một tác vụ.
+- **Race condition**: Khi liên quan đến thay đổi schema hoặc phân bổ tài nguyên, cần serialize các thao tác để tránh xung đột do ghi đồng thời.
 
-NocoBase core đã tích hợp sẵn nhiều giao diện middleware ở tầng ứng dụng, giúp các plugin tái sử dụng các khả năng thống nhất trong môi trường cụm. Dưới đây, chúng ta sẽ tìm hiểu cách sử dụng và các phương pháp hay nhất cho bộ nhớ đệm (cache), tin nhắn đồng bộ, hàng đợi tin nhắn và khóa phân tán, cùng với các tham chiếu mã nguồn.
+Lõi của NocoBase đã tích hợp sẵn nhiều interface middleware ở tầng ứng dụng, giúp plugin tái sử dụng các năng lực thống nhất trong môi trường Cluster. Phần dưới đây sẽ kết hợp với mã nguồn để giới thiệu cách sử dụng và best practices của cache, sync message, message queue và distributed lock.
 
 ## Giải pháp
 
-### Thành phần bộ nhớ đệm (Cache)
+### Component Cache
 
-Đối với dữ liệu cần lưu trữ trong bộ nhớ, bạn nên sử dụng thành phần bộ nhớ đệm tích hợp sẵn của hệ thống để quản lý.
+Đối với dữ liệu cần lưu trong bộ nhớ, khuyến nghị dùng component cache tích hợp sẵn của hệ thống để quản lý.
 
-- Lấy phiên bản bộ nhớ đệm mặc định thông qua `app.cache`.
-- `Cache` cung cấp các thao tác cơ bản như `set/get/del/reset`, đồng thời hỗ trợ `wrap` và `wrapWithCondition` để đóng gói logic bộ nhớ đệm, cũng như các phương thức hàng loạt như `mset/mget/mdel`.
-- Khi triển khai trong cụm, bạn nên đặt dữ liệu chia sẻ vào một bộ lưu trữ có khả năng duy trì (như Redis) và đặt `ttl` hợp lý để tránh mất bộ nhớ đệm khi phiên bản khởi động lại.
+- Lấy instance cache mặc định qua `app.cache`.
+- `Cache` cung cấp các thao tác cơ bản như `set/get/del/reset`, đồng thời hỗ trợ `wrap` và `wrapWithCondition` để đóng gói logic cache, cũng như các phương thức batch như `mset/mget/mdel`.
+- Khi triển khai Cluster, khuyến nghị đặt dữ liệu chia sẻ vào storage có khả năng persistence (như Redis), và đặt `ttl` hợp lý, tránh mất cache khi instance restart.
 
-Ví dụ: [Khởi tạo và sử dụng bộ nhớ đệm trong `plugin-auth`](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-auth/src/server/plugin.ts#L11-L72)
+Ví dụ: [Khởi tạo và sử dụng cache trong `plugin-auth`](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-auth/src/server/plugin.ts#L11-L72)
 
-```ts title="Tạo và sử dụng bộ nhớ đệm trong plugin"
+```ts title="Tạo và sử dụng cache trong plugin"
 // packages/plugins/@nocobase/plugin-auth/src/server/plugin.ts
 async load() {
   this.cache = await this.app.cacheManager.createCache({
@@ -43,17 +45,17 @@ async load() {
 }
 ```
 
-### Trình quản lý tin nhắn đồng bộ (SyncMessageManager)
+### SyncMessageManager (Quản lý tín hiệu đồng bộ)
 
-Nếu trạng thái trong bộ nhớ không thể được quản lý bằng bộ nhớ đệm phân tán (ví dụ: không thể tuần tự hóa), thì khi trạng thái thay đổi do hành động của người dùng, cần thông báo sự thay đổi đó đến các phiên bản khác thông qua tín hiệu đồng bộ để duy trì tính nhất quán của trạng thái.
+Nếu trạng thái trong bộ nhớ không thể dùng distributed cache (như không thể serialize), thì khi trạng thái thay đổi theo thao tác người dùng, cần thông báo thay đổi đến các instance khác qua tín hiệu đồng bộ để duy trì tính nhất quán.
 
-- Lớp cơ sở của plugin đã triển khai `sendSyncMessage`, bên trong gọi `app.syncMessageManager.publish` và tự động thêm tiền tố cấp ứng dụng vào kênh để tránh xung đột kênh.
-- `publish` có thể chỉ định `transaction`, tin nhắn sẽ được gửi sau khi giao dịch cơ sở dữ liệu được cam kết, đảm bảo đồng bộ hóa trạng thái và tin nhắn.
-- Xử lý tin nhắn từ các phiên bản khác bằng `handleSyncMessage`, có thể đăng ký trong giai đoạn `beforeLoad`, rất phù hợp cho các kịch bản như thay đổi cấu hình, đồng bộ hóa Schema.
+- Plugin base class đã triển khai sẵn `sendSyncMessage`, bên trong gọi `app.syncMessageManager.publish` và tự động thêm tiền tố cấp ứng dụng vào channel để tránh xung đột channel.
+- `publish` có thể chỉ định `transaction`, tin nhắn sẽ được gửi sau khi database transaction commit, đảm bảo trạng thái và tin nhắn đồng bộ.
+- Xử lý tin nhắn từ instance khác qua `handleSyncMessage`, có thể subscribe ở giai đoạn `beforeLoad`, rất phù hợp cho các kịch bản thay đổi cấu hình, đồng bộ Schema, v.v.
 
-Ví dụ: [`plugin-data-source-main` sử dụng tin nhắn đồng bộ để duy trì tính nhất quán của schema trên nhiều nút](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-data-source-main/src/server/server.ts#L20-L220)
+Ví dụ: [`plugin-data-source-main` duy trì schema nhất quán đa node qua sync message](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-data-source-main/src/server/server.ts#L20-L220)
 
-```ts title="Đồng bộ hóa cập nhật Schema trong plugin"
+```ts title="Đồng bộ cập nhật Schema trong plugin"
 export class PluginDataSourceMainServer extends Plugin {
   async handleSyncMessage(message) {
     if (message.type === 'syncCollection') {
@@ -67,17 +69,17 @@ export class PluginDataSourceMainServer extends Plugin {
 }
 ```
 
-### Trình quản lý phát sóng tin nhắn (PubSubManager)
+### PubSubManager (Quản lý broadcast tin nhắn)
 
-Phát sóng tin nhắn là thành phần cơ bản của tín hiệu đồng bộ và cũng hỗ trợ sử dụng trực tiếp. Khi cần phát sóng tin nhắn giữa các phiên bản, bạn có thể thực hiện thông qua thành phần này.
+Broadcast tin nhắn là component nền tảng của tín hiệu đồng bộ, cũng hỗ trợ sử dụng trực tiếp. Khi cần broadcast tin nhắn giữa các instance, có thể dùng component này.
 
-- `app.pubSubManager.subscribe(channel, handler, { debounce })` có thể được sử dụng để đăng ký kênh giữa các phiên bản; tùy chọn `debounce` dùng để khử nhiễu, tránh các cuộc gọi lại thường xuyên do phát sóng lặp lại.
-- `publish` hỗ trợ `skipSelf` (mặc định là true) và `onlySelf`, dùng để kiểm soát xem tin nhắn có được gửi lại cho phiên bản hiện tại hay không.
-- Cần cấu hình bộ điều hợp (như Redis, RabbitMQ, v.v.) trước khi ứng dụng khởi động; nếu không, mặc định sẽ không kết nối với hệ thống tin nhắn bên ngoài.
+- `app.pubSubManager.subscribe(channel, handler, { debounce })` có thể subscribe channel giữa các instance; tùy chọn `debounce` dùng để chống dội, tránh callback liên tục do broadcast trùng lặp.
+- `publish` hỗ trợ `skipSelf` (mặc định true) và `onlySelf`, để kiểm soát có gửi lại tin nhắn về instance hiện tại hay không.
+- Cần cấu hình adapter (như Redis, RabbitMQ, v.v.) trước khi khởi động ứng dụng, nếu không mặc định sẽ không kết nối hệ thống message bên ngoài.
 
-Ví dụ: [`plugin-async-task-manager` sử dụng PubSub để phát sóng sự kiện hủy tác vụ](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-async-task-manager/src/server/base-task-manager.ts#L194-L258)
+Ví dụ: [`plugin-async-task-manager` dùng PubSub để broadcast sự kiện cancel task](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-async-task-manager/src/server/base-task-manager.ts#L194-L258)
 
-```ts title="Phát sóng tín hiệu hủy tác vụ"
+```ts title="Broadcast tín hiệu cancel task"
 const channel = `${plugin.name}.task.cancel`;
 
 await this.app.pubSubManager.subscribe(channel, async ({ id }) => {
@@ -88,17 +90,17 @@ await this.app.pubSubManager.subscribe(channel, async ({ id }) => {
 await this.app.pubSubManager.publish(channel, { id: taskId }, { skipSelf: true });
 ```
 
-### Thành phần hàng đợi sự kiện (EventQueue)
+### Component EventQueue
 
-Hàng đợi tin nhắn được sử dụng để lập lịch các tác vụ bất đồng bộ, phù hợp để xử lý các thao tác tốn nhiều thời gian hoặc có thể thử lại.
+Message queue dùng để lập lịch các tác vụ bất đồng bộ, phù hợp xử lý các thao tác tốn thời gian hoặc có thể retry.
 
-- Khai báo một consumer với `app.eventQueue.subscribe(channel, { idle, process, concurrency })`. `process` trả về một `Promise`, và bạn có thể sử dụng `AbortSignal.timeout` để kiểm soát thời gian chờ.
-- `publish` tự động thêm tiền tố tên ứng dụng và hỗ trợ các tùy chọn như `timeout`, `maxRetries`. Mặc định nó sử dụng bộ điều hợp hàng đợi trong bộ nhớ, nhưng có thể chuyển sang các bộ điều hợp mở rộng như RabbitMQ khi cần.
-- Trong một cụm, hãy đảm bảo tất cả các nút sử dụng cùng một bộ điều hợp để tránh phân mảnh tác vụ giữa các nút.
+- Khai báo consumer qua `app.eventQueue.subscribe(channel, { idle, process, concurrency })`, `process` trả về `Promise`, có thể dùng `AbortSignal.timeout` để kiểm soát timeout.
+- `publish` sẽ tự động thêm tiền tố tên ứng dụng và hỗ trợ các tùy chọn như `timeout`, `maxRetries`, mặc định adapter là memory queue, có thể chuyển sang adapter mở rộng như RabbitMQ khi cần.
+- Trong cluster, đảm bảo tất cả các node sử dụng cùng một adapter để tránh task bị chia cắt giữa các node.
 
-Ví dụ: [`plugin-async-task-manager` sử dụng EventQueue để lập lịch tác vụ](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-async-task-manager/src/server/base-task-manager.ts#L199-L240)
+Ví dụ: [`plugin-async-task-manager` dùng EventQueue để lập lịch task](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-async-task-manager/src/server/base-task-manager.ts#L199-L240)
 
-```ts title="Phân phối tác vụ bất đồng bộ trong hàng đợi"
+```ts title="Phân phối task bất đồng bộ trong queue"
 this.app.eventQueue.subscribe(`${plugin.name}.task`, {
   concurrency: this.concurrency,
   idle: this.idle,
@@ -110,17 +112,17 @@ this.app.eventQueue.subscribe(`${plugin.name}.task`, {
 await this.app.eventQueue.publish(`${plugin.name}.task`, { id: taskId }, { maxRetries: 3 });
 ```
 
-### Trình quản lý khóa phân tán (LockManager)
+### LockManager (Quản lý distributed lock)
 
-Khi cần tránh các thao tác tranh chấp, bạn có thể sử dụng khóa phân tán để tuần tự hóa việc truy cập tài nguyên.
+Khi cần tránh các thao tác race condition, có thể dùng distributed lock để serialize việc truy cập tài nguyên.
 
-- Mặc định, nó cung cấp bộ điều hợp `local` dựa trên tiến trình, có thể đăng ký các triển khai phân tán như Redis; kiểm soát đồng thời thông qua `app.lockManager.runExclusive(key, fn, ttl)` hoặc `acquire`/`tryAcquire`.
-- `ttl` được sử dụng để giải phóng khóa dự phòng, ngăn khóa bị giữ vĩnh viễn trong các trường hợp ngoại lệ.
-- Các kịch bản phổ biến bao gồm: thay đổi Schema, ngăn chặn tác vụ trùng lặp, giới hạn tốc độ, v.v.
+- Mặc định cung cấp adapter `local` dựa trên process, có thể đăng ký các implementation distributed như Redis; kiểm soát đồng thời qua `app.lockManager.runExclusive(key, fn, ttl)` hoặc `acquire`/`tryAcquire`.
+- `ttl` dùng để tự giải phóng lock dự phòng, ngăn lock bị giữ vĩnh viễn trong các tình huống bất thường.
+- Các kịch bản phổ biến gồm: thay đổi Schema, ngăn task trùng lặp, rate limit, v.v.
 
-Ví dụ: [`plugin-data-source-main` sử dụng khóa phân tán để bảo vệ quy trình xóa trường](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-data-source-main/src/server/server.ts#L320-L360)
+Ví dụ: [`plugin-data-source-main` dùng distributed lock bảo vệ quy trình xóa field](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-data-source-main/src/server/server.ts#L320-L360)
 
-```ts title="Tuần tự hóa thao tác xóa trường"
+```ts title="Serialize thao tác xóa field"
 const lockKey = `${this.name}:fields.beforeDestroy:${collectionName}`;
 await this.app.lockManager.runExclusive(lockKey, async () => {
   await fieldModel.remove(options);
@@ -130,10 +132,10 @@ await this.app.lockManager.runExclusive(lockKey, async () => {
 
 ## Khuyến nghị phát triển
 
-- **Tính nhất quán của trạng thái trong bộ nhớ**: Cố gắng tránh sử dụng trạng thái trong bộ nhớ khi phát triển. Thay vào đó, hãy sử dụng bộ nhớ đệm hoặc tin nhắn đồng bộ để duy trì tính nhất quán của trạng thái.
-- **Ưu tiên tái sử dụng các giao diện tích hợp**: Thống nhất sử dụng các khả năng như `app.cache`, `app.syncMessageManager`, v.v., để tránh triển khai lại logic giao tiếp giữa các nút trong plugin.
-- **Chú ý đến ranh giới giao dịch**: Các thao tác có giao dịch nên sử dụng `transaction.afterCommit` (`syncMessageManager.publish` đã tích hợp sẵn) để đảm bảo tính nhất quán của dữ liệu và tin nhắn.
-- **Xây dựng chiến lược lùi dần (backoff)**: Đối với các tác vụ hàng đợi và phát sóng, hãy đặt các giá trị `timeout`, `maxRetries`, `debounce` hợp lý để ngăn chặn các đợt tăng đột biến lưu lượng truy cập mới trong các tình huống ngoại lệ.
-- **Sử dụng giám sát và ghi nhật ký bổ trợ**: Tận dụng tốt nhật ký ứng dụng để ghi lại tên kênh, tải trọng tin nhắn, khóa key, v.v., nhằm thuận tiện cho việc khắc phục sự cố không thường xuyên trong cụm.
+- **Tính nhất quán trạng thái bộ nhớ**: Cố gắng tránh dùng trạng thái bộ nhớ trong phát triển, thay bằng cache hoặc sync message để duy trì tính nhất quán.
+- **Ưu tiên tái sử dụng interface tích hợp sẵn**: Sử dụng thống nhất các năng lực như `app.cache`, `app.syncMessageManager`, tránh triển khai lại logic giao tiếp xuyên node trong plugin.
+- **Chú ý đến biên giới transaction**: Các thao tác có transaction nên dùng `transaction.afterCommit` (đã tích hợp sẵn trong `syncMessageManager.publish`) để đảm bảo dữ liệu và tin nhắn nhất quán.
+- **Xây dựng chiến lược backoff**: Đối với task queue và broadcast, đặt hợp lý các tham số `timeout`, `maxRetries`, `debounce`, ngăn tạo ra các đợt traffic mới trong tình huống bất thường.
+- **Giám sát và log đi kèm**: Tận dụng log ứng dụng để ghi tên channel, payload tin nhắn, lock key, v.v., thuận tiện cho việc khắc phục các sự cố ngẫu nhiên trong cluster.
 
-Với các khả năng trên, các plugin có thể an toàn chia sẻ trạng thái, đồng bộ hóa cấu hình và lập lịch tác vụ giữa các phiên bản khác nhau, đáp ứng các yêu cầu về tính ổn định và nhất quán trong các kịch bản triển khai cụm.
+Thông qua các năng lực trên, plugin có thể chia sẻ trạng thái an toàn, đồng bộ cấu hình, lập lịch task giữa các instance, đáp ứng yêu cầu về tính ổn định và nhất quán trong kịch bản triển khai Cluster.

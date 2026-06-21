@@ -12,6 +12,6 @@
   {
     "type": "dir",
     "name": "formatters",
-    "label": "Công cụ định dạng"
+    "label": "Bộ định dạng"
   }
 ]

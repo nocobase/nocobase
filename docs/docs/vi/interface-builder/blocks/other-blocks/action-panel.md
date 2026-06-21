@@ -1,37 +1,36 @@
 ---
 pkg: "@nocobase/plugin-block-workbench"
+title: "Block Action Panel"
+description: "Block Action Panel: hiển thị tập trung các nút Action, hỗ trợ cấu hình điểm vào các Action như nhiệm vụ chờ, phê duyệt, workflow."
+keywords: "Action Panel,ActionPanel,nút Action,nhiệm vụ chờ,phê duyệt workflow,Interface Builder,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Khối: Workbench
+# Block: Action Panel
 
 ## Giới thiệu
 
-Dùng để đặt các thao tác nhanh khác nhau. Hiện tại hỗ trợ:
+Dùng để đặt các Action nhanh khác nhau, hiện hỗ trợ
 
 - [Liên kết](/interface-builder/actions/types/link)
-- [Quét mã QR]
-- [Thao tác Pop-up](/interface-builder/actions/types/pop-up)
+- [Quét QR Code]
+- [Action Popup](/interface-builder/actions/types/pop-up)
 
 ![20251023225754](https://static-docs.nocobase.com/20251023225754.png)
 
-> 💡 Các loại thao tác khác sẽ tiếp tục được bổ sung trong các phiên bản tương lai.
-## Các loại thao tác
+> 💡 Phiên bản tiếp theo sẽ tiếp tục mở rộng nhiều loại Action hơn.
+## Loại Action
 
-- **Liên kết**: Điều hướng đến một trang cụ thể hoặc URL bên ngoài.
+- **Liên kết**: Chuyển đến Trang chỉ định hoặc URL bên ngoài.
 
 ![20251023230643](https://static-docs.nocobase.com/20251023230643.png)
 
-- **Quét mã QR**: Kích hoạt một thao tác tương ứng bằng cách quét mã QR.
+- **Quét QR Code**: Kích hoạt Action tương ứng bằng cách quét QR Code.
 
-- **Mở Pop-up**: Mở một pop-up để hiển thị nội dung của khối.
+- **Mở Popup**: Mở Popup để hiển thị nội dung Block.
   ![20251023230522](https://static-docs.nocobase.com/20251023230522.png)
 
 ## Bố cục
 
-- Dạng lưới
-- Dạng danh sách
+- Lưới
+- Danh sách
 
 ![20251023230718](https://static-docs.nocobase.com/20251023230718.gif)

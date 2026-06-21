@@ -1,8 +1,10 @@
 ---
 displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
+title: "Action: Print"
+keywords: "Action: Print,plugin,NocoBase"
 description: |
-  Calls the browser's print function to print a record.
+  Memanggil fungsi cetak browser untuk mencetak satu data record.
 isFree: true
 builtIn: true
 defaultEnabled: false

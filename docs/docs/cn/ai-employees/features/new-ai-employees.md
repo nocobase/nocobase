@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "新建 AI 员工"
+description: "创建自定义 AI 员工：配置 Profile、Role setting 系统提示词、Skills 技能权限、知识库，定义角色人设与能力边界。"
+keywords: "新建 AI 员工,创建 AI 员工,Role setting,系统提示词,技能配置,NocoBase"
+---
+
 # 新建 AI 员工
 
 如果内置 AI 员工不能满足你的需求，可以创建并定制自己的 AI 员工。

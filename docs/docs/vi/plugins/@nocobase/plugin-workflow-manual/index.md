@@ -1,12 +1,14 @@
 ---
-displayName: "Workflow: Manual node"
+displayName: "Workflow: Node xử lý thủ công"
 packageName: '@nocobase/plugin-workflow-manual'
+title: "Workflow: Node xử lý thủ công"
+keywords: "Workflow: Node xử lý thủ công,Plugin,NocoBase"
 description: |
-  Could be used for workflows which some of decisions are made by users.
+  Dùng cho quy trình mà một phần quyết định được kiểm soát thủ công.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Manual node
+# Workflow: Node xử lý thủ công

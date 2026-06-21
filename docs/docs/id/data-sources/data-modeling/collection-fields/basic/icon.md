@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ikon"
+description: "Field Ikon, menyimpan identifier ikon, mendukung icon picker."
+keywords: "ikon,icon,field ikon,icon picker,NocoBase"
+---
 
-# Ikon
+# Icon
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512180027](https://static-docs.nocobase.com/20240512180027.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

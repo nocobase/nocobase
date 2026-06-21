@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Mở rộng loại xác minh"
+description: "Phát triển mở rộng loại xác minh trong NocoBase: đăng ký form cấu hình, triển khai class xác minh, đăng ký loại xác minh, mở rộng phương thức xác thực danh tính tùy chỉnh."
+keywords: "Mở rộng loại xác minh,IVerification,Verification,registerVerificationType,NocoBase"
+---
 
+# Mở rộng loại xác minh
 
-# Mở rộng các loại xác thực
+## Client
 
-## Phía máy khách
+### Đăng ký form cấu hình
 
-### Đăng ký biểu mẫu cấu hình
+## Server
 
-## Phía máy chủ
+### Triển khai class xác minh
 
-### Triển khai lớp xác thực
-
-### Đăng ký loại xác thực
+### Đăng ký loại xác minh

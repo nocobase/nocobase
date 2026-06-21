@@ -26,6 +26,7 @@ function setupEngineWithCollections() {
     fields: [
       { name: 'id', type: 'integer', interface: 'number' },
       { name: 'name', type: 'string', interface: 'text' },
+      { name: 'rawUserPayload', type: 'json', filterable: true },
     ],
   });
   ds.addCollection({
@@ -41,6 +42,8 @@ function setupEngineWithCollections() {
     filterTargetKey: 'id',
     fields: [
       { name: 'title', type: 'string', interface: 'text' },
+      { name: 'internalName', type: 'string', interface: 'text' },
+      { name: 'rawPostPayload', type: 'json', filterable: true },
       { name: 'author', type: 'belongsTo', target: 'users', interface: 'm2o' },
       { name: 'tags', type: 'belongsToMany', target: 'tags', interface: 'm2m' },
     ],
@@ -89,6 +92,27 @@ describe('objectVariable utilities', () => {
       author: { collection: 'users', dataSourceKey: 'main', filterByTk: 2 },
       tags: { collection: 'tags', dataSourceKey: 'main', filterByTk: [11, 12] },
     });
+  });
+
+  it('createAssociationAwareObjectMetaFactory should hide fields without interface from object variable meta', async () => {
+    const { collection } = setupEngineWithCollections();
+    const obj = { title: 'hello', internalName: 'internal', rawPostPayload: { secret: true }, author: 1 };
+    const metaFactory = createAssociationAwareObjectMetaFactory(
+      () => collection,
+      'Current object',
+      () => obj,
+    );
+
+    const meta = await metaFactory();
+    const props = await (meta?.properties as any)?.();
+    const authorFields = await props?.author?.properties?.();
+
+    expect(props).toHaveProperty('title');
+    expect(props).toHaveProperty('internalName');
+    expect(props).toHaveProperty('author');
+    expect(props).not.toHaveProperty('rawPostPayload');
+    expect(authorFields).toHaveProperty('name');
+    expect(authorFields).not.toHaveProperty('rawUserPayload');
   });
 
   it('integrates with FlowContext.resolveJsonTemplate to call variables:resolve with flattened contextParams', async () => {

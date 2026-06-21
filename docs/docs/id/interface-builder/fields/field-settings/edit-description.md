@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Edit Deskripsi"
+description: "Konfigurasi Field: menambahkan informasi deskripsi untuk Field, menampilkan prompt bantuan di bawah Form item."
+keywords: "edit deskripsi, deskripsi Field, prompt bantuan, interface builder, NocoBase"
+---
 
-# Mengedit Deskripsi
+# Edit Deskripsi
 
-## Pendahuluan
+## Pengantar
 
-Deskripsi bidang adalah teks penjelasan singkat yang muncul di bawah komponen bidang, ditampilkan dalam warna abu-abu terang. Teks ini berfungsi untuk membantu pengguna memahami tujuan bidang serta persyaratan input yang diperlukan.
+Deskripsi Field adalah teks penjelasan singkat yang ditampilkan dalam huruf abu-abu muda di bawah komponen Field, dapat digunakan untuk membantu pengguna memahami tujuan Field dan persyaratan input.
 
 ![20240411114048](https://static-docs.nocobase.com/20240411114048.png)
 

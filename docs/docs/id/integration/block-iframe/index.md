@@ -1,55 +1,54 @@
 ---
-pkg: "@nocobase/plugin-block-iframe"
+title: "Embed Blok Iframe"
+description: "Blok Iframe untuk menanam halaman web eksternal atau HTML: konfigurasi URL/HTML, template Handlebars, injeksi variabel, JS Block membuat iframe secara dinamis, contoh Vue/React, pertimbangan keamanan."
+keywords: "Blok Iframe,embed halaman web,template Handlebars,injeksi variabel,JS Block,integrasi aplikasi eksternal,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-
 
 # Blok Iframe
 
-## Pendahuluan
+<PluginInfo name="block-iframe"></PluginInfo>
 
-Blok Iframe memungkinkan Anda menyematkan halaman web atau konten eksternal ke dalam halaman saat ini. Pengguna dapat dengan mudah mengintegrasikan aplikasi eksternal ke halaman dengan mengonfigurasi URL atau langsung menyisipkan kode HTML. Saat menggunakan halaman HTML, pengguna dapat dengan fleksibel menyesuaikan konten untuk memenuhi kebutuhan tampilan tertentu. Pendekatan ini sangat cocok untuk skenario yang memerlukan tampilan kustomisasi, memungkinkan pemuatan sumber daya eksternal tanpa pengalihan, sehingga meningkatkan pengalaman pengguna dan interaktivitas halaman.
+## Pengenalan
+
+Blok IFrame memungkinkan Anda menanam halaman web eksternal atau konten ke halaman saat ini. Pengguna dapat dengan mudah mengintegrasikan aplikasi eksternal ke halaman dengan mengkonfigurasi URL atau menyisipkan kode HTML secara langsung. Saat menggunakan halaman HTML, pengguna dapat secara fleksibel menyesuaikan konten untuk memenuhi kebutuhan tampilan tertentu. Cara ini sangat cocok untuk skenario yang membutuhkan tampilan kustomisasi, dapat memuat sumber daya eksternal tanpa navigasi, meningkatkan pengalaman pengguna dan efek interaksi halaman.
 
 ## Instalasi
 
-Ini adalah plugin bawaan, tidak perlu instalasi.
+Plugin bawaan, tidak perlu instalasi.
 
-## Menambahkan Blok
+## Tambahkan Blok
 
 ![20240408220259](https://static-docs.nocobase.com/20240408220259.png)
 
-Konfigurasi URL atau HTML untuk langsung menyematkan aplikasi eksternal.
+Konfigurasikan URL atau HTML untuk menanam aplikasi eksternal secara langsung.
 
 ![20240408220322](https://static-docs.nocobase.com/20240408220322.png)
 
-## Mesin Template
+## Engine Template
 
 ### Template String
 
-Mesin template bawaan.
+Engine template default
 
 ### Handlebars
 
 ![20240811205239](https://static-docs.nocobase.com/20240811205239.png)
 
-Untuk informasi lebih lanjut, lihat dokumentasi mesin template Handlebars.
+Untuk informasi lebih lanjut, lihat dokumentasi engine template Handlebars
 
 ## Meneruskan Variabel
 
-### Dukungan HTML untuk Parsing Variabel
+### HTML Mendukung Parsing Variabel
 
-#### Dukungan untuk Memilih Variabel dari Pemilih Variabel dalam Konteks Blok Saat Ini
+#### Mendukung Pemilihan Variabel Konteks Blok Saat Ini dari Pemilih Variabel
 
 ![20240603120321](https://static-docs.nocobase.com/20240603120321.png)
 
 ![20240603120629](https://static-docs.nocobase.com/20240603120629.gif)
 
-#### Dukungan untuk Menginjeksikan Variabel ke dalam Aplikasi dan Menggunakannya melalui Kode
+#### Mendukung Injeksi Variabel ke Aplikasi melalui Kode dan Penggunaannya
 
-Anda juga dapat menginjeksikan variabel kustom ke dalam aplikasi melalui kode dan menggunakannya dalam HTML. Contohnya, membuat aplikasi kalender dinamis menggunakan Vue 3 dan Element Plus:
+Anda juga dapat menginjeksikan variabel kustom ke aplikasi melalui kode dan menggunakannya di HTML. Misalnya, gunakan Vue 3 dan Element Plus untuk membuat aplikasi kalender dinamis:
 
 ```html
 <!doctype html>
@@ -120,7 +119,7 @@ Anda juga dapat menginjeksikan variabel kustom ke dalam aplikasi melalui kode da
 
 ![20250320163250](https://static-docs.nocobase.com/20250320163250.png)
 
-Contoh: Komponen kalender sederhana yang dibuat dengan React dan Ant Design (antd), menggunakan dayjs untuk menangani tanggal.
+Contoh: komponen kalender sederhana yang dibuat dengan React dan Ant Design (antd), dikombinasikan dengan dayjs untuk menangani tanggal
 
 ```html
 <!doctype html>
@@ -200,22 +199,22 @@ Contoh: Komponen kalender sederhana yang dibuat dengan React dan Ant Design (ant
 
 ![20250320164537](https://static-docs.nocobase.com/20250320164537.png)
 
-### URL mendukung variabel
+### URL Mendukung Variabel
 
 ![20240603142219](https://static-docs.nocobase.com/20240603142219.png)
 
-Untuk informasi lebih lanjut tentang variabel, lihat dokumentasi variabel.
+Untuk informasi lebih lanjut tentang variabel, lihat dokumentasi variabel
 
-## Membuat Iframe dengan Blok JS (NocoBase 2.0)
+## Membuat Iframe dengan JS Block (NocoBase 2.0)
 
-Di NocoBase 2.0, Anda dapat menggunakan blok JS untuk membuat iframe secara dinamis dengan kontrol yang lebih besar. Pendekatan ini memberikan fleksibilitas yang lebih baik untuk menyesuaikan perilaku dan gaya iframe.
+Pada NocoBase 2.0, Anda dapat menggunakan JS Block untuk membuat iframe secara dinamis, sehingga mendapatkan kontrol yang lebih banyak. Pendekatan ini memberikan fleksibilitas yang lebih baik untuk menyesuaikan perilaku dan gaya iframe.
 
 ### Contoh Dasar
 
-Buat blok JS dan gunakan kode berikut untuk membuat iframe:
+Buat JS Block dan gunakan kode berikut untuk membuat iframe:
 
 ```javascript
-// Membuat iframe yang mengisi kontainer blok saat ini
+// Buat iframe yang mengisi container blok saat ini
 const iframe = document.createElement('iframe');
 iframe.src = 'https://example.com';
 iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
@@ -223,28 +222,28 @@ iframe.style.width = '100%';
 iframe.style.height = '100%';
 iframe.style.border = 'none';
 
-// Mengganti elemen anak yang ada agar iframe menjadi satu-satunya konten
+// Ganti elemen anak yang ada, sehingga iframe menjadi konten satu-satunya
 ctx.element.replaceChildren(iframe);
 ```
 
 ### Poin Penting
 
-- **ctx.element**: Elemen DOM dari kontainer blok JS saat ini.
-- **Atribut sandbox**: Mengontrol batasan keamanan untuk konten iframe.
-  - `allow-scripts`: Mengizinkan iframe untuk mengeksekusi skrip.
-  - `allow-same-origin`: Mengizinkan iframe untuk mengakses sumber asalnya sendiri.
-- **replaceChildren()**: Mengganti semua elemen anak dari kontainer dengan iframe.
+- **ctx.element**: elemen DOM container JS Block saat ini
+- **Atribut sandbox**: mengontrol batasan keamanan konten iframe
+  - `allow-scripts`: memungkinkan iframe mengeksekusi skrip
+  - `allow-same-origin`: memungkinkan iframe mengakses asalnya sendiri
+- **replaceChildren()**: mengganti semua elemen anak container dengan iframe
 
-### Contoh Lanjutan dengan Status Pemuatan
+### Contoh Lanjutan dengan Status Loading
 
-Anda dapat meningkatkan pembuatan iframe dengan status pemuatan dan penanganan kesalahan:
+Anda dapat meningkatkan pembuatan iframe dengan status loading dan penanganan error:
 
 ```javascript
-// Menampilkan pesan pemuatan
-ctx.message.loading('Sedang memuat konten eksternal...');
+// Tampilkan tip loading
+ctx.message.loading('Memuat konten eksternal...');
 
 try {
-  // Membuat iframe
+  // Buat iframe
   const iframe = document.createElement('iframe');
   iframe.src = 'https://example.com';
   iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
@@ -252,20 +251,20 @@ try {
   iframe.style.height = '100%';
   iframe.style.border = 'none';
 
-  // Menambahkan event listener untuk pemuatan
+  // Tambahkan listener event load
   iframe.addEventListener('load', () => {
     ctx.message.success('Konten berhasil dimuat');
   });
 
-  // Menambahkan event listener untuk kesalahan
+  // Tambahkan listener event error
   iframe.addEventListener('error', () => {
     ctx.message.error('Gagal memuat konten');
   });
 
-  // Menyisipkan iframe ke dalam kontainer
+  // Sisipkan iframe ke container
   ctx.element.replaceChildren(iframe);
 } catch (error) {
-  ctx.message.error('Terjadi kesalahan saat membuat iframe: ' + error.message);
+  ctx.message.error('Error membuat iframe: ' + error.message);
 }
 ```
 
@@ -273,8 +272,8 @@ try {
 
 Saat menggunakan iframe, pertimbangkan praktik terbaik keamanan berikut:
 
-1. **Gunakan HTTPS**: Selalu muat konten iframe melalui HTTPS jika memungkinkan.
-2. **Batasi Izin Sandbox**: Hanya aktifkan izin sandbox yang diperlukan.
-3. **Kebijakan Keamanan Konten (CSP)**: Konfigurasikan header CSP yang sesuai.
-4. **Kebijakan Asal yang Sama (Same-Origin Policy)**: Perhatikan batasan lintas-asal.
-5. **Sumber Tepercaya**: Hanya muat konten dari domain tepercaya.
+1. **Gunakan HTTPS**: jika memungkinkan, selalu muat konten iframe melalui HTTPS
+2. **Batasi izin Sandbox**: aktifkan hanya izin sandbox yang diperlukan
+3. **Kebijakan Keamanan Konten**: konfigurasikan header CSP yang sesuai
+4. **Kebijakan Same-origin**: perhatikan batasan cross-origin
+5. **Sumber tepercaya**: muat konten hanya dari domain tepercaya

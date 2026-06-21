@@ -1,14 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Modifikator Terakhir"
+description: "Field sistem modifikator, otomatis mencatat modifikator terakhir."
+keywords: "updatedBy,modifikator,field sistem,field audit,NocoBase"
+---
 
-# Terakhir Diperbarui Oleh
+# Modifikator Terakhir
 
-## Pendahuluan
+## Pengantar
 
 Akan ditambahkan
 
-## Konfigurasi Kolom
+## Konfigurasi Field
 
 ![index-2025-11-01-00-51-12](https://static-docs.nocobase.com/index-2025-11-01-00-51-12.png)
 

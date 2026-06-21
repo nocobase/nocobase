@@ -12,18 +12,19 @@ import { basename } from 'path';
 import match from 'mime-match';
 
 import { Collection, Model, Transactionable } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
+import { Application, Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Readable } from 'stream';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { AttachmentModel, StorageClassType, StorageModel } from './storages';
+import { AttachmentModel, GetFileStreamOptions, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
-import StorageTypeLocal from './storages/local';
+import StorageTypeLocal, { validateLocalStorageConfig } from './storages/local';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
-import { encodeURL } from './utils';
+import { encodeURL, resolveStoragePath } from './utils';
+import { registerRepairFilenamesCommand } from './commands/repair-filenames';
 
 export type * from './storages';
 
@@ -43,18 +44,24 @@ export type FileRecordOptions = {
   collectionName: string;
   filePath: string;
   storageName?: string;
+  subPath?: string;
   values?: any;
 } & Transactionable;
 
 export type UploadFileOptions = {
   filePath: string;
   storageName?: string;
+  subPath?: string;
   documentRoot?: string;
 };
 
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
   storagesCache = new Map<number | string, StorageModel>();
+
+  static async staticImport() {
+    Application.addCommand(registerRepairFilenamesCommand);
+  }
 
   afterDestroy = async (record: Model, options) => {
     const { collection } = record.constructor as typeof Model;
@@ -89,14 +96,14 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async createFileRecord(options: FileRecordOptions) {
-    const { values, storageName, collectionName, filePath, transaction } = options;
+    const { values, storageName, subPath, collectionName, filePath, transaction } = options;
     const collection = this.db.getCollection(collectionName);
     if (!collection) {
       throw new Error(`collection does not exist`);
     }
     const collectionRepository = this.db.getRepository(collectionName);
     const name = storageName || collection.options.storage;
-    const data = await this.uploadFile({ storageName: name, filePath });
+    const data = await this.uploadFile({ storageName: name, subPath, filePath });
     return await collectionRepository.create({ values: { ...data, ...values }, transaction });
   }
 
@@ -105,17 +112,23 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async uploadFile(options: UploadFileOptions) {
-    const { storageName, filePath, documentRoot } = options;
+    const { storageName, subPath, filePath, documentRoot } = options;
 
     if (!this.storagesCache.size) {
       await this.loadStorages();
     }
     const storages = Array.from(this.storagesCache.values());
-    const storage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
+    const cachedStorage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
 
-    if (!storage) {
+    if (!cachedStorage) {
       throw new Error('[file-manager] no linked or default storage provided');
     }
+
+    const storage = {
+      ...cachedStorage,
+      options: { ...(cachedStorage.options || {}) },
+      path: resolveStoragePath(cachedStorage.path, subPath),
+    };
 
     const fileStream = fs.createReadStream(filePath);
 
@@ -227,6 +240,9 @@ export class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(STORAGE_TYPE_TX_COS, StorageTypeTxCos);
 
     const Storage = this.db.getModel('storages');
+    Storage.beforeSave((m) => {
+      validateLocalStorageConfig(m.toJSON());
+    });
     Storage.afterSave(async (m, { transaction }) => {
       await this.loadStorages({ transaction });
       this.sendSyncMessage({ type: 'reloadStorages' }, { transaction });
@@ -352,7 +368,10 @@ export class PluginFileManagerServer extends Plugin {
     }
     return !!storage.options?.public;
   }
-  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
+  async getFileStream(
+    file: AttachmentModel,
+    options?: GetFileStreamOptions,
+  ): Promise<{ stream: Readable; contentType?: string }> {
     if (!file.storageId) {
       throw new Error('File storageId not found');
     }
@@ -371,7 +390,7 @@ export class PluginFileManagerServer extends Plugin {
       throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
     }
 
-    return storageInstance.getFileStream(file);
+    return storageInstance.getFileStream(file, options);
   }
 }
 

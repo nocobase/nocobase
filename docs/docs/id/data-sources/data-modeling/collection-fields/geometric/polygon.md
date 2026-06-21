@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Polygon"
+description: "Field geometri Polygon, menyimpan bentuk polygon (tipe polygon PostgreSQL)."
+keywords: "polygon,polygon,field geometri,PostgreSQL,NocoBase"
+---
 
-# Poligon
+# Polygon
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512181547](https://static-docs.nocobase.com/20240512181547.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

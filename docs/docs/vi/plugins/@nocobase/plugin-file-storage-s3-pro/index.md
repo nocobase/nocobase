@@ -1,15 +1,17 @@
 ---
-displayName: "File storage: S3(Pro)"
+displayName: "Lưu trữ tệp: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
+title: "Lưu trữ tệp: S3 (Pro)"
+keywords: "Lưu trữ tệp: S3 (Pro),Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support S3-compatible file storage, including services like Amazon S3, Aliyun OSS, Tencent Cloud COS, and MinIO. Features include direct file uploads and private access control.
+  Hỗ trợ các loại lưu trữ tệp tương thích với giao thức S3, ví dụ như Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, MinIO, v.v. Hỗ trợ tải lên trực tiếp tệp và truy cập riêng tư.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# File storage: S3(Pro)
+# Lưu trữ tệp: S3 (Pro)

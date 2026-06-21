@@ -24,6 +24,7 @@ export type LogType =
   | 'stream_start' // SSE new message start
   | 'stream_tools' // SSE tool calls info
   | 'stream_delta' // SSE tool call chunks
+  | 'stream_reasoning' // SSE reasoning content
   | 'stream_error' // SSE error
   | 'tool_call' // Frontend tool execution
   | 'tool_result' // Tool execution result

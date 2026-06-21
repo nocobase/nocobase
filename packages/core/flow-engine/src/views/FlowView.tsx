@@ -11,13 +11,23 @@ import { PopoverProps as AntdPopoverProps } from 'antd';
 import { FlowContext } from '../flowContext';
 import { ViewNavigation } from './ViewNavigation';
 
+export type FlowViewBeforeClosePayload = {
+  result?: any;
+  force?: boolean;
+};
+
+export type FlowViewBeforeCloseHandler = (
+  payload: FlowViewBeforeClosePayload,
+) => Promise<boolean | void> | boolean | void;
+
 export type FlowView = {
   type: 'drawer' | 'popover' | 'dialog' | 'embed';
   inputArgs: any;
   Header: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> | null;
   Footer: React.FC<{ children?: React.ReactNode }> | null;
-  close: (result?: any, force?: boolean) => void;
+  close: (result?: any, force?: boolean) => Promise<boolean | void> | boolean | void;
   update: (newConfig: any) => void;
+  beforeClose?: FlowViewBeforeCloseHandler;
   navigation?: ViewNavigation;
   /** 页面的销毁方法 */
   destroy?: () => void;
@@ -74,11 +84,21 @@ export class FlowViewer {
     if (this.types[type]) {
       zIndex += 1;
       const onClose = others.onClose;
+      let zIndexReleased = false;
+      const releaseZIndex = () => {
+        if (!zIndexReleased) {
+          zIndexReleased = true;
+          zIndex -= 1;
+        }
+      };
       const _zIndex = others.zIndex;
       others.onClose = (...args) => {
         onClose?.(...args);
-        zIndex -= 1;
+        releaseZIndex();
       };
+      if (type === 'embed') {
+        others.onOpenCancelled = releaseZIndex;
+      }
       // embed 不能设置过高的 zIndex，会遮挡菜单的折叠按钮图表
       if (type !== 'embed') {
         others.zIndex = _zIndex ?? this.getNextZIndex();

@@ -1,51 +1,50 @@
 ---
 pkg: '@nocobase/plugin-acl'
+title: "Konfigurasi Izin NocoBase"
+description: "Konfigurasi izin NocoBase: antarmuka konfigurasi, instalasi plugin, konfigurasi izin plugin, pewarisan izin, izin operasi resource, aturan allow/deny."
+keywords: "konfigurasi izin,ACL,izin resource,pewarisan izin,allow,deny,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Konfigurasi Izin
 
-# Mengonfigurasi Izin
-
-## Pengaturan Izin Umum
+## Konfigurasi Izin Umum
 
 ![](https://static-docs.nocobase.com/119a9650259f9be71210121d0d3a435d.png)
 
-### Izin Konfigurasi
+### Konfigurasi Izin
 
-1.  **Mengizinkan konfigurasi antarmuka**: Izin ini mengontrol apakah pengguna dapat mengonfigurasi antarmuka. Setelah diaktifkan, tombol konfigurasi UI akan muncul. Peran "admin" secara default mengaktifkan izin ini.
-2.  **Mengizinkan instalasi, aktivasi, penonaktifan plugin**: Izin ini mengontrol apakah pengguna dapat mengaktifkan atau menonaktifkan **plugin**. Setelah diaktifkan, pengguna akan mendapatkan akses ke antarmuka manajer **plugin**. Peran "admin" secara default mengaktifkan izin ini.
-3.  **Mengizinkan konfigurasi plugin**: Izin ini memungkinkan pengguna untuk mengonfigurasi parameter **plugin** atau mengelola data backend **plugin**. Peran "admin" secara default mengaktifkan izin ini.
-4.  **Mengizinkan penghapusan cache, memulai ulang aplikasi**: Izin ini terkait dengan tugas pemeliharaan sistem seperti membersihkan cache dan memulai ulang aplikasi. Setelah diaktifkan, tombol operasi terkait akan muncul di pusat pribadi. Izin ini dinonaktifkan secara default.
-5.  **Item menu baru secara default diizinkan untuk diakses**: Item menu yang baru dibuat secara default dapat diakses, dan pengaturan ini diaktifkan secara default.
+1. Izinkan konfigurasi antarmuka: Izin ini mengontrol apakah pengguna dapat mengkonfigurasi antarmuka. Setelah izin ini diaktifkan, tombol konfigurasi UI akan muncul. Role "admin" mengaktifkan izin ini secara default.
+2. Izinkan instalasi, aktivasi, dan menonaktifkan plugin: Izin ini mengontrol apakah pengguna dapat mengaktifkan atau menonaktifkan plugin. Setelah izin ini diaktifkan, pengguna dapat mengakses antarmuka plugin manager. Role "admin" mengaktifkan izin ini secara default.
+3. Izinkan konfigurasi plugin: Izin ini mengontrol apakah pengguna dapat mengkonfigurasi parameter plugin atau mengelola data backend plugin. Role "admin" mengaktifkan izin ini secara default.
+4. Izinkan menghapus cache, restart aplikasi: Izin ini mengontrol izin operasional sistem pengguna: menghapus cache dan restart aplikasi. Setelah diaktifkan, tombol operasi terkait akan muncul di pusat profil, default tidak diaktifkan.
+5. Item menu baru diizinkan diakses secara default: Menu yang baru dibuat default diizinkan untuk diakses, default diaktifkan.
 
-### Izin Tindakan Global
+### Izin Operasi Global
 
-Izin tindakan global berlaku secara universal untuk semua **koleksi** dan dikategorikan berdasarkan jenis operasi. Izin ini dapat dikonfigurasi berdasarkan cakupan data: semua data atau data milik pengguna sendiri. Yang pertama memungkinkan operasi pada seluruh **koleksi**, sedangkan yang kedua membatasi operasi hanya pada data yang relevan dengan pengguna.
+Izin operasi global berlaku secara global (semua tabel data) dan dibagi berdasarkan tipe operasi. Mendukung konfigurasi berdasarkan dimensi data scope: semua data dan data milik sendiri. Yang pertama mengizinkan operasi pada seluruh tabel data, sedangkan yang kedua membatasi hanya pada data terkait pengguna sendiri.
 
-## Izin Tindakan Koleksi
+## Izin Operasi Tabel Data
 
-![](https://static-docs.nocobase.com/6a6e0281939cecdea5b5218e6173c5d7.png)
+![](https://static-docs.nocobase.com/6a6e0281391cecdea5b5218e6173c5d7.png)
 
 ![](https://static-docs.nocobase.com/9814140434ff9e1bf028a6c282a5a165.png)
 
-Izin tindakan **koleksi** menyempurnakan izin tindakan global, memungkinkan konfigurasi izin akses sumber daya secara individual untuk setiap **koleksi**. Izin ini dibagi menjadi dua aspek:
+Izin operasi tabel data lebih lanjut menyempurnakan izin operasi global, memungkinkan konfigurasi izin yang berbeda untuk akses resource pada setiap tabel data. Izin ini terbagi dalam dua aspek:
 
-1.  **Izin tindakan**: Izin tindakan meliputi tindakan menambah, melihat, mengedit, menghapus, mengekspor, dan mengimpor. Izin ini diatur berdasarkan cakupan data:
-    *   **Semua data**: Memungkinkan pengguna untuk melakukan tindakan pada semua catatan dalam **koleksi**.
-    *   **Data milik sendiri**: Membatasi pengguna untuk melakukan tindakan hanya pada catatan yang mereka buat.
+1. Izin operasi: Izin operasi mencakup operasi tambah, lihat, edit, hapus, ekspor, dan impor. Izin ini dikonfigurasi berdasarkan dimensi data scope:
+   - Semua data: Mengizinkan pengguna melakukan operasi pada semua record di tabel data.
+   - Data milik sendiri: Membatasi pengguna hanya pada record data yang dibuat oleh dirinya sendiri.
 
-2.  **Izin bidang**: Izin bidang memungkinkan Anda untuk mengatur izin spesifik untuk setiap bidang selama operasi yang berbeda. Misalnya, beberapa bidang dapat dikonfigurasi agar hanya dapat dilihat, tanpa hak pengeditan.
+2. Izin field: Izin field memungkinkan konfigurasi izin untuk setiap field pada operasi yang berbeda. Misalnya, beberapa field dapat dikonfigurasi hanya untuk dilihat tetapi tidak boleh diedit.
 
 ## Izin Akses Menu
 
-Izin akses menu mengontrol akses berdasarkan item menu.
+Izin akses menu mengontrol izin akses berdasarkan dimensi menu
 
 ![](https://static-docs.nocobase.com/28eddfc843d27641162d9129e3b6e33f.png)
 
 ## Izin Konfigurasi Plugin
 
-Izin konfigurasi **plugin** mengontrol kemampuan untuk mengonfigurasi parameter **plugin** tertentu. Ketika diaktifkan, antarmuka manajemen **plugin** yang sesuai akan muncul di pusat admin.
+Izin konfigurasi plugin digunakan untuk mengontrol izin konfigurasi parameter plugin tertentu. Setelah izin konfigurasi plugin dicentang, antarmuka manajemen plugin yang sesuai akan muncul di pusat manajemen.
 
 ![](https://static-docs.nocobase.com/5a742ae20a9de93dc2722468b9fd7475.png)

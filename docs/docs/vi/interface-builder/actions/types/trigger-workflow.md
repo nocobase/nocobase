@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Action kích hoạt workflow"
+description: "Action kích hoạt workflow: nhấp nút để kích hoạt thực thi workflow, hỗ trợ truyền tham số, dữ liệu ngữ cảnh."
+keywords: "kích hoạt workflow,TriggerWorkflow,workflow,tự động hóa,Interface Builder,NocoBase"
+---
 
-
-# Kích hoạt luồng công việc
+# Kích hoạt workflow

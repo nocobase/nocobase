@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-webhook'
+title: "工作流触发器 - Webhook"
+description: "Webhook 触发器：提供 HTTP URL 供第三方调用，支付回调、消息推送等外部系统触发工作流。"
+keywords: "工作流,Webhook,HTTP 触发器,支付回调,外部系统调用,NocoBase"
 ---
 
 # Webhook

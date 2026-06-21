@@ -1,10 +1,9 @@
 ---
 pkg: '@nocobase/plugin-departments'
+title: "Manajemen Departemen NocoBase"
+description: "Manajemen departemen NocoBase: membuat departemen baru, sub-departemen, struktur tree departemen, struktur organisasi, hierarki departemen."
+keywords: "manajemen departemen,struktur organisasi,tree departemen,sub-departemen,plugin-departments,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Departemen
 
@@ -30,9 +29,9 @@ Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat 
 
 ![](https://static-docs.nocobase.com/f206f866753cf30ac78aadf4f76bad32.png)
 
-### Mengubah Departemen Atasan
+### Mengubah Departemen Induk
 
-Ubah kolom departemen atasan pada formulir pengeditan departemen. Departemen saat ini dan sub-departemennya tidak dapat dipilih.
+Pada formulir edit departemen, ubah field departemen induk. Departemen saat ini dan sub-departemen dari departemen saat ini tidak dapat dipilih.
 
 ![](https://static-docs.nocobase.com/9d80ddf42f32c77186566ed8ada70128.png)
 
@@ -44,27 +43,27 @@ Ubah kolom departemen atasan pada formulir pengeditan departemen. Departemen saa
 
 ### Menambahkan Anggota ke Departemen
 
-Seorang pengguna dapat bergabung dengan beberapa departemen secara bersamaan. Departemen pertama yang mereka gabung akan menjadi departemen utama secara default. Seorang pengguna hanya memiliki satu departemen utama.
+Seorang pengguna dapat bergabung dengan beberapa departemen secara bersamaan. Departemen pertama yang diikuti default menjadi departemen utama. Seorang pengguna hanya memiliki satu departemen utama.
 
 ![](https://static-docs.nocobase.com/60afd282f33b555e6fe0662b9da544cc.png)
 
-Pengguna yang sudah menjadi anggota departemen tidak akan muncul dalam daftar pilihan pengguna.
+Pengguna yang sudah menjadi anggota departemen tidak akan muncul di daftar pemilihan pengguna.
 
 ![](https://static-docs.nocobase.com/6bcd93173c169973f970de35d2657993.png)
 
-### Menetapkan Kepala Departemen
+### Mengatur Penanggung Jawab Departemen
 
-Pada formulir pengeditan departemen, klik kolom kepala departemen untuk memilih anggota departemen sebagai kepala. Fitur ini mendukung multi-pilihan. Anggota yang sudah menjadi kepala departemen tidak akan muncul dalam daftar pilihan anggota.
+Pada formulir edit departemen, klik field penanggung jawab untuk memilih anggota departemen menjadi penanggung jawab. Mendukung multi-pilih. Anggota yang sudah menjadi penanggung jawab departemen tidak akan muncul di daftar pemilihan anggota.
 
 ![](https://static-docs.nocobase.com/92970546cbd0aeb5a8b6a36da87583bd.png)
 
-### Mengonfigurasi Departemen untuk Pengguna
+### Mengkonfigurasi Departemen untuk Pengguna
 
-Selain menambahkan anggota ke departemen, Anda juga dapat mengonfigurasi departemen untuk pengguna dari sudut pandang pengguna.
+Selain menambahkan anggota ke departemen, Anda juga dapat mengkonfigurasi departemen untuk pengguna dari sudut pandang pengguna.
 
 ![](https://static-docs.nocobase.com/ca82a802012572e225570e8be93a4094.png)
 
-Departemen yang sudah digabungkan tidak dapat dipilih.
+Departemen yang sudah diikuti tidak dapat dipilih.
 
 ![](https://static-docs.nocobase.com/70e16d17ee9c4b5d43f8a5e1c633b177.png)
 
@@ -74,6 +73,6 @@ Departemen yang sudah digabungkan tidak dapat dipilih.
 
 ## Mencari Pengguna dan Departemen
 
-Cari pengguna berdasarkan nama panggilan, nama pengguna, nomor telepon, atau email. Cari departemen berdasarkan nama departemen.
+Cari pengguna berdasarkan nickname pengguna, username, telepon, atau email. Cari departemen berdasarkan nama departemen.
 
 ![](https://static-docs.nocobase.com/2d71346a5400205b22436b4db331a9b8.png)

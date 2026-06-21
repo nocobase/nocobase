@@ -1,14 +1,16 @@
 ---
-displayName: "Multi-keyword filter"
+displayName: "Lọc đa từ khóa"
 packageName: '@nocobase/plugin-multi-keyword-filter'
+title: "Lọc đa từ khóa"
+keywords: "Lọc đa từ khóa,Plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
-isFree: false
-builtIn: false
+  Hỗ trợ lọc đa từ khóa cho các Field thông thường, hỗ trợ nhập nhanh hoặc nhập hàng loạt từ khóa từ Excel.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Multi-keyword filter
+# Lọc đa từ khóa

@@ -1,39 +1,38 @@
 ---
 pkg: '@nocobase/plugin-acl'
+title: "Manajemen Role NocoBase"
+description: "Manajemen role NocoBase: role default Admin dan Member, tambah/hapus/ubah role, identifier role, konfigurasi role default, switch role, penugasan multi-role."
+keywords: "manajemen role,Admin,Member,role default,switch role,ACL,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-# Peran
+# Role
 
 ## Pusat Manajemen
 
-### Manajemen Peran
+### Manajemen Role
 
 ![](https://static-docs.nocobase.com/da7083c67d794e23dc6eb0f85b1de86c.png)
 
-Aplikasi yang baru diinstal sudah dilengkapi dengan dua peran bawaan, yaitu "Admin" dan "Member". Keduanya memiliki pengaturan izin default yang berbeda.
+Aplikasi yang baru diinisialisasi memiliki dua role bawaan, yaitu "Admin" dan "Member", yang memiliki pengaturan izin default yang berbeda.
 
-### Menambah, Menghapus, dan Mengubah Peran
+### Tambah/Hapus/Ubah Role
 
-Pengidentifikasi peran (identifikasi unik sistem) memungkinkan Anda untuk menyesuaikan peran default. Namun, peran default sistem tidak dapat dihapus.
+Identifier role (identifier unik sistem) dapat dikustomisasi sebagai role default. Role default sistem tidak dapat dihapus.
 
 ![](https://static-docs.nocobase.com/35f323b346db4f9f12f9bee4dea63302.png)
 
-### Mengatur Peran Default
+### Mengatur Role Default
 
-Peran default di sini mengacu pada peran yang akan digunakan secara otomatis ketika pengguna baru dibuat tanpa peran yang ditentukan.
+Role default di sini adalah role yang akan digunakan ketika pengguna baru dibuat tanpa role.
 
 ![](https://static-docs.nocobase.com/f41bba7ff55ca28715c486dc45bc1708.png)
 
-## Pusat Pribadi
+## Pusat Profil
 
-### Pergantian Peran
+### Switch Role
 
-Anda dapat menetapkan beberapa peran untuk satu pengguna. Ketika pengguna memiliki beberapa peran, mereka dapat beralih peran di pusat pribadi.
+Anda dapat menugaskan beberapa role kepada satu pengguna. Ketika pengguna memiliki beberapa role, mereka dapat berpindah role di pusat profil.
 
 ![](https://static-docs.nocobase.com/e331d11ec1ca3b8b7e0472105b167819.png)
 
-Prioritas peran default saat pengguna masuk ke sistem adalah: peran yang terakhir kali diganti (nilai ini akan diperbarui setiap kali peran diganti) > peran pertama (peran default sistem).
+Prioritas role default saat pengguna masuk ke sistem: role yang terakhir digunakan saat berpindah (nilai role default akan diperbarui setiap kali berpindah role) > role pertama (role default sistem)

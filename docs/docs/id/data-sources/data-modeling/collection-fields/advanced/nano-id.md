@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Nano ID"
+description: "Field Nano ID, menyimpan identifier unik pendek."
+keywords: "Nano ID,nanoId,ID unik pendek,generasi ID,field lanjutan,NocoBase"
+---
 
 # Nano ID
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Kolom
+## Konfigurasi Field
 
 ![20240512173225](https://static-docs.nocobase.com/20240512173225.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

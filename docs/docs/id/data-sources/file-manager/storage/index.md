@@ -1,64 +1,66 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Storage Engine File"
+description: "Storage engine field lampiran: penyimpanan lokal, Aliyun OSS, Amazon S3, Tencent COS, S3 Pro, mengonfigurasi judul, path, URL akses, dan lainnya."
+keywords: "penyimpanan file,Storage,OSS,S3,COS,penyimpanan lokal,cloud storage,NocoBase"
+---
 
-# Gambaran Umum
+# Ikhtisar
 
-## Mesin Bawaan
+## Engine Bawaan
 
-Saat ini, NocoBase mendukung jenis mesin bawaan berikut:
+Tipe engine yang saat ini didukung secara bawaan oleh NocoBase sebagai berikut:
 
 - [Penyimpanan Lokal](./local.md)
-- [Alibaba Cloud OSS](./aliyun-oss.md)
+- [Aliyun OSS](./aliyun-oss.md)
 - [Amazon S3](./amazon-s3.md)
-- [Tencent Cloud COS](./tencent-cos.md)
+- [Tencent COS](./tencent-cos.md)
 
-Saat instalasi sistem, mesin penyimpanan lokal akan otomatis ditambahkan dan dapat langsung digunakan. Anda juga bisa menambahkan mesin baru atau mengedit parameter mesin yang sudah ada.
+Saat sistem diinstal, akan otomatis ditambahkan satu storage engine penyimpanan lokal, yang dapat langsung digunakan. Anda juga dapat menambahkan engine baru atau mengedit parameter engine yang sudah ada.
 
-## Parameter Mesin Umum
+## Parameter Umum Engine
 
-Selain parameter khusus untuk setiap jenis mesin, berikut adalah parameter umum (menggunakan penyimpanan lokal sebagai contoh):
+Selain parameter khusus dari masing-masing kategori engine, bagian berikut adalah parameter umum (mengambil contoh penyimpanan lokal):
 
-![Contoh Konfigurasi Mesin Penyimpanan Berkas](https://static-docs.nocobase.com/20240529115151.png)
+![Contoh konfigurasi storage engine](https://static-docs.nocobase.com/20240529115151.png)
 
 ### Judul
 
-Nama mesin penyimpanan, digunakan untuk identifikasi manual.
+Nama storage engine, digunakan untuk identifikasi manual.
 
 ### Nama Sistem
 
-Nama sistem mesin penyimpanan, digunakan untuk identifikasi oleh sistem. Harus unik di seluruh sistem. Jika dibiarkan kosong, sistem akan secara otomatis membuat nama acak.
+Nama sistem storage engine, digunakan untuk identifikasi sistem. Harus unik dalam sistem. Jika tidak diisi, akan otomatis dihasilkan acak oleh sistem.
 
-### URL Dasar Akses
+### URL Akses Dasar
 
-Bagian awalan alamat URL yang dapat diakses secara eksternal untuk berkas ini. Ini bisa berupa URL dasar CDN, contohnya: "`https://cdn.nocobase.com/app`" (tanpa tanda "`/`" di akhir).
+Bagian prefix alamat URL yang dapat diakses untuk file ini, dapat berupa URL akses dasar CDN, contohnya: "`https://cdn.nocobase.com/app`" (tanpa "`/`" di akhir).
 
-### Jalur
+### Path
 
-Jalur relatif yang digunakan saat menyimpan berkas. Bagian ini juga akan otomatis digabungkan ke URL akhir saat diakses. Contohnya: "`user/avatar`" (tanpa tanda "`/`" di awal atau akhir).
+Path relatif yang digunakan saat menyimpan file. Saat akses, bagian ini juga akan otomatis digabungkan ke URL final. Contoh: "`user/avatar`" (tanpa "`/`" di awal dan akhir).
 
-### Batas Ukuran Berkas
+### Batasan Ukuran File
 
-Batas ukuran untuk berkas yang diunggah ke mesin penyimpanan ini. Berkas yang melebihi ukuran yang ditetapkan tidak dapat diunggah. Batas default sistem adalah 20MB, dan batas maksimum yang dapat disesuaikan adalah 1GB.
+Batasan ukuran saat upload file ke storage engine ini. File yang melebihi ukuran yang diatur tidak akan dapat diupload. Default sistem dibatasi 20MB, dapat disesuaikan hingga maksimum 1GB.
 
-### Jenis Berkas
+### Tipe File
 
-Anda dapat membatasi jenis berkas yang dapat diunggah, menggunakan format deskripsi sintaks [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types). Contohnya: `image/*` mewakili berkas gambar. Beberapa jenis dapat dipisahkan dengan koma, seperti: `image/*, application/pdf` yang berarti mengizinkan berkas jenis gambar dan PDF.
+Dapat membatasi tipe file yang diupload, menggunakan sintaks [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types) untuk mendeskripsikan format. Contohnya: `image/*` mewakili file kategori gambar. Beberapa tipe dapat dipisahkan dengan koma, seperti: `image/*, application/pdf` yang berarti mengizinkan file tipe gambar dan PDF.
 
-### Mesin Penyimpanan Default
+### Storage Engine Default
 
-Setelah dicentang, ini akan ditetapkan sebagai mesin penyimpanan default sistem. Jika kolom lampiran atau **koleksi** berkas tidak menentukan mesin penyimpanan, berkas yang diunggah akan disimpan ke mesin penyimpanan default. Mesin penyimpanan default tidak dapat dihapus.
+Setelah dicentang, akan diatur sebagai storage engine default sistem. Saat field lampiran atau Collection File tidak menentukan storage engine, file yang diupload semuanya akan disimpan ke storage engine default. Storage engine default tidak dapat dihapus.
 
-### Pertahankan Berkas Saat Menghapus Catatan
+### Pertahankan File saat Record Dihapus
 
-Setelah dicentang, berkas yang telah diunggah di mesin penyimpanan akan tetap dipertahankan meskipun catatan data di tabel lampiran atau **koleksi** berkas dihapus. Secara default, opsi ini tidak dicentang, yang berarti berkas di mesin penyimpanan akan ikut terhapus bersama catatan.
+Setelah dicentang, ketika record data Collection lampiran atau Collection File dihapus, file yang sudah diupload di storage engine tetap dipertahankan. Default tidak dicentang, yaitu saat record dihapus, file di storage engine juga akan dihapus secara bersamaan.
 
 :::info{title=Tips}
-Setelah berkas diunggah, jalur akses akhir akan terbentuk dari gabungan beberapa bagian:
+Setelah file diupload, path akses final akan dibentuk dari beberapa bagian yang digabung:
 
 ```
-<URL Dasar Akses>/<Jalur>/<NamaBerkas><Ekstensi>
+<URL Akses Dasar>/<Path>/<Nama File><Ekstensi>
 ```
 
-Contohnya: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
+Contoh: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
 :::

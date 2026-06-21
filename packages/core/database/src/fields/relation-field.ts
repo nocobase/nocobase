@@ -29,7 +29,7 @@ export abstract class RelationField extends Field {
   }
 
   get sourceKey() {
-    return this.options.sourceKey || this.collection.model.primaryKeyAttribute;
+    return this.options.sourceKey || this.collection.filterTargetKey;
   }
 
   get targetKey() {

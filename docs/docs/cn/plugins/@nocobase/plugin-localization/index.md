@@ -1,4 +1,6 @@
 ---
+title: "本地化"
+keywords: "本地化,插件,NocoBase"
 displayName: "本地化"
 packageName: '@nocobase/plugin-localization'
 description: |

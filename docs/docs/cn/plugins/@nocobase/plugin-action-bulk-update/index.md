@@ -1,4 +1,6 @@
 ---
+title: "操作：批量更新"
+keywords: "操作：批量更新,插件,NocoBase"
 displayName: "操作：批量更新"
 packageName: '@nocobase/plugin-action-bulk-update'
 supportedVersions:

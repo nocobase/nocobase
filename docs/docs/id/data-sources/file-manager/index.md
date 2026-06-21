@@ -1,42 +1,41 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "File Manager"
+description: "Collection File, Field Lampiran, dan storage engine file, mendukung penyimpanan lokal, Aliyun OSS, Amazon S3, Tencent COS, mengelola meta info file dan upload."
+keywords: "file manager,collection file,field lampiran,storage engine,OSS,S3,COS,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# File Manager
 
+<PluginInfo name="file-manager"></PluginInfo>
 
-# Manajer File
+## Pengantar
 
-## Pendahuluan
+Plugin File Manager menyediakan Collection File, Field Lampiran, dan storage engine file, untuk mengelola file secara efektif. File adalah record Collection dengan struktur khusus. Collection dengan struktur khusus ini disebut Collection File, digunakan untuk menyimpan meta info file, dan dapat dikelola melalui File Manager. Field Lampiran adalah field relasi khusus yang terhubung ke Collection File. File mendukung berbagai cara penyimpanan. Storage engine file yang saat ini didukung meliputi penyimpanan lokal, Aliyun OSS, Amazon S3, dan Tencent COS.
 
-Plugin Manajer File menyediakan koleksi file, kolom lampiran, dan mesin penyimpanan file untuk mengelola file secara efektif. File adalah catatan dalam koleksi khusus, yang disebut koleksi file. Koleksi ini menyimpan metadata file dan dapat dikelola melalui Manajer File. Kolom lampiran adalah kolom asosiasi spesifik yang terkait dengan koleksi file. Plugin ini mendukung berbagai metode penyimpanan, termasuk penyimpanan lokal, Alibaba Cloud OSS, Amazon S3, dan Tencent Cloud COS.
+## Panduan Penggunaan
 
-## Panduan Pengguna
+### Collection File
 
-### Koleksi File
+Memiliki Collection attachments bawaan, untuk menyimpan semua file yang terhubung dengan field lampiran. Selain itu, Anda juga dapat membuat Collection File baru, untuk menyimpan file tertentu.
 
-Koleksi `attachments` sudah tersedia secara bawaan untuk menyimpan semua file yang terkait dengan kolom lampiran. Selain itu, koleksi file baru juga dapat dibuat untuk menyimpan file tertentu.
+[Lihat dokumentasi pengantar Collection File untuk penggunaan lebih lanjut](/data-sources/file-manager/file-collection)
 
-[Pelajari lebih lanjut di dokumentasi Koleksi File](/data-sources/file-manager/file-collection)
+### Field Lampiran
 
-### Kolom Lampiran
+Field Lampiran adalah field relasi khusus yang terhubung ke Collection File. Dapat dibuat melalui "Field Tipe Lampiran", atau dikonfigurasi melalui "Field Relasi".
 
-Kolom lampiran adalah kolom asosiasi spesifik yang terkait dengan koleksi file, yang dapat dibuat melalui tipe kolom "Lampiran" atau dikonfigurasi melalui kolom "Asosiasi".
+[Lihat dokumentasi pengantar Field Lampiran untuk penggunaan lebih lanjut](/data-sources/file-manager/field-attachment)
 
-[Pelajari lebih lanjut di dokumentasi Kolom Lampiran](/data-sources/file-manager/field-attachment)
+### Storage Engine File
 
-### Mesin Penyimpanan File
+Storage engine file digunakan untuk menyimpan file ke layanan tertentu, termasuk penyimpanan lokal (disimpan ke hard disk server), penyimpanan cloud, dan lainnya.
 
-Mesin penyimpanan file digunakan untuk menyimpan file ke layanan tertentu, termasuk penyimpanan lokal (menyimpan ke hard drive server), penyimpanan cloud, dll.
+[Lihat pengantar storage engine file untuk lebih lanjut](./storage/index.md)
 
-[Pelajari lebih lanjut di dokumentasi Mesin Penyimpanan File](./storage/index.md)
+### HTTP API
 
-### API HTTP
+Upload file dapat diproses melalui HTTP API, lihat [HTTP API](./http-api.md).
 
-Unggahan file dapat ditangani melalui API HTTP, lihat [API HTTP](./http-api.md).
+## Pengembangan Ekstensi
 
-## Pengembangan
-
-*
+* 

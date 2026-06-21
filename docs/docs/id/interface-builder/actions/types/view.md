@@ -1,19 +1,22 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Lihat"
+description: "Action Lihat: membuka detail dalam bentuk read-only, mendukung cara membuka seperti Popup, drawer, jump."
+keywords: "Action Lihat, View, lihat detail, read-only, interface builder, NocoBase"
+---
+
 
 # Lihat
 
-## Pendahuluan
+## Pengantar
 
-Aksi Lihat adalah tombol baris yang memiliki catatan saat ini sebagai konteksnya. Aksi ini disajikan dalam bentuk pop-up di mana pengguna dapat menyesuaikan dan mengonfigurasi blok.
+Action Lihat termasuk tombol baris, dengan record saat ini sebagai konteks, ditampilkan dalam bentuk Popup. Pengguna dapat mengkonfigurasi Block secara kustom di Popup.
 
 ![20251029152616](https://static-docs.nocobase.com/20251029152616.png)
 
-### Konfigurasi Aksi
+### Konfigurasi Action
 
 ![20251029152719](https://static-docs.nocobase.com/20251029152719.png)
 
-- [Tombol Edit](/interface-builder/actions/action-settings/edit-button)
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule)
-- [Edit Pop-up](/interface-builder/actions/action-settings/edit-popup)
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button)
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule)
+- [Edit Popup](/interface-builder/actions/action-settings/edit-popup)

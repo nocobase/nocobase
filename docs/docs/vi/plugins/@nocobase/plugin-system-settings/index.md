@@ -1,12 +1,14 @@
 ---
-displayName: "System settings"
+displayName: "Cài đặt hệ thống"
 packageName: '@nocobase/plugin-system-settings'
+title: "Cài đặt hệ thống"
+keywords: "Cài đặt hệ thống,Plugin,NocoBase"
 description: |
-  Used to adjust the system title, logo, language, etc.
+  Dùng để điều chỉnh tiêu đề, LOGO, ngôn ngữ của hệ thống, v.v.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# System settings
+# Cài đặt hệ thống

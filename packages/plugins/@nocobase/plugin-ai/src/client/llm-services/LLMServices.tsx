@@ -43,7 +43,7 @@ import PluginAIClient from '..';
 import { LLMTestFlight } from './component/LLMTestFlight';
 import { EnabledModelsSelect } from './component/EnabledModelsSelect';
 import { ModelOptionsSettings } from './component/ModelOptionsSettings';
-import { useLLMServicesRepository } from './hooks/useLLMServicesRepository';
+import { useAIConfigRepository } from '../repositories/hooks/useAIConfigRepository';
 
 const useCreateFormProps = () => {
   const form = useMemo(
@@ -91,7 +91,7 @@ const useCreateActionProps = () => {
   const resource = useDataBlockResource();
   const { refresh } = useDataBlockRequest();
   const t = useT();
-  const llmServicesRepo = useLLMServicesRepository();
+  const llmServicesRepo = useAIConfigRepository();
 
   return {
     type: 'primary',
@@ -102,7 +102,7 @@ const useCreateActionProps = () => {
         values,
       });
       refresh();
-      llmServicesRepo.refresh();
+      llmServicesRepo.refreshLLMServices();
       message.success(t('Saved successfully'));
       setVisible(false);
     },
@@ -118,7 +118,7 @@ const useEditActionProps = () => {
   const collection = useCollection();
   const filterTk = collection.getFilterTargetKey();
   const t = useT();
-  const llmServicesRepo = useLLMServicesRepository();
+  const llmServicesRepo = useAIConfigRepository();
 
   return {
     type: 'primary',
@@ -130,7 +130,7 @@ const useEditActionProps = () => {
         filterByTk: values[filterTk],
       });
       refresh();
-      llmServicesRepo.refresh();
+      llmServicesRepo.refreshLLMServices();
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
@@ -145,7 +145,9 @@ const providerDescriptions: Record<string, string> = {
   deepseek: 'DeepSeek',
   dashscope: 'Qwen (Tongyi)',
   kimi: 'Kimi',
+  xai: 'Grok models by xAI',
   ollama: 'Local models',
+  mimo: 'Xiaomi MIMO',
 };
 
 const providerSortOrder: string[] = [
@@ -250,7 +252,7 @@ const EnabledSwitch: React.FC = observer(
     const collection = useCollection();
     const filterTk = collection.getFilterTargetKey();
     const checked = field.value !== false;
-    const llmServicesRepo = useLLMServicesRepository();
+    const llmServicesRepo = useAIConfigRepository();
 
     return (
       <Switch
@@ -263,7 +265,7 @@ const EnabledSwitch: React.FC = observer(
             filterByTk: record[filterTk],
           });
           refresh();
-          llmServicesRepo.refresh();
+          llmServicesRepo.refreshLLMServices();
         }}
       />
     );
@@ -273,24 +275,24 @@ const EnabledSwitch: React.FC = observer(
 
 const useLLMDestroyActionProps = () => {
   const props = useDestroyActionProps();
-  const llmServicesRepo = useLLMServicesRepository();
+  const llmServicesRepo = useAIConfigRepository();
   return {
     ...props,
     async onClick(e?, callBack?) {
       await props.onClick(e, callBack);
-      llmServicesRepo.refresh();
+      llmServicesRepo.refreshLLMServices();
     },
   };
 };
 
 const useLLMBulkDestroyActionProps = () => {
   const props = useBulkDestroyActionProps();
-  const llmServicesRepo = useLLMServicesRepository();
+  const llmServicesRepo = useAIConfigRepository();
   return {
     ...props,
     async onClick(e?, callBack?) {
       await props.onClick(e, callBack);
-      llmServicesRepo.refresh();
+      llmServicesRepo.refreshLLMServices();
     },
   };
 };

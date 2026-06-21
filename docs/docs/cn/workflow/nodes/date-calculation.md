@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-date-calculation'
+title: "工作流节点 - 日期计算"
+description: "日期计算节点：加减时间段、格式化、单位转换等九种计算函数，支持管道串联。"
+keywords: "工作流,日期计算,Date,时间格式化,管道串联,NocoBase"
 ---
 
 # 日期计算

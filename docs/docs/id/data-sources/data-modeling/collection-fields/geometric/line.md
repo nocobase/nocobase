@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Garis"
+description: "Field geometri Garis, menyimpan ruas garis (tipe line PostgreSQL)."
+keywords: "garis,line,field geometri,PostgreSQL,NocoBase"
+---
 
 # Garis
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Kolom
+## Konfigurasi Field
 
 ![20240512181454](https://static-docs.nocobase.com/20240512181454.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

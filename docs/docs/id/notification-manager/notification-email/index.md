@@ -1,31 +1,30 @@
 ---
 pkg: '@nocobase/plugin-notification-email'
+title: "Notifikasi Email"
+description: "Channel notifikasi email: mengirim notifikasi email melalui SMTP, konfigurasi server SMTP, node notifikasi workflow, plugin built-in perlu diaktifkan."
+keywords: "notifikasi email,SMTP,channel email,notifikasi workflow,notification manager,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Notifikasi: Email
 
-## Pendahuluan
+## Pengantar
 
-Kirim notifikasi melalui saluran email, saat ini hanya mendukung metode transmisi SMTP.
+Mengirim notifikasi melalui channel email, saat ini hanya mendukung transport SMTP.
 
 ## Instalasi
 
-Ini adalah plugin bawaan yang harus diaktifkan sebelum digunakan.
+Plugin built-in, perlu diaktifkan terlebih dahulu sebelum digunakan.
 
 ![20240928192940](https://static-docs.nocobase.com/20240928192940.png)
 
-## Panduan Penggunaan
+## Manual Penggunaan
 
-### Konfigurasi Saluran Email
+### Konfigurasi Channel Email
 
-Saat ini, hanya metode transmisi SMTP yang didukung.
+Saat ini hanya mendukung transport SMTP
 
 ![20240928191819](https://static-docs.nocobase.com/20240928191819.png)
 
-### Konfigurasi Notifikasi Alur Kerja
+### Konfigurasi Notifikasi Workflow
 
 ![20240928191935](https://static-docs.nocobase.com/20240928191935.png)

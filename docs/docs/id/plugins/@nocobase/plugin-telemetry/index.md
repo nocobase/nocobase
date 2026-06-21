@@ -1,14 +1,16 @@
 ---
-displayName: "Telemetry"
+displayName: "Telemetri"
 packageName: '@nocobase/plugin-telemetry'
+title: "Telemetri"
+keywords: "Telemetri,Plugin,NocoBase"
 supportedVersions:
   - 2.x
 description: |
-  An OpenTelemetry-based telemetry plugin providing CPU, memory, and HTTP request metrics with HTTP export support.
+  Plugin telemetri aplikasi berbasis OpenTelemetry, memiliki metrik bawaan seperti CPU, memori, request HTTP, dan mendukung ekspor melalui HTTP.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Telemetry
+# Telemetri

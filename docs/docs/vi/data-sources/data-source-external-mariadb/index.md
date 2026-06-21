@@ -1,24 +1,21 @@
 ---
-pkg: "@nocobase/plugin-data-source-external-mariadb"
+title: "External Data Source - MariaDB"
+description: "Tích hợp database MariaDB bên ngoài làm Data Source, kết nối read-only đến database có sẵn, đồng bộ Collection và cấu hình Field."
+keywords: "External MariaDB,MariaDB Data Source,External database,Đồng bộ Collection,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# External Data Source - MariaDB
 
+<PluginInfo commercial="true" name="data-source-external-mariadb"></PluginInfo>
 
-# Nguồn Dữ Liệu Ngoài - MariaDB
+## Giới thiệu
 
-## Giới Thiệu
+Sử dụng database MariaDB bên ngoài làm Data Source. Phiên bản hiện được hỗ trợ: MariaDB >= 10.3
 
-Sử dụng cơ sở dữ liệu MariaDB bên ngoài làm nguồn dữ liệu. Các phiên bản hiện được hỗ trợ: MariaDB >= 10.3
+## Cài đặt
 
-## Cài Đặt
+Plugin này là plugin thương mại, để biết chi tiết cách kích hoạt vui lòng tham khảo: [Hướng dẫn kích hoạt plugin thương mại](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
-Đây là một plugin thương mại, bạn cần tải lên và kích hoạt thông qua trình quản lý plugin.
+## Hướng dẫn sử dụng
 
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
-
-## Hướng Dẫn Sử Dụng
-
-Tham khảo phần [Nguồn Dữ Liệu / Cơ Sở Dữ Liệu Ngoài](/data-sources/data-source-manager/external-database).
+Xem chương [Data Source / External Database](/data-sources/data-source-manager/external-database)

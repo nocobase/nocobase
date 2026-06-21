@@ -1,36 +1,35 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "Collection File"
+description: "Collection File menyimpan meta info file, ada Collection attachments bawaan atau dapat dibuat Collection file custom, digunakan untuk relasi field lampiran."
+keywords: "collection file,File Collection,attachments,meta info,lampiran,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Collection File
 
+<PluginInfo name="file-manager"></PluginInfo>
 
-# Koleksi File
+## Pengantar
 
-## Pendahuluan
+File adalah record Collection dengan struktur khusus. Collection dengan struktur khusus ini disebut Collection File, digunakan untuk menyimpan meta info file, dan dapat dikelola melalui File Manager.
 
-File adalah catatan dalam koleksi yang terstruktur secara khusus, dikenal sebagai koleksi file. Koleksi ini digunakan untuk menyimpan metadata file dan dapat dikelola melalui Manajer File.
+## Panduan Penggunaan
 
-## Panduan Pengguna
-
-Membuat Koleksi File
+Membuat Collection File
 
 ![20240324090414](https://static-docs.nocobase.com/20240324090414.png)
 
-Kolom Preset dalam Koleksi File
+Field bawaan Collection File
 
 ![20240324090527](https://static-docs.nocobase.com/20240324090527.png)
 
-Menggunakan dalam Blok
+Penggunaan dalam Block
 
 ![20240324090848](https://static-docs.nocobase.com/20240324090848.png)
 
-Kolom Relasi
+Field Relasi
 
 ![20240324091529](https://static-docs.nocobase.com/20240324091529.png)
 
-Blok Relasi
+Block Relasi
 
 ![20240324091321](https://static-docs.nocobase.com/20240324091321.png)

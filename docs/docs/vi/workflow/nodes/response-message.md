@@ -1,60 +1,60 @@
 ---
 pkg: '@nocobase/plugin-workflow-response-message'
+title: "Node Workflow - Thông báo phản hồi"
+description: "Node thông báo phản hồi: phản hồi thông báo tùy chỉnh cho client, hỗ trợ sự kiện trước Action, sự kiện Action tùy chỉnh."
+keywords: "workflow,thông báo phản hồi,Response Message,phản hồi client,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Thông báo phản hồi
 
 ## Giới thiệu
 
-Nút thông báo phản hồi được dùng để gửi các thông báo tùy chỉnh từ luồng công việc đến máy khách (client) đã thực hiện thao tác, trong các loại luồng công việc cụ thể.
+Node thông báo phản hồi được dùng để phản hồi thông báo tùy chỉnh trong quy trình cho client gửi Action trong các loại quy trình cụ thể.
 
-:::info{title=Lưu ý}
-Hiện tại, nút này hỗ trợ sử dụng trong chế độ đồng bộ của các loại luồng công việc "Sự kiện trước thao tác" và "Sự kiện thao tác tùy chỉnh".
+:::info{title=Mẹo}
+Hiện hỗ trợ sử dụng trong Workflow loại "Sự kiện trước Action" ở chế độ đồng bộ và "Sự kiện Action tùy chỉnh".
 :::
 
-## Tạo nút
+## Tạo Node
 
-Trong các loại luồng công việc được hỗ trợ, quý vị có thể thêm nút "Thông báo phản hồi" vào bất kỳ vị trí nào trong luồng công việc. Hãy nhấp vào nút dấu cộng ("+") trong luồng công việc để thêm nút này:
+Trong các loại Workflow được hỗ trợ, có thể thêm Node "Thông báo phản hồi" tại bất kỳ vị trí nào trong quy trình, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Thông báo phản hồi":
 
-![Thêm nút](https://static-docs.nocobase.com/eac2b3565e95e4ce59f340624062ed3d.png)
+![Thêm Node](https://static-docs.nocobase.com/eac2b3565e95e4ce59f340624062ed3d.png)
 
-Thông báo phản hồi sẽ tồn tại dưới dạng một mảng trong suốt quá trình xử lý yêu cầu. Khi bất kỳ nút thông báo phản hồi nào được thực thi trong luồng công việc, nội dung thông báo mới sẽ được thêm vào mảng. Khi máy chủ gửi phản hồi, tất cả các thông báo sẽ được gửi đến máy khách (client) cùng một lúc.
+Thông báo phản hồi sẽ tồn tại dưới dạng mảng trong toàn bộ quá trình request, khi quy trình thực thi đến Node thông báo phản hồi bất kỳ sẽ thêm nội dung thông báo mới vào mảng, khi server gửi nội dung phản hồi sẽ gửi tất cả các thông báo cùng đến client.
 
-## Cấu hình nút
+## Cấu hình Node
 
-Nội dung thông báo là một chuỗi mẫu (template string) mà quý vị có thể chèn các biến vào. Quý vị có thể tùy ý sắp xếp nội dung mẫu này trong cấu hình nút:
+Tổng thể nội dung thông báo là một template chuỗi, trong đó có thể chèn biến, trong cấu hình Node có thể tổ chức nội dung template đó tùy ý:
 
-![Cấu hình nút](https://static-docs.nocobase.com/d5fa5f4002d50baf3ba16048818fddfc.png)
+![Cấu hình Node](https://static-docs.nocobase.com/d5fa5f4002d50baf3ba16048818fddfc.png)
 
-Khi luồng công việc thực thi đến nút này, mẫu sẽ được phân tích cú pháp và tạo ra kết quả nội dung thông báo. Trong cấu hình trên, biến "Biến cục bộ / Lặp qua tất cả sản phẩm / Đối tượng lặp / Sản phẩm / Tiêu đề" sẽ được thay thế bằng một giá trị cụ thể trong luồng công việc thực tế, ví dụ:
+Khi quy trình thực thi đến Node đó, sẽ phân tích template và sinh kết quả nội dung thông báo, trong cấu hình trên, biến "Biến cục bộ / Vòng lặp tất cả sản phẩm / Đối tượng vòng lặp / Sản phẩm / Tiêu đề" sẽ được thay thế bằng giá trị cụ thể trong quy trình thực tế, ví dụ:
 
 ```
-Sản phẩm “iPhone 14 pro” không đủ hàng tồn kho
+Tồn kho của sản phẩm "iPhone 14 pro" không đủ
 ```
 
 ![Nội dung thông báo](https://static-docs.nocobase.com/06bd4a6b6ec499c853f0c39987f63a6a.png)
 
-## Cấu hình luồng công việc
+## Cấu hình quy trình
 
-Trạng thái của thông báo phản hồi phụ thuộc vào trạng thái thành công hay thất bại của quá trình thực thi luồng công việc. Việc thực thi thất bại của bất kỳ nút nào cũng sẽ khiến toàn bộ luồng công việc thất bại. Trong trường hợp này, nội dung thông báo sẽ được trả về máy khách (client) với trạng thái thất bại và hiển thị thông báo.
+Nhắc trạng thái của thông báo phản hồi tùy thuộc vào trạng thái thành công hay thất bại của việc thực thi quy trình đó, việc thực thi thất bại của bất kỳ Node nào cũng sẽ dẫn đến thất bại của toàn bộ quy trình, lúc này nội dung thông báo sẽ được trả về client với trạng thái thất bại và nhắc.
 
-Nếu quý vị cần chủ động định nghĩa trạng thái thất bại trong luồng công việc, quý vị có thể sử dụng "Nút kết thúc" và cấu hình nó ở trạng thái thất bại. Khi nút này được thực thi, luồng công việc sẽ thoát với trạng thái thất bại, và thông báo sẽ được trả về máy khách (client) với trạng thái thất bại.
+Nếu cần định nghĩa trạng thái thất bại một cách chủ động trong quy trình, có thể sử dụng "Node kết thúc" trong quy trình và cấu hình thành trạng thái thất bại, khi thực thi đến Node đó sẽ thoát quy trình với trạng thái thất bại và trả thông báo về client với trạng thái thất bại.
 
-Nếu toàn bộ luồng công việc không tạo ra trạng thái thất bại và thực thi thành công đến cuối, nội dung thông báo sẽ được trả về máy khách (client) với trạng thái thành công.
+Nếu toàn bộ quy trình không sinh ra trạng thái thất bại và thực thi thành công đến kết thúc, nội dung thông báo sẽ được trả về client với trạng thái thành công.
 
-:::info{title=Lưu ý}
-Nếu nhiều nút thông báo phản hồi được định nghĩa trong luồng công việc, các nút đã thực thi sẽ thêm nội dung thông báo vào một mảng. Khi cuối cùng trả về máy khách (client), tất cả nội dung thông báo sẽ được trả về và hiển thị cùng lúc.
+:::info{title=Mẹo}
+Nếu trong quy trình định nghĩa nhiều Node thông báo phản hồi, các Node đã được thực thi sẽ thêm nội dung thông báo vào mảng, khi cuối cùng trả về client sẽ trả tất cả nội dung thông báo cùng nhau và nhắc.
 :::
 
-## Trường hợp sử dụng
+## Tình huống sử dụng
 
-### Luồng công việc "Sự kiện trước thao tác"
+### Quy trình "Sự kiện trước Action"
 
-Việc sử dụng thông báo phản hồi trong luồng công việc "Sự kiện trước thao tác" cho phép gửi phản hồi thông báo tương ứng đến máy khách (client) sau khi luồng công việc kết thúc. Để biết thêm chi tiết, vui lòng tham khảo [Sự kiện trước thao tác](../triggers/pre-action.md).
+Sử dụng thông báo phản hồi trong quy trình "Sự kiện trước Action" có thể gửi phản hồi thông báo tương ứng cho client sau khi quy trình kết thúc, tham khảo cụ thể tại [Sự kiện trước Action](../triggers/pre-action.md).
 
-### Luồng công việc "Sự kiện thao tác tùy chỉnh"
+### Quy trình "Sự kiện Action tùy chỉnh"
 
-Việc sử dụng thông báo phản hồi trong "Sự kiện thao tác tùy chỉnh" ở chế độ đồng bộ cho phép gửi phản hồi thông báo tương ứng đến máy khách (client) sau khi luồng công việc kết thúc. Để biết thêm chi tiết, vui lòng tham khảo [Sự kiện thao tác tùy chỉnh](../triggers/custom-action.md).
+Sử dụng thông báo phản hồi trong "Sự kiện Action tùy chỉnh" ở chế độ đồng bộ có thể gửi phản hồi thông báo tương ứng cho client sau khi quy trình kết thúc, tham khảo cụ thể tại [Sự kiện Action tùy chỉnh](../triggers/custom-action.md).

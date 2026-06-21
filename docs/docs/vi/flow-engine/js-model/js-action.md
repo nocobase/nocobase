@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "JSAction - Action JS"
+description: "JSAction Action JS: nút thao tác tùy chỉnh, thực thi logic JavaScript, hỗ trợ liên động ctx, form, Block, JS Model của FlowEngine."
+keywords: "JSAction,Action JS,Thao tác tùy chỉnh,Liên động form,Liên động Block,JS Model FlowEngine,NocoBase"
+---
 
-
-# Thao tác JS
+# Action JS

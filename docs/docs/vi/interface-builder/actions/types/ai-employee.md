@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Action AI Employee"
+description: "Action AI Employee: mở panel hội thoại AI Employee, gắn AI Employee vào Block và đặt sẵn nhiệm vụ."
+keywords: "Action AI Employee,AI Employee,cộng tác AI,panel hội thoại,Interface Builder,NocoBase"
+---
 
-
-# Nhân viên AI
+# AI-Employee

@@ -1,30 +1,58 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+---
+title: "Ikhtisar Pengembangan Plugin Client"
+description: "Ikhtisar pengembangan plugin client NocoBase: alur pembelajaran utama Plugin → Router → Component → Context → FlowEngine, tabel index cepat membantu menemukan bagian."
+keywords: "plugin client,Plugin,Router,Component,Context,FlowEngine,FlowModel,NocoBase"
+---
+
+# Ikhtisar
+
+Plugin client NocoBase dapat melakukan banyak hal: mendaftarkan halaman baru, menulis Component kustom, memanggil API backend, menambahkan Block dan Field, bahkan memperluas tombol Action. Semua kapabilitas ini diorganisir melalui satu entry point plugin yang terpadu.
+
+Jika Anda sudah memiliki pengalaman pengembangan React, Anda akan cepat memulai — sebagian besar skenario adalah menulis Component React biasa, dan menggunakan kapabilitas konteks yang disediakan NocoBase (seperti membuat request, internasionalisasi) untuk berinteraksi dengan NocoBase. Anda hanya perlu memahami [FlowEngine](./flow-engine/index.md) ketika Anda perlu Component Anda muncul di antarmuka konfigurasi visual NocoBase.
+
+:::warning Perhatian
+
+NocoBase sedang bermigrasi dari `client` (v1) ke `client-v2`, saat ini `client-v2` masih dalam pengembangan. Konten dalam dokumentasi ini disediakan untuk eksplorasi awal, tidak disarankan untuk langsung digunakan di environment production. Plugin yang baru dikembangkan harap menggunakan direktori `src/client-v2/` dan API `@nocobase/client-v2`.
+
 :::
 
-# Gambaran Umum
+## Alur Pembelajaran
 
-Pengembangan plugin sisi klien NocoBase menawarkan beragam fungsionalitas dan kemampuan untuk membantu pengembang menyesuaikan dan memperluas fitur frontend NocoBase. Berikut adalah kemampuan utama dan bab terkait dalam pengembangan plugin sisi klien NocoBase:
+Disarankan untuk memahami pengembangan plugin client dalam urutan berikut, dari sederhana ke kompleks:
 
-| Modul                  | Deskripsi                                           | Bab Terkait                                      |
-|---------------------------|------------------------------------------------|-----------------------------------------------|
-| **Kelas Plugin**               | Membuat dan mengelola plugin sisi klien, memperluas fungsionalitas frontend             | [plugin.md](plugin.md)                       |
-| **Router**               | Menyesuaikan routing frontend, mengimplementasikan navigasi dan pengalihan halaman             | [router.md](router.md)                       |
-| **Sumber Daya**               | Mengelola sumber daya frontend, menangani pengambilan dan operasi data               | [resource.md](resource.md)                   |
-| **Permintaan**               | Menyesuaikan permintaan HTTP, menangani panggilan API dan transmisi data      | [request.md](request.md)                     |
-| **Konteks**             | Mendapatkan dan menggunakan konteks aplikasi, mengakses status dan layanan global       | [context.md](context.md)                     |
-| **ACL**               | Mengimplementasikan kontrol akses frontend, mengontrol izin akses halaman dan fitur     | [acl.md](acl.md)                             |
-| **Manajer Sumber Data**             | Mengelola dan menggunakan beberapa sumber data, mengimplementasikan pengalihan dan akses sumber data | [data-source-manager.md](data-source-manager.md) |
-| **Gaya & Tema**             | Menyesuaikan gaya dan tema, mengimplementasikan kustomisasi dan estetika antarmuka pengguna           | [styles-themes.md](styles-themes.md)          |
-| **I18n**             | Mengintegrasikan dukungan multi-bahasa, mengimplementasikan internasionalisasi dan lokalisasi             | [i18n.md](i18n.md)                            |
-| **Pencatat Log**               | Menyesuaikan format dan metode output log, meningkatkan kemampuan debugging dan pemantauan   | [logger.md](logger.md)                        |
-| **Pengujian**           | Menulis dan menjalankan kasus uji, memastikan stabilitas plugin dan akurasi fungsional | [test.md](test.md)                            |
+```
+Plugin (entry) → Router (halaman) → Component → Context → FlowEngine (ekstensi UI)
+```
 
-Ekstensi UI
+Di mana:
 
-| Modul      | Deskripsi                                                                                   | Bab Terkait                                      |
-|---------------|----------------------------------------------------------------------------------------|-----------------------------------------------|
-| **Konfigurasi UI**  | Menggunakan FlowEngine dan model alur untuk mengimplementasikan konfigurasi dan orkestrasi properti komponen secara dinamis, mendukung kustomisasi visual halaman dan interaksi yang kompleks   | [FlowEngine](../../flow-engine/index.md) dan [model alur](../../flow-engine/flow-model.md) |
-| **Ekstensi Blok**  | Menyesuaikan blok halaman, membuat modul dan tata letak UI yang dapat digunakan kembali                                         | [blok](../../ui-development-block/index.md) |
-| **Ekstensi Bidang**  | Menyesuaikan tipe bidang, mengimplementasikan tampilan dan pengeditan data yang kompleks  | [bidang](../../ui-development-field/index.md) |
-| **Ekstensi Aksi**  | Menyesuaikan tipe aksi, mengimplementasikan logika kompleks dan penanganan interaksi  | [aksi](../../ui-development-action/index.md) |
+1. **[Plugin](./plugin)**: Class entry plugin, mendaftarkan route, model, dan resource lainnya dalam siklus hidup `load()`, dll.
+2. **[Router](./router)**: Mendaftarkan route halaman melalui `router.add()`, mendaftarkan halaman pengaturan plugin melalui `pluginSettingsManager`.
+3. **[Component](./component/index.md)**: Yang di-mount oleh route adalah Component React. Default menggunakan React + Antd, sama dengan pengembangan front-end biasa.
+4. **[Context](./ctx/index.md)**: Dalam plugin dapat mengakses konteks melalui `this.context`, dalam Component melalui `useFlowContext()`, kemudian dapat menggunakan kapabilitas yang disediakan NocoBase — membuat request (`ctx.api`), internasionalisasi (`ctx.t`), log (`ctx.logger`), dll.
+5. **[FlowEngine](./flow-engine/index.md)**: Jika Component Anda perlu muncul di menu "Tambah Block / Field / Action", mendukung konfigurasi visual oleh pengguna, perlu menggunakan FlowModel untuk membungkusnya.
+
+Empat langkah pertama mencakup sebagian besar skenario plugin. Hanya saat perlu integrasi mendalam dengan sistem konfigurasi UI NocoBase, baru perlu sampai ke langkah kelima. Tidak yakin cara mana yang harus digunakan, dapat melihat [Component vs FlowModel](./component-vs-flow-model).
+
+## Index Cepat
+
+| Saya ingin...                             | Lihat di mana                                                |
+| ------------------------------------ | ------------------------------------------------------- |
+| Memahami struktur dasar plugin client               | [Plugin](./plugin)                                 |
+| Menambahkan halaman independen                     | [Router](./router)                                 |
+| Menambahkan halaman pengaturan plugin                   | [Router](./router)                                 |
+| Menulis Component React biasa                | [Pengembangan Component](./component/index.md)                       |
+| Memanggil API backend, menggunakan kapabilitas bawaan NocoBase | [Context → Kapabilitas Umum](./ctx/common-capabilities)         |
+| Menyesuaikan style Component                       | [Styles & Themes](./component/styles-themes) |
+| Menambahkan Block baru                     | [FlowEngine → Ekstensi Block](./flow-engine/block)            |
+| Menambahkan Component Field baru                 | [FlowEngine → Ekstensi Field](./flow-engine/field)            |
+| Menambahkan tombol Action baru                 | [FlowEngine → Ekstensi Action](./flow-engine/action)           |
+| Tidak yakin menggunakan Component atau FlowModel    | [Component vs FlowModel](./component-vs-flow-model)     |
+| Melihat bagaimana plugin lengkap dibuat           | [Contoh Praktis Plugin](./examples/index.md)                              |
+
+## Tautan Terkait
+
+- [Menulis Plugin Pertama](../write-your-first-plugin) — Membuat plugin yang dapat berjalan dari nol
+- [Ikhtisar Pengembangan Server](../server) — Plugin client biasanya perlu dipasangkan dengan server
+- [Dokumentasi Lengkap FlowEngine](../../flow-engine/index.md) — Referensi lengkap FlowModel, Flow, Context
+- [Struktur Direktori Proyek](../project-structure) — File plugin diletakkan di mana

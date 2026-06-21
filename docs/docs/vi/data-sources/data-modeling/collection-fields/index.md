@@ -1,34 +1,35 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Field của Collection"
+description: "Loại Field của Collection: Interface và kiểu dữ liệu, Field vô hướng, Field quan hệ, cấu hình liên kết, quy tắc xác thực Field."
+keywords: "Field của Collection,loại Field,Field Interface,Field của Collection,NocoBase"
+---
 
+# Field của Collection
 
-# Trường của bộ sưu tập
+## Loại Interface của Field
 
-## Các kiểu Interface của trường
-
-NocoBase phân loại các trường thành các danh mục sau đây từ góc độ Interface:
+NocoBase phân chia các Field theo góc nhìn Interface thành các nhóm sau:
 
 ![20240512110352](https://static-docs.nocobase.com/20240512110352.png)
 
-## Các kiểu dữ liệu của trường
+## Kiểu dữ liệu của Field
 
-Mỗi Interface của trường đều có một kiểu dữ liệu mặc định. Ví dụ, đối với các trường có Interface là Số (Number), kiểu dữ liệu mặc định là `double`, nhưng cũng có thể là `float`, `decimal`, v.v. Các kiểu dữ liệu hiện được hỗ trợ bao gồm:
+Mỗi Field Interface có một kiểu dữ liệu mặc định, ví dụ Field có Interface là Số (Number) thì kiểu dữ liệu mặc định là double, nhưng cũng có thể là float, decimal, v.v. Các kiểu dữ liệu hiện được hỗ trợ bao gồm:
 
 ![20240512103733](https://static-docs.nocobase.com/20240512103733.png)
 
-## Ánh xạ kiểu trường
+## Ánh xạ loại Field
 
-Quy trình thêm trường mới vào cơ sở dữ liệu chính như sau:
+Quy trình thêm Field mới của database chính:
 
-1. Chọn kiểu Interface
-2. Cấu hình kiểu dữ liệu tùy chọn cho Interface hiện tại
+1. Chọn loại Interface
+2. Cấu hình kiểu dữ liệu khả dụng cho Interface hiện tại
 
 ![20240512172416](https://static-docs.nocobase.com/20240512172416.png)
 
-Quy trình ánh xạ trường từ các nguồn dữ liệu bên ngoài là:
+Quy trình ánh xạ Field của Data Source bên ngoài:
 
-1. Tự động ánh xạ kiểu dữ liệu tương ứng (Field type) và kiểu UI (Field Interface) dựa trên kiểu trường của cơ sở dữ liệu bên ngoài.
-2. Điều chỉnh thành kiểu dữ liệu và kiểu Interface phù hợp hơn khi cần.
+1. Tự động ánh xạ kiểu dữ liệu (Field type) và loại UI (Field Interface) tương ứng dựa trên loại Field của database bên ngoài.
+2. Sửa thành kiểu dữ liệu và loại Interface phù hợp hơn theo nhu cầu.
 
 ![20240512172759](https://static-docs.nocobase.com/20240512172759.png)

@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-cc'
+title: "工作流节点 - 抄送"
+description: "抄送节点：将流程上下文内容发送给指定用户，展示在待办中心「抄送我的」。"
+keywords: "工作流,抄送,CC,待办中心,抄送我的,NocoBase"
 ---
 
 # 抄送 <Badge>v1.8.2+</Badge>

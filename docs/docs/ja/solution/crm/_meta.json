@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "ソリューションの概要"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "詳細設計"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "インストール"
+  },
+  {
+    "type": "dir",
+    "name": "guide",
+    "label": "操作ガイド"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "更新履歴"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "旧版 CRM (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "その他"
+  }
+]

@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Created At"
+description: "Field hệ thống Created At, tự động ghi nhận thời gian tạo."
+keywords: "createdAt,Thời gian tạo,Field hệ thống,Field audit,NocoBase"
+---
 
-
-# Thời gian tạo
+# Created At
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512174347](https://static-docs.nocobase.com/20240512174347.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung.
+Sẽ được bổ sung sau

@@ -1,12 +1,14 @@
 ---
-displayName: "Office File Previewer"
+displayName: "Xem trước tệp Office"
 packageName: '@nocobase/plugin-file-previewer-office'
+title: "Xem trước tệp Office"
+keywords: "Xem trước tệp Office,Plugin,NocoBase"
 description: |
-  A plugin for previewing office files via Microsoft live preview service.
+  Plugin xem trước tệp Office dựa trên dịch vụ trực tuyến của Microsoft.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Office File Previewer
+# Xem trước tệp Office

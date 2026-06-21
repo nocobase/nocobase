@@ -1,15 +1,17 @@
 ---
-displayName: "Workflow: date calculation node"
+displayName: "Workflow: Node tính toán ngày tháng"
 packageName: '@nocobase/plugin-workflow-date-calculation'
+title: "Workflow: Node tính toán ngày tháng"
+keywords: "Workflow: Node tính toán ngày tháng,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
-isFree: false
-builtIn: false
+  Có thể được sử dụng để thực hiện các phép tính trên ngày tháng trong workflow, chẳng hạn như cộng trừ, so sánh, định dạng, v.v.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: date calculation node
+# Workflow: Node tính toán ngày tháng

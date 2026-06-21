@@ -1,15 +1,17 @@
 ---
-displayName: "Action: Duplicate record"
+displayName: "Action: Duplicate Record"
 packageName: '@nocobase/plugin-action-duplicate'
+title: "Action: Duplicate Record"
+keywords: "Action: Duplicate Record,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
+  Duplikasi sebuah record. Bisa diduplikasi ke form untuk diedit lalu di-submit, atau langsung diduplikasi menjadi record baru.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Duplicate record
+# Action: Duplicate Record

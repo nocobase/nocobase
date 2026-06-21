@@ -1,12 +1,14 @@
 ---
-displayName: "Collection field: administrative divisions of China"
+displayName: "Field: Khu vực hành chính Trung Quốc"
 packageName: '@nocobase/plugin-field-china-region'
+title: "Field: Khu vực hành chính Trung Quốc"
+keywords: "Field: Khu vực hành chính Trung Quốc,Plugin,NocoBase"
 description: |
-  Provides data and field type for administrative divisions of China.
+  Cung cấp dữ liệu khu vực hành chính Trung Quốc và loại Field tương ứng.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: administrative divisions of China
+# Field: Khu vực hành chính Trung Quốc

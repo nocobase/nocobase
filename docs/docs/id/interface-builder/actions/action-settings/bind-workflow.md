@@ -1,43 +1,45 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Bind Workflow"
+description: "Konfigurasi Action: mengikat tombol Action ke workflow, memicu eksekusi workflow tertentu saat diklik."
+keywords: "bind workflow, bind workflow, trigger workflow, konfigurasi Action, interface builder, NocoBase"
+---
 
-# Mengikat Alur Kerja
+# Bind Workflow
 
-## Pendahuluan
+## Pengantar
 
-Pada beberapa tombol aksi, Anda dapat mengonfigurasi pengikatan alur kerja untuk mengaitkan aksi tersebut dengan sebuah alur kerja, sehingga memungkinkan pemrosesan data secara otomatis.
+Pada beberapa tombol Action, Anda dapat mengkonfigurasi bind workflow untuk mengaitkan Action submit dengan workflow guna mengimplementasikan pemrosesan data otomatis.
 
 ![20251029144822](https://static-docs.nocobase.com/20251029144822.png)
 
 ![20251029145017](https://static-docs.nocobase.com/20251029145017.png)
 
-## Aksi dan Jenis Alur Kerja yang Didukung
+## Tipe Action dan Workflow yang Didukung
 
-Tombol aksi dan jenis alur kerja yang saat ini didukung untuk pengikatan adalah sebagai berikut:
+Tipe tombol Action dan workflow yang saat ini didukung untuk binding adalah sebagai berikut:
 
-| Tombol Aksi \ Jenis Alur Kerja | Kejadian Sebelum Aksi | Kejadian Setelah Aksi | Kejadian Persetujuan | Kejadian Aksi Kustom |
+| Tombol Action \ Tipe Workflow | Event Pre-Action | Event Post-Action | Event Approval | Event Custom Action |
 | --- | --- | --- | --- | --- |
-| Tombol "Kirim", "Simpan" pada formulir | ✅ | ✅ | ✅ | ❌ |
-| Tombol "Perbarui data" pada baris data (Tabel, Daftar, dll.) | ✅ | ✅ | ✅ | ❌ |
-| Tombol "Hapus" pada baris data (Tabel, Daftar, dll.) | ✅ | ❌ | ❌ | ❌ |
-| Tombol "Picukan alur kerja" | ❌ | ❌ | ❌ | ✅ |
+| Tombol "Submit", "Save" pada Form | OK | OK | OK | Tidak |
+| Tombol "Update Data" di baris data (Table, List, dll.) | OK | OK | OK | Tidak |
+| Tombol "Hapus" di baris data (Table, List, dll.) | OK | Tidak | Tidak | Tidak |
+| Tombol "Trigger Workflow" | Tidak | Tidak | Tidak | OK |
 
-## Mengikat Beberapa Alur Kerja Sekaligus
+## Bind Beberapa Workflow Bersamaan
 
-Satu tombol aksi dapat diikat ke beberapa alur kerja. Ketika beberapa alur kerja diikat, urutan eksekusinya mengikuti aturan berikut:
+Sebuah tombol Action dapat di-bind ke beberapa workflow. Ketika beberapa workflow di-bind, urutan eksekusi workflow mengikuti aturan berikut:
 
-1.  Untuk alur kerja dengan jenis pemicu yang sama, alur kerja sinkron akan dieksekusi terlebih dahulu, diikuti oleh alur kerja asinkron.
-2.  Alur kerja dengan jenis pemicu yang sama dieksekusi sesuai urutan konfigurasi.
-3.  Antara alur kerja dengan jenis pemicu yang berbeda:
-    1.  Kejadian sebelum aksi selalu dieksekusi sebelum kejadian setelah aksi dan kejadian persetujuan.
-    2.  Kejadian setelah aksi dan kejadian persetujuan tidak memiliki urutan tertentu, dan logika bisnis tidak boleh bergantung pada urutan konfigurasi.
+1. Workflow sinkron pada tipe trigger yang sama dieksekusi terlebih dahulu, workflow asinkron dieksekusi setelahnya.
+2. Workflow pada tipe trigger yang sama dieksekusi sesuai urutan konfigurasi.
+3. Antar workflow tipe trigger berbeda:
+    1. Event Pre-Action pasti dieksekusi sebelum event Post-Action dan event Approval
+    2. Event Post-Action dan event Approval tidak memiliki urutan tertentu, bisnis tidak boleh bergantung pada urutan konfigurasi.
 
-## Selengkapnya
+## Lebih Lanjut
 
-Untuk jenis kejadian alur kerja yang berbeda, lihat dokumentasi detail dari plugin terkait:
+Untuk tipe event workflow yang berbeda, lihat penjelasan detail Plugin terkait:
 
-*   [Kejadian Setelah Aksi]
-*   [Kejadian Sebelum Aksi]
-*   [Kejadian Persetujuan]
-*   [Kejadian Aksi Kustom]
+* [Event Post-Action]
+* [Event Pre-Action]
+* [Event Approval]
+* [Event Custom Action]

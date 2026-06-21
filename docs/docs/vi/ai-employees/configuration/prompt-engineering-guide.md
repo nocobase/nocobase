@@ -1,255 +1,261 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+pkg: "@nocobase/plugin-ai"
+title: "Hướng dẫn Prompt engineering cho Nhân viên AI"
+description: "Viết Prompt chất lượng cao cho Nhân viên AI: công thức vàng 9 yếu tố, ví dụ thực chiến với Viz, thẻ XML, mô-đun hóa tái sử dụng, quy tắc MUST/ALWAYS/NEVER, tối ưu lặp 5 bước."
+keywords: "Prompt engineering,System Prompt,Role setting,AI Prompt,NocoBase"
+---
 
+# Nhân viên AI · Hướng dẫn Prompt engineering
 
-# Trợ lý AI · Hướng dẫn Kỹ thuật Prompt
+> Từ "viết thế nào" đến "viết tốt", hướng dẫn này dạy bạn viết Prompt chất lượng cao theo cách đơn giản, ổn định, có thể tái sử dụng.
 
-> Từ "cách viết" đến "viết hay", hướng dẫn này sẽ chỉ cho bạn cách viết các prompt chất lượng cao một cách đơn giản, ổn định và có thể tái sử dụng.
+## 1. Tại sao Prompt rất quan trọng
 
-## 1. Tại sao Prompt lại quan trọng
-
-Prompt là "mô tả công việc" của một trợ lý AI, quyết định trực tiếp phong cách, giới hạn và chất lượng đầu ra của nó.
+Prompt chính là "bản mô tả công việc" của Nhân viên AI, trực tiếp quyết định phong cách, ranh giới và chất lượng đầu ra của nó.
 
 **Ví dụ so sánh:**
 
-❌ Prompt không rõ ràng:
+Prompt không rõ ràng:
 
 ```
 Bạn là một trợ lý phân tích dữ liệu, giúp người dùng phân tích dữ liệu.
 ```
 
-✅ Prompt rõ ràng và có thể kiểm soát:
+Prompt rõ ràng có thể kiểm soát:
 
 ```
 Bạn là Viz, một chuyên gia phân tích dữ liệu.
 
 Định vị vai trò
-- Phong cách: Có khả năng phân tích sâu sắc, diễn đạt rõ ràng, chú trọng trực quan hóa
-- Sứ mệnh: Biến dữ liệu phức tạp thành "câu chuyện biểu đồ" dễ hiểu
+- Phong cách: Khả năng insight mạnh, diễn đạt rõ ràng, coi trọng trực quan hóa
+- Sứ mệnh: Kể dữ liệu phức tạp thành "câu chuyện biểu đồ" dễ hiểu
 
-Luồng công việc
-1) Hiểu yêu cầu
-2) Tạo SQL an toàn (chỉ sử dụng SELECT)
-3) Rút trích thông tin chi tiết
+Quy trình làm việc
+1) Hiểu nhu cầu
+2) Tạo SQL an toàn (chỉ dùng SELECT)
+3) Trích xuất insight
 4) Trình bày bằng biểu đồ
 
 Quy tắc cứng
-- PHẢI: Chỉ sử dụng SELECT, tuyệt đối không thay đổi dữ liệu
-- LUÔN LUÔN: Mặc định xuất ra biểu đồ trực quan
-- KHÔNG BAO GIỜ: Bịa đặt hoặc đoán dữ liệu
+- MUST: Chỉ sử dụng SELECT, tuyệt đối không sửa đổi dữ liệu
+- ALWAYS: Mặc định tạo biểu đồ trình bày
+- NEVER: Bịa đặt hoặc đoán dữ liệu
 
 Định dạng đầu ra
 Kết luận ngắn gọn (2-3 câu) + JSON biểu đồ ECharts
 ```
 
-**Kết luận**: Một prompt tốt sẽ làm rõ "là ai, làm gì, làm như thế nào và đạt tiêu chuẩn gì", giúp hiệu suất của AI ổn định và có thể kiểm soát được.
+**Kết luận**: Prompt tốt nói rõ "là ai, làm gì, làm thế nào, đạt tiêu chuẩn nào", AI sẽ hoạt động ổn định và có thể kiểm soát.
 
-## 2. Công thức vàng "Chín yếu tố" của Prompt
 
-Một cấu trúc đã được thực tiễn chứng minh hiệu quả:
+## 2. Công thức vàng "9 yếu tố" của Prompt
+
+Một cấu trúc đã được thực hành chứng minh là hữu dụng:
 
 ```
-Đặt tên + Hướng dẫn kép + Xác nhận mô phỏng + Nhấn mạnh lặp lại + Quy tắc bắt buộc
-+ Thông tin nền + Khuyến khích tích cực + Ví dụ tham khảo + Ví dụ phản diện (Tùy chọn)
+Đặt tên + Chỉ thị kép + Xác nhận mô phỏng + Nhấn mạnh lặp lại + Quy tắc bắt buộc
++ Thông tin nền + Khích lệ tích cực + Ví dụ tham khảo + Ví dụ phản diện (tùy chọn)
 ```
 
-### 2.1 Mô tả các yếu tố
+### 2.1 Giải thích các yếu tố
 
-| Yếu tố   | Giải quyết vấn đề gì            | Tại sao hiệu quả        |
+| Yếu tố | Giải quyết vấn đề gì | Tại sao hiệu quả |
 | ---- | ----------------- | ------------ |
-| Đặt tên   | Xác định rõ danh tính và phong cách           | Giúp AI xây dựng "cảm giác vai trò" |
-| Hướng dẫn kép | Phân biệt "tôi là ai / tôi cần làm gì"     | Giảm nhầm lẫn định vị       |
-| Xác nhận mô phỏng | Nhắc lại sự hiểu biết trước khi thực hiện            | Ngăn ngừa sai lệch          |
-| Nhấn mạnh lặp lại | Các điểm chính xuất hiện lặp đi lặp lại           | Nâng cao mức độ ưu tiên        |
-| Quy tắc bắt buộc | PHẢI/LUÔN LUÔN/KHÔNG BAO GIỜ | Hình thành giới hạn cơ bản         |
-| Thông tin nền | Kiến thức và ràng buộc cần thiết           | Giảm hiểu lầm         |
-| Khuyến khích tích cực | Hướng dẫn kỳ vọng và phong cách           | Giọng điệu và hiệu suất ổn định hơn    |
-| Ví dụ tham khảo | Cung cấp một mô hình trực tiếp để bắt chước           | Đầu ra gần với kỳ vọng hơn      |
-| Ví dụ phản diện | Tránh các lỗi thường gặp             | Sửa lỗi, càng dùng càng chính xác    |
+| Đặt tên | Xác định danh tính và phong cách | Để AI thiết lập "cảm giác vai trò" |
+| Chỉ thị kép | Phân biệt "tôi là ai/tôi cần làm gì" | Giảm nhầm lẫn định vị |
+| Xác nhận mô phỏng | Lặp lại trước khi thực thi | Ngăn chặn lệch hướng |
+| Nhấn mạnh lặp lại | Điểm chính xuất hiện nhiều lần | Nâng cao độ ưu tiên |
+| Quy tắc bắt buộc | MUST/ALWAYS/NEVER | Hình thành đường ranh |
+| Thông tin nền | Kiến thức và ràng buộc cần thiết | Giảm hiểu lầm |
+| Khích lệ tích cực | Hướng dẫn kỳ vọng và phong cách | Ngữ điệu và biểu hiện ổn định hơn |
+| Ví dụ tham khảo | Đối tượng bắt chước trực tiếp | Đầu ra gần với kỳ vọng hơn |
+| Ví dụ phản diện | Tránh các bẫy thường gặp | Có lỗi thì sửa, càng dùng càng chính xác |
 
-### 2.2 Mẫu khởi đầu nhanh
+### 2.2 Mẫu nhanh để bắt đầu
 
 ```yaml
 # 1) Đặt tên
-Bạn là [Tên], một [Vai trò/Chuyên môn] xuất sắc.
+Bạn là [Tên], một [vị trí/chuyên môn] xuất sắc.
 
-# 2) Hướng dẫn kép
+# 2) Chỉ thị kép
 ## Vai trò
-Phong cách: [Tính từ x2-3]
-Sứ mệnh: [Tóm tắt trách nhiệm chính trong một câu]
+Phong cách: [tính từ x2-3]
+Sứ mệnh: [Một câu mô tả trách nhiệm chính]
 
-## Luồng công việc
-1) Hiểu: [Điểm chính]
-2) Thực hiện: [Điểm chính]
-3) Xác minh: [Điểm chính]
-4) Trình bày: [Điểm chính]
+## Quy trình tác vụ
+1) Hiểu: [điểm chính]
+2) Thực thi: [điểm chính]
+3) Xác minh: [điểm chính]
+4) Trình bày: [điểm chính]
 
 # 3) Xác nhận mô phỏng
-Trước khi thực hiện, hãy nhắc lại sự hiểu biết của bạn: "Tôi hiểu rằng bạn cần... Tôi sẽ hoàn thành điều này bằng cách..."
+Lặp lại sự hiểu biết trước khi thực thi: "Tôi hiểu rằng bạn cần... Tôi sẽ hoàn thành thông qua..."
 
 # 4) Nhấn mạnh lặp lại
-Yêu cầu cốt lõi: [1-2 điểm quan trọng nhất] (xuất hiện ít nhất 2 lần ở đầu/trong luồng/cuối)
+Yêu cầu cốt lõi: [1-2 điểm quan trọng nhất] (xuất hiện ít nhất 2 lần ở đầu/quy trình/cuối)
 
 # 5) Quy tắc bắt buộc
-PHẢI: [Quy tắc không thể vi phạm]
-LUÔN LUÔN: [Nguyên tắc luôn tuân thủ]
-KHÔNG BAO GIỜ: [Hành động bị cấm rõ ràng]
+MUST: [Quy tắc không được vi phạm]
+ALWAYS: [Nguyên tắc tuân thủ nhất quán]
+NEVER: [Mục cấm rõ ràng]
 
 # 6) Thông tin nền
-[Kiến thức chuyên môn/ngữ cảnh/lỗi thường gặp cần thiết]
+[Kiến thức lĩnh vực cần thiết/ngữ cảnh/bẫy thường gặp]
 
-# 7) Khuyến khích tích cực
-Bạn xuất sắc trong [Khả năng] và giỏi về [Sở trường]. Vui lòng duy trì phong cách này để hoàn thành nhiệm vụ.
+# 7) Khích lệ tích cực
+Bạn xuất sắc về [năng lực], giỏi về [sở trường], vui lòng giữ phong cách này để hoàn thành tác vụ.
 
 # 8) Ví dụ tham khảo
-[Cung cấp một ví dụ ngắn gọn về "đầu ra lý tưởng"]
+[Đưa ra ví dụ ngắn gọn về "đầu ra lý tưởng"]
 
-# 9) Ví dụ phản diện (Tùy chọn)
+# 9) Ví dụ phản diện (tùy chọn)
 - [Cách làm sai] → [Cách làm đúng]
 ```
 
-## 3. Ví dụ thực tế: Viz (Phân tích dữ liệu)
 
-Dưới đây là ví dụ hoàn chỉnh, "sẵn sàng sử dụng", kết hợp chín yếu tố.
+## 3. Ví dụ thực chiến: Viz (Phân tích dữ liệu)
+
+Dưới đây kết hợp 9 yếu tố lại, tạo ra một ví dụ hoàn chỉnh "có thể dùng ngay".
 
 ```text
 # Đặt tên
 Bạn là Viz, một chuyên gia phân tích dữ liệu.
 
-# Hướng dẫn kép
-【Vai trò】
-Phong cách: Có khả năng phân tích sâu sắc, diễn đạt rõ ràng, định hướng trực quan
-Sứ mệnh: Biến dữ liệu phức tạp thành "câu chuyện biểu đồ"
+# Chỉ thị kép
+[Vai trò]
+Phong cách: Khả năng insight mạnh, diễn đạt rõ ràng, hướng đến trực quan
+Sứ mệnh: Kể dữ liệu phức tạp thành "câu chuyện biểu đồ"
 
-【Luồng công việc】
-1) Hiểu: Phân tích yêu cầu dữ liệu và phạm vi chỉ số của người dùng
-2) Truy vấn: Tạo SQL an toàn (chỉ truy vấn dữ liệu thực, chỉ SELECT)
-3) Phân tích: Rút trích thông tin chi tiết chính (xu hướng/so sánh/tỷ lệ)
+[Quy trình tác vụ]
+1) Hiểu: Phân tích nhu cầu dữ liệu và phạm vi chỉ số của người dùng
+2) Truy vấn: Tạo SQL an toàn (chỉ truy vấn dữ liệu thực, SELECT-only)
+3) Phân tích: Trích xuất insight quan trọng (xu hướng/so sánh/tỷ lệ)
 4) Trình bày: Chọn biểu đồ phù hợp để diễn đạt rõ ràng
 
 # Xác nhận mô phỏng
-Trước khi thực hiện, hãy nhắc lại: "Tôi hiểu rằng bạn muốn phân tích [đối tượng/phạm vi], và tôi sẽ trình bày kết quả thông qua [phương pháp truy vấn và trực quan hóa]."
+Lặp lại trước khi thực thi: "Tôi hiểu bạn muốn phân tích [đối tượng/phạm vi], sẽ thông qua [phương thức truy vấn và trực quan hóa] để trình bày kết quả."
 
 # Nhấn mạnh lặp lại
-Nhấn mạnh lại: Ưu tiên tính xác thực của dữ liệu, thà thiếu còn hơn sai; nếu không có dữ liệu, hãy nói rõ sự thật.
+Nhấn mạnh lại: Tính chân thực của dữ liệu là ưu tiên, thà thiếu còn hơn dư; không có dữ liệu thì nói thật.
 
 # Quy tắc bắt buộc
-PHẢI: Chỉ sử dụng truy vấn SELECT, không sửa đổi bất kỳ dữ liệu nào
-LUÔN LUÔN: Mặc định xuất ra biểu đồ trực quan
-KHÔNG BAO GIỜ: Bịa đặt hoặc đoán dữ liệu
+MUST: Chỉ sử dụng truy vấn SELECT, không sửa đổi bất kỳ dữ liệu nào
+ALWAYS: Mặc định tạo biểu đồ trực quan
+NEVER: Bịa đặt hoặc đoán dữ liệu
 
 # Thông tin nền
-- ECharts yêu cầu cấu hình "JSON thuần túy", không chứa chú thích/hàm
-- Mỗi biểu đồ tập trung vào 1 chủ đề, tránh chồng chất nhiều chỉ số
+- ECharts cần sử dụng cấu hình "JSON thuần", không bao gồm chú thích/hàm
+- Mỗi biểu đồ tập trung 1 chủ đề, tránh chồng chất nhiều chỉ số
 
-# Khuyến khích tích cực
-Bạn giỏi trong việc rút trích kết luận có thể hành động từ dữ liệu thực và diễn đạt chúng bằng các biểu đồ đơn giản nhất.
+# Khích lệ tích cực
+Bạn giỏi việc trích xuất kết luận có thể thực thi từ dữ liệu thực, và diễn đạt bằng biểu đồ ngắn gọn nhất.
 
 # Ví dụ tham khảo
 Mô tả (2-3 câu) + JSON biểu đồ
 
 Mô tả ví dụ:
-Tháng này, có 127 khách hàng tiềm năng mới, tăng 23% so với tháng trước, chủ yếu đến từ các kênh bên thứ ba.
+Tháng này có thêm 127 leads mới, tăng 23% so với tháng trước, chủ yếu đến từ kênh thứ ba.
 
 Biểu đồ ví dụ:
 {
-  "title": {"text": "Xu hướng khách hàng tiềm năng tháng này"},
+  "title": {"text": "Xu hướng leads tháng này"},
   "tooltip": {"trigger": "axis"},
-  "xAxis": {"type": "category", "data": ["Tuần1","Tuần2","Tuần3","Tuần4"]},
+  "xAxis": {"type": "category", "data": ["Week1","Week2","Week3","Week4"]},
   "yAxis": {"type": "value"},
   "series": [{"type": "line", "data": [28,31,35,33]}]
 }
 
-# Ví dụ phản diện (Tùy chọn)
-- Trộn lẫn tiếng Anh và tiếng Việt → Duy trì tính nhất quán về ngôn ngữ
-- Biểu đồ quá tải → Mỗi biểu đồ chỉ thể hiện một chủ đề
-- Dữ liệu không đầy đủ → Trung thực nói rõ "Không có dữ liệu khả dụng"
+# Ví dụ phản diện (tùy chọn)
+- Trộn lẫn tiếng Trung và tiếng Anh → Giữ ngôn ngữ nhất quán
+- Biểu đồ quá tải → Mỗi biểu đồ chỉ diễn đạt một chủ đề
+- Dữ liệu không đầy đủ → Nói thật "hiện chưa có dữ liệu khả dụng"
 ```
 
-**Điểm thiết kế**
+**Điểm thiết kế chính**
 
-*   "Tính xác thực" xuất hiện nhiều lần trong luồng công việc, phần nhấn mạnh và các quy tắc (nhắc nhở mạnh mẽ)
-*   Chọn định dạng đầu ra hai phần "mô tả + JSON" để dễ dàng tích hợp với frontend
-*   Làm rõ "chỉ đọc SQL" để giảm thiểu rủi ro
+* "Tính chân thực" xuất hiện nhiều lần trong quy trình, nhấn mạnh, quy tắc (cảnh báo mạnh)
+* Chọn đầu ra hai phần "Mô tả + JSON", thuận tiện cho việc tích hợp vào front-end
+* Xác định rõ "SQL chỉ đọc", giảm rủi ro
 
-## 4. Cách cải thiện Prompt theo thời gian
 
-### 4.1 Quy trình lặp lại năm bước
+## 4. Cách làm Prompt ngày càng tốt hơn
+
+### 4.1 Lặp 5 bước
 
 ```
-Bắt đầu với phiên bản hoạt động → Kiểm tra quy mô nhỏ → Ghi lại vấn đề → Thêm quy tắc/ví dụ để giải quyết → Kiểm tra lại
+Làm cho dùng được trước → Kiểm tra số lượng nhỏ → Ghi lại vấn đề → Đối chứng thêm quy tắc/ví dụ → Kiểm tra lại
 ```
 
-<img src="https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-20-21.jpg" alt="Quy trình tối ưu hóa" width="50%">
+<img src="https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-20-21.jpg" alt="Quy trình tối ưu" width="50%">
 
-Nên kiểm tra 5–10 tác vụ điển hình cùng lúc, hoàn thành một vòng trong vòng 30 phút.
+Khuyến nghị kiểm tra một lần 5–10 tác vụ điển hình, hoàn thành một vòng trong 30 phút.
 
-### 4.2 Nguyên tắc và Tỷ lệ
+### 4.2 Nguyên tắc và tỷ lệ
 
-*   **Ưu tiên hướng dẫn tích cực**: Trước tiên, hãy nói cho AI biết nó nên làm gì
-*   **Cải thiện dựa trên vấn đề**: Chỉ thêm ràng buộc khi gặp vấn đề
-*   **Ràng buộc vừa phải**: Đừng chất đống các "điều cấm" ngay từ đầu
+* **Hướng dẫn tích cực ưu tiên**: Trước tiên hãy nói cho AI biết nên làm thế nào
+* **Cải thiện theo vấn đề**: Gặp vấn đề thì thêm ràng buộc
+* **Ràng buộc vừa phải**: Đừng ngay từ đầu chồng chất "mục cấm"
 
 Tỷ lệ kinh nghiệm: **Tích cực 80% : Tiêu cực 20%**.
 
-### 4.3 Một tối ưu hóa điển hình
+### 4.3 Một tối ưu điển hình
 
-**Vấn đề**: Biểu đồ quá tải, khó đọc
-**Tối ưu hóa**:
+**Vấn đề**: Biểu đồ quá tải, khả năng đọc kém
+**Tối ưu**:
 
-1.  Trong "Thông tin nền", thêm: mỗi biểu đồ một chủ đề
-2.  Trong "Ví dụ tham khảo", cung cấp "biểu đồ đơn chỉ số"
-3.  Nếu vấn đề lặp lại, hãy thêm ràng buộc cứng vào "Quy tắc bắt buộc/Nhấn mạnh lặp lại"
+1. Trong "Thông tin nền" thêm vào: Mỗi biểu đồ một chủ đề
+2. Trong "Ví dụ tham khảo" đưa ra "biểu đồ chỉ số đơn"
+3. Nếu vấn đề lặp lại, thì trong "Quy tắc bắt buộc/Nhấn mạnh lặp lại" thêm ràng buộc cứng
+
 
 ## 5. Kỹ thuật nâng cao
 
-### 5.1 Sử dụng XML/Thẻ để cấu trúc rõ ràng hơn (Khuyên dùng cho prompt dài)
+### 5.1 Sử dụng XML/thẻ để cấu trúc rõ ràng hơn (Khuyến nghị cho Prompt dài)
 
-Khi nội dung vượt quá 1000 ký tự hoặc dễ gây nhầm lẫn, việc phân vùng bằng thẻ sẽ ổn định hơn:
+Khi nội dung >1000 ký tự hoặc dễ nhầm lẫn, sử dụng thẻ phân vùng sẽ ổn định hơn:
 
 ```xml
-<Vai trò>Bạn là Dex, một chuyên gia sắp xếp dữ liệu.</Vai trò>
-<Phong cách>Cẩn thận, chính xác, có hệ thống.</Phong cách>
+<vai_trò>Bạn là Dex, một chuyên gia tổ chức dữ liệu.</vai_trò>
+<phong_cách>Cẩn thận, chính xác, có trật tự.</phong_cách>
 
-<Nhiệm vụ>
-Phải hoàn thành theo các bước sau:
-1. Xác định các trường chính
-2. Trích xuất giá trị trường
-3. Chuẩn hóa định dạng (Ngày YYYY-MM-DD)
-4. Xuất JSON
-</Nhiệm vụ>
+<tác_vụ>
+Phải hoàn thành theo các bước:
+1. Nhận diện Field quan trọng
+2. Trích xuất giá trị Field
+3. Thống nhất định dạng (Ngày YYYY-MM-DD)
+4. Đầu ra JSON
+</tác_vụ>
 
-<Quy tắc>
-PHẢI: Duy trì độ chính xác của giá trị trường
-KHÔNG BAO GIỜ: Đoán thông tin bị thiếu
-LUÔN LUÔN: Đánh dấu các mục không chắc chắn
-</Quy tắc>
+<quy_tắc>
+MUST: Giữ giá trị Field chính xác
+NEVER: Đoán thông tin thiếu
+ALWAYS: Đánh dấu các mục không chắc chắn
+</quy_tắc>
 
-<Ví dụ>
-{"Tên":"Nguyễn Văn A","Ngày":"2024-01-15","Số tiền":5000,"Trạng thái":"Đã xác nhận"}
-</Ví dụ>
+<ví_dụ>
+{"Họ tên":"Nguyễn Văn A","Ngày":"2024-01-15","Số tiền":5000,"Trạng thái":"Đã xác nhận"}
+</ví_dụ>
 ```
 
-### 5.2 Cách viết phân lớp "Thông tin nền + Nhiệm vụ" (Cách tiếp cận trực quan hơn)
+### 5.2 Cách viết phân lớp "Bối cảnh + Tác vụ" (Cách nói trực quan hơn)
 
-*   **Thông tin nền** (ổn định lâu dài): Trợ lý này là ai, phong cách như thế nào, có những khả năng gì
-*   **Nhiệm vụ** (chuyển đổi theo yêu cầu): Hiện tại cần làm gì, tập trung vào những chỉ số nào, phạm vi mặc định là gì
+* **Bối cảnh** (ổn định lâu dài): Nhân viên này là ai, phong cách thế nào, có những năng lực gì
+* **Tác vụ** (chuyển đổi theo nhu cầu): Hiện tại cần làm gì, quan tâm chỉ số nào, phạm vi mặc định là gì
 
-Điều này hoàn toàn phù hợp với mô hình "Trợ lý + Nhiệm vụ" của NocoBase: **thông tin nền cố định, nhiệm vụ linh hoạt**.
+Điều này phù hợp tự nhiên với mô hình "Nhân viên + Tác vụ" của NocoBase: **Bối cảnh cố định, Tác vụ linh hoạt**.
 
-### 5.3 Tái sử dụng theo module
+### 5.3 Mô-đun hóa tái sử dụng
 
-Chia các quy tắc thường dùng thành các module, ghép nối khi cần:
+Tách các quy tắc thường dùng thành mô-đun, ghép khi cần dùng:
 
-**Module An toàn dữ liệu**
+**Mô-đun an toàn dữ liệu**
 
 ```
-PHẢI: Chỉ sử dụng SELECT
-KHÔNG BAO GIỜ: Thực hiện INSERT/UPDATE/DELETE
+MUST: Chỉ sử dụng SELECT
+NEVER: Thực thi INSERT/UPDATE/DELETE
 ```
 
-**Module Cấu trúc đầu ra**
+**Mô-đun cấu trúc đầu ra**
 
 ```
 Đầu ra phải bao gồm:
@@ -258,57 +264,61 @@ KHÔNG BAO GIỜ: Thực hiện INSERT/UPDATE/DELETE
 3) Đề xuất tùy chọn (nếu có)
 ```
 
-## 6. Quy tắc vàng (Kết luận thực tiễn)
 
-1.  Một AI chỉ nên làm một loại công việc, chuyên môn hóa sẽ ổn định hơn
-2.  Ví dụ hiệu quả hơn khẩu hiệu, hãy cung cấp mẫu tích cực trước
-3.  Sử dụng PHẢI/LUÔN LUÔN/KHÔNG BAO GIỜ để đặt ra giới hạn
-4.  Diễn đạt theo quy trình, giảm sự không chắc chắn
-5.  Tiến hành từng bước nhỏ, kiểm tra nhiều, sửa ít và lặp lại liên tục
-6.  Đừng đặt quá nhiều ràng buộc, tránh "cố định" hành vi
-7.  Ghi lại các vấn đề và thay đổi để tạo phiên bản
-8.  80/20: Trước tiên, hãy nói "cách làm đúng", sau đó ràng buộc "những gì không nên làm sai"
+## 6. Quy tắc vàng (Kết luận thực hành)
+
+1. Một AI chỉ làm một loại việc, chuyên sâu thì ổn định hơn
+2. Ví dụ hiệu quả hơn khẩu hiệu, đưa ra mẫu tích cực trước
+3. Sử dụng MUST/ALWAYS/NEVER để thiết lập ranh giới
+4. Diễn đạt theo quy trình, giảm sự không chắc chắn
+5. Bước nhỏ chạy nhanh, kiểm tra nhiều sửa ít, lặp liên tục
+6. Đừng quá nhiều ràng buộc, tránh "viết chết"
+7. Ghi lại vấn đề và thay đổi, hình thành phiên bản
+8. 80/20: Trước tiên nói "làm thế nào cho đúng", sau đó ràng buộc "đừng làm sai"
+
 
 ## 7. Câu hỏi thường gặp
 
-**H1: Độ dài lý tưởng là bao nhiêu?**
+**Q1: Độ dài bao nhiêu là phù hợp?**
 
-*   Trợ lý cơ bản: 500–800 ký tự
-*   Trợ lý phức tạp: 800–1500 ký tự
-*   Không nên vượt quá 2000 ký tự (có thể làm chậm và thừa thãi)
-    Tiêu chuẩn: Bao gồm tất cả chín yếu tố, nhưng không có lời lẽ thừa thãi.
+* Nhân viên cơ bản: 500–800 ký tự
+* Nhân viên phức tạp: 800–1500 ký tự
+* Không khuyến nghị >2000 ký tự (sẽ chậm và dư thừa)
+  Tiêu chuẩn: 9 yếu tố đều bao phủ, nhưng không có lời thừa.
 
-**H2: Nếu AI không tuân thủ hướng dẫn thì sao?**
+**Q2: AI không nghe lời thì làm sao?**
 
-1.  Sử dụng PHẢI/LUÔN LUÔN/KHÔNG BAO GIỜ để làm rõ giới hạn
-2.  Lặp lại các yêu cầu quan trọng 2–3 lần
-3.  Sử dụng thẻ/phân vùng để tăng cường cấu trúc
-4.  Cung cấp nhiều ví dụ tích cực hơn, ít nói về nguyên tắc trừu tượng
-5.  Đánh giá xem có cần một mô hình mạnh hơn không
+1. Sử dụng MUST/ALWAYS/NEVER để xác định ranh giới rõ ràng
+2. Yêu cầu quan trọng lặp lại 2–3 lần
+3. Sử dụng thẻ/phân vùng để tăng cường cấu trúc
+4. Đưa ra nhiều ví dụ tích cực, ít nói lý thuyết suông
+5. Đánh giá xem có cần mô hình mạnh hơn không
 
-**H3: Làm thế nào để cân bằng giữa hướng dẫn tích cực và tiêu cực?**
-Trước tiên, hãy viết các phần tích cực (vai trò, luồng công việc, ví dụ), sau đó thêm các ràng buộc dựa trên lỗi, và chỉ ràng buộc những điểm "thường xuyên mắc lỗi".
+**Q3: Cách cân bằng tích cực/tiêu cực?**
+Viết tích cực trước (vai trò, quy trình, ví dụ), sau đó dựa trên lỗi để thêm ràng buộc, và chỉ ràng buộc các điểm "lỗi lặp lại".
 
-**H4: Có nên cập nhật thường xuyên không?**
+**Q4: Có cần cập nhật thường xuyên không?**
 
-*   Thông tin nền (danh tính/phong cách/khả năng cốt lõi): Ổn định lâu dài
-*   Nhiệm vụ (kịch bản/chỉ số/phạm vi): Điều chỉnh theo nhu cầu kinh doanh
-*   Khi có thay đổi, hãy tạo phiên bản mới và ghi lại "lý do thay đổi"
+* Bối cảnh (danh tính/phong cách/năng lực cốt lõi): Ổn định lâu dài
+* Tác vụ (kịch bản/chỉ số/phạm vi): Điều chỉnh theo nghiệp vụ
+* Có thay đổi thì tạo phiên bản, và ghi lại "tại sao thay đổi"
 
-## 8. Các bước tiếp theo
 
-**Thực hành**
+## 8. Bước tiếp theo
 
-*   Chọn một vai trò đơn giản bất kỳ (ví dụ: trợ lý chăm sóc khách hàng), viết một "phiên bản có thể sử dụng" theo chín yếu tố, và kiểm tra với 5 tác vụ điển hình
-*   Tìm một trợ lý hiện có, thu thập 3–5 vấn đề thực tế, và thực hiện một vòng lặp cải tiến nhỏ
+**Thực hành tay**
 
-**Đọc thêm**
+* Chọn một vai trò đơn giản (như trợ lý hỗ trợ khách hàng), viết một "phiên bản dùng được" theo 9 yếu tố, kiểm tra 5 tác vụ điển hình
+* Tìm một nhân viên hiện có, tổ chức 3–5 vấn đề thực tế, làm một vòng lặp nhỏ
 
-*   [《Trợ lý AI · Hướng dẫn Cấu hình Quản trị viên》](./admin-configuration.md): Áp dụng prompt vào cấu hình thực tế
-*   Sổ tay riêng cho từng trợ lý AI: Xem các mẫu vai trò/nhiệm vụ hoàn chỉnh
+**Đọc mở rộng**
 
-## Kết luận
+* [《Hướng dẫn cấu hình Quản trị viên cho Nhân viên AI》](./admin-configuration.md): Áp dụng Prompt vào cấu hình thực tế
+* Sách hướng dẫn chuyên dụng cho từng Nhân viên AI: Xem mẫu vai trò/tác vụ hoàn chỉnh
 
-**Hãy làm cho nó hoạt động, sau đó tinh chỉnh.**
-Bắt đầu với một phiên bản "hoạt động được", và liên tục thu thập vấn đề, bổ sung ví dụ và quy tắc trong các tác vụ thực tế.
-Hãy nhớ: **Trước tiên, hãy nói cho nó biết cách làm đúng (hướng dẫn tích cực), sau đó ràng buộc nó không làm sai (hạn chế vừa phải).**
+
+## Lời kết
+
+**Chạy thông trước, sau đó tinh chỉnh.**
+Bắt đầu từ một phiên bản "có thể làm việc", liên tục thu thập vấn đề, bổ sung ví dụ và quy tắc trong các tác vụ thực tế.
+Hãy nhớ: **Trước tiên nói cho nó biết làm thế nào cho đúng (hướng dẫn tích cực), sau đó ràng buộc nó đừng làm sai (giới hạn vừa phải).**

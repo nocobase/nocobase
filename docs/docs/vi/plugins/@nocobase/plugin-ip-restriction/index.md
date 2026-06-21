@@ -1,15 +1,17 @@
 ---
-displayName: "IP restriction"
+displayName: "Hạn chế IP"
 packageName: '@nocobase/plugin-ip-restriction'
+title: "Hạn chế IP"
+keywords: "Hạn chế IP,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Control system access by configuring IP blacklists and whitelists to ensure security.
+   Bằng cách thiết lập danh sách đen và danh sách trắng IP, kiểm soát quyền truy cập hệ thống, đảm bảo an toàn.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# IP restriction
+# Hạn chế IP

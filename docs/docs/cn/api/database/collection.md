@@ -1,3 +1,9 @@
+---
+title: "Collection"
+description: "NocoBase Database Collection API：定义数据模型、字段、索引、关联，通过 db.collection() 配置。"
+keywords: "Collection,数据模型,db.collection,字段定义,Database API,NocoBase"
+---
+
 # Collection
 
 ## 概览

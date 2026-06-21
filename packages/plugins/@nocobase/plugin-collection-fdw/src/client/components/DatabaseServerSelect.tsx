@@ -156,7 +156,8 @@ export const DatabaseServerSelectProvider = (props) => {
       .then(({ data }) => {
         initialOptions.current = data?.data;
         setOptions(data?.data);
-      });
+      })
+      .catch(console.error);
   };
   useEffect(() => {
     try {

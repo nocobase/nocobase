@@ -1,3 +1,9 @@
+---
+title: "SAML 配置示例：Google Workspace"
+description: "将 Google Workspace 配置为 SAML IdP：Web应用和移动应用设置、复制 SSO 网址与证书、在 NocoBase 添加 SAML 认证器、属性映射。"
+keywords: "SAML,Google Workspace,IdP 配置,SSO,属性映射,证书,NocoBase"
+---
+
 # Google Workspace
 
 ## 将 Google 设置为 IdP
