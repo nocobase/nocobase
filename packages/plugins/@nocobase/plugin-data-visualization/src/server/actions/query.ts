@@ -79,7 +79,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
   const { mode, contextParams, ...values } = ctx.action.params.values as QueryParams;
   if (mode !== 'sql') {
     const resolvedValues = await resolveVariablesTemplate(ctx as any, values as any, contextParams || {}, {
-      flowModelUid: values.flowModelUid,
+      rd: values.rd,
       requireFlowModelUid: true,
     });
     ctx.action.params.values = {
@@ -97,9 +97,9 @@ export const parseVariables = async (ctx: Context, next: Next) => {
 };
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
-  const { uid, cache: cacheConfig, refresh, flowModelUid, contextParams } = ctx.action.params.values as QueryParams;
+  const { uid, cache: cacheConfig, refresh, rd, contextParams } = ctx.action.params.values as QueryParams;
   const cache = ctx.app.cacheManager.getCache('data-visualization') as Cache;
-  const hasVariableContext = !!flowModelUid || !!contextParams;
+  const hasVariableContext = !!rd || !!contextParams;
   const useCache = cacheConfig?.enabled && uid && !hasVariableContext;
 
   if (useCache && !refresh) {

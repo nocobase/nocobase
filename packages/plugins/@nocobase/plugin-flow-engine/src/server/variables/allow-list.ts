@@ -8,7 +8,13 @@
  */
 
 import type { ResourcerContext } from '@nocobase/resourcer';
-import { extractUsedVariablePaths, hasUnsupportedDynamicVariablePath } from '@nocobase/utils';
+import {
+  decodeJwtSessionPayload,
+  extractUsedVariablePaths,
+  getFlowModelRdSessionId,
+  hasUnsupportedDynamicVariablePath,
+  resolveFlowModelUidFromRd,
+} from '@nocobase/utils';
 import FlowModelRepository from '../repository';
 import type { JSONValue } from '../template/resolver';
 
@@ -43,6 +49,12 @@ type AclWithRoles = {
 type RoleRecord = {
   allowConfigure?: unknown;
   get?: (key: string) => unknown;
+};
+
+type AuthorizationResult = {
+  allowed: boolean;
+  contextParams: Record<string, unknown>;
+  flowModelUid?: string;
 };
 
 export function clearVariableAllowListCache(app?: object) {
@@ -348,22 +360,59 @@ function getRequestedKeysForContext(requestedKeys: Set<string>, contextKey: stri
   );
 }
 
+function getRequestBearerToken(ctx: ResourcerContext): string {
+  const contextWithBearerToken = ctx as ResourcerContext & { getBearerToken?: () => string | undefined };
+  const token = contextWithBearerToken.getBearerToken?.();
+  if (token) return token;
+
+  const authorization =
+    typeof ctx.get === 'function' ? ctx.get('authorization') || ctx.get('Authorization') : undefined;
+  if (typeof authorization !== 'string') return '';
+  const matched = authorization.match(/^Bearer\s+(.+)$/i);
+  return matched?.[1] || '';
+}
+
+function getCurrentRequestRdSessionId(ctx: ResourcerContext): string {
+  const state = (ctx as ResourcerContext & { state?: Record<string, unknown> }).state;
+  const cacheKey = '__variableResolveRdSessionId';
+  if (typeof state?.[cacheKey] === 'string') {
+    return state[cacheKey] as string;
+  }
+
+  const sessionId = getFlowModelRdSessionId(decodeJwtSessionPayload(getRequestBearerToken(ctx)));
+  if (state) {
+    state[cacheKey] = sessionId;
+  }
+  return sessionId;
+}
+
+function resolveFlowModelUidFromRequestRd(ctx: ResourcerContext, rd?: string | number): string {
+  if (typeof rd !== 'string' || !rd) return '';
+  const state = (ctx as ResourcerContext & { state?: Record<string, unknown> }).state;
+  const cacheKey = '__variableResolveRdUidCache';
+  const cache = (state?.[cacheKey] as Map<string, string> | undefined) || new Map<string, string>();
+  if (state && !state[cacheKey]) {
+    state[cacheKey] = cache;
+  }
+  if (cache.has(rd)) return cache.get(rd) || '';
+
+  const flowModelUid = resolveFlowModelUidFromRd(rd, getCurrentRequestRdSessionId(ctx)) || '';
+  cache.set(rd, flowModelUid);
+  return flowModelUid;
+}
+
 export async function authorizeVariablesResolve(
   ctx: ResourcerContext,
   options: {
     contextParams?: Record<string, unknown>;
-    flowModelUid?: string | number;
+    rd?: string | number;
     requireFlowModelUid?: boolean;
     template: JSONValue;
   },
-): Promise<Record<string, unknown>> {
+): Promise<AuthorizationResult> {
   const contextParams = options.contextParams || {};
   const sanitizedContextParams = sanitizeContextParams(contextParams);
-  const hasRecordParams = hasRecordContextParams(contextParams);
-  const flowModelUid =
-    typeof options.flowModelUid === 'string' || typeof options.flowModelUid === 'number'
-      ? String(options.flowModelUid).trim()
-      : '';
+  const flowModelUid = resolveFlowModelUidFromRequestRd(ctx, options.rd);
   const requestedKeys = extractVariableKeys(options.template);
 
   if (requestedKeys.has(unsupportedVariableKey)) {
@@ -374,34 +423,21 @@ export async function authorizeVariablesResolve(
   }
 
   if (await currentRoleAllowsConfigure(ctx)) {
-    return sanitizedContextParams;
+    return { allowed: true, contextParams: sanitizedContextParams, flowModelUid };
   }
 
   if (!flowModelUid) {
-    if (hasRecordParams && options.requireFlowModelUid !== false) {
-      ctx.throw(400, {
-        code: 'FLOW_MODEL_UID_REQUIRED',
-        message: 'flowModelUid is required when resolving record variables',
-      });
-    }
-    return sanitizedContextParams;
+    return { allowed: options.requireFlowModelUid === false, contextParams: sanitizedContextParams };
   }
 
   const allowList = await getVariableAllowList(ctx, flowModelUid);
   if (!allowList) {
-    ctx.throw(404, {
-      code: 'FLOW_MODEL_NOT_FOUND',
-      message: 'flowModelUid is not found',
-    });
-    return sanitizedContextParams;
+    return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
   }
 
   for (const key of requestedKeys) {
     if (!allowList.variables.has(key)) {
-      ctx.throw(403, {
-        code: 'VARIABLE_NOT_ALLOWED',
-        message: `Variable is not configured in current flow model: ${key}`,
-      });
+      return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
     }
   }
 
@@ -421,13 +457,10 @@ export async function authorizeVariablesResolve(
         continue;
       }
       if (!allowedSources.has(sourceKey)) {
-        ctx.throw(403, {
-          code: 'VARIABLE_NOT_ALLOWED',
-          message: `Variable source is not configured in current flow model: ${contextKey}`,
-        });
+        return { allowed: false, contextParams: sanitizedContextParams, flowModelUid };
       }
     }
   }
 
-  return sanitizedContextParams;
+  return { allowed: true, contextParams: sanitizedContextParams, flowModelUid };
 }

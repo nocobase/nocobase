@@ -48,7 +48,7 @@ import {
   resolveModuleUrl,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
-import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
+import { buildFlowModelResolveDescriptor, enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { inferRecordRef } from './utils/variablesParams';
@@ -3438,7 +3438,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
               return await resolveClientOnlyExpressions(template);
             }
             serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
-              flowModelUid: this.model?.uid,
+              rd: buildFlowModelResolveDescriptor(this as FlowRuntimeContext<FlowModel>, this.model?.uid),
               template,
               contextParams: autoContextParams || {},
             });

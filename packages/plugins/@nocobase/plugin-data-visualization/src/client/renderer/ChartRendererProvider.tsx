@@ -15,6 +15,7 @@ import {
   useAPIClient,
   useRequest,
 } from '@nocobase/client';
+import { generateFlowModelRdFromToken } from '@nocobase/utils/client';
 import React, { createContext, useContext, useEffect } from 'react';
 import { parseField, removeUnparsableFilter } from '../utils';
 import { ChartDataContext } from '../block/ChartDataProvider';
@@ -107,12 +108,14 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       const config = { dataSource, collection, query: parsedQuery };
       const queryWithFilter =
         !manual && hasFilter(config, filterValues) ? appendFilter(config, filterValues) : parsedQuery;
+      const rd = generateFlowModelRdFromToken(schema?.['x-uid'], api?.auth?.token);
       try {
         const res = await api.request({
           url: 'charts:queryData',
           method: 'POST',
           data: {
             uid: schema?.['x-uid'],
+            ...(rd ? { rd } : {}),
             dataSource,
             collection,
             ...queryWithFilter,

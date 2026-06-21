@@ -15,6 +15,13 @@ import { FlowModel } from '../models/flowModel';
 import { RunJSContextRegistry } from '../runjs-context/registry';
 import { setupRunJSContexts } from '../runjs-context/setup';
 
+const createTestToken = () => {
+  const payload = Buffer.from(JSON.stringify({ userId: 1, signInTime: 'flow-context-test-sign-in' })).toString(
+    'base64url',
+  );
+  return `test.${payload}.token`;
+};
+
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
     const ctx = new FlowContext();
@@ -1947,12 +1954,14 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
   it('calls server only for subpaths that match resolveOnServer function', async () => {
     const engine = new FlowEngine();
     const api = {
+      auth: { token: createTestToken() },
       request: vi.fn(async (config: any) => {
         const batchItem = config?.data?.values?.batch?.[0];
         const cp = batchItem?.contextParams || {};
         // Only 'view.record' should be present
         expect(Object.keys(cp)).toContain('view.record');
-        expect(batchItem?.flowModelUid).toBe('view-model');
+        expect(batchItem?.flowModelUid).toBeUndefined();
+        expect(batchItem?.rd).toMatch(/^v1\./);
         return { data: { id: 1 } } as any;
       }),
     } as any;
@@ -2010,11 +2019,13 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
   it('calls server for whole variable when resolveOnServer is true', async () => {
     const engine = new FlowEngine();
     const api = {
+      auth: { token: createTestToken() },
       request: vi.fn(async (config: any) => {
         const batchItem = config?.data?.values?.batch?.[0];
         const cp = batchItem?.contextParams || {};
         expect(Object.keys(cp)).toContain('user');
-        expect(batchItem?.flowModelUid).toBe('user-model');
+        expect(batchItem?.flowModelUid).toBeUndefined();
+        expect(batchItem?.rd).toMatch(/^v1\./);
         return { data: { userId: 1 } } as any;
       }),
     } as any;
@@ -2042,6 +2053,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
   it('does not fallback to client-only resolution on variables:resolve client errors', async () => {
     const engine = new FlowEngine();
     const api = {
+      auth: { token: createTestToken() },
       request: vi.fn(async () => {
         const error = new Error('Forbidden') as Error & { response?: { status: number } };
         error.response = { status: 403 };
@@ -2072,6 +2084,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
   it('reads resolveOnServer from delegated context properties (e.g., engine.context -> model.context)', async () => {
     const engine = new FlowEngine();
     const api = {
+      auth: { token: createTestToken() },
       request: vi.fn(async (config: any) => ({ data: { ok: true } })),
     } as any;
     engine.context.defineProperty('api', { value: api });
@@ -2096,7 +2109,8 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     await (model.context as any).resolveJsonTemplate(tpl);
     expect(api.request).toHaveBeenCalledTimes(1);
     const batchItem = api.request.mock.calls[0][0]?.data?.values?.batch?.[0];
-    expect(batchItem?.flowModelUid).toBe(model.uid);
+    expect(batchItem?.flowModelUid).toBeUndefined();
+    expect(batchItem?.rd).toMatch(/^v1\./);
   });
 
   it('still calls server when resolveOnServer=true even without meta/buildVariablesParams', async () => {
@@ -2120,11 +2134,13 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
   it('mixes server and client variables correctly in one pass', async () => {
     const engine = new FlowEngine();
     const api = {
+      auth: { token: createTestToken() },
       request: vi.fn(async (config: any) => {
         const batchItem = config?.data?.values?.batch?.[0];
         const cp = batchItem?.contextParams || {};
         expect(Object.keys(cp).sort()).toEqual(['user', 'view.record']);
-        expect(batchItem?.flowModelUid).toBe('mixed-model');
+        expect(batchItem?.flowModelUid).toBeUndefined();
+        expect(batchItem?.rd).toMatch(/^v1\./);
         return { data: { ok: true } } as any;
       }),
     } as any;

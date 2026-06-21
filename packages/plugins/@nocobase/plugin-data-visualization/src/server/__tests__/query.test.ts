@@ -11,7 +11,16 @@ import { createMockServer, MockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
+import { generateFlowModelRd } from '@nocobase/utils';
 import { cacheMiddleware, checkPermission, parseVariables } from '../actions/query';
+import { FlowModelRepository } from '@nocobase/plugin-flow-engine';
+
+const testSessionKey = 'chart-query-test-sign-in';
+
+const createTestToken = (userId: number) => {
+  const payload = Buffer.from(JSON.stringify({ userId, signInTime: testSessionKey })).toString('base64url');
+  return `test.${payload}.token`;
+};
 
 describe('query', () => {
   describe('action helpers', () => {
@@ -20,7 +29,7 @@ describe('query', () => {
     let db: Database;
     beforeAll(async () => {
       app = await createMockServer({
-        plugins: ['field-sort', 'data-source-manager', 'users', 'acl'],
+        plugins: ['field-sort', 'data-source-manager', 'users', 'acl', 'flow-engine'],
       });
       db = app.db;
       db.options.underscored = true;
@@ -117,8 +126,23 @@ describe('query', () => {
 
     it('should reuse flow-engine variable resolver for filter values', async () => {
       const user = await db.getRepository('users').findOne();
+      const flowModelUid = 'chart-query-user-filter-flow-model';
+      const flowModels = db.getCollection('flowModels').repository as FlowModelRepository;
+      await flowModels.insertModel({
+        uid: flowModelUid,
+        use: 'ChartQueryUserFilterTestModel',
+        stepParams: {
+          filter: {
+            userId: { $eq: '{{ ctx.user.id }}' },
+          },
+        },
+      });
+      const token = createTestToken(user.id);
       const context = {
         ...ctx,
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
         auth: {
           user,
         },
@@ -128,12 +152,14 @@ describe('query', () => {
         get: (key: string) => {
           return {
             'x-timezone': '',
+            authorization: `Bearer ${token}`,
           }[key];
         },
         getCurrentLocale: () => 'en-US',
         action: {
           params: {
             values: {
+              rd: generateFlowModelRd(flowModelUid, `${user.id}:${testSessionKey}`),
               filter: {
                 userId: { $eq: '{{ ctx.user.id }}' },
               },
@@ -149,8 +175,14 @@ describe('query', () => {
   });
 
   describe('parseVariables authorization', () => {
-    it('should require explicit flowModelUid for record variable context', async () => {
+    it('should keep original query when rd is missing for record variable context', async () => {
       const context = {
+        state: {},
+        get: (key: string) => {
+          return {
+            'x-timezone': '',
+          }[key];
+        },
         throw(status: number, body: any) {
           throw { status, body };
         },
@@ -173,12 +205,9 @@ describe('query', () => {
         },
       };
 
-      await expect(parseVariables(context as any, async () => {})).rejects.toMatchObject({
-        status: 400,
-        body: {
-          code: 'FLOW_MODEL_UID_REQUIRED',
-        },
-      });
+      await parseVariables(context as any, async () => {});
+
+      expect(context.action.params.values.filter.id.$eq).toBe('{{ ctx.record.id }}');
     });
   });
 
@@ -293,7 +322,7 @@ describe('query', () => {
               },
               refresh: false,
               uid: key,
-              flowModelUid: 'flow-model-uid',
+              rd: 'rd',
               contextParams: {
                 record: {
                   dataSourceKey: 'main',

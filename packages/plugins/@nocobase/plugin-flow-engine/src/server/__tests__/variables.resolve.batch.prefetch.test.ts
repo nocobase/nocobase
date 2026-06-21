@@ -8,6 +8,7 @@
  */
 
 import { MockServer } from '@nocobase/test';
+import { generateFlowModelRd } from '@nocobase/utils';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 import FlowModelRepository from '../repository';
 
@@ -17,12 +18,19 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     resetVariablesRegistryForTest();
   });
 
+  const testSessionKey = 'variables-resolve-batch-prefetch-sign-in';
+  const createTestToken = (userId = 1) => {
+    const payload = Buffer.from(JSON.stringify({ userId, signInTime: testSessionKey })).toString('base64url');
+    return `test.${payload}.token`;
+  };
+
   const execResolve = async (values: any, userId?: number) => {
+    const token = createTestToken(userId || 1);
     const action = app.resourceManager.getAction('variables', 'resolve');
     const ctx: any = {
       app,
       db: app.db,
-      headers: {},
+      headers: { authorization: `Bearer ${token}` },
       request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
       auth: userId ? { user: { id: userId }, role: 'root' } : {},
       state: {},
@@ -78,6 +86,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
 
     try {
       const flowModelUid = 'batch-prefetch-flow-model';
+      const rd = generateFlowModelRd(flowModelUid, `1:${testSessionKey}`);
       const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
       await repository.insertModel({
         uid: flowModelUid,
@@ -98,13 +107,13 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       const payload = {
         batch: [
           {
-            flowModelUid,
+            rd,
             id: 't1',
             template: { a: '{{ ctx.view.record.id }}' },
             contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
           },
           {
-            flowModelUid,
+            rd,
             id: 't2',
             template: { b: '{{ ctx.view.record.roles[0].name }}' },
             contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },

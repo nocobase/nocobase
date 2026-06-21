@@ -9,6 +9,7 @@
 
 import { vi } from 'vitest';
 import { MockServer } from '@nocobase/test';
+import { generateFlowModelRd } from '@nocobase/utils';
 import { variables, inferSelectsFromUsage } from '../variables/registry';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 import FlowModelRepository from '../repository';
@@ -52,6 +53,15 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     return output;
   };
 
+  const testSessionKey = 'variables-resolve-test-sign-in';
+  const createTestToken = (userId = 1) => {
+    const payload = Buffer.from(JSON.stringify({ userId, signInTime: testSessionKey })).toString('base64url');
+    return `test.${payload}.token`;
+  };
+
+  const createRd = (flowModelUid: string, userId = 1) =>
+    generateFlowModelRd(flowModelUid, `${userId}:${testSessionKey}`);
+
   const createTestFlowModel = async (
     template: unknown,
     options: { collectionName?: string; extraSources?: Array<{ collection: string; dataSourceKey?: string }> } = {},
@@ -88,16 +98,22 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     return uid;
   };
 
-  const maybeAttachFlowModelUid = async (
+  const maybeAttachRd = async (
     values: any,
     options: { autoFlowModelUid?: boolean; flowModelUid?: string } = {},
+    userId = 1,
   ) => {
-    if (options.autoFlowModelUid === false) return values;
-    if (values?.flowModelUid || (Array.isArray(values?.batch) && values.batch.every((item) => item?.flowModelUid))) {
+    if (values?.rd || (Array.isArray(values?.batch) && values.batch.every((item) => item?.rd))) {
       return values;
     }
-    if (!hasRecordParams(values?.contextParams) && !hasRecordParams(values?.batch)) return values;
-
+    if (options.autoFlowModelUid === false && !values?.flowModelUid && !Array.isArray(values?.batch)) return values;
+    if (
+      options.autoFlowModelUid === false &&
+      Array.isArray(values?.batch) &&
+      values.batch.some((item) => !item?.flowModelUid)
+    ) {
+      return values;
+    }
     const templates = Array.isArray(values?.batch)
       ? values.batch.map((item) => item?.template ?? {})
       : [values?.template ?? {}];
@@ -110,10 +126,15 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     if (Array.isArray(values?.batch)) {
       return {
         ...values,
-        batch: values.batch.map((item) => ({ ...item, flowModelUid: item?.flowModelUid || flowModelUid })),
+        batch: values.batch.map((item) => {
+          const itemFlowModelUid = item?.flowModelUid || flowModelUid;
+          const { flowModelUid: _flowModelUid, ...rest } = item;
+          return { ...rest, rd: item?.rd || createRd(itemFlowModelUid, userId) };
+        }),
       };
     }
-    return { ...values, flowModelUid };
+    const { flowModelUid: _flowModelUid, ...rest } = values || {};
+    return { ...rest, rd: values?.rd || createRd(values?.flowModelUid || flowModelUid, userId) };
   };
 
   const execResolve = async (
@@ -121,12 +142,13 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     userId?: number,
     options: { autoFlowModelUid?: boolean; flowModelUid?: string; currentRole?: string; currentRoles?: string[] } = {},
   ) => {
-    const requestValues = await maybeAttachFlowModelUid(values, options);
+    const requestValues = await maybeAttachRd(values, options, userId || 1);
+    const token = createTestToken(userId || 1);
     const action = app.resourceManager.getAction('variables', 'resolve');
     const ctx: any = {
       app,
       db: app.db,
-      headers: {},
+      headers: { authorization: `Bearer ${token}` },
       request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: requestValues },
       auth: userId ? { user: { id: userId }, role: 'root' } : {},
       state: {
@@ -254,7 +276,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.id).toBe(1);
   });
 
-  it('should require flowModelUid when resolving record-like context params', async () => {
+  it('should soft return original template when rd is missing for record-like context params', async () => {
     const payload = {
       template: { id: '{{ ctx.view.record.id }}' },
       contextParams: {
@@ -266,11 +288,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(400);
-    expect(res.body?.error?.code).toBe('FLOW_MODEL_UID_REQUIRED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.id).toBe('{{ ctx.view.record.id }}');
   });
 
-  it('should reject variables not configured in the current flow model', async () => {
+  it('should soft return original template when variables are not configured in the current flow model', async () => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.id }}' });
     const payload = {
       flowModelUid,
@@ -284,8 +307,9 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.secret).toBe('{{ ctx.record.secret }}');
   });
 
   it('should allow configured optional chaining variable paths', async () => {
@@ -328,7 +352,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.name.length).toBeGreaterThan(0);
   });
 
-  it('should reject unconfigured optional chaining variable paths', async () => {
+  it('should soft return original template for unconfigured optional chaining variable paths', async () => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record?.name }}' });
     const payload = {
       flowModelUid,
@@ -342,11 +366,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.password).toBe('{{ ctx.record?.password }}');
   });
 
-  it('should reject unconfigured optional bracket variable paths with whitespace', async () => {
+  it('should soft return original template for unconfigured optional bracket variable paths with whitespace', async () => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record?. ["name"] }}' });
     const payload = {
       flowModelUid,
@@ -360,8 +385,9 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.password).toBe("{{ ctx.record?. ['password'] }}");
   });
 
   it('should allow configure roles to resolve unsaved variables not yet in the flow model allow-list', async () => {
@@ -460,7 +486,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
   });
 
-  it('should still require flowModelUid for regular roles with currentRole state', async () => {
+  it('should soft return original template for regular roles with currentRole state when rd is missing', async () => {
     const regularRole = await createRegularRole();
     const payload = {
       template: { name: '{{ ctx.record.name }}' },
@@ -477,11 +503,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       autoFlowModelUid: false,
       currentRole: regularRole,
     });
-    expect(res.status).toBe(400);
-    expect(res.body?.error?.code).toBe('FLOW_MODEL_UID_REQUIRED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.name).toBe('{{ ctx.record.name }}');
   });
 
-  it('should still reject unconfigured variables for regular roles with currentRole state', async () => {
+  it('should soft return original template for unconfigured variables with currentRole state', async () => {
     const regularRole = await createRegularRole();
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.id }}' });
     const payload = {
@@ -500,11 +527,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       autoFlowModelUid: false,
       currentRole: regularRole,
     });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.secret).toBe('{{ ctx.record.secret }}');
   });
 
-  it('should reject unconfigured variables passed as method arguments', async () => {
+  it('should soft return original template for unconfigured variables passed as method arguments', async () => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.echo(1) }}' });
     const payload = {
       flowModelUid,
@@ -518,8 +546,9 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.secret).toBe('{{ ctx.echo(ctx.record.secret) }}');
   });
 
   it('should reject unsupported dynamic paths before resolving static variables in the same template', async () => {
@@ -585,7 +614,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   it.each([
     ['record collection', { dataSourceKey: 'main', collection: 'roles', filterByTk: 'root' }],
     ['data source', { dataSourceKey: 'external', collection: 'users', filterByTk: 1 }],
-  ])('should reject a different %s when the variable source is configured', async (_name, record) => {
+  ])('should soft return original template for a different %s when the variable source is configured', async (_name, record) => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.record.name }}' }, { collectionName: 'users' });
     const payload = {
       flowModelUid,
@@ -595,11 +624,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.name).toBe('{{ ctx.record.name }}');
   });
 
-  it('should reject a different flattened record collection when the variable source is configured', async () => {
+  it('should soft return original template for a different flattened record collection when the variable source is configured', async () => {
     const flowModelUid = await createTestFlowModel(
       { allowed: '{{ ctx.view.record.name }}' },
       { collectionName: 'users' },
@@ -616,11 +646,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.name).toBe('{{ ctx.view.record.name }}');
   });
 
-  it('should reject a different array-indexed record collection when the variable source is configured', async () => {
+  it('should soft return original template for a different array-indexed record collection when the variable source is configured', async () => {
     const flowModelUid = await createTestFlowModel({ allowed: '{{ ctx.list[0].name }}' });
     const payload = {
       flowModelUid,
@@ -634,11 +665,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.name).toBe('{{ ctx.list[0].name }}');
   });
 
-  it('should reject another source from the same flow model when the requested variable source does not match', async () => {
+  it('should soft return original template for another source from the same flow model when the requested variable source does not match', async () => {
     const flowModelUid = await createTestFlowModel({
       allowedUserName: '{{ ctx.view.record.name }}',
       otherRoleSource: {
@@ -665,8 +697,9 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       },
     };
     const res = await execResolve(payload, 1, { autoFlowModelUid: false });
-    expect(res.status).toBe(403);
-    expect(res.body?.error?.code).toBe('VARIABLE_NOT_ALLOWED');
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.name).toBe('{{ ctx.view.record.name }}');
   });
 
   it('should allow unresolved association source to keep compatible record context params', async () => {

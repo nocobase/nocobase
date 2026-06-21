@@ -8,6 +8,7 @@
  */
 
 import { getValuesByPath } from '@nocobase/shared';
+import { generateFlowModelRdFromToken } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
@@ -78,7 +79,7 @@ export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 // =========================
 
 type BatchPayload = {
-  flowModelUid?: string;
+  rd?: string;
   template: JSONValue;
   contextParams?: ServerContextParams | undefined;
 };
@@ -189,8 +190,8 @@ export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchP
     }
     try {
       const batch = items.map((it) => ({
-        flowModelUid: it.payload.flowModelUid,
         id: it.id,
+        rd: it.payload.rd,
         template: it.payload.template,
         contextParams: it.payload.contextParams || {},
       }));
@@ -241,6 +242,10 @@ export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchP
     agg.timer = setTimeout(flush, BATCH_FLUSH_DELAY_MS);
   }
   return p;
+}
+
+export function buildFlowModelResolveDescriptor(ctx: FlowRuntimeContext, flowModelUid?: string | number | null) {
+  return generateFlowModelRdFromToken(flowModelUid, ctx?.api?.auth?.token);
 }
 
 /**

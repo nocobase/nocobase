@@ -16,6 +16,13 @@ import {
 } from '../utils/associationObjectVariable';
 import { FlowModel } from '../models/flowModel';
 
+const createTestToken = () => {
+  const payload = Buffer.from(JSON.stringify({ userId: 1, signInTime: 'object-variable-test-sign-in' })).toString(
+    'base64url',
+  );
+  return `test.${payload}.token`;
+};
+
 function setupEngineWithCollections() {
   const engine = new FlowEngine();
   const ds = engine.context.dataSourceManager.getDataSource('main');
@@ -124,6 +131,7 @@ describe('objectVariable utilities', () => {
     // Provide API stub to intercept variables:resolve
     const calls: any[] = [];
     const api = {
+      auth: { token: createTestToken() },
       request: vi.fn(async ({ url, data, method }) => {
         calls.push({ url, data, method });
         const batch = (data?.values?.batch as any[]) || [];
@@ -159,7 +167,8 @@ describe('objectVariable utilities', () => {
     const call = calls.find((c) => c.url === 'variables:resolve');
     expect(call).toBeTruthy();
     const batch0 = call.data?.values?.batch?.[0];
-    expect(batch0?.flowModelUid).toBe('object-variable-model');
+    expect(batch0?.flowModelUid).toBeUndefined();
+    expect(batch0?.rd).toMatch(/^v1\./);
     expect(batch0?.contextParams).toBeTruthy();
     // Flattened key should be 'obj.author'
     const cp = batch0.contextParams as Record<string, any>;
@@ -336,6 +345,7 @@ describe('objectVariable utilities', () => {
     const ctx = engine.context as any;
     const calls: any[] = [];
     const api = {
+      auth: { token: createTestToken() },
       request: vi.fn(async ({ url, data, method }) => {
         calls.push({ url, data, method });
         const batch = (data?.values?.batch as any[]) || [];
@@ -369,7 +379,8 @@ describe('objectVariable utilities', () => {
     const call = calls.find((c) => c.url === 'variables:resolve');
     expect(call).toBeTruthy();
     const batch0 = call.data?.values?.batch?.[0];
-    expect(batch0?.flowModelUid).toBe('object-variable-filter-model');
+    expect(batch0?.flowModelUid).toBeUndefined();
+    expect(batch0?.rd).toMatch(/^v1\./);
     const cp = batch0?.contextParams as Record<string, any>;
     const keys = Object.keys(cp || {});
     expect(keys).toContain('obj.author');

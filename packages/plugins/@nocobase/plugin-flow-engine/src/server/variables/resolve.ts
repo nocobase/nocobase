@@ -15,14 +15,14 @@ import { variables } from './registry';
 import { prefetchRecordsForResolve } from './utils';
 
 type ResolveBatchItem = {
-  flowModelUid?: string | number;
+  rd?: string;
   id?: string | number;
   template: JSONValue;
   contextParams?: Record<string, unknown>;
 };
 
 type ResolveVariablesOptions = {
-  flowModelUid?: string | number;
+  rd?: string;
   requireFlowModelUid?: boolean;
 };
 
@@ -42,14 +42,17 @@ export async function resolveVariablesTemplate(
   contextParams: Record<string, unknown> = {},
   options: ResolveVariablesOptions = {},
 ) {
-  const safeContextParams = await authorizeVariablesResolve(ctx, {
+  const authorization = await authorizeVariablesResolve(ctx, {
     contextParams,
-    flowModelUid: options.flowModelUid,
+    rd: options.rd,
     requireFlowModelUid: options.requireFlowModelUid,
     template,
   });
-  await prefetchRecordsForResolve(ctx, [{ template, contextParams: safeContextParams }]);
-  return resolveVariablesTemplateWithPrefetchedRecords(ctx, template, safeContextParams);
+  if (!authorization.allowed) {
+    return template;
+  }
+  await prefetchRecordsForResolve(ctx, [{ template, contextParams: authorization.contextParams }]);
+  return resolveVariablesTemplateWithPrefetchedRecords(ctx, template, authorization.contextParams);
 }
 
 async function resolveVariablesTemplateWithPrefetchedRecords(
@@ -71,30 +74,36 @@ export async function resolveVariablesBatch(
   const authorizedItems: ResolveBatchItem[] = [];
   for (const item of items) {
     const template = item?.template ?? {};
-    const contextParams = await authorizeVariablesResolve(ctx, {
+    const authorization = await authorizeVariablesResolve(ctx, {
       contextParams: (item?.contextParams || {}) as Record<string, unknown>,
-      flowModelUid: item?.flowModelUid,
+      rd: item?.rd,
       requireFlowModelUid: options.requireFlowModelUid,
       template,
     });
     authorizedItems.push({
-      flowModelUid: item?.flowModelUid,
+      rd: item?.rd,
       id: item?.id,
       template,
-      contextParams,
+      contextParams: authorization.allowed ? authorization.contextParams : undefined,
     });
   }
 
   await prefetchRecordsForResolve(
     ctx,
-    authorizedItems.map((item) => ({
-      template: item?.template ?? {},
-      contextParams: (item?.contextParams || {}) as Record<string, unknown>,
-    })),
+    authorizedItems
+      .filter((item) => item.contextParams)
+      .map((item) => ({
+        template: item?.template ?? {},
+        contextParams: (item?.contextParams || {}) as Record<string, unknown>,
+      })),
   );
 
   const results: Array<{ id?: string | number; data: unknown }> = [];
   for (const item of authorizedItems) {
+    if (!item.contextParams) {
+      results.push({ id: item?.id, data: item?.template ?? {} });
+      continue;
+    }
     const data = await resolveVariablesTemplateWithPrefetchedRecords(
       ctx,
       item?.template ?? {},
