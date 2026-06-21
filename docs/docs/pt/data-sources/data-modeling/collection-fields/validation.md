@@ -74,6 +74,10 @@ Após configurar as regras para os campos, as regras de validação corresponden
 
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
+Quando o campo é usado em um formulário, as regras de validação do campo também aparecem nas configurações de validação do campo. Essas regras ficam em **Regras de validação de campo no lado do servidor** e são exibidas ali como somente leitura. Se precisar alterá-las, edite o campo em Fonte de dados → Configuração da coleção.
+
+Você ainda pode adicionar regras extras para o campo do formulário atual em **Regras de validação no lado do cliente**. Essas regras se aplicam apenas ao componente de campo atual. O resultado final da validação combina **Regras de validação de campo no lado do servidor** e **Regras de validação no lado do cliente**.
+
 As regras de validação também se aplicam a componentes de sub-tabela e sub-formulário:
 
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
@@ -84,19 +88,19 @@ As regras de validação também se aplicam a componentes de sub-tabela e sub-fo
 
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Diferenças em relação à Validação de Campo no Lado do Cliente
-A validação de campo no lado do cliente e no lado do servidor são aplicáveis a diferentes cenários de uso. Existem diferenças significativas na forma como são implementadas e no momento em que as regras são acionadas, por isso precisam ser gerenciadas separadamente.
+## Diferenças entre Regras de Validação de Campo no Lado do Servidor e no Lado do Cliente
+As regras de validação de campo no lado do servidor e no lado do cliente são configuradas em locais diferentes e têm escopos diferentes.
 
 ### Diferenças no Método de Configuração
-- **Validação no lado do cliente**: Você configura as regras diretamente nos formulários de edição (como mostrado na imagem abaixo).
-- **Validação de campo no lado do servidor**: Você define as regras do campo na **fonte de dados** → Configuração da **coleção**.
+- **Regras de validação de campo no lado do servidor**: Você define as regras do campo em Fonte de dados → Configuração da coleção. Essas regras são as regras base do campo.
+- **Regras de validação no lado do cliente**: Você configura regras extras nas configurações de um campo de formulário. Essas regras afetam apenas o componente de campo atual.
 
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
 ![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
 ### Diferenças no Momento de Acionamento da Validação
-- **Validação no lado do cliente**: É acionada em tempo real enquanto você preenche os campos, exibindo mensagens de erro imediatamente.
-- **Validação de campo no lado do servidor**: É realizada no lado do servidor após a submissão dos dados e antes que eles sejam armazenados. As mensagens de erro são retornadas através das respostas da API.
-- **Escopo de aplicação**: A validação de campo no lado do servidor não só entra em vigor durante a submissão de formulários, mas também é acionada em todos os cenários que envolvem adição ou modificação de dados, como **fluxos de trabalho** e importação de dados.
-- **Mensagens de erro**: A validação no lado do cliente suporta mensagens de erro personalizadas, enquanto a validação no lado do servidor atualmente não oferece suporte a mensagens de erro personalizadas.
+- **Regras de validação de campo no lado do servidor**: Acionam validação no frontend quando o campo é usado em um formulário e também validam antes da gravação dos dados. Elas também se aplicam a cenários que criam ou atualizam dados, como fluxos de trabalho e importações de dados.
+- **Regras de validação no lado do cliente**: Acionam validação no frontend apenas no campo de formulário atual.
+- **Exibição das regras**: As regras de validação de campo no lado do servidor são exibidas como regras herdadas e somente leitura. As regras de validação no lado do cliente são exibidas separadamente e podem ser editadas ali.
+- **Mensagens de erro**: As regras de validação no lado do cliente suportam mensagens de erro personalizadas, enquanto as regras de validação de campo no lado do servidor atualmente não oferecem suporte a mensagens de erro personalizadas.
