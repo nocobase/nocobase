@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-calendar"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Kalender-Sammlung
 

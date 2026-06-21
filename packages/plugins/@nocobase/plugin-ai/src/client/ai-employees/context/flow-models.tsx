@@ -114,7 +114,8 @@ const toCollection = async (model: CollectionBlockModel) => {
       collection: {
         ...collection,
       },
-      prompt: `You can use the tools dataSourceQuery to query data from a data source and dataSourceCounting to get record counts.
+      prompt: `Before querying, first call getSkill with skillName="data-query" to load the data-query skill and make dataSourceQuery and dataSourceCounting available.
+After the skill is loaded, use dataSourceQuery to query data from a data source and dataSourceCounting to get record counts.
 When analyzing user messages, if any words or phrases are related or similar to a known collectionName, prioritize retrieving relevant data before responding.
 When the user asks about quantities, totals, or record counts, you must first call dataSourceCounting to obtain accurate numbers before answering.
 Always apply dataScope.filter when calling dataSourceQuery or dataSourceCounting. Ensure that the filter structure is properly transformed to match the tools’ input format.

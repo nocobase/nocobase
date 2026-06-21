@@ -8,19 +8,18 @@ keywords: "依赖管理,peerDependencies,package.json,插件依赖,NocoBase"
 
 在 NocoBase 插件开发中，依赖分为 **自身依赖** 和 **全局依赖** 两类。
 
-- **全局依赖**：由 `@nocobase/server` 和 `@nocobase/client` 提供，插件中无需单独打包。
-- **自身依赖**：插件独有的依赖（包括 server端依赖），会被打包到插件产物中。
+- **全局依赖**：由 `@nocobase/server` 和 `@nocobase/client-v2` 提供，插件中无需单独打包。
+- **自身依赖**：插件独有的依赖（包括 server 端依赖），会被打包到插件产物中。
 
 ## 开发原则
 
-由于自身依赖会被打包到插件产物中（包括 server 依赖会被打包到 `dist/node_modules`），因此在插件开发时，可以将所有依赖声明在 `devDependencies` 中，而不是 `dependencies`。这样可以避免在开发环境与生产环境中产生差异。
+由于自身依赖会被打包到插件产物中（server 依赖会打包到 `dist/node_modules`），你可以将所有依赖声明在 `devDependencies` 中，而不是 `dependencies`。这样可以避免开发环境与生产环境产生差异。
 
-当插件需要安装下列依赖时，请确保 **版本号** 与全局依赖中 `@nocobase/server` 和 `@nocobase/client`
-保持一致，否则可能导致运行时冲突。
+当插件需要用到下列依赖时，确保 **版本号** 与全局依赖中 `@nocobase/server` 和 `@nocobase/client-v2` 保持一致，否则可能导致运行时冲突。
 
 ## 全局依赖
 
-以下依赖由 NocoBase 提供，插件中无需打包。若确有需要，应与框架版本保持一致。
+以下依赖由 NocoBase 提供，插件中无需打包。如果确实需要用到，应与 NocoBase 版本保持一致。
 
 ``` js
 // nocobase 核心
@@ -28,7 +27,7 @@ keywords: "依赖管理,peerDependencies,package.json,插件依赖,NocoBase"
 '@nocobase/actions',
 '@nocobase/auth',
 '@nocobase/cache',
-'@nocobase/client',
+'@nocobase/client-v2',
 '@nocobase/database',
 '@nocobase/evaluators',
 '@nocobase/logger',
@@ -120,12 +119,17 @@ keywords: "依赖管理,peerDependencies,package.json,插件依赖,NocoBase"
 ## 开发建议
 
 1.  **保持依赖一致性**\
-    如果需要使用全局依赖中已存在的包，请避免安装不同版本，直接使用全局依赖即可。
+    如果全局依赖中已经有某个包，直接用全局版本就好，不要安装不同版本。
 
 2.  **尽量减少打包体积**\
-    对于常见的 UI 库（如 `antd`）、工具库（如 `lodash`）、数据库驱动（如
-    `pg`、`mysql2`），应依赖全局提供的版本，避免重复打包。
+    常见的 UI 库（比如 `antd`）、工具库（比如 `lodash`）、数据库驱动（比如 `pg`、`mysql2`），都应该用全局提供的版本，避免重复打包。
 
 3.  **调试与生产环境一致**\
-    使用 `devDependencies` 即可保证开发与最终产物一致，避免因
-    `dependencies` 与 `peerDependencies` 配置不当导致的环境差异。
+    用 `devDependencies` 即可保证开发与最终产物一致，避免因 `dependencies` 与 `peerDependencies` 配置不当导致的环境差异。
+
+## 相关链接
+
+- [构建与打包](./build.md) — 插件的构建与打包配置
+- [项目目录结构](./project-structure.md) — 插件的文件组织方式
+- [编写第一个插件](./write-your-first-plugin.md) — 从零开始创建插件
+- [插件开发概述](./index.md) — 插件开发整体介绍

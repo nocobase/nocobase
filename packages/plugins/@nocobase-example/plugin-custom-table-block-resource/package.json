@@ -3,10 +3,11 @@
   "name": "@nocobase-example/plugin-custom-table-block-resource",
   "displayName": "Plugin example: Custom resource for table block",
   "description": "This plugin demonstrates how to use the custom resource for table block feature to create a custom resource for a table block.",
-  "version": "2.0.57",
+  "version": "2.1.9",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   }

@@ -33,10 +33,6 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Updates über den Git-Workflow synchronisieren
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # Installationsmethoden und Versionsvergleich
@@ -60,4 +56,9 @@ Sie können NocoBase auf verschiedene Arten installieren.
 | **Anwendungsbereiche** | No-Code-Benutzer, schnelle Bereitstellung auf einem Server. | Frontend-/Full-Stack-Entwickler, Teamprojekte, Low-Code-Entwicklung. | Technische Entwickler, Benutzer, die unveröffentlichte Versionen testen möchten. |
 | **Technische Anforderungen** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Upgrade-Methode** | Neuestes Image herunterladen und Container neu starten | Abhängigkeiten mit yarn aktualisieren | Updates über den Git-Workflow synchronisieren |
-| **Anleitungen** | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Bereitstellung</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Bereitstellung</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Bereitstellung</code>](#) |
+
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
+## Wie geht es weiter
+
+Wenn Sie sich für eine Installationsmethode entschieden haben, lesen Sie als Nächstes [NocoBase-App installieren](/ai/install-nocobase-app). Dort installieren Sie die NocoBase CLI und schließen die Installation sowie Initialisierung der Anwendung ab.

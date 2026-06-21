@@ -11,25 +11,40 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { Model } from '@nocobase/database';
 import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
-import axios from 'axios';
+import { checkUrlAgainstWhitelist, serverRequest } from '@nocobase/utils';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
-import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
+import { buildTool, encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
-import { tool } from 'langchain';
 import '@langchain/core/utils/stream';
-import { ToolsEntry } from '@nocobase/ai';
 import { LLMResult } from '@langchain/core/outputs';
 import { ContentBlock } from '@langchain/core/messages';
 import { CachedDocumentLoader, SUPPORTED_DOCUMENT_EXTNAMES } from '../document-loader';
 import path from 'node:path';
 import PluginAIServer from '../plugin';
+import { MODEL_KWARGS_KEY } from './common/reasoning';
 
 export type ParsedAttachmentResult = {
   placement: string;
   content: any;
 };
+
+export type LLMProviderInvokeOptions = {
+  modelKwargs?: Record<string, any>;
+  modelRequestParams?: Record<string, any>;
+  [key: string]: any;
+};
+
+export type LLMModelRequestBuilderResult = {
+  context: AIChatContext;
+  options?: LLMProviderInvokeOptions;
+};
+
+export type LLMModelRequestBuilder = (input: {
+  context: AIChatContext;
+  options?: LLMProviderInvokeOptions;
+}) => LLMModelRequestBuilderResult;
 
 export interface LLMProviderOptions {
   app: Application;
@@ -37,10 +52,26 @@ export interface LLMProviderOptions {
   modelOptions?: Record<string, any>;
 }
 
+function normalizeBaseURL(baseURL: string): string {
+  checkUrlAgainstWhitelist(baseURL);
+  return new URL(baseURL).toString().replace(/\/$/, '');
+}
+
+function resolveServiceOptions(serviceOptions: Record<string, any> | undefined, app: Application) {
+  const rendered = app.environment.renderJsonTemplate(serviceOptions ?? {});
+  if (rendered?.baseURL != null) {
+    if (typeof rendered.baseURL !== 'string') {
+      throw new Error('baseURL must be a string');
+    }
+    rendered.baseURL = normalizeBaseURL(rendered.baseURL);
+  }
+  return rendered;
+}
+
 export abstract class LLMProvider {
   app: Application;
   serviceOptions: Record<string, any>;
-  modelOptions: Record<string, any>;
+  modelOptions: Record<string, any> | undefined;
   chatModel: any;
 
   abstract createModel(): BaseChatModel | any;
@@ -52,16 +83,20 @@ export abstract class LLMProvider {
   constructor(opts: LLMProviderOptions) {
     const { app, serviceOptions, modelOptions } = opts;
     this.app = app;
-    this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
+    this.serviceOptions = resolveServiceOptions(serviceOptions, app);
     if (modelOptions) {
       this.modelOptions = modelOptions;
       this.chatModel = this.createModel();
     }
   }
 
+  protected getModelRequestBuilder(_model?: string): LLMModelRequestBuilder | null {
+    return null;
+  }
+
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
-    const toolDefinitions = context.tools?.map(ToolDefinition.from('ToolsEntry'));
+    const toolDefinitions = context.tools?.map(buildTool);
 
     if (this.builtInTools()?.length) {
       const tools = [...this.builtInTools()];
@@ -82,9 +117,31 @@ export abstract class LLMProvider {
     return chain;
   }
 
-  async invoke(context: AIChatContext, options?: any) {
-    const chain = this.prepareChain(context);
-    return chain.invoke(context.messages, options);
+  async invoke(context: AIChatContext, options?: LLMProviderInvokeOptions) {
+    const builder = this.getModelRequestBuilder(this.modelOptions?.model);
+    const request = builder?.({ context, options }) || { context, options };
+    const chain = this.prepareChain(request.context);
+    const requestInvokeOptions = options?.signal
+      ? {
+          ...(request.options || {}),
+          signal: request.options?.signal ?? options.signal,
+        }
+      : request.options;
+    const { modelKwargs, modelRequestParams, options: requestOptions, ...restOptions } = requestInvokeOptions || {};
+    const invokeOptions = modelKwargs
+      ? {
+          ...restOptions,
+          [MODEL_KWARGS_KEY]: modelKwargs,
+          options: {
+            ...(requestOptions || {}),
+            [MODEL_KWARGS_KEY]: modelKwargs,
+          },
+        }
+      : {
+          ...restOptions,
+          ...(requestOptions ? { options: requestOptions } : {}),
+        };
+    return chain.invoke(request.context.messages, invokeOptions);
   }
 
   async stream(context: AIChatContext, options?: any) {
@@ -99,18 +156,19 @@ export abstract class LLMProvider {
   }> {
     const options = this.serviceOptions || {};
     const apiKey = options.apiKey;
-    let baseURL = options.baseURL || this.baseURL;
-    if (!baseURL) {
-      return { code: 400, errMsg: 'baseURL is required' };
+    let url: string;
+    try {
+      url = this.buildRequestURL('models');
+    } catch (e) {
+      return { code: 400, errMsg: e instanceof Error ? e.message : String(e) };
     }
     if (!apiKey) {
       return { code: 400, errMsg: 'API Key required' };
     }
-    if (baseURL && baseURL.endsWith('/')) {
-      baseURL = baseURL.slice(0, -1);
-    }
     try {
-      const res = await axios.get(`${baseURL}/models`, {
+      const res = await serverRequest({
+        method: 'GET',
+        url,
         headers: {
           Authorization: `Bearer ${apiKey}`,
         },
@@ -195,17 +253,21 @@ export abstract class LLMProvider {
   }
 
   protected async loadDocument(ctx: Context, attachment: any): Promise<any> {
-    const referer = ctx.get('referer') || '';
-    const ua = ctx.get('user-agent') || '';
     const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
-    const parsed = await this.documentLoader.load(attachment, {
-      requestOptions: {
-        headers: {
-          Referer: referer,
-          'User-Agent': ua,
-        },
-      },
-    });
+
+    const loaderOptions =
+      typeof ctx.get === 'function'
+        ? {
+            requestOptions: {
+              headers: {
+                Referer: ctx.get('referer') || '',
+                'User-Agent': ctx.get('user-agent') || '',
+              },
+            },
+          }
+        : undefined;
+
+    const parsed = await this.documentLoader.load(attachment, loaderOptions);
     if (!parsed.supported) {
       return {
         placement: 'system',
@@ -230,17 +292,18 @@ export abstract class LLMProvider {
     if (!schema) {
       return;
     }
-    const methods = {
+    const methods: Record<string, string> = {
       json_object: 'jsonMode',
       json_schema: 'jsonSchema',
     };
-    const options = {
+    const options: Record<string, any> = {
       includeRaw: true,
       name,
       method: methods[responseFormat],
     };
     if (strict) {
       options['strict'] = strict;
+      options['method'] = 'jsonSchema';
     }
     return {
       schema: {
@@ -288,7 +351,7 @@ export abstract class LLMProvider {
     return [];
   }
 
-  parseReasoningContent(chunk: AIMessageChunk): { status: string; content: string } {
+  parseReasoningContent(chunk: AIMessageChunk): { status: string; content: string } | null {
     return null;
   }
 
@@ -302,6 +365,23 @@ export abstract class LLMProvider {
 
   protected get documentLoader(): CachedDocumentLoader {
     return this.aiPlugin.documentLoaders.cached;
+  }
+
+  protected getResolvedBaseURL(): string {
+    const baseURL = this.serviceOptions?.baseURL ?? this.baseURL;
+    if (!baseURL) {
+      throw new Error('baseURL is required');
+    }
+    if (typeof baseURL !== 'string') {
+      throw new Error('baseURL must be a string');
+    }
+    return normalizeBaseURL(baseURL);
+  }
+
+  protected buildRequestURL(pathname: string): string {
+    const url = new URL(pathname.replace(/^\/+/, ''), `${this.getResolvedBaseURL()}/`).toString();
+    checkUrlAgainstWhitelist(url);
+    return url;
   }
 
   protected get aiPlugin(): PluginAIServer {
@@ -322,7 +402,7 @@ export abstract class EmbeddingProvider {
   constructor(protected opts: EmbeddingProviderOptions) {
     const { app, serviceOptions, modelOptions } = this.opts;
     this.app = app;
-    this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions ?? {});
+    this.serviceOptions = resolveServiceOptions(serviceOptions, app);
     this.modelOptions = modelOptions;
   }
   abstract createEmbedding(): EmbeddingsInterface;
@@ -341,7 +421,10 @@ export abstract class EmbeddingProvider {
     if (!baseURL) {
       throw new Error('baseURL is required');
     }
-    return baseURL;
+    if (typeof baseURL !== 'string') {
+      throw new Error('baseURL must be a string');
+    }
+    return normalizeBaseURL(baseURL);
   }
 
   protected get model() {
@@ -350,39 +433,5 @@ export abstract class EmbeddingProvider {
       throw new Error('Embedding model is required');
     }
     return model;
-  }
-}
-
-type FromType = 'ToolsEntry';
-
-export class ToolDefinition<T> {
-  constructor(
-    private from: FromType,
-    private _tool: T,
-  ) {}
-
-  static from(from: FromType) {
-    return (tool: any) => new ToolDefinition(from, tool).tool;
-  }
-
-  get tool() {
-    if (this.from === 'ToolsEntry') {
-      return this.convertToolOptions();
-    } else {
-      throw new Error('not supported tool definitions');
-    }
-  }
-
-  private convertToolOptions() {
-    const {
-      invoke,
-      definition: { name, description, schema },
-    } = this._tool as ToolsEntry;
-    return tool((input, { toolCall, context }) => invoke(context.ctx, input, toolCall.id), {
-      name,
-      description,
-      schema,
-      returnDirect: false,
-    });
   }
 }

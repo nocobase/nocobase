@@ -829,6 +829,52 @@ describe('simulateLayoutForSlot', () => {
     expect(nestedRows[1].sizes).toEqual([12, 12]);
   });
 
+  it('keeps nested column insertion target when removing a sibling collapses the original path', () => {
+    const layout = createLayout(
+      {
+        vyvfw2jw071: [['6ad3ccaabd5', 'ff8b4b57f65']],
+        ablhoqw51gb: [['21b422021b8']],
+      },
+      {
+        vyvfw2jw071: [24],
+        ablhoqw51gb: [24],
+      },
+      ['vyvfw2jw071', 'ablhoqw51gb'],
+    );
+    layout.layout = normalizeGridLayout({
+      rows: layout.rows,
+      sizes: layout.sizes,
+      rowOrder: layout.rowOrder,
+      itemUids: ['6ad3ccaabd5', 'ff8b4b57f65', '21b422021b8'],
+    });
+
+    const slot: LayoutSlot = {
+      type: 'column',
+      rowId: 'll5vo5pzj3u',
+      columnIndex: 0,
+      insertIndex: 1,
+      position: 'after',
+      path: [
+        { rowId: 'vyvfw2jw071', cellId: 'vyvfw2jw071:cell:0' },
+        { rowId: 'll5vo5pzj3u', cellId: 'ghy612j5zzg' },
+      ],
+      rect,
+    };
+
+    const result = simulateLayoutForSlot({ slot, sourceUid: 'ff8b4b57f65', layout });
+
+    expect(result.layout!.rows).toMatchObject([
+      {
+        id: 'vyvfw2jw071',
+        cells: [{ items: ['6ad3ccaabd5', 'ff8b4b57f65'] }],
+      },
+      {
+        id: 'ablhoqw51gb',
+        cells: [{ items: ['21b422021b8'] }],
+      },
+    ]);
+  });
+
   it('treats dragging an item to its own item-edge as no-op', () => {
     const layout = createLayout(
       {

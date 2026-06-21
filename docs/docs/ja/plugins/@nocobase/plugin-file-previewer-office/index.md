@@ -1,4 +1,6 @@
 ---
+title: "Office File Previewer"
+keywords: "File manager,Collection fields"
 displayName: "Office File Previewer"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |

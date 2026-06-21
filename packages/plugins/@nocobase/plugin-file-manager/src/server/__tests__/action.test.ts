@@ -8,15 +8,35 @@
  */
 
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 import querystring from 'querystring';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import PluginFileManagerServer from '../server';
+import { getDocumentRoot, normalizeLocalStoragePath } from '../storages/local';
 
-const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
+const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads' } = process.env;
 
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `/storage/uploads`;
+
+function getStorageDestPath(storage) {
+  return path.join(getDocumentRoot(storage), storage.path || '');
+}
+
+describe('local storage path validation', () => {
+  it('should normalize windows path separators', () => {
+    expect(normalizeLocalStoragePath('windows\\path')).toBe('windows/path');
+  });
+
+  it('should reject null byte path', () => {
+    expect(() => normalizeLocalStoragePath('safe\0path')).toThrow('Invalid local storage path');
+  });
+
+  it('should reject non-string path', () => {
+    expect(() => normalizeLocalStoragePath(1)).toThrow('Invalid local storage path');
+  });
+});
 
 describe('action', () => {
   let app;
@@ -169,26 +189,20 @@ describe('action', () => {
         const storage = await attachment.getStorage();
         expect(storage.get()).toMatchObject({
           type: STORAGE_TYPE_LOCAL,
-          options: { documentRoot: LOCAL_STORAGE_DEST },
           rules: { size: FILE_SIZE_LIMIT_DEFAULT },
           path: '',
           baseUrl: DEFAULT_LOCAL_BASE_URL,
           default: true,
         });
 
-        const { documentRoot = 'storage/uploads' } = storage.options || {};
-        const destPath = path.resolve(
-          path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-          storage.path || '',
-        );
+        const destPath = getStorageDestPath(storage);
         const file = await fs.readFile(`${destPath}/${attachment.filename}`);
         // 文件是否保存到指定路径
         expect(file.toString().includes('Hello world!')).toBeTruthy();
 
-        // 通过 url 是否能正确访问
-        const url = attachment.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBeTruthy();
+        // 默认 local storage 的静态访问需要至少一个端到端校验，确保静态文件中间件仍可通过生成的 URL 访问
+        const res = await agent.get(body.data.url);
+        expect(res.text).toContain('Hello world!');
       });
 
       it('filename with special character (URL)', async () => {
@@ -336,11 +350,7 @@ describe('action', () => {
         expect(body.data.size).toBe(255);
 
         const attachment = await AttachmentRepo.findById(body.data.id);
-        const { documentRoot = 'storage/uploads' } = imageStorage.options || {};
-        const destPath = path.resolve(
-          path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-          imageStorage.path || '',
-        );
+        const destPath = getStorageDestPath(imageStorage);
         const stats = await fs.stat(path.join(destPath, attachment.filename));
         expect(stats.size).toBe(255);
       });
@@ -384,9 +394,9 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBe(true);
+        const destPath = getStorageDestPath(storage);
+        const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
       });
 
       it('path with heading or tailing slash', async () => {
@@ -428,9 +438,9 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBe(true);
+        const destPath = getStorageDestPath(storage);
+        const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
       });
 
       it('path longer than 255', async () => {
@@ -473,9 +483,24 @@ describe('action', () => {
 
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBe(true);
+        const destPath = getStorageDestPath(storage);
+        const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
+      });
+
+      it('upload should reject unsafe local storage path at write destination', async () => {
+        const Plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+        const storage = Plugin.storagesCache.get(defaultStorage.id);
+        if (!storage) {
+          throw new Error('Default storage not found');
+        }
+        storage.path = '../outside';
+
+        await expect(
+          Plugin.uploadFile({
+            filePath: path.resolve(__dirname, './files/text.txt'),
+          }),
+        ).rejects.toThrow('Access denied');
       });
     });
   });
@@ -543,11 +568,7 @@ describe('action', () => {
       // 关联的存储引擎是否正确
       const storage = await StorageRepo.findById(attachment.storageId);
 
-      const { documentRoot = 'storage/uploads' } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
 
@@ -569,11 +590,7 @@ describe('action', () => {
 
       const storage = await StorageRepo.findById(attachment.storageId);
 
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
 
@@ -601,11 +618,7 @@ describe('action', () => {
         },
       });
 
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const file1 = await fs.stat(path.join(destPath, f1.data.filename));
       expect(file1).toBeTruthy();
 
@@ -630,11 +643,7 @@ describe('action', () => {
 
       const storage = await StorageRepo.findById(attachment.storageId);
 
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const filePath = path.join(destPath, attachment.filename);
       const file = await fs.stat(filePath);
       expect(file).toBeTruthy();
@@ -655,11 +664,7 @@ describe('action', () => {
       const { data: attachment } = body;
 
       const storage = await StorageRepo.findById(attachment.storageId);
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
 
       const outsideDir = path.resolve(destPath, '..');
       await fs.mkdir(outsideDir, { recursive: true });
@@ -706,6 +711,105 @@ describe('action', () => {
   });
 
   describe('storage actions', () => {
+    it('should reject unsafe local storage documentRoot on create', async () => {
+      const { status } = await agent.resource('storages').create({
+        values: {
+          name: 'unsafe_create',
+          type: STORAGE_TYPE_LOCAL,
+          baseUrl: DEFAULT_LOCAL_BASE_URL,
+          options: {
+            documentRoot: path.resolve(process.cwd(), '..', 'unsafe-local-storage'),
+          },
+        },
+      });
+
+      expect(status).toBe(400);
+    });
+
+    it('should reject unsafe local storage documentRoot on update', async () => {
+      const { status } = await agent.resource('storages').update({
+        filterByTk: defaultStorage.id,
+        values: {
+          options: {
+            documentRoot: '..',
+          },
+        },
+      });
+
+      expect(status).toBe(400);
+
+      const storage = await StorageRepo.findById(defaultStorage.id);
+      expect(storage.options.documentRoot).toBe(LOCAL_STORAGE_DEST);
+    });
+
+    it('should keep trusted existing absolute local storage documentRoot usable', async () => {
+      const documentRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-local-storage-'));
+
+      try {
+        const storage = await StorageRepo.create({
+          values: {
+            name: 'external_local',
+            type: STORAGE_TYPE_LOCAL,
+            rules: {
+              mimetype: ['text/*'],
+            },
+            path: 'trusted/path',
+            baseUrl: '/external-local',
+            options: {
+              documentRoot,
+            },
+          },
+        });
+
+        db.collection({
+          name: 'externalFiles',
+          fields: [
+            {
+              name: 'file',
+              type: 'belongsTo',
+              target: 'attachments',
+              storage: storage.name,
+            },
+          ],
+        });
+
+        const { body, status } = await agent.resource('attachments').create({
+          attachmentField: 'externalFiles.file',
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+
+        expect(status).toBe(200);
+        const content = await fs.readFile(path.join(documentRoot, 'trusted/path', body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
+      } finally {
+        await fs.rm(documentRoot, { recursive: true, force: true });
+      }
+    });
+
+    it('should reject unsafe local storage path on create', async () => {
+      const { status } = await agent.resource('storages').create({
+        values: {
+          name: 'unsafe_path_create',
+          type: STORAGE_TYPE_LOCAL,
+          baseUrl: DEFAULT_LOCAL_BASE_URL,
+          path: '../outside',
+        },
+      });
+
+      expect(status).toBe(400);
+    });
+
+    it('should reject unsafe local storage path on update', async () => {
+      const { status } = await agent.resource('storages').update({
+        filterByTk: defaultStorage.id,
+        values: {
+          path: '../outside',
+        },
+      });
+
+      expect(status).toBe(400);
+    });
+
     describe('getBasicInfo', () => {
       it('get default storage', async () => {
         const { body, status } = await agent.resource('storages').getBasicInfo();

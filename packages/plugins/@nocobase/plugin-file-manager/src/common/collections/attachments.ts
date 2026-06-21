@@ -17,6 +17,7 @@ export default {
   asStrategyResource: true,
   shared: true,
   name: 'attachments',
+  dataCategory: 'business',
   createdBy: true,
   updatedBy: true,
   template: 'file',

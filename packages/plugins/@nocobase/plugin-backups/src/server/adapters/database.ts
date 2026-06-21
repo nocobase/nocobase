@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { DatabaseOptions } from '@nocobase/database';
 import { exec as execCallback, execSync, spawn } from 'child_process';
 import { createReadStream, createWriteStream } from 'fs';
@@ -13,10 +22,27 @@ const D$$ = os.platform() === 'win32' ? '$$' : '\\$\\$';
 
 const STREAM_BUFFER_SIZE = 2 * 1024 * 1024; // 2MB buffer for better IO performance
 
+export type DBBackupOptions = {
+  dir: string;
+  skipFdw?: boolean;
+  includeTables?: string[];
+  excludeTables?: string[];
+};
+
+export type DBRestoreOptions = {
+  filePath: string;
+  schema?: string;
+  skipDropAllTables?: boolean;
+  toolchain?: DBBackupToolchain;
+};
+
+export type DBBackupToolchain = 'postgres' | 'kingbase';
+
 export interface DBAdapter {
   dbOpts: DatabaseOptions;
-  backup(dir: string, skipFdw?: boolean): Promise<void>;
-  restore(filePath: string, schema?: string): Promise<void>;
+  backupToolchain?: DBBackupToolchain;
+  backup(options: DBBackupOptions): Promise<void>;
+  restore(options: DBRestoreOptions): Promise<void>;
   check(op: 'backup' | 'restore'): Promise<void>;
   clientVersion(op: 'backup' | 'restore'): Promise<string | void>;
 }
@@ -37,12 +63,28 @@ const formatPathInEnv = (path?: string) => {
   return path;
 };
 const escapeStringLiteral = (value: string) => String(value).replace(/'/g, "''");
+const quotePgIdentifier = (value: string) => `"${String(value).replace(/"/g, '""')}"`;
+const quoteShellArg = (value: string) => `'${String(value).replace(/'/g, "'\\''")}'`;
+const quotePgTablePattern = (table: string) => quoteShellArg(String(table).split('.').map(quotePgIdentifier).join('.'));
+const qualifyPgTablePattern = (table: string, schema?: string) => {
+  const tablePattern = String(table);
+  if (!schema || tablePattern.includes('.')) {
+    return tablePattern;
+  }
+
+  return `${schema}.${tablePattern}`;
+};
+const assertPostgresSchemaIdentifier = (schema: string) => {
+  if (!/^[A-Za-z_][A-Za-z0-9_]{0,62}$/.test(schema)) {
+    throw new Error(`Invalid PostgreSQL schema: ${schema}`);
+  }
+};
 
 abstract class BaseDBAdapter implements DBAdapter {
   constructor(public dbOpts: DatabaseOptions) {}
 
-  abstract backup(dir: string, skipFdw?: boolean): Promise<void>;
-  abstract restore(filePath: string): Promise<void>;
+  abstract backup(options: DBBackupOptions): Promise<void>;
+  abstract restore(options: DBRestoreOptions): Promise<void>;
 
   async check(_: 'backup' | 'restore') {}
   async clientVersion(_: 'backup' | 'restore'): Promise<string | void> {}
@@ -52,10 +94,19 @@ abstract class BaseDBAdapter implements DBAdapter {
       execSync(`${command} --version`);
     } catch (error) {
       throw new Error(
-        `Command ${command} not found, please install it first. Check reference here: https://docs.nocobase.com/handbook/backups#installation`,
+        `Command ${command} not found, please install it first. Check reference here: https://docs.nocobase.com/ops-management/backup-manager/`,
       );
     }
   };
+
+  protected hasCommand(command: string) {
+    try {
+      execSync(`${command} --version`);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  }
 }
 
 class MySQLAdapter extends BaseDBAdapter {
@@ -77,24 +128,35 @@ class MySQLAdapter extends BaseDBAdapter {
     const cmd = op === 'backup' ? this.#backupCmd : this.#restoreCmd;
     try {
       return execSync(`${cmd} --version`).toString();
-    } catch (_error) {}
+    } catch (_error) {
+      return undefined;
+    }
   }
 
-  async backup(dir: string, skipFdw: boolean = false): Promise<void> {
+  async backup({ dir, skipFdw = false, includeTables, excludeTables }: DBBackupOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
     const filePath = `${dir}/data`;
     const versionStr = await this.clientVersion('backup');
     const versionMatch = (versionStr || '').match(/Ver\s+(\d+\.\d+\.\d+)/i);
     const version = versionMatch ? Number(versionMatch[1].split('.')[0]) : null;
-    
+
     let createServerSQL = '';
     if (!skipFdw) {
       createServerSQL = await this.#getFederatedServerSQL(username, host, port, database, password);
     }
 
+    const includeOption =
+      Array.isArray(includeTables) && includeTables.length ? includeTables.map((table) => table) : [];
+    const excludeOption =
+      Array.isArray(excludeTables) && excludeTables.length
+        ? excludeTables.map((table) => `--ignore-table=${database}.${table}`)
+        : [];
+
     const mysqldumpArgs = [
-      '-u', username,
-      '-h', host,
+      '-u',
+      username,
+      '-h',
+      host,
       ...(port ? ['-P', port.toString()] : []),
       '--protocol=tcp',
       '--hex-blob',
@@ -104,20 +166,28 @@ class MySQLAdapter extends BaseDBAdapter {
       '--routines',
       '--triggers',
       ...(version && version > 7 ? ['--column-statistics=0'] : []),
-      database
+      database,
     ];
+
+    if (excludeOption.length) {
+      mysqldumpArgs.push(...excludeOption);
+    }
+
+    if (includeOption.length) {
+      mysqldumpArgs.push(...includeOption);
+    }
 
     // Stream mysqldump output directly to final file (no intermediate file)
     return new Promise((resolve, reject) => {
       const mysqldumpProcess = spawn(this.#backupCmd, mysqldumpArgs, {
         env: { ...process.env, MYSQL_PWD: password },
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       const writeStream = createWriteStream(filePath, {
-        highWaterMark: STREAM_BUFFER_SIZE
+        highWaterMark: STREAM_BUFFER_SIZE,
       });
-      
+
       const escapeTransform = new EscapeQuoteTransform();
 
       // Handle errors
@@ -139,27 +209,32 @@ class MySQLAdapter extends BaseDBAdapter {
       }
 
       // Direct streaming: mysqldump stdout -> transform -> final file
-      pipeline(
-        mysqldumpProcess.stdout,
-        escapeTransform,
-        writeStream
-      ).then(() => {
-        // Add SQL footers
-        writeStream.write('\n/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;\n');
-        writeStream.write('/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;\n');
-        writeStream.write('/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;\n');
-        writeStream.end(() => resolve());
-      }).catch(reject);
+      pipeline(mysqldumpProcess.stdout, escapeTransform, writeStream)
+        .then(() => {
+          // Add SQL footers
+          writeStream.write('\n/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;\n');
+          writeStream.write('/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;\n');
+          writeStream.write('/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;\n');
+          writeStream.end(() => resolve());
+        })
+        .catch(reject);
     });
   }
 
-  async #getFederatedServerSQL(username: string, host: string, port: number | undefined, database: string, password: string): Promise<string> {
+  async #getFederatedServerSQL(
+    username: string,
+    host: string,
+    port: number | undefined,
+    database: string,
+    password: string,
+  ): Promise<string> {
     try {
-      const fetchFederatedTablesCommand = `mysql -u ${username} -h ${host} ${port ? `-P ${port}` : ''
-        } --protocol=tcp -D ${database} -e "
+      const fetchFederatedTablesCommand = `mysql -u ${username} -h ${host} ${
+        port ? `-P ${port}` : ''
+      } --protocol=tcp -D ${database} -e "
     SELECT TABLE_NAME
-    FROM information_schema.tables 
-    WHERE table_schema = '${database}' 
+    FROM information_schema.tables
+    WHERE table_schema = '${database}'
       AND engine = 'FEDERATED';" -s -N`;
       const federatedTables = (await run(fetchFederatedTablesCommand, { MYSQL_PWD: password })).trim();
 
@@ -168,8 +243,9 @@ class MySQLAdapter extends BaseDBAdapter {
       let servers: string[] = [];
       if (federatedTables) {
         const createTablePromises = federatedTables.split('\n').map(async (entry) => {
-          const createTableCommand = `mysql -u ${username} -h ${host} ${port ? `-P ${port}` : ''
-            } --protocol=tcp -D ${database} -e "SHOW CREATE TABLE ${entry}" -s -N`;
+          const createTableCommand = `mysql -u ${username} -h ${host} ${
+            port ? `-P ${port}` : ''
+          } --protocol=tcp -D ${database} -e "SHOW CREATE TABLE ${entry}" -s -N`;
           const cmdRet = await run(createTableCommand, { MYSQL_PWD: password });
           const match = cmdRet.match(/ENGINE=FEDERATED\s+.*CONNECTION\s*=\s*'([^']+)\/.*?'/i);
           return match ? match[1] : '';
@@ -177,12 +253,13 @@ class MySQLAdapter extends BaseDBAdapter {
         servers = await Promise.all(createTablePromises);
       }
 
-      if (servers.filter(s => s).length === 0) return '';
+      if (servers.filter((s) => s).length === 0) return '';
 
-      const fetchServerInfoCommand = `mysql -u ${username} -h ${host} ${port ? `-P ${port}` : ''
-        } --protocol=tcp -D ${database} -e "
+      const fetchServerInfoCommand = `mysql -u ${username} -h ${host} ${
+        port ? `-P ${port}` : ''
+      } --protocol=tcp -D ${database} -e "
     SELECT Server_name, Host, Db, Username, Password, Port FROM mysql.servers
-    WHERE Server_name IN ('${servers.filter(s => s).join("','")}');" -s -N`;
+    WHERE Server_name IN ('${servers.filter((s) => s).join("','")}');" -s -N`;
       const serverInfo = await run(fetchServerInfoCommand, { MYSQL_PWD: password });
 
       if (!serverInfo) return '';
@@ -198,7 +275,7 @@ class MySQLAdapter extends BaseDBAdapter {
         const [Server_name, Host, Db, Username, Password, Port] = entry.split('\t');
         createServerSQL += `
           IF NOT EXISTS (SELECT * FROM mysql.servers WHERE Server_name = '${Server_name}') THEN
-            CREATE SERVER ${Server_name} FOREIGN DATA WRAPPER mysql 
+            CREATE SERVER ${Server_name} FOREIGN DATA WRAPPER mysql
             OPTIONS (HOST '${Host}', DATABASE '${Db}', USER '${Username}', PASSWORD '${Password}', PORT ${Port});
           END IF;
         `;
@@ -215,12 +292,13 @@ class MySQLAdapter extends BaseDBAdapter {
     }
   }
 
-  async restore(filePath: string): Promise<void> {
+  async restore({ filePath, skipDropAllTables = false }: DBRestoreOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
 
-    const dropDataCommand = `mysql -u ${username} -h ${host} ${
-      port ? `-P ${port}` : ''
-    } --protocol=tcp -D ${database} -e "
+    if (!skipDropAllTables) {
+      const dropDataCommand = `mysql -u ${username} -h ${host} ${
+        port ? `-P ${port}` : ''
+      } --protocol=tcp -D ${database} -e "
     DELIMITER $$
     DROP PROCEDURE IF EXISTS drop_all_tables_and_triggers$$
     CREATE PROCEDURE drop_all_tables_and_triggers()
@@ -234,7 +312,7 @@ class MySQLAdapter extends BaseDBAdapter {
             SELECT table_name
             FROM information_schema.TABLES
             WHERE table_schema = SCHEMA();
-            
+
         -- Cursor for triggers
         DECLARE _trigger_cursor CURSOR FOR
             SELECT trigger_name
@@ -301,8 +379,9 @@ class MySQLAdapter extends BaseDBAdapter {
     DELIMITER ;
     "`;
 
-    // Run the command to drop all tables
-    await run(dropDataCommand, { MYSQL_PWD: password });
+      // Run the command to drop all tables
+      await run(dropDataCommand, { MYSQL_PWD: password });
+    }
 
     const command = `${this.#restoreCmd} -u ${username} -h ${host} ${
       port ? `-P ${port}` : ''
@@ -312,46 +391,93 @@ class MySQLAdapter extends BaseDBAdapter {
 }
 
 class PostgresAdapter extends BaseDBAdapter {
-  get #backupCmd() {
+  get backupToolchain(): DBBackupToolchain {
+    return 'postgres';
+  }
+
+  protected getBackupCommandName(_toolchain: DBBackupToolchain = this.backupToolchain) {
     return formatPathInEnv(process.env.PG_DUMP_PATH) || 'pg_dump';
   }
-  get #restoreCmd() {
+
+  protected getRestoreCommandName(_toolchain: DBBackupToolchain = this.backupToolchain) {
     return formatPathInEnv(process.env.PG_RESTORE_PATH) || 'pg_restore';
   }
+
+  protected getSqlCommandName(_toolchain: DBBackupToolchain = this.backupToolchain) {
+    return formatPathInEnv(process.env.PSQL_PATH) || 'psql';
+  }
+
+  protected getPasswordEnvVars(
+    password: string,
+    _toolchain: DBBackupToolchain = this.backupToolchain,
+  ): NodeJS.ProcessEnv {
+    return { PGPASSWORD: password };
+  }
+
+  protected getBackupSchema() {
+    return this.dbOpts.schema;
+  }
+
   async check(op: 'backup' | 'restore') {
     switch (op) {
       case 'backup':
-        this.assertCommand(this.#backupCmd);
+        this.assertCommand(this.getBackupCommandName());
         break;
       case 'restore':
-        this.assertCommand(this.#restoreCmd);
+        this.assertCommand(this.getRestoreCommandName());
         break;
     }
   }
 
   async clientVersion(op: 'backup' | 'restore'): Promise<string | void> {
-    const cmd = op === 'backup' ? this.#backupCmd : this.#restoreCmd;
+    const cmd = op === 'backup' ? this.getBackupCommandName() : this.getRestoreCommandName();
     try {
       return execSync(`${cmd} --version`).toString();
-    } catch (_error) {}
+    } catch (_error) {
+      return undefined;
+    }
   }
 
-  async backup(dir: string): Promise<void> {
-    const { username, host, port, database, password, schema: backupSchema } = this.dbOpts;
+  async backup({ dir, includeTables, excludeTables }: DBBackupOptions): Promise<void> {
+    const { username, host, port, database, password } = this.dbOpts;
     const filePath = `${dir}/data`;
+    const backupSchema = this.getBackupSchema();
     const schemaOption = backupSchema ? `--schema=${backupSchema}` : '';
+    const includeOption =
+      Array.isArray(includeTables) && includeTables.length
+        ? includeTables
+            .map((table) => `-t ${quotePgTablePattern(qualifyPgTablePattern(table, backupSchema))}`)
+            .join(' ')
+        : '';
+    const excludeOption =
+      Array.isArray(excludeTables) && excludeTables.length
+        ? excludeTables
+            .map((table) => `-T ${quotePgTablePattern(qualifyPgTablePattern(table, backupSchema))}`)
+            .join(' ')
+        : '';
     // set the password in the environment variable, so we don't need to pass it in the command
-    const command = `${this.#backupCmd} -U ${username} -h ${host} ${
+    const command = `${this.getBackupCommandName()} ${includeOption} ${excludeOption} -U ${username} -h ${host} ${
       port ? `-p ${port}` : ''
     } -F c -b --quote-all-identifiers ${schemaOption} -f ${filePath} ${database}`;
-    await run(command, { PGPASSWORD: password });
+    await run(command, this.getPasswordEnvVars(password));
   }
 
-  async restore(filePath: string, schema?: string): Promise<void> {
+  async restore({
+    filePath,
+    schema,
+    skipDropAllTables = false,
+    toolchain = this.backupToolchain,
+  }: DBRestoreOptions): Promise<void> {
     const { username, host, port, database, password } = this.dbOpts;
     let schemaOption = this.dbOpts.schema;
     if (schema && !schemaOption) {
       schemaOption = 'public'; // if schema is provided, but schemaOption is not, set it to public
+    }
+    if (schema) {
+      assertPostgresSchemaIdentifier(schema);
+    }
+    if (schemaOption) {
+      assertPostgresSchemaIdentifier(schemaOption);
     }
     const cpuCores = os.cpus().length; // get the number of CPU cores, so we can use it to parallelize the restore
     const j = Math.max(1, Math.floor(cpuCores / 2)); // use half of the cores
@@ -361,9 +487,12 @@ class PostgresAdapter extends BaseDBAdapter {
     const relnamespaceCondition = schemaOption
       ? `WHERE relnamespace = '${schemaOption}'::regnamespace`
       : `WHERE tgrelid IN (SELECT oid FROM pg_class WHERE relnamespace NOT IN (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname IN ('pg_catalog', 'information_schema')))`;
-    const dropDataCommand = `psql -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
-    DO ${D$$} DECLARE r RECORD; 
-    BEGIN 
+    if (!skipDropAllTables) {
+      const dropDataCommand = `${this.getSqlCommandName(toolchain)} -U ${username} -h ${host} ${
+        port ? `-p ${port}` : ''
+      } -d ${database} -c "
+    DO ${D$$} DECLARE r RECORD;
+    BEGIN
     FOR r IN (SELECT viewname,schemaname FROM pg_views ${schemaNameCondition}) LOOP
         BEGIN
           EXECUTE 'DROP VIEW IF EXISTS ' || quote_ident(r.schemaname) || '.' || quote_ident(r.tablename) || ' CASCADE';
@@ -372,13 +501,13 @@ class PostgresAdapter extends BaseDBAdapter {
         END;
     END LOOP;
 
-    FOR r IN (SELECT tablename,schemaname FROM pg_tables ${schemaNameCondition}) LOOP 
+    FOR r IN (SELECT tablename,schemaname FROM pg_tables ${schemaNameCondition}) LOOP
       BEGIN
-        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.schemaname) || '.' || quote_ident(r.tablename) || ' CASCADE'; 
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.schemaname) || '.' || quote_ident(r.tablename) || ' CASCADE';
       EXCEPTION
         WHEN OTHERS THEN
       END;
-    END LOOP; 
+    END LOOP;
 
     FOR r IN (SELECT sequencename,schemaname FROM pg_sequences ${schemaNameCondition}) LOOP
       BEGIN
@@ -392,7 +521,7 @@ class PostgresAdapter extends BaseDBAdapter {
       SELECT tgname, tgrelid::regclass::text AS table_fullname
       FROM pg_trigger
       WHERE tgrelid IN (SELECT oid FROM pg_class ${relnamespaceCondition})
-    ) LOOP 
+    ) LOOP
       BEGIN
         EXECUTE 'DROP TRIGGER IF EXISTS ' || quote_ident(r.tgname) || ' ON ' || quote_ident(r.table_fullname) || ' CASCADE';
       EXCEPTION
@@ -402,29 +531,47 @@ class PostgresAdapter extends BaseDBAdapter {
 
     END ${D$$};"`.replace(/\n/g, ' ');
 
-    // Run the command to drop all existing data
-    await run(dropDataCommand, { PGPASSWORD: password });
+      // Run the command to drop all existing data
+      await run(dropDataCommand, this.getPasswordEnvVars(password, toolchain));
+    }
 
     if (schema === schemaOption || !schemaOption) {
       // current schema is the same as the backup schema
-      const pgRestoreCommand = `${this.#restoreCmd} -U ${username} -h ${host} ${
+      const pgRestoreCommand = `${this.getRestoreCommandName(toolchain)} -U ${username} -h ${host} ${
         port ? `-p ${port}` : ''
       } -d ${database} --clean --if-exists --no-owner -j ${j} ${filePath}`;
-      await run(pgRestoreCommand, { PGPASSWORD: password });
+      await run(pgRestoreCommand, this.getPasswordEnvVars(password, toolchain));
     } else {
       const srcSchema = schema || 'public';
-      const pgRestoreCommand = `${this.#restoreCmd} -U ${username} -h ${host} ${
-        port ? `-p ${port}` : ''
-      } -n ${srcSchema} -d ${database} --clean --if-exists --no-owner -j ${j} ${filePath}`;
-      await this.#restoreSchema(srcSchema, schemaOption, pgRestoreCommand);
+      const pgRestoreCommand = this.buildSchemaRestoreCommand(srcSchema, schemaOption, filePath, j, toolchain);
+      await this.restoreSchema(srcSchema, schemaOption, pgRestoreCommand, toolchain);
     }
   }
 
-  async #restoreSchema(srcSchema: string, targetSchema: string, pgRestoreCommand: string) {
+  protected buildSchemaRestoreCommand(
+    srcSchema: string,
+    _targetSchema: string,
+    filePath: string,
+    jobs: number,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
+    const { username, host, port, database } = this.dbOpts;
+    return `${this.getRestoreCommandName(toolchain)} -U ${username} -h ${host} ${
+      port ? `-p ${port}` : ''
+    } -n ${srcSchema} -d ${database} --clean --if-exists --no-owner -j ${jobs} ${filePath}`;
+  }
+
+  protected async restoreSchema(
+    srcSchema: string,
+    targetSchema: string,
+    pgRestoreCommand: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
     const { username, host, port, database, password } = this.dbOpts;
     const ts = Date.now();
     // 1. backup current schema to srcSchema_ts if exists and create new schema (same name as srcSchema)
-    const preCommand = `psql -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
+    const sqlCommandName = this.getSqlCommandName(toolchain);
+    const preCommand = `${sqlCommandName} -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
     DO ${D$$}
     BEGIN
         IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = '${srcSchema}') THEN
@@ -432,7 +579,7 @@ class PostgresAdapter extends BaseDBAdapter {
         END IF;
         EXECUTE 'CREATE SCHEMA ${srcSchema}';
     END ${D$$};"`.replace(/\n/g, ' ');
-    const postCommand = `psql -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
+    const postCommand = `${sqlCommandName} -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
     DO ${D$$}
     BEGIN
         EXECUTE 'DROP SCHEMA ${targetSchema} CASCADE';
@@ -442,22 +589,28 @@ class PostgresAdapter extends BaseDBAdapter {
         END IF;
     END ${D$$};"`.replace(/\n/g, ' ');
 
-    await run(preCommand, { PGPASSWORD: password });
+    await run(preCommand, this.getPasswordEnvVars(password, toolchain));
     try {
-      await run(pgRestoreCommand, { PGPASSWORD: password });
+      await run(pgRestoreCommand, this.getPasswordEnvVars(password, toolchain));
     } finally {
-      await run(postCommand, { PGPASSWORD: password });
+      await run(postCommand, this.getPasswordEnvVars(password, toolchain));
     }
-    await this.#syncCollectionSchemaMetadata(srcSchema, targetSchema);
+    await this.syncCollectionSchemaMetadata(srcSchema, targetSchema, toolchain);
   }
 
-  async #syncCollectionSchemaMetadata(srcSchema: string, targetSchema: string) {
+  protected async syncCollectionSchemaMetadata(
+    srcSchema: string,
+    targetSchema: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
     const { username, host, port, database, password, tablePrefix } = this.dbOpts;
     const collectionsTable = `${tablePrefix || ''}collections`;
     const targetSchemaLiteral = escapeStringLiteral(targetSchema);
     const srcSchemaLiteral = escapeStringLiteral(srcSchema);
     const collectionsTableLiteral = escapeStringLiteral(collectionsTable);
-    const updateCollectionSchemaCommand = `psql -U ${username} -h ${host} ${port ? `-p ${port}` : ''} -d ${database} -c "
+    const updateCollectionSchemaCommand = `${this.getSqlCommandName(toolchain)} -U ${username} -h ${host} ${
+      port ? `-p ${port}` : ''
+    } -d ${database} -c "
     DO ${D$$}
     DECLARE
         collections_table text := '${collectionsTableLiteral}';
@@ -477,12 +630,102 @@ class PostgresAdapter extends BaseDBAdapter {
             );
         END IF;
     END ${D$$};"`.replace(/\n/g, ' ');
-    await run(updateCollectionSchemaCommand, { PGPASSWORD: password });
+    await run(updateCollectionSchemaCommand, this.getPasswordEnvVars(password, toolchain));
+  }
+}
+
+class KingbaseAdapter extends PostgresAdapter {
+  get backupToolchain(): DBBackupToolchain {
+    return this.hasKingbaseToolchain() ? 'kingbase' : 'postgres';
+  }
+
+  private getKingbaseBackupCommandName() {
+    return formatPathInEnv(process.env.KINGBASE_DUMP_PATH) || 'sys_dump';
+  }
+
+  private getKingbaseRestoreCommandName() {
+    return formatPathInEnv(process.env.KINGBASE_RESTORE_PATH) || 'sys_restore';
+  }
+
+  private getKingbaseSqlCommandName() {
+    return formatPathInEnv(process.env.KINGBASE_PSQL_PATH) || 'ksql';
+  }
+
+  private hasKingbaseToolchain() {
+    return (
+      this.hasCommand(this.getKingbaseBackupCommandName()) &&
+      this.hasCommand(this.getKingbaseRestoreCommandName()) &&
+      this.hasCommand(this.getKingbaseSqlCommandName())
+    );
+  }
+
+  protected getBackupCommandName(toolchain: DBBackupToolchain = this.backupToolchain) {
+    return toolchain === 'kingbase' ? this.getKingbaseBackupCommandName() : super.getBackupCommandName(toolchain);
+  }
+
+  protected getRestoreCommandName(toolchain: DBBackupToolchain = this.backupToolchain) {
+    return toolchain === 'kingbase' ? this.getKingbaseRestoreCommandName() : super.getRestoreCommandName(toolchain);
+  }
+
+  protected getSqlCommandName(toolchain: DBBackupToolchain = this.backupToolchain) {
+    return toolchain === 'kingbase' ? this.getKingbaseSqlCommandName() : super.getSqlCommandName(toolchain);
+  }
+
+  protected getPasswordEnvVars(
+    password: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ): NodeJS.ProcessEnv {
+    if (toolchain === 'postgres') {
+      return super.getPasswordEnvVars(password, toolchain);
+    }
+    return { KINGBASE_PASSWORD: password };
+  }
+
+  protected getBackupSchema() {
+    return this.dbOpts.schema || 'public';
+  }
+
+  protected buildSchemaRestoreCommand(
+    srcSchema: string,
+    targetSchema: string,
+    filePath: string,
+    jobs: number,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
+    if (toolchain === 'postgres') {
+      return super.buildSchemaRestoreCommand(srcSchema, targetSchema, filePath, jobs, toolchain);
+    }
+    const { username, host, port, database } = this.dbOpts;
+    return `${this.getRestoreCommandName(toolchain)} -U ${username} -h ${host} ${
+      port ? `-p ${port}` : ''
+    } -g ${srcSchema} -G ${targetSchema} -d ${database} --clean --if-exists --no-owner -j ${jobs} ${filePath}`;
+  }
+
+  protected async restoreSchema(
+    srcSchema: string,
+    targetSchema: string,
+    restoreCommand: string,
+    toolchain: DBBackupToolchain = this.backupToolchain,
+  ) {
+    if (toolchain === 'postgres') {
+      await super.restoreSchema(srcSchema, targetSchema, restoreCommand, toolchain);
+      return;
+    }
+
+    const { username, host, port, database, password } = this.dbOpts;
+    const targetSchemaIdentifier = quotePgIdentifier(targetSchema).replace(/"/g, '\\"');
+    const createSchemaCommand = `${this.getSqlCommandName(toolchain)} -U ${username} -h ${host} ${
+      port ? `-p ${port}` : ''
+    } -d ${database} -c "CREATE SCHEMA IF NOT EXISTS ${targetSchemaIdentifier};"`;
+
+    await run(createSchemaCommand, this.getPasswordEnvVars(password, toolchain));
+    await run(restoreCommand, this.getPasswordEnvVars(password, toolchain));
+    await this.syncCollectionSchemaMetadata(srcSchema, targetSchema, toolchain);
   }
 }
 
 class SQLiteAdapter extends BaseDBAdapter {
-  async backup(dir: string): Promise<void> {
+  async backup({ dir }: DBBackupOptions): Promise<void> {
     const { storage } = this.dbOpts;
     const filePath = `${dir}/data`;
     const dbFilePath = path.resolve(storage);
@@ -490,7 +733,7 @@ class SQLiteAdapter extends BaseDBAdapter {
     await fsPromises.copyFile(dbFilePath, filePath);
   }
 
-  async restore(filePath: string): Promise<void> {
+  async restore({ filePath }: DBRestoreOptions): Promise<void> {
     const { storage } = this.dbOpts;
     const dbFilePath = path.resolve(storage);
     await fsPromises.copyFile(filePath, dbFilePath, fsPromises.constants.COPYFILE_FICLONE);
@@ -502,6 +745,7 @@ class MariaDBAdapter extends MySQLAdapter {}
 const adapterMap = {
   mysql: MySQLAdapter,
   postgres: PostgresAdapter,
+  kingbase: KingbaseAdapter,
   sqlite: SQLiteAdapter,
   mariadb: MariaDBAdapter,
 };

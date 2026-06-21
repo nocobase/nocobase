@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { InboxOutlined, QuestionCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import { useAPIClient } from '@nocobase/client';
 import { App, Button, Checkbox, Flex, Input, Modal, Tooltip, Upload, Form, UploadFile } from 'antd';
@@ -110,10 +119,10 @@ export const RestoreFromLocal = () => {
               <p className="ant-upload-text"> {t('Click or drag file to this area to upload')}</p>
             </Upload.Dragger>
           </Form.Item>
-          {dialect === 'postgres' && (
+          {['postgres', 'kingbase'].includes(dialect) && (
             <Form.Item
               label={<strong>{t('Confirm the application database schema')}</strong>}
-              help={t('Required if application database schema is different with the backup', {currentDbSchemaTips})}
+              help={t('Required if application database schema is different with the backup', { currentDbSchemaTips })}
             >
               <Input autoComplete="new-password" value={dbSchema} onChange={(e) => setDbSchema(e.target.value)} />
             </Form.Item>

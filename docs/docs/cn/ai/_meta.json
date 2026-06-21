@@ -1,0 +1,67 @@
+[
+  {
+    "type": "custom-link",
+    "label": "快速开始",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "NocoBase 如何工作",
+        "link": "/get-started/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "操作系统要求",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "生产环境",
+            "link": "/get-started/system-requirements"
+          },
+          {
+            "type": "custom-link",
+            "label": "本地开发搭建",
+            "link": "/ai/local-development-setup"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "安装方式和版本对比",
+        "link": "/get-started/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "安装 NocoBase 应用",
+        "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "升级 NocoBase 应用",
+        "link": "/ai/upgrade-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "从 2.0 升级到 2.1",
+        "link": "/ai/upgrade-from-2-0-to-2-1"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI Agent 接入指南",
+        "link": "/ai/quick-start"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase CLI",
+        "proxy": false,
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "开始（旧版）",
+        "proxy": false,
+        "link": "/get-started/how-nocobase-works"
+      }
+    ]
+  }
+]

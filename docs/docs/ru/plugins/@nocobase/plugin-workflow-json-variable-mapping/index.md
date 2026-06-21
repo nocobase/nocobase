@@ -1,4 +1,6 @@
 ---
+title: "Workflow: JSON variable mapping"
+keywords: "Workflow"
 displayName: "Workflow: JSON variable mapping"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 description: |

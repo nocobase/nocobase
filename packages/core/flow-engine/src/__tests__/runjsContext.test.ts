@@ -38,6 +38,7 @@ describe('flowRunJSContext registry and doc', () => {
         'JSBlockModel',
         'JSFieldModel',
         'JSItemModel',
+        'JSItemActionModel',
         'JSColumnModel',
         'FormJSFieldItemModel',
         'JSRecordActionModel',
@@ -58,8 +59,10 @@ describe('flowRunJSContext registry and doc', () => {
     it('should expose scene metadata for contexts', () => {
       expect(getRunJSScenesForModel('JSBlockModel', 'v1')).toEqual(['block']);
       expect(getRunJSScenesForModel('JSFieldModel', 'v1')).toEqual(['detail']);
+      expect(getRunJSScenesForModel('JSItemActionModel', 'v1')).toEqual(['table']);
       expect(getRunJSScenesForModel('JSBlockModel', 'v2')).toEqual(['block']);
       expect(getRunJSScenesForModel('JSFieldModel', 'v2')).toEqual(['detail']);
+      expect(getRunJSScenesForModel('JSItemActionModel', 'v2')).toEqual(['table']);
       expect(getRunJSScenesForModel('UnknownModel', 'v1')).toEqual([]);
       expect(getRunJSScenesForModel('UnknownModel', 'v2')).toEqual([]);
     });
@@ -85,6 +88,19 @@ describe('flowRunJSContext registry and doc', () => {
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc).toBeTruthy();
       expect(doc?.label).toMatch(/RunJS base/);
+      expect(doc?.properties?.element).toBeUndefined();
+    });
+
+    it('should mark element-dependent base completions with element requirement', () => {
+      const ctx: any = { model: { constructor: { name: 'UnknownModel' } } };
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+
+      expect((doc?.methods?.render as any)?.completion?.requires).toContain('element');
+      expect((doc?.properties?.viewer as any)?.properties?.popover?.completion?.requires).toContain('element');
+      expect((doc?.properties?.viewer as any)?.properties?.embed?.completion?.requires).toContain('element');
+      expect(
+        (doc?.properties?.libs as any)?.properties?.ReactDOM?.properties?.createRoot?.completion?.requires,
+      ).toContain('element');
     });
 
     it('should support locale-specific doc', () => {
@@ -96,6 +112,11 @@ describe('flowRunJSContext registry and doc', () => {
       const messageText =
         typeof message === 'string' ? message : (message as any)?.description ?? (message as any)?.detail ?? '';
       expect(String(messageText)).toMatch(/Ant Design 全局消息/);
+      expect((doc?.methods?.render as any)?.completion?.requires).toContain('element');
+      expect((doc?.properties?.viewer as any)?.properties?.popover?.completion?.requires).toContain('element');
+      expect(
+        (doc?.properties?.libs as any)?.properties?.ReactDOM?.properties?.createRoot?.completion?.requires,
+      ).toContain('element');
     });
 
     it('should fallback to English when locale is not found', () => {

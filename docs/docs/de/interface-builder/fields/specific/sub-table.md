@@ -1,8 +1,4 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
-# Untertabelle
+# Untertabelle (Inline-Bearbeitung)
 
 ## Einführung
 
@@ -28,7 +24,7 @@ Die Standardkomponente für ein Beziehungsfeld ist die Dropdown-Auswahl (unterst
 
 ## Feldkonfigurationsoptionen
 
-### Auswahl bestehender Daten erlauben (standardmäßig deaktiviert)
+### Auswahl bestehender Daten erlauben (standardmäßig aktiviert)
 
 Ermöglicht die Auswahl und Verknüpfung bestehender Daten.
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)

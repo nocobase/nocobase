@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Busca RAG
 
 ## Introdução
@@ -21,7 +17,7 @@ Selecione o funcionário de IA para o qual você deseja habilitar o RAG, clique 
 Na aba `Knowledge base`, ative o interruptor `Enable`.
 
 - Em `Knowledge Base Prompt`, insira o prompt para referenciar a base de conhecimento. `{knowledgeBaseData}` é um placeholder fixo e não deve ser modificado;
-- Em `Knowledge Base`, selecione a base de conhecimento configurada. Veja: [Base de Conhecimento](/ai-employees/knowledge-base/knowledge-base);
+- Em `Knowledge Base`, selecione a base de conhecimento configurada. Veja: [Base de Conhecimento](./knowledge-base/);
 - No campo `Top K`, insira o número de documentos a serem recuperados. O padrão é 3;
 - No campo `Score`, insira o limite de relevância do documento para a busca;
 

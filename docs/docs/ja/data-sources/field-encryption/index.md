@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-encryption"
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 # 暗号化
 
@@ -30,7 +26,7 @@ pkg: "@nocobase/plugin-field-encryption"
 
 エンベロープ暗号化方式を採用しています。
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### キーの作成プロセス
 1. 暗号化フィールドを初めて作成する際、システムは自動的に32ビットの`アプリケーションキー`を生成し、Base64エンコード形式でデフォルトの保存ディレクトリに保存します。

@@ -14,7 +14,13 @@ import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { Model } from '@nocobase/database';
 import _ from 'lodash';
 import type OpenAI from 'openai';
-import { collectReasoningMap, patchRequestMessagesReasoning, REASONING_MAP_KEY } from './common/reasoning';
+import {
+  collectReasoningMap,
+  MODEL_KWARGS_KEY,
+  patchRequestMessagesReasoning,
+  patchRequestModelKwargs,
+  REASONING_MAP_KEY,
+} from './common/reasoning';
 import { Context } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import path from 'node:path';
@@ -55,7 +61,9 @@ class ReasoningDeepSeek extends ChatDeepSeek {
     requestOptions?: OpenAI.RequestOptions,
   ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | OpenAI.Chat.Completions.ChatCompletion> {
     const reasoningMap = requestOptions?.[REASONING_MAP_KEY] as Map<string, string> | undefined;
+    const modelKwargs = requestOptions?.[MODEL_KWARGS_KEY] as Record<string, any> | undefined;
     patchRequestMessagesReasoning(request, reasoningMap);
+    patchRequestModelKwargs(request, modelKwargs);
     if (request.stream) {
       return super.completionWithRetry(request as OpenAI.Chat.ChatCompletionCreateParamsStreaming, requestOptions);
     }
@@ -71,7 +79,7 @@ export class DeepSeekProvider extends LLMProvider {
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat } = this.modelOptions || {};
 
     const modelKwargs: Record<string, any> = {};
@@ -88,7 +96,7 @@ export class DeepSeekProvider extends LLMProvider {
       ...this.modelOptions,
       modelKwargs,
       configuration: {
-        baseURL: baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       },
       verbose: false,
     });

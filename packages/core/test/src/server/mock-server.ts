@@ -9,14 +9,13 @@
 
 import { mockDatabase } from '@nocobase/database';
 import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
-import { uid } from '@nocobase/utils';
+import { storagePathJoin, uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest from 'supertest';
 import { SuperAgent, SuperAgentRequest } from 'superagent';
 import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
 import { MockDataSource } from './mock-data-source';
-import path from 'path';
 import process from 'node:process';
 import { promises as fs } from 'fs';
 
@@ -344,7 +343,7 @@ export async function createMockCluster({
 
 export async function createMockServer(options: MockServerOptions = {}): Promise<MockServer> {
   // clean cache directory
-  const cachePath = path.join(process.cwd(), 'storage', 'cache');
+  const cachePath = storagePathJoin('cache');
   try {
     await fs.rm(cachePath, { recursive: true, force: true });
     await fs.mkdir(cachePath, { recursive: true });

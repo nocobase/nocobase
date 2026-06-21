@@ -1,7 +1,3 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 # Аутентификация пользователей
 
 Модуль аутентификации пользователей NocoBase состоит из двух основных частей:
@@ -13,12 +9,12 @@
 
 Кроме того, NocoBase предлагает и другие плагины для различных методов аутентификации пользователей:
 
-- [@nocobase/plugin-auth-sms](/auth-verification/auth-sms/) - Предоставляет функцию входа по SMS-коду
-- [@nocobase/plugin-auth-saml](/auth-verification/auth-saml/) - Предоставляет функцию входа через SAML SSO
-- [@nocobase/plugin-auth-oidc](/auth-verification/auth-oidc/) - Предоставляет функцию входа через OIDC SSO
-- [@nocobase/plugin-auth-cas](/auth-verification/auth-cas/) - Предоставляет функцию входа через CAS SSO
-- [@nocobase/plugin-auth-ldap](/auth-verification/auth-ldap/) - Предоставляет функцию входа через LDAP SSO
-- [@nocobase/plugin-auth-wecom](/auth-verification/auth-wecom/) - Предоставляет функцию входа через WeCom
-- [@nocobase/plugin-auth-dingtalk](/auth-verification/auth-dingtalk/) - Предоставляет функцию входа через DingTalk
+- [@nocobase/plugin-auth-sms](../auth-sms/index.md) - Предоставляет функцию входа по SMS-коду
+- [@nocobase/plugin-auth-saml](../auth-saml/index.md) - Предоставляет функцию входа через SAML SSO
+- [@nocobase/plugin-auth-oidc](../auth-oidc/index.md) - Предоставляет функцию входа через OIDC SSO
+- [@nocobase/plugin-auth-cas](../auth-cas/index.md) - Предоставляет функцию входа через CAS SSO
+- [@nocobase/plugin-auth-ldap](../auth-ldap/index.md) - Предоставляет функцию входа через LDAP SSO
+- [@nocobase/plugin-auth-wecom](../auth-wecom/index.md) - Предоставляет функцию входа через WeCom
+- [@nocobase/plugin-auth-dingtalk](../auth-dingtalk/index.md) - Предоставляет функцию входа через DingTalk
 
 Благодаря этим плагинам, после того как администратор настроит соответствующий метод аутентификации, пользователи смогут напрямую входить в систему, используя учетные данные, предоставленные такими платформами, как Google Workspace, Microsoft Azure. Также возможна интеграция с такими инструментами, как Auth0, Logto, Keycloak. Кроме того, разработчики могут легко расширять функциональность, добавляя другие необходимые методы аутентификации через предоставляемые нами базовые интерфейсы.

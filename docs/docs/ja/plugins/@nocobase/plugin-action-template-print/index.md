@@ -1,4 +1,6 @@
 ---
+title: "Template print"
+keywords: "Actions"
 displayName: "Template print"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:

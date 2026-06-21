@@ -1,4 +1,6 @@
 ---
+title: "Workflow: JSON calculation"
+keywords: "Workflow"
 displayName: "Workflow: JSON calculation"
 packageName: '@nocobase/plugin-workflow-json-query'
 description: |

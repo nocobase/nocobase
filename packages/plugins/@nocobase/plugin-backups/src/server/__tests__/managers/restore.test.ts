@@ -11,7 +11,7 @@ import * as cp from 'child_process';
 import archiver from 'archiver';
 import path from 'path';
 import { storagePathJoin } from '@nocobase/utils';
-import { BACKUP_EXTENSION, SETTINGS } from '../../utils';
+import { BACKUP_EXTENSION, getDBVersion, SETTINGS } from '../../utils';
 import { getApp } from '..';
 import fs from 'fs';
 import { MockServer, sleep } from '@nocobase/test/server';
@@ -57,12 +57,12 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-const backupFileBaseName = 'backup_for_unit_tests';
 const backupFilesFolder = storagePathJoin('backups', 'main');
-const finalBackupFilePath = path.join(backupFilesFolder, `${backupFileBaseName}.${BACKUP_EXTENSION}`);
 const schemaMismatchBackupFilePath = path.join(backupFilesFolder, `backup_schema_mismatch.${BACKUP_EXTENSION}`);
+const createdBackupFilePaths = new Set<string>();
 
 async function createBackupArchive(filePath: string, metadata: Record<string, any>) {
+  createdBackupFilePaths.add(filePath);
   await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
   await new Promise<void>((resolve, reject) => {
     const output = fs.createWriteStream(filePath);
@@ -80,6 +80,16 @@ async function createBackupArchive(filePath: string, metadata: Record<string, an
   });
 }
 
+function createBackupFile(caseName: string) {
+  const backupFileBaseName = `backup_${caseName}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const backupFilePath = path.join(backupFilesFolder, `${backupFileBaseName}.${BACKUP_EXTENSION}`);
+  createdBackupFilePaths.add(backupFilePath);
+  return {
+    backupFileBaseName,
+    backupFilePath,
+  };
+}
+
 describe('RestoreManager', () => {
   let app: MockServer;
   const defaultBackupSettings: BackupSettings = {
@@ -93,7 +103,6 @@ describe('RestoreManager', () => {
   beforeEach(async () => {
     app = await getApp();
     await fs.promises.mkdir(backupFilesFolder, { recursive: true });
-    await fs.promises.unlink(finalBackupFilePath).catch(() => {});
     await fs.promises.unlink(schemaMismatchBackupFilePath).catch(() => {});
 
     mockExecImplementation = (command, _options, callback) => {
@@ -141,10 +150,13 @@ describe('RestoreManager', () => {
 
   afterEach(async () => {
     await app.destroy();
+    for (const backupFilePath of createdBackupFilePaths) {
+      await fs.promises.unlink(backupFilePath).catch(() => {});
+    }
+    createdBackupFilePaths.clear();
   });
 
   afterAll(async () => {
-    fs.promises.unlink(finalBackupFilePath).catch(() => {});
     fs.promises.unlink(schemaMismatchBackupFilePath).catch(() => {});
   });
 
@@ -163,6 +175,15 @@ describe('RestoreManager', () => {
       },
       plugins: [],
     };
+  }
+
+  async function createMetadataCompatibleWithCurrentDb(database: Record<string, any> = {}) {
+    const version = await getDBVersion(app.db);
+    return createMetadata({
+      version,
+      backupClientVersion: version,
+      ...database,
+    });
   }
 
   function createCtx(requestBody: Record<string, any> = {}) {
@@ -198,17 +219,15 @@ describe('RestoreManager', () => {
   }
 
   it('restoreFromBackup', async () => {
-    vi.spyOn(app, 'runCommand').mockReturnValue({} as any);
-    const backupManager = new BackupManager(app, null, defaultBackupSettings);
-    await backupManager.backup(backupFileBaseName);
-    await sleep(3000);
+    const { backupFileBaseName, backupFilePath } = createBackupFile('restore-from-backup');
+    await fs.promises.writeFile(backupFilePath, 'mocked backup file');
     const ctx = {
       app: app,
       logger: app.logger,
       i18n: app.i18n,
     };
     const restoreManager = new RestoreManager(ctx);
-    const restoreSpy = vi.spyOn(restoreManager, 'restore');
+    const restoreSpy = vi.spyOn(restoreManager, 'restore').mockResolvedValue(undefined);
     await restoreManager.restoreFromBackup(`${backupFileBaseName}.${BACKUP_EXTENSION}`, 'task_id');
     expect(restoreSpy).toHaveBeenCalled();
   });
@@ -238,20 +257,18 @@ describe('RestoreManager', () => {
   });
 
   it('restoreFromUpload', async () => {
-    const backupManager = new BackupManager(app, null, defaultBackupSettings);
-    vi.spyOn(app, 'runCommand').mockReturnValue({} as any);
-    await backupManager.backup(backupFileBaseName);
-    await sleep(3000);
+    const { backupFilePath } = createBackupFile('restore-from-upload');
+    await fs.promises.writeFile(backupFilePath, 'mocked backup file');
     const ctx = {
       app: app,
       logger: app.logger,
       i18n: app.i18n,
     };
     const restoreManager = new RestoreManager(ctx);
-    const restoreSpy = vi.spyOn(restoreManager, 'restore');
+    const restoreSpy = vi.spyOn(restoreManager, 'restore').mockResolvedValue(undefined);
     await restoreManager.restoreFromUpload(
       {
-        path: finalBackupFilePath,
+        path: backupFilePath,
       } as unknown as Express.Multer.File,
       'task_id',
     );
@@ -259,10 +276,9 @@ describe('RestoreManager', () => {
   });
 
   it('restore', async () => {
-    const backupManager = new BackupManager(app, null, defaultBackupSettings);
-    vi.spyOn(app, 'runCommand').mockReturnValue({} as any);
-    await backupManager.backup(backupFileBaseName);
-    await sleep(3000);
+    const { backupFilePath } = createBackupFile('restore');
+    await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb());
+    const runCommandSpy = vi.spyOn(app, 'runCommand').mockResolvedValue({} as any);
     const ctx = {
       app: app,
       logger: app.logger,
@@ -278,19 +294,27 @@ describe('RestoreManager', () => {
     settings = await app.db.getRepository(SETTINGS).findOne();
     expect(settings.encryptionPassword).toBe('123456');
 
-    const restoreManager = new RestoreManager(ctx);
-    await restoreManager.restore(finalBackupFilePath, 'task_id');
-    await sleep(3000);
+    const restoreManager = new RestoreManager(ctx, {
+      dialect: 'postgres',
+      username: 'test',
+      password: 'test',
+      database: 'test',
+      host: 'localhost',
+      port: 5432,
+      schema: 'source_schema',
+    });
+    await restoreManager.restore(backupFilePath, 'task_id');
+    await vi.waitFor(() => {
+      expect(runCommandSpy).toHaveBeenCalledWith('upgrade');
+    });
     settings = await app.db.getRepository(SETTINGS).findOne();
     // after the restore, the backup encryption should be disabled
     expect(settings.encryptionPassword).toBe('');
   });
 
   it('restore with tolerentMode', async () => {
-    const backupManager = new BackupManager(app, null, defaultBackupSettings);
-    vi.spyOn(app, 'runCommand').mockReturnValue({} as any);
-    await backupManager.backup(backupFileBaseName);
-    await sleep(3000);
+    const { backupFilePath } = createBackupFile('restore-tolerent-mode');
+    await createBackupArchive(backupFilePath, createMetadata());
     const ctx = {
       app: app,
       logger: app.logger,
@@ -306,11 +330,24 @@ describe('RestoreManager', () => {
     settings = await app.db.getRepository(SETTINGS).findOne();
     expect(settings.encryptionPassword).toBe('123456');
 
-    const restoreManager = new RestoreManager(ctx);
+    const restoreManager = new RestoreManager(ctx, {
+      dialect: 'postgres',
+      username: 'test',
+      password: 'test',
+      database: 'test',
+      host: 'localhost',
+      port: 5432,
+      schema: 'source_schema',
+    });
     const tolerentMode = true;
-    vi.spyOn(app, 'runCommand').mockRejectedValueOnce(new Error('some errors happend and ignored'));
-    await restoreManager.restore(finalBackupFilePath, 'task_id', undefined, tolerentMode);
-    await sleep(3000);
+    const runCommandSpy = vi
+      .spyOn(app, 'runCommand')
+      .mockRejectedValueOnce(new Error('some errors happend and ignored'))
+      .mockResolvedValue({} as any);
+    await restoreManager.restore(backupFilePath, 'task_id', undefined, tolerentMode);
+    await vi.waitFor(() => {
+      expect(runCommandSpy).toHaveBeenCalledTimes(2);
+    });
     settings = await app.db.getRepository(SETTINGS).findOne();
     // after the restore, the backup encryption should be disabled
     expect(settings.encryptionPassword).toBe('');
@@ -353,6 +390,67 @@ describe('RestoreManager', () => {
     ).resolves.toBeUndefined();
     await sleep(3000);
     expect(app.runCommand).toHaveBeenCalledWith('upgrade');
+  });
+
+  it('allows Kingbase schema mismatch with force schema restore', async () => {
+    vi.spyOn(app, 'runCommand').mockReturnValue({} as any);
+    await createBackupArchive(
+      schemaMismatchBackupFilePath,
+      createMetadata({
+        dialect: 'kingbase',
+        toolchain: 'kingbase',
+        version: 'KingbaseES V009R001C010',
+        backupClientVersion: 'sys_dump (KingbaseES) V009R001C010',
+      }),
+    );
+    const restoreManager = new RestoreManager(createCtx(), {
+      dialect: 'kingbase',
+      username: 'test',
+      password: 'test',
+      database: 'test',
+      host: 'localhost',
+      port: 54321,
+      schema: 'target_schema',
+    });
+
+    await expect(
+      restoreManager.restore(schemaMismatchBackupFilePath, 'task_id', undefined, true, true, {
+        forceSchemaRestore: true,
+      }),
+    ).resolves.toBeUndefined();
+    await sleep(3000);
+    expect(app.runCommand).toHaveBeenCalledWith('upgrade');
+  });
+
+  it('infers PostgreSQL toolchain for legacy Kingbase backups created by pg_dump', async () => {
+    const { backupFilePath } = createBackupFile('kingbase-pg-toolchain');
+    await createBackupArchive(
+      backupFilePath,
+      createMetadata({
+        dialect: 'kingbase',
+        schema: 'source_schema',
+        version: 'KingbaseES V009R001C010',
+        backupClientVersion: 'pg_dump (PostgreSQL) 17.2',
+      }),
+    );
+    const mockedExec = cp.exec as unknown as Mock;
+    mockedExec.mockClear();
+    const restoreManager = new RestoreManager(createCtx(), {
+      dialect: 'kingbase',
+      username: 'test',
+      password: 'test',
+      database: 'test',
+      host: 'localhost',
+      port: 54321,
+      schema: 'source_schema',
+    });
+
+    await restoreManager.restore(backupFilePath, 'task_id', undefined, true, true);
+
+    await vi.waitFor(() => {
+      expect(mockedExec.mock.calls.some(([command]) => command.includes('pg_restore'))).toBe(true);
+    });
+    expect(mockedExec.mock.calls.some(([, options]) => options.env?.PGPASSWORD === 'test')).toBe(true);
   });
 
   it('does not ignore dialect mismatch with force schema restore', async () => {

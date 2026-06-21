@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Recuperación RAG
 
 ## Introducción
@@ -21,7 +17,7 @@ Seleccione el empleado de IA para el que desea habilitar RAG, haga clic en el bo
 En la pestaña `Knowledge base`, active el interruptor `Enable`.
 
 - En `Knowledge Base Prompt`, introduzca el mensaje (prompt) para referenciar la base de conocimientos. `{knowledgeBaseData}` es un marcador de posición fijo y no debe modificarse.
-- En `Knowledge Base`, seleccione la base de conocimientos configurada. Consulte: [Base de conocimientos](/ai-employees/knowledge-base/knowledge-base).
+- En `Knowledge Base`, seleccione la base de conocimientos configurada. Consulte: [Base de conocimientos](./knowledge-base/).
 - En el campo `Top K`, introduzca el número de documentos a recuperar; el valor predeterminado es 3.
 - En el campo `Score`, introduzca el umbral de relevancia de los documentos para la recuperación.
 

@@ -103,12 +103,6 @@ export const KeepAliveProvider: FC<{ active: boolean; parentActive: boolean }> =
       prevRouteContextRef.current = currentRouteContext;
     }
 
-    // When the page is inactive, we use UNSAFE_LocationContext and UNSAFE_RouteContext to prevent child components
-    // from receiving Context updates, thereby optimizing performance.
-    // This is based on how React Context works:
-    // 1. When Context value changes, React traverses the component tree from top to bottom
-    // 2. During traversal, React finds components using that Context and marks them for update
-    // 3. When encountering the same Context Provider, traversal stops, avoiding unnecessary child component updates
     const contextProviders = (
       <RouteContext.Provider value={prevRouteContextValueRef.current}>
         <MotionContext.Provider value={prevMotionContextRef.current}>
@@ -160,53 +154,39 @@ interface KeepAliveProps {
 const MINIMUM_CACHED_PAGES = 5;
 const MAXIMUM_CACHED_PAGES = 15;
 
-// Evaluate device performance to determine maximum number of cached pages
-// Range: minimum 5, maximum 10
 const getMaxPageCount = () => {
-  // If keep-alive is enabled in e2e environment, it makes locator selection difficult. So we disable keep-alive in e2e environment
-  // if (process.env.__E2E__) {
-  //   return 1;
-  // }
-
   const baseCount = MINIMUM_CACHED_PAGES;
 
   try {
-    // 1. Try using deviceMemory (Chrome/Edge)
     const memory = (navigator as any).deviceMemory;
     if (memory) {
       return Math.min(Math.max(baseCount, memory * 3), MAXIMUM_CACHED_PAGES);
     }
 
-    // 2. Try using hardwareConcurrency (Safari/Firefox/Chrome)
     const cores = navigator.hardwareConcurrency;
     if (cores) {
       return cores >= 8 ? MAXIMUM_CACHED_PAGES : cores >= 4 ? 7 : baseCount;
     }
 
-    // 3. Fallback: Use performance.now() to test execution speed
     const start = performance.now();
     let result = 0;
-    // Reduce loop count but increase complexity to prevent JIT optimization (Dead Code Elimination)
     for (let i = 0; i < 500000; i++) {
       result += Math.sqrt(i);
     }
-    // Prevent result from being optimized away
     if (result < 0) {
       console.log(result);
     }
 
     const duration = performance.now() - start;
 
-    // Adjust page count based on execution time
     if (duration < 5) {
-      return MAXIMUM_CACHED_PAGES; // Very good performance
+      return MAXIMUM_CACHED_PAGES;
     } else if (duration < 15) {
-      return 10; // Average performance
+      return 10;
     }
 
     return baseCount;
   } catch (e) {
-    // Return base count if any error occurs
     return baseCount;
   }
 };

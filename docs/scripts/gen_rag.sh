@@ -20,8 +20,8 @@ DOCS_DIR="$DOCS_ROOT/docs"
 DIST_DIR="$DOCS_ROOT/dist/static"
 
 # Domain mapping
-CN_DOMAIN="https://v2.docs.nocobase.com/cn"
-EN_DOMAIN="https://v2.docs.nocobase.com"
+CN_DOMAIN="https://docs.nocobase.com/cn"
+EN_DOMAIN="https://docs.nocobase.com"
 
 generate_rag() {
     local lang=$1

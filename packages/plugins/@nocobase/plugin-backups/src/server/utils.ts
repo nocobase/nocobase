@@ -8,6 +8,7 @@
  */
 
 export const BACKUP_EXTENSION = 'nbdata';
+export const METADATA_EXTENSION = '_metadata.json';
 export const STORAGE_PATH = 'storage/uploads';
 export const SETTINGS = 'backupSettings';
 export const BACKUPS = 'backups';
@@ -201,6 +202,7 @@ const dbVersionCommands = {
   mysql: 'select version() as version',
   mariadb: 'select version() as version',
   postgres: 'select version() as version',
+  kingbase: 'select version() as version',
 };
 
 export async function getDBVersion(db: Database): Promise<string> {

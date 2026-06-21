@@ -1,14 +1,10 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Erweiterungsentwicklung
 
 ## Speicher-Engines erweitern
 
 ### Serverseitig
 
-1. **`StorageType` implementieren**
+1. **Von `StorageType` erben**
    
    Erstellen Sie eine neue Klasse und implementieren Sie die Methoden `make()` und `delete()`. Überschreiben Sie bei Bedarf Hooks wie `getFileURL()`, `getFileStream()` oder `getFileData()`.
 
@@ -150,7 +146,7 @@ Registriert ein neues Dateityp-Descriptor-Objekt im Dateityp-Register. Der Typ d
 
 ##### `match()`
 
-Methode zur Zuordnung des Dateiformats.
+Methode zur Prüfung des Dateiformats.
 
 Der Eingabeparameter `file` ist das Datenobjekt einer hochgeladenen Datei und enthält relevante Eigenschaften zur Typprüfung:
 
@@ -174,4 +170,3 @@ Die eingehenden Props sind:
 * `file`: aktuelles Dateiobjekt (kann eine String-URL oder ein Objekt mit `url`/`preview` sein)
 * `index`: Index der Datei in der Liste
 * `list`: Dateiliste
-

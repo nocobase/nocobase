@@ -29,6 +29,14 @@ const emailsClass = css`
   }
 `;
 
+const filesClass = css`
+  width: 100%;
+
+  .ant-space-item:nth-child(2) {
+    flex-grow: 1;
+  }
+`;
+
 export default class extends Instruction {
   title = `{{t("Mailer", { ns: "${NAMESPACE}" })}}`;
   type = 'mailer';
@@ -375,6 +383,62 @@ export default class extends Instruction {
           },
         },
       ],
+    },
+    attachments: {
+      type: 'array',
+      title: `{{t("Attachments", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Only variables that resolve to file collection records are supported.", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'ArrayItems',
+      items: {
+        type: 'void',
+        'x-component': 'Space',
+        'x-component-props': {
+          className: filesClass,
+        },
+        properties: {
+          sort: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.SortHandle',
+          },
+          input: {
+            type: 'string',
+            default: null,
+            'x-decorator': 'FormItem',
+            'x-component': 'WorkflowVariableInput',
+            'x-component-props': {
+              constantAbel: false,
+              variableOptions: {
+                types: [
+                  function isFileRecordMatch(field, { collectionManager }) {
+                    if (!field.target || field.isForeignKey) {
+                      return false;
+                    }
+
+                    const targetCollection = collectionManager.getCollection(field.target);
+
+                    return targetCollection?.template === 'file' || targetCollection?.options?.template === 'file';
+                  },
+                ],
+              },
+              placeholder: `{{t("File record", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+          remove: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.Remove',
+          },
+        },
+      },
+      properties: {
+        add: {
+          type: 'void',
+          title: `{{t("Add attachment", { ns: "${NAMESPACE}" })}}`,
+          'x-component': 'ArrayItems.Addition',
+        },
+      },
     },
     // headers: {
     //   type: 'array',

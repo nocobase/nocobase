@@ -1,6 +1,11 @@
 [
   {
     "type": "dir",
+    "name": "all-in-one",
+    "label": "All-in-One Business Suite"
+  },
+  {
+    "type": "dir",
     "name": "ticket-system",
     "label": "Ticketing Solution"
   },

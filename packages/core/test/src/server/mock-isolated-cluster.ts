@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Path from 'node:path';
 import { spawn, ChildProcess } from 'node:child_process';
 
 import { getPortPromise } from 'portfinder';
-import { uid } from '@nocobase/utils';
+import { storagePathJoin, uid } from '@nocobase/utils';
 import { createMockServer } from './mock-server';
 
 type IsolatedClusterOptions = {
@@ -49,8 +48,8 @@ export class MockIsolatedCluster {
           ...this.options.env,
           APP_PORT: `${port}`,
           APPEND_PRESET_BUILT_IN_PLUGINS: (this.options.plugins ?? []).join(','),
-          SOCKET_PATH: `storage/tests/gateway-cluster-${uid()}.sock`,
-          PM2_HOME: Path.resolve(process.cwd(), `storage/tests/.pm2-${uid()}`),
+          SOCKET_PATH: storagePathJoin('tests', `gateway-cluster-${uid()}.sock`),
+          PM2_HOME: storagePathJoin('tests', `.pm2-${uid()}`),
         },
       });
 

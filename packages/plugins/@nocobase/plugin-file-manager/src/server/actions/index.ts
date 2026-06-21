@@ -9,12 +9,19 @@
 
 import actions from '@nocobase/actions';
 import { createMiddleware } from './attachments';
+import { validateStorageMiddleware } from './storage-validation';
 import * as storageActions from './storages';
 
 export default function ({ app }) {
   app.resourcer.define({
     name: 'storages',
     actions: storageActions,
+    middlewares: [
+      {
+        only: ['create', 'update'],
+        handler: validateStorageMiddleware,
+      },
+    ],
   });
   app.resourcer.use(createMiddleware, { tag: 'createMiddleware', after: 'auth' });
   app.resourcer.registerActionHandler('upload', actions.create);

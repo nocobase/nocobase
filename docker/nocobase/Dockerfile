@@ -1,48 +1,55 @@
-FROM node:22-bookworm-slim as builder
+FROM node:22-bookworm-slim AS builder
 
 ARG CNA_VERSION
+ARG VERDACCIO_URL=https://registry.npmjs.org/
 
 WORKDIR /app
 
-RUN cd /app \
+RUN npm config set registry "$VERDACCIO_URL" \
+  && yarn config set registry "$VERDACCIO_URL" \
   && yarn config set network-timeout 600000 -g \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --empty-key --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
-  && yarn install --production \
-  && rm -rf yarn.lock \
-  && find node_modules -type f -name "yarn.lock" -delete \
-  && find node_modules -type f -name "bower.json" -delete \
-  && find node_modules -type f -name "composer.json" -delete
+  && yarn install --production
 
-RUN cd /app \
-  && rm -rf nocobase.tar.gz \
-  && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
+COPY cleanup-node-modules.sh /usr/local/bin/cleanup-node-modules.sh
+
+RUN chmod +x /usr/local/bin/cleanup-node-modules.sh \
+  && cleanup-node-modules.sh /app/my-nocobase-app
 
 FROM node:22-bookworm-slim
 
-# COPY ./sources.list /etc/apt/sources.list
-RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
-  && case "${dpkgArch##*-}" in \
-  amd64) ARCH='x64';; \
-  ppc64el) ARCH='ppc64le';; \
-  s390x) ARCH='s390x';; \
-  arm64) ARCH='arm64';; \
-  armhf) ARCH='armv7l';; \
-  i386) ARCH='x86';; \
-  *) echo "unsupported architecture"; exit 1 ;; \
-  esac \
-  && set -ex \
-  # libatomic1 for arm
-  && apt-get update && apt-get install -y nginx libaio1
+ARG NGINX_VERSION=1.30.1-1~bookworm
 
-RUN rm -rf /etc/nginx/sites-enabled/default
-COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
+ENV NOCOBASE_RUNNING_IN_DOCKER=true
+
+ENV NB_SKIP_STARTUP_UPDATE=1
+
+RUN set -eux; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends ca-certificates gnupg wget; \
+  wget -qO /tmp/nginx_signing.key https://nginx.org/keys/nginx_signing.key; \
+  gpg --batch --yes --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key; \
+  printf '%s\n' \
+    'deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian bookworm nginx' \
+    > /etc/apt/sources.list.d/nginx.list; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends "nginx=${NGINX_VERSION}" libaio1; \
+  nginx -v; \
+  apt-get purge -y --auto-remove wget gnupg; \
+  rm -rf /etc/nginx/conf.d/default.conf; \
+  rm -rf \
+    /etc/apt/sources.list.d/nginx.list \
+    /tmp/nginx_signing.key \
+    /usr/share/keyrings/nginx-archive-keyring.gpg \
+    /var/lib/apt/lists/*
 
 WORKDIR /app/nocobase
 
+COPY --from=builder /app/my-nocobase-app/ /app/nocobase/
 COPY docker-entrypoint.sh /app/
-# COPY docker-entrypoint.sh /usr/local/bin/
-# ENTRYPOINT ["docker-entrypoint.sh"]
+
+RUN ln -sf /app/nocobase/node_modules/.bin/nb /usr/local/bin/nb
 
 EXPOSE 80/tcp
 

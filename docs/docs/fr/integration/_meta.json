@@ -32,7 +32,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Workflows",
+    "label": "Flux de travail",
     "items": [
       {
         "type": "custom-link",
@@ -50,6 +50,22 @@
     "type": "custom-link",
     "label": "Source de données externe",
     "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tables de données externes (FDW)",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Aperçu",
+        "link": "/integration/fdw/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Activer MySQL Federated",
+        "link": "/integration/fdw/enable-federated"
+      }
+    ]
   },
   {
     "type": "custom-link",

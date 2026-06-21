@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
-import { DataSource, DataSourceManager, isFieldInterfaceMatch } from '../index';
+import { describe, expect, it, vi } from 'vitest';
+import { DataSource, DataSourceManager, getCollectionFieldInterface, isFieldInterfaceMatch } from '../index';
 import { FlowEngine } from '../../flowEngine';
 
 describe('Collection/Field helpers', () => {
@@ -54,5 +54,44 @@ describe('Collection/Field helpers', () => {
     // nested path resolution
     const field = posts.getFieldByPath('category.name');
     expect(field?.name).toBe('name');
+  });
+
+  it('resolves collection field interfaces from the first available manager', () => {
+    const first = { collectionFieldInterfaceManager: { getFieldInterface: vi.fn((name) => ({ name })) } };
+    const second = { collectionFieldInterfaceManager: { getFieldInterface: vi.fn((name) => ({ name })) } };
+
+    expect(getCollectionFieldInterface('input', {}, first, second)).toEqual({ name: 'input' });
+    expect(first.collectionFieldInterfaceManager.getFieldInterface).toHaveBeenCalledWith('input');
+    expect(second.collectionFieldInterfaceManager.getFieldInterface).not.toHaveBeenCalled();
+    expect(getCollectionFieldInterface(undefined, first)).toBeUndefined();
+    expect(getCollectionFieldInterface('input', {})).toBeUndefined();
+  });
+
+  it('uses collection field interface resolver from getInterfaceOptions', () => {
+    const { ds, m } = setup();
+    const ctx = m.flowEngine.context;
+    const getOwnerFieldInterface = vi.fn((name: string) => ({ name, source: 'owner' }));
+    const getLegacyFieldInterface = vi.fn((name: string) => ({ name, source: 'legacy' }));
+
+    ctx.defineProperty('app', {
+      value: {
+        dataSourceManager: {
+          collectionFieldInterfaceManager: {
+            getFieldInterface: getLegacyFieldInterface,
+          },
+        },
+      },
+    });
+    ds.addCollection({
+      name: 'posts',
+      fields: [{ name: 'title', type: 'string', interface: 'input' }],
+    });
+
+    const field = ds.getCollection('posts')!.getField('title')!;
+    expect(field.getInterfaceOptions()).toEqual({ name: 'input', source: 'legacy' });
+
+    m.setCollectionFieldInterfaceManager({ getFieldInterface: getOwnerFieldInterface });
+    expect(field.getInterfaceOptions()).toEqual({ name: 'input', source: 'owner' });
+    expect(getLegacyFieldInterface).toHaveBeenCalledTimes(1);
   });
 });

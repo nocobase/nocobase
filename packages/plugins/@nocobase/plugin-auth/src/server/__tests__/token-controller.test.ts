@@ -174,6 +174,18 @@ describe('auth', () => {
     ).toBe(true);
   });
 
+  it('records the authenticator that issued the token', async () => {
+    const user = await db.getRepository('users').findOne();
+    const tokenInfo = await auth.tokenController.add({ userId: user.id, authenticator: 'app-sso' });
+    const record = await db.getRepository('issuedTokens').findOne({
+      filter: {
+        jti: tokenInfo.jti,
+      },
+    });
+
+    expect(record.get('authenticator')).toBe('app-sso');
+  });
+
   it('after JTI is renewed for 10s, any further renewal should fail.', async () => {
     const user = await db.getRepository('users').findOne();
     const tokenInfo = await auth.tokenController.add({ userId: user.id });

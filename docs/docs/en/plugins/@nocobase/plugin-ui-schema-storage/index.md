@@ -1,4 +1,6 @@
 ---
+title: "UI schema storage"
+keywords: "System & security"
 displayName: "UI schema storage"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

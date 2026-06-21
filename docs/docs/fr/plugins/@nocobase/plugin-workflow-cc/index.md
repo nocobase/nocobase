@@ -1,4 +1,6 @@
 ---
+title: "Workflow: CC"
+keywords: "Workflow"
 displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |

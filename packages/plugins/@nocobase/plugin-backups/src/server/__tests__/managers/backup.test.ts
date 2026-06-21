@@ -12,7 +12,7 @@ import { BackupManager, BackupSettings } from '../../managers/backup';
 import { MockServer } from '@nocobase/test';
 import path from 'path';
 import { storagePathJoin } from '@nocobase/utils';
-import { BACKUP_EXTENSION } from '../../utils';
+import { BACKUP_EXTENSION, METADATA_EXTENSION } from '../../utils';
 import fs from 'fs';
 import * as cp from 'child_process';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
@@ -57,6 +57,7 @@ vi.mock('child_process', async (importOriginal) => {
 const backupFileBaseName = 'backup_for_unit_tests';
 const backupFilesFolder = storagePathJoin('backups', 'main');
 const finalBackupFilePath = path.join(backupFilesFolder, `${backupFileBaseName}.${BACKUP_EXTENSION}`);
+const finalMetadataFilePath = path.join(backupFilesFolder, `${backupFileBaseName}${METADATA_EXTENSION}`);
 
 async function listZipEntries(filePath: string) {
   return await new Promise<string[]>((resolve, reject) => {
@@ -98,6 +99,7 @@ describe('BackupManager', async () => {
 
   afterAll(async () => {
     fs.promises.unlink(finalBackupFilePath).catch(() => {});
+    fs.promises.unlink(finalMetadataFilePath).catch(() => {});
   });
 
   it('createBackupName', async () => {
@@ -163,6 +165,63 @@ describe('BackupManager', async () => {
         await fs.promises.unlink(validFilePath).catch(() => {});
         getRepositorySpy.mockRestore();
       }
+    });
+
+    it('should exclude runtime tables while preserving backup option exclusions', async () => {
+      const spawnMock = vi.mocked(cp.spawn);
+      spawnMock.mockClear();
+      const runtimeCollection = {
+        name: 'runtime_records',
+        dataCategory: 'runtime',
+        getTableNameWithSchemaAsString: () => 'runtime_records',
+      };
+      const businessCollection = {
+        name: 'business_records',
+        dataCategory: 'business',
+        getTableNameWithSchemaAsString: () => 'business_records',
+      };
+      const fakeApp = {
+        name: 'main',
+        db: {
+          options: {
+            dialect: 'mysql',
+            username: 'root',
+            host: 'localhost',
+            database: 'backup_test',
+            password: '',
+          },
+          collections: new Map([
+            [runtimeCollection.name, runtimeCollection],
+            [businessCollection.name, businessCollection],
+          ]),
+          sequelize: {
+            getDialect: () => 'mysql',
+            query: vi.fn().mockResolvedValue([{ version: '8.0.0' }]),
+          },
+        },
+        pm: {
+          has: vi.fn().mockReturnValue(false),
+          getPlugins: vi.fn().mockReturnValue(new Map()),
+        },
+        version: {
+          get: vi.fn().mockResolvedValue('1.0.0'),
+        },
+        logger: {
+          error: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+        },
+      } as unknown as ConstructorParameters<typeof BackupManager>[0];
+      const backupManager = new BackupManager(fakeApp, null, defaultBackupSettings);
+
+      await backupManager.backup(backupFileBaseName, {
+        excludeTables: ['audit_logs'],
+      });
+
+      const mysqldumpArgs = spawnMock.mock.calls[0]?.[1] as string[];
+      expect(mysqldumpArgs).toContain('--ignore-table=backup_test.audit_logs');
+      expect(mysqldumpArgs).toContain('--ignore-table=backup_test.runtime_records');
+      expect(mysqldumpArgs).not.toContain('--ignore-table=backup_test.business_records');
     });
 
     it('should warn and continue when a file collection query fails', async () => {
@@ -289,10 +348,22 @@ describe('BackupManager', async () => {
   });
 
   describe('destroy', async () => {
-    it('should delete the backup file', async () => {
+    it('should delete the backup file and metadata file', async () => {
       const backupManager = new BackupManager(app, null, defaultBackupSettings);
       await backupManager.backup(backupFileBaseName);
       await backupManager.destroy(`${backupFileBaseName}.${BACKUP_EXTENSION}`);
+      const files = await fs.promises.readdir(backupFilesFolder);
+      expect(files).not.toContain(`${backupFileBaseName}.${BACKUP_EXTENSION}`);
+      expect(files).not.toContain(`${backupFileBaseName}${METADATA_EXTENSION}`);
+    });
+
+    it('should ignore missing metadata file when deleting backup file', async () => {
+      const backupManager = new BackupManager(app, null, defaultBackupSettings);
+      await backupManager.backup(backupFileBaseName);
+      await fs.promises.unlink(finalMetadataFilePath);
+
+      await expect(backupManager.destroy(`${backupFileBaseName}.${BACKUP_EXTENSION}`)).resolves.toBeUndefined();
+
       const files = await fs.promises.readdir(backupFilesFolder);
       expect(files).not.toContain(`${backupFileBaseName}.${BACKUP_EXTENSION}`);
     });
