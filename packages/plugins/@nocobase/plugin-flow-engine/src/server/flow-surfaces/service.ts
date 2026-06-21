@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'crypto';
-import type { HasManyRepository } from '@nocobase/database';
+import type { BelongsToManyRepository, HasManyRepository } from '@nocobase/database';
 import type { Plugin } from '@nocobase/server';
 import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
@@ -1170,6 +1170,7 @@ type AIEmployeePromptValidationContext = {
 };
 
 const FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY = 'flowSurfaceMenuBindable';
+const FLOW_SURFACE_DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
 const ANT_DESIGN_ICON_NAMES = new Set(Object.keys(antDesignIconAsn || {}));
 const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
 const AI_EMPLOYEE_OWNER_PLUGIN = '@nocobase/plugin-ai';
@@ -1543,6 +1544,91 @@ export class FlowSurfacesService {
     return _.isPlainObject(options) ? options : {};
   }
 
+  private hasDesktopRouteUiLayoutsRelation() {
+    return !!this.db.getCollection('desktopRoutes')?.getField('uiLayouts');
+  }
+
+  private readRouteUiLayoutUids(route: any) {
+    return _.uniq(
+      _.castArray(this.readRouteField(route, 'uiLayouts'))
+        .map((uiLayout: any) => {
+          if (typeof uiLayout === 'string') {
+            return uiLayout.trim();
+          }
+          const uid = this.readRouteField<string>(uiLayout, 'uid');
+          return typeof uid === 'string' ? uid.trim() : '';
+        })
+        .filter((uid): uid is string => !!uid),
+    );
+  }
+
+  private async findRouteUiLayoutUids(route: any, transaction?: any) {
+    if (!this.hasDesktopRouteUiLayoutsRelation()) {
+      return [];
+    }
+
+    const routeId = this.readRouteField(route, 'id');
+    const loadedUids = this.readRouteUiLayoutUids(route);
+    if (loadedUids.length || _.isNil(routeId)) {
+      return loadedUids;
+    }
+
+    const routeWithLayouts = await this.db.getRepository('desktopRoutes').findOne({
+      filterByTk: String(routeId),
+      appends: ['uiLayouts'],
+      transaction,
+    });
+    return this.readRouteUiLayoutUids(routeWithLayouts);
+  }
+
+  private async findDefaultAdminRouteUiLayoutUids(transaction?: any) {
+    if (!this.hasDesktopRouteUiLayoutsRelation() || !this.db.getCollection('uiLayouts')) {
+      return [];
+    }
+
+    const adminLayout = await this.db.getRepository('uiLayouts').findOne({
+      filterByTk: FLOW_SURFACE_DEFAULT_ADMIN_UI_LAYOUT_UID,
+      transaction,
+    });
+    return adminLayout ? [FLOW_SURFACE_DEFAULT_ADMIN_UI_LAYOUT_UID] : [];
+  }
+
+  private async resolveNewMenuRouteUiLayoutUids(parentRoute: any, transaction?: any) {
+    if (parentRoute) {
+      return this.findRouteUiLayoutUids(parentRoute, transaction);
+    }
+    return this.findDefaultAdminRouteUiLayoutUids(transaction);
+  }
+
+  private async resolveExistingPageRouteUiLayoutUids(route: any, transaction?: any) {
+    const existingUids = await this.findRouteUiLayoutUids(route, transaction);
+    if (existingUids.length) {
+      return existingUids;
+    }
+    return this.findDefaultAdminRouteUiLayoutUids(transaction);
+  }
+
+  private async setRouteUiLayouts(routeId: unknown, uiLayoutUids: string[], transaction?: any) {
+    if (!this.hasDesktopRouteUiLayoutsRelation() || _.isNil(routeId) || uiLayoutUids.length === 0) {
+      return;
+    }
+
+    await this.db.getRepository<BelongsToManyRepository>('desktopRoutes.uiLayouts', String(routeId)).set({
+      tk: uiLayoutUids,
+      transaction,
+    });
+  }
+
+  private async ensureRouteUiLayouts(route: any, fallbackUiLayoutUids: string[], transaction?: any) {
+    const existingUids = await this.findRouteUiLayoutUids(route, transaction);
+    if (existingUids.length) {
+      return existingUids;
+    }
+
+    await this.setRouteUiLayouts(this.readRouteField(route, 'id'), fallbackUiLayoutUids, transaction);
+    return fallbackUiLayoutUids;
+  }
+
   private async findMenuRouteById(menuRouteId: string | number, transaction?: any) {
     return this.db.getRepository('desktopRoutes').findOne({
       filterByTk: String(menuRouteId),
@@ -1742,9 +1828,11 @@ export class FlowSurfacesService {
   private async createFlowMenuGroup(values: Record<string, any>, transaction?: any) {
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
     const parentId = this.readRouteField(parentRoute, 'id') ?? null;
+    const uiLayoutUids = await this.resolveNewMenuRouteUiLayoutUids(parentRoute, transaction);
     const title = String(values.title || '').trim();
     const existingGroups = await this.findMenuGroupRoutesByParentIdAndTitle(parentId, title, transaction);
     if (existingGroups.length === 1) {
+      await this.ensureRouteUiLayouts(existingGroups[0], uiLayoutUids, transaction);
       return this.buildMenuResult(existingGroups[0]);
     }
     if (existingGroups.length > 1) {
@@ -1787,11 +1875,13 @@ export class FlowSurfacesService {
       filter: { schemaUid },
       transaction,
     });
+    await this.setRouteUiLayouts(this.readRouteField(route, 'id'), uiLayoutUids, transaction);
     return this.buildMenuResult(route);
   }
 
   private async createFlowMenuItem(values: Record<string, any>, transaction?: any) {
     const parentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, transaction);
+    const uiLayoutUids = await this.resolveNewMenuRouteUiLayoutUids(parentRoute, transaction);
     this.assertVisibleNavigationIcon('createMenu', 'values', values);
     const pageSchemaUid = values.pageSchemaUid || uid();
     const menuSchemaUid = uid();
@@ -1844,6 +1934,8 @@ export class FlowSurfacesService {
       transaction,
     });
     const tabRoute = _.sortBy(_.castArray(route?.get?.('children') || []), 'sort')[0];
+    await this.setRouteUiLayouts(this.readRouteField(route, 'id'), uiLayoutUids, transaction);
+    await this.setRouteUiLayouts(this.readRouteField(tabRoute, 'id'), uiLayoutUids, transaction);
 
     await this.ensureFlowRoutePageSchemaShell(pageSchemaUid, transaction);
     const pageTree = buildPersistedRootPageModel({
@@ -7932,6 +8024,7 @@ export class FlowSurfacesService {
   private async initializeFlowPageForRoute(route: any, values: Record<string, any>, transaction?: any) {
     const routeId = this.readRouteField(route, 'id');
     const pageSchemaUid = this.readRouteField(route, 'schemaUid');
+    const uiLayoutUids = await this.resolveExistingPageRouteUiLayoutUids(route, transaction);
     const structure = await this.loadRouteBackedPageStructure(route, transaction);
     let tabRoute = structure.tabRoutes[0];
     const routeOptions = this.readRouteOptions(route);
@@ -8003,6 +8096,8 @@ export class FlowSurfacesService {
       });
     }
 
+    await this.setRouteUiLayouts(routeId, uiLayoutUids, transaction);
+    await this.setRouteUiLayouts(this.readRouteField(tabRoute, 'id'), uiLayoutUids, transaction);
     await this.ensureFlowRoutePageSchemaShell(pageSchemaUid, transaction);
     await this.db.getRepository('desktopRoutes').update({
       filterByTk: String(routeId),
@@ -8129,6 +8224,7 @@ export class FlowSurfacesService {
     const tabSchemaName = values.tabSchemaName || uid();
     const title = values.title || 'Untitled';
     const sort = this.allocateRouteSortValue();
+    const uiLayoutUids = await this.findRouteUiLayoutUids(pageRoute, options.transaction);
     const route = await this.db.getRepository('desktopRoutes').create({
       values: {
         type: 'tabs',
@@ -8146,6 +8242,7 @@ export class FlowSurfacesService {
       },
       transaction: options.transaction,
     });
+    await this.setRouteUiLayouts(route.get('id'), uiLayoutUids, options.transaction);
 
     // Modern page tabs are route-backed synthetic anchors.
     // Keep the persisted subtree aligned with frontend semantics by storing only the async grid child under the tab schema uid.
