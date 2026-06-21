@@ -12,8 +12,13 @@ export * from './models';
 
 // Workflow node extension contract (shared base class + canvas building blocks) for downstream node plugins migrating
 // their config UI to the modern canvas.
-export { Instruction } from './canvas/Instruction';
+export { Instruction, useAvailableUpstreams, useNodeContext } from './canvas/Instruction';
 export type { LoaderOf, NodeAvailableContext, TempAssociationSource } from './canvas/Instruction';
+export { Branch } from './canvas/Branch';
+export { NodeDefaultView } from './canvas/Node';
+export { useCurrentWorkflowContext, useFlowContext } from './canvas/contexts';
+export type { CanvasNode } from './canvas/contexts';
+export { default as useStyles } from './canvas/style';
 export { WorkflowVariableInput } from './canvas/WorkflowVariableInput';
 export type { WorkflowVariableInputProps } from './canvas/WorkflowVariableInput';
 export { WorkflowVariableTextArea } from './canvas/WorkflowVariableTextArea';
@@ -24,8 +29,9 @@ export { WorkflowTypedVariableInput, WORKFLOW_TYPED_CONSTANT_TYPES } from './can
 export type { WorkflowTypedVariableInputProps } from './canvas/WorkflowTypedVariableInput';
 export { useWorkflowVariableOptions } from './canvas/useWorkflowVariableOptions';
 export type { UseWorkflowVariableOptions } from './canvas/useWorkflowVariableOptions';
-export { CurrentWorkflowContext, useCurrentWorkflowContext } from './canvas/contexts';
+export { CurrentWorkflowContext } from './canvas/contexts';
 export { getCollectionFieldOptions } from './canvas/collectionFieldOptions';
+export { BaseTypeSets, defaultFieldNames } from './canvas/collectionFieldOptions';
 export type { UseVariableOptions, VariableOption } from './canvas/collectionFieldOptions';
 export { Trigger } from './triggers';
 export type { LoaderOf as TriggerLoaderOf, TriggerTempAssociationSource } from './triggers';

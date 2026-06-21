@@ -50,6 +50,7 @@ function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<
   const model = {
     defaultValuesRefreshSeq: 0,
     lastDefaultValueByFieldName: new Map<string, any>(),
+    userEditedFieldNames: new Set<string>(),
     form: {
       getFieldsValue: () => ({ ...values }),
       getFieldValue: (name: string) => values[name],
@@ -86,6 +87,10 @@ function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<
       return undefined;
     }),
     canApplyFormDefaultValue: (FilterFormBlockModel.prototype as any).canApplyFormDefaultValue,
+    canApplyFormOverrideValue: (FilterFormBlockModel.prototype as any).canApplyFormOverrideValue,
+    normalizeFieldValueMode: (FilterFormBlockModel.prototype as any).normalizeFieldValueMode,
+    markFilterFormUserEditedFields: (FilterFormBlockModel.prototype as any).markFilterFormUserEditedFields,
+    resetFilterFormUserEditedFields: (FilterFormBlockModel.prototype as any).resetFilterFormUserEditedFields,
     matchDefaultValueCondition: (FilterFormBlockModel.prototype as any).matchDefaultValueCondition,
     applyFormDefaultValues: FilterFormBlockModel.prototype.applyFormDefaultValues,
     handleFilterFormValuesChange: (FilterFormBlockModel.prototype as any).handleFilterFormValuesChange,
@@ -313,6 +318,78 @@ describe('filter-form defaultValues wiring', () => {
     await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
 
     expect(values.username_user).toBe('Bob');
+  });
+
+  it('applies override values until the target filter field is changed by user', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel(
+      [
+        {
+          key: 'username-override',
+          enable: true,
+          targetPath: 'username',
+          mode: 'override',
+          value: '{{ ctx.formValues.nickname_nick }}',
+        },
+      ],
+      { nickname_nick: 'Bob', username_user: 'Manual' },
+    );
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+    expect(values.username_user).toBe('Bob');
+
+    values.nickname_nick = 'Carol';
+    model.defaultValuesRefreshSeq += 1;
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any, {
+      refreshSeq: model.defaultValuesRefreshSeq,
+    });
+    expect(values.username_user).toBe('Carol');
+
+    values.username_user = 'User value';
+    (model as any).handleFilterFormValuesChange(
+      { username_user: 'User value' },
+      { nickname_nick: 'Carol', username_user: 'User value' },
+    );
+
+    await waitFor(() => {
+      expect(values.username_user).toBe('User value');
+    });
+
+    values.nickname_nick = 'Dora';
+    model.defaultValuesRefreshSeq += 1;
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any, {
+      refreshSeq: model.defaultValuesRefreshSeq,
+    });
+    expect(values.username_user).toBe('User value');
+  });
+
+  it('clears filter form user-edited override state on forced apply', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel(
+      [
+        {
+          key: 'username-override',
+          enable: true,
+          targetPath: 'username',
+          mode: 'override',
+          condition: {
+            logic: '$and',
+            items: [{ path: '{{ ctx.formValues.nickname_nick }}', operator: '$eq', value: 'allow' }],
+          },
+          value: '{{ ctx.formValues.nickname_nick }}',
+        },
+      ],
+      { nickname_nick: 'deny', username_user: 'User value' },
+    );
+
+    model.userEditedFieldNames.add('username_user');
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any, { force: true });
+    expect(values.username_user).toBe('User value');
+    expect(model.userEditedFieldNames.has('username_user')).toBe(false);
+
+    values.nickname_nick = 'allow';
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+
+    expect(values.username_user).toBe('allow');
   });
 
   it('skips filter form field values when the rule condition does not match', async () => {

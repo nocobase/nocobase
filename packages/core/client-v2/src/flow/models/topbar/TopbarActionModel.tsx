@@ -14,8 +14,9 @@ import { Button, Dropdown, theme, Tooltip, type ButtonProps, type MenuProps } fr
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useACLRoleContext } from '../../../acl';
+import type { BaseApplication } from '../../../BaseApplication';
 import type { PluginSettingsPageType } from '../../../PluginSettingsManager';
 import { useApp } from '../../../hooks/useApp';
 import {
@@ -63,6 +64,89 @@ const topbarActionTriggerClassName = css`
   align-items: center;
   height: 100%;
 `;
+
+type TopbarSettingsAppLike = Pick<BaseApplication<any>, 'router' | 'getPublicPath'>;
+
+const normalizeTopbarPath = (pathname?: string) => {
+  const trimmed = pathname?.trim();
+  if (!trimmed || trimmed === '/') {
+    return '/';
+  }
+  return `/${trimmed.replace(/^\/+/, '')}`;
+};
+
+const normalizeTopbarBasePath = (pathname?: string) => {
+  const normalized = normalizeTopbarPath(pathname).replace(/\/+$/, '');
+  return normalized === '' || normalized === '/' ? '' : normalized;
+};
+
+const getTopbarRouterBasePath = (app: TopbarSettingsAppLike | undefined) => {
+  return app?.router?.getBasename?.() || app?.router?.basename || app?.getPublicPath?.() || '';
+};
+
+const stripTopbarRouterBasePath = (pathname: string, basename?: string) => {
+  const normalizedPath = normalizeTopbarPath(pathname);
+  const normalizedBase = normalizeTopbarBasePath(basename);
+
+  if (!normalizedBase) {
+    return normalizedPath;
+  }
+
+  if (normalizedPath === normalizedBase) {
+    return '/';
+  }
+
+  if (normalizedPath.startsWith(`${normalizedBase}/`)) {
+    return normalizeTopbarPath(normalizedPath.slice(normalizedBase.length));
+  }
+
+  return normalizedPath;
+};
+
+const isAdminRuntimePath = (pathname: string) => {
+  return pathname === '/admin' || pathname.startsWith('/admin/');
+};
+
+const buildTopbarDocumentHref = (targetPath: string, basename?: string) => {
+  const normalizedTarget = normalizeTopbarPath(targetPath);
+  const normalizedBase = normalizeTopbarBasePath(basename);
+
+  if (!normalizedBase || normalizedTarget === normalizedBase || normalizedTarget.startsWith(`${normalizedBase}/`)) {
+    return normalizedTarget;
+  }
+
+  return `${normalizedBase}${normalizedTarget}`;
+};
+
+function TopbarExternalSettingsLabel(props: { title: React.ReactNode; link: string }) {
+  return (
+    <div
+      onClick={() => {
+        window.open(props.link, '_blank', 'noopener,noreferrer');
+      }}
+    >
+      {props.title}
+    </div>
+  );
+}
+
+function TopbarInternalSettingsLabel(props: { title: React.ReactNode; path?: string }) {
+  const app = useApp();
+  const location = useLocation();
+  const targetPath = props.path || '/admin/settings';
+  const basename = getTopbarRouterBasePath(app);
+  const currentPath = stripTopbarRouterBasePath(location.pathname, basename);
+
+  if (isAdminRuntimePath(currentPath)) {
+    return <Link to={targetPath}>{props.title}</Link>;
+  }
+
+  return (
+    <a href={buildTopbarDocumentHref(targetPath, basename)} target="_blank" rel="noopener noreferrer">
+      {props.title}
+    </a>
+  );
+}
 
 /**
  * 将 settings 顶部菜单转换成右上角 dropdown items。
@@ -112,15 +196,9 @@ export function getTopbarPluginSettingsItems(options: {
       title: targetTitle,
       icon: item.icon,
       label: targetLink ? (
-        <div
-          onClick={() => {
-            window.open(targetLink, '_blank', 'noopener,noreferrer');
-          }}
-        >
-          {targetTitle}
-        </div>
+        <TopbarExternalSettingsLabel title={targetTitle} link={targetLink} />
       ) : (
-        <Link to={targetPath || '/admin/settings'}>{targetTitle}</Link>
+        <TopbarInternalSettingsLabel title={targetTitle} path={targetPath} />
       ),
     };
   });
@@ -131,7 +209,12 @@ export function getTopbarPluginSettingsItems(options: {
     items.push({
       key: pluginManagerSetting.key,
       icon: pluginManagerSetting.icon || <ApiOutlined />,
-      label: <Link to={pluginManagerSetting.path}>{pluginManagerSetting.title || t('Plugin manager')}</Link>,
+      label: (
+        <TopbarInternalSettingsLabel
+          title={pluginManagerSetting.title || t('Plugin manager')}
+          path={pluginManagerSetting.path}
+        />
+      ),
     });
   }
 

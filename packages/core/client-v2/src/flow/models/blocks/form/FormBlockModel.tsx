@@ -166,6 +166,13 @@ export class FormBlockModel<
     this.userModifiedTopLevelFields.clear();
   }
 
+  /**
+   * @internal
+   */
+  resetRuntimeUserEditedState(): void {
+    this.formValueRuntime?.resetUserEditedState?.();
+  }
+
   public async onDispatchEventStart(eventName: string, options?: any, inputArgs?: Record<string, any>): Promise<void> {
     if (eventName === 'beforeRender') {
       const grid = this.subModels.grid;

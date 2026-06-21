@@ -69,6 +69,10 @@ Field relasi hanya mendukung validasi wajib diisi. Perhatikan bahwa validasi waj
 Setelah aturan field dikonfigurasi, aturan validasi yang sesuai akan dipicu saat menambahkan atau mengubah data.
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
+Saat field digunakan dalam form, aturan validasi field juga akan ditampilkan di pengaturan validasi field. Aturan ini muncul di bawah **Aturan validasi field server-side** dan hanya dapat dilihat di sana. Jika perlu mengubahnya, edit field di Data Source → Konfigurasi Collection.
+
+Anda tetap dapat menambahkan aturan tambahan untuk field form saat ini di bawah **Aturan validasi sisi klien**. Aturan ini hanya berlaku untuk komponen field saat ini. Hasil validasi akhir menggabungkan **Aturan validasi field server-side** dan **Aturan validasi sisi klien**.
+
 Aturan validasi juga berlaku untuk komponen sub table dan sub form:
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
 
@@ -77,19 +81,19 @@ Aturan validasi juga berlaku untuk komponen sub table dan sub form:
 Perhatikan bahwa pada skenario sub form atau sub table, validasi wajib diisi pada field relasi untuk sementara tidak berlaku.
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Perbedaan dengan Validasi Field Sisi Klien
-Validasi field server-side cocok untuk skenario aplikasi yang berbeda dengan validasi field sisi klien. Keduanya memiliki perbedaan signifikan dalam cara implementasi dan waktu pemicu aturan, sehingga perlu dikelola secara terpisah.
+## Perbedaan antara Aturan Validasi Field Server-Side dan Sisi Klien
+Aturan validasi field server-side dan aturan validasi sisi klien dikonfigurasi di tempat yang berbeda dan memiliki cakupan yang berbeda.
 
 ### Perbedaan Cara Konfigurasi
-- **Validasi Klien**: Konfigurasi aturan pada form edit (seperti gambar di bawah)
-- **Validasi Field Server**: Atur aturan field di Data Source → Konfigurasi Collection
+- **Aturan validasi field server-side**: Atur aturan field di Data Source → Konfigurasi Collection. Aturan ini adalah aturan dasar field
+- **Aturan validasi sisi klien**: Konfigurasi aturan tambahan di pengaturan field form. Aturan ini hanya memengaruhi komponen field saat ini
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
 ![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
 
 ### Perbedaan Waktu Pemicu Validasi
-- **Validasi Klien**: Memicu validasi secara real-time saat pengguna mengisi field, dan langsung menampilkan pesan error
-- **Validasi Field Server**: Setelah data disubmit, server melakukan validasi sebelum data masuk ke database, pesan error dikembalikan melalui respons API
-- **Cakupan Aplikasi**: Selain berlaku saat submit form, validasi field server juga akan dipicu di workflow, import data, dan semua skenario yang melibatkan penambahan atau modifikasi data
-- **Pesan Error**: Validasi klien mendukung pesan error custom, validasi server untuk sementara tidak mendukung pesan error custom
+- **Aturan validasi field server-side**: Memicu validasi frontend saat field digunakan dalam form, dan juga melakukan validasi sebelum data ditulis. Aturan ini juga berlaku pada skenario yang membuat atau memperbarui data, seperti workflow dan import data
+- **Aturan validasi sisi klien**: Hanya memicu validasi frontend pada field form saat ini
+- **Tampilan aturan**: Aturan validasi field server-side ditampilkan sebagai aturan turunan yang hanya dapat dilihat. Aturan validasi sisi klien ditampilkan secara terpisah dan dapat diedit di sana
+- **Pesan Error**: Aturan validasi sisi klien mendukung pesan error custom, sementara aturan validasi field server-side untuk sementara tidak mendukung pesan error custom
