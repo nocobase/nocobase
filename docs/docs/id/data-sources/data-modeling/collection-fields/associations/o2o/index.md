@@ -1,66 +1,68 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "One to One"
+description: "Field relasi One to One (O2O), entitas dua Collection berkorespondensi satu-satu, digunakan untuk memisahkan aspek berbeda dari suatu entitas untuk disimpan."
+keywords: "One to One,O2O,HasOne,BelongsTo,field terkait,NocoBase"
+---
 
-# Satu-ke-Satu
+# One to One
 
-Dalam hubungan antara karyawan dan profil pribadi, setiap karyawan hanya dapat memiliki satu catatan profil pribadi, dan setiap catatan profil pribadi hanya dapat berkorespondensi dengan satu karyawan. Dalam kasus ini, hubungan antara karyawan dan profil pribadi adalah satu-ke-satu.
+Hubungan antara karyawan dan profil pribadi, setiap karyawan hanya bisa memiliki satu record profil pribadi, dan setiap record profil pribadi hanya bisa berkorespondensi dengan satu karyawan. Dalam situasi ini, hubungan antara karyawan dan profil pribadi adalah One to One.
 
-Kunci asing dalam hubungan satu-ke-satu dapat ditempatkan di koleksi sumber atau koleksi target. Jika merepresentasikan "memiliki satu", kunci asing lebih tepat ditempatkan di koleksi target; jika merepresentasikan "milik", maka kunci asing lebih baik ditempatkan di koleksi sumber.
+Foreign key One to One dapat ditempatkan di Collection sumber atau Collection target. Jika menyatakan "Has One", lebih cocok menempatkan foreign key di Collection target; jika menyatakan "Belongs To", maka lebih cocok menempatkan foreign key di Collection sumber.
 
-Sebagai contoh, dalam kasus yang disebutkan di atas, di mana seorang karyawan hanya memiliki satu profil pribadi dan profil pribadi tersebut milik karyawan, maka tepat untuk menempatkan kunci asing di koleksi profil pribadi.
+Sebagai contoh di atas, karyawan hanya memiliki satu profil pribadi, dan profil pribadi adalah milik karyawan, jadi foreign key ini cocok ditempatkan di Collection profil pribadi.
 
-## Satu-ke-Satu (Memiliki Satu)
+## One to One (Has One)
 
-Ini menunjukkan bahwa seorang karyawan memiliki catatan profil pribadi.
+Menyatakan bahwa seorang karyawan memiliki satu record profil pribadi
 
 Relasi ER
 
 ![alt text](https://static-docs.nocobase.com/4359e128936bbd7c9ff51bcff1d646dd.png)
 
-Konfigurasi Bidang
+Konfigurasi field
 
-![alt text](https://static-docs.nocobase.com/765a87e094b4fb50c9426a108f87105.png)
+![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
-## Satu-ke-Satu (Milik)
+## One to One (Belongs To)
 
-Ini menunjukkan bahwa profil pribadi milik karyawan tertentu.
+Menyatakan bahwa suatu record profil pribadi adalah milik seorang karyawan
 
 Relasi ER
 
 ![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98753ca24ac72d.png)
 
-Konfigurasi Bidang
+Konfigurasi field
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a3498242da43c187c.png)
+![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
-## Deskripsi Parameter
+## Penjelasan Parameter
 
-### Koleksi Sumber
+### Source collection
 
-Koleksi sumber adalah koleksi tempat bidang saat ini berada.
+Collection sumber, yaitu Collection tempat field saat ini berada.
 
-### Koleksi Target
+### Target collection
 
-Koleksi target adalah koleksi yang sedang dihubungkan.
+Collection target, dengan Collection mana akan dihubungkan.
 
-### Kunci Asing
+### Foreign key
 
-Digunakan untuk membangun hubungan antara dua koleksi. Dalam hubungan satu-ke-satu, kunci asing dapat ditempatkan di koleksi sumber atau koleksi target. Jika merepresentasikan "memiliki satu", kunci asing lebih tepat ditempatkan di koleksi target; jika merepresentasikan "milik", maka kunci asing lebih baik ditempatkan di koleksi sumber.
+Digunakan untuk membangun relasi antar dua Collection. Foreign key One to One dapat ditempatkan di Collection sumber atau Collection target. Jika menyatakan "Has One", lebih cocok menempatkan foreign key di Collection target; jika menyatakan "Belongs To", maka lebih cocok menempatkan foreign key di Collection sumber.
 
-### Kunci Sumber <- Kunci Asing (Kunci Asing di Koleksi Target)
+### Source key <- Foreign key (Foreign key di Collection target)
 
-Bidang yang direferensikan oleh batasan kunci asing harus unik. Ketika kunci asing ditempatkan di koleksi target, ini menunjukkan "memiliki satu".
+Field yang dirujuk oleh constraint foreign key, harus memiliki keunikan. Ketika foreign key ditempatkan di target, menyatakan "Has One".
 
-### Kunci Target <- Kunci Asing (Kunci Asing di Koleksi Sumber)
+### Target key <- Foreign key (Foreign key di Collection sumber)
 
-Bidang yang direferensikan oleh batasan kunci asing harus unik. Ketika kunci asing ditempatkan di koleksi sumber, ini menunjukkan "milik".
+Field yang dirujuk oleh constraint foreign key, harus memiliki keunikan. Ketika foreign key ditempatkan di Collection sumber, menyatakan "Belongs To".
 
 ### ON DELETE
 
-ON DELETE mengacu pada aturan tindakan untuk referensi kunci asing di koleksi anak terkait saat menghapus catatan dari koleksi induk. Ini adalah opsi yang ditentukan saat membuat batasan kunci asing. Opsi ON DELETE yang umum meliputi:
+ON DELETE merujuk pada aturan operasi terhadap referensi foreign key di tabel anak yang terkait saat menghapus record di tabel parent. Ini adalah opsi yang digunakan saat mendefinisikan constraint foreign key. Opsi ON DELETE yang umum meliputi:
 
-- CASCADE: Ketika catatan di koleksi induk dihapus, secara otomatis hapus semua catatan terkait di koleksi anak.
-- SET NULL: Ketika catatan di koleksi induk dihapus, atur nilai kunci asing di koleksi anak terkait menjadi NULL.
-- RESTRICT: Opsi default, di mana penghapusan catatan koleksi induk ditolak jika ada catatan terkait di koleksi anak.
-- NO ACTION: Mirip dengan RESTRICT, penghapusan catatan koleksi induk ditolak jika ada catatan terkait di koleksi anak.
+- CASCADE: Ketika record di tabel parent dihapus, semua record yang terkait di tabel anak akan otomatis dihapus.
+- SET NULL: Ketika record di tabel parent dihapus, nilai foreign key di tabel anak yang terkait akan diatur menjadi NULL.
+- RESTRICT: Opsi default. Ketika mencoba menghapus record di tabel parent, jika ada record di tabel anak yang terkait, penghapusan record tabel parent akan ditolak.
+- NO ACTION: Mirip dengan RESTRICT, jika ada record di tabel anak yang terkait, penghapusan record tabel parent akan ditolak.

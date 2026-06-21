@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "存储引擎：腾讯云 COS"
+description: "NocoBase 内置腾讯云 COS 存储引擎配置：区域、SecretId、SecretKey、存储桶，适用于腾讯云对象存储。"
+keywords: "腾讯云 COS,腾讯云存储,SecretId,SecretKey,存储桶,对象存储,NocoBase"
+---
+
 # 腾讯云 COS
 
 基于腾讯云 COS 的存储引擎，使用前需要准备相关账号和权限。

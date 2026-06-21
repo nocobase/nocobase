@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-verification'
+title: "验证管理"
+description: "NocoBase 验证管理中心：短信验证码、TOTP 认证器，支持短信登录、2FA、风险操作二次验证，可扩展验证类型与场景。"
+keywords: "验证管理,短信验证码,TOTP,2FA,身份验证,二次验证,NocoBase"
 ---
 
 # 验证
@@ -15,7 +18,7 @@ pkg: '@nocobase/plugin-verification'
 **验证管理中心支持管理和接入不同的用户身份验证方式。** 比如：
 
 - 短信验证码 - 由验证插件默认提供。参考：[验证：短信](./sms)
-- TOTP 认证器 - 参考：[验证：TOTP 认证器](../verification-totp/)
+- TOTP 认证器 - 参考：[验证：TOTP 认证器](../verification-totp/index.md)
 
 开发者也可以以插件的形式扩展其他验证类型。参考：[扩展验证类型](./dev/type)
 

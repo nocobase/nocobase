@@ -1,3 +1,9 @@
+---
+title: "FlowModel 事件流与配置化"
+description: "FlowModel 事件流与配置化：registerFlow 注册 Flow、在界面搭建中配置 Flow、事件、属性，实现无代码编排。"
+keywords: "FlowModel 配置,registerFlow,事件流配置,无代码编排,界面搭建,FlowEngine,NocoBase"
+---
+
 # FlowModel 事件流与配置化
 
 FlowModel 提供了一种基于「事件流（Flow）」的方式来实现组件的配置化逻辑，使组件的行为和配置更具扩展性与可视化。

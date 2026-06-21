@@ -25,7 +25,7 @@ const snippet: SnippetModule = {
   content: `
 // Format number using locale
 const n = Number(ctx.value ?? 0);
-ctx.element.innerHTML = String(Number.isFinite(n) ? n.toLocaleString() : ctx.value ?? '');
+ctx.render(String(Number.isFinite(n) ? n.toLocaleString() : ctx.value ?? ''));
 `,
 };
 

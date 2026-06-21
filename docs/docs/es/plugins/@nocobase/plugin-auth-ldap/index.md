@@ -1,18 +1,17 @@
 ---
-displayName: "Autenticación: LDAP"
+title: "Auth: LDAP"
+keywords: "Authentication"
+displayName: "Auth: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Permite la autenticación de usuarios a través del protocolo LDAP.
+  LDAP authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Autenticación: LDAP
+# Auth: LDAP

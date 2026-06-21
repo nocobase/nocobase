@@ -1,15 +1,17 @@
 ---
-displayName: "Redis Worker-ID-Zuweiser"
+title: "Redis worker ID allocator"
+keywords: "Architecture"
+displayName: "Redis worker ID allocator"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Auf Redis basierender Worker-ID-Zuweiser.
+  Worker id allocator based on Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Redis Worker-ID-Zuweiser
+# Redis worker ID allocator

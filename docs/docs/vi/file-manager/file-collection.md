@@ -1,30 +1,32 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Bảng file"
+description: "Bảng file chuyên dùng để lưu metadata của file, có sẵn các field tên file, kích thước, loại, đường dẫn lưu trữ, hỗ trợ tạo bảng file tùy chỉnh, field quan hệ và hiển thị trong block."
+keywords: "bảng file,collection file,file collection,metadata file,field quan hệ,block,NocoBase"
+---
 
-
-# Bộ sưu tập tệp
+# Bảng file
 
 ## Giới thiệu
 
-Bộ sưu tập tệp là một bộ sưu tập chuyên dùng để lưu trữ siêu dữ liệu của tệp, với các trường tích hợp sẵn như tên tệp, kích thước, loại và đường dẫn lưu trữ.
+Bảng file là bảng dữ liệu chuyên dùng để lưu trữ metadata của file, có sẵn các field tên file, kích thước, loại, đường dẫn lưu trữ, v.v.
 
-## Tạo Bộ sưu tập tệp
+## Tạo bảng file
 
 ![20240324090414](https://static-docs.nocobase.com/20240324090414.png)
 
-## Các trường cài đặt sẵn trong Bộ sưu tập tệp
+## Field có sẵn của bảng file
 
 ![20240324090527](https://static-docs.nocobase.com/20240324090527.png)
 
-## Sử dụng trong một Khối
+## Sử dụng trong block
 
 ![20240324090848](https://static-docs.nocobase.com/20240324090848.png)
 
-## Trường liên kết
+## Field quan hệ
 
 ![20240324091529](https://static-docs.nocobase.com/20240324091529.png)
 
-## Khối liên kết
+## Block quan hệ
 
 ![20240324091321](https://static-docs.nocobase.com/20240324091321.png)

@@ -1,30 +1,32 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "DataSourceManager Manajemen Data Source"
+description: "Manajemen data source server NocoBase: app.dataSourceManager, multi data source, addDataSource, getDataSource."
+keywords: "DataSourceManager,manajemen data source,multi data source,addDataSource,getDataSource,NocoBase"
+---
 
-# DataSourceManager: Manajemen Sumber Data
+# DataSourceManager Manajemen Data Source
 
-NocoBase menyediakan `DataSourceManager` untuk mengelola banyak sumber data. Setiap `DataSource` memiliki instans `Database`, `ResourceManager`, dan `ACL` sendiri, sehingga memudahkan pengembang untuk mengelola dan memperluas berbagai sumber data secara fleksibel.
+NocoBase menyediakan `DataSourceManager` untuk mengelola beberapa data source. Setiap `DataSource` memiliki instance `Database`, `ResourceManager`, dan `ACL` sendiri, sehingga Anda dapat mengelola dan memperluas data source yang berbeda dengan fleksibel.
 
 ## Konsep Dasar
 
-Setiap instans `DataSource` mencakup hal-hal berikut:
+Setiap instance `DataSource` berisi konten berikut:
 
-- **`dataSource.collectionManager`**: Digunakan untuk mengelola koleksi dan kolom.
-- **`dataSource.resourceManager`**: Menangani operasi terkait sumber daya (misalnya, CRUD, dll.).
-- **`dataSource.acl`**: Kontrol akses (ACL) untuk operasi sumber daya.
+- **`dataSource.collectionManager`**: Digunakan untuk mengelola tabel data dan field.
+- **`dataSource.resourceManager`**: Menangani operasi terkait resource (seperti CRUD, dll.).
+- **`dataSource.acl`**: Access Control List (ACL) untuk operasi resource.
 
-Untuk akses yang mudah, alias disediakan untuk anggota sumber data utama:
+Untuk memudahkan akses, NocoBase menyediakan alias singkat untuk member terkait data source utama:
 
 - `app.db` setara dengan `dataSourceManager.get('main').collectionManager.db`
 - `app.acl` setara dengan `dataSourceManager.get('main').acl`
 - `app.resourceManager` setara dengan `dataSourceManager.get('main').resourceManager`
 
-## Metode Umum
+## Method Umum
 
 ### dataSourceManager.get(dataSourceKey)
 
-Metode ini mengembalikan instans `DataSource` yang ditentukan.
+Mengembalikan instance `DataSource` yang ditentukan.
 
 ```ts
 const dataSource = dataSourceManager.get('main');
@@ -32,25 +34,25 @@ const dataSource = dataSourceManager.get('main');
 
 ### dataSourceManager.use()
 
-Mendaftarkan middleware untuk semua sumber data. Ini akan memengaruhi operasi pada semua sumber data.
+Mendaftarkan middleware untuk semua data source, akan mempengaruhi operasi semua data source.
 
 ```ts
-dataSourceManager.use((ctx, next) => {
-  console.log('This middleware applies to all data sources.');
+dataSourceManager.use(async (ctx, next) => {
+  console.log('Middleware ini berlaku untuk semua data source');
   await next();
 });
 ```
 
 ### dataSourceManager.beforeAddDataSource()
 
-Dieksekusi sebelum pemuatan sumber data. Umumnya digunakan untuk pendaftaran kelas statis, seperti kelas model dan pendaftaran tipe kolom:
+Dieksekusi sebelum data source dimuat. Biasanya digunakan untuk registrasi class statis, seperti registrasi class model dan tipe field:
 
 ```ts
 dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
   const collectionManager = dataSource.collectionManager;
   if (collectionManager instanceof SequelizeCollectionManager) {
     collectionManager.registerFieldTypes({
-      belongsToArray: BelongsToArrayField, // Tipe kolom kustom
+      belongsToArray: BelongsToArrayField, // Mendaftarkan tipe field kustom
     });
   }
 });
@@ -58,16 +60,24 @@ dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
 
 ### dataSourceManager.afterAddDataSource()
 
-Dieksekusi setelah pemuatan sumber data. Umumnya digunakan untuk mendaftarkan operasi, mengatur kontrol akses, dll.
+Dieksekusi setelah data source dimuat. Biasanya digunakan untuk mendaftarkan operasi, mengatur kontrol akses, dll.
 
 ```ts
 dataSourceManager.afterAddDataSource((dataSource) => {
   dataSource.resourceManager.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
   dataSource.resourceManager.registerActionHandler('importXlsx', importXlsx);
-  dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn'); // Mengatur izin akses
+  dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn'); // Pengguna login dapat mengakses
 });
 ```
 
-## Ekstensi Sumber Data
+## Ekstensi Data Source
 
-Untuk ekstensi sumber data yang lengkap, silakan merujuk ke bab ekstensi sumber data.
+Untuk cara ekstensi data source yang lengkap, silakan merujuk ke bagian ekstensi data source.
+
+## Tautan Terkait
+
+- [Database](./database.md) — CRUD, Repository, transaksi, dan event database
+- [Collections Tabel Data](./collections.md) — Mendefinisikan atau memperluas struktur tabel data dengan kode
+- [ResourceManager Manajemen Resource](./resource-manager.md) — Mendaftarkan API kustom dan operasi resource
+- [ACL Kontrol Hak Akses](./acl.md) — Hak akses role, snippet hak akses, dan kontrol akses
+- [Plugin](./plugin.md) — Siklus hidup class plugin, member method, dan objek `app`

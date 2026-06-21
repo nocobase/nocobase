@@ -7,37 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { create } from 'zustand';
-import { Conversation } from '../../types';
-import { createSelectors } from './create-selectors';
-
-interface ChatConversationsState {
-  currentConversation?: string;
-  conversations: Conversation[];
-  keyword: string;
-  webSearch: boolean;
-}
-
-interface ChatConversationsActions {
-  setCurrentConversation: (id: string | undefined) => void;
-  setKeyword: (keyword: string) => void;
-  setConversations: (conversations: Conversation[] | ((prev: Conversation[]) => Conversation[])) => void;
-  setWebSearch: (webSearch: boolean) => void;
-}
-
-const store = create<ChatConversationsState & ChatConversationsActions>((set) => ({
-  currentConversation: undefined,
-  conversations: [],
-  keyword: '',
-  webSearch: true,
-
-  setCurrentConversation: (id) => set({ currentConversation: id }),
-  setKeyword: (keyword) => set({ keyword }),
-  setConversations: (conversations) =>
-    set((state) => ({
-      conversations: typeof conversations === 'function' ? conversations(state.conversations) : conversations,
-    })),
-  setWebSearch: (webSearch) => set({ webSearch }),
-}));
-
-export const useChatConversationsStore = createSelectors(store);
+export * from '../../../../client-v2/ai-employees/chatbox/stores/chat-conversations';

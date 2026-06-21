@@ -1,17 +1,43 @@
 [
   {
     "type": "custom-link",
-    "label": "Ikhtisar",
-    "link": "/multi-app/"
+    "label": "Multi-app",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/multi-app/multi-app/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mode Shared Memory",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mode Multi-Environment",
+        "link": "/multi-app/multi-app/remote"
+      },
+      {
+        "type": "custom-link",
+        "label": "Blok aplikasi dan app switcher",
+        "link": "/multi-app/multi-app/app-block-and-switcher"
+      },
+      {
+        "type": "custom-link",
+        "label": "App SSO",
+        "link": "/multi-app/multi-app/app-sso"
+      },
+      {
+        "type": "custom-link",
+        "label": "Memanggil API sub-aplikasi",
+        "link": "/multi-app/multi-app/sub-app-api"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Multi-Aplikasi",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "Multi-Ruang",
-    "link": "/multi-app/multi-space"
+    "label": "Multi-Space",
+    "link": "/multi-app/multi-space/"
   }
 ]

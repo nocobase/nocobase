@@ -1,3 +1,9 @@
+---
+title: "createMockClient 测试工具"
+description: "createMockClient 创建 FlowEngine 测试用 Mock 客户端，用于单元测试、Storybook、示例开发，支持 apiMock 构建 Mock 接口。"
+keywords: "createMockClient,Mock 客户端,单元测试,Storybook,apiMock,FlowEngine 测试,NocoBase"
+---
+
 # createMockClient
 
 在示例和测试时，一般建议通过 createMockClient 快速构建 Mock 应用。Mock 应用是个干净的没有激活任何插件的空应用，仅用于示例和测试。

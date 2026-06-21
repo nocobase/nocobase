@@ -14,7 +14,15 @@ import { Button, Space } from 'antd';
 import React, { useEffect } from 'react';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { StepSettingsDialogProps } from '../../../../types';
-import { compileUiSchema, FlowExitException, getT, resolveDefaultParams, resolveStepUiSchema } from '../../../../utils';
+import {
+  compileUiSchema,
+  FlowExitException,
+  getT,
+  resolveDefaultParams,
+  resolveStepUiSchema,
+  FlowCancelSaveException,
+} from '../../../../utils';
+import { FlowExitAllException } from '../../../../utils/exceptions';
 import { observer } from '../../../../reactive';
 
 const SchemaField = createSchemaField();
@@ -126,6 +134,17 @@ const openStepSettingsDialog = async ({
   };
 
   const openView = model.context.viewer[mode].bind(model.context.viewer);
+  const resolvedUiModeProps = toJS(uiModeProps) || {};
+  const { zIndex: uiModeZIndex, ...restUiModeProps } = resolvedUiModeProps;
+  const resolveDialogZIndex = (rawZIndex?: number) => {
+    const nextZIndex =
+      typeof model.context.viewer?.getNextZIndex === 'function'
+        ? model.context.viewer.getNextZIndex()
+        : (model.context.themeToken?.zIndexPopupBase || 1000) + 1;
+    const inputZIndex = Number(rawZIndex) || 0;
+    return Math.max(nextZIndex, inputZIndex);
+  };
+  const mergedZIndex = resolveDialogZIndex(uiModeZIndex);
 
   const form = createForm({
     initialValues: compileUiSchema(scopes, initialValues),
@@ -144,7 +163,8 @@ const openStepSettingsDialog = async ({
     title: dialogTitle || t(title),
     width: dialogWidth,
     destroyOnClose: true,
-    ...toJS(uiModeProps),
+    ...restUiModeProps,
+    zIndex: mergedZIndex,
     // 透传 navigation，便于变量元信息根据真实视图栈推断父级弹窗
     inputArgs,
     onClose: () => {
@@ -157,7 +177,11 @@ const openStepSettingsDialog = async ({
         useEffect(() => {
           return autorun(() => {
             const dynamicProps = toJS(uiModeProps);
-            currentDialog.update(dynamicProps);
+            const { zIndex, ...restDynamicProps } = dynamicProps || {};
+            currentDialog.update({
+              ...restDynamicProps,
+              zIndex: resolveDialogZIndex(zIndex),
+            });
           });
         }, []);
 
@@ -203,7 +227,10 @@ const openStepSettingsDialog = async ({
                           await afterParamsSave(flowRuntimeContext, currentValues, previousParams);
                         }
                       } catch (error) {
-                        if (error instanceof FlowExitException) {
+                        if (error instanceof FlowCancelSaveException) {
+                          return;
+                        }
+                        if (error instanceof FlowExitException || error instanceof FlowExitAllException) {
                           currentDialog.close();
                           return;
                         }

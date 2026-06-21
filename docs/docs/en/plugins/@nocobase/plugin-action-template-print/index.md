@@ -1,4 +1,6 @@
 ---
+title: "Template print"
+keywords: "Actions"
 displayName: "Template print"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+editionLevel: 2
 ---
 
 # Template print

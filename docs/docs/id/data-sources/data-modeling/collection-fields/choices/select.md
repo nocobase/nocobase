@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Dropdown (Pilihan Tunggal)"
+description: "Field dropdown pilihan tunggal, memilih satu item dari opsi yang sudah ditentukan."
+keywords: "dropdown,Select,pilihan tunggal,field opsi,NocoBase"
+---
 
-# Pilihan Tunggal
+# Dropdown (Pilihan Tunggal)
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512180203](https://static-docs.nocobase.com/20240512180203.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

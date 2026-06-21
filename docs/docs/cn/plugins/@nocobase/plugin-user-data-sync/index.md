@@ -1,4 +1,6 @@
 ---
+title: "用户数据同步"
+keywords: "用户数据同步,插件,NocoBase"
 displayName: "用户数据同步"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 用户数据同步

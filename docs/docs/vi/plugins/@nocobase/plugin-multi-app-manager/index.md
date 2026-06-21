@@ -1,14 +1,14 @@
 ---
-displayName: "Trình quản lý đa ứng dụng (đã ngừng sử dụng)"
+displayName: "Trình quản lý đa ứng dụng (Đã ngừng sử dụng)"
 packageName: '@nocobase/plugin-multi-app-manager'
+title: "Trình quản lý đa ứng dụng (Đã ngừng sử dụng)"
+keywords: "Trình quản lý đa ứng dụng (Đã ngừng sử dụng),Plugin,NocoBase"
 description: |
-  Đa ứng dụng chạy theo cơ chế chia sẻ tiến trình, chỉ phù hợp cho môi trường thử nghiệm và demo. Không sử dụng trong môi trường sản xuất.
+  Đa ứng dụng chạy theo cách chia sẻ tiến trình, chỉ phù hợp cho môi trường kiểm thử và demo, vui lòng không sử dụng trong môi trường sản xuất.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trình quản lý đa ứng dụng (đã ngừng sử dụng)
+# Trình quản lý đa ứng dụng (Đã ngừng sử dụng)

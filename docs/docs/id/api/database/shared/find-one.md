@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "FindOneOptions"
+description: "Parameter method findOne Repository NocoBase: sama dengan find, hanya mengembalikan satu data, tidak memerlukan limit."
+keywords: "FindOneOptions,Repository,findOne,query,NocoBase"
+---
 
 **Tipe**
 
@@ -10,4 +12,4 @@ type FindOneOptions = Omit<FindOptions, 'limit'>;
 
 **Parameter**
 
-Sebagian besar parameter sama dengan `find()`. Perbedaannya adalah `findOne()` hanya mengembalikan satu data, sehingga parameter `limit` tidak diperlukan, dan selalu `1` selama kueri.
+Sebagian besar parameter sama dengan `find()`, perbedaannya `findOne()` hanya mengembalikan satu data, sehingga tidak memerlukan parameter `limit`, dan saat query selalu bernilai `1`.

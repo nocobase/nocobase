@@ -1,30 +1,29 @@
 ---
 pkg: '@nocobase/plugin-auth-dingtalk'
+title: "Autentikasi: DingTalk"
+description: "Login DingTalk NocoBase: mendukung login akun DingTalk, mengkonfigurasi Client ID, Client Secret, callback URL, mengaktifkan izin nomor telepon pribadi dan kontak."
+keywords: "DingTalk,login DingTalk,OAuth,Client ID,callback URL,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Autentikasi: DingTalk
 
-## Pendahuluan
+## Pengantar
 
-Plugin Autentikasi: DingTalk memungkinkan pengguna untuk masuk ke NocoBase menggunakan akun DingTalk mereka.
+Plugin Autentikasi: DingTalk mendukung pengguna untuk login ke NocoBase menggunakan akun DingTalk.
 
 ## Mengaktifkan Plugin
 
 ![](https://static-docs.nocobase.com/202406120929356.png)
 
-## Mengajukan Izin API di Konsol Pengembang DingTalk
+## Mendaftar Izin Antarmuka di DingTalk Developer Backend
 
-Lihat <a href="https://open.dingtalk.com/document/orgapp/tutorial-obtaining-user-personal-information" target="_blank">Platform Terbuka DingTalk - Menerapkan Login ke Situs Web Pihak Ketiga</a> untuk membuat aplikasi.
+Lihat <a href="https://open.dingtalk.com/document/orgapp/tutorial-obtaining-user-personal-information" target="_blank">DingTalk Open Platform - Implementasi Login Situs Web Pihak Ketiga</a>, lalu buat sebuah aplikasi.
 
-Masuk ke konsol manajemen aplikasi dan aktifkan "Informasi Nomor Telepon Pribadi" dan "Izin Baca Informasi Pribadi Buku Alamat".
+Masuk ke aplikasi backend, aktifkan "Informasi Nomor Telepon Pribadi" dan "Izin Baca Informasi Pribadi Kontak".
 
 ![](https://static-docs.nocobase.com/202406120006620.png)
 
-## Mendapatkan Kredensial dari Konsol Pengembang DingTalk
+## Mendapatkan Kunci dari DingTalk Developer Backend
 
 Salin Client ID dan Client Secret.
 
@@ -44,18 +43,18 @@ Tambahkan - DingTalk
 
 ![](https://static-docs.nocobase.com/202406120016896.png)
 
-- Sign up automatically when the user does not exist - Apakah akan membuat pengguna baru secara otomatis jika tidak ada pengguna yang cocok dengan nomor telepon.
-- Client ID dan Client Secret - Isi informasi yang disalin pada langkah sebelumnya.
-- Redirect URL - URL Callback, salin dan lanjutkan ke langkah berikutnya.
+- Sign up automatically when the user does not exist - Apakah secara otomatis membuat pengguna baru ketika nomor telepon tidak cocok dengan pengguna yang ada.
+- Client ID dan Client Secret - Isi dengan informasi yang disalin pada langkah sebelumnya.
+- Redirect URL - Callback URL, salin dan masuk ke langkah berikutnya.
 
-## Mengonfigurasi URL Callback di Konsol Pengembang DingTalk
+## Mengkonfigurasi Callback URL di DingTalk Developer Backend
 
-Tempel URL Callback yang disalin ke Konsol Pengembang DingTalk.
+Isi callback URL yang disalin ke DingTalk developer backend.
 
 ![](https://static-docs.nocobase.com/202406120012221.png)
 
-## Masuk
+## Login
 
-Kunjungi halaman masuk dan klik tombol di bawah formulir masuk untuk memulai login pihak ketiga.
+Akses halaman login, klik tombol di bawah formulir login untuk memulai login pihak ketiga.
 
 ![](https://static-docs.nocobase.com/202406120014539.png)

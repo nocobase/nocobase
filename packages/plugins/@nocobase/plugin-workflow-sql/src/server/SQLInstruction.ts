@@ -9,30 +9,70 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+import type WorkflowPlugin from '@nocobase/plugin-workflow';
+import Joi from 'joi';
 
 export type SQLInstructionConfig = {
   dataSource?: string;
   sql?: string;
   withMeta?: boolean;
+  unsafeInjection?: boolean;
+  variables?: Array<{ name: string; value: unknown }>;
 };
 
-export default class extends Instruction {
+export default class SQLInstruction extends Instruction {
+  declare workflow: WorkflowPlugin;
+
+  configSchema = Joi.object({
+    dataSource: Joi.string(),
+    sql: Joi.string(),
+    withMeta: Joi.boolean().default(false),
+    unsafeInjection: Joi.boolean().default(false),
+    variables: Joi.array().items(
+      Joi.object({
+        name: Joi.string().required(),
+        value: Joi.any(),
+      }),
+    ),
+  });
+
   async run(node: FlowNodeModel, input, processor: Processor) {
     const dataSourceName = node.config.dataSource || 'main';
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
     if (!(collectionManager instanceof SequelizeCollectionManager)) {
       throw new Error(`type of data source "${node.config.dataSource}" is not database`);
     }
-    const sql = processor.getParsedValue(node.config.sql || '', node.id).trim();
+
+    const { unsafeInjection = false, variables = [] } = node.config;
+
+    let sql = '';
+    let replacements = null;
+    if (unsafeInjection) {
+      sql = processor.getParsedValue(node.config.sql || '', node.id).trim();
+    } else {
+      sql = (node.config.sql || '').trim();
+      const parameters = processor.getParsedValue(variables, node.id);
+      replacements = {} as Record<string, unknown>;
+      for (const { name, value } of parameters) {
+        if (name) {
+          replacements[name] = value;
+        }
+      }
+    }
+
     if (!sql) {
       return {
         status: JOB_STATUS.RESOLVED,
       };
     }
+    const transaction =
+      processor.getScopeTransaction(node, dataSourceName) ??
+      this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
 
     const [result = null, meta = null] =
       (await collectionManager.db.sequelize.query(sql, {
-        transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+        transaction,
+        replacements,
         // plain: true,
         // model: db.getCollection(node.config.collection).model
       })) ?? [];
@@ -43,8 +83,14 @@ export default class extends Instruction {
     };
   }
 
-  async test({ dataSource, sql, withMeta }: SQLInstructionConfig = {}) {
-    if (!sql) {
+  async test({
+    dataSource,
+    sql: sqlConfig,
+    withMeta,
+    unsafeInjection = false,
+    variables = [],
+  }: SQLInstructionConfig = {}) {
+    if (!sqlConfig) {
       return {
         result: null,
         status: JOB_STATUS.RESOLVED,
@@ -58,7 +104,21 @@ export default class extends Instruction {
     }
 
     try {
-      const [result = null, meta = null] = (await collectionManager.db.sequelize.query(sql)) ?? [];
+      let sql = '';
+      let replacements = null;
+      if (unsafeInjection) {
+        sql = sqlConfig.trim();
+      } else {
+        sql = sqlConfig.trim();
+        replacements = {} as Record<string, unknown>;
+        for (const { name, value } of variables) {
+          if (name) {
+            replacements[name] = value;
+          }
+        }
+      }
+
+      const [result = null, meta = null] = (await collectionManager.db.sequelize.query(sql, { replacements })) ?? [];
 
       return {
         result: withMeta ? [result, meta] : result,
@@ -66,7 +126,7 @@ export default class extends Instruction {
       };
     } catch (error) {
       return {
-        result: error.message,
+        result: error instanceof Error ? error.message : String(error),
         status: JOB_STATUS.ERROR,
       };
     }

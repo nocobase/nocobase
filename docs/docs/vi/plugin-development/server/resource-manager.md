@@ -1,15 +1,16 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "ResourceManager - Quản lý Resource"
+description: "Quản lý resource phía server của NocoBase: app.resourceManager, registerActions, resource.use, đăng ký Action."
+keywords: "ResourceManager,Quản lý resource,registerActions,resource.use,Action,NocoBase"
+---
 
+# ResourceManager - Quản lý Resource
 
-# ResourceManager Quản lý tài nguyên
+Chức năng quản lý resource của NocoBase tự động chuyển đổi bảng dữ liệu (Collection) và quan hệ (Association) thành resource, và tích hợp sẵn nhiều loại thao tác, cho phép bạn nhanh chóng xây dựng REST API. Khác với REST API truyền thống một chút, các thao tác resource của NocoBase không phụ thuộc trực tiếp vào HTTP method, mà xác định thao tác cụ thể được thực thi thông qua việc định nghĩa tường minh `:action`.
 
-Tính năng quản lý tài nguyên của NocoBase có thể tự động chuyển đổi các bảng dữ liệu (bộ sưu tập) và các liên kết (association) hiện có thành tài nguyên. NocoBase cũng tích hợp sẵn nhiều loại thao tác, giúp nhà phát triển nhanh chóng xây dựng các thao tác tài nguyên REST API. Khác một chút so với REST API truyền thống, các thao tác tài nguyên của NocoBase không phụ thuộc vào phương thức yêu cầu HTTP mà xác định thao tác cụ thể cần thực hiện thông qua việc định nghĩa `:action` một cách rõ ràng.
+## Tự động sinh resource
 
-## Tự động tạo tài nguyên
-
-NocoBase sẽ tự động chuyển đổi các `bộ sưu tập` và `association` được định nghĩa trong cơ sở dữ liệu thành tài nguyên. Ví dụ, khi định nghĩa hai bộ sưu tập là `posts` và `tags`:
+NocoBase sẽ tự động chuyển các Collection và Association được định nghĩa trong database thành resource. Ví dụ định nghĩa hai collection `posts` và `tags`:
 
 ```ts
 db.defineCollection({
@@ -25,92 +26,94 @@ db.defineCollection({
 });
 ```
 
-Điều này sẽ tự động tạo ra các tài nguyên sau:
+Hệ thống sẽ tự động sinh các resource sau:
 
-* Tài nguyên `posts`
-* Tài nguyên `tags`
-* Tài nguyên liên kết `posts.tags`
+* Resource `posts`
+* Resource `tags`
+* Resource quan hệ `posts.tags`
 
-Ví dụ yêu cầu:
+Ví dụ request:
 
-| Phương thức | Đường dẫn                 | Thao tác     |
-| ----------- | -------------------------- | ------------ |
-| `GET`       | `/api/posts:list`          | Truy vấn danh sách |
-| `GET`       | `/api/posts:get/1`         | Truy vấn một bản ghi |
-| `POST`      | `/api/posts:create`        | Thêm mới     |
-| `POST`      | `/api/posts:update/1`      | Cập nhật     |
-| `POST`      | `/api/posts:destroy/1`     | Xóa          |
+| Phương thức   | Đường dẫn                     | Thao tác   |
+| -------- | ---------------------- | ---- |
+| `GET`  | `/api/posts:list`      | Truy vấn danh sách |
+| `GET`  | `/api/posts:get/1`     | Truy vấn một bản ghi |
+| `POST` | `/api/posts:create`    | Thêm mới   |
+| `POST` | `/api/posts:update/1`  | Cập nhật   |
+| `POST` | `/api/posts:destroy/1` | Xóa   |
 
-| Phương thức | Đường dẫn                 | Thao tác     |
-| ----------- | -------------------------- | ------------ |
-| `GET`       | `/api/tags:list`           | Truy vấn danh sách |
-| `GET`       | `/api/tags:get/1`          | Truy vấn một bản ghi |
-| `POST`      | `/api/tags:create`         | Thêm mới     |
-| `POST`      | `/api/tags:update/1`       | Cập nhật     |
-| `POST`      | `/api/tags:destroy/1`      | Xóa          |
+| Phương thức   | Đường dẫn                        | Thao tác   |
+| -------- | ------------------------- | ---- |
+| `GET`  | `/api/tags:list`      | Truy vấn danh sách |
+| `GET`  | `/api/tags:get/1`     | Truy vấn một bản ghi |
+| `POST` | `/api/tags:create`    | Thêm mới   |
+| `POST` | `/api/tags:update/1`  | Cập nhật   |
+| `POST` | `/api/tags:destroy/1` | Xóa   |
 
-| Phương thức | Đường dẫn                        | Thao tác                                  |
-| ----------- | -------------------------------- | ----------------------------------------- |
-| `GET`       | `/api/posts/1/tags:list`         | Truy vấn tất cả các `tags` liên kết với một `post` |
-| `GET`       | `/api/posts/1/tags:get/1`        | Truy vấn một `tag` cụ thể thuộc một `post` |
-| `POST`      | `/api/posts/1/tags:create`       | Tạo mới một `tag` cụ thể thuộc một `post` |
-| `POST`      | `/api/posts/1/tags:update/1`     | Cập nhật một `tag` cụ thể thuộc một `post` |
-| `POST`      | `/api/posts/1/tags:destroy/1`    | Xóa một `tag` cụ thể thuộc một `post`     |
-| `POST`      | `/api/posts/1/tags:add`          | Thêm các `tags` liên kết vào một `post`   |
-| `POST`      | `/api/posts/1/tags:remove`       | Xóa các `tags` liên kết khỏi một `post`   |
-| `POST`      | `/api/posts/1/tags:set`          | Đặt tất cả các `tags` liên kết cho một `post` |
-| `POST`      | `/api/posts/1/tags:toggle`       | Chuyển đổi liên kết `tags` cho một `post` |
+| Phương thức   | Đường dẫn                             | Thao tác                            |
+| -------- | ------------------------------ | ----------------------------- |
+| `GET`  | `/api/posts/1/tags:list`   | Truy vấn tất cả `tags` liên quan của một `post`   |
+| `GET`  | `/api/posts/1/tags:get/1`  | Truy vấn một `tags` thuộc một `post`    |
+| `POST` | `/api/posts/1/tags:create`  | Thêm một `tags` cho một `post`    |
+| `POST` | `/api/posts/1/tags:update/1`  | Cập nhật một `tags` thuộc một `post`    |
+| `POST` | `/api/posts/1/tags:destroy/1`  | Xóa một `tags` thuộc một `post`    |
+| `POST` | `/api/posts/1/tags:add`    | Thêm `tags` liên quan cho một `post`   |
+| `POST` | `/api/posts/1/tags:remove` | Loại bỏ `tags` liên quan của một `post`   |
+| `POST` | `/api/posts/1/tags:set`    | Đặt tất cả `tags` liên quan của một `post` |
+| `POST` | `/api/posts/1/tags:toggle` | Toggle quan hệ `tags` của một `post`   |
 
 :::tip Mẹo
 
-Các thao tác tài nguyên của NocoBase không phụ thuộc trực tiếp vào phương thức yêu cầu, mà xác định các thao tác thông qua việc định nghĩa `:action` một cách rõ ràng.
+Các thao tác resource của NocoBase không phụ thuộc trực tiếp vào HTTP method, mà quyết định thao tác được thực thi thông qua định nghĩa tường minh `:action`.
 
 :::
 
-## Các thao tác tài nguyên
+## Thao tác resource
 
-NocoBase cung cấp nhiều loại thao tác tích hợp sẵn phong phú để đáp ứng các nhu cầu kinh doanh khác nhau.
+NocoBase tích hợp sẵn nhiều loại thao tác, bao trùm các tình huống nghiệp vụ phổ biến.
 
-### Các thao tác CRUD cơ bản
+### Thao tác CRUD cơ bản
 
-| Tên thao tác    | Mô tả                                   | Loại tài nguyên áp dụng | Phương thức yêu cầu | Đường dẫn ví dụ             |
-| --------------- | --------------------------------------- | ----------------------- | ------------------- | --------------------------- |
-| `list`          | Truy vấn dữ liệu danh sách              | Tất cả                  | GET/POST            | `/api/posts:list`           |
-| `get`           | Truy vấn một bản ghi                    | Tất cả                  | GET/POST            | `/api/posts:get/1`          |
-| `create`        | Tạo bản ghi mới                         | Tất cả                  | POST                | `/api/posts:create`         |
-| `update`        | Cập nhật bản ghi                        | Tất cả                  | POST                | `/api/posts:update/1`       |
-| `destroy`       | Xóa bản ghi                             | Tất cả                  | POST                | `/api/posts:destroy/1`      |
-| `firstOrCreate` | Tìm bản ghi đầu tiên, tạo nếu không tồn tại | Tất cả                  | POST                | `/api/users:firstOrCreate`  |
-| `updateOrCreate`| Cập nhật bản ghi, tạo nếu không tồn tại | Tất cả                  | POST                | `/api/users:updateOrCreate` |
+| Tên thao tác       | Mô tả     | Loại resource áp dụng | Phương thức     | Ví dụ đường dẫn                   |
+| --------- | ------ | ------ | -------- | ---------------------- |
+| `list`    | Truy vấn dữ liệu danh sách | Tất cả     | GET/POST | `/api/posts:list`      |
+| `get`     | Truy vấn một bản ghi | Tất cả     | GET/POST | `/api/posts:get/1`     |
+| `create`  | Tạo bản ghi mới  | Tất cả     | POST     | `/api/posts:create`    |
+| `update`  | Cập nhật bản ghi   | Tất cả     | POST     | `/api/posts:update/1`  |
+| `destroy` | Xóa bản ghi   | Tất cả     | POST     | `/api/posts:destroy/1` |
+| `firstOrCreate`  | Tìm bản ghi đầu tiên, không có thì tạo | Tất cả | POST     |  `/api/users:firstOrCreate`  |
+| `updateOrCreate` | Cập nhật bản ghi, không có thì tạo    | Tất cả | POST     |  `/api/users:updateOrCreate` |
 
-### Các thao tác liên kết
+### Thao tác quan hệ
 
-| Tên thao tác | Mô tả             | Loại liên kết áp dụng                     | Đường dẫn ví dụ                |
-| ------------ | ----------------- | ----------------------------------------- | ------------------------------ |
-| `add`        | Thêm liên kết     | `hasMany`, `belongsToMany`                | `/api/posts/1/tags:add`        |
-| `remove`     | Xóa liên kết      | `hasOne`, `hasMany`, `belongsToMany`, `belongsTo` | `/api/posts/1/comments:remove` |
-| `set`        | Đặt lại liên kết  | `hasOne`, `hasMany`, `belongsToMany`, `belongsTo` | `/api/posts/1/comments:set`    |
-| `toggle`     | Thêm hoặc xóa liên kết | `belongsToMany`                           | `/api/posts/1/tags:toggle`     |
+| Tên thao tác      | Mô tả             | Loại quan hệ áp dụng                                   | Ví dụ đường dẫn                           |
+| -------- | -------------- | ---------------------------------------- | ------------------------------ |
+| `add`    | Thêm quan hệ  | `hasMany`, `belongsToMany` | `/api/posts/1/tags:add`    |
+| `remove` | Loại bỏ quan hệ  | `hasOne`, `hasMany`, `belongsToMany`, `belongsTo` | `/api/posts/1/comments:remove` |
+| `set`    | Đặt lại quan hệ  | `hasOne`, `hasMany`, `belongsToMany`, `belongsTo` | `/api/posts/1/comments:set`    |
+| `toggle` | Thêm hoặc loại bỏ quan hệ | `belongsToMany` | `/api/posts/1/tags:toggle`     |
 
-### Các tham số thao tác
+### Tham số thao tác
 
 Các tham số thao tác phổ biến bao gồm:
 
-*   `filter`: Điều kiện truy vấn
-*   `values`: Các giá trị cần đặt
-*   `fields`: Chỉ định các trường trả về
-*   `appends`: Bao gồm dữ liệu liên kết
-*   `except`: Loại trừ các trường
-*   `sort`: Quy tắc sắp xếp
-*   `page`, `pageSize`: Tham số phân trang
-*   `paginate`: Có bật phân trang hay không
-*   `tree`: Có trả về cấu trúc dạng cây hay không
-*   `whitelist`, `blacklist`: Danh sách trắng/đen các trường
-*   `updateAssociationValues`: Có cập nhật giá trị liên kết hay không
+* `filter`: Điều kiện truy vấn
+* `values`: Giá trị được đặt
+* `fields`: Chỉ định Field trả về
+* `appends`: Bao gồm dữ liệu quan hệ
+* `except`: Loại trừ Field
+* `sort`: Quy tắc sắp xếp
+* `page`, `pageSize`: Tham số phân trang
+* `paginate`: Có bật phân trang không
+* `tree`: Có trả về cấu trúc cây không
+* `whitelist`, `blacklist`: Whitelist/blacklist của Field
+* `updateAssociationValues`: Có cập nhật giá trị quan hệ không
 
-## Các thao tác tài nguyên tùy chỉnh
+---
 
-NocoBase cho phép đăng ký các thao tác bổ sung cho các tài nguyên hiện có. Bạn có thể sử dụng `registerActionHandlers` để tùy chỉnh các thao tác cho tất cả hoặc các tài nguyên cụ thể.
+## Thao tác resource tùy chỉnh
+
+Bạn có thể dùng `registerActionHandlers` để đăng ký thêm các thao tác cho resource đã có, hỗ trợ thao tác toàn cục và thao tác cho resource cụ thể.
 
 ### Đăng ký thao tác toàn cục
 
@@ -122,7 +125,7 @@ resourceManager.registerActionHandlers({
 });
 ```
 
-### Đăng ký thao tác cho tài nguyên cụ thể
+### Đăng ký thao tác cho resource cụ thể
 
 ```ts
 resourceManager.registerActionHandlers({
@@ -131,7 +134,7 @@ resourceManager.registerActionHandlers({
 });
 ```
 
-Ví dụ yêu cầu:
+Ví dụ request:
 
 ```
 POST /api/posts:customAction
@@ -139,11 +142,11 @@ POST /api/posts:publish
 POST /api/posts/1/comments:pin
 ```
 
-Quy tắc đặt tên: `resourceName:actionName`, sử dụng cú pháp dấu chấm (`posts.comments`) khi bao gồm các liên kết.
+Quy tắc đặt tên: `resourceName:actionName`, khi có quan hệ thì dùng cú pháp dấu chấm (`posts.comments`).
 
-## Tài nguyên tùy chỉnh
+## Resource tùy chỉnh
 
-Nếu bạn cần cung cấp các tài nguyên không liên quan đến các bộ sưu tập, bạn có thể sử dụng phương thức `resourceManager.define` để định nghĩa chúng:
+Nếu bạn cần cung cấp resource không liên quan đến bảng dữ liệu, có thể dùng `resourceManager.define` để định nghĩa:
 
 ```ts
 resourceManager.define({
@@ -156,16 +159,14 @@ resourceManager.define({
 });
 ```
 
-Phương thức yêu cầu nhất quán với các tài nguyên được tạo tự động:
+Cách request giống với resource tự động:
 
-*   `GET /api/app:getInfo`
-*   `POST /api/app:getInfo` (mặc định hỗ trợ cả GET/POST)
+* `GET /api/app:getInfo`
+* `POST /api/app:getInfo` (mặc định hỗ trợ cả GET/POST)
 
 ## Middleware tùy chỉnh
 
-Sử dụng phương thức `resourceManager.use()` để đăng ký middleware toàn cục. Ví dụ:
-
-Middleware ghi log toàn cục
+Dùng `resourceManager.use()` có thể đăng ký middleware toàn cục. Ví dụ một middleware log toàn cục:
 
 ```ts
 resourceManager.use(async (ctx, next) => {
@@ -178,49 +179,58 @@ resourceManager.use(async (ctx, next) => {
 
 ## Các thuộc tính Context đặc biệt
 
-Việc có thể truy cập vào middleware hoặc action của lớp `resourceManager` có nghĩa là tài nguyên đó chắc chắn tồn tại.
+Việc có thể vào được tầng `resourceManager` middleware hoặc action, có nghĩa là resource đó chắc chắn tồn tại. Lúc này bạn có thể truy cập context của request thông qua các thuộc tính sau:
 
 ### ctx.action
 
-*   `ctx.action.actionName`: Tên thao tác
-*   `ctx.action.resourceName`: Có thể là một bộ sưu tập hoặc association
-*   `ctx.action.params`: Các tham số thao tác
+- `ctx.action.actionName`: Tên thao tác
+- `ctx.action.resourceName`: Có thể là collection hoặc association
+- `ctx.action.params`: Tham số thao tác
 
 ### ctx.dataSource
 
-Đối tượng nguồn dữ liệu hiện tại.
+Đối tượng nguồn dữ liệu hiện tại
 
 ### ctx.getCurrentRepository()
 
-Đối tượng repository hiện tại.
+Đối tượng repository hiện tại
 
-## Cách lấy đối tượng resourceManager cho các nguồn dữ liệu khác nhau
+## Cách lấy đối tượng resourceManager của các nguồn dữ liệu khác nhau
 
-`resourceManager` thuộc về một nguồn dữ liệu và có thể đăng ký các thao tác riêng biệt cho từng nguồn dữ liệu khác nhau.
+`resourceManager` thuộc về nguồn dữ liệu, bạn có thể đăng ký thao tác cho các nguồn dữ liệu khác nhau riêng biệt.
 
 ### Nguồn dữ liệu chính
 
-Đối với nguồn dữ liệu chính, bạn có thể trực tiếp sử dụng `app.resourceManager` để thực hiện thao tác:
+Nguồn dữ liệu chính có thể dùng trực tiếp `app.resourceManager`:
 
 ```ts
 app.resourceManager.registerActionHandlers();
 ```
 
-### Các nguồn dữ liệu khác
+### Nguồn dữ liệu khác
 
-Đối với các nguồn dữ liệu khác, bạn có thể lấy một thể hiện nguồn dữ liệu cụ thể thông qua `dataSourceManager` và sử dụng `resourceManager` của thể hiện đó để thực hiện thao tác:
+Các nguồn dữ liệu khác có thể lấy instance tương ứng thông qua `dataSourceManager`:
 
 ```ts
 const dataSource = dataSourceManager.get('external');
 dataSource.resourceManager.registerActionHandlers();
 ```
 
-### Lặp qua tất cả các nguồn dữ liệu
+### Duyệt qua tất cả các nguồn dữ liệu
 
-Nếu bạn cần thực hiện các thao tác giống nhau trên tất cả các nguồn dữ liệu đã thêm, bạn có thể sử dụng phương thức `dataSourceManager.afterAddDataSource` để lặp qua, đảm bảo rằng `resourceManager` của mỗi nguồn dữ liệu đều có thể đăng ký các thao tác tương ứng:
+Nếu cần thực hiện cùng một thao tác cho tất cả các nguồn dữ liệu, có thể dùng `dataSourceManager.afterAddDataSource` để duyệt:
 
 ```ts
 dataSourceManager.afterAddDataSource((dataSource) => {
   dataSource.resourceManager.registerActionHandlers();
 });
 ```
+
+## Liên kết liên quan
+
+- [Bảng tra cứu Resource API](../../api/flow-engine/resource.md) — Chữ ký phương thức và cách dùng đầy đủ của MultiRecordResource / SingleRecordResource phía client
+- [ACL](./acl.md) — Cấu hình quyền role và kiểm soát truy cập cho các thao tác resource
+- [Context Request](./context.md) — Lấy thông tin context trong handler request
+- [Middleware](./middleware.md) — Thêm logic chặn và xử lý cho request
+- [DataSourceManager](./data-source-manager.md) — Quản lý nhiều nguồn dữ liệu và resource manager của chúng
+- [Collections](./collections.md) — Mối quan hệ map tự động giữa Collection và Resource

@@ -1,17 +1,16 @@
 ---
-displayName: "Formulir Draf"
+displayName: "Draf Formulir"
 packageName: '@nocobase/plugin-form-drafts'
+title: "Draf Formulir"
+keywords: "Draf Formulir,Plugin,NocoBase"
 supportedVersions:
   - 2.x
 description: |
-  Mendukung penyimpanan draf saat mengisi formulir, sehingga Anda dapat melanjutkan pengeditan dan pengirimannya nanti.
-isFree: false
-builtIn: false
+  Mendukung penyimpanan draf saat mengisi formulir, sehingga Anda dapat melanjutkan pengeditan dan pengiriman di kemudian waktu.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Formulir Draf
+# Draf Formulir

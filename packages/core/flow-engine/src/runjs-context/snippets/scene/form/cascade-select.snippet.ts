@@ -29,7 +29,7 @@ if (!parentRoleId) {
   return;
 }
 
-const res = await ctx.api.request({
+const res = await ctx.request({
   url: 'roles:list',
   method: 'get',
   params: {

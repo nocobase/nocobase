@@ -1,4 +1,6 @@
 ---
+title: "变量和密钥"
+keywords: "变量和密钥,插件,NocoBase"
 displayName: "变量和密钥"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 变量和密钥

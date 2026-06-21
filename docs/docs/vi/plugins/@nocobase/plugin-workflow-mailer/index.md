@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc: Nút gửi email"
+displayName: "Workflow: Node gửi email"
 packageName: '@nocobase/plugin-workflow-mailer'
+title: "Workflow: Node gửi email"
+keywords: "Workflow: Node gửi email,Plugin,NocoBase"
 description: |
-  Dùng để gửi email trong luồng công việc.
+  Có thể được sử dụng để gửi email trong workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút gửi email
+# Workflow: Node gửi email

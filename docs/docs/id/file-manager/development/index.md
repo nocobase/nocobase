@@ -1,16 +1,19 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Pengembangan Ekstensi File Manager"
+description: "Memperluas storage engine kustom (inherit StorageType, implementasi make/delete), memperluas tipe pratinjau file frontend (filePreviewTypes.add, match, Previewer), dengan contoh kode lengkap."
+keywords: "Pengembangan ekstensi,StorageType,Storage kustom,filePreviewTypes,Ekstensi pratinjau file,File Manager,NocoBase"
+---
 
 # Pengembangan Ekstensi
 
-## Memperluas Mesin Penyimpanan
+## Memperluas Storage Engine
 
-### Sisi Server
+### Server-side
 
-1. **Mewarisi `StorageType`**
+1. **Inherit `StorageType`**
    
-   Buat kelas baru dan implementasikan metode `make()` dan `delete()`. Jika perlu, timpa hook seperti `getFileURL()`, `getFileStream()`, dan `getFileData()`.
+   Buat class baru dan implementasikan method `make()` dan `delete()`. Jika perlu, override hook seperti `getFileURL()`, `getFileStream()`, `getFileData()`, dan lainnya.
 
 Contoh:
 
@@ -48,8 +51,8 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4. **Mendaftarkan tipe baru**  
-   Sisipkan implementasi penyimpanan baru pada siklus hidup `beforeLoad` atau `load` plugin:
+4. **Mendaftarkan Tipe Baru**  
+   Pada lifecycle `beforeLoad` atau `load` plugin, inject implementasi storage baru:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,20 +68,20 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Setelah didaftarkan, konfigurasi penyimpanan akan muncul di resource `storages`, sama seperti tipe bawaan. Konfigurasi yang disediakan oleh `StorageType.defaults()` dapat digunakan untuk mengisi formulir secara otomatis atau menginisialisasi record default.
+Setelah pendaftaran selesai, konfigurasi storage akan muncul pada resource `storages` seperti tipe bawaan. Konfigurasi yang disediakan oleh `StorageType.defaults()` dapat digunakan untuk mengisi form secara otomatis atau menginisialisasi record default.
 
 <!--
-### Konfigurasi sisi klien dan antarmuka manajemen
-Di sisi klien, Anda perlu memberi tahu pengelola file bagaimana merender formulir konfigurasi dan apakah ada logika unggah kustom. Setiap objek tipe penyimpanan berisi properti berikut:
+### Konfigurasi Client-side dan Antarmuka Manajemen
+Sisi client perlu memberi tahu File Manager bagaimana cara merender form konfigurasi dan apakah memiliki logika upload kustom. Setiap object tipe storage berisi properti berikut:
 -->
 
-## Memperluas Tipe File di Frontend
+## Memperluas Tipe File Frontend
 
-Untuk file yang sudah diunggah, Anda dapat menampilkan konten pratinjau yang berbeda di antarmuka frontend berdasarkan tipe file. Field lampiran pada pengelola file memiliki pratinjau file berbasis browser (disematkan dalam iframe), yang mendukung pratinjau sebagian besar format (seperti gambar, video, audio, dan PDF) langsung di browser. Ketika format file tidak didukung oleh browser atau memerlukan interaksi pratinjau khusus, Anda dapat memperluas komponen pratinjau berdasarkan tipe file.
+Untuk file yang sudah selesai diunggah, pada antarmuka frontend Anda dapat menampilkan konten pratinjau yang berbeda berdasarkan tipe file yang berbeda. Field lampiran File Manager memiliki pratinjau file berbasis browser bawaan (disematkan dalam iframe). Cara ini mendukung sebagian besar format file (gambar, video, audio, PDF, dan lainnya) untuk dipratinjau langsung di browser. Saat format file tidak mendukung pratinjau browser, atau ada interaksi pratinjau khusus yang dibutuhkan, Anda dapat memperluasnya melalui komponen pratinjau berbasis tipe file.
 
 ### Contoh
 
-Misalnya, jika Anda ingin mengintegrasikan pratinjau online kustom untuk file Office, Anda dapat menggunakan kode berikut:
+Contoh, jika Anda ingin mengintegrasikan pratinjau online kustom untuk file Office, Anda dapat menggunakan kode berikut:
 
 ```tsx
 import React, { useMemo } from 'react';
@@ -108,11 +111,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Di sini, `filePreviewTypes` adalah objek entry yang disediakan oleh `@nocobase/plugin-file-manager/client` untuk memperluas pratinjau file. Gunakan metode `add` untuk menambahkan objek deskripsi tipe file.
+`filePreviewTypes` adalah object entry yang disediakan `@nocobase/plugin-file-manager/client` untuk memperluas pratinjau file. Gunakan method `add` yang disediakannya untuk memperluas object deskripsi tipe file.
 
-Setiap tipe file harus mengimplementasikan metode `match()` untuk memeriksa apakah tipe file memenuhi persyaratan. Dalam contoh, `matchMimetype` digunakan untuk memeriksa atribut `mimetype` file. Jika cocok dengan tipe `docx`, maka dianggap tipe file yang harus ditangani. Jika tidak cocok, akan digunakan penanganan tipe bawaan.
+Setiap tipe file harus mengimplementasikan method `match()` untuk memeriksa apakah tipe file memenuhi syarat. Pada contoh, `matchMimetype` digunakan untuk memeriksa properti `mimetype` file. Jika cocok dengan tipe `docx`, maka file dianggap sebagai tipe yang perlu diproses. Jika tidak cocok, akan didowngrade ke pemrosesan tipe bawaan.
 
-Properti `Previewer` pada objek deskripsi tipe adalah komponen untuk pratinjau. Ketika tipe file cocok, komponen ini akan dirender dalam dialog pratinjau. Anda dapat mengembalikan tampilan React apa pun (misalnya iframe, pemutar, atau grafik).
+Properti `Previewer` pada object deskripsi tipe adalah komponen yang digunakan untuk pratinjau. Saat tipe file cocok, komponen ini akan dirender untuk pratinjau. Komponen akan dirender dalam layer popup pratinjau file. Anda dapat mengembalikan view React apapun (contoh iframe, player, chart, dan lainnya).
 
 ### API
 
@@ -136,7 +139,7 @@ export class FilePreviewTypes {
 
 #### `filePreviewTypes`
 
-`filePreviewTypes` adalah instance global yang diimpor dari `@nocobase/plugin-file-manager/client`:
+`filePreviewTypes` adalah instance global, di-import melalui `@nocobase/plugin-file-manager/client`:
 
 ```ts
 import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
@@ -144,34 +147,33 @@ import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 #### `filePreviewTypes.add()`
 
-Mendaftarkan objek deskripsi tipe file baru ke registri tipe file. Tipe objek deskripsi adalah `FilePreviewType`.
+Mendaftarkan object deskripsi tipe file baru ke registry tipe file. Tipe object deskripsi adalah `FilePreviewType`.
 
 #### `FilePreviewType`
 
 ##### `match()`
 
-Metode pencocokan format file.
+Method pencocokan format file.
 
-Parameter masukan `file` adalah objek data file yang diunggah, berisi properti relevan untuk pemeriksaan tipe:
+Parameter `file` yang dikirim adalah object data file yang sudah diunggah, berisi properti terkait yang dapat digunakan untuk penilaian tipe:
 
 * `mimetype`: deskripsi mimetype
 * `extname`: ekstensi file, termasuk "."
-* `path`: jalur penyimpanan relatif file
+* `path`: path relatif penyimpanan file
 * `url`: URL file
 
-Mengembalikan nilai `boolean` yang menunjukkan apakah cocok.
+Nilai kembalian bertipe `boolean`, menunjukkan hasil pencocokan.
 
 ##### `getThumbnailURL`
 
-Mengembalikan URL thumbnail yang digunakan pada daftar file. Jika nilai yang dikembalikan kosong, gambar placeholder bawaan akan digunakan.
+Digunakan untuk mengembalikan alamat thumbnail dalam daftar file. Saat nilai kembalian kosong, gambar placeholder bawaan akan digunakan.
 
 ##### `Previewer`
 
-Komponen React untuk pratinjau file.
+Komponen React yang digunakan untuk pratinjau file.
 
-Props yang diterima adalah:
+Parameter Props yang dikirim:
 
-* `file`: objek file saat ini (bisa berupa URL string atau objek yang berisi `url`/`preview`)
-* `index`: indeks file dalam daftar
-* `list`: daftar file
-
+* `file`: object file saat ini (mungkin berupa string URL atau object yang berisi `url`/`preview`)
+* `index`: indeks file dalam list
+* `list`: list file

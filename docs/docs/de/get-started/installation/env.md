@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Umgebungsvariablen
 
 ## Wie richte ich Umgebungsvariablen ein?
@@ -246,14 +242,6 @@ Die Methode zur Protokollausgabe. Mehrere Werte werden durch Kommas getrennt. De
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Der Speicherpfad für dateibasierte Protokolle. Der Standardwert ist `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Die Protokoll-Ausgabestufe. Der Standardwert in der Entwicklungsumgebung ist `debug`, in der Produktionsumgebung `info`. Optionen:
@@ -358,6 +346,27 @@ Die aktivierten Trace-Datenprozessoren. Der Standardwert ist `console`. Andere W
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
+### SERVER_REQUEST_WHITELIST
+
+Whitelist der erlaubten Ziele für serverseitige ausgehende HTTP-Anfragen, um SSRF-Angriffe (Server-Side Request Forgery) zu verhindern. Kommagetrennte Liste aus exakten IPs, CIDR-Bereichen, exakten Hostnamen und einstufigen Platzhalter-Subdomains.
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**Gilt für**: Workflow-Knoten „HTTP-Anfrage" und benutzerdefinierte Anfrage-Aktionsschaltflächen. Relative Pfade (Aufrufe der NocoBase-API selbst) sind nicht betroffen.
+
+**Nicht konfiguriert**: Alle `http`/`https`-Anfragen sind erlaubt (bisheriges Verhalten). **Konfiguriert**: Nur Anfragen, deren Host einem Whitelist-Eintrag entspricht, sind erlaubt; nicht übereinstimmende Anfragen führen zu einem Fehler.
+
+Unterstützte Formate:
+
+| Format | Beispiel | Trifft zu auf |
+| --- | --- | --- |
+| Exakte IPv4 | `1.2.3.4` | Nur diese IP |
+| IPv4 CIDR | `10.0.0.0/8` | Alle IPs im Subnetz |
+| Exakter Hostname | `api.example.com` | Nur dieser Hostname |
+| Platzhalter-Subdomain | `*.example.com` | Eine Subdomain-Ebene, z. B. `foo.example.com`; **nicht** `example.com` oder `a.b.example.com` |
+
 ## Experimentelle Umgebungsvariablen
 
 ### APPEND_PRESET_LOCAL_PLUGINS
@@ -365,8 +374,10 @@ TELEMETRY_TRACE_PROCESSOR=console
 Dient zum Anhängen vordefinierter, nicht aktivierter **Plugins**. Der Wert ist der Paketname (der `name`-Parameter in `package.json`), wobei mehrere **Plugins** durch Kommas getrennt werden.
 
 :::info
+
 1. Stellen Sie sicher, dass das **Plugin** lokal heruntergeladen wurde und im Verzeichnis `node_modules` gefunden werden kann. Weitere Details finden Sie unter [**Plugin**-Organisation](/plugin-development/project-structure).
 2. Nachdem Sie die Umgebungsvariable hinzugefügt haben, wird das **Plugin** auf der **Plugin**-Manager-Seite erst nach einer Erstinstallation (`nocobase install`) oder einem Upgrade (`nocobase upgrade`) angezeigt.
+
 :::
 
 ```bash
@@ -378,8 +389,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Dient zum Anhängen integrierter **Plugins**, die standardmäßig installiert werden. Der Wert ist der Paketname (der `name`-Parameter in `package.json`), wobei mehrere **Plugins** durch Kommas getrennt werden.
 
 :::info
+
 1. Stellen Sie sicher, dass das **Plugin** lokal heruntergeladen wurde und im Verzeichnis `node_modules` gefunden werden kann. Weitere Details finden Sie unter [**Plugin**-Organisation](/plugin-development/project-structure).
 2. Nachdem Sie die Umgebungsvariable hinzugefügt haben, wird das **Plugin** bei der Erstinstallation (`nocobase install`) oder einem Upgrade (`nocobase upgrade`) automatisch installiert oder aktualisiert.
+
 :::
 
 ```bash

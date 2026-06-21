@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "createMockClient Tools Test"
+description: "createMockClient membuat Mock client untuk test FlowEngine, untuk unit test, Storybook, pengembangan contoh, mendukung apiMock untuk membangun Mock API."
+keywords: "createMockClient,Mock client,unit test,Storybook,apiMock,test FlowEngine,NocoBase"
+---
 
 # createMockClient
 
-Untuk contoh dan pengujian, umumnya disarankan untuk membangun aplikasi mock dengan cepat menggunakan `createMockClient`. Aplikasi mock adalah aplikasi kosong yang bersih tanpa plugin apa pun yang diaktifkan, dan hanya ditujukan untuk contoh serta pengujian.
+Saat contoh dan testing, biasanya disarankan menggunakan createMockClient untuk dengan cepat membangun aplikasi Mock. Aplikasi Mock adalah aplikasi kosong yang bersih tanpa plugin yang diaktifkan, hanya untuk contoh dan test.
 
-Sebagai contoh:
+Misalnya contoh berikut:
 
 ```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
@@ -17,7 +19,7 @@ class PluginHelloModel extends Plugin {
   async load() {}
 }
 
-// Untuk skenario contoh dan pengujian
+// Untuk skenario contoh dan test
 const app = createMockClient({
   plugins: [PluginHelloModel],
 });
@@ -25,7 +27,7 @@ const app = createMockClient({
 export default app.getRootComponent();
 ```
 
-`createMockClient` menyediakan `apiMock` untuk membangun data API mock.
+createMockClient menyediakan apiMock untuk membangun data API Mock
 
 ```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
@@ -41,7 +43,7 @@ class PluginHelloModel extends Plugin {
   }
 }
 
-// Untuk skenario contoh dan pengujian
+// Untuk skenario contoh dan test
 const app = createMockClient({
   plugins: [PluginHelloModel],
 });
@@ -56,13 +58,13 @@ app.apiMock.onGet('users').reply(200, {
 export default app.getRootComponent();
 ```
 
-Dengan `createMockClient`, kita dapat dengan cepat memperluas fungsionalitas melalui plugin. API umum untuk `Plugin` meliputi:
+Berbasis createMockClient, kita dapat dengan cepat memperluas fungsi melalui plugin, API Plugin yang umum digunakan termasuk:
 
-- plugin.router: Memperluas rute
-- plugin.engine: Mesin frontend (NocoBase 2.0)
+- plugin.router: Memperluas route
+- plugin.engine: Engine front-end (NocoBase 2.0)
 - plugin.context: Konteks (NocoBase 2.0)
 
-Contoh 1: Menambahkan rute melalui router.
+Contoh 1: Menambahkan route melalui router.
 
 ```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
@@ -78,7 +80,7 @@ class PluginHelloModel extends Plugin {
   }
 }
 
-// Untuk skenario contoh dan pengujian
+// Untuk skenario contoh dan test
 const app = createMockClient({
   plugins: [PluginHelloModel],
 });
@@ -86,4 +88,4 @@ const app = createMockClient({
 export default app.getRootComponent();
 ```
 
-Kami akan membahas lebih banyak konten di bab-bab selanjutnya.
+Konten lebih lanjut akan kami perkenalkan di bab berikutnya.

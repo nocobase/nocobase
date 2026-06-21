@@ -1,14 +1,14 @@
 ---
-displayName: "Blok: Panel Aksi"
+displayName: "Block: Workbench"
 packageName: '@nocobase/plugin-block-workbench'
+title: "Block: Workbench"
+keywords: "Block: Workbench,plugin,NocoBase"
 description: |
-  Mengelola dan menampilkan berbagai aksi secara terpusat, memudahkan pengguna untuk menjalankan tugas dengan cepat. Mendukung ekstensibilitas, jenis aksi yang saat ini didukung meliputi pop-up, tautan, pemindaian, dan permintaan kustom.
+  Mengelola dan menampilkan berbagai action secara terpusat, memudahkan pengguna mengeksekusi task dengan cepat. Mendukung perluasan; tipe action yang saat ini didukung adalah popup, link, scan, dan custom request.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Panel Aksi
+# Block: Workbench

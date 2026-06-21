@@ -1,18 +1,17 @@
 ---
-displayName: "Flux de travail : JavaScript"
+title: "Workflow: JavaScript"
+keywords: "Workflow"
+displayName: "Workflow: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Exécute un morceau de code JavaScript dans un environnement Node.js isolé.
-isFree: false
-builtIn: false
+  Execute a piece of JavaScript in an isolated Node.js environment.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Flux de travail : JavaScript
+# Workflow: JavaScript

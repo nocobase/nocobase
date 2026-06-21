@@ -1,19 +1,23 @@
+---
+title: "Event 事件"
+description: "NocoBase 服务端事件：app.on、app.emit、事件监听与触发、插件间事件通信。"
+keywords: "Event,事件,app.on,app.emit,事件监听,事件触发,NocoBase"
+---
 
 # Event 事件
 
-NocoBase 的服务端（Server）在应用生命周期、插件生命周期以及数据库操作等环节中，都会触发相应的事件（Event）。插件开发者可以通过监听这些事件，实现扩展逻辑、自动化操作或自定义行为。
+NocoBase 的服务端在应用生命周期、插件生命周期以及数据库操作等环节中，都会触发相应的事件（Event）。你可以通过监听这些事件，实现扩展逻辑、自动化操作或自定义行为。
 
 NocoBase 的事件系统主要分为两个层面：
 
-- **`app.on()` - 应用级事件**：监听应用的生命周期事件，如启动、安装、启用插件等。
-- **`db.on()` - 数据库级事件**：监听数据模型层面的操作事件，如创建、更新、删除记录等。
+- **`app.on()`——应用级事件**：监听应用的生命周期事件，比如启动、安装、启用插件等。
+- **`db.on()`——数据库级事件**：监听数据模型层面的操作事件，比如创建、更新、删除记录等。
 
-
-两者都继承自 Node.js 的 `EventEmitter`，支持使用标准的 `.on()`、`.off()`、`.emit()` 接口。NocoBase 还扩展支持了 `emitAsync`，用于异步触发事件并等待所有监听器执行完成。
+两者都继承自 Node.js 的 `EventEmitter`，支持使用标准的 `.on()`、`.off()`、`.emit()` 接口。NocoBase 还扩展了 `emitAsync`，用于异步触发事件并等待所有监听器执行完成。
 
 ## 注册事件监听的位置
 
-事件监听一般应在插件的 `beforeLoad()` 方法中进行注册，这样可以保证事件在插件加载阶段就已准备好，后续逻辑能正确响应。
+事件监听通常在插件的 `beforeLoad()` 方法中注册，这样可以保证事件在插件加载阶段就已准备好，后续逻辑能正确响应。
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -38,7 +42,7 @@ export default class PluginHelloServer extends Plugin {
 
 ## 监听应用事件 `app.on()`
 
-应用事件用于捕获 NocoBase 应用及插件的生命周期变化，适合做初始化逻辑、资源注册或插件依赖检测等。
+应用事件用于捕获 NocoBase 应用及插件的生命周期变化，适合做初始化逻辑、资源注册或依赖检测等。
 
 ### 常见事件类型
 
@@ -54,15 +58,15 @@ export default class PluginHelloServer extends Plugin {
 | `beforeDisablePlugin` / `afterDisablePlugin` | 插件禁用前 / 后 | 清理插件资源 |
 | `afterUpgrade` | 应用升级完成后 | 执行数据迁移或兼容性修复 |
 
-示例：监听应用启动事件
+比如监听应用启动事件：
 
 ```ts
 app.on('afterStart', async () => {
-  app.logger.info('🚀 NocoBase 服务已启动！');
+  app.logger.info('NocoBase 服务已启动');
 });
 ```
 
-示例：监听插件加载事件
+比如监听插件加载事件：
 
 ```ts
 app.on('afterLoadPlugin', ({ plugin }) => {
@@ -72,7 +76,7 @@ app.on('afterLoadPlugin', ({ plugin }) => {
 
 ## 监听数据库事件 `db.on()`
 
-数据库事件可以捕获模型层的各种数据变更，适合做审计、同步、自动填充等操作。
+数据库事件用于捕获模型层的各种数据变更，适合做审计、同步、自动填充等操作。
 
 ### 常见事件类型
 
@@ -88,7 +92,7 @@ app.on('afterLoadPlugin', ({ plugin }) => {
 | `beforeDefineCollection` / `afterDefineCollection` | 定义集合前 / 后 |
 | `beforeRemoveCollection` / `afterRemoveCollection` | 删除集合前 / 后 |
 
-示例：监听数据创建后事件
+比如监听数据创建后事件：
 
 ```ts
 db.on('afterCreate', async (model, options) => {
@@ -96,10 +100,18 @@ db.on('afterCreate', async (model, options) => {
 });
 ```
 
-示例：监听更新数据前事件
+比如监听更新数据前事件：
 
 ```ts
 db.on('beforeUpdate', async (model, options) => {
-  db.logger.info('数据已创建！');
+  db.logger.info('数据即将更新');
 });
 ```
+
+## 相关链接
+
+- [Plugin 插件](./plugin.md) — 在插件生命周期方法中注册事件监听
+- [Database 数据库操作](./database.md) — 数据库级事件的触发源与数据操作 API
+- [Collections 数据表](./collections.md) — 数据表定义与数据库事件中的模型关系
+- [Middleware 中间件](./middleware.md) — 中间件与事件在请求处理中的协作
+- [服务端开发概述](./index.md) — 事件系统在服务端架构中的角色

@@ -6,12 +6,12 @@
   },
   {
     "type": "custom-link",
-    "label": "Pemrosesan Berulang",
+    "label": "Pemrosesan Loop",
     "link": "/template-print/syntax/loops"
   },
   {
     "type": "dir",
     "name": "formatters",
-    "label": "Alat Pemformatan"
+    "label": "Alat Format"
   }
 ]

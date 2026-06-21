@@ -1,4 +1,6 @@
 ---
+title: "Authentication"
+keywords: "Authentication,Security"
 displayName: "Authentication"
 packageName: '@nocobase/plugin-auth'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Authentication

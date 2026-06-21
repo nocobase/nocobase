@@ -1,0 +1,17 @@
+[
+  {
+    "type": "dir",
+    "name": "all-in-one",
+    "label": "一体型業務管理システム"
+  },
+  {
+    "type": "dir",
+    "name": "ticket-system",
+    "label": "チケットシステム"
+  },
+  {
+    "type": "dir",
+    "name": "crm",
+    "label": "CRM"
+  }
+]

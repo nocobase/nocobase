@@ -1,31 +1,29 @@
 ---
 pkg: "@nocobase/plugin-field-attachment-url"
+title: "Field Lampiran (URL)"
+description: "Field lampiran mendukung format URL, menyimpan link eksternal, tanpa perlu upload file, cocok untuk merujuk gambar, dokumen, dan lainnya dari eksternal."
+keywords: "lampiran URL,Attachment URL,link eksternal,lampiran URL,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Field Collection: Lampiran (URL)
 
+## Pengantar
 
-# Bidang Data: Lampiran (URL)
-
-## Pendahuluan
-
-Mendukung lampiran dalam format URL.
+Mendukung lampiran format URL.
 
 ## Instalasi
 
 Plugin ini adalah plugin komersial.
 
-## Panduan Pengguna
+## Panduan Penggunaan
 
-### Konfigurasi Bidang
+### Konfigurasi Field
 
 ![20241017092323](https://static-docs.nocobase.com/20241017092323.png)
 
-### Sumber Data Eksternal
+### Data Source Eksternal
 
 ![20241017092456](https://static-docs.nocobase.com/20241017092456.png)
 
-### Antarmuka
+### UI
 
 ![20241017092759](https://static-docs.nocobase.com/20241017092759.png)

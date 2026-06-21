@@ -1,18 +1,17 @@
 ---
 displayName: "Penyimpanan File: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
+title: "Penyimpanan File: S3 (Pro)"
+keywords: "Penyimpanan File: S3 (Pro),Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Mendukung jenis penyimpanan file yang kompatibel dengan protokol S3, termasuk layanan seperti Amazon S3, Aliyun OSS, Tencent Cloud COS, dan MinIO, dll. Juga mendukung unggahan file langsung dan akses privat.
+  Mendukung jenis penyimpanan file yang kompatibel dengan protokol S3, seperti Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, MinIO, dan lainnya. Mendukung unggah langsung file dan akses privat.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
 # Penyimpanan File: S3 (Pro)

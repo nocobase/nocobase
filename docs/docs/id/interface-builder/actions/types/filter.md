@@ -1,24 +1,26 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Filter"
+description: "Action Filter: membuka panel filter, menerapkan kondisi filter pada Block data."
+keywords: "Action Filter, Filter, filter data, panel filter, interface builder, NocoBase"
+---
 
 # Filter
 
-## Pendahuluan
+## Pengantar
 
-Operasi filter biasanya muncul di blok data untuk menyaring data dengan mengonfigurasi berbagai kondisi. Perlu diperhatikan bahwa jika cakupan data sudah dikonfigurasi untuk blok tersebut, operasi filter akan digabungkan dengan kondisi cakupan data sebagai kondisi penyaringan akhir.
+Action Filter biasanya muncul di Block data, dengan mengkonfigurasi berbagai kondisi untuk memfilter data. Perlu diperhatikan bahwa jika Block sudah dikonfigurasi cakupan data, Action Filter akan digabungkan dengan kondisi cakupan data sebagai kondisi filter akhir.
 
 ![20251029173609](https://static-docs.nocobase.com/20251029173609.png)
 
-## Pengaturan Operasi
+## Konfigurasi Action
 
 ![20251029173708](https://static-docs.nocobase.com/20251029173708.png)
 
-### Kolom yang Dapat Difilter
+### Field yang Dapat Difilter
 
-Secara default, semua kolom dari koleksi ini diaktifkan. Hanya kolom yang diaktifkan yang dapat dipilih dalam daftar kolom kondisi.
+Secara default semua Field di Table ini diaktifkan, hanya Field yang diaktifkan yang dapat dipilih dalam daftar Field kondisi.
 
-Kolom dari koleksi terkait juga dapat digunakan sebagai kolom filter.
+Field dari Table relasi juga dapat dijadikan Field filter.
 
 ![20251029173817](https://static-docs.nocobase.com/20251029173817.png)
 
@@ -26,5 +28,5 @@ Kolom dari koleksi terkait juga dapat digunakan sebagai kolom filter.
 
 ![20251029174106](https://static-docs.nocobase.com/20251029174106.png)
 
-- [Tombol Edit](/interface-builder/actions/action-settings/edit-button)
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule): Menampilkan/menyembunyikan tombol secara dinamis;
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button)
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule): tampilan/sembunyi tombol secara dinamis;

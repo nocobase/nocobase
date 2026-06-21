@@ -1,8 +1,14 @@
+---
+title: "Install from Git Source"
+description: "NocoBase Getting Started: Install from Git Source"
+keywords: "git,NocoBase"
+---
+
 # Install from Git Source
 
 :::tip Prerequisites
 
-- Git, Node.js 20+, and Yarn 1.22.x are installed
+- Git, Node.js >= 22, and Yarn 1.22.x are installed
 - A required database is configured and running: MySQL 8.0.17+, MariaDB 10.9+, or PostgreSQL 10+
 
 :::
@@ -12,24 +18,24 @@
 Choose a NocoBase version ([Version Comparison](../quickstart.md)) and run the corresponding command.
 
 <Tabs>
-<Tab label="Beta version (2.0-beta)">
+<Tab label="Latest version">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="Beta version">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
 ```
 
 </Tab>
-<Tab label="Alpha version (2.0-alpha)">
+<Tab label="Alpha version">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
-```
-
-</Tab>
-<Tab label="Latest version (1.9)">
-
-```bash
-git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
 ```
 
 </Tab>

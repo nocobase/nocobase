@@ -1,38 +1,36 @@
 ---
-pkg: "@nocobase/plugin-verification"
+pkg: '@nocobase/plugin-verification'
+title: "Quản lý kiểm tra"
+description: "Trung tâm quản lý kiểm tra NocoBase: SMS code, TOTP authenticator, hỗ trợ đăng nhập SMS, 2FA, kiểm tra hai bước cho thao tác có rủi ro, có thể mở rộng loại và kịch bản kiểm tra."
+keywords: "quản lý kiểm tra,SMS code,TOTP,2FA,kiểm tra danh tính,kiểm tra hai bước,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+
+# Kiểm tra
+
+:::info{title=Mẹo}
+Từ `1.6.0-alpha.30`, tính năng **Mã xác minh** ban đầu được nâng cấp thành **Quản lý kiểm tra**, hỗ trợ quản lý và tích hợp các phương thức kiểm tra danh tính người dùng khác nhau. Sau khi người dùng gắn phương thức kiểm tra tương ứng, có thể kiểm tra danh tính trong các kịch bản cần thiết. Tính năng này dự kiến hỗ trợ ổn định từ `1.7.0`.
 :::
 
-
-
-# Xác minh
-
-:::info{title=Lưu ý}
-Bắt đầu từ phiên bản `1.6.0-alpha.30`, tính năng **mã xác minh** ban đầu đã được nâng cấp thành **Quản lý Xác minh**, hỗ trợ quản lý và tích hợp nhiều phương thức xác minh danh tính người dùng khác nhau. Sau khi người dùng liên kết phương thức xác minh tương ứng, họ có thể thực hiện xác minh danh tính khi cần thiết. Tính năng này dự kiến sẽ được hỗ trợ ổn định từ phiên bản `1.7.0` trở đi.
-:::
-
-
+<PluginInfo name="verification"></PluginInfo>
 
 ## Giới thiệu
 
-**Trung tâm Quản lý Xác minh hỗ trợ quản lý và tích hợp nhiều phương thức xác minh danh tính người dùng khác nhau.** Ví dụ:
+**Trung tâm quản lý kiểm tra hỗ trợ quản lý và tích hợp các phương thức kiểm tra danh tính người dùng khác nhau.** Ví dụ:
 
-- Mã xác minh SMS – Được cung cấp mặc định bởi **plugin** xác minh. Tham khảo: [Xác minh: SMS](./sms)
-- Trình xác thực TOTP – Tham khảo: [Xác minh: Trình xác thực TOTP](../verification-totp/)
+- SMS code - được plugin verification cung cấp mặc định. Tham khảo: [Kiểm tra: SMS](./sms)
+- TOTP Authenticator - tham khảo: [Kiểm tra: TOTP Authenticator](../verification-totp/index.md)
 
-Các nhà phát triển cũng có thể mở rộng các loại xác minh khác dưới dạng **plugin**. Tham khảo: [Mở rộng loại xác minh](./dev/type)
+Bạn cũng có thể mở rộng các loại kiểm tra khác dưới dạng plugin. Tham khảo: [Mở rộng loại kiểm tra](./dev/type)
 
-**Sau khi người dùng liên kết phương thức xác minh tương ứng, họ có thể thực hiện xác minh danh tính trong các trường hợp cần thiết.** Ví dụ:
+**Sau khi người dùng gắn phương thức kiểm tra tương ứng, có thể kiểm tra danh tính trong các kịch bản cần thiết.** Ví dụ:
 
-- Đăng nhập bằng mã xác minh SMS – Tham khảo: [Xác thực: SMS](./sms)
-- Xác thực hai yếu tố (2FA) – Tham khảo: [Xác thực hai yếu tố (2FA)](../2fa)
-- Xác minh thứ cấp cho các thao tác rủi ro – Sẽ hỗ trợ trong tương lai
+- Đăng nhập bằng SMS code - tham khảo: [Xác thực: SMS](./sms)
+- Xác thực hai yếu tố (2FA) - tham khảo: [Xác thực hai yếu tố (2FA)](../2fa)
+- Kiểm tra hai bước cho thao tác có rủi ro - sẽ hỗ trợ trong tương lai
 
-Các nhà phát triển cũng có thể tích hợp xác minh danh tính vào các trường hợp cần thiết khác bằng cách mở rộng **plugin**. Tham khảo: [Mở rộng các trường hợp xác minh](./dev/scene)
+Bạn cũng có thể tích hợp kiểm tra danh tính vào các kịch bản cần thiết khác dưới dạng plugin mở rộng. Tham khảo: [Mở rộng kịch bản kiểm tra](./dev/scene)
 
-**Sự khác biệt và mối liên hệ giữa Module Xác minh và Module Xác thực người dùng:** Module Xác thực người dùng chủ yếu chịu trách nhiệm xác thực danh tính trong các trường hợp đăng nhập của người dùng, trong đó các quy trình như đăng nhập bằng SMS, xác thực hai yếu tố phụ thuộc vào các trình xác minh do Module Xác minh cung cấp; còn Module Xác minh chịu trách nhiệm xác minh danh tính cho các thao tác rủi ro khác nhau, trong đó đăng nhập của người dùng là một trong các trường hợp rủi ro đó.
+**Sự khác biệt và mối liên hệ giữa module kiểm tra và module xác thực người dùng:** Module xác thực người dùng chủ yếu chịu trách nhiệm về xác thực danh tính trong kịch bản đăng nhập, trong đó các luồng như đăng nhập SMS, xác thực hai yếu tố phụ thuộc vào verifier do module kiểm tra cung cấp; module kiểm tra chịu trách nhiệm về kiểm tra danh tính trong các thao tác có rủi ro khác nhau, đăng nhập là một trong những kịch bản thao tác có rủi ro.
 
 ![](https://static-docs.nocobase.com/202502262315404.png)
 

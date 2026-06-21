@@ -1,15 +1,14 @@
 ---
 pkg: "@nocobase/plugin-calendar"
+title: "Bảng lịch"
+description: "Bảng lịch lưu trữ thông tin ngày và sự kiện, được sử dụng cùng với block lịch, cần cấu hình các field như tiêu đề, thời gian bắt đầu, thời gian kết thúc."
+keywords: "Bảng lịch,Calendar Collection,sự kiện lịch,lịch trình,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Bộ sưu tập Lịch
+# Bảng lịch
 
 ## Giới thiệu
 
-Bộ sưu tập Lịch là một bảng dữ liệu chuyên biệt được thiết kế để lưu trữ ngày tháng và các thông tin liên quan đến ngày tháng. Nó thường được sử dụng để quản lý và theo dõi thời gian trong các ứng dụng hoặc hệ thống. Mục tiêu chính của bộ sưu tập Lịch là cung cấp quyền truy cập linh hoạt và hiệu quả vào thông tin ngày tháng, cho phép truy xuất nhanh chóng dữ liệu liên quan khi cần.
+Bảng lịch là một loại Collection dùng để lưu trữ ngày tháng và thông tin liên quan đến ngày, thường được sử dụng để theo dõi thời gian và ngày tháng trong ứng dụng hoặc hệ thống. Thiết kế của bảng lịch nhằm cung cấp khả năng truy cập linh hoạt và hiệu quả vào ngày tháng, để có thể nhanh chóng lấy được thông tin liên quan đến ngày khi cần.
 
 ## Hướng dẫn sử dụng
 

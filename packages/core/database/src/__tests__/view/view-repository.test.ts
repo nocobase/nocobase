@@ -72,5 +72,10 @@ describe('view repository', () => {
 
     expect(results[0].length).toBe(1);
     expect(results[1]).toBe(4);
+
+    const rows = await viewCollection.repository.find({ limit: 4, order: [['aaa', 'ASC']] });
+    expect(rows.length).toBe(4);
+    expect(rows[0].toJSON().aaa).toBe(1);
+    expect(rows[3].toJSON().aaa).toBe(4);
   });
 });

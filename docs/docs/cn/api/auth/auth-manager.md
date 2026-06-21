@@ -1,3 +1,9 @@
+---
+title: "AuthManager"
+description: "NocoBase 认证管理器：AuthManager 管理多种认证方式、注册认证器。"
+keywords: "AuthManager,认证管理器,认证器注册,多种认证方式,NocoBase"
+---
+
 # AuthManager
 
 ## 概览

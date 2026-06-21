@@ -1,53 +1,49 @@
 ---
 pkg: "@nocobase/plugin-block-list"
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 # Блок списка
 
 ## Введение
 
-Блок списка отображает данные в виде списка, что удобно для таких сценариев, как списки задач, новостные ленты или информация о продуктах.
+Блок списка отображает данные в формате списка и подходит для сценариев вроде списка задач, новостей и информации о товарах.
 
-## Настройка блока
+## Конфигурация блока
 
 ![20251023202835](https://static-docs.nocobase.com/20251023202835.png)
 
-### Настройка области данных
+### Установить область данных
 
-На изображении показано: отфильтруйте заказы со статусом «Отменен».
+Как показано: фильтрация заказов со статусом "Отменен".
 
 ![20251023202927](https://static-docs.nocobase.com/20251023202927.png)
 
-Более подробную информацию смотрите в разделе [Настройка области данных](/interface-builder/blocks/block-settings/data-scope).
+Для подробностей см. [Установить область данных](/interface-builder/blocks/block-settings/data-scope)
 
-### Настройка правил сортировки
+### Установить правила сортировки
 
-На изображении показано: отсортируйте по сумме заказа в порядке убывания.
+Как показано: сортировка по сумме заказа в порядке убывания.
 
 ![20251023203022](https://static-docs.nocobase.com/20251023203022.png)
 
-Более подробную информацию смотрите в разделе [Настройка правил сортировки](/interface-builder/blocks/block-settings/sorting-rule).
+Для подробностей см. [Установить правила сортировки](/interface-builder/blocks/block-settings/sorting-rule)
 
-## Настройка полей
+## Настроить поля
 
-### Поля текущей коллекции
+### Поля из этой коллекции
 
-> **Обратите внимание**: Поля из унаследованных коллекций (то есть поля родительских коллекций) автоматически объединяются и отображаются в текущем списке полей.
+> **Примечание**: Поля из наследуемых коллекций (то есть родительских коллекций) автоматически объединяются и отображаются в текущем списке полей.
 
 ![20251023203103](https://static-docs.nocobase.com/20251023203103.png)
 
 ### Поля из связанных коллекций
 
-> **Обратите внимание**: Поля из связанных коллекций могут быть отображены (в настоящее время поддерживаются только отношения «один к одному»).
+> **Примечание**: можно отображать поля из связанных коллекций (сейчас поддерживаются только связи to-one).
 
 ![20251023203611](https://static-docs.nocobase.com/20251023203611.png)
 
-Для настройки полей списка смотрите раздел [Поле «Детали»](/interface-builder/fields/generic/detail-form-item).
+Для конфигурации полей списка см. [Поля деталей](/interface-builder/fields/generic/detail-form-item)
 
-## Настройка действий
+## Настроить действия
 
 ### Глобальные действия
 
@@ -59,23 +55,23 @@ pkg: "@nocobase/plugin-block-list"
 - [Обновить](/interface-builder/actions/types/refresh)
 - [Импорт](/interface-builder/actions/types/import)
 - [Экспорт](/interface-builder/actions/types/export)
-- [Печать по шаблону](/template-print/index)
+- [Печать шаблона](/template-print/index)
 - [Массовое обновление](/interface-builder/actions/types/bulk-update)
 - [Экспорт вложений](/interface-builder/actions/types/export-attachments)
-- [Запустить рабочий процесс](/interface-builder/actions/types/trigger-workflow)
+- [Запуск рабочего процесса](/interface-builder/actions/types/trigger-workflow)
 - [Действие JS](/interface-builder/actions/types/js-action)
-- [AI-сотрудник](/interface-builder/actions/types/ai-employee)
+- [ИИ-сотрудник](/interface-builder/actions/types/ai-employee)
 
-### Действия со строками
+### Действия строки
 
 ![20251023204329](https://static-docs.nocobase.com/20251023204329.png)
 
 - [Редактировать](/interface-builder/actions/types/edit)
 - [Удалить](/interface-builder/actions/types/delete)
 - [Ссылка](/interface-builder/actions/types/link)
-- [Всплывающее окно](/interface-builder/actions/types/pop-up)
+- [Открыть модальное окно](/interface-builder/actions/types/pop-up)
 - [Обновить запись](/interface-builder/actions/types/update-record)
-- [Печать по шаблону](/template-print/index)
-- [Запустить рабочий процесс](/interface-builder/actions/types/trigger-workflow)
+- [Печать шаблона](/template-print/index)
+- [Запуск рабочего процесса](/interface-builder/actions/types/trigger-workflow)
 - [Действие JS](/interface-builder/actions/types/js-action)
-- [AI-сотрудник](/interface-builder/actions/types/ai-employee)
+- [ИИ-сотрудник](/interface-builder/actions/types/ai-employee)

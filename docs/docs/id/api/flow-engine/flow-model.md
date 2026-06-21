@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "FlowModel"
+description: "API FlowModel NocoBase: uid, registerFlow, define, renderComponent, dan properti serta method model lainnya."
+keywords: "FlowModel,uid,renderComponent,FlowEngine,NocoBase"
+---
 
 # FlowModel
 

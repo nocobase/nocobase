@@ -1,4 +1,6 @@
 ---
+title: "数据表：树"
+keywords: "数据表：树,插件,NocoBase"
 displayName: "数据表：树"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 数据表：树

@@ -1,18 +1,17 @@
 ---
-displayName: "Источник данных: REST API"
+title: "Data source: REST API"
+keywords: "Data sources"
+displayName: "Data source: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Используйте внешние источники данных REST API.
+  Внешние источники данных на базе REST API.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 1
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Источник данных: REST API
+# Data source: REST API

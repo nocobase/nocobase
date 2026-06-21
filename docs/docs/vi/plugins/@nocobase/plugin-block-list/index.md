@@ -1,14 +1,14 @@
 ---
-displayName: "Khối: Danh sách"
+displayName: "Block: Danh sách"
 packageName: '@nocobase/plugin-block-list'
+title: "Block: Danh sách"
+keywords: "Block: Danh sách,Plugin,NocoBase"
 description: |
-  Hiển thị dữ liệu dưới dạng danh sách, hỗ trợ phân trang.
+  Hiển thị dữ liệu dưới dạng danh sách, hỗ trợ cấu hình phân trang.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Khối: Danh sách
+# Block: Danh sách

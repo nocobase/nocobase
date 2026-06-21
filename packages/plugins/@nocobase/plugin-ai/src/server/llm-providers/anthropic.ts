@@ -7,14 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProvider } from './provider';
+import { LLMProvider, ParsedAttachmentResult } from './provider';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
-import axios from 'axios';
+import { serverRequest } from '@nocobase/utils';
 import { encodeFile, stripToolCallTags } from '../utils';
 import { Model } from '@nocobase/database';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { Context } from '@nocobase/actions';
+import { AIMessageChunk } from '@langchain/core/messages';
+
+// Kimi code API only accept anthropic client
+// And anthropic default max_tokens is 2k that is too small for Kimi code
+const MAX_TOKENS_PRESET = {
+  'kimi-for-coding': 128 * 1024,
+};
 
 export class AnthropicProvider extends LLMProvider {
   declare chatModel: ChatAnthropic;
@@ -24,7 +31,7 @@ export class AnthropicProvider extends LLMProvider {
   }
 
   createModel() {
-    const { apiKey, baseURL } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const sanitizedModelOptions = { ...(this.modelOptions || {}) };
     const model = sanitizedModelOptions.model;
 
@@ -55,11 +62,13 @@ export class AnthropicProvider extends LLMProvider {
       }
     }
 
+    this.setMaxTokens(sanitizedModelOptions);
+
     return new ChatAnthropic({
       apiKey,
       ...sanitizedModelOptions,
       model,
-      anthropicApiUrl: baseURL || this.baseURL,
+      anthropicApiUrl: this.getResolvedBaseURL(),
       verbose: false,
     });
   }
@@ -71,18 +80,22 @@ export class AnthropicProvider extends LLMProvider {
   }> {
     const options = this.serviceOptions || {};
     const apiKey = options.apiKey;
-    let baseURL = options.baseURL || this.baseURL;
-    if (!baseURL) {
+    let url: string;
+    try {
+      url = this.buildRequestURL('v1/models');
+    } catch (e) {
+      return { code: 400, errMsg: e instanceof Error ? e.message : String(e) };
+    }
+    if (!url) {
       return { code: 400, errMsg: 'baseURL is required' };
     }
     if (!apiKey) {
       return { code: 400, errMsg: 'API Key required' };
     }
-    if (baseURL && baseURL.endsWith('/')) {
-      baseURL = baseURL.slice(0, -1);
-    }
     try {
-      const res = await axios.get(`${baseURL}/v1/models`, {
+      const res = await serverRequest({
+        method: 'GET',
+        url,
         headers: {
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
@@ -99,7 +112,7 @@ export class AnthropicProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -113,12 +126,31 @@ export class AnthropicProvider extends LLMProvider {
     }
 
     if (Array.isArray(content.content)) {
-      const textMessage = content.content.find((msg) => msg.type === 'text');
-      content.content = textMessage?.text;
+      const blocks = content.content;
+      const textBlocks = blocks.filter((msg: any) => msg.type === 'text');
+      content.content = textBlocks.map((block: any) => block.text).join('') || '';
+
+      // Extract references from web_search_tool_result blocks (backward compat)
+      if (!content.reference) {
+        const refs: { title: string; url: string }[] = [];
+        for (const block of blocks) {
+          if (block.type === 'web_search_tool_result' && Array.isArray(block.content)) {
+            for (const item of block.content) {
+              if (item.type === 'web_search_result' && item.url) {
+                refs.push({ title: item.title || '', url: item.url });
+              }
+            }
+          }
+        }
+        if (refs.length) {
+          content.reference = refs;
+        }
+      }
     }
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };
@@ -126,34 +158,78 @@ export class AnthropicProvider extends LLMProvider {
 
   parseResponseChunk(chunk: any) {
     if (chunk && Array.isArray(chunk)) {
-      if (chunk[0] && chunk[0].type === 'text') {
-        chunk = chunk[0].text;
+      const textBlock = chunk.find((block: any) => block.type === 'text');
+      if (textBlock) {
+        return stripToolCallTags(textBlock.text);
       }
+      // Non-text content blocks (server_tool_use, web_search_tool_result) - skip
+      return null;
     }
     return stripToolCallTags(chunk);
   }
 
-  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
+  protected builtInTools(): any[] {
+    if (this.modelOptions?.builtIn?.webSearch === true) {
+      return [
+        {
+          type: 'web_search_20250305',
+          name: 'web_search',
+        },
+      ];
+    }
+    return [];
+  }
+
+  isToolConflict(): boolean {
+    return false;
+  }
+
+  parseWebSearchAction(chunk: AIMessageChunk): { type: string; query: string }[] {
+    if (!Array.isArray(chunk.content)) {
+      return [];
+    }
+    return (chunk.content as any[])
+      .filter((block) => block.type === 'server_tool_use' && block.name === 'web_search')
+      .map((block) => ({
+        type: 'web_search',
+        query: block.input?.query || '',
+      }));
+  }
+
+  protected async convertToContent(ctx: Context, attachment: any): Promise<ParsedAttachmentResult> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
     const data = await encodeFile(ctx, decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
-        type: 'image_url',
-        image_url: {
-          url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+        placement: 'contentBlocks',
+        content: {
+          type: 'image_url',
+          image_url: {
+            url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+          },
         },
       };
     } else {
       return {
-        type: 'document',
-        source: {
-          type: 'base64',
-          media_type: attachment.mimetype,
-          data,
+        placement: 'contentBlocks',
+        content: {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: attachment.mimetype,
+            data,
+          },
         },
       };
     }
+  }
+
+  private setMaxTokens(options: Record<string, any> = {}) {
+    if (!options.model || options.maxTokens) {
+      return;
+    }
+    options.maxTokens = Object.entries(MAX_TOKENS_PRESET).find(([key]) => options.model.startsWith(key))?.[1];
   }
 }
 
@@ -170,4 +246,5 @@ export const anthropicProviderOptions: LLMProviderMeta = {
     ],
   },
   provider: AnthropicProvider,
+  supportWebSearch: true,
 };

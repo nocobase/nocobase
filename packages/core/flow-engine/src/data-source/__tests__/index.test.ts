@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DataSource, DataSourceManager } from '../index';
 import { FlowEngine } from '../../flowEngine';
 
@@ -50,7 +50,7 @@ describe('DataSource & Collection APIs', () => {
         { name: 'body', type: 'string', interface: 'text' },
       ],
     });
-    const bodyField = ds.getCollection('posts')!.getField('body');
+    const bodyField = ds.getCollection('posts')?.getField('body');
     expect(bodyField?.name).toBe('body');
 
     // remove collection
@@ -78,5 +78,72 @@ describe('DataSource & Collection APIs', () => {
         { name: 'b', inherits: ['a'] },
       ]),
     ).toThrow(/circular/);
+  });
+
+  it('translates validation messages from data-source-main in component rules', async () => {
+    const { m, engine } = makeManager();
+    engine.context.i18n = {
+      t: (key: string, options?: Record<string, any>) => {
+        if (key === 'string.length' && options?.ns === 'data-source-main') {
+          return `${options.label} 长度必须为 ${options.limit} 个字符`;
+        }
+        return key;
+      },
+    } as any;
+
+    const ds = new DataSource({ key: 'main' });
+    m.addDataSource(ds);
+    ds.addCollection({
+      name: 'posts',
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+          interface: 'text',
+          title: '单行文本',
+          validation: {
+            type: 'string',
+            rules: [{ name: 'length', args: { limit: 18 } }],
+          },
+        },
+      ],
+    });
+
+    const rules = ds.getCollection('posts')?.getField('title')?.getComponentProps().rules || [];
+
+    await expect(rules[0].validator({}, '123')).rejects.toBe('单行文本 长度必须为 18 个字符');
+  });
+
+  it('ensureLoaded, reload and data source events work for main loader', async () => {
+    const { m, engine } = makeManager();
+    const loadedListener = vi.fn();
+    const failedListener = vi.fn();
+    engine.context.app = { eventBus: new EventTarget() } as any;
+    engine.context.app.eventBus.addEventListener('dataSource:loaded', loadedListener);
+    engine.context.app.eventBus.addEventListener('dataSource:loadFailed', failedListener);
+
+    const loader = vi
+      .fn()
+      .mockResolvedValueOnce({
+        collections: [{ name: 'posts', fields: [{ name: 'title', type: 'string', interface: 'input' }] }],
+      })
+      .mockResolvedValueOnce({
+        collections: [{ name: 'users', fields: [{ name: 'nickname', type: 'string', interface: 'input' }] }],
+      });
+
+    m.registerLoader('main', loader);
+
+    await m.ensureLoaded();
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(m.getDataSource('main')?.status).toBe('loaded');
+    expect(m.getCollection('main', 'posts')?.name).toBe('posts');
+    expect(loadedListener).toHaveBeenCalledTimes(1);
+
+    await m.reloadDataSource('main');
+    expect(loader).toHaveBeenCalledTimes(2);
+    expect(m.getCollection('main', 'posts')).toBeUndefined();
+    expect(m.getCollection('main', 'users')?.name).toBe('users');
+    expect(m.getDataSource('main')?.reload).toBeTypeOf('function');
+    expect(failedListener).not.toHaveBeenCalled();
   });
 });

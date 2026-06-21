@@ -1,3 +1,9 @@
+---
+title: "FDW 连接外部数据表"
+description: "基于 Foreign Data Wrapper 连接远程表：MySQL federated、PostgreSQL postgres_fdw/mysql_fdw，创建数据库服务、选择远程表、字段同步。"
+keywords: "FDW,外部数据表,Foreign Data Wrapper,postgres_fdw,mysql_fdw,federated,远程表,NocoBase"
+---
+
 # 连接外部数据表（FDW）
 
 ## 介绍

@@ -11,6 +11,7 @@ import { ContextPathProxy } from '../ContextPathProxy';
 import { FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
+import { FlowExitAllException } from '../utils/exceptions';
 
 describe('FlowRuntimeContext', () => {
   let engine: FlowEngine;
@@ -46,7 +47,7 @@ describe('FlowRuntimeContext', () => {
 
   it('should throw on exit()', () => {
     const ctx = new FlowRuntimeContext(model, 'flow1', 'runtime');
-    expect(() => ctx.exit()).toThrow();
+    expect(() => ctx.exit()).toThrow(FlowExitAllException);
   });
 });
 

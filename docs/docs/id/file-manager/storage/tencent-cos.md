@@ -1,35 +1,38 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Storage Engine: Tencent Cloud COS"
+description: "Konfigurasi storage engine Tencent Cloud COS built-in NocoBase: region, SecretId, SecretKey, bucket, cocok untuk Tencent Cloud Object Storage."
+keywords: "Tencent Cloud COS,Tencent Cloud Storage,SecretId,SecretKey,bucket,object storage,NocoBase"
+---
 
 # Tencent Cloud COS
 
-Mesin penyimpanan berbasis Tencent Cloud COS. Sebelum menggunakannya, Anda perlu menyiapkan akun dan izin yang relevan.
+Storage engine berdasarkan Tencent Cloud COS, perlu menyiapkan akun dan permission terkait sebelum digunakan.
 
 ## Parameter Konfigurasi
 
-![Contoh Konfigurasi Mesin Penyimpanan Tencent COS](https://static-docs.nocobase.com/20240712222125.png)
+![Contoh konfigurasi storage engine Tencent COS](https://static-docs.nocobase.com/20240712222125.png)
 
-:::info{title=Catatan}
-Bagian ini hanya menjelaskan parameter khusus untuk mesin penyimpanan Tencent Cloud COS. Untuk parameter umum, silakan lihat [Parameter Mesin Umum](./index.md#general-engine-parameters).
+:::info{title=Tips}
+Hanya memperkenalkan parameter spesifik untuk Tencent Cloud COS storage engine. Untuk parameter umum lihat [Parameter Umum Engine](./index.md#parameter-umum-engine).
 :::
 
-### Wilayah
+### Region
 
-Isi wilayah untuk penyimpanan COS, contoh: `ap-chengdu`.
+Isi region storage COS, contohnya: `ap-chengdu`.
 
-:::info{title=Catatan}
-Anda dapat melihat informasi wilayah ruang penyimpanan Anda di [Konsol Tencent Cloud COS](https://console.cloud.tencent.com/cos). Anda hanya perlu menggunakan prefiks wilayahnya (tidak perlu nama domain lengkap).
+:::info{title=Tips}
+Anda dapat melihat informasi region storage space di [Tencent Cloud COS Console](https://console.cloud.tencent.com/cos), dan hanya perlu mengambil bagian prefix region saja (tidak perlu domain lengkap).
 :::
 
 ### SecretId
 
-Isi ID kunci akses Tencent Cloud Anda.
+Isi ID Tencent Cloud access key.
 
 ### SecretKey
 
-Isi Secret kunci akses Tencent Cloud Anda.
+Isi Secret Tencent Cloud access key.
 
 ### Bucket
 
-Isi nama Bucket penyimpanan COS, contoh: `qing-cdn-1234189398`.
+Isi nama bucket COS storage, contohnya: `qing-cdn-1234189398`.

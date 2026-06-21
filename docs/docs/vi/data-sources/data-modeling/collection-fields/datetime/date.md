@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Ngày"
+description: "Field ngày, chỉ lưu trữ phần ngày."
+keywords: "ngày,date,Field ngày,chọn ngày,NocoBase"
+---
 
 # Ngày
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512181142](https://static-docs.nocobase.com/20240512181142.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung

@@ -1,31 +1,29 @@
 ---
 pkg: '@nocobase/plugin-user-data-sync'
+title: "Sinkronisasi Data Pengguna NocoBase"
+description: "Sinkronisasi data pengguna NocoBase: mendaftarkan sumber sinkronisasi, HTTP API, WeCom, sinkronisasi tabel pengguna dan departemen, ekstensi sumber data plugin."
+keywords: "sinkronisasi data pengguna,sinkronisasi data,HTTP API,WeCom,sumber sinkronisasi,plugin-user-data-sync,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-
 
 # Sinkronisasi Data Pengguna
 
-## Pendahuluan
+## Pengantar
 
-Fitur ini memungkinkan Anda untuk mendaftarkan dan mengelola sumber sinkronisasi data pengguna. Secara default, API HTTP disediakan, dan sumber data lainnya dapat diperluas melalui plugin. Fitur ini mendukung sinkronisasi data ke **koleksi** Pengguna dan Departemen secara default, dan juga dapat diperluas untuk menyinkronkan ke sumber daya target lainnya melalui plugin.
+Mendaftarkan dan mengelola sumber sinkronisasi data pengguna. Default menyediakan HTTP API, dan dapat memperluas sumber data lain melalui plugin. Default mendukung sinkronisasi data ke tabel **users** dan **departments**, dan juga dapat memperluas resource target sinkronisasi lain melalui plugin.
 
-## Pengelolaan Sumber Data dan Sinkronisasi Data
+## Manajemen Sumber Data dan Sinkronisasi Data
 
 ![](https://static-docs.nocobase.com/202412041043465.png)
 
 :::info
-Jika tidak ada plugin yang menyediakan sumber sinkronisasi data pengguna terinstal, data pengguna dapat disinkronkan menggunakan API HTTP. Lihat [Sumber Data - HTTP API](./sources/api.md).
+Saat plugin yang menyediakan sumber sinkronisasi data pengguna belum diinstal, Anda dapat menyinkronkan data pengguna melalui HTTP API. Lihat [Sumber Data - HTTP API](./sources/api.md).
 :::
 
 ## Menambahkan Sumber Data
 
-Setelah Anda menginstal plugin yang menyediakan sumber sinkronisasi data pengguna, Anda dapat menambahkan sumber data yang sesuai. Hanya sumber data yang diaktifkan yang akan menampilkan tombol "Sinkronkan" dan "Tugas".
+Setelah menginstal plugin yang menyediakan sumber sinkronisasi data pengguna, Anda dapat menambahkan sumber data yang sesuai. Hanya sumber data yang aktif yang akan menampilkan tombol sinkronisasi dan tugas.
 
-> Contoh: WeCom
+> Contoh dengan WeCom
 
 ![](https://static-docs.nocobase.com/202412041053785.png)
 
@@ -35,14 +33,14 @@ Klik tombol "Sinkronkan" untuk memulai sinkronisasi data.
 
 ![](https://static-docs.nocobase.com/202412041055022.png)
 
-Klik tombol "Tugas" untuk melihat status sinkronisasi. Setelah sinkronisasi berhasil, Anda dapat melihat data di daftar Pengguna dan Departemen.
+Klik tombol "Tugas" untuk melihat status sinkronisasi. Setelah sinkronisasi berhasil, Anda dapat melihat data di daftar pengguna dan departemen.
 
 ![](https://static-docs.nocobase.com/202412041202337.png)
 
-Untuk tugas sinkronisasi yang gagal, Anda dapat mengklik "Coba Lagi".
+Untuk tugas sinkronisasi yang gagal, klik "Coba Lagi".
 
 ![](https://static-docs.nocobase.com/202412041058337.png)
 
-Jika terjadi kegagalan sinkronisasi, Anda dapat memecahkan masalah melalui log sistem. Selain itu, catatan sinkronisasi mentah disimpan di direktori `user-data-sync` di bawah folder log aplikasi.
+Saat sinkronisasi gagal, Anda dapat menyelidiki penyebabnya melalui log sistem. Pada saat yang sama, di direktori `user-data-sync` di dalam direktori log aplikasi tersimpan record sinkronisasi data asli.
 
 ![](https://static-docs.nocobase.com/202412041205655.png)

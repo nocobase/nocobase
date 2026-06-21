@@ -1,14 +1,14 @@
 ---
-displayName: "Khối: Kanban"
+displayName: "Block: Kanban"
 packageName: '@nocobase/plugin-kanban'
+title: "Block: Kanban"
+keywords: "Block: Kanban,Plugin,NocoBase"
 description: |
-  Cung cấp khối Kanban.
+  Cung cấp Block Kanban.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Khối: Kanban
+# Block: Kanban

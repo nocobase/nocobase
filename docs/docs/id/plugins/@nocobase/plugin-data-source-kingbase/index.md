@@ -1,15 +1,17 @@
 ---
-displayName: "Sumber data: KingbaseES (人大金仓)"
+displayName: "Data Source: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
+title: "Data Source: KingbaseES"
+keywords: "Data Source: KingbaseES,plugin,NocoBase"
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Menggunakan database KingbaseES sebagai sumber data. Dapat berfungsi sebagai database utama atau sebagai database eksternal.
+  Menggunakan database KingbaseES sebagai data source. Dapat digunakan sebagai database utama maupun sebagai database eksternal.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Sumber data: KingbaseES (人大金仓)
+# Data Source: KingbaseES

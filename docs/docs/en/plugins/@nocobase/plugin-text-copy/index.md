@@ -1,4 +1,6 @@
 ---
+title: "Text copy"
+keywords: "Clipboard,Copy"
 displayName: "Text copy"
 packageName: '@nocobase/plugin-text-copy'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Text copy

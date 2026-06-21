@@ -1,75 +1,77 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "RunJS Tulis dan Jalankan JavaScript Online"
+description: "RunJS dalam interface builder memungkinkan Anda menulis dan menjalankan JavaScript secara online, mendukung JS Block, JS Field, JS Action, dan ekstensi logika kustom lainnya."
+keywords: "RunJS, tulis JS online, JavaScript, JS Block, JS Field, JS Action, interface builder, NocoBase"
+---
 
-# Menulis & Menjalankan JS Daring
+# Tulis & Jalankan JS Online
 
-Di NocoBase, **RunJS** menyediakan metode ekstensi yang ringan, cocok untuk skenario **eksperimen cepat dan pemrosesan logika sementara**. Tanpa perlu membuat plugin atau memodifikasi kode sumber, Anda dapat menyesuaikan antarmuka atau interaksi melalui JavaScript.
+Di NocoBase, **RunJS** menyediakan cara ekstensi yang ringan, cocok untuk skenario **eksperimen cepat, pemrosesan logika sementara**. Tanpa perlu membuat Plugin atau memodifikasi source code, Anda dapat mewujudkan kustomisasi personal antarmuka atau interaksi melalui JavaScript.
 
-Melalui RunJS, Anda dapat langsung memasukkan kode JS di desainer antarmuka untuk mencapai:
+Melalui ini, Anda dapat memasukkan kode JS langsung di interface designer untuk mengimplementasikan:
 
--   Kustomisasi konten rendering (bidang, blok, kolom, item, dll.)
--   Logika interaksi kustom (klik tombol, keterkaitan event)
--   Perilaku dinamis yang dikombinasikan dengan data kontekstual
+- Render konten kustom (Field, Block, kolom, item, dll.)
+- Logika interaksi kustom (klik tombol, linkage event)
+- Menggabungkan data konteks untuk implementasi perilaku dinamis
 
 ## Skenario yang Didukung
 
-### Blok JS
+### JS Block
 
-Dengan JS, Anda dapat menyesuaikan rendering blok, memberikan kontrol penuh atas struktur dan gaya blok.
-Ini cocok untuk menampilkan komponen kustom, diagram statistik, konten pihak ketiga, dan skenario lain yang sangat fleksibel.
+Render Block kustom melalui JS, dapat mengontrol struktur dan style Block sepenuhnya.
+Cocok untuk skenario fleksibel tinggi seperti menampilkan komponen kustom, chart statistik, konten pihak ketiga, dll.
 
 ![20250916105031](https://static-docs.nocobase.com/20250916105031.png)
 
-Dokumentasi: [Blok JS](/interface-builder/blocks/other-blocks/js-block)
+Dokumentasi: [JS Block](/interface-builder/blocks/other-blocks/js-block)
 
-### Aksi JS
+### JS Action
 
-Dengan JS, Anda dapat menyesuaikan logika klik tombol aksi, memungkinkan Anda untuk mengeksekusi operasi frontend atau permintaan API apa pun.
-Contoh: menghitung nilai secara dinamis, mengirim data kustom, memicu pop-up, dll.
+Logika klik tombol Action kustom melalui JS, dapat menjalankan operasi frontend atau request API apa pun.
+Misalnya: menghitung nilai secara dinamis, submit data kustom, memicu Popup, dll.
 
 ![20250916105123](https://static-docs.nocobase.com/20250916105123.png)
 
-Dokumentasi: [Aksi JS](/interface-builder/actions/types/js-action)
+Dokumentasi: [JS Action](/interface-builder/actions/types/js-action)
 
-### Bidang JS
+### JS Field
 
-Dengan JS, Anda dapat menyesuaikan logika rendering bidang. Anda dapat menampilkan gaya, konten, atau status yang berbeda secara dinamis berdasarkan nilai bidang.
+Logika render Field kustom melalui JS. Dapat menampilkan style, konten, atau status berbeda secara dinamis berdasarkan nilai Field.
 
 ![20250916105354](https://static-docs.nocobase.com/20250916105354.png)
 
-Dokumentasi: [Bidang JS](/interface-builder/fields/specific/js-field)
+Dokumentasi: [JS Field](/interface-builder/fields/specific/js-field)
 
-### Item JS
+### JS Item
 
-Dengan JS, Anda dapat merender item independen tanpa terikat pada bidang tertentu. Ini umum digunakan untuk menampilkan blok informasi kustom.
+Render item independen melalui JS, tidak terikat dengan Field tertentu. Sering digunakan untuk menampilkan blok informasi kustom.
 
 ![20250916104848](https://static-docs.nocobase.com/20250916104848.png)
 
-Dokumentasi: [Item JS](/interface-builder/fields/specific/js-item)
+Dokumentasi: [JS Item](/interface-builder/fields/specific/js-item)
 
-### Kolom Tabel JS
+### JS Table Column
 
-Dengan JS, Anda dapat menyesuaikan rendering kolom tabel.
-Ini dapat mengimplementasikan logika tampilan sel yang kompleks, seperti progress bar, label status, dll.
+Render kolom Table kustom melalui JS.
+Dapat mengimplementasikan logika tampilan sel yang kompleks, seperti progress bar, tag status, dll.
 
 ![20250916105443](https://static-docs.nocobase.com/20250916105443.png)
 
-Dokumentasi: [Kolom Tabel JS](/interface-builder/fields/specific/js-column)
+Dokumentasi: [JS Table Column](/interface-builder/fields/specific/js-column)
 
-### Aturan Keterkaitan (Linkage Rules)
+### Linkage Rules (Aturan Linkage)
 
-Dengan JS, Anda dapat mengontrol logika keterkaitan antar bidang dalam formulir atau halaman.
-Contoh: ketika satu bidang berubah, secara dinamis memodifikasi nilai atau visibilitas bidang lain.
+Mengontrol logika linkage antar Field di Form atau Page melalui JS.
+Misalnya: saat satu Field berubah, modifikasi nilai atau visibilitas Field lain secara dinamis.
 
 ![20251029114532](https://static-docs.nocobase.com/20251029114532.png)
 
-Dokumentasi: [Aturan Keterkaitan](/interface-builder/linkage-rule)
+Dokumentasi: [Aturan Linkage](/interface-builder/linkage-rule)
 
-### Alur Event (Eventflow)
+### Eventflow (Event Flow)
 
-Dengan JS, Anda dapat menyesuaikan kondisi pemicu dan logika eksekusi alur event untuk membangun rantai interaksi frontend yang lebih kompleks.
+Memicu kondisi dan logika eksekusi Event Flow kustom melalui JS, untuk membangun rantai interaksi frontend yang lebih kompleks.
 
 ![](https://static-docs.nocobase.com/20251031092755.png)
 
-Dokumentasi: [Alur Event](/interface-builder/event-flow)
+Dokumentasi: [Event Flow](/interface-builder/event-flow)

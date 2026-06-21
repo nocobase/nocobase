@@ -1,18 +1,17 @@
 ---
-displayName: "Gestionnaire de sauvegardes"
+title: "Backup manager"
+keywords: "System management"
+displayName: "Backup manager"
 packageName: '@nocobase/plugin-backups'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Offre des fonctionnalités de sauvegarde et de restauration. Prend en charge les sauvegardes planifiées pour garantir la sécurité des données et une récupération rapide.
-isFree: false
-builtIn: false
+  Provides backup and restore functionality, supports scheduled backups, and ensures data security and quick recovery.
+isFree: true
+builtIn: true
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Gestionnaire de sauvegardes
+# Backup manager

@@ -29,6 +29,7 @@
   "Notification Management": "Notification Management",
   "Notification manager": "Notification manager",
   "Notification type": "Notification type",
+  "Notification type {{type}} is not registered.": "Loại thông báo {{type}} chưa được đăng ký.",
   "Query users": "Query users",
   "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.",
   "Reason": "Reason",

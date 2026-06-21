@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Plugin (Server)"
+description: "API Plugin server NocoBase: app, name, load, dll dari plugin."
+keywords: "Plugin,plugin server,app,name,load,API plugin,NocoBase"
+---
 
 # Plugin
 

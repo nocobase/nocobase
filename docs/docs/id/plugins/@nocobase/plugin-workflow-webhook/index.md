@@ -1,18 +1,17 @@
 ---
-displayName: "Alur Kerja: Webhook"
+displayName: "Workflow: Trigger Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
+title: "Workflow: Trigger Webhook"
+keywords: "Workflow: Trigger Webhook,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Menerima panggilan HTTP dari sistem eksternal dan memicu kejadian. Cocok untuk dorongan data dan notifikasi peristiwa yang diprakarsai oleh sistem pihak ketiga, seperti callback pembayaran dan notifikasi pesan.
+  Menerima panggilan HTTP dari sistem eksternal dan memicu event. Cocok untuk push data dan notifikasi event yang diinisiasi oleh sistem pihak ketiga, seperti callback pembayaran, notifikasi pesan, dan lainnya.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Webhook
+# Workflow: Trigger Webhook

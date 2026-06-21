@@ -8,7 +8,7 @@
  */
 
 import { createCollectionContextMeta, useFlowEngine } from '@nocobase/flow-engine';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
@@ -58,8 +58,11 @@ export const useCurrentRoles = () => {
 export const CurrentUserProvider = (props) => {
   const api = useAPIClient();
   const app = useApp();
+  const flowEngine = useFlowEngine();
   const navigate = useNavigate();
   const location = useLocation();
+  const runtimeFlowEngine = app?.flowEngine || flowEngine;
+  const hasLoadedRef = useRef(false);
   const result = useRequest<any>(() =>
     api
       .request({
@@ -72,12 +75,12 @@ export const CurrentUserProvider = (props) => {
           navigate('/signin?redirect=' + location.pathname + location.search);
         }
         const userMeta = createCollectionContextMeta(
-          () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
-          app.flowEngine.translate('Current user'),
+          () => runtimeFlowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
+          runtimeFlowEngine.translate('Current user'),
         );
         // 排序：用户优先显示
         userMeta.sort = 1000;
-        app.flowEngine.context.defineProperty('user', {
+        runtimeFlowEngine.context.defineProperty('user', {
           value: res?.data?.data,
           resolveOnServer: true,
           meta: userMeta,
@@ -88,7 +91,11 @@ export const CurrentUserProvider = (props) => {
 
   const { render } = useAppSpin();
 
-  if (result.loading) {
+  if (!result.loading) {
+    hasLoadedRef.current = true;
+  }
+
+  if (result.loading && !hasLoadedRef.current) {
     return render();
   }
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;

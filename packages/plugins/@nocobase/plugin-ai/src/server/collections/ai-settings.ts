@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'aiSettings',
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
   fields: [
     {
@@ -19,6 +20,14 @@ export default defineCollection({
       defaultValue: {
         storage: 'local',
       },
+    },
+    {
+      type: 'string',
+      name: 'defaultLLMService',
+    },
+    {
+      type: 'string',
+      name: 'defaultModel',
     },
   ],
 });

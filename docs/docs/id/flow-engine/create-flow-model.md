@@ -1,14 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Membuat FlowModel"
+description: "Membuat FlowModel: langkah-langkah seperti define, registerFlow, renderComponent, menulis komponen yang dapat diorkestrasi dari nol, pengantar pengembangan FlowEngine."
+keywords: "Membuat FlowModel,define,registerFlow,renderComponent,Komponen yang dapat diorkestrasi,Pengembangan FlowEngine,NocoBase"
+---
 
 # Membuat FlowModel
 
-## Sebagai Node Akar
+## Sebagai Root Node
 
-### Membangun Instans FlowModel
+### Membangun Instance FlowModel
 
-Bangun sebuah instans secara lokal.
+Membangun sebuah instance secara lokal
 
 ```ts
 const model = engine.buildModel({
@@ -19,15 +21,15 @@ const model = engine.buildModel({
 
 ### Menyimpan FlowModel
 
-Jika sebuah instans yang telah dibangun perlu dipertahankan (persisted), Anda dapat menyimpannya menggunakan metode `save`.
+Jika instance yang dibangun perlu di-persisten, dapat disimpan melalui metode save.
 
 ```ts
 await model.save();
 ```
 
-### Memuat FlowModel dari Repositori Jarak Jauh
+### Memuat FlowModel dari Repository Remote
 
-Model yang sudah disimpan dapat dimuat menggunakan `loadModel`. Metode ini akan memuat seluruh pohon model (termasuk node anak):
+Model yang sudah disimpan dapat dimuat melalui loadModel. Metode ini akan memuat seluruh model tree (termasuk node anak):
 
 ```ts
 await engine.loadModel(uid);
@@ -35,7 +37,7 @@ await engine.loadModel(uid);
 
 ### Memuat atau Membuat FlowModel
 
-Jika model sudah ada, model akan dimuat; jika tidak, model akan dibuat dan disimpan.
+Jika model ada, akan dimuat; jika tidak ada, akan dibuat dan disimpan.
 
 ```ts
 await engine.loadOrCreateModel({
@@ -44,7 +46,7 @@ await engine.loadOrCreateModel({
 });
 ```
 
-### Merender FlowModel
+### Render FlowModel
 
 ```tsx pure
 const model = engine.buildModel({
@@ -57,17 +59,17 @@ const model = await engine.loadOrCreateModel(options);
 <FlowModelRenderer model={model} />
 ```
 
-## Sebagai Node Anak
+## Sebagai Sub Node
 
-Ketika Anda perlu mengelola properti dan perilaku beberapa sub-komponen atau modul di dalam sebuah model, Anda perlu menggunakan SubModel. Contohnya adalah dalam skenario seperti tata letak bersarang (nested layouts), rendering kondisional, dan lain-lain.
+Saat Anda perlu mengelola properti dan perilaku beberapa sub-komponen atau modul di dalam sebuah model, Anda perlu menggunakan SubModel, misalnya skenario nested layout, conditional rendering, dan sebagainya.
 
 ### Membuat SubModel
 
-Disarankan untuk menggunakan `<AddSubModelButton />`
+Direkomendasikan menggunakan `<AddSubModelButton />`
 
-Ini dapat secara otomatis menangani masalah seperti penambahan, pengikatan (binding), dan penyimpanan Model anak. Untuk detail lebih lanjut, lihat [Petunjuk Penggunaan AddSubModelButton](https://pr-7056.client.docs-cn.nocobase.com/core/flow-engine/flow-sub-models/add-sub-model).
+Dapat secara otomatis menangani masalah penambahan, binding, dan penyimpanan sub Model. Detail lihat [Petunjuk Penggunaan AddSubModelButton](https://pr-7056.client.docs-cn.nocobase.com/core/flow-engine/flow-sub-models/add-sub-model).
 
-### Merender SubModel
+### Render SubModel
 
 ```tsx pure
 model.mapSubModels('subKey', (subModel) => {
@@ -77,7 +79,7 @@ model.mapSubModels('subKey', (subModel) => {
 
 ## Sebagai ForkModel
 
-Fork biasanya digunakan dalam skenario di mana template model yang sama perlu dirender di beberapa lokasi (tetapi dengan status independen), misalnya setiap baris dalam sebuah tabel.
+Fork biasanya digunakan untuk skenario di mana template model yang sama perlu dirender di banyak posisi (tetapi dengan state yang independen), misalnya setiap baris di tabel.
 
 ### Membuat ForkModel
 
@@ -85,7 +87,7 @@ Fork biasanya digunakan dalam skenario di mana template model yang sama perlu di
 const fork1 = model.createFork('key1', {});
 const fork2 = model.createFork('key2', {});
 ```
-### Merender ForkModel
+### Render ForkModel
 
 ```tsx pure
 <FlowModelRenderer model={fork1} />

@@ -1,4 +1,6 @@
 ---
+title: "WeCom"
+keywords: "Authentication,Notification,Users & permissions"
 displayName: "WeCom"
 packageName: '@nocobase/plugin-auth-wecom'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
 
 # WeCom

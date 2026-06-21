@@ -1,18 +1,17 @@
 ---
-displayName: "Alur kerja: Variabel kustom"
+displayName: "Workflow: Node Variabel Kustom"
 packageName: '@nocobase/plugin-workflow-variable'
+title: "Workflow: Node Variabel Kustom"
+keywords: "Workflow: Node Variabel Kustom,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Digunakan untuk membuat variabel kustom atau menetapkan nilai padanya dalam alur kerja, guna menyimpan data sementara selama proses.
-isFree: false
-builtIn: false
+  Digunakan untuk membuat variabel kustom atau memberinya nilai dalam workflow, untuk menyimpan data sementara dalam proses.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur kerja: Variabel kustom
+# Workflow: Node Variabel Kustom

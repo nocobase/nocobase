@@ -14,16 +14,22 @@ import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 
+import Joi from 'joi';
+
 import WorkflowPlugin, {
   EXECUTION_STATUS,
   EventOptions,
   Trigger,
   WorkflowModel,
+  getWorkflowExecutionLogMeta,
   toJSON,
+  validateCollectionField,
 } from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
 interface Context extends ActionContext, DefaultContext {}
+
+const ASYNC_WORKFLOW_TRIGGER_DELAY_MS = 200;
 
 class RequestOnActionTriggerError extends Error {
   status = 400;
@@ -36,6 +42,18 @@ class RequestOnActionTriggerError extends Error {
 
 export default class extends Trigger {
   static TYPE = 'action';
+
+  configSchema = Joi.object({
+    collection: Joi.string().required(),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
 
   constructor(workflow: WorkflowPlugin) {
     super(workflow);
@@ -204,12 +222,32 @@ export default class extends Trigger {
       }
     }
 
-    for (const event of syncGroup) {
-      const processor = await this.workflow.trigger(event[0], event[1], { httpContext: context });
+    for (const [index, event] of syncGroup.entries()) {
+      const workflow = event[0];
+      const remainingSyncWorkflows = syncGroup.length - index - 1;
+      const syncLogMeta = {
+        workflowId: workflow.id,
+        workflowKey: workflow.key,
+        workflowTitle: workflow.title,
+        resourceName,
+        actionName,
+        currentSyncOrder: index + 1,
+        totalSyncWorkflows: syncGroup.length,
+        remainingSyncWorkflows,
+        pendingAsyncWorkflows: asyncGroup.length,
+      };
+
+      context.logger.debug('[Workflow post-action]: executing sync workflow', syncLogMeta);
+
+      const processor = await this.workflow.trigger(workflow, event[1], { httpContext: context });
 
       // NOTE: workflow trigger failed
       if (!processor) {
-        return context.throw(500);
+        context.logger.error(
+          '[Workflow post-action]: sync workflow trigger failed before execution created',
+          syncLogMeta,
+        );
+        return context.throw(500, 'Workflow on your action failed, please contact the administrator');
       }
 
       const { lastSavedJob, nodesMap } = processor;
@@ -217,28 +255,78 @@ export default class extends Trigger {
       // NOTE: passthrough
       if (processor.execution.status === EXECUTION_STATUS.RESOLVED) {
         if (lastNode?.type === 'end') {
+          context.logger.debug('[Workflow post-action]: sync workflow ended request chain on end node', {
+            ...syncLogMeta,
+            ...getWorkflowExecutionLogMeta(workflow, processor),
+          });
           return;
         }
+        context.logger.debug('[Workflow post-action]: sync workflow finished successfully', {
+          ...syncLogMeta,
+          ...getWorkflowExecutionLogMeta(workflow, processor),
+        });
         continue;
       }
       // NOTE: intercept
       if (processor.execution.status < EXECUTION_STATUS.STARTED) {
         if (lastNode?.type !== 'end') {
+          context.logger.error('[Workflow post-action]: sync workflow failed', {
+            ...syncLogMeta,
+            ...getWorkflowExecutionLogMeta(workflow, processor),
+          });
           return context.throw(500, 'Workflow on your action failed, please contact the administrator');
         }
 
+        context.logger.warn('[Workflow post-action]: sync workflow intercepted request on end node', {
+          ...syncLogMeta,
+          ...getWorkflowExecutionLogMeta(workflow, processor),
+        });
         const err = new RequestOnActionTriggerError('Request failed');
         err.status = 400;
         err.messages = context.state.messages;
         return context.throw(err.status, err);
       }
       // NOTE: should not be pending
+      context.logger.error('[Workflow post-action]: sync workflow is still pending after trigger', {
+        ...syncLogMeta,
+        ...getWorkflowExecutionLogMeta(workflow, processor),
+      });
       return context.throw(500, 'Workflow on your action hangs, please contact the administrator');
     }
 
-    for (const event of asyncGroup) {
-      this.workflow.trigger(event[0], event[1]);
+    this.scheduleAsyncWorkflowTriggers(context, asyncGroup);
+  }
+
+  private scheduleAsyncWorkflowTriggers(context: Context, events: [WorkflowModel, Record<string, any>][]) {
+    if (!events.length) {
+      return;
     }
+
+    const triggerAsyncWorkflows = () => {
+      const triggerAsyncWorkflow = async (workflow: WorkflowModel, values: Record<string, any>) => {
+        await this.workflow.trigger(workflow, values);
+      };
+
+      setTimeout(() => {
+        for (const [workflow, values] of events) {
+          triggerAsyncWorkflow(workflow, values).catch((error) => {
+            context.logger.error('[Workflow post-action]: async workflow trigger failed', {
+              error,
+              workflowId: workflow.id,
+              workflowKey: workflow.key,
+              workflowTitle: workflow.title,
+            });
+          });
+        }
+      }, ASYNC_WORKFLOW_TRIGGER_DELAY_MS);
+    };
+
+    if (context.res.writableEnded) {
+      triggerAsyncWorkflows();
+      return;
+    }
+
+    context.res.once('finish', triggerAsyncWorkflows);
   }
 
   async execute(workflow: WorkflowModel, values, options: EventOptions) {

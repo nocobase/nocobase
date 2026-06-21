@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Tham chiếu API"
+description: "Tham chiếu API mở rộng Workflow: Workflow Model, ngữ cảnh thực thi Node, API Trigger, truyền biến."
+keywords: "workflow,tham chiếu API,Workflow Model,ngữ cảnh Node,API Trigger,NocoBase"
+---
 
 # Tham chiếu API
 
-## Phía máy chủ
+## Phía Server
 
-Các API có sẵn trong cấu trúc gói phía máy chủ được hiển thị trong đoạn mã sau:
+Các API có sẵn trong cấu trúc package phía server như đoạn code dưới đây:
 
 ```ts
 import PluginWorkflowServer, {
@@ -20,13 +21,13 @@ import PluginWorkflowServer, {
 
 ### `PluginWorkflowServer`
 
-Lớp plugin **luồng công việc**.
+Class plugin Workflow.
 
-Thông thường, trong quá trình chạy ứng dụng, bạn có thể gọi `app.pm.get<PluginWorkflowServer>(PluginWorkflowServer)` ở bất kỳ đâu có thể truy cập thể hiện ứng dụng `app` để lấy thể hiện của **plugin luồng công việc** (sau đây được gọi là `plugin`).
+Thông thường khi ứng dụng đang chạy, ở bất kỳ nơi nào có thể lấy được instance ứng dụng `app` thì đều có thể gọi `app.pm.get<PluginWorkflowServer>(PluginWorkflowServer)` để lấy instance plugin Workflow (dưới đây gọi là `plugin`).
 
 #### `registerTrigger()`
 
-Mở rộng và đăng ký một loại trình kích hoạt mới.
+Mở rộng đăng ký loại Trigger mới.
 
 **Chữ ký**
 
@@ -34,10 +35,10 @@ Mở rộng và đăng ký một loại trình kích hoạt mới.
 
 **Tham số**
 
-| Tham số   | Kiểu                        | Mô tả                         |
-| --------- | --------------------------- | ----------------------------- |
-| `type`    | `string`                    | Mã định danh loại trình kích hoạt |
-| `trigger` | `typeof Trigger \| Trigger` | Kiểu hoặc thể hiện của trình kích hoạt |
+| Tham số      | Kiểu                        | Mô tả             |
+| --------- | --------------------------- | ---------------- |
+| `type`    | `string`                    | Định danh loại Trigger |
+| `trigger` | `typeof Trigger \| Trigger` | Loại hoặc instance Trigger |
 
 **Ví dụ**
 
@@ -45,7 +46,7 @@ Mở rộng và đăng ký một loại trình kích hoạt mới.
 import PluginWorkflowServer, { Trigger } from '@nocobase/plugin-workflow';
 
 function handler(this: MyTrigger, workflow: WorkflowModel, message: string) {
-  // kích hoạt luồng công việc
+  // trigger workflow
   this.workflow.trigger(workflow, { data: message.data });
 }
 
@@ -53,7 +54,7 @@ class MyTrigger extends Trigger {
   messageHandlers: Map<number, WorkflowModel> = new Map();
   on(workflow: WorkflowModel) {
     const messageHandler = handler.bind(this, workflow);
-    // lắng nghe một số sự kiện để kích hoạt luồng công việc
+    // listen some event to trigger workflow
     process.on(
       'message',
       this.messageHandlers.set(workflow.id, messageHandler),
@@ -62,18 +63,18 @@ class MyTrigger extends Trigger {
 
   off(workflow: WorkflowModel) {
     const messageHandler = this.messageHandlers.get(workflow.id);
-    // gỡ bỏ bộ lắng nghe
+    // remove listener
     process.off('message', messageHandler);
   }
 }
 
 export default class MyPlugin extends Plugin {
   load() {
-    // lấy thể hiện của plugin luồng công việc
+    // get workflow plugin instance
     const workflowPlugin =
       this.app.pm.get<PluginWorkflowServer>(PluginWorkflowServer);
 
-    // đăng ký trình kích hoạt
+    // register trigger
     workflowPlugin.registerTrigger('myTrigger', MyTrigger);
   }
 }
@@ -81,7 +82,7 @@ export default class MyPlugin extends Plugin {
 
 #### `registerInstruction()`
 
-Mở rộng và đăng ký một loại nút mới.
+Mở rộng đăng ký loại Node mới.
 
 **Chữ ký**
 
@@ -89,10 +90,10 @@ Mở rộng và đăng ký một loại nút mới.
 
 **Tham số**
 
-| Tham số       | Kiểu                                | Mô tả                     |
-| ------------- | ----------------------------------- | ------------------------- |
-| `type`        | `string`                            | Mã định danh loại lệnh    |
-| `instruction` | `typeof Instruction \| Instruction` | Kiểu hoặc thể hiện của lệnh |
+| Tham số          | Kiểu                                | Mô tả           |
+| ------------- | ----------------------------------- | -------------- |
+| `type`        | `string`                            | Định danh loại Instruction |
+| `instruction` | `typeof Instruction \| Instruction` | Loại hoặc instance Instruction |
 
 **Ví dụ**
 
@@ -110,10 +111,10 @@ class LogInstruction extends Instruction {
 
 export default class MyPlugin extends Plugin {
   load() {
-    // lấy thể hiện của plugin luồng công việc
+    // get workflow plugin instance
     const workflowPlugin = this.app.pm.get<PluginWorkflowServer>(PluginWorkflowServer);
 
-    // đăng ký lệnh
+    // register instruction
     workflowPlugin.registerInstruction('log', LogInstruction);
   }
 }
@@ -121,20 +122,20 @@ export default class MyPlugin extends Plugin {
 
 #### `trigger()`
 
-Kích hoạt một **luồng công việc** cụ thể. Chủ yếu được sử dụng trong các trình kích hoạt tùy chỉnh để kích hoạt **luồng công việc** tương ứng khi một sự kiện tùy chỉnh cụ thể được lắng nghe.
+Kích hoạt Workflow cụ thể. Chủ yếu dùng trong Trigger tùy chỉnh, để kích hoạt Workflow tương ứng khi nghe được sự kiện tùy chỉnh nào đó.
 
 **Chữ ký**
 
 `trigger(workflow: Workflow, context: any)`
 
 **Tham số**
-| Tham số    | Kiểu          | Mô tả                             |
-| ---------- | ------------- | --------------------------------- |
-| `workflow` | `WorkflowModel` | Đối tượng **luồng công việc** cần kích hoạt |
-| `context`  | `object`      | Dữ liệu ngữ cảnh được cung cấp tại thời điểm kích hoạt |
+| Tham số | Kiểu | Mô tả |
+| --- | --- | --- |
+| `workflow` | `WorkflowModel` | Đối tượng Workflow cần kích hoạt |
+| `context` | `object` | Dữ liệu ngữ cảnh được cung cấp khi kích hoạt |
 
 :::info{title=Mẹo}
-`context` hiện là một mục bắt buộc. Nếu không được cung cấp, **luồng công việc** sẽ không được kích hoạt.
+`context` hiện là bắt buộc, nếu không cung cấp thì Workflow đó sẽ không được kích hoạt.
 :::
 
 **Ví dụ**
@@ -146,9 +147,9 @@ class MyTrigger extends Trigger {
   timer: NodeJS.Timeout;
 
   on(workflow) {
-    // đăng ký sự kiện
+    // register event
     this.timer = setInterval(() => {
-      // kích hoạt luồng công việc
+      // trigger workflow
       this.plugin.trigger(workflow, { date: new Date() });
     }, workflow.config.interval ?? 60000);
   }
@@ -157,10 +158,10 @@ class MyTrigger extends Trigger {
 
 #### `resume()`
 
-Tiếp tục thực thi một **luồng công việc** đang chờ với một tác vụ nút cụ thể.
+Khôi phục thực thi Workflow đang chờ với một Task Node cụ thể.
 
-- Chỉ những **luồng công việc** ở trạng thái chờ (`EXECUTION_STATUS.STARTED`) mới có thể được tiếp tục thực thi.
-- Chỉ những tác vụ nút ở trạng thái chờ (`JOB_STATUS.PENDING`) mới có thể được tiếp tục thực thi.
+- Chỉ có Workflow đang ở trạng thái chờ (`EXECUTION_STATUS.STARTED`) mới có thể được khôi phục thực thi.
+- Chỉ có Task Node đang ở trạng thái chờ (`JOB_STATUS.PENDING`) mới có thể được khôi phục thực thi.
 
 **Chữ ký**
 
@@ -168,12 +169,12 @@ Tiếp tục thực thi một **luồng công việc** đang chờ với một t
 
 **Tham số**
 
-| Tham số | Kiểu       | Mô tả                     |
-| ------- | ---------- | ------------------------- |
-| `job`   | `JobModel` | Đối tượng tác vụ đã cập nhật |
+| Tham số  | Kiểu       | Mô tả             |
+| ----- | ---------- | ---------------- |
+| `job` | `JobModel` | Đối tượng Task sau khi cập nhật |
 
 :::info{title=Mẹo}
-Đối tượng tác vụ được truyền vào thường là đối tượng đã cập nhật, và `status` của nó thường được cập nhật thành một giá trị khác `JOB_STATUS.PENDING`, nếu không nó sẽ tiếp tục chờ.
+Đối tượng Task được truyền vào thường là đối tượng sau khi cập nhật, và thường sẽ cập nhật `status` thành giá trị khác `JOB_STATUS.PENDING`, nếu không sẽ tiếp tục chờ.
 :::
 
 **Ví dụ**
@@ -182,28 +183,28 @@ Xem chi tiết tại [mã nguồn](https://github.com/nocobase/nocobase/blob/mai
 
 ### `Trigger`
 
-Lớp cơ sở cho các trình kích hoạt, được sử dụng để mở rộng các loại trình kích hoạt tùy chỉnh.
+Class cơ sở của Trigger, dùng để mở rộng loại Trigger tùy chỉnh.
 
-| Tham số       | Kiểu                                                        | Mô tả                                  |
-| ------------- | ----------------------------------------------------------- | -------------------------------------- |
-| `constructor` | `(public readonly workflow: PluginWorkflowServer): Trigger` | Hàm tạo                                |
-| `on?`         | `(workflow: WorkflowModel): void`                           | Bộ xử lý sự kiện sau khi bật **luồng công việc** |
-| `off?`        | `(workflow: WorkflowModel): void`                           | Bộ xử lý sự kiện sau khi tắt **luồng công việc** |
+| Tham số          | Kiểu                                                        | Mô tả                   |
+| ------------- | ----------------------------------------------------------- | ---------------------- |
+| `constructor` | `(public readonly workflow: PluginWorkflowServer): Trigger` | Constructor               |
+| `on?`         | `(workflow: WorkflowModel): void`                           | Xử lý sự kiện sau khi bật Workflow |
+| `off?`        | `(workflow: WorkflowModel): void`                           | Xử lý sự kiện sau khi tắt Workflow |
 
-`on`/`off` được sử dụng để đăng ký/hủy đăng ký bộ lắng nghe sự kiện khi một **luồng công việc** được bật/tắt. Tham số được truyền vào là thể hiện **luồng công việc** tương ứng với trình kích hoạt, có thể được xử lý theo cấu hình tương ứng. Một số loại trình kích hoạt đã lắng nghe sự kiện toàn cục có thể không cần triển khai hai phương thức này. Ví dụ, trong một trình kích hoạt theo lịch, bạn có thể đăng ký bộ hẹn giờ trong `on` và hủy đăng ký nó trong `off`.
+`on`/`off` được dùng để đăng ký/hủy đăng ký lắng nghe sự kiện khi Workflow được bật/tắt, tham số được truyền vào là instance Workflow của Trigger tương ứng, có thể xử lý theo cấu hình tương ứng. Một số loại Trigger nếu đã lắng nghe sự kiện ở phạm vi toàn cục thì cũng có thể không cần triển khai hai phương thức này. Ví dụ trong Trigger định kỳ, có thể đăng ký timer trong `on`, hủy đăng ký timer trong `off`.
 
 ### `Instruction`
 
-Lớp cơ sở cho các loại lệnh, được sử dụng để mở rộng các loại lệnh tùy chỉnh.
+Class cơ sở của loại Instruction, dùng để mở rộng loại Instruction tùy chỉnh.
 
-| Tham số       | Kiểu                                                            | Mô tả                                      |
-| ------------- | --------------------------------------------------------------- | ------------------------------------------ |
-| `constructor` | `(public readonly workflow: PluginWorkflowServer): Instruction` | Hàm tạo                                    |
-| `run`         | `Runner`                                                        | Logic thực thi khi lần đầu tiên vào nút     |
-| `resume?`     | `Runner`                                                        | Logic thực thi khi vào nút sau khi tiếp tục từ một gián đoạn |
-| `getScope?`   | `(node: FlowNodeModel, data: any, processor: Processor): any`   | Cung cấp nội dung biến cục bộ cho nhánh được tạo bởi nút tương ứng |
+| Tham số          | Kiểu                                                            | Mô tả                               |
+| ------------- | --------------------------------------------------------------- | ---------------------------------- |
+| `constructor` | `(public readonly workflow: PluginWorkflowServer): Instruction` | Constructor                           |
+| `run`         | `Runner`                                                        | Logic thực thi khi vào Node lần đầu             |
+| `resume?`     | `Runner`                                                        | Logic thực thi khi vào Node sau khi khôi phục thực thi từ trạng thái gián đoạn |
+| `getScope?`   | `(node: FlowNodeModel, data: any, processor: Processor): any`   | Cung cấp nội dung biến cục bộ cho nhánh sinh ra bởi Node tương ứng |
 
-**Các kiểu liên quan**
+**Kiểu liên quan**
 
 ```ts
 export type Job =
@@ -229,44 +230,44 @@ export class Instruction {
 }
 ```
 
-`getScope` có thể tham khảo [triển khai của nút lặp](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-loop/src/server/LoopInstruction.ts#L83), được sử dụng để cung cấp nội dung biến cục bộ cho các nhánh.
+`getScope` có thể tham khảo [cách triển khai Node vòng lặp](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-loop/src/server/LoopInstruction.ts#L83), được dùng để cung cấp nội dung biến cục bộ của nhánh.
 
 ### `EXECUTION_STATUS`
 
-Bảng hằng số trạng thái kế hoạch thực thi **luồng công việc**, được sử dụng để xác định trạng thái hiện tại của kế hoạch thực thi tương ứng.
+Bảng hằng số trạng thái kế hoạch thực thi Workflow, dùng để xác định trạng thái hiện tại của kế hoạch thực thi tương ứng.
 
-| Tên hằng số                     | Ý nghĩa                    |
-| ------------------------------- | -------------------------- |
-| `EXECUTION_STATUS.QUEUEING`     | Đang xếp hàng              |
-| `EXECUTION_STATUS.STARTED`      | Đang thực thi              |
-| `EXECUTION_STATUS.RESOLVED`     | Hoàn thành thành công      |
-| `EXECUTION_STATUS.FAILED`       | Thất bại                   |
-| `EXECUTION_STATUS.ERROR`        | Lỗi thực thi               |
-| `EXECUTION_STATUS.ABORTED`      | Đã hủy bỏ                  |
-| `EXECUTION_STATUS.CANCELED`     | Đã hủy                     |
-| `EXECUTION_STATUS.REJECTED`     | Đã từ chối                 |
-| `EXECUTION_STATUS.RETRY_NEEDED` | Chưa thực thi thành công, cần thử lại |
+| Tên hằng số                          | Ý nghĩa                 |
+| ------------------------------- | -------------------- |
+| `EXECUTION_STATUS.QUEUEING`     | Đang xếp hàng               |
+| `EXECUTION_STATUS.STARTED`      | Đang thực thi               |
+| `EXECUTION_STATUS.RESOLVED`     | Hoàn tất thành công             |
+| `EXECUTION_STATUS.FAILED`       | Thất bại                 |
+| `EXECUTION_STATUS.ERROR`        | Lỗi thực thi             |
+| `EXECUTION_STATUS.ABORTED`      | Đã gián đoạn               |
+| `EXECUTION_STATUS.CANCELED`     | Đã hủy               |
+| `EXECUTION_STATUS.REJECTED`     | Đã từ chối               |
+| `EXECUTION_STATUS.RETRY_NEEDED` | Thực thi không thành công, cần thử lại |
 
-Ngoại trừ ba trạng thái đầu tiên, tất cả các trạng thái khác đều đại diện cho trạng thái thất bại, nhưng có thể được sử dụng để mô tả các nguyên nhân thất bại khác nhau.
+Ngoài ba trạng thái đầu, các trạng thái còn lại đều biểu thị trạng thái thất bại nhưng có thể dùng để mô tả các nguyên nhân thất bại khác nhau.
 
 ### `JOB_STATUS`
 
-Bảng hằng số trạng thái tác vụ nút **luồng công việc**, được sử dụng để xác định trạng thái hiện tại của tác vụ nút tương ứng. Trạng thái do nút tạo ra cũng sẽ ảnh hưởng đến trạng thái của toàn bộ kế hoạch thực thi.
+Bảng hằng số trạng thái Task Node của Workflow, dùng để xác định trạng thái hiện tại của Task Node tương ứng, trạng thái sinh ra bởi Node cũng đồng thời ảnh hưởng đến trạng thái của toàn bộ kế hoạch thực thi.
 
-| Tên hằng số                 | Ý nghĩa                                         |
-| ------------------------- | ----------------------------------------------- |
-| `JOB_STATUS.PENDING`      | Đang chờ: Đã thực thi đến nút này, nhưng lệnh yêu cầu tạm dừng và chờ |
-| `JOB_STATUS.RESOLVED`     | Hoàn thành thành công                           |
-| `JOB_STATUS.FAILED`       | Thất bại: Việc thực thi nút này không đáp ứng được các điều kiện cấu hình |
-| `JOB_STATUS.ERROR`        | Lỗi: Đã xảy ra lỗi chưa được xử lý trong quá trình thực thi nút này |
-| `JOB_STATUS.ABORTED`      | Đã hủy bỏ: Việc thực thi nút này đã bị chấm dứt bởi logic khác sau khi ở trạng thái chờ |
-| `JOB_STATUS.CANCELED`     | Đã hủy: Việc thực thi nút này đã bị hủy thủ công sau khi ở trạng thái chờ |
-| `JOB_STATUS.REJECTED`     | Đã từ chối: Việc tiếp tục thực thi nút này đã bị từ chối thủ công sau khi ở trạng thái chờ |
-| `JOB_STATUS.RETRY_NEEDED` | Chưa thực thi thành công, cần thử lại           |
+| Tên hằng số                    | Ý nghĩa                                     |
+| ------------------------- | ---------------------------------------- |
+| `JOB_STATUS.PENDING`      | Chờ: đã thực thi đến Node này nhưng instruction yêu cầu treo và chờ |
+| `JOB_STATUS.RESOLVED`     | Hoàn tất thành công                                 |
+| `JOB_STATUS.FAILED`       | Thất bại: Node này thực thi không thỏa mãn điều kiện cấu hình         |
+| `JOB_STATUS.ERROR`        | Lỗi: trong quá trình thực thi Node này phát sinh lỗi không được bắt   |
+| `JOB_STATUS.ABORTED`      | Gián đoạn: Node này sau khi chờ bị logic khác kết thúc thực thi   |
+| `JOB_STATUS.CANCELED`     | Hủy: Node này sau khi chờ bị hủy thực thi bởi người dùng       |
+| `JOB_STATUS.REJECTED`     | Từ chối: Node này sau khi chờ bị từ chối tiếp tục bởi người dùng       |
+| `JOB_STATUS.RETRY_NEEDED` | Thực thi không thành công, cần thử lại                     |
 
-## Phía máy khách
+## Phía Client
 
-Các API có sẵn trong cấu trúc gói phía máy khách được hiển thị trong đoạn mã sau:
+Các API có sẵn trong cấu trúc package phía client như đoạn code dưới đây:
 
 ```ts
 import PluginWorkflowClient, {
@@ -279,7 +280,7 @@ import PluginWorkflowClient, {
 
 #### `registerTrigger()`
 
-Đăng ký bảng cấu hình tương ứng cho loại trình kích hoạt.
+Đăng ký panel cấu hình tương ứng với loại Trigger.
 
 **Chữ ký**
 
@@ -287,14 +288,14 @@ import PluginWorkflowClient, {
 
 **Tham số**
 
-| Tham số   | Kiểu                        | Mô tả                                      |
-| --------- | --------------------------- | ------------------------------------------ |
-| `type`    | `string`                    | Mã định danh loại trình kích hoạt, nhất quán với mã định danh được sử dụng để đăng ký |
-| `trigger` | `typeof Trigger \| Trigger` | Kiểu hoặc thể hiện của trình kích hoạt     |
+| Tham số      | Kiểu                        | Mô tả                                 |
+| --------- | --------------------------- | ------------------------------------ |
+| `type`    | `string`                    | Định danh loại Trigger, giống định danh được dùng khi đăng ký |
+| `trigger` | `typeof Trigger \| Trigger` | Loại hoặc instance Trigger                     |
 
 #### `registerInstruction()`
 
-Đăng ký bảng cấu hình tương ứng cho loại nút.
+Đăng ký panel cấu hình tương ứng với loại Node.
 
 **Chữ ký**
 
@@ -302,21 +303,21 @@ import PluginWorkflowClient, {
 
 **Tham số**
 
-| Tham số       | Kiểu                                | Mô tả                                  |
-| ------------- | ----------------------------------- | -------------------------------------- |
-| `type`        | `string`                            | Mã định danh loại nút, nhất quán với mã định danh được sử dụng để đăng ký |
-| `instruction` | `typeof Instruction \| Instruction` | Kiểu hoặc thể hiện của nút             |
+| Tham số          | Kiểu                                | Mô tả                               |
+| ------------- | ----------------------------------- | ---------------------------------- |
+| `type`        | `string`                            | Định danh loại Node, giống định danh được dùng khi đăng ký |
+| `instruction` | `typeof Instruction \| Instruction` | Loại hoặc instance Node                     |
 
 #### `registerInstructionGroup()`
 
-Đăng ký nhóm loại nút. NocoBase cung cấp 4 nhóm loại nút mặc định:
+Đăng ký nhóm loại Node. NocoBase mặc định cung cấp 4 nhóm loại Node:
 
-* `'control'`: Điều khiển
-* `'collection'`: Thao tác **bộ sưu tập**
-* `'manual'`: Xử lý thủ công
-* `'extended'`: Các tiện ích mở rộng khác
+* `'control'`: nhóm điều khiển
+* `'collection'`: nhóm thao tác bảng dữ liệu
+* `'manual'`: nhóm xử lý thủ công
+* `'extended'`: nhóm mở rộng khác
 
-Nếu bạn cần mở rộng các nhóm khác, bạn có thể sử dụng phương thức này để đăng ký.
+Nếu cần mở rộng thêm nhóm khác, có thể sử dụng phương thức này để đăng ký.
 
 **Chữ ký**
 
@@ -324,10 +325,10 @@ Nếu bạn cần mở rộng các nhóm khác, bạn có thể sử dụng phư
 
 **Tham số**
 
-| Tham số | Kiểu               | Mô tả                             |
-| ------- | ----------------- | --------------------------------- |
-| `type`  | `string`          | Mã định danh nhóm nút, nhất quán với mã định danh được sử dụng để đăng ký |
-| `group` | `{ label: string }` | Thông tin nhóm, hiện chỉ bao gồm tiêu đề |
+| Tham số      | Kiểu               | Mô tả                           |
+| --------- | ----------------- | ----------------------------- |
+| `type`    | `string`          | Định danh nhóm Node, giống định danh được dùng khi đăng ký |
+| `group` | `{ label: string }` | Thông tin nhóm, hiện chỉ chứa tiêu đề         |
 
 **Ví dụ**
 
@@ -343,35 +344,35 @@ export default class YourPluginClient extends Plugin {
 
 ### `Trigger`
 
-Lớp cơ sở cho các trình kích hoạt, được sử dụng để mở rộng các loại trình kích hoạt tùy chỉnh.
+Class cơ sở của Trigger, dùng để mở rộng loại Trigger tùy chỉnh.
 
-| Tham số         | Kiểu                                                             | Mô tả                                      |
-| --------------- | ---------------------------------------------------------------- | ------------------------------------------ |
-| `title`         | `string`                                                         | Tên loại trình kích hoạt                   |
-| `fieldset`      | `{ [key: string]: ISchema }`                                     | Tập hợp các mục cấu hình trình kích hoạt   |
-| `scope?`        | `{ [key: string]: any }`                                         | Tập hợp các đối tượng có thể được sử dụng trong Schema của mục cấu hình |
-| `components?`   | `{ [key: string]: React.FC }`                                    | Tập hợp các thành phần có thể được sử dụng trong Schema của mục cấu hình |
-| `useVariables?` | `(config: any, options: UseVariableOptions ) => VariableOptions` | Bộ truy cập giá trị cho dữ liệu ngữ cảnh trình kích hoạt |
+| Tham số            | Kiểu                                                             | Mô tả                               |
+| --------------- | ---------------------------------------------------------------- | ---------------------------------- |
+| `title`         | `string`                                                         | Tên loại Trigger                     |
+| `fieldset`      | `{ [key: string]: ISchema }`                                     | Tập các mục cấu hình của Trigger                   |
+| `scope?`        | `{ [key: string]: any }`                                         | Tập các đối tượng có thể được dùng trong Schema mục cấu hình |
+| `components?`   | `{ [key: string]: React.FC }`                                    | Tập các Component có thể được dùng trong Schema mục cấu hình |
+| `useVariables?` | `(config: any, options: UseVariableOptions ) => VariableOptions` | Hàm lấy giá trị dữ liệu ngữ cảnh kích hoạt           |
 
-- Nếu `useVariables` không được thiết lập, điều đó có nghĩa là loại trình kích hoạt này không cung cấp chức năng truy xuất giá trị, và dữ liệu ngữ cảnh của trình kích hoạt không thể được chọn trong các nút của **luồng công việc**.
+- Nếu `useVariables` không được thiết lập, có nghĩa loại Trigger này không cung cấp khả năng lấy giá trị, các Node trong quy trình không thể chọn dữ liệu ngữ cảnh của Trigger.
 
 ### `Instruction`
 
-Lớp cơ sở cho các lệnh, được sử dụng để mở rộng các loại nút tùy chỉnh.
+Class cơ sở của Instruction, dùng để mở rộng loại Node tùy chỉnh.
 
-| Tham số            | Kiểu                                                    | Mô tả                                                                          |
+| Tham số                 | Kiểu                                                    | Mô tả                                                                           |
 | -------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `group`              | `string`                                                | Mã định danh nhóm loại nút, hiện có các tùy chọn: `'control'`/`'collection'`/`'manual'`/`'extended'` |
-| `fieldset`           | `Record<string, ISchema>`                               | Tập hợp các mục cấu hình nút                                                  |
-| `scope?`             | `Record<string, Function>`                              | Tập hợp các đối tượng có thể được sử dụng trong Schema của mục cấu hình       |
-| `components?`        | `Record<string, React.FC>`                              | Tập hợp các thành phần có thể được sử dụng trong Schema của mục cấu hình       |
-| `Component?`         | `React.FC`                                              | Thành phần hiển thị tùy chỉnh cho nút                                          |
-| `useVariables?`      | `(node, options: UseVariableOptions) => VariableOption` | Phương thức để nút cung cấp các tùy chọn biến nút                              |
-| `useScopeVariables?` | `(node, options?) => VariableOptions`                   | Phương thức để nút cung cấp các tùy chọn biến cục bộ nhánh                     |
-| `useInitializers?`   | `(node) => SchemaInitializerItemType`                   | Phương thức để nút cung cấp các tùy chọn khởi tạo                             |
-| `isAvailable?`       | `(ctx: NodeAvailableContext) => boolean`                | Phương thức để xác định xem nút có khả dụng hay không                          |
+| `group`              | `string`                                                | Định danh nhóm loại Node, hiện có thể chọn: `'control'`/`'collection'`/`'manual'`/`'extended'` |
+| `fieldset`           | `Record<string, ISchema>`                               | Tập các mục cấu hình Node                                                                 |
+| `scope?`             | `Record<string, Function>`                              | Tập các đối tượng có thể được dùng trong Schema mục cấu hình                                             |
+| `components?`        | `Record<string, React.FC>`                              | Tập các Component có thể được dùng trong Schema mục cấu hình                                             |
+| `Component?`         | `React.FC`                                              | Component render tùy chỉnh của Node                                                             |
+| `useVariables?`      | `(node, options: UseVariableOptions) => VariableOption` | Phương thức cung cấp tùy chọn biến của Node                                                     |
+| `useScopeVariables?` | `(node, options?) => VariableOptions`                   | Phương thức cung cấp tùy chọn biến cục bộ của nhánh                                                 |
+| `useInitializers?`   | `(node) => SchemaInitializerItemType`                   | Phương thức cung cấp tùy chọn initializer của Node                                                     |
+| `isAvailable?`       | `(ctx: NodeAvailableContext) => boolean`                | Phương thức kiểm tra Node có khả dụng không                                                         |
 
-**Các kiểu liên quan**
+**Kiểu liên quan**
 
 ```ts
 export type NodeAvailableContext = {
@@ -381,7 +382,7 @@ export type NodeAvailableContext = {
 };
 ```
 
-- Nếu `useVariables` không được thiết lập, điều đó có nghĩa là loại nút này không cung cấp chức năng truy xuất giá trị, và dữ liệu kết quả của loại nút này không thể được chọn trong các nút của **luồng công việc**. Nếu giá trị kết quả là đơn lẻ (không thể chọn), bạn có thể trả về nội dung tĩnh thể hiện thông tin tương ứng (tham khảo: [mã nguồn nút tính toán](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L68)). Nếu cần có thể chọn (ví dụ: một thuộc tính trong một đối tượng), bạn có thể tùy chỉnh đầu ra của thành phần chọn tương ứng (tham khảo: [mã nguồn nút tạo dữ liệu](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L41)).
-- `Component` là thành phần hiển thị tùy chỉnh cho nút. Khi hiển thị nút mặc định không đủ, nó có thể được ghi đè hoàn toàn để sử dụng, thực hiện hiển thị chế độ xem nút tùy chỉnh. Ví dụ, nếu bạn cần cung cấp thêm các nút thao tác hoặc tương tác khác cho nút bắt đầu của loại nhánh, bạn sẽ cần sử dụng phương thức này (tham khảo: [mã nguồn nhánh song song](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow-parallel/src/client/ParallelInstruction.tsx)).
-- `useInitializers` được sử dụng để cung cấp phương thức khởi tạo các khối. Ví dụ, trong một nút thủ công, bạn có thể khởi tạo các khối người dùng liên quan dựa trên các nút phía trên. Nếu phương thức này được cung cấp, nó sẽ khả dụng khi khởi tạo các khối trong cấu hình giao diện nút thủ công (tham khảo: [mã nguồn nút tạo dữ liệu](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L71)).
-- `isAvailable` chủ yếu được sử dụng để xác định xem một nút có thể được sử dụng (thêm) trong môi trường hiện tại hay không. Môi trường hiện tại bao gồm **luồng công việc** hiện tại, các nút phía trên và chỉ mục nhánh hiện tại, v.v.
+- Nếu `useVariables` không được thiết lập, có nghĩa loại Node này không cung cấp khả năng lấy giá trị, các Node trong quy trình không thể chọn dữ liệu kết quả của loại Node này. Nếu giá trị kết quả là duy nhất (không thể chọn), chỉ cần trả về một nội dung tĩnh có thể biểu thị thông tin tương ứng (tham khảo: [mã nguồn Node tính toán](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L68)). Nếu cần có thể chọn (như một thuộc tính trong Object), có thể tự định nghĩa Component chọn tương ứng để xuất ra (tham khảo: [mã nguồn Node thêm dữ liệu](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L41)).
+- `Component` là Component render tùy chỉnh của Node, khi việc render Node mặc định không thỏa mãn thì có thể hoàn toàn ghi đè để sử dụng, thực hiện render view tùy chỉnh cho Node. Ví dụ nếu cần cung cấp thêm các nút thao tác hoặc tương tác khác cho Node bắt đầu của loại nhánh, cần sử dụng phương thức này (tham khảo: [mã nguồn nhánh song song](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/client/ParallelInstruction.tsx)).
+- `useInitializers` được dùng để cung cấp phương thức initializer Block, ví dụ trong Node thủ công có thể khởi tạo Block người dùng liên quan dựa trên Node phía trên. Nếu cung cấp phương thức này, sẽ khả dụng khi initializer Block trong cấu hình giao diện Node thủ công (tham khảo: [mã nguồn Node thêm dữ liệu](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/create.tsx#L71)).
+- `isAvailable` chủ yếu được dùng để kiểm tra Node có thể được sử dụng (thêm vào) trong môi trường hiện tại hay không. Môi trường hiện tại bao gồm Workflow hiện tại, Node phía trên và chỉ số nhánh hiện tại...

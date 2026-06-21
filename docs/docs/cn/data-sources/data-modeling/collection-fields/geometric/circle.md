@@ -1,3 +1,9 @@
+---
+title: "圆"
+description: "圆几何字段，存储圆形（PostgreSQL circle 类型）。"
+keywords: "圆,circle,几何字段,PostgreSQL,NocoBase"
+---
+
 # 圆
 
 ## 介绍

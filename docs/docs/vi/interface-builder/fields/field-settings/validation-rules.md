@@ -1,42 +1,43 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Quy tắc xác thực"
+description: "Cấu hình Field: cài đặt quy tắc xác thực Field, hỗ trợ bắt buộc, định dạng, độ dài, xác thực tùy chỉnh."
+keywords: "quy tắc xác thực,validation,xác thực Form,xác thực Field,Interface Builder,NocoBase"
+---
 
-
-# Thiết lập Quy tắc Xác thực
+# Cài đặt quy tắc xác thực
 
 ## Giới thiệu
 
-Các quy tắc xác thực được sử dụng để đảm bảo dữ liệu người dùng nhập vào đáp ứng các yêu cầu mong muốn.
+Quy tắc xác thực được dùng để đảm bảo dữ liệu bạn nhập đáp ứng kỳ vọng.
 
-## Nơi thiết lập Quy tắc Xác thực cho Trường
+## Có thể cài đặt quy tắc xác thực Field ở đâu
 
-### Cấu hình Quy tắc Xác thực cho Trường của bộ sưu tập
+### Cấu hình quy tắc xác thực trong Field Table dữ liệu
 
-Hầu hết các trường đều hỗ trợ cấu hình quy tắc xác thực. Sau khi một trường được cấu hình quy tắc xác thực, quá trình xác thực ở phía backend sẽ được kích hoạt khi dữ liệu được gửi đi. Các loại trường khác nhau hỗ trợ các quy tắc xác thực khác nhau.
+Hầu hết các Field đều hỗ trợ cấu hình quy tắc xác thực. Khi Field được cấu hình quy tắc xác thực, sẽ kích hoạt xác thực phía backend khi gửi dữ liệu. Các loại Field khác nhau hỗ trợ các quy tắc xác thực khác nhau.
 
-- **Trường Ngày**
+- **Field ngày tháng**
 
   ![20251028225946](https://static-docs.nocobase.com/20251028225946.png)
 
-- **Trường Số**
+- **Field số**
 
   ![20251028230418](https://static-docs.nocobase.com/20251028230418.png)
 
-- **Trường Văn bản**
+- **Field văn bản**
 
-  Ngoài việc giới hạn độ dài văn bản, các trường văn bản còn hỗ trợ biểu thức chính quy (regex) tùy chỉnh để xác thực chi tiết hơn.
+  Field văn bản ngoài việc giới hạn độ dài văn bản, còn hỗ trợ biểu thức chính quy tùy chỉnh để xác thực chi tiết hơn.
 
   ![20251028230554](https://static-docs.nocobase.com/20251028230554.png)
 
-### Xác thực Frontend trong Cấu hình Trường
+### Xác thực phía frontend trong cấu hình Field
 
-Các quy tắc xác thực được thiết lập trong cấu hình trường sẽ kích hoạt quá trình xác thực ở phía frontend, đảm bảo dữ liệu người dùng nhập vào tuân thủ các quy định.
+Quy tắc xác thực được cài đặt trong cấu hình Field sẽ kích hoạt xác thực phía frontend, đảm bảo dữ liệu bạn nhập đáp ứng quy định.
 
 ![20251028230105](https://static-docs.nocobase.com/20251028230105.png)
 
 ![20251028230255](https://static-docs.nocobase.com/20251028230255.png)
 
-**Các trường văn bản** cũng hỗ trợ xác thực bằng biểu thức chính quy (regex) tùy chỉnh để đáp ứng các yêu cầu định dạng cụ thể.
+**Field văn bản** còn hỗ trợ xác thực biểu thức chính quy tùy chỉnh để đáp ứng yêu cầu định dạng cụ thể.
 
 ![20251028230903](https://static-docs.nocobase.com/20251028230903.png)

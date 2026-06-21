@@ -1,4 +1,6 @@
 ---
+title: "通知管理"
+keywords: "通知管理,插件,NocoBase"
 displayName: "通知管理"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 通知管理

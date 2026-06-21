@@ -1,46 +1,48 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Node Workflow - Query Data"
+description: "Node Query Data: query satu atau beberapa record berdasarkan kondisi, hasil dapat digunakan sebagai variable oleh Node berikutnya."
+keywords: "Workflow,Query Data,Query,operasi tabel data,variable,NocoBase"
+---
 
-# Kueri Data
+# Query Data
 
-Digunakan untuk mengueri dan mengambil catatan data dari sebuah koleksi yang memenuhi kondisi tertentu.
+Digunakan untuk meng-query record data dari tabel data tertentu yang memenuhi kondisi.
 
-Anda dapat mengonfigurasi kueri untuk satu atau beberapa catatan. Hasil kueri dapat digunakan sebagai variabel di node-node selanjutnya. Saat mengueri beberapa catatan, hasilnya adalah sebuah array. Jika hasil kueri kosong, Anda dapat memilih apakah akan melanjutkan eksekusi node-node selanjutnya.
+Anda dapat mengkonfigurasi query untuk mendapatkan satu atau beberapa data, hasil query dapat digunakan sebagai variable oleh Node berikutnya. Saat query beberapa data, hasil query berupa array. Saat hasil query kosong, Anda dapat memilih apakah akan tetap mengeksekusi Node berikutnya.
 
 ## Membuat Node
 
-Di antarmuka konfigurasi alur kerja, klik tombol plus ("+") pada alur untuk menambahkan node "Kueri Data":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Query Data":
 
-![Menambahkan Node Kueri Data](https://static-docs.nocobase.com/c1ef2b851b437806faf7a39c6ab9d33a.png)
+![Query Data_Tambah](https://static-docs.nocobase.com/c1ef2b851b437806faf7a39c6ab9d33a.png)
 
 ## Konfigurasi Node
 
-![Konfigurasi Node Kueri](https://static-docs.nocobase.com/20240520131324.png)
+![Node Query_Konfigurasi](https://static-docs.nocobase.com/20240520131324.png)
 
-### Koleksi
+### Tabel Data
 
-Pilih koleksi tempat Anda ingin mengueri data.
+Pilih tabel data yang akan diquery.
 
 ### Tipe Hasil
 
-Tipe hasil dibagi menjadi "Satu Catatan" dan "Beberapa Catatan":
+Tipe hasil terbagi menjadi dua jenis "data tunggal" dan "data multi-baris":
 
--   Satu Catatan: Hasilnya adalah sebuah objek, yaitu hanya catatan pertama yang cocok, atau `null`.
--   Beberapa Catatan: Hasilnya akan berupa sebuah array yang berisi catatan-catatan yang cocok dengan kondisi. Jika tidak ada catatan yang cocok, maka akan menjadi array kosong. Anda dapat memprosesnya satu per satu menggunakan node Loop.
+- Data tunggal: hasil berupa objek, hanya record pertama yang cocok, atau nilai kosong.
+- Data multi: hasil berupa array, berisi record yang cocok dengan kondisi, jika tidak ada record yang cocok berupa array kosong. Dapat diproses satu per satu menggunakan Node Loop.
 
 ### Kondisi Filter
 
-Mirip dengan kondisi filter dalam kueri koleksi biasa, Anda dapat menggunakan variabel konteks alur kerja.
+Mirip dengan kondisi filter pada query tabel data biasa, dapat menggunakan variable konteks alur.
 
-### Urutkan
+### Pengurutan
 
-Saat mengueri satu atau beberapa catatan, Anda dapat menggunakan aturan pengurutan untuk mengontrol hasil yang diinginkan. Misalnya, untuk mengueri catatan terbaru, Anda dapat mengurutkan berdasarkan bidang "Waktu Pembuatan" secara menurun.
+Saat query satu atau beberapa data, dapat dilakukan kontrol hasil yang diinginkan melalui aturan pengurutan. Misalnya untuk query data terbaru, Anda dapat mengurutkan secara descending menggunakan field "waktu pembuatan".
 
-### Paginasi
+### Pagination
 
-Ketika kumpulan hasil mungkin sangat besar, Anda dapat menggunakan paginasi untuk mengontrol jumlah hasil kueri. Misalnya, untuk mengueri 10 catatan terbaru, Anda dapat mengurutkan berdasarkan bidang "Waktu Pembuatan" secara menurun, lalu mengatur paginasi menjadi 1 halaman dengan 10 catatan.
+Saat hasil set kemungkinan sangat besar, Anda dapat menggunakan pagination untuk mengontrol jumlah hasil query. Misalnya untuk query 10 data terbaru, Anda dapat mengurutkan secara descending menggunakan field "waktu pembuatan", lalu mengatur pagination ke halaman 1 dengan 10 data.
 
-### Penanganan Hasil Kosong
+### Penanganan Saat Hasil Kosong
 
-Dalam mode satu catatan, jika tidak ada data yang memenuhi kondisi, hasil kueri akan menjadi `null`. Dalam mode beberapa catatan, hasilnya akan menjadi array kosong (`[]`). Anda dapat memilih apakah akan mencentang "Keluar dari alur kerja saat hasil kueri kosong". Jika dicentang, dan hasil kueri kosong, node-node selanjutnya tidak akan dieksekusi, dan alur kerja akan keluar lebih awal dengan status gagal.
+Pada mode hasil tunggal, jika tidak ada data yang memenuhi kondisi, hasil query akan menjadi `null`. Pada mode hasil multi berupa array kosong (`[]`). Anda dapat memilih untuk mencentang "keluar dari alur saat hasil query kosong" sesuai kebutuhan. Jika dicentang, ketika hasil query kosong, Node berikutnya tidak akan dieksekusi dan alur akan keluar lebih awal dengan status gagal.

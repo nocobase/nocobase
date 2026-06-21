@@ -1,58 +1,96 @@
+---
+title: "Hệ thống Context của FlowEngine"
+description: "Hệ thống Context của FlowEngine: FlowContext, DataSourceManager, quản lý tài nguyên, hiểu Context và data source runtime của FlowEngine."
+keywords: "FlowContext,hệ thống Context,DataSourceManager,quản lý tài nguyên,FlowEngine runtime,NocoBase"
+---
 
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+# Tổng quan hệ thống Context
 
+Hệ thống Context của Flow engine NocoBase được chia thành ba tầng, tương ứng với các phạm vi tác dụng khác nhau, sử dụng hợp lý có thể giúp chia sẻ và cách ly linh hoạt service, cấu hình, dữ liệu, nâng cao khả năng bảo trì và mở rộng nghiệp vụ.
 
-# Tổng quan về Hệ thống Ngữ cảnh
+- **FlowEngineContext (Context toàn cục)**: Duy nhất toàn cục, tất cả Model và Flow đều có thể truy cập, phù hợp để đăng ký service, cấu hình toàn cục.
+- **FlowModelContext (Context Model)**: Dùng để chia sẻ Context bên trong cây Model, sub model tự động proxy Context của Model cha, hỗ trợ ghi đè cùng tên, phù hợp với logic và cách ly dữ liệu cấp Model.
+- **FlowRuntimeContext (Context runtime của Flow)**: Được tạo mỗi khi Flow thực thi, xuyên suốt vòng đời chạy của Flow, phù hợp để truyền dữ liệu, lưu biến, ghi nhận trạng thái chạy trong Flow. Hỗ trợ hai chế độ `mode: 'runtime' | 'settings'`, tương ứng với chế độ runtime và chế độ cấu hình.
 
-Hệ thống ngữ cảnh của công cụ **luồng công việc** NocoBase được chia thành ba lớp, mỗi lớp tương ứng với một phạm vi khác nhau. Việc sử dụng hợp lý giúp chia sẻ và cô lập linh hoạt các dịch vụ, cấu hình và dữ liệu, từ đó nâng cao khả năng bảo trì và mở rộng của hệ thống.
-
-- **FlowEngineContext (Ngữ cảnh Toàn cục)**: Duy nhất trên toàn hệ thống, tất cả các mô hình và **luồng công việc** đều có thể truy cập. Thích hợp để đăng ký các dịch vụ, cấu hình toàn cục, v.v.
-- **FlowModelContext (Ngữ cảnh Mô hình)**: Dùng để chia sẻ ngữ cảnh bên trong cây mô hình. Các mô hình con tự động ủy quyền cho ngữ cảnh của mô hình cha, hỗ trợ ghi đè tên trùng lặp. Thích hợp để cô lập logic và dữ liệu ở cấp độ mô hình.
-- **FlowRuntimeContext (Ngữ cảnh Thời gian Chạy của Luồng công việc)**: Được tạo mỗi khi một **luồng công việc** được thực thi và tồn tại trong suốt chu kỳ chạy của **luồng công việc**. Thích hợp để truyền dữ liệu, lưu trữ biến và ghi lại trạng thái chạy trong **luồng công việc**. Hỗ trợ hai chế độ: `mode: 'runtime' | 'settings'`, tương ứng với trạng thái chạy và trạng thái cấu hình.
-
-Tất cả `FlowEngineContext` (Ngữ cảnh Toàn cục), `FlowModelContext` (Ngữ cảnh Mô hình), `FlowRuntimeContext` (Ngữ cảnh Thời gian Chạy của Luồng công việc), v.v., đều là các lớp con hoặc thể hiện của `FlowContext`.
+Tất cả các `FlowEngineContext` (Context toàn cục), `FlowModelContext` (Context Model), `FlowRuntimeContext` (Context runtime của Flow) đều là class con hoặc instance của `FlowContext`.
 
 ---
 
-## 🗂️ Sơ đồ Phân cấp
+## 🗂️ Sơ đồ phân cấp
 
 ```text
-FlowEngineContext (Ngữ cảnh Toàn cục)
+FlowEngineContext (Context toàn cục)
 │
-├── FlowModelContext (Ngữ cảnh Mô hình)
-│     ├── 子 FlowModelContext (Mô hình con)
-│     │     ├── FlowRuntimeContext (Ngữ cảnh Thời gian Chạy của Luồng công việc)
-│     │     └── FlowRuntimeContext (Ngữ cảnh Thời gian Chạy của Luồng công việc)
-│     └── FlowRuntimeContext (Ngữ cảnh Thời gian Chạy của Luồng công việc)
+├── FlowModelContext (Context Model)
+│     ├── FlowModelContext con (sub model)
+│     │     ├── FlowRuntimeContext (Context runtime của Flow)
+│     │     └── FlowRuntimeContext (Context runtime của Flow)
+│     └── FlowRuntimeContext (Context runtime của Flow)
 │
-├── FlowModelContext (Ngữ cảnh Mô hình)
-│     └── FlowRuntimeContext (Ngữ cảnh Thời gian Chạy của Luồng công việc)
+├── FlowModelContext (Context Model)
+│     └── FlowRuntimeContext (Context runtime của Flow)
 │
-└── FlowModelContext (Ngữ cảnh Mô hình)
-      ├── 子 FlowModelContext (Mô hình con)
-      │     └── FlowRuntimeContext (Ngữ cảnh Thời gian Chạy của Luồng công việc)
-      └── FlowRuntimeContext (Ngữ cảnh Thời gian Chạy của Luồng công việc)
+└── FlowModelContext (Context Model)
+      ├── FlowModelContext con (sub model)
+      │     └── FlowRuntimeContext (Context runtime của Flow)
+      └── FlowRuntimeContext (Context runtime của Flow)
 ```
 
-- `FlowModelContext` có thể truy cập các thuộc tính và phương thức của `FlowEngineContext` thông qua cơ chế ủy quyền (delegate), cho phép chia sẻ các khả năng toàn cục.
-- `FlowModelContext` của mô hình con có thể truy cập ngữ cảnh của mô hình cha (quan hệ đồng bộ) thông qua cơ chế ủy quyền (delegate), hỗ trợ ghi đè tên trùng lặp.
-- Các mô hình cha-con không đồng bộ sẽ không thiết lập quan hệ ủy quyền (delegate) để tránh làm ô nhiễm trạng thái.
-- `FlowRuntimeContext` luôn truy cập `FlowModelContext` tương ứng của nó thông qua cơ chế ủy quyền (delegate), nhưng không truyền ngược lên trên.
+- `FlowModelContext` thông qua cơ chế proxy (delegate) có thể truy cập thuộc tính và phương thức của `FlowEngineContext`, đạt được chia sẻ năng lực toàn cục.
+- `FlowModelContext` của sub model thông qua cơ chế proxy (delegate) có thể truy cập Context của Model cha (quan hệ đồng bộ), hỗ trợ ghi đè cùng tên.
+- Sub model bất đồng bộ và Model cha không thiết lập quan hệ proxy (delegate), tránh ô nhiễm trạng thái.
+- `FlowRuntimeContext` luôn truy cập `FlowModelContext` tương ứng thông qua cơ chế proxy (delegate), nhưng không truyền ngược lên trên.
 
-## 🧭 Chế độ Thời gian Chạy và Cấu hình (mode)
+---
 
-`FlowRuntimeContext` hỗ trợ hai chế độ, được phân biệt bằng tham số `mode`:
+## 🧭 Chế độ runtime và chế độ cấu hình (mode)
 
-- `mode: 'runtime'` (Chế độ thời gian chạy): Được sử dụng trong giai đoạn thực thi thực tế của **luồng công việc**. Các thuộc tính và phương thức trả về dữ liệu thực. Ví dụ:
+`FlowRuntimeContext` hỗ trợ hai chế độ, phân biệt qua tham số `mode`:
+
+- `mode: 'runtime'` (chế độ runtime): Dùng cho giai đoạn thực thi thực tế của Flow, các thuộc tính và phương thức trả về dữ liệu thật. Ví dụ:
   ```js
   console.log(runtimeCtx.steps.step1.result); // 42
   ```
 
-- `mode: 'settings'` (Chế độ cấu hình): Được sử dụng trong giai đoạn thiết kế và cấu hình **luồng công việc**. Việc truy cập thuộc tính trả về một chuỗi mẫu biến, tạo điều kiện thuận lợi cho việc chọn biểu thức và biến. Ví dụ:
+- `mode: 'settings'` (chế độ cấu hình): Dùng cho giai đoạn thiết kế và cấu hình Flow, truy cập thuộc tính trả về chuỗi template biến, thuận tiện cho biểu thức và lựa chọn biến. Ví dụ:
   ```js
   console.log(settingsCtx.steps.step1.result); // '{{ ctx.steps.step1.result }}'
   ```
 
-Thiết kế hai chế độ này vừa đảm bảo tính khả dụng của dữ liệu trong thời gian chạy, vừa tạo điều kiện thuận lợi cho việc tham chiếu biến và tạo biểu thức trong quá trình cấu hình, từ đó nâng cao tính linh hoạt và dễ sử dụng của công cụ **luồng công việc**.
+Thiết kế chế độ kép này vừa đảm bảo tính khả dụng của dữ liệu khi chạy, vừa thuận tiện cho việc tham chiếu biến và sinh biểu thức khi cấu hình, nâng cao tính linh hoạt và dễ sử dụng của Flow engine.
+
+---
+
+## 🤖 Thông tin Context cho công cụ/mô hình lớn
+
+Trong một số kịch bản (ví dụ chỉnh sửa code RunJS của JS*Model, AI coding), cần để "bên gọi" hiểu được mà không cần thực thi code:
+
+- `ctx` hiện tại có những **năng lực tĩnh** nào (tài liệu API, tham số, ví dụ, link tài liệu, v.v.)
+- Giao diện/runtime hiện tại có những **biến tùy chọn** nào (ví dụ "record hiện tại", "record popup hiện tại", v.v., cấu trúc động)
+- **Snapshot nhỏ gọn** của môi trường runtime hiện tại (dùng cho prompt)
+
+### 1) `await ctx.getApiInfos(options?)` (thông tin API tĩnh)
+
+### 2) `await ctx.getVarInfos(options?)` (thông tin cấu trúc biến)
+
+- Xây dựng cấu trúc biến dựa trên `defineProperty(...).meta` (bao gồm meta factory)
+- Hỗ trợ cắt giảm `path` và kiểm soát độ sâu `maxDepth`
+- Chỉ mở rộng xuống khi cần
+
+Tham số thường dùng:
+
+- `maxDepth`: Số tầng mở rộng tối đa (mặc định 3)
+- `path: string | string[]`: Cắt giảm, chỉ xuất subtree theo path chỉ định
+
+### 3) `await ctx.getEnvInfos()` (snapshot môi trường runtime)
+
+Cấu trúc node (đơn giản hóa):
+
+```ts
+type EnvNode = {
+  description?: string;
+  getVar?: string; // Có thể dùng trực tiếp cho await ctx.getVar(getVar), bắt đầu bằng "ctx."
+  value?: any; // Giá trị tĩnh đã được giải quyết/có thể serialize
+  properties?: Record<string, EnvNode>;
+};
+```

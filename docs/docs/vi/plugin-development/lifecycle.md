@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Vòng đời Plugin"
+description: "Các hook vòng đời của Plugin NocoBase: install, enable, disable, uninstall, load, loadAsync, thời điểm gắn kết server và client."
+keywords: "vòng đời plugin,load,loadAsync,install,enable,disable,gỡ cài đặt,NocoBase"
+---
 
 # Vòng đời
 
-Phần này tổng hợp các hook vòng đời của plugin ở cả phía máy chủ và phía máy khách, giúp nhà phát triển đăng ký và giải phóng tài nguyên một cách chính xác.
+Tài liệu này tổng hợp các hook vòng đời của Plugin trên cả server và client, giúp bạn đăng ký và giải phóng tài nguyên đúng cách.
 
-Có thể so sánh với vòng đời của FlowModel để làm nổi bật các khái niệm chung.
+Có thể đối chiếu với vòng đời của FlowModel để làm nổi bật các khái niệm chung.
 
 ## Nội dung đề xuất
 
-- Các callback được kích hoạt khi plugin được cài đặt, kích hoạt, vô hiệu hóa hoặc gỡ cài đặt.
-- Thời điểm gắn kết, cập nhật và hủy bỏ của các thành phần phía máy khách.
-- Các khuyến nghị để xử lý các tác vụ bất đồng bộ và lỗi trong vòng đời.
+- Các callback được kích hoạt khi Plugin cài đặt, kích hoạt, vô hiệu hóa, gỡ cài đặt.
+- Thời điểm mount, update và destroy của các Component phía client.
+- Khuyến nghị xử lý tác vụ bất đồng bộ và lỗi trong vòng đời.

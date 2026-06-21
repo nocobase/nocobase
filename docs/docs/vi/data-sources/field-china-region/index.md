@@ -1,20 +1,19 @@
 ---
-pkg: "@nocobase/plugin-field-china-region"
+title: "China Region"
+description: "Field khu vực hành chính Trung Quốc, hỗ trợ chọn liên cấp Tỉnh/Thành phố/Quận, phù hợp cho các tình huống địa chỉ, quê quán."
+keywords: "China Region,Tỉnh/Thành phố/Quận,Field khu vực hành chính,Liên cấp 3 cấp,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# China Region
 
-
-# Vùng hành chính Trung Quốc
+<PluginInfo name="field-china-region"></PluginInfo>
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512180305](https://static-docs.nocobase.com/20240512180305.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung.
+Sẽ được bổ sung sau

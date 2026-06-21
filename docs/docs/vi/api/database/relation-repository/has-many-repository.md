@@ -1,31 +1,32 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "HasManyRepository"
+description: "Repository quan hệ HasMany của NocoBase: xử lý CRUD cho quan hệ một-nhiều."
+keywords: "HasManyRepository,HasMany,một-nhiều,Repository,NocoBase"
+---
 
 # HasManyRepository
 
-`HasManyRepository` là một `Relation Repository` được dùng để xử lý các mối quan hệ `HasMany`.
+`HasManyRepository` là `Relation Repository` dùng để xử lý quan hệ `HasMany`.
 
 ## Phương thức của lớp
 
 ### `find()`
 
-Tìm các đối tượng liên quan
+Tìm các đối tượng quan hệ.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async find(options?: FindOptions): Promise<M[]>`
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-Các tham số truy vấn tương tự như [`Repository.find()`](../repository.md#find).
+Tham số truy vấn giống [`Repository.find()`](../repository.md#find).
 
 ### `findOne()`
 
-Tìm một đối tượng liên quan, chỉ trả về một bản ghi
+Tìm đối tượng quan hệ, chỉ trả về một bản ghi.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async findOne(options?: FindOneOptions): Promise<M>`
 
@@ -33,13 +34,13 @@ Tìm một đối tượng liên quan, chỉ trả về một bản ghi
 
 ### `count()`
 
-Trả về số lượng bản ghi phù hợp với điều kiện truy vấn
+Trả về số lượng bản ghi thỏa mãn điều kiện truy vấn.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async count(options?: CountOptions)`
 
-**Kiểu dữ liệu**
+**Kiểu**
 
 ```typescript
 interface CountOptions
@@ -51,13 +52,13 @@ interface CountOptions
 
 ### `findAndCount()`
 
-Truy vấn cơ sở dữ liệu để lấy một tập dữ liệu và số lượng kết quả phù hợp với các điều kiện cụ thể.
+Truy vấn từ cơ sở dữ liệu tập dữ liệu thỏa mãn điều kiện cụ thể và số lượng kết quả.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]>`
 
-**Kiểu dữ liệu**
+**Kiểu**
 
 ```typescript
 type FindAndCountOptions = CommonFindOptions;
@@ -65,9 +66,9 @@ type FindAndCountOptions = CommonFindOptions;
 
 ### `create()`
 
-Tạo các đối tượng liên quan
+Tạo đối tượng quan hệ.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async create(options?: CreateOptions): Promise<M>`
 
@@ -75,9 +76,9 @@ Tạo các đối tượng liên quan
 
 ### `update()`
 
-Cập nhật các đối tượng liên quan phù hợp với điều kiện
+Cập nhật các đối tượng quan hệ thỏa mãn điều kiện.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async update(options?: UpdateOptions): Promise<M>`
 
@@ -85,9 +86,9 @@ Cập nhật các đối tượng liên quan phù hợp với điều kiện
 
 ### `destroy()`
 
-Xóa các đối tượng liên quan phù hợp với điều kiện
+Xóa các đối tượng quan hệ thỏa mãn điều kiện.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async destroy(options?: TK | DestroyOptions): Promise<M>`
 
@@ -95,13 +96,13 @@ Xóa các đối tượng liên quan phù hợp với điều kiện
 
 ### `add()`
 
-Thêm mối quan hệ liên kết đối tượng
+Thêm quan hệ giữa các đối tượng.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async add(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
-**Kiểu dữ liệu**
+**Kiểu**
 
 ```typescript
 interface AssociatedOptions extends Transactionable {
@@ -109,31 +110,31 @@ interface AssociatedOptions extends Transactionable {
 }
 ```
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-- `tk` - Giá trị `targetKey` của đối tượng liên quan, có thể là một giá trị đơn hoặc một mảng.
+- `tk` - Giá trị targetKey của đối tượng quan hệ, có thể là giá trị đơn lẻ hoặc mảng.
   <embed src="../shared/transaction.md"></embed>
 
 ### `remove()`
 
-Xóa mối quan hệ liên kết với các đối tượng đã cho
+Gỡ bỏ quan hệ với đối tượng cho trước.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async remove(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-Các tham số tương tự như phương thức [`add()`](#add).
+Tham số giống phương thức [`add()`](#add).
 
 ### `set()`
 
-Thiết lập các đối tượng liên quan cho mối quan hệ hiện tại
+Đặt đối tượng quan hệ của quan hệ hiện tại.
 
-**Chữ ký phương thức**
+**Chữ ký**
 
 - `async set(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-Các tham số tương tự như phương thức [`add()`](#add).
+Tham số giống phương thức [`add()`](#add).

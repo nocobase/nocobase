@@ -6,13 +6,13 @@
   },
   {
     "type": "custom-link",
-    "label": "Deskripsi Konfigurasi",
+    "label": "Konfigurasi",
     "link": "/template-print/configuration"
   },
   {
     "type": "dir",
     "name": "syntax",
-    "label": "Sintaks Templat"
+    "label": "Sintaks Template"
   },
   {
     "type": "dir",
@@ -21,7 +21,12 @@
   },
   {
     "type": "custom-link",
-    "label": "Pertanyaan Umum (FAQ)",
+    "label": "HTTP API",
+    "link": "/template-print/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "FAQ",
     "link": "/template-print/faq"
   },
   {

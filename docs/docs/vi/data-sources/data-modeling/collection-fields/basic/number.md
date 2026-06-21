@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Số"
+description: "Field số, hỗ trợ các kiểu số nguyên, số thập phân, double, float, decimal."
+keywords: "số,number,Field số,double,float,decimal,NocoBase"
+---
 
 # Số
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512175752](https://static-docs.nocobase.com/20240512175752.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung

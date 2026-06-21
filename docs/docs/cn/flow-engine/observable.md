@@ -1,3 +1,9 @@
+---
+title: "FlowEngine 响应式机制 Observable"
+description: "Observable 响应式机制：FlowEngine 属性变化与视图更新，理解 FlowModel 的响应式原理与数据绑定。"
+keywords: "Observable,响应式,属性变化,视图更新,FlowModel 响应式,FlowEngine,NocoBase"
+---
+
 # 响应式机制：Observable
 
 :::info

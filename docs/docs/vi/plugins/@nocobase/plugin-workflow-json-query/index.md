@@ -1,17 +1,14 @@
 ---
-displayName: "Luồng công việc: Tính toán JSON"
+displayName: "Workflow: Tính toán JSON"
 packageName: '@nocobase/plugin-workflow-json-query'
-supportedVersions:
-  - 1.x
-  - 2.x
+title: "Workflow: Tính toán JSON"
+keywords: "Workflow: Tính toán JSON,Plugin,NocoBase"
 description: |
-  Dùng để chuyển đổi hoặc tính toán giá trị từ các đối tượng JSON phức tạp (ví dụ: kết quả từ các nút yêu cầu HTTP hoặc SQL).
+  Dùng để chuyển đổi hoặc tính toán giá trị của các đối tượng JSON phức tạp (ví dụ: kết quả của node HTTP request và node SQL).
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Tính toán JSON
+# Workflow: Tính toán JSON

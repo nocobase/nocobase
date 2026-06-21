@@ -1,47 +1,56 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Many-to-Many"
+description: "Field quan hệ ManyToMany (M2M), thực thể trong hai bảng liên kết nhiều-nhiều, thường cần bảng trung gian, ví dụ Student-Course."
+keywords: "Many-to-Many,M2M,BelongsToMany,Bảng trung gian,Field liên kết,NocoBase"
+---
 
+# Many-to-Many
 
-# Nhiều-Nhiều
+Trong hệ thống đăng ký môn học, có hai thực thể là học sinh và môn học, một học sinh có thể chọn nhiều môn học, một môn học cũng có thể được nhiều học sinh chọn, điều này tạo thành quan hệ ManyToMany. Trong relational database, để biểu diễn quan hệ ManyToMany giữa học sinh và môn học, thường sử dụng một bảng trung gian, ví dụ bảng đăng ký môn học. Bảng này có thể ghi lại học sinh nào đã chọn môn học nào, và môn học nào được học sinh nào chọn. Thiết kế như vậy có thể biểu diễn rất tốt quan hệ ManyToMany giữa học sinh và môn học.
 
-Trong một hệ thống đăng ký khóa học, có hai thực thể: sinh viên và khóa học. Một sinh viên có thể đăng ký nhiều khóa học, và một khóa học cũng có thể có nhiều sinh viên đăng ký. Điều này tạo thành một mối quan hệ nhiều-nhiều. Trong cơ sở dữ liệu quan hệ, để biểu diễn mối quan hệ nhiều-nhiều giữa sinh viên và khóa học, người ta thường sử dụng một `bộ sưu tập` trung gian, ví dụ như `bộ sưu tập` đăng ký khóa học. `Bộ sưu tập` này có thể ghi lại những khóa học mà mỗi sinh viên đã chọn và những sinh viên đã đăng ký mỗi khóa học. Thiết kế này giúp biểu diễn mối quan hệ nhiều-nhiều giữa sinh viên và khóa học một cách hiệu quả.
-
-Sơ đồ ER:
+Quan hệ ER như sau
 
 ![alt text](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
 
-Cấu hình trường:
+Cấu hình Field
 
 ![alt text](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
 
 ## Mô tả tham số
 
-### `Source collection` (`bộ sưu tập` nguồn)
-`Bộ sưu tập` nguồn là `bộ sưu tập` chứa trường hiện tại.
+### Source collection
 
-### `Target collection` (`bộ sưu tập` đích)
-`Bộ sưu tập` đích là `bộ sưu tập` mà bạn muốn liên kết.
+Bảng nguồn, tức là bảng chứa field hiện tại.
 
-### `Through collection` (`bộ sưu tập` trung gian)
-`Bộ sưu tập` trung gian được sử dụng khi có mối quan hệ nhiều-nhiều giữa hai thực thể. `Bộ sưu tập` trung gian này có hai khóa ngoại dùng để duy trì mối liên kết giữa hai thực thể.
+### Target collection
 
-### `Source key` (khóa nguồn)
-Trường trong `bộ sưu tập` nguồn được khóa ngoại tham chiếu. Trường này phải là duy nhất.
+Bảng đích, liên kết với bảng nào.
 
-### `Foreign key 1` (khóa ngoại 1)
-Trường trong `bộ sưu tập` trung gian, dùng để thiết lập liên kết với `bộ sưu tập` nguồn.
+### Through collection
 
-### `Foreign key 2` (khóa ngoại 2)
-Trường trong `bộ sưu tập` trung gian, dùng để thiết lập liên kết với `bộ sưu tập` đích.
+Bảng trung gian, khi giữa hai thực thể tồn tại quan hệ ManyToMany, cần sử dụng bảng trung gian để lưu trữ quan hệ này. Bảng trung gian có hai khóa ngoại, dùng để lưu trữ liên kết giữa hai thực thể.
 
-### `Target key` (khóa đích)
-Trường trong `bộ sưu tập` đích được khóa ngoại tham chiếu. Trường này phải là duy nhất.
+### Source key
 
-### `ON DELETE`
-`ON DELETE` đề cập đến các quy tắc được áp dụng cho các tham chiếu khóa ngoại trong các `bộ sưu tập` con liên quan khi các bản ghi trong `bộ sưu tập` cha bị xóa. Đây là một tùy chọn được sử dụng khi định nghĩa một ràng buộc khóa ngoại. Các tùy chọn `ON DELETE` phổ biến bao gồm:
+Field được tham chiếu bởi ràng buộc khóa ngoại, phải có tính duy nhất.
 
-- **CASCADE**: Khi một bản ghi trong `bộ sưu tập` cha bị xóa, tất cả các bản ghi liên quan trong `bộ sưu tập` con cũng sẽ tự động bị xóa.
-- **SET NULL**: Khi một bản ghi trong `bộ sưu tập` cha bị xóa, các giá trị khóa ngoại trong các bản ghi liên quan của `bộ sưu tập` con sẽ được đặt thành `NULL`.
-- **RESTRICT**: Đây là tùy chọn mặc định. Nó ngăn chặn việc xóa một bản ghi trong `bộ sưu tập` cha nếu có các bản ghi liên quan trong `bộ sưu tập` con.
-- **NO ACTION**: Tương tự như `RESTRICT`, tùy chọn này ngăn chặn việc xóa một bản ghi trong `bộ sưu tập` cha nếu có các bản ghi liên quan trong `bộ sưu tập` con.
+### Foreign key 1
+
+Field của bảng trung gian, dùng để thiết lập liên kết với bảng nguồn.
+
+### Foreign key 2
+
+Field của bảng trung gian, dùng để thiết lập liên kết với bảng đích.
+
+### Target key
+
+Field được tham chiếu bởi ràng buộc khóa ngoại, phải có tính duy nhất.
+
+### ON DELETE
+
+ON DELETE là quy tắc xử lý các tham chiếu khóa ngoại trong bảng con liên quan khi xóa bản ghi trong bảng cha, đây là một tùy chọn khi định nghĩa ràng buộc khóa ngoại. Các tùy chọn ON DELETE phổ biến bao gồm:
+
+- CASCADE: Khi xóa bản ghi trong bảng cha, tự động xóa tất cả các bản ghi liên quan trong bảng con.
+- SET NULL: Khi xóa bản ghi trong bảng cha, đặt giá trị khóa ngoại liên quan trong bảng con thành NULL.
+- RESTRICT: Tùy chọn mặc định, khi cố gắng xóa bản ghi trong bảng cha, nếu tồn tại bản ghi liên quan trong bảng con, từ chối xóa bản ghi bảng cha.
+- NO ACTION: Tương tự RESTRICT, nếu tồn tại bản ghi liên quan trong bảng con, từ chối xóa bản ghi bảng cha.

@@ -1,16 +1,14 @@
 ---
-displayName: "ワークフロー：テストツールキット"
+title: "Workflow: test kit"
+keywords: "Workflow: test kit,Plugin,NocoBase"
+displayName: "Workflow: test kit"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-
-
-# ワークフロー：テストツールキット
+# Workflow: test kit

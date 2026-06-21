@@ -1,8 +1,10 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Context (Server)"
+description: "API Context server NocoBase: konteks request, action, state, body."
+keywords: "Context,konteks request,action,state,body,server,NocoBase"
+---
 
-# Konteks
+# Context
 
 ## action
 
@@ -19,3 +21,5 @@ Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat 
 ## t()
 
 ## can()
+
+

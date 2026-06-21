@@ -1,4 +1,6 @@
 ---
+title: "Office 文件预览"
+keywords: "Office 文件预览,插件,NocoBase"
 displayName: "Office 文件预览"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Office 文件预览

@@ -12,23 +12,39 @@ import { Conversation } from '../../types';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useCallback, useRef } from 'react';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
+import { useWorkflowTasksStore } from '../stores/workflow-tasks';
 
 export const useChatConversationActions = () => {
   const api = useAPIClient();
   const setConversations = useChatConversationsStore.use.setConversations();
   const keyword = useChatConversationsStore.use.keyword();
-  const conversationsService = useRequest<Conversation[]>(
-    (page = 1, keyword = '') =>
-      api
+  const unreadCount = useChatConversationsStore.use.unreadCount();
+  const setUnreadCount = useChatConversationsStore.use.setUnreadCount();
+  const setWorkflowTaskUnreadCount = useWorkflowTasksStore.use.setUnreadCount();
+
+  const conversationsService = useRequest<{
+    data: Conversation[];
+    meta: { count: number; page: number; pageSize: number; totalPage: number };
+  }>(
+    (page = 1, keyword = '') => {
+      const filter: any = {};
+
+      // Filter by keyword
+      if (keyword) {
+        filter.title = { $includes: keyword };
+      }
+
+      return api
         .resource('aiConversations')
         .list({
-          sort: ['-updatedAt'],
+          sort: ['-createdAt'],
           appends: ['aiEmployee'],
           page,
-          pageSize: 15,
-          filter: keyword ? { title: { $includes: keyword } } : {},
+          pageSize: 50,
+          filter,
         })
-        .then((res) => res?.data),
+        .then((res) => res?.data);
+    },
     {
       manual: true,
       onSuccess: (data, params) => {
@@ -44,7 +60,7 @@ export const useChatConversationActions = () => {
       },
     },
   );
-  const conversationsServiceRef = useRef<any>();
+  const conversationsServiceRef = useRef(conversationsService);
   conversationsServiceRef.current = conversationsService;
   const loadMoreConversations = useCallback(async () => {
     const conversationsService = conversationsServiceRef.current;
@@ -56,8 +72,24 @@ export const useChatConversationActions = () => {
   }, [keyword]);
   const { ref: lastConversationRef } = useLoadMoreObserver({ loadMore: loadMoreConversations });
 
+  const loadUnreadCounts = useCallback(async () => {
+    const res = await api.resource('aiConversations').unreadCounts();
+    const data = res?.data?.data;
+    setUnreadCount(data?.conversationUnreadCount || 0);
+    setWorkflowTaskUnreadCount(data?.workflowTaskUnreadCount || 0);
+  }, [api, setUnreadCount, setWorkflowTaskUnreadCount]);
+
+  const runSearch = (keyword = '') => conversationsService.run(1, keyword);
+  const refresh = useCallback(() => {
+    conversationsServiceRef.current.run();
+  }, []);
+
   return {
     conversationsService,
+    loadUnreadCounts,
     lastConversationRef,
+    runSearch,
+    refresh,
+    unreadCount,
   };
 };

@@ -1,14 +1,14 @@
 ---
-displayName: "Logs"
+title: "Logger"
+keywords: "Logging and monitoring"
+displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
-  Logs do lado do servidor, que incluem principalmente logs de requisições de API e logs de execução do sistema, e permitem empacotar e baixar os arquivos de log.
+  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Logs
+# Logger

@@ -18,6 +18,7 @@ export const statusEnum = [
 ];
 const collection = {
   name: 'collections-' + uid(),
+  disableTranslation: true,
   fields: [
     {
       type: 'string',

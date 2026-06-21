@@ -1,119 +1,121 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Quy tắc liên kết"
+description: "Quy tắc liên kết trong xây dựng giao diện: liên kết Block, liên kết Field, liên kết Action, triển khai lọc, gán giá trị, ẩn hiện và liên kết dữ liệu giữa các component."
+keywords: "Quy tắc liên kết, liên kết Block, liên kết Field, liên kết Action, liên kết dữ liệu, xây dựng giao diện, NocoBase"
+---
 
-
-# Quy tắc Liên động
+# Quy tắc liên kết
 
 ## Giới thiệu
 
-Trong NocoBase, Quy tắc Liên động là một cơ chế dùng để kiểm soát hành vi tương tác của các phần tử giao diện người dùng (frontend). Nó cho phép người dùng điều chỉnh logic hiển thị và hành vi của các khối, trường và thao tác trong giao diện dựa trên các điều kiện khác nhau, mang lại trải nghiệm tương tác linh hoạt, ít mã (low-code). Tính năng này đang được liên tục cải tiến và tối ưu hóa.
+Trong NocoBase, quy tắc liên kết là một cơ chế dùng để kiểm soát hành vi tương tác của các phần tử giao diện ở phía front-end. Nó cho phép bạn điều chỉnh logic hiển thị và hành vi của Block, Field cũng như Action trong giao diện dựa trên các điều kiện khác nhau, mang lại trải nghiệm tương tác linh hoạt và low-code. Tính năng này đang được liên tục cải tiến và tối ưu hóa.
 
-Bằng cách cấu hình các quy tắc liên động, bạn có thể đạt được những điều sau:
+Bằng cách cấu hình quy tắc liên kết, bạn có thể thực hiện các tình huống như:
 
-- Ẩn/hiện một số khối dựa trên vai trò người dùng hiện tại. Các vai trò khác nhau sẽ thấy các khối với phạm vi dữ liệu khác nhau, ví dụ: quản trị viên thấy khối chứa thông tin đầy đủ; người dùng thông thường chỉ thấy khối thông tin cơ bản.
-- Khi một tùy chọn được chọn trong biểu mẫu, tự động điền hoặc đặt lại giá trị của các trường khác.
-- Khi một tùy chọn được chọn trong biểu mẫu, vô hiệu hóa một số mục nhập.
-- Khi một tùy chọn được chọn trong biểu mẫu, đặt một số mục nhập là bắt buộc.
-- Kiểm soát xem các nút thao tác có hiển thị hoặc có thể nhấp được trong một số điều kiện nhất định hay không.
+- Ẩn/hiển thị một số Block dựa trên vai trò người dùng hiện tại, các vai trò khác nhau hiển thị Block với phạm vi dữ liệu khác nhau, ví dụ Quản trị viên hiển thị Block thông tin đầy đủ; Người dùng thông thường chỉ thấy Block thông tin cơ bản
+- Khi Form chọn một tùy chọn, tự động điền hoặc đặt lại giá trị các Field khác.
+- Khi Form chọn một tùy chọn, vô hiệu hóa một số mục nhập.
+- Khi Form chọn một tùy chọn, đặt một số mục nhập là bắt buộc.
+- Kiểm soát việc nút Action có thể nhìn thấy hoặc nhấp được hay không trong một số điều kiện.
 
-## Cấu hình Điều kiện
+
+## Cấu hình điều kiện
 
 ![20251029114532](https://static-docs.nocobase.com/20251029114532.png)
 
 ### Biến bên trái
 
-Biến bên trái trong điều kiện được dùng để định nghĩa "đối tượng đánh giá" trong quy tắc liên động. Điều kiện sẽ được đánh giá dựa trên giá trị của biến này để quyết định có kích hoạt hành vi liên động hay không.
+Biến bên trái của điều kiện được sử dụng để xác định "đối tượng được đánh giá" trong quy tắc liên kết, tức là dựa trên giá trị của biến đó để đánh giá điều kiện, từ đó quyết định có kích hoạt hành vi liên kết hay không.
 
 Các biến có thể chọn bao gồm:
 
-- Các trường trong ngữ cảnh, ví dụ: `「Biểu mẫu hiện tại/xxx」`, `「Bản ghi hiện tại/xxx」`, `「Bản ghi cửa sổ bật lên hiện tại/xxx」`, v.v.
-- Các biến toàn cục hệ thống, ví dụ: `Người dùng hiện tại`, `Vai trò hiện tại`, v.v., phù hợp để kiểm soát động dựa trên thông tin nhận dạng, quyền hạn của người dùng và các thông tin khác.
-  > ✅ Các tùy chọn biến bên trái khả dụng được xác định bởi ngữ cảnh của khối. Hãy sử dụng biến bên trái một cách hợp lý tùy theo nhu cầu nghiệp vụ:
+- Field trong ngữ cảnh, ví dụ `「Form hiện tại/xxx」`、`「Bản ghi hiện tại/xxx」`、`「Bản ghi Popup hiện tại/xxx」` v.v.;
+- Biến toàn cục của hệ thống, ví dụ `Người dùng hiện tại`、`Vai trò hiện tại` v.v., phù hợp để kiểm soát động dựa trên thông tin định danh, quyền của người dùng.
+  > Các biến có thể chọn cho biến bên trái được quyết định bởi ngữ cảnh nơi Block tồn tại, hãy sử dụng biến bên trái hợp lý theo nhu cầu nghiệp vụ:
   >
-  > - `「Người dùng hiện tại」` đại diện cho thông tin người dùng đang đăng nhập;
-  > - `「Biểu mẫu hiện tại」` đại diện cho các giá trị được nhập theo thời gian thực trong biểu mẫu;
-  > - `「Bản ghi hiện tại」` đại diện cho giá trị bản ghi đã lưu, ví dụ như bản ghi hàng trong bảng.
+  > - 「Người dùng hiện tại」biểu thị thông tin người dùng đang trong trạng thái đăng nhập;
+  > - 「Form hiện tại」biểu thị giá trị nhập vào theo thời gian thực trong Form;
+  > - 「Bản ghi hiện tại」biểu thị giá trị bản ghi đã lưu, ví dụ bản ghi dòng trên Table.
 
 ### Toán tử
 
-Toán tử được dùng để thiết lập logic đánh giá điều kiện, tức là cách so sánh biến bên trái với giá trị bên phải. Các loại biến bên trái khác nhau hỗ trợ các toán tử khác nhau. Các toán tử phổ biến như sau:
+Toán tử dùng để thiết lập logic đánh giá điều kiện, tức là cách so sánh biến bên trái với giá trị bên phải. Các loại biến bên trái khác nhau hỗ trợ các toán tử khác nhau, các toán tử thường gặp như sau:
 
-- **Kiểu văn bản**: `$includes`, `$eq`, `$ne`, `$empty`, `$notEmpty`, v.v.
-- **Kiểu số**: `$eq`, `$gt`, `$lt`, `$gte`, `$lte`, v.v.
-- **Kiểu Boolean**: `$isTruly`, `$isFalsy`
-- **Kiểu mảng**: `$match`, `$anyOf`, `$empty`, `$notEmpty`, v.v.
+- **Loại Text**: `$includes`、`$eq`、`$ne`、`$empty`、`$notEmpty` v.v.
+- **Loại số**: `$eq`、`$gt`、`$lt`、`$gte`、`$lte` v.v.
+- **Loại Boolean**: `$isTruly`、`$isFalsy`
+- **Loại mảng**: `$match`、`$anyOf`、`$empty`、`$notEmpty` v.v.
 
-> ✅ Hệ thống sẽ tự động đề xuất danh sách các toán tử khả dụng dựa trên kiểu của biến bên trái để đảm bảo logic cấu hình hợp lý.
+> Hệ thống sẽ tự động đề xuất danh sách toán tử khả dụng dựa trên loại biến bên trái, đảm bảo logic cấu hình hợp lý.
 
 ### Giá trị bên phải
 
-Được dùng để so sánh với biến bên trái, đây là giá trị tham chiếu để xác định xem điều kiện có được đáp ứng hay không.
+Dùng để so sánh với biến bên trái, là giá trị tham chiếu để đánh giá điều kiện có thỏa mãn hay không.
 
 Nội dung được hỗ trợ bao gồm:
 
-- Giá trị hằng số: Nhập các số, văn bản, ngày tháng cố định, v.v.;
-- Biến ngữ cảnh: ví dụ như các trường khác trong biểu mẫu hiện tại, bản ghi hiện tại, v.v.;
-- Biến hệ thống: ví dụ như người dùng hiện tại, thời gian hiện tại, vai trò hiện tại, v.v.
+- Giá trị hằng: nhập giá trị số, văn bản, ngày tháng cố định v.v.;
+- Biến ngữ cảnh: ví dụ Field khác trong Form hiện tại, bản ghi hiện tại v.v.;
+- Biến hệ thống: ví dụ người dùng hiện tại, thời gian hiện tại, vai trò hiện tại v.v.
 
-> ✅ Hệ thống sẽ tự động điều chỉnh phương thức nhập cho giá trị bên phải dựa trên kiểu của biến bên trái, ví dụ:
+> Hệ thống sẽ tự động điều chỉnh phương thức nhập bên phải dựa trên loại biến bên trái, ví dụ:
 >
-> - Khi bên trái là "trường tùy chọn", bộ chọn tùy chọn tương ứng sẽ hiển thị;
-> - Khi bên trái là "trường ngày tháng", bộ chọn ngày tháng sẽ hiển thị;
-> - Khi bên trái là "trường văn bản", hộp nhập văn bản sẽ hiển thị.
+> - Khi bên trái là "Field tùy chọn", sẽ hiển thị bộ chọn tùy chọn tương ứng;
+> - Khi bên trái là "Field ngày", sẽ hiển thị bộ chọn ngày;
+> - Khi bên trái là "Field text", sẽ hiển thị ô nhập text.
 
-> 💡 Việc sử dụng linh hoạt các giá trị bên phải (đặc biệt là các biến động) cho phép bạn xây dựng logic liên động dựa trên người dùng hiện tại, trạng thái dữ liệu hiện tại và môi trường ngữ cảnh, từ đó mang lại trải nghiệm tương tác mạnh mẽ hơn.
+> Sử dụng linh hoạt giá trị bên phải (đặc biệt là biến động), bạn có thể xây dựng logic liên kết dựa trên người dùng hiện tại, trạng thái dữ liệu hiện tại, ngữ cảnh môi trường, từ đó tạo ra trải nghiệm tương tác mạnh mẽ hơn.
 
-## Logic Thực thi Quy tắc
+## Logic thực thi quy tắc
 
-### Kích hoạt Điều kiện
+### Kích hoạt điều kiện
 
-Khi điều kiện trong một quy tắc được đáp ứng (không bắt buộc), thao tác sửa đổi thuộc tính bên dưới sẽ tự động được thực thi. Nếu không có điều kiện nào được thiết lập, quy tắc mặc định được coi là luôn đáp ứng và thao tác sửa đổi thuộc tính sẽ tự động được thực thi.
+Khi điều kiện trong quy tắc được thỏa mãn (không bắt buộc), thao tác thay đổi thuộc tính bên dưới sẽ được tự động thực thi, nếu không thiết lập điều kiện, mặc định sẽ coi quy tắc luôn được thỏa mãn và tự động thực thi thao tác thay đổi thuộc tính.
 
-### Nhiều Quy tắc
+### Nhiều quy tắc
 
-Bạn có thể cấu hình nhiều quy tắc liên động cho một biểu mẫu. Khi các điều kiện của nhiều quy tắc được đáp ứng đồng thời, hệ thống sẽ thực thi các kết quả theo thứ tự từ đầu đến cuối, nghĩa là kết quả cuối cùng sẽ là tiêu chuẩn thực thi.
-Ví dụ: Quy tắc 1 đặt một trường thành "Vô hiệu hóa", và Quy tắc 2 đặt trường đó thành "Có thể chỉnh sửa". Nếu điều kiện của cả hai quy tắc đều được đáp ứng, trường sẽ chuyển sang trạng thái "Có thể chỉnh sửa".
+Bạn có thể cấu hình nhiều quy tắc liên kết cho một Form, khi đồng thời thỏa mãn điều kiện của nhiều quy tắc, hệ thống sẽ thực thi kết quả theo thứ tự trước sau của các quy tắc, tức là kết quả cuối cùng được lấy làm tiêu chuẩn.
+Ví dụ: Quy tắc 1 đặt Field thành "Vô hiệu hóa", Quy tắc 2 đặt Field thành "Có thể chỉnh sửa", nếu cả hai điều kiện của quy tắc đều thỏa mãn, thì Field sẽ ở trạng thái "Có thể chỉnh sửa".
 
-> Thứ tự thực thi của nhiều quy tắc là rất quan trọng. Khi thiết kế quy tắc, hãy đảm bảo làm rõ mức độ ưu tiên và mối quan hệ tương tác giữa chúng để tránh xung đột quy tắc.
+> Thứ tự thực thi của nhiều quy tắc rất quan trọng. Hãy đảm bảo khi thiết kế quy tắc, bạn cần làm rõ độ ưu tiên và mối quan hệ tương hỗ giữa chúng để tránh xung đột quy tắc
 
-## Quản lý Quy tắc
+## Quản lý quy tắc
 
-Bạn có thể thực hiện các thao tác sau đối với mỗi quy tắc:
+Bạn có thể thực hiện các thao tác sau cho mỗi quy tắc:
 
-- Đặt tên tùy chỉnh: Đặt tên dễ hiểu cho quy tắc để dễ quản lý và nhận diện.
+- Tùy chỉnh đặt tên: Đặt tên dễ hiểu cho quy tắc để thuận tiện quản lý và nhận diện.
 
-- Sắp xếp: Điều chỉnh thứ tự dựa trên mức độ ưu tiên thực thi của quy tắc để đảm bảo hệ thống xử lý chúng theo đúng trình tự.
+- Sắp xếp: Điều chỉnh thứ tự theo độ ưu tiên thực thi của quy tắc, đảm bảo hệ thống xử lý quy tắc đúng thứ tự.
 
 - Xóa: Xóa các quy tắc không còn cần thiết.
 
-- Bật/Tắt: Tạm thời tắt một quy tắc mà không cần xóa nó, phù hợp cho các trường hợp cần tạm ngừng một quy tắc trong những tình huống cụ thể.
+- Bật/Tắt: Tạm thời tắt một quy tắc nào đó mà không cần xóa, phù hợp với tình huống cần tạm dừng một quy tắc trong điều kiện cụ thể.
 
-- Sao chép quy tắc: Tạo quy tắc mới bằng cách sao chép quy tắc hiện có để tránh cấu hình lặp lại.
+- Sao chép quy tắc: Tạo quy tắc mới bằng cách sao chép quy tắc đã có, tránh cấu hình lặp lại.
 
-## Về Biến
+## Về biến
 
-Trong việc gán giá trị trường và cấu hình điều kiện, không chỉ hỗ trợ sử dụng hằng số mà còn hỗ trợ sử dụng biến. Danh sách biến sẽ khác nhau tùy thuộc vào vị trí của khối. Việc lựa chọn và sử dụng biến một cách hợp lý có thể đáp ứng nhu cầu nghiệp vụ một cách linh hoạt hơn. Để biết thêm thông tin về biến, vui lòng tham khảo [Biến](/interface-builder/variables).
+Trong việc gán giá trị Field và cấu hình điều kiện, không chỉ hỗ trợ sử dụng hằng số mà còn hỗ trợ sử dụng biến. Danh sách biến sẽ khác nhau tùy theo vị trí Block, lựa chọn và sử dụng biến hợp lý có thể đáp ứng linh hoạt hơn nhu cầu nghiệp vụ. Để biết thêm thông tin về biến, vui lòng tham khảo [Biến](/interface-builder/variables).
 
-## Quy tắc Liên động Khối
+## Quy tắc liên kết Block
 
-Quy tắc liên động khối cho phép kiểm soát động việc hiển thị của một khối dựa trên các biến hệ thống (như người dùng hiện tại, vai trò) hoặc biến ngữ cảnh (như bản ghi cửa sổ bật lên hiện tại). Ví dụ, quản trị viên có thể xem thông tin đơn hàng đầy đủ, trong khi vai trò chăm sóc khách hàng chỉ có thể xem dữ liệu đơn hàng cụ thể. Thông qua quy tắc liên động khối, bạn có thể cấu hình các khối tương ứng dựa trên vai trò, và thiết lập các trường, nút thao tác và phạm vi dữ liệu khác nhau trong các khối đó. Khi vai trò đăng nhập là vai trò mục tiêu, hệ thống sẽ hiển thị khối tương ứng. Cần lưu ý rằng các khối mặc định là hiển thị, vì vậy thông thường bạn cần xác định logic để ẩn khối.
+Quy tắc liên kết Block cho phép bạn kiểm soát động việc hiển thị Block dựa trên biến hệ thống (ví dụ người dùng hiện tại, vai trò) hoặc biến ngữ cảnh (ví dụ bản ghi Popup hiện tại). Ví dụ, Quản trị viên có thể xem thông tin đơn hàng đầy đủ, trong khi vai trò chăm sóc khách hàng chỉ có thể xem dữ liệu đơn hàng cụ thể. Thông qua quy tắc liên kết Block, bạn có thể cấu hình Block tương ứng theo vai trò, đồng thời thiết lập các Field, nút Action và phạm vi dữ liệu khác nhau trong Block. Khi vai trò đăng nhập là vai trò mục tiêu, hệ thống sẽ hiển thị Block tương ứng. Cần lưu ý rằng Block mặc định là hiển thị, thông thường cần phán đoán logic ẩn Block.
 
-👉 Để biết chi tiết, xem: [Khối/Quy tắc Liên động Khối](/interface-builder/blocks/block-settings/block-linkage-rule)
+Chi tiết xem: [Block/Quy tắc liên kết Block](/interface-builder/blocks/block-settings/block-linkage-rule)
 
-## Quy tắc Liên động Trường
+## Quy tắc liên kết Field
 
-Quy tắc liên động trường được dùng để điều chỉnh động trạng thái của các trường trong biểu mẫu hoặc khối chi tiết dựa trên hành động của người dùng, chủ yếu bao gồm:
+Quy tắc liên kết Field được sử dụng để điều chỉnh động trạng thái Field trong Form hoặc Block chi tiết dựa trên thao tác của người dùng, chủ yếu bao gồm:
 
-- Kiểm soát trạng thái **Hiển thị/Ẩn** của một trường
-- Đặt trường có **Bắt buộc** hay không
+- Kiểm soát **hiển thị/ẩn** Field
+- Đặt Field có **bắt buộc** hay không
 - **Gán giá trị**
 - Thực thi JavaScript để xử lý logic nghiệp vụ tùy chỉnh
 
-👉 Để biết chi tiết, xem: [Khối/Quy tắc Liên động Trường](/interface-builder/blocks/block-settings/field-linkage-rule)
+Chi tiết xem: [Block/Quy tắc liên kết Field](/interface-builder/blocks/block-settings/field-linkage-rule)
 
-## Quy tắc Liên động Thao tác
+## Quy tắc liên kết Action
 
-Quy tắc liên động thao tác hiện hỗ trợ kiểm soát hành vi thao tác, như ẩn/vô hiệu hóa, dựa trên các biến ngữ cảnh như giá trị bản ghi hiện tại và biểu mẫu hiện tại, cũng như các biến toàn cục.
+Quy tắc liên kết Action hiện hỗ trợ các biến ngữ cảnh như giá trị bản ghi hiện tại, Form hiện tại và biến toàn cục để kiểm soát hành vi Action như ẩn/vô hiệu hóa.
 
-👉 Để biết chi tiết, xem: [Thao tác/Quy tắc Liên động](/interface-builder/actions/action-settings/linkage-rule)
+Chi tiết xem: [Action/Quy tắc liên kết](/interface-builder/actions/action-settings/linkage-rule)

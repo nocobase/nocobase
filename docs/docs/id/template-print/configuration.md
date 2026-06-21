@@ -1,62 +1,67 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Konfigurasi Template Print"
+description: "Konfigurasi NocoBase Template Print: aktivasi fitur Template Print di Block Detail dan Block Tabel, konfigurasi Template."
+keywords: "Template Print,Konfigurasi,configuration,NocoBase"
+---
 
-## Petunjuk Konfigurasi
+## Konfigurasi
 
-### Mengaktifkan Fitur Cetak Templat
-Cetak templat saat ini mendukung blok detail dan blok tabel. Berikut adalah cara konfigurasi untuk kedua jenis blok ini.
+### Aktivasi Fitur Template Print
+Template Print saat ini mendukung Block Detail dan Block Tabel, di bawah ini akan dijelaskan masing-masing cara konfigurasi kedua jenis Block tersebut.
 
-#### Blok Detail
+#### Block Detail
 
-1.  **Buka Blok Detail**:
-    -   Di aplikasi, masuk ke blok detail tempat Anda ingin menggunakan fitur cetak templat.
+1. **Buka Block Detail**:
+- Pada aplikasi, masuk ke Block Detail yang membutuhkan fitur Template Print.
 
-2.  **Akses Menu Operasi Konfigurasi**:
-    -   Di bagian atas antarmuka, klik menu "Operasi Konfigurasi".
+2. **Masuk ke Menu Konfigurasi Action**:
+- Pada bagian atas antarmuka, klik menu "Configure Actions".
 
-3.  **Pilih "Cetak Templat"**:
-    -   Di menu tarik-turun, klik opsi "Cetak Templat" untuk mengaktifkan fungsi plugin.
+3. **Pilih "Template Print"**:
+- Pada drop-down menu, klik opsi "Template Print" untuk mengaktifkan fitur plugin.
 
-![Mengaktifkan Cetak Templat](https://static-docs.nocobase.com/20241212150539-2024-12-12-15-05-43.png)
+![Aktivasi Template Print](https://static-docs.nocobase.com/20241212150539-2024-12-12-15-05-43.png)
 
-### Mengonfigurasi Templat
+### Konfigurasi Template
 
-1.  **Akses Halaman Konfigurasi Templat**:
-    -   Di menu konfigurasi tombol "Cetak Templat", pilih opsi "Konfigurasi Templat".
+1. **Masuk ke Halaman Konfigurasi Template**:
+- Pada menu konfigurasi tombol "Template Print", pilih opsi "Template Configuration".
 
-![Opsi Konfigurasi Templat](https://static-docs.nocobase.com/20241212151858-2024-12-12-15-19-01.png)
+![Opsi Konfigurasi Template](https://static-docs.nocobase.com/20241212151858-2024-12-12-15-19-01.png)
 
-2.  **Tambahkan Templat Baru**:
-    -   Klik tombol "Tambahkan Templat" untuk masuk ke halaman penambahan templat.
+2. **Tambah Template Baru**:
+- Klik tombol "Add Template", masuk ke halaman tambah Template.
 
-![Tombol Tambahkan Templat](https://static-docs.nocobase.com/20241212151243-2024-12-12-15-12-46.png)
+![Tombol Tambah Template](https://static-docs.nocobase.com/20241212151243-2024-12-12-15-12-46.png)
 
-3.  **Isi Informasi Templat**:
-    -   Di formulir templat, isi nama templat dan pilih jenis templat (Word, Excel, PowerPoint).
-    -   Unggah berkas templat yang sesuai (mendukung format `.docx`, `.xlsx`, `.pptx`).
+3. **Isi Informasi Template**:
+- Pada form Template, isi nama Template, pilih tipe Template (Word, Excel, PowerPoint).
+- Upload file Template yang sesuai (mendukung format `.docx`, `.xlsx`, `.pptx`).
 
-![Konfigurasi Nama dan Berkas Templat](https://static-docs.nocobase.com/20241212151518-2024-12-12-15-15-21.png)
+![Konfigurasi Nama dan File Template](https://static-docs.nocobase.com/20241212151518-2024-12-12-15-15-21.png)
 
-4.  **Edit dan Simpan Templat**:
-    -   Buka halaman "Daftar Bidang", salin bidang-bidang, lalu tempelkan ke dalam templat.
-    ![Daftar Bidang](https://static-docs.nocobase.com/20250107141010.png)
-    ![20241212152743-2024-12-12-15-27-45](https://static-docs.nocobase.com/20241212152743-2024-12-12-15-27-45.png)
-    -   Setelah selesai mengisi, klik tombol "Simpan" untuk menyelesaikan penambahan templat.
+4. **Edit dan Simpan Template**:
+- Buka halaman "Field List", salin field, dan isi ke Template
+  ![Field List](https://static-docs.nocobase.com/20250107141010.png)
+  ![20241212152743-2024-12-12-15-27-45](https://static-docs.nocobase.com/20241212152743-2024-12-12-15-27-45.png)
+- Template Print sudah mendukung **field lampiran** dan **field tanda tangan tulisan tangan**, Field List akan secara otomatis menghasilkan ekspresi Template yang sesuai.
+- Jika Anda ingin menampilkan gambar pada Template, disarankan selalu menyalin variabel langsung dari "Field List", bukan menulis ekspresi `:attachment()` atau `:signature()` secara manual.
+- Setelah selesai mengisi, klik tombol "Save" untuk menyelesaikan penambahan Template.
 
-5.  **Manajemen Templat**:
-    -   Klik tombol "Gunakan" di sisi kanan daftar templat untuk mengaktifkan templat.
-    -   Klik tombol "Edit" untuk mengubah nama templat atau mengganti berkas templat.
-    -   Klik tombol "Unduh" untuk mengunduh berkas templat yang sudah dikonfigurasi.
-    -   Klik tombol "Hapus" untuk menghapus templat yang tidak lagi diperlukan. Sistem akan meminta konfirmasi untuk menghindari penghapusan yang tidak disengaja.
-    ![Manajemen Templat](https://static-docs.nocobase.com/20250107140436.png)
+5. **Manajemen Template**:
+- Klik tombol "Use" di sebelah kanan daftar Template untuk mengaktifkan Template.
+- Klik tombol "Edit" untuk memodifikasi nama Template atau mengganti file Template.
+- Klik tombol "Download" untuk mengunduh file Template yang sudah dikonfigurasi.
+- Klik tombol "Delete" untuk menghapus Template yang tidak diperlukan lagi. Sistem akan menampilkan konfirmasi untuk menghindari penghapusan yang tidak disengaja.
+  ![Manajemen Template](https://static-docs.nocobase.com/20250107140436.png)
 
-#### Blok Tabel
+#### Block Tabel
 
-Penggunaan blok tabel pada dasarnya sama dengan blok detail, dengan perbedaan sebagai berikut:
-
-1.  **Mendukung Pencetakan Banyak Data**: Anda perlu memilih terlebih dahulu catatan yang ingin dicetak. Maksimal 100 catatan dapat dicetak sekaligus.
-
+Penggunaan Block Tabel pada dasarnya sama dengan Block Detail, perbedaannya:
+1. Mendukung Print beberapa data: Perlu memilih record yang akan diprint terlebih dahulu, maksimal 100 sekaligus.
+   
 ![20250416215633-2025-04-16-21-56-35](https://static-docs.nocobase.com/20250416215633-2025-04-16-21-56-35.png)
 
-2.  **Manajemen Isolasi Templat**: Templat untuk blok tabel dan blok detail tidak dapat saling digunakan — karena struktur datanya berbeda (satu adalah objek, yang lain adalah array).
+2. Manajemen Template Terisolasi: Template Block Tabel dan Block Detail tidak dapat saling digunakan — karena struktur datanya berbeda (satu adalah objek, satu adalah array).
+
+

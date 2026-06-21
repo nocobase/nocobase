@@ -1,3 +1,9 @@
+---
+title: "通知管理 API 参考"
+description: "通知管理 API 参考：BaseNotificationChannel、registerChannelType、PluginNotificationManagerServer，发送通知、渠道注册、模板与用户订阅配置。"
+keywords: "通知管理 API,BaseNotificationChannel,registerChannelType,通知渠道,发送通知,NocoBase"
+---
+
 # API参考
 
 ## 服务端

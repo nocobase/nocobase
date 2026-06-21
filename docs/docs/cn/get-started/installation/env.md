@@ -1,3 +1,9 @@
+---
+title: "NocoBase 环境变量配置"
+description: "NocoBase 环境变量：TZ 时区、APP_KEY、DB 数据库、CACHE、FILE_STORAGE 等配置说明，Docker 与 create-nocobase-app 设置方式。"
+keywords: "环境变量,APP_KEY,TZ,DB 配置,CACHE,FILE_STORAGE,Docker 环境变量,NocoBase"
+---
+
 # 环境变量
 
 ## 如何设置环境变量？
@@ -243,14 +249,6 @@ DB_LOGGING=on
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-基于文件的日志存储路径，默认为 `storage/logs`。
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 输出日志级别，开发环境默认值 `debug`, 生产环境默认值 `info`. 可选项：
@@ -359,6 +357,27 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 用于配置集群模式下进行服务拆分时，不同节点的工作模式，详情查看「[服务拆分：如何拆分服务](/cluster-mode/services-splitting#如何拆分服务)」。
 
+### SERVER_REQUEST_WHITELIST
+
+服务端对外发送 HTTP 请求的目标白名单，用于防止 SSRF（服务端请求伪造）攻击。逗号分隔，支持精确 IP、CIDR 范围、精确域名和通配符子域名（单级）。
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**适用范围**：工作流「HTTP 请求」节点、自定义操作按钮的「自定义请求」。相对路径（调用 NocoBase 自身 API）不受此限制影响。
+
+**未配置时**：所有 `http`/`https` 请求均放行（保持原有行为）。**配置后**：仅允许匹配白名单的请求，不匹配的请求会报错。
+
+支持的格式：
+
+| 格式 | 示例 | 匹配规则 |
+| --- | --- | --- |
+| 精确 IPv4 | `1.2.3.4` | 仅匹配该 IP |
+| IPv4 CIDR | `10.0.0.0/8` | 匹配该网段内所有 IP |
+| 精确域名 | `api.example.com` | 仅匹配该域名 |
+| 通配符子域名 | `*.example.com` | 匹配一级子域名，如 `foo.example.com`，不匹配 `example.com` 或 `a.b.example.com` |
+
 ## 实验性环境变量
 
 ### APPEND_PRESET_LOCAL_PLUGINS
@@ -369,7 +388,8 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 1. 需要确保插件已经下载到本地，并且在 `node_modules` 目录里可以找到，更多内容查看 [插件的组织方式](/plugin-development/project-structure)。
 2. 添加了环境变量后，需要在初始化安装 `nocobase install` 或升级 `nocobase upgrade` 后才会在插件管理器页面里显示。
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -383,7 +403,8 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 
 1. 需要确保插件已经下载到本地，并且在 `node_modules` 目录里可以找到，更多内容查看 [插件的组织方式](/plugin-development/project-structure)。
 2. 添加了环境变量后，需要在初始化安装 `nocobase install` 或升级 `nocobase upgrade` 时会自动安装或升级插件。
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -465,7 +486,7 @@ yarn cross-env \
 
 ### WORKFLOW_SCRIPT_MODULES
 
-工作流 JavaScript 节点可用的模块列表，详情查看「[JavaScript 节点：使用外部模块](/workflow/nodes/javascript#使用外部模块)」。
+工作流 JavaScript 节点可用的模块列表，详情查看「[JavaScript 节点：使用外部模块](/workflow/nodes/javascript#非安全模式需要模块支持)」。
 
 ### WORKFLOW_LOOP_LIMIT
 

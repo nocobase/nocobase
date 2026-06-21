@@ -1,112 +1,114 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Nilai Default"
+description: "Konfigurasi Field: mengkonfigurasi nilai default Field, mendukung nilai tetap, ekspresi, referensi variabel."
+keywords: "nilai default, default value, default Field, interface builder, NocoBase"
+---
 
 # Nilai Default
 
-## Pendahuluan
+## Pengantar
 
-Nilai default adalah nilai awal sebuah *field* saat *record* baru dibuat. Anda dapat menetapkan nilai default untuk *field* saat mengonfigurasinya di sebuah **koleksi**, atau menentukan nilai default untuk *field* di blok formulir Tambah (*Add Form*). Nilai ini dapat diatur sebagai konstanta atau variabel.
+Nilai default adalah nilai awal Field dalam status tambah baru. Anda dapat menetapkan nilai default untuk Field saat mengkonfigurasi Field Collection, atau menentukan nilai default untuk Field di Block Form tambah baru. Dapat diatur sebagai konstanta atau variabel.
 
-## Di Mana Nilai Default Dapat Diatur
+## Di Mana Dapat Mengatur Nilai Default
 
-### *Field* **Koleksi**
+### Field Collection
 
 ![20240411095933](https://static-docs.nocobase.com/20240411095933.png)
 
-### *Field* dalam Formulir Tambah (*Add Form*)
+### Field di Tambah Form
 
-Sebagian besar *field* dalam Formulir Tambah (*Add Form*) mendukung pengaturan nilai default.
+Sebagian besar Field di Tambah Form mendukung pengaturan nilai default.
 
 ![20251028161801](https://static-docs.nocobase.com/20251028161801.png)
 
-### Penambahan dalam Sub-formulir (*Sub-form*)
+### Penambahan Sub-Form
 
-Sub-data yang ditambahkan melalui *field* sub-formulir, baik dalam formulir Tambah (*Add Form*) maupun Edit (*Edit Form*), akan memiliki nilai default.
+Baik di Sub-Form di Tambah atau Edit Form, sub-data yang ditambahkan memiliki nilai default.
 
-Tambah baru (*Add new*) dalam sub-formulir
+Add new Sub-Form
 ![20251028163455](https://static-docs.nocobase.com/20251028163455.png)
 
-Saat mengedit data yang sudah ada, *field* yang kosong tidak akan diisi dengan nilai default. Hanya data yang baru ditambahkan yang akan diisi dengan nilai default.
+Saat mengedit data yang sudah ada, ketika data kosong, nilai default tidak akan otomatis terisi. Hanya data baru yang ditambahkan yang akan diisi dengan nilai default.
 
-### Nilai Default untuk *Field* Relasi (*Association Fields*)
+### Nilai Default Data Relasi
 
-Hanya relasi tipe **Banyak-ke-Satu** (*Many-to-One*) dan **Banyak-ke-Banyak** (*Many-to-Many*) yang memiliki nilai default saat menggunakan komponen pemilih (*selector components*) (Select, RecordPicker).
+Hanya relasi tipe "**many-to-one**" dan "**many-to-many**", dan menggunakan komponen selector (Select, RecordPicker), yang memiliki nilai default.
 
 ![20251028164128](https://static-docs.nocobase.com/20251028164128.png)
 
 ## Variabel Nilai Default
 
-### Variabel Apa Saja yang Tersedia
+### Variabel Apa Saja
 
--   Pengguna saat ini;
--   *Record* saat ini; ini hanya berlaku untuk *record* yang sudah ada;
--   Formulir saat ini, idealnya hanya mencantumkan *field* dalam formulir;
--   Objek saat ini, sebuah konsep dalam sub-formulir (objek data untuk setiap baris dalam sub-formulir);
--   Parameter URL
-    Untuk informasi lebih lanjut tentang variabel, lihat [Variabel](/interface-builder/variables)
+- Pengguna saat ini;
+- Record saat ini, hanya data yang sudah ada yang memiliki konsep record saat ini;
+- Form saat ini, idealnya hanya menampilkan Field di Form;
+- Objek saat ini, konsep di sub-form (objek data setiap baris di sub-form);
+- Parameter URL
+  Untuk informasi lebih lanjut tentang variabel, silakan lihat [Variabel](/interface-builder/variables)
 
-### Variabel Nilai Default *Field*
+### Variabel Nilai Default Field
 
-Dibagi menjadi dua kategori: *field* non-relasi dan *field* relasi.
+Dibagi menjadi dua kategori: Field non-relasi dan Field relasi.
 
-#### Variabel Nilai Default *Field* Relasi
+#### Variabel Nilai Default Field Relasi
 
--   Objek variabel harus berupa *record* **koleksi**;
--   Harus berupa **koleksi** dalam rantai pewarisan, yang bisa berupa **koleksi** saat ini atau **koleksi** induk/anak;
--   Variabel "Record yang dipilih di tabel" hanya tersedia untuk *field* relasi "Banyak-ke-Banyak" dan "Satu-ke-Banyak/Banyak-ke-Satu";
--   **Untuk skenario multi-level, perlu diratakan (*flattened*) dan dihilangkan duplikatnya (*deduplicated*)**
+- Objek variabel harus berupa record collection;
+- Harus berada di rantai inheritance Table, dapat berupa Table saat ini, atau Table parent-child;
+- Variabel "Record terpilih Form" hanya tersedia di Field relasi "many-to-many" dan "one-to-many/many-to-one";
+- **Saat multi-level, perlu di-flatten dan dedup**
 
 ```typescript
-// Record yang dipilih di tabel:
+// Record terpilih Table:
 [{id:1},{id:2},{id:3},{id:4}]
 
-// Record yang dipilih di tabel/ke-satu:
+// Record terpilih Table/to-one:
 [{toOne: {id:2}}, {toOne: {id:3}}, {toOne: {id:3}}]
-// Ratakan dan hilangkan duplikat
+// Flatten dan dedup
 [{id: 2}, {id: 3}]
 
-// Record yang dipilih di tabel/ke-banyak:
+// Record terpilih Table/to-many:
 [{toMany: [{id: 1}, {id:2}]}, {toMany: {[id:3}, {id:4}]}]
-// Ratakan
+// Flatten
 [{id:1},{id:2},{id:3},{id:4}]
 ```
 
 #### Variabel Nilai Default Non-Relasi
 
--   Tipe harus konsisten atau kompatibel, misalnya, *string* kompatibel dengan angka, dan semua objek yang menyediakan metode `toString`;
--   *Field* JSON bersifat khusus dan dapat menyimpan semua jenis data;
+- Tipe konsisten atau kompatibel, seperti string kompatibel dengan number, dan semua objek yang menyediakan metode toString;
+- Field JSON cukup khusus, dapat menyimpan data apa pun;
 
-### Level *Field* (*Field* Opsional)
+### Level Field (Field Opsional)
 
 ![20240411101157](https://static-docs.nocobase.com/20240411101157.png)
 
--   Variabel nilai default non-relasi
-    -   Saat memilih *field* multi-level, ini terbatas pada relasi *to-one* dan tidak mendukung relasi *to-many*;
-    -   *Field* JSON bersifat khusus dan dapat tidak terbatas;
+- Variabel nilai default non-relasi
+  - Saat memilih Field multi-level, hanya terbatas pada relasi to-one, tidak mendukung relasi to-many;
+  - Field JSON cukup khusus, dapat tidak dibatasi;
 
--   Variabel nilai default relasi
-    -   `hasOne`, hanya mendukung relasi *to-one*;
-    -   `hasMany`, mendukung *to-one* (konversi internal) dan *to-many*;
-    -   `belongsToMany`, mendukung *to-one* (konversi internal) dan *to-many*;
-    -   `belongsTo`, umumnya untuk *to-one*, tetapi ketika relasi induk adalah `hasMany`, ia juga mendukung *to-many* (karena `hasMany/belongsTo` pada dasarnya adalah relasi *many-to-many*);
+- Variabel nilai default relasi
+  - hasOne, hanya mendukung relasi to-one;
+  - hasMany, baik to-one (konversi internal) dan to-many keduanya bisa;
+  - belongsToMany, baik to-one (konversi internal) dan to-many keduanya bisa;
+  - belongsTo, umumnya to-one. Saat relasi parent adalah hasMany, juga mendukung to-many (karena hasMany/belongsTo pada dasarnya adalah relasi many-to-many);
 
 ## Penjelasan Kasus Khusus
 
-### "Banyak-ke-Banyak" Setara dengan Kombinasi "Satu-ke-Banyak/Banyak-ke-Satu"
+### "Many-to-Many" Setara dengan Kombinasi "One-to-Many/Many-to-One"
 
 Model
 
 ![20240411101558](https://static-docs.nocobase.com/20240411101558.png)
 
-### Mengapa Relasi Satu-ke-Satu dan Satu-ke-Banyak Tidak Memiliki Nilai Default?
+### Mengapa One-to-One dan One-to-Many Tidak Memiliki Nilai Default?
 
-Misalnya, dalam relasi A.B, jika `b1` terkait dengan `a1`, maka `b1` tidak dapat terkait dengan `a2`. Jika `b1` terkait dengan `a2`, maka keterkaitannya dengan `a1` akan dihapus. Dalam kasus ini, data tidak dibagikan (*shared*), sedangkan nilai default adalah mekanisme yang dibagikan (semua dapat terkait). Oleh karena itu, relasi Satu-ke-Satu (*One-to-One*) dan Satu-ke-Banyak (*One-to-Many*) tidak dapat memiliki nilai default.
+Misalnya relasi A.B, b1 yang sudah diasosiasikan dengan a1 tidak dapat diasosiasikan dengan a2. Jika b1 diasosiasikan dengan a2, maka asosiasi dengan a1 akan dilepaskan. Dalam kasus ini, data tidak shared, sedangkan nilai default adalah mekanisme shared (semuanya dapat diasosiasikan), sehingga one-to-one dan one-to-many tidak dapat mengatur nilai default.
 
-### Mengapa Sub-formulir atau Sub-tabel Relasi Banyak-ke-Satu dan Banyak-ke-Banyak Tidak Dapat Memiliki Nilai Default?
+### Mengapa Sub-Form atau Sub-Table dari Many-to-One dan Many-to-Many Juga Tidak Dapat Memiliki Nilai Default?
 
-Karena fokus sub-formulir dan sub-tabel adalah untuk langsung mengedit data relasi (termasuk menambah dan menghapus), sementara nilai default relasi adalah mekanisme yang dibagikan di mana semua dapat terkait, tetapi data relasi tidak dapat dimodifikasi. Oleh karena itu, tidak cocok untuk menyediakan nilai default dalam skenario ini.
+Karena fokus sub-form dan sub-table adalah mengedit data relasi secara langsung (termasuk tambah, hapus), sedangkan nilai default relasi adalah mekanisme shared, semuanya dapat diasosiasikan, tetapi tidak dapat memodifikasi data relasi. Jadi dalam skenario ini tidak cocok untuk menyediakan nilai default.
 
-Selain itu, sub-formulir atau sub-tabel memiliki sub-*field*, dan akan menjadi tidak jelas apakah nilai default untuk sub-formulir atau sub-tabel adalah nilai default baris atau nilai default kolom.
+Selain itu, sub-form atau sub-table memiliki sub-Field. Pengaturan nilai default sub-form atau sub-table sebagai nilai default baris atau nilai default kolom akan membingungkan.
 
-Dengan mempertimbangkan semua faktor, lebih tepat jika sub-formulir atau sub-tabel tidak dapat memiliki nilai default yang diatur secara langsung, terlepas dari jenis relasinya.
+Mempertimbangkan secara komprehensif, lebih cocok untuk tidak dapat langsung mengatur nilai default untuk sub-form atau sub-table apa pun relasinya.

@@ -1,5 +1,6 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Menulis Plugin Field"
+description: "Pengembangan Field Extension NocoBase: menulis plugin Field kustom."
+keywords: "plugin field,Field,pengembangan extension,NocoBase"
+---
 
-Mohon berikan konten dalam bahasa Mandarin (asli) dan Inggris (referensi) agar saya dapat menerjemahkannya ke Bahasa Indonesia sesuai dengan instruksi Anda.

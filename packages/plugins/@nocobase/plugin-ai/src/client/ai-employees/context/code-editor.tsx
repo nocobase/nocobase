@@ -7,16 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { WorkContextOptions } from '../types';
 import { CodeOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 // @ts-ignore
 import _ from 'lodash';
 import { Space } from 'antd';
-import { css } from '@nocobase/client';
-import ReactMarkdown from 'react-markdown';
-import { Code } from '../chatbox/markdown/Code';
 
 type Content = {
   scene: string;
@@ -41,3 +37,4 @@ export const CodeEditorContext: WorkContextOptions = {
     return (content as Content)?.code;
   },
 };
+import React from 'react';

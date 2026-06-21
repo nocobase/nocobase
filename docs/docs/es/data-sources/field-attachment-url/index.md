@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-attachment-url"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Campo de la colección: Adjunto (URL)
 

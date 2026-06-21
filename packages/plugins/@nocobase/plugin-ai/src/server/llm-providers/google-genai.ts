@@ -8,17 +8,18 @@
  */
 
 import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
-import { EmbeddingProvider, LLMProvider } from './provider';
-import axios from 'axios';
+import { EmbeddingProvider, LLMProvider, ParsedAttachmentResult } from './provider';
+import { serverRequest } from '@nocobase/utils';
 import { Model } from '@nocobase/database';
 import { encodeFile } from '../utils';
-import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { Context } from '@nocobase/actions';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
+import { ChatGenerationChunk, LLMResult } from '@langchain/core/outputs';
 
-const GOOGLE_GEN_AI_URL = 'https://generativelanguage.googleapis.com/v1beta/';
+const GOOGLE_GEN_AI_URL = 'https://generativelanguage.googleapis.com';
 
 export class GoogleGenAIProvider extends LLMProvider {
   declare chatModel: ChatGoogleGenerativeAI;
@@ -36,7 +37,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       ...this.modelOptions,
       model,
       json: responseFormat === 'json',
-      verbose: false,
+      baseUrl: this.getResolvedBaseURL(),
     });
   }
 
@@ -47,30 +48,35 @@ export class GoogleGenAIProvider extends LLMProvider {
   }> {
     const options = this.serviceOptions || {};
     const apiKey = options.apiKey;
-    let baseURL = options.baseURL || this.baseURL;
-    if (!baseURL) {
+    let url: string;
+    try {
+      url = this.buildRequestURL(`v1beta/models?key=${encodeURIComponent(apiKey ?? '')}`);
+    } catch (e) {
+      return { code: 400, errMsg: e instanceof Error ? e.message : String(e) };
+    }
+    if (!url) {
       return { code: 400, errMsg: 'baseURL is required' };
     }
     if (!apiKey) {
       return { code: 400, errMsg: 'API Key required' };
     }
-    if (baseURL && baseURL.endsWith('/')) {
-      baseURL = baseURL.slice(0, -1);
-    }
     try {
-      const res = await axios.get(`${baseURL}/models?key=${apiKey}`);
+      const res = await serverRequest({
+        method: 'GET',
+        url,
+      });
       return {
         models: res?.data?.models.map((model) => ({
           id: model.name,
         })),
       };
     } catch (e) {
-      return { code: 500, errMsg: e.message };
+      return { code: e.response?.status || 500, errMsg: e.message };
     }
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -102,28 +108,45 @@ export class GoogleGenAIProvider extends LLMProvider {
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };
   }
 
-  async parseAttachment(ctx: Context, attachment: any) {
+  protected async convertToContent(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(ctx, decodeURIComponent(url));
-    if (attachment.mimetype.startsWith('image/')) {
+    if (attachment.mimetype?.startsWith('image/')) {
+      const data = await encodeFile(ctx, decodeURIComponent(url));
       return {
-        type: 'image_url',
-        image_url: {
-          url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+        placement: 'contentBlocks',
+        content: {
+          type: 'image_url',
+          image_url: {
+            url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+          },
         },
       };
     } else {
+      const data = await encodeFile(ctx, decodeURIComponent(url));
       return {
-        type: attachment.mimetype,
-        data,
+        placement: 'contentBlocks',
+        content: {
+          type: attachment.mimetype,
+          data,
+        },
       };
     }
+  }
+
+  parseResponseMetadata(output: LLMResult) {
+    const [generation] = output?.generations ?? [];
+    const [chatGenerationChunk] = generation ?? [];
+    return [
+      (chatGenerationChunk as any)?.message?.id,
+      { groundingMetadata: chatGenerationChunk?.generationInfo?.groundingMetadata },
+    ];
   }
 
   getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']) {
@@ -159,15 +182,12 @@ export class GoogleGenAIProvider extends LLMProvider {
 
   protected builtInTools(): any[] {
     if (this.modelOptions?.builtIn?.webSearch === true) {
-      const groundingTool = {
-        googleSearch: {},
-      };
-      return [groundingTool];
+      return [{ googleSearch: {} }];
     }
     return [];
   }
 
-  protected isToolConflict(): boolean {
+  isToolConflict(): boolean {
     return true;
   }
 }
@@ -180,7 +200,7 @@ export class GoogleGenAIEmbeddingProvider extends EmbeddingProvider {
   createEmbedding(): EmbeddingsInterface {
     return new GoogleGenerativeAIEmbeddings({
       apiKey: this.apiKey,
-      baseUrl: this.baseUrl,
+      baseUrl: this.baseURL,
       model: this.model,
     });
   }
@@ -190,17 +210,10 @@ export const googleGenAIProviderOptions: LLMProviderMeta = {
   title: 'Google generative AI',
   supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
   models: {
-    [SupportedModel.LLM]: [
-      'models/gemini-2.5-pro',
-      'models/gemini-2.5-flash',
-      'models/gemini-2.5-flash-lite',
-      'models/gemini-2.0-flash',
-      'models/gemini-2.0-flash-lite',
-      'models/gemini-1.5-pro',
-      'models/gemini-1.5-flash',
-    ],
+    [SupportedModel.LLM]: ['models/gemini-3.0-pro-preview'],
     [SupportedModel.EMBEDDING]: ['gemini-embedding-001'],
   },
   provider: GoogleGenAIProvider,
   embedding: GoogleGenAIEmbeddingProvider,
+  supportWebSearch: true,
 };

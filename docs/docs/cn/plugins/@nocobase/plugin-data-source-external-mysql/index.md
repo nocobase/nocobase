@@ -1,4 +1,6 @@
 ---
+title: "数据源：外部 MySQL"
+keywords: "数据源：外部 MySQL,插件,NocoBase"
 displayName: "数据源：外部 MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
 
 # 数据源：外部 MySQL

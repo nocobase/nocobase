@@ -1,14 +1,14 @@
 ---
-displayName: "Журнал"
+title: "Logger"
+keywords: "Logging and monitoring"
+displayName: "Логирование"
 packageName: '@nocobase/plugin-logger'
 description: |
-  Серверные журналы, в основном включающие журналы запросов API и журналы работы системы, а также позволяющие упаковывать и скачивать файлы журналов.
+  Серверные логи: в основном логи API-запросов и журнал работы системы; можно упаковать и скачать файлы логов.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Журнал
+# Логирование

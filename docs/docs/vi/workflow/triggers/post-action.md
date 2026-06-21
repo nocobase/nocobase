@@ -1,133 +1,132 @@
 ---
 pkg: '@nocobase/plugin-workflow-action-trigger'
+title: "Sự kiện sau Action"
+description: "Trigger sự kiện sau Action: kích hoạt Workflow sau khi Action được thực thi, như tự động tạo liên kết sau khi lưu, gửi thông báo, đồng bộ dữ liệu."
+keywords: "workflow,sự kiện sau action,Post Action,kích hoạt sau khi lưu,đồng bộ dữ liệu,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Sự kiện sau thao tác
+# Sự kiện sau Action
 
 ## Giới thiệu
 
-Tất cả các thay đổi dữ liệu do người dùng tạo ra trong hệ thống thường được hoàn thành thông qua một thao tác, hình thức cụ thể thường là nhấp vào một nút. Nút này có thể là nút gửi trong một biểu mẫu, hoặc nút thao tác trong một khối dữ liệu. Sự kiện sau thao tác được dùng để liên kết các luồng công việc liên quan với các thao tác của những nút này, nhằm đạt được hiệu quả kích hoạt một quy trình cụ thể sau khi thao tác của người dùng hoàn tất thành công.
+Tất cả biến động dữ liệu được người dùng tạo ra trong hệ thống thường được hoàn thành thông qua một thao tác nào đó, hình thức cụ thể thường là bấm vào một nút nào đó, nút có thể là nút gửi trong form hoặc nút Action trong Block dữ liệu. Sự kiện sau Action được dùng để liên kết các thao tác trên những nút này với Workflow liên quan, để đạt được hiệu quả kích hoạt quy trình cụ thể sau khi thao tác của người dùng thành công.
 
-Ví dụ, khi thêm mới hoặc cập nhật dữ liệu, người dùng có thể cấu hình tùy chọn “Liên kết luồng công việc” cho một nút. Sau khi thao tác nhấp chuột hoàn tất, luồng công việc đã liên kết sẽ được kích hoạt.
+Ví dụ, khi thêm hoặc cập nhật dữ liệu, người dùng có thể thông qua việc cấu hình tùy chọn "Liên kết Workflow" của nút, sau khi bấm thao tác hoàn tất sẽ kích hoạt Workflow được liên kết.
 
-Ở cấp độ triển khai, do việc xử lý sự kiện sau thao tác nằm ở tầng middleware (middleware của Koa), do đó, các lệnh gọi HTTP API đến NocoBase cũng có thể kích hoạt các sự kiện sau thao tác đã được định nghĩa.
+Về mặt triển khai, vì việc xử lý sự kiện sau Action nằm ở tầng middleware (middleware của Koa), do đó các lời gọi HTTP API của NocoBase cũng có thể kích hoạt sự kiện sau Action đã được định nghĩa.
 
 ## Cài đặt
 
-Đây là một plugin tích hợp sẵn, không cần cài đặt.
+Plugin tích hợp sẵn, không cần cài đặt.
 
-## Cấu hình trình kích hoạt
+## Cấu hình Trigger
 
-### Tạo luồng công việc
+### Tạo Workflow
 
-Khi tạo một luồng công việc, hãy chọn loại là “Sự kiện sau thao tác”:
+Khi tạo Workflow, loại chọn "Sự kiện sau Action":
 
-![Tạo luồng công việc_Trình kích hoạt sự kiện sau thao tác](https://static-docs.nocobase.com/13c87035ec1bb7332514676d3e896007.png)
+![Tạo Workflow_Trigger sự kiện sau Action](https://static-docs.nocobase.com/13c87035ec1bb7332514676d3e896007.png)
 
 ### Chế độ thực thi
 
-Đối với các sự kiện sau thao tác, khi tạo, bạn cũng có thể chọn chế độ thực thi là “Đồng bộ” hoặc “Bất đồng bộ”:
+Đối với sự kiện sau Action, khi tạo còn có thể chọn chế độ thực thi là "Đồng bộ" hoặc "Bất đồng bộ":
 
-![Tạo luồng công việc_Chọn đồng bộ hoặc bất đồng bộ](https://static-docs.nocobase.com/bc83525c7e539d578f9e2e20baf9ab69.png)
+![Tạo Workflow_chọn đồng bộ hoặc bất đồng bộ](https://static-docs.nocobase.com/bc83525c7e539d578f9e2e20baf9ab69.png)
 
-Nếu quy trình cần được thực thi và trả về ngay lập tức sau thao tác của người dùng, bạn có thể sử dụng chế độ đồng bộ; nếu không, mặc định sẽ là chế độ bất đồng bộ. Ở chế độ bất đồng bộ, thao tác sẽ hoàn tất ngay sau khi luồng công việc được kích hoạt, và luồng công việc sẽ được thực thi tuần tự trong hàng đợi nền của ứng dụng.
+Nếu là quy trình cần thực thi và trả về ngay sau khi người dùng thao tác, có thể sử dụng chế độ đồng bộ, ngược lại mặc định là chế độ bất đồng bộ. Ở chế độ bất đồng bộ, sau khi kích hoạt Workflow thì thao tác đó hoàn tất, Workflow sẽ được thực thi tuần tự ở backend ứng dụng theo dạng hàng đợi.
 
-### Cấu hình bộ sưu tập
+### Cấu hình bảng dữ liệu
 
-Vào khung vẽ luồng công việc, nhấp vào trình kích hoạt để mở cửa sổ cấu hình, và trước tiên cần chọn bộ sưu tập cần liên kết:
+Vào canvas Workflow, bấm vào Trigger để mở popup cấu hình, đầu tiên cần chọn bảng dữ liệu cần liên kết:
 
-![Cấu hình luồng công việc_Chọn bộ sưu tập](https://static-docs.nocobase.com/35c49a91eba731127edcf76719c97634.png)
+![Cấu hình Workflow_chọn bảng dữ liệu](https://static-docs.nocobase.com/35c49a91eba731127edcf76719c97634.png)
 
 ### Chọn chế độ kích hoạt
 
-Sau đó chọn chế độ kích hoạt, có hai loại: chế độ cục bộ và chế độ toàn cục:
+Sau đó chọn chế độ kích hoạt, có hai loại là chế độ cục bộ và chế độ toàn cục:
 
-![Cấu hình luồng công việc_Chọn chế độ kích hoạt](https://static-docs.nocobase.com/317809c48b2f2a2d38aedc7d08abdadc.png)
+![Cấu hình Workflow_chọn chế độ kích hoạt](https://static-docs.nocobase.com/317809c48b2f2a2d38aedc7d08abdadc.png)
 
 Trong đó:
 
-*   Chế độ cục bộ chỉ được kích hoạt trên các nút thao tác đã liên kết luồng công việc này. Các nút chưa liên kết luồng công việc này sẽ không kích hoạt khi được nhấp. Bạn có thể quyết định có nên liên kết luồng công việc này hay không, dựa trên việc các biểu mẫu có mục đích khác nhau có nên kích hoạt cùng một quy trình hay không.
-*   Chế độ toàn cục sẽ được kích hoạt trên tất cả các nút thao tác đã cấu hình của bộ sưu tập, không phân biệt đến từ biểu mẫu nào, và cũng không cần liên kết luồng công việc tương ứng.
+* Chế độ cục bộ chỉ kích hoạt trên các nút Action được liên kết với Workflow này, các nút không liên kết Workflow này sau khi bấm sẽ không kích hoạt. Có thể dựa trên việc cân nhắc các form có mục đích khác nhau có kích hoạt cùng một quy trình hay không để quyết định có liên kết Workflow này hay không.
+* Chế độ toàn cục thì sẽ kích hoạt trên tất cả các nút Action được cấu hình trên bảng dữ liệu, không phân biệt từ form nào và cũng không cần liên kết với Workflow tương ứng.
 
-Ở chế độ cục bộ, các nút thao tác hiện hỗ trợ liên kết như sau:
+Ở chế độ cục bộ, hiện hỗ trợ liên kết các nút Action sau:
 
-*   Các nút “Gửi” và “Lưu” trong biểu mẫu thêm mới.
-*   Các nút “Gửi” và “Lưu” trong biểu mẫu cập nhật.
-*   Nút “Cập nhật dữ liệu” trong các hàng dữ liệu (bảng, danh sách, Kanban, v.v.).
+* Nút "Gửi" và "Lưu" của form thêm.
+* Nút "Gửi" và "Lưu" của form cập nhật.
+* Nút "Cập nhật dữ liệu" trong dòng dữ liệu (bảng, danh sách, kanban...).
 
-### Chọn loại thao tác
+### Chọn loại Action
 
-Nếu bạn chọn chế độ toàn cục, bạn cũng cần chọn loại thao tác. Hiện tại, hỗ trợ “Thao tác tạo dữ liệu” và “Thao tác cập nhật dữ liệu”. Cả hai thao tác đều kích hoạt luồng công việc sau khi thao tác thành công.
+Nếu chọn chế độ toàn cục, còn cần chọn loại Action, hiện hỗ trợ "Action tạo dữ liệu" và "Action cập nhật dữ liệu". Cả hai Action đều kích hoạt Workflow sau khi Action thành công.
 
-### Chọn dữ liệu liên kết được tải trước
+### Chọn dữ liệu quan hệ preload
 
-Nếu bạn cần sử dụng dữ liệu liên kết của dữ liệu kích hoạt trong các quy trình tiếp theo, bạn có thể chọn các trường liên kết cần tải trước:
+Nếu cần sử dụng dữ liệu liên kết của dữ liệu kích hoạt trong các bước tiếp theo, có thể chọn các trường quan hệ cần preload:
 
-![Cấu hình luồng công việc_Tải trước liên kết](https://static-docs.nocobase.com/5cded063509c7ba1d34f49bec8d68227.png)
+![Cấu hình Workflow_preload quan hệ](https://static-docs.nocobase.com/5cded063509c7ba1d34f49bec8d68227.png)
 
-Sau khi kích hoạt, bạn có thể trực tiếp sử dụng dữ liệu liên kết này trong quy trình.
+Sau khi kích hoạt có thể trực tiếp sử dụng các dữ liệu liên kết này trong quy trình.
 
-## Cấu hình thao tác
+## Cấu hình Action
 
-Đối với các thao tác ở chế độ kích hoạt cục bộ, sau khi cấu hình luồng công việc hoàn tất, bạn cần quay lại giao diện người dùng và liên kết luồng công việc này với nút thao tác biểu mẫu của khối dữ liệu tương ứng.
+Đối với Action ở chế độ kích hoạt cục bộ, sau khi cấu hình Workflow xong, cần quay lại giao diện người dùng và liên kết Workflow này với nút Action form trong Block dữ liệu tương ứng.
 
-Các luồng công việc được cấu hình cho nút “Gửi” (bao gồm cả nút “Lưu dữ liệu”) sẽ được kích hoạt sau khi người dùng gửi biểu mẫu tương ứng và thao tác dữ liệu hoàn tất.
+Workflow được cấu hình cho nút "Gửi" (bao gồm nút "Lưu dữ liệu") sẽ được kích hoạt sau khi người dùng gửi form tương ứng và Action dữ liệu hoàn tất.
 
-![Sự kiện sau thao tác_Nút Gửi](https://static-docs.nocobase.com/ae12d219b8400d75b395880ec4cb2bda.png)
+![Sự kiện sau Action_nút gửi](https://static-docs.nocobase.com/ae12d219b8400d75b395880ec4cb2bda.png)
 
-Chọn “Liên kết luồng công việc” từ menu cấu hình nút để mở cửa sổ cấu hình liên kết. Trong cửa sổ này, bạn có thể cấu hình bất kỳ số lượng luồng công việc nào cần kích hoạt. Nếu không cấu hình cái nào, có nghĩa là không cần kích hoạt. Đối với mỗi luồng công việc, trước tiên cần xác định dữ liệu kích hoạt là dữ liệu của toàn bộ biểu mẫu hay dữ liệu của một trường liên kết cụ thể trong biểu mẫu. Sau đó, dựa trên bộ sưu tập tương ứng với mô hình dữ liệu đã chọn, hãy chọn luồng công việc biểu mẫu đã được cấu hình để khớp với mô hình bộ sưu tập đó.
+Từ menu cấu hình của nút chọn "Liên kết Workflow" để mở popup cấu hình liên kết. Trong popup có thể cấu hình bao nhiêu Workflow muốn kích hoạt cũng được, nếu không cấu hình cái nào nghĩa là không cần kích hoạt. Đối với mỗi Workflow, cần giới hạn trước dữ liệu kích hoạt là dữ liệu của toàn bộ form hay dữ liệu của trường quan hệ nào đó trong form, sau đó dựa trên bảng dữ liệu tương ứng với mô hình dữ liệu được chọn để chọn Workflow form đã được cấu hình khớp với mô hình bảng đó.
 
-![Sự kiện sau thao tác_Cấu hình liên kết luồng công việc_Chọn ngữ cảnh](https://static-docs.nocobase.com/358315fc175849a7fbadbe3276ac6fed.png)
+![Sự kiện sau Action_cấu hình liên kết Workflow_chọn ngữ cảnh](https://static-docs.nocobase.com/358315fc175849a7fbadbe3276ac6fed.png)
 
-![Sự kiện sau thao tác_Cấu hình liên kết luồng công việc_Chọn luồng công việc](https://static-docs.nocobase.com/175a71a61b93540cce62a1cb124eb0b5.png)
+![Sự kiện sau Action_cấu hình liên kết Workflow_chọn Workflow](https://static-docs.nocobase.com/175a71a61b93540cce62a1cb124eb0b5.png)
 
-:::info{title="Lưu ý"}
-Luồng công việc cần được kích hoạt trước khi có thể được chọn trong giao diện trên.
+:::info{title="Mẹo"}
+Workflow cần được bật mới có thể được chọn trong giao diện trên.
 :::
 
 ## Ví dụ
 
-Ở đây sẽ minh họa bằng cách sử dụng thao tác thêm mới.
+Ở đây minh họa thông qua thao tác thêm.
 
-Giả sử có một kịch bản “Đơn xin hoàn tiền”. Chúng ta cần thực hiện kiểm tra tự động hạn mức và kiểm tra thủ công đối với các khoản vượt hạn mức sau khi nhân viên gửi yêu cầu hoàn tiền. Chỉ những đơn được kiểm tra thành công mới được duyệt và sau đó chuyển cho bộ phận tài chính xử lý.
+Giả sử tình huống "Đề nghị hoàn ứng", chúng ta cần sau khi nhân viên gửi đề nghị hoàn ứng chi phí, sẽ thực hiện kiểm duyệt tự động hạn mức và kiểm duyệt thủ công khi vượt hạn mức, chỉ những đề nghị được kiểm duyệt thành công mới được thông qua, sau đó giao cho bộ phận tài chính xử lý.
 
-Đầu tiên, chúng ta có thể tạo một bộ sưu tập “Hoàn tiền chi phí” với các trường sau:
+Đầu tiên, chúng ta tạo một bảng dữ liệu "Hoàn ứng chi phí" với các trường sau:
 
-*   Tên dự án: Văn bản một dòng
-*   Người nộp đơn: Nhiều-một (Người dùng)
-*   Số tiền: Số
-*   Trạng thái: Chọn một (“Đã duyệt”, “Đã xử lý”)
+- Tên dự án: Văn bản một dòng
+- Người đề nghị: Nhiều - một (User)
+- Số tiền: Số
+- Trạng thái: Lựa chọn đơn ("Kiểm duyệt thông qua", "Xử lý hoàn tất")
 
-Sau đó, hãy tạo một luồng công việc loại “Sự kiện sau thao tác” và cấu hình mô hình bộ sưu tập trong trình kích hoạt là bộ sưu tập “Hoàn tiền chi phí”:
+Sau đó tạo một Workflow loại "Sự kiện sau Action" và cấu hình mô hình bảng dữ liệu trong Trigger thành bảng "Hoàn ứng chi phí":
 
-![Ví dụ_Cấu hình trình kích hoạt_Chọn bộ sưu tập](https://static-docs.nocobase.com/6e1abb5c3e1198038676115943714f07.png)
+![Ví dụ_cấu hình Trigger_chọn bảng dữ liệu](https://static-docs.nocobase.com/6e1abb5c3e1198038676115943714f07.png)
 
-Sau khi đặt luồng công việc ở trạng thái đã kích hoạt, chúng ta sẽ quay lại cấu hình các nút xử lý cụ thể của quy trình sau.
+Sau khi đặt Workflow ở trạng thái bật, các Node xử lý cụ thể của quy trình sẽ quay lại cấu hình sau.
 
-Sau đó, chúng ta tạo một khối bảng cho bộ sưu tập “Hoàn tiền chi phí” trên giao diện, và thêm một nút “Thêm” vào thanh công cụ, cấu hình các trường biểu mẫu tương ứng. Trong các tùy chọn cấu hình của nút thao tác “Gửi” của biểu mẫu, hãy mở hộp thoại cấu hình “Liên kết luồng công việc” của nút, chọn toàn bộ dữ liệu biểu mẫu làm ngữ cảnh, và chọn luồng công việc mà chúng ta đã tạo trước đó:
+Sau đó chúng ta tạo Block bảng của bảng dữ liệu "Hoàn ứng chi phí" trên giao diện và thêm nút "Thêm" trên thanh công cụ, cấu hình các trường form tương ứng. Trong mục cấu hình của nút Action "Gửi" form, mở hộp thoại cấu hình "Liên kết Workflow" của nút, chọn dữ liệu của toàn bộ form làm ngữ cảnh và Workflow là Workflow chúng ta đã tạo trước đó:
 
-![Ví dụ_Cấu hình nút biểu mẫu_Liên kết luồng công việc](https://static-docs.nocobase.com/fc00bdcdb975bb8850e5cab235f854f3.png)
+![Ví dụ_cấu hình nút form_liên kết Workflow](https://static-docs.nocobase.com/fc00bdcdb975bb8850e5cab235f854f3.png)
 
-Sau khi cấu hình biểu mẫu hoàn tất, hãy quay lại sắp xếp logic của luồng công việc. Ví dụ, chúng ta yêu cầu quản trị viên thực hiện kiểm tra thủ công khi số tiền lớn hơn 500, nếu không thì duyệt trực tiếp. Sau khi duyệt thành công mới tạo bản ghi hoàn tiền và được bộ phận tài chính xử lý thêm (đã lược bỏ).
+Sau khi cấu hình form xong, quay lại điều phối logic của Workflow. Ví dụ chúng ta cần khi số tiền lớn hơn 500 đồng yêu cầu admin kiểm duyệt thủ công, ngược lại trực tiếp thông qua, sau khi kiểm duyệt thông qua mới tạo bản ghi hoàn ứng và bộ phận tài chính tiếp tục xử lý (lược).
 
-![Ví dụ_Quy trình xử lý](https://static-docs.nocobase.com/059e8e3d5ffb34cc2da6880fa3dc490b.png)
+![Ví dụ_quy trình xử lý](https://static-docs.nocobase.com/059e8e3d5ffb34cc2da6880fa3dc490b.png)
 
-Nếu bỏ qua các bước xử lý tài chính tiếp theo, thì việc cấu hình quy trình xin hoàn tiền đã hoàn tất. Khi nhân viên điền và gửi đơn xin hoàn tiền, luồng công việc tương ứng sẽ được kích hoạt. Nếu số tiền chi phí nhỏ hơn 500, một bản ghi sẽ tự động được tạo và chờ bộ phận tài chính xử lý thêm. Nếu không, nó sẽ được người quản lý duyệt, và sau khi duyệt thành công, một bản ghi cũng sẽ được tạo và chuyển cho bộ phận tài chính xử lý.
+Bỏ qua phần xử lý của tài chính sau đó, như vậy đã hoàn tất cấu hình quy trình đề nghị hoàn ứng. Khi nhân viên điền đơn đề nghị hoàn ứng và gửi, sẽ kích hoạt Workflow tương ứng, nếu số tiền nhỏ hơn 500 sẽ tự động tạo bản ghi và chờ tài chính xử lý tiếp, ngược lại sẽ do quản lý kiểm duyệt, sau khi kiểm duyệt thông qua cũng tương tự tạo bản ghi và giao cho tài chính xử lý.
 
-Quy trình trong ví dụ này cũng có thể được cấu hình trên một nút “Gửi” thông thường. Bạn có thể quyết định có cần tạo bản ghi trước khi thực hiện các quy trình tiếp theo hay không, dựa trên kịch bản nghiệp vụ cụ thể.
+Quy trình của ví dụ này cũng có thể được cấu hình trên nút "Gửi" thông thường, có thể tùy theo tình huống nghiệp vụ cụ thể để quyết định có cần tạo bản ghi trước rồi mới thực thi quy trình tiếp theo hay không.
 
 ## Gọi từ bên ngoài
 
-Việc kích hoạt sự kiện sau thao tác không chỉ giới hạn ở các thao tác trên giao diện người dùng, mà còn có thể được kích hoạt thông qua các lệnh gọi HTTP API.
+Việc kích hoạt sự kiện sau Action không chỉ giới hạn ở thao tác trên giao diện người dùng mà còn có thể được kích hoạt thông qua HTTP API.
 
-:::info{title="Lưu ý"}
-Khi kích hoạt sự kiện sau thao tác thông qua lệnh gọi HTTP API, bạn cũng cần chú ý đến trạng thái kích hoạt của luồng công việc và liệu cấu hình bộ sưu tập có khớp hay không, nếu không, lệnh gọi có thể không thành công hoặc xảy ra lỗi.
+:::info{title="Mẹo"}
+Khi kích hoạt sự kiện sau Action thông qua HTTP API, cũng cần lưu ý trạng thái bật của Workflow và việc cấu hình bảng dữ liệu có khớp không, nếu không có thể không gọi thành công hoặc xuất hiện lỗi.
 :::
 
-Đối với các luồng công việc được liên kết cục bộ trên một nút thao tác, bạn có thể gọi như sau (ví dụ với nút tạo của bộ sưu tập `posts`):
+Đối với Workflow được liên kết cục bộ trên nút Action, có thể gọi như sau (lấy ví dụ nút tạo trên bảng `posts`):
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -138,17 +137,17 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey"
 ```
 
-Trong đó, tham số URL `triggerWorkflows` là khóa của luồng công việc, nhiều luồng công việc được phân tách bằng dấu phẩy. Khóa này có thể được lấy bằng cách di chuột qua tên luồng công việc ở đầu khung vẽ luồng công việc:
+Trong đó tham số URL `triggerWorkflows` là key của Workflow, nhiều Workflow phân tách bằng dấu phẩy. Key này có thể nhận được khi rê chuột qua tên Workflow trên đầu canvas Workflow:
 
-![Luồng công việc_Khóa_Cách xem](https://static-docs.nocobase.com/20240426135108.png)
+![Cách xem key Workflow](https://static-docs.nocobase.com/20240426135108.png)
 
-Sau khi lệnh gọi trên thành công, sự kiện sau thao tác của bộ sưu tập `posts` tương ứng sẽ được kích hoạt.
+Sau khi gọi như trên thành công, sẽ kích hoạt sự kiện sau Action của bảng `posts` tương ứng.
 
-:::info{title="Lưu ý"}
-Vì các lệnh gọi từ bên ngoài cũng cần dựa trên danh tính người dùng, nên khi gọi qua HTTP API, tương tự như các yêu cầu gửi từ giao diện thông thường, đều cần cung cấp thông tin xác thực, bao gồm tiêu đề yêu cầu `Authorization` hoặc tham số `token` (token nhận được khi đăng nhập), và tiêu đề yêu cầu `X-Role` (tên vai trò hiện tại của người dùng).
+:::info{title="Mẹo"}
+Vì việc gọi từ bên ngoài cũng cần dựa trên danh tính người dùng, nên khi gọi qua HTTP API, giống như request thông thường được gửi từ giao diện, đều cần cung cấp thông tin xác thực, bao gồm header `Authorization` hoặc tham số `token` (token nhận được khi đăng nhập), và header `X-Role` (tên vai trò hiện tại của người dùng).
 :::
 
-Nếu bạn cần kích hoạt một sự kiện cho dữ liệu liên kết một-một (một-nhiều hiện chưa được hỗ trợ) trong thao tác này, bạn có thể sử dụng `!` trong tham số để chỉ định dữ liệu kích hoạt của trường liên kết:
+Nếu cần kích hoạt sự kiện cho dữ liệu quan hệ một - một (chưa hỗ trợ một - nhiều) trong Action đó, có thể sử dụng `!` trong tham số để chỉ định dữ liệu kích hoạt của trường quan hệ:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -162,29 +161,29 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey!category"
 ```
 
-Sau khi lệnh gọi trên thành công, sự kiện sau thao tác của bộ sưu tập `categories` tương ứng sẽ được kích hoạt.
+Sau khi gọi như trên thành công, sẽ kích hoạt sự kiện sau Action của bảng `categories` tương ứng.
 
-:::info{title="Lưu ý"}
-Nếu sự kiện được cấu hình ở chế độ toàn cục, bạn không cần sử dụng tham số URL `triggerWorkflows` để chỉ định luồng công việc tương ứng. Chỉ cần gọi thao tác bộ sưu tập tương ứng là có thể kích hoạt.
+:::info{title="Mẹo"}
+Nếu sự kiện được cấu hình ở chế độ toàn cục, không cần sử dụng tham số URL `triggerWorkflows` để chỉ định Workflow tương ứng, trực tiếp gọi Action bảng dữ liệu tương ứng là có thể kích hoạt.
 :::
 
-## Các câu hỏi thường gặp
+## Câu hỏi thường gặp
 
-### Sự khác biệt với sự kiện trước thao tác
+### Sự khác biệt với sự kiện trước Action
 
-*   **Sự kiện trước thao tác**: Được kích hoạt trước khi một thao tác (như thêm mới, cập nhật, v.v.) được thực thi. Trước khi thao tác được thực thi, dữ liệu yêu cầu có thể được xác thực hoặc xử lý trong luồng công việc. Nếu luồng công việc bị chấm dứt (yêu cầu bị chặn), thao tác đó (thêm mới, cập nhật, v.v.) sẽ không được thực thi.
-*   **Sự kiện sau thao tác**: Được kích hoạt sau khi một thao tác của người dùng thành công. Tại thời điểm này, dữ liệu đã được gửi thành công và đã được lưu vào cơ sở dữ liệu, có thể tiếp tục xử lý các quy trình liên quan dựa trên kết quả thành công.
+* Sự kiện trước Action: được kích hoạt trước khi một Action nào đó (như thêm, cập nhật...) được thực thi, trước khi Action được thực thi, có thể kiểm tra hoặc xử lý dữ liệu của request trong quy trình, nếu quy trình bị dừng (request bị chặn) thì Action đó (thêm, cập nhật...) sẽ không được thực thi.
+* Sự kiện sau Action: được kích hoạt sau khi một Action nào đó của người dùng thành công, lúc này dữ liệu đã được gửi thành công và đã hoàn tất ghi vào DB, có thể tiếp tục xử lý quy trình liên quan dựa trên kết quả thành công.
 
-Như được hiển thị trong hình dưới đây:
+Như hình dưới đây:
 
-![Thứ tự thực thi thao tác](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Thứ tự thực thi Action](https://static-docs.nocobase.com/20251219234806.png)
 
-### Sự khác biệt với sự kiện bộ sưu tập
+### Sự khác biệt với sự kiện bảng dữ liệu
 
-Sự kiện sau thao tác và sự kiện bộ sưu tập có những điểm tương đồng, về mặt hiệu quả, cả hai đều là các quy trình được kích hoạt sau khi dữ liệu thay đổi. Tuy nhiên, cấp độ triển khai của chúng khác nhau: sự kiện sau thao tác là ở cấp độ API, trong khi sự kiện bộ sưu tập là dành cho các thay đổi dữ liệu trong bộ sưu tập.
+Sự kiện sau Action có điểm tương tự với sự kiện bảng dữ liệu, về mặt hiệu quả đều là quy trình được kích hoạt sau khi dữ liệu biến động, nhưng về mặt triển khai có sự khác biệt, sự kiện sau Action nhằm vào tầng API, còn sự kiện bảng dữ liệu nhằm vào biến động dữ liệu của bảng dữ liệu.
 
-Sự kiện bộ sưu tập gần với tầng cơ sở của hệ thống hơn. Trong một số trường hợp, một thay đổi dữ liệu do một sự kiện gây ra có thể kích hoạt một sự kiện khác, tạo ra một phản ứng dây chuyền. Đặc biệt khi dữ liệu trong một số bộ sưu tập liên kết cũng thay đổi trong quá trình thao tác trên bộ sưu tập hiện tại, thì các sự kiện liên quan đến bộ sưu tập liên kết cũng có thể được kích hoạt.
+Sự kiện bảng dữ liệu gần với tầng cơ sở của hệ thống hơn, trong một số tình huống có thể do biến động dữ liệu của một sự kiện kích hoạt một sự kiện khác và sinh ra phản ứng dây chuyền. Đặc biệt là dữ liệu của một số bảng dữ liệu liên kết cũng phát sinh biến động trong Action của bảng hiện tại, thì các sự kiện liên quan của bảng liên kết cũng có thể được kích hoạt.
 
-Việc kích hoạt sự kiện bộ sưu tập không bao gồm thông tin liên quan đến người dùng. Ngược lại, sự kiện sau thao tác gần với phía người dùng hơn, là kết quả của các thao tác người dùng. Ngữ cảnh của luồng công việc cũng sẽ chứa thông tin liên quan đến người dùng, phù hợp để xử lý các quy trình liên quan đến thao tác người dùng. Trong thiết kế tương lai của NocoBase, có thể sẽ mở rộng thêm nhiều sự kiện sau thao tác có thể được dùng để kích hoạt, vì vậy **khuyến nghị nên sử dụng sự kiện sau thao tác** để xử lý các quy trình mà thay đổi dữ liệu do thao tác người dùng gây ra.
+Việc kích hoạt sự kiện bảng dữ liệu không chứa thông tin liên quan đến người dùng. Còn sự kiện sau Action gần với phía người dùng hơn, là kết quả của thao tác người dùng, ngữ cảnh quy trình cũng sẽ chứa thông tin liên quan đến người dùng, phù hợp xử lý quy trình thao tác người dùng. Trong thiết kế tương lai của NocoBase, có thể sẽ mở rộng thêm nhiều sự kiện sau Action có thể dùng để kích hoạt, nên **khuyến nghị sử dụng sự kiện sau Action** để xử lý các quy trình có biến động dữ liệu do thao tác người dùng gây ra.
 
-Một điểm khác biệt nữa là, sự kiện sau thao tác có thể được liên kết cục bộ trên các nút biểu mẫu cụ thể. Nếu có nhiều biểu mẫu, việc gửi từ một số biểu mẫu có thể kích hoạt sự kiện này, trong khi các biểu mẫu khác thì không. Trong khi đó, sự kiện bộ sưu tập là dành cho các thay đổi dữ liệu trong toàn bộ bộ sưu tập và không thể liên kết cục bộ.
+Một điểm khác biệt nữa là sự kiện sau Action có thể liên kết cục bộ trên nút form cụ thể, nếu có nhiều form, có thể một phần form gửi sẽ kích hoạt sự kiện đó còn phần khác thì không, còn sự kiện bảng dữ liệu là nhằm vào biến động dữ liệu của toàn bộ bảng dữ liệu, không thể liên kết cục bộ.

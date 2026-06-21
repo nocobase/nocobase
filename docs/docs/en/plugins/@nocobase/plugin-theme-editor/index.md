@@ -1,4 +1,6 @@
 ---
+title: "Theme editor"
+keywords: "System management"
 displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Theme editor

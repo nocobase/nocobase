@@ -1,0 +1,386 @@
+---
+title: "Установка и обновление NocoBase в изолированной сети (через create-nocobase-app)"
+description: "Быстрый старт NocoBase: установка и обновление NocoBase в изолированной сети с помощью create-nocobase-app"
+keywords: "create,nocobase,app,NocoBase"
+---
+
+# Установка и обновление NocoBase во внутренней сети (create-nocobase-app)
+
+Среды во внутренней сети (intranet) не могут напрямую обращаться к npm registry. Вам нужно создать проект и установить зависимости в среде с доступом в интернет, затем упаковать весь проект и перенести его на сервер intranet для развёртывания.
+
+**Общий процесс**: создайте проект в интернете → установите зависимости и сформируйте пакет → скопируйте во внутреннюю сеть → распакуйте, настройте и запустите
+
+:::tip Необходимые условия
+
+- На обеих машинах (в интернете и intranet) должны быть установлены **Node.js 20+** и **Yarn 1.22.x**
+- База данных: MySQL 8.0.17+, MariaDB 10.9+ или PostgreSQL 10+ (может быть развернута во внутренней сети или в интернете)
+- **Версия Node.js** и **архитектура ОС** должны совпадать между машинами в интернете и во внутренней сети; иначе некоторые нативные модули в `node_modules` могут оказаться несовместимыми
+- Путь установки проекта **должен быть одинаковым** с обеих сторон (например, `/app/my-nocobase-app`), иначе после миграции проект не запустится
+
+:::
+
+## Интернет-среда
+
+Создайте проект и установите зависимости в среде с доступом в интернет.
+
+### Установка в первый раз
+
+#### 1. Создайте проект в интернете
+
+Выполните следующие команды на машине с доступом к npm. **Важно**: сначала перейдите в целевой родительский каталог (например, `cd /app`), чтобы путь к проекту был `/app/my-nocobase-app` и совпадал с путем развёртывания во внутренней сети.
+
+<Tabs>
+
+<Tab label="Последняя версия">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Бета-версия">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Альфа-версия">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+</Tabs>
+
+:::warning Пояснения к параметрам
+
+- `--skip-dev-dependencies` пропускает dev-зависимости (для развёртывания в производственной среде, чтобы уменьшить размер)
+- `APP_ENV=production` переводит приложение в production-режим
+- `TZ` задает часовой пояс приложения (по умолчанию используется системный часовой пояс)
+- `DB_*` — это настройки базы данных; обновите их, чтобы они соответствовали вашей базе данных
+
+:::
+
+#### 2. Перейдите в каталог
+
+```bash
+cd my-nocobase-app
+```
+
+#### 3. Установите зависимости
+
+```bash
+yarn install
+```
+
+:::tip Коммерческие плагины (опционально)
+
+Шаги 4–7 ниже предназначены только для загрузки коммерческих плагинов. Если вы используете только open-source версию, пропустите шаги 4–7 и перейдите напрямую к шагу 8, чтобы упаковать проект.
+
+:::
+
+#### 4. Установите NocoBase
+
+```bash
+yarn nocobase install
+```
+
+#### 5. Запустите NocoBase
+
+```bash
+yarn start
+```
+
+#### 6. Введите лицензионный ключ
+
+Перейдите по:
+
+```
+http://<internet-server-ip>:13000/admin/settings/license-settings
+```
+
+#### 7. Загрузите коммерческие плагины
+
+```bash
+yarn nocobase pkg download-pro
+```
+
+#### 8. Упакуйте проект
+
+```bash
+# Запускайте команду изнутри my-nocobase-app; архив будет создан в родительском каталоге
+# Исключает .env (конфиденциальные данные); упаковываются только storage/plugins (коммерческие плагины и т.д.)
+tar -czf ../nocobase-app.tar.gz \
+  --exclude='./.env' \
+  --exclude='./storage' \
+  . \
+  ./storage/plugins
+```
+
+### Обновление приложения
+
+#### 1. Обновите код приложения и плагины
+
+```bash
+yarn nocobase upgrade
+```
+
+#### 2. Переупакуйте проект
+
+```bash
+tar -czf ../nocobase-app.tar.gz \
+  --exclude='./.env' \
+  --exclude='./storage' \
+  . \
+  ./storage/plugins
+```
+
+## Среда во внутренней сети
+
+Перенесите упакованный проект на сервер intranet.
+
+### Установка в первый раз
+
+#### 1. Загрузите код приложения и плагины
+
+Скопируйте `nocobase-app.tar.gz` на сервер intranet (например, через USB или сетевую папку), затем распакуйте (используйте полный путь, если tar.gz находится не в текущем каталоге):
+
+```bash
+mkdir -p /app/my-nocobase-app
+tar -xzf nocobase-app.tar.gz -C /app/my-nocobase-app
+```
+
+#### 2. Перейдите в каталог
+
+```bash
+cd /app/my-nocobase-app
+```
+
+#### 3. Настройте файл .env
+
+Создайте файл `.env` в корневом каталоге проекта. Ориентируйтесь на конфигурацию среды в интернете и **обновите эти параметры**:
+
+- `DB_HOST`: замените на адрес базы данных во внутренней сети (если база данных находится на другом сервере intranet)
+- `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`: укажите фактические настройки базы данных во внутренней сети
+- `APP_KEY`: по возможности оставьте таким же, как в среде в интернете; в противном случае существующие токены станут недействительными
+
+Вы можете выполнить `cat .env` в корне проекта в интернете, чтобы посмотреть полную конфигурацию, затем скопировать и адаптировать ее для intranet.
+
+#### 4. Установите NocoBase
+
+```bash
+yarn nocobase install
+```
+
+#### 5. Запустите NocoBase
+
+```bash
+yarn start -d
+```
+
+#### 6. Войдите в NocoBase
+
+Перейдите по `http://<intranet-server-ip>:13000` и войдите, используя начальную учетную запись.
+
+#### 7. Введите лицензионный ключ
+
+Коммерческим пользователям нужно ввести лицензионный ключ. Перейдите по:
+
+```
+http://<intranet-server-ip>:13000/admin/settings/license-settings
+```
+
+### Обновление приложения
+
+#### 1. Остановите приложение
+
+```bash
+cd /app/my-nocobase-app
+yarn nocobase pm2-stop
+```
+
+#### 2. Перезапишите код приложения и плагины
+
+Скопируйте `nocobase-app.tar.gz` на сервер intranet, затем распакуйте:
+
+```bash
+tar -xzf nocobase-app.tar.gz -C /app/my-nocobase-app
+```
+
+#### 3. Обновите приложение
+
+```bash
+cd /app/my-nocobase-app
+yarn nocobase upgrade --skip-code-update
+```
+
+#### 4. Перезапустите приложение
+
+```bash
+yarn start -d
+```
+
+#### 5. Введите лицензионный ключ
+
+Если данные авторизации лицензии изменились, введите их заново. Перейдите по:
+
+```
+http://<intranet-server-ip>:13000/admin/settings/license-settings
+```
+
+## Часто задаваемые вопросы (FAQ)
+
+**В: Запуск во внутренней сети (intranet) завершается ошибкой "module or binary not found"**
+
+О: Убедитесь, что версия Node.js и архитектура ОС совпадают между интернетом и intranet (например, обе системы Linux x64 и Node 20.x). Если они отличаются, выполните `yarn install` еще раз в той же среде и повторно упакуйте проект.
+
+**В: Ошибки, связанные с путями, после распаковки**
+
+О: Убедитесь, что путь распаковки во внутренней сети совпадает с путем, использованным при создании в интернете (например, оба раза `/app/my-nocobase-app`). Для этого используйте параметр `-C` с `tar -xzf`, чтобы задать тот же путь.
+
+**В: Не удалось подключиться к базе данных**
+
+О: Проверьте, что `DB_HOST` в `.env` указывает на адрес базы данных, доступный из intranet, и что порт и правила фаерволла настроены корректно.

@@ -32,7 +32,7 @@ JS Item is used for "custom items" (not bound to a field) in a form. You can use
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
 
-- Can be used with AI Employee to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in-employee)
+- Can be used with AI Employee to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Common Usage (Simplified Examples)
 
@@ -87,5 +87,5 @@ ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</spa
 ## Related Documentation
 
 - [Variables and Context](/interface-builder/variables)
-- [Linkage Rules](/interface-builder/linkage-rule)
+- [Linkage Rule](/interface-builder/linkage-rule)
 - [Views and Popups](/interface-builder/actions/types/view)

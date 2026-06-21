@@ -1,4 +1,6 @@
 ---
+title: "Block: iframe"
+keywords: "Blocks"
 displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Block: iframe

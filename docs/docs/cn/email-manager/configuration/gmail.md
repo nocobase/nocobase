@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Gmail 配置"
+description: "Gmail 邮箱接入：Google Cloud 注册、创建项目、开启 Gmail API、OAuth 客户端、Client ID/Secret、回调 URL 配置。"
+keywords: "Gmail 配置,Google Cloud,OAuth 客户端,Gmail API,Client ID,NocoBase"
 ---
 
 # 谷歌配置

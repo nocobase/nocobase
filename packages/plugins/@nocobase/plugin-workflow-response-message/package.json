@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-response-message",
-  "version": "2.0.0-alpha.70",
+  "version": "2.2.0-alpha.1",
   "displayName": "Workflow: Response message",
   "displayName.ru-RU": "Рабочий процесс: Сообщение ответа",
   "displayName.zh-CN": "工作流：响应消息",
@@ -11,6 +11,9 @@
   "homepage": "https://docs.nocobase.com/handbook/workflow-response-message",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-response-message",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-response-message",
+  "devDependencies": {
+    "joi": "^17.13.3"
+  },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/plugin-workflow": "2.x",
@@ -21,5 +24,6 @@
   "keywords": [
     "Workflow"
   ],
-  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4"
+  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
+  "license": "Apache-2.0"
 }

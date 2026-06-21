@@ -1,17 +1,17 @@
 ---
-displayName: "Blok: Template (Usang)"
+displayName: "Block: Template (Deprecated)"
 packageName: '@nocobase/plugin-block-template'
+title: "Block: Template (Deprecated)"
+keywords: "Block: Template (Deprecated),plugin,NocoBase"
 description: |
-  Membuat dan mengelola template blok untuk digunakan kembali di halaman.
+  Membuat dan mengelola template Block, untuk digunakan kembali pada halaman.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Template (Usang)
+# Block: Template (Deprecated)
 
-> Catatan: Plugin ini sudah usang.
+> Perhatian: Plugin ini sudah deprecated.

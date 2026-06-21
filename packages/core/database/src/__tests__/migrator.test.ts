@@ -32,6 +32,22 @@ describe('migrator', () => {
     expect(db.getModel('migrations').tableName).toBe('test_migrations');
   });
 
+  test('should preserve explicit tableName for database synced collections when tablePrefix is configured', async () => {
+    db.collection({
+      name: 'externalTable',
+      tableName: 'a1',
+      from: 'dbsync',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
+    expect(db.getCollection('externalTable').model.tableName).toBe('a1');
+  });
+
   test('addMigrations', async () => {
     db.addMigrations({
       directory: resolve(__dirname, './fixtures/migrations'),

@@ -1,37 +1,39 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Cakupan Data"
+description: "Konfigurasi Block: mengkonfigurasi cakupan data, mendukung kondisi filter, filter izin, mengontrol cakupan data yang ditampilkan Block."
+keywords: "cakupan data, filter data, filter izin, konfigurasi Block, interface builder, NocoBase"
+---
 
-# Mengatur Cakupan Data
+# Atur Cakupan Data
 
-## Pendahuluan
+## Pengantar
 
-Mengatur cakupan data berarti menetapkan kondisi filter default untuk sebuah blok data. Pengguna dapat menyesuaikan cakupan data secara fleksibel sesuai kebutuhan bisnis, namun terlepas dari operasi filter apa pun yang dilakukan, sistem akan secara otomatis menerapkan kondisi filter default ini, memastikan data selalu berada dalam batas cakupan yang ditentukan.
+Mengatur cakupan data adalah mendefinisikan kondisi filter default untuk Data Block. Pengguna dapat menyesuaikan cakupan data secara fleksibel berdasarkan kebutuhan bisnis, tetapi terlepas dari operasi filter apa pun, sistem akan otomatis menerapkan kondisi filter default ini, memastikan data selalu sesuai dengan batasan cakupan yang ditentukan.
 
-## Panduan Pengguna
+## Panduan Penggunaan
 
 ![20251027110053](https://static-docs.nocobase.com/20251027110053.png)
 
-Kolom filter mendukung pemilihan kolom dari koleksi saat ini dan koleksi terkait.
+Field filter mendukung pemilihan Field Table ini, Field Table relasi.
 
 ![20251027110140](https://static-docs.nocobase.com/20251027110140.png)
 
 ### Operator
 
-Berbagai jenis kolom mendukung operator yang berbeda. Misalnya, kolom teks mendukung operator seperti sama dengan, tidak sama dengan, dan berisi; kolom angka mendukung operator seperti lebih besar dari dan lebih kecil dari; sedangkan kolom tanggal mendukung operator seperti berada dalam rentang dan sebelum tanggal tertentu.
+Tipe Field yang berbeda mendukung operator yang berbeda. Misalnya Field teks mendukung operator seperti equal, not equal, contains, dll. Field number mendukung operator seperti greater than, less than, dll. Field tanggal mendukung operator seperti dalam range, sebelum tanggal tertentu, dll.
 
 ![20251027111124](https://static-docs.nocobase.com/20251027111124.png)
 
 ### Nilai Statis
 
-Contoh: Filter data berdasarkan "Status" pesanan.
+Contoh: Filter data berdasarkan "status" pesanan.
 
 ![20251027111229](https://static-docs.nocobase.com/20251027111229.png)
 
 ### Nilai Variabel
 
-Contoh: Filter data pesanan untuk pengguna saat ini.
+Contoh: Filter data pesanan pengguna saat ini.
 
 ![20251027113349](https://static-docs.nocobase.com/20251027113349.png)
 
-Untuk informasi lebih lanjut tentang variabel, lihat [Variabel](/interface-builder/variables)
+Untuk informasi lebih lanjut tentang variabel, silakan lihat [Variabel](/interface-builder/variables)

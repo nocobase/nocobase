@@ -1,27 +1,30 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Field Filter Form"
+description: "Field Filter Form: Field kondisi filter yang digunakan dalam Filter Block, mendukung control filter seperti input, select, tanggal, dll."
+keywords: "Field Filter Form, FilterFormItem, kondisi filter, Filter Block, interface builder, NocoBase"
+---
 
-# Bidang Formulir Filter
+# Field Filter Form
 
-## Pendahuluan
+## Pengantar
 
-Formulir filter mendukung pemilihan bidang dari **koleksi** saat ini dan **koleksi** terkait (bidang dari asosiasi bertingkat) sebagai bidang filter.
+Filter Form mendukung pemilihan Field Table ini dan Field Table relasi (Field relasi dari relasi) sebagai Field filter.
 
 ![20251029120214](https://static-docs.nocobase.com/20251029120214.png)
 
-## Konfigurasi Bidang
+
+## Konfigurasi Field
+
 
 ![20251029120523](https://static-docs.nocobase.com/20251029120523.png)
 
-## Bidang Terkait
+## Hubungkan Field
 
 ![20251029120352](https://static-docs.nocobase.com/20251029120352.png)
-
 ### Operator
 
-Pilih operator yang sesuai berdasarkan tipe bidang untuk meningkatkan akurasi dan efisiensi pemfilteran. Untuk bidang bertipe string, nilai defaultnya adalah pencocokan samar (fuzzy matching).
+Pilih operator yang sesuai berdasarkan tipe Field untuk filter, untuk meningkatkan akurasi dan efisiensi filter. Untuk Field tipe string, default adalah fuzzy match.
 
-- [Edit judul bidang](/interface-builder/fields/field-settings/edit-title)
-- [Edit deskripsi bidang](/interface-builder/fields/field-settings/edit-description)
-- [Edit informasi tooltip bidang](/interface-builder/fields/field-settings/edit-tooltip)
+- [Edit Judul Field](/interface-builder/fields/field-settings/edit-title)
+- [Edit Deskripsi Field](/interface-builder/fields/field-settings/edit-description)
+- [Edit Tooltip Field](/interface-builder/fields/field-settings/edit-tooltip)

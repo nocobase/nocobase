@@ -1,15 +1,14 @@
 ---
-displayName: "Alur Kerja: Perangkat Uji"
+displayName: "Workflow: Toolkit Pengujian"
 packageName: '@nocobase/plugin-workflow-test'
+title: "Workflow: Toolkit Pengujian"
+keywords: "Workflow: Toolkit Pengujian,Plugin,NocoBase"
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-# Alur Kerja: Perangkat Uji
+# Workflow: Toolkit Pengujian

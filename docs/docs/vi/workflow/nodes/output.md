@@ -1,31 +1,30 @@
 ---
 pkg: '@nocobase/plugin-workflow-subflow'
+title: "Node Workflow - Đầu ra luồng"
+description: "Node đầu ra luồng: định nghĩa giá trị đầu ra trong Workflow được gọi để bên gọi sử dụng."
+keywords: "workflow,đầu ra luồng,Output,đầu ra luồng con,truyền biến,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-
-# Đầu ra của luồng công việc
+# Đầu ra luồng
 
 ## Giới thiệu
 
-Nút "Đầu ra của luồng công việc" được sử dụng trong một luồng công việc được gọi để định nghĩa giá trị đầu ra của luồng công việc đó. Khi một luồng công việc được gọi bởi một luồng công việc khác, bạn có thể sử dụng nút "Đầu ra của luồng công việc" để truyền giá trị trở lại cho bên gọi.
+Node "Đầu ra luồng" được dùng để định nghĩa giá trị đầu ra của Workflow trong Workflow được gọi. Khi một Workflow được Workflow khác gọi, có thể qua Node "Đầu ra luồng" truyền giá trị về cho bên gọi.
 
-## Tạo nút
+## Tạo Node
 
-Trong luồng công việc được gọi, hãy thêm một nút "Đầu ra của luồng công việc":
+Trong Workflow được gọi, thêm Node "Đầu ra luồng":
 
 ![20241231002033](https://static-docs.nocobase.com/20241231002033.png)
 
-## Cấu hình nút
+## Cấu hình Node
 
 ### Giá trị đầu ra
 
-Nhập hoặc chọn một biến làm giá trị đầu ra. Giá trị đầu ra có thể thuộc bất kỳ kiểu nào, chẳng hạn như một hằng số (chuỗi, số, giá trị boolean, ngày tháng hoặc JSON tùy chỉnh), hoặc một biến khác từ luồng công việc.
+Nhập hoặc chọn biến làm giá trị đầu ra, giá trị đầu ra có thể là loại bất kỳ, có thể là hằng số như chuỗi, số, giá trị logic, ngày hoặc JSON tùy chỉnh..., cũng có thể là biến khác trong quy trình.
 
 ![20241231003059](https://static-docs.nocobase.com/20241231003059.png)
 
 :::info{title=Mẹo}
-Nếu bạn thêm nhiều nút "Đầu ra của luồng công việc" vào một luồng công việc được gọi, thì khi luồng công việc đó được gọi, giá trị của nút "Đầu ra của luồng công việc" được thực thi cuối cùng sẽ được xuất ra.
+Nếu trong Workflow được gọi có thêm nhiều Node "Đầu ra luồng", thì khi gọi Workflow đó, sẽ xuất theo giá trị của Node "Đầu ra luồng" được thực thi cuối cùng.
 :::

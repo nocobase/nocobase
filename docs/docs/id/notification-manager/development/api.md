@@ -1,14 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Referensi API Notification Manager"
+description: "Referensi API Notification Manager: BaseNotificationChannel, registerChannelType, PluginNotificationManagerServer, mengirim notifikasi, registrasi channel, konfigurasi template dan subscription user."
+keywords: "API notification manager,BaseNotificationChannel,registerChannelType,channel notifikasi,kirim notifikasi,NocoBase"
+---
 
 # Referensi API
 
-## Sisi Server
+## Server-side
 
 ### `BaseNotificationChannel`
 
-`BaseNotificationChannel` adalah kelas abstrak yang menjadi dasar bagi berbagai jenis saluran notifikasi. Kelas ini mendefinisikan antarmuka penting yang diperlukan untuk implementasi saluran. Jika Anda ingin menambahkan jenis saluran notifikasi baru, Anda harus mewarisi kelas ini dan mengimplementasikan metode-metode di dalamnya.
+Adalah abstract class untuk tipe channel user, mendefinisikan interface yang dibutuhkan oleh channel notifikasi. Untuk memperluas tipe channel notifikasi baru perlu meng-inherit class ini, dan mengimplementasikan method-nya.
 
 ```ts
 export abstract class BaseNotificationChannel<Message = any> {
@@ -22,11 +24,11 @@ export abstract class BaseNotificationChannel<Message = any> {
 
 ### `PluginNotificationManagerServer`
 
-`PluginNotificationManagerServer` adalah plugin sisi server yang berfungsi sebagai alat manajemen notifikasi. Plugin ini menyediakan metode untuk mendaftarkan jenis saluran notifikasi dan mengirimkan notifikasi.
+Plugin notification manager server-side, menyediakan method untuk registrasi tipe channel notifikasi dan method pengiriman notifikasi.
 
 #### `registerChannelType()`
 
-Metode ini mendaftarkan jenis saluran baru di sisi server. Contoh penggunaan disediakan di bawah ini.
+Mendaftarkan server-side dari tipe channel, lihat contoh berikut
 
 ```ts
 import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
@@ -42,85 +44,74 @@ export class PluginNotificationExampleServer extends Plugin {
 export default PluginNotificationExampleServer;
 ```
 
-##### Tanda Tangan
+##### Signature
 
 `registerChannelType({ type, Channel }: {type: string, Channel: BaseNotificationChannel })`
 
 #### `send()`
 
-Metode `send` digunakan untuk mengirimkan notifikasi melalui saluran yang ditentukan.
+Method pengiriman notifikasi, panggil method ini untuk mengirim notifikasi
 
 ```ts
-// Pesan dalam aplikasi
-send({
-  channelName: 'in-app-message',
-  message: {
-    title: 'Judul tes pesan dalam aplikasi',
-    content: 'Tes pesan dalam aplikasi'
-  },
-  receivers: {
-    type: 'userId',
-    value: [1, 2, 3]
-  },
-  triggerFrom: 'alur kerja'
-});
+send('in-app-message', 
+  message:[
+    receivers: [1,2,3],
+    receiverType: 'userId',
+    content: 'in-app message test',
+    title: 'in-app message test title'
+  ],
+  triggerFrom: 'workflow')
 
-// Email
-send({
-  channelName: 'email',
-  message: {
-    title: 'Judul tes email',
-    content: 'Tes email'
-  },
-  receivers: {
-    type: 'channel-self-defined',
-    channelType: 'email',
-    value: ['a@example.com', 'b@example.com']
-  },
-  triggerFrom: 'alur kerja'
-});
+  send('email', 
+  message:[
+    receivers: ['a@163.com', 'b@163.com'],
+    receiverType: 'email',
+    content: 'email test',
+    title: 'email test title'
+  ],
+  triggerFrom: 'workflow')
 ```
 
-##### Tanda Tangan
+##### Signature
 
-`send(sendConfig: {channelName: String, message: Object, receivers: ReceiversType, triggerFrom: String })`
+`send(sendConfig: {channelName:String, message: Object, receivers: ReceiversType, triggerFrom: String })`
 
-Bidang `receivers` saat ini hanya mendukung dua format: ID pengguna NocoBase `userId` atau konfigurasi saluran kustom `channel-self-defined`.
+Penerima `receivers` saat ini hanya mendukung dua format: NocoBase user ID dalam aplikasi `userId` dan konfigurasi spesifik channel `channel-self-defined`
 
 ```ts
-type ReceiversType =
+type ReceiversType = 
   | { value: number[]; type: 'userId' }
   | { value: any; type: 'channel-self-defined'; channelType: string };
 ```
 
-##### Informasi Detail
+##### Detail
 
-`sendConfig`
+sendConfig
 
-| Properti         | Tipe         |  Deskripsi       |
+| Property         | Tipe         |  Deskripsi   |
 | ------------ | ------------ | --------- |
-| `channelName`    | `string` | Pengidentifikasi saluran   |
-| `message`   | `object`   | Objek pesan      |
+| `channelName`    | `string` | Identifier channel   |
+| `message`   | `object`   | Object pesan      |
 | `receivers`     | `ReceiversType`  | Penerima |
-| `triggerFrom`     | `string`  | Sumber pemicu |
+| `triggerFrom`     | `string`  | Sumber trigger |
 
-## Sisi Klien
+## Client-side
 
 ### `PluginNotificationManagerClient`
 
 #### `channelTypes`
 
-Pustaka jenis saluran yang terdaftar.
+Library tipe channel yang sudah terdaftar
 
-##### Tanda Tangan
+##### Signature
 
 `channelTypes: Registry<registerTypeOptions>`
 
 #### `registerChannelType()`
 
-Mendaftarkan jenis saluran sisi klien.
+Mendaftarkan tipe channel client-side
 
-##### Tanda Tangan
+##### Signature
 
 `registerChannelType(params: registerTypeOptions)`
 
@@ -128,20 +119,19 @@ Mendaftarkan jenis saluran sisi klien.
 
 ```ts
 type registerTypeOptions = {
-  title: string; // Judul tampilan untuk saluran
-  type: string; // Pengidentifikasi saluran
+  title: string; // Judul tampilan channel
+  type: string;  // Identifier channel
   components: {
-    ChannelConfigForm?: ComponentType; // Komponen formulir konfigurasi saluran;
-    MessageConfigForm?: ComponentType<{ variableOptions: any }>; // Komponen formulir konfigurasi pesan;
-    ContentConfigForm?: ComponentType<{ variableOptions: any }>; // Komponen formulir konfigurasi konten (hanya untuk konten pesan, tidak termasuk konfigurasi penerima);
+    ChannelConfigForm?: ComponentType // Komponen form konfigurasi channel;
+    MessageConfigForm?: ComponentType<{ variableOptions: any }> // Komponen form konfigurasi pesan;
+    ContentConfigForm?: ComponentType<{ variableOptions: any }> // Komponen form konfigurasi content (hanya konten pesan, tidak termasuk konfigurasi penerima);
   };
-  meta?: {
-    // Metadata untuk konfigurasi saluran
-    createable?: boolean; // Apakah saluran baru dapat ditambahkan;
-    editable?: boolean; // Apakah konfigurasi saluran dapat diedit;
-    deletable?: boolean; // Apakah konfigurasi saluran dapat dihapus;
+  meta?: { // Meta-info konfigurasi channel
+    createable?: boolean // Apakah mendukung penambahan channel;
+    editable?: boolean  // Apakah informasi konfigurasi channel dapat diedit;
+    deletable?: boolean // Apakah informasi konfigurasi channel dapat dihapus;
   };
 };
 
-type RegisterChannelType = (params: ChannelType) => void;
+type RegisterChannelType = (params: ChannelType) => void
 ```

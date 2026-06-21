@@ -1,93 +1,95 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Node HTTP Request Workflow"
+description: "Node HTTP Request Workflow memanggil API eksternal: GET/POST/PUT, referensi variabel, autentikasi Basic/Bearer/API Key, parsing respons, timeout retry, perbandingan dengan Webhook."
+keywords: "HTTP Request Workflow,node HTTP Request,panggilan API eksternal,Bearer Token,API Key,integrasi Workflow,NocoBase"
+---
 
-# Integrasi Permintaan HTTP Alur Kerja
+# Integrasi HTTP Request Workflow
 
-Melalui node Permintaan HTTP, alur kerja NocoBase dapat secara proaktif mengirimkan permintaan ke layanan HTTP mana pun, memungkinkan pertukaran data dan integrasi bisnis dengan sistem eksternal.
+Melalui node HTTP Request, Workflow NocoBase dapat secara aktif mengirimkan request ke layanan HTTP apa pun, sehingga mencapai interaksi data dan integrasi bisnis dengan sistem eksternal.
 
-## Gambaran Umum
+## Ikhtisar
 
-Node Permintaan HTTP adalah komponen integrasi inti dalam alur kerja, yang memungkinkan Anda memanggil API pihak ketiga, antarmuka layanan internal, atau layanan web lainnya selama eksekusi alur kerja untuk mengambil data atau memicu operasi eksternal.
+Node HTTP Request adalah komponen integrasi inti dalam Workflow, memungkinkan Anda memanggil API pihak ketiga, antarmuka layanan internal, atau layanan Web lainnya selama eksekusi Workflow untuk mendapatkan data atau memicu operasi eksternal.
 
-## Skenario Penggunaan Umum
+## Skenario Aplikasi Tipikal
 
 ### Pengambilan Data
 
-- **Kueri Data Pihak Ketiga**: Mengambil data *real-time* dari API cuaca, API nilai tukar, dll.
-- **Resolusi Alamat**: Memanggil API layanan peta untuk penguraian alamat dan *geocoding*.
-- **Sinkronisasi Data Perusahaan**: Mengambil data pelanggan, pesanan, dll. dari sistem CRM, ERP.
+- **Query data pihak ketiga**: dapatkan data real-time dari API cuaca, API kurs, dll.
+- **Parsing alamat**: panggil API layanan peta untuk parsing alamat dan geocoding
+- **Sinkronisasi data perusahaan**: dapatkan data pelanggan, pesanan, dll. dari sistem CRM, ERP
 
 ### Pemicu Bisnis
 
-- **Dorongan Pesan**: Memanggil layanan SMS, email, WeCom, dll. untuk mengirim notifikasi.
-- **Permintaan Pembayaran**: Menginisiasi pembayaran, pengembalian dana, dll. dengan *gateway* pembayaran.
-- **Pemrosesan Pesanan**: Mengirimkan resi pengiriman, menanyakan status logistik dengan sistem pengiriman.
+- **Push pesan**: panggil layanan SMS, email, WeCom, dll. untuk mengirim notifikasi
+- **Request pembayaran**: lakukan operasi pembayaran, refund, dll. ke gateway pembayaran
+- **Pemrosesan pesanan**: kirim resi ke sistem logistik, query status logistik
 
 ### Integrasi Sistem
 
-- **Panggilan *Microservice***: Memanggil API layanan lain dalam arsitektur *microservice*.
-- **Pelaporan Data**: Melaporkan data bisnis ke platform analitik, sistem pemantauan.
-- **Layanan Pihak Ketiga**: Mengintegrasikan layanan AI, pengenalan OCR, sintesis suara, dll.
+- **Panggilan microservice**: panggil API layanan lain dalam arsitektur microservice
+- **Pelaporan data**: laporkan data bisnis ke platform analisis data, sistem monitoring
+- **Layanan pihak ketiga**: integrasikan layanan AI, OCR, sintesis suara, dll.
 
-### Otomatisasi
+### Operasi Otomatis
 
-- **Tugas Terjadwal**: Memanggil API eksternal secara berkala untuk menyinkronkan data.
-- **Respons Peristiwa**: Secara otomatis memanggil API eksternal saat data berubah untuk memberi tahu sistem terkait.
-- **Alur Kerja Persetujuan**: Mengirimkan permintaan persetujuan melalui API sistem persetujuan.
+- **Tugas terjadwal**: secara berkala panggil API eksternal untuk sinkronisasi data
+- **Respons event**: secara otomatis panggil API eksternal saat data berubah untuk memberi tahu sistem terkait
+- **Alur persetujuan**: panggil API sistem persetujuan untuk mengirim request persetujuan
 
-## Fitur
+## Karakteristik Fitur
 
 ### Dukungan HTTP Lengkap
 
-- Mendukung semua metode HTTP: GET, POST, PUT, PATCH, DELETE.
-- Mendukung *header* permintaan kustom (*Headers*).
-- Mendukung berbagai format data: JSON, data formulir, XML, dll.
-- Mendukung berbagai jenis parameter: parameter URL, parameter jalur, *body* permintaan, dll.
+- Mendukung semua metode HTTP termasuk GET, POST, PUT, PATCH, DELETE
+- Mendukung Headers Request kustom
+- Mendukung berbagai format data: JSON, form data, XML, dll.
+- Mendukung berbagai cara passing parameter: parameter URL, parameter path, request body, dll.
 
-### Pemrosesan Data Fleksibel
+### Pemrosesan Data yang Fleksibel
 
-- **Referensi Variabel**: Membuat permintaan secara dinamis menggunakan variabel alur kerja.
-- **Penguraian Respons**: Secara otomatis mengurai respons JSON dan mengekstrak data yang diperlukan.
-- **Transformasi Data**: Mengubah format data permintaan dan data respons.
-- **Penanganan Kesalahan**: Mengonfigurasi strategi coba lagi, pengaturan *timeout*, logika penanganan kesalahan.
+- **Referensi variabel**: gunakan variabel Workflow untuk membangun request secara dinamis
+- **Parsing respons**: secara otomatis parse respons JSON dan ekstrak data yang dibutuhkan
+- **Transformasi data**: lakukan transformasi format pada data request dan data respons
+- **Penanganan error**: konfigurasikan strategi retry, pengaturan timeout, logika penanganan error
 
-### Autentikasi Keamanan
+### Autentikasi Aman
 
-- **Autentikasi Dasar**: Autentikasi dasar HTTP.
-- **Token Pembawa (*Bearer Token*)**: Autentikasi token.
-- **Kunci API (*API Key*)**: Autentikasi kunci API kustom.
-- ***Header* Kustom**: Mendukung metode autentikasi apa pun.
+- **Basic Auth**: autentikasi dasar HTTP
+- **Bearer Token**: autentikasi token
+- **API Key**: autentikasi API Key kustom
+- **Headers kustom**: mendukung metode autentikasi apa pun
 
 ## Langkah Penggunaan
 
-### 1. Memverifikasi Plugin Telah Diaktifkan
+### 1. Konfirmasikan Plugin sudah Diaktifkan
 
-Node Permintaan HTTP adalah fitur bawaan dari plugin **alur kerja**. Pastikan plugin **[alur kerja](/plugins/@nocobase/plugin-workflow/)** telah diaktifkan.
+Node HTTP Request adalah fitur bawaan Plugin Workflow; pastikan Plugin **[Workflow](/plugins/@nocobase/plugin-workflow/index.md)** sudah diaktifkan.
 
-### 2. Menambahkan Node Permintaan HTTP ke Alur Kerja
+### 2. Tambahkan Node HTTP Request pada Workflow
 
-1. Buat atau edit sebuah alur kerja.
-2. Tambahkan node **Permintaan HTTP** pada posisi yang diinginkan.
+1. Buat atau edit Workflow
+2. Tambahkan node **HTTP Request** di posisi yang dibutuhkan
 
-![HTTP Request - Add Node](https://static-docs.nocobase.com/46f2a6fc3f6869c80f8fbd362a54e644.png)
+![HTTP Request_Tambahkan](https://static-docs.nocobase.com/46f2a6fc3f6869c80f8fbd362a54e644.png)
 
-3. Konfigurasi parameter permintaan.
+3. Konfigurasikan parameter request
 
-### 3. Mengonfigurasi Parameter Permintaan
+### 3. Konfigurasikan Parameter Request
 
-![HTTP Request Node - Configuration](https://static-docs.nocobase.com/2fcb29af66b892fa704add52e2974a52.png)
+![Node HTTP Request_Konfigurasi Node](https://static-docs.nocobase.com/2fcb29af66b892fa704add52e2974a52.png)
 
 #### Konfigurasi Dasar
 
-- **URL Permintaan**: Alamat API target, mendukung penggunaan variabel.
+- **URL Request**: alamat API target, mendukung penggunaan variabel
   ```
   https://api.example.com/users/{{$context.userId}}
   ```
 
-- **Metode Permintaan**: Pilih GET, POST, PUT, DELETE, dll.
+- **Metode Request**: pilih GET, POST, PUT, DELETE, dll.
 
-- ***Header* Permintaan**: Konfigurasi *Header* HTTP.
+- **Headers Request**: konfigurasikan HTTP Headers
   ```json
   {
     "Content-Type": "application/json",
@@ -95,27 +97,27 @@ Node Permintaan HTTP adalah fitur bawaan dari plugin **alur kerja**. Pastikan pl
   }
   ```
 
-- **Parameter Permintaan**:
-  - **Parameter Kueri**: Parameter kueri URL.
-  - **Parameter *Body***: Data *body* permintaan (POST/PUT).
+- **Parameter Request**:
+  - **Parameter Query**: parameter query URL
+  - **Parameter Body**: data body request (POST/PUT)
 
 #### Konfigurasi Lanjutan
 
-- **Waktu *Timeout***: Atur *timeout* permintaan (standar 30 detik).
-- **Coba Lagi Saat Gagal**: Konfigurasi jumlah coba lagi dan interval coba lagi.
-- **Abaikan Kegagalan**: Alur kerja akan terus berjalan meskipun permintaan gagal.
-- **Pengaturan Proksi**: Konfigurasi proksi HTTP (jika diperlukan).
+- **Waktu Timeout**: atur timeout request (default 30 detik)
+- **Retry saat Gagal**: konfigurasikan jumlah retry dan interval retry
+- **Abaikan Kegagalan**: meskipun request gagal, Workflow tetap berjalan
+- **Pengaturan Proxy**: konfigurasikan HTTP proxy (jika diperlukan)
 
-### 4. Menggunakan Data Respons
+### 4. Gunakan Data Respons
 
-Setelah eksekusi node Permintaan HTTP, data respons dapat digunakan pada node-node berikutnya:
+Setelah node HTTP Request dieksekusi, data respons dapat digunakan pada node berikutnya:
 
-- `{{$node.data.status}}`: Kode status HTTP.
-- `{{$node.data.headers}}`: *Header* respons.
-- `{{$node.data.data}}`: Data *body* respons.
-- `{{$node.data.error}}`: Pesan kesalahan (jika permintaan gagal).
+- `{{$node.data.status}}`: kode status HTTP
+- `{{$node.data.headers}}`: headers respons
+- `{{$node.data.data}}`: data body respons
+- `{{$node.data.error}}`: informasi error (jika request gagal)
 
-![HTTP Request Node - Response Usage](https://static-docs.nocobase.com/20240529110610.png)
+![Node HTTP Request_Penggunaan Hasil Respons](https://static-docs.nocobase.com/20240529110610.png)
 
 ## Skenario Contoh
 
@@ -129,7 +131,7 @@ Query Parameters:
   city: {{$context.city}}
   key: your-api-key
 
-// Menggunakan Respons
+// Penggunaan respons
 Temperature: {{$node.data.data.temperature}}
 Weather: {{$node.data.data.condition}}
 ```
@@ -153,7 +155,7 @@ Body:
 }
 ```
 
-### Contoh 3: Menanyakan Status Pembayaran
+### Contoh 3: Query Status Pembayaran
 
 ```javascript
 // Konfigurasi
@@ -163,18 +165,18 @@ Headers:
   Authorization: Bearer {{$context.apiKey}}
   Content-Type: application/json
 
-// Logika Kondisional
+// Kondisi
 Jika {{$node.data.data.status}} sama dengan "paid"
-  - Perbarui status pesanan menjadi "Dibayar"
+  - Update status pesanan menjadi "Telah Dibayar"
   - Kirim notifikasi pembayaran berhasil
-Jika tidak, jika {{$node.data.data.status}} sama dengan "pending"
+Atau jika {{$node.data.data.status}} sama dengan "pending"
   - Pertahankan status pesanan sebagai "Menunggu Pembayaran"
-Jika tidak
-  - Catat kegagalan pembayaran
-  - Beri tahu administrator untuk menangani pengecualian
+Lainnya
+  - Catat log pembayaran gagal
+  - Notifikasi admin untuk menangani anomali
 ```
 
-### Contoh 4: Menyinkronkan Data ke CRM
+### Contoh 4: Sinkronisasi Data ke CRM
 
 ```javascript
 // Konfigurasi
@@ -193,7 +195,7 @@ Body:
 }
 ```
 
-## Konfigurasi Autentikasi
+## Konfigurasi Metode Autentikasi
 
 ### Basic Authentication
 
@@ -212,118 +214,118 @@ Headers:
 ### API Key
 
 ```javascript
-// Di Header
+// Pada Header
 Headers:
   X-API-Key: your-api-key
 
-// Atau di Kueri
+// Atau pada Query
 Query Parameters:
   api_key: your-api-key
 ```
 
 ### OAuth 2.0
 
-Pertama, dapatkan *access_token*, lalu gunakan:
+Anda perlu mendapatkan access_token terlebih dahulu, kemudian gunakan:
 
 ```javascript
 Headers:
   Authorization: Bearer {{$context.accessToken}}
 ```
 
-## Penanganan Kesalahan dan *Debugging*
+## Penanganan Error dan Debugging
 
-### Kesalahan Umum
+### Error Umum
 
-1.  **Koneksi *Timeout***: Periksa koneksi jaringan, tingkatkan waktu *timeout*.
-2.  **401 Tidak Sah**: Verifikasi kredensial autentikasi.
-3.  **404 Tidak Ditemukan**: Periksa apakah URL sudah benar.
-4.  **500 Kesalahan Server**: Periksa status layanan penyedia API.
+1. **Connection timeout**: periksa koneksi jaringan, perpanjang waktu timeout
+2. **401 Unauthorized**: periksa apakah informasi autentikasi benar
+3. **404 Not Found**: periksa apakah URL benar
+4. **500 Server Error**: periksa status layanan penyedia API
 
-### Tips *Debugging*
+### Tips Debugging
 
-1.  **Gunakan Node Log**: Tambahkan node log sebelum dan sesudah permintaan HTTP untuk mencatat data permintaan dan respons.
+1. **Gunakan node log**: tambahkan node log sebelum dan sesudah HTTP Request untuk mencatat data request dan respons
 
-2.  **Periksa Log Eksekusi**: Log eksekusi alur kerja berisi informasi permintaan dan respons yang terperinci.
+2. **Lihat log eksekusi**: log eksekusi Workflow berisi informasi rinci tentang request dan respons
 
-3.  **Alat Pengujian**: Uji API terlebih dahulu menggunakan alat seperti Postman, cURL, dll.
+3. **Tools pengujian**: gunakan tools seperti Postman, cURL untuk menguji API terlebih dahulu
 
-4.  **Penanganan Kesalahan**: Tambahkan logika kondisional untuk menangani status respons yang berbeda.
+4. **Penanganan error**: tambahkan kondisi untuk menangani status respons yang berbeda
 
 ```javascript
 Jika {{$node.data.status}} >= 200 dan {{$node.data.status}} < 300
-  - Tangani logika berhasil
-Jika tidak
+  - Tangani logika sukses
+Lainnya
   - Tangani logika gagal
-  - Catat kesalahan: {{$node.data.error}}
+  - Catat error: {{$node.data.error}}
 ```
 
 ## Saran Optimasi Performa
 
-### 1. Menggunakan Pemrosesan Asinkron
+### 1. Gunakan Pemrosesan Asinkron
 
-Untuk permintaan yang tidak memerlukan hasil segera, pertimbangkan untuk menggunakan alur kerja asinkron.
+Untuk request yang tidak perlu mendapatkan hasil segera, pertimbangkan menggunakan Workflow asinkron.
 
-### 2. Mengonfigurasi *Timeout* yang Wajar
+### 2. Konfigurasikan Timeout yang Wajar
 
-Atur *timeout* berdasarkan waktu respons API yang sebenarnya untuk menghindari penantian yang berlebihan.
+Atur timeout sesuai dengan waktu respons aktual API untuk menghindari menunggu terlalu lama.
 
-### 3. Mengimplementasikan Strategi *Caching*
+### 3. Implementasikan Strategi Cache
 
-Untuk data yang jarang berubah (konfigurasi, kamus), pertimbangkan untuk menyimpan respons dalam *cache*.
+Untuk data yang tidak sering berubah (seperti konfigurasi, kamus), pertimbangkan untuk men-cache hasil respons.
 
-### 4. Pemrosesan *Batch*
+### 4. Pemrosesan Batch
 
-Jika perlu melakukan beberapa panggilan ke API yang sama, pertimbangkan untuk menggunakan *endpoint* *batch* API (jika didukung).
+Jika Anda perlu memanggil API yang sama beberapa kali, pertimbangkan menggunakan antarmuka batch API (jika didukung).
 
-### 5. Coba Lagi Saat Gagal
+### 5. Retry Error
 
-Konfigurasi strategi coba lagi yang wajar, tetapi hindari percobaan ulang yang berlebihan yang dapat menyebabkan pembatasan laju API.
+Konfigurasikan strategi retry yang wajar, tetapi hindari retry berlebihan yang dapat menyebabkan rate limiting API.
 
 ## Praktik Terbaik Keamanan
 
-### 1. Melindungi Informasi Sensitif
+### 1. Lindungi Informasi Sensitif
 
-- Jangan mengekspos informasi sensitif di URL.
-- Gunakan HTTPS untuk transmisi terenkripsi.
-- Simpan kunci API dan data sensitif lainnya dalam variabel lingkungan atau manajemen konfigurasi.
+- Jangan ekspos informasi sensitif pada URL
+- Gunakan transmisi terenkripsi HTTPS
+- Gunakan variabel lingkungan atau manajemen konfigurasi untuk informasi sensitif seperti API Key
 
-### 2. Memvalidasi Data Respons
+### 2. Validasi Data Respons
 
 ```javascript
-// Memvalidasi status respons
+// Validasi status respons
 if (![200, 201].includes($node.data.status)) {
-  throw new Error('Permintaan API gagal');
+  throw new Error('API request failed');
 }
 
-// Memvalidasi format data
+// Validasi format data
 if (!$node.data.data || !$node.data.data.id) {
-  throw new Error('Data respons tidak valid');
+  throw new Error('Invalid response data');
 }
 ```
 
-### 3. Pembatasan Laju
+### 3. Batasi Frekuensi Request
 
 Patuhi batasan laju API pihak ketiga untuk menghindari pemblokiran.
 
-### 4. Pembersihan Log
+### 4. Sanitasi Log
 
-Saat mencatat log, perhatikan untuk membersihkan informasi sensitif (kata sandi, kunci, dll.).
+Saat mencatat log, perhatikan sanitasi informasi sensitif (kata sandi, key, dll.).
 
-## Perbandingan dengan *Webhook*
+## Perbandingan dengan Webhook
 
-| Fitur | Node Permintaan HTTP | Pemicu *Webhook* |
-|-------|----------------------|------------------|
-| Arah | NocoBase memanggil eksternal secara proaktif | Eksternal memanggil NocoBase secara proaktif |
-| Waktu | Saat eksekusi alur kerja | Saat peristiwa eksternal terjadi |
-| Tujuan | Mengambil data, memicu operasi eksternal | Menerima notifikasi, peristiwa eksternal |
-| Skenario Umum | Memanggil API pembayaran, menanyakan cuaca | *Callback* pembayaran, notifikasi pesan |
+| Karakteristik | Node HTTP Request | Trigger Webhook |
+|------|-------------|---------------|
+| Arah | NocoBase memanggil eksternal secara aktif | Eksternal memanggil NocoBase secara aktif |
+| Waktu | Saat eksekusi Workflow | Saat event eksternal terjadi |
+| Tujuan | Dapatkan data, picu operasi eksternal | Terima notifikasi, event eksternal |
+| Skenario tipikal | Panggil antarmuka pembayaran, query cuaca | Callback pembayaran, notifikasi pesan |
 
-Kedua fitur ini saling melengkapi untuk membangun solusi integrasi sistem yang lengkap.
+Kedua fitur ini saling melengkapi, bersama-sama membangun solusi integrasi sistem yang lengkap.
 
 ## Sumber Daya Terkait
 
-- [Dokumentasi Plugin Alur Kerja](/plugins/@nocobase/plugin-workflow/)
-- [Alur Kerja: Node Permintaan HTTP](/workflow/nodes/request)
-- [Alur Kerja: Pemicu *Webhook*](/integration/workflow-webhook/)
-- [Autentikasi Kunci API](/integration/api-keys/)
-- [Plugin Dokumentasi API](/plugins/@nocobase/plugin-api-doc/)
+- [Dokumentasi Plugin Workflow](/plugins/@nocobase/plugin-workflow/index.md)
+- [Workflow: Node HTTP Request](/workflow/nodes/request)
+- [Workflow: Trigger Webhook](/integration/workflow-webhook/index.md)
+- [Autentikasi API Key](/integration/api-keys/index.md)
+- [Plugin Dokumentasi API](/plugins/@nocobase/plugin-api-doc/index.md)

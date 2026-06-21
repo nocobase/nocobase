@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Descripción general
 
 Un flujo de trabajo se compone generalmente de varios pasos operativos conectados. Cada nodo representa uno de estos pasos y sirve como una unidad lógica fundamental en el proceso. Al igual que en un lenguaje de programación, los diferentes tipos de nodos representan distintas instrucciones que determinan su comportamiento. Cuando el flujo de trabajo se ejecuta, el sistema entra en cada nodo secuencialmente y ejecuta sus instrucciones.
@@ -10,7 +6,7 @@ Un flujo de trabajo se compone generalmente de varios pasos operativos conectado
 El disparador de un flujo de trabajo no es un nodo. Solo se muestra como un punto de entrada en el diagrama de flujo, pero es un concepto diferente al de un nodo. Para más detalles, consulte el contenido de [Disparadores](../triggers/index.md).
 :::
 
-Desde una perspectiva funcional, los nodos implementados actualmente se pueden dividir en varias categorías principales (un total de 29 tipos de nodos):
+Desde una perspectiva funcional, los nodos implementados actualmente se pueden dividir en varias categorías principales (un total de 30 tipos de nodos):
 
 - Inteligencia Artificial
   - [Modelo de Lenguaje Grande](../../ai-employees/workflow/nodes/llm/chat.md) (proporcionado por el plugin @nocobase/plugin-workflow-llm)
@@ -36,6 +32,7 @@ Desde una perspectiva funcional, los nodos implementados actualmente se pueden d
   - [Consultar datos](./query.md)
   - [Consulta agregada](./aggregate.md) (proporcionado por el plugin @nocobase/plugin-workflow-aggregate)
   - [Acción SQL](./sql.md) (proporcionado por el plugin @nocobase/plugin-workflow-sql)
+  - [Transacción de base de datos](./transaction.md) (proporcionado por el plugin @nocobase/plugin-workflow-transaction)
 - Procesamiento manual
   - [Procesamiento manual](./manual.md) (proporcionado por el plugin @nocobase/plugin-workflow-manual)
   - [Aprobación](./approval.md) (proporcionado por el plugin @nocobase/plugin-workflow-approval)

@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc: Nút thông báo"
+displayName: "Workflow: Node thông báo"
 packageName: '@nocobase/plugin-workflow-notification'
+title: "Workflow: Node thông báo"
+keywords: "Workflow: Node thông báo,Plugin,NocoBase"
 description: |
-  Có thể dùng để gửi các loại thông báo trong luồng công việc.
+  Có thể được sử dụng để gửi nhiều loại thông báo trong workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút thông báo
+# Workflow: Node thông báo

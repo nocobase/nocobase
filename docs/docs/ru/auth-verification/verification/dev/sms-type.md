@@ -1,16 +1,12 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
+# Расширение SMS-провайдера
 
-# Расширение функциональности SMS-провайдера
+В этой статье объясняем, как расширить функциональность SMS-провайдера через плагин [Верификация: SMS](../sms) .
 
-В этой статье мы расскажем, как расширить функциональность SMS-провайдера в рамках функции [Верификация: SMS](../sms) с помощью плагина.
+## Клиент
 
-## Клиентская часть
+### Зарегистрировать форму конфигурации
 
-### Регистрация формы конфигурации
-
-При настройке SMS-верификатора, после выбора типа SMS-провайдера, появится форма конфигурации, связанная с этим типом. Эту форму конфигурации разработчик должен зарегистрировать на клиентской стороне.
+При настройке SMS-вeрификатора после выбора типа SMS-провайдера появится форма конфигурации, связанная с этим типом провайдера. Эту форму конфигурации должен зарегистрировать разработчик на стороне клиента.
 
 ![](https://static-docs.nocobase.com/202503011221912.png)
 
@@ -24,14 +20,14 @@ const CustomSMSProviderSettingsForm: React.FC = () => {
     type: 'void',
     properties: {
       accessKeyId: {
-        title: `{{t("Идентификатор ключа доступа", { ns: "${NAMESPACE}" })}}`,
+        title: `{{t("Access Key ID", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'TextAreaWithGlobalScope',
         required: true,
       },
       accessKeySecret: {
-        title: `{{t("Секретный ключ доступа", { ns: "${NAMESPACE}" })}}`,
+        title: `{{t("Access Key Secret", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'TextAreaWithGlobalScope',
@@ -54,17 +50,17 @@ class PluginCustomSMSProviderClient extends Plugin {
 }
 ```
 
-## Серверная часть
+## Сервер
 
-### Реализация интерфейса отправки
+### Реализовать интерфейс отправки (Implement Sending Interface)
 
-Плагин верификации уже инкапсулировал процесс создания одноразовых паролей (OTP), поэтому разработчикам достаточно реализовать только логику отправки сообщений для взаимодействия с SMS-провайдером.
+Плагин верификации уже инкапсулировал процесс создания одноразовых динамических паролей (OTP), поэтому разработчикам нужно лишь реализовать логику отправки сообщений через SMS-провайдера.
 
 ```ts
 class CustomSMSProvider extends SMSProvider {
   constructor(options) {
     super(options);
-    // options — это объект конфигурации с клиентской стороны
+    // options — объект конфигурации, переданный с клиента
     const options = this.options;
     // ...
   }
@@ -75,9 +71,9 @@ class CustomSMSProvider extends SMSProvider {
 }
 ```
 
-### Регистрация типа верификации
+### Зарегистрировать тип верификации
 
-После реализации интерфейса отправки его необходимо зарегистрировать.
+После реализации интерфейса отправки его нужно зарегистрировать.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -87,9 +83,9 @@ import { tval } from '@nocobase/utils';
 class PluginCustomSMSProviderServer extends Plugin {
   async load() {
     const plugin = this.app.pm.get('verification') as PluginVerificationServer;
-    // Имя должно соответствовать тому, что используется на клиентской стороне
+    // Имя должно соответствовать тому, которое используется на клиенте
     plugin.smsOTPProviderManager.registerProvider('custom-sms-provider-name', {
-      title: tval('Пользовательский SMS-провайдер', { ns: namespace }),
+      title: tval('Custom SMS provider', { ns: namespace }),
       provider: CustomSMSProvider,
     });
   }

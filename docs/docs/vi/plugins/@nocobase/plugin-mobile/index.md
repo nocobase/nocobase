@@ -1,14 +1,14 @@
 ---
-displayName: "Di động (đã ngừng hỗ trợ)"
+displayName: "Di động (Đã ngừng sử dụng)"
 packageName: '@nocobase/plugin-mobile'
+title: "Di động (Đã ngừng sử dụng)"
+keywords: "Di động (Đã ngừng sử dụng),Plugin,NocoBase"
 description: |
-  Cung cấp khả năng cấu hình các trang dành cho thiết bị di động.
+  Từ phiên bản 2.0, di động được thay thế bằng plugin ui-layout mới, plugin này vẫn đang được phát triển.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Di động (đã ngừng hỗ trợ)
+# Di động (Đã ngừng sử dụng)

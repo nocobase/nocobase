@@ -17,32 +17,31 @@ import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useFi
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
+import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, Spin, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
-import { DndContext, useDesignable, useTableSize } from '../..';
-import {
-  RecordIndexProvider,
-  RecordProvider,
-  useCollection,
-  useCollectionParentRecordData,
-  useDataBlockProps,
-  useDataBlockRequest,
-  useFlag,
-  useSchemaInitializerRender,
-  useTableSelectorContext,
-} from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { useTableSelectorContext } from '../../../block-provider/TableSelectorProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
+import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { useDataBlockProps } from '../../../data-source/data-block/DataBlockProvider';
+import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
+import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
+import { useFlag } from '../../../flag-provider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
+import { DndContext } from '../../common/dnd-context';
+import { useDesignable } from '../../hooks/useDesignable';
+import { useTableSize } from '../../hooks/useBlockSize';
 import { useToken } from '../__builtins__';
 import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from '../table-v2/components/ColumnFieldProvider';
@@ -55,9 +54,6 @@ const useArrayField = (props) => {
   return (props.field || field) as ArrayField;
 };
 
-function getSchemaArrJSON(schemaArr: Schema[]) {
-  return schemaArr.map((item) => (item.name === 'actions' ? omit(item.toJSON(), 'properties') : item.toJSON()));
-}
 function adjustColumnOrder(columns) {
   const leftFixedColumns = [];
   const normalColumns = [];
@@ -75,17 +71,6 @@ function adjustColumnOrder(columns) {
 
   return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
 }
-
-export const useColumnsDeepMemoized = (columns: any[]) => {
-  const columnsJSON = getSchemaArrJSON(columns);
-  const oldObj = useCreation(() => ({ value: _.cloneDeep(columnsJSON) }), []);
-
-  if (!_.isEqual(columnsJSON, oldObj.value)) {
-    oldObj.value = _.cloneDeep(columnsJSON);
-  }
-
-  return oldObj.value;
-};
 
 const TableColumnTitle = withTooltipComponent(RecursionField);
 
@@ -105,8 +90,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
     return buf;
   }, []);
   const { current, pageSize } = paginationProps;
-  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
-
   const schemaToolbarBigger = useMemo(() => {
     return css`
       .nb-action-link {
@@ -180,9 +163,9 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         } as TableColumnProps<any>;
       }),
 
-    // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.value, field.address, collection, parentRecordData, schemaToolbarBigger, designable],
+    // 子表格列配置（隐藏/删除）在设计器中会原地修改 schema，
+    // 这里要直接依赖 columnsSchema，确保每次修改都能触发列重算。
+    [columnsSchema, field.value, field.address, collection, parentRecordData, schemaToolbarBigger, designable, t],
   );
 
   const tableColumns = useMemo(() => {
@@ -423,7 +406,7 @@ const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
   padding-right: 8px;
   .nb-table-index {
     opacity: 0;
@@ -450,7 +433,8 @@ const rowSelectCheckboxContentClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
+  gap: 0;
 `;
 
 const rowSelectCheckboxCheckedClassHover = css`

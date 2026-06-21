@@ -6,43 +6,43 @@
   },
   {
     "type": "custom-link",
-    "label": "Kebijakan Token",
+    "label": "Token Policy",
     "link": "/security/token-policy/"
   },
   {
     "type": "custom-link",
-    "label": "Kebijakan Kata Sandi",
+    "label": "Password Policy",
     "items": [
       {
         "type": "custom-link",
-        "label": "Kebijakan Kata Sandi",
+        "label": "Password Policy",
         "link": "/security/password-policy/"
       },
       {
         "type": "custom-link",
-        "label": "Penguncian Pengguna",
+        "label": "User Lockout",
         "link": "/security/password-policy/lockout"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Pembatasan IP",
+    "label": "IP Restriction",
     "link": "/security/ip-restriction/"
   },
   {
     "type": "custom-link",
-    "label": "Log Audit",
+    "label": "Audit Log",
     "link": "/security/audit-logger/"
   },
   {
     "type": "custom-link",
-    "label": "Autentikasi Dua Faktor (2FA)",
+    "label": "Two-Factor Authentication (2FA)",
     "link": "/auth-verification/2fa/"
   },
   {
     "type": "custom-link",
-    "label": "Enkripsi Kolom",
-    "link": "/data-sources/field-encryption"
+    "label": "Field Encryption",
+    "link": "/data-sources/field-encryption/"
   }
 ]

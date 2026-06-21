@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Mendaftarkan FlowModel"
+description: "Mendaftarkan FlowModel: FlowEngine.registerFlowModel mendaftarkan FlowModel ke engine, untuk digunakan oleh plugin dan halaman, penggunaan registerFlowModel."
+keywords: "mendaftarkan FlowModel,registerFlowModel,FlowEngine,registrasi plugin,registrasi FlowModel,NocoBase"
+---
 
 # Mendaftarkan FlowModel
 
-## Memulai dengan FlowModel Kustom
+## Mulai dari FlowModel Kustom
 
 ```tsx pure
 class HelloModel extends FlowModel {
@@ -19,20 +21,28 @@ class HelloModel extends FlowModel {
 }
 ```
 
-## Kelas Dasar FlowModel yang Tersedia
+```tsx file="./_demos/register-flow-model.tsx" preview
+```
 
-| Nama Kelas Dasar        | Deskripsi                                 |
-| ----------------------- | ----------------------------------------- |
-| `BlockModel`            | Kelas dasar untuk semua blok              |
-| `CollectionBlockModel`  | Blok koleksi, mewarisi dari BlockModel    |
-| `ActionModel`           | Kelas dasar untuk semua aksi              |
+## Class Dasar FlowModel yang Tersedia
+
+| Nama Class Dasar               | Penjelasan                          |
+| ---------------------- | ----------------------------- |
+| `BlockModel`           | Class dasar semua Block                |
+| `CollectionBlockModel` | Block tabel data, inherits dari BlockModel |
+| `ActionModel`          | Class dasar semua Action                |
 
 ## Mendaftarkan FlowModel
 
 ```ts
 export class PluginHelloClient extends Plugin {
   async load() {
-    this.engine.registerModels({ HelloModel });
+    this.engine.registerModelLoaders({
+      HelloModel: {
+        // Dynamic import, modul yang sesuai akan dimuat saat model ini benar-benar digunakan pertama kali
+        loader: () => import('./HelloModel'),
+      },
+    });
   }
 }
 ```

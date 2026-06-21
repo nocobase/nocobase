@@ -1,14 +1,14 @@
 ---
-displayName: "Blok: Markdown"
+displayName: "Markdown"
 packageName: '@nocobase/plugin-block-markdown'
+title: "Markdown"
+keywords: "Markdown,plugin,NocoBase"
 description: |
-  Menyediakan blok Markdown
+  Menyediakan Block Markdown.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Markdown
+# Markdown

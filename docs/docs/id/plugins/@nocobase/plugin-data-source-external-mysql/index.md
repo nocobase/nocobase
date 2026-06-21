@@ -1,18 +1,17 @@
 ---
-displayName: "Sumber Data: MySQL Eksternal"
+displayName: "Data Source: External MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
+title: "Data Source: External MySQL"
+keywords: "Data Source: External MySQL,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Menggunakan database MySQL eksternal sebagai sumber data.
+  Menggunakan database MySQL eksternal sebagai data source.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Sumber Data: MySQL Eksternal
+# Data Source: External MySQL

@@ -1,77 +1,83 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tùy chọn Biểu đồ"
+description: "Cấu hình hiển thị biểu đồ: chế độ Basic trực quan và chế độ Custom JS, ánh xạ field xField/yField/seriesField, lựa chọn loại biểu đồ như line, bar, pie."
+keywords: "tùy chọn biểu đồ,Basic mode,Custom mode,ECharts,ánh xạ field,xField,yField,NocoBase"
+---
+
+# Tùy chọn Biểu đồ
+
+Cấu hình cách hiển thị biểu đồ, hỗ trợ hai chế độ: Basic (trực quan) và Custom (tùy chỉnh JS). Basic phù hợp cho ánh xạ nhanh và các thuộc tính thông dụng; Custom phù hợp cho các tình huống phức tạp và tùy chỉnh nâng cao.
 
 
-# Tùy chọn biểu đồ
-
-Cấu hình cách biểu đồ được hiển thị. Hỗ trợ hai chế độ: Basic (trực quan) và Custom (JS tùy chỉnh). Chế độ Basic lý tưởng cho việc ánh xạ nhanh và các thuộc tính phổ biến; chế độ Custom phù hợp với các tình huống phức tạp và tùy chỉnh nâng cao.
-
-## Bố cục bảng điều khiển
+## Cấu trúc panel
 
 ![clipboard-image-1761473695](https://static-docs.nocobase.com/clipboard-image-1761473695.png)
 
-> Mẹo: Để cấu hình nội dung hiện tại dễ dàng hơn, quý vị có thể thu gọn các bảng điều khiển khác trước.
+> Tips: Để cấu hình nội dung hiện tại thuận tiện hơn, có thể thu gọn các panel khác trước.
 
-Thanh thao tác ở trên cùng
-Lựa chọn chế độ:
-- Basic: Cấu hình trực quan, chọn loại và hoàn tất ánh xạ trường, điều chỉnh trực tiếp các thuộc tính phổ biến bằng công tắc.
-- Custom: Viết mã JS trong trình chỉnh sửa và trả về một đối tượng `option` của ECharts.
+Phía trên cùng là thanh thao tác
+Lựa chọn chế độ
+- Basic: Cấu hình trực quan, chọn loại và hoàn thành ánh xạ field, các thuộc tính chuyển đổi thông dụng được điều chỉnh trực tiếp.
+- Custom: Viết JS trong editor, trả về `option` ECharts.
 
 ## Chế độ Basic
 
 ![20251026190615](https://static-docs.nocobase.com/20251026190615.png)
 
 ### Chọn loại biểu đồ
-- Hỗ trợ: biểu đồ đường, biểu đồ vùng, biểu đồ cột, biểu đồ thanh, biểu đồ tròn, biểu đồ vành khuyên, biểu đồ phễu, biểu đồ phân tán, v.v.
-- Các trường yêu cầu có thể khác nhau tùy theo loại biểu đồ. Trước tiên, hãy xác nhận tên cột và loại dữ liệu trong mục “Truy vấn dữ liệu → Xem dữ liệu”.
+- Hỗ trợ: line chart, area chart, bar chart, column chart, pie chart, doughnut chart, funnel chart, scatter chart, v.v.
+- Các field yêu cầu của các loại biểu đồ khác nhau có thể khác nhau, hãy xác nhận tên cột và kiểu trong "Truy vấn dữ liệu → Xem dữ liệu" trước.
 
-### Ánh xạ trường
-- Biểu đồ đường/vùng/cột/thanh:
-  - `xField`: Chiều (ví dụ: ngày, danh mục, khu vực)
-  - `yField`: Đo lường (giá trị số đã tổng hợp)
-  - `seriesField` (tùy chọn): Nhóm chuỗi (dùng cho nhiều đường/nhiều nhóm cột)
-- Biểu đồ tròn/vành khuyên:
-  - `Category`: Chiều phân loại
-  - `Value`: Đo lường
-- Biểu đồ phễu:
+### Ánh xạ field
+- line/area/bar/column:
+  - `xField`: Dimension (như ngày, danh mục, khu vực)
+  - `yField`: Measure (giá trị số sau khi tổng hợp)
+  - `seriesField` (Tùy chọn): Nhóm series (dùng cho nhiều đường/nhiều cột)
+- pie/doughnut:
+  - `Category`: Dimension phân loại
+  - `Value`: Measure
+- funnel:
   - `Category`: Giai đoạn/phân loại
-  - `Value`: Giá trị (thường là số lượng hoặc tỷ lệ phần trăm)
-- Biểu đồ phân tán:
-  - `xField`, `yField`: Hai đo lường hoặc chiều, dùng cho trục tọa độ
+  - `Value`: Giá trị (thường là số lượng hoặc tỷ lệ)
+- scatter:
+  - `xField`, `yField`: Hai measure hoặc dimension, dùng cho trục tọa độ
 
-> Để biết thêm các tùy chọn biểu đồ, quý vị có thể tham khảo tài liệu ECharts: [Trục tọa độ](https://echarts.apache.org/handbook/en/concepts/axis) và [Ví dụ](https://echarts.apache.org/examples/en/index.html)
+
+> Để xem thêm cấu hình tùy chọn biểu đồ, vui lòng tham khảo tài liệu Echarts [Trục tọa độ](https://echarts.apache.org/handbook/en/concepts/axis) và [Ví dụ](https://echarts.apache.org/examples/en/index.html)
+
 
 **Lưu ý:**
-- Sau khi thay đổi chiều hoặc đo lường, hãy kiểm tra lại ánh xạ để tránh biểu đồ trống hoặc sai lệch.
-- Biểu đồ tròn/vành khuyên và biểu đồ phễu phải cung cấp tổ hợp “phân loại + giá trị”.
+- Sau khi thay đổi dimension hoặc measure, hãy xác nhận lại ánh xạ để tránh xuất hiện biểu đồ rỗng hoặc lệch.
+- pie/doughnut, funnel bắt buộc phải cung cấp tổ hợp "phân loại + giá trị".
 
-### Các thuộc tính phổ biến
+### Thuộc tính thông dụng
 
 ![20251026191332](https://static-docs.nocobase.com/20251026191332.png)
 
-- Xếp chồng, làm mượt (biểu đồ đường/vùng)
-- Hiển thị nhãn, chú giải công cụ (tooltip), chú giải (legend)
-- Xoay nhãn trục tọa độ, đường phân cách
-- Bán kính và bán kính trong của biểu đồ tròn/vành khuyên, cách sắp xếp biểu đồ phễu
+- Stack, smooth (line/area)
+- Hiển thị label, tooltip, legend
+- Xoay axis label, đường phân cách
+- Bán kính và bán kính trong của pie/doughnut, cách sắp xếp funnel
+
 
 **Khuyến nghị:**
-- Sử dụng biểu đồ đường/vùng cho chuỗi thời gian và bật làm mượt ở mức độ vừa phải; sử dụng biểu đồ cột/thanh để so sánh các danh mục lớn.
-- Khi dữ liệu dày đặc, không cần bật tất cả các nhãn để tránh che khuất.
+- Time series sử dụng line/area và bật smooth vừa phải; so sánh các loại lớn sử dụng bar/column.
+- Khi dữ liệu dày đặc không cần bật tất cả các label, tránh che khuất.
 
 ## Chế độ Custom
 
-Dùng để trả về một đối tượng `option` hoàn chỉnh của ECharts, phù hợp cho các tùy chỉnh nâng cao như hợp nhất nhiều chuỗi, chú giải công cụ phức tạp và kiểu động.
-Cách dùng được khuyến nghị: tập trung dữ liệu vào `dataset.source`. Để biết chi tiết, vui lòng tham khảo tài liệu ECharts: [Tập dữ liệu](https://echarts.apache.org/handbook/en/concepts/dataset/#map-row-or-column-of-dataset-to-series)
+Dùng để trả về `option` ECharts đầy đủ, phù hợp cho việc hợp nhất nhiều series, tooltip phức tạp, style động và các tùy chỉnh nâng cao khác.
+Cách sử dụng khuyến nghị: Tập trung dữ liệu thống nhất vào `dataset.resource`, để biết cách sử dụng chi tiết, vui lòng tham khảo tài liệu Echarts [Dataset](https://echarts.apache.org/handbook/en/concepts/dataset/#map-row-or-column-of-dataset-to-series)
 
 ![20251026191728](https://static-docs.nocobase.com/20251026191728.png)
 
-### Ngữ cảnh dữ liệu
-- `ctx.data.objects`: Mảng đối tượng (mỗi hàng là một bản ghi, được khuyến nghị)
-- `ctx.data.rows`: Mảng hai chiều (bao gồm tiêu đề bảng)
-- `ctx.data.columns`: Mảng hai chiều được nhóm theo cột
+### Context dữ liệu
+- `ctx.data.objects`: Mảng object (mỗi hàng bản ghi, khuyến nghị)
+- `ctx.data.rows`: Mảng hai chiều (kèm header)
+- `ctx.data.columns`: Mảng hai chiều theo cột
 
-### Ví dụ: Biểu đồ đường đơn hàng theo tháng
+
+### Ví dụ: Line chart đơn hàng theo tháng
 ```js
 return {
   dataset: { source: ctx.data.objects || [] },
@@ -87,11 +93,11 @@ return {
 }
 ```
 
-### Xem trước và Lưu
-- Trong chế độ Custom, sau khi chỉnh sửa xong, quý vị có thể nhấp vào nút **Xem trước** ở bên phải để cập nhật bản xem trước biểu đồ.
-- Ở phía dưới, nhấp vào “Lưu” để áp dụng và lưu cấu hình; nhấp vào “Hủy” để hoàn tác tất cả các thay đổi cấu hình trong lần này.
+### Preview và Lưu
+- Trong chế độ Custom sau khi sửa xong, có thể click nút Preview ở bên phải để cập nhật preview biểu đồ.
+- Click "Lưu" ở phía dưới để cấu hình có hiệu lực và lưu lại; click "Hủy" để hoàn tác tất cả các thay đổi cấu hình lần này.
 
 ![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
 
 > [!TIP]
-> Để biết thêm thông tin về các tùy chọn biểu đồ, vui lòng xem mục [Cách dùng nâng cao — Cấu hình biểu đồ tùy chỉnh](#).
+> Để biết thêm về tùy chọn biểu đồ, vui lòng xem Cách sử dụng nâng cao - Cấu hình biểu đồ tùy chỉnh.

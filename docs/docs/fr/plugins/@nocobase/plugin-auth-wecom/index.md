@@ -1,18 +1,17 @@
 ---
+title: "WeCom"
+keywords: "Authentication,Notification,Users & permissions"
 displayName: "WeCom"
 packageName: '@nocobase/plugin-auth-wecom'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Offre des fonctionnalités d'intégration WeCom, incluant les méthodes d'authentification, les canaux de notification et la source de données pour la synchronisation des utilisateurs.
+  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
 # WeCom

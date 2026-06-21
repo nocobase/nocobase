@@ -1,4 +1,6 @@
 ---
+title: "遥测：Prometheus"
+keywords: "遥测：Prometheus,插件,NocoBase"
 displayName: "遥测：Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:

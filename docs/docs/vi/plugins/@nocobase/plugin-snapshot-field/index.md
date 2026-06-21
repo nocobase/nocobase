@@ -1,18 +1,17 @@
 ---
-displayName: "Trường của bộ sưu tập: Ảnh chụp nhanh"
+displayName: "Trường dữ liệu: Snapshot quan hệ"
 packageName: '@nocobase/plugin-snapshot-field'
+title: "Trường dữ liệu: Snapshot quan hệ"
+keywords: "Trường dữ liệu: Snapshot quan hệ,Plugin,NocoBase"
 description: |
-  Khi thêm một bản ghi mới, plugin này sẽ tạo một ảnh chụp nhanh của dữ liệu liên quan và lưu trữ nó trong bản ghi hiện tại. Ảnh chụp nhanh này sẽ không được cập nhật khi dữ liệu liên quan thay đổi.
+  Khi thêm dữ liệu, tạo snapshot cho dữ liệu quan hệ của nó và lưu trong dữ liệu hiện tại. Khi dữ liệu quan hệ được cập nhật, snapshot sẽ không được cập nhật.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Trường dữ liệu: Snapshot quan hệ
 
-# Trường của bộ sưu tập: Ảnh chụp nhanh
-
-> Lưu ý: Plugin này đã bị ngừng phát triển (deprecated).
+> Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

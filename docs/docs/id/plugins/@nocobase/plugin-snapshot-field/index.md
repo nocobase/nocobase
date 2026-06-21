@@ -1,17 +1,17 @@
 ---
-displayName: "Kolom koleksi: Snapshot"
+displayName: "Field Collection: Snapshot Relasi"
 packageName: '@nocobase/plugin-snapshot-field'
+title: "Field Collection: Snapshot Relasi"
+keywords: "Field Collection: Snapshot Relasi,Plugin,NocoBase"
 description: |
-  Saat menambahkan data baru, buat snapshot untuk data relasionalnya dan simpan di data baru tersebut. Snapshot tidak akan diperbarui ketika data relasional diperbarui.
+  Saat menambahkan data, buatlah snapshot dari data relasinya dan simpan di data saat ini. Saat data relasi diperbarui, snapshot tidak akan diperbarui.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Kolom Koleksi: Snapshot
+# Field Collection: Snapshot Relasi
 
-> Catatan: Plugin ini sudah tidak digunakan lagi (deprecated).
+> Perhatian: Plugin ini sudah usang (deprecated).

@@ -1,18 +1,17 @@
 ---
-displayName: "Cetak Templat"
+displayName: "Template Print"
 packageName: '@nocobase/plugin-action-template-print'
+title: "Template Print"
+keywords: "Template Print,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Mendukung pengguna untuk mencetak templat di dalam aplikasi NocoBase.
+  Memungkinkan pengguna mencetak template di dalam aplikasi NocoBase.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Cetak Templat
+# Template Print

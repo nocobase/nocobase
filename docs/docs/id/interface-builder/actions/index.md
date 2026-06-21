@@ -1,30 +1,33 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ikhtisar Action"
+description: "Action mengkonfigurasi tombol, link, submit, dll., mendefinisikan perilaku interaksi Block dan Form, mendukung 20+ tipe Action seperti tambah, edit, hapus, ekspor, impor, trigger workflow."
+keywords: "Action, Actions, tombol Action, tambah edit hapus, ekspor impor, trigger workflow, interface builder, NocoBase"
+---
 
-# Aksi
+# Action
 
-Di UI, aksi adalah tombol yang digunakan untuk memicu serangkaian instruksi. Tombol ini dapat ditempatkan langsung di halaman, kotak dialog, atau laci, dan juga dapat digunakan dalam kombinasi dengan blok. Saat ini, aksi yang dapat dikonfigurasi secara dinamis sebagian besar digunakan dalam kombinasi dengan blok.
+Di UI, Action adalah tombol yang digunakan untuk memicu serangkaian instruksi. Dapat ditempatkan langsung di Page, dialog, drawer, atau dikombinasikan dengan Block. Saat ini, Action yang dapat dikonfigurasi secara dinamis terutama digunakan dalam kombinasi dengan Block.
 
-## Aksi dalam Blok
+## Action di Block
 
 ![20251028231445](https://static-docs.nocobase.com/20251028231445.png)
 
-## Desainer (Bilah Alat)
 
-- Seret
-- [Alur peristiwa](/interface-builder/event-flow)
+## Designer (Toolbar)
+
+- Drag
+- [Event Flow](/interface-builder/event-flow)
 - Konfigurasi parameter
 
 ![20251028231600](https://static-docs.nocobase.com/20251028231600.png)
 
-## Seret untuk Mengurutkan
+## Drag Sort
 
-Tekan dan tahan ikon "Seret" di desainer tombol untuk mengurutkan tombol.
+Tahan ikon "Drag" di designer tombol untuk mengurutkan tombol.
 ![20251028231700](https://static-docs.nocobase.com/20251028231700.gif)
 
-## Opsi
+## Item Konfigurasi
 
 ![20251028231823](https://static-docs.nocobase.com/20251028231823.png)
 
-## Alur Peristiwa
+## Event Flow

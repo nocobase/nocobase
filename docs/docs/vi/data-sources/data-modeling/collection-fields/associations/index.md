@@ -1,17 +1,18 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Field quan hệ"
+description: "Field quan hệ thiết lập kết nối giữa các bảng, hỗ trợ OneToOne, OneToMany, ManyToOne, ManyToMany, không cần field thực để lưu trữ."
+keywords: "Field quan hệ,BelongsTo,HasMany,O2O,O2M,M2O,M2M,Field liên kết,NocoBase"
+---
 
+# Field quan hệ
 
-# Trường Quan hệ
+Trong NocoBase, field quan hệ không phải là field thực, mà được dùng để thiết lập kết nối giữa các bảng. Khái niệm này tương đương với quan hệ trong relational database.
 
-Trong NocoBase, trường quan hệ không phải là các trường dữ liệu thực sự, mà chúng được dùng để thiết lập kết nối giữa các **bộ sưu tập**. Khái niệm này tương đương với các mối quan hệ trong cơ sở dữ liệu quan hệ.
+Trong relational database, các kiểu quan hệ phổ biến chủ yếu bao gồm:
 
-Trong cơ sở dữ liệu quan hệ, các loại mối quan hệ phổ biến nhất bao gồm:
+- [OneToOne (One-to-one)](./o2o/index.md): Mỗi thực thể trong hai bảng chỉ có thể tương ứng với một thực thể trong bảng kia. Quan hệ này thường được dùng để lưu trữ các khía cạnh khác nhau của thực thể trong các bảng khác nhau, nhằm giảm dư thừa và cải thiện tính nhất quán của dữ liệu.
+- [OneToMany (One-to-many)](./o2m/index.md): Mỗi thực thể trong một bảng có thể liên kết với nhiều thực thể trong bảng khác. Đây là một trong những kiểu quan hệ phổ biến nhất, ví dụ một tác giả có thể viết nhiều bài viết, nhưng một bài viết chỉ có thể có một tác giả.
+- [ManyToOne (Many-to-one)](./m2o/index.md): Nhiều thực thể trong một bảng có thể liên kết với một thực thể trong bảng khác. Quan hệ này cũng rất phổ biến trong data modeling, ví dụ nhiều học sinh có thể thuộc về cùng một lớp học.
+- [ManyToMany (Many-to-many)](./m2m/index.md): Nhiều thực thể trong hai bảng có thể liên kết với nhau. Quan hệ này thường yêu cầu một bảng trung gian để ghi lại liên kết giữa các thực thể, ví dụ mối quan hệ giữa học sinh và môn học, một học sinh có thể chọn nhiều môn học, và một môn học cũng có thể được nhiều học sinh chọn.
 
-- [Một-một](./o2o/index.md): Mỗi **thực thể** trong hai **bộ sưu tập** chỉ tương ứng với một **thực thể** duy nhất trong **bộ sưu tập** còn lại. Loại mối quan hệ này thường được sử dụng để lưu trữ các khía cạnh khác nhau của một **thực thể** trong các **bộ sưu tập** riêng biệt, nhằm giảm sự dư thừa và cải thiện tính nhất quán dữ liệu.
-- [Một-nhiều](./o2m/index.md): Mỗi **thực thể** trong một **bộ sưu tập** có thể liên kết với nhiều **thực thể** trong **bộ sưu tập** khác. Đây là một trong những loại mối quan hệ phổ biến nhất. Ví dụ, một tác giả có thể viết nhiều bài báo, nhưng mỗi bài báo chỉ có thể có một tác giả.
-- [Nhiều-một](./m2o/index.md): Nhiều **thực thể** trong một **bộ sưu tập** có thể liên kết với một **thực thể** duy nhất trong **bộ sưu tập** khác. Loại mối quan hệ này cũng rất phổ biến trong mô hình hóa dữ liệu. Chẳng hạn, nhiều sinh viên có thể thuộc cùng một lớp học.
-- [Nhiều-nhiều](./m2m/index.md): Nhiều **thực thể** trong hai **bộ sưu tập** có thể liên kết với nhau. Loại mối quan hệ này thường yêu cầu một **bộ sưu tập trung gian** để ghi lại các liên kết giữa các **thực thể**. Ví dụ, mối quan hệ giữa sinh viên và khóa học – một sinh viên có thể đăng ký nhiều khóa học, và một khóa học cũng có thể có nhiều sinh viên.
-
-Các loại mối quan hệ này đóng vai trò quan trọng trong thiết kế cơ sở dữ liệu và mô hình hóa dữ liệu, giúp mô tả các mối quan hệ và cấu trúc dữ liệu phức tạp trong thế giới thực.
+Các kiểu quan hệ này đều có vai trò quan trọng trong thiết kế database và data modeling, có thể giúp mô tả các quan hệ và cấu trúc dữ liệu phức tạp trong thế giới thực.

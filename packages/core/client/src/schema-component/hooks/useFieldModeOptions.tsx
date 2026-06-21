@@ -125,6 +125,6 @@ export const useFieldModeOptions = (props?) => {
               { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ];
     }
-  }, [t, collectionField?.interface, label]);
+  }, [t, collectionField?.interface, label, isReadPretty, isTableField]);
   return (fieldModeOptions || []).filter(Boolean);
 };

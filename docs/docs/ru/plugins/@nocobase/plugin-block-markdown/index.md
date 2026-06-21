@@ -1,14 +1,14 @@
 ---
+title: "Block: Markdown"
+keywords: "Blocks"
 displayName: "Блок: Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |
-  Предоставляет блок Markdown.
+  Блок с разметкой Markdown.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
 # Блок: Markdown

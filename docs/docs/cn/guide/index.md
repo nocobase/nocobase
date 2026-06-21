@@ -1,8 +1,9 @@
 ---
 pageType: home
-
 pageName: guide
-
+title: "NocoBase 功能指南"
+description: "NocoBase 核心功能指南：数据源、界面搭建、AI 员工、用户权限、认证验证、工作流、通知、多应用、集成、安全、运维。"
+keywords: "NocoBase,功能指南,数据源,界面搭建,工作流,NocoBase 文档"
 features:
   - title: 核心功能
     details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。
@@ -62,9 +63,6 @@ features:
       - title: 日志和监控
         details: 记录系统运行与用户操作。
         link: /log-and-monitor/logger/
-      - title: 多应用
-        details: 创建和管理多个物理隔离的应用实例，支持不同业务或项目的独立运行。
-        link: /app-supervisor/
       - title: 集群模式
         details: 支持多节点部署与负载均衡，确保系统在高并发场景下的稳定性与可扩展性。
         link: /cluster-mode

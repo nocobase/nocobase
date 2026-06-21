@@ -9,5 +9,6 @@
 
 export * from './APIClient';
 export * from './Auth';
+export * from './headers';
 export * from './Storage';
 export { default as getSubAppName } from './getSubAppName';

@@ -42,6 +42,8 @@ import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
 import { OptionsParser } from './options-parser';
+import { buildQuery, normalizeQueryResult } from './query/builder';
+import type { QueryOptions } from './query/types';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
@@ -51,6 +53,7 @@ import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { processIncludes } from './utils';
 import { valuesToFilter } from './utils/filter-utils';
+import { AssociationNotFoundError } from './errors/association-not-found-error';
 
 const debug = require('debug')('noco-database');
 
@@ -238,6 +241,7 @@ export interface AggregateOptions {
   filter?: Filter;
   distinct?: boolean;
 }
+export interface QueryOptionsWithTransaction extends QueryOptions, Transactionable {}
 
 export interface FirstOrCreateOptions extends Transactionable {
   filterKeys: string[];
@@ -288,13 +292,15 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       };
     }
 
+    const hasInclude = Array.isArray(options['include']) && options['include'].length > 0;
     const queryOptions: any = {
       ...options,
-      distinct: Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey(),
     };
 
-    if (Array.isArray(queryOptions.include) && queryOptions.include.length > 0) {
+    if (hasInclude) {
       queryOptions.include = processIncludes(queryOptions.include, this.collection.model);
+      queryOptions.distinct =
+        Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey();
     } else {
       delete queryOptions.include;
     }
@@ -385,6 +391,24 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       type: QueryTypes.SELECT,
     });
     return result?.['USER'] ?? '';
+  }
+
+  async query(options: QueryOptionsWithTransaction = {}): Promise<any[]> {
+    const transaction = await this.getTransaction(options);
+    const { queryOptions, fieldMap } = buildQuery(this.database, this.collection, options);
+    const finalQueryOptions: SequelizeFindOptions = {
+      ...queryOptions,
+      transaction,
+    };
+
+    if (Array.isArray(finalQueryOptions.include) && finalQueryOptions.include.length > 0) {
+      finalQueryOptions.include = processIncludes(finalQueryOptions.include, this.collection.model);
+    } else {
+      delete finalQueryOptions.include;
+    }
+
+    const data = await this.model.findAll(finalQueryOptions);
+    return normalizeQueryResult(data, fieldMap);
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
@@ -945,6 +969,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     const params = parser.toSequelizeParams({ parseSort: _.isBoolean(options?.parseSort) ? options.parseSort : true });
+
+    if (parser.associationNotFoundWarnings.length > 0) {
+      this.database.logger.warn(parser.associationNotFoundWarnings.join('; '));
+    }
+
     debug('sequelize query params %o', params);
 
     if (options.where && params.where) {

@@ -1,52 +1,44 @@
+---
+pkg: '@nocobase/plugin-ai'
+title: 'Collaborate with AI Employees'
+description: 'Collaborate with AI Employees: bottom-right main entry, block Action entry, chat operations, and switching employees and models in a conversation (AI Employee Switcher, Model Switcher).'
+keywords: 'AI Employee collaboration,chat panel,employee switcher,model switcher,NocoBase'
+---
+
 # Collaborate with AI Employees
 
-After creating an AI Employee, we can collaborate with our AI Employee on any NocoBase page.
+After creating and enabling AI Employees, you can collaborate with them in pages.
 
-We can open them by clicking an employee avatar in the employee list at the bottom right of the page, and then start collaborating.
+## Entry Points
 
-![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
+1. **Bottom-right main entry**: Open the AI chat panel from the bottom-right corner of business pages. Suitable for general Q&A and cross-block collaboration.
+2. **Block Action entry**: In blocks that support `Actions`, add AI Employees through `Actions -> AI employees`. Suitable for tasks on the current block, such as filling form blocks.
+3. **Scenario-specific entry**: Development-oriented employees, such as Nathan, Lina, and Dara, provide dedicated entries in specific scenarios such as JS blocks, chart blocks, or Localization Management.
 
-You can also pin AI Employees wherever you need them, such as on Tables or Forms, and click them to open the Chatbox.
+### Bottom-right Main Entry
 
-![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
+![20260331165456](https://static-docs.nocobase.com/20260331165456.png)
 
+### Block Action Entry
 
-## Basic Operations in the Chatbox
+![20251022135306](https://static-docs.nocobase.com/20251022135306.png)
 
-After opening the AI Employee, enter your message and click the send button to start the conversation.
+### Scenario-Specific Entry
 
-![20251021234541](https://static-docs.nocobase.com/20251021234541.png)
+![](https://static-docs.nocobase.com/202605121057862.png)
 
-Hovering over a user message will reveal quick action icons:
-- Edit and resend message
-- Copy user message content
-  
-![20251021235715](https://static-docs.nocobase.com/20251021235715.png)
+## Basic Chat Operations
 
-Hovering over an AI message will reveal quick action icons:
-- Ask AI to regenerate reply
-- Copy AI message content
+The chat panel supports common operations such as sending messages, uploading attachments, viewing history, creating new chats, and editing system prompts.
 
-![20251021235847](https://static-docs.nocobase.com/20251021235847.png)
+## In-Chat Switching
 
-Click the "Upload" icon to upload and send files to the AI Employee.
+In most cases, you can simply talk to Atlas, and he will coordinate the appropriate AI Employee to help handle the task.
 
-![20251022000327](https://static-docs.nocobase.com/20251022000327.png)
+If you want to use a specific AI Employee, click the AI Employee dropdown in the message composer to select one.
 
-The top left corner of the Chatbox is the chat history list. Click to expand the list and view past conversations.
+![20260331174320](https://static-docs.nocobase.com/20260331174320.png)
 
-![20251021234640](https://static-docs.nocobase.com/20251021234640.png)
+Model preferences are saved per employee and restored next time.
 
-Click the "Pencil" icon in the top right corner to start a new Chat.
-
-![20251021234841](https://static-docs.nocobase.com/20251021234841.png)
-
-Click the "i" icon in the top right corner to edit the custom System prompt.
-
-![20251021235314](https://static-docs.nocobase.com/20251021235314.png)
-
-Click the "Expand" icon in the top right corner to display the AI Employee Chatbox in full screen.
-
-![20251021235427](https://static-docs.nocobase.com/20251021235427.png)
-
-![20251021235525](https://static-docs.nocobase.com/20251021235525.png)
+![chat-footer-employee-switcher-and-model-switcher.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/chat-footer-employee-switcher-and-model-switcher.png)

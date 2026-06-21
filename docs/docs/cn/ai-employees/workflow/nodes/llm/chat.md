@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "工作流 LLM 节点 - 文本对话"
+description: "工作流 LLM 文本对话节点：选择模型、设置调用参数、Response format、System/User/Assistant 消息类型、变量引用。"
+keywords: "工作流,LLM 节点,文本对话,工作流 AI,NocoBase"
+---
+
 # 文本对话
 
 <PluginInfo name="ai"></PluginInfo>
@@ -16,7 +23,7 @@
 
 ## 选择模型
 
-首先选择已接入的 LLM 服务，如果还没有接入 LLM 服务，则需要先添加 LLM 服务配置。参考：[LLM 服务管理](/ai-employees/quick-start/llm-service)
+首先选择已接入的 LLM 服务，如果还没有接入 LLM 服务，则需要先添加 LLM 服务配置。参考：[LLM 服务管理](/ai-employees/features/llm-service)
 
 选择服务以后，应用会尝试从 LLM 服务获取可用模型列表供选择。部分 LLM 在线服务获取模型的接口可能不符合标准 API 协议，用户也可以手动输入模型 id.
 

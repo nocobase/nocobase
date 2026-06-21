@@ -1,74 +1,76 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ikhtisar"
+description: "Tipe field datetime: dengan timezone/tanpa timezone, tanggal, waktu, Unix Timestamp, perbandingan tipe NocoBase/MySQL/PostgreSQL."
+keywords: "datetime,DateTime,field waktu,dengan timezone,tanpa timezone,Unix Timestamp,NocoBase"
+---
 
-# Gambaran Umum
+# Ikhtisar
 
-## Tipe Kolom Tanggal dan Waktu
+## Tipe Field Datetime
 
-Tipe kolom tanggal dan waktu dapat dikategorikan sebagai berikut:
+Tipe field datetime meliputi beberapa berikut:
 
--   **Tanggal dan Waktu (dengan Zona Waktu)**: Nilai tanggal dan waktu ini distandardisasi ke UTC (Coordinated Universal Time) dan disesuaikan dengan zona waktu jika diperlukan.
--   **Tanggal dan Waktu (tanpa Zona Waktu)**: Tipe ini menyimpan data tanggal dan waktu tanpa menyertakan informasi zona waktu apa pun.
--   **Tanggal (tanpa Waktu)**: Format ini secara eksklusif menyimpan informasi tanggal, tanpa komponen waktu.
--   **Waktu**: Hanya menyimpan informasi waktu, tidak termasuk tanggal.
--   **Unix Timestamp**: Tipe ini merepresentasikan jumlah detik yang telah berlalu sejak 1 Januari 1970, dan disimpan sebagai Unix timestamp.
+- **Datetime (dengan Timezone)** - Datetime akan dikonversi secara seragam ke waktu UTC (Coordinated Universal Time), dan dikonversi ke timezone saat dibutuhkan;
+- **Datetime (tanpa Timezone)** - Menyimpan tanggal dan waktu tanpa informasi timezone;
+- **Tanggal (tanpa Waktu)** - Hanya menyimpan tanggal, tidak termasuk bagian waktu;
+- **Waktu** - Hanya menyimpan waktu, tidak termasuk bagian tanggal;
+- **Unix Timestamp** - Disimpan sebagai Unix timestamp, biasanya dalam detik sejak 1 Januari 1970.
 
-Berikut adalah contoh untuk setiap tipe kolom terkait tanggal dan waktu:
+Contoh untuk berbagai tipe field terkait tanggal:
 
-| **Tipe Kolom**                  | **Contoh Nilai**           | **Deskripsi**                                          |
-|---------------------------------|----------------------------|--------------------------------------------------------|
-| Tanggal dan Waktu (dengan Zona Waktu) | 2024-08-24T07:30:00.000Z   | Dikonversi ke UTC dan dapat disesuaikan untuk zona waktu |
-| Tanggal dan Waktu (tanpa Zona Waktu) | 2024-08-24 15:30:00        | Menyimpan tanggal dan waktu tanpa mempertimbangkan zona waktu |
-| Tanggal (tanpa Waktu)           | 2024-08-24                 | Hanya menangkap tanggal, tanpa informasi waktu         |
-| Waktu                           | 15:30:00                   | Hanya menangkap waktu, tidak termasuk detail tanggal   |
-| Unix Timestamp                  | 1724437800                 | Merepresentasikan detik sejak 1970-01-01 00:00:00 UTC |
+| **Tipe Field**         | **Contoh Nilai**                 | **Deskripsi**                                   |
+|--------------------|---------------------------|--------------------------------------------|
+| Datetime (dengan Timezone)    | 2024-08-24T07:30:00.000Z   | Datetime akan dikonversi secara seragam ke waktu UTC (Coordinated Universal Time)      |
+| Datetime (tanpa Timezone)  | 2024-08-24 15:30:00        | Datetime tanpa timezone, hanya mencatat tanggal dan waktu             |
+| Tanggal (tanpa Waktu)     | 2024-08-24                 | Hanya menyimpan informasi tanggal, tidak termasuk waktu                     |
+| Waktu               | 15:30:00                   | Hanya menyimpan informasi waktu, tidak termasuk tanggal                     |
+| Unix Timestamp        | 1724437800                 | Jumlah detik yang berlalu sejak 00:00:00 UTC 1 Januari 1970 |
 
-## Perbandingan Sumber Data
+## Perbandingan Berbagai Data Source
 
-Berikut adalah tabel perbandingan untuk NocoBase, MySQL, dan PostgreSQL:
+Tabel perbandingan NocoBase, MySQL, dan PostgreSQL:
 
-| **Tipe Kolom**                  | **NocoBase**                  | **MySQL**                  | **PostgreSQL**                        |
-|---------------------------------|-------------------------------|----------------------------|---------------------------------------|
-| Tanggal dan Waktu (dengan Zona Waktu) | Datetime with timezone        | TIMESTAMP<br/> DATETIME    | TIMESTAMP WITH TIME ZONE              |
-| Tanggal dan Waktu (tanpa Zona Waktu) | Datetime without timezone     | DATETIME                   | TIMESTAMP WITHOUT TIME ZONE           |
-| Tanggal (tanpa Waktu)           | Date                          | DATE                       | DATE                                  |
-| Waktu                           | Time                          | TIME                       | TIME WITHOUT TIME ZONE                |
-| Unix Timestamp                  | Unix timestamp                | INTEGER<br/>BIGINT         | INTEGER<br/>BIGINT                    |
-| Waktu (dengan Zona Waktu)       | -                             | -                          | TIME WITH TIME ZONE                   |
+| **Tipe Field**       | **NocoBase**               | **MySQL**          | **PostgreSQL**                |
+|------------------|-----------------------------|--------------------|-------------------------------|
+| Datetime (dengan Timezone)   | Datetime with timezone    | TIMESTAMP<br/> DATETIME | TIMESTAMP WITH TIME ZONE      |
+| Datetime (tanpa Timezone)  | Datetime without timezone  | DATETIME           | TIMESTAMP WITHOUT TIME ZONE   |
+| Tanggal (tanpa Waktu)     | Date                      | DATE                 | DATE                          |
+| Waktu               | Time                     | TIME                 | TIME WITHOUT TIME ZONE        |
+| Unix Timestamp        | Unix timestamp            | INTEGER<br/>BIGINT   | INTEGER<br/>BIGINT              |
+| Waktu (dengan Timezone)      | -                         | -                  | TIME WITH TIME ZONE           |
 
 Catatan:
--   Tipe `TIMESTAMP` MySQL mencakup rentang antara `1970-01-01 00:00:01 UTC` dan `2038-01-19 03:14:07 UTC`. Untuk tanggal dan waktu di luar rentang ini, disarankan untuk menggunakan `DATETIME` atau `BIGINT` untuk menyimpan Unix timestamp.
+- Rentang data MySQL TIMESTAMP berada di antara waktu UTC `1970-01-01 00:00:01 ~ 2038-01-19 03:14:07`. Saat melebihi rentang ini, disarankan untuk menggunakan DATETIME atau BIGINT untuk menyimpan Unix timestamp.
 
-## Alur Kerja Pemrosesan Penyimpanan Tanggal dan Waktu
+## Alur Pemrosesan Penyimpanan Datetime
 
-### Dengan Zona Waktu
+### Dengan Timezone
 
-Ini termasuk `Tanggal dan Waktu (dengan Zona Waktu)` dan `Unix Timestamp`.
+Termasuk `Datetime (tanpa Timezone)` dan `Unix Timestamp`
 
 ![20240824191933](https://static-docs.nocobase.com/20240824191933.png)
 
 Catatan:
--   Untuk mengakomodasi rentang tanggal yang lebih luas, NocoBase menggunakan tipe `DATETIME` di database MySQL untuk kolom Tanggal dan Waktu (dengan Zona Waktu). Nilai tanggal yang disimpan dikonversi berdasarkan variabel lingkungan `TZ` server, yang berarti jika variabel lingkungan `TZ` berubah, nilai Tanggal dan Waktu yang disimpan juga akan berubah.
--   Karena ada perbedaan zona waktu antara UTC dan waktu lokal, menampilkan nilai UTC mentah secara langsung dapat menyebabkan kebingungan bagi pengguna.
+- Untuk mendukung rentang data yang lebih luas, field datetime (dengan timezone) NocoBase di database MySQL menggunakan DATETIME. Nilai tanggal yang disimpan adalah nilai yang sudah dikonversi berdasarkan environment variable TZ server. Jika environment variable TZ berubah, nilai datetime yang tersimpan akan berubah.
+- Ada perbedaan timezone antara waktu UTC dan waktu lokal. Menampilkan langsung nilai UTC asli dapat menyebabkan kesalahpahaman bagi pengguna.
 
-### Tanpa Zona Waktu
+### Tanpa Timezone
 
 ![20240824185600](https://static-docs.nocobase.com/20240824185600.png)
 
 ## UTC
 
-UTC (Coordinated Universal Time) adalah standar waktu global yang digunakan untuk mengoordinasikan dan menyinkronkan waktu di seluruh dunia. Ini adalah standar waktu yang sangat presisi, dipertahankan oleh jam atom, dan disinkronkan dengan rotasi Bumi.
+UTC (Coordinated Universal Time) adalah standar waktu global yang digunakan untuk mengoordinasikan dan menyatukan waktu di seluruh dunia. Standar ini berbasis pada jam atom dengan presisi tinggi dan tetap sinkron dengan waktu rotasi bumi.
 
-Perbedaan antara UTC dan waktu lokal dapat menyebabkan kebingungan saat menampilkan nilai UTC mentah. Contohnya:
+Ada perbedaan timezone antara waktu UTC dan waktu lokal. Menampilkan langsung nilai UTC asli dapat menyebabkan kesalahpahaman bagi pengguna, contohnya:
 
-| **Zona Waktu** | **Tanggal dan Waktu**    |
-|----------------|--------------------------|
-| UTC            | 2024-08-24T07:30:00.000Z |
-| UTC+8          | 2024-08-24 15:30:00      |
-| UTC+5          | 2024-08-24 12:30:00      |
-| UTC-5          | 2024-08-24 02:30:00      |
-| UTC+0          | 2024-08-24 07:30:00      |
-| UTC-6          | 2024-08-23 01:30:00      |
+| **Timezone**       | **Datetime**                      |
+|----------------|----------------------------------|
+| UTC            | 2024-08-24T07:30:00.000Z          |
+| WITA (UTC+8) | 2024-08-24 15:30:00               |
+| Zona Timur 5 (UTC+5) | 2024-08-24 12:30:00               |
+| Zona Barat 5 (UTC-5) | 2024-08-24 02:30:00               |
+| Waktu Inggris (UTC+0) | 2024-08-24 07:30:00              |
+| Waktu Tengah (UTC-6) | 2024-08-23 01:30:00              |
 
-Waktu-waktu yang berbeda ini semuanya merujuk pada momen yang sama, hanya saja diekspresikan dalam zona waktu yang berbeda.
+Semua di atas merepresentasikan satu waktu yang sama, hanya berbeda timezone-nya saja.

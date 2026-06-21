@@ -1,109 +1,97 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Hướng dẫn sử dụng Email Center"
+description: "Email Center: Link account liên kết tài khoản, ủy quyền OAuth, đồng bộ dữ liệu, lọc Email, gửi/nhận, xóa tài khoản."
+keywords: "Email Center,liên kết tài khoản,Link account,ủy quyền OAuth,đồng bộ dữ liệu,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Email Center
 
-
-# Trung tâm Email
+<PluginInfo commercial="true" name="email-manager"></PluginInfo>
 
 ## Giới thiệu
-Sau khi bật plugin email, Trung tâm Email sẽ mặc định khả dụng để bạn kết nối tài khoản, quản lý email, cấu hình tính năng, v.v.
+Sau khi plugin Email được kích hoạt, hệ thống mặc định cung cấp Email Center để tích hợp tài khoản, quản lý Email và cấu hình tính năng.
 
-Nhấp vào biểu tượng tin nhắn email ở góc trên bên phải để truy cập trang quản lý email.
+Click vào icon Email message ở phía trên bên phải để vào trang quản lý Email.
 
-![](https://static-docs.nocobase.com/mail-1733816161753.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_02_PM.png)
+
 ## Liên kết tài khoản
 
 ### Liên kết tài khoản
 
-Nhấp vào nút "Account setting", sau đó trong cửa sổ bật lên, nhấp vào nút "Link account" và chọn loại tài khoản email bạn muốn liên kết.
+Click nút **Cài đặt**, sau khi popup mở ra, click nút **Link account**, chọn loại Email cần liên kết.
 
-![](https://static-docs.nocobase.com/mail-1733816162279.png)
+![](https://static-docs.nocobase.com/email-manager/Email-01-01-2026_09_00_AM.png)
 
-Trình duyệt sẽ tự động mở trang đăng nhập email tương ứng. Bạn hãy đăng nhập vào tài khoản của mình và cấp các quyền cần thiết.
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_03_PM.png)
+
+Trình duyệt sẽ tự động mở trang đăng nhập của Email tương ứng, đăng nhập tài khoản và đồng ý ủy quyền (quy trình ủy quyền của các nhà cung cấp khác nhau có sự khác biệt).
 
 ![](https://static-docs.nocobase.com/mail-1733816162534.png)
 
-Sau khi ủy quyền hoàn tất, bạn sẽ được chuyển hướng trở lại trang NocoBase để liên kết tài khoản và đồng bộ dữ liệu (lần đồng bộ đầu tiên có thể mất một chút thời gian, vui lòng chờ đợi).
+![](https://static-docs.nocobase.com/email-manager/Microsoft-%E5%B8%90%E6%88%B7-12-31-2025_09_49_PM.png)
 
-![](https://static-docs.nocobase.com/mail-1733816162794.png)
+Sau khi ủy quyền hoàn tất sẽ chuyển hướng lại NocoBase, chọn thời điểm bắt đầu đồng bộ để liên kết tài khoản và đồng bộ dữ liệu (lần đồng bộ đầu tiên có thể mất khá lâu, vui lòng chờ).
 
-Sau khi đồng bộ dữ liệu hoàn tất, trang hiện tại sẽ tự động đóng và quay lại trang tin nhắn email ban đầu, nơi bạn có thể thấy tài khoản đã được liên kết.
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_51_PM.png)
 
-![](https://static-docs.nocobase.com/mail-1733816163177.png)
+Sau khi đồng bộ dữ liệu hoàn tất, trang hiện tại sẽ tự động đóng và quay lại trang Email message ban đầu, lúc này có thể thấy tài khoản đã được liên kết.
 
-Nhấp vào khu vực lớp phủ để đóng cửa sổ bật lên, và bạn sẽ thấy danh sách email.
-
-![](https://static-docs.nocobase.com/mail-1733816163503.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_51_PM%20(1).png)
 
 ### Xóa tài khoản
-Bạn có thể nhấp vào "Delete" để xóa tài khoản và các email liên quan.
+Click **Xóa** để xóa tài khoản và các Email liên quan.
 
-![](https://static-docs.nocobase.com/mail-1733816163758.png)
-
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_08_PM.png)
 
 ## Quản lý Email
 
 ### Lọc Email
 
-Trên trang quản lý email, khu vực bên trái là vùng lọc, và khu vực bên phải là vùng danh sách email. Khi truy cập trang, mặc định sẽ hiển thị hộp thư đến.
+Trang quản lý Email phía bên trái là khu vực lọc, phía bên phải là khu vực danh sách Email.
 
-![](https://static-docs.nocobase.com/mail-1733816165536.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_11_PM.png)
 
-Các email có cùng chủ đề sẽ được nhóm lại, và trường chủ đề sẽ hiển thị tổng số email trong cuộc hội thoại.
-Khi một số email trong cùng cuộc hội thoại khớp với tiêu chí lọc, email gốc của cuộc hội thoại sẽ được hiển thị, và loại của email gốc hiện tại sẽ được chỉ rõ bên cạnh trường chủ đề.
+Các Email cùng chủ đề sẽ được gộp lại, sau field chủ đề sẽ đánh dấu tổng cộng có bao nhiêu Email qua lại.
 
-![](https://static-docs.nocobase.com/mail-1733816165797.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_13_PM.png)
 
-Tiêu đề email chưa đọc sẽ được hiển thị bằng chữ in đậm, và biểu tượng email ở phía trên sẽ có huy hiệu hiển thị số lượng email chưa đọc.
+Tiêu đề Email chưa đọc sẽ được hiển thị in đậm, bên cạnh icon Email phía trên sẽ đánh dấu số Email chưa đọc.
 
-![](https://static-docs.nocobase.com/mail-1733816166067.png)
 
 ### Đồng bộ Email thủ công
 
-Khoảng thời gian đồng bộ email hiện tại là 5 phút. Nếu bạn muốn buộc đồng bộ email, hãy nhấp vào nút "Refresh".
+Khoảng thời gian đồng bộ Email hiện tại là 5 phút. Nếu cần buộc đồng bộ Email, click nút **Đồng bộ Email**.
 
-![](https://static-docs.nocobase.com/mail-1733816166364.png)
-
-### Thay đổi trạng thái đã đọc
-
-Các nút "Mark as read" và "Mark as unread" có thể được sử dụng để thay đổi trạng thái đã đọc của email hàng loạt.
-
-![](https://static-docs.nocobase.com/mail-1733816166621.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_43_PM.png)
 
 ### Gửi Email
 
-Nhấp vào nút "Write email" ở phía trên để mở bảng soạn email.
+Click nút **Gửi Email** ở phía trên để mở panel gửi.
 
-![](https://static-docs.nocobase.com/mail-1733816166970.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_13_PM%20(2).png)
 
-Sau khi điền đầy đủ thông tin liên quan, bạn có thể gửi email. Hiện tại, tệp đính kèm chỉ hỗ trợ dung lượng dưới 3MB.
+Điền thông tin liên quan rồi gửi Email. Tệp đính kèm chỉ hỗ trợ tệp dưới 3MB.
 
-![](https://static-docs.nocobase.com/mail-1733816167214.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_14_PM.png)
 
 ### Xem Email
 
-Nhấp vào nút "View" trên một hàng để xem chi tiết email. Hiện có hai dạng: một là email đơn lẻ, bạn có thể xem trực tiếp thông tin chi tiết của email đó.
+Click vào field **Chủ đề** trên hàng để xem chi tiết Email. Chi tiết Email có hai dạng:
 
-![](https://static-docs.nocobase.com/mail-1733816167456.png)
+Dạng Email đơn lẻ có thể trực tiếp xem thông tin chi tiết.
 
-Dạng còn lại là nhiều email có cùng chủ đề, mặc định sẽ hiển thị dưới dạng danh sách. Bạn có thể nhấp để mở rộng hoặc thu gọn.
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_34_PM.png)
 
-![](https://static-docs.nocobase.com/mail-1733816167750.png)
+Nhiều Email cùng chủ đề mặc định hiển thị dưới dạng danh sách, có thể click để mở rộng hoặc thu gọn.
 
-Sau khi nhấp để xem chi tiết email, trạng thái của email sẽ mặc định được đặt là đã đọc. Bạn có thể nhấp vào nút "..." ở bên phải và chọn "Mark as unread" để chuyển lại thành chưa đọc.
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_29_PM.png)
 
-### Trả lời Email
+Sau khi xem chi tiết Email, trạng thái Email mặc định được đặt là đã đọc. Có thể click nút **...** bên phải, chọn **Đánh dấu chưa đọc** để đặt lại thành chưa đọc.
 
-Sau khi vào chi tiết email, ở phía dưới có nút "Reply". Bạn có thể sử dụng nút này để trả lời. Nếu có nhiều người liên quan, bạn có thể nhấp vào "Reply all" để trả lời tất cả mọi người.
+### Trả lời và chuyển tiếp
 
-![](https://static-docs.nocobase.com/mail-1733816167998.png)
+Sau khi vào chi tiết Email, ở phía dưới có các nút **Trả lời**, **Chuyển tiếp** để thực hiện thao tác tương ứng.
 
-### Chuyển tiếp Email
-
-Bạn có thể nhấp vào nút "Forward" ở phía dưới để chuyển tiếp email cho người khác.
-
-![](https://static-docs.nocobase.com/mail-1733816168241.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_09_45_PM.png)

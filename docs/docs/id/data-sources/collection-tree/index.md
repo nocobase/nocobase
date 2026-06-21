@@ -1,19 +1,16 @@
 ---
 pkg: "@nocobase/plugin-collection-tree"
+title: "Collection Tree"
+description: "Tabel struktur tree menyimpan data hubungan hierarkis, menggunakan desain adjacency list, cocok untuk skenario seperti struktur organisasi, direktori kategori, komentar bersarang."
+keywords: "collection tree,collection tree,adjacency list,data hierarkis,Tree Collection,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-
-
-# Koleksi Pohon
+# Collection Tree
 
 ## Pengantar
 
-Koleksi berstruktur pohon adalah pola desain koleksi data yang digunakan untuk mengatur data yang memiliki hubungan hierarkis. Struktur koleksi ini menyerupai pohon, di mana setiap item data dapat memiliki satu atau lebih item anak, dan item anak tersebut, pada gilirannya, dapat memiliki keturunannya sendiri.
+Tabel struktur tree adalah pola desain Collection yang digunakan untuk menyimpan data dengan hubungan hierarkis. Struktur tabel ini mirip dengan struktur tree, di mana setiap item data dapat memiliki satu atau lebih sub-item, dan sub-item ini dapat memiliki sub-itemnya sendiri.
 
-## Panduan Pengguna
+## Panduan Penggunaan
 
 ![20240324143228](https://static-docs.nocobase.com/20240324143228.png)
 

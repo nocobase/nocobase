@@ -1,18 +1,17 @@
 ---
 pkg: "@nocobase/plugin-field-formula"
+title: "Formula"
+description: "Field formula tự động tính toán dựa trên giá trị các field khác, hỗ trợ cấu hình expression, phù hợp cho các tình huống tổng kết tiền, tính tỷ lệ."
+keywords: "Field formula,Formula,Calculation field,Expression calculation,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Công thức tính toán
+# Formula
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512173541](https://static-docs.nocobase.com/20240512173541.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung sau

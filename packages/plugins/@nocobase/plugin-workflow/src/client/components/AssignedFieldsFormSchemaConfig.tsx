@@ -60,7 +60,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
   const scope = useWorkflowVariableOptions();
 
   const { values, setValuesIn, disabled } = useForm();
-  const params = toJS(values.params);
+  const params = toJS(values.params) ?? {};
   const [dataSourceName, collectionName] = parseCollectionName(values.collection);
 
   const schemaOptions = useSchemaOptionsContext();
@@ -81,6 +81,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
           });
         },
       }),
+    // NOTE: should NOT add params.values to deps, otherwise the variable input will not work
     [executed],
   );
 

@@ -1,9 +1,10 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Cấu hình API Key"
+description: "API Key của NocoBase: thêm API Key cho người dùng hiện tại để truy cập theo phương thức lập trình, cần cấu hình biến môi trường APP_KEY, cách cấu hình cho Docker và bản cài từ source."
+keywords: "API Key,APP_KEY,Xác thực API,Truy cập lập trình,Bearer token,NocoBase"
+---
 
-
-# Khóa API
+# API Key
 
 ## Giới thiệu
 
@@ -15,18 +16,18 @@ http://localhost:13000/admin/settings/api-keys/configuration
 
 ![](https://static-docs.nocobase.com/d64ccbdc8a512a0224e9f81dfe14a0a8.png)
 
-### Thêm Khóa API
+### Thêm API Key
 
 ![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
 
 **Lưu ý**
 
-- Khóa API bạn thêm sẽ thuộc về người dùng hiện tại và kế thừa vai trò của người dùng đó.
-- Hãy đảm bảo biến môi trường `APP_KEY` đã được cấu hình và giữ bí mật. Nếu `APP_KEY` thay đổi, tất cả các khóa API đã thêm trước đó sẽ không còn hiệu lực.
+- API Key được thêm thuộc về người dùng hiện tại, vai trò là vai trò mà người dùng hiện tại sở hữu
+- Đảm bảo bạn đã cấu hình biến môi trường `APP_KEY` và đảm bảo nó không bị rò rỉ. Nếu APP_KEY thay đổi, tất cả API Key đã thêm sẽ bị mất hiệu lực.
 
 ### Cách cấu hình APP_KEY
 
-Đối với phiên bản Docker, hãy sửa đổi tệp `docker-compose.yml`:
+Phiên bản docker, chỉnh sửa tệp docker-compose.yml
 
 ```diff
 services:
@@ -36,7 +37,7 @@ services:
 +     - APP_KEY=4jAokvLKTJgM0v_JseUkJ
 ```
 
-Đối với cài đặt từ mã nguồn hoặc `create-nocobase-app`, bạn có thể trực tiếp sửa đổi `APP_KEY` trong tệp `.env`:
+Cài đặt từ source hoặc create-nocobase-app, chỉnh sửa trực tiếp APP_KEY trong tệp .env
 
 ```bash
 APP_KEY=4jAokvLKTJgM0v_JseUkJ

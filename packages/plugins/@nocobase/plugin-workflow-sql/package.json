@@ -6,19 +6,21 @@
   "description": "Execute SQL statements in workflow.",
   "description.ru-RU": "Выполняет SQL-запросы в рамках рабочего процесса.",
   "description.zh-CN": "可用于在工作流中对数据库执行任意 SQL 语句。",
-  "version": "2.0.0-alpha.70",
-  "license": "AGPL-3.0",
+  "version": "2.2.0-alpha.1",
+  "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-sql",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-sql",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-sql",
   "devDependencies": {
     "antd": "5.x",
+    "joi": "^17.13.3",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
     "@nocobase/server": "2.x",

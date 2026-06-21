@@ -1,18 +1,17 @@
 ---
-displayName: "Autenticación: DingTalk"
+title: "DingTalk"
+keywords: "Authentication,Notification,Users & permissions"
+displayName: "DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Permite autenticar su identidad a través de una cuenta de DingTalk.
+  Provides abilities for integrating DingTalk, including authentication, notification channel and data source for synchronizing user data.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Autenticación: DingTalk
+# DingTalk

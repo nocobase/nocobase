@@ -1,29 +1,32 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "File Collection"
+description: "File collection khusus untuk menyimpan meta-info file, dengan field built-in seperti nama file, ukuran, tipe, storage path. Mendukung pembuatan file collection kustom, relation field, dan tampilan block."
+keywords: "file collection,koleksi file,file collection,meta-info file,relation field,block,NocoBase"
+---
 
-# Koleksi File
+# File Collection
 
-## Pendahuluan
+## Pengantar
 
-Koleksi file adalah sebuah koleksi yang dirancang khusus untuk menyimpan metadata file. Koleksi ini dilengkapi dengan kolom bawaan seperti nama file, ukuran, tipe, dan jalur penyimpanan.
+File collection adalah tabel data khusus untuk menyimpan meta-info file, dengan field built-in seperti nama file, ukuran, tipe, storage path, dll.
 
-## Membuat Koleksi File
+## Membuat File Collection
 
 ![20240324090414](https://static-docs.nocobase.com/20240324090414.png)
 
-## Kolom Bawaan Koleksi File
+## Field Built-in File Collection
 
 ![20240324090527](https://static-docs.nocobase.com/20240324090527.png)
 
-## Penggunaan dalam Blok
+## Penggunaan dalam Block
 
 ![20240324090848](https://static-docs.nocobase.com/20240324090848.png)
 
-## Kolom Relasi
+## Relation Field
 
 ![20240324091529](https://static-docs.nocobase.com/20240324091529.png)
 
-## Blok Relasi
+## Relation Block
 
 ![20240324091321](https://static-docs.nocobase.com/20240324091321.png)

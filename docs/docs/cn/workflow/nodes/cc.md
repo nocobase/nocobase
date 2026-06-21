@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-cc'
+title: "工作流节点 - 抄送"
+description: "抄送节点：将流程上下文内容发送给指定用户，展示在待办中心「抄送我的」。"
+keywords: "工作流,抄送,CC,待办中心,抄送我的,NocoBase"
 ---
 
 # 抄送 <Badge>v1.8.2+</Badge>
@@ -35,6 +38,18 @@ pkg: '@nocobase/plugin-workflow-cc'
 接收者需要在待办中心的“抄送我的”菜单中查看抄送内容。可以配置流程上下文中触发器和任意节点的结果作为内容区块。
 
 ![用户界面](https://static-docs.nocobase.com/20250710225400.png)
+
+### 待办卡片 <Badge>2.0+</Badge>
+
+可用于配置待办中心“抄送我的”列表中的任务卡片。
+
+![20260213010947](https://static-docs.nocobase.com/20260213010947.png)
+
+卡片中可以自由配置希望展示的业务字段（关系字段除外）。
+
+工作流抄送任务创建后，待办中心列表即可看到自定义的任务卡片：
+
+![20260214124325](https://static-docs.nocobase.com/20260214124325.png)
 
 ### 任务标题
 

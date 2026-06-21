@@ -1,75 +1,80 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Cấu trúc thư mục dự án Plugin"
+description: "Cấu trúc dự án Plugin NocoBase: Yarn Workspace, packages/plugins, storage, thư mục client/server, cấu hình lerna.json."
+keywords: "cấu trúc dự án,Yarn Workspace,packages/plugins,thư mục plugin,create-nocobase-app,NocoBase"
+---
 
+# Cấu trúc thư mục dự án
 
-# Cấu trúc dự án
+Dù bạn clone source code qua Git hay khởi tạo dự án bằng `create-nocobase-app`, dự án NocoBase được tạo ra về bản chất đều là một monorepo dựa trên **Yarn Workspace**.
 
-Dù bạn clone mã nguồn từ Git hay khởi tạo dự án bằng `create-nocobase-app`, dự án NocoBase được tạo ra về bản chất đều là một monorepo (kho lưu trữ đa gói) dựa trên **Yarn Workspace**.
+## Tổng quan thư mục cấp cao
 
-## Tổng quan về thư mục cấp cao nhất
-
-Ví dụ sau đây sử dụng `my-nocobase-app/` làm thư mục dự án. Có thể có một vài khác biệt nhỏ tùy thuộc vào môi trường:
+Dưới đây lấy `my-nocobase-app/` làm thư mục dự án. Có thể có khác biệt nhỏ giữa các môi trường:
 
 ```bash
 my-nocobase-app/
 ├── packages/              # Mã nguồn dự án
-│   ├── plugins/           # Các plugin đang phát triển (chưa biên dịch)
-├── storage/               # Dữ liệu runtime và nội dung được tạo động
+│   ├── plugins/           # Mã nguồn Plugin đang phát triển (chưa biên dịch)
+├── storage/               # Dữ liệu runtime và nội dung tạo động
 │   ├── apps/
 │   ├── db/
 │   ├── logs/
 │   ├── uploads/
-│   ├── plugins/           # Các plugin đã biên dịch (bao gồm cả những plugin được tải lên qua giao diện người dùng)
-│   └── tar/               # Các tệp gói plugin (.tar)
-├── scripts/               # Các script tiện ích và lệnh công cụ
-├── .env*                  # Cấu hình biến môi trường cho các môi trường khác nhau
-├── lerna.json             # Cấu hình workspace của Lerna
-├── package.json           # Cấu hình gói gốc, khai báo workspace và các script
-├── tsconfig*.json         # Cấu hình TypeScript (frontend, backend, ánh xạ đường dẫn)
-├── vitest.config.mts      # Cấu hình kiểm thử đơn vị Vitest
-└── playwright.config.ts   # Cấu hình kiểm thử E2E Playwright
+│   ├── plugins/           # Plugin đã biên dịch (bao gồm Plugin upload qua giao diện)
+│   └── tar/               # File đóng gói Plugin (.tar)
+├── scripts/               # Script tiện ích và lệnh công cụ
+├── .env*                  # Biến cấu hình theo từng môi trường
+├── lerna.json             # Cấu hình Lerna workspace
+├── package.json           # Cấu hình package gốc, khai báo workspace và script
+├── tsconfig*.json         # Cấu hình TypeScript (front-end, back-end, mapping path)
+├── vitest.config.mts      # Cấu hình unit test Vitest
+└── playwright.config.ts   # Cấu hình E2E test Playwright
 ```
 
 ## Mô tả thư mục con packages/
 
-Thư mục `packages/` chứa các module cốt lõi và các gói mở rộng của NocoBase. Nội dung của thư mục này phụ thuộc vào nguồn gốc dự án:
+Thư mục `packages/` chứa các module cốt lõi và package có thể mở rộng của NocoBase, nội dung cụ thể tùy thuộc vào nguồn dự án:
 
-- **Các dự án được tạo bằng `create-nocobase-app`**: Mặc định chỉ bao gồm `packages/plugins/`, dùng để lưu trữ mã nguồn của các plugin tùy chỉnh. Mỗi thư mục con là một gói npm độc lập.
-- **Khi clone kho mã nguồn chính thức**: Bạn sẽ thấy nhiều thư mục con hơn, như `core/`, `plugins/`, `pro-plugins/`, `presets/`, v.v., tương ứng với các module cốt lõi của framework, các plugin tích hợp sẵn và các giải pháp cài đặt sẵn chính thức.
+- **Dự án tạo bằng `create-nocobase-app`**: Mặc định chỉ có `packages/plugins/`, dùng để chứa mã nguồn Plugin tùy chỉnh. Mỗi thư mục con là một npm package độc lập.
+- **Clone repo source code chính thức**: Sẽ thấy nhiều thư mục con hơn như `core/`, `plugins/`, `pro-plugins/`, `presets/`, v.v. tương ứng với core framework, Plugin tích hợp sẵn và preset chính thức.
 
-Trong cả hai trường hợp, `packages/plugins` là vị trí chính để phát triển và gỡ lỗi các plugin tùy chỉnh.
+Trong cả hai trường hợp, `packages/plugins` đều là vị trí chính để bạn phát triển và debug Plugin tùy chỉnh.
 
 ## Thư mục runtime storage/
 
-Thư mục `storage/` lưu trữ dữ liệu được tạo ra trong quá trình runtime và các kết quả build. Mô tả các thư mục con phổ biến như sau:
+`storage/` lưu dữ liệu được tạo lúc runtime và sản phẩm build. Mô tả các thư mục con thường gặp:
 
-- `apps/`: Cấu hình và bộ nhớ đệm cho các kịch bản đa ứng dụng.
-- `logs/`: Các tệp log runtime và đầu ra gỡ lỗi.
-- `uploads/`: Các tệp và tài nguyên media do người dùng tải lên.
-- `plugins/`: Các plugin đã đóng gói được tải lên qua giao diện người dùng (UI) hoặc nhập qua CLI.
-- `tar/`: Các gói plugin nén được tạo ra sau khi thực thi `yarn build <plugin> --tar`.
+- `apps/`: Cấu hình và cache cho kịch bản multi-app.
+- `logs/`: Log runtime và output debug.
+- `uploads/`: File và tài nguyên media do người dùng upload.
+- `plugins/`: Plugin đóng gói được upload qua giao diện hoặc import qua CLI.
+- `tar/`: File nén Plugin được tạo sau khi chạy `yarn build <plugin> --tar`.
 
-> Thông thường, chúng tôi khuyến nghị thêm thư mục `storage` vào `.gitignore` và xử lý riêng biệt khi triển khai hoặc sao lưu.
+:::tip Mẹo
 
-## Cấu hình môi trường và các script dự án
+Thường thì bạn nên thêm thư mục `storage` vào `.gitignore`, xử lý riêng khi deploy hoặc backup.
 
-- `.env`, `.env.test`, `.env.e2e`: Được sử dụng lần lượt cho chạy cục bộ, kiểm thử đơn vị/tích hợp và kiểm thử end-to-end (E2E).
-- `scripts/`: Chứa các script vận hành và bảo trì phổ biến (ví dụ: khởi tạo cơ sở dữ liệu, các công cụ hỗ trợ phát hành, v.v.).
+:::
 
-## Đường dẫn tải plugin và độ ưu tiên
+## Cấu hình môi trường và script dự án
 
-Các plugin có thể tồn tại ở nhiều vị trí khác nhau. Khi NocoBase khởi động, hệ thống sẽ tải chúng theo thứ tự ưu tiên sau:
+- `.env`, `.env.test`, `.env.e2e`: Lần lượt tương ứng với chạy local, unit/integration test và end-to-end test.
+- `scripts/`: Chứa script vận hành thường dùng như khởi tạo database, công cụ hỗ trợ phát hành, v.v.
 
-1. Phiên bản mã nguồn trong `packages/plugins` (dùng cho phát triển và gỡ lỗi cục bộ).
-2. Phiên bản đã đóng gói trong `storage/plugins` (được tải lên qua giao diện người dùng hoặc nhập qua CLI).
-3. Các gói phụ thuộc trong `node_modules` (được cài đặt qua npm/yarn hoặc tích hợp sẵn trong framework).
+## Đường dẫn load Plugin và độ ưu tiên
 
-Khi một plugin có cùng tên tồn tại đồng thời trong thư mục mã nguồn và thư mục đã đóng gói, hệ thống sẽ ưu tiên tải phiên bản mã nguồn, giúp việc ghi đè và gỡ lỗi cục bộ trở nên thuận tiện.
+Plugin có thể tồn tại ở nhiều vị trí, NocoBase load theo độ ưu tiên sau khi khởi động:
 
-## Mẫu thư mục plugin
+1. Phiên bản source code trong `packages/plugins` (dùng cho phát triển và debug local).
+2. Phiên bản đóng gói trong `storage/plugins` (upload qua giao diện hoặc import qua CLI).
+3. Package dependency trong `node_modules` (cài qua npm/yarn hoặc tích hợp sẵn trong framework).
 
-Tạo một plugin bằng CLI:
+Nếu Plugin cùng tên cùng tồn tại trong thư mục source code và thư mục đóng gói, NocoBase sẽ ưu tiên load phiên bản source code, thuận tiện cho việc override và debug local.
+
+## Template thư mục Plugin
+
+Tạo Plugin bằng CLI:
 
 ```bash
 yarn pm create @my-project/plugin-hello
@@ -79,27 +84,38 @@ Cấu trúc thư mục được tạo ra như sau:
 
 ```bash
 packages/plugins/@my-project/plugin-hello/
-├── dist/                    # Đầu ra build (được tạo khi cần)
+├── dist/                    # Output build (tạo theo nhu cầu)
 ├── src/                     # Thư mục mã nguồn
-│   ├── client/              # Mã frontend (các khối, trang, mô hình, v.v.)
-│   │   ├── plugin.ts        # Lớp chính của plugin phía client
-│   │   └── index.ts         # Điểm vào phía client
-│   ├── locale/              # Tài nguyên đa ngôn ngữ (chia sẻ giữa frontend và backend)
+│   ├── client-v2/           # Mã front-end (Block, page, model, v.v.)
+│   │   ├── plugin.ts        # Class chính của Plugin client
+│   │   └── index.ts         # Entry client
+│   ├── locale/              # Tài nguyên đa ngôn ngữ (chia sẻ giữa front-end và back-end)
 │   ├── swagger/             # Tài liệu OpenAPI/Swagger
-│   └── server/              # Mã phía server
-│       ├── collections/     # Định nghĩa bảng dữ liệu / bộ sưu tập
-│       ├── commands/        # Các lệnh tùy chỉnh
-│       ├── migrations/      # Các script di chuyển cơ sở dữ liệu
-│       ├── plugin.ts        # Lớp chính của plugin phía server
-│       └── index.ts         # Điểm vào phía server
-├── index.ts                 # Xuất cầu nối frontend và backend
-├── client.d.ts              # Khai báo kiểu dữ liệu phía frontend
-├── client.js                # Sản phẩm build phía frontend
-├── server.d.ts              # Khai báo kiểu dữ liệu phía server
-├── server.js                # Sản phẩm build phía server
-├── .npmignore               # Cấu hình bỏ qua khi phát hành
+│   └── server/              # Mã server
+│       ├── collections/     # Định nghĩa Collection / bảng dữ liệu
+│       ├── commands/        # Lệnh tùy chỉnh
+│       ├── migrations/      # Script migration database
+│       ├── plugin.ts        # Class chính của Plugin server
+│       └── index.ts         # Entry server
+├── index.ts                 # Bridge export front-end và back-end
+├── client-v2.d.ts           # Khai báo type front-end
+├── client-v2.js             # Sản phẩm build front-end
+├── server.d.ts              # Khai báo type server
+├── server.js                # Sản phẩm build server
+├── .npmignore               # Cấu hình bỏ qua khi publish
 └── package.json
 ```
 
-> Sau khi quá trình build hoàn tất, thư mục `dist/` cùng các tệp `client.js` và `server.js` sẽ được tải khi plugin được kích hoạt.  
-> Trong giai đoạn phát triển, bạn chỉ cần sửa đổi thư mục `src/`. Trước khi phát hành, hãy thực thi `yarn build <plugin>` hoặc `yarn build <plugin> --tar`.
+:::tip Mẹo
+
+Sau khi build hoàn tất, các file `dist/`, `client-v2.js`, `server.js` sẽ được load khi Plugin được kích hoạt. Trong giai đoạn phát triển bạn chỉ cần chỉnh sửa thư mục `src/`, trước khi phát hành chạy `yarn build <plugin>` hoặc `yarn build <plugin> --tar`.
+
+:::
+
+## Liên kết liên quan
+
+- [Viết Plugin đầu tiên](./write-your-first-plugin.md) — Tạo Plugin từ đầu và trải nghiệm quy trình phát triển hoàn chỉnh
+- [Tổng quan phát triển server](./server/index.md) — Giới thiệu tổng thể và các khái niệm cốt lõi của Plugin server
+- [Tổng quan phát triển client](./client/index.md) — Giới thiệu tổng thể và các khái niệm cốt lõi của Plugin client
+- [Build và đóng gói](./build.md) — Quy trình build, đóng gói và phân phối Plugin
+- [Quản lý dependency](./dependency-management.md) — Cách khai báo và quản lý dependency của Plugin

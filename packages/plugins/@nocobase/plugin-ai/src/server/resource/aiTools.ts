@@ -9,14 +9,24 @@
 
 import { ResourceOptions } from '@nocobase/resourcer';
 import PluginAIServer from '../plugin';
+import { AIManager } from '@nocobase/ai';
 
 export const aiTools: ResourceOptions = {
   name: 'aiTools',
   actions: {
     list: async (ctx, next) => {
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const tools = await plugin.aiManager.toolManager.listTools();
-      ctx.body = tools;
+      const { toolsManager } = ctx.app.aiManager as AIManager;
+      const { filter } = ctx.action.params;
+      const tools = await toolsManager.listTools(filter);
+      ctx.body = tools.map((t) => ({
+        ...t,
+        definition: {
+          name: t.definition.name,
+          description: t.definition.description,
+          schema: undefined,
+        },
+        invoke: undefined,
+      }));
       await next();
     },
     listBinding: async (ctx, next) => {
@@ -29,18 +39,21 @@ export const aiTools: ResourceOptions = {
       if (!aiEmployee) {
         return [];
       }
-      if (!aiEmployee.skillSettings?.skills?.length) {
-        return [];
-      }
-      const bindingSkillNames = aiEmployee.skillSettings.skills.map((skill) => skill.name);
+
+      const bindingToolNames = aiEmployee.skillSettings?.tools?.map((tool) => tool.name) ?? [];
 
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const tools = await plugin.aiManager.toolManager.listTools();
-      const result = tools
-        .flatMap(({ group, tools }) => tools.map((tool) => ({ ...tool, group })))
-        .filter((tool) => bindingSkillNames.includes(tool.name));
+      const tools = await plugin.ai.toolsManager.listTools();
+      const result = tools.filter(
+        (tool) =>
+          (tool.scope === 'GENERAL' && tool.from === 'loader') || bindingToolNames.includes(tool.definition.name),
+      );
 
-      ctx.body = result;
+      ctx.body = result.map(({ introduction, definition }) => ({
+        title: introduction?.title ?? definition.name,
+        name: definition.name,
+        description: introduction?.about ?? definition.description,
+      }));
       await next();
     },
   },

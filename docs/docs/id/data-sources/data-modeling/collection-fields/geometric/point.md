@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Titik"
+description: "Field geometri Titik, menyimpan titik koordinat (tipe point PostgreSQL)."
+keywords: "titik,point,field geometri,koordinat,PostgreSQL,NocoBase"
+---
 
 # Titik
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Kolom
+## Konfigurasi Field
 
 ![20240512181420](https://static-docs.nocobase.com/20240512181420.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

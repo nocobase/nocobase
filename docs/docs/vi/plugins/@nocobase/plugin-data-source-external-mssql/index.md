@@ -1,6 +1,8 @@
 ---
 displayName: "Nguồn dữ liệu: SQL Server bên ngoài"
 packageName: '@nocobase/plugin-data-source-external-mssql'
+title: "Nguồn dữ liệu: SQL Server bên ngoài"
+keywords: "Nguồn dữ liệu: SQL Server bên ngoài,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
@@ -9,10 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Nguồn dữ liệu: SQL Server bên ngoài

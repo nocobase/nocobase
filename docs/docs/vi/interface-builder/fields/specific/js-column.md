@@ -1,54 +1,55 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "JSColumn cột Table JS"
+description: "JSColumn cột Table JS: nhúng render và logic tùy chỉnh trong cột Table, hỗ trợ React, ctx, dữ liệu hàng."
+keywords: "JSColumn,cột Table JS,cột tùy chỉnh,render Table,Interface Builder,NocoBase"
+---
 
-
-# Cột JS
+# JS Column
 
 ## Giới thiệu
 
-Cột JS được dùng cho các "cột tùy chỉnh" trong bảng, hiển thị nội dung ô của mỗi hàng bằng JavaScript. Cột này không liên kết với một trường cụ thể nào, phù hợp cho các tình huống như cột dẫn xuất, hiển thị kết hợp nhiều trường, huy hiệu trạng thái, nút hành động và tổng hợp dữ liệu từ xa.
+JS Column được dùng cho "cột tùy chỉnh" trong Table, render nội dung ô của mỗi hàng thông qua JavaScript. Không liên kết với Field cụ thể, phù hợp với các trường hợp như cột phái sinh, hiển thị tổ hợp đa Field, huy hiệu trạng thái, Action nút bấm, tổng hợp dữ liệu từ xa, v.v.
 
 ![jscolumn-add-20251029](https://static-docs.nocobase.com/jscolumn-add-20251029.png)
 
-## API Ngữ cảnh Thời gian Chạy
+## API ngữ cảnh runtime
 
-Khi hiển thị mỗi ô, Cột JS cung cấp các API ngữ cảnh sau:
+Mỗi ô của JS Column khi render có thể sử dụng các khả năng ngữ cảnh sau:
 
-- `ctx.element`: Bộ chứa DOM của ô hiện tại (ElementProxy), hỗ trợ `innerHTML`, `querySelector`, `addEventListener`, v.v.
-- `ctx.record`: Đối tượng bản ghi của hàng hiện tại (chỉ đọc).
-- `ctx.recordIndex`: Chỉ mục hàng trong trang hiện tại (bắt đầu từ 0, có thể bị ảnh hưởng bởi phân trang).
-- `ctx.collection`: Siêu dữ liệu của **bộ sưu tập** được liên kết với bảng (chỉ đọc).
-- `ctx.requireAsync(url)`: Tải thư viện AMD/UMD bất đồng bộ theo URL.
-- `ctx.importAsync(url)`: Nhập mô-đun ESM động theo URL.
-- `ctx.openView(options)`: Mở một chế độ xem đã cấu hình (modal/drawer/trang).
-- `ctx.i18n.t()` / `ctx.t()`: Quốc tế hóa.
-- `ctx.onRefReady(ctx.ref, cb)`: Hiển thị sau khi bộ chứa sẵn sàng.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Các thư viện tích hợp sẵn như React, ReactDOM, Ant Design, biểu tượng Ant Design và dayjs, dùng cho hiển thị JSX và xử lý thời gian. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` vẫn được giữ lại để tương thích.)
-- `ctx.render(vnode)`: Hiển thị phần tử React/HTML/DOM vào bộ chứa mặc định `ctx.element` (ô hiện tại). Nhiều lần hiển thị sẽ tái sử dụng Root và ghi đè nội dung hiện có của bộ chứa.
+- `ctx.element`: Container DOM của ô hiện tại (ElementProxy), hỗ trợ `innerHTML`, `querySelector`, `addEventListener`, v.v.;
+- `ctx.record`: Đối tượng bản ghi hàng hiện tại (chỉ đọc);
+- `ctx.recordIndex`: Chỉ số hàng trong Trang hiện tại (bắt đầu từ 0, có thể bị ảnh hưởng bởi phân trang);
+- `ctx.collection`: Thông tin meta của collection được Table liên kết (chỉ đọc);
+- `ctx.requireAsync(url)`: Tải bất đồng bộ thư viện AMD/UMD theo URL;
+- `ctx.importAsync(url)`: Import động module ESM theo URL;
+- `ctx.openView(options)`: Mở view đã được cấu hình (Popup/Drawer/Trang);
+- `ctx.i18n.t()` / `ctx.t()`: Quốc tế hóa;
+- `ctx.onRefReady(ctx.ref, cb)`: Render sau khi container sẵn sàng;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Các thư viện thông dụng có sẵn như React / ReactDOM / Ant Design / Ant Design Icons / dayjs / lodash / math.js / formula.js, dùng cho render JSX, xử lý thời gian, thao tác dữ liệu và tính toán toán học. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` vẫn được giữ lại để tương thích.)
+- `ctx.render(vnode)`: Render React element/HTML/DOM vào container mặc định `ctx.element` (ô hiện tại), nhiều lần render sẽ tái sử dụng Root, và ghi đè nội dung hiện có của container.
 
-## Trình chỉnh sửa và Đoạn mã
+## Trình chỉnh sửa và Snippets
 
-Trình chỉnh sửa script của Cột JS hỗ trợ tô sáng cú pháp, gợi ý lỗi và các đoạn mã tích hợp sẵn (Snippets).
+Trình chỉnh sửa script của JS Column hỗ trợ tô sáng cú pháp, gợi ý lỗi và snippets có sẵn.
 
-- `Snippets`: Mở danh sách các đoạn mã tích hợp sẵn, cho phép bạn tìm kiếm và chèn chúng vào vị trí con trỏ hiện tại chỉ với một cú nhấp.
-- `Run`: Chạy trực tiếp mã hiện tại. Nhật ký thực thi sẽ được xuất ra bảng `Logs` ở phía dưới, hỗ trợ `console.log/info/warn/error` và tô sáng lỗi.
+- `Snippets`: Mở danh sách snippets có sẵn, có thể tìm kiếm và chèn vào vị trí con trỏ hiện tại bằng một cú nhấp.
+- `Run`: Chạy trực tiếp mã hiện tại, log chạy được xuất ra panel `Logs` ở dưới, hỗ trợ `console.log/info/warn/error` và định vị tô sáng lỗi.
 
 ![jscolumn-toolbars-20251029](https://static-docs.nocobase.com/jscolumn-toolbars-20251029.png)
 
-Bạn cũng có thể sử dụng Trợ lý AI để tạo mã:
+Có thể kết hợp với AI Employee để tạo mã:
 
-- [Trợ lý AI · Nathan: Kỹ sư Frontend](/ai-employees/built-in/ai-coding)
+- [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Cách sử dụng phổ biến
 
-### 1) Hiển thị cơ bản (Đọc bản ghi hàng hiện tại)
+### 1) Render cơ bản (đọc bản ghi hàng hiện tại)
 
 ```js
 ctx.render(<span className="nb-js-col-name">{ctx.record?.name ?? '-'}</span>);
 ```
 
-### 2) Sử dụng JSX để hiển thị các thành phần React
+### 2) Sử dụng JSX để render component React
 
 ```js
 const { Tag } = ctx.libs.antd;
@@ -61,7 +62,7 @@ ctx.render(
 );
 ```
 
-### 3) Mở Modal/Drawer từ ô (Xem/Chỉnh sửa)
+### 3) Mở Popup/Drawer trong ô (xem/chỉnh sửa)
 
 ```js
 const tk = ctx.collection?.getFilterByTK?.(ctx.record);
@@ -93,7 +94,7 @@ ctx.render(<span>{dayjs().format('YYYY-MM-DD')}</span>);
 
 ## Lưu ý
 
-- Nên sử dụng CDN đáng tin cậy để tải các thư viện bên ngoài và chuẩn bị phương án dự phòng cho các trường hợp lỗi (ví dụ: `if (!lib) return;`).
-- Nên ưu tiên sử dụng bộ chọn `class` hoặc `[name=...]` thay vì `id` cố định để tránh trùng lặp `id` trong nhiều khối hoặc modal.
-- Dọn dẹp sự kiện: Các hàng trong bảng có thể thay đổi động theo phân trang/làm mới, khiến các ô được hiển thị nhiều lần. Bạn nên dọn dẹp hoặc loại bỏ các trình lắng nghe sự kiện trùng lặp trước khi liên kết chúng để tránh kích hoạt nhiều lần.
-- Mẹo hiệu suất: Tránh tải lặp lại các thư viện lớn trong mỗi ô. Thay vào đó, hãy lưu trữ thư viện vào bộ nhớ đệm ở cấp cao hơn (ví dụ: sử dụng biến toàn cục hoặc biến cấp bảng) và tái sử dụng.
+- Nên sử dụng CDN đáng tin cậy khi tải thư viện bên ngoài, và xử lý fallback cho các trường hợp thất bại (ví dụ `if (!lib) return;`).
+- Selector nên ưu tiên sử dụng `class` hoặc `[name=...]`, tránh sử dụng `id` cố định, để ngăn chặn `id` trùng lặp trong nhiều Block/Popup.
+- Dọn dẹp sự kiện: Hàng Table có thể thay đổi động theo phân trang/làm mới, ô sẽ được render nhiều lần. Trước khi gắn sự kiện nên dọn dẹp hoặc loại bỏ trùng lặp, để tránh kích hoạt trùng lặp.
+- Khuyến nghị về hiệu năng: Tránh tải thư viện lớn lặp lại trong mỗi ô; nên cache thư viện ở cấp trên (như thông qua biến toàn cục hoặc biến cấp Table) rồi tái sử dụng.

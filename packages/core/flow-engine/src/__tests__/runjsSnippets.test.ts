@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect } from 'vitest';
-import { getSnippetBody, listSnippetsForContext } from '../runjs-context/snippets';
+import { describe, expect, it } from 'vitest';
+import { getSnippetBody, listSnippetsForContext, registerRunJSSnippet } from '../runjs-context/snippets';
 
 describe('RunJS Snippets', () => {
   describe('getSnippetBody', () => {
@@ -22,7 +22,7 @@ describe('RunJS Snippets', () => {
     it('should return snippet body for global/api-request', async () => {
       const body = await getSnippetBody('global/api-request');
       expect(body).toBeTruthy();
-      expect(body).toContain('ctx.api.request');
+      expect(body).toContain('ctx.request');
     });
 
     it('should throw error for non-existent snippet', async () => {
@@ -112,6 +112,27 @@ describe('RunJS Snippets', () => {
       expect(multiScene?.scenes).toEqual(expect.arrayContaining(['detail', 'table']));
       expect(multiScene?.groups).toEqual(expect.arrayContaining(['scene/detail', 'scene/table']));
     });
+
+    it('should expose new style snippets for matching contexts', async () => {
+      const tableSnippets = await listSnippetsForContext('JSColumnRunJSContext', 'v1', 'zh-CN');
+      const fieldSnippets = await listSnippetsForContext('FormJSFieldItemRunJSContext', 'v1', 'zh-CN');
+      const detailEventSnippets = await listSnippetsForContext('DetailsItemModel', 'v1', 'zh-CN');
+      const tableEventSnippets = await listSnippetsForContext('TableColumnModel', 'v1', 'zh-CN');
+
+      const tableStyle = tableSnippets.find((s) => s.ref === 'scene/table/set-cell-style');
+      expect(tableStyle?.name).toBe('表格字段样式设置');
+      expect(tableStyle?.body).toContain('ctx.model.props.onCell');
+      expect(tableStyle?.scenes).toEqual(['tableFieldEvent']);
+
+      const fieldStyle = fieldSnippets.find((s) => s.ref === 'scene/detail/set-field-style');
+      expect(fieldStyle?.name).toBe('设置表单项/详情项样式');
+      expect(fieldStyle?.body).toContain('ctx.model.props.style');
+      expect(fieldStyle?.scenes).toEqual(expect.arrayContaining(['detailFieldEvent', 'formFieldEvent']));
+      expect(fieldStyle?.groups).toEqual(expect.arrayContaining(['scene/detail', 'scene/form']));
+
+      expect(detailEventSnippets.some((s) => s.ref === 'scene/detail/set-field-style')).toBe(true);
+      expect(tableEventSnippets.some((s) => s.ref === 'scene/table/set-cell-style')).toBe(true);
+    });
   });
 
   describe('New snippets', () => {
@@ -135,6 +156,43 @@ describe('RunJS Snippets', () => {
 
     it('should not include copy-record-json snippet', async () => {
       await expect(getSnippetBody('global/copy-record-json')).rejects.toThrow();
+    });
+  });
+
+  describe('registerRunJSSnippet', () => {
+    it('should allow registering and consuming a custom snippet', async () => {
+      const ref = 'plugin/test/hello';
+      registerRunJSSnippet(ref, async () => ({
+        default: {
+          content: `console.log('hello');`,
+          label: 'Hello',
+          versions: ['v1'],
+          contexts: ['*'],
+          scenes: ['block'],
+        },
+      }));
+
+      const body = await getSnippetBody(ref);
+      expect(body).toContain('hello');
+
+      const list = await listSnippetsForContext('*', 'v1', 'en-US');
+      expect(list.some((s) => s.ref === ref)).toBe(true);
+    });
+
+    it('should not overwrite existing refs by default, but can overwrite with override=true', async () => {
+      const ref = 'plugin/test/collision';
+      registerRunJSSnippet(ref, async () => ({ default: { content: 'A', label: 'A' } }));
+      expect(await getSnippetBody(ref)).toBe('A');
+
+      const overwritten = registerRunJSSnippet(ref, async () => ({ default: { content: 'B', label: 'B' } }));
+      expect(overwritten).toBe(false);
+      expect(await getSnippetBody(ref)).toBe('A');
+
+      const forced = registerRunJSSnippet(ref, async () => ({ default: { content: 'C', label: 'C' } }), {
+        override: true,
+      });
+      expect(forced).toBe(true);
+      expect(await getSnippetBody(ref)).toBe('C');
     });
   });
 });

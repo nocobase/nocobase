@@ -1,14 +1,14 @@
 ---
-displayName: "Xác thực: Khóa API"
+displayName: "Xác thực: API Key"
 packageName: '@nocobase/plugin-api-keys'
+title: "Xác thực: API Key"
+keywords: "Xác thực: API Key,Plugin,NocoBase"
 description: |
-  Cho phép người dùng sử dụng khóa API để truy cập API HTTP của ứng dụng
+  Cho phép người dùng truy cập HTTP API của ứng dụng bằng API Key.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Xác thực: Khóa API
+# Xác thực: API Key

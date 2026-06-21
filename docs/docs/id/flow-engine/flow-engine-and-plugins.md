@@ -1,34 +1,36 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "FlowEngine dan Plugin"
+description: "FlowEngine dan plugin: bagaimana plugin mendaftarkan FlowModel, memperluas kemampuan, integrasi dengan sistem plugin NocoBase, penggunaan registerFlowModel."
+keywords: "FlowEngine,Plugin,registerFlowModel,Ekstensi plugin,Sistem plugin NocoBase,NocoBase"
+---
 
 # Hubungan antara FlowEngine dan Plugin
 
-**FlowEngine** bukanlah sebuah plugin, melainkan sebuah **API inti** yang disediakan untuk digunakan oleh plugin, berfungsi untuk menghubungkan kapabilitas inti dengan ekstensi bisnis.
-Di NocoBase 2.0, semua API terpusat di FlowEngine, dan plugin dapat mengakses FlowEngine melalui `this.engine`.
+**FlowEngine** bukanlah plugin, melainkan disediakan sebagai **API kernel** untuk digunakan oleh plugin, untuk menghubungkan kemampuan kernel dengan ekstensi bisnis.
+Pada NocoBase 2.0, semua API berkumpul di FlowEngine, dan plugin dapat mengakses FlowEngine melalui `this.engine`.
 
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    this.engine.registerModels({ ... });
+    this.engine.registerModelLoaders({ ... });
   }
 }
 ```
 
-## Context: Kapabilitas Global yang Dikelola Secara Terpusat
+## Context: Kemampuan Global yang Dikelola Secara Terpusat
 
-FlowEngine menyediakan sebuah **Context** terpusat yang menyatukan API yang diperlukan untuk berbagai skenario, misalnya:
+FlowEngine menyediakan **Context** terpusat yang mengumpulkan berbagai API yang dibutuhkan untuk berbagai skenario, misalnya:
 
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    // Ekstensi router
+    // Ekstensi route
     this.engine.context.router;
 
-    // Membuat permintaan
+    // Memulai request
     this.engine.context.api.request();
 
-    // Terkait internasionalisasi
+    // Terkait i18n
     this.engine.context.i18n;
     this.engine.context.t('Hello');
   }
@@ -36,24 +38,24 @@ class PluginHello extends Plugin {
 ```
 
 > **Catatan**:
-> Context di versi 2.0 menyelesaikan masalah-masalah berikut dari versi 1.x:
+> Pada versi 2.0, Context menyelesaikan masalah berikut yang ada di 1.x:
 >
-> * Konteks yang tersebar, panggilan yang tidak konsisten
-> * Konteks hilang di antara pohon render React yang berbeda
+> * Context yang tersebar, pemanggilan tidak terpadu
+> * Context bisa hilang antara render tree React yang berbeda
 > * Hanya dapat digunakan di dalam komponen React
 >
-> Untuk detail lebih lanjut, lihat **bab FlowContext**.
+> Detail lebih lanjut lihat **bab FlowContext**.
 
 ---
 
-## Alias Pintasan di Plugin
+## Alias Pintas dalam Plugin
 
-Untuk menyederhanakan panggilan, FlowEngine menyediakan beberapa alias pada instance plugin:
+Untuk menyederhanakan pemanggilan, FlowEngine menyediakan beberapa alias pada instance plugin:
 
 * `this.context` → setara dengan `this.engine.context`
 * `this.router` → setara dengan `this.engine.context.router`
 
-## Contoh: Memperluas Router
+## Contoh: Memperluas Route
 
 ```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
@@ -69,7 +71,7 @@ class PluginHelloModel extends Plugin {
   }
 }
 
-// Untuk skenario contoh dan pengujian
+// Digunakan untuk skenario contoh dan testing
 const app = createMockClient({
   plugins: [PluginHelloModel],
 });
@@ -77,8 +79,8 @@ const app = createMockClient({
 export default app.getRootComponent();
 ```
 
-Dalam contoh ini:
+Pada contoh ini:
 
-* Plugin memperluas rute untuk jalur `/` menggunakan metode `this.router.add`;
-* `createMockClient` menyediakan aplikasi mock yang bersih untuk demonstrasi dan pengujian yang mudah;
-* `app.getRootComponent()` mengembalikan komponen root, yang dapat langsung dipasang ke halaman.
+* Plugin memperluas route untuk path `/` melalui metode `this.router.add`;
+* `createMockClient` menyediakan aplikasi Mock yang bersih, memudahkan untuk contoh dan testing;
+* `app.getRootComponent()` mengembalikan komponen root, yang dapat langsung di-mount ke halaman.

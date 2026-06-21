@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-action-bulk-update"
+title: "批量更新操作"
+description: "批量更新操作：批量更新选中记录，支持筛选条件批量更新。"
+keywords: "批量更新,BulkUpdate,批量修改,界面搭建,NocoBase"
 ---
 # 批量更新
 

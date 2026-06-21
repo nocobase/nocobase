@@ -1,63 +1,62 @@
 ---
 pkg: '@nocobase/plugin-workflow-subflow'
+title: "Node Workflow - Panggil Workflow"
+description: "Node Panggil Workflow: memanggil sub-alur, meneruskan variable, menggunakan kembali logika alur, memecah alur."
+keywords: "Workflow,Panggil Workflow,Subflow,sub-alur,reuse alur,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Panggil Workflow
 
-# Memanggil Alur Kerja
+## Pengantar
 
-## Pendahuluan
+Digunakan untuk memanggil alur lain di dalam sebuah workflow. Anda dapat menggunakan variable alur saat ini sebagai input untuk sub-alur, dan menggunakan output sub-alur sebagai variable alur saat ini untuk digunakan oleh Node berikutnya.
 
-Digunakan untuk memanggil alur kerja lain dari dalam suatu alur kerja. Anda dapat menggunakan variabel dari alur kerja saat ini sebagai input untuk alur kerja anak, dan menggunakan output dari alur kerja anak sebagai variabel dalam alur kerja saat ini untuk digunakan pada node-node berikutnya.
-
-Proses pemanggilan alur kerja ditunjukkan pada gambar di bawah ini:
+Proses pemanggilan workflow ditunjukkan pada gambar berikut:
 
 ![20241230134634](https://static-docs.nocobase.com/20241230134634.png)
 
-Dengan memanggil alur kerja, Anda dapat menggunakan kembali logika proses umum, seperti mengirim email, SMS, dll., atau memecah alur kerja yang kompleks menjadi beberapa alur kerja anak untuk manajemen dan pemeliharaan yang lebih mudah.
+Melalui pemanggilan workflow, Anda dapat menggunakan kembali logika alur umum, seperti pengiriman email, SMS, dll., atau memecah alur kompleks menjadi beberapa sub-alur untuk mempermudah pengelolaan dan pemeliharaan.
 
-Pada dasarnya, suatu alur kerja tidak membedakan apakah suatu proses adalah alur kerja anak atau bukan. Setiap alur kerja dapat dipanggil sebagai alur kerja anak oleh alur kerja lain, dan juga dapat memanggil alur kerja lain. Semua alur kerja setara; hanya ada hubungan memanggil dan dipanggil.
+Pada dasarnya workflow tidak membedakan apakah suatu alur adalah sub-alur atau bukan, workflow apa pun dapat dipanggil sebagai sub-alur oleh alur lain, dan juga dapat memanggil alur lain. Semua workflow setara, hanya ada relasi pemanggil dan yang dipanggil.
 
-Demikian pula, penggunaan pemanggilan alur kerja terjadi di dua tempat:
+Demikian juga, penggunaan pemanggilan workflow berada di dua posisi:
 
-1.  **Di alur kerja utama:** Sebagai pemanggil, ia memanggil alur kerja lain melalui node "Memanggil Alur Kerja".
-2.  **Di alur kerja anak:** Sebagai pihak yang dipanggil, ia menyimpan variabel yang perlu di-output dari alur kerja saat ini melalui node "Output Alur Kerja", yang dapat digunakan oleh node-node berikutnya di alur kerja yang memanggilnya.
+1. Pada alur utama: sebagai pemanggil, melalui Node "Panggil Workflow", memanggil workflow lain.
+2. Pada sub-alur: sebagai yang dipanggil, melalui Node "Output Alur", menyimpan variable yang perlu di-output oleh alur saat ini, untuk digunakan pada Node berikutnya di workflow yang memanggil alur saat ini.
 
 ## Membuat Node
 
-Di antarmuka konfigurasi alur kerja, klik tombol plus ("+") di alur kerja untuk menambahkan node "Memanggil Alur Kerja":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Panggil Workflow":
 
-![Add Invoke Workflow Node](https://static-docs.nocobase.com/20241230001323.png)
+![Tambahkan Node Panggil Workflow](https://static-docs.nocobase.com/20241230001323.png)
 
-## Mengonfigurasi Node
+## Konfigurasi Node
 
-### Memilih Alur Kerja
+### Pilih Workflow
 
-Pilih alur kerja yang akan dipanggil. Anda dapat menggunakan kotak pencarian untuk pencarian cepat:
+Pilih workflow yang akan dipanggil, Anda dapat mencarinya dengan cepat melalui kotak pencarian:
 
-![Select Workflow](https://static-docs.nocobase.com/20241230001534.png)
+![Pilih Workflow](https://static-docs.nocobase.com/20241230001534.png)
 
 :::info{title=Tips}
-*   Alur kerja yang dinonaktifkan juga dapat dipanggil sebagai alur kerja anak.
-*   Ketika alur kerja saat ini dalam mode sinkron, ia hanya dapat memanggil alur kerja anak yang juga dalam mode sinkron.
+* Workflow yang belum diaktifkan juga dapat dipanggil sebagai sub-alur.
+* Saat workflow saat ini dalam mode sinkron, hanya dapat memanggil sub-alur dalam mode sinkron juga.
 :::
 
-### Mengonfigurasi Variabel Pemicu Alur Kerja
+### Konfigurasi Variable Trigger Workflow
 
-Setelah memilih alur kerja, Anda juga perlu mengonfigurasi variabel pemicu sebagai data input untuk memicu alur kerja anak. Anda dapat langsung memilih data statis atau memilih variabel dari alur kerja saat ini:
+Setelah workflow dipilih, Anda perlu mengkonfigurasi variable trigger sebagai data input untuk memicu sub-alur. Anda dapat memilih data statis secara langsung, atau memilih variable dari alur saat ini:
 
-![Configure Trigger Variables](https://static-docs.nocobase.com/20241230162722.png)
+![Konfigurasi Variable Trigger](https://static-docs.nocobase.com/20241230162722.png)
 
-Jenis pemicu yang berbeda memerlukan variabel yang berbeda, yang dapat dikonfigurasi pada formulir sesuai kebutuhan.
+Variable yang diperlukan oleh tipe trigger yang berbeda juga berbeda, Anda dapat mengkonfigurasinya pada form sesuai kebutuhan.
 
-## Node Output Alur Kerja
+## Node Output Alur
 
-Lihat konten node [Output Alur Kerja](./output.md) untuk mengonfigurasi variabel output dari alur kerja anak.
+Silakan merujuk ke isi Node [Output Alur](./output.md), untuk mengkonfigurasi variable output sub-alur.
 
-## Menggunakan Output Alur Kerja
+## Menggunakan Output Alur
 
-Kembali ke alur kerja utama, di node-node lain di bawah node Memanggil Alur Kerja, ketika Anda ingin menggunakan nilai output dari alur kerja anak, Anda dapat memilih hasil dari node Memanggil Alur Kerja. Jika alur kerja anak meng-output nilai sederhana, seperti string, angka, nilai boolean, tanggal (tanggal adalah string dalam format UTC), dll., nilai tersebut dapat langsung digunakan; jika itu adalah objek kompleks (seperti objek dari koleksi), perlu dipetakan terlebih dahulu melalui node Parse JSON sebelum propertinya dapat digunakan; jika tidak, ia hanya dapat digunakan sebagai objek utuh.
+Kembali ke alur utama, pada Node lainnya di bawah Node Panggil Workflow, saat ingin menggunakan nilai output sub-alur, Anda dapat memilih hasil Node Panggil Workflow. Jika output sub-alur adalah nilai sederhana, seperti string, angka, boolean, tanggal (tanggal dalam format string UTC), dll., dapat digunakan secara langsung; jika berupa objek kompleks (seperti objek dari tabel data), perlu diparse terlebih dahulu melalui Node JSON Query, baru properti di dalamnya dapat digunakan, jika tidak hanya dapat digunakan sebagai keseluruhan objek.
 
-Jika alur kerja anak tidak mengonfigurasi node Output Alur Kerja, atau jika tidak memiliki nilai output, maka ketika menggunakan hasil dari node Memanggil Alur Kerja di alur kerja utama, Anda hanya akan mendapatkan nilai null (`null`).
+Jika sub-alur tidak mengkonfigurasi Node Output Alur, atau tidak memiliki nilai output, maka saat menggunakan hasil Node Panggil Workflow di alur utama, hanya akan mendapatkan nilai kosong (`null`).

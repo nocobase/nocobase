@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-api-keys'
+title: "API 密钥"
+description: "NocoBase API 密钥：为当前用户添加 API 密钥，用于 API 调用认证，需配置 APP_KEY 环境变量。"
+keywords: "API 密钥,APP_KEY,API 认证,接口调用认证,NocoBase"
 ---
 
 # API 密钥
@@ -8,7 +11,7 @@ pkg: '@nocobase/plugin-api-keys'
 
 ## 使用说明
 
-http://localhost:13000/admin/settings/api-keys/configuration
+https://example.com/admin/settings/api-keys
 
 ![](https://static-docs.nocobase.com/d64ccbdc8a512a0224e9f81dfe14a0a8.png)
 

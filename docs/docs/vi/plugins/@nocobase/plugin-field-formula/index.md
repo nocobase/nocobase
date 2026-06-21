@@ -1,14 +1,14 @@
 ---
-displayName: "Trường bộ sưu tập: Công thức"
+displayName: "Field: Công thức"
 packageName: '@nocobase/plugin-field-formula'
+title: "Field: Công thức"
+keywords: "Field: Công thức,Plugin,NocoBase"
 description: |
-  Cho phép cấu hình và lưu trữ kết quả của các phép tính giữa nhiều giá trị trường trong cùng một bản ghi, hỗ trợ cả hai công cụ Math.js và các hàm công thức Excel.
+  Cho phép cấu hình và lưu trữ kết quả tính toán giữa các giá trị Field trong cùng một bản ghi, hỗ trợ hai engine: Math.js và Excel formula functions.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trường bộ sưu tập: Công thức
+# Field: Công thức

@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-telemetry-prometheus'
+title: "Prometheus 遥测导出器"
+description: "NocoBase 指标导出至 Prometheus：TELEMETRY_METRIC_READER=prometheus、/api/prometheus:metrics 抓取、独立服务端口 9464、scrape_configs 配置。"
+keywords: "Prometheus,遥测导出,metrics 抓取,prometheus:metrics,scrape_configs,监控,NocoBase"
 ---
-
 # 遥测导出器: Prometheus
 
 ## 环境变量配置

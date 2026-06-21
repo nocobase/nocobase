@@ -1,29 +1,26 @@
 ---
-pkg: "@nocobase/plugin-logger"
+pkg: '@nocobase/plugin-logger'
+title: "Log Server NocoBase"
+description: "Log server NocoBase: log request, log hệ thống, log SQL, các định dạng console/json/logfmt/delimiter, cấu trúc thư mục storage/logs, đóng gói tải log."
+keywords: "log server,log request,log hệ thống,log SQL,định dạng log,logfmt,đóng gói log,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-
-
-# Nhật ký
+# Log
 
 ## Giới thiệu
 
-Nhật ký là một công cụ quan trọng giúp chúng ta xác định các vấn đề của hệ thống. Nhật ký máy chủ của NocoBase chủ yếu bao gồm nhật ký yêu cầu giao diện và nhật ký hoạt động hệ thống, hỗ trợ cấu hình cấp độ nhật ký, chiến lược luân chuyển, kích thước, định dạng in, v.v. Tài liệu này chủ yếu giới thiệu các nội dung liên quan đến nhật ký máy chủ của NocoBase, cũng như cách sử dụng tính năng đóng gói và tải xuống nhật ký máy chủ được cung cấp bởi plugin ghi nhật ký.
+Log là phương tiện quan trọng giúp chúng ta định vị các vấn đề hệ thống. Log server của NocoBase chủ yếu bao gồm log request interface và log vận hành hệ thống, hỗ trợ cấu hình mức log, chiến lược rolling, kích thước, định dạng in, v.v. Tài liệu này chủ yếu giới thiệu nội dung liên quan đến log server NocoBase và cách sử dụng tính năng đóng gói và tải log server do plugin log cung cấp.
 
-## Cấu hình nhật ký
+## Cấu hình log
 
-Bạn có thể cấu hình các tham số liên quan đến nhật ký như cấp độ nhật ký, phương thức xuất và định dạng in thông qua [biến môi trường](/get-started/installation/env.md#logger_transport).
+Có thể cấu hình các tham số liên quan đến log như mức log, phương thức output, định dạng in thông qua [biến môi trường](/get-started/installation/env.md#logger_transport).
 
-## Định dạng nhật ký
+## Định dạng log
 
-NocoBase hỗ trợ cấu hình 4 định dạng nhật ký khác nhau.
+NocoBase hỗ trợ cấu hình 4 định dạng log khác nhau.
 
 ### `console`
 
-Định dạng mặc định trong môi trường phát triển, các thông báo được hiển thị với màu sắc nổi bật.
+Định dạng mặc định cho môi trường phát triển, tin nhắn được hiển thị với màu sắc nổi bật.
 
 ```
 2023-12-30 22:40:06 [info]  response                                     method=GET path=/api/uiSchemas:getJsonSchema/nocobase-admin-menu res={"status":200} action={"actionName":"getJsonSchema","resourceName":"uiSchemas","params":{"filterByTk":"nocobase-admin-menu","resourceName":"uiSchemas","resourceIndex":"nocobase-admin-menu","actionName":"getJsonSchema"}} userId=1 status=200 cost=5 app=main reqId=ccf4e3bd-beb0-4350-af6e-b1fc1d9b6c3f
@@ -33,7 +30,7 @@ NocoBase hỗ trợ cấu hình 4 định dạng nhật ký khác nhau.
 
 ### `json`
 
-Định dạng mặc định trong môi trường sản xuất.
+Định dạng mặc định cho môi trường production.
 
 ```json
 {
@@ -73,83 +70,85 @@ Phân tách bằng dấu phân cách `|`.
 info|2023-12-26 22:07:09|13cd16f0-1568-418d-ac37-6771ee650e14|response|POST|/api/authenticators:publicList|{"status":200}|{"actionName":"publicList","resourceName":"authenticators","params":{"resourceName":"authenticators","actionName":"publicList"}}||200|25
 ```
 
-## Thư mục nhật ký
+## Thư mục log
 
-Cấu trúc thư mục chính của các tệp nhật ký NocoBase là:
+Cấu trúc thư mục chính của file log NocoBase:
 
-- `storage/logs` - Thư mục xuất nhật ký
-  - `main` - Tên ứng dụng chính
-    - `request_YYYY-MM-DD.log` - Nhật ký yêu cầu
-    - `system_YYYY-MM-DD.log` - Nhật ký hệ thống
-    - `system_error_YYYY-MM-DD.log` - Nhật ký lỗi hệ thống
-    - `sql_YYYY-MM-DD.log` - Nhật ký thực thi SQL
+- `storage/logs` - thư mục output log
+  - `main` - tên ứng dụng chính
+    - `request_YYYY-MM-DD.log` - log request
+    - `system_YYYY-MM-DD.log` - log hệ thống
+    - `system_error_YYYY-MM-DD.log` - log lỗi hệ thống
+    - `sql_YYYY-MM-DD.log` - log thực thi SQL
     - ...
-  - `sub-app` - Tên ứng dụng con
+  - `sub-app` - tên ứng dụng con
     - `request_YYYY-MM-DD.log`
     - ...
 
-## Tệp nhật ký
+## File log
 
-### Nhật ký yêu cầu
+### Log request
 
-`request_YYYY-MM-DD.log`, nhật ký yêu cầu và phản hồi giao diện.
+`request_YYYY-MM-DD.log`, log request và response interface.
 
-| Trường          | Mô tả                               |
+| Field          | Mô tả                               |
 | ------------- | ---------------------------------- |
-| `level`       | Cấp độ nhật ký                           |
-| `timestamp`   | Thời gian ghi nhật ký `YYYY-MM-DD hh:mm:ss` |
+| `level`       | Mức log                           |
+| `timestamp`   | Thời gian in log `YYYY-MM-DD hh:mm:ss` |
 | `message`     | `request` hoặc `response`            |
-| `userId`      | Chỉ có trong `response`                   |
-| `method`      | Phương thức yêu cầu                           |
-| `path`        | Đường dẫn yêu cầu                         |
-| `req` / `res` | Nội dung yêu cầu/phản hồi                      |
-| `action`      | Tài nguyên và tham số yêu cầu                     |
-| `status`      | Mã trạng thái phản hồi                         |
-| `cost`        | Thời gian xử lý yêu cầu                           |
+| `userId`      | Chỉ có trong `response`                  |
+| `method`      | Phương thức request                           |
+| `path`        | Đường dẫn request                           |
+| `req` / `res` | Nội dung request/response                      |
+| `action`      | Resource và tham số request                     |
+| `status`      | Status code response                         |
+| `cost`        | Thời gian request                           |
 | `app`         | Tên ứng dụng hiện tại                       |
-| `reqId`       | ID yêu cầu                            |
+| `reqId`       | Request ID                            |
 
-:::info{title=Lưu ý}
-`reqId` sẽ được gửi đến frontend thông qua tiêu đề phản hồi `X-Request-Id`.
+:::info{title=Mẹo}
+`reqId` sẽ được mang theo header response `X-Request-Id` đến frontend.
 :::
 
-### Nhật ký hệ thống
+### Log hệ thống
 
-`system_YYYY-MM-DD.log`, nhật ký hoạt động của ứng dụng, middleware, plugin và các thành phần hệ thống khác. Các nhật ký cấp độ `error` sẽ được ghi riêng vào `system_error_YYYY-MM-DD.log`.
+`system_YYYY-MM-DD.log`, log vận hành hệ thống của ứng dụng, middleware, plugin, v.v. Log mức `error` sẽ được in riêng vào `system_error_YYYY-MM-DD.log`
 
-| Trường        | Mô tả                               |
+| Field        | Mô tả                               |
 | ----------- | ---------------------------------- |
-| `level`     | Cấp độ nhật ký                           |
-| `timestamp` | Thời gian ghi nhật ký `YYYY-MM-DD hh:mm:ss` |
-| `message`   | Thông báo nhật ký                           |
+| `level`     | Mức log                           |
+| `timestamp` | Thời gian in log `YYYY-MM-DD hh:mm:ss` |
+| `message`   | Tin nhắn log                           |
 | `module`    | Module                               |
-| `submodule` | Submodule                             |
-| `method`    | Phương thức được gọi                           |
-| `meta`      | Thông tin liên quan khác, định dạng JSON            |
+| `submodule` | Sub-module                             |
+| `method`    | Phương thức gọi                           |
+| `meta`      | Các thông tin liên quan khác, định dạng JSON            |
 | `app`       | Tên ứng dụng hiện tại                       |
-| `reqId`     | ID yêu cầu                            |
+| `reqId`     | Request ID                            |
 
-### Nhật ký thực thi SQL
+### Log thực thi SQL
 
-`sql_YYYY-MM-DD.log`, nhật ký thực thi SQL của cơ sở dữ liệu. Các câu lệnh `INSERT INTO` chỉ giữ lại 2000 ký tự đầu tiên.
+`sql_YYYY-MM-DD.log`, log thực thi SQL của database. Trong đó câu lệnh `INSERT INTO` chỉ giữ lại 2000 ký tự đầu tiên.
 
-| Trường        | Mô tả                               |
+| Field        | Mô tả                               |
 | ----------- | ---------------------------------- |
-| `level`     | Cấp độ nhật ký                           |
-| `timestamp` | Thời gian ghi nhật ký `YYYY-MM-DD hh:mm:ss` |
+| `level`     | Mức log                           |
+| `timestamp` | Thời gian in log `YYYY-MM-DD hh:mm:ss` |
 | `sql`       | Câu lệnh SQL                           |
 | `app`       | Tên ứng dụng hiện tại                       |
-| `reqId`     | ID yêu cầu                            |
+| `reqId`     | Request ID                            |
 
-## Đóng gói và tải xuống nhật ký
+## Đóng gói tải log
 
-1.  Truy cập trang quản lý nhật ký.
-2.  Chọn các tệp nhật ký bạn muốn tải xuống.
-3.  Nhấp vào nút Tải xuống (Download).
+<PluginInfo name="logger"></PluginInfo>
+
+1. Vào trang Quản lý log.
+2. Chọn file log muốn tải.
+3. Click nút Tải (Download).
 
 ![2024-04-10_10-50-50](https://static-docs.nocobase.com/2024-04-10_10-50-50.png)
 
 ## Tài liệu liên quan
 
-- [Phát triển Plugin - Máy chủ - Ghi nhật ký](/plugin-development/server/logger)
-- [Tham khảo API - @nocobase/logger](/api/logger/logger)
+- [Phát triển plugin - Server - Log](/plugin-development/server/logger)
+- [Tài liệu API - @nocobase/logger](/api/logger/logger)

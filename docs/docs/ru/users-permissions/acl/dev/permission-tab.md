@@ -1,14 +1,10 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
+# Расширение вкладок конфигурации прав
 
-# Расширение вкладок конфигурации разрешений
-
-Ниже мы рассмотрим пример элемента конфигурации «Мобильное меню», чтобы показать, как расширить новую вкладку настроек разрешений. Результат показан на изображении:
+Ниже приведён пример элемента конфигурации «Мобильное меню», демонстрирующий, как расширить новую вкладку конфигурации прав. Результат показан на рисунке ниже:
 
 ![20240903210248](https://static-docs.nocobase.com/20240903210248.png)
 
-Код выглядит следующим образом:
+Код:
 
 ```typescript
 import { Plugin } from '@nocobase/client';
@@ -20,7 +16,7 @@ class PluginMobileClient extends Plugin {
 
     aclInstance?.settingsUI.addPermissionsTab(({ t, TabLayout, activeKey }) => ({
       key: 'mobile-menu',
-      label: t('Mobile menu', {
+      label: t('Мобильное меню', {
         ns: 'plugin-mobile',
       }),
       children: (
@@ -33,9 +29,9 @@ class PluginMobileClient extends Plugin {
 }
 ```
 
-Прежде всего, нам нужно получить экземпляр плагина `PluginACLClient` ([другие способы получения экземпляров плагинов](https://docs-cn.nocobase.com/development/client/life-cycle#%E8%8E%B7%E5%8F%96%E6%8F%92%E4%BB%B6)) и добавить новую вкладку настроек разрешений с помощью метода `settingsUI.addPermissionsTab`. В этом примере мы добавили вкладку настроек разрешений под названием «Мобильное меню».
+Сначала нужно получить экземпляр плагина `PluginACLClient` ([другие способы получения экземпляра плагина](/plugin-development/client/plugin#get-plugin-instance)), а затем добавить новую вкладку конфигурации прав с помощью метода `settingsUI.addPermissionsTab`. В этом примере добавлена вкладка конфигурации прав с именем «Мобильное меню».
 
-Значение свойства `settingsUI` — это экземпляр класса `ACLSettingsUI`, а информация о его типе выглядит следующим образом:
+Значение свойства `settingsUI` — экземпляр класса `ACLSettingsUI`, информация о типах:
 
 ```typescript
 import { TabsProps } from 'antd/es/tabs/index';
@@ -51,7 +47,7 @@ type TabCallback = (props: PermissionsTabsProps) => Tab;
 
 interface PermissionsTabsProps {
   /**
-   * ключ текущей активной панели вкладки
+   * ключ текущей активной панели вкладок
    */
   activeKey: string;
   /**

@@ -1,4 +1,6 @@
 ---
+title: "API documentation"
+keywords: "API documentation,Plugin,NocoBase"
 displayName: "API documentation"
 packageName: '@nocobase/plugin-api-doc'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # API documentation

@@ -1,35 +1,37 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Aturan Linkage Block"
+description: "Konfigurasi Block: mengkonfigurasi aturan linkage Block, mengimplementasikan linkage data antar Block, linkage filter, linkage tampilan/sembunyi."
+keywords: "Aturan Linkage Block, linkage Block, linkage data, konfigurasi Block, interface builder, NocoBase"
+---
 
-# Aturan Keterkaitan Blok
+# Aturan Linkage Block
 
-## Pendahuluan
+## Pengantar
 
-Aturan keterkaitan blok memungkinkan pengguna untuk mengontrol tampilan blok secara dinamis, mengelola presentasi elemen secara keseluruhan pada tingkat blok. Karena blok berfungsi sebagai wadah untuk bidang (field) dan tombol aksi, aturan ini memungkinkan pengguna untuk secara fleksibel mengontrol tampilan seluruh tampilan (view) dari dimensi blok.
+Aturan Linkage Block memungkinkan pengguna untuk mengontrol tampilan Block secara dinamis, mengelola tampilan elemen secara keseluruhan dari level Block. Block sebagai container Field dan tombol Action, melalui aturan ini, pengguna dapat mengontrol tampilan seluruh view secara fleksibel dari dimensi Block.
 
 ![20251029112218](https://static-docs.nocobase.com/20251029112218.png)
 
 ![20251029112338](https://static-docs.nocobase.com/20251029112338.png)
 
-> **Catatan**: Sebelum menjalankan aturan keterkaitan blok, tampilan blok harus terlebih dahulu melalui **pemeriksaan izin ACL**. Logika aturan keterkaitan blok hanya akan dievaluasi jika pengguna memiliki izin akses yang sesuai. Dengan kata lain, aturan keterkaitan blok hanya berlaku setelah persyaratan izin tampilan ACL terpenuhi. Jika tidak ada aturan keterkaitan blok, blok akan ditampilkan secara default.
+> **Perhatian**: Sebelum menjalankan aturan linkage Block, tampilan Block pertama-tama perlu melalui **penilaian izin ACL**. Hanya ketika pengguna memiliki izin akses yang sesuai, baru dapat memasuki logika penilaian aturan linkage Block. Dengan kata lain, aturan linkage Block hanya berlaku setelah memenuhi persyaratan izin lihat ACL. Saat tidak ada aturan linkage Block, Block secara default ditampilkan.
 
-### Mengontrol Blok dengan Variabel Global
+### Variabel Global Mengontrol Block
 
-**Aturan keterkaitan blok** mendukung penggunaan variabel global untuk mengontrol konten yang ditampilkan dalam blok secara dinamis, memungkinkan pengguna dengan peran dan izin berbeda untuk melihat dan berinteraksi dengan tampilan data yang disesuaikan. Sebagai contoh, dalam sistem manajemen pesanan, meskipun peran yang berbeda (seperti administrator, staf penjualan, dan personel keuangan, dll.) semuanya memiliki izin untuk melihat pesanan, bidang dan tombol aksi yang perlu dilihat oleh setiap peran mungkin berbeda. Dengan mengonfigurasi variabel global, Anda dapat secara fleksibel menyesuaikan bidang yang ditampilkan, tombol aksi, bahkan aturan pengurutan dan pemfilteran data berdasarkan peran pengguna, izin, atau kondisi lainnya.
+**Aturan Linkage Block** mendukung kontrol konten tampilan Block secara dinamis melalui variabel global, sehingga pengguna dengan peran dan izin yang berbeda dapat melihat dan beroperasi pada view data yang dikustomisasi. Misalnya, dalam sistem manajemen pesanan, meskipun peran yang berbeda (seperti admin, sales, finance, dll.) semuanya memiliki izin lihat pesanan, Field dan tombol Action yang perlu dilihat oleh setiap peran mungkin berbeda. Melalui konfigurasi variabel global, dapat menyesuaikan Field, tombol Action, bahkan urutan dan aturan filter data yang ditampilkan secara fleksibel berdasarkan peran pengguna, izin, atau kondisi lainnya.
 
-#### Skenario Penggunaan Spesifik:
+#### Skenario Aplikasi Spesifik:
 
--   **Kontrol Peran dan Izin**: Mengontrol visibilitas atau kemampuan edit bidang tertentu berdasarkan izin peran yang berbeda. Misalnya, staf penjualan hanya dapat melihat informasi dasar pesanan, sementara personel keuangan dapat melihat detail pembayaran.
--   **Tampilan yang Dipersonalisasi**: Menyesuaikan tampilan blok yang berbeda untuk departemen atau tim yang berbeda, memastikan bahwa setiap pengguna hanya melihat konten yang relevan dengan pekerjaan mereka, sehingga meningkatkan efisiensi kerja.
--   **Manajemen Izin Aksi**: Mengontrol tampilan tombol aksi menggunakan variabel global. Misalnya, beberapa peran mungkin hanya dapat melihat data, sementara peran lain dapat melakukan aksi seperti memodifikasi atau menghapus.
+- **Kontrol Izin Peran**: Berdasarkan izin peran yang berbeda, mengontrol apakah Field tertentu terlihat atau dapat diedit. Misalnya, sales hanya dapat melihat informasi dasar pesanan, sedangkan finance dapat melihat detail pembayaran pesanan.
+- **View Personal**: Menyesuaikan view Block yang berbeda untuk departemen atau tim yang berbeda, memastikan setiap pengguna hanya melihat konten yang relevan dengan pekerjaannya, meningkatkan efisiensi kerja.
+- **Manajemen Izin Action**: Mengontrol tampilan tombol Action melalui variabel global. Misalnya, peran tertentu mungkin hanya dapat melihat data, peran lain dapat menjalankan modifikasi, hapus, dll.
 
-### Mengontrol Blok dengan Variabel Kontekstual
+### Variabel Konteks Mengontrol Block
 
-Blok juga dapat dikontrol oleh variabel dalam konteks. Misalnya, Anda dapat menggunakan variabel kontekstual seperti "Catatan saat ini", "Formulir saat ini", dan "Catatan pop-up saat ini" untuk menampilkan atau menyembunyikan blok secara dinamis.
+Block juga dapat dikontrol tampilannya melalui variabel dalam konteks. Misalnya, dapat menggunakan variabel konteks seperti "Record saat ini", "Form saat ini", "Record popup saat ini" untuk menampilkan atau menyembunyikan Block secara dinamis.
 
-Contoh: Blok "Informasi Peluang Pesanan" hanya ditampilkan jika status pesanan adalah "Sudah Dibayar".
+Contoh: Hanya saat status pesanan adalah "Sudah Dibayar", baru menampilkan Block "Informasi Peluang Pesanan".
 
 ![20251029114022](https://static-docs.nocobase.com/20251029114022.png)
 
-Untuk informasi lebih lanjut tentang aturan keterkaitan, lihat [Aturan Keterkaitan](/interface-builder/linkage-rule)
+Untuk penjelasan aturan linkage lebih lanjut, lihat [Aturan Linkage](/interface-builder/linkage-rule)

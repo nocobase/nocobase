@@ -1,32 +1,34 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "CacheManager"
+description: "Manajer cache NocoBase: CacheManager untuk membuat dan mengelola instance Cache."
+keywords: "CacheManager,manajer cache,instance Cache,NocoBase"
+---
 
 # CacheManager
 
-## Gambaran Umum
+## Ikhtisar
 
-CacheManager didasarkan pada <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> dan menyediakan fungsionalitas manajemen modul Cache untuk NocoBase. Tipe Cache bawaan adalah:
+CacheManager dibangun berdasarkan <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>, menyediakan fungsi manajemen modul Cache untuk NocoBase. Tipe Cache bawaan:
 
 - memory - lru-cache yang disediakan secara default oleh node-cache-manager
-- redis - didukung oleh node-cache-manager-redis-yet untuk fungsionalitas terkait
+- redis - fungsionalitas didukung oleh node-cache-manager-redis-yet
 
-Tipe lainnya dapat didaftarkan dan diperluas melalui API.
+Tipe lainnya dapat diperluas melalui registrasi API.
 
-### Konsep
+### Penjelasan Konsep
 
-- **Store**: Mendefinisikan metode caching, termasuk metode pabrik (factory method) untuk membuat cache dan konfigurasi terkait lainnya. Setiap metode caching memiliki pengenal unik yang disediakan saat pendaftaran.
-  Pengenal unik untuk dua metode caching bawaan adalah `memory` dan `redis`.
+- **Store**: Mendefinisikan satu metode cache, mencakup factory method untuk membuat cache, dan konfigurasi terkait lainnya. Setiap metode cache memiliki identifier unik, disediakan saat registrasi.
+  Identifier unik untuk dua metode cache bawaan adalah `memory` dan `redis`.
 
-- **Metode Pabrik Store**: Metode yang disediakan oleh `node-cache-manager` dan paket ekstensi terkait untuk membuat cache. Contohnya, `'memory'` yang disediakan secara default oleh `node-cache-manager`, dan `redisStore` yang disediakan oleh `node-cache-manager-redis-yet`. Ini sesuai dengan parameter pertama dari metode `caching` di `node-cache-manager`.
+- **Factory Method Store**: Disediakan oleh `node-cache-manager` dan paket ekstensi terkait, digunakan untuk membuat cache. Contoh `'memory'` yang disediakan default oleh `node-cache-manager`, `redisStore` yang disediakan oleh `node-cache-manager-redis-yet`, dll. Yaitu parameter pertama dari method `caching` di `node-cache-manager`.
 
-- **Cache**: Sebuah kelas yang dienkapsulasi oleh NocoBase, menyediakan metode terkait untuk menggunakan cache. Saat benar-benar menggunakan cache, Anda beroperasi pada sebuah instance `Cache`. Setiap instance `Cache` memiliki pengenal unik, yang dapat digunakan sebagai namespace untuk membedakan modul yang berbeda.
+- **Cache**: Class yang di-wrap NocoBase, menyediakan method terkait penggunaan cache. Saat menggunakan cache yang sebenarnya dioperasikan adalah instance `Cache`, setiap instance `Cache` memiliki identifier unik, dapat digunakan sebagai namespace untuk membedakan modul yang berbeda.
 
-## Metode Kelas
+## Method Class
 
 ### `constructor()`
 
-#### Tanda Tangan (Signature)
+#### Signature
 
 - `constructor(options?: CacheManagerOptions)`
 
@@ -52,20 +54,20 @@ type StoreOptions = {
 
 ##### CacheManagerOptions
 
-| Properti       | Tipe                           | Deskripsi                                                                                                                                                                                                                         |
-| -------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `defaultStore` | `string`                       | Pengenal unik untuk tipe Cache default.                                                                                                                                                                                             |
-| `stores`       | `Record<string, StoreOptions>` | Mendaftarkan tipe Cache. Kunci adalah pengenal unik untuk tipe Cache, dan nilainya adalah objek yang berisi metode pendaftaran tipe Cache dan konfigurasi global.<br />Di `node-cache-manager`, metode untuk membuat cache adalah `await caching(store, config)`. Objek yang akan disediakan di sini adalah [`StoreOptions`](#storeoptions). |
+| Properti | Tipe | Deskripsi |
+| -------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `defaultStore` | `string` | Identifier unik tipe Cache default |
+| `stores` | `Record<string, StoreOptions>` | Mendaftarkan tipe Cache, key adalah identifier unik tipe Cache, value adalah objek yang berisi method registrasi tipe Cache dan konfigurasi global.<br />Di `node-cache-manager`, method untuk membuat cache adalah `await caching(store, config)`. Sedangkan objek yang harus disediakan di sini adalah [`StoreOptions`](#storeoptions) |
 
 ##### StoreOptions
 
-| Properti        | Tipe                                   | Deskripsi                                                                                                                                                                                            |
-| --------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `store`         | `memory` \| `FactoryStore<Store, any>` | Metode pabrik store, sesuai dengan parameter pertama `caching`.                                                                                                                                        |
-| `close`         | `(store: Store) => Promise<void>`      | Opsional. Untuk middleware seperti Redis yang memerlukan koneksi, metode callback untuk menutup koneksi harus disediakan. Parameter input adalah objek yang dikembalikan oleh metode pabrik store. |
-| `[key: string]` | `any`                                  | Konfigurasi global store lainnya, sesuai dengan parameter kedua `caching`.                                                                                                                           |
+| Properti | Tipe | Deskripsi |
+| --------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `store` | `memory` \| `FactoryStore<Store, any>` | factory method store, sesuai dengan parameter pertama caching |
+| `close` | `(store: Store) => Promise<void>` | Opsional. Jika menggunakan middleware seperti Redis yang perlu membuat koneksi, perlu menyediakan method callback untuk menutup koneksi, parameter input adalah objek yang dikembalikan oleh factory method store |
+| `[key: string]` | `any` | Konfigurasi global store lainnya, sesuai dengan parameter kedua caching |
 
-#### Opsi Default `options`
+#### `options` Default
 
 ```ts
 import { redisStore, RedisStore } from 'cache-manager-redis-yet';
@@ -75,7 +77,7 @@ const defaultOptions: CacheManagerOptions = {
   stores: {
     memory: {
       store: 'memory',
-      // global config
+      // Konfigurasi global
       max: 2000,
     },
     redis: {
@@ -88,14 +90,14 @@ const defaultOptions: CacheManagerOptions = {
 };
 ```
 
-Parameter `options` akan digabungkan dengan opsi default. Properti yang sudah ada dalam opsi default dapat dihilangkan, contohnya:
+Parameter `options` akan di-merge dengan default options, isi parameter default options yang sudah ada dapat dikosongkan, contoh:
 
 ```ts
 const cacheManager = new CacheManager({
   stores: {
     defaultStore: 'redis',
     redis: {
-      // redisStore sudah disediakan dalam opsi default, jadi Anda hanya perlu menyediakan konfigurasi redisStore.
+      // redisStore sudah disediakan di default options, hanya perlu menyediakan konfigurasi redisStore.
       url: 'redis://localhost:6379',
     },
   },
@@ -104,44 +106,44 @@ const cacheManager = new CacheManager({
 
 ### `registerStore()`
 
-Mendaftarkan metode caching baru. Contoh:
+Mendaftarkan metode cache baru, lihat
 
 ```ts
 import { redisStore } from 'cache-manager-redis-yet';
 
 cacheManager.registerStore({
-  // pengenal unik untuk store
+  // Identifier unik store
   name: 'redis',
-  // metode pabrik untuk membuat store
+  // Factory method untuk membuat store
   store: redisStore,
-  // menutup koneksi store
+  // Menutup koneksi store
   close: async (redis: RedisStore) => {
     await redis.client.quit();
   },
-  // konfigurasi global
+  // Konfigurasi global
   url: 'xxx',
 });
 ```
 
-#### Tanda Tangan (Signature)
+#### Signature
 
 - `registerStore(options: { name: string } & StoreOptions)`
 
 ### `createCache()`
 
-Membuat cache. Contoh:
+Membuat cache, lihat
 
 ```ts
 await cacheManager.createCache({
-  name: 'default', // pengenal unik untuk cache
-  store: 'memory', // pengenal unik untuk store
-  prefix: 'mycache', // secara otomatis menambahkan prefiks 'mycache:' ke kunci cache, opsional
-  // konfigurasi store lainnya, konfigurasi kustom akan digabungkan dengan konfigurasi global store
+  name: 'default', // identifier unik cache
+  store: 'memory', // identifier unik store
+  prefix: 'mycache', // Otomatis menambahkan prefix 'mycache:' ke key cache, opsional
+  // Konfigurasi store lainnya, konfigurasi kustom, akan di-merge dengan konfigurasi global store
   max: 2000,
 });
 ```
 
-#### Tanda Tangan (Signature)
+#### Signature
 
 - `createCache(options: { name: string; prefix?: string; store?: string; [key: string]: any }): Promise<Cache>`
 
@@ -149,19 +151,19 @@ await cacheManager.createCache({
 
 ##### options
 
-| Properti        | Tipe     | Deskripsi                                           |
-| --------------- | -------- | ----------------------------------------------------- |
-| `name`          | `string` | Pengenal unik untuk cache.                      |
-| `store`         | `string` | Pengenal unik untuk store.                      |
-| `prefix`        | `string` | Opsional, prefiks kunci cache.                           |
-| `[key: string]` | `any`    | Item konfigurasi kustom lainnya yang terkait dengan store. |
+| Properti | Tipe | Deskripsi |
+| --------------- | -------- | ----------------------------- |
+| `name` | `string` | Identifier unik cache |
+| `store` | `string` | Identifier unik store |
+| `prefix` | `string` | Opsional, prefix key cache |
+| `[key: string]` | `any` | Item konfigurasi kustom terkait store lainnya |
 
-Jika `store` dihilangkan, `defaultStore` akan digunakan. Dalam kasus ini, metode caching akan berubah sesuai dengan metode caching default sistem.
+Saat `store` dilewati, akan menggunakan `defaultStore`, dalam hal ini metode cache akan berubah mengikuti perubahan metode cache default sistem.
 
-Ketika tidak ada konfigurasi kustom, akan dikembalikan ruang cache default yang dibuat oleh konfigurasi global dan dibagikan oleh metode caching saat ini. Disarankan untuk menambahkan `prefix` untuk menghindari konflik kunci.
+Saat tidak ada konfigurasi kustom, akan mengembalikan ruang cache default yang dibuat oleh konfigurasi global, dibagikan oleh metode cache saat ini, disarankan menambahkan prefix untuk menghindari konflik key.
 
 ```ts
-// Menggunakan cache default, dengan konfigurasi global
+// Menggunakan cache default, menggunakan konfigurasi global
 await cacheManager.createCache({ name: 'default', prefix: 'mycache' });
 ```
 
@@ -171,19 +173,19 @@ Lihat [Cache](./cache.md)
 
 ### `getCache()`
 
-Mendapatkan cache yang sesuai.
+Mendapatkan cache yang sesuai
 
 ```ts
 cacheManager.getCache('default');
 ```
 
-#### Tanda Tangan (Signature)
+#### Signature
 
 - `getCache(name: string): Cache`
 
 ### `flushAll()`
 
-Mengatur ulang semua cache.
+Mereset semua cache
 
 ```ts
 await cacheManager.flushAll();
@@ -191,7 +193,7 @@ await cacheManager.flushAll();
 
 ### `close()`
 
-Menutup semua koneksi middleware cache.
+Menutup koneksi semua middleware cache
 
 ```ts
 await cacheManager.close();

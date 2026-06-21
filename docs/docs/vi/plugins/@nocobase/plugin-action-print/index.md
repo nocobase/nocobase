@@ -1,14 +1,14 @@
 ---
-displayName: "Thao tác: In"
+displayName: "Action: In"
 packageName: '@nocobase/plugin-action-print'
+title: "Action: In"
+keywords: "Action: In,Plugin,NocoBase"
 description: |
-  Gọi chức năng in của trình duyệt để in một bản ghi.
+  Sử dụng chức năng in của trình duyệt để in một bản ghi.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: In
+# Action: In

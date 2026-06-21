@@ -1,16 +1,14 @@
 ---
-displayName: "Luồng công việc: Nút trì hoãn"
+displayName: "Workflow: Node trì hoãn"
 packageName: '@nocobase/plugin-workflow-delay'
+title: "Workflow: Node trì hoãn"
+keywords: "Workflow: Node trì hoãn,Plugin,NocoBase"
 description: |
-  Có thể dùng trong các nhánh song song của luồng công việc để chờ các nhánh khác hoàn tất thực thi.
+  Có thể được sử dụng trong các nhánh song song của workflow để chờ các nhánh khác hoàn thành thực thi.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-
-
-# Luồng công việc: Nút trì hoãn
+# Workflow: Node trì hoãn

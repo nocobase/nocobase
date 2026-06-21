@@ -1,5 +1,7 @@
 ---
-displayName: "Sammlungsfreigabe für mehrere Anwendungen"
+title: "Multi-app share collection"
+keywords: "System management"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -7,12 +9,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
+# Multi-app share collection
 
-# Sammlungsfreigabe für mehrere Anwendungen
-
-> Hinweis: Dieses Plugin ist veraltet.
+> Note: This plugin is deprecated.

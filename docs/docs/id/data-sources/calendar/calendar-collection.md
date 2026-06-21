@@ -1,17 +1,15 @@
 ---
 pkg: "@nocobase/plugin-calendar"
+title: "Collection Calendar"
+description: "Collection calendar menyimpan tanggal dan informasi event, digunakan bersama Block Calendar, perlu mengonfigurasi field judul, waktu mulai, waktu selesai, dan lainnya."
+keywords: "collection calendar,Calendar Collection,event kalender,jadwal,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Collection Calendar
 
+## Pengantar
 
-# Koleksi Kalender
+Collection calendar adalah Collection yang digunakan untuk menyimpan tanggal dan informasi terkait tanggal, biasanya digunakan untuk melacak waktu dan tanggal di dalam aplikasi atau sistem. Desain collection calendar bertujuan untuk menyediakan akses yang fleksibel dan efisien terhadap tanggal, sehingga dapat dengan cepat mengambil informasi terkait tanggal saat dibutuhkan.
 
-## Pendahuluan
-
-Koleksi Kalender adalah tabel data khusus yang dirancang untuk menyimpan tanggal dan informasi terkait tanggal. Koleksi ini umumnya digunakan untuk mengelola dan melacak waktu dalam aplikasi atau sistem. Tujuan utamanya adalah untuk menyediakan akses yang fleksibel dan efisien terhadap informasi tanggal, sehingga memungkinkan pengambilan data yang relevan dengan cepat saat dibutuhkan.
-
-## Panduan Pengguna
+## Panduan Penggunaan
 
 ![20240512182454](https://static-docs.nocobase.com/20240512182454.png)

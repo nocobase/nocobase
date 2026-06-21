@@ -1,36 +1,38 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Storage engine: Amazon S3"
+description: "Cấu hình storage engine Amazon S3 tích hợp sẵn của NocoBase: Region, AccessKey ID/Secret, tên Bucket, dùng cho AWS Cloud Storage."
+keywords: "Amazon S3,AWS,Bucket,AccessKey,Cloud Storage,Cấu hình S3,NocoBase"
+---
 
+# Storage engine: Amazon S3
 
-# Công cụ lưu trữ: Amazon S3
-
-Đây là công cụ lưu trữ dựa trên Amazon S3. Trước khi sử dụng, bạn cần chuẩn bị tài khoản và các quyền liên quan.
+Storage engine dựa trên Amazon S3, cần chuẩn bị tài khoản và quyền liên quan trước khi sử dụng.
 
 ## Tham số cấu hình
 
-![Amazon S3 Storage Engine Configuration Example](https://static-docs.nocobase.com/20251031092524.png)
+![Ví dụ cấu hình storage engine Amazon S3](https://static-docs.nocobase.com/20251031092524.png)
 
-:::info{title=Lưu ý}
-Phần này chỉ giới thiệu các tham số dành riêng cho công cụ lưu trữ Amazon S3. Để biết các tham số chung, vui lòng tham khảo [Tham số chung của công cụ](./index#引擎通用参数).
+:::info{title=Mẹo}
+Chỉ giới thiệu các tham số dành riêng cho storage engine Amazon S3. Đối với các tham số chung, vui lòng tham khảo [Tham số chung của engine](./index#tham-số-chung).
 :::
 
-### Vùng (Region)
+### Region
 
-Nhập vùng lưu trữ S3, ví dụ: `us-west-1`.
+Điền Region của S3, ví dụ: `us-west-1`.
 
-:::info{title=Lưu ý}
-Bạn có thể xem thông tin vùng của bộ chứa (bucket) trong [bảng điều khiển Amazon S3](https://console.aws.amazon.com/s3/). Bạn chỉ cần sử dụng tiền tố vùng (không cần tên miền đầy đủ).
+:::info{title=Mẹo}
+Có thể xem thông tin Region của Bucket tại [Amazon S3 Console](https://console.aws.amazon.com/s3/), chỉ cần lấy phần tiền tố Region (không cần tên miền đầy đủ).
 :::
 
 ### AccessKey ID
 
-Nhập ID của khóa truy cập ủy quyền Amazon S3.
+Điền ID của khóa truy cập được ủy quyền của Amazon S3.
 
 ### AccessKey Secret
 
-Nhập Secret của khóa truy cập ủy quyền Amazon S3.
+Điền Secret của khóa truy cập được ủy quyền của Amazon S3.
 
-### Tên bộ chứa (Bucket)
+### Bucket
 
-Nhập tên bộ chứa S3.
+Điền tên Bucket của S3.

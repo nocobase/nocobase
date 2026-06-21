@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Phạm vi dữ liệu Field"
+description: "Cấu hình Field: cài đặt phạm vi dữ liệu của Field liên kết, lọc dữ liệu có thể chọn, hỗ trợ lọc theo quyền."
+keywords: "phạm vi dữ liệu,data scope,bộ lọc liên kết,cấu hình Field,Interface Builder,NocoBase"
+---
 
-
-# Thiết lập Phạm vi Dữ liệu
+# Cài đặt phạm vi dữ liệu
 
 ## Giới thiệu
 
-Việc thiết lập phạm vi dữ liệu cho một trường liên kết tương tự như việc thiết lập phạm vi dữ liệu cho một block. Nó đặt các điều kiện lọc mặc định cho dữ liệu liên kết.
+Cài đặt phạm vi dữ liệu của Field quan hệ tương tự như cài đặt phạm vi dữ liệu của Block, đặt điều kiện lọc mặc định cho dữ liệu quan hệ.
 
 ## Hướng dẫn sử dụng
 
@@ -15,25 +16,25 @@ Việc thiết lập phạm vi dữ liệu cho một trường liên kết tươ
 
 ### Giá trị tĩnh
 
-Ví dụ: Chỉ những sản phẩm chưa bị xóa mới có thể được chọn để liên kết.
+Ví dụ: chỉ có thể chọn liên kết với sản phẩm chưa bị xóa.
 
-> Danh sách trường bao gồm các trường từ bộ sưu tập mục tiêu của trường liên kết.
+> Danh sách Field là các Field của Table mục tiêu Field quan hệ
 
 ![20251028211434](https://static-docs.nocobase.com/20251028211434.png)
 
 ### Giá trị biến
 
-Ví dụ: Chỉ những sản phẩm có ngày dịch vụ sau ngày đặt hàng mới có thể được chọn để liên kết.
+Ví dụ: chỉ có thể chọn liên kết với sản phẩm có ngày dịch vụ muộn hơn ngày đơn hàng.
 
 ![20251028211727](https://static-docs.nocobase.com/20251028211727.png)
 
-Để biết thêm thông tin về biến, tham khảo [Biến](/interface-builder/variables)
+Xem thêm về biến tại [Biến](/interface-builder/variables)
 
-### Liên kết Trường Liên kết
+### Liên kết Field quan hệ
 
-Việc liên kết giữa các trường liên kết được thực hiện bằng cách thiết lập phạm vi dữ liệu.
+Các Field quan hệ liên kết với nhau bằng cách cài đặt phạm vi dữ liệu.
 
-Ví dụ: Bộ sưu tập Đơn hàng có một trường liên kết Một-nhiều "Sản phẩm Cơ hội" và một trường liên kết Nhiều-một "Cơ hội". Bộ sưu tập Sản phẩm Cơ hội cũng có một trường liên kết Nhiều-một "Cơ hội". Trong block biểu mẫu đơn hàng, dữ liệu có thể chọn cho "Sản phẩm Cơ hội" sẽ được lọc để chỉ hiển thị các sản phẩm cơ hội liên kết với "Cơ hội" đang được chọn trong biểu mẫu.
+Ví dụ: Trong Table đơn hàng có Field quan hệ một-nhiều "Sản phẩm cơ hội" và Field quan hệ nhiều-một "Cơ hội", Sản phẩm cơ hội có Field quan hệ nhiều-một "Cơ hội", trong Block Form đơn hàng, dữ liệu có thể chọn của sản phẩm cơ hội là sản phẩm cơ hội liên kết với cơ hội đã chọn trong Form hiện tại.
 
 ![20251028212943](https://static-docs.nocobase.com/20251028212943.png)
 

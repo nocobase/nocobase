@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Giờ"
+description: "Field giờ, chỉ lưu trữ phần giờ."
+keywords: "giờ,time,Field giờ,chọn giờ,NocoBase"
+---
 
-
-# Thời gian
+# Giờ
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512181216](https://static-docs.nocobase.com/20240512181216.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung.
+Sẽ được bổ sung

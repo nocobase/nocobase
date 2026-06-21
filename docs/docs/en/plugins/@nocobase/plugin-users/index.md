@@ -1,4 +1,6 @@
 ---
+title: "Users"
+keywords: "Users & permissions"
 displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Users

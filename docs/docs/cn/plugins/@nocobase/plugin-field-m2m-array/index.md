@@ -1,4 +1,6 @@
 ---
+title: "数据表字段：多对多 (数组)"
+keywords: "数据表字段：多对多 (数组),插件,NocoBase"
 displayName: "数据表字段：多对多 (数组)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 数据表字段：多对多 (数组)

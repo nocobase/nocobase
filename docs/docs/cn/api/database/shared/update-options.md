@@ -1,3 +1,9 @@
+---
+title: "UpdateOptions"
+description: "NocoBase Repository update 方法参数：values、filter、filterByTk、whitelist、blacklist、transaction。"
+keywords: "UpdateOptions,Repository,update,values,NocoBase"
+---
+
 **类型**
 
 ```typescript

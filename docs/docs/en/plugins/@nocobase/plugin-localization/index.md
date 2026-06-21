@@ -1,4 +1,6 @@
 ---
+title: "Localization"
+keywords: "System management"
 displayName: "Localization"
 packageName: '@nocobase/plugin-localization'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Localization

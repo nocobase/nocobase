@@ -9,7 +9,6 @@
 
 import { Database, createMockDatabase } from '@nocobase/database';
 import dayjs from 'dayjs';
-import record from 'packages/core/client/src/schema-component/antd/table-v2/demos/new-demos/record';
 import { TimeInterface } from '../../interfaces/time-interface';
 
 describe('TimeInterface', () => {
@@ -59,6 +58,14 @@ describe('TimeInterface', () => {
       const interfaceInstance = new TimeInterface();
       const value = await interfaceInstance.toValue(time);
       expect(value).toEqual(time);
+    });
+
+    it('should parse excel time serial', async () => {
+      const interfaceInstance = new TimeInterface();
+
+      expect(await interfaceInstance.toValue(0.5084722222222222)).toEqual('12:12:12');
+      expect(await interfaceInstance.toValue(45789.50847222222)).toEqual('12:12:12');
+      expect(await interfaceInstance.toValue(0)).toEqual('00:00:00');
     });
   });
 });

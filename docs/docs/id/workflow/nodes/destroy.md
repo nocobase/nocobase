@@ -1,39 +1,41 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Node Workflow - Hapus Data"
+description: "Node Hapus Data: menghapus record tabel data berdasarkan kondisi, mendukung penghapusan batch, mengembalikan jumlah baris yang dihapus."
+keywords: "Workflow,Hapus Data,Destroy,operasi tabel data,penghapusan batch,NocoBase"
+---
 
 # Hapus Data
 
-Digunakan untuk menghapus data dari sebuah koleksi yang memenuhi kondisi tertentu.
+Digunakan untuk menghapus data pada tabel data tertentu yang memenuhi kondisi.
 
-Penggunaan dasar node hapus mirip dengan node perbarui, hanya saja node hapus tidak memerlukan penetapan nilai kolom. Anda hanya perlu memilih koleksi dan kondisi filter. Hasil dari node hapus akan mengembalikan jumlah baris data yang berhasil dihapus, yang hanya dapat dilihat di riwayat eksekusi dan tidak dapat digunakan sebagai variabel di node selanjutnya.
+Penggunaan dasar Node Hapus mirip dengan Node Update, hanya saja Node Hapus tidak memerlukan assignment field, hanya perlu memilih tabel data dan kondisi filter. Hasil Node Hapus akan mengembalikan jumlah baris data yang berhasil dihapus, hanya dapat dilihat di riwayat eksekusi, dan tidak dapat digunakan sebagai variable pada Node berikutnya.
 
-:::info{title=Catatan}
-Saat ini, node hapus tidak mendukung penghapusan satu per satu; ini melakukan penghapusan secara massal. Oleh karena itu, ini tidak akan memicu peristiwa lain untuk setiap data yang dihapus.
+:::info{title=Perhatian}
+Saat ini Node Hapus tidak mendukung penghapusan satu per satu, semuanya adalah penghapusan batch, sehingga tidak akan memicu event lain pada penghapusan setiap record data.
 :::
 
-## Buat Node
+## Membuat Node
 
-Di antarmuka konfigurasi alur kerja, klik tombol plus ("+") di alur untuk menambahkan node "Hapus data":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Hapus Data":
 
-![Buat node hapus data](https://static-docs.nocobase.com/e1d6b8728251fcdbed6c7f50e5570da2.png)
+![Membuat Node Hapus Data](https://static-docs.nocobase.com/e1d6b8728251fcdbed6c7f50e5570da2.png)
 
 ## Konfigurasi Node
 
-![Node hapus_Konfigurasi Node](https://static-docs.nocobase.com/580600c2b13ef4e01dfa48b23539648e.png)
+![Node Hapus_Konfigurasi Node](https://static-docs.nocobase.com/580600c2b13ef4e01dfa48b23539648e.png)
 
-### Koleksi
+### Tabel Data
 
-Pilih koleksi tempat data akan dihapus.
+Pilih tabel data yang akan dihapus.
 
 ### Kondisi Filter
 
-Mirip dengan kondisi filter untuk kueri koleksi biasa, Anda dapat menggunakan variabel konteks alur kerja.
+Mirip dengan kondisi filter pada query tabel data biasa, dapat menggunakan variable konteks alur.
 
 ## Contoh
 
-Misalnya, untuk membersihkan data pesanan historis yang dibatalkan dan tidak valid secara berkala, Anda dapat menggunakan node hapus:
+Misalnya untuk membersihkan data pesanan historis yang sudah dibatalkan secara terjadwal, dapat diimplementasikan menggunakan Node Hapus:
 
-![Node hapus_Contoh_Konfigurasi Node](https://static-docs.nocobase.com/b94b75077a17252f8523c3f13ce5f320.png)
+![Node Hapus_Contoh_Konfigurasi Node](https://static-docs.nocobase.com/b94b75077a17252f8523c3f13ce5f320.png)
 
-Alur kerja akan dipicu secara berkala dan akan menghapus semua data pesanan historis yang dibatalkan dan tidak valid.
+Workflow akan terpicu secara terjadwal, dan menghapus semua data pesanan historis yang sudah dibatalkan.

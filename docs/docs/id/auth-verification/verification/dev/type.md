@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Memperluas Tipe Verifikasi"
+description: "Pengembangan untuk memperluas tipe verifikasi NocoBase: mendaftarkan formulir konfigurasi, mengimplementasikan class verifikasi, mendaftarkan tipe verifikasi, memperluas metode verifikasi identitas kustom."
+keywords: "memperluas tipe verifikasi,IVerification,Verification,registerVerificationType,NocoBase"
+---
 
-# Memperluas Tipe Validasi
+# Memperluas Tipe Verifikasi
 
-## Sisi Klien
+## Klien
 
-### Mendaftarkan formulir konfigurasi
+### Mendaftarkan Formulir Konfigurasi
 
-## Sisi Server
+## Server
 
-### Mengimplementasikan kelas validasi
+### Mengimplementasikan Class Verifikasi
 
-### Mendaftarkan tipe validasi
+### Mendaftarkan Tipe Verifikasi

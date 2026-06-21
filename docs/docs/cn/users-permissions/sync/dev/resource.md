@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "扩展同步目标资源"
+description: "NocoBase 用户数据同步插件扩展：自定义同步目标资源、SyncResource 接口、用户表与部门表映射。"
+keywords: "扩展同步资源,SyncResource,同步目标,用户表映射,plugin-user-data-sync,NocoBase"
+---
+
 # 扩展同步目标资源
 
 ## 概述

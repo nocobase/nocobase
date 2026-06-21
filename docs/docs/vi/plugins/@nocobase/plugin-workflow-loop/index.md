@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc: Nút lặp"
+displayName: "Workflow: Node vòng lặp"
 packageName: '@nocobase/plugin-workflow-loop'
+title: "Workflow: Node vòng lặp"
+keywords: "Workflow: Node vòng lặp,Plugin,NocoBase"
 description: |
-  Dùng để lặp lại việc xử lý một quy trình con cho từng giá trị trong một mảng, hoặc để lặp lại quy trình con một số lần cố định.
+  Dùng để xử lý subflow lặp lại cho từng giá trị trong một mảng, cũng có thể dùng cho subflow lặp lại với số lần cố định.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút lặp
+# Workflow: Node vòng lặp

@@ -1,20 +1,22 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Action xem"
+description: "Action xem: mở Chi tiết dưới dạng chỉ đọc, hỗ trợ các cách mở như Popup, Drawer, chuyển hướng."
+keywords: "Action xem,View,xem Chi tiết,chỉ đọc,Interface Builder,NocoBase"
+---
 
 
 # Xem
 
 ## Giới thiệu
 
-Thao tác Xem là một nút hàng, sử dụng bản ghi hiện tại làm ngữ cảnh. Nó được hiển thị dưới dạng cửa sổ bật lên (popup), nơi người dùng có thể tùy chỉnh và cấu hình các khối.
+Action xem thuộc nút hàng, có bản ghi hiện tại làm ngữ cảnh, được hiển thị dưới dạng Popup, bạn có thể tùy chỉnh cấu hình Block trong Popup.
 
 ![20251029152616](https://static-docs.nocobase.com/20251029152616.png)
 
-### Cấu hình thao tác
+### Tùy chọn cấu hình Action
 
 ![20251029152719](https://static-docs.nocobase.com/20251029152719.png)
 
-- [Nút chỉnh sửa](/interface-builder/actions/action-settings/edit-button)
+- [Chỉnh sửa nút bấm](/interface-builder/actions/action-settings/edit-button)
 - [Quy tắc liên kết](/interface-builder/actions/action-settings/linkage-rule)
-- [Chỉnh sửa cửa sổ bật lên](/interface-builder/actions/action-settings/edit-popup)
+- [Chỉnh sửa Popup](/interface-builder/actions/action-settings/edit-popup)

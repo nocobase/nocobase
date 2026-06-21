@@ -1,47 +1,48 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Node Workflow - Truy vấn dữ liệu"
+description: "Node truy vấn dữ liệu: truy vấn một hoặc nhiều dữ liệu theo điều kiện, kết quả được dùng làm biến cho các Node tiếp theo."
+keywords: "workflow,truy vấn dữ liệu,Query,thao tác bảng dữ liệu,biến,NocoBase"
+---
 
+# Truy vấn dữ liệu
 
-# Truy vấn Dữ liệu
+Được dùng để truy vấn dữ liệu thỏa mãn điều kiện của một bảng dữ liệu nào đó và lấy bản ghi dữ liệu.
 
-Dùng để truy vấn và lấy các bản ghi dữ liệu từ một **bộ sưu tập** thỏa mãn các điều kiện cụ thể.
+Có thể cấu hình truy vấn một dữ liệu hoặc nhiều dữ liệu, kết quả truy vấn có thể được dùng làm biến trong các Node tiếp theo. Khi truy vấn nhiều dữ liệu, kết quả truy vấn là một mảng. Khi kết quả truy vấn rỗng, có thể chọn tiếp tục thực thi các Node tiếp theo hay không.
 
-Bạn có thể cấu hình để truy vấn một bản ghi hoặc nhiều bản ghi. Kết quả truy vấn có thể được sử dụng làm biến trong các nút tiếp theo. Khi truy vấn nhiều bản ghi, kết quả sẽ là một mảng. Khi kết quả truy vấn trống, bạn có thể chọn có tiếp tục thực thi các nút tiếp theo hay không.
+## Tạo Node
 
-## Tạo Nút
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Truy vấn dữ liệu":
 
-Trong giao diện cấu hình **luồng công việc**, hãy nhấp vào nút dấu cộng (“+”) trong luồng để thêm nút "Truy vấn Dữ liệu":
+![Truy vấn dữ liệu_thêm](https://static-docs.nocobase.com/c1ef2b851b437806faf7a39c6ab9d33a.png)
 
-![Thêm Nút Truy vấn Dữ liệu](https://static-docs.nocobase.com/c1ef2b851b437806faf7a39c6ab9d33a.png)
+## Cấu hình Node
 
-## Cấu hình Nút
+![Node truy vấn_cấu hình Node](https://static-docs.nocobase.com/20240520131324.png)
 
-![Cấu hình Nút Truy vấn](https://static-docs.nocobase.com/20240520131324.png)
+### Bảng dữ liệu
 
-### Bộ sưu tập
+Chọn bảng dữ liệu cần truy vấn.
 
-Chọn **bộ sưu tập** mà bạn muốn truy vấn dữ liệu.
+### Loại kết quả
 
-### Loại Kết quả
+Loại kết quả chia thành hai loại "Một dữ liệu" và "Nhiều dòng dữ liệu":
 
-Loại kết quả được chia thành hai dạng: "Một bản ghi" và "Nhiều bản ghi":
+- Một dữ liệu: kết quả là một đối tượng, chỉ là bản ghi khớp đầu tiên hoặc giá trị rỗng.
+- Nhiều dữ liệu: kết quả sẽ là một mảng chứa các bản ghi thỏa mãn điều kiện, không có bản ghi khớp thì là mảng rỗng. Có thể qua Node vòng lặp để xử lý từng cái một.
 
-- Một bản ghi: Kết quả là một đối tượng, chỉ là bản ghi đầu tiên khớp hoặc giá trị `null`.
-- Nhiều bản ghi: Kết quả sẽ là một mảng chứa các bản ghi khớp với điều kiện. Nếu không có bản ghi nào khớp, kết quả sẽ là một mảng trống. Bạn có thể xử lý từng bản ghi một bằng cách sử dụng nút Lặp (Loop node).
+### Điều kiện lọc
 
-### Điều kiện Lọc
-
-Tương tự như các điều kiện lọc trong truy vấn **bộ sưu tập** thông thường, bạn có thể sử dụng các biến ngữ cảnh của **luồng công việc**.
+Tương tự điều kiện lọc khi truy vấn bảng dữ liệu thông thường, có thể sử dụng biến ngữ cảnh của quy trình.
 
 ### Sắp xếp
 
-Khi truy vấn một hoặc nhiều bản ghi, bạn có thể sử dụng các quy tắc sắp xếp để kiểm soát kết quả mong muốn. Ví dụ, để truy vấn bản ghi mới nhất, bạn có thể sắp xếp theo trường "Thời gian tạo" theo thứ tự giảm dần.
+Khi truy vấn một hoặc nhiều dữ liệu đều có thể qua quy tắc sắp xếp để điều khiển kết quả cần thiết. Ví dụ truy vấn dữ liệu mới nhất, có thể qua trường "Thời gian tạo" sắp xếp giảm dần.
 
 ### Phân trang
 
-Khi tập hợp kết quả có thể rất lớn, bạn có thể sử dụng phân trang để kiểm soát số lượng kết quả truy vấn. Ví dụ, để truy vấn 10 bản ghi mới nhất, bạn có thể sắp xếp theo trường "Thời gian tạo" theo thứ tự giảm dần, sau đó thiết lập phân trang là 1 trang với 10 bản ghi.
+Khi tập kết quả có thể rất lớn, có thể sử dụng phân trang để điều khiển số lượng kết quả truy vấn. Ví dụ truy vấn 10 dữ liệu mới nhất, có thể qua trường "Thời gian tạo" sắp xếp giảm dần, sau đó đặt phân trang là 1 trang 10 dữ liệu.
 
-### Xử lý Kết quả Trống
+### Xử lý khi kết quả rỗng
 
-Ở chế độ một bản ghi, nếu không có dữ liệu nào khớp với điều kiện, kết quả truy vấn sẽ là `null`. Ở chế độ nhiều bản ghi, kết quả sẽ là một mảng trống (`[]`). Bạn có thể chọn có đánh dấu tùy chọn "Thoát **luồng công việc** khi kết quả truy vấn trống" hay không. Nếu được đánh dấu và kết quả truy vấn trống, các nút tiếp theo sẽ không được thực thi và **luồng công việc** sẽ thoát sớm với trạng thái thất bại.
+Ở chế độ kết quả một dữ liệu, nếu không có dữ liệu thỏa mãn điều kiện thì kết quả truy vấn sẽ là `null`, ở chế độ nhiều dữ liệu là mảng rỗng (`[]`). Có thể tùy theo nhu cầu chọn "Khi kết quả truy vấn rỗng, thoát quy trình", sau khi chọn, nếu kết quả truy vấn rỗng thì sẽ không thực thi các Node tiếp theo, thoát sớm với trạng thái thất bại.

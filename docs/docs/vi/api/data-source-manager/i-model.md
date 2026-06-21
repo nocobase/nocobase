@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "IModel"
+description: "Interface IModel của NocoBase: định nghĩa thuộc tính và phương thức cơ bản của đối tượng model."
+keywords: "IModel,interface,Model,model dữ liệu,NocoBase"
+---
 
 # IModel
 
-Giao diện `IModel` định nghĩa các thuộc tính và phương thức cơ bản của một đối tượng model.
+Interface `IModel` định nghĩa các thuộc tính và phương thức cơ bản của đối tượng model.
 
 ```typescript
 export interface IModel {
@@ -17,4 +18,4 @@ export interface IModel {
 
 ### toJSON()
 
-Chuyển đổi đối tượng model sang định dạng JSON.
+Chuyển đối tượng model sang định dạng JSON.

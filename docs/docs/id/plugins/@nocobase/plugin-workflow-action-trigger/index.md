@@ -1,14 +1,14 @@
 ---
-displayName: 'Alur Kerja: Peristiwa Setelah Tindakan'
+displayName: "Workflow: Event Setelah Action"
 packageName: '@nocobase/plugin-workflow-action-trigger'
+title: "Workflow: Event Setelah Action"
+keywords: "Workflow: Event Setelah Action,Plugin,NocoBase"
 description: |
-  Dipicu setelah selesainya permintaan yang dimulai melalui tombol tindakan atau API, seperti setelah penambahan, pembaruan, penghapusan data, atau 'pengiriman ke alur kerja". Cocok digunakan untuk pemrosesan data, pengiriman notifikasi, dan aktivitas serupa setelah tindakan selesai.
+  Dipicu setelah eksekusi selesai melalui tombol Action atau request API, misalnya setelah menambah, memperbarui, menghapus data, atau setelah "Submit ke Workflow". Cocok untuk pemrosesan data, pengiriman notifikasi, dan lainnya setelah operasi selesai.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Peristiwa Setelah Tindakan
+# Workflow: Event Setelah Action

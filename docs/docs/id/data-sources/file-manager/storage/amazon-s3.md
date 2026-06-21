@@ -1,14 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Amazon S3"
+description: "Konfigurasi storage engine Amazon S3: Bucket, Region, AccessKey, object storage yang kompatibel dengan protokol S3."
+keywords: "Amazon S3,S3 object storage,cloud storage,object storage,NocoBase"
+---
 
 # Amazon S3
 
 :::warning
-Dokumentasi sedang dilengkapi
+Dokumentasi akan ditambahkan
 :::
 
 <!--
-## 介绍
+## Pengantar
 
-## 使用手册 -->
+## Panduan Penggunaan -->

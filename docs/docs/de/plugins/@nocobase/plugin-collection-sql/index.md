@@ -1,14 +1,14 @@
 ---
-displayName: "Sammlung: SQL"
+title: "Collection: SQL"
+keywords: "Collections"
+displayName: "Collection: SQL"
 packageName: '@nocobase/plugin-collection-sql'
 description: |
-  Bietet eine SQL-Sammlungsvorlage.
+  Provides SQL collection template
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# Sammlung: SQL
+# Collection: SQL

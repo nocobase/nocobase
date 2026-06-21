@@ -1,32 +1,29 @@
 ---
-pkg: "@nocobase/plugin-embed"
+title: "Embed NocoBase ke Sistem Eksternal"
+description: "Plugin Embed untuk menanam halaman NocoBase ke website atau aplikasi lain: salin link embed, autentikasi token pengguna, integrasi iframe, plugin komersial."
+keywords: "embed NocoBase,Plugin Embed,embed iframe,autentikasi pengguna,autentikasi token,integrasi sistem eksternal,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Embed NocoBase
 
+<PluginInfo commercial="true" name="embed"></PluginInfo>
 
-# Sematkan NocoBase
+## Pengenalan
 
-## Pendahuluan
-
-Plugin ini digunakan untuk menyematkan halaman NocoBase ke situs web atau aplikasi lain.
+Plugin ini digunakan untuk menanam halaman NocoBase ke website atau aplikasi lain.
 
 ## Instalasi
 
-Plugin ini adalah plugin komersial dan perlu diunggah serta diaktifkan melalui manajer plugin.
+Plugin ini adalah Plugin komersial. Untuk metode aktivasi rinci, lihat: [Panduan Aktivasi Lisensi Komersial](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+## Petunjuk Penggunaan
 
-## Panduan Pengguna
-
-Setelah mengaktifkan konfigurasi antarmuka, klik "Salin tautan sematan" di menu pengaturan halaman (pojok kanan atas).
+Setelah konfigurasi antarmuka aktivasi selesai, pada pengaturan halaman (pojok kanan atas), klik "Salin Link Embed".
 
 ![](https://static-docs.nocobase.com/f11bd6d5e88d38731d7cd3cb149022c8.png)
 
-Setelah diklik, Anda akan mendapatkan tautan yang dapat dibuka secara terpisah, contohnya `https://xxx.com/embed/qs087rz4o2b`.
+Link yang didapat setelah klik dapat dibuka secara terpisah, misalnya `https://example.com/embed/qs087rz4o2b`.
 
 ![](https://static-docs.nocobase.com/9d847805a00fd07372a474665ec0e968.png)
 
-Jika Anda ingin menyematkan halaman NocoBase ke situs web atau aplikasi lain, diperlukan autentikasi pengguna, dan `token` perlu ditambahkan ke tautan, contohnya `https://xxx.com/embed/qs087rz4o2b?token=xxx`.
+Jika Anda ingin menanam halaman NocoBase ke website atau aplikasi lain, Anda perlu melakukan autentikasi pengguna dan menambahkan `token` ke link, misalnya `https://example.com/embed/qs087rz4o2b?token=xxx`.

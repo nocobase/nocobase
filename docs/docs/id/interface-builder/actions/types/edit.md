@@ -1,23 +1,26 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Edit"
+description: "Action Edit: membuka Form untuk mengedit record saat ini, mendukung cara membuka seperti Popup, drawer, jump."
+keywords: "Action Edit, Edit, edit record, edit Form, interface builder, NocoBase"
+---
 
 # Edit
 
-## Pendahuluan
+## Pengantar
 
-Tindakan Edit adalah tombol baris yang beroperasi dalam konteks catatan saat ini. Tindakan ini disajikan dalam bentuk pop-up di mana pengguna dapat menyesuaikan dan mengonfigurasi blok.
+Action Edit termasuk tombol baris, dengan record saat ini sebagai konteks, ditampilkan dalam bentuk Popup. Pengguna dapat mengkonfigurasi Block secara kustom di Popup.
+
 
 ![20251029165442](https://static-docs.nocobase.com/20251029165442.png)
 
-Konfigurasi blok sesuai kebutuhan.
+Konfigurasi Block sesuai kebutuhan.
 
 ![20251029165514](https://static-docs.nocobase.com/20251029165514.png)
 
-## Pengaturan Tindakan
+## Konfigurasi Action
 
 ![20251029165620](https://static-docs.nocobase.com/20251029165620.png)
 
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule): Menampilkan/menyembunyikan tombol secara dinamis;
-- [Tombol Edit](/interface-builder/actions/action-settings/edit-button): Mengedit judul, tipe, dan ikon tombol;
-- [Pop-up Edit](/interface-builder/actions/action-settings/edit-popup): Mengatur mode pembukaan dan ukuran.
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule): tampilan/sembunyi tombol secara dinamis;
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, ikon tombol;
+- [Edit Popup](/interface-builder/actions/action-settings/edit-popup): cara membuka, ukuran

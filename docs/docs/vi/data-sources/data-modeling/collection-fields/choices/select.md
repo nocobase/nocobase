@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Dropdown (chọn một)"
+description: "Field dropdown chọn một, chọn một mục từ các tùy chọn được thiết lập sẵn."
+keywords: "dropdown chọn,Select,chọn một,Field tùy chọn,NocoBase"
+---
 
-
-# Trường chọn một (Dropdown)
+# Dropdown (chọn một)
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512180203](https://static-docs.nocobase.com/20240512180203.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung

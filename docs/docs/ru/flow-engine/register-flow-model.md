@@ -1,7 +1,3 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 # Регистрация FlowModel
 
 ## Начните с пользовательского FlowModel
@@ -21,18 +17,23 @@ class HelloModel extends FlowModel {
 
 ## Доступные базовые классы FlowModel
 
-| Название базового класса | Описание                               |
-| :----------------------- | :------------------------------------- |
-| `BlockModel`             | Базовый класс для всех блоков          |
-| `CollectionBlockModel`   | Блок коллекции данных, наследуется от BlockModel |
-| `ActionModel`            | Базовый класс для всех операций        |
+| Имя базового класса | Описание |
+| ------------------- | -------- |
+| `BlockModel` | Базовый класс для всех блоков |
+| `CollectionBlockModel` | Блок коллекции, наследуется от `BlockModel` |
+| `ActionModel` | Базовый класс для всех действий |
 
 ## Регистрация FlowModel
 
 ```ts
 export class PluginHelloClient extends Plugin {
   async load() {
-    this.engine.registerModels({ HelloModel });
+    this.engine.registerModelLoaders({
+      HelloModel: {
+        // Динамический импорт: модуль модели загружается только тогда, когда эта модель впервые действительно нужна
+        loader: () => import('./HelloModel'),
+      },
+    });
   }
 }
 ```

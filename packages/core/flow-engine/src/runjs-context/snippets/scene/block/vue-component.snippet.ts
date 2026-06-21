@@ -29,10 +29,10 @@ mountNode.style.borderRadius = '8px';
 const target = document.createElement('div');
 target.className = 'nb-vue-counter';
 mountNode.appendChild(target);
-ctx.element.replaceChildren(mountNode);
+ctx.render(mountNode);
 
 async function bootstrap() {
-  const mod = await ctx.importAsync('https://esm.sh/vue@3.4.27/dist/vue.runtime.esm-browser.js');
+  const mod = await ctx.importAsync('vue@3.4.27/dist/vue.runtime.esm-browser.js');
   const createApp = mod?.createApp;
   const ref = mod?.ref;
   const h = mod?.h;
@@ -91,8 +91,7 @@ async function bootstrap() {
   };
 
   const app = createApp(Counter);
-  const mountTarget = ctx.element.querySelector('.nb-vue-counter');
-  app.mount(mountTarget || ctx.element);
+  app.mount(target);
 }
 
 bootstrap().catch((error) => {

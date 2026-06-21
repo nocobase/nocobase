@@ -1,4 +1,6 @@
 ---
+title: "评论"
+keywords: "评论,插件,NocoBase"
 displayName: "评论"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
@@ -6,10 +8,10 @@ supportedVersions:
   - 2.x
 description: |
   提供评论数据表模板和区块，为任意数据表的数据添加评论功能。
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
 
 # 评论

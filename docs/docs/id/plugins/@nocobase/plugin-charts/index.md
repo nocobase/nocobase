@@ -1,17 +1,17 @@
 ---
-displayName: "Grafik (Usang)"
+displayName: "Charts (Deprecated)"
 packageName: '@nocobase/plugin-charts'
+title: "Charts (Deprecated)"
+keywords: "Charts (Deprecated),plugin,NocoBase"
 description: |
-  Plugin ini telah usang, harap gunakan plugin visualisasi data sebagai gantinya.
+  Plugin yang sudah deprecated, gunakan plugin Data Visualization sebagai gantinya.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Grafik (Usang)
+# Charts (Deprecated)
 
-> Catatan: Plugin ini telah usang (deprecated).
+> Perhatian: Plugin ini sudah deprecated.

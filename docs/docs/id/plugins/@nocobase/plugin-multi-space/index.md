@@ -1,17 +1,16 @@
 ---
-displayName: "Multi-ruang"
+displayName: "Multi Space"
 packageName: '@nocobase/plugin-multi-space'
+title: "Multi Space"
+keywords: "Multi Space,Plugin,NocoBase"
 supportedVersions:
   - 2.x
 description: |
-  Menerapkan beberapa ruang data independen dalam satu instans aplikasi melalui isolasi logis.
+  Dalam satu instance aplikasi, mengimplementasikan beberapa ruang data independen melalui isolasi logis.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Multi-ruang
+# Multi Space

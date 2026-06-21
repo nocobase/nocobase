@@ -1,17 +1,16 @@
 ---
-displayName: "Riwayat Catatan"
+displayName: "Riwayat Record"
 packageName: '@nocobase/plugin-record-history'
+title: "Riwayat Record"
+keywords: "Riwayat Record,Plugin,NocoBase"
 supportedVersions:
   - 2.x
 description: |
-  Melacak dan menyimpan riwayat perubahan catatan koleksi.
+  Melacak dan menyimpan riwayat perubahan record collection.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Riwayat Catatan
+# Riwayat Record

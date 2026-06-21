@@ -1,14 +1,14 @@
 ---
-displayName: "Публичные формы"
+title: "Public forms"
+keywords: "Public forms,Plugin,NocoBase"
+displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Делитесь публичными формами для сбора информации от анонимных пользователей.
+  Публикация форм для внешнего доступа и сбора данных от анонимных пользователей.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Публичные формы
+# Public forms

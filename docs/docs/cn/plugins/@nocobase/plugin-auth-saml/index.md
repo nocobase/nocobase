@@ -1,4 +1,6 @@
 ---
+title: "认证：SAML 2.0"
+keywords: "认证：SAML 2.0,插件,NocoBase"
 displayName: "认证：SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
 
 # 认证：SAML 2.0

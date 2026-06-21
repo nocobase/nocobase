@@ -1,27 +1,26 @@
 ---
 pkg: "@nocobase/plugin-workflow-response-message"
+title: "Node Workflow - HTTP Response"
+description: "Node HTTP Response: response yang dikembalikan ke sistem pihak ketiga pada Webhook sinkron, alur berhenti setelah dieksekusi."
+keywords: "Workflow,HTTP Response,Response,response Webhook,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# HTTP Response
 
-# Respons HTTP
+## Pengantar
 
-## Pendahuluan
+Hanya didukung dalam workflow Webhook mode sinkron, digunakan untuk mengembalikan response kepada sistem pihak ketiga. Misalnya pada proses callback pembayaran, jika ada hasil bisnis yang tidak diharapkan (seperti error, gagal, dll.), Anda dapat menggunakan Node Response untuk mengembalikan response yang menyatakan error kepada sistem pihak ketiga, sehingga beberapa sistem pihak ketiga dapat mencoba ulang nanti berdasarkan status tersebut.
 
-Node ini hanya didukung dalam alur kerja Webhook mode sinkron dan digunakan untuk mengembalikan respons ke sistem pihak ketiga. Misalnya, saat memproses *callback* pembayaran, jika proses bisnis mengalami hasil yang tidak terduga (seperti kesalahan atau kegagalan), Anda dapat menggunakan node respons untuk mengembalikan respons kesalahan ke sistem pihak ketiga. Dengan begitu, beberapa sistem pihak ketiga dapat mencoba lagi nanti berdasarkan status tersebut.
+Selain itu, eksekusi Node Response akan menghentikan eksekusi workflow, Node berikutnya tidak akan dieksekusi lagi. Jika seluruh workflow tidak dikonfigurasi dengan Node Response, sistem akan secara otomatis merespon berdasarkan status eksekusi alur, eksekusi sukses mengembalikan `200`, eksekusi gagal mengembalikan `500`.
 
-Selain itu, eksekusi node respons akan menghentikan eksekusi alur kerja, dan node-node selanjutnya tidak akan dieksekusi. Jika tidak ada node respons yang dikonfigurasi di seluruh alur kerja, sistem akan merespons secara otomatis berdasarkan status eksekusi alur: mengembalikan `200` untuk eksekusi yang berhasil dan `500` untuk eksekusi yang gagal.
+## Membuat Node Response
 
-## Membuat Node Respons
-
-Pada antarmuka konfigurasi alur kerja, klik tombol plus ("+") di alur untuk menambahkan node "Respons":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Response":
 
 ![20241210115120](https://static-docs.nocobase.com/20241210115120.png)
 
-## Konfigurasi Respons
+## Konfigurasi Response
 
 ![20241210115500](https://static-docs.nocobase.com/20241210115500.png)
 
-Anda dapat menggunakan variabel dari konteks alur kerja di dalam badan respons.
+Body response dapat menggunakan variable konteks workflow.

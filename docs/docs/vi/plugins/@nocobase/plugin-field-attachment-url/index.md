@@ -1,14 +1,14 @@
 ---
-displayName: "Trường của bộ sưu tập: Tệp đính kèm (URL)"
+displayName: "Field: Tệp đính kèm (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
+title: "Field: Tệp đính kèm (URL)"
+keywords: "Field: Tệp đính kèm (URL),Plugin,NocoBase"
 description: |
-  Hỗ trợ tệp đính kèm dưới định dạng URL.
+  Hỗ trợ tệp đính kèm dạng URL.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trường của bộ sưu tập: Tệp đính kèm (URL)
+# Field: Tệp đính kèm (URL)

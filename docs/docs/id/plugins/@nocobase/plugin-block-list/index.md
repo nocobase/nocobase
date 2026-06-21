@@ -1,14 +1,14 @@
 ---
-displayName: "Blok: Daftar"
+displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
+title: "Block: List"
+keywords: "Block: List,plugin,NocoBase"
 description: |
-  Menampilkan data dalam bentuk daftar dengan dukungan pengaturan paginasi.
+  Menampilkan data dalam bentuk list, mendukung pengaturan paginasi.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Daftar
+# Block: List

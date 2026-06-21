@@ -1,13 +1,14 @@
 ---
-displayName: "Công cụ luồng công việc"
+displayName: "Frontend Flow Engine"
 packageName: '@nocobase/plugin-flow-engine'
+title: "Frontend Flow Engine"
+keywords: "Frontend Flow Engine,Plugin,NocoBase"
 description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Công cụ luồng công việc
+# Frontend Flow Engine

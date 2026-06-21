@@ -1,38 +1,37 @@
 ---
-pkg: "@nocobase/plugin-action-template-print"
+title: "Template In ấn"
+description: "Template In ấn NocoBase: Template Word/Excel/PPT, placeholder, điền dữ liệu động, xuất PDF, sinh báo giá hợp đồng hóa đơn."
+keywords: "Template In ấn,Word,Excel,PDF,placeholder,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Template In ấn
 
-
-# In Tài liệu Mẫu
-
-
+<PluginInfo commercial="true" name="action-template-print"></PluginInfo>
 
 ## Giới thiệu
 
-Plugin In Tài liệu Mẫu cho phép bạn thiết kế các tệp mẫu bằng Word, Excel và PowerPoint (hỗ trợ định dạng `.docx`, `.xlsx`, `.pptx`). Bạn có thể đặt các phần giữ chỗ (placeholder) và cấu trúc logic trong mẫu để tự động tạo ra các tệp theo định dạng đã định sẵn như `.docx`, `.xlsx`, `.pptx` và PDF. Plugin này được ứng dụng rộng rãi để tạo các loại tài liệu kinh doanh như báo giá, hóa đơn, hợp đồng, v.v.
+Plugin Template In ấn hỗ trợ chỉnh sửa file Template bằng Word, Excel và PowerPoint (hỗ trợ định dạng `.docx`, `.xlsx`, `.pptx`), thiết lập placeholder và cấu trúc logic trong Template, từ đó sinh động các file có định dạng quy định, như `.docx`, `.xlsx`, `.pptx` và file PDF. Có thể được ứng dụng rộng rãi để sinh các loại tài liệu nghiệp vụ, ví dụ như báo giá, hóa đơn, hợp đồng...
 
-### Các tính năng chính
+### Tính năng chính
 
-- **Hỗ trợ đa định dạng**: Tương thích với các mẫu Word, Excel và PowerPoint, đáp ứng nhiều nhu cầu tạo tài liệu khác nhau.
-- **Điền dữ liệu động**: Tự động điền và tạo nội dung tài liệu thông qua các phần giữ chỗ và cấu trúc logic.
-- **Quản lý mẫu linh hoạt**: Hỗ trợ thêm, chỉnh sửa, xóa và phân loại mẫu để dễ dàng bảo trì và sử dụng lại.
-- **Cú pháp mẫu phong phú**: Hỗ trợ thay thế cơ bản, truy cập mảng, vòng lặp và các câu lệnh điều kiện, đáp ứng nhu cầu tạo tài liệu phức tạp.
-- **Hỗ trợ định dạng (Formatter)**: Cung cấp các chức năng như xuất có điều kiện, định dạng ngày tháng, định dạng số, v.v., giúp cải thiện khả năng đọc và tính chuyên nghiệp của tài liệu.
-- **Đầu ra hiệu quả**: Hỗ trợ tạo tệp PDF trực tiếp, thuận tiện cho việc chia sẻ và in ấn.
+- **Hỗ trợ đa định dạng**: Tương thích với Template Word, Excel và PowerPoint, đáp ứng nhu cầu sinh tài liệu khác nhau.
+- **Điền dữ liệu động**: Thông qua placeholder và cấu trúc logic, tự động điền và sinh nội dung tài liệu.
+- **Quản lý Template linh hoạt**: Hỗ trợ thêm, chỉnh sửa, xóa và quản lý phân loại Template, dễ dàng bảo trì và sử dụng.
+- **Cú pháp Template phong phú**: Hỗ trợ thay thế cơ bản, truy cập mảng, vòng lặp, đầu ra điều kiện... và các loại cú pháp Template, đáp ứng nhu cầu sinh tài liệu phức tạp.
+- **Hỗ trợ Formatter**: Cung cấp đầu ra điều kiện, định dạng ngày, định dạng số... và các tính năng, nâng cao khả năng đọc và tính chuyên nghiệp của tài liệu.
+- **Hỗ trợ trường hình ảnh**: Hỗ trợ xuất hình ảnh tệp đính kèm và hình ảnh chữ ký tay trong Template.
+- **Định dạng đầu ra hiệu quả**: Hỗ trợ sinh trực tiếp file PDF, tiện chia sẻ và in ấn.
 
 ## Cài đặt
 
-### Cài đặt plugin
+### Cài đặt Plugin
 
-Tham khảo [Hướng dẫn cài đặt và nâng cấp các plugin thương mại](https://www.nocobase.com/c/blog/nocobase-commercial-license-activation-guide)
+Cách cài đặt và nâng cấp chi tiết vui lòng tham khảo: [Hướng dẫn kích hoạt Plugin thương mại](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
-### Cài đặt LibreOffice (Tùy chọn)
+### Cài đặt LibreOffice (tùy chọn)
 
-Để tạo tệp PDF, bạn cần cài đặt LibreOffice. [Vui lòng tải xuống từ trang web chính thức](https://www.libreoffice.org/download/download-libreoffice). Đối với phiên bản Docker, bạn có thể tạo một script trực tiếp trong thư mục `./storage/scripts`.
+Để sinh PDF phải cài đặt LibreOffice, [vui lòng truy cập trang chính thức để tải xuống](
+https://www.libreoffice.org/download/download-libreoffice). Phiên bản Docker, có thể trực tiếp viết một đoạn script trong thư mục `./storage/scripts`.
 
 ```bash
 mkdir ./storage/scripts
@@ -40,7 +39,7 @@ cd ./storage/scripts
 vim install-libreoffice.sh
 ```
 
-Nội dung của tệp `install-libreoffice.sh` như sau:
+Nội dung của `install-libreoffice.sh` như sau:
 
 ```sh
 #!/bin/bash
@@ -120,15 +119,15 @@ fi
 echo "LibreOffice installation completed successfully."
 ```
 
-Khởi động lại container `app`:
+Khởi động lại container app
 
 ```bash
 docker compose restart app
-# Xem nhật ký
+# Xem log
 docker compose logs app
 ```
 
-Kiểm tra xem cài đặt đã thành công chưa:
+Kiểm tra cài đặt thành công không
 
 ```bash
 $ docker compose exec app bash -c "libreoffice --version"

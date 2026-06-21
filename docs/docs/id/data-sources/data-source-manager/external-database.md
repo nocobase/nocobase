@@ -1,49 +1,51 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Database Eksternal"
+description: "Menambahkan MySQL/MariaDB/PostgreSQL/MSSQL/Oracle eksternal sebagai data source, sinkronisasi Collection, konfigurasi field, pembuatan field relasi, koneksi read-only ke database yang sudah ada."
+keywords: "database eksternal,MySQL,PostgreSQL,MSSQL,Oracle,sinkronisasi Collection,field relasi,NocoBase"
+---
 
-# Basis Data Eksternal
+# Database Eksternal
 
-## Pendahuluan
+## Pengantar
 
-Anda dapat menggunakan basis data eksternal yang sudah ada sebagai **sumber data**. Saat ini, basis data eksternal yang didukung meliputi MySQL, MariaDB, PostgreSQL, MSSQL, dan Oracle.
+Menggunakan database eksternal yang sudah ada sebagai data source. Database eksternal yang saat ini didukung meliputi MySQL, MariaDB, PostgreSQL, MSSQL, Oracle.
 
 ## Petunjuk Penggunaan
 
-### Menambahkan Basis Data Eksternal
+### Menambahkan Database Eksternal
 
-Setelah mengaktifkan **plugin**, Anda dapat memilih dan menambahkannya dari menu *dropdown* "Add new" di manajemen **sumber data**.
+Setelah plugin diaktifkan, Anda dapat memilih dan menambahkannya melalui dropdown Add new pada manajemen data source.
 
 ![20240507204316](https://static-docs.nocobase.com/20240507204316.png)
 
-Isi informasi untuk basis data yang ingin Anda hubungkan.
+Isi informasi database yang akan diintegrasikan
 
 ![20240507204820](https://static-docs.nocobase.com/20240507204820.png)
 
-### Sinkronisasi Koleksi
+### Sinkronisasi Collection
 
-Setelah koneksi dengan basis data eksternal berhasil dibuat, semua **koleksi** di dalam **sumber data** akan langsung dibaca. Basis data eksternal tidak mendukung penambahan **koleksi** atau modifikasi struktur tabel secara langsung. Jika diperlukan modifikasi, Anda dapat melakukannya melalui klien basis data, lalu klik tombol "Refresh" di antarmuka untuk melakukan sinkronisasi.
+Setelah database eksternal terhubung, semua Collection di data source akan langsung dibaca. Database eksternal tidak mendukung penambahan Collection langsung atau modifikasi struktur tabel. Jika perlu modifikasi, dapat dioperasikan melalui database client, lalu klik tombol "Refresh" di antarmuka untuk sinkronisasi.
 
 ![20240507204725](https://static-docs.nocobase.com/20240507204725.png)
 
-### Mengonfigurasi Bidang
+### Konfigurasi Field
 
-Basis data eksternal akan secara otomatis membaca dan menampilkan bidang-bidang dari **koleksi** yang sudah ada. Anda dapat dengan cepat melihat dan mengonfigurasi judul bidang, tipe data (*Field type*), dan tipe UI (*Field interface*). Anda juga dapat mengklik tombol "Edit" untuk mengubah konfigurasi lebih lanjut.
+Database eksternal akan otomatis membaca field dari Collection yang sudah ada, dan menampilkannya. Anda dapat dengan cepat melihat dan mengonfigurasi judul field, tipe data (Field type), dan tipe UI (Field interface). Anda juga dapat mengklik tombol "Edit" untuk mengubah konfigurasi lebih lanjut.
 
 ![20240507210537](https://static-docs.nocobase.com/20240507210537.png)
 
-Karena basis data eksternal tidak mendukung modifikasi struktur tabel, satu-satunya tipe yang tersedia saat menambahkan bidang baru adalah bidang relasi. Bidang relasi bukanlah bidang aktual, melainkan digunakan untuk membangun koneksi antar **koleksi**.
+Karena database eksternal tidak mendukung modifikasi struktur tabel, saat menambahkan field, hanya tipe field relasi yang dapat dipilih. Field relasi bukanlah field aktual, melainkan digunakan untuk membangun koneksi antar Collection.
 
 ![20240507220140](https://static-docs.nocobase.com/20240507220140.png)
 
-Untuk detail lebih lanjut, lihat bab [Bidang Koleksi/Ikhtisar](/data-sources/data-modeling/collection-fields).
+Untuk lebih lanjut, lihat bagian [Field Collection / Ikhtisar](/data-sources/data-modeling/collection-fields).
 
-### Pemetaan Tipe Bidang
+### Pemetaan Tipe Field
 
-NocoBase secara otomatis memetakan tipe bidang dari basis data eksternal ke tipe data (*Field type*) dan tipe UI (*Field Interface*) yang sesuai.
+NocoBase akan otomatis memetakan tipe data (Field type) dan tipe UI (Field Interface) yang sesuai untuk tipe field database eksternal.
 
-- Tipe data (*Field type*): Digunakan untuk mendefinisikan jenis, format, dan struktur data yang dapat disimpan oleh suatu bidang;
-- Tipe UI (*Field interface*): Mengacu pada jenis kontrol yang digunakan dalam antarmuka pengguna untuk menampilkan dan memasukkan nilai bidang.
+- Tipe Data (Field type): Digunakan untuk mendefinisikan jenis, format, dan struktur data yang dapat disimpan field;
+- Tipe UI (Field interface): Mengacu pada tipe kontrol yang digunakan untuk menampilkan dan menginput nilai field di antarmuka pengguna.
 
 | PostgreSQL | MySQL/MariaDB | NocoBase Data Type | NocoBase Interface Type |
 | - | - | - | - |
@@ -73,18 +75,18 @@ NocoBase secara otomatis memetakan tipe bidang dari basis data eksternal ke tipe
 | SET | SET | set | multipleSelect<br/>checkboxGroup |
 | RANGE | - | - | - |
 
-### Tipe Bidang yang Tidak Didukung
+### Tipe Field yang Tidak Didukung
 
-Tipe bidang yang tidak didukung akan ditampilkan secara terpisah. Bidang-bidang ini memerlukan adaptasi pengembangan sebelum dapat digunakan.
+Tipe field yang tidak didukung akan ditampilkan secara terpisah. Field-field ini perlu dikembangkan adaptasinya sebelum dapat digunakan.
 
 ![20240507221854](https://static-docs.nocobase.com/20240507221854.png)
 
-### Kunci Target Filter
+### Filter Target Key
 
-**Koleksi** yang ditampilkan sebagai blok harus memiliki Kunci Target Filter (*Filter target key*) yang dikonfigurasi. Kunci target filter digunakan untuk memfilter data berdasarkan bidang tertentu, dan nilai bidang harus bersifat unik. Secara *default*, kunci target filter adalah bidang kunci utama **koleksi**. Untuk *view*, **koleksi** tanpa kunci utama, atau **koleksi** dengan kunci utama komposit, Anda perlu mendefinisikan kunci target filter kustom.
+Collection yang digunakan sebagai tampilan block harus mengonfigurasi Filter target key. Filter target key mengacu pada filter data berdasarkan field tertentu, dan nilai field harus memiliki keunikan. Filter target key secara default adalah field Primary Key Collection. Jika Collection adalah view atau Collection tanpa Primary Key, atau Collection dengan Primary Key gabungan, perlu mengkustomisasi filter target key.
 
 ![20240507210230](https://static-docs.nocobase.com/20240507210230.png)
 
-Hanya **koleksi** yang memiliki Kunci Target Filter yang dikonfigurasi yang dapat ditambahkan ke halaman.
+Hanya Collection yang sudah diatur filter target key-nya yang dapat ditambahkan ke halaman
 
 ![20240507222827](https://static-docs.nocobase.com/20240507222827.png)

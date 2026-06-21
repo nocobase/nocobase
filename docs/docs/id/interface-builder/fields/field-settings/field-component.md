@@ -1,24 +1,26 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Komponen Field"
+description: "Konfigurasi Field: pilih tipe komponen UI yang digunakan oleh Field, seperti Input, Select, DatePicker, dll."
+keywords: "komponen Field, field component, komponen UI, interface builder, NocoBase"
+---
 
-# Komponen Bidang
+# Komponen Field
 
 ## Pengantar
 
-Komponen bidang digunakan untuk menampilkan konten dari suatu bidang.
-Beberapa bidang memiliki beberapa komponen tampilan bawaan. Pengguna dapat memilih komponen yang sesuai dengan kebutuhan mereka untuk menyajikan nilai bidang dengan cara yang berbeda.
+Komponen Field adalah container yang digunakan untuk menampilkan konten Field.
+Beberapa Field memiliki banyak komponen tampilan bawaan, pengguna dapat memilih komponen yang sesuai dengan kebutuhan aktual untuk menampilkan nilai Field dalam berbagai cara.
 
-Contoh: Dalam mode tampilan, bidang URL dapat diubah menjadi komponen Pratinjau atau komponen URL (default).
+Contoh: Field URL dalam mode baca dapat di-switch ke komponen preview, komponen URL (default)
 
 ![20251028214033](https://static-docs.nocobase.com/20251028214033.png)
 
 ![20251028214628](https://static-docs.nocobase.com/20251028214628.png)
 
-Contoh: Bidang relasi dapat diubah menjadi Sub-formulir, Sub-tabel (hanya untuk relasi ke-banyak), pemilih Data, pemilih Dropdown (default), atau pengelola Berkas (hanya jika **koleksi** target relasi adalah **koleksi** berkas).
+Contoh: Field relasi dapat di-switch ke Sub-Form, Sub-Table (hanya mendukung to-many), Data Picker, Dropdown Select (default), File Manager (hanya didukung saat Table target relasi adalah Table file)
 
 ![20251028214259](https://static-docs.nocobase.com/20251028214259.png)
 
-Beralih ke Sub-formulir:
+Switch ke Sub-Form:
 
 ![20251028214352](https://static-docs.nocobase.com/20251028214352.png)

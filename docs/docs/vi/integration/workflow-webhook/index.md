@@ -1,94 +1,95 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tích hợp Workflow Webhook"
+description: "Webhook trigger nhận HTTP call bên ngoài để kích hoạt workflow: gửi form, thông báo, đồng bộ dữ liệu, sự kiện GitHub/GitLab, cấu hình xác thực chữ ký, chế độ đồng bộ/bất đồng bộ, thực hành bảo mật."
+keywords: "Workflow Webhook,Webhook trigger,Tích hợp hệ thống ngoài,Gửi form,GitHub Webhook,Xác thực chữ ký,NocoBase"
+---
 
+# Tích hợp Workflow Webhook
 
-# Tích hợp Webhook vào luồng công việc
-
-Với trình kích hoạt Webhook, NocoBase có thể nhận các lệnh gọi HTTP từ các hệ thống bên thứ ba và tự động kích hoạt các luồng công việc, giúp tích hợp liền mạch với các hệ thống bên ngoài.
+Thông qua Webhook trigger, NocoBase có thể nhận HTTP call từ hệ thống bên thứ ba và tự động kích hoạt workflow, đạt được sự tích hợp liền mạch với các hệ thống bên ngoài.
 
 ## Tổng quan
 
-Webhook là một cơ chế "API đảo ngược", cho phép các hệ thống bên ngoài chủ động gửi dữ liệu đến NocoBase khi có các sự kiện cụ thể xảy ra. So với việc chủ động thăm dò (polling), Webhook cung cấp một phương pháp tích hợp theo thời gian thực và hiệu quả hơn.
+Webhook là một cơ chế "API ngược", cho phép hệ thống bên ngoài chủ động gửi dữ liệu đến NocoBase khi xảy ra một sự kiện cụ thể. So với polling chủ động, Webhook cung cấp cách tích hợp thời gian thực và hiệu quả hơn.
 
-## Các trường hợp sử dụng điển hình
+## Các kịch bản ứng dụng điển hình
 
-### Gửi dữ liệu biểu mẫu
+### Gửi dữ liệu form
 
-Các hệ thống khảo sát bên ngoài, biểu mẫu đăng ký, biểu mẫu phản hồi khách hàng, v.v., sau khi người dùng gửi dữ liệu, sẽ đẩy dữ liệu đó đến NocoBase thông qua Webhook. NocoBase sẽ tự động tạo các bản ghi và kích hoạt các quy trình xử lý tiếp theo (như gửi email xác nhận, phân công nhiệm vụ, v.v.).
+Hệ thống khảo sát, biểu mẫu đăng ký, biểu mẫu phản hồi khách hàng bên ngoài, sau khi người dùng gửi dữ liệu, sẽ đẩy dữ liệu đến NocoBase qua Webhook, tự động tạo bản ghi và kích hoạt các quy trình xử lý tiếp theo (như gửi email xác nhận, phân công công việc, v.v.).
 
 ### Thông báo tin nhắn
 
-Các sự kiện từ các nền tảng nhắn tin bên thứ ba (như WeCom, DingTalk, Slack) như tin nhắn mới, nhắc nhở (@), hoặc hoàn tất phê duyệt có thể kích hoạt các quy trình xử lý tự động trong NocoBase thông qua Webhook.
+Sự kiện từ các nền tảng tin nhắn của bên thứ ba (như WeCom, DingTalk, Slack) như tin nhắn mới, nhắc @, hoàn thành phê duyệt có thể kích hoạt quy trình tự động hóa trong NocoBase qua Webhook.
 
-### Đồng bộ hóa dữ liệu
+### Đồng bộ dữ liệu
 
-Khi dữ liệu trong các hệ thống bên ngoài (như CRM, ERP) thay đổi, Webhook sẽ đẩy các cập nhật đó đến NocoBase theo thời gian thực để duy trì đồng bộ hóa dữ liệu.
+Khi dữ liệu trong hệ thống bên ngoài (như CRM, ERP) thay đổi, đẩy theo thời gian thực đến NocoBase qua Webhook để giữ đồng bộ dữ liệu.
 
 ### Tích hợp dịch vụ bên thứ ba
 
-- **GitHub**: Các sự kiện như đẩy mã (code push), tạo yêu cầu kéo (PR creation) sẽ kích hoạt các luồng công việc tự động.
-- **GitLab**: Thông báo trạng thái quy trình CI/CD.
-- **Gửi biểu mẫu**: Các hệ thống biểu mẫu bên ngoài gửi dữ liệu đến NocoBase.
-- **Thiết bị IoT**: Thay đổi trạng thái thiết bị, báo cáo dữ liệu cảm biến.
+- **GitHub**: Sự kiện đẩy mã nguồn, tạo PR kích hoạt quy trình tự động hóa
+- **GitLab**: Thông báo trạng thái CI/CD
+- **Gửi form**: Hệ thống biểu mẫu bên ngoài gửi dữ liệu đến NocoBase
+- **Thiết bị IoT**: Thay đổi trạng thái thiết bị, báo cáo dữ liệu cảm biến
 
-## Tính năng nổi bật
+## Đặc điểm chức năng
 
 ### Cơ chế kích hoạt linh hoạt
 
-- Hỗ trợ các phương thức HTTP như GET, POST, PUT, DELETE.
-- Tự động phân tích cú pháp các định dạng phổ biến như JSON, dữ liệu biểu mẫu.
-- Có thể cấu hình xác thực yêu cầu để đảm bảo nguồn đáng tin cậy.
+- Hỗ trợ các phương thức HTTP như GET, POST, PUT, DELETE
+- Tự động phân tích các định dạng phổ biến như JSON, dữ liệu form
+- Có thể cấu hình xác thực request, đảm bảo nguồn đáng tin cậy
 
 ### Khả năng xử lý dữ liệu
 
-- Dữ liệu nhận được có thể được sử dụng làm biến trong các luồng công việc.
-- Hỗ trợ logic chuyển đổi và xử lý dữ liệu phức tạp.
-- Có thể kết hợp với các nút luồng công việc khác để triển khai logic nghiệp vụ phức tạp.
+- Dữ liệu nhận được có thể được sử dụng làm biến trong workflow
+- Hỗ trợ logic chuyển đổi và xử lý dữ liệu phức tạp
+- Có thể kết hợp với các node workflow khác để triển khai logic kinh doanh phức tạp
 
-### Đảm bảo an toàn bảo mật
+### Đảm bảo bảo mật
 
-- Hỗ trợ xác minh chữ ký để ngăn chặn các yêu cầu giả mạo.
-- Có thể cấu hình danh sách trắng IP (IP whitelist).
-- Truyền dữ liệu được mã hóa bằng HTTPS.
+- Hỗ trợ xác thực chữ ký, ngăn chặn request giả mạo
+- Có thể cấu hình IP whitelist
+- Truyền dữ liệu mã hóa HTTPS
 
 ## Các bước sử dụng
 
 ### 1. Cài đặt plugin
 
-Tìm và cài đặt plugin **[Luồng công việc: Trình kích hoạt Webhook](/plugins/@nocobase/plugin-workflow-webhook/)** trong trình quản lý plugin.
+Tìm và cài đặt plugin **[Workflow: Webhook trigger](/plugins/@nocobase/plugin-workflow-webhook/index.md)** trong trình quản lý plugin.
 
-> Lưu ý: Đây là một plugin thương mại, yêu cầu mua riêng hoặc đăng ký.
+> Lưu ý: Plugin này là plugin thương mại, cần mua hoặc đăng ký riêng.
 
-### 2. Tạo luồng công việc Webhook
+### 2. Tạo workflow Webhook
 
-1. Truy cập trang **Quản lý luồng công việc**.
-2. Nhấp vào **Tạo luồng công việc**.
-3. Chọn **Trình kích hoạt Webhook** làm phương thức kích hoạt.
+1. Vào trang **Quản lý workflow**
+2. Nhấp **Tạo workflow**
+3. Chọn **Webhook trigger** làm phương thức kích hoạt
 
-![Tạo luồng công việc Webhook](https://static-docs.nocobase.com/20241210105049.png)
+![Tạo workflow Webhook](https://static-docs.nocobase.com/20241210105049.png)
 
-4. Cấu hình các tham số Webhook.
+4. Cấu hình tham số Webhook
 
-![Cấu hình trình kích hoạt Webhook](https://static-docs.nocobase.com/20241210105441.png)
-   - **Đường dẫn yêu cầu**: Tùy chỉnh đường dẫn URL của Webhook.
-   - **Phương thức yêu cầu**: Chọn các phương thức HTTP được phép (GET/POST/PUT/DELETE).
-   - **Đồng bộ/Bất đồng bộ**: Chọn có đợi luồng công việc hoàn tất rồi mới trả về kết quả hay không.
-   - **Phương thức xác thực**: Cấu hình xác minh chữ ký hoặc các cơ chế bảo mật khác.
+![Cấu hình Webhook trigger](https://static-docs.nocobase.com/20241210105441.png)
+   - **Đường dẫn request**: Tùy chỉnh đường dẫn URL Webhook
+   - **Phương thức request**: Chọn phương thức HTTP được phép (GET/POST/PUT/DELETE)
+   - **Đồng bộ/bất đồng bộ**: Chọn có chờ workflow thực thi xong rồi mới trả kết quả hay không
+   - **Phương thức xác thực**: Cấu hình xác thực chữ ký hoặc cơ chế bảo mật khác
 
-### 3. Cấu hình các nút luồng công việc
+### 3. Cấu hình node workflow
 
-Thêm các nút luồng công việc dựa trên yêu cầu nghiệp vụ, ví dụ:
+Thêm các node workflow dựa trên nhu cầu kinh doanh, ví dụ:
 
-- **Thao tác bộ sưu tập**: Tạo, cập nhật, xóa bản ghi.
-- **Logic điều kiện**: Phân nhánh dựa trên dữ liệu nhận được.
-- **Yêu cầu HTTP**: Gọi các API khác.
-- **Thông báo**: Gửi email, SMS, v.v.
-- **Mã tùy chỉnh**: Thực thi mã JavaScript.
+- **Thao tác bảng dữ liệu**: Tạo, cập nhật, xóa dữ liệu
+- **Đánh giá điều kiện**: Phân nhánh điều kiện dựa trên dữ liệu nhận được
+- **HTTP request**: Gọi các API khác
+- **Thông báo tin nhắn**: Gửi email, SMS, v.v.
+- **Mã tùy chỉnh**: Thực thi mã JavaScript
 
 ### 4. Lấy URL Webhook
 
-Sau khi tạo luồng công việc, hệ thống sẽ tạo một URL Webhook duy nhất, thường có định dạng:
+Sau khi workflow được tạo, hệ thống sẽ tạo URL Webhook duy nhất, định dạng thường là:
 
 ```
 https://your-nocobase-domain.com/api/webhooks/your-workflow-key
@@ -98,13 +99,13 @@ https://your-nocobase-domain.com/api/webhooks/your-workflow-key
 
 Cấu hình URL Webhook đã tạo vào hệ thống bên thứ ba:
 
-- Đặt địa chỉ gọi lại (callback address) gửi dữ liệu trong các hệ thống biểu mẫu.
-- Cấu hình Webhook trong GitHub/GitLab.
-- Cấu hình địa chỉ đẩy sự kiện trong WeCom/DingTalk.
+- Đặt địa chỉ callback gửi dữ liệu trong hệ thống biểu mẫu
+- Cấu hình Webhook trong GitHub/GitLab
+- Cấu hình địa chỉ đẩy sự kiện trong WeCom/DingTalk
 
-### 6. Kiểm tra Webhook
+### 6. Kiểm thử Webhook
 
-Sử dụng các công cụ (như Postman, cURL) để kiểm tra Webhook:
+Sử dụng công cụ (như Postman, cURL) để kiểm thử Webhook:
 
 ```bash
 curl -X POST https://your-nocobase-domain.com/api/webhooks/your-workflow-key \
@@ -112,47 +113,47 @@ curl -X POST https://your-nocobase-domain.com/api/webhooks/your-workflow-key \
   -d '{"event":"test","data":{"message":"Hello NocoBase"}}'
 ```
 
-## Truy cập dữ liệu yêu cầu
+## Truy cập dữ liệu request
 
-Trong các luồng công việc, bạn có thể truy cập dữ liệu mà Webhook nhận được thông qua các biến:
+Trong workflow, bạn có thể truy cập dữ liệu Webhook nhận được thông qua các biến:
 
-- `{{$context.data}}`: Dữ liệu phần thân yêu cầu (request body).
-- `{{$context.headers}}`: Thông tin tiêu đề yêu cầu (request headers).
-- `{{$context.query}}`: Tham số truy vấn URL (URL query parameters).
-- `{{$context.params}}`: Tham số đường dẫn (path parameters).
+- `{{$context.data}}`: Dữ liệu request body
+- `{{$context.headers}}`: Thông tin request header
+- `{{$context.query}}`: Tham số query URL
+- `{{$context.params}}`: Tham số đường dẫn
 
-![Phân tích tham số yêu cầu](https://static-docs.nocobase.com/20241210111155.png)
+![Phân tích tham số request](https://static-docs.nocobase.com/20241210111155.png)
 
-![Phân tích phần thân yêu cầu](https://static-docs.nocobase.com/20241210112529.png)
+![Phân tích request body](https://static-docs.nocobase.com/20241210112529.png)
 
-## Cấu hình phản hồi
+## Cấu hình response
 
-![Cài đặt phản hồi](https://static-docs.nocobase.com/20241210114312.png)
+![Cài đặt response](https://static-docs.nocobase.com/20241210114312.png)
 
 ### Chế độ đồng bộ
 
-Trả về kết quả sau khi luồng công việc hoàn tất thực thi, có thể cấu hình:
+Trả về kết quả sau khi workflow thực thi xong, có thể cấu hình:
 
-- **Mã trạng thái phản hồi**: 200, 201, v.v.
-- **Dữ liệu phản hồi**: Dữ liệu JSON tùy chỉnh được trả về.
-- **Tiêu đề phản hồi**: Tiêu đề HTTP tùy chỉnh.
+- **Mã trạng thái response**: 200, 201, v.v.
+- **Dữ liệu response**: Tùy chỉnh dữ liệu JSON trả về
+- **Header response**: Tùy chỉnh HTTP header
 
 ### Chế độ bất đồng bộ
 
-Trả về xác nhận ngay lập tức, luồng công việc sẽ thực thi ở chế độ nền. Phù hợp cho:
+Trả về response xác nhận ngay lập tức, workflow thực thi ở background, phù hợp với:
 
-- Các luồng công việc chạy trong thời gian dài.
-- Các trường hợp không yêu cầu trả về kết quả thực thi.
-- Các tình huống có độ đồng thời cao.
+- Workflow chạy trong thời gian dài
+- Kịch bản không cần trả về kết quả thực thi
+- Kịch bản đồng thời cao
 
-## Các thực hành bảo mật tốt nhất
+## Thực hành bảo mật tốt nhất
 
-### 1. Bật xác minh chữ ký
+### 1. Bật xác thực chữ ký
 
 Hầu hết các dịch vụ bên thứ ba đều hỗ trợ cơ chế chữ ký:
 
 ```javascript
-// Ví dụ: Xác minh chữ ký Webhook của GitHub
+// Ví dụ: Xác thực chữ ký Webhook GitHub
 const crypto = require('crypto');
 const signature = context.headers['x-hub-signature-256'];
 const payload = JSON.stringify(context.data);
@@ -169,85 +170,85 @@ if (signature !== expectedSignature) {
 
 ### 2. Sử dụng HTTPS
 
-Đảm bảo NocoBase được triển khai trong môi trường HTTPS để bảo vệ an toàn truyền dữ liệu.
+Đảm bảo NocoBase được triển khai trong môi trường HTTPS, bảo vệ an toàn truyền dữ liệu.
 
-### 3. Hạn chế nguồn yêu cầu
+### 3. Hạn chế nguồn request
 
-Cấu hình danh sách trắng IP (IP whitelist) để chỉ cho phép các yêu cầu từ các nguồn đáng tin cậy.
+Cấu hình IP whitelist, chỉ cho phép request từ các nguồn đáng tin cậy.
 
 ### 4. Xác thực dữ liệu
 
-Thêm logic xác thực dữ liệu vào các luồng công việc để đảm bảo dữ liệu nhận được có định dạng chính xác và nội dung hợp lệ.
+Thêm logic xác thực dữ liệu trong workflow, đảm bảo dữ liệu nhận được có định dạng đúng và nội dung hợp lệ.
 
-### 5. Ghi nhật ký kiểm tra
+### 5. Audit log
 
-Ghi lại tất cả các yêu cầu Webhook để dễ dàng theo dõi và khắc phục sự cố.
+Ghi lại tất cả request Webhook để dễ theo dõi và xử lý sự cố.
 
-## Khắc phục sự cố
+## Câu hỏi thường gặp
 
 ### Webhook không kích hoạt?
 
-1. Kiểm tra xem URL Webhook có đúng không.
-2. Xác nhận trạng thái của luồng công việc là "Đã bật".
-3. Xem nhật ký gửi của hệ thống bên thứ ba.
-4. Kiểm tra cấu hình tường lửa và mạng.
+1. Kiểm tra URL Webhook có chính xác không
+2. Xác nhận trạng thái workflow là "đã bật"
+3. Xem log gửi của hệ thống bên thứ ba
+4. Kiểm tra firewall và cấu hình mạng
 
-### Làm thế nào để gỡ lỗi Webhook?
+### Cách debug Webhook?
 
-1. Xem nhật ký thực thi luồng công việc để biết thông tin chi tiết về các yêu cầu và kết quả gọi.
-2. Sử dụng các công cụ kiểm tra Webhook (như Webhook.site) để xác minh các yêu cầu.
-3. Kiểm tra dữ liệu quan trọng và thông báo lỗi trong nhật ký thực thi.
+1. Xem bản ghi thực thi workflow để biết thông tin chi tiết về request và kết quả gọi
+2. Sử dụng công cụ kiểm thử Webhook (như Webhook.site) để xác thực request
+3. Kiểm tra dữ liệu chính và thông tin lỗi trong bản ghi thực thi
 
-### Làm thế nào để xử lý việc thử lại?
+### Cách xử lý retry?
 
-Một số dịch vụ bên thứ ba sẽ thử gửi lại nếu không nhận được phản hồi thành công:
+Một số dịch vụ bên thứ ba sẽ retry gửi khi không nhận được response thành công:
 
-- Đảm bảo luồng công việc có tính chất lũy đẳng (idempotent).
-- Sử dụng các định danh duy nhất để loại bỏ trùng lặp.
-- Ghi lại các ID yêu cầu đã được xử lý.
+- Đảm bảo workflow có tính idempotent
+- Sử dụng định danh duy nhất để loại bỏ trùng lặp
+- Ghi lại ID request đã xử lý
 
-### Mẹo tối ưu hóa hiệu suất
+### Khuyến nghị tối ưu hiệu suất
 
-- Sử dụng chế độ bất đồng bộ để xử lý các thao tác tốn thời gian.
-- Thêm logic điều kiện để lọc bỏ các yêu cầu không cần xử lý.
-- Cân nhắc sử dụng hàng đợi tin nhắn (message queues) để xử lý các tình huống có độ đồng thời cao.
+- Sử dụng chế độ bất đồng bộ để xử lý các thao tác tốn thời gian
+- Thêm đánh giá điều kiện, lọc các request không cần xử lý
+- Cân nhắc sử dụng message queue cho kịch bản đồng thời cao
 
-## Các kịch bản ví dụ
+## Kịch bản ví dụ
 
-### Xử lý gửi biểu mẫu bên ngoài
+### Xử lý gửi form bên ngoài
 
 ```javascript
-// 1. Xác minh nguồn dữ liệu
-// 2. Phân tích dữ liệu biểu mẫu
+// 1. Xác thực nguồn dữ liệu
+// 2. Phân tích dữ liệu form
 const formData = context.data;
 
 // 3. Tạo bản ghi khách hàng
 // 4. Phân công cho người phụ trách liên quan
 // 5. Gửi email xác nhận cho người gửi
 if (formData.email) {
-  // Gửi thông báo qua email
+  // Gửi thông báo email
 }
 ```
 
-### Thông báo đẩy mã GitHub
+### Thông báo đẩy mã nguồn GitHub
 
 ```javascript
-// 1. Phân tích dữ liệu đẩy
+// 1. Phân tích dữ liệu push
 const commits = context.data.commits;
 const branch = context.data.ref.replace('refs/heads/', '');
 
 // 2. Nếu là nhánh chính
 if (branch === 'main') {
-  // 3. Kích hoạt quy trình triển khai
-  // 4. Thông báo cho các thành viên nhóm
+  // 3. Kích hoạt quy trình deploy
+  // 4. Thông báo thành viên team
 }
 ```
 
-![Ví dụ luồng công việc Webhook](https://static-docs.nocobase.com/20241210120655.png)
+![Ví dụ workflow Webhook](https://static-docs.nocobase.com/20241210120655.png)
 
 ## Tài nguyên liên quan
 
-- [Tài liệu plugin luồng công việc](/plugins/@nocobase/plugin-workflow/)
-- [Luồng công việc: Trình kích hoạt Webhook](/workflow/triggers/webhook)
-- [Luồng công việc: Nút yêu cầu HTTP](/integration/workflow-http-request/)
-- [Xác thực bằng khóa API](/integration/api-keys/)
+- [Tài liệu plugin Workflow](/plugins/@nocobase/plugin-workflow/index.md)
+- [Workflow: Webhook trigger](/workflow/triggers/webhook)
+- [Workflow: Node HTTP request](/integration/workflow-http-request/index.md)
+- [Xác thực API Key](/integration/api-keys/index.md)

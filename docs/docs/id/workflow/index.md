@@ -1,45 +1,44 @@
 ---
 pkg: '@nocobase/plugin-workflow'
+title: "Ikhtisar Workflow"
+description: "Workflow: orkestrasi visual proses bisnis otomatis, Trigger dan Node, persetujuan, sinkronisasi data, HTTP Request, kolaborasi manusia-mesin, tanpa perlu menulis kode."
+keywords: "Workflow,otomasi,Trigger,persetujuan,orkestrasi alur,sinkronisasi data,kolaborasi manusia-mesin,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Ikhtisar
 
-# Gambaran Umum
+## Pengantar
 
-## Pendahuluan
-
-**Plugin alur kerja** membantu Anda mengatur proses bisnis otomatis di NocoBase, seperti persetujuan harian, sinkronisasi data, pengingat, dan tugas lainnya. Dalam sebuah alur kerja, Anda dapat mengimplementasikan logika bisnis yang kompleks hanya dengan mengonfigurasi pemicu dan node terkait melalui antarmuka visual, tanpa perlu menulis kode.
+Plugin Workflow membantu Anda mengorkestrasi proses bisnis otomatis di NocoBase, seperti persetujuan harian, sinkronisasi data, pengingat, dan lain sebagainya. Pada Workflow, Anda hanya perlu mengonfigurasi Trigger dan Node terkait melalui antarmuka visual untuk mengimplementasikan logika bisnis yang kompleks tanpa harus menulis kode.
 
 ### Contoh
 
-Setiap alur kerja diatur dengan sebuah pemicu dan beberapa node. Pemicu mewakili sebuah peristiwa dalam sistem, dan setiap node mewakili langkah eksekusi. Bersama-sama, keduanya menjelaskan logika bisnis yang perlu diproses setelah peristiwa terjadi. Gambar berikut menunjukkan proses pengurangan stok yang umum setelah pesanan produk ditempatkan:
+Setiap Workflow disusun dari satu Trigger dan beberapa Node. Trigger merepresentasikan event di dalam sistem, sedangkan setiap Node merepresentasikan langkah eksekusi, secara keseluruhan menggambarkan logika bisnis yang perlu ditangani setelah event terjadi. Gambar di bawah menampilkan alur tipikal pengurangan stok setelah pemesanan produk:
 
-![Contoh Alur Kerja](https://static-docs.nocobase.com/20251029222146.png)
+![Contoh Workflow](https://static-docs.nocobase.com/20251029222146.png)
 
-Ketika pengguna mengirimkan pesanan, alur kerja secara otomatis memeriksa stok. Jika stok mencukupi, sistem akan mengurangi stok dan melanjutkan pembuatan pesanan; jika tidak, proses akan berakhir.
+Ketika pengguna mengirimkan pesanan, Workflow akan secara otomatis memeriksa stok. Jika stok mencukupi, maka stok akan dikurangi dan pembuatan pesanan dilanjutkan; jika tidak, alur akan diakhiri.
 
-### Kasus Penggunaan
+### Skenario Penggunaan
 
-Dari perspektif yang lebih umum, alur kerja dalam aplikasi NocoBase dapat menyelesaikan masalah dalam berbagai skenario:
+Dari sudut pandang yang lebih umum, Workflow di aplikasi NocoBase dapat menyelesaikan berbagai masalah dalam berbagai skenario:
 
--   **Mengotomatiskan tugas berulang**: Tinjauan pesanan, sinkronisasi stok, pembersihan data, perhitungan skor, dan lain-lain tidak lagi memerlukan operasi manual.
--   **Mendukung kolaborasi manusia-mesin**: Atur persetujuan atau tinjauan pada node-node penting, dan lanjutkan dengan langkah-langkah berikutnya berdasarkan hasilnya.
--   **Menghubungkan ke sistem eksternal**: Kirim permintaan HTTP, terima dorongan dari layanan eksternal, dan capai otomatisasi lintas sistem.
--   **Beradaptasi cepat dengan perubahan bisnis**: Sesuaikan struktur proses, kondisi, atau konfigurasi node lainnya, dan publikasikan tanpa rilis baru.
+- Menangani tugas berulang secara otomatis: peninjauan pesanan, sinkronisasi stok, pembersihan data, perhitungan skor, dan lain-lain tidak perlu lagi dilakukan secara manual.
+- Mendukung kolaborasi manusia-mesin: mengatur persetujuan atau peninjauan ulang pada Node kunci, dan melanjutkan langkah berikutnya berdasarkan hasil pemrosesan.
+- Menghubungkan sistem eksternal: mengirim HTTP Request, menerima push dari layanan eksternal, mewujudkan otomasi lintas sistem.
+- Beradaptasi cepat dengan perubahan bisnis: menyesuaikan struktur alur, kondisi, atau konfigurasi Node lainnya, tanpa perlu rilis ulang untuk go-live.
 
 ## Instalasi
 
-Alur kerja adalah **plugin** bawaan NocoBase. Tidak diperlukan instalasi atau konfigurasi tambahan.
+Workflow adalah plugin bawaan NocoBase, tidak memerlukan instalasi atau konfigurasi tambahan.
 
 ## Pelajari Lebih Lanjut
 
--   [Memulai Cepat](./getting-started)
--   [Pemicu](./triggers/index)
--   [Node](./nodes/index)
--   [Menggunakan Variabel](./advanced/variables)
--   [Eksekusi](./advanced/executions)
--   [Manajemen Versi](./advanced/revisions)
--   [Konfigurasi Lanjutan](./advanced/options)
--   [Pengembangan Ekstensi](./development/index)
+- [Memulai](./getting-started)
+- [Trigger](./triggers/index)
+- [Node](./nodes/index)
+- [Menggunakan Variabel](./advanced/variables)
+- [Rencana Eksekusi](./advanced/executions)
+- [Manajemen Versi](./advanced/revisions)
+- [Konfigurasi Lanjutan](./advanced/options)
+- [Pengembangan Ekstensi](./development/index)

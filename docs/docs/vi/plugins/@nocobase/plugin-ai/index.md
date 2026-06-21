@@ -1,14 +1,14 @@
 ---
 displayName: "Nhân viên AI"
 packageName: '@nocobase/plugin-ai'
+title: "Nhân viên AI"
+keywords: "Nhân viên AI,Plugin,NocoBase"
 description: |
-  Tạo các nhân viên AI với nhiều kỹ năng khác nhau để hợp tác với con người, xây dựng hệ thống và xử lý các hoạt động kinh doanh.
+  Tạo các nhân viên AI với nhiều kỹ năng khác nhau, phối hợp cùng con người, xây dựng hệ thống và xử lý nghiệp vụ.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Nhân viên AI

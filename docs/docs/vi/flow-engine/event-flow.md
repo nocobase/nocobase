@@ -1,61 +1,62 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Luồng sự kiện FlowEngine"
+description: "Luồng sự kiện FlowEngine: điều phối logic được điều khiển bởi sự kiện trong Flow, Step thực thi tuần tự, quản lý thay đổi thuộc tính và phản hồi sự kiện."
+keywords: "Luồng sự kiện,Event Flow,Step,Điều phối Flow,Thay đổi thuộc tính,Phản hồi sự kiện,FlowEngine,NocoBase"
+---
 
+# Luồng sự kiện
 
-# Luồng Sự Kiện
+Trong FlowEngine, tất cả component trên giao diện đều **được điều khiển bởi sự kiện (Event-driven)**.  
+Hành vi, tương tác và thay đổi dữ liệu của component đều được kích hoạt bởi sự kiện (Event) và thực thi qua Flow.
 
-Trong FlowEngine, tất cả các thành phần giao diện đều được **điều khiển bởi sự kiện (event-driven)**.
-Hành vi, tương tác và thay đổi dữ liệu của các thành phần đều được kích hoạt bởi các sự kiện và thực thi thông qua một luồng.
+## Luồng tĩnh và luồng động
 
-## Luồng Tĩnh và Luồng Động
+Trong FlowEngine, Flow có thể chia làm hai loại:
 
-Trong FlowEngine, các luồng có thể được chia thành hai loại:
+### **1. Luồng tĩnh (Static Flow)**
 
-### **1. Luồng Tĩnh (Static Flow)**
+- Được nhà phát triển định nghĩa trong code;
+- Tác động lên **tất cả các instance của một class Model**;
+- Thường được dùng để xử lý logic chung của một class Model;
 
-- Được định nghĩa bởi nhà phát triển trong mã nguồn;
-- Tác động lên **tất cả các thể hiện của một lớp Model**;
-- Thường được sử dụng để xử lý logic chung của một lớp Model;
-
-### **2. Luồng Động (Dynamic Flow)**
+### **2. Luồng động (Dynamic Flow)**
 
 - Được người dùng cấu hình trên giao diện;
-- Chỉ có hiệu lực đối với một thể hiện cụ thể;
-- Thường được sử dụng cho các hành vi cá nhân hóa trong các kịch bản cụ thể;
+- Chỉ có hiệu lực với một instance cụ thể;
+- Thường được dùng cho hành vi cá nhân hóa cho ngữ cảnh cụ thể;
 
-Nói tóm lại: **Luồng tĩnh là một mẫu logic được định nghĩa trên một lớp, trong khi luồng động là logic cá nhân hóa được định nghĩa trên một thể hiện.**
+Nói ngắn gọn: **Luồng tĩnh là template logic được định nghĩa trên class, luồng động là logic cá nhân hóa được định nghĩa trên instance.**
 
-## Quy Tắc Liên Kết so với Luồng Động
+## Quy tắc liên động vs Luồng động
 
-Trong hệ thống cấu hình của FlowEngine, có hai cách để triển khai logic sự kiện:
+Trong hệ thống cấu hình của FlowEngine, có hai cách triển khai logic sự kiện:
 
-### **1. Quy Tắc Liên Kết (Linkage Rules)**
+### **1. Quy tắc liên động (Linkage Rules)**
 
-- Là **sự đóng gói các bước của luồng sự kiện tích hợp sẵn**;
-- Cấu hình đơn giản hơn và mang tính ngữ nghĩa cao hơn;
-- Về bản chất, chúng vẫn là một dạng đơn giản hóa của **luồng sự kiện (Flow)**.
+- Là **bao đóng Step luồng sự kiện tích hợp sẵn**;
+- Cấu hình đơn giản hơn, ngữ nghĩa rõ ràng hơn;
+- Về bản chất vẫn là một dạng đơn giản hóa của **luồng sự kiện (Flow)**.
 
-### **2. Luồng Động (Dynamic Flow)**
+### **2. Luồng động (Dynamic Flow)**
 
 - Khả năng cấu hình Flow đầy đủ;
 - Có thể tùy chỉnh:
-  - **Bộ kích hoạt (on)**: Định nghĩa thời điểm kích hoạt;
-  - **Các bước thực thi (steps)**: Định nghĩa logic sẽ được thực thi;
-- Phù hợp với các logic nghiệp vụ phức tạp và linh hoạt hơn.
+  - **Trigger (on)**: định nghĩa khi nào kích hoạt;
+  - **Bước thực thi (steps)**: định nghĩa logic thực thi;
+- Áp dụng cho logic nghiệp vụ phức tạp và linh hoạt hơn.
 
-Do đó, **Quy Tắc Liên Kết ≈ Luồng Sự Kiện Đơn Giản Hóa**, và cơ chế cốt lõi của cả hai là nhất quán.
+Vì vậy, **quy tắc liên động ≈ luồng sự kiện đơn giản hóa**, cơ chế cốt lõi của hai cái nhất quán.
 
-## Tính Nhất Quán của FlowAction
+## Tính nhất quán của FlowAction
 
-Dù là **Quy Tắc Liên Kết** hay **Luồng Sự Kiện**, cả hai đều nên sử dụng cùng một tập hợp các **FlowAction**.
-Điều đó có nghĩa là:
+Cho dù là **quy tắc liên động** hay **luồng sự kiện**, đều nên dùng cùng một bộ **FlowAction**.  
+Tức là:
 
-- **FlowAction** định nghĩa các hành động có thể được gọi bởi một Flow;
-- Cả hai cùng chia sẻ một hệ thống hành động, thay vì triển khai hai hệ thống riêng biệt;
-- Điều này đảm bảo khả năng tái sử dụng logic và mở rộng nhất quán.
+- **FlowAction** định nghĩa các thao tác có thể được Flow gọi;
+- Cả hai dùng chung một hệ thống action, không phải triển khai hai bộ riêng;
+- Như vậy có thể đảm bảo tái sử dụng logic, mở rộng nhất quán.
 
-## Phân Cấp Khái Niệm
+## Cấp độ khái niệm
 
 Về mặt khái niệm, mối quan hệ trừu tượng cốt lõi của FlowModel như sau:
 
@@ -63,37 +64,37 @@ Về mặt khái niệm, mối quan hệ trừu tượng cốt lõi của FlowMo
 FlowModel
  └── FlowDefinition
       ├── FlowEventDefinition
-      │     ├── Sự kiện Toàn cục (Global Events)
-      │     └── Sự kiện Cục bộ (Local Events)
+      │     ├── Sự kiện toàn cục (Global Events)
+      │     └── Sự kiện cục bộ (Local Events)
       └── FlowActionDefinition
-            ├── Thao tác Toàn cục (Global Actions)
-            └── Thao tác Cục bộ (Local Actions)
+            ├── Thao tác toàn cục (Global Actions)
+            └── Thao tác cục bộ (Local Actions)
 ```
 
-### Mô Tả Phân Cấp
+### Mô tả các cấp
 
 - **FlowModel**  
-  Đại diện cho một thực thể mô hình với logic luồng có thể cấu hình và thực thi.
+  Biểu thị một thực thể model có thể cấu hình, có thể thực thi logic luồng.
 
 - **FlowDefinition**  
-  Định nghĩa một tập hợp logic luồng hoàn chỉnh (bao gồm điều kiện kích hoạt và các bước thực thi).
+  Định nghĩa một bộ logic luồng đầy đủ (bao gồm điều kiện kích hoạt và các bước thực thi).
 
 - **FlowEventDefinition**  
-  Định nghĩa nguồn kích hoạt của luồng, bao gồm:
-  - **Sự kiện toàn cục**: như khởi động ứng dụng, hoàn tất tải dữ liệu;
-  - **Sự kiện cục bộ**: như thay đổi trường, nhấp nút.
+  Định nghĩa nguồn kích hoạt của Flow, bao gồm:
+  - **Sự kiện toàn cục**: như ứng dụng khởi động, dữ liệu tải xong;
+  - **Sự kiện cục bộ**: như Field thay đổi, click nút.
 
 - **FlowActionDefinition**  
-  Định nghĩa các hành động có thể thực thi của luồng, bao gồm:
+  Định nghĩa các action mà Flow có thể thực thi, bao gồm:
   - **Thao tác toàn cục**: như làm mới trang, thông báo toàn cục;
-  - **Thao tác cục bộ**: như sửa đổi giá trị trường, chuyển đổi trạng thái thành phần.
+  - **Thao tác cục bộ**: như sửa giá trị Field, chuyển đổi trạng thái component.
 
-## Tóm Tắt
+## Tóm tắt
 
-| Khái niệm | Mục đích | Phạm vi áp dụng |
+| Khái niệm | Tác dụng | Phạm vi hiệu lực |
 |------|------|-----------|
-| **Luồng Tĩnh (Static Flow)** | Logic luồng được định nghĩa trong mã nguồn | Tất cả các thể hiện của XXModel |
-| **Luồng Động (Dynamic Flow)** | Logic luồng được định nghĩa trên giao diện | Một thể hiện FlowModel duy nhất |
-| **FlowEvent** | Định nghĩa bộ kích hoạt (thời điểm kích hoạt) | Toàn cục hoặc cục bộ |
+| **Luồng tĩnh (Static Flow)** | Logic luồng được định nghĩa trong code | Tất cả các instance của XXModel |
+| **Luồng động (Dynamic Flow)** | Logic luồng được định nghĩa trên giao diện | Một instance FlowModel | 
+| **FlowEvent** | Định nghĩa trigger (khi nào kích hoạt) | Toàn cục hoặc cục bộ | 
 | **FlowAction** | Định nghĩa logic thực thi | Toàn cục hoặc cục bộ |
-| **Quy Tắc Liên Kết (Linkage Rule)** | Đóng gói các bước của luồng sự kiện được đơn giản hóa | Cấp khối, cấp thao tác |
+| **Quy tắc liên động (Linkage Rule)** | Bao đóng Step luồng sự kiện đơn giản hóa | Cấp Block, Action | 

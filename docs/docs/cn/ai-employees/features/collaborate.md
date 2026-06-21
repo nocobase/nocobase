@@ -1,52 +1,44 @@
+---
+pkg: '@nocobase/plugin-ai'
+title: '与 AI 员工协作'
+description: '与 AI 员工协作：右下角主入口、区块 Action 入口、对话操作、会话内切换员工与模型（AI Employee Switcher、Model Switcher）。'
+keywords: 'AI 员工协作,对话面板,员工切换,模型切换,NocoBase'
+---
+
 # 与 AI 员工协作
 
-在创建 AI 员工后，我们就可以在 NocoBase 任意页面中与我们的 AI 员工进行协作了。
+创建并启用 AI 员工后，可在页面中与其进行协作。
 
-我们可以点击页面右下角的员工列表中员工头像唤醒他们，然后开始协作。
+## 入口
 
-![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
+1. **右下角主入口**：在业务页面右下角唤起 AI 对话面板，适合通用问答与跨区块协作。
+2. **区块 Action 入口**：在支持 `Actions` 的区块中，通过 `Actions -> AI employees` 添加 AI 员工，适合针对当前区块执行任务（例如填写表单区块等场景）。
+3. **特定入口**：开发类员工（如 Nathan、Lina、Dara）会在 JS 区块、图表区块或本地化管理等特定场景提供专属入口。
 
-也可以让 AI 员工驻扎在我们需要他们的任何地方，比如表格上，表单上，点击他们直接唤起。
+### 右下角主入口
 
-![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
+![20260331165456](https://static-docs.nocobase.com/20260331165456.png)
 
+### 区块 Action 入口
 
-## 对话框中的基本操作
+![20251022135306](https://static-docs.nocobase.com/20251022135306.png)
 
-唤起 AI 员工后，输入对话内容，点击发送按钮，即可开始对话。
+### 特定入口
 
-![20251021234541](https://static-docs.nocobase.com/20251021234541.png)
+![](https://static-docs.nocobase.com/202605121057862.png)
 
-鼠标悬停在用户消息上时将会复现快捷操作图标：
-- 编辑并重新发送消息
-- 复制用户消息内容
-  
-![20251021235715](https://static-docs.nocobase.com/20251021235715.png)
+## 对话基础操作
 
-鼠标悬停在 AI 消息上时将会复现快捷操作图标：
-- 让 AI 重新回复
-- 复制 AI 消息内容
+对话框支持发送消息、上传附件、查看历史会话、新建会话和编辑系统提示词等常见操作。
 
-![20251021235847](https://static-docs.nocobase.com/20251021235847.png)
+## 会话内切换
 
-点击“上传”图标，可以上传文件发送给 AI 员工。
+大部分情况下直接和 Atlas 对话即可，他会协调合适的 AI 员工协助处理问题。
 
-![20251022000327](https://static-docs.nocobase.com/20251022000327.png)
+如果要使用指定 AI 员工，可以点击发送框的 AI 员工下拉列表进行选择
 
-对话框左上角是历史对话列表，点击展开列表，可以查看历史对话。
+![20260331174320](https://static-docs.nocobase.com/20260331174320.png)
 
-![20251021234640](https://static-docs.nocobase.com/20251021234640.png)
+模型会按员工维度保存偏好，下一次进入时优先恢复。
 
-点击右上角"铅笔"图标，可以开启新的会话。
-
-![20251021234841](https://static-docs.nocobase.com/20251021234841.png)
-
-点击右上角“i”图标，可以编辑自定义的系统提示词
-
-![20251021235314](https://static-docs.nocobase.com/20251021235314.png)
-
-点击右上角“扩展”图标，可以全屏展示 AI 员工对话框。
-
-![20251021235427](https://static-docs.nocobase.com/20251021235427.png)
-
-![20251021235525](https://static-docs.nocobase.com/20251021235525.png)
+![chat-footer-employee-switcher-and-model-switcher.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/chat-footer-employee-switcher-and-model-switcher.png)

@@ -1,17 +1,16 @@
 ---
-displayName: "Variáveis personalizadas"
+title: "Custom variables"
+keywords: "Custom variables"
+displayName: "Custom variables"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Permite adicionar e usar variáveis personalizadas.
-isFree: false
-builtIn: false
+  Support for adding and using custom variables
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Variáveis personalizadas
+# Custom variables

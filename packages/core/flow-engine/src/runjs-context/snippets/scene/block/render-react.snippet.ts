@@ -22,7 +22,7 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-// Render a React element into ctx.element via ReactDOM
+// Render a React element into the current container
 const { Button } = ctx.libs.antd;
 
 ctx.render(

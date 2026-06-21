@@ -28,7 +28,7 @@ Since conversations with LLM services are often time-consuming, the LLM node can
 
 ## Select Model
 
-First, select a connected LLM service. If no LLM service is connected yet, you need to add an LLM service configuration first. See: [LLM Service Management](/ai-employees/quick-start/llm-service)
+First, select a connected LLM service. If no LLM service is connected yet, you need to add an LLM service configuration first. See: [LLM Service Management](/ai-employees/features/llm-service)
 
 After selecting a service, the application will attempt to retrieve a list of available models from the LLM service for you to choose from. Some online LLM services may have APIs for fetching models that do not conform to standard API protocols; in such cases, users can also manually enter the model ID.
 

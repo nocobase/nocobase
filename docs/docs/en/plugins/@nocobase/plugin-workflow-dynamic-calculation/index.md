@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Dynamic calculation node"
+keywords: "Workflow,Collections"
 displayName: "Workflow: Dynamic calculation node"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
@@ -6,6 +8,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
 
 # Workflow: Dynamic calculation node
+
+> Note: This plugin is deprecated.

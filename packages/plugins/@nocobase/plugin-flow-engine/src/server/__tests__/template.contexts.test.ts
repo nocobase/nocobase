@@ -89,7 +89,7 @@ describe('ServerBaseContext', () => {
 });
 
 describe('GlobalContext', () => {
-  it('filters env and exposes now/timestamp/date', () => {
+  it('filters env and exposes now/timestamp', () => {
     const env = {
       PUBLIC_FOO: 'x',
       NEXT_PUBLIC_BAR: 'y',
@@ -100,10 +100,7 @@ describe('GlobalContext', () => {
     expect(g.env).toEqual({ PUBLIC_FOO: 'x', NEXT_PUBLIC_BAR: 'y', NCB_PUBLIC_Z: 'z' });
     expect(typeof g.timestamp).toBe('number');
     expect(typeof g.now).toBe('string');
-    // date variables: shape exists, with at least today and dayBeforeYesterday
-    expect(typeof g.date).toBe('object');
-    expect('today' in g.date).toBe(true);
-    expect('dayBeforeYesterday' in g.date).toBe(true);
+    expect('date' in g).toBe(false);
   });
 });
 

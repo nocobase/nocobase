@@ -1,4 +1,6 @@
 ---
+title: "认证：API 密钥"
+keywords: "认证：API 密钥,插件,NocoBase"
 displayName: "认证：API 密钥"
 packageName: '@nocobase/plugin-api-keys'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 认证：API 密钥

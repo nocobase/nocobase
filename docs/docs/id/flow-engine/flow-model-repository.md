@@ -1,27 +1,29 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Persistensi dan Repository FlowModel"
+description: "Persistensi FlowModel dan pola Repository: loading data, save, interaksi dengan data source, mendukung operasi CRUD, manajemen data FlowEngine."
+keywords: "Persistensi FlowModel,Repository,Loading data,CRUD,Interaksi data source,FlowEngine,NocoBase"
+---
 
 # Persistensi FlowModel
 
-FlowEngine menyediakan sistem persistensi yang lengkap.
+FlowEngine menyediakan sistem persistensi yang lengkap
 
 ![20251008231338](https://static-docs.nocobase.com/20251008231338.png)
 
 ## IFlowModelRepository
 
-`IFlowModelRepository` adalah antarmuka persistensi model untuk FlowEngine, yang mendefinisikan operasi seperti memuat, menyimpan, dan menghapus model dari jarak jauh. Dengan mengimplementasikan antarmuka ini, data model dapat dipersistensikan ke basis data backend, API, atau media penyimpanan lainnya, memungkinkan sinkronisasi data antara frontend dan backend.
+`IFlowModelRepository` adalah interface persistensi model FlowEngine, yang mendefinisikan operasi loading remote, save, dan delete dari model. Dengan mengimplementasikan interface ini, data model dapat di-persisten ke database backend, API, atau media penyimpanan lainnya, sehingga mewujudkan sinkronisasi data frontend dan backend.
 
 ### Metode Utama
 
 - **findOne(query: Query): Promise<FlowModel \| null>**  
-  Memuat data model dari sumber jarak jauh berdasarkan pengidentifikasi unik `uid`.
+  Memuat data model dari remote berdasarkan identifier unik uid.
 
 - **save(model: FlowModel): Promise<any\>**  
-  Menyimpan data model ke penyimpanan jarak jauh.
+  Menyimpan data model ke storage remote.
 
 - **destroy(uid: string): Promise<boolean\>**  
-  Menghapus model dari penyimpanan jarak jauh berdasarkan `uid`.
+  Menghapus model dari storage remote berdasarkan uid.
 
 ### Contoh FlowModelRepository
 
@@ -31,18 +33,18 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
 
   async findOne(query) {
     const { uid, parentId } = query;
-    // Implementasi: Dapatkan model berdasarkan uid
+    // Implementasi: mendapatkan model berdasarkan uid
     return null;
   }
 
   async save(model: FlowModel) {
     console.log('Saving model:', model);
-    // Implementasi: Simpan model
+    // Implementasi: menyimpan model
     return model;
   }
 
   async destroy(uid: string) {
-    // Implementasi: Hapus model berdasarkan uid
+    // Implementasi: menghapus model berdasarkan uid
     return true;
   }
 }
@@ -54,30 +56,30 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
 flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ```
 
-## Metode Manajemen Model yang Disediakan oleh FlowEngine
+## Metode Manajemen Model yang Disediakan FlowEngine
 
 ### Metode Lokal
 
 ```ts
-flowEngine.createModel(options); // Membuat instans model lokal
-flowEngine.getModel(uid);        // Mendapatkan instans model lokal
-flowEngine.removeModel(uid);     // Menghapus instans model lokal
+await flowEngine.createModelAsync(options); // Membuat instance model lokal
+flowEngine.getModel(uid);        // Mendapatkan instance model lokal
+flowEngine.removeModel(uid);     // Menghapus instance model lokal
 ```
 
-### Metode Jarak Jauh (Diimplementasikan oleh ModelRepository)
+### Metode Remote (Diimplementasikan oleh ModelRepository)
 
 ```ts
-await flowEngine.loadModel(uid);     // Memuat model dari jarak jauh
-await flowEngine.saveModel(model);   // Menyimpan model ke jarak jauh
-await flowEngine.destroyModel(uid);  // Menghapus model dari jarak jauh
+await flowEngine.loadModel(uid);     // Memuat model dari remote
+await flowEngine.saveModel(model);   // Menyimpan model ke remote
+await flowEngine.destroyModel(uid);  // Menghapus model dari remote
 ```
 
-## Metode Instans Model
+## Metode Instance model
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
-await model.save();     // Menyimpan ke jarak jauh
-await model.destroy();  // Menghapus dari jarak jauh
+await model.save();     // Save ke remote
+await model.destroy();  // Delete dari remote
 ```

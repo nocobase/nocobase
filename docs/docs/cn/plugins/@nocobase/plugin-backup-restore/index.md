@@ -1,4 +1,6 @@
 ---
+title: "应用的备份与还原（废弃）"
+keywords: "应用的备份与还原（废弃）,插件,NocoBase"
 displayName: "应用的备份与还原（废弃）"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
@@ -7,6 +9,7 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
 
 # 应用的备份与还原（废弃）

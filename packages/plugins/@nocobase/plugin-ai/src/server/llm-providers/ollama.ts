@@ -11,7 +11,7 @@ import { ChatOllama, OllamaEmbeddings } from '@langchain/ollama';
 import { LLMProvider, EmbeddingProvider } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
-import axios from 'axios';
+import { serverRequest } from '@nocobase/utils';
 
 const OLLAMA_DEFAULT_URL = 'http://localhost:11434';
 
@@ -23,11 +23,10 @@ export class OllamaProvider extends LLMProvider {
   }
 
   createModel() {
-    const { baseURL } = this.serviceOptions || {};
     const { model, temperature, topP, topK, numPredict, ...rest } = this.modelOptions || {};
 
     return new ChatOllama({
-      baseUrl: baseURL || this.baseURL,
+      baseUrl: this.getResolvedBaseURL(),
       model: model || 'mistral-nemo:12b',
       temperature,
       topP,
@@ -45,19 +44,21 @@ export class OllamaProvider extends LLMProvider {
     code?: number;
     errMsg?: string;
   }> {
-    const options = this.serviceOptions || {};
-    let baseURL = options.baseURL || this.baseURL;
-
-    if (!baseURL) {
+    let url: string;
+    try {
+      url = this.buildRequestURL('api/tags');
+    } catch (e) {
+      return { code: 400, errMsg: e instanceof Error ? e.message : String(e) };
+    }
+    if (!url) {
       return { code: 400, errMsg: 'baseURL is required' };
     }
 
-    if (baseURL && baseURL.endsWith('/')) {
-      baseURL = baseURL.slice(0, -1);
-    }
-
     try {
-      const res = await axios.get(`${baseURL}/api/tags`);
+      const res = await serverRequest({
+        method: 'GET',
+        url,
+      });
       const models = res?.data?.models || [];
 
       return {
@@ -68,7 +69,9 @@ export class OllamaProvider extends LLMProvider {
     } catch (e) {
       return {
         code: 500,
-        errMsg: `Failed to fetch Ollama models: ${e.message}. Make sure Ollama is running at ${baseURL}`,
+        errMsg: `Failed to fetch Ollama models: ${
+          e.message
+        }. Make sure Ollama is running at ${this.getResolvedBaseURL()}`,
       };
     }
   }
@@ -81,7 +84,7 @@ export class OllamaEmbeddingProvider extends EmbeddingProvider {
 
   createEmbedding(): EmbeddingsInterface {
     return new OllamaEmbeddings({
-      baseUrl: this.baseUrl,
+      baseUrl: this.baseURL,
       model: this.model,
     });
   }

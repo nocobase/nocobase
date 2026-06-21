@@ -8,11 +8,11 @@
  */
 
 import { getSnippetBody } from '@nocobase/flow-engine';
-import { ToolOptions } from '../../../manager/ai-manager';
-import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useChat } from '../../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
+import { ToolsOptions } from '@nocobase/client';
 
-export const listCodeSnippetTool: [string, string, ToolOptions] = [
-  'codeEditor',
+export const listCodeSnippetTool: [string, ToolsOptions] = [
   'listCodeSnippet',
   {
     invoke(_app, _args) {
@@ -23,16 +23,17 @@ export const listCodeSnippetTool: [string, string, ToolOptions] = [
       return result;
     },
     useHooks() {
-      const editorRefMap = useChatMessagesStore.use.editorRef() ?? {};
-      const currentEditorRefUid = useChatMessagesStore.use.currentEditorRefUid();
+      const currentConversation = useChatConversationsStore.use.currentConversation();
+      const chat = useChat(currentConversation);
+      const editorRefMap = chat.use.editorRef() ?? {};
+      const currentEditorRefUid = chat.use.currentEditorRefUid();
       this.editorRef = editorRefMap[currentEditorRefUid];
       return this;
     },
   },
 ];
 
-export const getCodeSnippetTool: [string, string, ToolOptions] = [
-  'codeEditor',
+export const getCodeSnippetTool: [string, ToolsOptions] = [
   'getCodeSnippet',
   {
     invoke(_app, { ref }) {

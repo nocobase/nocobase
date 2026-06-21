@@ -1,3 +1,9 @@
+---
+title: "详情区块"
+description: "详情区块：以只读形式展示单条数据详情，支持字段布局、关联数据展示、操作按钮配置。"
+keywords: "详情区块,DetailsBlock,数据详情,只读展示,界面搭建,NocoBase"
+---
+
 # 详情区块
 
 ## 介绍
@@ -64,7 +70,7 @@
 
 ### 字段模板
 
-字段模板用于在详情区块中复用字段区域的配置。详情见 [字段模板](/interface-builder/fields/field-template)。
+字段模板用于在详情区块中复用字段区域的配置。详情见 [字段模板](../../ui-templates.md)。
 
 ![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
 

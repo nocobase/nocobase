@@ -129,11 +129,6 @@ export const Permissions: React.FC<{
             title: t('Position'),
           },
           {
-            dataIndex: 'modelSettings',
-            title: t('Model'),
-            render: (value) => value?.model && <Tag>{value?.model}</Tag>,
-          },
-          {
             dataIndex: 'available',
             title: (
               <>

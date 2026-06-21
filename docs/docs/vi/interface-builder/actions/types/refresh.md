@@ -1,7 +1,8 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Action làm mới"
+description: "Action làm mới: làm mới dữ liệu Block hiện tại, tải lại nguồn dữ liệu."
+keywords: "Action làm mới,Refresh,làm mới dữ liệu,Interface Builder,NocoBase"
+---
 
 # Làm mới
 

@@ -1,37 +1,36 @@
 ---
 pkg: "@nocobase/plugin-block-workbench"
+title: "Block Action Panel"
+description: "Block Action Panel: menampilkan tombol Action secara terpusat, mendukung konfigurasi entri Action seperti todo, approval, workflow, dll."
+keywords: "Action Panel, ActionPanel, tombol Action, todo, approval workflow, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Block: Action Panel
 
-# Blok: Workbench
+## Pengantar
 
-## Pendahuluan
+Digunakan untuk menempatkan berbagai Action shortcut. Saat ini mendukung
 
-Digunakan untuk menempatkan berbagai tindakan cepat. Saat ini mendukung:
-
-- [Tautan](/interface-builder/actions/types/link)
-- [Pindai Kode QR]
-- [Tindakan Pop-up](/interface-builder/actions/types/pop-up)
+- [Link](/interface-builder/actions/types/link)
+- [Scan QR Code]
+- [Action Popup](/interface-builder/actions/types/pop-up)
 
 ![20251023225754](https://static-docs.nocobase.com/20251023225754.png)
 
-> 💡 Tipe tindakan lainnya akan terus ditambahkan pada versi mendatang.
-## Tipe Tindakan
+> Versi mendatang akan terus memperluas tipe Action lainnya.
+## Tipe Action
 
-- **Tautan**: Mengarahkan ke halaman tertentu atau URL eksternal.
+- **Link**: jump ke halaman tertentu atau URL eksternal.
 
 ![20251023230643](https://static-docs.nocobase.com/20251023230643.png)
 
-- **Pindai Kode QR**: Memicu tindakan yang sesuai dengan memindai kode QR.
+- **Scan QR Code**: memicu Action yang sesuai dengan scan QR code.
 
-- **Buka Pop-up**: Membuka pop-up untuk menampilkan konten blok.
+- **Buka Popup**: membuka Popup untuk menampilkan konten Block.
   ![20251023230522](https://static-docs.nocobase.com/20251023230522.png)
 
-## Tata Letak
+## Layout
 
 - Grid
-- Daftar
+- List
 
 ![20251023230718](https://static-docs.nocobase.com/20251023230718.gif)

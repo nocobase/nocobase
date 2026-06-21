@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-password-policy'
+title: "密码策略"
+description: "密码策略：密码规则（最小长度、复杂度、历史数量）、密码有效期、登录尝试锁定、用户锁定管理，专业版功能。"
+keywords: "密码策略,密码规则,密码复杂度,密码有效期,用户锁定,登录安全,专业版,NocoBase"
 ---
 
 # 密码策略

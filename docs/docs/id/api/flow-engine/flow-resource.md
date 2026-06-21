@@ -1,5 +1,7 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "FlowResource"
+description: "FlowResource adalah API manajemen resource frontend FlowEngine, digunakan untuk mendaftarkan dan mendapatkan resource seperti data source, blok, dll."
+keywords: "FlowResource,manajemen resource,registrasi data source,resource blok,FlowEngine,NocoBase"
+---
 
-# Sumber Daya Alur Kerja
+# FlowResource

@@ -1,3 +1,9 @@
+---
+title: "数值格式化"
+description: "字段设置：配置数值显示格式，支持千分位、小数位、货币符号等。"
+keywords: "数值格式化,number format,千分位,小数位,界面搭建,NocoBase"
+---
+
 # 数值格式化
 
 ## 介绍

@@ -1,14 +1,14 @@
 ---
-displayName: "Рабочий процесс: Узел ручной обработки"
+title: "Workflow: Manual node"
+keywords: "Workflow"
+displayName: "Рабочий процесс: ручной узел"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Позволяет создавать рабочие процессы, в которых часть решений принимается вручную.
+  Для процессов, где часть решений принимается пользователями.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Рабочий процесс: Узел ручной обработки
+# Рабочий процесс: ручной узел

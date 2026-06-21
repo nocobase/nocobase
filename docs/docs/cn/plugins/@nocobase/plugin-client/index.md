@@ -1,4 +1,6 @@
 ---
+title: "WEB 客户端"
+keywords: "WEB 客户端,插件,NocoBase"
 displayName: "WEB 客户端"
 packageName: '@nocobase/plugin-client'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # WEB 客户端

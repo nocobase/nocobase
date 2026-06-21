@@ -8,16 +8,22 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Avatar as AntdAvatar, Space, Tabs, Tag } from 'antd';
-import { ExtendCollectionsProvider, SchemaComponent, useAPIClient } from '@nocobase/client';
+import { Avatar as AntdAvatar, Radio, Space, Tabs, Tooltip } from 'antd';
+import {
+  ExtendCollectionsProvider,
+  SchemaComponent,
+  useAPIClient,
+  useTableBlockContext,
+  useRecord,
+} from '@nocobase/client';
 import { useT } from '../../locale';
-import { useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
 import { avatars } from '../avatars';
-import { ModelSettings } from './ModelSettings';
 import { ProfileSettings } from './ProfileSettings';
 import { SystemPrompt } from './SystemPrompt';
-import aiEmployees from '../../../collections/ai-employees';
+import { ModelSettings } from './ModelSettings';
+import aiEmployees, { type AIEmployee } from '../../../collections/ai-employees';
 import { SkillSettings } from './SkillSettings';
 import { Templates } from './Templates';
 import {
@@ -29,14 +35,20 @@ import {
   useDeleteActionProps,
 } from './hooks';
 import { KnowledgeBaseSettings } from './KnowledgeBaseSettings';
-import { CheckOutlined } from '@ant-design/icons';
+import { CheckOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { EnableSwitch } from './EnableSwitch';
+import { ToolSettings } from './ToolsSettings';
 
 const AIEmployeeForm: React.FC<{
   edit?: boolean;
 }> = ({ edit }) => {
   const t = useT();
   const api = useAPIClient();
+  const form = useForm();
   const [knowledgeBaseEnabled, setKnowledgeBaseEnabled] = useState(false);
+  const chatSettings = form.values?.chatSettings ?? {};
+  const showSkills = chatSettings.enableSkills !== false;
+  const showTools = chatSettings.enableTools !== false;
 
   useEffect(() => {
     api
@@ -63,22 +75,30 @@ const AIEmployeeForm: React.FC<{
           children: <SystemPrompt />,
           forceRender: true,
         },
-        // {
-        //   key: 'chat',
-        //   label: 'Chat settings',
-        //   children: <ChatSettings />,
-        // },
         {
           key: 'modelSettings',
           label: t('Model settings'),
           children: <ModelSettings />,
           forceRender: true,
         },
-        {
-          key: 'skills',
-          label: t('Skills'),
-          children: <SkillSettings />,
-        },
+        ...(showSkills
+          ? [
+              {
+                key: 'skills',
+                label: t('Skills'),
+                children: <SkillSettings />,
+              },
+            ]
+          : []),
+        ...(showTools
+          ? [
+              {
+                key: 'tools',
+                label: t('Tools'),
+                children: <ToolSettings />,
+              },
+            ]
+          : []),
         ...(knowledgeBaseEnabled
           ? [
               {
@@ -109,12 +129,66 @@ const Enabled: React.FC = (props) => {
   return field.value && <CheckOutlined style={{ color: '#52c41a' }} />;
 };
 
-const LLMModel: React.FC = (props) => {
-  const field = useField<Field>();
+const CategoryFilter: React.FC = () => {
+  const t = useT();
+  const { service } = useTableBlockContext();
+  const category = service?.params?.[0]?.filter?.category || 'business';
+  const options = [
+    { label: t('Business'), value: 'business' },
+    { label: t('Developer'), value: 'developer' },
+  ];
+
+  return (
+    <Radio.Group
+      value={category}
+      optionType="button"
+      options={options}
+      onChange={(e) => {
+        if (e.target.value === category) {
+          return;
+        }
+        service?.run({
+          ...service?.params?.[0],
+          page: 1,
+          filter: {
+            ...service?.params?.[0]?.filter,
+            category: e.target.value,
+          },
+        });
+      }}
+    />
+  );
+};
+
+const Username: React.FC = () => {
+  const t = useT();
+  const field = useField<Field<string>>();
+  const record = useRecord<AIEmployee>();
+  const missingKnowledgeBaseKeys = record?.missingKnowledgeBaseKeys || [];
+
   if (!field.value) {
     return null;
   }
-  return <Tag>{field.value.model}</Tag>;
+
+  if (!missingKnowledgeBaseKeys.length) {
+    return <span>{field.value}</span>;
+  }
+
+  return (
+    <Space size={4}>
+      <span>{field.value}</span>
+      <Tooltip
+        title={t(
+          'Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.',
+          {
+            keys: missingKnowledgeBaseKeys.join(', '),
+          },
+        )}
+      >
+        <ExclamationCircleOutlined style={{ color: '#faad14', cursor: 'help' }} />
+      </Tooltip>
+    </Space>
+  );
 };
 
 export const Employees: React.FC = () => {
@@ -122,7 +196,7 @@ export const Employees: React.FC = () => {
   return (
     <ExtendCollectionsProvider collections={[aiEmployees]}>
       <SchemaComponent
-        components={{ AIEmployeeForm, Avatar, Templates, LLMModel, Enabled }}
+        components={{ AIEmployeeForm, Avatar, Templates, Enabled, EnableSwitch, CategoryFilter, Username }}
         scope={{
           t,
           useCreateFormProps,
@@ -146,6 +220,11 @@ export const Employees: React.FC = () => {
               'x-decorator-props': {
                 collection: 'aiEmployees',
                 action: 'list',
+                params: {
+                  filter: {
+                    category: 'business',
+                  },
+                },
                 rowKey: 'username',
                 dragSort: true,
                 dragSortBy: 'sort',
@@ -160,6 +239,11 @@ export const Employees: React.FC = () => {
                     },
                   },
                   properties: {
+                    categoryFilter: {
+                      type: 'void',
+                      'x-align': 'left',
+                      'x-component': 'CategoryFilter',
+                    },
                     refresh: {
                       title: "{{t('Refresh')}}",
                       'x-component': 'Action',
@@ -273,7 +357,7 @@ export const Employees: React.FC = () => {
                       properties: {
                         username: {
                           type: 'string',
-                          'x-component': 'Input',
+                          'x-component': 'Username',
                           'x-pattern': 'readPretty',
                         },
                       },
@@ -304,23 +388,12 @@ export const Employees: React.FC = () => {
                     },
                     column4: {
                       type: 'void',
-                      title: t('Model'),
-                      'x-component': 'TableV2.Column',
-                      properties: {
-                        modelSettings: {
-                          type: 'string',
-                          'x-component': 'LLMModel',
-                        },
-                      },
-                    },
-                    column5: {
-                      type: 'void',
                       title: t('Enabled'),
                       'x-component': 'TableV2.Column',
                       properties: {
                         enabled: {
-                          type: 'string',
-                          'x-component': 'Enabled',
+                          type: 'boolean',
+                          'x-component': 'EnableSwitch',
                         },
                       },
                     },

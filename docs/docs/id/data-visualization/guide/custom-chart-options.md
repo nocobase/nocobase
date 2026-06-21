@@ -1,31 +1,33 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Kustomisasi Konfigurasi Chart"
+description: "Mode Custom menulis JS untuk mengembalikan option ECharts berdasarkan ctx.data, mendukung dataset, penggabungan multi-seri, tooltip kompleks dan gaya dinamis, kemampuan ECharts lengkap."
+keywords: "chart kustom,mode Custom,ECharts option,ctx.data,dataset,NocoBase"
+---
 
-# Konfigurasi Bagan Kustom
+# Kustomisasi Konfigurasi Chart
 
-Dalam mode Kustom, Anda dapat mengonfigurasi bagan dengan menulis kode JS di editor. Berdasarkan `ctx.data`, Anda dapat mengembalikan `option` ECharts yang lengkap. Mode ini cocok untuk menggabungkan beberapa seri, membuat tooltip yang kompleks, dan gaya dinamis. Secara teori, semua fitur ECharts dan semua jenis bagan dapat didukung.
+Mode kustomisasi konfigurasi Chart memungkinkan Anda menulis JS pada editor kode, mengembalikan `option` ECharts lengkap berdasarkan `ctx.data`. Cocok untuk penggabungan multi-seri, tooltip kompleks, dan gaya dinamis. Secara teori dapat mendukung fungsi ECharts lengkap dan semua jenis Chart.
 
 ![clipboard-image-1761524637](https://static-docs.nocobase.com/clipboard-image-1761524637.png)
 
 ## Konteks Data
-- `ctx.data.objects`: array objek (setiap baris sebagai objek)
-- `ctx.data.rows`: array 2D (dengan header)
-- `ctx.data.columns`: array 2D yang dikelompokkan berdasarkan kolom
+- `ctx.data.objects`: array objek (setiap baris record)
+- `ctx.data.rows`: array dua dimensi (termasuk header)
+- `ctx.data.columns`: array dua dimensi yang dikelompokkan per kolom
 
 **Penggunaan yang Direkomendasikan:**
-Konsolidasikan data dalam `dataset.source`. Untuk penggunaan lebih lanjut, silakan lihat dokumentasi ECharts:
+Kumpulkan data secara seragam pada `dataset.resource`. Untuk penggunaan rinci, lihat dokumentasi ECharts.
 
  [Dataset](https://echarts.apache.org/handbook/en/concepts/dataset/#map-row-or-column-of-dataset-to-series)
 
- [Sumbu](https://echarts.apache.org/handbook/en/concepts/axis) 
+ [Axis](https://echarts.apache.org/handbook/en/concepts/axis) 
  
- [Contoh](https://echarts.apache.org/examples/en/index.html)
+ [Examples](https://echarts.apache.org/examples/en/index.html)
 
 
-Mari kita mulai dengan contoh yang paling sederhana:
+Mari lihat contoh paling sederhana terlebih dahulu:
 
-## Contoh 1: Bagan Batang Jumlah Pesanan Bulanan
+## Contoh 1: Bar Chart Jumlah Pesanan per Bulan
 
 ![20251027082816](https://static-docs.nocobase.com/20251027082816.png)
 
@@ -44,7 +46,7 @@ return {
 ```
 
 
-## Contoh 2: Bagan Tren Penjualan
+## Contoh 2: Chart Tren Penjualan
 
 ![clipboard-image-1761525188](https://static-docs.nocobase.com/clipboard-image-1761525188.png)
 
@@ -147,22 +149,22 @@ return {
 ```
 
 **Saran:**
-- Pertahankan gaya fungsi murni: hasilkan `option` hanya dari `ctx.data` dan hindari efek samping.
-- Perubahan pada nama kolom kueri akan memengaruhi pengindeksan; standarkan nama dan konfirmasi di "Lihat data" sebelum memodifikasi kode.
-- Untuk kumpulan data yang besar, hindari perhitungan sinkron yang kompleks dalam JS; lakukan agregasi pada tahap kueri jika diperlukan.
+- Pertahankan gaya pure function, hanya hasilkan `option` berdasarkan `ctx.data`, hindari side effect.
+- Penyesuaian nama kolom query akan mempengaruhi indeks; berikan penamaan yang seragam dan konfirmasikan pada "Lihat Data" sebelum mengubah kode.
+- Saat volume data besar, hindari kalkulasi sinkron yang kompleks pada JS; jika perlu, lakukan agregasi pada tahap query.
 
 
-## Contoh Lain
+## Contoh Lainnya
 
-Untuk contoh penggunaan lebih lanjut, Anda dapat merujuk ke [aplikasi Demo](https://demo3.sg.nocobase.com/admin/5xrop8s0bui) NocoBase.
+Untuk lebih banyak contoh penggunaan, lihat [Demo Aplikasi](https://demo3.sg.nocobase.com/admin/5xrop8s0bui) NocoBase.
 
-Anda juga dapat menelusuri [Contoh](https://echarts.apache.org/examples/en/index.html) resmi ECharts untuk menemukan efek bagan yang Anda inginkan, lalu merujuk dan menyalin kode konfigurasi JS-nya.
- 
+Anda juga dapat melihat [Examples](https://echarts.apache.org/examples/en/index.html) resmi ECharts, pilih efek Chart yang Anda inginkan, lalu rujuk dan salin kode konfigurasi JS-nya.
 
-## Pratinjau dan Simpan
+
+## Preview dan Simpan
 
 ![20251027083938](https://static-docs.nocobase.com/20251027083938.png)
 
-- Klik "Pratinjau" di sisi kanan atau di bagian bawah untuk menyegarkan bagan dan memvalidasi konfigurasi JS.
-- Klik "Simpan" untuk menyimpan konfigurasi JS saat ini ke dalam basis data.
-- Klik "Batal" untuk kembali ke status penyimpanan terakhir.
+- Klik "Preview" di sebelah kanan, atau "Preview" di bagian bawah, untuk merefresh Chart guna memverifikasi konten konfigurasi JS.
+- Klik "Simpan" untuk menyimpan konten konfigurasi JS saat ini ke database.
+- Klik "Batal" untuk kembali ke status simpan sebelumnya.

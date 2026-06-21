@@ -9,8 +9,9 @@
 
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
-import { ToolCall, WorkContextOptions } from '../ai-employees/types';
-import { Application } from '@nocobase/client';
+import { WorkContextOptions } from '../ai-employees/types';
+import { ToolsOptions } from '@nocobase/client';
+import { ToolModalProps } from '@nocobase/client-v2';
 
 export type LLMProviderOptions = {
   components: {
@@ -20,29 +21,11 @@ export type LLMProviderOptions = {
       msg: any;
     }>;
   };
+  formatModelLabel?: (id: string) => string;
 };
 
-export type ToolOptions = {
-  ui?: {
-    card?: ComponentType<{
-      messageId: string;
-      tool: ToolCall<unknown>;
-    }>;
-    modal?: {
-      title?: string;
-      okText?: string;
-      useOnOk?: () => {
-        onOk: () => void | Promise<void>;
-      };
-      Component?: ComponentType<{
-        tool: ToolCall<unknown>;
-        saveToolArgs?: (args: unknown) => Promise<void>;
-      }>;
-    };
-  };
-  invoke?: (ctx: Application, params: any) => any | Promise<any>;
-  useHooks?: () => ToolOptions;
-};
+export type ToolOptions = ToolsOptions;
+export type { ToolModalProps };
 
 export class AIManager {
   llmProviders = new Registry<LLMProviderOptions>();
@@ -53,23 +36,10 @@ export class AIManager {
       Component: ComponentType;
     }
   >();
-  tools = new Registry<ToolOptions>();
   workContext = new Registry<WorkContextOptions>();
 
   registerLLMProvider(name: string, options: LLMProviderOptions) {
     this.llmProviders.register(name, options);
-  }
-
-  registerTool(group: string, name: string, options: ToolOptions) {
-    this.tools.register(`${group}-${name}`, options);
-  }
-
-  useTools() {
-    const result = new Registry<ToolOptions>();
-    for (const [key, tool] of this.tools.getEntities()) {
-      result.register(key, tool?.useHooks?.() ?? tool);
-    }
-    return result;
   }
 
   registerWorkContext(name: string, options: WorkContextOptions) {
@@ -91,7 +61,7 @@ export class AIManager {
     });
   }
 
-  getWorkContext(name: string): WorkContextOptions {
+  getWorkContext(name: string): WorkContextOptions | null {
     const [rootKey, childKey] = name.split('.');
     if (childKey) {
       const root = this.workContext.get(rootKey);

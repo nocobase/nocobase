@@ -1,18 +1,21 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "Memperluas Sumber Data Sinkronisasi"
+description: "Ekstensi plugin sinkronisasi data pengguna NocoBase: sumber data sinkronisasi kustom, antarmuka SyncSource, pendaftaran sumber sinkronisasi."
+keywords: "memperluas sumber data sinkronisasi,SyncSource,sumber sinkronisasi,plugin-user-data-sync,pengembangan sinkronisasi data,NocoBase"
+---
 
-# Memperluas Sumber Data yang Tersinkronisasi
+# Memperluas Sumber Data Sinkronisasi
 
-## Gambaran Umum
+## Ikhtisar
 
-NocoBase mendukung perluasan jenis sumber data untuk sinkronisasi data pengguna sesuai kebutuhan.
+NocoBase mendukung perluasan tipe sumber data sinkronisasi data pengguna sesuai kebutuhan.
 
-## Sisi Server
+## Server
 
 ### Antarmuka Sumber Data
 
-Plugin sinkronisasi data pengguna bawaan menyediakan pendaftaran dan pengelolaan untuk jenis sumber data. Untuk memperluas jenis sumber data, Anda perlu mewarisi kelas abstrak `SyncSource` yang disediakan oleh plugin dan mengimplementasikan antarmuka standar yang relevan.
+Plugin sinkronisasi data pengguna bawaan menyediakan registrasi dan manajemen tipe sumber data. Untuk memperluas tipe sumber data, Anda perlu melakukan inheritance dari class abstrak `SyncSource` yang disediakan oleh plugin dan mengimplementasikan antarmuka standar yang sesuai.
 
 ```ts
 import { SyncSource, UserData } from '@nocobase/plugin-user-data-sync';
@@ -24,7 +27,7 @@ class CustomSyncSource extends SyncSource {
 }
 ```
 
-Kelas `SyncSource` menyertakan properti `options` untuk mengambil konfigurasi kustom untuk sumber data.
+`SyncSource` menyediakan properti options yang digunakan untuk mendapatkan konfigurasi kustom sumber data.
 
 ```ts
 import { SyncSource, UserData } from '@nocobase/plugin-user-data-sync';
@@ -39,33 +42,32 @@ class CustomSyncSource extends SyncSource {
 }
 ```
 
-### Deskripsi Kolom `UserData`
+### Penjelasan Field UserData
 
-| Kolom        | Deskripsi                                      |
+| Field        | Keterangan                                     |
 | ------------ | ---------------------------------------------- |
-| `dataType`   | Tipe data, pilihan adalah `user` dan `department` |
-| `uniqueKey`  | Kolom pengidentifikasi unik                    |
-| `records`    | Catatan data                                   |
+| `dataType`   | Tipe data, nilai opsional `user` dan `department` |
+| `uniqueKey`  | Field identifier unik                          |
+| `records`    | Record data                                    |
 | `sourceName` | Nama sumber data                               |
 
-Jika `dataType` adalah `user`, kolom `records` berisi kolom-kolom berikut:
+Jika dataType adalah `user`, maka records berisi field-field berikut:
 
-| Kolom         | Deskripsi               |
-| ------------- | ----------------------- |
-| `id`          | ID Pengguna             |
-| `nickname`    | Nama panggilan pengguna |
-| `avatar`      | Avatar pengguna         |
-| `email`       | Email                   |
-| `phone`       | Nomor telepon           |
-| `departments` | Array ID departemen     |
+| Field         | Keterangan                  |
+| ------------- | --------------------------- |
+| `id`          | User ID                     |
+| `nickname`    | Nickname pengguna           |
+| `avatar`      | Avatar pengguna             |
+| `email`       | Email                       |
+| `phone`       | Nomor telepon               |
+| `departments` | Array ID departemen yang diikuti |
 
-Jika `dataType` adalah `department`, kolom `records` berisi kolom-kolom berikut:
-
-| Kolom      | Deskripsi            |
-| ---------- | -------------------- |
-| `id`       | ID Departemen        |
-| `name`     | Nama departemen      |
-| `parentId` | ID departemen induk  |
+Jika dataType adalah `department`, maka records berisi field-field berikut:
+| Field      | Keterangan                |
+| ---------- | ------------------------- |
+| `id`       | ID Departemen             |
+| `name`     | Nama departemen           |
+| `parentId` | ID departemen induk       |
 
 ### Contoh Implementasi Antarmuka Sumber Data
 
@@ -100,9 +102,9 @@ class CustomSyncSource extends SyncSource {
 }
 ```
 
-### Mendaftarkan Jenis Sumber Data
+### Registrasi Tipe Sumber Data
 
-Sumber data yang diperluas harus didaftarkan ke modul pengelolaan data.
+Sumber data yang diperluas perlu didaftarkan ke modul manajemen data.
 
 ```ts
 import UserDataSyncPlugin from '@nocobase/plugin-user-data-sync';
@@ -122,9 +124,9 @@ class CustomSourcePlugin extends Plugin {
 }
 ```
 
-## Sisi Klien
+## Klien
 
-Antarmuka pengguna sisi klien mendaftarkan jenis sumber data menggunakan metode `registerType` yang disediakan oleh antarmuka klien plugin sinkronisasi data pengguna:
+Antarmuka pengguna klien didaftarkan melalui antarmuka `registerType` yang disediakan oleh klien plugin sinkronisasi data pengguna:
 
 ```ts
 import SyncPlugin from '@nocobase/plugin-user-data-sync/client';
@@ -134,15 +136,15 @@ class CustomSourcePlugin extends Plugin {
     const sync = this.app.pm.get(SyncPlugin);
     sync.registerType(authType, {
       components: {
-        AdminSettingsForm, // Formulir pengelolaan backend
+        AdminSettingsForm, // Formulir manajemen backend
       },
     });
   }
 }
 ```
 
-### Formulir Pengelolaan Backend
+### Formulir Manajemen Backend
 
 ![](https://static-docs.nocobase.com/202412041429835.png)
 
-Bagian atas menyediakan konfigurasi sumber data umum, sedangkan bagian bawah memungkinkan pendaftaran formulir konfigurasi kustom.
+Bagian atas adalah konfigurasi sumber data umum, dan bagian bawah adalah bagian formulir konfigurasi kustom yang dapat didaftarkan.

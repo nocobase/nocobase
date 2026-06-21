@@ -1,33 +1,34 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Template In ấn - Cách dùng cơ bản"
+description: "Cú pháp cơ bản của Template In ấn: thay thế placeholder, thay thế dữ liệu, chèn dữ liệu động."
+keywords: "Template In ấn,placeholder,Cú pháp,NocoBase"
+---
 
 ## Cách dùng cơ bản
 
-Plugin In Mẫu cung cấp nhiều cú pháp khác nhau để bạn linh hoạt chèn dữ liệu động và cấu trúc logic vào các mẫu. Dưới đây là giải thích chi tiết về cú pháp và các ví dụ sử dụng.
+Plugin Template In ấn cung cấp nhiều loại cú pháp, có thể chèn linh hoạt dữ liệu động và cấu trúc logic vào Template. Dưới đây là mô tả cú pháp chi tiết và ví dụ sử dụng.
 
 ### Thay thế cơ bản
 
-Sử dụng các phần giữ chỗ (placeholder) theo định dạng `{d.xxx}` để thay thế dữ liệu. Ví dụ:
+Sử dụng placeholder định dạng `{d.xxx}` để thay thế dữ liệu. Ví dụ:
 
-- `{d.title}`: Đọc trường `title` từ tập dữ liệu.
-- `{d.date}`: Đọc trường `date` từ tập dữ liệu.
+- `{d.title}`: Đọc trường `title` trong dataset.
+- `{d.date}`: Đọc trường `date` trong dataset.
 
 **Ví dụ**:
 
-Nội dung mẫu:
+Nội dung Template:
 ```
-Kính gửi Quý khách hàng,
+Kính chào quý Khách hàng!
 
-Cảm ơn Quý khách đã mua sản phẩm của chúng tôi: {d.productName}.
-Mã đơn hàng: {d.orderId}
-Ngày đặt hàng: {d.orderDate}
+Cảm ơn bạn đã mua Sản phẩm của chúng tôi: {d.productName}.
+Mã Đơn hàng: {d.orderId}
+Ngày Đơn hàng: {d.orderDate}
 
-Chúc Quý khách có trải nghiệm tuyệt vời!
+Chúc bạn sử dụng vui vẻ!
 ```
 
-Tập dữ liệu:
+Dataset:
 ```json
 {
   "productName": "Đồng hồ thông minh",
@@ -36,26 +37,26 @@ Tập dữ liệu:
 }
 ```
 
-Kết quả hiển thị:
+Kết quả render:
 ```
-Kính gửi Quý khách hàng,
+Kính chào quý Khách hàng!
 
-Cảm ơn Quý khách đã mua sản phẩm của chúng tôi: Đồng hồ thông minh.
-Mã đơn hàng: A123456789
-Ngày đặt hàng: 2025-01-01
+Cảm ơn bạn đã mua Sản phẩm của chúng tôi: Đồng hồ thông minh.
+Mã Đơn hàng: A123456789
+Ngày Đơn hàng: 2025-01-01
 
-Chúc Quý khách có trải nghiệm tuyệt vời!
+Chúc bạn sử dụng vui vẻ!
 ```
 
-### Truy cập đối tượng con
+### Truy cập object con
 
-Nếu tập dữ liệu chứa các đối tượng con, bạn có thể truy cập các thuộc tính của chúng bằng ký hiệu dấu chấm.
+Nếu dataset chứa object con, có thể truy cập thuộc tính của object con qua dấu chấm.
 
 **Cú pháp**: `{d.parent.child}`
 
 **Ví dụ**:
 
-Tập dữ liệu:
+Dataset:
 ```json
 {
   "customer": {
@@ -68,29 +69,29 @@ Tập dữ liệu:
 }
 ```
 
-Nội dung mẫu:
+Nội dung Template:
 ```
-Tên khách hàng: {d.customer.name}
+Tên Khách hàng: {d.customer.name}
 Địa chỉ email: {d.customer.contact.email}
-Số điện thoại liên hệ: {d.customer.contact.phone}
+Điện thoại liên hệ: {d.customer.contact.phone}
 ```
 
-Kết quả hiển thị:
+Kết quả render:
 ```
-Tên khách hàng: Lý Lôi
+Tên Khách hàng: Lý Lôi
 Địa chỉ email: lilei@example.com
-Số điện thoại liên hệ: 13800138000
+Điện thoại liên hệ: 13800138000
 ```
 
 ### Truy cập mảng
 
-Nếu tập dữ liệu chứa các mảng, bạn có thể sử dụng từ khóa dành riêng `i` để truy cập các phần tử trong mảng.
+Nếu dataset chứa mảng, có thể sử dụng từ khóa dành riêng `i` để truy cập phần tử trong mảng.
 
 **Cú pháp**: `{d.arrayName[i].field}`
 
 **Ví dụ**:
 
-Tập dữ liệu:
+Dataset:
 ```json
 {
   "staffs": [
@@ -101,12 +102,14 @@ Tập dữ liệu:
 }
 ```
 
-Nội dung mẫu:
+Nội dung Template:
 ```
-Họ của nhân viên đầu tiên là {d.staffs[i=0].lastname}, và tên là {d.staffs[i=0].firstname}
+Họ của nhân viên đầu tiên là {d.staffs[i=0].lastname}, tên là {d.staffs[i=0].firstname}
 ```
 
-Kết quả hiển thị:
+Kết quả render:
 ```
-Họ của nhân viên đầu tiên là Anderson, và tên là James
+Họ của nhân viên đầu tiên là Anderson, tên là James
 ```
+
+

@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc"
+displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
+title: "Workflow"
+keywords: "Workflow,Plugin,NocoBase"
 description: |
-  Một công cụ BPM mạnh mẽ, cung cấp nền tảng hỗ trợ tự động hóa nghiệp vụ, với khả năng mở rộng không giới hạn các trigger và node.
+  Một công cụ BPM mạnh mẽ, cung cấp hỗ trợ cơ bản cho tự động hóa nghiệp vụ và có thể mở rộng tùy ý với nhiều trigger và node hơn.
 isFree: true
 builtIn: true
-defaultEnabled: true
+defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc
+# Workflow

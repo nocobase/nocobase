@@ -1,31 +1,33 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "RelationRepository"
+description: "Repository tipe relasi NocoBase: dapat mengoperasikan data asosiasi tanpa memuat asosiasi, implementasi BelongsTo/HasMany/BelongsToMany, dll."
+keywords: "RelationRepository,BelongsTo,HasMany,BelongsToMany,Repository asosiasi,NocoBase"
+---
 
 # RelationRepository
 
-`RelationRepository` adalah objek `Repository` untuk tipe relasi. `RelationRepository` memungkinkan operasi pada data terkait tanpa perlu memuat relasi tersebut. Berdasarkan `RelationRepository`, setiap tipe relasi memiliki implementasi turunan yang sesuai, yaitu:
+`RelationRepository` adalah objek `Repository` tipe relasi, `RelationRepository` dapat mengoperasikan data asosiasi tanpa memuat asosiasi. Berdasarkan `RelationRepository`, setiap tipe asosiasi memiliki implementasi yang sesuai, yaitu
 
 - [`HasOneRepository`](#has-one-repository)
 - `HasManyRepository`
 - `BelongsToRepository`
 - `BelongsToManyRepository`
 
-## Konstruktor
+## Constructor
 
-**Tanda Tangan**
+**Signature**
 
 - `constructor(sourceCollection: Collection, association: string, sourceKeyValue: string | number)`
 
 **Parameter**
 
-| Nama Parameter     | Tipe               | Nilai Default | Deskripsi                                                               |
-| :----------------- | :----------------- | :------------ | :---------------------------------------------------------------------- |
-| `sourceCollection` | `Collection`       | -             | Koleksi yang sesuai dengan relasi referensi (`referencing relation`) dalam relasi. |
-| `association`      | `string`           | -             | Nama relasi                                                             |
-| `sourceKeyValue`   | `string \| number` | -             | Nilai kunci yang sesuai dalam relasi referensi.                         |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| ------------------ | ------------------ | ------ | --------------------------------------------------------- |
+| `sourceCollection` | `Collection` | - | Collection yang sesuai dengan referencing relation dalam asosiasi |
+| `association` | `string` | - | Nama asosiasi |
+| `sourceKeyValue` | `string \| number` | - | Nilai key yang sesuai dengan referencing relation |
 
-## Properti Kelas Dasar
+## Properti Class Dasar
 
 ### `db: Database`
 
@@ -33,20 +35,20 @@ Objek database
 
 ### `sourceCollection`
 
-Koleksi yang sesuai dengan relasi referensi (`referencing relation`) dalam relasi.
+Collection yang sesuai dengan referencing relation dalam asosiasi
 
 ### `targetCollection`
 
-Koleksi yang sesuai dengan relasi yang direferensikan (`referenced relation`) dalam relasi.
+Collection yang sesuai dengan referenced relation dalam asosiasi
 
 ### `association`
 
-Objek relasi di Sequelize yang sesuai dengan relasi saat ini.
+Objek association di sequelize yang sesuai dengan asosiasi saat ini
 
 ### `associationField`
 
-Bidang dalam koleksi yang sesuai dengan relasi saat ini.
+Field di collection yang sesuai dengan asosiasi saat ini
 
 ### `sourceKeyValue`
 
-Nilai kunci yang sesuai dalam relasi referensi.
+Nilai key yang sesuai dengan referencing relation

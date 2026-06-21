@@ -1,102 +1,101 @@
 ---
 pkg: '@nocobase/plugin-password-policy'
+title: "Password Policy"
+description: "Password policy: rule password (panjang minimum, kompleksitas, jumlah history), password expiration, lockout login attempt, manajemen user lockout, fitur professional."
+keywords: "password policy,rule password,kompleksitas password,password expiration,user lockout,keamanan login,professional,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Password Policy
 
-# Kebijakan Kata Sandi
+## Pengantar
 
-## Pendahuluan
+Mengatur rule password untuk semua user, password expiration, dan policy keamanan login password, mengelola user yang di-lock.
 
-Mengatur aturan kata sandi, masa berlaku kata sandi, dan kebijakan keamanan masuk kata sandi untuk semua pengguna, serta mengelola pengguna yang terkunci.
-
-## Aturan Kata Sandi
+## Rule Password
 
 ![](https://static-docs.nocobase.com/202412281329313.png)
 
-### Panjang Kata Sandi Minimum
+### Panjang Password Minimum
 
-Mengatur persyaratan panjang minimum untuk kata sandi, dengan panjang maksimum 64.
+Mengatur persyaratan panjang minimum password, panjang maksimum 64.
 
-### Persyaratan Kompleksitas Kata Sandi
+### Persyaratan Kompleksitas Password
 
-Opsi berikut didukung:
+Mendukung opsi berikut:
 
-- Harus mengandung huruf dan angka
-- Harus mengandung huruf, angka, dan simbol
-- Harus mengandung angka, huruf besar dan huruf kecil
-- Harus mengandung angka, huruf besar dan huruf kecil, serta simbol
-- Harus mengandung setidaknya 3 dari yang berikut: angka, huruf besar, huruf kecil, dan karakter khusus
-- Tanpa batasan
+- Harus berisi huruf dan angka
+- Harus berisi huruf, angka, dan simbol
+- Harus berisi angka, huruf besar dan huruf kecil
+- Harus berisi angka, huruf besar dan huruf kecil, simbol
+- Harus berisi 3 dari karakter berikut: angka, huruf besar, huruf kecil, dan karakter spesial
+- Tidak terbatas
 
 ![](https://static-docs.nocobase.com/202412281331649.png)
 
-### Kata Sandi Tidak Boleh Mengandung Nama Pengguna
+### Password Tidak Boleh Berisi Username
 
-Mengatur apakah kata sandi dapat mengandung nama pengguna dari pengguna saat ini.
+Mengatur apakah password boleh berisi username user saat ini.
 
-### Jumlah Riwayat Kata Sandi
+### Jumlah History Password
 
-Mengingat jumlah kata sandi yang baru saja digunakan oleh pengguna. Pengguna tidak dapat menggunakan kembali kata sandi ini saat mengubah kata sandi mereka. 0 berarti tanpa batasan, dengan jumlah maksimum 24.
+Mengingat sejumlah password terakhir yang digunakan user, user tidak boleh menggunakan ulang saat mengubah password. 0 berarti tidak terbatas, jumlah maksimum 24.
 
-## Konfigurasi Masa Berlaku Kata Sandi
+## Konfigurasi Password Expiration
 
 ![](https://static-docs.nocobase.com/202412281335588.png)
 
-### Periode Validitas Kata Sandi
+### Password Validity Period
 
-Periode validitas kata sandi pengguna. Pengguna harus mengubah kata sandi mereka sebelum kedaluwarsa untuk mengatur ulang periode validitas. Jika kata sandi tidak diubah sebelum kedaluwarsa, pengguna tidak akan dapat masuk dengan kata sandi lama dan memerlukan bantuan administrator untuk meresetnya. Jika metode masuk lainnya dikonfigurasi, pengguna masih dapat masuk menggunakan metode tersebut.
+Periode validitas password user. User harus mengganti password sebelum kadaluarsa, baru periode validitas akan dihitung ulang. Jika tidak mengganti password sebelum kadaluarsa, tidak akan dapat login dengan password lama, perlu bantuan administrator untuk reset. Jika ada konfigurasi metode login lain, user dapat login dengan cara lain.
 
-### Saluran Notifikasi Pengingat Masa Berlaku Kata Sandi
+### Channel Notifikasi Pengingat Password Expired
 
-Dalam 10 hari menjelang kedaluwarsa kata sandi pengguna, pengingat dikirim setiap kali pengguna masuk. Secara default, pengingat dikirim melalui saluran pesan internal "Pengingat Masa Berlaku Kata Sandi", yang dapat dikelola di bagian manajemen notifikasi.
+Dalam 10 hari sebelum password user kadaluarsa, setiap user login, kirim pengingat. Default dikirim ke channel in-app message "Password expiration reminder", channel dapat dikelola di notification manager.
 
-### Rekomendasi Konfigurasi
+### Saran Konfigurasi
 
-Karena kedaluwarsa kata sandi dapat mengakibatkan ketidakmampuan untuk masuk, termasuk untuk akun administrator, disarankan untuk segera mengubah kata sandi dan mengatur beberapa akun dalam sistem yang memiliki wewenang untuk mengubah kata sandi pengguna.
+Karena password expired dapat menyebabkan akun tidak dapat login, termasuk akun administrator, mohon segera ubah password, dan atur beberapa akun yang dapat mengubah password user di sistem.
 
-## Keamanan Masuk Kata Sandi
+## Keamanan Login Password
 
-Mengatur batasan percobaan masuk kata sandi yang tidak valid.
+Mengatur batas upaya login password invalid.
 
 ![](https://static-docs.nocobase.com/202412281339724.png)
 
-### Jumlah Maksimum Percobaan Masuk Kata Sandi Tidak Valid
+### Maksimum Upaya Login Password Invalid
 
-Mengatur jumlah maksimum percobaan masuk yang dapat dilakukan pengguna dalam interval waktu yang ditentukan.
+Mengatur jumlah maksimum user dapat mencoba login dalam interval waktu yang ditentukan.
 
-### Interval Waktu Maksimum Percobaan Masuk Kata Sandi Tidak Valid (Detik)
+### Maksimum Interval Waktu Login Password Invalid (detik)
 
-Mengatur interval waktu (dalam detik) untuk menghitung jumlah maksimum percobaan masuk tidak valid oleh pengguna.
+Mengatur interval waktu untuk menghitung jumlah maksimum login invalid user, satuan detik.
 
-### Durasi Penguncian (Detik)
+### Waktu Lockout (detik)
 
-Mengatur durasi pengguna dikunci setelah melebihi batas percobaan masuk kata sandi tidak valid (0 berarti tanpa batasan). Selama periode penguncian, pengguna dilarang mengakses sistem melalui metode autentikasi apa pun, termasuk API keys. Jika diperlukan pembukaan kunci secara manual, silakan merujuk ke [Penguncian Pengguna](./lockout.md).
+Mengatur waktu lockout user setelah melebihi batas login password invalid (0 berarti tidak terbatas). Selama user di-lock, akan dilarang mengakses sistem dengan metode autentikasi apa pun, termasuk API keys. Jika perlu unlock user secara aktif, lihat [User Lockout](./lockout.md).
 
 ### Skenario
 
-#### Tanpa Batasan
+#### Tidak Terbatas
 
-Tidak ada batasan pada jumlah percobaan kata sandi tidak valid oleh pengguna.
+Tidak membatasi jumlah upaya password invalid user.
 
 ![](https://static-docs.nocobase.com/202412281343226.png)
 
-#### Batasi Frekuensi Percobaan, Jangan Kunci Pengguna
+#### Membatasi Frekuensi Upaya, Tidak Lock User
 
-Contoh: Pengguna dapat mencoba masuk hingga 5 kali setiap 5 menit.
+Contoh: User dapat mencoba login maksimal 5 kali setiap 5 menit.
 
 ![](https://static-docs.nocobase.com/202412281344412.png)
 
-#### Kunci Pengguna Setelah Melebihi Batas
+#### Lock User Setelah Melebihi Batas
 
-Contoh: Jika pengguna melakukan 5 percobaan masuk kata sandi tidak valid secara berurutan dalam 5 menit, pengguna akan dikunci selama 2 jam.
+Contoh: User melakukan 5 login password invalid berturut-turut dalam 5 menit, lock user 2 jam.
 
 ![](https://static-docs.nocobase.com/202412281344952.png)
 
-### Rekomendasi Konfigurasi
+### Saran Konfigurasi
 
-- Konfigurasi jumlah percobaan masuk kata sandi tidak valid dan interval waktu biasanya digunakan untuk membatasi percobaan masuk kata sandi frekuensi tinggi dalam waktu singkat, mencegah serangan *brute-force*.
-- Apakah akan mengunci pengguna setelah melebihi batas perlu dipertimbangkan berdasarkan skenario penggunaan aktual. Pengaturan durasi penguncian dapat disalahgunakan secara jahat, karena penyerang dapat dengan sengaja memasukkan kata sandi yang salah berkali-kali untuk akun target, memaksa akun terkunci dan membuatnya tidak dapat digunakan. Hal ini dapat diatasi dengan menggabungkan pembatasan IP, batas laju API, dan tindakan lainnya.
-- Karena penguncian akun akan mencegah akses ke sistem, termasuk akun administrator, disarankan untuk mengatur beberapa akun dalam sistem yang memiliki wewenang untuk membuka kunci pengguna.
+- Konfigurasi jumlah dan interval waktu login password invalid biasanya digunakan untuk membatasi upaya login password frekuensi tinggi dalam waktu singkat, mencegah brute force.
+- Apakah lock user setelah melebihi batas perlu mempertimbangkan skenario penggunaan aktual. Pengaturan waktu lockout dapat dimanfaatkan secara jahat. Penyerang dapat sengaja memasukkan password salah berkali-kali ke akun target, memaksa akun di-lock dan tidak dapat digunakan secara normal. Dapat dikombinasikan dengan IP restriction, API rate limiting, dan tool lain untuk mencegah serangan seperti ini.
+- Karena lockout akun akan menyebabkan tidak dapat masuk sistem, termasuk akun administrator, dapat mengatur beberapa akun yang memiliki izin unlock user di sistem.

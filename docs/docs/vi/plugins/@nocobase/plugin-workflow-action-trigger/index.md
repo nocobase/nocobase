@@ -1,14 +1,14 @@
 ---
-displayName: 'Luồng công việc: Sự kiện sau thao tác'
+displayName: "Workflow: Sự kiện sau Action"
 packageName: '@nocobase/plugin-workflow-action-trigger'
+title: "Workflow: Sự kiện sau Action"
+keywords: "Workflow: Sự kiện sau Action,Plugin,NocoBase"
 description: |
-  Được kích hoạt sau khi một yêu cầu được khởi tạo thông qua nút thao tác hoặc API hoàn tất, chẳng hạn như sau khi thêm, cập nhật, xóa dữ liệu hoặc 'gửi đến luồng công việc". Chức năng này phù hợp để xử lý dữ liệu, gửi thông báo, v.v., sau khi các thao tác đã hoàn tất.
+  Kích hoạt qua nút Action hoặc API và sau khi thực thi hoàn tất, ví dụ sau khi thêm, cập nhật, xóa dữ liệu hoặc sau "Submit to workflow". Phù hợp để xử lý dữ liệu, gửi thông báo sau khi thao tác hoàn tất.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Sự kiện sau thao tác
+# Workflow: Sự kiện sau Action

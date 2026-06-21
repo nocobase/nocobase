@@ -1,54 +1,56 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Many to Many"
+description: "Field relasi Many to Many (M2M), entitas dua Collection terhubung many-to-many, biasanya butuh tabel perantara, seperti siswa-mata kuliah."
+keywords: "Many to Many,M2M,BelongsToMany,tabel perantara,field terkait,NocoBase"
+---
 
-# Banyak-ke-Banyak
+# Many to Many
 
-Dalam sistem pemilihan mata kuliah, terdapat dua entitas: mahasiswa dan mata kuliah. Seorang mahasiswa dapat mengambil beberapa mata kuliah, dan satu mata kuliah dapat diambil oleh beberapa mahasiswa, yang membentuk hubungan banyak-ke-banyak. Dalam basis data relasional, untuk menggambarkan hubungan banyak-ke-banyak antara mahasiswa dan mata kuliah, biasanya digunakan sebuah koleksi perantara, seperti koleksi pendaftaran. Koleksi ini dapat mencatat mata kuliah mana saja yang dipilih oleh setiap mahasiswa, dan mahasiswa mana saja yang mengambil setiap mata kuliah. Desain seperti ini dapat menggambarkan hubungan banyak-ke-banyak antara mahasiswa dan mata kuliah dengan efektif.
+Dalam sistem pemilihan mata kuliah, ada dua entitas: siswa dan mata kuliah. Seorang siswa dapat memilih banyak mata kuliah, dan satu mata kuliah juga dapat dipilih oleh banyak siswa, hal ini membentuk relasi Many to Many. Dalam database relasional, untuk merepresentasikan hubungan Many to Many antara siswa dan mata kuliah, biasanya digunakan tabel perantara, seperti tabel pemilihan mata kuliah. Tabel ini dapat mencatat mata kuliah apa saja yang dipilih oleh setiap siswa, dan mata kuliah apa saja yang dipilih oleh siswa mana. Desain seperti ini dapat dengan baik merepresentasikan hubungan Many to Many antara siswa dan mata kuliah.
 
-Diagram ER:
+Relasi ER seperti berikut
 
 ![alt text](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
 
-Konfigurasi Bidang:
+Konfigurasi field
 
 ![alt text](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
 
-## Deskripsi Parameter
+## Penjelasan Parameter
 
-### Koleksi Sumber
+### Source collection
 
-Koleksi sumber adalah koleksi tempat bidang saat ini berada.
+Collection sumber, yaitu Collection tempat field saat ini berada.
 
-### Koleksi Target
+### Target collection
 
-Koleksi target adalah koleksi yang akan dihubungkan.
+Collection target, dengan Collection mana akan dihubungkan.
 
-### Koleksi Perantara
+### Through collection
 
-Koleksi perantara digunakan ketika terdapat hubungan banyak-ke-banyak antara dua entitas. Koleksi perantara memiliki dua kunci asing yang berfungsi untuk menjaga asosiasi antara kedua entitas.
+Tabel perantara, ketika ada hubungan Many to Many antara dua entitas, perlu menggunakan tabel perantara untuk menyimpan hubungan ini. Tabel perantara memiliki dua foreign key, yang digunakan untuk menyimpan hubungan antar dua entitas.
 
-### Kunci Sumber
+### Source key
 
-Bidang dalam koleksi sumber yang direferensikan oleh kunci asing. Bidang ini harus bersifat unik.
+Field yang dirujuk oleh constraint foreign key, harus memiliki keunikan.
 
-### Kunci Asing 1
+### Foreign key 1
 
-Bidang dalam koleksi perantara yang membangun asosiasi dengan koleksi sumber.
+Field tabel perantara, digunakan untuk membangun relasi dengan Collection sumber.
 
-### Kunci Asing 2
+### Foreign key 2
 
-Bidang dalam koleksi perantara yang membangun asosiasi dengan koleksi target.
+Field tabel perantara, digunakan untuk membangun relasi dengan Collection target.
 
-### Kunci Target
+### Target key
 
-Bidang dalam koleksi target yang direferensikan oleh kunci asing. Bidang ini harus bersifat unik.
+Field yang dirujuk oleh constraint foreign key, harus memiliki keunikan.
 
 ### ON DELETE
 
-ON DELETE mengacu pada aturan yang diterapkan pada referensi kunci asing dalam koleksi anak terkait ketika rekaman dalam koleksi induk dihapus. Ini adalah opsi yang digunakan saat mendefinisikan batasan kunci asing. Opsi ON DELETE yang umum meliputi:
+ON DELETE merujuk pada aturan operasi terhadap referensi foreign key di tabel anak yang terkait saat menghapus record di tabel parent. Ini adalah opsi yang digunakan saat mendefinisikan constraint foreign key. Opsi ON DELETE yang umum meliputi:
 
-- **CASCADE**: Ketika sebuah rekaman dalam koleksi induk dihapus, semua rekaman terkait dalam koleksi anak akan dihapus secara otomatis.
-- **SET NULL**: Ketika sebuah rekaman dalam koleksi induk dihapus, nilai kunci asing dalam rekaman koleksi anak yang terkait akan diatur menjadi NULL.
-- **RESTRICT**: Opsi bawaan, mencegah penghapusan rekaman koleksi induk jika terdapat rekaman terkait dalam koleksi anak.
-- **NO ACTION**: Mirip dengan RESTRICT, mencegah penghapusan rekaman koleksi induk jika terdapat rekaman terkait dalam koleksi anak.
+- CASCADE: Ketika record di tabel parent dihapus, semua record yang terkait di tabel anak akan otomatis dihapus.
+- SET NULL: Ketika record di tabel parent dihapus, nilai foreign key di tabel anak yang terkait akan diatur menjadi NULL.
+- RESTRICT: Opsi default. Ketika mencoba menghapus record di tabel parent, jika ada record di tabel anak yang terkait, penghapusan record tabel parent akan ditolak.
+- NO ACTION: Mirip dengan RESTRICT, jika ada record di tabel anak yang terkait, penghapusan record tabel parent akan ditolak.

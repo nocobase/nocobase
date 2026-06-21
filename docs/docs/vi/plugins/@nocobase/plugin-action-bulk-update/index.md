@@ -1,14 +1,17 @@
 ---
-displayName: "Thao tác: Cập nhật hàng loạt"
+displayName: "Action: Cập nhật hàng loạt"
 packageName: '@nocobase/plugin-action-bulk-update'
+title: "Action: Cập nhật hàng loạt"
+keywords: "Action: Cập nhật hàng loạt,Plugin,NocoBase"
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Thực hiện cập nhật hàng loạt cho tất cả các bản ghi hoặc các bản ghi đã chọn.
+  Cập nhật hàng loạt toàn bộ dữ liệu hoặc dữ liệu đã chọn.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: Cập nhật hàng loạt
+# Action: Cập nhật hàng loạt

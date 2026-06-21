@@ -1,60 +1,200 @@
-FROM node:20-bookworm-slim as builder
+FROM node:22-bookworm-slim AS builder
 
 ARG CNA_VERSION=latest
+ARG VERDACCIO_URL=https://registry.npmjs.org/
+ARG USE_ALIYUN_MIRROR=0
 
 WORKDIR /app
 
-RUN cd /app \
-  && yarn config set network-timeout 600000 -g \
+RUN set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  fi; \
+  npm config set registry "$VERDACCIO_URL"; \
+  yarn config set registry "$VERDACCIO_URL"; \
+  yarn config set network-timeout 600000 -g \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
-  && yarn install --production \
-  && rm -rf yarn.lock \
-  && find node_modules -type f -name "yarn.lock" -delete \
-  && find node_modules -type f -name "bower.json" -delete \
-  && find node_modules -type f -name "composer.json" -delete
+  && yarn install --production
 
-RUN cd /app \
-  && rm -rf nocobase.tar.gz \
-  && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
+COPY cleanup-node-modules.sh /usr/local/bin/cleanup-node-modules.sh
 
-FROM node:20-bookworm-slim
+RUN chmod +x /usr/local/bin/cleanup-node-modules.sh \
+  && cleanup-node-modules.sh /app/my-nocobase-app
 
-RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+FROM node:22-bookworm-slim AS assets
 
-RUN echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-RUN wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+ARG USE_ALIYUN_MIRROR=0
+ARG TARGETARCH
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  nginx \
-  libaio1 \
-  postgresql-client-16 \
-  postgresql-client-17 \
-  libfreetype6 \
-  fontconfig \
-  libgssapi-krb5-2 \
-  fonts-liberation \
-  fonts-noto-cjk \
-  unzip \
-  && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+  fi; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends wget ca-certificates unzip; \
+  case "$TARGETARCH" in \
+    amd64) LIBREOFFICE_URL='https://static-docs.nocobase.com/LibreOffice_24.8.3.2_Linux_x86-64_deb.tar.gz' ;; \
+    arm64) LIBREOFFICE_URL='https://static-docs.nocobase.com/LibreOffice_24.8.3.2_Linux_aarch64_deb.tar.gz' ;; \
+    *) echo "Unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+  esac; \
+  case "$TARGETARCH" in \
+    amd64) ORACLE_CLIENT_URL='https://download.oracle.com/otn_software/linux/instantclient/1925000/instantclient-basic-linux.x64-19.25.0.0.0dbru.zip' ;; \
+    arm64) ORACLE_CLIENT_URL='https://download.oracle.com/otn_software/linux/instantclient/1925000/instantclient-basic-linux.arm64-19.25.0.0.0dbru.zip' ;; \
+    *) echo "Unsupported TARGETARCH for Oracle Instant Client: $TARGETARCH" >&2; exit 1 ;; \
+  esac; \
+  wget --no-check-certificate -O /tmp/libreoffice.tar.gz "$LIBREOFFICE_URL"; \
+  wget --no-check-certificate -O /tmp/instantclient_19_25.zip "$ORACLE_CLIENT_URL"; \
+  unzip -q /tmp/instantclient_19_25.zip -d /opt/; \
+  rm -rf /tmp/instantclient_19_25.zip /var/lib/apt/lists/*
 
-RUN rm -rf /etc/nginx/sites-enabled/default
-COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
+FROM mysql:8.0.39 AS mysql-client-assets
 
-RUN wget --no-check-certificate -O /opt/libreoffice24.8.zip https://static-docs.nocobase.com/libreoffice24.8.zip
-RUN wget --no-check-certificate -O /opt/instantclient_19_25.zip https://download.oracle.com/otn_software/linux/instantclient/1925000/instantclient-basic-linux.x64-19.25.0.0.0dbru.zip
-RUN wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
-  dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
-  cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
-  cp /tmp/mysql-client/usr/bin/mysql /usr/bin/ && \
-  rm mysql-community-client-core_8.0.39-1debian12_amd64.deb
+RUN set -eux; \
+  mkdir -p /mysql-client; \
+  cp /usr/bin/mysql /mysql-client/mysql; \
+  cp /usr/bin/mysqldump /mysql-client/mysqldump; \
+  find /mysql-client -type f -print
+
+FROM node:22-bookworm-slim AS runtime-base
+
+ARG NGINX_VERSION=1.30.1-1~bookworm
+ARG USE_ALIYUN_MIRROR=0
+ARG TARGETARCH
+ENV NB_SKIP_STARTUP_UPDATE=1 \
+    NOCOBASE_RUNNING_IN_DOCKER=true
+
+COPY --from=assets /opt/instantclient_19_25 /opt/instantclient_19_25
+
+RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.tar.gz,ro \
+  --mount=from=mysql-client-assets,source=/mysql-client,target=/tmp/mysql-client-assets,ro \
+  set -eux; \
+  rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; \
+  if [ "$USE_ALIYUN_MIRROR" = "1" ]; then \
+    printf '%s\n' \
+      'deb http://mirrors.aliyun.com/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://mirrors.aliyun.com/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    PGDG_MIRROR='http://mirrors.aliyun.com/postgresql/repos/apt'; \
+  else \
+    printf '%s\n' \
+      'deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware' \
+      'deb http://deb.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware' \
+      > /etc/apt/sources.list; \
+    PGDG_MIRROR='http://apt.postgresql.org/pub/repos/apt'; \
+  fi; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends wget gnupg ca-certificates; \
+  echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] ${PGDG_MIRROR} bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
+  wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc; \
+  wget --quiet -O /tmp/nginx_signing.key https://nginx.org/keys/nginx_signing.key; \
+  gpg --batch --yes --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key; \
+  printf '%s\n' \
+    'deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian bookworm nginx' \
+    > /etc/apt/sources.list.d/nginx.list; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends \
+    "nginx=${NGINX_VERSION}" \
+    libaio1 \
+    postgresql-client-16 \
+    postgresql-client-17 \
+    libfreetype6 \
+    fontconfig \
+    libgssapi-krb5-2 \
+    fonts-liberation \
+    fonts-noto-cjk \
+    libncurses6; \
+  if [ "$TARGETARCH" = "amd64" ] || [ "$TARGETARCH" = "arm64" ]; then \
+    cp /tmp/mysql-client-assets/mysql /usr/bin/mysql; \
+    cp /tmp/mysql-client-assets/mysqldump /usr/bin/mysqldump; \
+  else \
+    echo "Unsupported TARGETARCH for MySQL client: $TARGETARCH" >&2; exit 1; \
+  fi; \
+  nginx -v; \
+  /usr/bin/mysql --version; \
+  /usr/bin/mysqldump --version; \
+  tar -zxf /tmp/libreoffice.tar.gz -C /tmp; \
+  libreoffice_dir="$(find /tmp -maxdepth 1 -type d -name 'LibreOffice*_Linux_*_deb' | head -n 1)"; \
+  [ -n "$libreoffice_dir" ] || { echo 'Missing extracted LibreOffice directory' >&2; exit 1; }; \
+  find "$libreoffice_dir/DEBS" -maxdepth 1 -type f -name '*.deb' -print >/tmp/libreoffice-debs.list; \
+  [ -s /tmp/libreoffice-debs.list ] || { echo 'No LibreOffice deb packages found' >&2; exit 1; }; \
+  if ! dpkg -i $(cat /tmp/libreoffice-debs.list); then \
+    apt-get -f install -y; \
+  fi; \
+  [ -x /opt/libreoffice24.8/program/oosplash ] || { echo 'LibreOffice installation is incomplete' >&2; exit 1; }; \
+  apt-get purge -y --auto-remove \
+  wget \
+  gnupg \
+  dirmngr \
+  gpg \
+  gpg-agent \
+  gpg-wks-client \
+  gpg-wks-server \
+  gpgconf \
+  gpgsm \
+  gnupg-l10n \
+  gnupg-utils && \
+  rm -rf \
+  /etc/apt/sources.list.d/nginx.list \
+  /etc/nginx/conf.d/default.conf \
+  /root/.npm \
+  /tmp/nginx_signing.key \
+  /tmp/libreoffice-debs.list \
+  /tmp/LibreOffice*_Linux_*_deb \
+  /usr/share/keyrings/nginx-archive-keyring.gpg \
+  /var/lib/apt/lists/* && \
+  printf '%s\n' \
+  '#!/bin/sh' \
+  'exec /opt/libreoffice24.8/program/oosplash "$@"' \
+  > /usr/bin/libreoffice && \
+  printf '%s\n' \
+  '#!/bin/sh' \
+  'exec /opt/libreoffice24.8/program/oosplash "$@"' \
+  > /usr/bin/soffice && \
+  chmod +x /usr/bin/libreoffice && \
+  chmod +x /usr/bin/soffice && \
+  echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf && \
+  ldconfig
+
+FROM runtime-base
+
+ARG COMMIT_HASH
 
 WORKDIR /app/nocobase
 
+COPY --from=builder /app/my-nocobase-app/ /app/nocobase/
 COPY docker-entrypoint.sh /app/
 # COPY docker-entrypoint.sh /usr/local/bin/
 # ENTRYPOINT ["docker-entrypoint.sh"]
+
+RUN ln -sf /app/nocobase/node_modules/.bin/nb /usr/local/bin/nb && \
+  mkdir -p /app/nocobase/docs /app/nocobase/storage/uploads /app/nocobase/node_modules/@nocobase/app/dist/client && \
+  touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html && \
+  echo "$COMMIT_HASH" > /app/commit_hash.txt
 
 EXPOSE 80/tcp
 

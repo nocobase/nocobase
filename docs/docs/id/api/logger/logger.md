@@ -1,16 +1,18 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Logger"
+description: "API logging NocoBase: Logger untuk membuat log, level log, konfigurasi output."
+keywords: "Logger,API log,level log,output log,NocoBase"
+---
 
 # Logger
 
-## Membuat Logger
+## Membuat Log
 
 ### `createLogger()`
 
-Membuat logger kustom.
+Membuat log kustom.
 
-#### Tanda Tangan
+#### Signature
 
 - `createLogger(options: LoggerOptions)`
 
@@ -28,18 +30,18 @@ interface LoggerOptions
 
 #### Detail
 
-| Properti     | Deskripsi              |
-| :----------- | :--------------------- |
-| `dirname`    | Direktori keluaran log |
-| `filename`   | Nama berkas log        |
-| `format`     | Format log             |
-| `transports` | Metode keluaran log    |
+| Properti | Deskripsi |
+| ------------ | ------------ |
+| `dirname` | Direktori output log |
+| `filename` | Nama file log |
+| `format` | Format log |
+| `transports` | Metode output log |
 
 ### `createSystemLogger()`
 
-Membuat log runtime sistem yang dicetak dengan metode yang ditentukan. Lihat [Logger - Log Sistem](/log-and-monitor/logger/index.md#system-log)
+Membuat log runtime sistem yang dicetak dengan cara yang ditentukan. Lihat [Log - Log Sistem](#)
 
-#### Tanda Tangan
+#### Signature
 
 - `createSystemLogger(options: SystemLoggerOptions)`
 
@@ -53,19 +55,19 @@ export interface SystemLoggerOptions extends LoggerOptions {
 
 #### Detail
 
-| Properti        | Deskripsi                                              |
-| :-------------- | :----------------------------------------------------- |
-| `seperateError` | Apakah akan mengeluarkan log level `error` secara terpisah |
+| Properti | Deskripsi |
+| --------------- | ------------------------------- |
+| `seperateError` | Apakah log level `error` ditampilkan terpisah |
 
 ### `requestLogger()`
 
-Middleware untuk pencatatan log permintaan dan respons API.
+Middleware log request dan response API.
 
 ```ts
 app.use(requestLogger(app.name));
 ```
 
-#### Tanda Tangan
+#### Signature
 
 - `requestLogger(appName: string, options?: RequestLoggerOptions): MiddewareType`
 
@@ -81,11 +83,11 @@ export interface RequestLoggerOptions extends LoggerOptions {
 
 #### Detail
 
-| Properti            | Tipe                              | Deskripsi                                                              | Nilai Default                                                                                                                                                 |
-| :------------------ | :-------------------------------- | :--------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `skip`              | `(ctx?: any) => Promise<boolean>` | Melewatkan pencatatan log untuk permintaan tertentu berdasarkan konteks permintaan. | -                                                                                                                                                       |
-| `requestWhitelist`  | `string[]`                        | Daftar putih informasi permintaan yang akan dicetak dalam log.       | `[ 'action', 'header.x-role', 'header.x-hostname', 'header.x-timezone', 'header.x-locale','header.x-authenticator', 'header.x-data-source', 'referer']` |
-| `responseWhitelist` | `string[]`                        | Daftar putih informasi respons yang akan dicetak dalam log.      | `['status']`                                                                                                                                            |
+| Properti | Tipe | Deskripsi | Default |
+| ------------------- | --------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `skip` | `(ctx?: any) => Promise<boolean>` | Melewati log permintaan tertentu berdasarkan konteks request | - |
+| `requestWhitelist` | `string[]` | Whitelist informasi request yang dicetak ke log | `[ 'action', 'header.x-role', 'header.x-hostname', 'header.x-timezone', 'header.x-locale','header.x-authenticator', 'header.x-data-source', 'referer']` |
+| `responseWhitelist` | `string[]` | Whitelist informasi response yang dicetak ke log | `['status']` |
 
 ### app.createLogger()
 
@@ -103,11 +105,11 @@ class Application {
 }
 ```
 
-Ketika `dirname` adalah jalur relatif, berkas log akan dikeluarkan ke direktori dengan nama aplikasi saat ini.
+Saat `dirname` adalah relative path, output file log akan masuk ke direktori dengan nama aplikasi saat ini.
 
 ### plugin.createLogger()
 
-Penggunaannya sama dengan `app.createLogger()`.
+Penggunaan sama dengan `app.createLogger()`
 
 #### Definisi
 
@@ -125,31 +127,31 @@ class Plugin {
 
 `getLoggerLevel(): 'debug' | 'info' | 'warn' | 'error'`
 
-Mendapatkan level log yang saat ini dikonfigurasi dalam sistem.
+Mendapatkan level log yang dikonfigurasi sistem saat ini.
 
 ### getLoggerFilePath()
 
 `getLoggerFilePath(...paths: string[]): string`
 
-Menggabungkan jalur direktori berdasarkan direktori log yang saat ini dikonfigurasi dalam sistem.
+Berdasarkan direktori log yang dikonfigurasi sistem saat ini, menggabungkan path direktori.
 
 ### getLoggerTransports()
 
 `getLoggerTransports(): ('console' | 'file' | 'dailyRotateFile')[]`
 
-Mendapatkan metode keluaran log yang saat ini dikonfigurasi dalam sistem.
+Mendapatkan metode output log yang dikonfigurasi sistem saat ini.
 
 ### getLoggerFormat()
 
 `getLoggerFormat(): 'logfmt' | 'json' | 'delimiter' | 'console'`
 
-Mendapatkan format log yang saat ini dikonfigurasi dalam sistem.
+Mendapatkan format log yang dikonfigurasi sistem saat ini.
 
-## Keluaran Log
+## Output Log
 
 ### Transports
 
-Metode keluaran yang telah ditentukan.
+Metode output yang sudah disediakan.
 
 - `Transports.console`
 - `Transports.file`
@@ -163,7 +165,7 @@ const transport = Transports.console({
 });
 ```
 
-## Dokumentasi Terkait
+## Dokumen Terkait
 
-- [Panduan Pengembangan - Logger](/plugin-development/server/logger)
-- [Logger](/log-and-monitor/logger/)
+- [Panduan Pengembangan - Log](/plugin-development/server/logger)
+- [Log](/log-and-monitor/logger/index.md)

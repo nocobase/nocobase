@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "Аутентификация пользователя",
+    "label": "Аутентификация",
     "items": [
       {
         "type": "custom-link",
@@ -43,12 +43,12 @@
                 "items": [
                   {
                     "type": "custom-link",
-                    "label": "Вход через Google",
+                    "label": "Google",
                     "link": "/auth-verification/auth-oidc/examples/google"
                   },
                   {
                     "type": "custom-link",
-                    "label": "Вход через Microsoft",
+                    "label": "Microsoft Entra ID",
                     "link": "/auth-verification/auth-oidc/examples/microsoft"
                   }
                 ]
@@ -71,7 +71,7 @@
                 "items": [
                   {
                     "type": "custom-link",
-                    "label": "Вход через Google",
+                    "label": "Google Workspace",
                     "link": "/auth-verification/auth-saml/examples/google"
                   }
                 ]
@@ -100,24 +100,24 @@
           },
           {
             "type": "custom-link",
-            "label": "Ключи API",
+            "label": "API-ключи",
             "link": "/auth-verification/api-keys/"
           }
         ]
       },
       {
         "type": "dir",
-        "label": "Руководство для разработчиков",
+        "label": "Разработка",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
             "label": "Расширение типов аутентификации",
-            "link": "/auth-verification/auth/dev"
+            "link": "/auth-verification/auth/dev/"
           },
           {
             "type": "custom-link",
-            "label": "Справочник API",
+            "label": "API",
             "link": "/auth-verification/auth/dev/api"
           }
         ]
@@ -152,7 +152,7 @@
       {
         "type": "dir",
         "collapsed": true,
-        "label": "Руководство для разработчиков",
+        "label": "Разработка",
         "items": [
           {
             "type": "custom-link",
@@ -171,7 +171,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Справочник API",
+            "label": "API",
             "link": "/auth-verification/verification/dev/api"
           }
         ]

@@ -1,4 +1,6 @@
 ---
+title: "Audit logs (deprecated)"
+keywords: "System & security"
 displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
@@ -7,6 +9,7 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
 
 # Audit logs (deprecated)

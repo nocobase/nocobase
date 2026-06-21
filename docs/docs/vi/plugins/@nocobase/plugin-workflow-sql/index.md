@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc: Nút SQL"
+displayName: "Workflow: Node SQL"
 packageName: '@nocobase/plugin-workflow-sql'
+title: "Workflow: Node SQL"
+keywords: "Workflow: Node SQL,Plugin,NocoBase"
 description: |
-  Cho phép thực thi các câu lệnh SQL tùy ý trên cơ sở dữ liệu trong luồng công việc.
+  Có thể được sử dụng để thực thi bất kỳ câu lệnh SQL nào trên cơ sở dữ liệu trong workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút SQL
+# Workflow: Node SQL

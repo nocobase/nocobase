@@ -1,16 +1,17 @@
 ---
-displayName: "Источник данных: KingbaseES"
+title: "Data source: KingbaseES"
+keywords: "Data sources"
+displayName: "Data source: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Позволяет использовать базу данных KingbaseES в качестве источника данных. Вы можете применять ее как основную или как внешнюю базу данных.
+  База KingbaseES как источник данных: основная БД приложения или внешняя база.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-
-# Источник данных: KingbaseES
+# Data source: KingbaseES

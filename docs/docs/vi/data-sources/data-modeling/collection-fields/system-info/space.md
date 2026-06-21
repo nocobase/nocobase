@@ -1,17 +1,16 @@
 ---
 pkg: "@nocobase/plugin-multi-space"
+title: "Space"
+description: "Field hệ thống Space, dùng để cô lập dữ liệu multi-tenant."
+keywords: "Field space,space,multi-space,Field hệ thống,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Không gian
+# Space
 
 ## Giới thiệu
 
 Sẽ được bổ sung sau
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![index-2025-11-01-00-50-45](https://static-docs.nocobase.com/index-2025-11-01-00-50-45.png)
 

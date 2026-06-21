@@ -1,14 +1,14 @@
 ---
-displayName: "Trường bộ sưu tập: Nhiều-nhiều (mảng)"
+displayName: "Field: Many-to-many (Array)"
 packageName: '@nocobase/plugin-field-m2m-array'
+title: "Field: Many-to-many (Array)"
+keywords: "Field: Many-to-many (Array),Plugin,NocoBase"
 description: |
-  Hỗ trợ thiết lập mối quan hệ nhiều-nhiều bằng cách lưu trữ các khóa duy nhất của bộ sưu tập đích trong một mảng.
+  Hỗ trợ thiết lập quan hệ many-to-many bằng cách lưu khóa duy nhất của bảng đích trong một mảng.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trường bộ sưu tập: Nhiều-nhiều (mảng)
+# Field: Many-to-many (Array)

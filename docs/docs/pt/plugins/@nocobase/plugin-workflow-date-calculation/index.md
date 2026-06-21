@@ -1,18 +1,17 @@
 ---
-displayName: "Fluxo de trabalho: nó de cálculo de data"
+title: "Workflow: date calculation node"
+keywords: "Workflow"
+displayName: "Workflow: date calculation node"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Permite realizar operações com datas em fluxos de trabalho, como adição, subtração, comparação e formatação.
-isFree: false
-builtIn: false
+  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-# Fluxo de trabalho: nó de cálculo de data
+# Workflow: date calculation node

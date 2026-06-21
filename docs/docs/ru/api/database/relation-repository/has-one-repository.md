@@ -1,12 +1,8 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
-# HasOneRepository
+# HasOneRepository - Репозиторий HasOne
 
 ## Обзор
 
-`HasOneRepository` — это репозиторий для ассоциаций типа `HasOne`.
+`HasOneRepository` — это хранилище ассоциаций типов `HasOne`.
 
 ```typescript
 const User = db.collection({
@@ -26,7 +22,7 @@ const user = await User.repository.create({
   values: { name: 'u1' },
 });
 
-// Получаем репозиторий ассоциации
+// Получить репозиторий ассоциаций
 const userProfileRepository = User.repository
   .relation('profile')
   .of(user.get('id'));
@@ -58,7 +54,7 @@ interface SingleRelationFindOption extends Transactionable {
 
 **Подробности**
 
-Параметры запроса совпадают с параметрами [`Repository.find()`](../repository.md#find).
+Параметры запроса такие же, как у [`Repository.find()`](../repository.md#find).
 
 **Пример**
 
@@ -118,7 +114,7 @@ profile.get('avatar'); // 'avatar2'
 
 ### `remove()`
 
-Удаляет связанный объект. Эта операция только разрывает связь, но не удаляет сам связанный объект.
+Удаляет связанный объект. Это только отменяет связь, но не удаляет связанный объект.
 
 **Сигнатура**
 
@@ -132,14 +128,14 @@ profile.get('avatar'); // 'avatar2'
 
 ```typescript
 await UserProfileRepository.remove();
-(await UserProfileRepository.find()) == null; // true
+(await UserProfileRepository.find()) == null; // истинный
 
-(await Profile.repository.count()) === 1; // true
+(await Profile.repository.count()) === 1; // истинный
 ```
 
 ### `destroy()`
 
-Удаляет связанный объект.
+Удаляет связанный объект
 
 **Сигнатура**
 
@@ -153,13 +149,13 @@ await UserProfileRepository.remove();
 
 ```typescript
 await UserProfileRepository.destroy();
-(await UserProfileRepository.find()) == null; // true
-(await Profile.repository.count()) === 0; // true
+(await UserProfileRepository.find()) == null; // истинный
+(await Profile.repository.count()) === 0; // истинный
 ```
 
 ### `set()`
 
-Устанавливает связанный объект.
+Устанавливает связанный объект
 
 **Сигнатура**
 
@@ -175,7 +171,7 @@ interface SetOption extends Transactionable {
 
 **Подробности**
 
-- `tk`: `targetKey` связанного объекта, который нужно установить.
+- `tk`: TargetKey связанного объекта, который необходимо установить.
 - `transaction`: Объект транзакции. Если параметр транзакции не передан, метод автоматически создаст внутреннюю транзакцию.
 
 **Пример**
@@ -187,5 +183,5 @@ const newProfile = await Profile.repository.create({
 
 await UserProfileRepository.set(newProfile.get('id'));
 
-(await UserProfileRepository.find()).get('id') === newProfile.get('id'); // true
+(await UserProfileRepository.find()).get('id') === newProfile.get('id'); // истинный
 ```

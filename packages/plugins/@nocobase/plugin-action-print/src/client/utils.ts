@@ -12,6 +12,7 @@ import { useDetailsBlockContext, useFormBlockContext, useLazy } from '@nocobase/
 export const useDetailPrintActionProps = () => {
   const context = useFormBlockContext();
   const { formBlockRef } = useDetailsBlockContext();
+  // 这个 useLazy 暂时不好改，先不处理了
   const useReactToPrint = useLazy<typeof import('react-to-print').useReactToPrint>(
     () => import('react-to-print'),
     'useReactToPrint',

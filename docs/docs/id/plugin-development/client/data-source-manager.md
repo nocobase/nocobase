@@ -1,11 +1,13 @@
+---
+title: "DataSourceManager Manajemen Data Source (Client)"
+description: "Manajemen data source client NocoBase: app.dataSourceManager, multi data source, registrasi dan akuisisi data source front-end."
+keywords: "DataSourceManager,manajemen data source,client,multi data source,data source front-end,NocoBase"
+---
+
+# DataSourceManager Manajemen Data Source
+
 :::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Manajer Sumber Data
-
-:::tip
-
-Kami akan melengkapi contoh rinci dan praktik terbaik pada versi selanjutnya.
+Kami akan melengkapi contoh detail dan best practice di versi berikutnya.
 
 :::

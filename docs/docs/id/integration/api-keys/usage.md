@@ -1,88 +1,90 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Tutorial Penggunaan API Key"
+description: "Praktik API Key: contoh todo, buat peran dan key, pengujian Postman, antarmuka CRUD, panggilan JS Block, termasuk Authorization Bearer dan contoh curl."
+keywords: "penggunaan API Key,pengujian Postman,antarmuka CRUD,Authorization Bearer,JS Block,contoh todo,NocoBase"
+---
 
-# Menggunakan Kunci API di NocoBase
+# Menggunakan API Key di NocoBase
 
-Panduan ini menunjukkan cara menggunakan Kunci API di NocoBase untuk mengambil data melalui contoh praktis "Daftar Tugas". Ikuti petunjuk langkah demi langkah di bawah ini untuk memahami alur kerja secara lengkap.
+Panduan ini mendemonstrasikan cara menggunakan API Key di NocoBase untuk mendapatkan data melalui contoh "todo" yang nyata. Ikuti petunjuk langkah demi langkah berikut untuk memahami alur kerja yang lengkap.
 
 ![202503032004-todo1](https://static-docs.nocobase.com/202503032004-todo1.gif)
 
-## 1 Memahami Kunci API
+## 1 Memahami API Key
 
-Kunci API adalah token keamanan yang digunakan untuk mengautentikasi permintaan API dari pengguna yang berwenang. Kunci ini berfungsi sebagai kredensial yang memvalidasi identitas pemohon saat mengakses sistem NocoBase melalui aplikasi web, aplikasi seluler, atau skrip backend.
+API Key adalah token keamanan yang digunakan untuk memvalidasi API Request dari pengguna yang berwenang. Ia berfungsi sebagai kredensial untuk memvalidasi identitas pemohon saat mengakses sistem NocoBase melalui aplikasi web, aplikasi mobile, atau skrip backend.
 
-Dalam header permintaan HTTP, formatnya adalah:
+Format pada header HTTP Request:
 
 ```txt
-Authorization: Bearer {Kunci API}
+Authorization: Bearer {API Key}
 ```
 
-Prefiks "Bearer" menunjukkan bahwa string yang mengikutinya adalah Kunci API terautentikasi yang digunakan untuk memverifikasi izin pemohon.
+Awalan "Bearer" menunjukkan bahwa setelahnya adalah API Key terautentikasi yang digunakan untuk memvalidasi izin pemohon.
 
-### Kasus Penggunaan Umum
+### Skenario Penggunaan Umum
 
-Kunci API biasanya digunakan dalam skenario berikut:
+API Key biasanya digunakan dalam skenario berikut:
 
-1.  **Akses Aplikasi Klien**: Peramban web dan aplikasi seluler menggunakan Kunci API untuk mengautentikasi identitas pengguna, memastikan hanya pengguna yang berwenang yang dapat mengakses data.
-2.  **Eksekusi Tugas Otomatis**: Proses latar belakang dan tugas terjadwal menggunakan Kunci API untuk secara aman menjalankan pembaruan, sinkronisasi data, dan operasi pencatatan log.
-3.  **Pengembangan dan Pengujian**: Pengembang menggunakan Kunci API selama proses debug dan pengujian untuk mensimulasikan permintaan terautentikasi dan memverifikasi respons API.
+1. **Akses aplikasi klien**: browser web dan aplikasi mobile menggunakan API Key untuk memvalidasi identitas pengguna, memastikan hanya pengguna yang berwenang yang dapat mengakses data.
+2. **Eksekusi tugas otomatis**: proses background dan tugas terjadwal menggunakan API Key untuk melakukan operasi pembaruan, sinkronisasi data, dan pencatatan log secara aman.
+3. **Pengembangan dan pengujian**: developer menggunakan API Key selama debugging dan pengujian untuk meniru request terautentikasi dan memvalidasi respons API.
 
-Kunci API memberikan berbagai manfaat keamanan: verifikasi identitas, pemantauan penggunaan, pembatasan laju permintaan, dan pencegahan ancaman, yang semuanya memastikan operasi NocoBase berjalan stabil dan aman.
+API Key memberikan beberapa keuntungan keamanan: validasi identitas, pemantauan penggunaan, pembatasan laju request, dan pencegahan ancaman, memastikan operasi NocoBase yang stabil dan aman.
 
-## 2 Membuat Kunci API di NocoBase
+## 2 Membuat API Key di NocoBase
 
-### 2.1 Aktifkan Plugin Autentikasi: Kunci API
+### 2.1 Aktifkan Plugin Autentikasi: API Key
 
-Pastikan **plugin** bawaan [Autentikasi: Kunci API](/plugins/@nocobase/plugin-api-keys/) telah diaktifkan. Setelah diaktifkan, halaman konfigurasi Kunci API yang baru akan muncul di pengaturan sistem.
+Pastikan Plugin [Autentikasi: API Key](/plugins/@nocobase/plugin-api-keys/index.md) bawaan sudah diaktifkan. Setelah diaktifkan, halaman konfigurasi API Key baru akan muncul pada pengaturan sistem.
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
-### 2.2 Membuat **Koleksi** Uji
+### 2.2 Buat Tabel Data Pengujian
 
-Untuk tujuan demonstrasi, buat sebuah **koleksi** bernama `todos` dengan bidang-bidang berikut:
+Untuk tujuan demonstrasi, buat tabel data bernama `todos` dengan field-field berikut:
 
--   `id`
--   `judul (title)`
--   `selesai (completed)`
+- `id`
+- `judul (title)`
+- `selesai (completed)`
 
 ![20250303175632](https://static-docs.nocobase.com/20250303175632.png)
 
-Tambahkan beberapa catatan contoh ke **koleksi**:
+Tambahkan beberapa record contoh ke tabel data:
 
--   makan
--   tidur
--   bermain game
+- Makan
+- Tidur
+- Main game
 
 ![20250303180044](https://static-docs.nocobase.com/20250303180044.png)
 
-### 2.3 Membuat dan Menetapkan Peran
+### 2.3 Buat dan Tetapkan Peran
 
-Kunci API terikat pada peran pengguna, dan sistem menentukan izin permintaan berdasarkan peran yang ditetapkan. Sebelum membuat Kunci API, Anda harus membuat peran dan mengonfigurasi izin yang sesuai. Buat peran bernama "Peran API Daftar Tugas" dan berikan akses penuh ke **koleksi** `todos`.
+API Key terikat pada peran pengguna; sistem menentukan izin request berdasarkan peran yang ditetapkan. Sebelum membuat API Key, Anda harus membuat peran dan mengkonfigurasi izin yang sesuai. Buat peran bernama "Peran API Todo" dan beri akses penuh ke tabel data `todos`.
 
 ![20250303180247](https://static-docs.nocobase.com/20250303180247.png)
 
-Jika "Peran API Daftar Tugas" tidak tersedia saat membuat Kunci API, pastikan pengguna saat ini telah ditetapkan peran ini:
+Jika "Peran API Todo" tidak tersedia saat membuat API Key, pastikan pengguna saat ini telah ditetapkan peran ini:
 
 ![20250303180638](https://static-docs.nocobase.com/20250303180638.png)
 
-Setelah penetapan peran, segarkan halaman dan navigasikan ke halaman manajemen Kunci API. Klik "Tambah Kunci API" untuk memverifikasi bahwa "Peran API Daftar Tugas" muncul dalam pilihan peran.
+Setelah peran ditetapkan, refresh halaman dan navigasikan ke halaman manajemen API Key. Klik "Tambahkan API Key" untuk memverifikasi bahwa "Peran API Todo" muncul pada pemilihan peran.
 
 ![20250303180612](https://static-docs.nocobase.com/20250303180612.png)
 ![20250303180936](https://static-docs.nocobase.com/20250303180936.png)
 
-Untuk kontrol akses yang lebih baik, pertimbangkan untuk membuat akun pengguna khusus (misalnya, "Pengguna API Daftar Tugas") yang secara spesifik digunakan untuk manajemen dan pengujian Kunci API. Tetapkan "Peran API Daftar Tugas" kepada pengguna ini.
+Untuk kontrol akses yang lebih baik, pertimbangkan untuk membuat akun pengguna khusus (misalnya "Pengguna API Todo") khusus untuk manajemen dan pengujian API Key. Tetapkan "Peran API Todo" ke pengguna ini.
 ![20250304134443](https://static-docs.nocobase.com/20250304134443.png)
 ![20250304134713](https://static-docs.nocobase.com/20250304134713.png)
 ![20250304134734](https://static-docs.nocobase.com/20250304134734.png)
 
-### 2.4 Membuat dan Menyimpan Kunci API
+### 2.4 Hasilkan dan Simpan API Key
 
-Setelah mengirimkan formulir, sistem akan menampilkan pesan konfirmasi dengan Kunci API yang baru dibuat. **Penting**: Segera salin dan simpan kunci ini dengan aman, karena kunci ini tidak akan ditampilkan lagi untuk alasan keamanan.
+Setelah formulir disubmit, sistem akan menampilkan pesan konfirmasi dan API Key yang baru dihasilkan. **Catatan Penting**: segera salin dan simpan key ini dengan aman; karena alasan keamanan, key ini tidak akan ditampilkan lagi.
 
 ![20250303181130](https://static-docs.nocobase.com/20250303181130.png)
 
-Contoh Kunci API:
+Contoh API Key:
 
 ```txt
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJpYXQiOjE3NDA5OTY1ODAsImV4cCI6MzMyOTg1OTY1ODB9.tXF2FCAzFNgZFPXqSBbWAfEvWkQwz0-mtKnmOTZT-5M
@@ -90,79 +92,79 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
 
 ### 2.5 Catatan Penting
 
--   Masa berlaku Kunci API ditentukan oleh pengaturan kedaluwarsa yang dikonfigurasi saat pembuatan.
--   Pembuatan dan verifikasi Kunci API bergantung pada variabel lingkungan `APP_KEY`. **Jangan ubah variabel ini**, karena hal tersebut akan membatalkan semua Kunci API yang ada di sistem.
+- Masa berlaku API Key ditentukan oleh pengaturan kedaluwarsa yang dikonfigurasi saat pembuatan.
+- Pembuatan dan validasi API Key bergantung pada variabel lingkungan `APP_KEY`. **Jangan modifikasi variabel ini**, jika tidak semua API Key yang ada di sistem akan tidak berlaku.
 
-## 3 Menguji Autentikasi Kunci API
+## 3 Pengujian Autentikasi API Key
 
-### 3.1 Menggunakan **Plugin** Dokumentasi API
+### 3.1 Menggunakan Plugin Dokumentasi API
 
-Buka **plugin** [Dokumentasi API](/plugins/@nocobase/plugin-api-doc/) untuk melihat metode permintaan, URL, parameter, dan header permintaan untuk setiap endpoint API.
+Buka Plugin [Dokumentasi API](/plugins/@nocobase/plugin-api-doc/index.md), lihat metode request, URL, parameter, dan header untuk setiap endpoint API.
 
 ![20250303181522](https://static-docs.nocobase.com/20250303181522.png)
 ![20250303181704](https://static-docs.nocobase.com/20250303181704.png)
 
 ### 3.2 Memahami Operasi CRUD Dasar
 
-NocoBase menyediakan API CRUD (Create, Read, Update, Delete) standar untuk manipulasi data:
+NocoBase menyediakan API CRUD (Create, Read, Update, Delete) standar untuk operasi data:
 
--   **Kueri Daftar (API `list`):**
+- **Query daftar (antarmuka list):**
 
-    ```txt
-    GET {baseURL}/{collectionName}:list
-    Header Permintaan:
-    - Authorization: Bearer <Kunci API>
+  ```txt
+  GET {baseURL}/{collectionName}:list
+  Header:
+  - Authorization: Bearer <API Key>
 
-    ```
--   **Membuat Catatan (API `create`):**
+  ```
+- **Tambahkan record (antarmuka create):**
 
-    ```txt
-    POST {baseURL}/{collectionName}:create
+  ```txt
+  POST {baseURL}/{collectionName}:create
 
-    Header Permintaan:
-    - Authorization: Bearer <Kunci API>
+  Header:
+  - Authorization: Bearer <API Key>
 
-    Body Permintaan (dalam format JSON), contoh:
-        {
-            "title": "123"
-        }
-    ```
--   **Memperbarui Catatan (API `update`):**
+  Body request (format JSON), contoh:
+      {
+          "title": "123"
+      }
+  ```
+- **Modifikasi record (antarmuka update):**
 
-    ```txt
-    POST {baseURL}/{collectionName}:update?filterByTk={id}
-    Header Permintaan:
-    - Authorization: Bearer <Kunci API>
+  ```txt
+  POST {baseURL}/{collectionName}:update?filterByTk={id}
+  Header:
+  - Authorization: Bearer <API Key>
 
-    Body Permintaan (dalam format JSON), contoh:
-        {
-            "title": "123",
-            "completed": true
-        }
-    ```
--   **Menghapus Catatan (API `destroy`):**
+  Body request (format JSON), contoh:
+      {
+          "title": "123",
+          "completed": true
+      }
+  ```
+- **Hapus record (antarmuka delete):**
 
-    ```txt
-    POST {baseURL}/{collectionName}:destroy?filterByTk={id}
-    Header Permintaan:
-    - Authorization: Bearer <Kunci API>
-    ```
+  ```txt
+  POST {baseURL}/{collectionName}:destroy?filterByTk={id}
+  Header:
+  - Authorization: Bearer <API Key>
+  ```
 
-Di mana:
--   `{baseURL}`: URL sistem NocoBase Anda
--   `{collectionName}`: Nama **koleksi**
+Dimana:
+- `{baseURL}`: URL sistem NocoBase
+- `{collectionName}`: nama tabel data
 
-Contoh: Untuk instans lokal di `localhost:13000` dengan **koleksi** bernama `todos`:
+Contoh: instance lokal `localhost:13000`, nama tabel data `todos`:
 
 ```txt
 http://localhost:13000/api/todos:list
 ```
 
-### 3.3 Menguji dengan Postman
+### 3.3 Pengujian dengan Postman
 
-Buat permintaan GET di Postman dengan konfigurasi berikut:
--   **URL**: Endpoint permintaan (misalnya, `http://localhost:13000/api/todos:list`)
--   **Headers**: Tambahkan header `Authorization` dengan nilai:
+Buat GET Request di Postman dengan konfigurasi sebagai berikut:
+- **URL**: endpoint request (misalnya `http://localhost:13000/api/todos:list`)
+- **Headers**: tambahkan header `Authorization` dengan nilai:
 
 ```txt
 Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJpYXQiOjE3NDA5OTY1ODAsImV4cCI6MzMyOTg1OTY1ODB9.tXF2FCAzFNgZFPXqSBbWAfEvWkQwz0-mtKnmOTZT-5M
@@ -170,7 +172,7 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9k
 
 ![20250303182744](https://static-docs.nocobase.com/20250303182744.png)
 
-**Respons Berhasil:**
+**Respons sukses:**
 
 ```json
 {
@@ -194,7 +196,7 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9k
 }
 ```
 
-**Respons Error (Kunci API Tidak Valid/Kedaluwarsa):**
+**Respons error (API Key tidak valid/kedaluwarsa):**
 
 ```json
 {
@@ -207,11 +209,11 @@ Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9k
 }
 ```
 
-**Pemecahan Masalah**: Jika autentikasi gagal, verifikasi izin peran, pengikatan Kunci API, dan format token.
+**Pemecahan Masalah**: jika autentikasi gagal, validasi izin peran, binding API Key, dan format token.
 
-### 3.4 Mengekspor Kode Permintaan
+### 3.4 Ekspor Kode Request
 
-Postman memungkinkan Anda mengekspor permintaan dalam berbagai format. Contoh perintah cURL:
+Postman memungkinkan ekspor request dalam berbagai format. Contoh perintah cURL:
 
 ```txt
 curl --location 'http://localhost:13000/api/todos:list' \
@@ -221,74 +223,75 @@ curl --location 'http://localhost:13000/api/todos:list' \
 ![20250303184912](https://static-docs.nocobase.com/20250303184912.png)
 ![20250303184953](https://static-docs.nocobase.com/20250303184953.png)
 
-## 4 Menggunakan Kunci API dalam Blok JS
+## 4 Menggunakan API Key di JS Block
 
-NocoBase 2.0 mendukung penulisan kode JavaScript asli secara langsung di halaman menggunakan blok JS. Contoh ini menunjukkan cara mengambil data API eksternal menggunakan Kunci API.
+NocoBase 2.0 mendukung penulisan kode JavaScript native langsung pada halaman menggunakan JS Block. Contoh ini mendemonstrasikan cara menggunakan API Key untuk mendapatkan data API eksternal.
 
-### Membuat Blok JS
+### Buat JS Block
 
-Di halaman NocoBase Anda, tambahkan blok JS dan gunakan kode berikut untuk mengambil data daftar tugas:
+Tambahkan JS Block pada halaman NocoBase dan gunakan kode berikut untuk mendapatkan data todo:
 
 ```javascript
-// Mengambil data daftar tugas menggunakan Kunci API
+// Gunakan API Key untuk mendapatkan data todo
 async function fetchTodos() {
   try {
-    // Menampilkan pesan memuat
+    // Tampilkan tip loading
     ctx.message.loading('Sedang mengambil data...');
 
-    // Memuat pustaka axios untuk permintaan HTTP
+    // Muat library axios untuk HTTP Request
     const axios = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js');
 
     if (!axios) {
-      ctx.message.error('Gagal memuat pustaka HTTP');
+      ctx.message.error('Gagal memuat library HTTP');
       return;
     }
 
-    // Kunci API (ganti dengan kunci API Anda yang sebenarnya)
+    // API Key (ganti dengan API Key Anda yang sebenarnya)
     const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJpYXQiOjE3NDA5OTY1ODAsImV4cCI6MzMyOTg1OTY1ODB9.tXF2FCAzFNgZFPXqSBbWAfEvWkQwz0-mtKnmOTZT-5M';
 
-    // Melakukan permintaan API
+    // Inisiasi API Request
     const response = await axios.get('http://localhost:13000/api/todos:list', {
       headers: {
         'Authorization': `Bearer ${apiKey}`
       }
     });
 
-    // Menampilkan hasil
-    console.log('Daftar Tugas:', response.data);
-    ctx.message.success(`Berhasil mengambil ${response.data.data.length} item data`);
+    // Tampilkan hasil
+    console.log('Daftar todo:', response.data);
+    ctx.message.success(`Berhasil mendapatkan ${response.data.data.length} record`);
 
     // Anda dapat memproses data di sini
-    // Contoh: menampilkan ke tabel, memperbarui bidang formulir, dll.
+    // Contoh: tampilkan ke tabel, update field formulir, dll.
 
   } catch (error) {
-    console.error('Error saat mengambil data:', error);
+    console.error('Error mengambil data:', error);
     ctx.message.error('Gagal mengambil data: ' + error.message);
   }
 }
 
-// Menjalankan fungsi
+// Eksekusi fungsi
 fetchTodos();
 ```
 
-### Poin-Poin Penting
+### Poin Penting
 
--   **ctx.requireAsync()**: Memuat pustaka eksternal (seperti axios) secara dinamis untuk permintaan HTTP
--   **ctx.message**: Menampilkan notifikasi pengguna (memuat, berhasil, pesan error)
--   **Autentikasi Kunci API**: Meneruskan Kunci API dalam header permintaan `Authorization` dengan prefiks `Bearer`
--   **Penanganan Respons**: Memproses data yang dikembalikan sesuai kebutuhan (menampilkan, mengubah, dll.)
+- **ctx.requireAsync()**: muat library eksternal secara dinamis (seperti axios) untuk HTTP Request
+- **ctx.message**: tampilkan notifikasi pengguna (pesan loading, sukses, error)
+- **Autentikasi API Key**: teruskan API Key di header `Authorization` dengan awalan `Bearer`
+- **Penanganan respons**: proses data yang dikembalikan sesuai kebutuhan (tampilkan, transformasi, dll.)
 
 ## 5 Ringkasan
 
-Panduan ini mencakup alur kerja lengkap untuk menggunakan Kunci API di NocoBase:
+Panduan ini mencakup alur kerja lengkap penggunaan API Key di NocoBase:
 
-1.  **Pengaturan**: Mengaktifkan **plugin** Kunci API dan membuat **koleksi** uji
-2.  **Konfigurasi**: Membuat peran dengan izin yang sesuai dan membuat Kunci API
-3.  **Pengujian**: Memvalidasi autentikasi Kunci API menggunakan Postman dan **plugin** Dokumentasi API
-4.  **Integrasi**: Menggunakan Kunci API dalam blok JS
+1. **Persiapan**: aktifkan Plugin API Key dan buat tabel data pengujian
+2. **Konfigurasi**: buat peran dengan izin yang sesuai dan hasilkan API Key
+3. **Pengujian**: validasi autentikasi API Key dengan Postman dan Plugin Dokumentasi API
+4. **Integrasi**: gunakan API Key di JS Block
 
 ![202503031942-todo](https://static-docs.nocobase.com/202503031942-todo.gif)
 
-**Sumber Daya Tambahan:**
--   [Dokumentasi **Plugin** Kunci API](/plugins/@nocobase/plugin-api-keys/)
--   [**Plugin** Dokumentasi API](/plugins/@nocobase/plugin-api-doc/)
+
+**Sumber daya tambahan:**
+- [Dokumentasi Plugin API Key](/plugins/@nocobase/plugin-api-keys/index.md)
+- [Plugin Dokumentasi API](/plugins/@nocobase/plugin-api-doc/index.md)

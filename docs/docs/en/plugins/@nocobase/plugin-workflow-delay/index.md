@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Delay node"
+keywords: "Workflow"
 displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Workflow: Delay node

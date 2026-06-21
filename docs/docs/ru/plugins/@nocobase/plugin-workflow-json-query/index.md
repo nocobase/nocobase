@@ -1,17 +1,14 @@
 ---
-displayName: "Рабочий процесс: Вычисление JSON"
+title: "Workflow: JSON calculation"
+keywords: "Workflow"
+displayName: "Рабочий процесс: вычисления JSON"
 packageName: '@nocobase/plugin-workflow-json-query'
-supportedVersions:
-  - 1.x
-  - 2.x
 description: |
-  Используется для преобразования или вычисления значений из сложных JSON-объектов (например, результатов узлов HTTP-запросов или SQL-узлов).
+  Преобразование или вычисление значений из сложных JSON-данных (результат HTTP-запроса, SQL и т.д.).
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Рабочий процесс: Вычисление JSON
+# Рабочий процесс: вычисления JSON

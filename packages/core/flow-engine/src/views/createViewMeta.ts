@@ -15,6 +15,82 @@ import type { FlowView } from './FlowView';
 
 type PopupModelLike = { getStepParams?: (a: string, b: string) => any } | undefined;
 
+function isDefined(value: any) {
+  return value !== undefined && value !== null;
+}
+
+function isSameViewParamValue(left: any, right: any) {
+  if (left === right) return true;
+  if (!isDefined(left) || !isDefined(right)) return false;
+
+  try {
+    return JSON.stringify(left) === JSON.stringify(right);
+  } catch (_) {
+    return String(left) === String(right);
+  }
+}
+
+function getViewStack(view?: FlowView): any[] {
+  const stack = view?.navigation?.viewStack;
+  return Array.isArray(stack) ? stack : [];
+}
+
+function getAnchoredViewStackIndex(view?: FlowView, stack = getViewStack(view)): number {
+  if (!stack.length) return -1;
+
+  const args = view?.inputArgs || {};
+  const navParams = view?.navigation?.viewParams || {};
+  const viewUid = args.viewUid ?? navParams.viewUid;
+
+  if (!viewUid) {
+    return stack.length - 1;
+  }
+
+  const candidates = stack.map((item, index) => ({ item, index })).filter(({ item }) => item?.viewUid === viewUid);
+
+  if (!candidates.length) {
+    return stack.length - 1;
+  }
+
+  const keys = ['filterByTk', 'sourceId', 'tabUid'];
+  let bestIndex = candidates[candidates.length - 1].index;
+  let bestScore = -1;
+
+  for (const { item, index } of candidates) {
+    let score = 0;
+    let matched = true;
+
+    for (const key of keys) {
+      if (!isDefined(args[key])) continue;
+      if (!isSameViewParamValue(item?.[key], args[key])) {
+        matched = false;
+        break;
+      }
+      score += 1;
+    }
+
+    if (!matched) continue;
+    if (score >= bestScore) {
+      bestIndex = index;
+      bestScore = score;
+    }
+  }
+
+  return bestIndex;
+}
+
+function getPopupView(ctx: FlowContext, anchorView?: FlowView) {
+  return anchorView ?? ctx.view;
+}
+
+function isPopupView(view?: FlowView): boolean {
+  if (!view) return false;
+  const stack = getViewStack(view);
+  const openerUids = view?.inputArgs?.openerUids;
+  const hasOpener = Array.isArray(openerUids) && openerUids.length > 0;
+  return getAnchoredViewStackIndex(view, stack) >= 1 || hasOpener;
+}
+
 // 判断是否为普通对象（Plain Object），避免对类实例/代理等进行深度遍历
 function isPlainObject(val: any) {
   if (val === null || typeof val !== 'object') return false;
@@ -79,19 +155,11 @@ function makeMetaFromValue(value: any, title?: string, seen?: WeakSet<any>): any
 export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): PropertyMetaFactory {
   const t = (k: string) => ctx.t(k);
 
-  const isPopupView = (view?: FlowView): boolean => {
-    if (!view) return false;
-    const stack = Array.isArray(view.navigation?.viewStack) ? view.navigation.viewStack : [];
-    const openerUids = view?.inputArgs?.openerUids;
-    const hasOpener = Array.isArray(openerUids) && openerUids.length > 0;
-    return stack.length >= 2 || hasOpener;
-  };
-
-  const hasPopupNow = (): boolean => isPopupView(anchorView ?? ctx.view);
+  const hasPopupNow = (flowCtx: FlowContext = ctx): boolean => isPopupView(getPopupView(flowCtx, anchorView));
 
   // 统一解析锚定视图下的 RecordRef，避免在设置弹窗等二级视图中被误导
   const resolveRecordRef = async (flowCtx: FlowContext): Promise<RecordRef | undefined> => {
-    const view = anchorView ?? flowCtx.view;
+    const view = getPopupView(flowCtx, anchorView);
     if (!view || !isPopupView(view)) return undefined;
 
     const base = await buildPopupRuntime(flowCtx, view);
@@ -119,11 +187,12 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
   const getParentRecordRef = async (level: number, flowCtx?: FlowContext): Promise<RecordRef | undefined> => {
     try {
       const useCtx = flowCtx || ctx;
-      const nav = useCtx.view?.navigation;
-      const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
-      if (stack.length < 2 || level < 1) return undefined;
-      const idx = stack.length - 1 - level;
-      if (idx < 0) return undefined;
+      const view = getPopupView(useCtx, anchorView);
+      const stack = getViewStack(view);
+      const currentIndex = getAnchoredViewStackIndex(view, stack);
+      if (currentIndex < 1 || level < 1) return undefined;
+      const idx = currentIndex - level;
+      if (idx < 1) return undefined;
       const parent = stack[idx];
       if (!parent?.viewUid) return undefined;
 
@@ -156,9 +225,10 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
 
   const hasParentNow = (level: number): boolean => {
     try {
-      const nav = (anchorView ?? ctx.view)?.navigation;
-      const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
-      return stack.length >= level + 1; // level=1 需要至少2层
+      const view = getPopupView(ctx, anchorView);
+      const stack = getViewStack(view);
+      const currentIndex = getAnchoredViewStackIndex(view, stack);
+      return currentIndex - level >= 1; // level=1 需要至少一个上级弹窗
     } catch (_) {
       return false;
     }
@@ -231,9 +301,10 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
       disabled: () => !hasPopupNow(),
       hidden: () => !hasPopupNow(),
       buildVariablesParams: async (c) => {
-        if (!hasPopupNow()) return undefined;
+        if (!hasPopupNow(c)) return undefined;
         const ref = await resolveRecordRef(c);
-        const inputArgs = c.view?.inputArgs;
+        const view = getPopupView(c, anchorView);
+        const inputArgs = view?.inputArgs;
         type PopupVariableParams = {
           record?: RecordRef;
           sourceRecord?: RecordRef;
@@ -253,9 +324,9 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
 
         // 构建 parent 链（用于服务端解析 ctx.popup.parent[.parent...].record.*）
         try {
-          const nav = c.view?.navigation;
-          const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
-          if (stack.length >= 2) {
+          const stack = getViewStack(view);
+          const currentIndex = getAnchoredViewStackIndex(view, stack);
+          if (currentIndex >= 2) {
             let cur: Record<string, any> = params;
             let level = 1;
             let parentRef = await getParentRecordRef(level, c);
@@ -315,20 +386,21 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
         }
         // 当 view.inputArgs 带有 sourceId + associationName 时，提供“上级记录”变量（基于 sourceId 推断）
         try {
-          const inputArgs = ctx.view?.inputArgs;
+          const view = getPopupView(ctx, anchorView);
+          const inputArgs = view?.inputArgs;
           const srcId = inputArgs?.sourceId;
           let assoc: string | undefined = inputArgs?.associationName;
           let dsKey: string = inputArgs?.dataSourceKey || 'main';
 
           // 兜底：若 associationName 缺失或不含“.”，尝试从当前视图模型的 openView 参数推断
           if (!assoc || typeof assoc !== 'string' || !assoc.includes('.')) {
-            const nav = ctx.view?.navigation;
-            const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
-            const last = stack?.[stack.length - 1];
-            if (last?.viewUid) {
-              let model = ctx?.engine?.getModel(last.viewUid, true) as PopupModelLike;
+            const stack = getViewStack(view);
+            const currentIndex = getAnchoredViewStackIndex(view, stack);
+            const current = currentIndex >= 0 ? stack?.[currentIndex] : undefined;
+            if (current?.viewUid) {
+              let model = ctx?.engine?.getModel(current.viewUid, true) as PopupModelLike;
               if (!model) {
-                model = (await ctx.engine.loadModel({ uid: last.viewUid })) as PopupModelLike;
+                model = (await ctx.engine.loadModel({ uid: current.viewUid })) as PopupModelLike;
               }
               const p = model?.getStepParams?.('popupSettings', 'openView') || {};
               assoc = p?.associationName || assoc;
@@ -406,12 +478,12 @@ interface PopupNode {
 }
 
 export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promise<PopupNode | undefined> {
-  const nav = view?.navigation;
-  const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
+  const stack = getViewStack(view);
+  const currentIndex = getAnchoredViewStackIndex(view, stack);
 
   const openerUids = view?.inputArgs?.openerUids;
   const hasOpener = Array.isArray(openerUids) && openerUids.length > 0;
-  const hasStackPopup = stack.length >= 2;
+  const hasStackPopup = currentIndex >= 1;
   const isPopup = hasStackPopup || hasOpener;
   if (!isPopup) return undefined;
 
@@ -457,7 +529,7 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
     if (parentNode) node.parent = parentNode;
     return node;
   };
-  const currentNode = await buildNode((view?.navigation?.viewStack?.length || 1) - 1);
+  const currentNode = await buildNode(currentIndex);
   return currentNode;
 }
 

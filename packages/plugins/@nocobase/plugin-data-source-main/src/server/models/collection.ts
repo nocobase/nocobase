@@ -12,6 +12,8 @@ import lodash from 'lodash';
 import { QueryInterfaceDropTableOptions } from 'sequelize';
 import { FieldModel } from './field';
 
+const databaseSyncedCollectionSources = ['db2cm', 'dbsync'];
+
 interface LoadOptions extends Transactionable {
   // TODO
   skipField?: boolean | Array<string>;
@@ -63,7 +65,11 @@ export class CollectionModel extends MagicAttributeModel {
       delete collectionOptions.schema;
     }
 
-    if (this.db.inDialect('postgres') && !collectionOptions.schema && collectionOptions.from !== 'db2cm') {
+    if (
+      this.db.inDialect('postgres') &&
+      !collectionOptions.schema &&
+      !databaseSyncedCollectionSources.includes(collectionOptions.from)
+    ) {
       collectionOptions.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
     }
 
@@ -84,8 +90,8 @@ export class CollectionModel extends MagicAttributeModel {
         lodash.set(collectionOptions, 'dumpRules.group', 'custom');
       }
 
-      const fieldRepo = this.db.getRepository('collections.fields', name);
-      const fieldModels = await fieldRepo.find({ transaction });
+      const fieldModel = this.db.getModel('fields');
+      const fieldModels = await fieldModel.findAll({ where: { collectionName: name }, transaction });
       collectionOptions['fieldModels'] = fieldModels;
       collection = this.db.collection(collectionOptions);
     }

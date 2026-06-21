@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "FlowResource"
+description: "FlowResource là API quản lý tài nguyên frontend của FlowEngine, dùng để đăng ký và lấy các tài nguyên như nguồn dữ liệu, block."
+keywords: "FlowResource,quản lý tài nguyên,đăng ký nguồn dữ liệu,tài nguyên block,FlowEngine,NocoBase"
+---
 
-
-# Tài nguyên luồng
+# FlowResource

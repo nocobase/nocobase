@@ -1,3 +1,9 @@
+---
+title: "区块扩展概述"
+description: "区块扩展开发：基于 FlowModel 扩展自定义区块，支持 BlockModel、渲染、事件流。"
+keywords: "区块扩展,FlowModel,BlockModel,NocoBase"
+---
+
 # 区块扩展概述
 
 在 NocoBase 2.0 中，区块扩展的机制被大幅简化。开发者只需继承相应的 **FlowModel** 基类并实现相关接口方法（主要是 `renderComponent()` 方法），即可快速自定义区块。

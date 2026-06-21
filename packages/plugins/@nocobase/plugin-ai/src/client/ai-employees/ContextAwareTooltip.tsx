@@ -13,12 +13,17 @@ import { useT } from '../locale';
 import { Tooltip, Avatar, Flex } from 'antd';
 import { contextAware } from './stores/context-aware';
 import { avatars } from './avatars';
-import { useAIEmployeesData } from './hooks/useAIEmployeesData';
-import { useToken } from '@nocobase/client';
+import { useRequest, useToken } from '@nocobase/client';
+import { useAIConfigRepository } from '../repositories/hooks/useAIConfigRepository';
+import { AIEmployee } from './types';
 
 export const ContextAwareTooltip: React.FC = observer(() => {
   const t = useT();
-  const { aiEmployeesMap } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
+  const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
   const { token } = useToken();
   const [show, setShow] = useState(false);
 

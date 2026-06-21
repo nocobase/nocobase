@@ -204,7 +204,7 @@ export const DataBlockCollector = ({
         }
         dom.style.boxShadow = 'none';
         dom.style.transition = 'box-shadow 0.3s ease, transform 0.2s ease';
-      }
+      },
     });
   }, [
     associatedFields,

@@ -1,11 +1,13 @@
+---
+title: "Context Konteks (Client)"
+description: "Context client NocoBase: app, useApp, usePlugin, React Context, mendapatkan instance aplikasi dalam Component."
+keywords: "Context,useApp,usePlugin,React Context,konteks client,NocoBase"
+---
+
+# Context
+
 :::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Konteks
-
-:::tip
-
-Kami akan melengkapi contoh-contoh terperinci dan praktik terbaik di versi mendatang.
+Kami akan melengkapi contoh detail dan best practice di versi berikutnya.
 
 :::

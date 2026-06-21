@@ -1,25 +1,26 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Component Field"
+description: "Cấu hình Field: chọn loại component UI mà Field sử dụng, như Input, Select, DatePicker."
+keywords: "component Field,field component,component UI,Interface Builder,NocoBase"
+---
 
-
-# Thành phần Trường
+# Component Field
 
 ## Giới thiệu
 
-Thành phần Trường được sử dụng để hiển thị nội dung của một trường dữ liệu.
-Một số trường dữ liệu có nhiều thành phần hiển thị tích hợp sẵn. Người dùng có thể chọn thành phần phù hợp với nhu cầu thực tế của mình để trình bày giá trị của trường theo nhiều cách khác nhau.
+Component Field là vật mang dùng để hiển thị nội dung Field.
+Một số Field có sẵn nhiều component hiển thị, bạn có thể chọn component phù hợp theo nhu cầu thực tế để hiển thị giá trị Field theo các cách khác nhau.
 
-Ví dụ: Ở chế độ xem, một trường URL có thể được chuyển đổi thành thành phần Xem trước hoặc thành phần URL (mặc định).
+Ví dụ: Field URL ở trạng thái đọc có thể chuyển sang component Preview, component URL (mặc định)
 
 ![20251028214033](https://static-docs.nocobase.com/20251028214033.png)
 
 ![20251028214628](https://static-docs.nocobase.com/20251028214628.png)
 
-Ví dụ: Một trường liên kết có thể được chuyển đổi thành Biểu mẫu con, Bảng con (chỉ áp dụng cho các liên kết có nhiều bản ghi), Bộ chọn dữ liệu, Bộ chọn thả xuống (mặc định) hoặc Trình quản lý tệp (chỉ khi bộ sưu tập đích của liên kết là bộ sưu tập tệp).
+Ví dụ: Field quan hệ có thể chuyển sang Sub-Form, Sub-Table (chỉ hỗ trợ quan hệ một-nhiều/nhiều-nhiều), Data Picker, Select dropdown (mặc định), File Manager (chỉ hỗ trợ khi Table mục tiêu của quan hệ là Table tập tin)
 
 ![20251028214259](https://static-docs.nocobase.com/20251028214259.png)
 
-Chuyển sang Biểu mẫu con:
+Chuyển sang Sub-Form:
 
 ![20251028214352](https://static-docs.nocobase.com/20251028214352.png)

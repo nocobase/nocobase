@@ -1,19 +1,22 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: "@nocobase/plugin-ai"
+title: "Manajemen File Karyawan AI"
+description: "Konfigurasi cara penyimpanan file yang diunggah selama dialog Karyawan AI, atur Files storage di Settings Plugin Karyawan AI."
+keywords: "Karyawan AI,Penyimpanan File,Manajemen File,NocoBase"
+---
 
 # Manajemen File
 
-## Pendahuluan
+## Pengantar
 
-Konfigurasi cara penyimpanan file yang diunggah selama percakapan karyawan AI.
+Konfigurasi cara penyimpanan file yang diunggah selama dialog Karyawan AI.
 
 ## Pengaturan
 
-Buka halaman konfigurasi plugin karyawan AI, klik tab `Settings` untuk masuk ke halaman pengaturan metode penyimpanan.
+Masuk ke halaman konfigurasi Plugin Karyawan AI, klik tab `Settings`, masuk ke halaman pengaturan cara penyimpanan.
 
 ![20251022002648](https://static-docs.nocobase.com/20251022002648.png)
 
-Opsi penyimpanan yang tersedia untuk `Files storage` dikonfigurasi di plugin Manajemen File.
+Item penyimpanan opsional `Files storage`, diatur di Plugin manajemen file.
 
 ![20251022002853](https://static-docs.nocobase.com/20251022002853.png)

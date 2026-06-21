@@ -1,14 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Chỉnh sửa tiêu đề Field"
+description: "Cấu hình Field: tùy chỉnh tiêu đề hiển thị của Field trong Form, hỗ trợ đa ngôn ngữ."
+keywords: "chỉnh sửa tiêu đề Field,tiêu đề Field,tiêu đề tùy chỉnh,Interface Builder,NocoBase"
+---
 
-
-# Chỉnh sửa Tiêu đề Trường
+# Chỉnh sửa tiêu đề Field
 
 ## Giới thiệu
 
-Tiêu đề trường là tên hoặc nhãn của một trường, có thể được tùy chỉnh để phù hợp với nhu cầu của các khối khác nhau.
+Tiêu đề Field là tên hoặc nhãn được định nghĩa của Field, có thể được cài đặt cá nhân hóa theo nhu cầu của các Block khác nhau.
+
 
 ![20251028202812](https://static-docs.nocobase.com/20251028202812.png)
+
 
 ![20251028202846](https://static-docs.nocobase.com/20251028202846.png)

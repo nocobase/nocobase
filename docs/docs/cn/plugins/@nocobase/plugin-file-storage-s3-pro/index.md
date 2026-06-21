@@ -1,4 +1,6 @@
 ---
+title: "文件存储：S3 (Pro)"
+keywords: "文件存储：S3 (Pro),插件,NocoBase"
 displayName: "文件存储：S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
 
 # 文件存储：S3 (Pro)

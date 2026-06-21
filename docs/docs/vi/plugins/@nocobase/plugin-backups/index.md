@@ -1,6 +1,8 @@
 ---
 displayName: "Trình quản lý sao lưu"
 packageName: '@nocobase/plugin-backups'
+title: "Trình quản lý sao lưu"
+keywords: "Trình quản lý sao lưu,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
@@ -11,8 +13,5 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Trình quản lý sao lưu

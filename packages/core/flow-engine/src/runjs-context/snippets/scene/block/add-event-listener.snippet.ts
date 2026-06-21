@@ -21,20 +21,18 @@ const snippet: SnippetModule = {
       description: '渲染按钮并绑定点击事件处理',
     },
   },
-  content:
-    `
+  content: `
 // Render a button and bind a click handler
-ctx.element.innerHTML = ` +
-    '`' +
-    `
-  <button id="nb-jsb-btn" style="padding:6px 12px">\${ctx.t('Click me')}</button>
-` +
-    '`' +
-    `;
-const btn = document.getElementById('nb-jsb-btn');
-if (btn) {
-  btn.addEventListener('click', () => ctx.message.success(ctx.t('Clicked!')));
-}
+const button = document.createElement('button');
+button.textContent = ctx.t('Click me');
+button.style.padding = '6px 12px';
+button.addEventListener('click', () => ctx.message.success(ctx.t('Clicked!')));
+
+const wrapper = document.createElement('div');
+wrapper.style.padding = '12px';
+wrapper.appendChild(button);
+
+ctx.render(wrapper);
 `,
 };
 

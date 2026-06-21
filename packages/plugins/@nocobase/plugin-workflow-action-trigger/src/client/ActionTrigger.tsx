@@ -97,6 +97,15 @@ function useVariables(config, options) {
 export default class extends Trigger {
   title = `{{t("Post-action event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t('Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.', { ns: "${NAMESPACE}" })}}`;
+  presetFieldset = {
+    collection: {
+      type: 'string',
+      title: `{{t("Collection", { ns: "${NAMESPACE}" })}}`,
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'DataSourceCollectionCascader',
+    },
+  };
   fieldset = {
     collection: {
       type: 'string',
@@ -106,7 +115,7 @@ export default class extends Trigger {
         tooltip: `{{t("The collection to which the triggered data belongs.", { ns: "${NAMESPACE}" })}}`,
       },
       'x-component': 'DataSourceCollectionCascader',
-      'x-disabled': '{{ useWorkflowAnyExecuted() }}',
+      'x-disabled': true,
       title: `{{t("Collection", { ns: "${NAMESPACE}" })}}`,
       'x-reactions': [
         {
@@ -342,7 +351,11 @@ export default class extends Trigger {
   /**
    * 2.0
    */
-  getCreateModelMenuItem({ config }): SubModelItem {
+  getCreateModelMenuItem({ config }): SubModelItem | null {
+    // 无上下文数据源时，不提供触发器数据入口
+    if (!config?.collection) {
+      return null;
+    }
     return {
       key: 'triggerData',
       label: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
@@ -365,7 +378,7 @@ export default class extends Trigger {
         },
         subModels: {
           grid: {
-            use: 'DetailsGridModel',
+            use: 'NodeDetailsGridModel',
             subType: 'object',
           },
         },

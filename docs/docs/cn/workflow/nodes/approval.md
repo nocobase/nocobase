@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
+title: "工作流节点 - 审批"
+description: "审批节点：审批流程专用，配置通过/拒绝/退回操作，仅可在审批流程中使用。"
+keywords: "工作流,审批节点,Approval,通过拒绝退回,审批流程,NocoBase"
 ---
 
 # 审批
@@ -128,6 +131,18 @@ pkg: '@nocobase/plugin-workflow-approval'
 :::warning{title=重要}
 如果开启或关闭了某个操作按钮，或者修改了指派人员范围，需要在关闭操作界面配置的弹窗后保存该节点的配置，否则该操作按钮的变动不会生效。
 :::
+
+### “我的审批”卡片 <Badge>2.0+</Badge>
+
+可用于配置待办中心“我的审批”列表中的任务卡片。
+
+![20260214141554](https://static-docs.nocobase.com/20260214141554.png)
+
+卡片中可以自由配置希望展示的业务字段（关系字段除外），或审批相关信息。
+
+在审批进入该节点后，待办中心列表即可看到自定义的任务卡片：
+
+![20260214141722](https://static-docs.nocobase.com/20260214141722.png)
 
 ## 节点结果
 

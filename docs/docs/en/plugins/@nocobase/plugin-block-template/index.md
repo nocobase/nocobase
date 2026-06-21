@@ -1,4 +1,6 @@
 ---
+title: "Block: template (deprecated)"
+keywords: "Block,Template"
 displayName: "Block: template (deprecated)"
 packageName: '@nocobase/plugin-block-template'
 description: |
@@ -7,6 +9,7 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
 
 # Block: template (deprecated)

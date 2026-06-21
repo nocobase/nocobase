@@ -1,4 +1,6 @@
 ---
+title: "工作流：抄送"
+keywords: "工作流：抄送,插件,NocoBase"
 displayName: "工作流：抄送"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 工作流：抄送

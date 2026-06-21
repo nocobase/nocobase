@@ -1,18 +1,17 @@
 ---
-displayName: "Bộ điều hợp hàng đợi RabbitMQ"
+displayName: "Bộ chuyển đổi hàng đợi tin nhắn RabbitMQ"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
+title: "Bộ chuyển đổi hàng đợi tin nhắn RabbitMQ"
+keywords: "Bộ chuyển đổi hàng đợi tin nhắn RabbitMQ,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Dùng để xử lý hàng đợi tin nhắn của ứng dụng bằng RabbitMQ.
+  Xử lý hàng đợi tin nhắn của ứng dụng dựa trên RabbitMQ.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Bộ điều hợp hàng đợi RabbitMQ
+# Bộ chuyển đổi hàng đợi tin nhắn RabbitMQ

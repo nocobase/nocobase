@@ -1,20 +1,19 @@
 ---
 pkg: '@nocobase/plugin-workflow-mailer'
+title: "Node Workflow - Kirim Email"
+description: "Node Kirim Email: mengirim email, mendukung konten format teks dan HTML."
+keywords: "Workflow,Kirim Email,Mailer,Email,notifikasi,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Kirim Email
 
-# Mengirim Email
+## Pengantar
 
-## Pendahuluan
-
-Digunakan untuk mengirim email. Mendukung konten dalam format teks dan HTML.
+Digunakan untuk mengirim email, mendukung konten email dengan format teks dan HTML.
 
 ## Membuat Node
 
-Di antarmuka konfigurasi **alur kerja**, klik tombol plus ("+") pada alur untuk menambahkan node "Mengirim Email":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Kirim Email":
 
 ![20251031130522](https://static-docs.nocobase.com/20251031130522.png)
 
@@ -22,13 +21,13 @@ Di antarmuka konfigurasi **alur kerja**, klik tombol plus ("+") pada alur untuk 
 
 ![20251031131125](https://static-docs.nocobase.com/20251031131125.png)
 
-Setiap opsi dapat menggunakan variabel dari konteks **alur kerja**. Untuk informasi sensitif, variabel global dan rahasia juga dapat digunakan.
+Setiap opsi dapat menggunakan variable dari konteks alur. Untuk informasi sensitif, Anda juga dapat menggunakan variable global dan secret.
 
 ## Pertanyaan Umum
 
-### Batas Frekuensi Pengiriman Gmail
+### Pembatasan Frekuensi Pengiriman Gmail
 
-Saat mengirim beberapa email, Anda mungkin mengalami kesalahan berikut:
+Beberapa email saat dikirim mungkin akan menemui error berikut:
 
 ```json
 {
@@ -39,13 +38,13 @@ Saat mengirim beberapa email, Anda mungkin mengalami kesalahan berikut:
 }
 ```
 
-Hal ini karena Gmail membatasi frekuensi permintaan pengiriman dari domain yang tidak ditentukan. Saat menerapkan aplikasi, Anda perlu mengonfigurasi nama host server agar sesuai dengan domain pengiriman yang telah Anda ikat di Gmail. Contoh, dalam penerapan Docker:
+Ini disebabkan Gmail melakukan pembatasan frekuensi pada request pengiriman dari domain yang tidak ditandai. Anda perlu mengkonfigurasi hostname server saat deploy aplikasi sebagai domain pengiriman yang terdaftar di Gmail. Misalnya saat deploy dengan Docker:
 
 ```yaml
 services:
   app:
     image: nocobase/nocobase
-    hostname: <your-custom-hostname> # Atur ke domain pengiriman yang telah Anda ikat
+    hostname: <your-custom-hostname> # Atur sebagai domain pengiriman yang sudah terdaftar
 ```
 
 Referensi: [Google SMTP Relay - Intermittent problems](https://forum.nocobase.com/t/google-smtp-relay-intermittent-problems/5483/6)

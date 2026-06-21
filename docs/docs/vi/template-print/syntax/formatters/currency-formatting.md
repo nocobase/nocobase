@@ -1,58 +1,55 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Template In ấn - Định dạng tiền tệ"
+description: "Formatter Định dạng tiền tệ Template In ấn: formatC để Định dạng số tiền, hỗ trợ số chữ số thập phân, tiền tệ đích, nhiều định dạng đầu ra."
+keywords: "Template In ấn,Định dạng tiền tệ,formatC,NocoBase"
+---
 
-
-### Định dạng Tiền tệ
+### Định dạng tiền tệ
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)
 
-##### Giải thích Cú pháp
-Định dạng một số tiền tệ, cho phép bạn chỉ định số chữ số thập phân hoặc một định dạng đầu ra cụ thể.  
+##### Mô tả cú pháp
+Định dạng số tiền, có thể chỉ định số chữ số thập phân hoặc định dạng đầu ra cụ thể.
 Tham số:
-- `precisionOrFormat`: Tham số tùy chọn, có thể là một số (chỉ định số chữ số thập phân) hoặc một định danh định dạng cụ thể:
-  - Một số nguyên: thay đổi độ chính xác thập phân mặc định.
-  - `'M'`: chỉ xuất ra tên tiền tệ chính.
-  - `'L'`: xuất ra số cùng với ký hiệu tiền tệ (mặc định).
-  - `'LL'`: xuất ra số cùng với tên tiền tệ chính.
-- `targetCurrency`: Tùy chọn; mã tiền tệ đích (viết hoa, ví dụ: USD, EUR), sẽ ghi đè các cài đặt toàn cục.
+- precisionOrFormat: Tham số tùy chọn, có thể là số (chỉ định số chữ số thập phân), cũng có thể là mã định dạng cụ thể:
+  - Số nguyên: Thay đổi độ chính xác thập phân mặc định
+  - `'M'`: Chỉ xuất tên tiền tệ chính
+  - `'L'`: Xuất số kèm ký hiệu tiền tệ (mặc định)
+  - `'LL'`: Xuất số kèm tên tiền tệ chính
+- targetCurrency: Tùy chọn, mã tiền tệ đích (chữ hoa, như USD, EUR), sẽ ghi đè cài đặt toàn cục
 
 ##### Ví dụ
 ```
-// Môi trường ví dụ: Tùy chọn API { "lang": "en-us", "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-'1000.456':formatC()      // Xuất ra "$2,000.91"
-'1000.456':formatC('M')    // Xuất ra "dollars"
-'1':formatC('M')           // Xuất ra "dollar"
-'1000':formatC('L')        // Xuất ra "$2,000.00"
-'1000':formatC('LL')       // Xuất ra "2,000.00 dollars"
-
-// Ví dụ tiếng Pháp (khi cài đặt môi trường khác nhau):
-'1000.456':formatC()      // Xuất ra "2 000,91 ..."  
-'1000.456':formatC()      // Khi tiền tệ nguồn và tiền tệ đích giống nhau, xuất ra "1 000,46 €"
+'1000.456':formatC()      // Output "$2,000.91"
+'1000.456':formatC('M')    // Output "dollars"
+'1':formatC('M')           // Output "dollar"
+'1000':formatC('L')        // Output "$2,000.00"
+'1000':formatC('LL')       // Output "2,000.00 dollars"
 ```
 
 ##### Kết quả
-Kết quả đầu ra phụ thuộc vào các tùy chọn API và cài đặt tỷ giá hối đoái.
+Kết quả đầu ra dựa trên các tùy chọn API và cài đặt tỷ giá.
 
 
 #### 2. :convCurr(target, source)
 
-##### Giải thích Cú pháp
-Chuyển đổi một số từ tiền tệ này sang tiền tệ khác. Tỷ giá hối đoái có thể được truyền qua các tùy chọn API hoặc được thiết lập toàn cục.  
-Nếu không chỉ định tham số nào, việc chuyển đổi sẽ tự động được thực hiện từ `options.currencySource` sang `options.currencyTarget`.  
+##### Mô tả cú pháp
+Chuyển đổi số từ một loại tiền tệ sang loại tiền tệ khác. Tỷ giá có thể truyền qua tùy chọn API hoặc cài đặt toàn cục.
+Nếu không chỉ định tham số, tự động chuyển đổi từ `options.currencySource` sang `options.currencyTarget`.
 Tham số:
-- `target`: Tùy chọn; mã tiền tệ đích (mặc định là `options.currencyTarget`).
-- `source`: Tùy chọn; mã tiền tệ nguồn (mặc định là `options.currencySource`).
+- target: Tùy chọn, mã tiền tệ đích (mặc định bằng `options.currencyTarget`)
+- source: Tùy chọn, mã tiền tệ nguồn (mặc định bằng `options.currencySource`)
 
 ##### Ví dụ
 ```
-// Môi trường ví dụ: Tùy chọn API { "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-10:convCurr()              // Xuất ra 20
-1000:convCurr()            // Xuất ra 2000
-1000:convCurr('EUR')        // Xuất ra 1000
-1000:convCurr('USD')        // Xuất ra 2000
-1000:convCurr('USD', 'USD') // Xuất ra 1000
+10:convCurr()              // Output 20
+1000:convCurr()            // Output 2000
+1000:convCurr('EUR')        // Output 1000
+1000:convCurr('USD')        // Output 2000
+1000:convCurr('USD', 'USD') // Output 1000
 ```
 
 ##### Kết quả
-Đầu ra là giá trị tiền tệ đã được chuyển đổi.
+Đầu ra là giá trị tiền tệ sau khi chuyển đổi.
+
+

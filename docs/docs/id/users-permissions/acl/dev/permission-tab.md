@@ -1,14 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-acl'
+title: "Memperluas Tab Konfigurasi Izin"
+description: "Memperluas tab konfigurasi izin plugin ACL NocoBase: addPermissionsTab, TabLayout, tab izin kustom, dengan contoh menu mobile."
+keywords: "memperluas konfigurasi izin,addPermissionsTab,tab izin,pengembangan ACL,manajemen izin,NocoBase"
+---
 
 # Memperluas Tab Konfigurasi Izin
 
-Berikut adalah contoh item konfigurasi "Menu Seluler", yang menunjukkan cara memperluas tab konfigurasi izin baru. Hasilnya dapat dilihat pada gambar di bawah ini:
+Berikut adalah contoh dengan item konfigurasi "menu mobile", yang menunjukkan cara memperluas tab konfigurasi izin baru. Hasilnya seperti gambar di bawah ini:
 
 ![20240903210248](https://static-docs.nocobase.com/20240903210248.png)
 
-Berikut adalah kodenya:
+Kode-nya sebagai berikut:
 
 ```typescript
 import { Plugin } from '@nocobase/client';
@@ -33,9 +36,9 @@ class PluginMobileClient extends Plugin {
 }
 ```
 
-Pertama, kita perlu mendapatkan instance dari **plugin** `PluginACLClient` ([metode lain untuk mendapatkan instance plugin](/plugin-development/client/plugin#get-plugin-instance)), dan menambahkan tab konfigurasi izin baru menggunakan metode `settingsUI.addPermissionsTab`. Dalam contoh ini, kita menambahkan tab konfigurasi izin yang bernama "Menu Seluler".
+Pertama, kita perlu mendapatkan instance dari plugin `PluginACLClient` ([cara lain untuk mendapatkan instance plugin](https://docs-cn.nocobase.com/development/client/life-cycle#%E8%8E%B7%E5%8F%96%E6%8F%92%E4%BB%B6)), dan menambahkan tab konfigurasi izin baru melalui metode `settingsUI.addPermissionsTab`. Pada contoh ini, kita menambahkan tab konfigurasi izin bernama "Menu Mobile".
 
-Nilai properti `settingsUI` adalah instance dari kelas bernama `ACLSettingsUI`, dan informasi tipenya adalah sebagai berikut:
+Nilai dari properti `settingsUI` adalah instance dari class bernama `ACLSettingsUI`, dengan informasi tipe sebagai berikut:
 
 ```typescript
 import { TabsProps } from 'antd/es/tabs/index';

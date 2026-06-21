@@ -359,6 +359,10 @@ function TaskPageContent() {
               ? '0.5em'
               : `${token.paddingContentHorizontal}px ${token.paddingContentHorizontalLG}px`};
             border-top: 1px solid ${token.colorBorderSecondary};
+
+            .ant-pagination {
+              align-items: center;
+            }
           }
         }
       }

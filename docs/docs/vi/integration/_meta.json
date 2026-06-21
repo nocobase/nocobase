@@ -10,7 +10,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Khóa API",
+        "label": "API Key",
         "link": "/integration/api-keys/"
       },
       {
@@ -32,7 +32,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Luồng công việc",
+    "label": "Workflow",
     "items": [
       {
         "type": "custom-link",
@@ -41,15 +41,31 @@
       },
       {
         "type": "custom-link",
-        "label": "Yêu cầu HTTP",
+        "label": "HTTP Request",
         "link": "/integration/workflow-http-request/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Nguồn dữ liệu ngoài",
+    "label": "Nguồn dữ liệu bên ngoài",
     "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Bảng dữ liệu bên ngoài (FDW)",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Tổng quan",
+        "link": "/integration/fdw/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bật MySQL Federated",
+        "link": "/integration/fdw/enable-federated"
+      }
+    ]
   },
   {
     "type": "custom-link",
@@ -57,12 +73,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Khối Iframe",
+        "label": "Iframe Block",
         "link": "/integration/block-iframe/"
       },
       {
         "type": "custom-link",
-        "label": "Nhúng",
+        "label": "Embed",
         "link": "/integration/embed/"
       }
     ]

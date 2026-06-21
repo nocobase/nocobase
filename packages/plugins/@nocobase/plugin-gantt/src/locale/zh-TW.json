@@ -1,6 +1,11 @@
 {
+  "Color field": "顏色字段",
+  "Enable drag to reschedule": "啟用拖動重新排程",
   "End date field": "End date field",
+  "Details": "詳情",
+  "Event popup settings": "任務彈窗設定",
   "Progress field": "Progress field",
+  "Show table": "表格顯示",
   "Start date field": "Start date field",
   "Time scale": "Time scale",
   "Title field": "Title field"

@@ -11,14 +11,20 @@ import { DataSourceModel } from './models/data-source';
 import { Application } from '@nocobase/server';
 import PluginDataSourceManagerServer from './plugin';
 
+const nullableOverrideConfig: Record<string, string[]> = {
+  sort: ['scopeKey'],
+};
+
 export function mergeOptions(fieldOptions, modelOptions) {
   const newOptions = {
     ...fieldOptions,
     ...modelOptions,
   };
+  const fieldType = modelOptions.type || fieldOptions.type;
+  const nullableOverrideKeys = nullableOverrideConfig[fieldType] || [];
 
   for (const key of Object.keys(modelOptions)) {
-    if (modelOptions[key] === null && fieldOptions[key]) {
+    if (modelOptions[key] === null && fieldOptions[key] && !nullableOverrideKeys.includes(key)) {
       newOptions[key] = fieldOptions[key];
     }
   }
@@ -33,6 +39,10 @@ export const mapDataSourceWithCollection = (
   const plugin = app.pm.get('data-source-manager') as PluginDataSourceManagerServer;
   const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
   const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
+  const publicOptions = dataSource?.publicOptions();
+  const collectionManager = dataSource?.collectionManager as { db?: { isDBInstance?: boolean } };
+  const db = collectionManager?.db;
+  const isDBInstance = db?.isDBInstance === false ? false : !!db;
 
   const item: any = {
     key: dataSourceModel.get('key'),
@@ -41,10 +51,9 @@ export const mapDataSourceWithCollection = (
     type: dataSourceModel.get('type'),
 
     // @ts-ignore
-    isDBInstance: !!dataSource?.collectionManager.db,
+    isDBInstance,
   };
 
-  const publicOptions = dataSource?.publicOptions();
   if (publicOptions) {
     item['options'] = publicOptions;
   }

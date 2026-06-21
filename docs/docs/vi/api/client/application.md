@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Application (Client)"
+description: "API Application phía client của NocoBase: instance ứng dụng frontend."
+keywords: "Application,ứng dụng client,instance frontend,Client API,NocoBase"
+---
 
-
-# Ứng dụng
+# Application

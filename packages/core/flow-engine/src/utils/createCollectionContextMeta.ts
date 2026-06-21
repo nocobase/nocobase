@@ -14,6 +14,10 @@ import type { PropertyMetaFactory } from '../flowContext';
 const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'] as const;
 const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'] as const;
 
+function shouldShowFieldInMeta(field: CollectionField, includeNonFilterable?: boolean) {
+  return Boolean(field.interface && (includeNonFilterable || field.filterable));
+}
+
 /**
  * 创建字段的完整元数据（统一处理关联和非关联字段）
  */
@@ -36,7 +40,7 @@ function createFieldMetadata(field: CollectionField, includeNonFilterable?: bool
       properties: async () => {
         const subProperties: Record<string, any> = {};
         targetCollection.fields.forEach((subField) => {
-          if (includeNonFilterable || subField.filterable) {
+          if (shouldShowFieldInMeta(subField, includeNonFilterable)) {
             subProperties[subField.name] = createFieldMetadata(subField, includeNonFilterable);
           }
         });
@@ -114,7 +118,7 @@ export function createCollectionContextMeta(
 
         // 添加所有字段
         collection.fields.forEach((field) => {
-          if (includeNonFilterable || field.filterable) {
+          if (shouldShowFieldInMeta(field, includeNonFilterable)) {
             properties[field.name] = createFieldMetadata(field, includeNonFilterable);
           }
         });

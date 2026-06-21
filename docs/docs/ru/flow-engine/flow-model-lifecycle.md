@@ -1,10 +1,6 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 # Жизненный цикл FlowModel
 
-## Методы `model`
+## Методы модели
 
 Внутренние вызовы
 
@@ -21,7 +17,7 @@ class MyModel extends FlowModel {
 }
 ```
 
-## `model.emitter`
+## model.emitter
 
 Для внешних триггеров
 
@@ -31,9 +27,9 @@ class MyModel extends FlowModel {
 
 ## Процесс
 
-1. Создание модели
+1. Создание model
     - onInit
-2. Рендеринг модели
+2. Рендер модели
     - onDispatchEventStart
     - dispatchEvent('beforeRender')
     - onDispatchEventEnd
@@ -44,7 +40,7 @@ class MyModel extends FlowModel {
 4. Запуск потока
     - onDispatchEventStart
     - onDispatchEventEnd
-5. Повторный рендеринг
+5. Повторный рендер
   - onUnMount
   - onDispatchEventStart
   - dispatchEvent('beforeRender')

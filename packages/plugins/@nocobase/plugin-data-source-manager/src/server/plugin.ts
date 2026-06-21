@@ -16,7 +16,7 @@ import rolesConnectionResourcesResourcer from './resourcers/data-sources-resourc
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
 import dataSourcesActions from './actions/data-sources';
-import { LoadingProgress } from '@nocobase/data-source-manager';
+import { DataSource, LoadingProgress, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import lodash from 'lodash';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
@@ -24,6 +24,8 @@ import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 import { mergeRole } from '@nocobase/acl';
 import { loadDataSourceTablesIntoCollections } from './middlewares/load-tables';
+import { Collection } from '@nocobase/database';
+import { registerDataSourceManagerMcpPostProcessors } from './mcp-post-processors';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -284,6 +286,10 @@ export class PluginDataSourceManagerServer extends Plugin {
     const mapDataSourceWithCollection = (dataSourceModel, appendCollections = true) => {
       const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
       const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
+      const publicOptions = dataSource?.publicOptions();
+      const collectionManager = dataSource?.collectionManager as { db?: { isDBInstance?: boolean } };
+      const db = collectionManager?.db;
+      const isDBInstance = db?.isDBInstance === false ? false : !!db;
 
       const item: any = {
         key: dataSourceModel.get('key'),
@@ -292,10 +298,9 @@ export class PluginDataSourceManagerServer extends Plugin {
         type: dataSourceModel.get('type'),
 
         // @ts-ignore
-        isDBInstance: !!dataSource?.collectionManager.db,
+        isDBInstance,
       };
 
-      const publicOptions = dataSource?.publicOptions();
       if (publicOptions) {
         item['options'] = publicOptions;
       }
@@ -355,6 +360,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.resourceManager.use(loadDataSourceTablesIntoCollections);
+    registerDataSourceManagerMcpPostProcessors(this.ai.mcpToolsManager);
 
     this.app.use(async function handleAppendDataSourceCollection(ctx, next) {
       await next();
@@ -704,6 +710,48 @@ export class PluginDataSourceManagerServer extends Plugin {
           'key.$ne': 'main',
         },
       };
+    });
+
+    this.indexFieldForAI();
+  }
+
+  indexFieldForAI() {
+    const index = this.app.aiManager.documentManager.addIndex('dataModels.fields');
+    const getFieldDocument = (dataSource: string, collection: string, field: any) => ({
+      id: `${dataSource}.${collection}.${field.name}`,
+      text: `${field.name} ${field.options?.uiSchema?.title || ''} ${collection}`,
+    });
+    this.app.dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
+      const cm = dataSource.collectionManager;
+      if (cm instanceof SequelizeCollectionManager) {
+        const db = cm.db;
+        db.on('afterDefineCollection', async (collection: Collection) => {
+          if (dataSource.name === 'main') {
+            collection.on('field.afterAdd', async (field) => {
+              const doc = getFieldDocument(dataSource.name, collection.name, field);
+              await index.add(doc.id, doc.text);
+            });
+            collection.on('field.afterRemove', async (field) => {
+              const doc = getFieldDocument(dataSource.name, collection.name, field);
+              try {
+                await index.remove(doc.id);
+              } catch (err) {
+                // ignore
+              }
+            });
+          } else {
+            for (const [_, field] of collection.fields) {
+              const doc = getFieldDocument(dataSource.name, collection.name, field);
+              try {
+                await index.remove(doc.id);
+              } catch (err) {
+                // ignore
+              }
+              await index.add(doc.id, doc.text);
+            }
+          }
+        });
+      }
     });
   }
 

@@ -1,19 +1,20 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Viết plugin Block đầu tiên"
+description: "Phát triển mở rộng Block NocoBase: viết plugin Block đầu tiên"
+keywords: "write,a,block,plugin,NocoBase"
+---
 
+# Viết plugin Block đầu tiên
 
-# Viết plugin khối đầu tiên của bạn
+Trước khi bắt đầu, bạn nên đọc trước "[Viết plugin đầu tiên](../plugin-development/write-your-first-plugin.md)" để hiểu cách tạo plugin cơ bản nhanh chóng. Tiếp theo, chúng ta sẽ mở rộng dựa trên đó để xây dựng tính năng Block đơn giản.
 
-Trước khi bắt đầu, bạn nên đọc bài viết "[Viết plugin đầu tiên của bạn](../plugin-development/write-your-first-plugin.md)" để hiểu cách tạo nhanh một plugin cơ bản. Tiếp theo, chúng ta sẽ mở rộng plugin đó bằng cách thêm một tính năng khối (Block) đơn giản.
+## Bước 1: Tạo file Block Model
 
-## Bước 1: Tạo tệp mô hình khối
+Tạo file trong thư mục plugin: `client/models/SimpleBlockModel.tsx`
 
-Tạo một tệp mới trong thư mục plugin: `client/models/SimpleBlockModel.tsx`
+## Bước 2: Viết nội dung model
 
-## Bước 2: Viết nội dung mô hình
-
-Trong tệp, định nghĩa và triển khai một mô hình khối cơ bản, bao gồm cả logic hiển thị của nó:
+Định nghĩa và hiện thực một Block Model cơ bản trong file, bao gồm logic render:
 
 ```tsx
 import { BlockModel } from '@nocobase/client';
@@ -36,9 +37,9 @@ SimpleBlockModel.define({
 });
 ```
 
-## Bước 3: Đăng ký mô hình khối
+## Bước 3: Đăng ký Block Model
 
-Xuất mô hình vừa tạo trong tệp `client/models/index.ts`:
+Export model mới tạo trong file `client/models/index.ts`:
 
 ```ts
 import { ModelConstructor } from '@nocobase/flow-engine';
@@ -49,19 +50,19 @@ export default {
 } as Record<string, ModelConstructor>;
 ```
 
-## Bước 4: Kích hoạt và trải nghiệm khối
+## Bước 4: Kích hoạt và trải nghiệm Block
 
-Sau khi kích hoạt plugin, bạn sẽ thấy tùy chọn khối **Hello block** mới trong menu thả xuống "Thêm khối".
+Sau khi bật plugin, trong dropdown menu "Add block", bạn sẽ thấy tùy chọn block **Hello block** mới được thêm.
 
-Minh họa hiệu ứng:
+Demo:
 
 ![20251102223200_rec_](https://static-docs.nocobase.com/20251102223200_rec_.gif)
 
-## Bước 5: Thêm khả năng cấu hình cho khối
+## Bước 5: Thêm khả năng cấu hình cho Block
 
-Tiếp theo, chúng ta sẽ thêm chức năng có thể cấu hình cho khối thông qua **Flow**, cho phép người dùng chỉnh sửa nội dung khối trên giao diện.
+Tiếp theo, chúng ta sẽ thêm tính năng cấu hình cho Block thông qua **Flow**, để người dùng có thể chỉnh sửa nội dung Block trên giao diện.
 
-Tiếp tục chỉnh sửa tệp `SimpleBlockModel.tsx`:
+Tiếp tục chỉnh sửa file `SimpleBlockModel.tsx`:
 
 ```tsx
 import { BlockModel } from '@nocobase/client';
@@ -105,16 +106,16 @@ SimpleBlockModel.registerFlow({
 });
 ```
 
-Minh họa hiệu ứng:
+Demo:
 
 ![20251102222856_rec_](https://static-docs.nocobase.com/20251102222856_rec_.gif)
 
-## Tóm tắt
+## Tổng kết
 
-Bài viết này đã giới thiệu cách tạo một plugin khối đơn giản, bao gồm:
+Bài viết này đã giới thiệu cách tạo một plugin Block đơn giản, bao gồm:
 
-- Cách định nghĩa và triển khai một mô hình khối
-- Cách đăng ký một mô hình khối
-- Cách thêm chức năng cấu hình thông qua Flow
+- Cách định nghĩa và hiện thực Block Model
+- Cách đăng ký Block Model
+- Cách thêm tính năng cấu hình cho Block thông qua Flow
 
-Tham khảo mã nguồn đầy đủ: [Ví dụ về Simple Block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)
+Mã nguồn đầy đủ: [Ví dụ Simple Block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)

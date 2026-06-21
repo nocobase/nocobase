@@ -1,5 +1,7 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ekstensi Action"
+description: "Pengembangan ekstensi Action NocoBase: ekstensi action"
+keywords: "ekstensi Action,ekstensi action,ActionModel,NocoBase"
+---
 
-# Ekstensi Tindakan
+# Ekstensi Action

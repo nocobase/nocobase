@@ -1,31 +1,32 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Data Picker"
+description: "Field Data Picker: memilih record terkait dari Collection, mendukung pemilihan Popup, pencarian, multi-select."
+keywords: "Data Picker, Picker, pemilihan terkait, pemilihan Popup, interface builder, NocoBase"
+---
 
-# Pemilih Data
+# Data Picker
 
-## Pendahuluan
+## Pengantar
 
-Pemilih Data, dalam bentuk pemilih tabel pop-up, mendukung pemilihan data yang sudah ada dari koleksi target untuk dihubungkan atau menambahkan data ke koleksi target lalu menghubungkannya.
+Data Picker dalam bentuk Popup table selector, mendukung pemilihan data yang sudah ada dari Table target untuk diasosiasikan atau menambahkan data ke Table target kemudian diasosiasikan.
 
 ![20251027203343](https://static-docs.nocobase.com/20251027203343.png)
 
-Data yang sudah dipilih tidak akan ditampilkan di pemilih tabel.
+Data yang sudah dipilih tidak akan ditampilkan di table selector.
 
 ![20251027203717](https://static-docs.nocobase.com/20251027203717.gif)
 
-Di pemilih tabel, Anda juga dapat mengelola lebih lanjut koleksi target hubungan (menambah, menghapus, mengimpor/mengekspor, dll.).
+Di table selector, juga dapat melakukan manajemen lebih lanjut pada Table target relasi (tambah, hapus, impor, ekspor, dll.).
 
 ![20251027204028](https://static-docs.nocobase.com/20251027204028.png)
+## Konfigurasi Field
 
-## Konfigurasi Kolom
-
-### Kolom Judul
+### Field Judul
 
 ![20251027204737](https://static-docs.nocobase.com/20251027204737.gif)
 
-Untuk detail lebih lanjut, lihat [Kolom Judul](/interface-builder/fields/field-settings/title-field)
+Untuk informasi lebih lanjut, lihat [Field Judul](/interface-builder/fields/field-settings/title-field)
 
-[Ukuran Pop-up](/interface-builder/actions/action-settings/edit-popup)
+[Ukuran Popup](/interface-builder/actions/action-settings/edit-popup)
 
-[Komponen Kolom](/interface-builder/fields/association-field);
+[Komponen Field](/interface-builder/fields/association-field);

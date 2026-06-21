@@ -1,17 +1,16 @@
 ---
 displayName: "Biến tùy chỉnh"
 packageName: '@nocobase/plugin-custom-variables'
+title: "Biến tùy chỉnh"
+keywords: "Biến tùy chỉnh,Plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Cho phép bạn thêm và sử dụng các biến tùy chỉnh.
-isFree: false
-builtIn: false
+  Hỗ trợ thêm và sử dụng biến tùy chỉnh.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Biến tùy chỉnh

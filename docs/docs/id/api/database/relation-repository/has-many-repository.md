@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "HasManyRepository"
+description: "Repository relasi HasMany NocoBase: menangani CRUD untuk relasi one-to-many."
+keywords: "HasManyRepository,HasMany,one-to-many,Repository,NocoBase"
+---
 
 # HasManyRepository
 
 `HasManyRepository` adalah `Relation Repository` yang digunakan untuk menangani relasi `HasMany`.
 
-## Metode Kelas
+## Method Class
 
 ### `find()`
 
@@ -18,11 +20,11 @@ Mencari objek terkait
 
 **Detail**
 
-Parameter kueri sama dengan [`Repository.find()`](../repository.md#find).
+Parameter query konsisten dengan [`Repository.find()`](../repository.md#find).
 
 ### `findOne()`
 
-Mencari objek terkait, hanya mengembalikan satu catatan
+Mencari objek terkait, hanya mengembalikan satu record
 
 **Signature**
 
@@ -32,7 +34,7 @@ Mencari objek terkait, hanya mengembalikan satu catatan
 
 ### `count()`
 
-Mengembalikan jumlah catatan yang cocok dengan kondisi kueri
+Mengembalikan jumlah record yang sesuai dengan kondisi query
 
 **Signature**
 
@@ -50,7 +52,7 @@ interface CountOptions
 
 ### `findAndCount()`
 
-Mengkueri basis data untuk mendapatkan kumpulan data dan jumlah hasil yang cocok dengan kondisi tertentu.
+Query data set dan jumlah hasil dari database berdasarkan kondisi tertentu.
 
 **Signature**
 
@@ -74,7 +76,7 @@ Membuat objek terkait
 
 ### `update()`
 
-Memperbarui objek terkait yang memenuhi kondisi
+Memperbarui objek terkait yang sesuai dengan kondisi
 
 **Signature**
 
@@ -84,7 +86,7 @@ Memperbarui objek terkait yang memenuhi kondisi
 
 ### `destroy()`
 
-Menghapus objek terkait yang memenuhi kondisi
+Menghapus objek terkait yang sesuai dengan kondisi
 
 **Signature**
 
@@ -110,7 +112,7 @@ interface AssociatedOptions extends Transactionable {
 
 **Detail**
 
-- `tk` - Nilai `targetKey` dari objek terkait, bisa berupa nilai tunggal atau array.
+- `tk` - Nilai targetKey dari objek terkait, dapat berupa nilai tunggal atau array.
   <embed src="../shared/transaction.md"></embed>
 
 ### `remove()`
@@ -123,7 +125,7 @@ Menghapus asosiasi dengan objek yang diberikan
 
 **Detail**
 
-Parameter sama dengan metode [`add()`](#add).
+Parameter sama dengan method [`add()`](#add).
 
 ### `set()`
 
@@ -135,4 +137,4 @@ Mengatur objek terkait untuk relasi saat ini
 
 **Detail**
 
-Parameter sama dengan metode [`add()`](#add).
+Parameter sama dengan method [`add()`](#add).

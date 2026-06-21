@@ -6,7 +6,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Описание конфигурации",
+    "label": "Конфигурация",
     "link": "/template-print/configuration"
   },
   {
@@ -17,16 +17,21 @@
   {
     "type": "dir",
     "name": "advanced",
-    "label": "Расширенные функции"
+    "label": "Продвинутые возможности"
   },
   {
     "type": "custom-link",
-    "label": "Часто задаваемые вопросы",
+    "label": "HTTP API",
+    "link": "/template-print/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "Частые вопросы",
     "link": "/template-print/faq"
   },
   {
     "type": "custom-link",
-    "label": "Сценарии использования",
+    "label": "Сценарии применения",
     "link": "/template-print/scenes"
   }
 ]

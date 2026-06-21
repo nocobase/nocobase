@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Checkbox"
+description: "Field checkbox, chọn một giá trị boolean, có/không."
+keywords: "checkbox,checkbox,Field boolean,có/không,NocoBase"
+---
 
-
-# Hộp kiểm
+# Checkbox
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512180122](https://static-docs.nocobase.com/20240512180122.png)
 

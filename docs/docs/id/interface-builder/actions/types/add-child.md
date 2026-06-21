@@ -1,12 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Tambah Sub-Record"
+description: "Action Tambah Sub-Record: menambahkan sub-record asosiasi untuk record saat ini, cocok untuk asosiasi one-to-many."
+keywords: "Tambah Sub-Record, AddChild, one-to-many, sub-record, interface builder, NocoBase"
+---
 
-# Tambah Data Anak
 
-## Pendahuluan
 
-Operasi ini dirancang khusus untuk **blok tabel pohon** guna menambahkan data anak dengan cepat. Saat menambahkan data anak, baris yang dipilih akan dianggap sebagai *node* induk, memungkinkan pengguna untuk dengan mudah membuat data anak di bawah *node* induk mana pun. Fitur ini sangat menyederhanakan proses pengelolaan data hierarkis, menjadikan perluasan dan pengorganisasian struktur data lebih efisien dan intuitif.
+# Tambah Sub-Record
+
+## Pengantar
+
+Action ini dirancang khusus untuk **Block Tree Table**, digunakan untuk menambahkan sub-record dengan cepat. Saat menambahkan sub-record, baris yang dipilih akan dianggap sebagai parent node, pengguna dapat dengan mudah membuat sub-record di bawah parent node mana pun. Fitur ini sangat menyederhanakan proses manajemen data hierarki, membuat ekspansi dan pengorganisasian struktur data menjadi lebih efisien dan intuitif.
 
 ![20251125212256](https://static-docs.nocobase.com/20251125212256.png)
 

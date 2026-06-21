@@ -1,34 +1,36 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Perbandingan FlowModel dengan Komponen React"
+description: "Perbandingan FlowModel dengan React.Component: konfigurasi vs koding, kemampuan orkestrasi, pemilihan skenario penggunaan, panduan pemilihan FlowEngine."
+keywords: "FlowModel,Komponen React,Perbandingan,Dapat diorkestrasi,Konfigurasi,Pemilihan FlowEngine,NocoBase"
+---
 
 # FlowModel vs React.Component
 
 ## Perbandingan Tanggung Jawab Dasar
 
-| Fitur/Kemampuan       | `React.Component`              | `FlowModel`                                  |
-| --------------------- | ------------------------------ | -------------------------------------------- |
-| Kemampuan Render      | Ya, metode `render()` menghasilkan UI | Ya, metode `render()` menghasilkan UI        |
-| Manajemen State       | `state` dan `setState` bawaan  | Menggunakan `props`, tetapi manajemen state lebih bergantung pada struktur pohon model |
-| Siklus Hidup          | Ya, contohnya `componentDidMount` | Ya, contohnya `onInit`, `onMount`, `onUnmount` |
-| Tujuan                | Membangun komponen UI          | Membangun "pohon model" yang digerakkan oleh data, berbasis alur, dan terstruktur |
-| Struktur Data         | Pohon komponen                 | Pohon model (mendukung model induk-anak, Fork multi-instans) |
-| Komponen Anak         | Menggunakan JSX untuk menyarangkan komponen | Menggunakan `setSubModel`/`addSubModel` untuk secara eksplisit mengatur sub-model |
-| Perilaku Dinamis      | Pengikatan event, pembaruan state menggerakkan UI | Mendaftarkan/mengirim Alur, menangani alur otomatis |
-| Persistensi           | Tidak ada mekanisme bawaan     | Mendukung persistensi (misalnya `model.save()`) |
-| Mendukung Fork (render berkali-kali) | Tidak (memerlukan penggunaan ulang manual) | Ya (`createFork` untuk multi-instansiasi)    |
-| Kontrol Mesin         | Tidak ada                      | Ya, dikelola, didaftarkan, dan dimuat oleh `FlowEngine` |
+| Fitur/Kemampuan         | `React.Component`                      | `FlowModel`                                                |
+| ----------------------- | -------------------------------------- | ---------------------------------------------------------- |
+| Kemampuan render        | Ya, metode `render()` menghasilkan UI  | Ya, metode `render()` menghasilkan UI                      |
+| Manajemen state         | `state` dan `setState` bawaan          | Menggunakan `props`, tetapi manajemen state lebih bergantung pada struktur model tree |
+| Lifecycle               | Ya, seperti `componentDidMount`        | Ya, seperti `onInit`, `onMount`, `onUnmount`               |
+| Tujuan                  | Membangun komponen UI                  | Membangun "model tree" yang data-driven, mengalir, dan terstruktur |
+| Struktur data           | Component tree                         | Model tree (mendukung parent-child model, multi-instance Fork) |
+| Komponen anak           | Menggunakan nesting JSX                | Mengatur sub-model secara eksplisit dengan `setSubModel`/`addSubModel` |
+| Perilaku dinamis        | Event binding, update state mendorong UI | Mendaftarkan/men-dispatch Flow, menangani auto flow      |
+| Persistensi             | Tidak ada mekanisme bawaan             | Mendukung persistensi (seperti `model.save()`)             |
+| Mendukung Fork (render berkali-kali) | Tidak (perlu reuse manual)   | Ya (`createFork` multi-instance)                           |
+| Kontrol engine          | Tidak ada                              | Ya, dikelola, didaftarkan, dan dimuat oleh `FlowEngine`    |
 
-## Perbandingan Siklus Hidup
+## Perbandingan Lifecycle
 
-| Hook Siklus Hidup | `React.Component`                 | `FlowModel`                                  |
-| ----------------- | --------------------------------- | -------------------------------------------- |
-| Inisialisasi      | `constructor`, `componentDidMount` | `onInit`, `onMount`                           |
-| Pembongkaran      | `componentWillUnmount`            | `onUnmount`                                  |
-| Menanggapi Input  | `componentDidUpdate`              | `onBeforeAutoFlows`, `onAfterAutoFlows` |
-| Penanganan Error  | `componentDidCatch`               | `onAutoFlowsError`                      |
+| Lifecycle Hook   | `React.Component`                  | `FlowModel`                                  |
+| ---------------- | ---------------------------------- | -------------------------------------------- |
+| Inisialisasi     | `constructor`, `componentDidMount` | `onInit`, `onMount`                          |
+| Unmount          | `componentWillUnmount`             | `onUnmount`                                  |
+| Respons input    | `componentDidUpdate`               | `onBeforeAutoFlows`, `onAfterAutoFlows`      |
+| Penanganan error | `componentDidCatch`                | `onAutoFlowsError`                           |
 
-## Perbandingan Struktur Konstruksi
+## Perbandingan Struktur Bangunan
 
 **React:**
 
@@ -50,29 +52,29 @@ class HelloModel extends FlowModel {
 }
 ```
 
-## Pohon Komponen vs Pohon Model
+## Component Tree vs Model Tree
 
-*   **Pohon Komponen React**: Pohon render UI yang dibentuk oleh penyarangan JSX saat runtime.
-*   **Pohon Model FlowModel**: Pohon struktur logis yang dikelola oleh FlowEngine, yang dapat dipertahankan, serta memungkinkan pendaftaran dan kontrol sub-model secara dinamis. Cocok untuk membangun blok halaman, alur tindakan, model data, dll.
+* **React Component Tree**: UI render tree yang dibentuk oleh JSX nesting saat runtime.
+* **FlowModel Model Tree**: Pohon struktur logika yang dikelola oleh FlowEngine, dapat di-persisten, didaftarkan secara dinamis dan mengontrol sub-model. Cocok untuk membangun page block, action flow, model data, dan sebagainya.
 
-## Fitur Khusus (Spesifik FlowModel)
+## Fitur Khusus (Khusus FlowModel)
 
-| Fungsi                               | Deskripsi                                    |
-| ------------------------------------ | -------------------------------------------- |
-| `registerFlow`                       | Mendaftarkan alur                            |
-| `applyFlow` / `dispatchEvent`        | Menjalankan/memicu alur                      |
-| `setSubModel` / `addSubModel`        | Secara eksplisit mengontrol pembuatan dan pengikatan sub-model |
-| `createFork`                         | Mendukung penggunaan ulang logika model untuk beberapa render (misalnya, setiap baris dalam tabel) |
-| `openFlowSettings`                   | Pengaturan langkah alur                      |
-| `save` / `saveStepParams()`          | Model dapat dipertahankan dan diintegrasikan dengan backend |
+| Fitur                                  | Deskripsi                                            |
+| -------------------------------------- | ---------------------------------------------------- |
+| `registerFlow`                         | Mendaftarkan Flow                                    |
+| `applyFlow` / `dispatchEvent`          | Mengeksekusi/memicu Flow                             |
+| `setSubModel` / `addSubModel`          | Mengontrol secara eksplisit pembuatan dan binding sub-model |
+| `createFork`                           | Mendukung satu model logic yang di-reuse render berkali-kali (seperti setiap baris tabel) |
+| `openFlowSettings`                     | Pengaturan Flow Step                                 |
+| `save` / `saveStepParams()`            | Model dapat di-persisten, terhubung dengan backend   |
 
 ## Ringkasan
 
-| Item              | React.Component                 | FlowModel                                    |
-| ----------------- | ------------------------------- | -------------------------------------------- |
-| Skenario yang Cocok | Organisasi komponen lapisan UI  | Manajemen alur dan blok yang digerakkan oleh data |
-| Ide Inti          | UI Deklaratif                   | Alur terstruktur berbasis model              |
-| Metode Manajemen  | React mengontrol siklus hidup   | FlowModel mengontrol siklus hidup dan struktur model |
-| Keunggulan        | Ekosistem dan toolchain yang kaya | Sangat terstruktur, alur dapat dipertahankan, sub-model dapat dikontrol |
+| Item            | React.Component             | FlowModel                                  |
+| --------------- | --------------------------- | ------------------------------------------ |
+| Skenario cocok  | Organisasi komponen layer UI | Manajemen Flow dan Block yang data-driven |
+| Ide inti        | UI deklaratif               | Flow terstruktur yang model-driven         |
+| Cara manajemen  | React mengontrol lifecycle  | FlowModel mengontrol lifecycle dan struktur model |
+| Keunggulan      | Ekosistem dan toolchain yang kaya | Sangat terstruktur, Flow dapat di-persisten, sub-model dapat dikontrol |
 
-> FlowModel dapat digunakan secara komplementer dengan React: Menggunakan React untuk rendering di dalam FlowModel, sementara siklus hidup dan strukturnya dikelola oleh FlowEngine.
+> FlowModel dapat digunakan secara saling melengkapi dengan React: menggunakan render React di dalam FlowModel, sementara FlowEngine mengelola lifecycle dan strukturnya.

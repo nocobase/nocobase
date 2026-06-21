@@ -1,4 +1,6 @@
 ---
+title: "Multi-space"
+keywords: "Architecture"
 displayName: "Multi-space"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
@@ -8,7 +10,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
 
 # Multi-space

@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth-saml'
+title: "认证：SAML 2.0"
+description: "NocoBase SAML 2.0 SSO 认证：遵循 SAML 协议，对接 IdP（如 Google Workspace），配置 SSO URL、公钥、字段映射。"
+keywords: "SAML 2.0,SSO,单点登录,IdP,Google Workspace,字段映射,NocoBase"
 ---
 
 # 认证：SAML 2.0

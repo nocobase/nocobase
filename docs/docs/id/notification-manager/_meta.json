@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "Ikhtisar",
-    "link": "/notification-manager"
+    "link": "/notification-manager/"
   },
   {
     "type": "custom-link",
@@ -10,33 +10,33 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Pesan Internal",
-        "link": "/notification-manager/notification-in-app-message"
+        "label": "Pesan In-App",
+        "link": "/notification-manager/notification-in-app-message/"
       },
       {
         "type": "custom-link",
         "label": "Email",
-        "link": "/notification-manager/notification-email"
+        "link": "/notification-manager/notification-email/"
       },
       {
         "type": "custom-link",
-        "label": "WeChat Work",
-        "link": "/notification-manager/wecom"
+        "label": "WeCom",
+        "link": "/notification-manager/wecom/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Panduan Pengembang",
+    "label": "Panduan Pengembangan",
     "items": [
       {
         "type": "custom-link",
-        "label": "Perluas Tipe Saluran Notifikasi",
+        "label": "Memperluas Tipe Saluran Notifikasi",
         "link": "/notification-manager/development/extension"
       },
       {
         "type": "custom-link",
-        "label": "Perluas API Notifikasi",
+        "label": "Memperluas API Notifikasi",
         "link": "/notification-manager/development/api"
       }
     ]

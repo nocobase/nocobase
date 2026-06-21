@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Post-action event"
+keywords: "Workflow"
 displayName: "Workflow: Post-action event"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Workflow: Post-action event

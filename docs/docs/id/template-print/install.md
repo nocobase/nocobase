@@ -1,14 +1,18 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Template Print - Instalasi"
+description: "Instalasi plugin Template Print: aktivasi plugin komersial, instalasi LibreOffice (untuk generate PDF), konfigurasi lingkungan Docker."
+keywords: "Template Print,Instalasi,LibreOffice,PDF,NocoBase"
+---
 
-### Instal Plugin
 
-Rujuk dokumentasi Instalasi dan Peningkatan Plugin Komersial.
+### Instalasi Plugin
+
+Untuk metode instalasi dan upgrade yang detail, silakan merujuk ke: [Panduan Aktivasi Plugin Komersial](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
 ### Instal LibreOffice (Opsional)
 
-Untuk membuat PDF, Anda harus menginstal LibreOffice. [Silakan unduh dari situs web resmi](https://www.libreoffice.org/download/download-libreoffice). Untuk versi Docker, Anda dapat membuat skrip langsung di direktori `./storage/scripts`.
+Untuk menghasilkan PDF, harus menginstal LibreOffice, [silakan unduh dari situs resmi](
+https://www.libreoffice.org/download/download-libreoffice). Versi Docker, Anda dapat langsung menulis script di direktori `./storage/scripts`.
 
 ```bash
 mkdir ./storage/scripts
@@ -16,7 +20,7 @@ cd ./storage/scripts
 vim install-libreoffice.sh
 ```
 
-Isi dari `install-libreoffice.sh` adalah sebagai berikut:
+Konten `install-libreoffice.sh` adalah sebagai berikut:
 
 ```sh
 #!/bin/bash
@@ -96,7 +100,7 @@ fi
 echo "LibreOffice installation completed successfully."
 ```
 
-Mulai ulang kontainer `app`:
+Restart container app
 
 ```bash
 docker compose restart app
@@ -104,7 +108,7 @@ docker compose restart app
 docker compose logs app
 ```
 
-Verifikasi instalasi berhasil:
+Periksa apakah instalasi berhasil
 
 ```bash
 $ docker compose exec app bash -c "libreoffice --version"

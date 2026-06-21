@@ -1,33 +1,34 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Kiểm thử Plugin Server"
+description: "Kiểm thử đơn vị, kiểm thử tích hợp, Mock và công cụ kiểm thử cho Plugin NocoBase phía server."
+keywords: "Kiểm thử Plugin,Kiểm thử đơn vị,Kiểm thử tích hợp,Kiểm thử server,NocoBase"
+---
 
+# Test - Kiểm thử
 
-# Kiểm thử
+NocoBase cung cấp một bộ công cụ kiểm thử đầy đủ, giúp bạn nhanh chóng xác minh logic database, interface API và tính đúng đắn của các chức năng trong quá trình phát triển Plugin.
 
-NocoBase cung cấp một bộ công cụ kiểm thử toàn diện, giúp các nhà phát triển nhanh chóng xác minh tính đúng đắn của logic cơ sở dữ liệu, giao diện API và việc triển khai tính năng trong quá trình phát triển **plugin**. Bài viết này sẽ hướng dẫn cách viết, chạy và tổ chức các bài kiểm thử này.
+## Tại sao cần viết kiểm thử
 
-## Tại sao cần viết kiểm thử?
+Lợi ích của việc viết kiểm thử tự động trong phát triển Plugin:
 
-Lợi ích của việc viết kiểm thử tự động trong quá trình phát triển **plugin**:
+- Nhanh chóng xác minh model database, API, logic nghiệp vụ có đúng không  
+- Tránh lỗi hồi quy (sau khi nâng cấp core tự động kiểm tra tính tương thích của Plugin)  
+- Hỗ trợ chạy kiểm thử tự động trong môi trường tích hợp liên tục (CI)  
+- Hỗ trợ kiểm thử chức năng Plugin mà không cần khởi động dịch vụ đầy đủ  
 
-- Nhanh chóng xác minh tính đúng đắn của các mô hình cơ sở dữ liệu, API và logic nghiệp vụ.
-- Tránh các lỗi hồi quy (tự động phát hiện khả năng tương thích của **plugin** sau khi nâng cấp lõi hệ thống).
-- Hỗ trợ môi trường tích hợp liên tục (CI) để tự động chạy kiểm thử.
-- Hỗ trợ kiểm thử chức năng của **plugin** mà không cần khởi động toàn bộ dịch vụ.
-
-## Kiến thức cơ bản về môi trường kiểm thử
+## Cơ bản về môi trường kiểm thử
 
 NocoBase cung cấp hai công cụ kiểm thử cốt lõi:
 
 | Công cụ | Mô tả | Mục đích |
-|---|---|---|
-| `createMockDatabase` | Tạo một phiên bản cơ sở dữ liệu trong bộ nhớ | Kiểm thử các mô hình và logic cơ sở dữ liệu |
-| `createMockServer` | Tạo một phiên bản ứng dụng hoàn chỉnh (bao gồm cơ sở dữ liệu, **plugin**, API, v.v.) | Kiểm thử các quy trình nghiệp vụ và hành vi giao diện |
+|------|------|------|
+| `createMockDatabase` | Tạo instance database trong bộ nhớ | Kiểm thử model database và logic |
+| `createMockServer` | Tạo instance ứng dụng đầy đủ (bao gồm database, plugin, API, v.v.) | Kiểm thử quy trình nghiệp vụ và hành vi interface |
 
-## Sử dụng `createMockDatabase` để kiểm thử cơ sở dữ liệu
+## Sử dụng `createMockDatabase` để kiểm thử database
 
-`createMockDatabase` phù hợp để kiểm thử các chức năng liên quan trực tiếp đến cơ sở dữ liệu, chẳng hạn như định nghĩa mô hình, kiểu trường, quan hệ, các thao tác CRUD, v.v.
+`createMockDatabase` phù hợp để kiểm thử các chức năng liên quan trực tiếp đến database, ví dụ định nghĩa model, kiểu Field, mối quan hệ, thao tác CRUD, v.v.
 
 ### Ví dụ cơ bản
 
@@ -70,7 +71,7 @@ describe('Database test', () => {
 });
 ```
 
-### Kiểm thử các thao tác CRUD
+### Kiểm thử thao tác CRUD
 
 ```ts
 const Posts = db.collection({
@@ -79,11 +80,11 @@ const Posts = db.collection({
 });
 await db.sync();
 
-// Create
+// Tạo
 const post = await db.getRepository('posts').create({ values: { title: 'Initial Title' } });
 expect(post.get('title')).toBe('Initial Title');
 
-// Update
+// Cập nhật
 await db.getRepository('posts').update({
   filterByTk: post.get('id'),
   values: { title: 'Updated Title' },
@@ -92,7 +93,7 @@ const updated = await db.getRepository('posts').findOne({ filterByTk: post.get('
 expect(updated.get('title')).toBe('Updated Title');
 ```
 
-### Kiểm thử các liên kết mô hình
+### Kiểm thử mối quan hệ model
 
 ```ts
 const Users = db.collection({
@@ -126,7 +127,7 @@ expect(result.get('posts')).toHaveLength(1);
 
 ## Sử dụng `createMockServer` để kiểm thử API
 
-`createMockServer` tự động tạo một phiên bản ứng dụng hoàn chỉnh bao gồm cơ sở dữ liệu, **plugin** và các tuyến API, rất lý tưởng để kiểm thử giao diện của **plugin**.
+`createMockServer` sẽ tự động tạo một instance ứng dụng đầy đủ bao gồm database, plugin, route API, phù hợp để kiểm thử interface Plugin.
 
 ### Ví dụ cơ bản
 
@@ -155,21 +156,21 @@ describe('User API test', () => {
 });
 ```
 
-### Kiểm thử truy vấn và cập nhật API
+### Kiểm thử truy vấn và cập nhật của interface
 
 ```ts
-// Query user list
+// Truy vấn danh sách user
 const list = await app.agent().get('/users:list');
 expect(list.body.rows.length).toBeGreaterThan(0);
 
-// Update user
+// Cập nhật user
 const update = await app.agent().post(`/users:update/${id}`).send({ username: 'newname' });
 expect(update.body.username).toBe('newname');
 ```
 
-### Mô phỏng trạng thái đăng nhập hoặc kiểm thử quyền hạn
+### Mô phỏng trạng thái đăng nhập hoặc kiểm thử quyền
 
-Bạn có thể bật **plugin** `auth` khi tạo `MockServer`, sau đó sử dụng giao diện đăng nhập để lấy token hoặc session:
+Bạn có thể bật plugin `auth` khi tạo `MockServer`, sau đó dùng interface đăng nhập để lấy token hoặc session:
 
 ```ts
 const res = await app
@@ -188,22 +189,22 @@ await app
   .get('/protected-endpoint');
 ```
 
-Bạn cũng có thể sử dụng phương thức `login()` đơn giản hơn:
+Cũng có thể dùng phương thức `login()` đơn giản hơn:
 
 ```ts
 await app.agent().login(userOrId);
 ```
 
-## Tổ chức các tệp kiểm thử trong **plugin**
+## Tổ chức tệp kiểm thử trong Plugin
 
-Bạn nên lưu trữ các tệp kiểm thử liên quan đến logic phía máy chủ trong thư mục `./src/server/__tests__` của **plugin**.
+Khuyến nghị lưu các tệp kiểm thử liên quan đến logic server trong thư mục `./src/server/__tests__` của Plugin.
 
 ```bash
 packages/plugins/@my-project/plugin-hello/
 ├── src/                     # Thư mục mã nguồn
-│   └── server/              # Mã phía máy chủ
+│   └── server/              # Code server
 │       ├── __tests__/       # Thư mục tệp kiểm thử
-│       │   ├── db.test.ts   # Kiểm thử liên quan đến cơ sở dữ liệu (sử dụng createMockDatabase)
+│       │   ├── db.test.ts   # Kiểm thử liên quan đến database (dùng createMockDatabase)
 │       │   └── api.test.ts  # Kiểm thử liên quan đến API
 ```
 
@@ -215,3 +216,11 @@ yarn test packages/plugins/@my-project/plugin-hello/src/server
 # Chỉ định tệp
 yarn test packages/plugins/@my-project/plugin-hello/src/server/__tests__/db.test.ts
 ```
+
+## Liên kết liên quan
+
+- [Plugin](./plugin.md) — Vòng đời Plugin và API cốt lõi
+- [Collections](./collections.md) — Định nghĩa và cấu hình bảng dữ liệu
+- [Database](./database.md) — Thao tác database và Repository API
+- [Tổng quan phát triển server](./index.md) — Tổng quan các module server
+- [Tổng quan phát triển Plugin](../index.md) — Giới thiệu tổng thể về phát triển Plugin

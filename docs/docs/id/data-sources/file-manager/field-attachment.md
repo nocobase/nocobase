@@ -1,21 +1,21 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "Field Lampiran"
+description: "Field lampiran terhubung ke Collection file, mendukung konfigurasi 'Field Tipe Lampiran' atau 'Field Relasi', digunakan untuk menyimpan gambar, dokumen, dan file lainnya."
+keywords: "field lampiran,Field Attachment,field file,relasi file,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Field Lampiran
 
-# Bidang Lampiran
+<PluginInfo name="file-manager"></PluginInfo>
 
-## Pendahuluan
+## Pengantar
 
-Bidang lampiran adalah bidang relasional khusus yang terhubung langsung ke koleksi file.
+Field Lampiran adalah field relasi khusus yang terhubung ke Collection file.
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512180916](https://static-docs.nocobase.com/20240512180916.png)
 
 ## Contoh
 
-Contoh akan ditambahkan.
+Akan ditambahkan

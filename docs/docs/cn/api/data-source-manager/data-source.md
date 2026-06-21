@@ -1,3 +1,9 @@
+---
+title: "DataSource (abstract)"
+description: "NocoBase DataSource 抽象类：表示数据源类型（数据库、API 等），Collection 与 Repository 的容器。"
+keywords: "DataSource,抽象类,数据源类型,Collection,Repository 容器,NocoBase"
+---
+
 # DataSource (abstract)
 
 `DataSource` 抽象类，用于表示一种类型的数据源，可以是数据库、API等。

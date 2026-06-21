@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-departments'
+title: "NocoBase 部门管理"
+description: "NocoBase 部门管理：新建部门、子部门、部门树结构、组织架构、部门层级。"
+keywords: "部门管理,组织架构,部门树,子部门,plugin-departments,NocoBase"
 ---
 
 # 部门

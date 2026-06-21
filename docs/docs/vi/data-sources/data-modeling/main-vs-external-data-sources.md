@@ -1,170 +1,171 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "So sánh Database chính và bên ngoài"
+description: "Sự khác biệt giữa database chính và database bên ngoài: hỗ trợ loại database, loại Collection, loại Field, khả năng sao lưu khôi phục và di chuyển."
+keywords: "database chính,database bên ngoài,so sánh Data Source,kết nối chỉ đọc,đồng bộ Collection,NocoBase"
+---
 
+# So sánh Database chính và bên ngoài
 
-# So sánh Cơ sở dữ liệu chính và Cơ sở dữ liệu ngoài
+Sự khác biệt giữa database chính và database bên ngoài trong NocoBase chủ yếu thể hiện ở bốn khía cạnh sau: hỗ trợ loại database, hỗ trợ loại Collection, hỗ trợ loại Field và sao lưu khôi phục di chuyển.
 
-Sự khác biệt giữa cơ sở dữ liệu chính và cơ sở dữ liệu ngoài trong NocoBase chủ yếu thể hiện ở bốn khía cạnh sau: hỗ trợ loại cơ sở dữ liệu, hỗ trợ loại bộ sưu tập, hỗ trợ loại trường và khả năng sao lưu, di chuyển.
+## Một, Hỗ trợ loại database
 
-## 1. Hỗ trợ loại Cơ sở dữ liệu
+Xem thêm chi tiết tại: [Quản lý Data Source](https://docs.nocobase.com/data-sources/data-source-manager)
 
-Để biết thêm chi tiết, vui lòng tham khảo: [Quản lý nguồn dữ liệu](https://docs.nocobase.com/data-sources/data-source-manager)
+### Loại database
 
-### Các loại Cơ sở dữ liệu
+| Loại database | Database chính hỗ trợ | Database bên ngoài hỗ trợ |
+|-----------|-------------|--------------|
+| PostgreSQL | ✅ | ✅ |
+| MySQL | ✅ | ✅ |
+| MariaDB | ✅ | ✅ |
+| KingbaseES | ✅ | ✅ |
+| MSSQL | ❌ | ✅ |
+| Oracle | ❌ | ✅ |
 
-| Loại Cơ sở dữ liệu | Hỗ trợ Cơ sở dữ liệu chính | Hỗ trợ Cơ sở dữ liệu ngoài |
-|-------------------|---------------------------|------------------------------|
-| PostgreSQL        | ✅                        | ✅                           |
-| MySQL             | ✅                        | ✅                           |
-| MariaDB           | ✅                        | ✅                           |
-| KingbaseES        | ✅                        | ✅                           |
-| MSSQL             | ❌                        | ✅                           |
-| Oracle            | ❌                        | ✅                           |
+### Quản lý Collection
 
-### Quản lý bộ sưu tập
+| Quản lý Collection | Database chính hỗ trợ | Database bên ngoài hỗ trợ |
+|-----------|-------------|--------------|
+| Quản lý cơ bản | ✅ | ✅ |
+| Quản lý trực quan | ✅ | ❌ |
 
-| Quản lý bộ sưu tập | Hỗ trợ Cơ sở dữ liệu chính | Hỗ trợ Cơ sở dữ liệu ngoài |
-|--------------------|-----------------------------|------------------------------|
-| Quản lý cơ bản     | ✅                          | ✅                           |
-| Quản lý trực quan  | ✅                          | ❌                           |
+## Hai, Hỗ trợ loại Collection
 
-## 2. Hỗ trợ loại bộ sưu tập
+Xem thêm chi tiết tại: [Collection](https://docs.nocobase.com/data-sources/data-modeling/collection)
 
-Để biết thêm chi tiết, vui lòng tham khảo: [Bộ sưu tập](https://docs.nocobase.com/data-sources/data-modeling/collection)
+| Loại Collection | Database chính | Database bên ngoài | Ghi chú |
+|-----------|---------|-----------|------|
+| Bảng thông thường | ✅ | ✅ | Collection cơ bản |
+| Bảng View | ✅ | ✅ | View của Data Source |
+| Bảng kế thừa | ✅ | ❌ | Hỗ trợ kế thừa mô hình dữ liệu, chỉ Data Source chính hỗ trợ |
+| Bảng tệp | ✅ | ❌ | Hỗ trợ tải lên tệp, chỉ Data Source chính hỗ trợ |
+| Bảng bình luận | ✅ | ❌ | Tích hợp sẵn hệ thống bình luận, chỉ Data Source chính hỗ trợ |
+| Bảng lịch | ✅ | ❌ | Collection cho giao diện lịch |
+| Bảng biểu thức | ✅ | ❌ | Hỗ trợ tính toán công thức |
+| Bảng cây | ✅ | ❌ | Dùng cho mô hình hóa dữ liệu cấu trúc cây |
+| Bảng SQL | ✅ | ❌ | Collection có thể được định nghĩa qua SQL |
+| Kết nối Collection bên ngoài | ✅ | ❌ | Bảng kết nối Data Source bên ngoài, chức năng hạn chế |
 
-| Loại bộ sưu tập      | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài | Mô tả                                                 |
-|----------------------|-------------------|---------------------|-------------------------------------------------------|
-| Thông thường         | ✅                | ✅                  | Bộ sưu tập cơ bản                                     |
-| Dạng xem             | ✅                | ✅                  | Dạng xem nguồn dữ liệu                                |
-| Kế thừa              | ✅                | ❌                  | Hỗ trợ kế thừa mô hình dữ liệu, chỉ áp dụng cho nguồn dữ liệu chính |
-| Tệp                  | ✅                | ❌                  | Hỗ trợ tải tệp lên, chỉ áp dụng cho nguồn dữ liệu chính |
-| Bình luận            | ✅                | ❌                  | Hệ thống bình luận tích hợp, chỉ áp dụng cho nguồn dữ liệu chính |
-| Lịch                 | ✅                | ❌                  | Bộ sưu tập dùng cho dạng xem lịch                     |
-| Biểu thức            | ✅                | ❌                  | Hỗ trợ tính toán công thức                            |
-| Cây                  | ✅                | ❌                  | Dùng để mô hình hóa dữ liệu cấu trúc cây              |
-| SQL                  | ✅                | ❌                  | Bộ sưu tập có thể định nghĩa bằng SQL                 |
-| Kết nối ngoài        | ✅                | ❌                  | Bộ sưu tập kết nối cho nguồn dữ liệu ngoài, chức năng hạn chế |
+## Ba, Hỗ trợ loại Field
 
-## 3. Hỗ trợ loại trường
+Xem thêm chi tiết tại: [Field của Collection](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
 
-Để biết thêm chi tiết, vui lòng tham khảo: [Trường bộ sưu tập](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
+### Kiểu cơ bản
 
-### Các loại cơ bản
+| Loại Field | Database chính | Database bên ngoài |
+|---------|---------|-----------|
+| Văn bản một dòng | ✅ | ✅ |
+| Văn bản nhiều dòng | ✅ | ✅ |
+| Số điện thoại | ✅ | ✅ |
+| Email | ✅ | ✅ |
+| URL | ✅ | ✅ |
+| Số nguyên | ✅ | ✅ |
+| Số | ✅ | ✅ |
+| Phần trăm | ✅ | ✅ |
+| Mật khẩu | ✅ | ✅ |
+| Màu sắc | ✅ | ✅ |
+| Biểu tượng | ✅ | ✅ |
 
-| Loại trường         | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài |
-|---------------------|-------------------|---------------------|
-| Văn bản một dòng    | ✅                | ✅                  |
-| Văn bản nhiều dòng  | ✅                | ✅                  |
-| Số điện thoại       | ✅                | ✅                  |
-| Email               | ✅                | ✅                  |
-| URL                 | ✅                | ✅                  |
-| Số nguyên           | ✅                | ✅                  |
-| Số                  | ✅                | ✅                  |
-| Phần trăm           | ✅                | ✅                  |
-| Mật khẩu            | ✅                | ✅                  |
-| Màu sắc             | ✅                | ✅                  |
-| Biểu tượng          | ✅                | ✅                  |
+### Kiểu lựa chọn
 
-### Các loại lựa chọn
+| Loại Field | Database chính | Database bên ngoài |
+|---------|---------|-----------|
+| Checkbox | ✅ | ✅ |
+| Dropdown (chọn một) | ✅ | ✅ |
+| Dropdown (chọn nhiều) | ✅ | ✅ |
+| Radio | ✅ | ✅ |
+| Nhóm Checkbox | ✅ | ✅ |
+| Khu vực hành chính Trung Quốc | ✅ | ❌ |
 
-| Loại trường                   | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài |
-|-------------------------------|-------------------|---------------------|
-| Hộp kiểm                      | ✅                | ✅                  |
-| Menu thả xuống (chọn một)     | ✅                | ✅                  |
-| Menu thả xuống (chọn nhiều)   | ✅                | ✅                  |
-| Nhóm nút radio                | ✅                | ✅                  |
-| Nhóm hộp kiểm                 | ✅                | ✅                  |
-| Khu vực hành chính Trung Quốc | ✅                | ❌                  |
+### Kiểu đa phương tiện
 
-### Các loại đa phương tiện
+| Loại Field | Database chính | Database bên ngoài |
+|---------|---------|-----------|
+| Đa phương tiện | ✅ | ✅ |
+| Markdown | ✅ | ✅ |
+| Markdown (Vditor) | ✅ | ✅ |
+| Văn bản giàu định dạng | ✅ | ✅ |
+| Tệp đính kèm (Quan hệ) | ✅ | ❌ |
+| Tệp đính kèm (URL) | ✅ | ✅ |
 
-| Loại trường               | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài |
-|---------------------------|-------------------|---------------------|
-| Đa phương tiện            | ✅                | ✅                  |
-| Markdown                  | ✅                | ✅                  |
-| Markdown (Vditor)         | ✅                | ✅                  |
-| Văn bản đa dạng           | ✅                | ✅                  |
-| Tệp đính kèm (Liên kết)   | ✅                | ❌                  |
-| Tệp đính kèm (URL)        | ✅                | ✅                  |
+### Kiểu Datetime
 
-### Các loại Ngày & Giờ
+| Loại Field | Database chính | Database bên ngoài |
+|---------|---------|-----------|
+| Datetime (có múi giờ) | ✅ | ✅ |
+| Datetime (không có múi giờ) | ✅ | ✅ |
+| Unix Timestamp | ✅ | ✅ |
+| Ngày (không có giờ) | ✅ | ✅ |
+| Giờ | ✅ | ✅ |
 
-| Loại trường                 | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài |
-|-----------------------------|-------------------|---------------------|
-| Ngày giờ (có múi giờ)       | ✅                | ✅                  |
-| Ngày giờ (không múi giờ)    | ✅                | ✅                  |
-| Dấu thời gian Unix          | ✅                | ✅                  |
-| Ngày (không có giờ)         | ✅                | ✅                  |
-| Giờ                         | ✅                | ✅                  |
+### Kiểu hình học
 
-### Các loại Hình học
+| Loại Field | Database chính | Database bên ngoài |
+|---------|---------|-----------|
+| Điểm | ✅ | ✅ |
+| Đường thẳng | ✅ | ✅ |
+| Hình tròn | ✅ | ✅ |
+| Đa giác | ✅ | ✅ |
 
-| Loại trường | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài |
-|-------------|-------------------|---------------------|
-| Điểm        | ✅                | ✅                  |
-| Đường        | ✅                | ✅                  |
-| Hình tròn   | ✅                | ✅                  |
-| Đa giác     | ✅                | ✅                  |
+### Kiểu nâng cao
 
-### Các loại nâng cao
+| Loại Field | Database chính | Database bên ngoài |
+|---------|---------|-----------|
+| UUID | ✅ | ✅ |
+| Nano ID | ✅ | ✅ |
+| Sắp xếp | ✅ | ✅ |
+| Công thức | ✅ | ✅ |
+| Mã hóa tự động | ✅ | ✅ |
+| JSON | ✅ | ✅ |
+| Bộ chọn Collection | ✅ | ❌ |
+| Mã hóa | ✅ | ✅ |
 
-| Loại trường           | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài |
-|-----------------------|-------------------|---------------------|
-| UUID                  | ✅                | ✅                  |
-| Nano ID               | ✅                | ✅                  |
-| Sắp xếp               | ✅                | ✅                  |
-| Công thức tính toán   | ✅                | ✅                  |
-| Mã tự động            | ✅                | ✅                  |
-| JSON                  | ✅                | ✅                  |
-| Bộ chọn bộ sưu tập    | ✅                | ❌                  |
-| Mã hóa                | ✅                | ✅                  |
+### Field thông tin hệ thống
 
-### Các trường thông tin hệ thống
+| Loại Field | Database chính | Database bên ngoài |
+|---------|---------|-----------|
+| Ngày tạo | ✅ | ✅ |
+| Ngày cập nhật cuối | ✅ | ✅ |
+| Người tạo | ✅ | ❌ |
+| Người cập nhật cuối | ✅ | ❌ |
+| Table OID | ✅ | ❌ |
 
-| Loại trường           | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài |
-|-----------------------|-------------------|---------------------|
-| Ngày tạo              | ✅                | ✅                  |
-| Ngày cập nhật cuối    | ✅                | ✅                  |
-| Người tạo             | ✅                | ❌                  |
-| Người cập nhật cuối   | ✅                | ❌                  |
-| OID bảng              | ✅                | ❌                  |
+### Kiểu quan hệ
 
-### Các loại liên kết
-
-| Loại trường           | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài |
-|-----------------------|-------------------|---------------------|
-| Một-một               | ✅                | ✅                  |
-| Một-nhiều             | ✅                | ✅                  |
-| Nhiều-một             | ✅                | ✅                  |
-| Nhiều-nhiều           | ✅                | ✅                  |
-| Nhiều-nhiều (mảng)    | ✅                | ✅                  |
-
-:::info
-Các trường tệp đính kèm phụ thuộc vào bộ sưu tập tệp, mà bộ sưu tập tệp chỉ được hỗ trợ bởi cơ sở dữ liệu chính. Do đó, cơ sở dữ liệu ngoài hiện không hỗ trợ các trường tệp đính kèm.
-:::
-
-## 4. So sánh hỗ trợ Sao lưu và Di chuyển
-
-| Tính năng           | Cơ sở dữ liệu chính | Cơ sở dữ liệu ngoài |
-|---------------------|-------------------|---------------------|
-| Sao lưu & Khôi phục | ✅                | ❌ (Người dùng tự xử lý) |
-| Quản lý di chuyển   | ✅                | ❌ (Người dùng tự xử lý) |
+| Loại Field | Database chính | Database bên ngoài |
+|---------|---------|-----------|
+| OneToOne | ✅ | ✅ |
+| OneToMany | ✅ | ✅ |
+| ManyToOne | ✅ | ✅ |
+| ManyToMany | ✅ | ✅ |
+| ManyToMany (mảng) | ✅ | ✅ |
 
 :::info
-NocoBase cung cấp khả năng sao lưu, khôi phục và di chuyển cấu trúc cho cơ sở dữ liệu chính. Đối với cơ sở dữ liệu ngoài, người dùng cần tự thực hiện các thao tác này tùy theo môi trường cơ sở dữ liệu của họ. NocoBase không cung cấp hỗ trợ tích hợp sẵn.
+Field tệp đính kèm phụ thuộc vào bảng tệp, mà bảng tệp chỉ được hỗ trợ bởi database chính, do đó database bên ngoài tạm thời không hỗ trợ Field tệp đính kèm.
 :::
 
-## Tóm tắt so sánh
+## Bốn, So sánh hỗ trợ sao lưu và di chuyển
 
-| Mục so sánh               | Cơ sở dữ liệu chính                               | Cơ sở dữ liệu ngoài                                   |
-|---------------------------|---------------------------------------------------|-------------------------------------------------------|
-| Các loại Cơ sở dữ liệu    | PostgreSQL, MySQL, MariaDB, KingbaseES            | PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, KingbaseES |
-| Hỗ trợ loại bộ sưu tập    | Tất cả các loại bộ sưu tập                        | Chỉ hỗ trợ bộ sưu tập thông thường và dạng xem        |
-| Hỗ trợ loại trường        | Tất cả các loại trường                            | Tất cả các loại trường ngoại trừ trường tệp đính kèm |
-| Sao lưu & Di chuyển       | Hỗ trợ tích hợp sẵn                               | Người dùng tự xử lý                                   |
+| Chức năng | Database chính | Database bên ngoài |
+|-----|---------|-----------|
+| Sao lưu khôi phục | ✅ | ❌ (cần tự xử lý) |
+| Quản lý di chuyển | ✅ | ❌ (cần tự xử lý) |
+
+:::info
+NocoBase cung cấp khả năng sao lưu, khôi phục và di chuyển cấu trúc cho database chính. Đối với database bên ngoài, các thao tác này cần được người dùng tự thực hiện độc lập theo môi trường database của mình, NocoBase không cung cấp hỗ trợ tích hợp sẵn.
+:::
+
+## So sánh tổng kết
+
+| Mục so sánh | Database chính | Database bên ngoài |
+|-------|---------|-----------|
+| Loại database | PostgreSQL, MySQL, MariaDB, KingbaseES | PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, KingbaseES |
+| Hỗ trợ loại bảng | Tất cả các loại bảng | Chỉ hỗ trợ bảng thông thường và bảng View |
+| Hỗ trợ loại Field | Tất cả các loại Field | Tất cả các loại Field ngoại trừ Field tệp đính kèm |
+| Sao lưu và di chuyển | Hỗ trợ tích hợp sẵn | Cần tự xử lý |
 
 ## Khuyến nghị
 
-- **Nếu bạn đang sử dụng NocoBase để xây dựng một hệ thống nghiệp vụ hoàn toàn mới**, vui lòng sử dụng **cơ sở dữ liệu chính**. Điều này sẽ cho phép bạn tận dụng toàn bộ chức năng của NocoBase.
-- **Nếu bạn đang sử dụng NocoBase để kết nối với cơ sở dữ liệu của các hệ thống khác nhằm thực hiện các thao tác CRUD cơ bản**, thì hãy sử dụng **cơ sở dữ liệu ngoài**.
+- **Nếu sử dụng NocoBase để xây dựng hệ thống nghiệp vụ hoàn toàn mới**, vui lòng sử dụng **Database chính**, điều này sẽ cho phép bạn sử dụng đầy đủ chức năng của NocoBase.
+- **Nếu sử dụng NocoBase để kết nối database của hệ thống khác nhằm thực hiện các thao tác CRUD cơ bản**, hãy sử dụng **Database bên ngoài**.

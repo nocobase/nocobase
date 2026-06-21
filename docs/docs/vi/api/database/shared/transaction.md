@@ -1,5 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tham số Transaction"
+description: "Tham số transaction của Repository NocoBase: đối tượng transaction, tự động tạo transaction nội bộ khi không truyền."
+keywords: "Transaction,Repository,transaction,NocoBase"
+---
 
-- `transaction`: Đối tượng giao dịch. Nếu không truyền vào tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.
+- `transaction`: Đối tượng transaction. Nếu không truyền tham số transaction, phương thức sẽ tự động tạo một transaction nội bộ.

@@ -1,3 +1,9 @@
+---
+title: "必填"
+description: "字段设置：配置字段必填，提交时校验非空，支持自定义错误提示。"
+keywords: "必填,required,字段校验,表单验证,界面搭建,NocoBase"
+---
+
 # 必填
 
 ## 介绍

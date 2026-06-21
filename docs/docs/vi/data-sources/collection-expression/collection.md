@@ -1,28 +1,29 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Bảng biểu thức"
+description: "Bảng biểu thức được sử dụng cho phép tính biểu thức động trong workflow, lưu trữ quy tắc tính toán và công thức, hỗ trợ các Field từ các mô hình dữ liệu khác nhau làm biến, sử dụng cùng với dữ liệu nghiệp vụ."
+keywords: "Bảng biểu thức,biểu thức động,biểu thức workflow,quy tắc tính toán,công thức,NocoBase"
+---
 
+# Bảng biểu thức
 
-# Bộ sưu tập Biểu thức
+## Tạo bảng mẫu "Biểu thức"
 
-## Tạo mẫu bộ sưu tập "Biểu thức"
+Trước khi sử dụng node tính toán biểu thức động trong workflow, bạn cần tạo một bảng mẫu "Biểu thức" trong công cụ quản lý Collection để lưu trữ các biểu thức khác nhau:
 
-Trước khi sử dụng các nút thao tác biểu thức động trong luồng công việc, bạn cần tạo một mẫu bộ sưu tập "Biểu thức" trong công cụ quản lý bộ sưu tập. Mẫu này sẽ dùng để lưu trữ các biểu thức khác nhau:
+![Tạo bảng mẫu biểu thức](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
 
-![Creating an Expression Collection](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
+## Nhập dữ liệu biểu thức
 
-## Nhập dữ liệu Biểu thức
+Sau đó tạo một block bảng để thêm một số dữ liệu công thức vào bảng mẫu này. Mỗi hàng dữ liệu trong bảng mẫu "Biểu thức" có thể được hiểu là một quy tắc tính toán cho mô hình dữ liệu của một bảng cụ thể. Mỗi hàng dữ liệu công thức có thể sử dụng giá trị Field từ các mô hình dữ liệu của các Collection khác nhau làm biến, viết các biểu thức khác nhau làm quy tắc tính toán, và tất nhiên, cũng có thể sử dụng các engine tính toán khác nhau.
 
-Tiếp theo, bạn có thể thiết lập một khối bảng và nhập một số mục công thức vào mẫu bộ sưu tập này. Mỗi hàng trong mẫu bộ sưu tập "Biểu thức" có thể được xem là một quy tắc tính toán được thiết kế cho một mô hình dữ liệu cụ thể trong bộ sưu tập. Bạn có thể sử dụng các trường khác nhau từ các mô hình dữ liệu của nhiều bộ sưu tập làm biến số, để tạo ra các biểu thức độc đáo làm quy tắc tính toán. Hơn nữa, bạn có thể tận dụng các công cụ tính toán khác nhau khi cần.
-
-![Entering Expression Data](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
+![Nhập dữ liệu biểu thức](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
 
 :::info{title=Mẹo}
-Sau khi tạo công thức, chúng cần được liên kết với dữ liệu nghiệp vụ. Việc liên kết trực tiếp từng hàng dữ liệu nghiệp vụ với dữ liệu công thức có thể khá tẻ nhạt. Vì vậy, một cách tiếp cận phổ biến là sử dụng một bộ sưu tập siêu dữ liệu, tương tự như bộ sưu tập phân loại, để tạo mối quan hệ nhiều-một (hoặc một-một) với bộ sưu tập công thức. Sau đó, dữ liệu nghiệp vụ được liên kết với siêu dữ liệu đã phân loại theo mối quan hệ nhiều-một. Cách này cho phép bạn chỉ cần chỉ định siêu dữ liệu phân loại liên quan khi tạo dữ liệu nghiệp vụ, giúp dễ dàng tìm và sử dụng dữ liệu công thức tương ứng thông qua đường dẫn liên kết đã thiết lập.
+Sau khi tạo công thức, bạn cần liên kết dữ liệu nghiệp vụ với công thức. Việc liên kết trực tiếp mỗi hàng dữ liệu nghiệp vụ với hàng dữ liệu công thức sẽ khá rườm rà, vì vậy thông thường chúng ta sẽ sử dụng bảng metadata kiểu phân loại để liên kết ManyToOne (hoặc OneToOne) với bảng công thức, sau đó liên kết dữ liệu nghiệp vụ với metadata phân loại theo kiểu ManyToOne. Khi tạo dữ liệu nghiệp vụ chỉ cần chỉ định metadata phân loại cụ thể, có thể tìm thấy dữ liệu công thức tương ứng để sử dụng thông qua đường dẫn liên kết này trong các lần sử dụng sau.
 :::
 
-## Tải dữ liệu liên quan vào Luồng
+## Tải dữ liệu tương ứng trong quy trình
 
-Lấy ví dụ về sự kiện bộ sưu tập, hãy tạo một luồng công việc. Khi một đơn hàng được tạo, luồng công việc sẽ được kích hoạt và cần tải trước dữ liệu sản phẩm liên quan đến đơn hàng cùng với dữ liệu biểu thức liên quan đến sản phẩm:
+Lấy ví dụ về sự kiện Collection để tạo một workflow, kích hoạt khi có đơn hàng được tạo và cần tải trước dữ liệu sản phẩm liên quan đến đơn hàng cũng như dữ liệu biểu thức liên quan đến sản phẩm:
 
-![Collection Event_Trigger Configuration](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)
+![Cấu hình trigger sự kiện Collection](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)

@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Integer"
+description: "Field Integer, menyimpan nilai bilangan bulat."
+keywords: "tipe integer,integer,field number,nilai numerik,NocoBase"
+---
 
 # Integer
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512175723](https://static-docs.nocobase.com/20240512175723.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

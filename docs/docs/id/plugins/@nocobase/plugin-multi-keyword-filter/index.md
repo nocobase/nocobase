@@ -1,17 +1,16 @@
 ---
-displayName: "Filter Multi-Kata Kunci"
+displayName: "Filter Multi Kata Kunci"
 packageName: '@nocobase/plugin-multi-keyword-filter'
+title: "Filter Multi Kata Kunci"
+keywords: "Filter Multi Kata Kunci,Plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Mendukung penyaringan multi-kata kunci untuk bidang umum, dengan opsi untuk input cepat atau impor kata kunci secara massal dari Excel.
-isFree: false
-builtIn: false
+  Mendukung pemfilteran multi kata kunci untuk Field umum, mendukung input cepat atau impor batch kata kunci dari Excel.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Filter Multi-Kata Kunci
+# Filter Multi Kata Kunci

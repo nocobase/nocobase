@@ -1,31 +1,30 @@
 ---
 pkg: '@nocobase/plugin-workflow-subflow'
+title: "Node Workflow - Output Alur"
+description: "Node Output Alur: mendefinisikan nilai output dalam workflow yang dipanggil, untuk digunakan oleh pemanggil."
+keywords: "Workflow,Output Alur,Output,output sub-alur,passing variable,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Output Alur
 
-# Output Alur Kerja
+## Pengantar
 
-## Pendahuluan
-
-Node "Output Alur Kerja" digunakan dalam alur kerja yang dipanggil untuk mendefinisikan nilai outputnya. Ketika suatu alur kerja dipanggil oleh alur kerja lain, node "Output Alur Kerja" dapat digunakan untuk meneruskan nilai kembali ke pemanggil.
+Node "Output Alur" digunakan dalam workflow yang dipanggil, untuk mendefinisikan nilai output dari workflow tersebut. Saat sebuah workflow dipanggil oleh workflow lain, dapat meneruskan nilai kembali ke pemanggil melalui Node "Output Alur".
 
 ## Membuat Node
 
-Dalam alur kerja yang dipanggil, tambahkan node "Output Alur Kerja":
+Pada workflow yang dipanggil, tambahkan Node "Output Alur":
 
 ![20241231002033](https://static-docs.nocobase.com/20241231002033.png)
 
-## Mengonfigurasi Node
+## Konfigurasi Node
 
 ### Nilai Output
 
-Masukkan atau pilih variabel sebagai nilai output. Nilai output dapat berupa tipe apa pun, seperti konstanta (string, angka, nilai logis, tanggal, atau JSON kustom), atau variabel lain dari alur kerja.
+Masukkan atau pilih variable sebagai nilai output. Nilai output dapat berupa tipe apa pun, dapat berupa konstanta seperti string, angka, boolean, tanggal atau JSON kustom, dll., dapat juga berupa variable lain dalam alur.
 
 ![20241231003059](https://static-docs.nocobase.com/20241231003059.png)
 
 :::info{title=Tips}
-Jika beberapa node "Output Alur Kerja" ditambahkan ke alur kerja yang dipanggil, nilai dari node "Output Alur Kerja" terakhir yang dieksekusi akan menjadi output saat alur kerja tersebut dipanggil.
+Jika beberapa Node "Output Alur" ditambahkan dalam workflow yang dipanggil, maka saat workflow tersebut dipanggil, akan dioutput dengan nilai dari Node "Output Alur" terakhir yang dieksekusi.
 :::

@@ -13,6 +13,7 @@ export default defineCollection({
   migrationRules: ['schema-only'],
   autoGenId: false,
   name: 'aiConversations',
+  dataCategory: 'business',
   fields: [
     {
       name: 'sessionId',
@@ -20,8 +21,20 @@ export default defineCollection({
       primaryKey: true,
     },
     {
+      name: 'thread',
+      type: 'integer',
+      defaultValue: 0,
+      allowNull: false,
+    },
+    {
       name: 'topicId',
       type: 'string',
+    },
+    {
+      name: 'from',
+      type: 'string',
+      defaultValue: 'main-agent',
+      allowNull: false,
     },
     {
       name: 'user',
@@ -52,6 +65,22 @@ export default defineCollection({
     {
       name: 'options',
       type: 'jsonb',
+    },
+    {
+      name: 'llmActiveState',
+      type: 'string', // idle,streaming,invoking,
+      defaultValue: 'idle',
+    },
+    {
+      name: 'category',
+      type: 'string', // chat, task
+      defaultValue: 'chat',
+    },
+    {
+      name: 'read',
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: true,
     },
   ],
 });

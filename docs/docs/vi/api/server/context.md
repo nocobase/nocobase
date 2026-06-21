@@ -1,22 +1,25 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Context (Server)"
+description: "API Context phía server của NocoBase: ngữ cảnh request, action, state, body."
+keywords: "Context,ngữ cảnh request,action,state,body,server,NocoBase"
+---
 
+# Context
 
-# Ngữ cảnh
-
-## hành động
+## action
 
 - ctx.action.params
 - ctx.action.actionName
 - ctx.action.resourceName
 
-## xác thực
+## auth
 
-## ghi nhật ký
+## logger
 
-## quốc tế hóa
+## i18n
 
 ## t()
 
 ## can()
+
+

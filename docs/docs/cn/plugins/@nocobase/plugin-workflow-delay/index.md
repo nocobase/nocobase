@@ -1,4 +1,6 @@
 ---
+title: "工作流：延时节点"
+keywords: "工作流：延时节点,插件,NocoBase"
 displayName: "工作流：延时节点"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 工作流：延时节点

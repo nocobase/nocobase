@@ -1,41 +1,40 @@
 ---
 pkg: '@nocobase/plugin-workflow-parallel'
+title: "Node Workflow - Cabang Paralel"
+description: "Node Cabang Paralel: membagi alur menjadi beberapa cabang yang dieksekusi bersamaan, dapat dikonfigurasi mode cabang yang berbeda."
+keywords: "Workflow,Cabang Paralel,Parallel,eksekusi konkuren,mode cabang,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 
 # Cabang Paralel
 
-Node cabang paralel dapat membagi sebuah alur kerja menjadi beberapa cabang. Setiap cabang dapat dikonfigurasi dengan node yang berbeda, dan metode eksekusinya bervariasi tergantung pada mode cabang. Gunakan node cabang paralel dalam skenario di mana beberapa tindakan perlu dieksekusi secara bersamaan.
+Node Cabang Paralel dapat membagi alur menjadi beberapa cabang. Setiap cabang dapat dikonfigurasi dengan Node yang berbeda. Berdasarkan mode cabang yang berbeda, cara eksekusi cabang juga berbeda. Dalam skenario yang membutuhkan eksekusi beberapa operasi secara bersamaan, Anda dapat menggunakan Node Cabang Paralel.
 
 ## Instalasi
 
-Plugin bawaan, tidak memerlukan instalasi.
+Plugin bawaan, tidak perlu instalasi.
 
 ## Membuat Node
 
-Pada antarmuka konfigurasi alur kerja, klik tombol plus ("+") pada alur untuk menambahkan node "Cabang Paralel":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Cabang Paralel":
 
-![Tambah Cabang Paralel](https://static-docs.nocobase.com/9e0f3faa0b9335270647a30477559eac.png)
+![Cabang Paralel_Tambah](https://static-docs.nocobase.com/9e0f3faa0b9335270647a30477559eac.png)
 
-Setelah menambahkan node cabang paralel ke alur kerja, dua sub-cabang akan ditambahkan secara default. Anda juga dapat menambahkan lebih banyak cabang dengan mengeklik tombol tambah cabang. Jumlah node apa pun dapat ditambahkan ke setiap cabang. Cabang yang tidak diperlukan dapat dihapus dengan mengeklik tombol hapus di awal cabang.
+Setelah Node Cabang Paralel ditambahkan ke dalam alur, secara default akan ditambahkan dua sub-cabang. Anda juga dapat mengklik tombol tambah cabang untuk menambah sebanyak mungkin cabang, setiap cabang dapat ditambahkan Node apa saja, dan cabang yang tidak diperlukan dapat dihapus dengan mengklik tombol hapus di awal cabang.
 
-![Kelola Cabang Paralel](https://static-docs.nocobase.com/36088a8b7970c8a1771eb3ee9bc2a757.png)
+![Cabang Paralel_Manajemen Cabang](https://static-docs.nocobase.com/36088a8b7970c8a1771eb3ee9bc2a757.png)
 
 ## Konfigurasi Node
 
 ### Mode Cabang
 
-Node cabang paralel memiliki tiga mode berikut:
+Node Cabang Paralel memiliki tiga mode berikut:
 
-- **Semua Berhasil**: Alur kerja hanya akan melanjutkan eksekusi node setelah cabang selesai jika semua cabang berhasil dieksekusi. Jika tidak, jika ada cabang yang berakhir lebih awal, baik karena kegagalan, kesalahan, atau status non-berhasil lainnya, seluruh node cabang paralel akan berakhir lebih awal dengan status tersebut. Ini juga dikenal sebagai "mode Semua".
-- **Salah Satu Berhasil**: Alur kerja akan melanjutkan eksekusi node setelah cabang selesai segera setelah salah satu cabang berhasil dieksekusi. Seluruh node cabang paralel hanya akan berakhir lebih awal jika semua cabang berakhir lebih awal, baik karena kegagalan, kesalahan, atau status non-berhasil lainnya. Ini juga dikenal sebagai "mode Salah Satu".
-- **Salah Satu Berhasil atau Gagal**: Alur kerja akan melanjutkan eksekusi node setelah cabang selesai segera setelah salah satu cabang berhasil dieksekusi. Namun, jika ada node yang gagal, seluruh cabang paralel akan berakhir lebih awal dengan status tersebut. Ini juga dikenal sebagai "mode Race".
+- **Semua sukses**: semua cabang harus dieksekusi sukses, baru alur akan melanjutkan eksekusi Node setelah cabang berakhir. Sebaliknya, jika ada cabang yang berhenti lebih awal, baik gagal, error, atau status non-sukses lainnya, akan menyebabkan Node Cabang Paralel keseluruhan berhenti lebih awal dengan status tersebut, juga disebut "mode All".
+- **Salah satu sukses**: salah satu cabang dieksekusi sukses, alur akan melanjutkan eksekusi Node setelah cabang berakhir. Kecuali semua cabang berhenti lebih awal, baik gagal, error, atau status non-sukses lainnya, baru akan menyebabkan Node Cabang Paralel keseluruhan berhenti lebih awal dengan status tersebut, juga disebut "mode Any".
+- **Salah satu sukses dan gagal**: setelah salah satu cabang dieksekusi sukses, alur akan melanjutkan eksekusi Node setelah cabang berakhir, tetapi jika ada Node yang gagal, akan menyebabkan paralel keseluruhan berhenti lebih awal dengan status tersebut, juga disebut "mode Race".
 
-Terlepas dari modenya, setiap cabang akan dieksekusi secara berurutan dari kiri ke kanan hingga kondisi mode cabang yang telah ditentukan terpenuhi, pada titik tersebut akan melanjutkan ke node berikutnya atau keluar lebih awal.
+Mode apa pun yang dipilih, akan mencoba mengeksekusi setiap cabang dari kiri ke kanan secara berurutan, sampai memenuhi kondisi terkait dari mode cabang yang ditetapkan, kemudian melanjutkan eksekusi Node berikutnya atau keluar lebih awal.
 
 ## Contoh
 
-Lihat contoh dalam [Node Penundaan](./delay.md).
+Lihat contoh pada [Node Penundaan](./delay.md).

@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Refresh"
+description: "Action Refresh: refresh data Block saat ini, memuat ulang data source."
+keywords: "Action Refresh, Refresh, refresh data, interface builder, NocoBase"
+---
 
 # Refresh
 

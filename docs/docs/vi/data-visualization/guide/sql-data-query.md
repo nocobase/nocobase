@@ -1,20 +1,21 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Truy vấn dữ liệu chế độ SQL"
+description: "Chế độ SQL viết câu lệnh truy vấn để lấy dữ liệu biểu đồ, hỗ trợ JOIN nhiều bảng, VIEW, biến context, ánh xạ field và preview kết quả Table/JSON."
+keywords: "Truy vấn dữ liệu SQL,SQL mode,dữ liệu biểu đồ,ánh xạ field,biến context,NocoBase"
+---
 
+# Truy vấn dữ liệu chế độ SQL
 
-# Truy vấn dữ liệu ở chế độ SQL
-
-Trong bảng điều khiển Truy vấn dữ liệu, chuyển sang chế độ SQL, viết và chạy truy vấn, sau đó sử dụng trực tiếp kết quả trả về để ánh xạ và hiển thị biểu đồ.
+Trong panel "Truy vấn dữ liệu" chuyển sang chế độ SQL, viết và chạy câu lệnh truy vấn, sử dụng trực tiếp kết quả trả về để ánh xạ và render biểu đồ.
 
 ![20251027075805](https://static-docs.nocobase.com/20251027075805.png)
 
 ## Viết câu lệnh SQL
-- Trong bảng điều khiển Truy vấn dữ liệu, chọn chế độ SQL.
-- Nhập câu lệnh SQL và nhấp vào "Chạy truy vấn".
-- Hỗ trợ các câu lệnh SQL phức tạp bao gồm JOIN nhiều bảng, VIEW, v.v.
+- Trong panel "Truy vấn dữ liệu" chọn chế độ "SQL".
+- Nhập SQL, click "Chạy truy vấn" để thực thi.
+- Hỗ trợ các câu lệnh SQL đầy đủ phức tạp như JOIN nhiều bảng, VIEW
 
-Ví dụ: Thống kê tổng tiền đơn hàng theo tháng
+Ví dụ: Thống kê số tiền đơn hàng theo tháng
 ```sql
 SELECT 
   TO_CHAR(order_date, 'YYYY-MM') as mon,
@@ -26,44 +27,45 @@ LIMIT 100;
 ```
 
 ## Xem kết quả
-- Nhấp vào "Xem dữ liệu" để mở bảng điều khiển xem trước kết quả dữ liệu.
+- Click "Xem dữ liệu" để mở panel preview kết quả dữ liệu.
 
 ![20251027080014](https://static-docs.nocobase.com/20251027080014.png)
 
-Dữ liệu hỗ trợ phân trang; bạn có thể chuyển đổi giữa chế độ Bảng (Table) và JSON để kiểm tra tên và kiểu cột.
+Dữ liệu hỗ trợ hiển thị phân trang, cũng có thể chuyển đổi giữa Table/JSON để kiểm tra tên cột và kiểu
 ![20251027080100](https://static-docs.nocobase.com/20251027080100.png)
 
-## Ánh xạ trường dữ liệu
-- Trong cấu hình "Tùy chọn biểu đồ", thực hiện ánh xạ các trường dữ liệu dựa trên các cột kết quả truy vấn.
-- Theo mặc định, cột đầu tiên sẽ được sử dụng làm chiều (trục X hoặc danh mục), và cột thứ hai làm độ đo (trục Y hoặc giá trị). Vì vậy, hãy chú ý đến thứ tự các trường trong câu lệnh SQL:
+## Ánh xạ field
+- Trong cấu hình tùy chọn biểu đồ hoàn thành ánh xạ dựa trên các cột kết quả truy vấn dữ liệu.
+- Mặc định sẽ tự động lấy cột đầu tiên làm dimension (trục x hoặc phân loại), cột thứ hai làm measure (trục y hoặc giá trị). Vì vậy hãy lưu ý thứ tự field trong SQL:
 
 ```sql
 SELECT 
-  TO_CHAR(order_date, 'YYYY-MM') as mon, -- trường chiều ở cột đầu tiên
-  SUM(total_amount) AS total -- trường độ đo ở các cột sau
+  TO_CHAR(order_date, 'YYYY-MM') as mon, -- Field dimension đặt ở cột đầu tiên
+  SUM(total_amount) AS total -- Field measure đặt phía sau
 ```
 
 ![clipboard-image-1761524022](https://static-docs.nocobase.com/clipboard-image-1761524022.png)
 
-## Sử dụng biến ngữ cảnh
-Nhấp vào nút `x` ở góc trên bên phải của trình chỉnh sửa SQL để chọn sử dụng các biến ngữ cảnh.
+## Sử dụng biến context
+Click nút x ở góc trên bên phải SQL editor, có thể chọn sử dụng biến context.
 
 ![20251027081752](https://static-docs.nocobase.com/20251027081752.png)
 
-Sau khi xác nhận, biểu thức biến sẽ được chèn vào vị trí con trỏ (hoặc thay thế nội dung được chọn) trong văn bản SQL.
+Sau khi chọn xác nhận, biểu thức biến sẽ được chèn vào vị trí con trỏ trong văn bản SQL (hoặc vị trí nội dung được chọn).
 
-Ví dụ: `{{ ctx.user.createdAt }}`. Lưu ý không tự thêm dấu ngoặc kép.
+Ví dụ `{{ ctx.user.createdAt }}`, lưu ý không tự thêm dấu nháy.
 
 ![20251027081957](https://static-docs.nocobase.com/20251027081957.png)
 
-## Các ví dụ khác
-Để xem thêm các ví dụ sử dụng, bạn có thể tham khảo [ứng dụng Demo](https://demo3.sg.nocobase.com/admin/5xrop8s0bui) của NocoBase.
+## Thêm ví dụ
+Để xem thêm các ví dụ sử dụng, có thể tham khảo [ứng dụng Demo](https://demo3.sg.nocobase.com/admin/5xrop8s0bui) của Nocobase
 
 **Khuyến nghị:**
-- Ổn định tên cột trước khi ánh xạ vào biểu đồ để tránh lỗi sau này.
-- Trong giai đoạn gỡ lỗi, hãy đặt `LIMIT` để giảm số lượng hàng trả về và tăng tốc độ xem trước.
+- Sau khi tên cột ổn định mới tiến hành ánh xạ biểu đồ, tránh báo lỗi về sau.
+- Trong giai đoạn debug đặt `LIMIT` để giảm số hàng trả về, tăng tốc preview.
 
-## Xem trước, lưu và hoàn tác
-- Nhấp vào "Chạy truy vấn" để thực hiện yêu cầu dữ liệu và làm mới bản xem trước biểu đồ.
-- Nhấp vào "Lưu" để lưu văn bản SQL hiện tại và các cấu hình liên quan vào cơ sở dữ liệu.
-- Nhấp vào "Hủy" để quay lại trạng thái đã lưu gần nhất và loại bỏ các thay đổi chưa lưu hiện tại.
+
+## Preview, Lưu và Rollback
+- Click "Chạy truy vấn" sẽ thực thi yêu cầu dữ liệu và refresh preview biểu đồ.
+- Click "Lưu" sẽ lưu các cấu hình bao gồm văn bản SQL hiện tại vào database.
+- Click "Hủy" để quay về trạng thái lưu lần trước, bỏ các thay đổi chưa lưu hiện tại.

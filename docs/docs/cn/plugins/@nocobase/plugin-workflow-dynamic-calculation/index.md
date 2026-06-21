@@ -1,4 +1,6 @@
 ---
+title: "工作流：动态表达式计算节点"
+keywords: "工作流：动态表达式计算节点,插件,NocoBase"
 displayName: "工作流：动态表达式计算节点"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
@@ -6,6 +8,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
 
 # 工作流：动态表达式计算节点
+
+> 注意：本插件已废弃（deprecated）。

@@ -1,29 +1,28 @@
 ---
 pkg: "@nocobase/plugin-action-import"
+title: "Action Impor"
+description: "Action Impor: mengimpor data dari file seperti Excel ke Collection, mendukung download template, mapping Field."
+keywords: "Action Impor, Import, impor Excel, impor data, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
 # Impor
 
-## Pendahuluan
+## Pengantar
 
-Impor data menggunakan template Excel. Anda dapat mengonfigurasi bidang mana saja yang akan diimpor, dan template akan dibuat secara otomatis.
+Menggunakan template Excel untuk mengimpor data, dapat mengkonfigurasi Field mana yang akan diimpor, otomatis menghasilkan template.
 
 ![20251029165818](https://static-docs.nocobase.com/20251029165818.png)
 
-## Instruksi Impor
+## Petunjuk Impor
 
-### Bidang Tipe Angka
+### Field Tipe Numerik
 
-Mendukung angka dan persentase. Teks seperti `N/A` atau `-` akan disaring.
+Mendukung angka dan persentase. Teks `N/A` atau `-` akan difilter
 
 | Angka1 | Persentase | Angka2 | Angka3 |
 | ----- | ------ | ----- | ----- |
 | 123   | 25%    | N/A   | -     |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 {
@@ -34,36 +33,36 @@ Setelah dikonversi ke JSON:
 }
 ```
 
-### Bidang Tipe Boolean
+### Field Tipe Boolean
 
-Teks input yang didukung (bahasa Inggris tidak peka huruf besar/kecil):
+Teks input yang didukung (Bahasa Inggris case-insensitive):
 
 - `Yes`, `Y`, `True`, `1`, `Ya`
 - `No`, `N`, `False`, `0`, `Tidak`
 
-| Bidang1 | Bidang2 | Bidang3 | Bidang4 | Bidang5 |
+| Field1 | Field2 | Field3 | Field4 | Field4 |
 | ----- | ----- | ----- | ----- | ----- |
-| Tidak    | Ya    | Y     | true  | 0     |
+| Tidak | Ya | Y | true | 0 |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 {
-  "Bidang1": false,
-  "Bidang2": true,
-  "Bidang3": true,
-  "Bidang4": true,
-  "Bidang5": false,
+  "Field1": false,
+  "Field2": true,
+  "Field3": true,
+  "Field4": true,
+  "Field5": false,
 }
 ```
 
-### Bidang Tipe Tanggal
+### Field Tipe Tanggal
 
 | DateOnly            | Local(+08:00)       | GMT                 |
 | ------------------- | ------------------- | ------------------- |
 | 2023-01-18 22:22:22 | 2023-01-18 22:22:22 | 2023-01-18 22:22:22 |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 {
@@ -73,53 +72,53 @@ Setelah dikonversi ke JSON:
 }
 ```
 
-### Bidang Tipe Pilihan
+### Field Tipe Pilihan
 
-Baik nilai opsi maupun label opsi dapat digunakan sebagai teks impor. Beberapa opsi dipisahkan dengan koma (`,` `，`) atau tanda jeda (`、`).
+Nilai opsi dan label opsi dapat dijadikan teks impor. Beberapa opsi dipisahkan dengan koma (`,` `,`) atau pemisah (`、`)
 
-Contoh, opsi untuk bidang `Prioritas` meliputi:
+Misalnya Field `Prioritas` memiliki opsi yang tersedia:
 
 | Nilai Opsi | Label Opsi |
 | ------ | -------- |
-| low    | Rendah       |
+| low    | Rendah   |
 | medium | Sedang   |
-| high   | Tinggi       |
+| high   | Tinggi   |
 
-Baik nilai opsi maupun label opsi dapat digunakan sebagai teks impor.
+Nilai opsi dan label opsi dapat dijadikan teks impor
 
 | Prioritas |
 | ------ |
-| Tinggi     |
+| Tinggi |
 | low    |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 [{ Prioritas: 'high' }, { Prioritas: 'low' }];
 ```
 
-### Bidang Divisi Administratif Tiongkok
+### Field Region Administratif Tiongkok
 
-| Wilayah1         | Wilayah2         |
+| Region1         | Region2         |
 | ------------- | ------------- |
-| 北京市/市辖区 | 天津市/市辖区 |
+| Beijing/Distrik Kota | Tianjin/Distrik Kota |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 {
-  "Wilayah1": ["11","1101"],
-  "Wilayah2": ["12","1201"]
+  "Region1": ["11","1101"],
+  "Region2": ["12","1201"]
 }
 ```
 
-### Bidang Lampiran
+### Field Lampiran
 
 | Lampiran                                     |
 | ---------------------------------------- |
 | https://www.nocobase.com/images/logo.png |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 {
@@ -134,30 +133,30 @@ Setelah dikonversi ke JSON:
 }
 ```
 
-### Bidang Tipe Relasi
+### Field Tipe Relasi
 
-Beberapa entri data dipisahkan dengan koma (`,` `，`) atau tanda jeda (`、`).
+Beberapa data dipisahkan dengan koma (`,` `,`) atau pemisah (`、`)
 
 | Departemen/Nama | Kategori/Judul    |
 | --------- | ------------ |
-| Tim Pengembangan    | Kategori1、Kategori2 |
+| Tim Dev   | Kategori1, Kategori2 |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 {
-  "Departemen": [1], // 1 adalah ID catatan untuk departemen bernama "Tim Pengembangan"
-  "Kategori": [1,2], // 1,2 adalah ID catatan untuk kategori berjudul "Kategori1" dan "Kategori2"
+  "Departemen": [1], // 1 adalah ID record dengan nama departemen "Tim Dev"
+  "Kategori": [1,2], // 1,2 adalah ID record dengan judul kategori "Kategori1" dan "Kategori2"
 }
 ```
 
-### Bidang Tipe JSON
+### Field Tipe JSON
 
 | JSON1           |
 | --------------- |
 | {"key":"value"} |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 {
@@ -171,7 +170,7 @@ Setelah dikonversi ke JSON:
 | ----- | ----------- | ----------------- | ------ |
 | 1,2   | (1,2),(3,4) | (1,2),(3,4),(1,2) | 1,2,3  |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 {
@@ -184,7 +183,7 @@ Setelah dikonversi ke JSON:
 
 ## Format Impor Kustom
 
-Daftarkan `ValueParser` kustom melalui metode `db.registerFieldValueParsers()`, contohnya:
+Mendaftarkan `ValueParser` kustom melalui metode `db.registerFieldValueParsers()`, contoh:
 
 ```ts
 import { BaseValueParser } from '@nocobase/database';
@@ -203,19 +202,19 @@ class PointValueParser extends BaseValueParser {
 
 const db = new Database();
 
-// Saat mengimpor bidang dengan type=point, data akan diurai oleh PointValueParser
+// Saat Field type=point diimpor, akan di-parse melalui PointValueParser
 db.registerFieldValueParsers({
   point: PointValueParser,
 });
 ```
 
-Contoh Impor
+Contoh impor
 
 | Point |
 | ----- |
 | 1,2   |
 
-Setelah dikonversi ke JSON:
+Setelah dikonversi ke JSON menjadi
 
 ```ts
 {
@@ -223,13 +222,14 @@ Setelah dikonversi ke JSON:
 }
 ```
 
-## Pengaturan Aksi
+
+## Konfigurasi Action
 
 ![20251029170959](https://static-docs.nocobase.com/20251029170959.png)
 
-- Konfigurasi bidang yang dapat diimpor
+- Konfigurasi Field yang dapat diimpor
 
 ![20251029171036](https://static-docs.nocobase.com/20251029171036.png)
 
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule): Menampilkan/menyembunyikan tombol secara dinamis;
-- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Mengedit judul, tipe, dan ikon tombol;
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule): tampilan/sembunyi tombol secara dinamis;
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, ikon tombol;

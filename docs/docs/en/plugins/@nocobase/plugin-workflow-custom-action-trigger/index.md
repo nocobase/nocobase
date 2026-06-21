@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Custom action event"
+keywords: "Workflow"
 displayName: "Workflow: Custom action event"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
@@ -6,10 +8,10 @@ supportedVersions:
   - 2.x
 description: |
   Triggers after click a custom action button.
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
 
 # Workflow: Custom action event

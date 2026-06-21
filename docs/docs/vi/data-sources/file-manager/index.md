@@ -1,42 +1,41 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "File Manager"
+description: "File collection, field attachment và storage engine, hỗ trợ Local Storage, Aliyun OSS, Amazon S3, Tencent COS, quản lý metadata và upload file."
+keywords: "File manager,File collection,Field attachment,Storage engine,OSS,S3,COS,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# File Manager
 
-
-# Trình quản lý tệp
+<PluginInfo name="file-manager"></PluginInfo>
 
 ## Giới thiệu
 
-Plugin Trình quản lý tệp cung cấp bộ sưu tập tệp, trường đính kèm và các công cụ lưu trữ tệp để quản lý tệp hiệu quả. Tệp là các bản ghi trong một loại bộ sưu tập đặc biệt, được gọi là bộ sưu tập tệp, dùng để lưu trữ siêu dữ liệu của tệp và có thể được quản lý thông qua Trình quản lý tệp. Các trường đính kèm là các trường liên kết đặc biệt được liên kết với bộ sưu tập tệp. Plugin hỗ trợ nhiều phương thức lưu trữ. Các công cụ lưu trữ tệp hiện được hỗ trợ bao gồm lưu trữ cục bộ, Alibaba Cloud OSS, Amazon S3 và Tencent Cloud COS.
+Plugin file manager cung cấp file collection, field attachment và storage engine, dùng để quản lý file một cách hiệu quả. File là các bản ghi của bảng có cấu trúc đặc biệt, bảng có cấu trúc đặc biệt này được gọi là file collection, dùng để lưu trữ metadata của file, và có thể được quản lý thông qua file manager. Field attachment là field quan hệ đặc biệt được liên kết với file collection. File hỗ trợ nhiều cách lưu trữ, các storage engine hiện được hỗ trợ bao gồm Local Storage, Aliyun OSS, Amazon S3 và Tencent COS.
 
 ## Hướng dẫn sử dụng
 
-### Bộ sưu tập tệp
+### File Collection
 
-Bộ sưu tập `attachments` được tích hợp sẵn để lưu trữ tất cả các tệp liên quan đến trường đính kèm. Ngoài ra, bạn cũng có thể tạo các bộ sưu tập tệp mới để lưu trữ các tệp cụ thể.
+Bảng attachments được tích hợp sẵn, dùng để lưu trữ tất cả file được liên kết bởi field attachment. Ngoài ra, bạn cũng có thể tạo file collection mới để lưu trữ các file cụ thể.
 
-[Tìm hiểu thêm trong tài liệu Bộ sưu tập tệp](/data-sources/file-manager/file-collection)
+[Xem thêm cách dùng tại tài liệu giới thiệu File Collection](/data-sources/file-manager/file-collection)
 
-### Trường đính kèm
+### Field Attachment
 
-Trường đính kèm là các trường liên kết đặc biệt liên quan đến bộ sưu tập tệp, có thể được tạo thông qua loại trường "Đính kèm" hoặc được cấu hình thông qua trường "Liên kết".
+Field attachment là field quan hệ đặc biệt được liên kết với file collection, có thể tạo thông qua "field kiểu attachment", cũng có thể cấu hình thông qua "field quan hệ".
 
-[Tìm hiểu thêm trong tài liệu Trường đính kèm](/data-sources/file-manager/field-attachment)
+[Xem thêm cách dùng tại tài liệu giới thiệu Field Attachment](/data-sources/file-manager/field-attachment)
 
-### Công cụ lưu trữ tệp
+### Storage Engine
 
-Công cụ lưu trữ tệp được dùng để lưu tệp vào các dịch vụ cụ thể, bao gồm lưu trữ cục bộ (lưu vào ổ cứng máy chủ), lưu trữ đám mây, v.v.
+Storage engine dùng để lưu file vào các dịch vụ cụ thể, bao gồm Local Storage (lưu vào ổ cứng máy chủ), cloud storage, v.v.
 
-[Tìm hiểu thêm trong tài liệu Công cụ lưu trữ tệp](./storage/index.md)
+[Xem thêm nội dung tại tài liệu giới thiệu Storage Engine](./storage/index.md)
 
 ### HTTP API
 
-Tải tệp lên có thể được xử lý thông qua HTTP API, tham khảo [HTTP API](./http-api.md).
+Upload file có thể được xử lý thông qua HTTP API, tham khảo [HTTP API](./http-api.md).
 
-## Phát triển
+## Phát triển mở rộng
 
-*
+* 

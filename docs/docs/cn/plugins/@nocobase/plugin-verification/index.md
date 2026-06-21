@@ -1,4 +1,6 @@
 ---
+title: "验证"
+keywords: "验证,插件,NocoBase"
 displayName: "验证"
 packageName: '@nocobase/plugin-verification'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 验证

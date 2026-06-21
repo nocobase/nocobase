@@ -1,14 +1,14 @@
 ---
 displayName: "Xác thực người dùng"
 packageName: '@nocobase/plugin-auth'
+title: "Xác thực người dùng"
+keywords: "Xác thực người dùng,Plugin,NocoBase"
 description: |
-  Quản lý xác thực người dùng, bao gồm xác thực bằng mật khẩu cơ bản, xác thực bằng SMS và hỗ trợ các giao thức SSO, với khả năng mở rộng.
+  Quản lý xác thực người dùng, bao gồm xác thực mật khẩu cơ bản, xác thực SMS, xác thực giao thức SSO, có thể mở rộng.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Xác thực người dùng

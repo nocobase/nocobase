@@ -1,18 +1,17 @@
 ---
-displayName: "Sao lưu và khôi phục ứng dụng (đã ngừng hỗ trợ)"
+displayName: "Sao lưu và khôi phục ứng dụng (Đã ngừng sử dụng)"
 packageName: '@nocobase/plugin-backup-restore'
+title: "Sao lưu và khôi phục ứng dụng (Đã ngừng sử dụng)"
+keywords: "Sao lưu và khôi phục ứng dụng (Đã ngừng sử dụng),Plugin,NocoBase"
 description: |
-  Sao lưu và khôi phục ứng dụng, có thể dùng trong các trường hợp như sao chép, di chuyển hoặc nâng cấp ứng dụng.
+  Sao lưu và khôi phục ứng dụng, có thể dùng cho các tình huống sao chép, di chuyển, nâng cấp ứng dụng.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Sao lưu và khôi phục ứng dụng (Đã ngừng sử dụng)
 
-# Sao lưu và khôi phục ứng dụng (đã ngừng hỗ trợ)
-
-> Lưu ý: Plugin này đã ngừng hỗ trợ (deprecated).
+> Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

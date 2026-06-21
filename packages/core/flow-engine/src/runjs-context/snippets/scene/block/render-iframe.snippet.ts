@@ -30,8 +30,8 @@ iframe.style.width = '100%';
 iframe.style.height = '100%';
 iframe.style.border = 'none';
 
-// Replace existing children so the iframe is the only content
-ctx.element.replaceChildren(iframe);
+// Render the iframe as the only content
+ctx.render(iframe);
 `,
 };
 

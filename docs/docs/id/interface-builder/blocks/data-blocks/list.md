@@ -1,81 +1,81 @@
 ---
 pkg: "@nocobase/plugin-block-list"
+title: "Block List"
+description: "Block List: menampilkan data dari data source dalam bentuk list, mendukung layout card, pagination, filter, konfigurasi Action."
+keywords: "Block List, ListBlock, list data, layout card, pagination filter, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Block List
 
-# Blok Daftar
+## Pengantar
 
-## Pendahuluan
+Block List menampilkan data dalam bentuk list, cocok untuk skenario tampilan data seperti list tugas, news, informasi produk, dll.
 
-Blok Daftar menampilkan data dalam format daftar, cocok untuk skenario tampilan data seperti daftar tugas, berita, dan informasi produk.
-
-## Konfigurasi Blok
+## Konfigurasi Block
 
 ![20251023202835](https://static-docs.nocobase.com/20251023202835.png)
 
-### Mengatur Lingkup Data
+### Atur Cakupan Data
 
-Seperti yang ditunjukkan: Saring pesanan dengan status "Dibatalkan".
+Seperti pada gambar: Filter dokumen dengan status pesanan adalah Cancel
 
 ![20251023202927](https://static-docs.nocobase.com/20251023202927.png)
 
-Untuk informasi lebih lanjut, lihat [Mengatur Lingkup Data](/interface-builder/blocks/block-settings/data-scope)
+Untuk informasi lebih lanjut, lihat [Atur Cakupan Data](/interface-builder/blocks/block-settings/data-scope)
 
-### Mengatur Aturan Pengurutan
+### Atur Aturan Sort
 
-Seperti yang ditunjukkan: Urutkan berdasarkan jumlah pesanan secara menurun.
+Seperti pada gambar: Sort secara descending berdasarkan jumlah pesanan
 
 ![20251023203022](https://static-docs.nocobase.com/20251023203022.png)
 
-Untuk informasi lebih lanjut, lihat [Mengatur Aturan Pengurutan](/interface-builder/blocks/block-settings/sorting-rule)
+Untuk informasi lebih lanjut, lihat [Atur Aturan Sort](/interface-builder/blocks/block-settings/sorting-rule)
 
-## Mengkonfigurasi Bidang
+## Konfigurasi Field
 
-### Bidang dari Koleksi Ini
+### Field Table Ini
 
-> **Catatan**: Bidang dari koleksi yang diwarisi (yaitu, bidang koleksi induk) secara otomatis digabungkan dan ditampilkan dalam daftar bidang saat ini.
+> **Perhatian**: Field di Table inheritance (yaitu Field Table parent) akan otomatis digabungkan dan ditampilkan di daftar Field saat ini.
 
 ![20251023203103](https://static-docs.nocobase.com/20251023203103.png)
 
-### Bidang dari Koleksi Terkait
+### Field Table Relasi
 
-> **Catatan**: Bidang dari koleksi terkait dapat ditampilkan (saat ini hanya mendukung relasi satu-ke-satu).
+> **Perhatian**: Mendukung menampilkan Field Table relasi (saat ini hanya mendukung relasi to-one).
 
 ![20251023203611](https://static-docs.nocobase.com/20251023203611.png)
 
-Untuk konfigurasi bidang daftar, lihat [Bidang Detail](/interface-builder/fields/generic/detail-form-item)
+Konfigurasi Field List lihat [Field Detail](/interface-builder/fields/generic/detail-form-item)
 
-## Mengkonfigurasi Aksi
+## Konfigurasi Action
 
-### Aksi Global
+### Action Global
 
 ![20251023203918](https://static-docs.nocobase.com/20251023203918.png)
 
-- [Saring](/interface-builder/actions/types/filter)
+- [Filter](/interface-builder/actions/types/filter)
 - [Tambah](/interface-builder/actions/types/add-new)
 - [Hapus](/interface-builder/actions/types/delete)
-- [Segarkan](/interface-builder/actions/types/refresh)
+- [Refresh](/interface-builder/actions/types/refresh)
 - [Impor](/interface-builder/actions/types/import)
 - [Ekspor](/interface-builder/actions/types/export)
-- [Cetak Templat](/template-print/index)
-- [Perbarui Massal](/interface-builder/actions/types/bulk-update)
+- [Print Template](/template-print/index)
+- [Bulk Update](/interface-builder/actions/types/bulk-update)
 - [Ekspor Lampiran](/interface-builder/actions/types/export-attachments)
-- [Picu Alur Kerja](/interface-builder/actions/types/trigger-workflow)
-- [Aksi JS](/interface-builder/actions/types/js-action)
-- [Karyawan AI](/interface-builder/actions/types/ai-employee)
+- [Trigger Workflow](/interface-builder/actions/types/trigger-workflow)
+- [JS Action](/interface-builder/actions/types/js-action)
+- [AI Employee](/interface-builder/actions/types/ai-employee)
 
-### Aksi Baris
+### Action Baris
 
 ![20251023204329](https://static-docs.nocobase.com/20251023204329.png)
 
+
 - [Edit](/interface-builder/actions/types/edit)
 - [Hapus](/interface-builder/actions/types/delete)
-- [Tautkan](/interface-builder/actions/types/link)
-- [Pop-up](/interface-builder/actions/types/pop-up)
-- [Perbarui Catatan](/interface-builder/actions/types/update-record)
-- [Cetak Templat](/template-print/index)
-- [Picu Alur Kerja](/interface-builder/actions/types/trigger-workflow)
-- [Aksi JS](/interface-builder/actions/types/js-action)
-- [Karyawan AI](/interface-builder/actions/types/ai-employee)
+- [Link](/interface-builder/actions/types/link)
+- [Popup](/interface-builder/actions/types/pop-up)
+- [Update Record](/interface-builder/actions/types/update-record)
+- [Print Template](/template-print/index)
+- [Trigger Workflow](/interface-builder/actions/types/trigger-workflow)
+- [JS Action](/interface-builder/actions/types/js-action)
+- [AI Employee](/interface-builder/actions/types/ai-employee)

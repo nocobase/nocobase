@@ -1,15 +1,15 @@
 ---
 pkg: '@nocobase/plugin-auth-cas'
+title: "Xác thực: CAS"
+description: "Xác thực CAS NocoBase: tuân theo giao thức Central Authentication Service, đăng nhập bằng tài khoản IdP bên thứ ba, kích hoạt plugin, thêm xác thực, cấu hình và đăng nhập."
+keywords: "CAS,Central Authentication Service,SSO,đăng nhập một lần,IdP,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Xác thực: CAS
 
 ## Giới thiệu
 
-Plugin Xác thực: CAS tuân thủ tiêu chuẩn giao thức CAS (Central Authentication Service), cho phép người dùng đăng nhập vào NocoBase bằng tài khoản do các nhà cung cấp dịch vụ xác thực danh tính bên thứ ba (IdP) cung cấp.
+Plugin Xác thực: CAS tuân theo chuẩn giao thức CAS (Central Authentication Service), cho phép người dùng đăng nhập NocoBase bằng tài khoản do nhà cung cấp dịch vụ xác thực danh tính bên thứ ba (IdP) cung cấp.
 
 ## Cài đặt
 

@@ -1,14 +1,14 @@
 ---
 displayName: "Salin Teks"
 packageName: '@nocobase/plugin-text-copy'
+title: "Salin Teks"
+keywords: "Salin Teks,Plugin,NocoBase"
 description: |
-  Tambahkan tombol salin ke bidang teks
+  Tambahkan tombol salin untuk Field teks
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
 # Salin Teks

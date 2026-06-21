@@ -1,17 +1,19 @@
 ---
-displayName: "Мобильный клиент (Устаревший)"
+title: "Mobile client(Deprecated)"
+keywords: "Mobile client(Deprecated),Plugin,NocoBase"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
+supportedVersions:
+  - 1.x
 description: |
-  Предоставляет возможность настройки страниц для мобильных устройств.
+  Предоставляет возможность настраивать мобильные страницы.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Мобильный клиент (Устаревший)
+# Mobile client(Deprecated)
 
-> Примечание: Этот плагин устарел (deprecated).
+> Примечание: этот плагин устарел.

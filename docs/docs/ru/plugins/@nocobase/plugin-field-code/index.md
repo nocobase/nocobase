@@ -1,14 +1,17 @@
 ---
-displayName: "Поле коллекции: Код"
+title: "Collection field: Code"
+keywords: "Collection fields"
+displayName: "Поле коллекции: код"
 packageName: '@nocobase/plugin-field-code'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Предназначено для редактирования и подсветки кода, поддерживает языки Java, JavaScript, Python, SQL и другие.
-isFree: false
-builtIn: false
+  Редактирование кода с подсветкой синтаксиса: Java, JavaScript, Python, SQL и другие языки.
+isFree: true
+builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Поле коллекции: Код
+# Поле коллекции: код

@@ -1,14 +1,17 @@
 ---
-displayName: "Luồng công việc: Nút tính toán biểu thức động"
+displayName: "Workflow: Node tính toán biểu thức động"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
+title: "Workflow: Node tính toán biểu thức động"
+keywords: "Workflow: Node tính toán biểu thức động,Plugin,NocoBase"
 description: |
-  Một plugin hữu ích dùng để thực hiện tính toán biểu thức động dựa trên các hàng dữ liệu trong luồng công việc.
+  Dùng để thực hiện tính toán biểu thức động dựa trên hàng dữ liệu trong workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút tính toán biểu thức động
+# Workflow: Node tính toán biểu thức động
+
+> Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

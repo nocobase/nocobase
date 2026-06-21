@@ -1,3 +1,9 @@
+---
+title: "Telemetry"
+description: "NocoBase 可观测性 API：Telemetry 遥测、指标、追踪。"
+keywords: "Telemetry,可观测性,遥测,指标,追踪,Metric,Trace,NocoBase"
+---
+
 # Telemetry
 
 ## 概览

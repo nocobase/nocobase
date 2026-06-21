@@ -24,7 +24,7 @@ const snippet: SnippetModule = {
   },
   content: `
 const v = String(ctx.value ?? '');
-ctx.element.innerHTML = \`<span class="nb-js-field-value" style="color:#1890ff;font-weight:600">\${v}</span>\`;
+ctx.render(\`<span class="nb-js-field-value" style="color:#1890ff;font-weight:600">\${v}</span>\`);
 `,
 };
 

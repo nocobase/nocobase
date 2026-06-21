@@ -1,18 +1,17 @@
 ---
-displayName: "Authentification : CAS"
+title: "Auth: CAS"
+keywords: "Authentication"
+displayName: "Auth: CAS"
 packageName: '@nocobase/plugin-auth-cas'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Authentification par protocole CAS.
+  CAS authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Authentification : CAS
+# Auth: CAS

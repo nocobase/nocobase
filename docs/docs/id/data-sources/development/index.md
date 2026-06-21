@@ -1,8 +1,10 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ekstensi Data Source"
+description: "Pengembangan ekstensi plugin data source, mengintegrasikan database custom atau platform API, mengimplementasikan interface DataSource dan manajemen Collection."
+keywords: "ekstensi data source,Pengembangan DataSource,pengembangan plugin,data source custom,NocoBase"
+---
 
-# Ekstensi Sumber Data
+# Ekstensi Data Source
 
 :::tip
 Konten akan ditambahkan

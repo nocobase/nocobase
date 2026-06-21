@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Subflow"
+keywords: "Workflow"
 displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 2
 ---
 
 # Workflow: Subflow

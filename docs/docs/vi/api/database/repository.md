@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Repository"
+description: "API Repository của NocoBase Database: CRUD trên Collection, find/findOne/create/update/destroy."
+keywords: "Repository,CRUD,find,findOne,create,update,destroy,NocoBase"
+---
 
 # Repository
 
 ## Tổng quan
 
-Trên một đối tượng `bộ sưu tập` nhất định, bạn có thể lấy đối tượng `Repository` của nó để thực hiện các thao tác đọc và ghi trên bảng dữ liệu.
+Trên một đối tượng `Collection` cho trước, có thể lấy đối tượng `Repository` của nó để thực hiện thao tác đọc/ghi trên bảng dữ liệu.
 
 ```javascript
 const { UserCollection } = require('./collections');
@@ -28,7 +29,7 @@ await user.save();
 
 #### Truy vấn cơ bản
 
-Trên đối tượng `Repository`, bạn có thể gọi các phương thức liên quan đến `find*` để thực hiện các thao tác truy vấn. Tất cả các phương thức truy vấn đều hỗ trợ truyền tham số `filter` để lọc dữ liệu.
+Trên đối tượng `Repository`, gọi các phương thức liên quan `find*` để thực hiện thao tác truy vấn. Các phương thức truy vấn đều hỗ trợ truyền tham số `filter` để lọc dữ liệu.
 
 ```javascript
 // SELECT * FROM users WHERE id = 1
@@ -41,7 +42,7 @@ userRepository.find({
 
 #### Toán tử
 
-Tham số `filter` trong `Repository` còn cung cấp nhiều toán tử khác nhau để thực hiện các thao tác truy vấn đa dạng hơn.
+Tham số `filter` trong `Repository` còn cung cấp nhiều toán tử để thực hiện các thao tác truy vấn đa dạng hơn.
 
 ```javascript
 // SELECT * FROM users WHERE age > 18
@@ -53,47 +54,47 @@ userRepository.find({
   },
 });
 
-// SELECT * FROM users WHERE age > 18 OR name LIKE '%张%'
+// SELECT * FROM users WHERE age > 18 OR name LIKE '%Nguyễn%'
 userRepository.find({
   filter: {
-    $or: [{ age: { $gt: 18 } }, { name: { $like: '%张%' } }],
+    $or: [{ age: { $gt: 18 } }, { name: { $like: '%Nguyễn%' } }],
   },
 });
 ```
 
-Để biết thêm chi tiết về các toán tử, vui lòng tham khảo [Toán tử lọc](/api/database/operators).
+Để biết thêm thông tin chi tiết về toán tử, vui lòng tham khảo [Filter Operators](/api/database/operators).
 
-#### Kiểm soát trường dữ liệu
+#### Kiểm soát field
 
-Khi thực hiện thao tác truy vấn, bạn có thể kiểm soát các trường dữ liệu đầu ra thông qua các tham số `fields`, `except` và `appends`.
+Khi thực hiện thao tác truy vấn, có thể kiểm soát field kết quả qua các tham số `fields`, `except`, `appends`.
 
-- `fields`: Chỉ định các trường dữ liệu đầu ra
-- `except`: Loại trừ các trường dữ liệu đầu ra
-- `appends`: Thêm các trường dữ liệu liên kết vào đầu ra
+- `fields`: Chỉ định các field được trả về.
+- `except`: Loại trừ các field không trả về.
+- `appends`: Thêm các field quan hệ vào kết quả.
 
 ```javascript
-// Kết quả chỉ bao gồm các trường id và name
+// Kết quả chỉ chứa field id và name
 userRepository.find({
   fields: ['id', 'name'],
 });
 
-// Kết quả sẽ không bao gồm trường password
+// Kết quả không chứa field password
 userRepository.find({
   except: ['password'],
 });
 
-// Kết quả sẽ bao gồm dữ liệu từ đối tượng liên kết posts
+// Kết quả sẽ chứa dữ liệu của đối tượng quan hệ posts
 userRepository.find({
   appends: ['posts'],
 });
 ```
 
-#### Truy vấn trường liên kết
+#### Truy vấn field quan hệ
 
-Tham số `filter` hỗ trợ lọc theo các trường liên kết, ví dụ:
+Tham số `filter` hỗ trợ lọc theo field quan hệ, ví dụ:
 
 ```javascript
-// Truy vấn các đối tượng người dùng (user) mà các bài đăng (posts) liên kết của họ có một đối tượng với tiêu đề là 'post title'.
+// Truy vấn đối tượng user, có quan hệ posts với title là 'post title'
 userRepository.find({
   filter: {
     'posts.title': 'post title',
@@ -101,10 +102,10 @@ userRepository.find({
 });
 ```
 
-Các trường liên kết cũng có thể được lồng vào nhau.
+Field quan hệ cũng có thể lồng nhau:
 
 ```javascript
-// Truy vấn các đối tượng người dùng (user) mà kết quả truy vấn thỏa mãn điều kiện các bình luận (comments) của bài đăng (posts) của họ chứa từ khóa.
+// Truy vấn đối tượng user, kết quả là user có posts mà comments chứa keywords
 await userRepository.find({
   filter: {
     'posts.comments.content': {
@@ -116,7 +117,7 @@ await userRepository.find({
 
 #### Sắp xếp
 
-Bạn có thể sắp xếp kết quả truy vấn bằng cách sử dụng tham số `sort`.
+Qua tham số `sort`, có thể sắp xếp kết quả truy vấn.
 
 ```javascript
 // SELECT * FROM users ORDER BY age
@@ -135,7 +136,7 @@ await userRepository.find({
 });
 ```
 
-Bạn cũng có thể sắp xếp theo các trường của đối tượng liên kết.
+Cũng có thể sắp xếp theo field của đối tượng quan hệ:
 
 ```javascript
 await userRepository.find({
@@ -143,39 +144,39 @@ await userRepository.find({
 });
 ```
 
-### Tạo mới
+### Tạo
 
-#### Tạo mới cơ bản
+#### Tạo cơ bản
 
-Tạo các đối tượng dữ liệu mới thông qua `Repository`.
+Tạo đối tượng dữ liệu mới qua `Repository`.
 
 ```javascript
 await userRepository.create({
-  name: '张三',
+  name: 'Nguyễn Văn A',
   age: 18,
 });
-// INSERT INTO users (name, age) VALUES ('张三', 18)
+// INSERT INTO users (name, age) VALUES ('Nguyễn Văn A', 18)
 
 // Hỗ trợ tạo hàng loạt
 await userRepository.create([
   {
-    name: '张三',
+    name: 'Nguyễn Văn A',
     age: 18,
   },
   {
-    name: '李四',
+    name: 'Trần Văn B',
     age: 20,
   },
 ]);
 ```
 
-#### Tạo liên kết
+#### Tạo quan hệ
 
-Khi tạo mới, bạn có thể đồng thời tạo các đối tượng liên kết. Tương tự như truy vấn, việc sử dụng lồng ghép các đối tượng liên kết cũng được hỗ trợ, ví dụ:
+Khi tạo có thể đồng thời tạo đối tượng quan hệ. Tương tự truy vấn, cũng hỗ trợ sử dụng lồng nhau với đối tượng quan hệ, ví dụ:
 
 ```javascript
 await userRepository.create({
-  name: '张三',
+  name: 'Nguyễn Văn A',
   age: 18,
   posts: [
     {
@@ -192,10 +193,10 @@ await userRepository.create({
     },
   ],
 });
-// Khi tạo người dùng, một bài đăng (post) sẽ được tạo và liên kết với người dùng, và các thẻ (tags) sẽ được tạo và liên kết với bài đăng đó.
+// Đồng thời với việc tạo user, sẽ tạo post liên kết với user, tạo tags liên kết với post.
 ```
 
-Nếu đối tượng liên kết đã tồn tại trong cơ sở dữ liệu, bạn có thể truyền ID của nó. Khi tạo mới, một mối quan hệ liên kết sẽ được thiết lập với đối tượng liên kết đó.
+Nếu đối tượng quan hệ đã tồn tại trong cơ sở dữ liệu, có thể truyền ID, khi tạo sẽ thiết lập quan hệ với đối tượng quan hệ đó.
 
 ```javascript
 const tag1 = await tagRepository.findOne({
@@ -205,7 +206,7 @@ const tag1 = await tagRepository.findOne({
 });
 
 await userRepository.create({
-  name: '张三',
+  name: 'Nguyễn Văn A',
   age: 18,
   posts: [
     {
@@ -213,7 +214,7 @@ await userRepository.create({
       content: 'post content',
       tags: [
         {
-          id: tag1.id, // Thiết lập liên kết với đối tượng liên kết đã tồn tại
+          id: tag1.id, // Thiết lập quan hệ với đối tượng quan hệ đã tồn tại
         },
         {
           name: 'tag2',
@@ -228,12 +229,12 @@ await userRepository.create({
 
 #### Cập nhật cơ bản
 
-Sau khi lấy được đối tượng dữ liệu, bạn có thể trực tiếp sửa đổi các thuộc tính trên đối tượng dữ liệu (`Model`) và sau đó gọi phương thức `save` để lưu các thay đổi.
+Sau khi lấy được đối tượng dữ liệu, có thể trực tiếp sửa thuộc tính trên đối tượng dữ liệu (`Model`), sau đó gọi phương thức `save` để lưu sửa đổi.
 
 ```javascript
 const user = await userRepository.findOne({
   filter: {
-    name: '张三',
+    name: 'Nguyễn Văn A',
   },
 });
 
@@ -241,15 +242,15 @@ user.age = 20;
 await user.save();
 ```
 
-Đối tượng dữ liệu `Model` kế thừa từ Sequelize Model. Để biết các thao tác trên `Model`, vui lòng tham khảo [Sequelize Model](https://sequelize.org/master/manual/model-basics.html).
+Đối tượng dữ liệu `Model` kế thừa từ Sequelize Model, các thao tác trên `Model` có thể tham khảo [Sequelize Model](https://sequelize.org/master/manual/model-basics.html).
 
-Bạn cũng có thể cập nhật dữ liệu thông qua `Repository`:
+Cũng có thể cập nhật dữ liệu qua `Repository`:
 
 ```javascript
-// Cập nhật các bản ghi dữ liệu thỏa mãn điều kiện lọc.
+// Sửa các bản ghi thỏa điều kiện lọc
 await userRepository.update({
   filter: {
-    name: '张三',
+    name: 'Nguyễn Văn A',
   },
   values: {
     age: 20,
@@ -257,24 +258,24 @@ await userRepository.update({
 });
 ```
 
-Khi cập nhật, bạn có thể kiểm soát các trường dữ liệu được cập nhật bằng cách sử dụng các tham số `whitelist` và `blacklist`, ví dụ:
+Khi cập nhật, có thể kiểm soát field cập nhật qua tham số `whitelist`, `blacklist`, ví dụ:
 
 ```javascript
 await userRepository.update({
   filter: {
-    name: '张三',
+    name: 'Nguyễn Văn A',
   },
   values: {
     age: 20,
-    name: '李四',
+    name: 'Trần Văn B',
   },
-  whitelist: ['age'], // Chỉ cập nhật trường age
+  whitelist: ['age'], // Chỉ cập nhật field age
 });
 ```
 
-#### Cập nhật trường liên kết
+#### Cập nhật field quan hệ
 
-Khi cập nhật, bạn có thể thiết lập các đối tượng liên kết, ví dụ:
+Khi cập nhật, có thể đặt đối tượng quan hệ, ví dụ:
 
 ```javascript
 const tag1 = tagRepository.findOne({
@@ -291,10 +292,10 @@ await postRepository.update({
     title: 'new post title',
     tags: [
       {
-        id: tag1.id, // Thiết lập liên kết với tag1
+        id: tag1.id, // Thiết lập quan hệ với tag1
       },
       {
-        name: 'tag2', // Tạo một thẻ (tag) mới và thiết lập liên kết
+        name: 'tag2', // Tạo tag mới và thiết lập quan hệ
       },
     ],
   },
@@ -305,14 +306,14 @@ await postRepository.update({
     id: 1,
   },
   values: {
-    tags: null, // Hủy liên kết giữa bài đăng (post) và các thẻ (tags)
+    tags: null, // Gỡ quan hệ giữa post và tags
   },
 });
 ```
 
 ### Xóa
 
-Bạn có thể gọi phương thức `destroy()` trong `Repository` để thực hiện thao tác xóa. Khi xóa, bạn cần chỉ định điều kiện lọc:
+Có thể gọi phương thức `destroy()` trong `Repository` để thực hiện thao tác xóa. Khi xóa cần chỉ định điều kiện lọc:
 
 ```javascript
 await userRepository.destroy({
@@ -322,9 +323,9 @@ await userRepository.destroy({
 });
 ```
 
-## Hàm tạo
+## Constructor
 
-Thông thường, hàm này không được gọi trực tiếp bởi nhà phát triển. Nó chủ yếu được khởi tạo sau khi đăng ký kiểu thông qua `db.registerRepositories()` và chỉ định kiểu repository đã đăng ký tương ứng trong các tham số của `db.collection()`.
+Thông thường nhà phát triển không gọi trực tiếp, mà chủ yếu sau khi đăng ký kiểu qua `db.registerRepositories()`, chỉ định kiểu repository đã đăng ký trong tham số của `db.colletion()` và hoàn tất khởi tạo.
 
 **Chữ ký**
 
@@ -347,7 +348,7 @@ db.registerRepositories({
 
 db.collection({
   name: 'books',
-  // liên kết đến repository đã đăng ký ở đây
+  // here link to the registered repository
   repository: 'books',
 });
 
@@ -357,25 +358,25 @@ const books = db.getRepository('books') as MyRepository;
 await books.myQuery('SELECT * FROM books;');
 ```
 
-## Thành viên thể hiện
+## Thành viên của instance
 
 ### `database`
 
-Thể hiện quản lý cơ sở dữ liệu của ngữ cảnh hiện tại.
+Instance quản lý cơ sở dữ liệu trong ngữ cảnh.
 
 ### `collection`
 
-Thể hiện quản lý `bộ sưu tập` tương ứng.
+Instance quản lý bảng dữ liệu tương ứng.
 
 ### `model`
 
-Lớp mô hình dữ liệu tương ứng.
+Lớp model dữ liệu tương ứng.
 
-## Phương thức thể hiện
+## Phương thức của instance
 
 ### `find()`
 
-Truy vấn một tập dữ liệu từ cơ sở dữ liệu, có thể chỉ định các điều kiện lọc, sắp xếp, v.v.
+Truy vấn tập dữ liệu từ cơ sở dữ liệu, có thể chỉ định điều kiện lọc, sắp xếp, v.v.
 
 **Chữ ký**
 
@@ -410,14 +411,14 @@ interface CommonFindOptions extends Transactionable {
 type FindOptions = SequelizeFindOptions & CommonFindOptions & FilterByTk;
 ```
 
-**Chi tiết**
+**Thông tin chi tiết**
 
 #### `filter: Filter`
 
-Điều kiện truy vấn, dùng để lọc kết quả dữ liệu. Trong các tham số truy vấn được truyền vào, `key` là tên trường cần truy vấn, và `value` có thể là giá trị cần truy vấn hoặc được sử dụng kết hợp với các toán tử để lọc dữ liệu theo các điều kiện khác.
+Điều kiện truy vấn, dùng để lọc kết quả dữ liệu. Trong tham số truy vấn được truyền vào, `key` là tên field cần truy vấn, `value` có thể là giá trị cần truy vấn, hoặc kết hợp với toán tử để lọc dữ liệu theo điều kiện khác.
 
 ```typescript
-// Truy vấn các bản ghi có tên là foo và tuổi lớn hơn 18
+// Truy vấn các bản ghi có name là foo và age lớn hơn 18
 repository.find({
   filter: {
     name: 'foo',
@@ -428,14 +429,14 @@ repository.find({
 });
 ```
 
-Để biết thêm các toán tử, vui lòng tham khảo [Toán tử truy vấn](./operators.md).
+Để biết thêm toán tử, vui lòng tham khảo [Toán tử truy vấn](./operators.md).
 
 #### `filterByTk: TargetKey`
 
-Truy vấn dữ liệu bằng `TargetKey`, đây là một phương thức tiện lợi cho tham số `filter`. Trường cụ thể mà `TargetKey` đại diện có thể được [cấu hình](./collection.md#filtertargetkey) trong `bộ sưu tập`, mặc định là `primaryKey`.
+Truy vấn dữ liệu qua `TargetKey`, là phương thức tắt của tham số `filter`. `TargetKey` là field nào cụ thể có thể được [cấu hình](./collection.md#filtertargetkey) trong `Collection`, mặc định là `primaryKey`.
 
 ```typescript
-// Theo mặc định, tìm bản ghi có id là 1
+// Mặc định, tìm bản ghi có id là 1
 repository.find({
   filterByTk: 1,
 });
@@ -443,27 +444,27 @@ repository.find({
 
 #### `fields: string[]`
 
-Các cột truy vấn, dùng để kiểm soát kết quả trường dữ liệu. Sau khi truyền tham số này, chỉ các trường được chỉ định sẽ được trả về.
+Cột truy vấn, dùng để kiểm soát field kết quả. Sau khi truyền tham số này, chỉ trả về các field được chỉ định.
 
 #### `except: string[]`
 
-Các cột loại trừ, dùng để kiểm soát kết quả trường dữ liệu. Sau khi truyền tham số này, các trường được truyền vào sẽ không được xuất ra.
+Cột loại trừ, dùng để kiểm soát field kết quả. Sau khi truyền tham số này, các field được truyền vào sẽ không được xuất ra.
 
 #### `appends: string[]`
 
-Các cột bổ sung, dùng để tải dữ liệu liên kết. Sau khi truyền tham số này, các trường liên kết được chỉ định cũng sẽ được xuất ra.
+Cột bổ sung, dùng để load dữ liệu quan hệ. Sau khi truyền tham số này, các field quan hệ được chỉ định sẽ được xuất cùng.
 
 #### `sort: string[] | string`
 
-Chỉ định cách sắp xếp kết quả truy vấn. Tham số được truyền vào là tên trường, mặc định sắp xếp theo thứ tự tăng dần `asc`. Nếu cần sắp xếp theo thứ tự giảm dần `desc`, bạn có thể thêm ký hiệu `-` trước tên trường, ví dụ: `['-id', 'name']`, có nghĩa là sắp xếp theo `id giảm dần, name tăng dần`.
+Chỉ định cách sắp xếp kết quả truy vấn, tham số truyền vào là tên field, mặc định sắp xếp tăng dần `asc`. Nếu cần sắp xếp giảm dần `desc`, có thể thêm dấu `-` trước tên field, ví dụ: `['-id', 'name']` biểu thị sắp xếp theo `id desc, name asc`.
 
 #### `limit: number`
 
-Giới hạn số lượng kết quả, tương tự như `limit` trong `SQL`.
+Giới hạn số lượng kết quả, giống `limit` trong `SQL`.
 
 #### `offset: number`
 
-Độ lệch truy vấn, tương tự như `offset` trong `SQL`.
+Offset truy vấn, giống `offset` trong `SQL`.
 
 **Ví dụ**
 
@@ -483,7 +484,7 @@ const results = await posts.find({
 
 ### `findOne()`
 
-Truy vấn một bản ghi dữ liệu duy nhất từ cơ sở dữ liệu thỏa mãn các điều kiện cụ thể. Tương đương với `Model.findOne()` trong Sequelize.
+Truy vấn từ cơ sở dữ liệu một bản ghi đơn lẻ thỏa mãn điều kiện cụ thể. Tương đương với `Model.findOne()` trong Sequelize.
 
 **Chữ ký**
 
@@ -503,7 +504,7 @@ const result = await posts.findOne({
 
 ### `count()`
 
-Truy vấn tổng số dữ liệu thỏa mãn các điều kiện cụ thể từ cơ sở dữ liệu. Tương đương với `Model.count()` trong Sequelize.
+Truy vấn từ cơ sở dữ liệu tổng số bản ghi thỏa mãn điều kiện cụ thể. Tương đương với `Model.count()` trong Sequelize.
 
 **Chữ ký**
 
@@ -526,14 +527,14 @@ const books = db.getRepository('books');
 
 const count = await books.count({
   filter: {
-    title: '三字经',
+    title: 'Tam Tự Kinh',
   },
 });
 ```
 
 ### `findAndCount()`
 
-Truy vấn một tập dữ liệu và tổng số kết quả thỏa mãn các điều kiện cụ thể từ cơ sở dữ liệu. Tương đương với `Model.findAndCountAll()` trong Sequelize.
+Truy vấn từ cơ sở dữ liệu tập dữ liệu thỏa mãn điều kiện cụ thể và số lượng kết quả. Tương đương với `Model.findAndCountAll()` trong Sequelize.
 
 **Chữ ký**
 
@@ -549,13 +550,13 @@ type FindAndCountOptions = Omit<
   CommonFindOptions;
 ```
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-Các tham số truy vấn giống như `find()`. Giá trị trả về là một mảng, phần tử đầu tiên là kết quả truy vấn, phần tử thứ hai là tổng số kết quả.
+Tham số truy vấn giống `find()`. Giá trị trả về là một mảng, phần tử đầu tiên là kết quả truy vấn, phần tử thứ hai là tổng số kết quả.
 
 ### `create()`
 
-Chèn một bản ghi dữ liệu mới vào bảng dữ liệu. Tương đương với `Model.create()` trong Sequelize. Khi đối tượng dữ liệu cần tạo mang thông tin về các trường quan hệ, các bản ghi dữ liệu quan hệ tương ứng cũng sẽ được tạo hoặc cập nhật đồng thời.
+Insert một bản ghi vừa được tạo vào bảng dữ liệu. Tương đương với `Model.create()` trong Sequelize. Khi đối tượng dữ liệu cần tạo mang theo thông tin field quan hệ, sẽ đồng thời tạo hoặc cập nhật bản ghi dữ liệu quan hệ tương ứng.
 
 **Chữ ký**
 
@@ -570,11 +571,11 @@ const posts = db.getRepository('posts');
 
 const result = await posts.create({
   values: {
-    title: 'NocoBase 1.0 发布日志',
+    title: 'Nhật ký phát hành NocoBase 1.0',
     tags: [
-      // Khi có giá trị khóa chính của bảng quan hệ, sẽ cập nhật bản ghi đó
+      // Có giá trị khóa chính của bảng quan hệ thì sẽ cập nhật bản ghi đó
       { id: 1 },
-      // Khi không có giá trị khóa chính, sẽ tạo dữ liệu mới
+      // Không có giá trị khóa chính thì sẽ tạo dữ liệu mới
       { name: 'NocoBase' },
     ],
   },
@@ -583,7 +584,7 @@ const result = await posts.create({
 
 ### `createMany()`
 
-Chèn nhiều bản ghi dữ liệu mới vào bảng dữ liệu. Tương đương với việc gọi phương thức `create()` nhiều lần.
+Insert nhiều bản ghi vừa được tạo vào bảng dữ liệu. Tương đương với gọi nhiều lần phương thức `create()`.
 
 **Chữ ký**
 
@@ -597,10 +598,10 @@ interface CreateManyOptions extends BulkCreateOptions {
 }
 ```
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-- `records`: Một mảng các đối tượng dữ liệu cho các bản ghi cần tạo.
-- `transaction`: Đối tượng giao dịch. Nếu không truyền tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.
+- `records`: Mảng đối tượng dữ liệu của các bản ghi cần tạo.
+- `transaction`: Đối tượng transaction. Nếu không truyền tham số transaction, phương thức sẽ tự động tạo một transaction nội bộ.
 
 **Ví dụ**
 
@@ -610,16 +611,16 @@ const posts = db.getRepository('posts');
 const results = await posts.createMany({
   records: [
     {
-      title: 'NocoBase 1.0 发布日志',
+      title: 'Nhật ký phát hành NocoBase 1.0',
       tags: [
-        // Khi có giá trị khóa chính của bảng quan hệ, sẽ cập nhật bản ghi đó
+        // Có giá trị khóa chính của bảng quan hệ thì sẽ cập nhật bản ghi đó
         { id: 1 },
-        // Khi không có giá trị khóa chính, sẽ tạo dữ liệu mới
+        // Không có giá trị khóa chính thì sẽ tạo dữ liệu mới
         { name: 'NocoBase' },
       ],
     },
     {
-      title: 'NocoBase 1.1 发布日志',
+      title: 'Nhật ký phát hành NocoBase 1.1',
       tags: [{ id: 1 }],
     },
   ],
@@ -628,7 +629,7 @@ const results = await posts.createMany({
 
 ### `update()`
 
-Cập nhật dữ liệu trong bảng dữ liệu. Tương đương với `Model.update()` trong Sequelize. Khi đối tượng dữ liệu cần cập nhật mang thông tin về các trường quan hệ, các bản ghi dữ liệu quan hệ tương ứng cũng sẽ được tạo hoặc cập nhật đồng thời.
+Cập nhật dữ liệu trong bảng dữ liệu. Tương đương với `Model.update()` trong Sequelize. Khi đối tượng dữ liệu cần cập nhật mang theo thông tin field quan hệ, sẽ đồng thời tạo hoặc cập nhật bản ghi dữ liệu quan hệ tương ứng.
 
 **Chữ ký**
 
@@ -644,11 +645,11 @@ const posts = db.getRepository('posts');
 const result = await posts.update({
   filterByTk: 1,
   values: {
-    title: 'NocoBase 1.0 发布日志',
+    title: 'Nhật ký phát hành NocoBase 1.0',
     tags: [
-      // Khi có giá trị khóa chính của bảng quan hệ, sẽ cập nhật bản ghi đó
+      // Có giá trị khóa chính của bảng quan hệ thì sẽ cập nhật bản ghi đó
       { id: 1 },
-      // Khi không có giá trị khóa chính, sẽ tạo dữ liệu mới
+      // Không có giá trị khóa chính thì sẽ tạo dữ liệu mới
       { name: 'NocoBase' },
     ],
   },
@@ -661,7 +662,7 @@ Xóa dữ liệu trong bảng dữ liệu. Tương đương với `Model.destroy
 
 **Chữ ký**
 
-- `async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<number>`
+- `async destory(options?: TargetKey | TargetKey[] | DestoryOptions): Promise<number>`
 
 **Kiểu**
 
@@ -674,9 +675,9 @@ interface DestroyOptions extends SequelizeDestroyOptions {
 }
 ```
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-- `filter`: Chỉ định các điều kiện lọc cho các bản ghi cần xóa. Để biết cách sử dụng chi tiết của Filter, vui lòng tham khảo phương thức [`find()`](#find).
-- `filterByTk`: Chỉ định các điều kiện lọc cho các bản ghi cần xóa theo TargetKey.
-- `truncate`: Có xóa sạch dữ liệu bảng hay không, có hiệu lực khi không truyền tham số `filter` hoặc `filterByTk`.
-- `transaction`: Đối tượng giao dịch. Nếu không truyền tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.
+- `filter`: Chỉ định điều kiện lọc của bản ghi cần xóa. Cách dùng chi tiết Filter có thể tham khảo phương thức [`find()`](#find).
+- `filterByTk`: Chỉ định điều kiện lọc của bản ghi cần xóa theo TargetKey.
+- `truncate`: Có làm sạch dữ liệu bảng hay không, có hiệu lực khi không truyền tham số `filter` hoặc `filterByTk`.
+- `transaction`: Đối tượng transaction. Nếu không truyền tham số transaction, phương thức sẽ tự động tạo một transaction nội bộ.

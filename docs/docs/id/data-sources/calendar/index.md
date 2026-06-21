@@ -1,38 +1,37 @@
 ---
 pkg: "@nocobase/plugin-calendar"
+title: "Block Calendar"
+description: "Block Calendar menampilkan event dan data tanggal dalam tampilan kalender, cocok untuk penjadwalan rapat dan perencanaan acara, dengan konfigurasi field judul, waktu mulai/selesai, kalender lunar, rentang data."
+keywords: "block calendar,tampilan kalender,event,penjadwalan rapat,Calendar,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Block Calendar
 
+## Pengantar
 
-# Blok Kalender
-
-## Pendahuluan
-
-Blok Kalender menampilkan data terkait acara dan tanggal dalam tampilan kalender. Ini sangat cocok untuk skenario seperti penjadwalan rapat, perencanaan acara, dan pengelolaan waktu.
+Block Calendar menampilkan event dan data terkait tanggal dalam tampilan kalender, cocok untuk skenario seperti penjadwalan rapat dan perencanaan acara.
 
 ## Instalasi
 
-Plugin ini sudah terpasang secara bawaan, jadi tidak perlu instalasi tambahan.
+Plugin bawaan, tidak perlu diinstal.
 
-## Menambahkan Blok
+## Menambahkan Block
 
 ![20250403220300](https://static-docs.nocobase.com/20250403220300.png)
 
-1.  Bidang Judul: Digunakan untuk menampilkan informasi pada bilah kalender. Saat ini, mendukung tipe bidang seperti `input`, `select`, `phone`, `email`, `radioGroup`, dan `sequence`. Tipe bidang judul yang didukung dapat diperluas melalui plugin.
-2.  Waktu Mulai: Menunjukkan kapan tugas dimulai;
-3.  Waktu Selesai: Menandai kapan tugas berakhir;
+1. Field Judul: Digunakan untuk menampilkan informasi pada bilah kalender; saat ini mendukung tipe field `input`, `select`, `phone`, `email`, `radioGroup`, `sequence`, dan tipe lainnya dapat diperluas melalui plugin untuk mendukung lebih banyak tipe field judul pada Block Calendar.
+2. Waktu Mulai: Waktu mulai task;
+3. Waktu Selesai: Waktu selesai task;
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20240419201640.mp4" type="video/mp4">
 </video>
 
-Mengklik bilah tugas akan menyorot pilihan dan membuka jendela pop-up detail.
+
+Klik bilah task, bilah task yang sama akan disorot, dan akan muncul popup.
 
 ![20240408171928](https://static-docs.nocobase.com/20240408171928.png)
 
-## Opsi Konfigurasi Blok
+## Opsi Konfigurasi Block
 
 ![20240419203321](https://static-docs.nocobase.com/20240419203321.png)
 
@@ -47,51 +46,50 @@ Mengklik bilah tugas akan menyorot pilihan dan membuka jendela pop-up detail.
 
 ![20240419203751](https://static-docs.nocobase.com/20240419203751.png)
 
-Untuk informasi lebih lanjut, lihat .
+Untuk lebih lanjut, lihat 
 
-### Atur Tinggi Blok
+### Atur Tinggi Block
 
-Contoh: Sesuaikan tinggi blok kalender pesanan. Bilah gulir tidak akan muncul di dalam blok kalender.
+Contoh: Mengatur tinggi block kalender pesanan, scrollbar tidak akan muncul di dalam Block Calendar.
 
 ![20240605215742](https://static-docs.nocobase.com/20240605215742.gif)
 
-Untuk informasi lebih lanjut, lihat .
+Untuk lebih lanjut, lihat 
 
-### Bidang Warna Latar Belakang
+### Field Warna Latar Belakang
 
-:::info{title=Tip}
-Versi NocoBase yang diperlukan adalah v1.4.0-beta atau lebih tinggi.
+:::info{title=Tips}
+Versi NocoBase yang dibutuhkan adalah v1.4.0-beta atau lebih tinggi.
 :::
 
-Opsi ini dapat digunakan untuk mengonfigurasi warna latar belakang acara kalender. Berikut cara menggunakannya:
+Opsi ini dapat digunakan untuk mengonfigurasi warna latar belakang event kalender. Cara penggunaannya sebagai berikut:
 
-1.  Tabel data kalender perlu memiliki bidang bertipe **Pilihan Tunggal (Single select)** atau **Grup Radio (Radio group)**, dan bidang ini perlu dikonfigurasi dengan warna.
-2.  Kemudian, kembali ke antarmuka konfigurasi blok kalender dan pilih bidang yang baru saja Anda konfigurasikan warnanya di **Bidang Warna Latar Belakang**.
-3.  Terakhir, Anda bisa mencoba memilih warna untuk acara kalender dan klik kirim. Anda akan melihat bahwa warna tersebut telah diterapkan.
+1. Collection calendar perlu memiliki field tipe **Single select** atau **Radio group** yang sudah dikonfigurasi dengan warna.
+2. Lalu, kembali ke antarmuka konfigurasi Block Calendar, pada **Field Warna Latar Belakang**, pilih field yang baru saja dikonfigurasi dengan warna.
+3. Terakhir, coba pilih warna untuk sebuah event kalender, lalu klik submit, Anda akan melihat warna sudah berlaku.
 
 ![20240914192017_rec_](https://static-docs.nocobase.com/20240914192017_rec_.gif)
 
-### Hari Mulai Minggu
+### Hari Awal Minggu
 
-> Didukung di versi v1.7.7 dan yang lebih tinggi
+> Didukung oleh versi v1.7.7 dan lebih tinggi 
 
-Blok kalender mendukung pengaturan hari mulai minggu, memungkinkan Anda memilih **Minggu** atau **Senin** sebagai hari pertama dalam seminggu.
-Hari mulai bawaan adalah **Senin**, memudahkan pengguna untuk menyesuaikan tampilan kalender sesuai kebiasaan regional agar lebih sesuai dengan kebutuhan penggunaan.
+Block Calendar mendukung pengaturan hari awal setiap minggu, dapat memilih **Minggu** atau **Senin** sebagai hari pertama dalam seminggu.  
+Hari awal default adalah **Senin**, memudahkan pengguna untuk menyesuaikan tampilan kalender berdasarkan kebiasaan di berbagai wilayah, sesuai dengan kebutuhan penggunaan nyata.
 
 ![20250707165958](https://static-docs.nocobase.com/20250707165958.png)
-
-## Konfigurasi Aksi
+## Operasi Konfigurasi
 
 ![20240419203424](https://static-docs.nocobase.com/20240419203424.png)
 
 ### Hari Ini
 
-Tombol "Hari Ini" di Blok Kalender menawarkan navigasi cepat, memungkinkan pengguna untuk langsung kembali ke tanggal saat ini setelah menjelajahi tanggal lain.
+Tombol "Hari Ini" pada Block Calendar menyediakan fungsi navigasi yang nyaman, memungkinkan pengguna untuk dengan cepat kembali ke halaman kalender pada tanggal saat ini setelah berpindah ke tanggal lain.
 
 ![20240419203514](https://static-docs.nocobase.com/20240419203514.png)
 
 ### Ganti Tampilan
 
-Tampilan bawaan diatur ke Bulan.
+Default adalah bulan
 
 ![20240419203349](https://static-docs.nocobase.com/20240419203349.png)

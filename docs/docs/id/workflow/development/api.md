@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Referensi API"
+description: "Referensi API ekstensi Workflow: Workflow Model, konteks eksekusi Node, API Trigger, passing variabel."
+keywords: "Workflow,Referensi API,Workflow Model,konteks Node,API Trigger,NocoBase"
+---
 
 # Referensi API
 
-## Sisi Server
+## Server
 
-API yang tersedia dalam struktur paket sisi server ditunjukkan pada kode berikut:
+API yang tersedia pada struktur paket server seperti yang ditunjukkan kode berikut:
 
 ```ts
 import PluginWorkflowServer, {
@@ -19,24 +21,24 @@ import PluginWorkflowServer, {
 
 ### `PluginWorkflowServer`
 
-Kelas **plugin** **alur kerja**.
+Kelas plugin Workflow.
 
-Biasanya, selama runtime aplikasi, Anda dapat memanggil `app.pm.get<PluginWorkflowServer>(PluginWorkflowServer)` di mana pun Anda bisa mendapatkan instans aplikasi `app` untuk memperoleh instans **plugin** **alur kerja** (selanjutnya disebut sebagai `plugin`).
+Biasanya saat runtime aplikasi, di tempat mana pun yang dapat memperoleh instance aplikasi `app`, panggil `app.pm.get<PluginWorkflowServer>(PluginWorkflowServer)` untuk mendapatkan instance plugin Workflow (di bawah ini disebut `plugin`).
 
 #### `registerTrigger()`
 
-Memperluas dan mendaftarkan tipe **trigger** baru.
+Memperluas pendaftaran tipe Trigger baru.
 
-**Tanda Tangan**
+**Signature**
 
 `registerTrigger(type: string, trigger: typeof Trigger | Trigger })`
 
 **Parameter**
 
-| Parameter | Tipe | Deskripsi |
-| --------- | --------------------------- | ---------------- |
-| `type` | `string` | Pengidentifikasi tipe **trigger** |
-| `trigger` | `typeof Trigger \| Trigger` | Tipe atau instans **trigger** |
+| Parameter | Tipe                        | Deskripsi              |
+| --------- | --------------------------- | ---------------------- |
+| `type`    | `string`                    | Identifier tipe Trigger |
+| `trigger` | `typeof Trigger \| Trigger` | Tipe atau instance Trigger |
 
 **Contoh**
 
@@ -80,18 +82,18 @@ export default class MyPlugin extends Plugin {
 
 #### `registerInstruction()`
 
-Memperluas dan mendaftarkan tipe node baru.
+Memperluas pendaftaran tipe Node baru.
 
-**Tanda Tangan**
+**Signature**
 
 `registerInstruction(type: string, instruction: typeof Instruction | Instruction })`
 
 **Parameter**
 
-| Parameter | Tipe | Deskripsi |
-| ------------- | ----------------------------------- | -------------- |
-| `type` | `string` | Pengidentifikasi tipe instruksi |
-| `instruction` | `typeof Instruction \| Instruction` | Tipe atau instans instruksi |
+| Parameter     | Tipe                                | Deskripsi              |
+| ------------- | ----------------------------------- | ---------------------- |
+| `type`        | `string`                            | Identifier tipe instruksi |
+| `instruction` | `typeof Instruction \| Instruction` | Tipe atau instance instruksi |
 
 **Contoh**
 
@@ -120,20 +122,20 @@ export default class MyPlugin extends Plugin {
 
 #### `trigger()`
 
-Memicu **alur kerja** tertentu. Terutama digunakan dalam **trigger** kustom untuk memicu **alur kerja** yang sesuai ketika suatu event kustom tertentu didengarkan.
+Memicu Workflow tertentu. Terutama digunakan dalam Trigger kustom, ketika event kustom tertentu didengarkan, memicu Workflow yang sesuai.
 
-**Tanda Tangan**
+**Signature**
 
 `trigger(workflow: Workflow, context: any)`
 
 **Parameter**
 | Parameter | Tipe | Deskripsi |
 | --- | --- | --- |
-| `workflow` | `WorkflowModel` | Objek **alur kerja** yang akan dipicu |
+| `workflow` | `WorkflowModel` | Objek Workflow yang akan dipicu |
 | `context` | `object` | Data konteks yang disediakan saat pemicuan |
 
 :::info{title=Tips}
-`context` saat ini adalah item yang wajib diisi. Jika tidak disediakan, **alur kerja** tidak akan terpicu.
+`context` saat ini wajib, jika tidak disediakan, Workflow tersebut tidak akan dipicu.
 :::
 
 **Contoh**
@@ -156,51 +158,51 @@ class MyTrigger extends Trigger {
 
 #### `resume()`
 
-Melanjutkan eksekusi **alur kerja** yang tertunda dengan tugas node tertentu.
+Memulihkan eksekusi Workflow yang dijeda dengan tugas Node tertentu.
 
-- Hanya **alur kerja** yang berada dalam status tertunda (`EXECUTION_STATUS.STARTED`) yang dapat dilanjutkan eksekusinya.
-- Hanya tugas node yang berada dalam status tertunda (`JOB_STATUS.PENDING`) yang dapat dilanjutkan eksekusinya.
+- Hanya Workflow dalam status jeda (`EXECUTION_STATUS.STARTED`) yang dapat dipulihkan eksekusinya.
+- Hanya tugas Node dalam status jeda (`JOB_STATUS.PENDING`) yang dapat dipulihkan eksekusinya.
 
-**Tanda Tangan**
+**Signature**
 
 `resume(job: JobModel)`
 
 **Parameter**
 
-| Parameter | Tipe | Deskripsi |
-| ----- | ---------- | ---------------- |
-| `job` | `JobModel` | Objek tugas yang diperbarui |
+| Parameter | Tipe       | Deskripsi              |
+| --------- | ---------- | ---------------------- |
+| `job`     | `JobModel` | Objek tugas yang sudah diperbarui |
 
 :::info{title=Tips}
-Objek tugas yang diteruskan umumnya adalah objek yang telah diperbarui, dan `status`-nya biasanya diperbarui ke nilai selain `JOB_STATUS.PENDING`, jika tidak, ia akan terus tertunda.
+Objek tugas yang diteruskan biasanya adalah objek yang sudah diperbarui, dan biasanya `status` akan diperbarui ke nilai non-`JOB_STATUS.PENDING`, jika tidak akan terus dijeda.
 :::
 
 **Contoh**
 
-Lihat [kode sumber](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-manual/src/server/actions.ts#L99) untuk detailnya.
+Lihat detailnya di [source code](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-manual/src/server/actions.ts#L99).
 
 ### `Trigger`
 
-Kelas dasar untuk **trigger**, digunakan untuk memperluas tipe **trigger** kustom.
+Kelas dasar Trigger, digunakan untuk memperluas tipe Trigger kustom.
 
-| Parameter | Tipe | Penjelasan |
-| ------------- | ----------------------------------------------------------- | ---------------------- |
-| `constructor` | `(public readonly workflow: PluginWorkflowServer): Trigger` | Konstruktor |
-| `on?` | `(workflow: WorkflowModel): void` | Penanganan event setelah mengaktifkan **alur kerja** |
-| `off?` | `(workflow: WorkflowModel): void` | Penanganan event setelah menonaktifkan **alur kerja** |
+| Parameter      | Tipe                                                        | Penjelasan                |
+| -------------- | ----------------------------------------------------------- | ------------------------- |
+| `constructor`  | `(public readonly workflow: PluginWorkflowServer): Trigger` | Konstruktor               |
+| `on?`          | `(workflow: WorkflowModel): void`                           | Event handling setelah Workflow diaktifkan |
+| `off?`         | `(workflow: WorkflowModel): void`                           | Event handling setelah Workflow dinonaktifkan |
 
-`on`/`off` digunakan untuk mendaftarkan/membatalkan pendaftaran pendengar event saat **alur kerja** diaktifkan/dinonaktifkan. Parameter yang diteruskan adalah instans **alur kerja** yang sesuai dengan **trigger**, yang dapat diproses sesuai konfigurasi. Beberapa tipe **trigger** yang sudah memiliki event yang didengarkan secara global mungkin tidak perlu mengimplementasikan kedua metode ini. Misalnya, dalam **trigger** terjadwal, Anda dapat mendaftarkan timer di `on` dan membatalkan pendaftarannya di `off`.
+`on`/`off` digunakan untuk pendaftaran/pencabutan listener event saat Workflow diaktifkan/dinonaktifkan, parameter yang diteruskan adalah instance Workflow dari Trigger yang sesuai, dapat ditangani sesuai konfigurasi yang sesuai. Beberapa tipe Trigger jika sudah men-listen event secara global, juga tidak perlu mengimplementasikan kedua method ini. Misalnya pada Trigger terjadwal, Anda dapat mendaftarkan timer di `on`, dan mencabut timer di `off`.
 
 ### `Instruction`
 
-Kelas dasar untuk instruksi, digunakan untuk memperluas tipe node kustom.
+Kelas dasar tipe instruksi, digunakan untuk memperluas tipe instruksi kustom.
 
-| Parameter | Tipe | Penjelasan |
-| ------------- | --------------------------------------------------------------- | ---------------------------------- |
-| `constructor` | `(public readonly workflow: PluginWorkflowServer): Instruction` | Konstruktor |
-| `run` | `Runner` | Logika eksekusi untuk entri pertama ke node |
-| `resume?` | `Runner` | Logika eksekusi untuk masuk ke node setelah melanjutkan dari interupsi |
-| `getScope?` | `(node: FlowNodeModel, data: any, processor: Processor): any` | Menyediakan konten variabel lokal untuk cabang yang dihasilkan oleh node yang sesuai |
+| Parameter      | Tipe                                                            | Penjelasan                          |
+| -------------- | --------------------------------------------------------------- | ----------------------------------- |
+| `constructor`  | `(public readonly workflow: PluginWorkflowServer): Instruction` | Konstruktor                         |
+| `run`          | `Runner`                                                        | Logika eksekusi saat pertama kali masuk Node |
+| `resume?`      | `Runner`                                                        | Logika eksekusi setelah masuk Node setelah dipulihkan dari interupsi |
+| `getScope?`    | `(node: FlowNodeModel, data: any, processor: Processor): any`   | Menyediakan konten variabel lokal cabang yang dihasilkan Node yang sesuai |
 
 **Tipe Terkait**
 
@@ -228,44 +230,44 @@ export class Instruction {
 }
 ```
 
-Untuk `getScope`, Anda dapat merujuk pada [implementasi node loop](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-loop/src/server/LoopInstruction.ts#L83), yang digunakan untuk menyediakan konten variabel lokal untuk cabang.
+`getScope` dapat dirujuk pada [implementasi Node loop](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-loop/src/server/LoopInstruction.ts#L83), digunakan untuk menyediakan konten variabel lokal cabang.
 
 ### `EXECUTION_STATUS`
 
-Tabel konstanta untuk status rencana eksekusi **alur kerja**, digunakan untuk mengidentifikasi status terkini dari rencana eksekusi yang sesuai.
+Tabel konstanta status rencana eksekusi Workflow, digunakan untuk mengidentifikasi status saat ini dari rencana eksekusi yang sesuai.
 
-| Nama Konstanta | Arti |
+| Nama Konstanta                  | Arti                  |
 | ------------------------------- | -------------------- |
-| `EXECUTION_STATUS.QUEUEING` | Dalam Antrean |
-| `EXECUTION_STATUS.STARTED` | Sedang Berjalan |
-| `EXECUTION_STATUS.RESOLVED` | Selesai Berhasil |
-| `EXECUTION_STATUS.FAILED` | Gagal |
-| `EXECUTION_STATUS.ERROR` | Kesalahan |
-| `EXECUTION_STATUS.ABORTED` | Dihentikan |
-| `EXECUTION_STATUS.CANCELED` | Dibatalkan |
-| `EXECUTION_STATUS.REJECTED` | Ditolak |
-| `EXECUTION_STATUS.RETRY_NEEDED` | Tidak berhasil dieksekusi, perlu dicoba lagi |
+| `EXECUTION_STATUS.QUEUEING`     | Dalam antrian        |
+| `EXECUTION_STATUS.STARTED`      | Sedang dieksekusi    |
+| `EXECUTION_STATUS.RESOLVED`     | Berhasil selesai     |
+| `EXECUTION_STATUS.FAILED`       | Gagal                |
+| `EXECUTION_STATUS.ERROR`        | Eksekusi error       |
+| `EXECUTION_STATUS.ABORTED`      | Diinterupsi          |
+| `EXECUTION_STATUS.CANCELED`     | Dibatalkan           |
+| `EXECUTION_STATUS.REJECTED`     | Ditolak              |
+| `EXECUTION_STATUS.RETRY_NEEDED` | Tidak berhasil dieksekusi, perlu coba ulang |
 
-Selain tiga yang pertama, semua status lainnya menunjukkan kegagalan, namun dapat digunakan untuk menjelaskan berbagai alasan kegagalan.
+Selain tiga yang pertama, lainnya merepresentasikan status gagal, tetapi dapat digunakan untuk mengekspresikan alasan kegagalan yang berbeda.
 
 ### `JOB_STATUS`
 
-Tabel konstanta untuk status tugas node **alur kerja**, digunakan untuk mengidentifikasi status terkini dari tugas node yang sesuai. Status yang dihasilkan oleh node juga akan memengaruhi status seluruh rencana eksekusi.
+Tabel konstanta status tugas Node Workflow, digunakan untuk mengidentifikasi status saat ini dari tugas Node yang sesuai. Status yang dihasilkan Node juga akan memengaruhi status seluruh rencana eksekusi.
 
-| Nama Konstanta | Arti |
-| ------------------------- | ---------------------------------------- |
-| `JOB_STATUS.PENDING`      | Tertunda: Eksekusi telah mencapai node ini, tetapi instruksi mengharuskan penangguhan dan menunggu |
-| `JOB_STATUS.RESOLVED`     | Selesai Berhasil |
-| `JOB_STATUS.FAILED`       | Gagal: Eksekusi node ini tidak memenuhi kondisi yang dikonfigurasi |
-| `JOB_STATUS.ERROR`        | Kesalahan: Terjadi kesalahan yang tidak tertangani selama eksekusi node ini |
-| `JOB_STATUS.ABORTED`      | Dihentikan: Eksekusi node ini dihentikan oleh logika lain setelah berada dalam status tertunda |
-| `JOB_STATUS.CANCELED`     | Dibatalkan: Eksekusi node ini dibatalkan secara manual setelah berada dalam status tertunda |
-| `JOB_STATUS.REJECTED`     | Ditolak: Kelanjutan node ini ditolak secara manual setelah berada dalam status tertunda |
-| `JOB_STATUS.RETRY_NEEDED` | Tidak berhasil dieksekusi, perlu dicoba lagi |
+| Nama Konstanta            | Arti                                                |
+| ------------------------- | --------------------------------------------------- |
+| `JOB_STATUS.PENDING`      | Jeda: sudah dieksekusi sampai Node ini, tetapi instruksi meminta jeda menunggu |
+| `JOB_STATUS.RESOLVED`     | Berhasil selesai                                    |
+| `JOB_STATUS.FAILED`       | Gagal: eksekusi Node ini tidak dapat memenuhi kondisi konfigurasi |
+| `JOB_STATUS.ERROR`        | Error: terjadi error yang tidak tertangkap selama eksekusi Node ini |
+| `JOB_STATUS.ABORTED`      | Penghentian: Node ini dihentikan eksekusinya oleh logika lain setelah dijeda |
+| `JOB_STATUS.CANCELED`     | Dibatalkan: Node ini dibatalkan eksekusinya secara manual setelah dijeda |
+| `JOB_STATUS.REJECTED`     | Ditolak: Node ini ditolak untuk dilanjutkan secara manual setelah dijeda |
+| `JOB_STATUS.RETRY_NEEDED` | Tidak berhasil dieksekusi, perlu coba ulang        |
 
-## Sisi Klien
+## Client
 
-API yang tersedia dalam struktur paket sisi klien ditunjukkan pada kode berikut:
+API yang tersedia pada struktur paket client seperti yang ditunjukkan kode berikut:
 
 ```ts
 import PluginWorkflowClient, {
@@ -278,55 +280,55 @@ import PluginWorkflowClient, {
 
 #### `registerTrigger()`
 
-Mendaftarkan panel konfigurasi yang sesuai untuk tipe **trigger**.
+Mendaftarkan panel konfigurasi yang sesuai dengan tipe Trigger.
 
-**Tanda Tangan**
+**Signature**
 
 `registerTrigger(type: string, trigger: typeof Trigger | Trigger): void`
 
 **Parameter**
 
-| Parameter | Tipe | Penjelasan |
-| --------- | --------------------------- | ------------------------------------ |
-| `type` | `string` | Pengidentifikasi tipe **trigger**, konsisten dengan pengidentifikasi yang digunakan untuk pendaftaran |
-| `trigger` | `typeof Trigger \| Trigger` | Tipe atau instans **trigger** |
+| Parameter | Tipe                        | Penjelasan                                  |
+| --------- | --------------------------- | ------------------------------------------- |
+| `type`    | `string`                    | Identifier tipe Trigger, konsisten dengan identifier yang digunakan saat pendaftaran |
+| `trigger` | `typeof Trigger \| Trigger` | Tipe atau instance Trigger                  |
 
 #### `registerInstruction()`
 
-Mendaftarkan panel konfigurasi yang sesuai untuk tipe node.
+Mendaftarkan panel konfigurasi yang sesuai dengan tipe Node.
 
-**Tanda Tangan**
+**Signature**
 
 `registerInstruction(type: string, instruction: typeof Instruction | Instruction): void`
 
 **Parameter**
 
-| Parameter | Tipe | Penjelasan |
-| ------------- | ----------------------------------- | ---------------------------------- |
-| `type` | `string` | Pengidentifikasi tipe node, konsisten dengan pengidentifikasi yang digunakan untuk pendaftaran |
-| `instruction` | `typeof Instruction \| Instruction` | Tipe atau instans node |
+| Parameter     | Tipe                                | Penjelasan                                |
+| ------------- | ----------------------------------- | ----------------------------------------- |
+| `type`        | `string`                            | Identifier tipe Node, konsisten dengan identifier yang digunakan saat pendaftaran |
+| `instruction` | `typeof Instruction \| Instruction` | Tipe atau instance Node                   |
 
 #### `registerInstructionGroup()`
 
-Mendaftarkan grup tipe node. NocoBase menyediakan 4 grup tipe node default:
+Mendaftarkan grup tipe Node. NocoBase secara default menyediakan 4 grup tipe Node:
 
-* `'control'`: Kontrol
-* `'collection'`: Operasi **koleksi**
-* `'manual'`: Pemrosesan manual
-* `'extended'`: Ekstensi lainnya
+* `'control'`: Kelas kontrol
+* `'collection'`: Kelas operasi tabel data
+* `'manual'`: Kelas penanganan manual
+* `'extended'`: Kelas ekstensi lainnya
 
-Jika Anda perlu memperluas grup lain, Anda dapat menggunakan metode ini untuk mendaftarkannya.
+Jika perlu memperluas grup lain, Anda dapat menggunakan method ini untuk mendaftarkan.
 
-**Tanda Tangan**
+**Signature**
 
 `registerInstructionGroup(type: string, group: { label: string }): void`
 
 **Parameter**
 
-| Parameter | Tipe | Penjelasan |
-| --------- | ----------------- | ----------------------------- |
-| `type` | `string` | Pengidentifikasi grup node, konsisten dengan pengidentifikasi yang digunakan untuk pendaftaran |
-| `group` | `{ label: string }` | Informasi grup, saat ini hanya mencakup judul |
+| Parameter | Tipe                | Penjelasan                                          |
+| --------- | ------------------- | --------------------------------------------------- |
+| `type`    | `string`            | Identifier grup Node, konsisten dengan identifier yang digunakan saat pendaftaran |
+| `group`   | `{ label: string }` | Informasi grup, saat ini hanya mengandung judul     |
 
 **Contoh**
 
@@ -342,33 +344,33 @@ export default class YourPluginClient extends Plugin {
 
 ### `Trigger`
 
-Kelas dasar untuk **trigger**, digunakan untuk memperluas tipe **trigger** kustom.
+Kelas dasar Trigger, digunakan untuk memperluas tipe Trigger kustom.
 
-| Parameter | Tipe | Penjelasan |
-| --------------- | ---------------------------------------------------------------- | ---------------------------------- |
-| `title` | `string` | Nama tipe **trigger** |
-| `fieldset` | `{ [key: string]: ISchema }` | Kumpulan item konfigurasi **trigger** |
-| `scope?` | `{ [key: string]: any }` | Kumpulan objek yang mungkin digunakan dalam Schema item konfigurasi |
-| `components?` | `{ [key: string]: React.FC }` | Kumpulan komponen yang mungkin digunakan dalam Schema item konfigurasi |
-| `useVariables?` | `(config: any, options: UseVariableOptions ) => VariableOptions` | Akses nilai untuk data konteks **trigger** |
+| Parameter        | Tipe                                                             | Penjelasan                                  |
+| ---------------- | ---------------------------------------------------------------- | ------------------------------------------- |
+| `title`          | `string`                                                         | Nama tipe Trigger                           |
+| `fieldset`       | `{ [key: string]: ISchema }`                                     | Koleksi item konfigurasi Trigger            |
+| `scope?`         | `{ [key: string]: any }`                                         | Koleksi objek yang mungkin digunakan dalam Schema item konfigurasi |
+| `components?`    | `{ [key: string]: React.FC }`                                    | Koleksi komponen yang mungkin digunakan dalam Schema item konfigurasi |
+| `useVariables?`  | `(config: any, options: UseVariableOptions ) => VariableOptions` | Pengambil nilai data konteks Trigger        |
 
-- Jika `useVariables` tidak diatur, itu berarti tipe **trigger** ini tidak menyediakan fungsi pengambilan nilai, dan data konteks **trigger** tidak dapat dipilih di node **alur kerja**.
+- `useVariables` jika tidak diatur, artinya tipe Trigger ini tidak menyediakan fungsi pengambilan nilai, di Node alur tidak dapat memilih data konteks Trigger.
 
 ### `Instruction`
 
-Kelas dasar untuk instruksi, digunakan untuk memperluas tipe node kustom.
+Kelas dasar instruksi, digunakan untuk memperluas tipe Node kustom.
 
-| Parameter | Tipe | Penjelasan |
-| -------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `group` | `string` | Pengidentifikasi grup tipe node, opsi saat ini: `'control'`/`'collection'`/`'manual'`/`'extended'` |
-| `fieldset` | `Record<string, ISchema>` | Kumpulan item konfigurasi node |
-| `scope?` | `Record<string, Function>` | Kumpulan objek yang mungkin digunakan dalam Schema item konfigurasi |
-| `components?` | `Record<string, React.FC>` | Kumpulan komponen yang mungkin digunakan dalam Schema item konfigurasi |
-| `Component?` | `React.FC` | Komponen rendering kustom untuk node |
-| `useVariables?` | `(node, options: UseVariableOptions) => VariableOption` | Metode untuk node menyediakan opsi variabel node |
-| `useScopeVariables?` | `(node, options?) => VariableOptions` | Metode untuk node menyediakan opsi variabel lokal cabang |
-| `useInitializers?` | `(node) => SchemaInitializerItemType` | Metode untuk node menyediakan opsi inisialisasi |
-| `isAvailable?` | `(ctx: NodeAvailableContext) => boolean` | Metode untuk menentukan apakah node tersedia |
+| Parameter             | Tipe                                                    | Penjelasan                                                                       |
+| --------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `group`               | `string`                                                | Identifier grup tipe Node, saat ini opsional: `'control'`/`'collection'`/`'manual'`/`'extended'` |
+| `fieldset`            | `Record<string, ISchema>`                               | Koleksi item konfigurasi Node                                                    |
+| `scope?`              | `Record<string, Function>`                              | Koleksi objek yang mungkin digunakan dalam Schema item konfigurasi               |
+| `components?`         | `Record<string, React.FC>`                              | Koleksi komponen yang mungkin digunakan dalam Schema item konfigurasi            |
+| `Component?`          | `React.FC`                                              | Komponen rendering kustom Node                                                   |
+| `useVariables?`       | `(node, options: UseVariableOptions) => VariableOption` | Method Node menyediakan opsi variabel Node                                       |
+| `useScopeVariables?`  | `(node, options?) => VariableOptions`                   | Method Node menyediakan opsi variabel lokal cabang                               |
+| `useInitializers?`    | `(node) => SchemaInitializerItemType`                   | Method Node menyediakan opsi initializer                                         |
+| `isAvailable?`        | `(ctx: NodeAvailableContext) => boolean`                | Method untuk menentukan apakah Node tersedia                                     |
 
 **Tipe Terkait**
 
@@ -380,7 +382,7 @@ export type NodeAvailableContext = {
 };
 ```
 
-- Jika `useVariables` tidak diatur, itu berarti tipe node ini tidak menyediakan fungsi pengambilan nilai, dan data hasil dari tipe node ini tidak dapat dipilih di node **alur kerja**. Jika nilai hasilnya tunggal (tidak dapat dipilih), Anda dapat mengembalikan konten statis yang menyatakan informasi yang sesuai (lihat: [kode sumber node perhitungan](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L68)). Jika perlu dapat dipilih (misalnya, properti dari suatu Objek), Anda dapat menyesuaikan output komponen pilihan yang sesuai (lihat: [kode sumber node buat data](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L41)).
-- `Component` adalah komponen rendering kustom untuk node. Ketika rendering node default tidak memadai, komponen ini dapat sepenuhnya diganti untuk rendering tampilan node kustom. Misalnya, jika Anda perlu menyediakan lebih banyak tombol tindakan atau interaksi lain untuk node awal tipe cabang, Anda akan menggunakan metode ini (lihat: [kode sumber cabang paralel](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow-parallel/src/client/ParallelInstruction.tsx)).
-- `useInitializers` digunakan untuk menyediakan metode inisialisasi blok. Misalnya, dalam node manual, Anda dapat menginisialisasi blok pengguna terkait berdasarkan node hulu. Jika metode ini disediakan, ia akan tersedia saat menginisialisasi blok dalam konfigurasi antarmuka node manual (lihat: [kode sumber node buat data](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L71)).
-- `isAvailable` terutama digunakan untuk menentukan apakah sebuah node dapat digunakan (ditambahkan) di lingkungan saat ini. Lingkungan saat ini mencakup **alur kerja** saat ini, node hulu, dan indeks cabang saat ini.
+- `useVariables` jika tidak diatur, artinya tipe Node ini tidak menyediakan fungsi pengambilan nilai, di Node alur tidak dapat memilih data hasil tipe Node ini. Jika nilai hasil tunggal (tidak dapat dipilih), maka cukup mengembalikan konten statis yang dapat mengekspresikan informasi yang sesuai (referensi: [source code Node komputasi](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L68)). Jika perlu dapat dipilih (seperti suatu properti dalam Object), Anda dapat menyesuaikan output komponen pemilihan yang sesuai (referensi: [source code Node Tambah Data](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L41)).
+- `Component` komponen rendering kustom Node, dapat sepenuhnya mengganti rendering default Node ketika tidak terpenuhi, untuk melakukan rendering tampilan Node kustom. Misalnya untuk Node awal tipe cabang yang perlu menyediakan tombol operasi atau interaksi tambahan, perlu menggunakan method ini (referensi: [source code cabang paralel](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow-parallel/src/client/ParallelInstruction.tsx)).
+- `useInitializers` digunakan untuk menyediakan method inisialisasi Block, misalnya pada Node manual dapat menginisialisasi Block pengguna terkait berdasarkan Node hulu. Jika method ini disediakan, akan tersedia saat menginisialisasi Block dalam konfigurasi antarmuka Node manual (referensi: [source code Node Tambah Data](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L71)).
+- `isAvailable` terutama digunakan untuk menentukan apakah Node dapat digunakan (ditambahkan) di lingkungan saat ini. Lingkungan saat ini termasuk Workflow saat ini, Node hulu, dan indeks cabang saat ini, dll.

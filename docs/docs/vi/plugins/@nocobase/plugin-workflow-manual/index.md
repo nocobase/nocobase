@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc: Nút xử lý thủ công"
+displayName: "Workflow: Node xử lý thủ công"
 packageName: '@nocobase/plugin-workflow-manual'
+title: "Workflow: Node xử lý thủ công"
+keywords: "Workflow: Node xử lý thủ công,Plugin,NocoBase"
 description: |
-  Dùng cho các luồng công việc cần sự can thiệp thủ công để đưa ra các quyết định.
+  Dùng cho quy trình mà một phần quyết định được kiểm soát thủ công.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút xử lý thủ công
+# Workflow: Node xử lý thủ công

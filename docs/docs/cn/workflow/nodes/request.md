@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-request'
+title: "工作流节点 - HTTP 请求"
+description: "HTTP 请求节点：与外部 web 系统交互，发送 JSON 或 form-urlencoded 请求。"
+keywords: "工作流,HTTP 请求,Request,外部系统,API 调用,NocoBase"
 ---
 
 # HTTP 请求

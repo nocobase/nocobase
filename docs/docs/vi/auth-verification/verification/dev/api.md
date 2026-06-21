@@ -1,9 +1,10 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tài liệu tham khảo API xác minh"
+description: "API module xác minh của NocoBase: IVerification, Verification, OTPVerification, VerificationManager, các interface verify, bind, registerVerificationType, v.v."
+keywords: "API xác minh,IVerification,VerificationManager,OTP,verify,bind,NocoBase"
+---
 
-
-# Tham khảo API
+# Tài liệu tham khảo API
 
 ## IVerification
 

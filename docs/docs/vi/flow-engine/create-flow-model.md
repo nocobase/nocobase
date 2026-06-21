@@ -1,15 +1,16 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Tạo FlowModel"
+description: "Tạo FlowModel: các bước define, registerFlow, renderComponent, viết component có thể điều phối từ đầu, nhập môn phát triển FlowEngine."
+keywords: "Tạo FlowModel,define,registerFlow,renderComponent,Component có thể điều phối,Phát triển FlowEngine,NocoBase"
+---
 
 # Tạo FlowModel
 
-## Với vai trò là Nút Gốc
+## Làm root node
 
-### Xây dựng một phiên bản FlowModel
+### Xây dựng instance FlowModel
 
-Xây dựng một phiên bản cục bộ
+Xây dựng một instance cục bộ
 
 ```ts
 const model = engine.buildModel({
@@ -20,23 +21,23 @@ const model = engine.buildModel({
 
 ### Lưu FlowModel
 
-Khi một phiên bản đã được xây dựng cần được duy trì, bạn có thể lưu nó bằng phương thức save.
+Khi instance đã xây dựng cần lưu trữ, có thể lưu thông qua phương thức save.
 
 ```ts
 await model.save();
 ```
 
-### Tải FlowModel từ kho lưu trữ từ xa
+### Tải FlowModel từ kho từ xa
 
-Một model đã được lưu có thể được tải bằng phương thức loadModel. Phương thức này sẽ tải toàn bộ cây model (bao gồm các nút con):
+Model đã lưu có thể tải thông qua loadModel, phương thức này sẽ tải toàn bộ cây model (bao gồm các node con):
 
 ```ts
 await engine.loadModel(uid);
 ```
 
-### Tải hoặc Tạo FlowModel
+### Tải hoặc tạo FlowModel
 
-Nếu model tồn tại, nó sẽ được tải; ngược lại, nó sẽ được tạo và lưu.
+Nếu model tồn tại thì tải, không tồn tại thì tạo và lưu.
 
 ```ts
 await engine.loadOrCreateModel({
@@ -45,7 +46,7 @@ await engine.loadOrCreateModel({
 });
 ```
 
-### Hiển thị FlowModel
+### Render FlowModel
 
 ```tsx pure
 const model = engine.buildModel({
@@ -58,17 +59,17 @@ const model = await engine.loadOrCreateModel(options);
 <FlowModelRenderer model={model} />
 ```
 
-## Với vai trò là Nút Con
+## Làm node con
 
-Khi bạn cần quản lý các thuộc tính và hành vi của nhiều thành phần con hoặc module bên trong một model, bạn cần sử dụng SubModel, ví dụ như trong các tình huống bố cục lồng nhau, hiển thị có điều kiện, v.v.
+Khi bạn cần quản lý thuộc tính và hành vi của nhiều subcomponent hoặc module bên trong một model, thì cần dùng SubModel, ví dụ tình huống bố cục lồng nhau, render điều kiện, v.v.
 
 ### Tạo SubModel
 
-Chúng tôi khuyến nghị sử dụng `<AddSubModelButton />`
+Khuyến nghị dùng `<AddSubModelButton />`
 
-Nó có thể tự động xử lý các vấn đề như thêm, liên kết và lưu trữ các Model con. Để biết thêm chi tiết, hãy xem [Hướng dẫn sử dụng AddSubModelButton](https://pr-7056.client.docs-cn.nocobase.com/core/flow-engine/flow-sub-models/add-sub-model).
+Có thể tự động xử lý các vấn đề thêm, gắn, lưu trữ subModel, xem chi tiết tại [Hướng dẫn sử dụng AddSubModelButton](https://pr-7056.client.docs-cn.nocobase.com/core/flow-engine/flow-sub-models/add-sub-model).
 
-### Hiển thị SubModel
+### Render SubModel
 
 ```tsx pure
 model.mapSubModels('subKey', (subModel) => {
@@ -76,9 +77,9 @@ model.mapSubModels('subKey', (subModel) => {
 });
 ```
 
-## Với vai trò là ForkModel
+## Làm ForkModel
 
-Fork thường được sử dụng trong các tình huống cần hiển thị cùng một mẫu model ở nhiều vị trí (nhưng với trạng thái độc lập), ví dụ như mỗi hàng trong một bảng.
+Fork thường được dùng cho các tình huống cần render cùng một template model ở nhiều vị trí (nhưng trạng thái độc lập), ví dụ mỗi hàng trong bảng.
 
 ### Tạo ForkModel
 
@@ -86,7 +87,7 @@ Fork thường được sử dụng trong các tình huống cần hiển thị 
 const fork1 = model.createFork('key1', {});
 const fork2 = model.createFork('key2', {});
 ```
-### Hiển thị ForkModel
+### Render ForkModel
 
 ```tsx pure
 <FlowModelRenderer model={fork1} />

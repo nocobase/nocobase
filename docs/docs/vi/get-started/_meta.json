@@ -5,8 +5,14 @@
     "link": "/get-started/how-nocobase-works"
   },
   {
+    "type": "custom-link",
+    "label": "Yêu cầu hệ thống",
+    "link": "/get-started/system-requirements"
+  },
+  {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "So sánh các phương thức cài đặt và phiên bản"
   },
   {
     "type": "custom-link",
@@ -40,17 +46,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Nâng cấp cài đặt Docker",
+        "label": "Nâng cấp bản cài đặt Docker",
         "link": "/get-started/upgrading/docker"
       },
       {
         "type": "custom-link",
-        "label": "Nâng cấp cài đặt create-nocobase-app",
+        "label": "Nâng cấp bản cài đặt create-nocobase-app",
         "link": "/get-started/upgrading/create-nocobase-app"
       },
       {
         "type": "custom-link",
-        "label": "Nâng cấp cài đặt từ mã nguồn Git",
+        "label": "Nâng cấp bản cài đặt mã nguồn Git",
         "link": "/get-started/upgrading/git"
       }
     ]
@@ -61,8 +67,24 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Triển khai môi trường production",
+        "label": "Triển khai môi trường sản xuất",
         "link": "/get-started/deployment/production"
+      },
+      {
+        "type": "custom-link",
+        "label": "Triển khai mạng nội bộ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker",
+            "link": "/get-started/deployment/intranet/docker"
+          },
+          {
+            "type": "custom-link",
+            "label": "create-nocobase-app",
+            "link": "/get-started/deployment/intranet/create-nocobase-app"
+          }
+        ]
       },
       {
         "type": "custom-link",
@@ -80,7 +102,7 @@
           },
           {
             "type": "custom-link",
-            "label": "CDN",
+            "label": "cdn",
             "link": "/get-started/deployment/static-resource-proxy/cdn"
           }
         ]
@@ -103,14 +125,19 @@
       },
       {
         "type": "custom-link",
-        "label": "Cách triển khai nhanh hơn",
-        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+        "label": "Làm thế nào để triển khai nhanh hơn",
+        "link": "/get-started/deployment/how-to-deploy-nocobase-faster"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Cài đặt và nâng cấp plugin",
+    "label": "Cài đặt và nâng cấp Plugin",
     "link": "/get-started/install-upgrade-plugins"
+  },
+  {
+    "type": "custom-link",
+    "label": "Đóng góp bản dịch",
+    "link": "/get-started/translations"
   }
 ]

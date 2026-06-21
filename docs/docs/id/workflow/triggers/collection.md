@@ -1,92 +1,94 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Trigger Workflow - Event Tabel Data"
+description: "Trigger event tabel data: men-listen tambah/hapus/perbarui/kueri tabel data, memicu Workflow ketika kondisi terpenuhi, seperti tambah pesanan kurangi stok, peninjauan komentar."
+keywords: "Workflow,event tabel data,Trigger,CRUD,event Collection,NocoBase"
+---
 
-# Koleksi Event
+# Event Tabel Data
 
-## Pendahuluan
+## Pengantar
 
-Pemicu (trigger) dengan tipe **koleksi event** akan memantau event penambahan, penghapusan, dan pembaruan data pada sebuah **koleksi**. Ketika operasi data pada **koleksi** tersebut terjadi dan memenuhi kondisi yang telah dikonfigurasi, **alur kerja** yang sesuai akan terpicu. Contohnya, skenario seperti mengurangi stok produk setelah pesanan baru dibuat, atau menunggu tinjauan manual setelah komentar baru ditambahkan.
+Trigger tipe event tabel data akan men-listen event tambah/hapus/perbarui/kueri tabel data. Ketika operasi data terhadap tabel tersebut terjadi dan memenuhi kondisi yang dikonfigurasi, Workflow yang sesuai akan dipicu. Misalnya setelah menambah pesanan kurangi stok produk, setelah menambah komentar tunggu peninjauan manual, dan skenario lainnya.
 
 ## Penggunaan Dasar
 
-Ada beberapa kondisi perubahan pada **koleksi**:
+Perubahan tabel data memiliki beberapa kondisi:
 
-1.  Setelah data dibuat.
-2.  Setelah data diperbarui.
-3.  Setelah data dibuat atau diperbarui.
-4.  Setelah data dihapus.
+1. Setelah penambahan data.
+2. Setelah pembaruan data.
+3. Setelah penambahan atau pembaruan data.
+4. Setelah penghapusan data.
 
-![Koleksi Event_Pemilihan Waktu Pemicu](https://static-docs.nocobase.com/81275602742deb71e0c830eb97aa612c.png)
+![Event tabel data_pemilihan waktu pemicuan](https://static-docs.nocobase.com/81275602742deb71e0c830eb97aa612c.png)
 
-Anda dapat memilih waktu pemicu berdasarkan kebutuhan bisnis yang berbeda. Ketika kondisi perubahan yang dipilih mencakup pembaruan **koleksi**, Anda juga dapat membatasi bidang (field) yang berubah. Kondisi pemicu hanya akan terpenuhi jika bidang yang dipilih berubah. Jika tidak ada bidang yang dipilih, berarti perubahan pada bidang apa pun dapat memicu **alur kerja**.
+Anda dapat memilih waktu pemicuan berdasarkan kebutuhan bisnis yang berbeda. Ketika kondisi perubahan yang dipilih mengandung kondisi pembaruan tabel data, Anda juga dapat membatasi field yang berubah. Hanya ketika field yang dipilih berubah, kondisi pemicuan terpenuhi. Jika tidak memilih, semua field yang berubah dapat memicu.
 
-![Koleksi Event_Pilih Bidang yang Berubah](https://static-docs.nocobase.com/874a1475f01298b3c00267b2b4674611.png)
+![Event tabel data_pemilihan field yang berubah](https://static-docs.nocobase.com/874a1475f01298b3c00267b2b4674611.png)
 
-Lebih lanjut, Anda dapat mengonfigurasi aturan kondisi untuk setiap bidang pada baris data yang memicu. Pemicu hanya akan aktif jika bidang-bidang tersebut memenuhi kondisi yang sesuai.
+Lebih detail, Anda dapat mengonfigurasi aturan kondisi untuk setiap field baris data yang dipicu. Hanya ketika field di dalamnya memenuhi kondisi yang sesuai, baru dilakukan pemicuan.
 
-![Koleksi Event_Konfigurasi Kondisi Data](https://static-docs.nocobase.com/264ae3835dcd75cee0eef7812c11fe0c.png)
+![Event tabel data_konfigurasi kondisi yang dipenuhi data](https://static-docs.nocobase.com/264ae3835dcd75cee0eef7812c11fe0c.png)
 
-Setelah **koleksi event** terpicu, baris data yang menghasilkan event akan disuntikkan ke dalam rencana eksekusi sebagai data konteks pemicu. Data ini kemudian dapat digunakan sebagai variabel oleh node-node selanjutnya dalam **alur kerja**. Namun, jika node selanjutnya ingin menggunakan bidang relasi dari data ini, Anda perlu mengonfigurasi *preloading* data relasi terlebih dahulu. Data relasi yang dipilih akan disuntikkan ke dalam konteks bersamaan dengan pemicu dan dapat dipilih serta digunakan secara hierarkis.
+Setelah event tabel data dipicu, baris data yang menghasilkan event akan diinjeksikan ke rencana eksekusi sebagai data konteks pemicuan, untuk digunakan oleh Node dalam alur sebagai variabel. Namun ketika Node berikutnya ingin menggunakan field relasi data tersebut, Anda perlu mengonfigurasi terlebih dahulu pre-loading untuk data relasi. Data relasi yang dipilih akan diinjeksikan ke konteks bersamaan setelah pemicuan, dan dapat dipilih dan digunakan secara hierarkis.
 
 ## Tips Terkait
 
-### Pemicuan oleh Operasi Data Massal Saat Ini Belum Didukung
+### Pemicuan Operasi Data Batch Belum Didukung
 
-**Koleksi event** saat ini belum mendukung pemicuan oleh operasi data massal. Contohnya, ketika membuat data artikel dan secara bersamaan menambahkan beberapa data tag untuk artikel tersebut (data relasi satu-ke-banyak), hanya **alur kerja** untuk pembuatan artikel yang akan terpicu. Beberapa tag yang ditambahkan secara bersamaan tidak akan memicu **alur kerja** untuk pembuatan tag. Ketika mengasosiasikan atau menambahkan data relasi banyak-ke-banyak, **alur kerja** untuk **koleksi** perantara juga tidak akan terpicu.
+Event tabel data saat ini belum mendukung pemicuan operasi data batch. Misalnya saat menambah data artikel sambil menambah beberapa data tag artikel tersebut (data relasi to-many), hanya akan memicu Workflow penambahan artikel, sedangkan beberapa tag yang ditambahkan bersamaan tidak akan memicu Workflow penambahan tag. Saat asosiasi dan penambahan data relasi many-to-many, Workflow tabel perantara juga tidak akan dipicu.
 
-### Operasi Data di Luar Aplikasi Tidak Akan Memicu Event
+### Operasi Data di Luar Aplikasi Tidak Akan Memicu
 
-Operasi pada **koleksi** melalui panggilan HTTP API ke antarmuka aplikasi juga dapat memicu event yang sesuai. Namun, jika perubahan data dilakukan langsung melalui operasi basis data dan bukan melalui aplikasi NocoBase, event yang sesuai tidak dapat terpicu. Misalnya, pemicu (trigger) basis data bawaan tidak akan terkait dengan **alur kerja** di aplikasi.
+Operasi tabel data melalui panggilan API HTTP aplikasi juga dapat memicu event yang sesuai. Tetapi jika tidak melalui aplikasi NocoBase, melainkan langsung melalui operasi database menghasilkan perubahan data, tidak akan dapat memicu event yang sesuai. Misalnya Trigger asli di database tidak akan terkait dengan Workflow di aplikasi.
 
-Selain itu, menggunakan node operasi SQL untuk mengoperasikan basis data sama dengan mengoperasikan basis data secara langsung, dan ini juga tidak akan memicu **koleksi event**.
+Selain itu, menggunakan Node Operasi SQL untuk mengoperasikan database setara dengan langsung mengoperasikan database, juga tidak akan memicu event tabel data.
 
 ### Sumber Data Eksternal
 
-**Alur kerja** telah mendukung **sumber data** eksternal sejak versi `0.20`. Jika Anda menggunakan **plugin sumber data** eksternal, dan **koleksi event** dikonfigurasi untuk **sumber data** eksternal, selama operasi data pada **sumber data** tersebut dilakukan di dalam aplikasi (seperti pembuatan, pembaruan oleh pengguna, dan operasi data **alur kerja**), **koleksi event** yang sesuai dapat terpicu. Namun, jika perubahan data dilakukan melalui sistem lain atau langsung di dalam basis data eksternal, **koleksi event** tidak dapat terpicu.
+Workflow mulai mendukung sumber data eksternal sejak `0.20`. Jika menggunakan plugin sumber data eksternal, dan event tabel data yang dikonfigurasi adalah sumber data eksternal, selama operasi data terhadap sumber data tersebut diselesaikan di dalam aplikasi (penambahan, pembaruan oleh pengguna, dan operasi data Workflow, dll.), semua dapat memicu event tabel data yang sesuai. Tetapi jika perubahan data dilakukan melalui sistem lain atau langsung di database eksternal, tidak akan dapat memicu event tabel data.
 
 ## Contoh
 
-Mari kita ambil contoh skenario penghitungan total harga dan pengurangan stok setelah pesanan baru dibuat.
+Mari ambil contoh skenario menghitung total harga dan mengurangi stok setelah menambah pesanan.
 
-Pertama, kita membuat **koleksi** Produk dan **koleksi** Pesanan dengan model data sebagai berikut:
+Pertama, kita buat tabel produk dan tabel pesanan, model data sebagai berikut:
 
-| Nama Bidang    | Tipe Bidang      |
-| -------------- | ---------------- |
-| Nama Produk    | Teks Satu Baris  |
-| Harga          | Angka            |
-| Stok           | Bilangan Bulat   |
+| Nama Field    | Tipe Field      |
+| ------------- | --------------- |
+| Nama Produk   | Single Line Text |
+| Harga         | Number          |
+| Stok          | Integer         |
 
-| Nama Bidang    | Tipe Bidang          |
-| -------------- | -------------------- |
-| ID Pesanan     | Nomor Urut           |
-| Produk Pesanan | Banyak-ke-Satu (Produk) |
-| Total Pesanan  | Angka                |
+| Nama Field      | Tipe Field             |
+| --------------- | ---------------------- |
+| Nomor Pesanan   | Auto Number            |
+| Produk Pesanan  | Many-to-One (Produk)   |
+| Total Pesanan   | Number                 |
 
-Dan tambahkan beberapa data produk dasar:
+Dan tambahkan data produk dasar:
 
 | Nama Produk   | Harga | Stok |
 | ------------- | ----- | ---- |
 | iPhone 14 Pro | 7999  | 10   |
 | iPhone 13 Pro | 5999  | 0    |
 
-Kemudian, buat **alur kerja** berdasarkan **koleksi event** Pesanan:
+Kemudian buat sebuah Workflow berbasis event tabel data pesanan:
 
-![Koleksi Event_Contoh_Pemicu Pesanan Baru](https://static-docs.nocobase.com/094392a870dddc65aeb20357f62ddc08.png)
+![Event tabel data_contoh_pemicuan tambah pesanan](https://static-docs.nocobase.com/094392a870dddc65aeb20357f62ddc08.png)
 
-Berikut adalah beberapa opsi konfigurasi:
+Beberapa item konfigurasi di dalamnya:
 
--   **Koleksi**: Pilih **koleksi** "Pesanan".
--   Waktu Pemicu: Pilih "Setelah data dibuat".
--   Kondisi Pemicu: Biarkan kosong.
--   *Preload* Data Relasi: Centang "Produk".
+- Tabel Data: pilih tabel "Pesanan".
+- Waktu Pemicuan: pilih "Setelah Penambahan Data" untuk memicu.
+- Kondisi Pemicuan: kosongkan.
+- Pre-load Data Relasi: centang "Produk".
 
-Selanjutnya, konfigurasikan node-node lain sesuai logika **alur kerja**: periksa apakah stok produk lebih besar dari 0. Jika ya, kurangi stok; jika tidak, pesanan tidak valid dan harus dihapus:
+Kemudian konfigurasikan Node lainnya berdasarkan logika alur, periksa apakah stok produk lebih besar dari 0, jika lebih besar dari 0 kurangi stok, jika tidak pesanan tidak valid hapus pesanan:
 
-![Koleksi Event_Contoh_Orkestrasi Alur Kerja Pesanan Baru](https://static-docs.nocobase.com/7713ea1aaa0f52a0dc3c92aba5e58f05.png)
+![Event tabel data_contoh_orkestrasi alur tambah pesanan](https://static-docs.nocobase.com/7713ea1aaa0f52a0dc3c92aba5e58f05.png)
 
-Konfigurasi node akan dijelaskan secara rinci dalam dokumentasi untuk tipe node tertentu.
+Konfigurasi Node akan dijelaskan secara detail dalam dokumen pengantar tipe spesifik.
 
-Aktifkan **alur kerja** ini dan uji dengan membuat pesanan baru melalui antarmuka. Setelah memesan "iPhone 14 Pro", stok produk yang sesuai akan berkurang menjadi 9. Sedangkan jika memesan "iPhone 13 Pro", pesanan akan dihapus karena stok tidak mencukupi.
+Aktifkan Workflow ini, dan uji dengan menambah pesanan melalui antarmuka. Setelah memesan "iPhone 14 Pro", stok produk yang sesuai akan dikurangi menjadi 9, sedangkan jika memesan "iPhone 13 Pro", karena stok tidak mencukupi, pesanan akan dihapus.
 
-![Koleksi Event_Contoh_Hasil Eksekusi Pesanan Baru](https://static-docs.nocobase.com/24cbe51e24ba4804b3bd48d99415c54f.png)
+![Event tabel data_contoh_hasil eksekusi tambah pesanan](https://static-docs.nocobase.com/24cbe51e24ba4804b3bd48d99415c54f.png)

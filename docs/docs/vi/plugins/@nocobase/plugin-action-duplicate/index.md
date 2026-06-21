@@ -1,14 +1,17 @@
 ---
-displayName: "Thao tác: Sao chép bản ghi"
+displayName: "Action: Sao chép bản ghi"
 packageName: '@nocobase/plugin-action-duplicate'
+title: "Action: Sao chép bản ghi"
+keywords: "Action: Sao chép bản ghi,Plugin,NocoBase"
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Sao chép một bản ghi. Bạn có thể sao chép bản ghi này vào một biểu mẫu để chỉnh sửa trước khi gửi, hoặc sao chép trực tiếp để tạo một bản ghi mới.
+  Sao chép một bản ghi, có thể sao chép vào biểu mẫu để chỉnh sửa rồi gửi, hoặc sao chép trực tiếp và tạo bản ghi mới.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: Sao chép bản ghi
+# Action: Sao chép bản ghi

@@ -1,63 +1,66 @@
 ---
+title: "So sánh phương thức cài đặt và phiên bản NocoBase"
+description: "Ba phương thức cài đặt NocoBase: Docker (khuyến nghị), create-nocobase-app, mã nguồn Git; sự khác biệt giữa các phiên bản Latest/Beta/Alpha, tình huống áp dụng và cách nâng cấp."
+keywords: "Cài đặt NocoBase, Cài đặt Docker, create-nocobase-app, mã nguồn Git, Latest, Beta, Alpha, so sánh phiên bản, NocoBase"
 versions:
-  - label: Phiên bản mới nhất (Ổn định)
-    features: Tính năng ổn định, đã được kiểm thử kỹ lưỡng, chỉ sửa lỗi.
-    audience: Người dùng muốn trải nghiệm ổn định, triển khai cho môi trường sản xuất.
+  - label: Latest (Phiên bản ổn định)
+    features: Tính năng ổn định, kiểm thử kỹ lưỡng, chỉ vá lỗi.
+    audience: Người dùng muốn trải nghiệm ổn định, triển khai môi trường sản xuất.
     stability: ★★★★★
-    production_recommendation: Khuyên dùng
-  - label: Beta (Thử nghiệm)
-    features: Bao gồm các tính năng mới sắp ra mắt, đã được kiểm thử sơ bộ, có thể còn một vài vấn đề nhỏ.
-    audience: Người dùng muốn trải nghiệm sớm các tính năng mới và cung cấp phản hồi.
+    production_recommendation: Khuyến nghị
+  - label: Beta (Phiên bản kiểm thử)
+    features: Bao gồm các tính năng mới sắp phát hành, đã qua kiểm thử ban đầu, có thể còn ít vấn đề.
+    audience: Người dùng muốn trải nghiệm sớm tính năng mới và phản hồi.
     stability: ★★★★☆
-    production_recommendation: Cần thận trọng
-  - label: Alpha (Phát triển)
-    features: Phiên bản đang trong quá trình phát triển, có các tính năng mới nhất nhưng có thể chưa hoàn chỉnh hoặc không ổn định.
-    audience: Người dùng kỹ thuật, người đóng góp quan tâm đến phát triển tiên tiến.
+    production_recommendation: Sử dụng thận trọng
+  - label: Alpha (Phiên bản phát triển)
+    features: Phiên bản đang phát triển, tính năng mới nhất nhưng có thể chưa đầy đủ hoặc không ổn định.
+    audience: Người dùng kỹ thuật quan tâm đến phát triển tiên tiến, người đóng góp.
     stability: ★★☆☆☆
-    production_recommendation: Cần thận trọng
+    production_recommendation: Sử dụng thận trọng
 
 install_methods:
-  - label: Cài đặt bằng Docker (Khuyên dùng)
-    features: Không cần viết mã, cài đặt đơn giản, phù hợp để trải nghiệm nhanh.
-    scenarios: Người dùng không cần viết mã, người muốn triển khai nhanh lên máy chủ.
+  - label: Cài đặt Docker (Khuyến nghị)
+    features: Không cần viết code, cài đặt đơn giản, phù hợp để trải nghiệm nhanh.
+    scenarios: Người dùng no-code, người dùng muốn triển khai nhanh lên server.
     technical_requirement: ★☆☆☆☆
-    upgrade_method: Kéo image mới nhất và khởi động lại container
-  - label: Cài đặt bằng create-nocobase-app
-    features: Mã nguồn ứng dụng độc lập, hỗ trợ mở rộng plugin và tùy chỉnh giao diện.
-    scenarios: Nhà phát triển front-end/full-stack, dự án nhóm, phát triển low-code.
+    upgrade_method: Pull image mới nhất và khởi động lại container
+  - label: Cài đặt create-nocobase-app
+    features: Code nghiệp vụ độc lập, hỗ trợ mở rộng Plugin và tùy chỉnh giao diện.
+    scenarios: Lập trình viên frontend/full-stack, dự án nhóm, phát triển low-code.
     technical_requirement: ★★★☆☆
-    upgrade_method: Sử dụng yarn để cập nhật các dependency
+    upgrade_method: Dùng yarn để cập nhật phụ thuộc
   - label: Cài đặt từ mã nguồn Git
-    features: Trực tiếp lấy mã nguồn mới nhất, có thể tham gia đóng góp và gỡ lỗi.
-    scenarios: Nhà phát triển kỹ thuật, người muốn trải nghiệm các phiên bản chưa phát hành.
+    features: Lấy trực tiếp mã nguồn mới nhất, có thể tham gia đóng góp và debug.
+    scenarios: Lập trình viên kỹ thuật, người dùng muốn trải nghiệm phiên bản chưa phát hành.
     technical_requirement: ★★★★★
-    upgrade_method: Đồng bộ hóa cập nhật thông qua quy trình Git
+    upgrade_method: Đồng bộ cập nhật qua quy trình Git
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# So sánh phương thức cài đặt và phiên bản
 
+Bạn có thể cài đặt NocoBase bằng nhiều cách khác nhau.
 
-# So sánh các phương thức cài đặt và phiên bản
+## So sánh phiên bản
 
-Bạn có thể cài đặt NocoBase theo nhiều cách khác nhau.
-
-## So sánh các phiên bản
-
-| Tiêu chí | **Phiên bản mới nhất (Ổn định)** | **Beta (Thử nghiệm)** | **Alpha (Phát triển)** |
+| Tiêu chí | **Latest (Phiên bản ổn định)** | **Beta (Phiên bản kiểm thử)** | **Alpha (Phiên bản phát triển)** |
 |------|------------------------|----------------------|-----------------------|
-| **Đặc điểm** | Tính năng ổn định, đã được kiểm thử kỹ lưỡng, chỉ sửa lỗi. | Bao gồm các tính năng mới sắp ra mắt, đã được kiểm thử sơ bộ, có thể còn một vài vấn đề nhỏ. | Phiên bản đang trong quá trình phát triển, có các tính năng mới nhất nhưng có thể chưa hoàn chỉnh hoặc không ổn định. |
-| **Đối tượng sử dụng** | Người dùng muốn trải nghiệm ổn định, triển khai cho môi trường sản xuất. | Người dùng muốn trải nghiệm sớm các tính năng mới và cung cấp phản hồi. | Người dùng kỹ thuật, người đóng góp quan tâm đến phát triển tiên tiến. |
+| **Đặc điểm** | Tính năng ổn định, kiểm thử kỹ lưỡng, chỉ vá lỗi. | Bao gồm các tính năng mới sắp phát hành, đã qua kiểm thử ban đầu, có thể còn ít vấn đề. | Phiên bản đang phát triển, tính năng mới nhất nhưng có thể chưa đầy đủ hoặc không ổn định. |
+| **Đối tượng phù hợp** | Người dùng muốn trải nghiệm ổn định, triển khai môi trường sản xuất. | Người dùng muốn trải nghiệm sớm tính năng mới và phản hồi. | Người dùng kỹ thuật quan tâm đến phát triển tiên tiến, người đóng góp. |
 | **Độ ổn định** | ★★★★★ | ★★★★☆ | ★★☆☆☆ |
-| **Có khuyên dùng cho môi trường sản xuất không** | Khuyên dùng | Cần thận trọng | Cần thận trọng |
+| **Khuyến nghị dùng sản xuất** | Khuyến nghị | Sử dụng thận trọng | Sử dụng thận trọng |
 
-## So sánh các phương thức cài đặt
+## So sánh phương thức cài đặt
 
-| Tiêu chí | **Cài đặt bằng Docker (Khuyên dùng)** | **Cài đặt bằng create-nocobase-app** | **Cài đặt từ mã nguồn Git** |
+| Tiêu chí | **Cài đặt Docker (Khuyến nghị)** | **Cài đặt create-nocobase-app** | **Cài đặt từ mã nguồn Git** |
 |------|--------------------------|------------------------------|------------------|
-| **Đặc điểm** | Không cần viết mã, cài đặt đơn giản, phù hợp để trải nghiệm nhanh. | Mã nguồn ứng dụng độc lập, hỗ trợ mở rộng plugin và tùy chỉnh giao diện. | Trực tiếp lấy mã nguồn mới nhất, có thể tham gia đóng góp và gỡ lỗi. |
-| **Trường hợp áp dụng** | Người dùng không cần viết mã, người muốn triển khai nhanh lên máy chủ. | Nhà phát triển front-end/full-stack, dự án nhóm, phát triển low-code. | Nhà phát triển kỹ thuật, người muốn trải nghiệm các phiên bản chưa phát hành. |
+| **Đặc điểm** | Không cần viết code, cài đặt đơn giản, phù hợp để trải nghiệm nhanh. | Code nghiệp vụ độc lập, hỗ trợ mở rộng Plugin và tùy chỉnh giao diện. | Lấy trực tiếp mã nguồn mới nhất, có thể tham gia đóng góp và debug. |
+| **Tình huống áp dụng** | Người dùng no-code, người dùng muốn triển khai nhanh lên server. | Lập trình viên frontend/full-stack, dự án nhóm, phát triển low-code. | Lập trình viên kỹ thuật, người dùng muốn trải nghiệm phiên bản chưa phát hành. |
 | **Yêu cầu kỹ thuật** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
-| **Cách nâng cấp** | Kéo image mới nhất và khởi động lại container | Sử dụng yarn để cập nhật các dependency | Đồng bộ hóa cập nhật thông qua quy trình Git |
-| **Hướng dẫn** | [<code>Cài đặt</code>](#) [<code>Nâng cấp</code>](#) [<code>Triển khai</code>](#) | [<code>Cài đặt</code>](#) [<code>Nâng cấp</code>](#) [<code>Triển khai</code>](#) | [<code>Cài đặt</code>](#) [<code>Nâng cấp</code>](#) [<code>Triển khai</code>](#) |
+| **Cách nâng cấp** | Pull image mới nhất và khởi động lại container | Dùng yarn để cập nhật phụ thuộc | Đồng bộ cập nhật qua quy trình Git |
+
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
+## Tiếp theo nên làm gì
+
+Nếu bạn đã chọn được phương thức cài đặt, bước tiếp theo là [Cài đặt ứng dụng NocoBase](/ai/install-nocobase-app). Trang này sẽ hướng dẫn bạn cài đặt NocoBase CLI và hoàn tất việc cài đặt cũng như khởi tạo ứng dụng.

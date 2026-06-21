@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Đăng ký FlowModel"
+description: "Đăng ký FlowModel: FlowEngine.registerFlowModel đăng ký FlowModel vào engine, để Plugin và trang sử dụng, cách dùng registerFlowModel."
+keywords: "Đăng ký FlowModel,registerFlowModel,FlowEngine,Đăng ký Plugin,Đăng ký FlowModel,NocoBase"
+---
 
 # Đăng ký FlowModel
 
-## Bắt đầu với FlowModel tùy chỉnh
+## Bắt đầu từ FlowModel tùy chỉnh
 
 ```tsx pure
 class HelloModel extends FlowModel {
@@ -20,20 +21,28 @@ class HelloModel extends FlowModel {
 }
 ```
 
-## Các lớp cơ sở FlowModel có sẵn
+```tsx file="./_demos/register-flow-model.tsx" preview
+```
 
-| Tên lớp cơ sở           | Mô tả                                 |
-| ----------------------- | ------------------------------------- |
-| `BlockModel`            | Lớp cơ sở cho tất cả các block        |
-| `CollectionBlockModel`  | Block của bộ sưu tập, kế thừa từ BlockModel |
-| `ActionModel`           | Lớp cơ sở cho tất cả các hành động    |
+## Các lớp cơ sở FlowModel khả dụng
+
+| Tên lớp cơ sở               | Mô tả                          |
+| ---------------------- | ----------------------------- |
+| `BlockModel`           | Lớp cơ sở của tất cả Block                |
+| `CollectionBlockModel` | Block bảng dữ liệu, kế thừa từ BlockModel |
+| `ActionModel`          | Lớp cơ sở của tất cả Action                |
 
 ## Đăng ký FlowModel
 
 ```ts
 export class PluginHelloClient extends Plugin {
   async load() {
-    this.engine.registerModels({ HelloModel });
+    this.engine.registerModelLoaders({
+      HelloModel: {
+        // Dynamic import, chỉ tải module tương ứng khi model này được dùng đến lần đầu
+        loader: () => import('./HelloModel'),
+      },
+    });
   }
 }
 ```

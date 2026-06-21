@@ -1,14 +1,17 @@
 ---
-displayName: "Trường bộ sưu tập: Mã nguồn"
+displayName: "Field: Mã"
 packageName: '@nocobase/plugin-field-code'
+title: "Field: Mã"
+keywords: "Field: Mã,Plugin,NocoBase"
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Dùng để chỉnh sửa và tô sáng cú pháp mã nguồn, hỗ trợ các ngôn ngữ như Java, JavaScript, Python, SQL và nhiều ngôn ngữ khác.
-isFree: false
-builtIn: false
+  Dùng để chỉnh sửa và làm nổi bật mã, hỗ trợ các ngôn ngữ như Java, JavaScript, Python, SQL.
+isFree: true
+builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trường bộ sưu tập: Mã nguồn
+# Field: Mã

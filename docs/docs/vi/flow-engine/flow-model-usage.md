@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Sử dụng và render FlowModel"
+description: "Sử dụng và render FlowModel: cách tham chiếu, render FlowModel trong trang, cấu hình và truyền dữ liệu, cách dùng FlowModelRenderer."
+keywords: "Sử dụng FlowModel,Render FlowModel,FlowModelRenderer,Tham chiếu,Truyền dữ liệu,FlowEngine,NocoBase"
+---
 
-
-# Sử dụng và Kết xuất FlowModel
+# Sử dụng và render FlowModel

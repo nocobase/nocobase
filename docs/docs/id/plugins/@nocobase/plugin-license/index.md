@@ -1,14 +1,14 @@
 ---
 displayName: "Pengaturan Lisensi"
 packageName: '@nocobase/plugin-license'
+title: "Pengaturan Lisensi"
+keywords: "Pengaturan Lisensi,Plugin,NocoBase"
 description: |
-  Pengaturan ID instans dan kunci lisensi
+  Pengaturan ID instance dan kunci lisensi
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
 # Pengaturan Lisensi

@@ -1,14 +1,14 @@
 ---
-displayName: "Trình chỉnh sửa chủ đề"
+displayName: "Trình chỉnh sửa giao diện"
 packageName: '@nocobase/plugin-theme-editor'
+title: "Trình chỉnh sửa giao diện"
+keywords: "Trình chỉnh sửa giao diện,Plugin,NocoBase"
 description: |
-  Tùy chỉnh màu sắc, kích thước, v.v. của giao diện người dùng (UI) và lưu kết quả thành một chủ đề để có thể chuyển đổi giữa nhiều chủ đề khác nhau.
+  Tùy chỉnh màu sắc, kích thước, v.v. của UI và lưu kết quả thành giao diện, có thể chuyển đổi giữa nhiều giao diện.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trình chỉnh sửa chủ đề
+# Trình chỉnh sửa giao diện

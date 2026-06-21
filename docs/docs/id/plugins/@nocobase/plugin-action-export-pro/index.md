@@ -1,18 +1,17 @@
 ---
-displayName: "Aksi: Ekspor Catatan Pro"
+displayName: "Action: Export Record Pro"
 packageName: '@nocobase/plugin-action-export-pro'
+title: "Action: Export Record Pro"
+keywords: "Action: Export Record Pro,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Meningkatkan kemampuan ekspor data. Mendukung ekspor asinkron untuk menangani volume data besar. Mendukung ekspor lampiran.
+  Fungsi ekspor data yang ditingkatkan. Ekspor asynchronous, mendukung volume data besar. Mendukung ekspor lampiran.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Aksi: Ekspor Catatan Pro
+# Action: Export Record Pro

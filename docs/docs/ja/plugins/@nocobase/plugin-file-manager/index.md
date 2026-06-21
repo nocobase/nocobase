@@ -1,14 +1,14 @@
 ---
-displayName: "ファイルマネージャー"
+title: "File manager"
+keywords: "Collections,Collection fields"
+displayName: "File manager"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  ファイルストレージサービスを提供します。また、ファイルコレクションのテンプレートと添付ファイルフィールドも利用できます
+  Provides files storage services with files collection template and attachment field.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ファイルマネージャー
+# File manager

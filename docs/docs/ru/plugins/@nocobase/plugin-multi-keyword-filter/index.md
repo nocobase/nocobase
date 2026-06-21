@@ -1,18 +1,17 @@
 ---
-displayName: "Многокритериальный фильтр"
+title: "Multi-keyword filter"
+keywords: "Multiple keywords"
+displayName: "Multi-keyword filter"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  Поддерживает фильтрацию по нескольким ключевым словам для общих полей, с возможностью быстрого ввода или массового импорта ключевых слов из Excel.
-isFree: false
-builtIn: false
+  Поддержка фильтрации по нескольким ключевым словам для обычных полей: быстрый ввод или пакетный импорт ключевых слов из Excel.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-
-# Многокритериальный фильтр
+# Multi-keyword filter

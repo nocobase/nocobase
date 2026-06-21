@@ -1,5 +1,7 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "JSItem JS Item"
+description: "JSItem JS Item: menyematkan logika kustom di item sub-tabel, mendukung React, ctx, akses data baris, JS Model FlowEngine."
+keywords: "JSItem,JS Item,sub-tabel,akses data baris,JS Model FlowEngine,NocoBase"
+---
 
-# Item JS
+# JS Item

@@ -1,0 +1,134 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "KanbanBlockModel"
+  },
+  "tree": {
+    "alias": "block.kanban1",
+    "use": "KanbanBlockModel",
+    "props": {
+      "groupField": "status",
+      "groupOptions": [
+        {
+          "value": "todo",
+          "label": "To do",
+          "color": "blue"
+        },
+        {
+          "value": "doing",
+          "label": "Doing",
+          "color": "gold"
+        },
+        {
+          "value": "done",
+          "label": "Done",
+          "color": "green"
+        }
+      ],
+      "styleVariant": "color",
+      "quickCreateEnabled": false,
+      "dragEnabled": false
+    },
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "kanban_tasks"
+        }
+      }
+    },
+    "subModels": {
+      "actions": [
+        {
+          "alias": "node.FilterActionModel1",
+          "use": "FilterActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Filter\")}}"
+              }
+            }
+          }
+        },
+        {
+          "alias": "action.addNew1",
+          "use": "AddNewActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Add new\")}}",
+                "type": "primary"
+              }
+            }
+          }
+        },
+        {
+          "alias": "node.RefreshActionModel1",
+          "use": "RefreshActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Refresh\")}}"
+              }
+            }
+          }
+        }
+      ],
+      "cardViewAction": [
+        {
+          "alias": "action.kanbanCardView1",
+          "use": "KanbanCardViewActionModel",
+          "stepParams": {
+            "popupSettings": {
+              "openView": {
+                "mode": "drawer",
+                "size": "medium",
+                "pageModelClass": "ChildPageModel",
+                "collectionName": "kanban_tasks",
+                "dataSourceKey": "main"
+              }
+            }
+          }
+        }
+      ],
+      "item": [
+        {
+          "alias": "node.KanbanCardItemModel1",
+          "use": "KanbanCardItemModel",
+          "subModels": {
+            "grid": [
+              {
+                "alias": "node.DetailsGridModel1",
+                "use": "DetailsGridModel"
+              }
+            ]
+          }
+        }
+      ],
+      "quickCreateAction": [
+        {
+          "alias": "action.kanbanQuickCreate1",
+          "use": "KanbanQuickCreateActionModel",
+          "stepParams": {
+            "popupSettings": {
+              "openView": {
+                "mode": "drawer",
+                "size": "medium",
+                "pageModelClass": "ChildPageModel",
+                "collectionName": "kanban_tasks",
+                "dataSourceKey": "main"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Fixture Kanban Blocks",
+    "icon": null,
+    "options": null
+  }
+}

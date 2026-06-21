@@ -11,13 +11,13 @@
 
 import Application from '../application';
 
-const REPL = require('repl');
-
 export default (app: Application) => {
   app
     .command('console')
     .preload()
     .action(async () => {
+      // NOTE: move require('repl') here to lazy load, so it can be locked down by SES
+      const REPL = require('repl');
       await app.start();
       const repl = (REPL.start('nocobase > ').context.app = app);
       repl.on('exit', async function (err) {

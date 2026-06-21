@@ -104,4 +104,32 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
     expect(child.dispatchEvent).toHaveBeenCalledTimes(1);
     expect(child.dispatchEvent.mock.calls[0][0]).toBe('click');
   });
+
+  it('inherits current model input args when opening an external popup', async () => {
+    const { parent, child } = setup();
+    parent['getInputArgs'] = vi.fn(() => ({
+      filterByTk: 2,
+      sourceId: 10,
+      defaultInputKeys: ['filterByTk', 'sourceId'],
+    }));
+
+    await (parent.context as any).openView('child-uid', { mode: 'dialog' });
+
+    expect(child.dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(child.dispatchEvent.mock.calls[0][1]).toMatchObject({
+      mode: 'dialog',
+      filterByTk: 2,
+      sourceId: 10,
+    });
+    expect(child.dispatchEvent.mock.calls[0][1]).not.toHaveProperty('defaultInputKeys');
+  });
+
+  it('does not debounce external popup dispatches', async () => {
+    const { parent, child } = setup();
+
+    await (parent.context as any).openView('child-uid', { mode: 'dialog', filterByTk: 1 });
+
+    expect(child.dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(child.dispatchEvent.mock.calls[0][2]).toBeUndefined();
+  });
 });

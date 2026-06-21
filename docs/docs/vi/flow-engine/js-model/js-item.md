@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "JSItem - Item JS"
+description: "JSItem Item JS: nhúng logic tùy chỉnh trong item của sub-table, hỗ trợ React, ctx, truy cập dữ liệu hàng, JS Model của FlowEngine."
+keywords: "JSItem,Item JS,Sub-table,Truy cập dữ liệu hàng,JS Model FlowEngine,NocoBase"
+---
 
-
-# Mục JS
+# Item JS

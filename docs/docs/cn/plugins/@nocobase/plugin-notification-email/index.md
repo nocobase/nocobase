@@ -1,4 +1,6 @@
 ---
+title: "通知：电子邮件"
+keywords: "通知：电子邮件,插件,NocoBase"
 displayName: "通知：电子邮件"
 packageName: '@nocobase/plugin-notification-email'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 通知：电子邮件

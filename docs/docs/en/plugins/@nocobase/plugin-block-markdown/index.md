@@ -1,4 +1,6 @@
 ---
+title: "Block: Markdown"
+keywords: "Blocks"
 displayName: "Block: Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Block: Markdown

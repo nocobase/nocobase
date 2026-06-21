@@ -1,4 +1,6 @@
 ---
+title: "API 文档"
+keywords: "API 文档,插件,NocoBase"
 displayName: "API 文档"
 packageName: '@nocobase/plugin-api-doc'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # API 文档

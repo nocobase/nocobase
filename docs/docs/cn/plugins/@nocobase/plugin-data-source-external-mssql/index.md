@@ -1,4 +1,6 @@
 ---
+title: "数据源：外部 SQL Server"
+keywords: "数据源：外部 SQL Server,插件,NocoBase"
 displayName: "数据源：外部 SQL Server"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
 
 # 数据源：外部 SQL Server

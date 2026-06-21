@@ -187,6 +187,7 @@ const RequestProvider: React.FC<{
   });
   useEffect(() => {
     service.run({
+      sort: ['sort'],
       filter: {
         parentId: null,
       },

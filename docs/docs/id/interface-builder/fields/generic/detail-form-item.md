@@ -1,58 +1,60 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Field Detail"
+description: "Field Detail: komponen Field read-only yang digunakan dalam Block Detail, menampilkan data dalam bentuk read-only."
+keywords: "Field Detail, DetailFormItem, tampilan read-only, Block Detail, interface builder, NocoBase"
+---
 
-# Bidang Detail
+# Field Detail
 
-## Pendahuluan
+## Pengantar
 
-Konfigurasi bidang untuk blok Detail, Daftar, dan Grid pada dasarnya sama. Konfigurasi ini terutama mengontrol bagaimana bidang ditampilkan dalam mode baca saja.
+Konfigurasi Field Block Detail, Block List, Block Grid Card, dll. pada dasarnya konsisten, terutama mengontrol tampilan Field dalam status baca.
 
 ![20251025172851](https://static-docs.nocobase.com/20251025172851.png)
 
-## Opsi Konfigurasi Bidang
+## Konfigurasi Field
 
-### Pemformatan Bidang Tanggal
+### Format Field Tanggal
 
 ![20251025173005](https://static-docs.nocobase.com/20251025173005.png)
 
-Untuk detail lebih lanjut, lihat [Pemformatan Tanggal](/interface-builder/fields/specific/date-picker)
+Untuk informasi lebih lanjut, lihat [Format Tanggal](/interface-builder/fields/specific/date-picker)
 
-### Pemformatan Bidang Angka
+### Format Field Numerik
 
 ![20251025173242](https://static-docs.nocobase.com/20251025173242.png)
 
-Mendukung konversi unit sederhana, pemisah ribuan, awalan dan akhiran, presisi, dan notasi ilmiah.
+Mendukung konversi unit sederhana, pemisah ribuan, prefix-suffix, presisi, notasi ilmiah.
 
-Untuk detail lebih lanjut, lihat [Pemformatan Angka](/interface-builder/fields/field-settings/number-format)
+Untuk informasi lebih lanjut, lihat [Format Angka](/interface-builder/fields/field-settings/number-format)
 
-### Mengaktifkan Klik untuk Membuka
+### Aktifkan Klik untuk Membuka
 
-Selain bidang relasi yang mendukung pembukaan pop-up dengan klik, bidang biasa juga dapat dikonfigurasi untuk membuka pop-up sebagai titik masuk. Anda juga dapat mengatur cara pop-up dibuka (Drawer, Dialog, atau Sub-halaman).
+Selain Field relasi yang mendukung klik untuk membuka Popup, Field biasa juga dapat mengaktifkan klik untuk membuka sebagai entri membuka Popup. Anda juga dapat mengatur cara membuka Popup (drawer, dialog, sub-page).
 
 ![20251025173549](https://static-docs.nocobase.com/20251025173549.gif)
 
-### Mode Tampilan Overflow Konten
+### Cara Tampilan Konten yang Overflow
 
-Ketika konten bidang melebihi lebarnya, Anda dapat mengatur mode overflow.
+Saat konten Field overflow lebar, Anda dapat mengatur cara overflow
 
-- Elipsis (default)
-- Bungkus Teks
+- Ellipsis (default)
+- Wrap
 
 ![20251025173917](https://static-docs.nocobase.com/20251025173917.png)
 
-### Komponen Bidang
+### Komponen Field
 
-Beberapa bidang mendukung berbagai format tampilan, yang dapat dicapai dengan mengganti komponen bidang.
+Beberapa Field mendukung berbagai bentuk tampilan yang dapat diimplementasikan dengan berpindah komponen Field.
 
-Contoh: Komponen `URL` dapat diganti menjadi komponen `Preview`.
+Contoh: Komponen `URL` dapat di-switch ke komponen `Preview`.
 
 ![20251025174042](https://static-docs.nocobase.com/20251025174042.png)
 
-Contoh: Bidang relasi dapat ditampilkan secara berbeda dengan mengganti dari komponen bidang judul ke `Sub-detail` untuk menampilkan lebih banyak konten dari relasi tersebut.
+Contoh: Field relasi dapat di-switch ke tampilan yang berbeda. Dari komponen Field judul beralih ke `Sub-Detail` untuk menampilkan lebih banyak konten Field relasi.
 
 ![20251025174311](https://static-docs.nocobase.com/20251025174311.gif)
 
-- [Edit judul bidang](/interface-builder/fields/field-settings/edit-title)
-- [Edit deskripsi bidang](/interface-builder/fields/field-settings/edit-description)
-- [Edit tooltip bidang](/interface-builder/fields/field-settings/edit-tooltip)
+- [Edit Judul Field](/interface-builder/fields/field-settings/edit-title)
+- [Edit Deskripsi Field](/interface-builder/fields/field-settings/edit-description)
+- [Edit Tooltip Field](/interface-builder/fields/field-settings/edit-tooltip)

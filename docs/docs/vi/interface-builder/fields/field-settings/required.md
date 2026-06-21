@@ -1,29 +1,34 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Bắt buộc"
+description: "Cấu hình Field: cài đặt Field bắt buộc, kiểm tra không rỗng khi gửi, hỗ trợ thông báo lỗi tùy chỉnh."
+keywords: "bắt buộc,required,xác thực Field,xác thực Form,Interface Builder,NocoBase"
+---
 
 # Bắt buộc
 
 ## Giới thiệu
-Bắt buộc là một quy tắc phổ biến trong xác thực biểu mẫu. Bạn có thể bật tính năng này trực tiếp trong cấu hình trường, hoặc thiết lập trường bắt buộc một cách linh hoạt thông qua các quy tắc liên kết của biểu mẫu.
 
-## Nơi thiết lập trường bắt buộc
+Bắt buộc là quy tắc xác thực Form thường gặp, bạn có thể bật bắt buộc trực tiếp trong tùy chọn cấu hình Field, hoặc đặt Field bắt buộc động thông qua Quy tắc liên kết của Form.
 
-### Cấu hình trường của bộ sưu tập
-Khi một trường của bộ sưu tập được thiết lập là bắt buộc, nó sẽ kích hoạt xác thực ở phía backend, và giao diện người dùng (frontend) cũng sẽ hiển thị trường đó là bắt buộc theo mặc định (không thể sửa đổi).
+## Có thể đặt Field bắt buộc ở đâu
+
+### Cài đặt Field của Table dữ liệu
+
+Khi cài đặt bắt buộc trong Field Table dữ liệu, sẽ kích hoạt xác thực phía backend, frontend cũng mặc định hiển thị là bắt buộc (không thể sửa đổi).
 ![20251025175418](https://static-docs.nocobase.com/20251025175418.png)
 
-### Cấu hình trường
-Thiết lập trực tiếp một trường là bắt buộc. Điều này phù hợp với các trường mà người dùng luôn phải điền, chẳng hạn như tên người dùng, mật khẩu, v.v.
+### Cấu hình Field
+
+Đặt trực tiếp Field là bắt buộc, phù hợp với những Field luôn cần người dùng điền, như tên người dùng, mật khẩu.
 
 ![20251028222818](https://static-docs.nocobase.com/20251028222818.png)
 
 ### Quy tắc liên kết
-Thiết lập trường bắt buộc dựa trên các điều kiện thông qua quy tắc liên kết trường của khối biểu mẫu.
 
-Ví dụ: Số đơn hàng là bắt buộc khi ngày đặt hàng không trống.
+Thông qua Quy tắc liên kết Field của Block Form để đặt bắt buộc theo điều kiện.
+
+Ví dụ: khi ngày đơn hàng không rỗng thì mã đơn hàng bắt buộc.
 
 ![20251028223004](https://static-docs.nocobase.com/20251028223004.png)
 
-### Luồng công việc
+### Event Flow

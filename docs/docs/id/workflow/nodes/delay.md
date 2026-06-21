@@ -1,39 +1,41 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Node Workflow - Tunda"
+description: "Node tunda: menambahkan tunda dalam alur, dapat dikombinasikan dengan cabang paralel untuk implementasi penanganan timeout, lanjutkan atau hentikan setelah tunda."
+keywords: "Workflow,tunda,Delay,penanganan timeout,cabang paralel,NocoBase"
+---
 
-# Penundaan
+# Tunda
 
-## Pendahuluan
+## Pengantar
 
-Node Penundaan dapat menambahkan penundaan ke dalam alur kerja. Setelah penundaan selesai, alur kerja dapat melanjutkan eksekusi node berikutnya atau menghentikan alur kerja lebih awal, tergantung pada konfigurasi.
+Node tunda dapat menambahkan tunda dalam alur. Setelah tunda berakhir, sesuai konfigurasi dapat melanjutkan eksekusi Node setelah tunda atau menghentikan alur lebih awal.
 
-Node ini sering digunakan bersama dengan node Cabang Paralel. Node Penundaan dapat ditambahkan ke salah satu cabang untuk menangani pemrosesan setelah batas waktu terlampaui. Contohnya, dalam sebuah cabang paralel, satu cabang berisi pemrosesan manual dan cabang lainnya berisi node Penundaan. Ketika pemrosesan manual melebihi batas waktu, jika diatur untuk *gagal saat batas waktu terlampaui*, ini berarti pemrosesan manual harus diselesaikan dalam waktu yang ditentukan. Jika diatur untuk *lanjut saat batas waktu terlampaui*, ini berarti pemrosesan manual tersebut dapat diabaikan setelah waktu habis.
+Biasanya digunakan bersama Node cabang paralel, dapat menambahkan Node tunda di salah satu cabang, untuk mencapai tujuan penanganan terkait setelah timeout. Misalnya pada cabang paralel salah satu cabang mengandung penanganan manual, cabang lain mengandung Node tunda. Saat penanganan manual timeout, jika diatur sebagai gagal saat timeout, berarti penanganan manual harus diselesaikan dalam waktu yang ditentukan. Jika diatur sebagai lanjutkan saat timeout, berarti setelah waktu tersebut tiba penanganan manual dapat diabaikan.
 
 ## Instalasi
 
-Plugin bawaan, tidak perlu instalasi.
+Plugin bawaan, tidak perlu diinstal.
 
 ## Membuat Node
 
-Di antarmuka konfigurasi alur kerja, klik tombol plus ("+") pada alur untuk menambahkan node "Penundaan":
+Pada antarmuka konfigurasi Workflow, klik tombol plus ("+") di alur, tambahkan Node "Tunda":
 
-![Membuat Node Penundaan](https://static-docs.nocobase.com/d0816999c9f7acaec1c409bd8fb6cc36.png)
+![Buat Node tunda](https://static-docs.nocobase.com/d0816999c9f7acaec1c409bd8fb6cc36.png)
 
 ## Konfigurasi Node
 
-![Node Penundaan_Konfigurasi Node](https://static-docs.nocobase.com/5fe8a36535f20a087a0148ffa1cd2aea.png)
+![Node tunda_konfigurasi Node](https://static-docs.nocobase.com/5fe8a36535f20a087a0148ffa1cd2aea.png)
 
-### Waktu Penundaan
+### Waktu Tunda
 
-Untuk waktu penundaan, Anda dapat memasukkan angka dan memilih satuan waktu. Satuan waktu yang didukung adalah: detik, menit, jam, hari, dan minggu.
+Waktu tunda dapat diisi dengan satu angka, dan memilih unit waktu. Unit waktu yang didukung: detik, menit, jam, hari, dan minggu.
 
-### Status Saat Batas Waktu Terlampaui
+### Status Saat Tiba
 
-Untuk status saat batas waktu terlampaui, Anda dapat memilih "Lanjut dan teruskan" atau "Gagal dan keluar". Pilihan pertama berarti setelah penundaan berakhir, alur kerja akan melanjutkan eksekusi node berikutnya. Pilihan kedua berarti setelah penundaan berakhir, alur kerja akan berhenti lebih awal dengan status gagal.
+Status saat tiba dapat memilih "Lulus dan Lanjutkan" dan "Gagal dan Keluar". Yang pertama berarti setelah tunda berakhir, alur akan melanjutkan eksekusi Node setelah tunda. Yang kedua berarti setelah tunda berakhir, alur akan dihentikan lebih awal dengan status gagal.
 
 ## Contoh
 
-Ambil contoh skenario di mana sebuah tiket kerja (work order) perlu dijawab dalam waktu terbatas setelah diajukan. Kita perlu menambahkan node manual di salah satu dari dua cabang paralel dan node Penundaan di cabang lainnya. Jika pemrosesan manual tidak dijawab dalam waktu 10 menit, status tiket kerja akan diperbarui menjadi "batas waktu terlampaui dan belum diproses".
+Mari ambil contoh skenario yang perlu menjawab dalam batas waktu setelah tiket diinisiasi. Kita perlu menambahkan Node manual di salah satu dari dua cabang paralel, cabang lainnya menambahkan Node tunda. Jika penanganan manual tidak menjawab dalam 10 menit, perbarui status tiket menjadi timeout belum diproses.
 
-![Node Penundaan_Contoh_Organisasi Alur](https://static-docs.nocobase.com/898c84adc376dc211b003a62e16e8e5b.png)
+![Node tunda_contoh_organisasi alur](https://static-docs.nocobase.com/898c84adc376dc211b003a62e16e8e5b.png)

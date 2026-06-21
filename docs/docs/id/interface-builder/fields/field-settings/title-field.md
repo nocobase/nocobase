@@ -1,29 +1,31 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Field Judul"
+description: "Konfigurasi Field: mengkonfigurasi Field tampilan judul detail/list, mendukung path Field relasi."
+keywords: "Field judul, title-field, tampilan judul, konfigurasi Field, interface builder, NocoBase"
+---
 
-# Bidang Judul
+# Field Judul
 
-## Pendahuluan
+## Pengantar
 
-**Bidang Judul** biasanya digunakan dalam komponen bidang relasi sebagai pengidentifikasi untuk data terkait yang ditampilkan di antarmuka. Ini menentukan bagaimana informasi utama data disajikan, biasanya untuk membantu pengguna dengan cepat mengidentifikasi dan memahami data.
+**Field Judul** biasanya digunakan dalam komponen Field relasi, sebagai identifikasi tampilan data terkait Field tersebut di antarmuka. Menentukan bagaimana menampilkan informasi utama data, biasanya digunakan untuk membantu pengguna dengan cepat mengenali dan memahami data.
 
-Berbagai jenis bidang judul sesuai dengan komponen bidang yang berbeda dan mendukung opsi konfigurasi yang relevan. Contohnya:
+Tipe Field judul yang berbeda sesuai dengan komponen Field yang berbeda, dan mendukung item konfigurasi yang sesuai. Misalnya:
 
-- Ketika bidang judul adalah **Bidang Tanggal**, komponen bidang akan menggunakan **komponen Tanggal** untuk menampilkan data tersebut.
-- Ketika bidang judul adalah **Bidang Teks**, komponen bidang akan menggunakan **komponen Teks** untuk menampilkan data tersebut.
-- Ketika bidang judul adalah **Bidang Opsi**, komponen bidang akan menggunakan **komponen Opsi** untuk menampilkan data tersebut.
+- Saat Field judul adalah **Field tanggal**, komponen Field menggunakan **komponen tanggal** untuk menampilkan data tersebut.
+- Saat Field judul adalah **Field teks**, komponen Field menggunakan **komponen teks** untuk menampilkan data tersebut.
+- Saat Field judul adalah **Field opsi**, komponen Field menggunakan **komponen opsi** untuk menampilkan data tersebut.
 
-## Tempat Mengonfigurasi Bidang Judul
+## Di Mana Dapat Mengatur Field Judul
 
-### Mengonfigurasi Bidang Judul di Koleksi
+### Konfigurasi Field Judul di Collection
 
 Berlaku secara global
 
 ![20251028224219](https://static-docs.nocobase.com/20251028224219.png)
 
-### Mengonfigurasi Bidang Judul di Komponen Bidang Relasi
+### Konfigurasi Field Judul di Komponen Field Relasi
 
-Hanya berlaku dalam blok, memiliki prioritas tertinggi
+Hanya berlaku di dalam Block, prioritas tertinggi
 
 ![20251028224501](https://static-docs.nocobase.com/20251028224501.png)

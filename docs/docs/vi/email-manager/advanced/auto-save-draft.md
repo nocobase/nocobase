@@ -1,20 +1,19 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Tự động lưu nháp"
+description: "Sau khi bật tự động lưu nháp, trong quá trình chỉnh sửa Email sẽ lưu nháp theo thời gian thực. Khi mở lại cùng người gửi và người nhận sẽ hỏi có sử dụng nháp đã lưu không."
+keywords: "Tự động lưu nháp,nháp Email,lưu nháp,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+# Tự động lưu nháp
 
-# Tự động lưu bản nháp
-
-Trong menu của nút **Lưu bản nháp**, bạn có thể bật tính năng **Tự động lưu bản nháp**.
+Trong nút **Lưu nháp** có thể bật tính năng **Tự động lưu nháp**.
 
 ![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_08_29_PM.png)
 
-Trong quá trình chỉnh sửa email, hệ thống sẽ tự động lưu bản nháp theo thời gian thực, đảm bảo nội dung không bị mất.
+Sau khi kích hoạt, hệ thống sẽ tự động lưu nháp theo thời gian thực trong quá trình chỉnh sửa Email, đảm bảo nội dung không bị mất.
 
 ![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_08_31_PM.png)
 
-Khi bạn mở lại trình soạn thảo email (với cùng người gửi và người nhận), hệ thống sẽ hỏi bạn có muốn sử dụng bản nháp đã lưu hay không.
+Khi mở lại khung soạn thảo Email với cùng người gửi và người nhận, hệ thống sẽ hỏi có sử dụng nháp đã lưu hay không.
 
 ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_08_35_PM.png)

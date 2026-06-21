@@ -1,18 +1,17 @@
 ---
 displayName: "Xác thực: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
+title: "Xác thực: OIDC"
+keywords: "Xác thực: OIDC,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Xác thực danh tính thông qua giao thức OIDC (OpenID Connect).
+  Xác thực danh tính qua giao thức OIDC (OpenID Connect).
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Xác thực: OIDC

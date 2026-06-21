@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-graph-collection-manager"
+title: "可视化数据表管理"
+description: "类 ER 图的可视化数据表管理工具，支持主数据库，直观展示实体与关系，从业务需求提取数据模型。"
+keywords: "ER 图,可视化数据表,数据建模,实体关系图,Graph Collection,NocoBase"
 ---
-
 # 可视化数据表管理
 
 ## 介绍

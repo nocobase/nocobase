@@ -1,46 +1,46 @@
 ---
 pkg: '@nocobase/plugin-user-data-sync'
+title: "Đồng bộ dữ liệu người dùng NocoBase"
+description: "Đồng bộ dữ liệu người dùng NocoBase: đăng ký nguồn đồng bộ, HTTP API, WeCom, đồng bộ bảng người dùng và phòng ban, mở rộng nguồn dữ liệu thông qua plugin."
+keywords: "Đồng bộ dữ liệu người dùng,đồng bộ dữ liệu,HTTP API,WeCom,nguồn đồng bộ,plugin-user-data-sync,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Đồng bộ hóa dữ liệu người dùng
+# Đồng bộ dữ liệu người dùng
 
 ## Giới thiệu
 
-Tính năng này cho phép bạn đăng ký và quản lý các nguồn đồng bộ hóa dữ liệu người dùng. Mặc định, một HTTP API được cung cấp, nhưng bạn có thể mở rộng để hỗ trợ các nguồn dữ liệu khác thông qua plugin. Tính năng này hỗ trợ đồng bộ hóa dữ liệu vào các **bộ sưu tập** **Người dùng** và **Phòng ban** theo mặc định, với khả năng mở rộng đồng bộ hóa tới các tài nguyên đích khác bằng cách sử dụng plugin.
+Đăng ký và quản lý các nguồn đồng bộ dữ liệu người dùng. Mặc định cung cấp HTTP API, có thể mở rộng các nguồn dữ liệu khác thông qua plugin. Mặc định hỗ trợ đồng bộ dữ liệu vào bảng **người dùng** và **phòng ban**, cũng có thể mở rộng các tài nguyên đích đồng bộ khác thông qua plugin.
 
-## Quản lý và Đồng bộ hóa nguồn dữ liệu
+## Quản lý nguồn dữ liệu và đồng bộ dữ liệu
 
 ![](https://static-docs.nocobase.com/202412041043465.png)
 
 :::info
-Nếu chưa cài đặt plugin nào cung cấp nguồn đồng bộ hóa dữ liệu người dùng, bạn có thể đồng bộ hóa dữ liệu người dùng bằng HTTP API. Tham khảo [Nguồn dữ liệu - HTTP API](./sources/api.md).
+Khi chưa cài đặt plugin cung cấp nguồn đồng bộ dữ liệu người dùng, bạn có thể sử dụng HTTP API để đồng bộ dữ liệu người dùng. Tham khảo [Nguồn dữ liệu - HTTP API](./sources/api.md).
 :::
 
 ## Thêm nguồn dữ liệu
 
-Sau khi bạn cài đặt một plugin cung cấp nguồn đồng bộ hóa dữ liệu người dùng, bạn có thể thêm nguồn dữ liệu tương ứng. Chỉ các nguồn dữ liệu đã được bật mới hiển thị các nút "Đồng bộ hóa" và "Tác vụ".
+Sau khi cài đặt plugin cung cấp nguồn đồng bộ dữ liệu người dùng, bạn có thể thêm nguồn dữ liệu tương ứng. Chỉ những nguồn dữ liệu được kích hoạt mới hiển thị nút đồng bộ và nhiệm vụ.
 
-> Ví dụ: WeCom
+> Lấy WeCom làm ví dụ
 
 ![](https://static-docs.nocobase.com/202412041053785.png)
 
-## Đồng bộ hóa dữ liệu
+## Đồng bộ dữ liệu
 
-Nhấp vào nút **Đồng bộ hóa** để bắt đầu đồng bộ hóa dữ liệu.
+Click nút "Đồng bộ" để bắt đầu đồng bộ dữ liệu.
 
 ![](https://static-docs.nocobase.com/202412041055022.png)
 
-Nhấp vào nút **Tác vụ** để xem trạng thái đồng bộ hóa. Sau khi đồng bộ hóa thành công, bạn có thể xem dữ liệu trong danh sách Người dùng và Phòng ban.
+Click nút "Nhiệm vụ" để xem trạng thái đồng bộ. Sau khi đồng bộ thành công, bạn có thể vào danh sách người dùng và phòng ban để xem dữ liệu.
 
 ![](https://static-docs.nocobase.com/202412041202337.png)
 
-Đối với các tác vụ đồng bộ hóa thất bại, bạn có thể nhấp vào **Thử lại**.
+Đối với các nhiệm vụ đồng bộ thất bại, bạn có thể click "Thử lại".
 
 ![](https://static-docs.nocobase.com/202412041058337.png)
 
-Trong trường hợp đồng bộ hóa thất bại, bạn có thể khắc phục sự cố thông qua nhật ký hệ thống. Ngoài ra, các bản ghi đồng bộ hóa thô được lưu trữ trong thư mục `user-data-sync` nằm trong thư mục nhật ký ứng dụng.
+Khi đồng bộ thất bại, bạn có thể thông qua log hệ thống để tìm nguyên nhân. Đồng thời, các bản ghi đồng bộ dữ liệu gốc được lưu trong thư mục `user-data-sync` dưới thư mục log của ứng dụng.
 
 ![](https://static-docs.nocobase.com/202412041205655.png)

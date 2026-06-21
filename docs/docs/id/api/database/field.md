@@ -1,150 +1,152 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Field"
+description: "API Field Database NocoBase: mendefinisikan tipe field Collection, field skalar, konfigurasi field asosiasi."
+keywords: "Field API,definisi field,tipe field,field skalar,field asosiasi,NocoBase"
+---
 
-# Bidang
+# Field
 
-## Gambaran Umum
+## Ikhtisar
 
-Kelas manajemen bidang **koleksi** (kelas abstrak). Ini juga merupakan kelas dasar untuk semua jenis bidang. Setiap jenis bidang lainnya diimplementasikan dengan mewarisi kelas ini.
+Class manajemen field tabel data (abstract class). Sekaligus class dasar untuk semua tipe field, tipe field lainnya semua diimplementasikan dengan extends class ini.
 
-Untuk cara menyesuaikan bidang, silakan lihat [Memperluas Jenis Bidang]
+Untuk cara mendefinisikan field kustom lihat [Memperluas Tipe Field]
 
-## Konstruktor
+## Constructor
 
-Biasanya tidak dipanggil langsung oleh pengembang, melainkan terutama melalui metode `db.collection({ fields: [] })` sebagai titik masuk proxy.
+Biasanya tidak dipanggil langsung oleh developer, terutama dipanggil melalui method `db.collection({ fields: [] })` sebagai entry point proxy.
 
-Saat memperluas bidang, ini terutama diimplementasikan dengan mewarisi kelas abstrak `Field` dan kemudian mendaftarkannya ke dalam instans Database.
+Saat memperluas field terutama melalui extends abstract class `Field`, lalu mendaftarkannya ke instance Database.
 
-**Tanda Tangan**
+**Signature**
 
 - `constructor(options: FieldOptions, context: FieldContext)`
 
 **Parameter**
 
-| Nama Parameter       | Tipe           | Nilai Default | Deskripsi                                     |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | -------------------- | -------------- | ------ | ---------------------------------------- |
-| `options`            | `FieldOptions` | -      | Objek konfigurasi bidang                 |
-| `options.name`       | `string`       | -      | Nama bidang                              |
-| `options.type`       | `string`       | -      | Tipe bidang, sesuai dengan nama tipe bidang yang terdaftar di db |
-| `context`            | `FieldContext` | -      | Objek konteks bidang                     |
-| `context.database`   | `Database`     | -      | Instans database                         |
-| `context.collection` | `Collection`   | -      | Instans **koleksi**                      |
+| `options` | `FieldOptions` | - | Objek konfigurasi field |
+| `options.name` | `string` | - | Nama field |
+| `options.type` | `string` | - | Tipe field, sesuai dengan nama tipe field yang didaftarkan di db |
+| `context` | `FieldContext` | - | Objek konteks field |
+| `context.database` | `Database` | - | Instance database |
+| `context.collection` | `Collection` | - | Instance tabel data |
 
-## Anggota Instans
+## Anggota Instance
 
 ### `name`
 
-Nama bidang.
+Nama field.
 
 ### `type`
 
-Tipe bidang.
+Tipe field.
 
 ### `dataType`
 
-Tipe penyimpanan database bidang.
+Tipe penyimpanan database dari field.
 
 ### `options`
 
-Parameter konfigurasi inisialisasi bidang.
+Parameter konfigurasi inisialisasi field.
 
 ### `context`
 
-Objek konteks bidang.
+Objek konteks field.
 
-## Metode Konfigurasi
+## Method Konfigurasi
 
 ### `on()`
 
-Metode definisi singkat berdasarkan peristiwa **koleksi**. Setara dengan `db.on(this.collection.name + '.' + eventName, listener)`.
+Cara definisi shortcut berbasis event tabel data. Setara dengan `db.on(this.collection.name + '.' + eventName, listener)`.
 
-Biasanya tidak perlu menimpa metode ini saat mewarisi.
+Saat extends biasanya tidak perlu meng-override method ini.
 
-**Tanda Tangan**
+**Signature**
 
 - `on(eventName: string, listener: (...args: any[]) => void)`
 
 **Parameter**
 
-| Nama Parameter | Tipe                       | Nilai Default | Deskripsi       |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ----------- | -------------------------- | ------ | ---------- |
-| `eventName` | `string`                   | -      | Nama peristiwa |
-| `listener`  | `(...args: any[]) => void` | -      | Pendengar peristiwa |
+| `eventName` | `string` | - | Nama event |
+| `listener` | `(...args: any[]) => void` | - | Event listener |
 
 ### `off()`
 
-Metode penghapusan singkat berdasarkan peristiwa **koleksi**. Setara dengan `db.off(this.collection.name + '.' + eventName, listener)`.
+Cara penghapusan shortcut berbasis event tabel data. Setara dengan `db.off(this.collection.name + '.' + eventName, listener)`.
 
-Biasanya tidak perlu menimpa metode ini saat mewarisi.
+Saat extends biasanya tidak perlu meng-override method ini.
 
-**Tanda Tangan**
+**Signature**
 
 - `off(eventName: string, listener: (...args: any[]) => void)`
 
 **Parameter**
 
-| Nama Parameter | Tipe                       | Nilai Default | Deskripsi       |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ----------- | -------------------------- | ------ | ---------- |
-| `eventName` | `string`                   | -      | Nama peristiwa |
-| `listener`  | `(...args: any[]) => void` | -      | Pendengar peristiwa |
+| `eventName` | `string` | - | Nama event |
+| `listener` | `(...args: any[]) => void` | - | Event listener |
 
 ### `bind()`
 
-Konten yang akan dieksekusi ketika bidang ditambahkan ke **koleksi**. Biasanya digunakan untuk menambahkan pendengar peristiwa **koleksi** dan pemrosesan lainnya.
+Konten yang dieksekusi saat field ditambahkan ke tabel data. Biasanya digunakan untuk menambahkan event listener tabel data dan pemrosesan lainnya.
 
-Saat mewarisi, Anda perlu memanggil metode `super.bind()` yang sesuai terlebih dahulu.
+Saat extends, harus memanggil method `super.bind()` yang sesuai terlebih dahulu.
 
-**Tanda Tangan**
+**Signature**
 
 - `bind()`
 
 ### `unbind()`
 
-Konten yang akan dieksekusi ketika bidang dihapus dari **koleksi**. Biasanya digunakan untuk menghapus pendengar peristiwa **koleksi** dan pemrosesan lainnya.
+Konten yang dieksekusi saat field dihapus dari tabel data. Biasanya digunakan untuk menghapus event listener tabel data dan pemrosesan lainnya.
 
-Saat mewarisi, Anda perlu memanggil metode `super.unbind()` yang sesuai terlebih dahulu.
+Saat extends, harus memanggil method `super.unbind()` yang sesuai terlebih dahulu.
 
-**Tanda Tangan**
+**Signature**
 
 - `unbind()`
 
 ### `get()`
 
-Mendapatkan nilai item konfigurasi bidang.
+Mendapatkan nilai item konfigurasi field.
 
-**Tanda Tangan**
+**Signature**
 
 - `get(key: string): any`
 
 **Parameter**
 
-| Nama Parameter | Tipe     | Nilai Default | Deskripsi       |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ------ | -------- | ------ | ---------- |
-| `key`  | `string` | -      | Nama item konfigurasi |
+| `key` | `string` | - | Nama item konfigurasi |
 
 **Contoh**
 
 ```ts
 const field = db.collection('users').getField('name');
 
-// Mendapatkan nilai item konfigurasi nama bidang, mengembalikan 'name'
+// Mendapatkan nilai item konfigurasi nama field, mengembalikan 'name'
 console.log(field.get('name'));
 ```
 
 ### `merge()`
 
-Menggabungkan nilai item konfigurasi bidang.
+Menggabungkan nilai item konfigurasi field.
 
-**Tanda Tangan**
+**Signature**
 
 - `merge(options: { [key: string]: any }): void`
 
 **Parameter**
 
-| Nama Parameter | Tipe                     | Nilai Default | Deskripsi               |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | --------- | ------------------------ | ------ | ------------------ |
-| `options` | `{ [key: string]: any }` | -      | Objek item konfigurasi yang akan digabungkan |
+| `options` | `{ [key: string]: any }` | - | Objek item konfigurasi yang akan digabungkan |
 
 **Contoh**
 
@@ -152,14 +154,14 @@ Menggabungkan nilai item konfigurasi bidang.
 const field = db.collection('users').getField('name');
 
 field.merge({
-  // Menambahkan konfigurasi indeks
+  // Menambahkan satu konfigurasi index
   index: true,
 });
 ```
 
 ### `remove()`
 
-Menghapus bidang dari **koleksi** (hanya dari memori).
+Menghapus field dari tabel data (hanya menghapus dari memori).
 
 **Contoh**
 
@@ -168,51 +170,51 @@ const books = db.getCollections('books');
 
 books.getField('isbn').remove();
 
-// benar-benar menghapus dari db
+// really remove from db
 await books.sync();
 ```
 
-## Metode Database
+## Method Database
 
 ### `removeFromDb()`
 
-Menghapus bidang dari database.
+Menghapus field dari database.
 
-**Tanda Tangan**
+**Signature**
 
 - `removeFromDb(options?: Transactionable): Promise<void>`
 
 **Parameter**
 
-| Nama Parameter         | Tipe          | Nilai Default | Deskripsi     |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ---------------------- | ------------- | ------ | -------- |
-| `options.transaction?` | `Transaction` | -      | Instans transaksi |
+| `options.transaction?` | `Transaction` | - | Instance transaction |
 
 ### `existsInDb()`
 
-Menentukan apakah bidang ada di database.
+Memeriksa apakah field ada di database.
 
-**Tanda Tangan**
+**Signature**
 
 - `existsInDb(options?: Transactionable): Promise<boolean>`
 
 **Parameter**
 
-| Nama Parameter         | Tipe          | Nilai Default | Deskripsi     |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ---------------------- | ------------- | ------ | -------- |
-| `options.transaction?` | `Transaction` | -      | Instans transaksi |
+| `options.transaction?` | `Transaction` | - | Instance transaction |
 
-## Daftar Jenis Bidang Bawaan
+## Daftar Tipe Field Bawaan
 
-NocoBase memiliki beberapa jenis bidang bawaan yang umum digunakan. Anda dapat langsung menggunakan nama `type` yang sesuai untuk menentukan jenis saat mendefinisikan bidang untuk sebuah **koleksi**. Jenis bidang yang berbeda memiliki konfigurasi parameter yang berbeda; silakan lihat daftar di bawah ini untuk detailnya.
+NocoBase menyediakan beberapa tipe field umum bawaan, dapat langsung digunakan saat mendefinisikan field tabel data dengan menggunakan nama type yang sesuai untuk menentukan tipenya. Tipe field yang berbeda memiliki konfigurasi parameter yang berbeda, untuk detail lihat daftar di bawah.
 
-Semua item konfigurasi untuk jenis bidang, kecuali yang dijelaskan di bawah ini, akan diteruskan ke Sequelize. Jadi, semua item konfigurasi bidang yang didukung oleh Sequelize dapat digunakan di sini (seperti `allowNull`, `defaultValue`, dll.).
+Selain item konfigurasi tambahan yang dijelaskan di bawah, semua item konfigurasi tipe field akan diteruskan ke Sequelize, sehingga semua item konfigurasi field yang didukung Sequelize dapat digunakan di sini (seperti `allowNull`, `defaultValue`, dll).
 
-Selain itu, jenis bidang sisi server terutama mengatasi masalah penyimpanan database dan beberapa algoritma, dan pada dasarnya tidak terkait dengan jenis tampilan bidang dan komponen yang digunakan di frontend. Untuk jenis bidang frontend, silakan lihat instruksi tutorial yang sesuai.
+Selain itu, tipe field di sisi server terutama mengatasi masalah penyimpanan database dan beberapa algoritma, pada dasarnya tidak terkait dengan tipe tampilan field di frontend dan komponen yang digunakan. Untuk tipe field frontend dapat dilihat pada penjelasan tutorial yang sesuai.
 
 ### `'boolean'`
 
-Tipe nilai boolean.
+Tipe nilai logika.
 
 **Contoh**
 
@@ -230,7 +232,7 @@ db.collection({
 
 ### `'integer'`
 
-Tipe bilangan bulat (32-bit).
+Integer (32-bit).
 
 **Contoh**
 
@@ -248,7 +250,7 @@ db.collection({
 
 ### `'bigInt'`
 
-Tipe bilangan bulat besar (64-bit).
+Long integer (64-bit).
 
 **Contoh**
 
@@ -266,7 +268,7 @@ db.collection({
 
 ### `'double'`
 
-Tipe floating-point presisi ganda (64-bit).
+Double precision floating point (64-bit).
 
 **Contoh**
 
@@ -284,11 +286,11 @@ db.collection({
 
 ### `'real'`
 
-Tipe bilangan riil (hanya untuk PG).
+Tipe real number (hanya berlaku untuk PG).
 
 ### `'decimal'`
 
-Tipe bilangan desimal.
+Tipe decimal number.
 
 ### `'string'`
 
@@ -310,7 +312,7 @@ db.collection({
 
 ### `'text'`
 
-Tipe teks. Setara dengan tipe `TEXT` di sebagian besar database.
+Tipe text. Setara dengan tipe `TEXT` di sebagian besar database.
 
 **Contoh**
 
@@ -328,7 +330,7 @@ db.collection({
 
 ### `'password'`
 
-Tipe kata sandi (ekstensi NocoBase). Mengenkripsi kata sandi berdasarkan metode `scrypt` dari paket `crypto` bawaan Node.js.
+Tipe password (ekstensi NocoBase). Berdasarkan method `scrypt` dari paket native crypto Node.js untuk enkripsi password.
 
 **Contoh**
 
@@ -339,8 +341,8 @@ db.collection({
     {
       type: 'password',
       name: 'password',
-      length: 64, // Panjang, default 64
-      randomBytesSize: 8, // Panjang byte acak, default 8
+      length: 64, // panjang, default 64
+      randomBytesSize: 8, // panjang random bytes, default 8
     },
   ],
 });
@@ -348,10 +350,10 @@ db.collection({
 
 **Parameter**
 
-| Nama Parameter    | Tipe     | Nilai Default | Deskripsi         |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ----------------- | -------- | ------ | ------------ |
-| `length`          | `number` | 64     | Panjang karakter |
-| `randomBytesSize` | `number` | 8      | Ukuran byte acak |
+| `length` | `number` | 64 | Panjang karakter |
+| `randomBytesSize` | `number` | 8 | Ukuran random bytes |
 
 ### `'date'`
 
@@ -363,7 +365,7 @@ Tipe waktu.
 
 ### `'array'`
 
-Tipe array (hanya untuk PG).
+Tipe array (hanya berlaku untuk PG).
 
 ### `'json'`
 
@@ -371,7 +373,7 @@ Tipe JSON.
 
 ### `'jsonb'`
 
-Tipe JSONB (hanya untuk PG, yang lain akan kompatibel sebagai tipe `'json'`).
+Tipe JSONB (hanya berlaku untuk PG, lainnya akan dikompatibilitas sebagai tipe `'json'`).
 
 ### `'uuid'`
 
@@ -379,11 +381,11 @@ Tipe UUID.
 
 ### `'uid'`
 
-Tipe UID (ekstensi NocoBase). Tipe pengidentifikasi string acak pendek.
+Tipe UID (ekstensi NocoBase). Tipe identifier string acak pendek.
 
 ### `'formula'`
 
-Tipe formula (ekstensi NocoBase). Memungkinkan konfigurasi perhitungan formula matematika berdasarkan [mathjs](https://www.npmjs.com/package/mathjs). Formula dapat mereferensikan nilai kolom lain dalam catatan yang sama untuk perhitungan.
+Tipe formula (ekstensi NocoBase). Dapat dikonfigurasi perhitungan rumus matematika berdasarkan [mathjs](https://www.npmjs.com/package/mathjs), dalam rumus dapat mereferensikan nilai kolom lain dari record yang sama untuk berpartisipasi dalam perhitungan.
 
 **Contoh**
 
@@ -410,11 +412,11 @@ db.collection({
 
 ### `'radio'`
 
-Tipe radio (ekstensi NocoBase). Paling banyak satu baris data di seluruh **koleksi** dapat memiliki nilai bidang ini sebagai `true`; semua yang lain akan menjadi `false` atau `null`.
+Tipe radio (ekstensi NocoBase). Maksimal satu baris data di seluruh tabel yang nilai field-nya `true`, lainnya semua `false` atau `null`.
 
 **Contoh**
 
-Hanya ada satu pengguna yang ditandai sebagai `root` di seluruh sistem. Setelah nilai `root` pengguna lain diubah menjadi `true`, semua catatan lain dengan `root` sebagai `true` akan diubah menjadi `false`:
+Seluruh sistem hanya memiliki satu user yang ditandai sebagai root, setelah nilai root user lain diubah menjadi `true`, semua record lain dengan root `true` akan diubah menjadi `false`:
 
 ```ts
 db.collection({
@@ -430,13 +432,13 @@ db.collection({
 
 ### `'sort'`
 
-Tipe pengurutan (ekstensi NocoBase). Mengurutkan berdasarkan bilangan bulat, secara otomatis menghasilkan nomor urut baru untuk catatan baru, dan mengatur ulang nomor urut saat data dipindahkan.
+Tipe sort (ekstensi NocoBase). Sorting berdasarkan integer, otomatis menghasilkan nomor urut baru untuk record baru, melakukan reorder nomor saat memindahkan data.
 
-Jika sebuah **koleksi** mendefinisikan opsi `sortable`, bidang yang sesuai juga akan secara otomatis dibuat.
+Jika tabel data mendefinisikan opsi `sortable`, juga akan otomatis menghasilkan field yang sesuai.
 
 **Contoh**
 
-Postingan dapat diurutkan berdasarkan pengguna yang memilikinya:
+Artikel dapat di-sort berdasarkan user pemilik:
 
 ```ts
 db.collection({
@@ -449,7 +451,7 @@ db.collection({
     {
       type: 'sort',
       name: 'priority',
-      scopeKey: 'userId', // Mengurutkan data yang dikelompokkan berdasarkan nilai userId yang sama
+      scopeKey: 'userId', // Sort data yang dikelompokkan dengan nilai userId yang sama
     },
   ],
 });
@@ -457,15 +459,15 @@ db.collection({
 
 ### `'virtual'`
 
-Tipe virtual. Tidak benar-benar menyimpan data, hanya digunakan untuk definisi getter/setter khusus.
+Tipe virtual. Tidak benar-benar menyimpan data, hanya digunakan saat definisi getter/setter khusus.
 
 ### `'belongsTo'`
 
-Tipe asosiasi banyak-ke-satu. Kunci asing disimpan di **koleksi** itu sendiri, berlawanan dengan `hasOne`/`hasMany`.
+Tipe asosiasi many-to-one. Foreign key disimpan di tabel sendiri, berlawanan dengan hasOne/hasMany.
 
 **Contoh**
 
-Setiap postingan milik seorang penulis:
+Setiap artikel dimiliki oleh seorang author:
 
 ```ts
 db.collection({
@@ -474,9 +476,9 @@ db.collection({
     {
       type: 'belongsTo',
       name: 'author',
-      target: 'users', // Jika tidak dikonfigurasi, defaultnya adalah nama koleksi dalam bentuk jamak dari name
-      foreignKey: 'authorId', // Jika tidak dikonfigurasi, defaultnya adalah format <name> + Id
-      sourceKey: 'id', // Jika tidak dikonfigurasi, defaultnya adalah id dari koleksi target
+      target: 'users', // Jika tidak dikonfigurasi, default adalah nama tabel jamak dari name
+      foreignKey: 'authorId', // Jika tidak dikonfigurasi, default adalah format <name> + Id
+      sourceKey: 'id', // Jika tidak dikonfigurasi, default adalah id dari tabel target
     },
   ],
 });
@@ -484,11 +486,11 @@ db.collection({
 
 ### `'hasOne'`
 
-Tipe asosiasi satu-ke-satu. Kunci asing disimpan di **koleksi** terkait, berlawanan dengan `belongsTo`.
+Tipe asosiasi one-to-one. Foreign key disimpan di tabel asosiasi, berlawanan dengan belongsTo.
 
 **Contoh**
 
-Setiap pengguna memiliki satu profil:
+Setiap user memiliki satu profile:
 
 ```ts
 db.collection({
@@ -497,7 +499,7 @@ db.collection({
     {
       type: 'hasOne',
       name: 'profile',
-      target: 'profiles', // Dapat dihilangkan
+      target: 'profiles', // Dapat dilewati
     },
   ],
 });
@@ -505,11 +507,11 @@ db.collection({
 
 ### `'hasMany'`
 
-Tipe asosiasi satu-ke-banyak. Kunci asing disimpan di **koleksi** terkait, berlawanan dengan `belongsTo`.
+Tipe asosiasi one-to-many. Foreign key disimpan di tabel asosiasi, berlawanan dengan belongsTo.
 
 **Contoh**
 
-Setiap pengguna dapat memiliki beberapa postingan:
+Setiap user dapat memiliki banyak artikel:
 
 ```ts
 db.collection({
@@ -527,11 +529,11 @@ db.collection({
 
 ### `'belongsToMany'`
 
-Tipe asosiasi banyak-ke-banyak. Menggunakan **koleksi** perantara untuk menyimpan kunci asing kedua belah pihak. Jika **koleksi** yang sudah ada tidak ditentukan sebagai **koleksi** perantara, **koleksi** perantara akan dibuat secara otomatis.
+Tipe asosiasi many-to-many. Menggunakan tabel perantara untuk menyimpan foreign key dari kedua belah pihak, jika tidak menentukan tabel yang sudah ada sebagai tabel perantara, akan otomatis dibuat tabel perantara.
 
 **Contoh**
 
-Setiap postingan dapat memiliki beberapa tag, dan setiap tag juga dapat ditambahkan ke beberapa postingan:
+Setiap artikel dapat memiliki banyak tag, dan setiap tag juga dapat ditambahkan ke banyak artikel:
 
 ```ts
 db.collection({
@@ -540,11 +542,11 @@ db.collection({
     {
       type: 'belongsToMany',
       name: 'tags',
-      target: 'tags', // Dapat dihilangkan jika namanya sama
-      through: 'postsTags', // Koleksi perantara akan dibuat secara otomatis jika tidak dikonfigurasi
-      foreignKey: 'postId', // Kunci asing koleksi sumber di koleksi perantara
-      sourceKey: 'id', // Kunci utama koleksi sumber
-      otherKey: 'tagId', // Kunci asing koleksi target di koleksi perantara
+      target: 'tags', // Jika nama sama dapat dilewati
+      through: 'postsTags', // Tabel perantara jika tidak dikonfigurasi akan otomatis dihasilkan
+      foreignKey: 'postId', // Foreign key tabel sendiri di tabel perantara
+      sourceKey: 'id', // Primary key tabel sendiri
+      otherKey: 'tagId', // Foreign key tabel asosiasi di tabel perantara
     },
   ],
 });
@@ -555,7 +557,7 @@ db.collection({
     {
       type: 'belongsToMany',
       name: 'posts',
-      through: 'postsTags', // Kelompok hubungan yang sama menunjuk ke koleksi perantara yang sama
+      through: 'postsTags', // Set relasi yang sama menunjuk ke tabel perantara yang sama
     },
   ],
 });

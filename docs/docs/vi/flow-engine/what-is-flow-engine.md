@@ -1,64 +1,65 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "FlowEngine là gì"
+description: "FlowEngine là engine phát triển no-code/low-code frontend của NocoBase 2.0, kết hợp Model và Flow, đơn giản hóa logic frontend và khả năng cấu hình điều phối, hiểu các khái niệm cốt lõi Flow, Step, Engine."
+keywords: "FlowEngine,No-code,Low-code,FlowModel,Flow,Step,Engine frontend,Có thể điều phối,NocoBase"
+---
 
 # FlowEngine là gì?
 
-FlowEngine là một công cụ phát triển front-end không mã/mã thấp hoàn toàn mới, được NocoBase 2.0 giới thiệu. Nó kết hợp Model và Flow để đơn giản hóa logic front-end, nâng cao khả năng tái sử dụng và dễ bảo trì. Đồng thời, nhờ khả năng cấu hình của Flow, FlowEngine mang đến khả năng cấu hình và điều phối không mã cho các thành phần front-end và logic nghiệp vụ.
+FlowEngine là engine phát triển no-code, low-code frontend hoàn toàn mới được giới thiệu trong NocoBase 2.0. Nó kết hợp Model và Flow, đơn giản hóa logic frontend, nâng cao tính tái sử dụng và khả năng bảo trì; đồng thời, thông qua khả năng cấu hình của Flow, mang lại khả năng cấu hình và điều phối no-code cho các component frontend và logic nghiệp vụ.
 
-## Tại sao lại gọi là FlowEngine?
+## Tại sao gọi là FlowEngine?
 
-Trong FlowEngine, các thuộc tính và logic của một thành phần không còn được định nghĩa tĩnh nữa, mà được điều khiển và quản lý bởi **Flow**.
+Bởi vì trong FlowEngine, thuộc tính và logic của component không còn được định nghĩa tĩnh nữa, mà được điều khiển và quản lý thông qua **Flow**.
 
-*   **Flow**, giống như một luồng dữ liệu, phân tách logic thành các bước (Step) có thứ tự, sau đó áp dụng dần dần lên thành phần.
-*   **Engine** thể hiện đây là một công cụ điều khiển logic và tương tác front-end.
+* **Flow** giống như luồng dữ liệu, phân tách logic thành các bước (Step) có thứ tự, tác động dần lên component;
+* **Engine** thể hiện đây là một engine điều khiển logic và tương tác frontend.
 
-Vì vậy, **FlowEngine = Một công cụ logic front-end được điều khiển bởi Flow**.
+Vì vậy, **FlowEngine = engine logic frontend được điều khiển bởi luồng**.
 
 ## Model là gì?
 
-Trong FlowEngine, Model là một mô hình trừu tượng của một thành phần, chịu trách nhiệm:
+Trong FlowEngine, Model là model trừu tượng của component, chịu trách nhiệm:
 
-*   Quản lý **thuộc tính (Props) và trạng thái** của thành phần.
-*   Định nghĩa **phương thức hiển thị** của thành phần.
-*   Chứa và thực thi **Flow**.
-*   Xử lý thống nhất **phân phối sự kiện** và **vòng đời**.
+* Quản lý **thuộc tính (Props) và trạng thái** của component;
+* Định nghĩa **cách render** của component;
+* Mang theo và thực thi **Flow**;
+* Xử lý thống nhất **phân phối sự kiện** và **vòng đời**.
 
-Nói cách khác, **Model là bộ não logic của một thành phần**, biến thành phần từ một đơn vị tĩnh thành một đơn vị động có thể cấu hình và điều phối.
+Nói cách khác, **Model là bộ não logic của component**, biến component từ tĩnh thành đơn vị động có thể cấu hình, có thể điều phối.
 
 ## Flow là gì?
 
-Trong FlowEngine, **Flow là một luồng logic phục vụ Model**.
-Mục đích của nó là:
+Trong FlowEngine, **Flow là luồng logic phục vụ cho Model**.
+Vai trò của nó là:
 
-*   Phân tách logic thuộc tính hoặc sự kiện thành các bước (Step) và thực thi chúng tuần tự theo một luồng.
-*   Quản lý các thay đổi thuộc tính cũng như phản hồi sự kiện.
-*   Làm cho logic trở nên **động, có thể cấu hình và tái sử dụng**.
+* Phân tách logic thuộc tính hoặc sự kiện thành các bước (Step), thực thi tuần tự theo cách của luồng;
+* Có thể quản lý thay đổi thuộc tính, cũng có thể quản lý phản hồi sự kiện;
+* Khiến logic trở nên **động hóa, có thể cấu hình hóa, có thể tái sử dụng**.
 
-## Làm thế nào để hiểu các khái niệm này?
+## Làm sao để hiểu các khái niệm này?
 
-Bạn có thể hình dung **Flow** như một **dòng nước**:
+Có thể tưởng tượng **Flow** như một **dòng nước**:
 
-*   **Step giống như một nút trên dòng nước**
-    Mỗi Step đảm nhận một nhiệm vụ nhỏ (ví dụ: thiết lập thuộc tính, kích hoạt sự kiện, gọi API), giống như dòng nước tạo ra tác động khi đi qua một cái cống hoặc một cối xay nước.
+* **Step giống như các nút mà dòng nước đi qua**
+  Mỗi Step đảm nhận một nhiệm vụ nhỏ (ví dụ thiết lập thuộc tính, kích hoạt sự kiện, gọi interface), giống như khi dòng nước đi qua một cánh cửa nước hoặc bánh xe nước nào đó sẽ tạo ra tác dụng tương ứng.
 
-*   **Flow có thứ tự**
-    Dòng nước sẽ đi theo một con đường định trước từ thượng nguồn xuống hạ nguồn, lần lượt đi qua tất cả các Step; tương tự, logic trong một Flow sẽ được thực thi theo thứ tự đã định nghĩa.
+* **Luồng có thứ tự**
+  Dòng nước sẽ đi theo đường đã định từ thượng nguồn đến hạ nguồn, qua từng Step; tương tự, logic trong Flow sẽ thực thi theo thứ tự đã định nghĩa.
 
-*   **Flow có thể phân nhánh và kết hợp**
-    Một dòng nước có thể chia thành nhiều dòng nhỏ hơn hoặc hợp nhất lại; Flow cũng có thể được chia thành nhiều Flow con, hoặc kết hợp thành các chuỗi logic phức tạp hơn.
+* **Luồng có thể phân nhánh và kết hợp**
+  Một dòng nước có thể chia thành nhiều dòng nhỏ, cũng có thể hội tụ lại; Flow cũng có thể tách thành nhiều luồng con, hoặc kết hợp thành chuỗi logic phức tạp hơn.
 
-*   **Flow có thể cấu hình và kiểm soát**
-    Hướng và lưu lượng của dòng nước có thể được điều chỉnh bằng cống nước; phương thức thực thi và các tham số của Flow cũng có thể được kiểm soát thông qua cấu hình (stepParams).
+* **Luồng có thể cấu hình và kiểm soát**
+  Hướng và lưu lượng của dòng nước có thể được điều chỉnh thông qua cửa nước; cách thức thực thi và tham số của Flow cũng có thể được kiểm soát thông qua cấu hình (stepParams).
 
-Tóm tắt ví von
+Tóm tắt phép ẩn dụ
 
-*   Một **thành phần** giống như một cối xay nước cần có dòng nước để quay.
-*   Một **Model** là đế và bộ điều khiển của cối xay nước này, chịu trách nhiệm tiếp nhận dòng nước và điều khiển hoạt động của nó.
-*   Một **Flow** là dòng nước đó, đi qua từng Step theo thứ tự, thúc đẩy thành phần liên tục thay đổi và phản hồi.
+* **Component** giống như một bánh xe nước, cần có dòng nước đẩy mới có thể quay;
+* **Model** là đế và bộ điều khiển của bánh xe nước này, chịu trách nhiệm tiếp nhận dòng nước và điều khiển vận hành;
+* **Flow** là dòng nước đó, đi qua từng Step theo thứ tự, đẩy component thay đổi và phản hồi liên tục.
 
-Vì vậy, trong FlowEngine:
+Vì vậy trong FlowEngine:
 
-*   **Flow cho phép logic di chuyển tự nhiên như một dòng nước**.
-*   **Model giúp các thành phần trở thành vật mang và thực thi của dòng nước này**.
+* **Flow khiến logic chảy tự nhiên như dòng nước**;
+* **Model khiến component trở thành vật thể chứa và thực thi của dòng nước**.

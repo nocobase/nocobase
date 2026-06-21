@@ -30,12 +30,12 @@ container.style.position = 'relative';
 container.style.borderRadius = '10px';
 container.style.overflow = 'hidden';
 container.style.background = 'radial-gradient(700px 300px at 20% 25%, #172036, #0b0f19 60%), radial-gradient(600px 240px at 80% 70%, rgba(56,189,248,0.12), transparent 60%)';
-ctx.element.replaceChildren(container);
+ctx.render(container);
 
 // 不做显式清理逻辑；如需存储信息，统一挂在 ctx.model 上
 
-// 使用 ctx.useResource 加载 users:list（真实数据）
-ctx.useResource('MultiRecordResource');
+// 使用 ctx.initResource 加载 users:list（真实数据）
+ctx.initResource('MultiRecordResource');
 const resource = ctx.resource;
 resource.setDataSourceKey && resource.setDataSourceKey('main');
 resource.setResourceName && resource.setResourceName('users');
@@ -44,7 +44,7 @@ try {
   await resource.refresh();
 } catch (err) {
   var msg = (err && err.message) ? err.message : 'users:list 请求失败';
-  ctx.element.innerHTML = '<div style="color:#cbd5e1; padding: 12px; text-align:center;">' + msg + '</div>';
+  container.innerHTML = '<div style="color:#cbd5e1; padding: 12px; text-align:center;">' + msg + '</div>';
   throw err;
 }
 
@@ -80,7 +80,7 @@ function makeAvatarTexture(user, idx) {
   return tex;
 }
 
-const THREE = await ctx.importAsync('https://esm.sh/three@0.160.0');
+const THREE = await ctx.importAsync('three@0.160.0');
 const { Scene, PerspectiveCamera, WebGLRenderer, Color, AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, SphereGeometry, Raycaster, Vector2 } = THREE;
 
 const scene = new Scene();
@@ -186,7 +186,7 @@ async function getPrimaryKeyField() {
   if (__pkField) return __pkField;
   const name = (resource && resource.getResourceName) ? resource.getResourceName() : 'users';
   try {
-    const meta = await ctx.api.request({ url: 'collections:get', method: 'get', params: { filterByTk: name } });
+    const meta = await ctx.request({ url: 'collections:get', method: 'get', params: { filterByTk: name } });
     const data = (meta && meta.data) ? meta.data : {};
     // prefer filterTargetKey, fallback to fields.primaryKey
     const ft = (data && data.filterTargetKey) ? data.filterTargetKey : (data && data.options && data.options.filterTargetKey);

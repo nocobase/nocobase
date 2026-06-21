@@ -1,51 +1,53 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Middleware"
+description: "Middleware server NocoBase: app.use, middleware Koa, intersepsi request, middleware resource."
+keywords: "Middleware,middleware,app.use,Koa,intersepsi request,middleware resource,NocoBase"
+---
 
 # Middleware
 
-Middleware NocoBase Server pada dasarnya adalah **Koa middleware**. Anda dapat mengoperasikan objek `ctx` untuk menangani permintaan dan respons, sama seperti di Koa. Namun, karena NocoBase perlu mengelola logika di berbagai lapisan bisnis, jika semua middleware ditempatkan bersama, akan sangat sulit untuk dipelihara dan dikelola.
+Middleware NocoBase Server pada dasarnya adalah **middleware Koa**, Anda dapat memanipulasi objek `ctx` untuk menangani request dan response seperti di Koa. Namun karena NocoBase perlu mengelola logika di berbagai layer bisnis, jika semua middleware ditempatkan di satu tempat, akan sangat sulit dikelola.
 
-Oleh karena itu, NocoBase membagi middleware menjadi **empat tingkatan**:
+Untuk itu, NocoBase membagi middleware menjadi **empat level**:
 
-1.  **Middleware Tingkat Sumber Data**: `app.dataSourceManager.use()`
-    Hanya berlaku untuk permintaan **sumber data tertentu**, sering digunakan untuk koneksi database, validasi kolom, atau logika pemrosesan transaksi untuk sumber data tersebut.
+1. **Middleware level Data Source**: `app.dataSourceManager.use()`
+   Hanya berlaku untuk request data source tertentu, sering digunakan untuk koneksi database, validasi field, atau pemrosesan transaksi data source tersebut.
 
-2.  **Middleware Tingkat Sumber Daya**: `app.resourceManager.use()`
-    Hanya berlaku untuk sumber daya (Resource) yang telah didefinisikan, cocok untuk menangani logika tingkat sumber daya, seperti izin data, pemformatan, dll.
+2. **Middleware level Resource**: `app.resourceManager.use()`
+   Hanya berlaku untuk Resource yang sudah didefinisikan, cocok untuk menangani logika level resource, seperti hak akses data, formatting, dll.
 
-3.  **Middleware Tingkat Izin**: `app.acl.use()`
-    Dieksekusi sebelum pemeriksaan izin, digunakan untuk memverifikasi izin atau peran pengguna.
+3. **Middleware level Hak Akses**: `app.acl.use()`
+   Dieksekusi sebelum penilaian hak akses, digunakan untuk memvalidasi hak akses pengguna atau role.
 
-4.  **Middleware Tingkat Aplikasi**: `app.use()`
-    Dieksekusi untuk setiap permintaan, cocok untuk pencatatan log, penanganan kesalahan umum, pemrosesan respons, dll.
+4. **Middleware level Aplikasi**: `app.use()`
+   Akan dieksekusi pada setiap request, cocok untuk pencatatan log, penanganan error umum, pemrosesan response, dll.
 
 ## Registrasi Middleware
 
-Middleware biasanya didaftarkan dalam metode `load` dari plugin, contohnya:
+Middleware biasanya didaftarkan pada method `load` plugin, contohnya:
 
 ```ts
 export class MyPlugin extends Plugin {
   load() {
-    // Middleware tingkat aplikasi
+    // Middleware level aplikasi
     this.app.use(async (ctx, next) => {
       console.log('App middleware');
       await next();
     });
 
-    // Middleware sumber data
+    // Middleware data source
     this.app.dataSourceManager.use(async (ctx, next) => {
       console.log('DataSource middleware');
       await next();
     });
 
-    // Middleware izin
+    // Middleware hak akses
     this.app.acl.use(async (ctx, next) => {
       console.log('ACL middleware');
       await next();
     });
 
-    // Middleware sumber daya
+    // Middleware resource
     this.app.resourceManager.use(async (ctx, next) => {
       console.log('Resource middleware');
       await next();
@@ -59,44 +61,44 @@ export class MyPlugin extends Plugin {
 
 Urutan eksekusi middleware adalah sebagai berikut:
 
-1.  Pertama, eksekusi middleware izin yang ditambahkan oleh `acl.use()`
-2.  Kemudian, eksekusi middleware sumber daya yang ditambahkan oleh `resourceManager.use()`
-3.  Selanjutnya, eksekusi middleware sumber data yang ditambahkan oleh `dataSourceManager.use()`
-4.  Terakhir, eksekusi middleware aplikasi yang ditambahkan oleh `app.use()`
+1. Pertama eksekusi middleware hak akses yang ditambahkan oleh `acl.use()`
+2. Kemudian eksekusi middleware resource yang ditambahkan oleh `resourceManager.use()`
+3. Selanjutnya eksekusi middleware data source yang ditambahkan oleh `dataSourceManager.use()`
+4. Terakhir eksekusi middleware aplikasi yang ditambahkan oleh `app.use()`
 
-## Mekanisme Penyisipan `before` / `after` / `tag`
+## Mekanisme Insertion before / after / tag
 
-Untuk kontrol urutan middleware yang lebih fleksibel, NocoBase menyediakan parameter `before`, `after`, dan `tag`:
+Untuk mengontrol urutan middleware secara lebih fleksibel, NocoBase menyediakan parameter `before`, `after`, dan `tag`:
 
--   **tag**: Memberikan penanda pada middleware, digunakan untuk direferensikan oleh middleware berikutnya.
--   **before**: Menyisipkan sebelum middleware dengan `tag` yang ditentukan.
--   **after**: Menyisipkan setelah middleware dengan `tag` yang ditentukan.
+- **tag**: Memberikan tanda pada middleware, untuk dirujuk oleh middleware lainnya
+- **before**: Sisipkan sebelum middleware dengan tag yang ditentukan
+- **after**: Sisipkan setelah middleware dengan tag yang ditentukan
 
 Contoh:
 
 ```ts
 // Middleware biasa
 app.use(m1, { tag: 'restApi' });
-app.resourceManager.use(m2, { tag: 'parseToken' });
-app.resourceManager.use(m3, { tag: 'checkRole' });
+app.resourcer.use(m2, { tag: 'parseToken' });
+app.resourcer.use(m3, { tag: 'checkRole' });
 
-// m4 akan ditempatkan sebelum m1
+// m4 akan diletakkan sebelum m1
 app.use(m4, { before: 'restApi' });
 
 // m5 akan disisipkan di antara m2 dan m3
-app.resourceManager.use(m5, { after: 'parseToken', before: 'checkRole' });
+app.resourcer.use(m5, { after: 'parseToken', before: 'checkRole' });
 ```
 
-:::tip
+:::tip Tips
 
-Jika posisi tidak ditentukan, urutan eksekusi default untuk middleware yang baru ditambahkan adalah:
+Jika posisi tidak ditentukan, urutan eksekusi default middleware yang baru ditambahkan adalah:
 `acl.use()` -> `resourceManager.use()` -> `dataSourceManager.use()` -> `app.use()`
 
 :::
 
-## Contoh Model Onion Ring
+## Contoh Model Onion
 
-Urutan eksekusi middleware mengikuti **Model Onion Ring** Koa, yaitu masuk ke tumpukan middleware terlebih dahulu, dan keluar terakhir.
+Urutan eksekusi middleware mengikuti **model onion** Koa, yaitu masuk ke stack middleware terlebih dahulu, kemudian keluar terakhir.
 
 ```ts
 app.use(async (ctx, next) => {
@@ -106,7 +108,7 @@ app.use(async (ctx, next) => {
   ctx.body.push(2);
 });
 
-app.resourceManager.use(async (ctx, next) => {
+app.resourcer.use(async (ctx, next) => {
   ctx.body = ctx.body || [];
   ctx.body.push(3);
   await next();
@@ -120,7 +122,7 @@ app.acl.use(async (ctx, next) => {
   ctx.body.push(6);
 });
 
-app.resourceManager.define({
+app.resourcer.define({
   name: 'test',
   actions: {
     async list(ctx, next) {
@@ -133,19 +135,28 @@ app.resourceManager.define({
 });
 ```
 
-Contoh urutan output saat mengakses antarmuka yang berbeda:
+Akses API yang berbeda, contoh urutan output:
 
--   **Permintaan Biasa**: `/api/hello`
-    Output: `[1,2]` (sumber daya tidak terdefinisi, tidak mengeksekusi middleware `resourceManager` dan `acl`)
+- **Request biasa**: `/api/hello`
+  Output: `[1,2]` (Resource tidak terdefinisi, tidak mengeksekusi middleware `resourceManager` dan `acl`)
 
--   **Permintaan Sumber Daya**: `/api/test:list`
-    Output: `[5,3,7,1,2,8,4,6]`
-    Middleware dieksekusi sesuai dengan urutan tingkatan dan model onion ring.
+- **Request resource**: `/api/test:list`
+  Output: `[5,3,7,1,2,8,4,6]`
+  Middleware dieksekusi sesuai level dan model onion
 
 ## Ringkasan
 
--   NocoBase Middleware adalah ekstensi dari Koa Middleware
--   Empat tingkatan: Aplikasi -> Sumber Data -> Sumber Daya -> Izin
--   Dapat menggunakan `before` / `after` / `tag` untuk mengontrol urutan eksekusi secara fleksibel
--   Mengikuti Model Onion Ring Koa, memastikan middleware dapat dikombinasikan dan disarangkan
--   Middleware tingkat sumber data hanya berlaku untuk permintaan sumber data yang ditentukan, middleware tingkat sumber daya hanya berlaku untuk permintaan sumber daya yang telah didefinisikan
+- Middleware NocoBase adalah ekstensi dari Middleware Koa
+- Empat level: aplikasi -> data source -> resource -> hak akses
+- Dapat menggunakan `before` / `after` / `tag` untuk mengontrol urutan eksekusi dengan fleksibel
+- Mengikuti model onion Koa, memastikan middleware dapat dikomposisi dan dinested
+- Middleware level data source hanya berlaku untuk request data source tertentu, middleware level resource hanya berlaku untuk request resource yang terdefinisi
+
+## Tautan Terkait
+
+- [Context](./context.md) — Memahami API lengkap objek `ctx` di middleware
+- [ResourceManager Manajemen Resource](./resource-manager.md) — Registrasi middleware level resource dan definisi resource
+- [ACL Kontrol Hak Akses](./acl.md) — Penggunaan middleware level hak akses dan logika validasi hak akses
+- [Plugin](./plugin.md) — Mendaftarkan middleware dalam method `load` plugin
+- [DataSourceManager Manajemen Data Source](./data-source-manager.md) — Skenario penggunaan middleware level data source
+- [Ikhtisar Pengembangan Server](./index.md) — Arsitektur server menyeluruh dan posisi middleware di dalamnya

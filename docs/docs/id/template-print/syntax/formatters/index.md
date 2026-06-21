@@ -1,19 +1,22 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Formatter Template Print"
+description: "Formatter Template Print: mengkonversi data mentah menjadi teks yang dapat dibaca, sintaks colon, chaining, parameter konstan dan dinamis."
+keywords: "Formatter Template,formatters,Template Print,NocoBase"
+---
 
-## Formatter
+## Alat Format
 
-Formatter digunakan untuk mengubah data mentah menjadi teks yang mudah dibaca. Formatter diterapkan pada data menggunakan titik dua (`:`) dan dapat dirangkai sehingga keluaran dari setiap formatter menjadi masukan untuk formatter berikutnya. Beberapa formatter mendukung parameter konstan atau parameter dinamis.
+Formatter digunakan untuk mengkonversi data mentah menjadi teks yang mudah dibaca. Formatter diterapkan ke data melalui colon (:), dapat di-chain, output setiap formatter akan menjadi input dari formatter berikutnya. Beberapa formatter mendukung parameter konstan atau parameter dinamis.
 
-### Gambaran Umum
+
+### Ikhtisar
 
 #### 1. Penjelasan Sintaks
-Bentuk dasar pemanggilan formatter adalah sebagai berikut:
+Bentuk pemanggilan dasar formatter adalah:
 ```
-{d.property:formatter1:formatter2(...)}
+{d.properti:formatter1:formatter2(...)}
 ```  
-Sebagai contoh, dalam kasus mengubah string `"JOHN"` menjadi `"John"`, formatter `lowerCase` digunakan terlebih dahulu untuk mengubah semua huruf menjadi huruf kecil, kemudian `ucFirst` digunakan untuk membuat huruf pertama menjadi kapital.
+Contoh, dalam contoh konversi string `"JOHN"` menjadi `"John"`, pertama menggunakan `lowerCase` untuk mengkonversi semua huruf menjadi huruf kecil, lalu menggunakan `ucFirst` untuk mengkapitalisasi huruf pertama.
 
 #### 2. Contoh
 Data:
@@ -29,40 +32,42 @@ My name is {d.name:lowerCase:ucFirst}. I was born on {d.birthday:formatD(LL)}.
 ```
 
 #### 3. Hasil
-Setelah dirender, hasilnya adalah:
+Setelah render output:
 ```
 My name is John. I was born on January 31, 2000.
 ```
 
+
 ### Parameter Konstan
 
 #### 1. Penjelasan Sintaks
-Banyak formatter mendukung satu atau lebih parameter konstan, yang dipisahkan oleh koma dan diapit dalam tanda kurung untuk memodifikasi keluaran. Sebagai contoh, `:prepend(myPrefix)` akan menambahkan "myPrefix" di depan teks.  
-**Catatan:** Jika parameter berisi koma atau spasi, parameter tersebut harus diapit dalam tanda kutip tunggal, misalnya: `prepend('my prefix')`.
+Banyak formatter mendukung satu atau beberapa parameter konstan, dipisahkan dengan koma, dan ditempatkan dalam tanda kurung untuk memodifikasi output. Contoh, `:prepend(myPrefix)` akan menambahkan "myPrefix" sebelum teks.  
+Perhatian: Jika parameter berisi koma atau spasi, harus dibungkus dengan tanda kutip tunggal, contoh `prepend('my prefix')`.
 
 #### 2. Contoh
-Contoh template (lihat penggunaan formatter spesifik untuk detailnya).
+Contoh Template (lihat penggunaan formatter spesifik).
 
 #### 3. Hasil
-Keluaran akan memiliki awalan yang ditentukan yang ditambahkan di depan teks.
+Output akan menambahkan prefix yang ditentukan sebelum teks.
+
 
 ### Parameter Dinamis
 
 #### 1. Penjelasan Sintaks
-Formatter juga mendukung parameter dinamis. Parameter ini dimulai dengan titik (`.`) dan tidak diapit dalam tanda kutip.  
-Ada dua metode untuk menentukan parameter dinamis:
-- **Jalur JSON Absolut**: Dimulai dengan `d.` atau `c.` (merujuk pada data root atau data tambahan).
-- **Jalur JSON Relatif**: Dimulai dengan satu titik (`.`), menunjukkan bahwa properti dicari dari objek induk saat ini.
+Formatter mendukung parameter dinamis, parameter dimulai dengan titik (.) dan tanpa tanda kutip.  
+Dapat menggunakan dua cara:
+- **Path JSON Absolut**: Dimulai dengan `d.` atau `c.` (data root atau data tambahan).
+- **Path JSON Relatif**: Dimulai dengan satu titik (.), berarti mencari properti dari objek parent saat ini.
 
-Sebagai contoh:
+Contoh:
 ```
 {d.subObject.qtyB:add(d.subObject.qtyC)}
 ```
-Ini juga dapat ditulis sebagai jalur relatif:
+Juga dapat ditulis sebagai path relatif:
 ```
 {d.subObject.qtyB:add(.qtyC)}
 ```
-Jika Anda perlu mengakses data dari level yang lebih tinggi (induk atau di atasnya), Anda dapat menggunakan beberapa titik:
+Jika perlu mengakses data level di atas atau lebih tinggi, dapat menggunakan beberapa titik:
 ```
 {d.subObject.qtyB:add(..qtyA):add(.qtyC)}
 ```
@@ -83,7 +88,7 @@ Data:
   }]
 }
 ```
-Penggunaan dalam Template:
+Pada Template digunakan:
 ```
 {d.subObject.qtyB:add(d.subObject.qtyC)}      // Hasil: 8 (5 + 3)
 {d.subObject.qtyB:add(.qtyC)}                   // Hasil: 8
@@ -92,10 +97,12 @@ Penggunaan dalam Template:
 ```
 
 #### 3. Hasil
-Contoh-contoh tersebut menghasilkan 8, 8, 28, dan 6 secara berurutan.
+Setiap contoh masing-masing menghasilkan 8, 8, 28, 6.
 
-> **Catatan:** Penggunaan iterator kustom atau filter array sebagai parameter dinamis tidak diizinkan, misalnya:
+> **Perhatian:** Menggunakan iterator kustom atau filter array sebagai parameter dinamis tidak diperbolehkan, seperti:
 > ```
 > {d.subObject.qtyB:add(..subArray[i].qtyE)}
 > {d.subObject.qtyB:add(d.subArray[i].qtyE)}
 > ```
+
+

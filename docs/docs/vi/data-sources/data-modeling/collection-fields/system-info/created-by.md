@@ -1,18 +1,19 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Created By"
+description: "Field hệ thống Created By, tự động ghi nhận người tạo."
+keywords: "Created By,createdBy,Field hệ thống,Field audit,NocoBase"
+---
 
-
-# Người tạo
+# Created By
 
 ## Giới thiệu
 
-Sẽ được bổ sung
+Sẽ được bổ sung sau
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![index-2025-11-01-00-50-59](https://static-docs.nocobase.com/index-2025-11-01-00-50-59.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung
+Sẽ được bổ sung sau

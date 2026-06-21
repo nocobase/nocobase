@@ -1,13 +1,14 @@
 ---
-displayName: "Luồng công việc: Bộ công cụ kiểm thử"
+displayName: "Workflow: Bộ công cụ kiểm thử"
 packageName: '@nocobase/plugin-workflow-test'
+title: "Workflow: Bộ công cụ kiểm thử"
+keywords: "Workflow: Bộ công cụ kiểm thử,Plugin,NocoBase"
 description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Bộ công cụ kiểm thử
+# Workflow: Bộ công cụ kiểm thử

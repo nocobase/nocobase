@@ -1,18 +1,17 @@
 ---
-displayName: "Adaptor Antrean Pesan RabbitMQ"
+displayName: "Adapter Antrian Pesan RabbitMQ"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
+title: "Adapter Antrian Pesan RabbitMQ"
+keywords: "Adapter Antrian Pesan RabbitMQ,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Digunakan untuk menangani antrean pesan aplikasi menggunakan RabbitMQ.
+  Memproses antrian pesan aplikasi berbasis RabbitMQ.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Adaptor Antrean Pesan RabbitMQ
+# Adapter Antrian Pesan RabbitMQ

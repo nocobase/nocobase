@@ -1,4 +1,6 @@
 ---
+title: "授权设置"
+keywords: "授权设置,插件,NocoBase"
 displayName: "授权设置"
 packageName: '@nocobase/plugin-license'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 授权设置

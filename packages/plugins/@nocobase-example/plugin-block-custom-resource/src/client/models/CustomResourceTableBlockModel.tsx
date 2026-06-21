@@ -36,9 +36,9 @@ export class CustomBlockWithResourceModel extends BlockModel {
       <div>
         <h1>Hello, NocoBase!</h1>
         <p>
-          This is a simple block rendered by <strong>CustomResourceTableBlockModel</strong>.
+          This is a simple block rendered by <strong>CustomResourceBlockModel</strong>.
         </p>
-        <pre>{JSON.stringify(this.resource.getData(), null, 2)}</pre>
+        <pre>{JSON.stringify(this.resource?.getData(), null, 2)}</pre>
       </div>
     );
   }
@@ -56,8 +56,12 @@ CustomBlockWithResourceModel.registerFlow({
     },
     refresh: {
       handler: async (ctx) => {
-        const resource = ctx.resource as SingleRecordResource;
-        await resource.refresh();
+        try {
+          const resource = ctx.resource as SingleRecordResource;
+          await resource.refresh();
+        } catch (error) {
+          console.log(error);
+        }
       },
     },
   },

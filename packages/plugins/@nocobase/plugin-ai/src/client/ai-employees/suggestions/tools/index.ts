@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolOptions } from '../../../manager/ai-manager';
+import { ToolsOptions } from '@nocobase/client';
 import { SuggestionsOptions } from '../ui/SuggestionsOptions';
 
-export const suggestionsTool: [string, string, ToolOptions] = [
-  'dataModeling',
+export const suggestionsTool: [string, ToolsOptions] = [
   'suggestions',
   {
     ui: {

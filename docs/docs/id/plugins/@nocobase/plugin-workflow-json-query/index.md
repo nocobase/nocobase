@@ -1,17 +1,14 @@
 ---
-displayName: "Alur Kerja: Perhitungan JSON"
+displayName: "Workflow: Kalkulasi JSON"
 packageName: '@nocobase/plugin-workflow-json-query'
-supportedVersions:
-  - 1.x
-  - 2.x
+title: "Workflow: Kalkulasi JSON"
+keywords: "Workflow: Kalkulasi JSON,Plugin,NocoBase"
 description: |
-  Digunakan untuk mengubah atau menghitung nilai dari data JSON yang kompleks (misalnya, hasil dari permintaan HTTP atau SQL, dll.).
+  Digunakan untuk mentransformasi atau menghitung nilai dari objek JSON yang kompleks (misalnya hasil dari node request HTTP dan node SQL).
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Perhitungan JSON
+# Workflow: Kalkulasi JSON

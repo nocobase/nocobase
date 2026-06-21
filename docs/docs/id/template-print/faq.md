@@ -1,79 +1,86 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Template Print - FAQ"
+description: "FAQ Template Print: solusi sel kosong Excel hilang, merge cell tidak berfungsi, format kacau saat render loop, dll."
+keywords: "Template Print,FAQ,NocoBase"
+---
 
-## Pertanyaan Umum dan Solusi
+## FAQ dan Solusi
 
-### 1. Kolom dan Sel Kosong di Template Excel Hilang dalam Hasil Render
+### 1. Kolom Kosong dan Sel Kosong di Template Excel Hilang dalam Hasil Render
 
-**Deskripsi Masalah**: Dalam template Excel, jika sebuah sel tidak memiliki konten atau gaya, sel tersebut mungkin akan dihapus saat proses render, menyebabkan sel tersebut hilang dari dokumen akhir.
+**Deskripsi Masalah**: Pada Template Excel, jika sel tertentu tidak memiliki konten atau gaya, mungkin akan dihilangkan saat render, menyebabkan sel tersebut hilang di dokumen akhir.
 
 **Solusi**:
 
-- **Isi Warna Latar Belakang**: Terapkan warna latar belakang pada sel-sel kosong di area target untuk memastikan sel tetap terlihat selama proses render.
-- **Sisipkan Spasi**: Sisipkan karakter spasi pada sel-sel kosong untuk mempertahankan struktur sel meskipun tidak ada konten aktual.
-- **Atur Batas (Border)**: Tambahkan gaya batas pada tabel untuk memperkuat batas sel dan mencegah sel menghilang saat render.
+- **Isi Background Color**: Isi warna latar untuk sel kosong di area target, memastikan sel tetap terlihat selama proses render.
+- **Sisipkan Spasi**: Sisipkan karakter spasi pada sel kosong, meskipun tidak ada konten aktual, dapat mempertahankan struktur sel.
+- **Atur Border**: Tambahkan style border pada tabel, memperkuat batas sel, menghindari sel hilang saat render.
 
 **Contoh**:
 
-Dalam template Excel, atur latar belakang abu-abu muda untuk semua sel target dan sisipkan spasi pada sel-sel kosong.
+Pada Template Excel, atur background abu-abu muda untuk semua sel target, dan sisipkan spasi pada sel kosong.
 
-### 2. Sel Gabungan Tidak Berfungsi dalam Output
+### 2. Merge Cell Tidak Berfungsi Saat Output
 
-**Deskripsi Masalah**: Saat menggunakan fungsionalitas perulangan untuk menghasilkan tabel, sel gabungan dalam template dapat menyebabkan hasil render yang tidak normal, seperti efek penggabungan yang hilang atau data yang tidak sejajar.
-
-**Solusi**:
-
-- **Hindari Penggunaan Sel Gabungan**: Usahakan untuk menghindari penggunaan sel gabungan dalam tabel output perulangan untuk memastikan render data yang benar.
-- **Gunakan "Pusatkan di Seluruh Pilihan"**: Jika Anda perlu memusatkan teks secara horizontal di beberapa sel, gunakan fitur "Pusatkan di Seluruh Pilihan" (Center Across Selection) alih-alih menggabungkan sel.
-- **Batasi Posisi Sel Gabungan**: Jika sel gabungan memang diperlukan, gabungkan sel hanya di bagian atas atau kanan tabel. Hindari menggabungkan sel di bagian bawah atau kiri untuk mencegah hilangnya efek penggabungan saat render.
-
-### 3. Konten di Bawah Area Render Perulangan Menyebabkan Format Berantakan
-
-**Deskripsi Masalah**: Dalam template Excel, jika ada konten lain (misalnya, ringkasan pesanan, catatan) di bawah area perulangan yang tumbuh secara dinamis berdasarkan item data (misalnya, detail pesanan), maka saat render, baris data yang dihasilkan oleh perulangan akan meluas ke bawah, langsung menimpa atau mendorong konten statis di bawahnya. Hal ini menyebabkan format dokumen akhir menjadi berantakan dan konten saling tumpang tindih.
+**Deskripsi Masalah**: Saat menggunakan fitur loop untuk output tabel, jika ada merge cell pada Template, mungkin akan menyebabkan hasil render tidak normal, seperti efek merge hilang atau data tidak align.
 
 **Solusi**:
 
-  * **Sesuaikan Tata Letak, Posisikan Area Perulangan di Bagian Bawah**: Ini adalah metode yang paling direkomendasikan. Tempatkan area tabel yang perlu dirender secara berulang di bagian paling bawah lembar kerja. Pindahkan semua informasi yang semula berada di bawahnya (ringkasan, tanda tangan, dll.) ke atas area perulangan. Dengan demikian, data perulangan dapat meluas ke bawah dengan bebas tanpa memengaruhi elemen lain.
-  * **Sediakan Baris Kosong yang Cukup**: Jika konten harus ditempatkan di bawah area perulangan, Anda dapat memperkirakan jumlah maksimum baris yang mungkin dihasilkan oleh perulangan. Kemudian, sisipkan baris kosong yang cukup secara manual sebagai penyangga antara area perulangan dan konten di bawahnya. Namun, metode ini memiliki risiko; jika data aktual melebihi jumlah baris yang diperkirakan, masalah akan muncul kembali.
-  * **Gunakan Template Word**: Jika persyaratan tata letak rumit dan tidak dapat diselesaikan dengan menyesuaikan struktur Excel, pertimbangkan untuk menggunakan dokumen Word sebagai template. Tabel di Word secara otomatis akan mendorong konten di bawahnya saat jumlah baris bertambah, tanpa masalah tumpang tindih konten, sehingga lebih cocok untuk pembuatan dokumen dinamis semacam ini.
+- **Hindari Merge Cell**: Sebisa mungkin hindari menggunakan merge cell pada tabel yang di-loop, untuk memastikan data ter-render dengan benar.
+- **Gunakan Center Across Selection**: Jika perlu teks yang center horizontal di beberapa sel, gunakan fitur "Center Across Selection", bukan merge cell.
+- **Batasi Posisi Merge Cell**: Jika harus menggunakan merge cell, lakukan merge hanya di bagian atas atau kanan tabel, hindari merge di bawah atau kiri, untuk mencegah efek merge hilang saat render.
+
+
+
+### 3. Konten di Bawah Area Loop Render Menyebabkan Format Kacau
+
+**Deskripsi Masalah**: Pada Template Excel, jika di bawah area loop yang akan tumbuh secara dinamis berdasarkan data (misalnya, detail Pesanan), masih ada konten lain (misalnya, ringkasan Pesanan, catatan), maka saat render, baris data yang dihasilkan loop akan diperluas ke bawah, langsung menutupi atau mendorong konten statis di bawah, menyebabkan format dokumen akhir kacau, konten tumpang tindih.
+
+**Solusi**:
+
+  * **Sesuaikan Layout, Letakkan Area Loop di Bagian Bawah**: Ini adalah metode yang paling direkomendasikan. Letakkan area tabel yang perlu di-loop di bagian bawah seluruh worksheet. Pindahkan informasi seperti ringkasan, tanda tangan, dll. yang awalnya di bawah ke atas area loop. Dengan begitu, data loop dapat dengan bebas diperluas ke bawah, tanpa memengaruhi elemen lain.
+  * **Sediakan Baris Kosong yang Cukup**: Jika harus menempatkan konten di bawah area loop, perkirakan jumlah baris maksimum yang mungkin dihasilkan loop, dan sisipkan baris kosong yang cukup secara manual antara area loop dan konten di bawahnya sebagai buffer. Tetapi metode ini ada risikonya, jika data aktual melebihi perkiraan, masalah akan muncul lagi.
+  * **Gunakan Template Word**: Jika persyaratan layout kompleks dan tidak dapat diselesaikan dengan menyesuaikan struktur Excel, dapat mempertimbangkan menggunakan dokumen Word sebagai Template. Tabel di Word akan secara otomatis mendorong konten di bawah saat baris bertambah, tidak akan terjadi konten yang tertutup, lebih cocok untuk generate dokumen dinamis seperti ini.
 
 **Contoh**:
 
-**Pendekatan yang Salah**: Menempatkan informasi "Ringkasan Pesanan" tepat di bawah tabel "Detail Pesanan" yang berulang.
+**Cara yang Salah**: Menempatkan informasi "Ringkasan Pesanan" tepat di bawah tabel "Detail Pesanan" yang di-loop.
 ![20250820080712](https://static-docs.nocobase.com/20250820080712.png)
 
-**Pendekatan yang Benar 1 (Sesuaikan Tata Letak)**: Pindahkan informasi "Ringkasan Pesanan" ke atas tabel "Detail Pesanan", menjadikan area perulangan sebagai elemen terbawah halaman.
+**Cara Benar 1 (Sesuaikan Layout)**: Pindahkan informasi "Ringkasan Pesanan" ke atas tabel "Detail Pesanan", biarkan area loop menjadi elemen di bagian bawah halaman.
 ![20250820082226](https://static-docs.nocobase.com/20250820082226.png)
 
-**Pendekatan yang Benar 2 (Sediakan Baris Kosong)**: Sediakan banyak baris kosong antara "Detail Pesanan" dan "Ringkasan Pesanan" untuk memastikan konten perulangan memiliki ruang ekspansi yang cukup.
+**Cara Benar 2 (Sediakan Baris Kosong)**: Sediakan banyak baris kosong antara "Detail Pesanan" dan "Ringkasan Pesanan", memastikan konten loop memiliki ruang ekspansi yang cukup.
 ![20250820081510](https://static-docs.nocobase.com/20250820081510.png)
 
-**Pendekatan yang Benar 3**: Gunakan template Word.
+**Cara Benar 3**: Gunakan Template Word.
 
-### 4. Pesan Error Muncul Saat Render Template
 
-**Deskripsi Masalah**: Selama proses render template, sistem menampilkan pesan error yang menyebabkan render gagal.
+
+
+### 4. Muncul Pesan Error Saat Template Render
+
+**Deskripsi Masalah**: Selama proses render Template, sistem menampilkan pesan error, menyebabkan render gagal.
 
 **Kemungkinan Penyebab**:
 
-- **Error Placeholder**: Nama placeholder tidak cocok dengan bidang dataset atau terdapat kesalahan sintaks.
-- **Data Hilang**: Dataset tidak memiliki bidang yang direferensikan dalam template.
-- **Penggunaan Formatter yang Tidak Tepat**: Parameter formatter salah atau jenis format yang tidak didukung.
+- **Kesalahan Placeholder**: Nama placeholder tidak cocok dengan field dataset atau ada kesalahan sintaks.
+- **Data Hilang**: Dataset tidak memiliki field yang direferensikan dalam Template.
+- **Penggunaan Formatter yang Tidak Tepat**: Parameter formatter salah atau tipe Format yang tidak didukung.
 
 **Solusi**:
 
-- **Periksa Placeholder**: Pastikan nama placeholder dalam template cocok dengan nama bidang dalam dataset dan memiliki sintaks yang benar.
-- **Validasi Dataset**: Konfirmasikan bahwa dataset berisi semua bidang yang direferensikan dalam template dengan format data yang sesuai.
-- **Sesuaikan Formatter**: Periksa metode penggunaan formatter, pastikan parameter sudah benar, dan gunakan jenis format yang didukung.
+- **Periksa Placeholder**: Pastikan nama placeholder dalam Template cocok dengan nama field dalam dataset, dan sintaksnya benar.
+- **Verifikasi Dataset**: Konfirmasi dataset berisi semua field yang direferensikan dalam Template, dan format datanya sesuai persyaratan.
+- **Sesuaikan Formatter**: Periksa cara penggunaan formatter, pastikan parameter benar, dan gunakan tipe Format yang didukung.
 
 **Contoh**:
 
 **Template yang Salah**:
 ```
-订单编号：{d.orderId}
-订单日期：{d.orderDate:format('YYYY/MM/DD')}
-总金额：{d.totalAmount:format('0.00')}
+Nomor Pesanan: {d.orderId}
+Tanggal Pesanan: {d.orderDate:format('YYYY/MM/DD')}
+Total Jumlah: {d.totalAmount:format('0.00')}
 ```
 
 **Dataset**:
@@ -81,8 +88,8 @@ Dalam template Excel, atur latar belakang abu-abu muda untuk semua sel target da
 {
   "orderId": "A123456789",
   "orderDate": "2025-01-01T10:00:00Z"
-  // Bidang totalAmount hilang
+  // Tidak ada field totalAmount
 }
 ```
 
-**Solusi**: Tambahkan bidang `totalAmount` ke dataset atau hapus referensi ke `totalAmount` dari template.
+**Solusi**: Tambahkan field `totalAmount` ke dataset, atau hapus referensi ke `totalAmount` dari Template.

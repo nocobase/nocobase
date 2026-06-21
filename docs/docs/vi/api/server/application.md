@@ -1,6 +1,8 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Application (Server)"
+description: "API Application phía server của NocoBase: instance ứng dụng, Plugin, middleware."
+keywords: "Application,ứng dụng server,Plugin,middleware,Server API,NocoBase"
+---
 
+# Application
 
-# Ứng dụng

@@ -1,14 +1,14 @@
 ---
-displayName: "Kolom Koleksi: Pengkodean Otomatis"
+displayName: "Collection Field: Auto Code"
 packageName: '@nocobase/plugin-field-sequence'
+title: "Collection Field: Auto Code"
+keywords: "Collection Field: Auto Code,plugin,NocoBase"
 description: |
-  Secara otomatis menghasilkan kode berdasarkan aturan yang dikonfigurasi, mendukung kombinasi tanggal, angka, dan teks.
+  Membuat kode secara otomatis berdasarkan aturan yang dikonfigurasi, mendukung kombinasi tanggal, angka, dan teks.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Kolom Koleksi: Pengkodean Otomatis
+# Collection Field: Auto Code

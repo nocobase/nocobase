@@ -1,31 +1,32 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Migration - Migration database"
+description: "Migration database cho Plugin NocoBase: lớp Migration, up/down, nâng cấp phiên bản, thay đổi schema."
+keywords: "Migration,Migration database,up,down,Script nâng cấp,Thay đổi schema,NocoBase"
+---
 
+# Migration - Script nâng cấp
 
-# Migration
+Trong quá trình phát triển và cập nhật Plugin NocoBase, cấu trúc database hoặc cấu hình của Plugin có thể có những thay đổi không tương thích. Để đảm bảo việc nâng cấp được thực hiện trơn tru, NocoBase cung cấp cơ chế **Migration** — xử lý các thay đổi này thông qua việc viết tệp migration.
 
-Trong quá trình phát triển và cập nhật các plugin của NocoBase, cấu trúc cơ sở dữ liệu hoặc cấu hình của plugin có thể có những thay đổi không tương thích. Để đảm bảo quá trình nâng cấp diễn ra suôn sẻ, NocoBase cung cấp cơ chế **Migration** (di chuyển dữ liệu), cho phép bạn xử lý các thay đổi này bằng cách viết các tệp migration. Bài viết này sẽ hướng dẫn bạn tìm hiểu một cách có hệ thống về cách sử dụng và quy trình phát triển Migration.
+## Khái niệm Migration
 
-## Khái niệm về Migration
+Migration là script được thực thi tự động khi nâng cấp Plugin, dùng để giải quyết các vấn đề sau:
 
-Migration là một script tự động thực thi trong quá trình nâng cấp plugin, được sử dụng để giải quyết các vấn đề sau:
+- Điều chỉnh cấu trúc bảng dữ liệu (thêm Field, sửa kiểu Field, v.v.)
+- Migration dữ liệu (như cập nhật hàng loạt giá trị Field)
+- Cập nhật cấu hình hoặc logic nội bộ của Plugin
 
-- Điều chỉnh cấu trúc bảng dữ liệu (như thêm trường, sửa đổi kiểu dữ liệu của trường, v.v.)
-- Di chuyển dữ liệu (ví dụ: cập nhật hàng loạt giá trị trường)
-- Cập nhật cấu hình hoặc logic nội bộ của plugin
+Thời điểm thực thi Migration chia làm ba loại:
 
-Thời điểm thực thi Migration được chia thành ba loại:
-
-| Loại | Thời điểm kích hoạt | Kịch bản thực thi |
-|------|--------------------|-------------------|
-| `beforeLoad` | Trước khi tất cả cấu hình plugin được tải | |
-| `afterSync` | Sau khi cấu hình bộ sưu tập được đồng bộ hóa với cơ sở dữ liệu (cấu trúc bảng đã thay đổi) | |
-| `afterLoad` | Sau khi tất cả cấu hình plugin được tải | |
+| Loại | Thời điểm kích hoạt | Tình huống thực thi |
+|------|----------|----------|
+| `beforeLoad` | Trước khi tải tất cả cấu hình Plugin |
+| `afterSync`  | Sau khi cấu hình bảng dữ liệu đồng bộ với database (cấu trúc bảng đã thay đổi) |
+| `afterLoad`  | Sau khi tải tất cả cấu hình Plugin |
 
 ## Tạo tệp Migration
 
-Các tệp Migration nên được đặt trong thư mục `src/server/migrations/*.ts` của plugin. NocoBase cung cấp lệnh `create-migration` để nhanh chóng tạo các tệp migration.
+Tệp Migration được đặt trong `src/server/migrations/*.ts` của thư mục Plugin. NocoBase cung cấp lệnh `create-migration` để nhanh chóng sinh tệp migration.
 
 ```bash
 yarn nocobase create-migration [options] <name>
@@ -34,9 +35,9 @@ yarn nocobase create-migration [options] <name>
 Tham số tùy chọn
 
 | Tham số | Mô tả |
-|------|-----------|
-| `--pkg <pkg>` | Chỉ định tên gói plugin |
-| `--on [on]` | Chỉ định thời điểm thực thi, các tùy chọn: `beforeLoad`, `afterSync`, `afterLoad` |
+|------|------|
+| `--pkg <pkg>` | Chỉ định tên gói Plugin |
+| `--on [on]`  | Chỉ định thời điểm thực thi, có thể chọn `beforeLoad`, `afterSync`, `afterLoad` |
 
 Ví dụ
 
@@ -44,7 +45,7 @@ Ví dụ
 $ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
 ```
 
-Đường dẫn tệp migration được tạo như sau:
+Đường dẫn tệp migration được sinh ra như sau:
 
 ```
 /nocobase/packages/plugins/@nocobase/plugin-client/src/server/migrations/20240107173313-update-ui.ts
@@ -60,47 +61,51 @@ export default class extends Migration {
   appVersion = '<0.19.0-alpha.3';
 
   async up() {
-    // Viết logic nâng cấp tại đây
+    // Viết logic nâng cấp ở đây
   }
 }
 ```
 
-> ⚠️ `appVersion` được sử dụng để xác định phiên bản mà quá trình nâng cấp hướng tới. Các môi trường có phiên bản nhỏ hơn phiên bản được chỉ định sẽ thực thi migration này.
+:::tip Mẹo
+
+`appVersion` dùng để xác định phiên bản mà việc nâng cấp nhắm đến, môi trường có phiên bản nhỏ hơn phiên bản đã chỉ định sẽ thực thi migration này.
+
+:::
 
 ## Viết Migration
 
-Trong các tệp Migration, bạn có thể truy cập các thuộc tính và API phổ biến sau thông qua `this` để thuận tiện thao tác với cơ sở dữ liệu, plugin và các thể hiện ứng dụng:
+Trong tệp Migration, bạn có thể truy cập các thuộc tính và API phổ biến sau thông qua `this`, tiện cho việc thao tác database, Plugin và instance ứng dụng:
 
-Các thuộc tính phổ biến
+Thuộc tính phổ biến
 
-- **`this.app`**  
-  Thể hiện ứng dụng NocoBase hiện tại. Có thể được sử dụng để truy cập các dịch vụ toàn cục, plugin hoặc cấu hình.  
+- **`this.app`**
+  Instance ứng dụng NocoBase hiện tại, có thể dùng để truy cập dịch vụ toàn cục, Plugin hoặc cấu hình.
   ```ts
   const config = this.app.config.get('database');
   ```
 
-- **`this.db`**  
-  Thể hiện dịch vụ cơ sở dữ liệu, cung cấp các giao diện để thao tác với các mô hình (bộ sưu tập).  
+- **`this.db`**
+  Instance dịch vụ database, cung cấp interface thao tác trên model (Tables).
   ```ts
   const users = await this.db.getRepository('users').findAll();
   ```
 
-- **`this.plugin`**  
-  Thể hiện plugin hiện tại, có thể được sử dụng để truy cập các phương thức tùy chỉnh của plugin.  
+- **`this.plugin`**
+  Instance Plugin hiện tại, có thể dùng để truy cập các phương thức tùy chỉnh của Plugin.
   ```ts
   const settings = this.plugin.customMethod();
   ```
 
-- **`this.sequelize`**  
-  Thể hiện Sequelize, có thể trực tiếp thực thi SQL thô hoặc các thao tác giao dịch.  
+- **`this.sequelize`**
+  Instance Sequelize, có thể thực thi trực tiếp SQL gốc hoặc thao tác transaction.
   ```ts
   await this.sequelize.transaction(async (transaction) => {
     await this.sequelize.query('UPDATE users SET active = 1', { transaction });
   });
   ```
 
-- **`this.queryInterface`**  
-  QueryInterface của Sequelize, thường được sử dụng để sửa đổi cấu trúc bảng, ví dụ như thêm trường, xóa bảng, v.v.  
+- **`this.queryInterface`**
+  QueryInterface của Sequelize, thường dùng để sửa cấu trúc bảng, ví dụ thêm Field, xóa bảng, v.v.
   ```ts
   await this.queryInterface.addColumn('users', 'age', {
     type: this.sequelize.Sequelize.INTEGER,
@@ -108,7 +113,7 @@ Các thuộc tính phổ biến
   });
   ```
 
-Ví dụ về cách viết Migration
+Ví dụ viết Migration
 
 ```ts
 import { Migration } from '@nocobase/server';
@@ -118,26 +123,26 @@ export default class extends Migration {
   appVersion = '<0.19.0-alpha.3';
 
   async up() {
-    // Sử dụng queryInterface để thêm trường
+    // Dùng queryInterface để thêm Field
     await this.queryInterface.addColumn('users', 'nickname', {
       type: this.sequelize.Sequelize.STRING,
       allowNull: true,
     });
 
-    // Sử dụng db để truy cập các mô hình dữ liệu
+    // Dùng db để truy cập model dữ liệu
     const users = await this.db.getRepository('users').findAll();
     for (const user of users) {
       user.nickname = user.username;
       await user.save();
     }
 
-    // Thực thi phương thức tùy chỉnh của plugin
+    // Gọi phương thức tùy chỉnh của plugin
     await this.plugin.customMethod();
   }
 }
 ```
 
-Ngoài các thuộc tính phổ biến được liệt kê ở trên, Migration còn cung cấp nhiều API phong phú. Để biết tài liệu chi tiết, vui lòng tham khảo [Migration API](/api/server/migration).
+Ngoài các thuộc tính phổ biến đã liệt kê ở trên, Migration còn cung cấp thêm nhiều API, cách dùng chi tiết xem tại [Migration API](../../api/server/migration.md).
 
 ## Kích hoạt Migration
 
@@ -147,11 +152,11 @@ Việc thực thi Migration được kích hoạt bởi lệnh `nocobase upgrade
 $ yarn nocobase upgrade
 ```
 
-Trong quá trình nâng cấp, hệ thống sẽ xác định thứ tự thực thi dựa trên loại Migration và `appVersion`.
+Khi nâng cấp, hệ thống sẽ phán đoán thứ tự thực thi dựa trên loại Migration và `appVersion`.
 
 ## Kiểm thử Migration
 
-Trong quá trình phát triển plugin, bạn nên sử dụng **Mock Server** để kiểm thử xem migration có thực thi đúng cách hay không, nhằm tránh làm hỏng dữ liệu thật.
+Trong phát triển Plugin, khuyến nghị dùng **Mock Server** để kiểm thử migration có thực thi đúng không, tránh phá hỏng dữ liệu thật.
 
 ```ts
 import { createMockServer, MockServer } from '@nocobase/test';
@@ -161,7 +166,7 @@ describe('Migration Test', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['my-plugin'], // Tên plugin
+      plugins: ['my-plugin'], // Tên Plugin
       version: '0.18.0-alpha.5', // Phiên bản trước khi nâng cấp
     });
   });
@@ -172,20 +177,33 @@ describe('Migration Test', () => {
 
   test('run upgrade migration', async () => {
     await app.runCommand('upgrade');
-    // Viết logic xác thực, ví dụ: kiểm tra xem trường có tồn tại không, dữ liệu đã di chuyển thành công chưa
+    // Viết logic xác minh, ví dụ kiểm tra Field có tồn tại không, dữ liệu có migration thành công không
   });
 });
 ```
 
-> Tip: Sử dụng Mock Server có thể nhanh chóng mô phỏng các kịch bản nâng cấp và xác minh thứ tự thực thi Migration cũng như các thay đổi dữ liệu.
+:::tip Mẹo
 
-## Các khuyến nghị thực hành phát triển
+Dùng Mock Server có thể nhanh chóng mô phỏng tình huống nâng cấp, và xác minh thứ tự thực thi Migration cũng như thay đổi dữ liệu.
 
-1. **Tách Migration**  
-   Mỗi lần nâng cấp, hãy cố gắng tạo một tệp migration duy nhất để duy trì tính nguyên tử và đơn giản hóa việc khắc phục sự cố.
-2. **Chỉ định thời điểm thực thi**  
-   Chọn `beforeLoad`, `afterSync` hoặc `afterLoad` dựa trên đối tượng thao tác, tránh phụ thuộc vào các module chưa được tải.
-3. **Lưu ý về kiểm soát phiên bản**  
-   Sử dụng `appVersion` để chỉ rõ phiên bản mà migration áp dụng, nhằm ngăn chặn việc thực thi lặp lại.
-4. **Kiểm thử toàn diện**  
-   Sau khi xác minh migration trên Mock Server, hãy thực hiện nâng cấp trong môi trường thực.
+:::
+
+## Khuyến nghị thực hành phát triển
+
+1. **Tách Migration**
+   Mỗi lần nâng cấp cố gắng sinh một tệp migration, giữ tính nguyên tử, tiện cho việc chẩn đoán vấn đề.
+2. **Chỉ định thời điểm thực thi**
+   Chọn `beforeLoad`, `afterSync` hoặc `afterLoad` theo đối tượng thao tác, tránh phụ thuộc vào module chưa được tải.
+3. **Chú ý kiểm soát phiên bản**
+   Dùng `appVersion` để xác định rõ phiên bản mà migration áp dụng, ngăn việc thực thi trùng lặp.
+4. **Kiểm thử bao trùm**
+   Trước tiên xác minh migration trên Mock Server, sau đó mới thực thi nâng cấp trong môi trường thật.
+
+## Liên kết liên quan
+
+- [Collections](./collections.md) — Định nghĩa cấu trúc bảng dữ liệu thường cần điều chỉnh trong Migration
+- [Database](./database.md) — API thao tác dữ liệu thông qua `this.db` trong Migration
+- [Plugin](./plugin.md) — Cách tổ chức và tải tệp Migration trong Plugin
+- [Command](./command.md) — Kích hoạt migration thông qua các lệnh `nocobase upgrade` và `create-migration`
+- [Test](./test.md) — Kiểm thử kết quả thực thi Migration bằng Mock Server
+- [Migration API](../../api/server/migration.md) — Tham chiếu API đầy đủ của lớp Migration

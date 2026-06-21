@@ -1,49 +1,50 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Hướng dẫn nâng cấp bản cài đặt mã nguồn Git"
+description: "Nâng cấp NocoBase cài đặt từ mã nguồn Git: git pull, yarn install, yarn nocobase upgrade, xóa cache và cài lại phụ thuộc."
+keywords: "Mã nguồn Git, nâng cấp, git pull, yarn nocobase upgrade, yarn install, NocoBase"
+---
 
-
-# Nâng cấp cài đặt từ mã nguồn Git
+# Nâng cấp bản cài đặt từ mã nguồn Git
 
 :::warning Chuẩn bị trước khi nâng cấp
 
-- Hãy đảm bảo sao lưu cơ sở dữ liệu của bạn trước.
-- Dừng NocoBase đang chạy (`Ctrl + C`).
+- Bắt buộc phải backup database trước
+- Dừng NocoBase đang chạy (`Ctrl + C`)
 
 :::
 
-## 1. Chuyển đến thư mục dự án NocoBase
+## 1. Chuyển vào thư mục dự án NocoBase
 
 ```bash
 cd my-nocobase-app
 ```
 
-## 2. Kéo mã nguồn mới nhất
+## 2. Pull code mới nhất
 
 ```bash
 git pull
 ```
 
-## 3. Xóa bộ nhớ đệm và các phụ thuộc cũ (tùy chọn)
+## 3. Xóa cache và phụ thuộc cũ (không bắt buộc)
 
-Nếu quá trình nâng cấp thông thường thất bại, bạn có thể thử xóa bộ nhớ đệm và các phụ thuộc, sau đó tải lại.
+Nếu quy trình nâng cấp thông thường thất bại, có thể thử xóa cache và phụ thuộc rồi tải lại
 
 ```bash
-# Xóa bộ nhớ đệm của NocoBase
+# Xóa cache nocobase
 yarn nocobase clean
-# Xóa các phụ thuộc
+# Xóa phụ thuộc
 yarn rimraf -rf node_modules # tương đương với rm -rf node_modules
 ```
 
-## 4. Cập nhật các phụ thuộc
+## 4. Cập nhật phụ thuộc
 
-📢 Do các yếu tố như môi trường mạng và cấu hình hệ thống, bước này có thể mất hơn mười phút.
+Lưu ý: Do điều kiện mạng và cấu hình hệ thống, bước tiếp theo này có thể mất khoảng mười mấy phút.
 
 ```bash
 yarn install
 ```
 
-## 5. Chạy lệnh nâng cấp
+## 5. Thực thi lệnh nâng cấp
 
 ```bash
 yarn nocobase upgrade
@@ -57,10 +58,10 @@ yarn dev
 
 :::tip Mẹo cho môi trường sản xuất
 
-Không khuyến nghị triển khai NocoBase được cài đặt từ mã nguồn trực tiếp trong môi trường sản xuất (Đối với môi trường sản xuất, vui lòng tham khảo [Triển khai sản xuất](../deployment/production.md)).
+NocoBase cài đặt từ mã nguồn không khuyến nghị triển khai trực tiếp ở môi trường sản xuất (môi trường sản xuất vui lòng tham khảo [Triển khai môi trường sản xuất](../deployment/production.md)).
 
 :::
 
-## 7. Nâng cấp các plugin bên thứ ba
+## 7. Nâng cấp Plugin bên thứ ba
 
-Tham khảo [Cài đặt và nâng cấp plugin](../install-upgrade-plugins.mdx)
+Tham khảo [Cài đặt và nâng cấp Plugin](../install-upgrade-plugins.mdx)

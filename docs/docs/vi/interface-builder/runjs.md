@@ -1,72 +1,77 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "RunJS - Viết và chạy JavaScript trực tuyến"
+description: "RunJS trong xây dựng giao diện: viết và chạy JavaScript trực tuyến, hỗ trợ JS Block, JS Field, JS Action và mở rộng logic tùy chỉnh khác."
+keywords: "RunJS, viết JS trực tuyến, JavaScript, JS Block, JS Field, JS Action, xây dựng giao diện, NocoBase"
+---
 
+# Viết và chạy JS trực tuyến
 
-# Viết & Chạy JS Trực Tuyến
+Trong NocoBase, **RunJS** cung cấp một phương pháp mở rộng nhẹ, phù hợp với các tình huống **thử nghiệm nhanh, xử lý logic tạm thời**, không cần tạo Plugin hoặc sửa đổi mã nguồn, bạn có thể tùy chỉnh giao diện hoặc tương tác cá nhân hóa thông qua JavaScript.
 
-Trong NocoBase, **RunJS** cung cấp một phương pháp mở rộng nhẹ nhàng, phù hợp cho các tình huống **thử nghiệm nhanh và xử lý logic tạm thời**. Không cần tạo **plugin** hoặc sửa đổi mã nguồn, bạn có thể tùy chỉnh giao diện hoặc tương tác một cách cá nhân hóa thông qua JavaScript.
+Thông qua nó, bạn có thể nhập trực tiếp mã JS trong trình thiết kế giao diện để thực hiện:
 
-Với **RunJS**, bạn có thể trực tiếp nhập mã JS vào trình thiết kế giao diện người dùng để đạt được:
+- Tùy chỉnh nội dung render (Field, Block, cột, mục v.v.)
+- Tùy chỉnh logic tương tác (nhấp nút, liên kết sự kiện)
+- Kết hợp dữ liệu ngữ cảnh để triển khai hành vi động
 
-- Tùy chỉnh nội dung hiển thị (trường, khối, cột, mục, v.v.)  
-- Tùy chỉnh logic tương tác (nhấp nút, liên kết sự kiện)  
-- Kết hợp dữ liệu ngữ cảnh để tạo hành vi động  
+## Các tình huống được hỗ trợ
 
-## Các Tình Huống Được Hỗ Trợ
+### JS Block
 
-### Khối JS
+Thông qua JS để tùy chỉnh render Block, có thể kiểm soát hoàn toàn cấu trúc và kiểu dáng của Block.
+Phù hợp với các tình huống có độ linh hoạt cao như hiển thị component tùy chỉnh, biểu đồ thống kê, nội dung bên thứ ba.
 
-Tùy chỉnh hiển thị khối thông qua JS, giúp bạn kiểm soát hoàn toàn cấu trúc và kiểu dáng của khối. Phù hợp để hiển thị các thành phần tùy chỉnh, biểu đồ thống kê, nội dung bên thứ ba và các tình huống linh hoạt cao khác.
+![20250916105031](https://static-docs.nocobase.com/20250916105031.png)
 
-![20250916105031](https://static-docs.nocobase.com/20250916105031.png)  
+Tài liệu: [JS Block](/interface-builder/blocks/other-blocks/js-block)
 
-Tài liệu: [Khối JS](/interface-builder/blocks/other-blocks/js-block)
+### JS Action
 
-### Thao Tác JS
+Thông qua JS để tùy chỉnh logic nhấp của nút Action, có thể thực hiện bất kỳ thao tác front-end hoặc yêu cầu API nào.
+Ví dụ: tính toán giá trị động, gửi dữ liệu tùy chỉnh, kích hoạt Popup v.v.
 
-Tùy chỉnh logic nhấp chuột của các nút thao tác thông qua JS, cho phép bạn thực thi bất kỳ thao tác frontend hoặc yêu cầu API nào. Ví dụ: tính toán giá trị động, gửi dữ liệu tùy chỉnh, kích hoạt cửa sổ bật lên, v.v.
+![20250916105123](https://static-docs.nocobase.com/20250916105123.png)
 
-![20250916105123](https://static-docs.nocobase.com/20250916105123.png)  
+Tài liệu: [JS Action](/interface-builder/actions/types/js-action)
 
-Tài liệu: [Thao Tác JS](/interface-builder/actions/types/js-action)
+### JS Field
 
-### Trường JS
+Thông qua JS để tùy chỉnh logic render của Field. Có thể hiển thị động kiểu dáng, nội dung hoặc trạng thái khác nhau dựa trên giá trị Field.
 
-Tùy chỉnh logic hiển thị của trường thông qua JS. Bạn có thể hiển thị động các kiểu dáng, nội dung hoặc trạng thái khác nhau dựa trên giá trị của trường.
+![20250916105354](https://static-docs.nocobase.com/20250916105354.png)
 
-![20250916105354](https://static-docs.nocobase.com/20250916105354.png)  
+Tài liệu: [JS Field](/interface-builder/fields/specific/js-field)
 
-Tài liệu: [Trường JS](/interface-builder/fields/specific/js-field)
+### JS Item
 
-### Mục JS
+Thông qua JS để render một mục độc lập, không gắn với Field cụ thể. Thường được sử dụng để hiển thị khối thông tin tùy chỉnh.
 
-Hiển thị các mục độc lập thông qua JS mà không cần liên kết với các trường cụ thể. Thường được sử dụng để hiển thị các khối thông tin tùy chỉnh.
+![20250916104848](https://static-docs.nocobase.com/20250916104848.png)
 
-![20250916104848](https://static-docs.nocobase.com/20250916104848.png)  
+Tài liệu: [JS Item](/interface-builder/fields/specific/js-item)
 
-Tài liệu: [Mục JS](/interface-builder/fields/specific/js-item)
+### JS Table Column
 
-### Cột Bảng JS
+Thông qua JS để tùy chỉnh render cột Table.
+Có thể triển khai logic hiển thị ô phức tạp, ví dụ thanh tiến trình, nhãn trạng thái v.v.
 
-Tùy chỉnh hiển thị cột bảng thông qua JS. Có thể triển khai logic hiển thị ô phức tạp, như thanh tiến độ, nhãn trạng thái, v.v.
+![20250916105443](https://static-docs.nocobase.com/20250916105443.png)
 
-![20250916105443](https://static-docs.nocobase.com/20250916105443.png)  
+Tài liệu: [JS Table Column](/interface-builder/fields/specific/js-column)
 
-Tài liệu: [Cột Bảng JS](/interface-builder/fields/specific/js-column)
+### Linkage rules (Quy tắc liên kết)
 
-### Quy Tắc Liên Kết
+Trong Form hoặc trang, kiểm soát logic liên kết giữa các Field thông qua JS.
+Ví dụ: khi một Field thay đổi, sửa đổi động giá trị hoặc tính khả kiến của Field khác.
 
-Kiểm soát logic liên kết giữa các trường trong biểu mẫu hoặc trang thông qua JS. Ví dụ: khi một trường thay đổi, bạn có thể sửa đổi động giá trị hoặc khả năng hiển thị của một trường khác.
+![20251029114532](https://static-docs.nocobase.com/20251029114532.png)
 
-![20251029114532](https://static-docs.nocobase.com/20251029114532.png)  
+Tài liệu: [Quy tắc liên kết](/interface-builder/linkage-rule)
 
-Tài liệu: [Quy Tắc Liên Kết](/interface-builder/linkage-rule)
+### Eventflow (Event flow)
 
-### Luồng Sự Kiện
+Thông qua JS để tùy chỉnh điều kiện kích hoạt và logic thực thi của event flow, xây dựng chuỗi tương tác front-end phức tạp hơn.
 
-Tùy chỉnh điều kiện kích hoạt và logic thực thi của luồng sự kiện thông qua JS, xây dựng các chuỗi tương tác frontend phức tạp hơn.
+![](https://static-docs.nocobase.com/20251031092755.png)
 
-![](https://static-docs.nocobase.com/20251031092755.png)  
-
-Tài liệu: [Luồng Sự Kiện](/interface-builder/event-flow)
+Tài liệu: [Event flow](/interface-builder/event-flow)

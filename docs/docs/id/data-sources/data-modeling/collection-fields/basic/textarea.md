@@ -1,21 +1,23 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Teks Multi Baris"
+description: "Field teks multi baris, cocok untuk input teks panjang, mendukung pemenggalan baris dan editing multi baris."
+keywords: "teks multi baris,textarea,text area,field teks,NocoBase"
+---
 
-# Teks Panjang
+# Teks Multi Baris
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512165017](https://static-docs.nocobase.com/20240512165017.png)
 
 ## Konfigurasi UI
 
-### Mode Edit
+Mode Editable
 
 ![20240512164001](https://static-docs.nocobase.com/20240512164001.png)
 
-### Mode Baca
+Mode Read
 
 ![20240512164138](https://static-docs.nocobase.com/20240512164138.png)

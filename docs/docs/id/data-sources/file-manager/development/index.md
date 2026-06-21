@@ -1,16 +1,18 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Pengembangan Ekstensi File Manager"
+description: "Memperluas komponen pratinjau tipe file, custom field lampiran, logika upload, berbasis API attachmentFileTypes, mime-match, dan lainnya."
+keywords: "ekstensi file manager,ekstensi field lampiran,ekstensi pratinjau file,attachmentFileTypes,NocoBase"
+---
 
 # Pengembangan Ekstensi
 
-## Memperluas Tipe File Frontend
+## Memperluas Tipe File Front-end
 
-Untuk file yang sudah diunggah, antarmuka pengguna frontend dapat menampilkan konten pratinjau yang berbeda berdasarkan tipe file. Bidang lampiran pada pengelola file memiliki pratinjau file berbasis browser (tertanam dalam iframe) yang mendukung sebagian besar format file (seperti gambar, video, audio, dan PDF) untuk pratinjau langsung di browser. Ketika format file tidak didukung untuk pratinjau browser, atau jika ada kebutuhan interaksi pratinjau khusus, Anda dapat memperluas komponen pratinjau berdasarkan tipe file.
+Untuk file yang sudah selesai diupload, di antarmuka front-end Anda dapat menampilkan konten pratinjau yang berbeda berdasarkan tipe file yang berbeda. Field lampiran File Manager memiliki pratinjau file bawaan berbasis browser (di-embed dalam iframe). Cara ini mendukung sebagian besar format file (gambar, video, audio, PDF, dan lainnya) untuk pratinjau langsung di browser. Saat format file tidak didukung untuk pratinjau browser, atau ada kebutuhan interaksi pratinjau khusus, Anda dapat menerapkannya melalui ekstensi komponen pratinjau berbasis tipe file.
 
 ### Contoh
 
-Misalnya, jika Anda ingin memperluas komponen carousel untuk file gambar, Anda dapat menggunakan kode berikut:
+Misalnya jika Anda ingin memperluas komponen carousel switching untuk file tipe gambar, Anda dapat menggunakan kode berikut:
 
 ```ts
 import match from 'mime-match';
@@ -62,11 +64,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-`attachmentFileTypes` adalah objek entri yang disediakan dalam paket `@nocobase/client` untuk memperluas tipe file. Gunakan metode `add` yang disediakannya untuk memperluas objek deskriptor tipe file.
+Di antaranya, `attachmentFileTypes` adalah objek entry yang disediakan dalam paket `@nocobase/client` untuk memperluas tipe file. Gunakan metode `add` yang disediakannya untuk memperluas objek deskripsi tipe file.
 
-Setiap tipe file harus mengimplementasikan metode `match()` untuk memeriksa apakah tipe file memenuhi persyaratan. Dalam contoh ini, metode yang disediakan oleh paket `mime-match` digunakan untuk memeriksa atribut `mimetype` file. Jika cocok dengan tipe `image/*`, maka dianggap sebagai tipe file yang perlu diproses. Jika tidak cocok, maka akan kembali ke penanganan tipe bawaan.
+Setiap tipe file harus mengimplementasikan metode `match()`, yang digunakan untuk memeriksa apakah tipe file memenuhi persyaratan. Dalam contoh, metode yang disediakan paket `mime-match` digunakan untuk mendeteksi properti `mimetype` file. Jika cocok dengan tipe `image/*`, maka dianggap sebagai tipe file yang perlu diproses. Jika tidak cocok, akan downgrade ke pemrosesan tipe bawaan.
 
-Properti `Previewer` pada objek deskriptor tipe adalah komponen yang digunakan untuk pratinjau. Ketika tipe file cocok, komponen ini akan dirender untuk pratinjau. Umumnya disarankan untuk menggunakan komponen tipe modal (seperti `<Modal />` dll.) sebagai kontainer dasar, kemudian menempatkan konten pratinjau dan interaktif ke dalam komponen tersebut untuk mengimplementasikan fungsionalitas pratinjau.
+Properti `Previewer` pada objek deskripsi tipe adalah komponen yang digunakan untuk pratinjau. Ketika tipe file cocok, komponen ini akan dirender untuk pratinjau. Biasanya disarankan menggunakan komponen tipe popup sebagai container dasar (seperti `<Modal />` dan lainnya), lalu meletakkan konten pratinjau dan interaksi yang dibutuhkan ke dalam komponen tersebut, untuk mengimplementasikan fungsi pratinjau.
 
 ### API
 
@@ -100,7 +102,7 @@ export class AttachmentFileTypes {
 
 #### `attachmentFileTypes`
 
-`attachmentFileTypes` adalah sebuah instance global, diimpor dari `@nocobase/client`:
+`attachmentFileTypes` adalah instance global, diimpor melalui `@nocobase/client`:
 
 ```ts
 import { attachmentFileTypes } from '@nocobase/client';
@@ -108,7 +110,7 @@ import { attachmentFileTypes } from '@nocobase/client';
 
 #### `attachmentFileTypes.add()`
 
-Mendaftarkan objek deskriptor tipe file baru ke pusat registrasi tipe file. Tipe objek deskriptor adalah `AttachmentFileType`.
+Mendaftarkan objek deskripsi tipe file baru ke registry tipe file. Tipe objek deskripsi adalah `AttachmentFileType`.
 
 #### `AttachmentFileType`
 
@@ -116,14 +118,14 @@ Mendaftarkan objek deskriptor tipe file baru ke pusat registrasi tipe file. Tipe
 
 Metode pencocokan format file.
 
-Parameter `file` yang diteruskan adalah objek data untuk file yang diunggah, berisi properti terkait yang dapat digunakan untuk penentuan tipe:
+Parameter input `file` adalah objek data file yang sudah diupload, berisi properti terkait yang dapat digunakan untuk penilaian tipe:
 
-*   `mimetype`: Deskripsi mimetype
-*   `extname`: Ekstensi file, termasuk tanda "."
-*   `path`: Jalur penyimpanan relatif file
-*   `url`: URL file
+* `mimetype`: Deskripsi mimetype
+* `extname`: Ekstensi file, termasuk "."
+* `path`: Path relatif penyimpanan file
+* `url`: URL file
 
-Nilai kembaliannya adalah tipe `boolean`, menunjukkan hasil kecocokan.
+Nilai kembalian adalah tipe `boolean`, mewakili hasil apakah cocok.
 
 ##### `Previewer`
 
@@ -131,11 +133,11 @@ Komponen React untuk pratinjau file.
 
 Parameter Props yang diteruskan adalah:
 
-*   `index`: Indeks file dalam daftar lampiran
-*   `list`: Daftar lampiran
-*   `onSwitchIndex`: Metode untuk mengganti indeks
+* `index`: Indeks file dalam daftar lampiran
+* `list`: Daftar lampiran
+* `onSwitchIndex`: Metode untuk mengganti indeks
 
-`onSwitchIndex` dapat menerima nilai indeks apa pun dari `list` untuk beralih ke file lain. Jika `null` digunakan sebagai parameter untuk beralih, komponen pratinjau akan langsung ditutup.
+`onSwitchIndex` dapat menerima nilai indeks apa pun dalam list, untuk berpindah ke file lain. Jika menggunakan `null` sebagai parameter pergantian, maka komponen pratinjau akan langsung ditutup.
 
 ```ts
 onSwitchIndex(null);

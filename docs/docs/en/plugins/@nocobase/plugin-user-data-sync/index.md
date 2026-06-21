@@ -1,4 +1,6 @@
 ---
+title: "User data synchronization"
+keywords: "Users & permissions"
 displayName: "User data synchronization"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # User data synchronization

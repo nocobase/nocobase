@@ -1,3 +1,9 @@
+---
+title: "FlowModel 与 React 组件对比"
+description: "FlowModel 与 React.Component 对比：配置化 vs 代码化、可编排性、适用场景选择，FlowEngine 选型参考。"
+keywords: "FlowModel,React 组件,对比,可编排,配置化,FlowEngine 选型,NocoBase"
+---
+
 # FlowModel vs React.Component
 
 ## 基本职责对比

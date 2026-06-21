@@ -1,19 +1,21 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "Mở rộng nguồn dữ liệu đồng bộ"
+description: "Mở rộng plugin đồng bộ dữ liệu người dùng NocoBase: tùy chỉnh nguồn dữ liệu đồng bộ, interface SyncSource, đăng ký nguồn đồng bộ."
+keywords: "Mở rộng nguồn dữ liệu đồng bộ,SyncSource,nguồn đồng bộ,plugin-user-data-sync,phát triển đồng bộ dữ liệu,NocoBase"
+---
 
 # Mở rộng nguồn dữ liệu đồng bộ
 
 ## Tổng quan
 
-NocoBase hỗ trợ mở rộng các loại **nguồn dữ liệu** đồng bộ hóa dữ liệu người dùng theo nhu cầu.
+NocoBase hỗ trợ mở rộng các loại nguồn dữ liệu đồng bộ dữ liệu người dùng theo nhu cầu.
 
-## Phía máy chủ
+## Server
 
-### Giao diện nguồn dữ liệu
+### Interface nguồn dữ liệu
 
-**Plugin** đồng bộ hóa dữ liệu người dùng tích hợp sẵn cung cấp chức năng đăng ký và quản lý các loại **nguồn dữ liệu**. Để mở rộng một loại **nguồn dữ liệu**, bạn cần kế thừa lớp trừu tượng `SyncSource` do **plugin** cung cấp và triển khai các giao diện tiêu chuẩn tương ứng.
+Plugin đồng bộ dữ liệu người dùng tích hợp sẵn cung cấp việc đăng ký và quản lý các loại nguồn dữ liệu. Để mở rộng loại nguồn dữ liệu, cần kế thừa lớp trừu tượng `SyncSource` do plugin cung cấp và triển khai các interface chuẩn tương ứng.
 
 ```ts
 import { SyncSource, UserData } from '@nocobase/plugin-user-data-sync';
@@ -25,7 +27,7 @@ class CustomSyncSource extends SyncSource {
 }
 ```
 
-`SyncSource` cung cấp thuộc tính `options` để lấy cấu hình tùy chỉnh của **nguồn dữ liệu**.
+`SyncSource` cung cấp thuộc tính options, dùng để lấy cấu hình tùy chỉnh của nguồn dữ liệu.
 
 ```ts
 import { SyncSource, UserData } from '@nocobase/plugin-user-data-sync';
@@ -40,34 +42,34 @@ class CustomSyncSource extends SyncSource {
 }
 ```
 
-### Mô tả các trường của `UserData`
+### Mô tả các field UserData
 
-| Trường         | Mô tả                                      |
+| Field         | Mô tả                                      |
 | ------------ | ----------------------------------------- |
 | `dataType`   | Loại dữ liệu, các giá trị tùy chọn là `user` và `department` |
-| `uniqueKey`  | Trường định danh duy nhất                              |
-| `records`    | Các bản ghi dữ liệu                                  |
-| `sourceName` | Tên **nguồn dữ liệu**                                |
+| `uniqueKey`  | Field định danh duy nhất                              |
+| `records`    | Bản ghi dữ liệu                                  |
+| `sourceName` | Tên nguồn dữ liệu                                |
 
-Nếu `dataType` là `user`, trường `records` sẽ bao gồm các trường sau:
+Nếu dataType là `user`, records bao gồm các field sau:
 
-| Trường          | Mô tả           |
+| Field          | Mô tả           |
 | ------------- | -------------- |
 | `id`          | ID người dùng        |
-| `nickname`    | Biệt danh người dùng       |
-| `avatar`      | Ảnh đại diện người dùng             |
+| `nickname`    | Nickname người dùng       |
+| `avatar`      | Ảnh đại diện người dùng       |
 | `email`       | Email           |
 | `phone`       | Số điện thoại         |
-| `departments` | Mảng ID phòng ban |
+| `departments` | Mảng ID các phòng ban thuộc về |
 
-Nếu `dataType` là `department`, trường `records` sẽ bao gồm các trường sau:
-| Trường | Mô tả |
+Nếu dataType là `department`, records bao gồm các field sau:
+| Field | Mô tả |
 | -------- | ---------------------- |
 | `id` | ID phòng ban |
 | `name` | Tên phòng ban |
 | `parentId` | ID phòng ban cha |
 
-### Ví dụ triển khai giao diện nguồn dữ liệu
+### Ví dụ triển khai interface nguồn dữ liệu
 
 ```ts
 import { SyncSource, UserData } from '@nocobase/plugin-user-data-sync';
@@ -102,7 +104,7 @@ class CustomSyncSource extends SyncSource {
 
 ### Đăng ký loại nguồn dữ liệu
 
-**Nguồn dữ liệu** mở rộng cần được đăng ký với module quản lý dữ liệu.
+Nguồn dữ liệu mở rộng cần được đăng ký với module quản lý dữ liệu.
 
 ```ts
 import UserDataSyncPlugin from '@nocobase/plugin-user-data-sync';
@@ -122,9 +124,9 @@ class CustomSourcePlugin extends Plugin {
 }
 ```
 
-## Phía máy khách
+## Client
 
-Giao diện người dùng phía máy khách đăng ký các loại **nguồn dữ liệu** bằng cách sử dụng phương thức `registerType` do **plugin** đồng bộ hóa dữ liệu người dùng cung cấp:
+Giao diện người dùng phía client được đăng ký thông qua interface `registerType` mà plugin đồng bộ dữ liệu người dùng phía client cung cấp:
 
 ```ts
 import SyncPlugin from '@nocobase/plugin-user-data-sync/client';
@@ -134,15 +136,15 @@ class CustomSourcePlugin extends Plugin {
     const sync = this.app.pm.get(SyncPlugin);
     sync.registerType(authType, {
       components: {
-        AdminSettingsForm, // Biểu mẫu quản lý backend
+        AdminSettingsForm, // form quản trị
       },
     });
   }
 }
 ```
 
-### Biểu mẫu quản lý backend
+### Form quản trị
 
 ![](https://static-docs.nocobase.com/202412041429835.png)
 
-Phần trên cung cấp cấu hình **nguồn dữ liệu** chung, trong khi phần dưới là phần biểu mẫu cấu hình tùy chỉnh có thể đăng ký.
+Phần phía trên là cấu hình nguồn dữ liệu chung, phần phía dưới là phần form cấu hình tùy chỉnh có thể đăng ký.

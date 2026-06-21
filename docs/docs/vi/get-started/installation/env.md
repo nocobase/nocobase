@@ -1,19 +1,20 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Cấu hình biến môi trường NocoBase"
+description: "Biến môi trường NocoBase: Hướng dẫn cấu hình TZ múi giờ, APP_KEY, DB database, CACHE, FILE_STORAGE, cách thiết lập với Docker và create-nocobase-app."
+keywords: "biến môi trường, APP_KEY, TZ, cấu hình DB, CACHE, FILE_STORAGE, biến môi trường Docker, NocoBase"
+---
 
+# Biến môi trường
 
-# Biến Môi Trường
+## Cách thiết lập biến môi trường?
 
-## Cách Thiết Lập Biến Môi Trường?
+### Cài đặt qua Git source code hoặc create-nocobase-app
 
-### Cài đặt từ mã nguồn Git hoặc `create-nocobase-app`
+Thiết lập biến môi trường trong file `.env` ở thư mục gốc của dự án, sau khi sửa biến môi trường cần kill tiến trình ứng dụng và khởi động lại.
 
-Thiết lập các biến môi trường trong tệp `.env` ở thư mục gốc của dự án. Sau khi thay đổi biến môi trường, bạn cần dừng tiến trình ứng dụng và khởi động lại.
+### Cài đặt qua Docker
 
-### Cài đặt bằng Docker
-
-Sửa đổi cấu hình `docker-compose.yml` và thiết lập các biến môi trường trong tham số `environment`. Ví dụ:
+Sửa cấu hình `docker-compose.yml`, thiết lập biến môi trường trong tham số `enviroment`. Ví dụ:
 
 ```yml
 services:
@@ -23,7 +24,7 @@ services:
       - APP_ENV=production
 ```
 
-Bạn cũng có thể sử dụng `env_file` để thiết lập biến môi trường trong tệp `.env`. Ví dụ:
+Cũng có thể dùng `env_file`, để thiết lập biến môi trường trong file `.env`. Ví dụ:
 
 ```yml
 services:
@@ -32,30 +33,30 @@ services:
     env_file: .env
 ```
 
-Sau khi thay đổi biến môi trường, bạn cần xây dựng lại container của ứng dụng.
+Sau khi sửa biến môi trường, cần build lại container app.
 
 ```yml
 docker compose up -d app
 ```
 
-## Biến Môi Trường Toàn Cục
+## Biến môi trường toàn cục
 
 ### TZ
 
-Dùng để thiết lập múi giờ cho ứng dụng, mặc định là múi giờ của hệ điều hành.
+Dùng để thiết lập múi giờ của ứng dụng, mặc định là múi giờ của hệ điều hành.
 
 https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
 :::warning
-Các thao tác liên quan đến thời gian sẽ được xử lý dựa trên múi giờ này. Việc thay đổi TZ có thể ảnh hưởng đến các giá trị ngày tháng trong cơ sở dữ liệu. Để biết thêm chi tiết, hãy tham khảo mục "[Tổng quan về Ngày & Giờ](/data-sources/data-modeling/collection-fields/datetime)".
+Các thao tác liên quan đến thời gian sẽ xử lý dựa trên múi giờ này, sửa TZ có thể ảnh hưởng đến giá trị ngày tháng trong cơ sở dữ liệu, xem chi tiết tại "[Tổng quan ngày & giờ](/data-sources/data-modeling/collection-fields/datetime)"
 :::
 
 ### APP_ENV
 
-Môi trường ứng dụng, giá trị mặc định là `development`, các tùy chọn bao gồm:
+Môi trường ứng dụng, giá trị mặc định `development`, các tùy chọn bao gồm:
 
-- `production` môi trường sản phẩm
-- `development` môi trường phát triển
+- `production` Môi trường production
+- `development` Môi trường phát triển
 
 ```bash
 APP_ENV=production
@@ -63,10 +64,10 @@ APP_ENV=production
 
 ### APP_KEY
 
-Khóa bí mật của ứng dụng, dùng để tạo token người dùng, v.v. Hãy thay đổi thành khóa ứng dụng của riêng bạn và đảm bảo không để lộ ra bên ngoài.
+Khóa ứng dụng, dùng để sinh user token, v.v. Hãy đổi thành khóa ứng dụng riêng của bạn và đảm bảo không tiết lộ ra ngoài
 
 :::warning
-Nếu APP_KEY bị thay đổi, các token cũ cũng sẽ không còn hiệu lực.
+Nếu APP_KEY bị thay đổi, các token cũ cũng sẽ mất hiệu lực
 :::
 
 ```bash
@@ -75,7 +76,7 @@ APP_KEY=app-key-test
 
 ### APP_PORT
 
-Cổng ứng dụng, giá trị mặc định là `13000`.
+Cổng ứng dụng, giá trị mặc định `13000`
 
 ```bash
 APP_PORT=13000
@@ -83,7 +84,7 @@ APP_PORT=13000
 
 ### API_BASE_PATH
 
-Tiền tố địa chỉ API của NocoBase, giá trị mặc định là `/api/`.
+Tiền tố địa chỉ API NocoBase, giá trị mặc định `/api/`
 
 ```bash
 API_BASE_PATH=/api/
@@ -95,37 +96,37 @@ API_BASE_PATH=/api/
 
 > `v1.6.0+`
 
-Chế độ khởi động đa lõi (cluster). Nếu biến này được cấu hình, nó sẽ được truyền vào lệnh `pm2 start` dưới dạng tham số `-i <instances>`. Các tùy chọn tương tự như tham số `-i` của pm2 (tham khảo [PM2: Cluster Mode](https://pm2.keymetrics.io/docs/usage/cluster-mode/)), bao gồm:
+Chế độ khởi động đa nhân (cluster), nếu cấu hình biến này, sẽ được truyền tới lệnh `pm2 start` làm tham số `-i <instances>`. Tùy chọn giống tham số `-i` của pm2 (tham khảo [PM2: Cluster Mode](https://pm2.keymetrics.io/docs/usage/cluster-mode/)), bao gồm:
 
-- `max`: Sử dụng số lõi CPU tối đa
-- `-1`: Sử dụng số lõi CPU tối đa trừ một
-- `<number>`: Chỉ định số lõi
+- `max`: dùng số lõi CPU tối đa
+- `-1`: dùng số lõi CPU tối đa trừ 1
+- `<number>`: chỉ định số lõi
 
-Giá trị mặc định là trống, có nghĩa là tính năng này không được bật.
+Mặc định để trống, nghĩa là không bật.
 
 :::warning{title="Lưu ý"}
-Chế độ này yêu cầu sử dụng các plugin liên quan đến chế độ cluster. Nếu không, chức năng của ứng dụng có thể gặp sự cố bất thường.
+Chế độ này cần kết hợp với các plugin liên quan đến chế độ cluster, nếu không các tính năng của ứng dụng có thể hoạt động bất thường.
 :::
 
-Để biết thêm thông tin, xem thêm: [Chế độ Cluster](/cluster-mode).
+Tham khảo thêm: [Chế độ cluster](/cluster-mode).
 
 ### PLUGIN_PACKAGE_PREFIX
 
-Tiền tố tên gói của plugin, mặc định là: `@nocobase/plugin-,@nocobase/preset-`.
+Tiền tố tên package của Plugin, mặc định: `@nocobase/plugin-,@nocobase/preset-`.
 
-Ví dụ, để thêm `plugin` `hello` vào dự án `my-nocobase-app`, tên gói đầy đủ của `plugin` sẽ là `@my-nocobase-app/plugin-hello`.
+Ví dụ, thêm Plugin `hello` vào dự án `my-nocobase-app`, tên package đầy đủ của Plugin sẽ là `@my-nocobase-app/plugin-hello`.
 
-PLUGIN_PACKAGE_PREFIX có thể được cấu hình như sau:
+PLUGIN_PACKAGE_PREFIX có thể cấu hình thành:
 
 ```bash
 PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
 ```
 
-Khi đó, mối quan hệ giữa tên `plugin` và tên gói như sau:
+Tương ứng tên Plugin và tên package như sau:
 
-- Tên gói của `plugin` `users` là `@nocobase/plugin-users`
-- Tên gói của `plugin` `nocobase` là `@nocobase/preset-nocobase`
-- Tên gói của `plugin` `hello` là `@my-nocobase-app/plugin-hello`
+- Tên package của Plugin `users` là `@nocobase/plugin-users`
+- Tên package của Plugin `nocobase` là `@nocobase/preset-nocobase`
+- Tên package của Plugin `hello` là `@my-nocobase-app/plugin-hello`
 
 ### DB_DIALECT
 
@@ -141,9 +142,9 @@ DB_DIALECT=mysql
 
 ### DB_HOST
 
-Máy chủ cơ sở dữ liệu (cần cấu hình khi sử dụng cơ sở dữ liệu MySQL hoặc PostgreSQL).
+Host cơ sở dữ liệu (cần cấu hình khi dùng MySQL hoặc PostgreSQL)
 
-Mặc định là `localhost`.
+Giá trị mặc định `localhost`
 
 ```bash
 DB_HOST=localhost
@@ -151,10 +152,10 @@ DB_HOST=localhost
 
 ### DB_PORT
 
-Cổng cơ sở dữ liệu (cần cấu hình khi sử dụng cơ sở dữ liệu MySQL hoặc PostgreSQL).
+Cổng cơ sở dữ liệu (cần cấu hình khi dùng MySQL hoặc PostgreSQL)
 
-- Cổng mặc định cho MySQL và MariaDB là 3306
-- Cổng mặc định cho PostgreSQL là 5432
+- MySQL, MariaDB cổng mặc định 3306
+- PostgreSQL cổng mặc định 5432
 
 ```bash
 DB_PORT=3306
@@ -162,7 +163,7 @@ DB_PORT=3306
 
 ### DB_DATABASE
 
-Tên cơ sở dữ liệu (cần cấu hình khi sử dụng cơ sở dữ liệu MySQL hoặc PostgreSQL).
+Tên cơ sở dữ liệu (cần cấu hình khi dùng MySQL hoặc PostgreSQL)
 
 ```bash
 DB_DATABASE=nocobase
@@ -170,7 +171,7 @@ DB_DATABASE=nocobase
 
 ### DB_USER
 
-Người dùng cơ sở dữ liệu (cần cấu hình khi sử dụng cơ sở dữ liệu MySQL hoặc PostgreSQL).
+Người dùng cơ sở dữ liệu (cần cấu hình khi dùng MySQL hoặc PostgreSQL)
 
 ```bash
 DB_USER=nocobase
@@ -178,7 +179,7 @@ DB_USER=nocobase
 
 ### DB_PASSWORD
 
-Mật khẩu cơ sở dữ liệu (cần cấu hình khi sử dụng cơ sở dữ liệu MySQL hoặc PostgreSQL).
+Mật khẩu cơ sở dữ liệu (cần cấu hình khi dùng MySQL hoặc PostgreSQL)
 
 ```bash
 DB_PASSWORD=nocobase
@@ -186,7 +187,7 @@ DB_PASSWORD=nocobase
 
 ### DB_TABLE_PREFIX
 
-Tiền tố bảng dữ liệu.
+Tiền tố bảng dữ liệu
 
 ```bash
 DB_TABLE_PREFIX=nocobase_
@@ -194,18 +195,18 @@ DB_TABLE_PREFIX=nocobase_
 
 ### DB_UNDERSCORED
 
-Liệu tên bảng và tên trường trong cơ sở dữ liệu có được chuyển đổi sang kiểu snake case hay không. Mặc định là `false`. Nếu sử dụng cơ sở dữ liệu MySQL (MariaDB) và `lower_case_table_names=1`, thì `DB_UNDERSCORED` phải được đặt là `true`.
+Tên bảng và tên Field trong cơ sở dữ liệu có chuyển sang kiểu snake case không, mặc định là `false`. Nếu dùng MySQL (MariaDB), và `lower_case_table_names=1`, thì DB_UNDERSCORED bắt buộc phải là `true`
 
 :::warning
-Khi `DB_UNDERSCORED=true`, tên bảng và tên trường thực tế trong cơ sở dữ liệu sẽ không khớp với những gì hiển thị trên giao diện người dùng. Ví dụ, `orderDetails` sẽ được lưu trữ dưới dạng `order_details` trong cơ sở dữ liệu.
+Khi `DB_UNDERSCORED=true`, tên bảng và tên Field thực tế trong cơ sở dữ liệu không trùng với những gì thấy trên giao diện, ví dụ `orderDetails` trong cơ sở dữ liệu sẽ là `order_details`
 :::
 
 ### DB_LOGGING
 
-Công tắc nhật ký cơ sở dữ liệu, giá trị mặc định là `off`, các tùy chọn bao gồm:
+Bật/tắt log cơ sở dữ liệu, giá trị mặc định `off`, các tùy chọn bao gồm:
 
-- `on` bật
-- `off` tắt
+- `on` Bật
+- `off` Tắt
 
 ```bash
 DB_LOGGING=on
@@ -213,52 +214,44 @@ DB_LOGGING=on
 
 ### DB_POOL_MAX
 
-Số lượng kết nối tối đa trong nhóm kết nối cơ sở dữ liệu, giá trị mặc định là `5`.
+Số kết nối tối đa của connection pool cơ sở dữ liệu, giá trị mặc định `5`.
 
 ### DB_POOL_MIN
 
-Số lượng kết nối tối thiểu trong nhóm kết nối cơ sở dữ liệu, giá trị mặc định là `0`.
+Số kết nối tối thiểu của connection pool cơ sở dữ liệu, giá trị mặc định `0`.
 
 ### DB_POOL_IDLE
 
-Thời gian chờ tối đa (tính bằng mili giây) mà một kết nối có thể ở trạng thái rảnh trước khi được giải phóng. Giá trị mặc định là `10000` (10 giây).
+Thời gian idle của connection pool cơ sở dữ liệu, giá trị mặc định `10000` (10 giây).
 
 ### DB_POOL_ACQUIRE
 
-Thời gian chờ tối đa (tính bằng mili giây) mà nhóm kết nối sẽ cố gắng lấy một kết nối trước khi báo lỗi. Giá trị mặc định là `60000` (60 giây).
+Thời gian chờ tối đa khi lấy kết nối từ connection pool cơ sở dữ liệu, giá trị mặc định `60000` (60 giây).
 
 ### DB_POOL_EVICT
 
-Khoảng thời gian (tính bằng mili giây) sau đó nhóm kết nối sẽ loại bỏ các kết nối rảnh. Giá trị mặc định là `1000` (1 giây).
+Thời gian sống tối đa của kết nối trong connection pool cơ sở dữ liệu, giá trị mặc định `1000` (1 giây).
 
 ### DB_POOL_MAX_USES
 
-Số lần một kết nối có thể được sử dụng trước khi nó bị loại bỏ và thay thế. Giá trị mặc định là `0` (không giới hạn).
+Số lần một kết nối có thể được sử dụng trước khi bị loại bỏ và thay thế, giá trị mặc định `0` (không giới hạn).
 
 ### LOGGER_TRANSPORT
 
-Phương thức xuất nhật ký, nhiều giá trị được phân tách bằng dấu `,`. Mặc định là `console` trong môi trường phát triển, `console,dailyRotateFile` trong môi trường sản phẩm.
+Cách xuất log, nhiều cái phân tách bằng `,`. Môi trường phát triển mặc định là `console`, môi trường production mặc định là `console,dailyRotateFile`.
 Các tùy chọn:
 
 - `console` - `console.log`
-- `file` - Xuất ra tệp
-- `dailyRotateFile` - Xuất ra các tệp xoay vòng hàng ngày
+- `file` - `file`
+- `dailyRotateFile` - `file rotate theo ngày`
 
 ```bash
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Đường dẫn lưu trữ nhật ký dựa trên tệp, mặc định là `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
-Mức độ nhật ký đầu ra. Mặc định là `debug` trong môi trường phát triển và `info` trong môi trường sản phẩm. Các tùy chọn:
+Mức log xuất ra, môi trường phát triển mặc định là `debug`, môi trường production mặc định là `info`. Các tùy chọn:
 
 - `error`
 - `warn`
@@ -270,14 +263,14 @@ Mức độ nhật ký đầu ra. Mặc định là `debug` trong môi trường
 LOGGER_LEVEL=info
 ```
 
-Mức độ nhật ký đầu ra của cơ sở dữ liệu là `debug`, được kiểm soát bởi `DB_LOGGING` và không bị ảnh hưởng bởi `LOGGER_LEVEL`.
+Mức xuất log cơ sở dữ liệu là `debug`, được kiểm soát bật/tắt bởi `DB_LOGGING`, không bị ảnh hưởng bởi `LOGGER_LEVEL`.
 
 ### LOGGER_MAX_FILES
 
-Số lượng tệp nhật ký tối đa được giữ lại.
+Số file log tối đa được giữ lại.
 
-- Khi `LOGGER_TRANSPORT` là `file`: Mặc định là `10`.
-- Khi `LOGGER_TRANSPORT` là `dailyRotateFile`: Sử dụng `[n]d` để biểu thị số ngày. Mặc định là `14d`.
+- Khi `LOGGER_TRANSPORT` là `file`, giá trị mặc định là `10`.
+- Khi `LOGGER_TRANSPORT` là `dailyRotateFile`, dùng `[n]d` để biểu thị số ngày. Giá trị mặc định là `14d`.
 
 ```bash
 LOGGER_MAX_FILES=14d
@@ -285,10 +278,10 @@ LOGGER_MAX_FILES=14d
 
 ### LOGGER_MAX_SIZE
 
-Xoay vòng nhật ký theo kích thước.
+Rotate log theo kích thước.
 
-- Khi `LOGGER_TRANSPORT` là `file`: Đơn vị là `byte`. Mặc định là `20971520 (20 * 1024 * 1024)`.
-- Khi `LOGGER_TRANSPORT` là `dailyRotateFile`: Có thể sử dụng `[n]k`, `[n]m`, `[n]g`. Mặc định không được cấu hình.
+- Khi `LOGGER_TRANSPORT` là `file`, đơn vị là `byte`, giá trị mặc định là `20971520 (20 * 1024 * 1024)`.
+- Khi `LOGGER_TRANSPORT` là `dailyRotateFile`, có thể dùng `[n]k`, `[n]m`, `[n]g`. Mặc định không cấu hình.
 
 ```bash
 LOGGER_MAX_SIZE=20971520
@@ -296,7 +289,7 @@ LOGGER_MAX_SIZE=20971520
 
 ### LOGGER_FORMAT
 
-Định dạng in nhật ký. Mặc định là `console` trong môi trường phát triển và `json` trong môi trường sản phẩm. Các tùy chọn:
+Format in log, môi trường phát triển mặc định `console`, môi trường production mặc định `json`. Các tùy chọn:
 
 - `console`
 - `json`
@@ -307,11 +300,11 @@ LOGGER_MAX_SIZE=20971520
 LOGGER_FORMAT=json
 ```
 
-Tham khảo: [Định dạng Nhật ký](/log-and-monitor/logger/index.md#log-format)
+Tham khảo: [Format log](/log-and-monitor/logger/index.md#format-log)
 
 ### CACHE_DEFAULT_STORE
 
-Mã định danh duy nhất cho phương thức lưu trữ bộ nhớ đệm, chỉ định phương thức bộ nhớ đệm mặc định của máy chủ. Mặc định là `memory`. Các tùy chọn tích hợp bao gồm:
+Định danh duy nhất của cách dùng cache, chỉ định cách cache mặc định phía server, giá trị mặc định `memory`, các tùy chọn tích hợp sẵn:
 
 - `memory`
 - `redis`
@@ -322,7 +315,7 @@ CACHE_DEFAULT_STORE=memory
 
 ### CACHE_MEMORY_MAX
 
-Số lượng mục tối đa trong bộ nhớ đệm, giá trị mặc định là `2000`.
+Số lượng item tối đa của memory cache, giá trị mặc định `2000`.
 
 ```bash
 CACHE_MEMORY_MAX=2000
@@ -330,7 +323,7 @@ CACHE_MEMORY_MAX=2000
 
 ### CACHE_REDIS_URL
 
-URL kết nối Redis, tùy chọn. Ví dụ: `redis://localhost:6379`
+Kết nối Redis, tùy chọn. Ví dụ: `redis://localhost:6379`
 
 ```bash
 CACHE_REDIS_URL=redis://localhost:6379
@@ -338,7 +331,7 @@ CACHE_REDIS_URL=redis://localhost:6379
 
 ### TELEMETRY_ENABLED
 
-Bật thu thập dữ liệu đo từ xa. Mặc định là `off`.
+Bật thu thập dữ liệu telemetry, mặc định là `off`.
 
 ```bash
 TELEMETRY_ENABLED=on
@@ -346,7 +339,7 @@ TELEMETRY_ENABLED=on
 
 ### TELEMETRY_METRIC_READER
 
-Các bộ thu thập chỉ số giám sát được bật. Mặc định là `console`. Các giá trị khác cần tham khảo tên đã đăng ký của các `plugin` thu thập tương ứng, ví dụ `prometheus`. Nhiều giá trị được phân tách bằng dấu `,`.
+Bộ thu thập metric đang bật, mặc định là `console`. Các giá trị khác cần tham khảo tên đăng ký của plugin thu thập tương ứng, ví dụ `prometheus`. Nhiều cái phân tách bằng `,`.
 
 ```bash
 TELEMETRY_METRIC_READER=console,prometheus
@@ -354,23 +347,49 @@ TELEMETRY_METRIC_READER=console,prometheus
 
 ### TELEMETRY_TRACE_PROCESSOR
 
-Các bộ xử lý dữ liệu theo dõi được bật. Mặc định là `console`. Các giá trị khác cần tham khảo tên đã đăng ký của các `plugin` xử lý tương ứng. Nhiều giá trị được phân tách bằng dấu `,`.
+Bộ xử lý dữ liệu trace đang bật, mặc định là `console`. Các giá trị khác cần tham khảo tên đăng ký của plugin processor tương ứng. Nhiều cái phân tách bằng `,`.
 
 ```bash
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
-## Biến Môi Trường Thử Nghiệm
+### WORKER_MODE
+
+Dùng để cấu hình chế độ làm việc của các node khác nhau khi tách dịch vụ trong chế độ cluster, xem chi tiết tại "[Tách dịch vụ: Cách tách dịch vụ](/cluster-mode/services-splitting#cach-tach-dich-vu)".
+
+### SERVER_REQUEST_WHITELIST
+
+Whitelist mục tiêu cho các yêu cầu HTTP gửi ra ngoài từ server, dùng để chống tấn công SSRF (Server-Side Request Forgery). Phân tách bằng dấu phẩy, hỗ trợ IP chính xác, dải CIDR, tên miền chính xác và subdomain wildcard (một cấp).
+
+```bash
+SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+```
+
+**Phạm vi áp dụng**: Node "HTTP Request" của Workflow, "Custom Request" của nút Action tùy chỉnh. Đường dẫn tương đối (gọi API của chính NocoBase) không bị giới hạn này.
+
+**Khi không cấu hình**: Tất cả yêu cầu `http`/`https` đều được cho qua (giữ hành vi cũ). **Sau khi cấu hình**: Chỉ cho phép các yêu cầu khớp với whitelist, các yêu cầu không khớp sẽ báo lỗi.
+
+Các format được hỗ trợ:
+
+| Format | Ví dụ | Quy tắc khớp |
+| --- | --- | --- |
+| IPv4 chính xác | `1.2.3.4` | Chỉ khớp IP đó |
+| IPv4 CIDR | `10.0.0.0/8` | Khớp tất cả IP trong dải mạng đó |
+| Tên miền chính xác | `api.example.com` | Chỉ khớp tên miền đó |
+| Subdomain wildcard | `*.example.com` | Khớp subdomain một cấp, như `foo.example.com`, không khớp `example.com` hoặc `a.b.example.com` |
+
+## Biến môi trường thử nghiệm
 
 ### APPEND_PRESET_LOCAL_PLUGINS
 
-Dùng để thêm các `plugin` cục bộ được cài đặt sẵn nhưng chưa kích hoạt. Giá trị là tên gói của `plugin` (tham số `name` trong `package.json`), nhiều `plugin` được phân tách bằng dấu phẩy.
+Dùng để thêm các Plugin được preset chưa được kích hoạt, giá trị là tên package của Plugin (tham số name của package.json), nhiều Plugin phân tách bằng dấu phẩy tiếng Anh.
 
 :::info
 
-1. Đảm bảo `plugin` đã được tải xuống cục bộ và có thể tìm thấy trong thư mục `node_modules`. Để biết thêm chi tiết, xem [Cấu trúc Tổ chức của Plugin](/plugin-development/project-structure).
-2. Sau khi thêm biến môi trường, `plugin` sẽ chỉ hiển thị trên trang quản lý `plugin` sau khi cài đặt ban đầu (`nocobase install`) hoặc nâng cấp (`nocobase upgrade`).
-   :::
+1. Cần đảm bảo Plugin đã được tải về local, và có thể tìm thấy trong thư mục `node_modules`, xem thêm tại [Cách tổ chức Plugin](/plugin-development/project-structure).
+2. Sau khi thêm biến môi trường, cần thực hiện cài đặt khởi tạo `nocobase install` hoặc nâng cấp `nocobase upgrade` thì mới hiển thị trên trang quản lý Plugin.
+
+:::
 
 ```bash
 APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -378,21 +397,22 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 
 ### APPEND_PRESET_BUILT_IN_PLUGINS
 
-Dùng để thêm các `plugin` tích hợp được cài đặt mặc định. Giá trị là tên gói của `plugin` (tham số `name` trong `package.json`), nhiều `plugin` được phân tách bằng dấu phẩy.
+Dùng để thêm các Plugin được preset và cài đặt mặc định, giá trị là tên package của Plugin (tham số name của package.json), nhiều Plugin phân tách bằng dấu phẩy tiếng Anh.
 
 :::info
 
-1. Đảm bảo `plugin` đã được tải xuống cục bộ và có thể tìm thấy trong thư mục `node_modules`. Để biết thêm chi tiết, xem [Cấu trúc Tổ chức của Plugin](/plugin-development/project-structure).
-2. Sau khi thêm biến môi trường, `plugin` sẽ tự động được cài đặt hoặc nâng cấp trong quá trình cài đặt ban đầu (`nocobase install`) hoặc nâng cấp (`nocobase upgrade`).
-   :::
+1. Cần đảm bảo Plugin đã được tải về local, và có thể tìm thấy trong thư mục `node_modules`, xem thêm tại [Cách tổ chức Plugin](/plugin-development/project-structure).
+2. Sau khi thêm biến môi trường, sẽ tự động cài đặt hoặc nâng cấp Plugin khi thực hiện cài đặt khởi tạo `nocobase install` hoặc nâng cấp `nocobase upgrade`.
+
+:::
 
 ```bash
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 ```
 
-## Biến Môi Trường Tạm Thời
+## Biến môi trường tạm thời
 
-Khi cài đặt NocoBase, bạn có thể thiết lập các biến môi trường tạm thời để hỗ trợ quá trình cài đặt, ví dụ:
+Khi cài đặt NocoBase, có thể thiết lập biến môi trường tạm thời để hỗ trợ cài đặt, ví dụ:
 
 ```bash
 yarn cross-env \
@@ -402,20 +422,20 @@ yarn cross-env \
   INIT_ROOT_NICKNAME="Super Admin" \
   nocobase install
 
-# Tương đương với
+# Tương đương
 yarn nocobase install \
   --lang=zh-CN  \
   --root-email=demo@nocobase.com \
   --root-password=admin123 \
   --root-nickname="Super Admin"
 
-# Tương đương với
+# Tương đương
 yarn nocobase install -l zh-CN -e demo@nocobase.com -p admin123 -n "Super Admin"
 ```
 
 ### INIT_APP_LANG
 
-Ngôn ngữ khi cài đặt. Mặc định là `en-US`. Các tùy chọn bao gồm:
+Ngôn ngữ khi cài đặt, giá trị mặc định `en-US`, các tùy chọn bao gồm:
 
 - `en-US`
 - `zh-CN`
@@ -428,7 +448,7 @@ yarn cross-env \
 
 ### INIT_ROOT_EMAIL
 
-Email người dùng Root.
+Email Người dùng Root
 
 ```bash
 yarn cross-env \
@@ -439,7 +459,7 @@ yarn cross-env \
 
 ### INIT_ROOT_PASSWORD
 
-Mật khẩu người dùng Root.
+Mật khẩu Người dùng Root
 
 ```bash
 yarn cross-env \
@@ -451,7 +471,7 @@ yarn cross-env \
 
 ### INIT_ROOT_NICKNAME
 
-Biệt danh người dùng Root.
+Biệt danh Người dùng Root
 
 ```bash
 yarn cross-env \
@@ -461,3 +481,13 @@ yarn cross-env \
   INIT_ROOT_NICKNAME="Super Admin" \
   nocobase install
 ```
+
+## Biến môi trường do các Plugin khác cung cấp
+
+### WORKFLOW_SCRIPT_MODULES
+
+Danh sách module có thể dùng cho node JavaScript của Workflow, xem chi tiết tại "[Node JavaScript: Sử dụng module bên ngoài](/workflow/nodes/javascript#su-dung-module-ben-ngoai)".
+
+### WORKFLOW_LOOP_LIMIT
+
+Giới hạn số lần lặp tối đa của node loop trong Workflow, xem chi tiết tại "[Node Loop](/workflow/nodes/loop#WORKFLOW_LOOP_LIMIT)".

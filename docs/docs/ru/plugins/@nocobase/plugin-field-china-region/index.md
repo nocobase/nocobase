@@ -1,14 +1,14 @@
 ---
-displayName: "Поле коллекции: Административные районы Китая"
+title: "Collection field: administrative divisions of China"
+keywords: "Collection fields"
+displayName: "Поле коллекции: административное деление Китая"
 packageName: '@nocobase/plugin-field-china-region'
 description: |
-  Предоставляет данные и тип поля для административных районов Китая.
+  Данные и тип поля для административного деления КНР.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Поле коллекции: Административные районы Китая
+# Поле коллекции: административное деление Китая

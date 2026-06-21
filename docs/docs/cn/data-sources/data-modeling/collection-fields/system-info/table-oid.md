@@ -1,3 +1,9 @@
+---
+title: "Table OID"
+description: "Table OID 系统字段，PostgreSQL 表对象标识。"
+keywords: "Table OID,PostgreSQL,系统字段,表对象标识,NocoBase"
+---
+
 # Table OID
 
 ## 介绍

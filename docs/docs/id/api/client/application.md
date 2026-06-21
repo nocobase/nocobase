@@ -1,5 +1,7 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Application (Client)"
+description: "API Application client NocoBase: instance aplikasi frontend."
+keywords: "Application,aplikasi client,instance frontend,Client API,NocoBase"
+---
 
-# Aplikasi
+# Application

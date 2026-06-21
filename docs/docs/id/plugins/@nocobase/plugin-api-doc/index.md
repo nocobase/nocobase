@@ -1,14 +1,14 @@
 ---
-displayName: "Dokumentasi API"
+displayName: "API Documentation"
 packageName: '@nocobase/plugin-api-doc'
+title: "API Documentation"
+keywords: "API Documentation,plugin,NocoBase"
 description: |
   Generator dokumentasi OpenAPI untuk NocoBase HTTP API.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Dokumentasi API
+# API Documentation

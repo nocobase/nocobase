@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Biểu tượng"
+description: "Field biểu tượng, lưu trữ định danh biểu tượng, hỗ trợ bộ chọn biểu tượng."
+keywords: "biểu tượng,icon,Field biểu tượng,bộ chọn biểu tượng,NocoBase"
+---
 
-
-# Biểu tượng
+# Icon
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512180027](https://static-docs.nocobase.com/20240512180027.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung

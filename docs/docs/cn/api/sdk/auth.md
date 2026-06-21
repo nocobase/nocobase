@@ -1,3 +1,9 @@
+---
+title: "Auth (SDK)"
+description: "NocoBase 前端 SDK Auth：登录、登出、token 管理。"
+keywords: "Auth SDK,登录,登出,token 管理,前端认证,NocoBase"
+---
+
 # Auth
 
 ## 概览
@@ -20,7 +26,7 @@ API 接口 `token`.
 
 ### `authenticator`
 
-当前用户认证时所用的认证器。参考 [用户认证](/auth-verification/auth/)。
+当前用户认证时所用的认证器。参考 [用户认证](/auth-verification/auth/index.md)。
 
 ## 类方法
 

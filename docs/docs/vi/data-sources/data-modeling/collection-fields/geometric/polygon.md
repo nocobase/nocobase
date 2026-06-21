@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Đa giác"
+description: "Field hình học đa giác, lưu trữ đa giác (kiểu polygon của PostgreSQL)."
+keywords: "đa giác,polygon,Field hình học,PostgreSQL,NocoBase"
+---
 
 # Đa giác
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512181547](https://static-docs.nocobase.com/20240512181547.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung

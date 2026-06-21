@@ -19,6 +19,7 @@
   "Scan QR code": "Scan QR code",
   "Scan QR code action settings": "Scan QR code action settings",
   "The image size is too large. Please compress it to below 1MB before uploading": "The image size is too large. Please compress it to below 1MB before uploading",
+  "The image size is too large. Please compress it to below 10MB before uploading": "The image size is too large. Please compress it to below 10MB before uploading",
   "Unknown error": "Unknown error",
   "You have not granted permission to use the camera": "You have not granted permission to use the camera"
 }

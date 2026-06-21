@@ -20,9 +20,16 @@ import { FlowRuntimeContext } from './flowContext';
 import { FlowEngine, untracked } from '.';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
-import { ParamObject, StepSettingsDialogProps, ToolbarItemConfig } from './types';
+import {
+  DynamicFlowSource,
+  DynamicFlowSourceProvider,
+  ParamObject,
+  StepSettingsDialogProps,
+  ToolbarItemConfig,
+} from './types';
 import {
   compileUiSchema,
+  FlowCancelSaveException,
   FlowExitException,
   getT,
   resolveDefaultParams,
@@ -31,8 +38,10 @@ import {
   setupRuntimeContextSteps,
   shouldHideStepInSettings,
 } from './utils';
+import { FlowExitAllException } from './utils/exceptions';
 import { FlowStepContext } from './hooks/useFlowStep';
 import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
+import { lazy } from './lazy-helper';
 
 const Panel = Collapse.Panel;
 
@@ -112,16 +121,24 @@ export interface FlowSettingsOpenOptions {
   onSaved?: () => void | Promise<void>;
 }
 
+export type FlowSettingsComponent = React.ComponentType<any>;
+export type FlowSettingsComponentModule = { default?: FlowSettingsComponent } | Record<string, FlowSettingsComponent>;
+export type FlowSettingsComponentLoader = () => Promise<FlowSettingsComponentModule | FlowSettingsComponent>;
+export type FlowSettingsComponentLoaderMap = Record<string, FlowSettingsComponentLoader>;
+
 export class FlowSettings {
   public components: Record<string, any> = {};
   public scopes: Record<string, any> = {};
   private antdComponentsLoaded = false;
   public enabled: boolean;
+  private engine: FlowEngine;
   #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
+  private dynamicFlowSourceProviders: DynamicFlowSourceProvider[] = [];
   #emitter: Emitter = new Emitter();
 
   constructor(engine: FlowEngine) {
+    this.engine = engine;
     // 初始默认为 false，由 SchemaComponentProvider 根据实际设计模式状态同步设置
     this.enabled = false;
     engine.context.defineProperty('flowSettingsEnabled', {
@@ -289,6 +306,30 @@ export class FlowSettings {
     });
   }
 
+  public registerComponentLoaders(loaders: FlowSettingsComponentLoaderMap): void {
+    Object.entries(loaders).forEach(([name, loader]) => {
+      if (this.components[name]) {
+        console.warn(`FlowSettings: Component with name '${name}' is already registered and will be overwritten.`);
+      }
+      this.components[name] = lazy(async () => {
+        const loaded = await loader();
+        if (typeof loaded === 'function') {
+          return { default: loaded };
+        }
+        if (loaded?.default && typeof loaded.default === 'function') {
+          return { default: loaded.default };
+        }
+        const namedComponent = loaded?.[name];
+        if (typeof namedComponent === 'function') {
+          return { default: namedComponent };
+        }
+        throw new Error(
+          `FlowSettings: component loader for '${name}' must resolve to a React component or a module exporting it.`,
+        );
+      });
+    });
+  }
+
   /**
    * 添加作用域到 FlowSettings 的作用域注册表中。
    * 这些作用域可以在 flow step 的 uiSchema 中使用。
@@ -309,13 +350,15 @@ export class FlowSettings {
   /**
    * 启用流程设置组件的显示
    * @example
-   * flowSettings.enable();
+   * await flowSettings.enable();
    */
-  public enable(): void {
+  public async enable(): Promise<void> {
+    await this.engine.preloadModelLoaders();
     this.enabled = true;
   }
 
-  public forceEnable() {
+  public async forceEnable(): Promise<void> {
+    await this.engine.preloadModelLoaders();
     this.#forceEnabled = true;
     this.enabled = true;
   }
@@ -323,16 +366,16 @@ export class FlowSettings {
   /**
    * 禁用流程设置组件的显示
    * @example
-   * flowSettings.disable();
+   * await flowSettings.disable();
    */
-  public disable(): void {
+  public async disable(): Promise<void> {
     if (this.#forceEnabled) {
       return;
     }
     this.enabled = false;
   }
 
-  public forceDisable() {
+  public async forceDisable(): Promise<void> {
     this.#forceEnabled = false;
     this.enabled = false;
   }
@@ -425,6 +468,83 @@ export class FlowSettings {
    */
   public getToolbarItems(): ToolbarItemConfig[] {
     return [...this.toolbarItems];
+  }
+
+  public registerDynamicFlowSourceProvider(provider: DynamicFlowSourceProvider): () => void {
+    const existingIndex = this.dynamicFlowSourceProviders.findIndex((item) => item.key === provider.key);
+    if (existingIndex !== -1) {
+      console.warn(
+        `FlowSettings: Dynamic flow source provider with key '${provider.key}' already exists and will be replaced.`,
+      );
+      this.dynamicFlowSourceProviders[existingIndex] = provider;
+    } else {
+      this.dynamicFlowSourceProviders.push(provider);
+    }
+
+    this.dynamicFlowSourceProviders.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+
+    return () => {
+      const index = this.dynamicFlowSourceProviders.indexOf(provider);
+      if (index !== -1) {
+        this.dynamicFlowSourceProviders.splice(index, 1);
+      }
+    };
+  }
+
+  public hasDynamicFlowSourceProvider(model: FlowModel): boolean {
+    return this.dynamicFlowSourceProviders.some((provider) => {
+      try {
+        return provider.visible ? provider.visible(model) : true;
+      } catch (error) {
+        console.warn(`FlowSettings: Dynamic flow source provider '${provider.key}' visibility check failed.`, error);
+        return false;
+      }
+    });
+  }
+
+  public async getDynamicFlowSources(model: FlowModel): Promise<DynamicFlowSource[]> {
+    const t = getT(model);
+    const selfSource: DynamicFlowSource = {
+      key: 'self',
+      label: t('Current block'),
+      model,
+      sort: -1000,
+    };
+    const sources: DynamicFlowSource[] = [];
+    const seenKeys = new Set<string>(['self']);
+    const seenModelUids = new Set<string>([model.uid]);
+
+    for (const provider of this.dynamicFlowSourceProviders) {
+      try {
+        if (provider.visible && !provider.visible(model)) {
+          continue;
+        }
+
+        const providerSources = await provider.getSources(model);
+        for (const source of providerSources || []) {
+          if (!source?.key || !source.model) {
+            continue;
+          }
+          const key = String(source.key);
+          const uid = source.model.uid;
+          if (seenKeys.has(key) || seenModelUids.has(uid)) {
+            continue;
+          }
+          seenKeys.add(key);
+          seenModelUids.add(uid);
+          sources.push({
+            ...source,
+            key,
+            label: source.label || key,
+            sort: source.sort || 0,
+          });
+        }
+      } catch (error) {
+        console.warn(`FlowSettings: Dynamic flow source provider '${provider.key}' failed.`, error);
+      }
+    }
+
+    return [selfSource, ...sources.sort((a, b) => (a.sort || 0) - (b.sort || 0))];
   }
 
   /**
@@ -903,7 +1023,10 @@ export class FlowSettings {
               console.error('FlowSettings.open: onSaved callback error', cbErr);
             }
           } catch (err) {
-            if (err instanceof FlowExitException) {
+            if (err instanceof FlowCancelSaveException) {
+              return;
+            }
+            if (err instanceof FlowExitException || err instanceof FlowExitAllException) {
               currentView.close();
               return;
             }

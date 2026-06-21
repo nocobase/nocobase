@@ -1,33 +1,34 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "FlowModel so với Component React"
+description: "FlowModel so với React.Component: cấu hình hóa vs code hóa, khả năng điều phối, lựa chọn ngữ cảnh áp dụng, tham chiếu lựa chọn FlowEngine."
+keywords: "FlowModel,Component React,So sánh,Có thể điều phối,Cấu hình hóa,Lựa chọn FlowEngine,NocoBase"
+---
 
-
-# FlowModel so với React.Component
+# FlowModel vs React.Component
 
 ## So sánh trách nhiệm cơ bản
 
-| Đặc điểm/Khả năng       | `React.Component`                  | `FlowModel`                                  |
-| :-------------------- | :--------------------------------- | :------------------------------------------- |
-| Khả năng hiển thị (render) | Có, phương thức `render()` tạo ra giao diện người dùng (UI) | Có, phương thức `render()` tạo ra giao diện người dùng (UI) |
-| Quản lý trạng thái    | `state` và `setState` tích hợp sẵn | Sử dụng `props`, nhưng việc quản lý trạng thái phụ thuộc nhiều hơn vào cấu trúc cây mô hình |
-| Vòng đời              | Có, ví dụ như `componentDidMount`  | Có, ví dụ như `onInit`, `onMount`, `onUnmount` |
-| Mục đích sử dụng      | Xây dựng các thành phần UI         | Xây dựng "cây mô hình" có cấu trúc, dựa trên dữ liệu và luồng |
-| Cấu trúc dữ liệu      | Cây thành phần                     | Cây mô hình (hỗ trợ mô hình cha-con, Fork đa phiên bản) |
-| Thành phần con        | Sử dụng JSX để lồng các thành phần | Sử dụng `setSubModel`/`addSubModel` để thiết lập rõ ràng các mô hình con |
-| Hành vi động          | Liên kết sự kiện, cập nhật trạng thái điều khiển UI | Đăng ký/phân phối các luồng, xử lý các luồng tự động |
-| Khả năng lưu trữ bền vững | Không có cơ chế tích hợp sẵn       | Hỗ trợ lưu trữ bền vững (ví dụ: `model.save()`) |
-| Hỗ trợ Fork (hiển thị nhiều lần) | Không (cần tái sử dụng thủ công) | Có (`createFork` để tạo nhiều phiên bản)     |
-| Kiểm soát bởi Engine  | Không                             | Có, được `FlowEngine` quản lý, đăng ký và tải |
+| Tính năng/Năng lực         | `React.Component`       | `FlowModel`                            |
+| ------------- | ----------------------- | -------------------------------------- |
+| Khả năng render          | Có, phương thức `render()` sinh UI    | Có, phương thức `render()` sinh UI                   |
+| Quản lý trạng thái          | `state` và `setState` tích hợp | Dùng `props`, nhưng quản lý trạng thái phụ thuộc nhiều hơn vào cấu trúc cây model               |
+| Vòng đời          | Có, như `componentDidMount` | Có, như `onInit`, `onMount`, `onUnmount`     |
+| Mục đích            | Xây dựng component UI                | Xây dựng "cây model" được điều khiển bởi dữ liệu, luồng hóa, có cấu trúc                   |
+| Cấu trúc dữ liệu          | Cây component                     | Cây model (hỗ trợ model cha-con, đa instance Fork)                   |
+| Component con           | Lồng component bằng JSX             | Dùng `setSubModel`/`addSubModel` để thiết lập subModel tường minh |
+| Hành vi động          | Gắn sự kiện, cập nhật trạng thái điều khiển UI          | Đăng ký/phát Flow, xử lý luồng tự động                      |
+| Lưu trữ           | Không có cơ chế tích hợp                   | Hỗ trợ lưu trữ (như `model.save()`)                |
+| Hỗ trợ Fork (render nhiều lần) | Không (cần tái sử dụng thủ công)                | Có (đa instance hóa với `createFork`)                   |
+| Kiểm soát engine          | Không                       | Có, được `FlowEngine` quản lý, đăng ký và tải              |
 
 ## So sánh vòng đời
 
 | Hook vòng đời | `React.Component`                 | `FlowModel`                                  |
-| :------------ | :-------------------------------- | :------------------------------------------- |
-| Khởi tạo      | `constructor`, `componentDidMount` | `onInit`, `onMount`                          |
-| Hủy bỏ (Unmount) | `componentWillUnmount`            | `onUnmount`                                  |
-| Phản hồi đầu vào | `componentDidUpdate`              | `onBeforeAutoFlows`, `onAfterAutoFlows`      |
-| Xử lý lỗi     | `componentDidCatch`               | `onAutoFlowsError`                           |
+| ------ | --------------------------------- | -------------------------------------------- |
+| Khởi tạo    | `constructor`, `componentDidMount` | `onInit`, `onMount`                           |
+| Hủy bỏ     | `componentWillUnmount`            | `onUnmount`                                  |
+| Phản hồi đầu vào   | `componentDidUpdate`              | `onBeforeAutoFlows`, `onAfterAutoFlows` |
+| Xử lý lỗi   | `componentDidCatch`               | `onAutoFlowsError`                      |
 
 ## So sánh cấu trúc xây dựng
 
@@ -51,29 +52,29 @@ class HelloModel extends FlowModel {
 }
 ```
 
-## Cây thành phần so với Cây mô hình
+## Cây component vs cây model
 
-*   **Cây thành phần React**: Là cây hiển thị giao diện người dùng (UI) được hình thành bởi các thành phần JSX lồng nhau trong thời gian chạy.
-*   **Cây mô hình FlowModel**: Là cây cấu trúc logic được quản lý bởi FlowEngine, có khả năng lưu trữ bền vững, cho phép đăng ký động và kiểm soát các mô hình con. Phù hợp để xây dựng các khối trang, luồng thao tác, mô hình dữ liệu, v.v.
+* **Cây component React**: Cây render UI được hình thành bởi việc lồng JSX khi runtime.
+* **Cây model FlowModel**: Cây cấu trúc logic do FlowEngine quản lý, có thể lưu trữ, đăng ký và kiểm soát động subModel, phù hợp xây dựng các Block trang, luồng thao tác, model dữ liệu, v.v.
 
-## Các tính năng đặc biệt (chỉ có ở FlowModel)
+## Chức năng đặc biệt (chỉ có ở FlowModel)
 
-| Chức năng                             | Mô tả                                          |
-| :------------------------------------ | :--------------------------------------------- |
-| `registerFlow`                        | Đăng ký luồng                                  |
-| `applyFlow` / `dispatchEvent`         | Thực thi/kích hoạt luồng                       |
-| `setSubModel` / `addSubModel`         | Kiểm soát rõ ràng việc tạo và liên kết các mô hình con |
-| `createFork`                          | Hỗ trợ tái sử dụng logic của một mô hình để hiển thị nhiều lần (ví dụ: mỗi hàng trong bảng) |
-| `openFlowSettings`                    | Cài đặt bước luồng                             |
-| `save` / `saveStepParams()`           | Mô hình có thể được lưu trữ bền vững và tích hợp với backend |
+| Chức năng                               | Mô tả                     |
+| -------------------------------- | ---------------------- |
+| `registerFlow`                 | Đăng ký Flow             |
+| `applyFlow` / `dispatchEvent` | Thực thi/Kích hoạt Flow             |
+| `setSubModel` / `addSubModel`         | Kiểm soát tường minh việc tạo và gắn subModel          |
+| `createFork`                          | Hỗ trợ một logic model được tái sử dụng render nhiều lần (như mỗi hàng của bảng) |
+| `openFlowSettings`                    | Cài đặt bước Flow |
+| `save` / `saveStepParams()`           | Model có thể lưu trữ, kết nối với backend           |
 
 ## Tóm tắt
 
-| Mục           | React.Component                 | FlowModel                                    |
-| :------------ | :------------------------------ | :------------------------------------------- |
-| Các trường hợp phù hợp | Tổ chức thành phần lớp UI       | Quản lý luồng và khối dựa trên dữ liệu       |
-| Ý tưởng cốt lõi | UI khai báo                     | Luồng có cấu trúc dựa trên mô hình           |
-| Phương thức quản lý | React kiểm soát vòng đời        | FlowModel kiểm soát vòng đời và cấu trúc của mô hình |
-| Ưu điểm       | Hệ sinh thái và bộ công cụ phong phú | Cấu trúc chặt chẽ, luồng có thể lưu trữ bền vững, mô hình con có thể kiểm soát |
+| Mục   | React.Component | FlowModel              |
+| ---- | --------------- | ---------------------- |
+| Ngữ cảnh phù hợp | Tổ chức component tầng UI        | Quản lý luồng và Block được điều khiển bởi dữ liệu           |
+| Tư tưởng cốt lõi | UI khai báo          | Luồng có cấu trúc được điều khiển bởi model             |
+| Cách quản lý | React kiểm soát vòng đời    | FlowModel kiểm soát vòng đời và cấu trúc model |
+| Ưu điểm   | Hệ sinh thái và toolchain phong phú        | Cấu trúc mạnh, luồng có thể lưu trữ, subModel có thể kiểm soát      |
 
-> FlowModel có thể được sử dụng bổ trợ với React: Sử dụng React để hiển thị trong FlowModel, trong khi vòng đời và cấu trúc của nó được FlowEngine quản lý.
+> FlowModel có thể dùng bổ sung với React: dùng React để render trong FlowModel, còn FlowEngine quản lý vòng đời và cấu trúc của nó.

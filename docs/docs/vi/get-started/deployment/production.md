@@ -1,47 +1,48 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Triển khai môi trường sản xuất NocoBase"
+description: "Quy trình triển khai sản xuất NocoBase: khuyến nghị Docker hoặc create-nocobase-app, proxy tài nguyên tĩnh (Nginx/Caddy/CDN), lệnh vận hành docker compose/pm2."
+keywords: "Triển khai môi trường sản xuất, triển khai sản xuất, triển khai Docker, proxy tài nguyên tĩnh, Nginx, Caddy, lệnh vận hành, NocoBase"
+---
 
+# Triển khai môi trường sản xuất
 
-# Triển khai trong môi trường sản xuất
-
-Khi triển khai NocoBase trong môi trường sản xuất, việc cài đặt các phần phụ thuộc có thể phức tạp do sự khác biệt trong cách xây dựng giữa các hệ thống và môi trường. Để có trải nghiệm đầy đủ tính năng, chúng tôi khuyến nghị sử dụng **Docker** để triển khai. Nếu môi trường hệ thống của bạn không thể sử dụng Docker, bạn cũng có thể triển khai bằng **create-nocobase-app**.
+Khi triển khai NocoBase ở môi trường sản xuất, do cách build khác nhau giữa các hệ thống và môi trường, việc cài đặt phụ thuộc có thể khá phức tạp. Để có được trải nghiệm tính năng đầy đủ, chúng tôi khuyến nghị sử dụng **Docker** để triển khai. Nếu môi trường hệ thống không thể dùng Docker, cũng có thể dùng **create-nocobase-app** để triển khai.
 
 :::warning
 
-Không khuyến nghị triển khai trực tiếp từ mã nguồn trong môi trường sản xuất. Mã nguồn có nhiều phần phụ thuộc, dung lượng lớn và việc biên dịch toàn bộ đòi hỏi CPU và bộ nhớ cao. Nếu thực sự cần triển khai từ mã nguồn, bạn nên xây dựng một Docker image tùy chỉnh trước khi triển khai.
+Không khuyến nghị triển khai trực tiếp từ mã nguồn ở môi trường sản xuất. Mã nguồn có nhiều phụ thuộc, dung lượng lớn và việc biên dịch toàn bộ yêu cầu cao về CPU và bộ nhớ. Nếu thật sự cần triển khai từ mã nguồn, khuyến nghị build image Docker tùy chỉnh trước, sau đó mới triển khai.
 
 :::
 
 ## Quy trình triển khai
 
-Để triển khai trong môi trường sản xuất, bạn có thể tham khảo các bước cài đặt và nâng cấp hiện có.
+Triển khai môi trường sản xuất có thể tham khảo các bước cài đặt và nâng cấp đã có.
 
-### Cài đặt mới
+### Cài đặt mới hoàn toàn
 
 - [Cài đặt Docker](../installation/docker.mdx)
 - [Cài đặt create-nocobase-app](../installation/create-nocobase-app.mdx)
 
 ### Nâng cấp ứng dụng
 
-- [Nâng cấp cài đặt Docker](../installation/docker.mdx)
-- [Nâng cấp cài đặt create-nocobase-app](../installation/create-nocobase-app.mdx)
+- [Nâng cấp bản cài đặt Docker](../installation/docker.mdx)
+- [Nâng cấp bản cài đặt create-nocobase-app](../installation/create-nocobase-app.mdx)
 
-### Cài đặt và nâng cấp plugin của bên thứ ba
+### Cài đặt và nâng cấp Plugin bên thứ ba
 
-- [Cài đặt và nâng cấp plugin](../install-upgrade-plugins.mdx)
+- [Cài đặt và nâng cấp Plugin](../install-upgrade-plugins.mdx)
 
 ## Proxy tài nguyên tĩnh
 
-Trong môi trường sản xuất, bạn nên để máy chủ proxy quản lý các tài nguyên tĩnh, ví dụ:
+Trong môi trường sản xuất, khuyến nghị giao tài nguyên tĩnh cho server proxy quản lý, ví dụ:
 
 - [nginx](./static-resource-proxy/nginx.md) 
 - [caddy](./static-resource-proxy/caddy.md)
 - [cdn](./static-resource-proxy/cdn.md)
 
-## Các lệnh vận hành phổ biến
+## Lệnh vận hành thường dùng
 
-Tùy thuộc vào phương thức cài đặt, bạn có thể sử dụng các lệnh sau để quản lý tiến trình NocoBase:
+Theo các phương thức cài đặt khác nhau, có thể dùng các lệnh sau để quản lý tiến trình NocoBase:
 
 - [docker compose](./common-commands/docker-compose.md)
 - [pm2](./common-commands/pm2.md)

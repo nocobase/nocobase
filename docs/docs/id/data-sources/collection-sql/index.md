@@ -1,63 +1,62 @@
 ---
-pkg: "@nocobase/plugin-collection-sql"
+title: "Collection SQL"
+description: "Mengambil data melalui statement SQL dan mengonfigurasi metadata field, digunakan seperti Collection biasa untuk tabel, chart, workflow, cocok untuk skenario kueri terkait, statistik, dan lainnya."
+keywords: "Collection SQL,Collection SQL,kueri SQL,kueri terkait,statistik,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Collection SQL
 
+<PluginInfo name="collection-sql"></PluginInfo>
 
-# Koleksi SQL
+## Pengantar
 
-## Pendahuluan
+SQL collection menyediakan cara untuk mengambil data melalui statement SQL. Dengan mengambil field data melalui statement SQL dan mengonfigurasi metadata field, pengguna dapat menggunakannya seperti Collection biasa, untuk tabel, chart, workflow, dan lainnya, cocok untuk skenario kueri terkait, statistik, dan lainnya.
 
-Koleksi SQL menyediakan metode yang ampuh untuk mengambil data menggunakan kueri SQL. Dengan mengekstrak bidang data melalui kueri SQL dan mengonfigurasi metadata bidang terkait, pengguna dapat memanfaatkan bidang-bidang ini seolah-olah mereka bekerja dengan tabel standar. Fitur ini sangat bermanfaat untuk skenario yang melibatkan kueri gabungan (join query) yang kompleks, analisis statistik, dan lain-lain.
+## Panduan Penggunaan
 
-## Panduan Pengguna
-
-### Membuat Koleksi SQL Baru
+### Buat Baru
 
 <img src="https://static-docs.nocobase.com/202405191452918.png"/>
 
-1. Masukkan kueri SQL Anda di kotak input yang tersedia dan klik Eksekusi (Execute). Sistem akan menganalisis kueri untuk menentukan tabel dan bidang yang terlibat, secara otomatis mengekstrak metadata bidang yang relevan dari tabel sumber.
+<p>1. Setelah memasukkan statement SQL pada kotak input SQL, klik Execute, sistem akan mencoba mem-parsing tabel dan field mana yang digunakan SQL, dan mem-parsing metadata field dari tabel sumber.</p>
 
 <img src="https://static-docs.nocobase.com/202405191453556.png"/>
 
-2. Jika analisis sistem terhadap tabel dan bidang sumber tidak tepat, Anda dapat memilih tabel dan bidang yang sesuai secara manual untuk memastikan metadata yang benar digunakan. Mulailah dengan memilih tabel sumber, kemudian pilih bidang yang sesuai di bagian sumber bidang di bawah.
+<p>2. Jika tabel sumber dan field yang dianalisis otomatis oleh sistem tidak benar, Anda dapat memilih tabel dan field yang sesuai secara manual, untuk menggunakan metadata field yang sesuai. Anda perlu memilih tabel sumber terlebih dahulu, baru kemudian dapat memilih field dari tabel tersebut pada sumber field di bagian bawah.</p>
 
 <img src="https://static-docs.nocobase.com/202405191453579.png"/>
 
-3. Untuk bidang yang tidak memiliki sumber langsung, sistem akan menyimpulkan tipe bidang berdasarkan tipe data. Jika kesimpulan ini tidak tepat, Anda dapat memilih tipe bidang yang benar secara manual.
+<p>3. Jika field tidak memiliki field sumber yang sesuai, sistem akan menyimpulkan tipe field berdasarkan tipe data. Jika hasil penyimpulan tidak benar, Anda dapat memilih tipe field secara manual.</p>
 
 <img src="https://static-docs.nocobase.com/202405191454703.png"/>
 
-4. Saat Anda mengonfigurasi setiap bidang, Anda dapat melihat pratinjau tampilannya di area pratinjau, memungkinkan Anda untuk melihat dampak langsung dari pengaturan Anda.
+<p>4. Saat mengonfigurasi field, Anda dapat melihat efek tampilan yang sesuai pada area pratinjau.</p>
 
 <img src="https://static-docs.nocobase.com/202405191455439.png"/>
 
-5. Setelah Anda menyelesaikan konfigurasi dan memastikan semuanya benar, klik tombol Konfirmasi (Confirm) di bawah kotak input SQL untuk menyelesaikan pengiriman.
+<p>5. Setelah konfigurasi selesai dan dikonfirmasi tidak ada masalah, Anda perlu mengklik tombol Confirm di bawah kotak input SQL untuk melakukan submit terakhir.</p>
 
 <img src="https://static-docs.nocobase.com/202405191455302.png"/>
 
-### Mengedit
+### Edit
 
-1. Jika Anda perlu memodifikasi kueri SQL, klik tombol Edit untuk langsung mengubah pernyataan SQL dan mengonfigurasi ulang bidang sesuai kebutuhan.
+1. Saat ada perubahan pada statement SQL, Anda dapat mengklik tombol Edit untuk mengubah statement SQL secara langsung dan mengonfigurasi ulang field.
 
-2. Untuk menyesuaikan metadata bidang, gunakan opsi Konfigurasi Bidang (Configure Fields), yang memungkinkan Anda memperbarui pengaturan bidang seperti halnya pada tabel biasa.
+2. Saat perlu mengubah metadata field, Anda dapat mengonfigurasinya melalui Configure fields, mengubah konfigurasi terkait field seperti pada Collection biasa.
 
 ### Sinkronisasi
 
-Jika kueri SQL tidak berubah tetapi struktur tabel database yang mendasarinya telah dimodifikasi, Anda dapat menyinkronkan dan mengonfigurasi ulang bidang dengan memilih Konfigurasi Bidang (Configure Fields) - Sinkronkan dari Database (Sync from Database).
+Jika statement SQL tidak berubah, tetapi struktur tabel database berubah, Anda dapat mengklik Configure fields - Sync from database untuk menyinkronkan dan mengonfigurasi field.
 
 <img src="https://static-docs.nocobase.com/202405191456216.png"/>
 
-### Perbandingan Koleksi SQL dengan Tampilan Database yang Terhubung
+### Perbandingan Collection SQL dengan Database View Connection
 
-| Tipe Template             | Paling Cocok Untuk                                                                                              | Metode Implementasi | Dukungan untuk Operasi CRUD |
-| :------------------------ | :-------------------------------------------------------------------------------------------------------------- | :------------------ | :-------------------------- |
-| SQL                       | Model sederhana, kasus penggunaan ringan<br />Interaksi terbatas dengan database<br />Menghindari pemeliharaan tampilan<br />Lebih suka operasi berbasis UI | Subkueri SQL        | Tidak Didukung              |
-| Terhubung ke tampilan database | Model kompleks<br />Membutuhkan interaksi database<br />Diperlukan modifikasi data<br />Membutuhkan dukungan database yang lebih kuat dan stabil | Tampilan database   | Didukung Sebagian           |
+| Tipe Template       | Skenario Penggunaan                                                                               | Prinsip Implementasi   | Dukungan CRUD |
+| -------------- | -------------------------------------------------------------------------------------- | ---------- | ---------- |
+| SQL            | Model relatif sederhana, skenario ringan<br />Tidak nyaman mengoperasikan database<br />Tidak ingin merawat view<br />Ingin sepenuhnya melalui operasi UI | SQL subkueri | Tidak didukung     |
+| Database View Connection | Model relatif kompleks<br />Perlu berinteraksi dengan database<br />Perlu mengubah data<br />Perlu dukungan database yang lebih baik dan stabil | Database view | Dukungan parsial   |
 
 :::warning
-Saat menggunakan koleksi SQL, pastikan untuk memilih tabel yang dapat dikelola dalam NocoBase. Menggunakan tabel dari database yang sama yang tidak terhubung ke NocoBase dapat menyebabkan penguraian kueri SQL yang tidak akurat. Jika ini menjadi perhatian, pertimbangkan untuk membuat dan menautkan ke tampilan (view).
+Saat menggunakan Collection SQL, harap pilih Collection yang dapat dikelola di NocoBase. Jika berada di database yang sama, tetapi tabel lainnya yang belum terintegrasi dengan NocoBase, dapat menyebabkan parsing statement SQL tidak akurat. Jika ada kebutuhan seperti ini, dapat dipertimbangkan untuk membangun view dan menghubungkannya.
 :::

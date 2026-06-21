@@ -1,14 +1,14 @@
 ---
-displayName: "Aksi: Cetak"
+displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
+title: "Action: Print"
+keywords: "Action: Print,plugin,NocoBase"
 description: |
-  Memanggil fungsi cetak browser untuk mencetak satu data.
+  Memanggil fungsi cetak browser untuk mencetak satu data record.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Aksi: Cetak
+# Action: Print

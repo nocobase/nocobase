@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Unix Timestamp"
+description: "Field Unix Timestamp, menyimpan timestamp tingkat detik."
+keywords: "Unix Timestamp,unix timestamp,timestamp,tingkat detik,NocoBase"
+---
 
-# Timestamp Unix
+# Unix Timestamp
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Kolom
+## Konfigurasi Field
 
 ![20240512180432](https://static-docs.nocobase.com/20240512180432.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

@@ -1,9 +1,10 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "UpdateOptions"
+description: "Tham số phương thức update của Repository NocoBase: values, filter, filterByTk, whitelist, blacklist, transaction."
+keywords: "UpdateOptions,Repository,update,values,NocoBase"
+---
 
-
-## Kiểu
+**Kiểu**
 
 ```typescript
 interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
@@ -17,13 +18,13 @@ interface UpdateOptions extends Omit<SequelizeUpdateOptions, 'where'> {
 }
 ```
 
-## Chi tiết
+**Thông tin chi tiết**
 
 - `values`: Đối tượng dữ liệu của bản ghi cần cập nhật.
-- `filter`: Chỉ định các điều kiện lọc cho các bản ghi cần cập nhật. Để biết cách sử dụng chi tiết của Filter, hãy tham khảo phương thức [`find()`](#find).
-- `filterByTk`: Chỉ định các điều kiện lọc cho các bản ghi cần cập nhật theo `TargetKey`.
-- `whitelist`: Danh sách trắng cho các trường của `values`. Chỉ các trường trong danh sách này mới được ghi.
-- `blacklist`: Danh sách đen cho các trường của `values`. Các trường trong danh sách này sẽ không được ghi.
-- `transaction`: Đối tượng giao dịch. Nếu không truyền tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.
+- `filter`: Chỉ định điều kiện lọc của bản ghi cần cập nhật. Cách dùng chi tiết Filter có thể tham khảo phương thức [`find()`](#find).
+- `filterByTk`: Chỉ định điều kiện lọc của bản ghi cần cập nhật theo TargetKey.
+- `whitelist`: Whitelist của các field trong `values`, chỉ các field trong whitelist sẽ được ghi.
+- `blacklist`: Blacklist của các field trong `values`, các field trong blacklist sẽ không được ghi.
+- `transaction`: Đối tượng transaction. Nếu không truyền tham số transaction, phương thức sẽ tự động tạo một transaction nội bộ.
 
-Bạn phải truyền ít nhất một trong hai tham số `filterByTk` hoặc `filter`.
+`filterByTk` và `filter` ít nhất phải truyền một trong hai.

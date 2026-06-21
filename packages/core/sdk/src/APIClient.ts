@@ -42,6 +42,11 @@ interface ExtendedOptions {
 
 export type APIClientOptions = AxiosInstance | (AxiosRequestConfig & ExtendedOptions);
 
+export type RequestOptions = AxiosRequestConfig & {
+  skipNotify?: boolean | ((error: any) => boolean);
+  skipAuth?: boolean;
+};
+
 export class APIClient {
   options?: APIClientOptions;
   axios: AxiosInstance;

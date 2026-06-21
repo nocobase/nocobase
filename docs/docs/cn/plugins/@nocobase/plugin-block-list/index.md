@@ -1,4 +1,6 @@
 ---
+title: "区块：列表"
+keywords: "区块：列表,插件,NocoBase"
 displayName: "区块：列表"
 packageName: '@nocobase/plugin-block-list'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 区块：列表

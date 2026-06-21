@@ -1,45 +1,66 @@
 ---
 pageType: home
-
 pageName: home
-
+title: "Документация NocoBase"
+description: "Документация открытой no-code/low-code платформы NocoBase: быстрый старт, источники данных, конструктор интерфейсов, ИИ-сотрудники, рабочие процессы, права пользователей, аутентификация и разработка плагинов."
+keywords: "NocoBase,no-code,low-code,документация,open-source"
 hero:
   name: Документация NocoBase
   text: Быстро освойте NocoBase
   actions:
     - theme: brand
       text: Начать работу
-      link: /get-started/how-nocobase-works
+      link: /ai/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
-
 features:
   - title: Начало работы
     details: Узнайте, как пользоваться NocoBase, а также как установить и развернуть его.
     items:
       - title: Начало работы с NocoBase
         details: Ознакомьтесь с основными концепциями и базовыми операциями NocoBase.
-        link: /get-started/how-nocobase-works
-      - title: Установка, обновление и развертывание
-        details: Установите NocoBase с нуля, выполните обновление версии и развертывание в производственной среде.
-        link: /get-started/quickstart
+        link: /ai/how-nocobase-works
       - title: Установка и обновление плагинов
         details: Узнайте, как добавлять, управлять и обновлять плагины для расширения возможностей системы.
-        link: /get-started/install-upgrade-plugins
-
+        link: /ai/install-nocobase-app
+      - title: Учебные материалы
+        details: Начните с нуля и по шагам создайте реальный проект.        
+        link: /tutorials/v2/
+  - title: ИИ
+    details: "Новый способ работы с NocoBase на базе ИИ: создание, использование и разработка с помощью естественного языка."
+    items:
+      - title: Мастер ИИ-разработки
+        details: Создавайте приложения NocoBase с нуля при помощи ИИ — от моделирования данных и настройки интерфейса до рабочих процессов и публикации.
+        link: /ai-builder
+      - title: ИИ-сотрудники
+        details: "Работайте вместе с ИИ-сотрудниками и подключайте их к бизнес-процессам: созданию систем, анализу данных, переводу, принятию решений и другим задачам."
+        link: /ai-employees
+      - title: Разработка плагинов с ИИ
+        details: Используйте ИИ при разработке плагинов NocoBase — от каркаса проекта (scaffold) и кода компонентов до бизнес-логики.
+        link: /ai-dev
+      - title: Подробнее...
+        details: Изучите больше возможностей ИИ.
+        link: /ai
   - title: Продвинутые темы
     details: Глубоко изучите основные концепции NocoBase и освойте ключевые возможности по настройке и разработке.
     items:
       - title: Подробнее...
         details: Изучите использование других функциональных модулей.
         link: /guide
-
   - title: Разработка
     details: Предоставляет разработчикам NocoBase широкие возможности для расширения и интеграции.
     items:
       - title: Подробнее...
         details: Изучите больше руководств по разработке плагинов.
         link: /development
-
+  - title: Решения
+    details: Отраслевые шаблоны решений на базе NocoBase.
+    items:
+      - title: Система обработки заявок
+        details: Умная система обработки заявок с ИИ, многоканальной поддержкой, управлением SLA, базой знаний и другими возможностями.
+        link: /solution/ticket-system/
+      - title: "CRM (Предпросмотр)"
+        details: "No-code, гибкая платформа управления взаимоотношениями с клиентами: клиенты, лиды, возможности, заказы и многое другое."
+        link: /solution/crm/
 ---

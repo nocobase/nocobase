@@ -8,6 +8,7 @@
  */
 
 import { LLMProviderOptions } from '../../manager/ai-manager';
+import { formatModelLabel } from '../../llm-services/component/EnabledModelsSelect';
 import { ModelSettingsForm } from './ModelSettings';
 import { ProviderSettingsForm } from './ProviderSettings';
 
@@ -16,4 +17,5 @@ export const googleGenAIProviderOptions: LLMProviderOptions = {
     ProviderSettingsForm,
     ModelSettingsForm,
   },
+  formatModelLabel,
 };

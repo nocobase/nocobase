@@ -1,18 +1,17 @@
 ---
 displayName: "Bình luận"
 packageName: '@nocobase/plugin-comments'
+title: "Bình luận"
+keywords: "Bình luận,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Cung cấp mẫu bộ sưu tập bình luận và khối để thêm chức năng bình luận cho bất kỳ bộ sưu tập nào.
-isFree: false
-builtIn: false
+  Cung cấp mẫu Collection và Block bình luận, thêm chức năng bình luận cho dữ liệu của Collection bất kỳ.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Bình luận

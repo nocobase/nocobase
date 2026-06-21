@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "ACL"
+description: "API ACL server NocoBase: allow/deny untuk konfigurasi permission resource, role access control."
+keywords: "ACL,allow,deny,konfigurasi permission,role access control,permission resource,NocoBase"
+---
 
 # ACL
 

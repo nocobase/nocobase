@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "IModel"
+description: "Interface IModel NocoBase: definisi properti dan method dasar dari objek model."
+keywords: "IModel,interface,Model,model data,NocoBase"
+---
 
 # IModel
 
-Antarmuka `IModel` mendefinisikan properti dan metode dasar dari objek model.
+Interface `IModel` mendefinisikan properti dan method dasar dari objek model.
 
 ```typescript
 export interface IModel {
@@ -16,4 +18,4 @@ export interface IModel {
 
 ### toJSON()
 
-Mengonversi objek model ke format JSON.
+Mengkonversi objek model ke format JSON

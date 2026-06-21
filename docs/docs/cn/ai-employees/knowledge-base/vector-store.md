@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai-knowledge-base"
+title: "向量存储"
+description: "向量存储是 Embedding model 与向量数据库的绑定，用于文档向量化与检索。配置 Vector store、LLM service、Embedding model。"
+keywords: "向量存储,Embedding model,向量数据库,NocoBase"
+---
+
 # 向量存储
 
 ## 介绍
@@ -16,7 +23,7 @@
 
 - 在 `Name` 输入框输入向量存储名称；
 - 在 `Vector store` 选择已经配置好的向量数据库，参考：[向量数据库](/ai-employees/knowledge-base/vector-database)；
-- 在 `LLM service` 选择已经配置好的 LLM 服务，参考：[LLM 服务管理](/ai-employees/quick-start/llm-service)；
+- 在 `LLM service` 选择已经配置好的 LLM 服务，参考：[LLM 服务管理](/ai-employees/features/llm-service)；
 - 在 `Embedding model` 输入框输入要使用的 `Embedding` 模型名称；
   
 点击 `Submit` 按钮保存向量存储信息。

@@ -1,4 +1,6 @@
 ---
+title: "区块：模板（已废弃）"
+keywords: "区块：模板（已废弃）,插件,NocoBase"
 displayName: "区块：模板（已废弃）"
 packageName: '@nocobase/plugin-block-template'
 description: |
@@ -7,6 +9,7 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
 
 # 区块：模板（已废弃）

@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc: Nút yêu cầu HTTP"
+displayName: "Workflow: Node HTTP Request"
 packageName: '@nocobase/plugin-workflow-request'
+title: "Workflow: Node HTTP Request"
+keywords: "Workflow: Node HTTP Request,Plugin,NocoBase"
 description: |
-  Dùng để gửi yêu cầu HTTP đến bất kỳ dịch vụ HTTP nào để tương tác dữ liệu trong luồng công việc.
+  Có thể được sử dụng để gửi request đến bất kỳ dịch vụ HTTP nào trong workflow để trao đổi dữ liệu.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút yêu cầu HTTP
+# Workflow: Node HTTP Request

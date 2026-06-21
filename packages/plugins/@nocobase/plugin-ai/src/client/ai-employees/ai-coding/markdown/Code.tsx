@@ -10,41 +10,28 @@
 import React from 'react';
 import { Card, Typography, Button, App, Space, Tooltip, Divider } from 'antd';
 import { CloseOutlined, CodeOutlined, CopyOutlined, ExpandOutlined } from '@ant-design/icons';
-import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { css, useGlobalTheme } from '@nocobase/client';
+import { lazy } from '@nocobase/client';
 import { FlowModelContext, useFlowContext, useFlowViewContext } from '@nocobase/flow-engine';
-import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useChat } from '../../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useT } from '../../../locale';
+
+const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'CodeHighlight');
 
 export const CodeInternal: React.FC<{
   language: string;
   value: string;
   height?: string;
   scrollToBottom?: boolean;
-}> = ({ language, value, height, scrollToBottom, ...rest }) => {
-  const { isDarkTheme } = useGlobalTheme();
-  const bottomRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (scrollToBottom === true) {
-      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-    }
-  }, [value, scrollToBottom]);
-
-  return (
-    <div style={{ maxHeight: height ?? '500px', overflowY: 'auto' }}>
-      <SyntaxHighlighter {...rest} PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
-        {value}
-      </SyntaxHighlighter>
-      <div ref={bottomRef} />
-    </div>
-  );
-};
+}> = ({ language, value, height, scrollToBottom, ...rest }) => (
+  <CodeHighlight {...rest} language={language} value={value} height={height} scrollToBottom={scrollToBottom} />
+);
 
 export const Code = (props: any) => {
   const ctx = useFlowContext<FlowModelContext>();
   const t = useT();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
   const { children, className, node, message, ...rest } = props;
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
@@ -64,8 +51,8 @@ export const Code = (props: any) => {
     isFullText = pattern.test(message.content);
   }
 
-  const editorRefMap = useChatMessagesStore.use.editorRef();
-  const currentEditorRefUid = useChatMessagesStore.use.currentEditorRefUid();
+  const editorRefMap = chat.use.editorRef();
+  const currentEditorRefUid = chat.use.currentEditorRefUid();
   const editorRef = editorRefMap[currentEditorRefUid];
 
   return match ? (

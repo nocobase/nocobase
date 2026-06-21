@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "FlowDefinition Định nghĩa Flow"
+description: "FlowDefinition định nghĩa cấu trúc cơ bản và cấu hình Flow: key, on, steps, defaultParams, mô tả thông tin meta của Flow, điều kiện kích hoạt, các Step thực thi, là kiểu cốt lõi của FlowEngine."
+keywords: "FlowDefinition,định nghĩa Flow,cấu hình Flow,on,steps,defaultParams,kiểu FlowEngine,NocoBase"
+---
 
 # FlowDefinition
 
-FlowDefinition định nghĩa cấu trúc và cấu hình cơ bản của một luồng, là một trong những khái niệm cốt lõi của FlowEngine. Nó mô tả siêu dữ liệu, điều kiện kích hoạt, các bước thực thi, v.v. của luồng.
+FlowDefinition định nghĩa cấu trúc cơ bản và cấu hình Flow, là một trong những khái niệm cốt lõi của Flow engine. Nó mô tả thông tin meta của Flow, điều kiện kích hoạt, các Step thực thi, v.v.
 
 ## Định nghĩa kiểu
 
@@ -21,12 +22,34 @@ interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
 }
 ```
 
-## Phương thức đăng ký
+Trong đó kiểu của `on` như sau:
+
+```ts
+type FlowEventPhase =
+  | 'beforeAllFlows'
+  | 'afterAllFlows'
+  | 'beforeFlow'
+  | 'afterFlow'
+  | 'beforeStep'
+  | 'afterStep';
+
+type FlowEvent<TModel extends FlowModel = FlowModel> =
+  | string
+  | {
+      eventName: string;
+      defaultParams?: Record<string, any>;
+      phase?: FlowEventPhase;
+      flowKey?: string;
+      stepKey?: string;
+    };
+```
+
+## Cách đăng ký
 
 ```ts
 class MyModel extends FlowModel {}
 
-// Đăng ký một luồng thông qua lớp model
+// Đăng ký Flow thông qua class Model
 MyModel.registerFlow({
   key: 'pageSettings',
   title: 'Page settings',
@@ -51,9 +74,9 @@ MyModel.registerFlow({
 
 **Kiểu**: `string`  
 **Bắt buộc**: Có  
-**Mô tả**: Định danh duy nhất cho luồng.
+**Mô tả**: Định danh duy nhất của Flow
 
-Chúng tôi khuyến nghị sử dụng kiểu đặt tên nhất quán là `xxxSettings`, ví dụ:
+Khuyến nghị đặt tên theo phong cách thống nhất `xxxSettings`, ví dụ:
 - `pageSettings`
 - `tableSettings` 
 - `cardSettings`
@@ -65,7 +88,7 @@ Chúng tôi khuyến nghị sử dụng kiểu đặt tên nhất quán là `xxx
 - `datetimeSettings`
 - `numberSettings`
 
-Cách đặt tên này giúp dễ dàng nhận diện và bảo trì, đồng thời khuyến nghị sử dụng nhất quán trên toàn bộ dự án.
+Cách đặt tên này dễ nhận biết và bảo trì, khuyến nghị thống nhất toàn cục.
 
 **Ví dụ**:
 ```ts
@@ -78,9 +101,9 @@ key: 'deleteSettings'
 
 **Kiểu**: `string`  
 **Bắt buộc**: Không  
-**Mô tả**: Tiêu đề dễ đọc của luồng.
+**Mô tả**: Tiêu đề Flow dễ đọc
 
-Chúng tôi khuyến nghị duy trì kiểu đặt tên nhất quán với `key`, sử dụng định dạng `Xxx settings`, ví dụ:
+Khuyến nghị giữ phong cách nhất quán với key, đặt tên theo `Xxx settings`, ví dụ:
 - `Page settings`
 - `Table settings`
 - `Card settings`
@@ -92,7 +115,7 @@ Chúng tôi khuyến nghị duy trì kiểu đặt tên nhất quán với `key`
 - `Datetime settings`
 - `Number settings`
 
-Cách đặt tên này rõ ràng và dễ hiểu hơn, tạo điều kiện thuận lợi cho việc hiển thị trên giao diện người dùng và hợp tác nhóm.
+Cách đặt tên này rõ ràng, dễ hiểu, thuận tiện cho việc hiển thị giao diện và làm việc nhóm.
 
 **Ví dụ**:
 ```ts
@@ -105,11 +128,11 @@ title: 'Delete settings'
 
 **Kiểu**: `boolean`  
 **Bắt buộc**: Không  
-**Giá trị mặc định**: `false`  
-**Mô tả**: Cho biết luồng có chỉ được thực thi thủ công hay không.
+**Mặc định**: `false`  
+**Mô tả**: Có chỉ thực thi Flow thủ công hay không
 
-- `true`: Luồng chỉ có thể được kích hoạt thủ công và sẽ không tự động thực thi.
-- `false`: Luồng có thể tự động thực thi (mặc định tự động thực thi khi không có thuộc tính `on`).
+- `true`: Flow chỉ có thể được kích hoạt thủ công, không tự động thực thi
+- `false`: Flow có thể tự động thực thi (mặc định tự động thực thi khi không có thuộc tính `on`)
 
 **Ví dụ**:
 ```ts
@@ -121,10 +144,10 @@ manual: false // Có thể tự động thực thi
 
 **Kiểu**: `number`  
 **Bắt buộc**: Không  
-**Giá trị mặc định**: `0`  
-**Mô tả**: Thứ tự thực thi của luồng. Giá trị càng nhỏ, luồng càng được thực thi trước.
+**Mặc định**: `0`  
+**Mô tả**: Thứ tự thực thi Flow, giá trị càng nhỏ càng được thực thi trước
 
-Có thể là số âm, dùng để kiểm soát thứ tự thực thi của nhiều luồng.
+Có thể là số âm, dùng để điều khiển thứ tự thực thi của nhiều Flow.
 
 **Ví dụ**:
 ```ts
@@ -137,37 +160,69 @@ sort: 1   // Thực thi sau
 
 **Kiểu**: `FlowEvent<TModel>`  
 **Bắt buộc**: Không  
-**Mô tả**: Cấu hình sự kiện cho phép luồng này được kích hoạt bởi `dispatchEvent`.
+**Mô tả**: Cấu hình Event cho phép Flow này được kích hoạt bởi `dispatchEvent`
 
-Chỉ dùng để khai báo tên sự kiện kích hoạt (chuỗi hoặc `{ eventName }`), không bao gồm hàm xử lý.
+Dùng để khai báo tên Event kích hoạt (chuỗi hoặc `{ eventName }`), cùng thời điểm thực thi tùy chọn (`phase`). Không bao gồm hàm xử lý (logic xử lý nằm trong `steps`).
 
-**Các loại sự kiện được hỗ trợ**:
-- `'click'` - Sự kiện nhấp chuột
-- `'submit'` - Sự kiện gửi
-- `'reset'` - Sự kiện đặt lại
-- `'remove'` - Sự kiện xóa
-- `'openView'` - Sự kiện mở chế độ xem
-- `'dropdownOpen'` - Sự kiện mở danh sách thả xuống
-- `'popupScroll'` - Sự kiện cuộn cửa sổ bật lên
-- `'search'` - Sự kiện tìm kiếm
-- `'customRequest'` - Sự kiện yêu cầu tùy chỉnh
-- `'collapseToggle'` - Sự kiện chuyển đổi thu gọn
+**Các kiểu Event hỗ trợ**:
+- `'beforeRender'` - Event trước khi render, tự động kích hoạt khi component render lần đầu
+- `'click'` - Event click
+- `'submit'` - Event submit
+- `'reset'` - Event reset
+- `'remove'` - Event xóa
+- `'openView'` - Event mở view
+- `'dropdownOpen'` - Event mở dropdown
+- `'popupScroll'` - Event cuộn popup
+- `'search'` - Event tìm kiếm
+- `'customRequest'` - Event request tùy chỉnh
+- `'collapseToggle'` - Event toggle thu gọn
 - Hoặc bất kỳ chuỗi tùy chỉnh nào
 
 **Ví dụ**:
 ```ts
-on: 'click'  // Kích hoạt khi nhấp chuột
-on: 'submit' // Kích hoạt khi gửi
+on: 'click'  // Kích hoạt khi click
+on: 'submit' // Kích hoạt khi submit
 on: { eventName: 'customEvent', defaultParams: { param1: 'value1' } }
+```
+
+#### Thời điểm thực thi (phase)
+
+Khi cùng một Event (ví dụ `click`) có nhiều event flow, có thể dùng `phase / flowKey / stepKey` để chỉ định Flow này được chèn vào vị trí nào trong các Flow tĩnh tích hợp:
+
+| phase | Ý nghĩa | Trường cần có |
+| --- | --- | --- |
+| `beforeAllFlows`(mặc định) | Thực thi trước tất cả các Flow tĩnh tích hợp | - |
+| `afterAllFlows` | Thực thi sau tất cả các Flow tĩnh tích hợp | - |
+| `beforeFlow` | Thực thi trước khi một Flow tĩnh tích hợp bắt đầu | `flowKey` |
+| `afterFlow` | Thực thi sau khi một Flow tĩnh tích hợp kết thúc | `flowKey` |
+| `beforeStep` | Thực thi trước khi một Step của Flow tĩnh tích hợp bắt đầu | `flowKey` + `stepKey` |
+| `afterStep` | Thực thi sau khi một Step của Flow tĩnh tích hợp kết thúc | `flowKey` + `stepKey` |
+
+**Ví dụ**:
+
+```ts
+// 1) Mặc định: Trước tất cả các Flow tĩnh tích hợp (không cần ghi phase)
+on: { eventName: 'click' }
+
+// 2) Sau tất cả các Flow tĩnh tích hợp
+on: { eventName: 'click', phase: 'afterAllFlows' }
+
+// 3) Trước/sau khi một Flow tĩnh tích hợp bắt đầu/kết thúc
+on: { eventName: 'click', phase: 'beforeFlow', flowKey: 'buttonSettings' }
+on: { eventName: 'click', phase: 'afterFlow', flowKey: 'buttonSettings' }
+
+// 4) Trước/sau khi một Step của Flow tĩnh tích hợp bắt đầu/kết thúc
+on: { eventName: 'click', phase: 'beforeStep', flowKey: 'buttonSettings', stepKey: 'general' }
+on: { eventName: 'click', phase: 'afterStep', flowKey: 'buttonSettings', stepKey: 'general' }
 ```
 
 ### steps
 
 **Kiểu**: `Record<string, StepDefinition<TModel>>`  
 **Bắt buộc**: Có  
-**Mô tả**: Định nghĩa các bước của luồng.
+**Mô tả**: Định nghĩa các Step của Flow
 
-Định nghĩa tất cả các bước có trong luồng, mỗi bước có một khóa duy nhất.
+Định nghĩa tất cả các Step có trong Flow, mỗi Step có một key duy nhất.
 
 **Ví dụ**:
 ```ts
@@ -189,9 +244,9 @@ steps: {
 
 **Kiểu**: `Record<string, any> | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>)`  
 **Bắt buộc**: Không  
-**Mô tả**: Các tham số mặc định cấp luồng.
+**Mô tả**: Tham số mặc định cấp Flow
 
-Khi model được khởi tạo (`createModel`), nó sẽ điền các giá trị ban đầu cho các tham số bước của "luồng hiện tại". Nó chỉ điền vào các giá trị còn thiếu, không ghi đè lên các giá trị đã có. Định dạng trả về cố định là: `{ [stepKey]: params }`
+Khi khởi tạo Model (createModel), điền giá trị khởi tạo cho tham số Step của "Flow hiện tại". Chỉ điền các giá trị thiếu, không ghi đè giá trị đã có. Hình dạng trả về cố định: `{ [stepKey]: params }`
 
 **Ví dụ**:
 ```ts

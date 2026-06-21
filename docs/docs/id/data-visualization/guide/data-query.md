@@ -1,65 +1,74 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Query Data"
+description: "Query data Chart: mode grafis Builder dan mode SQL, konfigurasi ukuran/dimensi, filter/sortir/paginasi, pemilihan sumber data dan koleksi."
+keywords: "query data,mode Builder,ukuran,dimensi,kondisi filter,sumber data,NocoBase"
+---
 
-# Kueri Data
+# Query Data
 
-Panel konfigurasi bagan secara keseluruhan terbagi menjadi tiga bagian: Kueri Data, Opsi Bagan, dan Event Interaksi, ditambah tombol Batalkan, Pratinjau, dan Simpan di bagian bawah.
+Panel konfigurasi Chart secara keseluruhan dibagi menjadi tiga bagian: Query Data, Opsi Chart, dan Event Interaksi, serta tombol Batal, Preview, dan Simpan di bagian paling bawah.
 
-Mari kita lihat panel "Kueri Data" terlebih dahulu untuk memahami dua mode kueri (Builder/SQL) dan fitur-fitur umumnya.
+Mari kita lihat panel "Query Data" terlebih dahulu untuk memahami dua mode query (Builder/SQL) dan fitur umumnya.
+
 
 ## Struktur Panel
 ![clipboard-image-1761466636](https://static-docs.nocobase.com/clipboard-image-1761466636.png)
 
-> Tips: Untuk mengonfigurasi konten saat ini dengan lebih mudah, Anda bisa melipat panel lain terlebih dahulu.
+> Tips: Untuk lebih mudah mengkonfigurasi konten saat ini, Anda dapat melipat panel lainnya terlebih dahulu.
 
-Bagian paling atas adalah bilah aksi:
-- Mode: Builder (grafis, sederhana, dan nyaman) / SQL (pernyataan tulisan tangan, lebih fleksibel).
-- Jalankan Kueri: Klik untuk mengeksekusi permintaan kueri data.
-- Lihat Hasil: Membuka panel hasil data, tempat Anda dapat beralih antara tampilan Tabel/JSON. Klik lagi untuk melipat panel.
+
+Bagian paling atas adalah toolbar
+- Mode: Builder (grafis, sederhana dan mudah) / SQL (statement manual, lebih fleksibel).
+- Jalankan Query: klik untuk mengeksekusi permintaan query data.
+- Lihat Hasil: buka panel hasil data, dapat beralih antara Table/JSON. Klik lagi untuk menyembunyikan panel.
 
 Dari atas ke bawah secara berurutan:
-- Sumber Data dan koleksi: Wajib diisi. Pilih sumber data dan tabel data.
-- Ukuran (Measures): Wajib diisi. Bidang numerik yang akan ditampilkan.
-- Dimensi (Dimensions): Kelompokkan berdasarkan bidang (misalnya, tanggal, kategori, wilayah).
-- Filter: Atur kondisi filter (misalnya, =, ≠, >, <, berisi, rentang). Beberapa kondisi dapat digabungkan.
-- Urutkan: Pilih bidang untuk diurutkan dan urutan (naik/turun).
-- Paginasi: Kontrol rentang data dan urutan pengembalian.
+- Sumber data dan koleksi: wajib diisi, pilih sumber data dan tabel data.
+- Ukuran (Measures): wajib diisi, field numerik yang ditampilkan.
+- Dimensi (Dimensions): pengelompokan berdasarkan field (tanggal/kategori/wilayah, dll.).
+- Filter: atur kondisi filter (=, ≠, >, <, contains, range, dll.), beberapa kondisi dapat dikombinasikan.
+- Sortir: pilih field untuk sortir dan urutan naik/turun.
+- Paginasi: kontrol cakupan data dan urutan pengembalian.
+
 
 ## Mode Builder
 
-### Pilih sumber data dan koleksi
-- Di panel "Kueri Data", atur mode ke "Builder".
-- Pilih sumber data dan koleksi (tabel data). Jika koleksi tidak dapat dipilih atau kosong, periksa terlebih dahulu izin dan apakah koleksi sudah dibuat.
+### Pilih Sumber Data dan Koleksi
+- Pada panel "Query Data" pilih mode "Builder".
+- Pilih sumber data dan koleksi (tabel data). Saat koleksi tidak dapat dipilih atau kosong, periksa terlebih dahulu izin dan apakah sudah dibuat.
 
-### Konfigurasi Ukuran (Measures)
-- Pilih satu atau lebih bidang numerik dan atur agregasi: `Sum`, `Count`, `Avg`, `Max`, `Min`.
-- Kasus penggunaan umum: `Count` untuk menghitung catatan, `Sum` untuk menghitung total.
 
-### Konfigurasi Dimensi (Dimensions)
-- Pilih satu atau lebih bidang sebagai dimensi pengelompokan.
-- Bidang tanggal dan waktu dapat diformat (misalnya, `YYYY-MM`, `YYYY-MM-DD`) untuk memfasilitasi pengelompokan berdasarkan bulan atau hari.
+### Konfigurasikan Ukuran (Measures)
+- Pilih satu atau beberapa field numerik, atur agregasi: `Sum`, `Count`, `Avg`, `Max`, `Min`.
+- Skenario umum: `Count` untuk menghitung jumlah record, `Sum` untuk menghitung total.
 
-### Filter, Urutkan, dan Paginasi
-- Filter: Tambahkan kondisi (misalnya, =, ≠, berisi, rentang). Beberapa kondisi dapat digabungkan.
-- Urutkan: Pilih bidang dan urutan pengurutan (naik/turun).
-- Paginasi: Atur `Limit` dan `Offset` untuk mengontrol jumlah baris yang dikembalikan. Disarankan untuk mengatur `Limit` yang kecil saat melakukan debug.
 
-### Jalankan Kueri dan Lihat Hasil
-- Klik "Jalankan Kueri" untuk mengeksekusi. Setelah kembali, beralihlah antara `Tabel / JSON` di "Lihat Hasil" untuk memeriksa kolom dan nilai.
-- Sebelum memetakan bidang bagan, konfirmasikan nama kolom dan tipenya di sini untuk menghindari bagan kosong atau error di kemudian hari.
+### Konfigurasikan Dimensi (Dimensions)
+- Pilih satu atau beberapa field sebagai dimensi pengelompokan.
+- Field tanggal-waktu dapat diatur formatnya (seperti `YYYY-MM`, `YYYY-MM-DD`) untuk memudahkan pengelompokan per bulan/hari.
+
+
+### Filter, Sortir, dan Paginasi
+- Filter: tambahkan kondisi (=, ≠, contains, range, dll.), beberapa kondisi dapat dikombinasikan.
+- Sortir: pilih field dan urutan naik/turun.
+- Paginasi: atur `Limit` dan `Offset` untuk mengontrol jumlah baris yang dikembalikan; saat debugging disarankan mengatur `Limit` lebih kecil terlebih dahulu.
+
+
+### Jalankan Query dan Lihat Hasil
+- Klik "Jalankan Query" untuk eksekusi, setelah dikembalikan periksa kolom dan nilai pada "Lihat Data" dengan beralih `Table / JSON`.
+- Sebelum memetakan field Chart, konfirmasikan terlebih dahulu nama dan tipe kolom di sini, untuk menghindari Chart kosong atau error.
 
 ![20251026174338](https://static-docs.nocobase.com/20251026174338.png)
 
-### Pemetaan Bidang Selanjutnya
+### Pemetaan Field Selanjutnya
 
-Selanjutnya, saat mengonfigurasi "Opsi Bagan", Anda akan memetakan bidang berdasarkan bidang dari sumber data dan koleksi yang dipilih.
+Selanjutnya pada konfigurasi "Opsi Chart", lakukan pemetaan field berdasarkan field tabel sumber data dan koleksi yang dipilih.
 
 ## Mode SQL
 
-### Tulis Kueri
-- Beralih ke mode "SQL", masukkan pernyataan kueri Anda, dan klik "Jalankan Kueri".
-- Contoh (jumlah total pesanan berdasarkan tanggal):
+### Tulis Query
+- Beralih ke mode "SQL", masukkan statement query, klik "Jalankan Query".
+- Contoh (statistik jumlah pesanan berdasarkan tanggal):
 ```sql
 SELECT 
   TO_CHAR(order_date, 'YYYY-MM') as mon,
@@ -72,14 +81,15 @@ LIMIT 100;
 
 ![20251026175952](https://static-docs.nocobase.com/20251026175952.png)
 
-### Jalankan Kueri dan Lihat Hasil
+### Jalankan Query dan Lihat Hasil
 
-- Klik "Jalankan Kueri" untuk mengeksekusi. Setelah kembali, beralihlah antara `Tabel / JSON` di "Lihat Hasil" untuk memeriksa kolom dan nilai.
-- Sebelum memetakan bidang bagan, konfirmasikan nama kolom dan tipenya di sini untuk menghindari bagan kosong atau error di kemudian hari.
+- Klik "Jalankan Query" untuk eksekusi, setelah dikembalikan periksa kolom dan nilai pada "Lihat Data" dengan beralih `Table / JSON`.
+- Sebelum memetakan field Chart, konfirmasikan terlebih dahulu nama dan tipe kolom di sini, untuk menghindari Chart kosong atau error.
 
-### Pemetaan Bidang Selanjutnya
+### Pemetaan Field Selanjutnya
 
-Selanjutnya, saat mengonfigurasi "Opsi Bagan", Anda akan memetakan bidang berdasarkan kolom dari hasil kueri.
+Selanjutnya pada konfigurasi "Opsi Chart", lakukan pemetaan field berdasarkan kolom hasil query.
+
 
 > [!TIP]
-> Untuk informasi lebih lanjut tentang mode SQL, silakan lihat [Penggunaan Lanjutan — Kueri Data dalam Mode SQL](#).
+> Untuk informasi lebih lanjut tentang mode SQL, lihat Penggunaan Lanjutan — Query Data Mode SQL.

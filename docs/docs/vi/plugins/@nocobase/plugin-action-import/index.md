@@ -1,14 +1,17 @@
 ---
-displayName: "Thao tác: Nhập bản ghi"
+displayName: "Action: Nhập bản ghi"
 packageName: '@nocobase/plugin-action-import'
+title: "Action: Nhập bản ghi"
+keywords: "Action: Nhập bản ghi,Plugin,NocoBase"
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Sử dụng mẫu Excel để nhập dữ liệu. Bạn có thể cấu hình các trường cần nhập và mẫu sẽ được tạo tự động.
+  Sử dụng mẫu Excel để nhập dữ liệu, có thể cấu hình các trường cần nhập, tự động tạo mẫu.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: Nhập bản ghi
+# Action: Nhập bản ghi

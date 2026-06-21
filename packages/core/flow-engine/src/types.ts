@@ -145,6 +145,8 @@ export enum ActionScene {
   ACTION_LINKAGE_RULES,
   /** 动态事件流可用 */
   DYNAMIC_EVENT_FLOW,
+  /** 菜单项联动规则可用 */
+  MENU_LINKAGE_RULES,
 }
 
 /**
@@ -172,6 +174,18 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
    * - StepDefinition.hideInSettings can override the ActionDefinition value.
    */
   hideInSettings?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
+  /**
+   * Whether to disable this step/action in settings menus.
+   * - Supports static boolean and dynamic decision based on runtime context.
+   * - StepDefinition.disabledInSettings can override the ActionDefinition value.
+   */
+  disabledInSettings?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
+  /**
+   * Optional reason shown when this step/action is disabled in settings menus.
+   * - Supports static string and dynamic resolver based on runtime context.
+   * - StepDefinition.disabledReasonInSettings can override the ActionDefinition value.
+   */
+  disabledReasonInSettings?: string | ((ctx: TCtx) => string | Promise<string>);
   /**
    * 在执行 Action 前为 ctx 定义临时属性。
    * - 仅支持 PropertyOptions 形态（例如：{ foo: { value: 5 } }）；
@@ -201,6 +215,7 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
  */
 export type FlowEventName =
   | 'click'
+  | 'close'
   | 'submit'
   | 'reset'
   | 'remove'
@@ -375,6 +390,65 @@ export interface CreateModelOptions {
   delegateToParent?: boolean;
   [key: string]: any; // 允许额外的自定义选项
 }
+
+/**
+ * FlowModel loader result.
+ * Supports returning the model constructor directly, a default export, or a module object containing the named export.
+ */
+export type FlowModelLoaderResult =
+  | ModelConstructor
+  | {
+      default?: ModelConstructor;
+      [key: string]: unknown;
+    }
+  | Record<string, unknown>;
+
+/**
+ * FlowModel loader function.
+ */
+export type FlowModelLoader = () => Promise<FlowModelLoaderResult>;
+
+/**
+ * FlowModel loader entry (normalized internal form).
+ */
+export interface FlowModelLoaderEntry {
+  loader: FlowModelLoader;
+  extends?: string[];
+  // meta?: Partial<FlowModelMeta>;
+  // scenes?: string[];
+}
+
+/**
+ * FlowModel loader input (user-facing form for registerModelLoaders).
+ * The `extends` field accepts flexible formats that will be normalized to `string[]` at registration time.
+ */
+export interface FlowModelLoaderInput {
+  loader: FlowModelLoader;
+  extends?: string | ModelConstructor | (string | ModelConstructor)[];
+}
+
+/**
+ * FlowModel loader entry map (normalized internal form).
+ */
+export type FlowModelLoaderMap = Record<string, FlowModelLoaderEntry>;
+
+/**
+ * FlowModel loader input map (user-facing form for registerModelLoaders).
+ */
+export type FlowModelLoaderInputMap = Record<string, FlowModelLoaderInput>;
+
+/**
+ * Batch ensure result.
+ */
+export interface EnsureBatchResult {
+  requested: string[];
+  loaded: string[];
+  failed: Array<{
+    name: string;
+    error?: unknown;
+  }>;
+}
+
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
   save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;
@@ -536,6 +610,20 @@ export interface ToolbarItemConfig {
   visible?: (model: FlowModel) => boolean;
   /** 排序权重，数字越小越靠右（先添加的在右边） */
   sort?: number;
+}
+
+export interface DynamicFlowSource {
+  key: string;
+  label: React.ReactNode;
+  model: FlowModel;
+  sort?: number;
+}
+
+export interface DynamicFlowSourceProvider {
+  key: string;
+  sort?: number;
+  visible?: (model: FlowModel) => boolean;
+  getSources: (model: FlowModel) => DynamicFlowSource[] | Promise<DynamicFlowSource[]>;
 }
 
 export interface ApplyFlowCacheEntry {

@@ -1,18 +1,17 @@
 ---
-displayName: "Alur kerja: Peristiwa aksi kustom"
+displayName: "Workflow: Event Action Kustom"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
+title: "Workflow: Event Action Kustom"
+keywords: "Workflow: Event Action Kustom,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Terpicu setelah mengklik tombol yang terikat dengan aksi kustom. Ini cocok untuk mengorkestrasi operasi kustom pada baris data.
-isFree: false
-builtIn: false
+  Dipicu setelah mengklik tombol yang terhubung dengan event kustom. Cocok untuk orkestrasi Action kustom pada baris data.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur kerja: Peristiwa aksi kustom
+# Workflow: Event Action Kustom

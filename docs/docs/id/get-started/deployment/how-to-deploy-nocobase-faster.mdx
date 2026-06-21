@@ -1,0 +1,384 @@
+---
+title: "Cara Deployment Lebih Cepat"
+description: "Pelajari cara mengoptimalkan deployment NocoBase dengan HTTP/2, CDN, lokasi server, serta teknik kompresi dan caching untuk mengurangi waktu muat secara signifikan."
+keywords: "NocoBase,Deployment,Performa,HTTP/2,CDN,Optimasi"
+---
+
+# Cara Deployment Lebih Cepat
+
+Banyak pengguna mungkin merasa NocoBase berjalan lebih lambat dari yang diharapkan setelah deployment. Hal ini sering kali disebabkan oleh lingkungan jaringan, konfigurasi server, atau arsitektur deployment. Sebelum membahas teknik optimasi, mari kita lihat dulu nilai referensi kecepatan muat NocoBase yang normal untuk menghindari kekhawatiran yang tidak perlu.
+
+### Referensi Kecepatan Muat Normal NocoBase
+
+Berikut adalah kecepatan muat yang diuji di lingkungan demo NocoBase:
+
+* Waktu yang dibutuhkan untuk masuk ke aplikasi pertama kali dengan memasukkan URL: sekitar 2 detik
+* Waktu yang dibutuhkan untuk berpindah halaman di dalam aplikasi: sekitar 50-300 milidetik
+
+<video autoplay loop width="100%">
+      <source src="https://static-docs.nocobase.com/886b8e6afd4eea8fd1ff601fdbaecaf0.mp4" />
+</video>
+
+<video autoplay loop width="100%">
+      <source src="https://static-docs.nocobase.com/c240cf4029820f0e4c2bbb58723e2d76.mp4" />
+</video>
+
+Selanjutnya, saya akan berbagi serangkaian teknik optimasi deployment yang sederhana namun efektif, yang dapat meningkatkan kecepatan akses secara signifikan hanya dengan menyesuaikan pengaturan deployment, tanpa perlu mengubah kode apa pun:
+
+## I. Optimasi Jaringan dan Infrastruktur
+
+### 1. Versi Protokol HTTP: Mudah Beralih ke HTTP/2
+
+【Prasyarat】
+
+- **Dukungan HTTPS Diperlukan**: Ini penting! Hampir semua browser modern hanya mendukung HTTP/2 melalui koneksi HTTPS, jadi Anda harus mengonfigurasi sertifikat SSL terlebih dahulu.
+- **Persyaratan Server**: Anda perlu menggunakan perangkat lunak server yang mendukung HTTP/2, seperti Nginx 1.9.5+ atau Apache 2.4.17+.
+- **Versi TLS**: TLS 1.2 atau lebih tinggi direkomendasikan (TLS 1.3 adalah yang terbaik), karena versi SSL lama tidak mendukung HTTP/2.
+
+【Tips】
+
+Protokol HTTP/1.1 tradisional memiliki keterbatasan saat menangani banyak permintaan—biasanya hanya 6-8 koneksi secara bersamaan, mirip seperti antre membeli tiket, yang mudah menyebabkan keterlambatan.
+![250416_http1_en](https://static-docs.nocobase.com/250416_http1_en.png)
+
+HTTP/2 menggunakan teknologi "multiplexing" untuk menangani banyak permintaan secara bersamaan, sehingga sangat mempercepat pemuatan sumber daya; sementara HTTP/3 yang terbaru bahkan tampil lebih baik di jaringan yang tidak stabil, dengan hasil yang sangat baik.
+
+![250416_http2_en](https://static-docs.nocobase.com/250416_http2_en.png)
+
+【Saran Optimasi】
+
+- Pastikan server web Anda mengaktifkan dukungan HTTP/2, yang mudah dikonfigurasi di sebagian besar server (seperti Nginx, Caddy).
+- Di Nginx, cukup tambahkan parameter `http2` setelah direktif listen:
+
+```nginx
+listen 443 ssl http2;
+```
+
+【Verifikasi】
+
+Di panel developer browser Anda, buka opsi "Network", klik kanan dan centang "Protocol" untuk melihat versi protokol koneksi saat ini:
+![20250407145442](https://static-docs.nocobase.com/20250407145442.png)
+
+Berdasarkan pengujian kami, kecepatan keseluruhan meningkat sekitar 10%, dengan peningkatan performa yang lebih signifikan saat sistem memiliki banyak block dan sumber daya.
+
+### 2. Bandwidth Jaringan: Semakin Besar Semakin Baik, dengan Penagihan Fleksibel
+
+【Tips】
+
+Sama seperti jalan tol yang lebih lancar daripada jalan biasa, bandwidth menentukan efisiensi transmisi data. Saat NocoBase dimuat untuk pertama kalinya, ia perlu mengunduh banyak sumber daya frontend, dan bandwidth yang tidak memadai dengan mudah menjadi hambatan.
+
+【Saran Optimasi】
+
+- Pilih bandwidth yang cukup (direkomendasikan 50Mbps+ untuk banyak pengguna), jangan pelit pada sumber daya penting ini.
+- Disarankan menggunakan penagihan "bayar sesuai pemakaian": banyak penyedia cloud menawarkan model fleksibel ini, yang memungkinkan Anda menikmati bandwidth lebih tinggi saat jam sibuk sambil tetap mengendalikan biaya selama penggunaan normal.
+
+### 3. Latensi Jaringan dan Lokasi Geografis Server: Semakin Dekat Semakin Cepat
+
+【Tips】
+
+Latensi adalah waktu tunggu untuk transmisi data. Bahkan dengan bandwidth yang cukup, jika server terlalu jauh dari pengguna (misalnya pengguna di Cina tetapi server di AS), setiap respons permintaan bisa melambat karena jarak yang jauh.
+
+【Saran Optimasi】
+
+- Usahakan men-deploy NocoBase di wilayah yang lebih dekat dengan basis pengguna utama Anda.
+- Jika pengguna Anda tersebar secara global, pertimbangkan untuk menggunakan layanan akselerasi global (seperti Alibaba Cloud Global Accelerator atau AWS Global Accelerator) untuk mengoptimalkan routing jaringan dan mengurangi latensi.
+
+【Verifikasi】
+
+Gunakan perintah ping untuk menguji latensi dari berbagai wilayah.
+Pendekatan ini menunjukkan peningkatan yang paling jelas, dengan kecepatan akses yang meningkat 1-3 kali lipat atau lebih tergantung wilayahnya.
+Lintas 12 zona waktu, 13 detik:
+![20250416130618](https://static-docs.nocobase.com/20250416130618.png)
+
+Lintas 2 zona waktu, 8 detik:
+![20250409131039](https://static-docs.nocobase.com/20250409131039.png)
+
+Wilayah yang sama, sekitar 3 detik:
+![20250409130928](https://static-docs.nocobase.com/20250409130928.png)
+
+## II. Optimasi Arsitektur Deployment
+
+### 4. Metode Deployment Server dan Proxy: Pilih Arsitektur yang Paling Sesuai
+
+【Prasyarat】
+
+- **Hak Akses Server**: Anda memerlukan akses root atau sudo untuk mengonfigurasi layanan seperti Nginx.
+- **Keterampilan Dasar**: Diperlukan pengetahuan dasar tentang konfigurasi server, tetapi jangan khawatir, contoh konfigurasi spesifik akan disediakan.
+- **Akses Port**: Pastikan firewall Anda mengizinkan akses ke port 80 (HTTP) dan 443 (HTTPS).
+
+【Tips】
+
+Saat pengguna mengakses NocoBase, permintaan langsung menuju server Anda. Metode deployment yang tepat memungkinkan server Anda menangani permintaan secara lebih efisien, memberikan respons yang lebih cepat.
+
+【Berbagai Solusi dan Rekomendasi】
+
+**Menjalankan NocoBase tanpa menggunakan reverse proxy untuk sumber daya statis (tidak direkomendasikan):**
+
+- Kekurangan: Metode ini sederhana tetapi performanya buruk saat menangani konkurensi tinggi atau file statis; hanya cocok untuk development dan testing.
+- Rekomendasi: Mohon hindari metode ini jika memungkinkan.
+
+> Lihat "[Dokumentasi Instalasi](https://docs.nocobase.com/get-started/quickstart)"
+
+Tanpa reverse proxy, pemuatan halaman utama memakan waktu sekitar 6,1 detik
+![20250409131357](https://static-docs.nocobase.com/20250409131357.png)
+
+**Menggunakan Nginx / Caddy sebagai reverse proxy (sangat direkomendasikan):**
+
+- Kelebihan: Server reverse proxy dapat menangani koneksi konkuren secara efisien, menyajikan file statis, menerapkan load balancing, dan membuat konfigurasi HTTP/2 menjadi sederhana.
+- Rekomendasi: Di lingkungan produksi, setelah deployment aplikasi (deployment dari source code / create-nocobase-app / Docker image), gunakan Nginx atau Caddy sebagai reverse proxy.
+
+> Lihat "[Dokumentasi Deployment](https://docs.nocobase.com/get-started/deployment/production)"
+
+Dengan proxy Nginx, pemuatan halaman utama memakan waktu sekitar 3-4 detik
+![20250409131541](https://static-docs.nocobase.com/20250409131541.png)
+
+![20250416081410](https://static-docs.nocobase.com/20250416081410.png)
+
+**Menggunakan deployment cluster dengan load balancing (cocok untuk skenario konkurensi tinggi dan ketersediaan tinggi):**
+
+- Kelebihan: Dengan men-deploy beberapa instance untuk menangani permintaan, Anda dapat meningkatkan stabilitas sistem secara keseluruhan dan kapasitas konkurensi secara signifikan.
+- Untuk metode deployment spesifik, lihat **[Cluster Mode](https://docs.nocobase.com/welcome/getting-started/deployment/cluster-mode)**
+
+### 5. Menggunakan CDN untuk Mempercepat Sumber Daya Statis
+
+【Prasyarat】
+
+- **Persyaratan Domain**: Anda memerlukan nama domain terdaftar dan kemampuan untuk mengelola pengaturan DNS-nya.
+- **Sertifikat SSL**: Sebagian besar layanan CDN memerlukan konfigurasi sertifikat SSL (Anda bisa menggunakan sertifikat Let's Encrypt gratis).
+- **Pemilihan Layanan**: Pilih penyedia CDN yang sesuai berdasarkan wilayah pengguna (pengguna di Cina daratan memerlukan CDN dengan izin ICP).
+
+【Tips】
+CDN (Content Delivery Network) menyimpan sumber daya statis Anda di node-node di seluruh dunia, memungkinkan pengguna mendapatkan sumber daya dari node terdekat, seperti mengambil air dari sumber yang dekat, yang sangat mengurangi keterlambatan pemuatan.
+
+Selain itu, keunggulan terbesar CDN adalah kemampuannya untuk **secara signifikan mengurangi beban dan tekanan bandwidth pada server aplikasi Anda**. Saat banyak pengguna mengakses NocoBase secara bersamaan tanpa CDN, semua permintaan sumber daya statis (JavaScript, CSS, gambar, dll.) langsung menuju server Anda, yang berpotensi menyebabkan kejenuhan bandwidth, penurunan performa, atau bahkan server crash. Dengan mengalihkan permintaan ini ke CDN, server Anda dapat fokus memproses logika bisnis inti, memberikan pengalaman yang lebih stabil bagi pengguna.
+
+![20250416_0826](https://static-docs.nocobase.com/20250416_0826.png)
+
+【Saran Optimasi】• Konfigurasikan server Anda untuk mendistribusikan permintaan sumber daya statis melalui CDN.• Pilih penyedia CDN yang sesuai berdasarkan lokasi pengguna:
+
+- Pengguna global: Cloudflare, Akamai, AWS CloudFront;
+- Pengguna Cina daratan: Alibaba Cloud CDN, Tencent Cloud CDN, Baidu Cloud Acceleration. Contoh konfigurasi:
+
+```nginx
+# Mengarahkan sumber daya statis ke domain CDN
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    rewrite ^(.*)$ https://your-cdn-domain.com$1 permanent;
+}
+```
+
+- Untuk proyek kecil, paket gratis Cloudflare dapat menyediakan akselerasi CDN yang baik:
+
+1. Daftarkan akun Cloudflare dan tambahkan domain Anda;
+2. Modifikasi DNS untuk mengarahkan domain Anda ke server Cloudflare;
+3. Atur level cache yang sesuai di panel kontrol.
+
+**Catatan Khusus**: Bahkan jika semua pengguna Anda berada di wilayah yang sama, tetap sangat direkomendasikan untuk menggunakan CDN karena secara efektif mengurangi beban server, meningkatkan stabilitas sistem secara keseluruhan, terutama saat periode trafik tinggi.
+
+## III. Optimasi Sumber Daya Statis
+
+### 6. Kompresi Server dan Konfigurasi Cache
+
+【Prasyarat】
+
+- **Sumber Daya CPU**: Kompresi meningkatkan beban CPU server, sehingga server Anda harus memiliki daya pemrosesan yang cukup.
+- **Dukungan Modul Nginx**: Kompresi Gzip umumnya sudah built-in, tetapi kompresi Brotli mungkin memerlukan instalasi modul tambahan.
+- **Hak Akses Konfigurasi**: Anda memerlukan izin untuk memodifikasi konfigurasi server.
+
+【Tips】
+
+Dengan mengaktifkan kompresi dan menerapkan strategi cache yang masuk akal, Anda dapat secara signifikan mengurangi volume transfer data dan permintaan berulang, pada dasarnya "merampingkan" sumber daya Anda agar kecepatan pemuatan melesat.
+![20250416081719](https://static-docs.nocobase.com/20250416081719.png)
+
+【Saran Optimasi】
+
+- Solusi paling sederhana: Gunakan layanan CDN gratis Cloudflare, yang secara otomatis mengaktifkan kompresi Gzip.
+- Aktifkan kompresi Gzip atau Brotli, yang dapat diatur di Nginx seperti ini:
+
+```nginx
+# Aktifkan kompresi Gzip
+gzip on;
+gzip_comp_level 6;
+gzip_min_length 1000;
+gzip_proxied any;
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+# Jika kompresi Brotli didukung, aktifkan untuk kompresi yang lebih efisien
+brotli on;
+brotli_comp_level 6;
+brotli_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+```
+
+- Atur header cache yang sesuai untuk sumber daya statis guna mengurangi pemuatan berulang:
+
+```nginx
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000";
+    access_log off;
+}
+```
+
+### 7. Menggunakan SSL/TLS dan Mengoptimalkan Performa
+
+【Prasyarat】
+
+- **Sertifikat SSL**: Anda memerlukan sertifikat SSL yang valid (Anda bisa menggunakan sertifikat Let's Encrypt gratis).
+- **Hak Akses Konfigurasi Server**: Anda harus dapat memodifikasi konfigurasi SSL.
+- **Konfigurasi DNS**: Konfigurasikan DNS resolver yang andal untuk OCSP Stapling.
+
+【Tips】
+
+Keamanan selalu menjadi prioritas utama, tetapi konfigurasi HTTPS yang tidak tepat dapat menambah beberapa keterlambatan. Berikut beberapa trik optimasi untuk membantu Anda mempertahankan performa tinggi sambil menjaga keamanan.
+
+【Saran Optimasi】
+
+- Gunakan TLS 1.3, yang saat ini merupakan versi TLS tercepat. Konfigurasi di Nginx:
+
+```nginx
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers on;
+ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+```
+
+- Aktifkan OCSP Stapling untuk mengurangi waktu verifikasi sertifikat:
+
+```nginx
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 5s;
+```
+
+- Kurangi waktu handshake berulang melalui penggunaan ulang sesi:
+
+```nginx
+ssl_session_cache shared:SSL:10m;
+ssl_session_timeout 10m;
+```
+
+【Efek Optimasi Lintas Wilayah】
+**Catatan Khusus**: Berikut menunjukkan efek optimasi dalam skenario lintas wilayah/lintas 12 zona waktu, yang secara mendasar berbeda dengan skenario akses lokal (sekitar 3 detik) yang disebutkan sebelumnya. Latensi jaringan yang disebabkan oleh jarak geografis tidak dapat dihindari, tetapi optimasi tetap dapat meningkatkan kecepatan secara signifikan:
+
+Dengan Http2 + caching CDN + kompresi Gzip + kompresi Brotli digabungkan:
+Sebelum optimasi (akses lintas wilayah), 13 detik:
+![20250416130618](https://static-docs.nocobase.com/20250416130618.png)
+Setelah optimasi (akses lintas wilayah), 8 detik:
+![20250409173528](https://static-docs.nocobase.com/20250409173528.png)
+
+Contoh ini menunjukkan bahwa bahkan ketika lokasi geografis berjauhan, langkah-langkah optimasi yang tepat tetap dapat mengurangi waktu muat sekitar 40%, meningkatkan pengalaman pengguna secara signifikan.
+
+## IV. Monitoring dan Pemecahan Masalah
+
+### 8. Monitoring Performa dan Analisis Dasar
+
+【Prasyarat】
+
+- **Aksesibilitas**: Situs Anda harus dapat diakses publik untuk menggunakan sebagian besar alat pengujian online.
+- **Keterampilan Dasar**: Anda perlu memahami arti dasar metrik performa, meskipun kami akan menjelaskan setiap indikator utama.
+
+【Tips】
+
+Sulit untuk mengoptimalkan secara tepat tanpa mengetahui di mana bottleneck-nya. Kami merekomendasikan penggunaan beberapa alat gratis untuk memantau performa situs guna membantu mengidentifikasi masalah.
+
+【Saran Optimasi】
+
+**Gunakan alat gratis berikut untuk memeriksa performa situs:**
+
+- [Google PageSpeed Insights](https://pagespeed.web.dev/)
+- [WebPageTest](https://www.webpagetest.org/)
+- [Pingdom](https://tools.pingdom.com/)
+
+**Fokus pada metrik utama ini:**
+
+- Waktu muat halaman
+- Waktu respons server
+- Waktu resolusi DNS
+- Waktu handshake SSL
+
+**Solusi masalah umum:**
+
+- Resolusi DNS lambat? Pertimbangkan untuk mengganti layanan DNS atau mengaktifkan pre-resolution DNS.
+- Handshake SSL lambat? Optimalkan konfigurasi SSL, aktifkan penggunaan ulang sesi.
+- Respons server lambat? Periksa sumber daya server, lakukan upgrade jika perlu.
+- Pemuatan sumber daya statis lambat? Coba terapkan CDN dan sesuaikan strategi cache.
+
+## Checklist Cepat Optimasi Deployment
+
+Checklist berikut dapat membantu Anda dengan cepat memeriksa dan mengoptimalkan deployment NocoBase Anda:
+
+1. **Pemeriksaan Versi HTTP**
+
+   - [ ]  HTTPS diaktifkan (prasyarat untuk HTTP/2)
+   - [ ]  HTTP/2 diaktifkan
+   - [ ]  Pertimbangkan mendukung HTTP/3 jika kondisinya memungkinkan
+2. **Penilaian Bandwidth**
+
+   - [ ]  Bandwidth server yang cukup (direkomendasikan minimal 10Mbps, 50Mbps+ lebih disukai)
+   - [ ]  Pertimbangkan model penagihan bayar sesuai pemakaian daripada bandwidth tetap
+3. **Pemilihan Lokasi Server**
+
+   - [ ]  Lokasi server harus dekat dengan wilayah pengguna
+   - [ ]  Pertimbangkan menggunakan layanan akselerasi global untuk pengguna di seluruh dunia
+4. **Arsitektur Deployment**
+
+   - [ ]  Gunakan Nginx/Caddy sebagai reverse proxy untuk memisahkan sumber daya statis dari API
+   - [ ]  Jika perlu, terapkan deployment multi-instance dan teknologi load balancing
+5. **Penerapan CDN**
+
+   - [ ]  Percepat distribusi sumber daya statis melalui CDN
+   - [ ]  Konfigurasikan strategi cache yang sesuai
+   - [ ]  Pastikan CDN mendukung HTTP/2 atau HTTP/3
+6. **Kompresi dan Caching**
+
+   - [ ]  Aktifkan kompresi Gzip atau Brotli
+   - [ ]  Atur header cache browser yang sesuai
+7. **Optimasi SSL/TLS**
+
+   - [ ]  Gunakan TLS 1.3 untuk meningkatkan kecepatan handshake
+   - [ ]  Aktifkan OCSP Stapling
+   - [ ]  Konfigurasikan penggunaan ulang sesi SSL
+8. **Monitoring Performa**
+
+   - [ ]  Gunakan alat pengujian performa secara berkala untuk mengevaluasi situs Anda
+   - [ ]  Pantau metrik utama (waktu muat, respons, resolusi, handshake)
+   - [ ]  Optimalkan berdasarkan masalah yang teridentifikasi
+
+## Pertanyaan yang Sering Diajukan
+
+【T】Server saya di-deploy di wilayah yang berbeda dengan pengguna saya, menyebabkan akses lambat. Apa yang harus saya lakukan?
+
+【J】Solusi terbaik adalah memilih server cloud di wilayah yang sama dengan pengguna utama Anda. Jika itu tidak memungkinkan, Anda juga bisa:
+
+1. Menggunakan layanan CDN untuk mempercepat sumber daya statis;
+2. Memanfaatkan layanan akselerasi global untuk mengoptimalkan routing jaringan;
+3. Mengaktifkan semua tindakan kompresi dan optimasi cache sebanyak mungkin.
+
+【T】Mengapa NocoBase saya lambat saat pertama kali dimuat tetapi cepat setelahnya?
+
+【J】Pemuatan pertama yang lambat adalah hal yang normal karena perlu mengunduh banyak sumber daya pada awalnya.
+
+Menggunakan Demo resmi kami sebagai contoh, pemuatan pertama biasanya memakan waktu sekitar 3 detik. Akses harian berikutnya saat memasukkan URL memakan waktu sekitar 1-2 detik, sedangkan navigasi antar halaman di dalam aplikasi sangat cepat sekitar 50-300 milidetik, dengan latensi yang sangat rendah.
+
+![20250416130719](https://static-docs.nocobase.com/20250416130719.png)
+
+Untuk waktu pemuatan yang terlalu lama, masih ada ruang untuk optimasi:
+
+1. Pastikan HTTP/2 diaktifkan;
+2. Terapkan akselerasi CDN;
+3. Aktifkan kompresi Gzip/Brotli;
+4. Periksa apakah bandwidth server cukup.
+
+【T】Saat ini saya menggunakan shared hosting dan tidak dapat memodifikasi konfigurasi Nginx. Apa yang harus saya lakukan?
+
+【J】Dalam kasus ini, meskipun opsi optimasi lebih sedikit, kami tetap merekomendasikan:
+
+1. Coba gunakan layanan CDN (seperti Cloudflare);
+2. Optimalkan parameter yang dapat disesuaikan di dalam aplikasi;
+3. Jika kondisinya memungkinkan, pertimbangkan untuk meng-upgrade ke VPS yang mendukung lebih banyak konfigurasi kustom.
+
+---
+
+Melalui strategi optimasi deployment yang sederhana namun praktis ini, Anda dapat meningkatkan kecepatan akses NocoBase secara signifikan dan memberikan pengalaman yang lebih lancar kepada pengguna. Banyak tindakan optimasi dapat diselesaikan dalam beberapa jam, tidak memerlukan perubahan kode, dan dengan mudah menunjukkan hasilnya.
+
+Operasi harian:
+![2504161639operatio_user2](https://static-docs.nocobase.com/2504161639operatio_user2.gif)
+![2504161639operation3](https://static-docs.nocobase.com/2504161639operation3.gif)

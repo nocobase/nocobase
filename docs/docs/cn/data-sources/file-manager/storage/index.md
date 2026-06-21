@@ -1,3 +1,9 @@
+---
+title: "文件存储引擎"
+description: "附件字段存储引擎：本地存储、阿里云 OSS、Amazon S3、腾讯云 COS、S3 Pro，配置标题、路径、访问 URL 等。"
+keywords: "文件存储,Storage,OSS,S3,COS,本地存储,云存储,NocoBase"
+---
+
 # 概述
 
 ## 内置引擎

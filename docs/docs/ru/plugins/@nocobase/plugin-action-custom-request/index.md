@@ -1,14 +1,17 @@
 ---
-displayName: "Операция: Пользовательский запрос"
+title: "Action: Custom request"
+keywords: "Actions"
+displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Позволяет отправлять запросы любому HTTP-сервису и передавать ему контекстные данные.
+  Отправка запроса к любому HTTP-сервису; поддерживается передача контекстных данных в целевой сервис.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Операция: Пользовательский запрос
+# Action: Custom request

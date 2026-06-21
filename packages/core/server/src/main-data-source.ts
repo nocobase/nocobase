@@ -95,6 +95,7 @@ export class MainDataSource extends SequelizeDataSource {
         const results = await this.tables2Collections(toAddTables);
         const values = results.map((result) => ({
           ...result,
+          from: 'dbsync',
           underscored: false,
         }));
         await repo.create({ values, context: ctx });
@@ -115,11 +116,15 @@ export class MainDataSource extends SequelizeDataSource {
         ...filter,
       },
     });
-    const collections = loadedCollections.filter((collection: Model) => collection.options?.from !== 'db2cm');
+    const collections = loadedCollections.filter(
+      (collection: Model) => !['db2cm', 'dbsync'].includes(collection.options?.from),
+    );
     const loadedData = {};
     for (const collection of collections) {
       const c = db.getCollection(collection.name);
-      loadedData[c.tableName()] = {
+      // Use the physical table/view name so view collections whose logical name
+      // differs from `viewName` can still be matched during introspection sync.
+      loadedData[c.model.tableName] = {
         ...collection.toJSON(),
         fields: collection.fields.map((field: Model) => {
           const f = c.getField(field.name);
@@ -153,8 +158,13 @@ export class MainDataSource extends SequelizeDataSource {
       ctx.log.error(err);
     }
     const toLoadCollections = this.mergeWithLoadedCollections(collections, loadedCollections);
+    const currentSchema = process.env.COLLECTION_MANAGER_SCHEMA || db.options.schema || 'public';
 
     for (const values of toLoadCollections) {
+      if (values.schema === currentSchema) {
+        delete values.schema;
+      }
+
       const existsFields = loadedCollections[values.tableName].fields;
       const deletedFields = existsFields.filter((field: any) => !values.fields.find((f) => f.name === field.name));
 

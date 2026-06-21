@@ -1,40 +1,42 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Storage engine: Aliyun OSS"
+description: "Cấu hình storage engine Aliyun OSS tích hợp sẵn của NocoBase: Region, AccessKey, Bucket, timeout, dùng cho Aliyun Object Storage."
+keywords: "Aliyun OSS,Aliyun,AccessKey,Bucket,Object Storage,Cấu hình OSS,NocoBase"
+---
+
+# Storage engine: Aliyun OSS
+
+Storage engine dựa trên Aliyun OSS, cần chuẩn bị tài khoản và quyền liên quan trước khi sử dụng.
+
+## Tham số cấu hình
+
+![Ví dụ cấu hình storage engine Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)
+
+:::info{title=Mẹo}
+Chỉ giới thiệu các tham số dành riêng cho storage engine Aliyun OSS. Đối với các tham số chung, vui lòng tham khảo [Tham số chung của engine](./index#tham-số-chung).
 :::
 
+### Region
 
-# Công cụ lưu trữ: Aliyun OSS
+Điền Region của OSS, ví dụ: `oss-cn-hangzhou`.
 
-Đây là một công cụ lưu trữ dựa trên Aliyun OSS. Trước khi sử dụng, bạn cần chuẩn bị tài khoản và các quyền truy cập liên quan.
-
-## Thông số cấu hình
-
-![Ví dụ cấu hình công cụ lưu trữ Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)
-
-:::info{title=Lưu ý}
-Phần này chỉ giới thiệu các thông số dành riêng cho công cụ lưu trữ Aliyun OSS. Để biết các thông số chung, vui lòng tham khảo [Thông số công cụ chung](./index#引擎通用参数).
-:::
-
-### Khu vực
-
-Nhập khu vực lưu trữ OSS, ví dụ: `oss-cn-hangzhou`.
-
-:::info{title=Lưu ý}
-Bạn có thể xem thông tin khu vực của bộ chứa (bucket) trong [Bảng điều khiển Aliyun OSS](https://oss.console.aliyun.com/). Bạn chỉ cần lấy phần tiền tố khu vực (không cần tên miền đầy đủ).
+:::info{title=Mẹo}
+Có thể xem thông tin Region của Bucket tại [Aliyun OSS Console](https://oss.console.aliyun.com/), chỉ cần lấy phần tiền tố Region (không cần tên miền đầy đủ).
 :::
 
 ### AccessKey ID
 
-Nhập ID của khóa truy cập được ủy quyền của Aliyun.
+Điền ID của khóa truy cập được ủy quyền của Aliyun.
 
 ### AccessKey Secret
 
-Nhập Secret của khóa truy cập được ủy quyền của Aliyun.
+Điền Secret của khóa truy cập được ủy quyền của Aliyun.
 
-### Bộ chứa
+### Bucket
 
-Nhập tên bộ chứa OSS.
+Điền tên Bucket của OSS.
 
-### Thời gian chờ
+### Timeout
 
-Nhập thời gian chờ khi tải lên Aliyun OSS, đơn vị là mili giây. Mặc định là `60000` mili giây (tức 60 giây).
+Điền thời gian timeout khi upload lên Aliyun OSS, đơn vị mili giây, mặc định là `60000` ms (tức 60 giây).

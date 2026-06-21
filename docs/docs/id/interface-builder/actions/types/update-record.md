@@ -1,35 +1,36 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Update Record"
+description: "Action Update Record: langsung update Field tertentu di record, tanpa perlu membuka Form."
+keywords: "Update Record, UpdateRecord, update Field, interface builder, NocoBase"
+---
 
-# Perbarui Catatan
+# Update Record
 
-## Pendahuluan
+## Pengantar
 
-Aksi baris kustom untuk memperbarui data, dengan mengonfigurasi logika pembaruan bidang melalui penugasan bidang.
+Action update data baris kustom, dengan mengkonfigurasi penugasan Field untuk mengkonfigurasi logika update Field.
 
 ![20251029194309](https://static-docs.nocobase.com/20251029194309.png)
-
-## Pengaturan Aksi
+## Konfigurasi Action
 
 ![20251029194330](https://static-docs.nocobase.com/20251029194330.png)
 
-### Aturan Keterkaitan
+### Aturan Linkage
 
-Contoh: Sembunyikan tombol saat status pesanan adalah "dibatalkan".
+Contoh: Tombol disembunyikan ketika status dokumen adalah Cancel.
 
 ![20251029194524](https://static-docs.nocobase.com/20251029194524.png)
 
-Untuk detail lebih lanjut, lihat [Aturan Keterkaitan Aksi](/interface-builder/linkage-rule).
+Untuk informasi lebih lanjut, lihat [Aturan Linkage Action](/interface-builder/linkage-rule).
 
-### Penugasan Nilai
+### Penugasan Field
 
-Contoh: Perbarui penanggung jawab pada catatan saat ini menjadi pengguna saat ini.
+Contoh: Update penanggung jawab di record saat ini menjadi pengguna saat ini.
 
 ![20251029194652](https://static-docs.nocobase.com/20251029194652.png)
 
-Untuk detail lebih lanjut, lihat [Penugasan Nilai](/interface-builder/actions/action-settings/assign-values).
+Untuk informasi lebih lanjut, lihat [Penugasan Field](/interface-builder/actions/action-settings/assign-values).
 
-- [Tombol Edit](/interface-builder/actions/action-settings/edit-button)
-- [Konfirmasi Ulang](/interface-builder/actions/action-settings/double-check)
-- [Ikat alur kerja](/interface-builder/actions/action-settings/bind-workflow)
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button)
+- [Konfirmasi Ganda](/interface-builder/actions/action-settings/double-check)
+- [Bind Workflow](/interface-builder/actions/action-settings/bind-workflow)

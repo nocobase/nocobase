@@ -1,4 +1,6 @@
 ---
+title: "公开表单"
+keywords: "公开表单,插件,NocoBase"
 displayName: "公开表单"
 packageName: '@nocobase/plugin-public-forms'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 公开表单

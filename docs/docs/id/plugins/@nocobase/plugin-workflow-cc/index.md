@@ -1,14 +1,14 @@
 ---
-displayName: "Alur Kerja: CC"
+displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
+title: "Workflow: CC"
+keywords: "Workflow: CC,Plugin,NocoBase"
 description: |
-  Menyediakan fitur CC (salinan karbon) dalam alur kerja untuk mengirim persetujuan, atau informasi jenis lainnya kepada pengguna tertentu.
+  Menyediakan fungsi CC dalam workflow, untuk mengirimkan salinan persetujuan atau informasi lainnya ke pengguna tertentu.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: CC
+# Workflow: CC

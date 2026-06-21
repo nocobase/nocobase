@@ -1,16 +1,16 @@
 [
   {
     "type": "custom-link",
-    "label": "Mulai Cepat",
+    "label": "Quick Start",
     "items": [
       {
         "type": "custom-link",
-        "label": "Pengenalan",
-        "link": "/ui-development-action"
+        "label": "Pengantar",
+        "link": "/ui-development-action/"
       },
       {
         "type": "custom-link",
-        "label": "Menulis Plugin Aksi",
+        "label": "Menulis Plugin Action",
         "link": "/ui-development-action/write-an-action-plugin"
       }
     ]

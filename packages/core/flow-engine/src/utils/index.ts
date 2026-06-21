@@ -22,7 +22,7 @@ export {
 export { escapeT, getT, tExpr } from './translation';
 
 // 异常类
-export { FlowExitException } from './exceptions';
+export { FlowCancelSaveException, FlowExitAllException, FlowExitException } from './exceptions';
 
 // 流程定义相关
 export { defineAction } from './flow-definitions';
@@ -34,7 +34,14 @@ export { isInheritedFrom } from './inheritance';
 export { resolveCreateModelOptions, resolveDefaultParams, resolveExpressions } from './params-resolvers';
 
 // Schema 工具
-export { compileUiSchema, resolveStepUiSchema, resolveUiMode, shouldHideStepInSettings } from './schema-utils';
+export {
+  compileUiSchema,
+  resolveStepUiSchema,
+  resolveStepDisabledInSettings,
+  resolveUiMode,
+  shouldHideEventInSettings,
+  shouldHideStepInSettings,
+} from './schema-utils';
 
 // Runtime Context Steps 设置
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
@@ -59,6 +66,16 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
+export {
+  decodeBase64Url,
+  encodeBase64Url,
+  isCompleteCtxDatePath,
+  isCtxDatePathPrefix,
+  isCtxDateExpression,
+  parseCtxDateExpression,
+  resolveCtxDatePath,
+  serializeCtxDateValue,
+} from './dateVariable';
 
 // 安全全局对象（window/document）
 export {
@@ -87,3 +104,6 @@ export { isBeforeRenderFlow } from './flows';
 
 // Module URL resolver
 export { resolveModuleUrl, isCssFile } from './resolveModuleUrl';
+
+// Random base36 identifier with optional semantic prefix
+export { randomId } from './randomId';

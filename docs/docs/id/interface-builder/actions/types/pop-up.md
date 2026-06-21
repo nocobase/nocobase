@@ -1,23 +1,25 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Buka Popup"
+description: "Action Buka Popup: membuka dialog atau drawer, menampilkan konten Block yang ditentukan."
+keywords: "Buka Popup, PopUp, Popup, drawer, interface builder, NocoBase"
+---
 
-# Buka Modal
+# Buka Popup
 
-## Pendahuluan
+## Pengantar
 
-Aksi **Buka Modal** serupa dengan aksi Lihat dan Edit. Pengguna dapat mengonfigurasi tombol **Buka Modal** pada baris atau header tabel. Setelah tombol diklik, sebuah modal akan muncul, dan blok-blok di dalamnya akan menampilkan data berdasarkan catatan konteks saat ini.
+**Action Buka Popup** mirip dengan Action Lihat dan Edit. Pengguna dapat mengkonfigurasi tombol **Buka Popup** di baris atau header Table. Setelah tombol diklik, Popup yang sesuai akan muncul, dan Block dalam Popup akan menampilkan data berdasarkan record konteks saat ini.
 
 ![20251029182351](https://static-docs.nocobase.com/20251029182351.png)
 
-Konfigurasikan blok-blok di dalam modal sesuai kebutuhan.
+Konfigurasi Block sesuai kebutuhan di Popup.
 
 ![20251029190208](https://static-docs.nocobase.com/20251029190208.png)
 
-## Pengaturan Aksi
+## Konfigurasi Action
 
 ![20251029190352](https://static-docs.nocobase.com/20251029190352.png)
 
-- [Edit tombol](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, dan ikon tombol.
-- [Aturan Keterkaitan](/interface-builder/linkage-rule): Kontrol status tombol secara dinamis (tampil/nonaktif).
-- [Edit Modal](/interface-builder/actions/action-settings/edit-popup): Atur mode pembukaan (modal atau drawer) dan ukuran.
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button): Edit judul, tipe, ikon tombol
+- [Aturan Linkage](/interface-builder/linkage-rule): kontrol status tombol secara dinamis (tampilan/nonaktif)
+- [Edit Popup](/interface-builder/actions/action-settings/edit-popup): cara membuka, ukuran

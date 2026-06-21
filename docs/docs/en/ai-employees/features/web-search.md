@@ -1,40 +1,39 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI Employee Web Search"
+description: "Web Search supplements the latest information beyond the model's training data. Availability depends on whether the model supports Web Search, and it can be enabled or disabled in the chat input area."
+keywords: "Web Search,AI retrieval,AI Employees,NocoBase"
+---
+
 # Web Search
 
-Usually, the data timeliness of large language models is relatively poor and lacks the latest data. Therefore, online LLM Service platforms generally provide Web Search functions, allowing AI to use Tools to search for information before replying, and then reply based on the search results of the Tools.
+Web Search supplements the latest information beyond the model's training data.
 
-AI Employees have adapted to the Web Search functions of various online LLM Service platforms. You can enable the Web Search function in the AI Employee Model configuration and in the Chat.
+## How It Works
 
-## Enable Web Search Function
+Whether Web Search is available depends on whether the model service selected in the current session supports Web Search.
 
-Enter the AI Employee plugin configuration page, click the `AI employees` tab to enter the AI Employee management page.
+- Supported: the Web Search toggle is displayed and can be enabled or disabled as needed.
+- Not supported: the toggle is hidden, and search is disabled automatically.
 
-![20251021225643](https://static-docs.nocobase.com/20251021225643.png)
+## Use in a Conversation
 
-Select the AI Employee for whom you want to enable the Web Search function, click the `Edit` button to enter the AI Employee editing page.
+Use the Web Search toggle in the chat input area:
 
-![20251022114043](https://static-docs.nocobase.com/20251022114043.png)
+- When enabled, AI extracts keywords from the context, calls the search tool, and then replies based on the search results.
 
-In the `Model settings` tab, turn on the `Web Search` switch, and click the `Submit` button to save the changes.
+![20260420155024](https://static-docs.nocobase.com/20260420155024.png)
 
-![20251022114300](https://static-docs.nocobase.com/20251022114300.png)
+- When disabled, AI replies based only on the existing context.
 
-## Use Web Search Function in Chat
+![20260420154948](https://static-docs.nocobase.com/20260420154948.png)
 
-After the AI Employee enables the Web Search function, a "Web Search" icon will appear in the chat input box. Web Search is enabled by default, click to disable it.
+## Platform Differences
 
-![20251022115110](https://static-docs.nocobase.com/20251022115110.png)
+Support for Web Search varies across LLM service providers. Use it according to your actual provider and model.
 
-After enabling Web Search, the AI Employee's reply will display the Web Search results.
+The following LLM services support Web Search:
 
-![20251022115502](https://static-docs.nocobase.com/20251022115502.png)
-
-## Differences in Web Search Tools on Various AI Platforms
-
-Currently, the AI Employee Web Search function relies on the online LLM Service platform, and there will be differences in the user experience. The specific differences are as follows:
-
-| Platform | Web Search | Tools | Real-time response to search terms | Return reference external link information |
-| :--- | :--- | :--- | :--- | :--- |
-| OpenAI | ✅ | ✅ | ✅ | ✅ |
-| Gemini | ✅ | ❌ | ❌ | ✅ |
-| Dashscope | ✅ | ✅ | ❌ | ❌ |
-| DeepSeek | ❌ | ❌ | ❌ | ❌ |
+- OpenAI (note: OpenAI (completions) is not supported)
+- Google Generative AI
+- Dashscope

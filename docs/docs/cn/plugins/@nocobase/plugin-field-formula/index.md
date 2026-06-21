@@ -1,4 +1,6 @@
 ---
+title: "数据表字段：公式"
+keywords: "数据表字段：公式,插件,NocoBase"
 displayName: "数据表字段：公式"
 packageName: '@nocobase/plugin-field-formula'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 数据表字段：公式

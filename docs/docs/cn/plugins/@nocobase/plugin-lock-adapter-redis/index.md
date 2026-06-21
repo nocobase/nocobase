@@ -1,4 +1,6 @@
 ---
+title: "Redis 分布式锁适配器"
+keywords: "Redis 分布式锁适配器,插件,NocoBase"
 displayName: "Redis 分布式锁适配器"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:

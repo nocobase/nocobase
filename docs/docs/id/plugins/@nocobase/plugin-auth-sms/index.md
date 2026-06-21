@@ -1,14 +1,14 @@
 ---
-displayName: "Autentikasi: SMS"
+displayName: "Authentication: SMS"
 packageName: '@nocobase/plugin-auth-sms'
+title: "Authentication: SMS"
+keywords: "Authentication: SMS,plugin,NocoBase"
 description: |
-  Mengautentikasi identitas melalui kode verifikasi SMS.
+  Autentikasi identitas melalui kode verifikasi SMS.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Autentikasi: SMS
+# Authentication: SMS

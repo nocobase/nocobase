@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-block-workbench"
+title: "操作面板区块"
+description: "操作面板区块：集中展示操作按钮，支持待办任务、审批、工作流等操作入口配置。"
+keywords: "操作面板,ActionPanel,操作按钮,待办任务,工作流审批,界面搭建,NocoBase"
 ---
 # 区块：操作面板
 

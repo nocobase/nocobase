@@ -34,6 +34,7 @@
   "Failed to destroy model after creation error": "Failed to destroy model after creation error",
   "Failed to get action {{action}}": "Failed to get action {{action}}",
   "Failed to get configurable flows for model {{model}}": "Failed to get configurable flows for model {{model}}",
+  "Attributes are unavailable before selecting a record": "Attributes are unavailable before selecting a record",
   "Failed to import FormDialog": "Failed to import FormDialog",
   "Failed to import FormDialog or FormStep": "Failed to import FormDialog or FormStep",
   "Failed to import Formily components": "Failed to import Formily components",
@@ -70,5 +71,11 @@
   "Template name is required": "Template name is required",
   "UID copied to clipboard": "UID copied to clipboard",
   "createModelOptions must specify use property": "createModelOptions must specify \"use\" property",
-  "here": "here"
+  "here": "here",
+  "RunJS deprecated warning": "[RunJS][Deprecated] {{api}} is deprecated{{location}}",
+  "RunJS deprecated warning with message": "[RunJS][Deprecated] {{api}} {{message}}{{location}}",
+  "RunJS deprecated separator": "; ",
+  "RunJS deprecated replacedBy": "Use {{replacedBy}} instead",
+  "RunJS deprecated since": "since {{since}}",
+  "RunJS deprecated removedIn": "will be removed in {{removedIn}}"
 }

@@ -1,44 +1,46 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Contoh Konfigurasi OIDC: Microsoft Entra ID"
+description: "Konfigurasi login OIDC dengan Microsoft Entra ID: mendaftarkan aplikasi, mengkonfigurasi callback URL, mendapatkan Client ID, Client Secret, Tenant ID, lalu mengisi authenticator NocoBase."
+keywords: "OIDC,Microsoft Entra,Azure AD,OAuth,Client ID,callback URL,NocoBase"
+---
 
 # Microsoft Entra ID
 
-> https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app
+> https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app  
 > https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc
 
-## Menambahkan Autentikator di NocoBase
+## Menambahkan Authenticator Baru di NocoBase
 
-Pertama, tambahkan autentikator baru di NocoBase: Pengaturan plugin - Autentikasi Pengguna - Tambah - OIDC.
+Pertama, tambahkan authenticator baru di NocoBase: Plugin Settings - Autentikasi Pengguna - Tambah - OIDC.
 
-Salin URL callback.
+Salin callback URL.
 
 ![](https://static-docs.nocobase.com/202412021504114.png)
 
 ## Mendaftarkan Aplikasi
 
-Buka pusat admin Microsoft Entra dan daftarkan aplikasi baru.
+Buka Microsoft Entra Admin Center, daftarkan aplikasi baru.
 
 ![](https://static-docs.nocobase.com/202412021506837.png)
 
-Tempel URL callback yang baru saja Anda salin di sini.
+Di sini, isi callback URL yang baru saja Anda salin.
 
 ![](https://static-docs.nocobase.com/202412021520696.png)
 
-## Mendapatkan dan Mengisi Informasi yang Sesuai
+## Mendapatkan dan Mengisi Informasi Terkait
 
-Klik aplikasi yang baru saja Anda daftarkan, lalu salin **Application (client) ID** dan **Directory (tenant) ID** dari halaman ikhtisar.
+Klik untuk masuk ke aplikasi yang baru saja didaftarkan, di halaman utama salin **Application (client) ID** dan **Directory (tenant) ID**.
 
 ![](https://static-docs.nocobase.com/202412021522063.png)
 
-Klik `Certificates & secrets`, buat rahasia klien (Client secrets) baru, dan salin **Value**-nya.
+Klik Certificates & secrets, buat client secret baru (Client secrets), dan salin **Value**.
 
 ![](https://static-docs.nocobase.com/202412021522846.png)
 
-Berikut adalah pemetaan antara informasi Microsoft Entra dan konfigurasi autentikator NocoBase:
+Korelasi antara informasi di atas dan konfigurasi authenticator NocoBase adalah sebagai berikut:
 
-| Informasi Microsoft Entra | Bidang Autentikator NocoBase                                                                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Application (client) ID   | Client ID                                                                                                                                        |
-| Client secrets - Value    | Client secret                                                                                                                                    |
-| Directory (tenant) ID     | Issuer:<br />https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration, ganti `{tenant}` dengan Directory (tenant) ID yang sesuai |
+| Informasi Microsoft Entra | Konfigurasi Authenticator NocoBase                                                                                                                                                       |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Application (client) ID   | Client ID                                                                                                                                                                                |
+| Client secrets - Value    | Client secret                                                                                                                                                                            |
+| Directory (tenant) ID     | Issuer:<br />https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration, `{tenant}` perlu diganti dengan Directory (tenant) ID yang sesuai                          |

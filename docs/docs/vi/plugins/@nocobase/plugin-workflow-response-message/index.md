@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc: Thông báo phản hồi"
+displayName: "Workflow: Thông báo phản hồi"
 packageName: '@nocobase/plugin-workflow-response-message'
+title: "Workflow: Thông báo phản hồi"
+keywords: "Workflow: Thông báo phản hồi,Plugin,NocoBase"
 description: |
-  Được sử dụng để tổng hợp và hiển thị các thông báo phản hồi cho client trong các luồng công việc xử lý sự kiện biểu mẫu và chặn yêu cầu.
+  Dùng để soạn và hiển thị thông báo phản hồi cho client trong workflow của sự kiện biểu mẫu và chặn request.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Thông báo phản hồi
+# Workflow: Thông báo phản hồi

@@ -12,48 +12,66 @@ import * as templates from '../ai-employees/templates';
 import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
 import _ from 'lodash';
+import { EEFeatures } from '../manager/ai-feature-manager';
 
 export const list = async (ctx: Context, next: Next) => {
   const { paginate } = ctx.action.params || {};
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const builtInManager = plugin.builtInManager;
 
+  const filter = ctx.action.params.filter || {};
+  ctx.action.mergeParams({
+    filter: {
+      ...filter,
+      deprecated: false,
+    },
+  });
+
   await actions.list(ctx as Context, () => {});
 
-  const locale = ctx.getCurrentLocale();
-  let data = ctx.body.rows;
+  let data;
   if (paginate === 'false' || paginate === false) {
+    ctx.body = ctx.body.map((it) => it.toJSON());
     data = ctx.body;
+  } else {
+    ctx.body.rows = ctx.body.rows.map((it) => it.toJSON());
+    data = ctx.body.rows;
   }
+
+  const featureEnabled = plugin.features.isFeaturesEnabled(Object.values(EEFeatures));
+  if (featureEnabled) {
+    const knowledgeBaseKeys: string[] = _.uniq(
+      data.map((it) => it.knowledgeBase?.knowledgeBaseKeys ?? []).flatMap((it) => it),
+    );
+    const knowledgeBaseList = await plugin.features.knowledgeBase.getKnowledgeBase(knowledgeBaseKeys);
+    const existedKnowledgeBaseKeys = knowledgeBaseList?.map((it) => it.key) ?? [];
+    for (const row of data as AIEmployee[]) {
+      row.missingKnowledgeBaseKeys = [];
+      if (!row.knowledgeBase?.knowledgeBaseKeys?.length) {
+        continue;
+      }
+      for (const k of row.knowledgeBase.knowledgeBaseKeys) {
+        if (existedKnowledgeBaseKeys.includes(k)) {
+          continue;
+        }
+        row.missingKnowledgeBaseKeys.push(k);
+      }
+    }
+  }
+
   data.forEach((row: AIEmployee) => {
     if (row.builtIn) {
-      builtInManager.setupBuiltInInfo(locale, row);
+      builtInManager.setupBuiltInInfo(ctx, row);
     }
   });
 
   await next();
 };
 
-export const create = async (ctx: Context, next: Next) => {
-  const { skillSettings } = ctx.action.params.values ?? {};
-  const skills = skillSettings.skills ?? [];
-  skills.push(
-    {
-      name: 'dataSource-dataSourceCounting',
-      autoCall: true,
-    },
-    {
-      name: 'dataSource-dataSourceQuery',
-      autoCall: true,
-    },
-  );
-  skillSettings.skills = _.uniqBy(skills, 'name');
-
-  await actions.create(ctx as Context, next);
-};
-
 export const listByUser = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+  const skills = await plugin.ai.skillsManager.listSkills({ scope: 'GENERAL' });
+  const tools = await plugin.ai.toolsManager.listTools({ scope: 'GENERAL' });
   const user = ctx.auth.user;
   const model = ctx.db.getModel('aiEmployees');
   const sequelize = ctx.db.sequelize;
@@ -100,30 +118,32 @@ export const listByUser = async (ctx: Context, next: Next) => {
     ],
   });
 
-  const locale = ctx.getCurrentLocale();
   rows.forEach((row) => {
     if (row.builtIn) {
-      builtInManager.setupBuiltInInfo(locale, row as unknown as AIEmployee);
+      builtInManager.setupBuiltInInfo(ctx, row as unknown as AIEmployee);
     }
   });
 
-  const llmServiceNameSet = new Set(
-    rows.filter((row) => row.modelSettings?.llmService).map((row) => row.modelSettings?.llmService),
-  );
-  const llmProviders = llmServiceNameSet.size
-    ? await ctx.db.getRepository('llmServices').find({
-        filter: {
-          name: {
-            $in: Array.from(llmServiceNameSet),
-          },
-        },
-      })
-    : [];
-  const llmProviderMap = new Map(llmProviders.map((provider) => [provider.name, provider]));
-
   ctx.body = rows.map((row) => {
-    const llmServiceName: string = row.modelSettings.llmService;
-    const llmProvider = (llmProviderMap.get(llmServiceName) as any)?.provider ?? '';
+    const skillSettings: { skills: string[]; tools: { name: string; autoCall: boolean }[] } = row.skillSettings ?? {
+      skills: [],
+      tools: [],
+    };
+    if (!_.isArray(skillSettings.skills)) {
+      skillSettings.skills = [];
+    }
+    if (!_.isArray(skillSettings.tools)) {
+      skillSettings.tools = [];
+    }
+    for (const tool of tools) {
+      skillSettings.tools.push({
+        name: tool.definition.name,
+        autoCall: tool.defaultPermission === 'ALLOW',
+      });
+    }
+    for (const { name } of skills) {
+      skillSettings.skills.push(name);
+    }
     return {
       username: row.username,
       nickname: row.nickname,
@@ -134,11 +154,12 @@ export const listByUser = async (ctx: Context, next: Next) => {
       userConfig: {
         prompt: row.userConfigs?.[0]?.prompt,
       },
-      skillSettings: row.skillSettings,
+      skillSettings,
+      chatSettings: row.chatSettings,
+      modelSettings: row.modelSettings,
       builtIn: row.builtIn,
-      webSearch: row.modelSettings?.builtIn?.webSearch ?? false,
-      llmProvider,
-      toolsConflict: llmProvider === 'google-genai',
+      category: row.category,
+      deprecated: row.deprecated,
     };
   });
   await next();

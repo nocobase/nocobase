@@ -1,20 +1,23 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Tambah"
+description: "Action Tambah: membuka Form untuk menambahkan record baru, mendukung cara membuka seperti Popup, drawer, jump."
+keywords: "Action Tambah, Add, buat record baru, tambah Form, interface builder, NocoBase"
+---
 
 # Tambah
 ## Pengantar
 
-Operasi Tambah berfungsi untuk menambahkan catatan ke `koleksi` blok saat ini. Dengan mengonfigurasi blok formulir, Anda dapat memasukkan catatan data baru untuk `koleksi` blok tersebut.
+Action Tambah adalah untuk menambahkan record ke Collection Block saat ini. Dengan mengkonfigurasi Block Form, masukkan record data baru ke Collection Block saat ini.
 
 ![20251029152258](https://static-docs.nocobase.com/20251029152258.png)
 
 ![20251029152324](https://static-docs.nocobase.com/20251029152324.png)
 
-## Konfigurasi Aksi
+
+## Konfigurasi Action
 
 ![20251029152442](https://static-docs.nocobase.com/20251029152442.png)
 
-- [Tombol Edit](/interface-builder/actions/action-settings/edit-button)
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule)
-- [Pop-up Edit](/interface-builder/actions/action-settings/edit-popup)
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button)
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule)
+- [Edit Popup](/interface-builder/actions/action-settings/edit-popup)

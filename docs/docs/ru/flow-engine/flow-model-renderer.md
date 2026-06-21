@@ -1,78 +1,74 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 # Рендеринг FlowModel
 
-`FlowModelRenderer` — это основной React-компонент для рендеринга `FlowModel`. Он отвечает за преобразование экземпляра `FlowModel` в визуальный React-компонент.
+Рендерер FlowModel (`FlowModelRenderer`) — основной React-компонент для рендеринга FlowModel. Он отвечает за преобразование экземпляра `FlowModel` в визуальный React-компонент.
 
-## Основное использование
+## Базовое использование
 
-### FlowModelRenderer
+### Рендерер FlowModel (`FlowModelRenderer`)
 
 ```tsx pure
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 
-// Основное использование
+// Базовое использование
 <FlowModelRenderer model={myModel} />
 ```
 
 ### FieldModelRenderer
 
-Для рендеринга управляемых моделей полей (FieldModel) используйте `FieldModelRenderer`:
+Для управляемых field-моделей используйте `FieldModelRenderer`:
 
 ```tsx pure
 import { FieldModelRenderer } from '@nocobase/flow-engine';
 
-// Рендеринг управляемого поля
+// Рендер управляемого поля
 <FieldModelRenderer model={fieldModel} />
 ```
 
-## Параметры Props
+## Props
 
-### FlowModelRendererProps
+### Свойства рендерера FlowModel (`FlowModelRendererProps`)
 
-| Параметр | Тип | Значение по умолчанию | Описание |
+| Параметр | Тип | По умолчанию | Описание |
 |------|------|--------|------|
 | `model` | `FlowModel` | - | Экземпляр FlowModel для рендеринга |
-| `uid` | `string` | - | Уникальный идентификатор для FlowModel |
-| `fallback` | `React.ReactNode` | `<Skeleton.Button size="small" />` | Резервное содержимое, отображаемое при ошибке рендеринга |
-| `showFlowSettings` | `boolean \| object` | `false` | Показывать ли вход для настроек рабочего процесса |
-| `flowSettingsVariant` | `'dropdown' \| 'contextMenu' \| 'modal' \| 'drawer'` | `'dropdown'` | Стиль взаимодействия для настроек рабочего процесса |
+| `uid` | `string` | - | Уникальный идентификатор flow model |
+| `fallback` | `React.ReactNode` | `<Skeleton.Button size="small" />` | Fallback-контент при ошибке рендеринга |
+| `showFlowSettings` | `boolean \| object` | `false` | Показывать ли вход в настройки flow |
+| `flowSettingsVariant` | `'dropdown' \| 'contextMenu' \| 'modal' \| 'drawer'` | `'dropdown'` | Стиль взаимодействия для настроек flow |
 | `hideRemoveInSettings` | `boolean` | `false` | Скрывать ли кнопку удаления в настройках |
 | `showTitle` | `boolean` | `false` | Показывать ли заголовок модели в левом верхнем углу рамки |
-| `skipApplyAutoFlows` | `boolean` | `false` | Пропускать ли автоматическое применение рабочих процессов |
-| `inputArgs` | `Record<string, any>` | - | Дополнительный контекст, передаваемый в `useApplyAutoFlows` |
-| `showErrorFallback` | `boolean` | `true` | Оборачивать ли внешний слой компонентом `FlowErrorFallback` |
-| `settingsMenuLevel` | `number` | - | Уровень меню настроек: 1 = только текущая модель, 2 = включая дочерние модели |
-| `extraToolbarItems` | `ToolbarItemConfig[]` | - | Дополнительные элементы панели инструментов |
+| `skipApplyAutoFlows` | `boolean` | `false` | Пропускать ли применение auto flows |
+| `inputArgs` | `Record<string, any>` | - | Дополнительный контекст для `useApplyAutoFlows` |
+| `showErrorFallback` | `boolean` | `true` | Оборачивать ли верхний уровень в компонент `FlowErrorFallback` |
+| `settingsMenuLevel` | `number` | - | Уровень меню настроек: 1=текущая модель, 2=включая дочерние модели |
+| `extraToolbarItems` | `ToolbarItemConfig[]` | - | Дополнительные элементы toolbar |
 
 ### Детальная конфигурация `showFlowSettings`
 
-Когда `showFlowSettings` является объектом, поддерживаются следующие конфигурации:
+Когда `showFlowSettings` задан объектом, поддерживаются следующие настройки:
 
 ```tsx pure
 showFlowSettings={{
-  showBackground: true,    // Показывать фон
-  showBorder: true,        // Показывать границу
-  showDragHandle: true,    // Показывать маркер перетаскивания
-  style: {},              // Пользовательский стиль панели инструментов
-  toolbarPosition: 'inside' // Позиция панели инструментов: 'inside' | 'above' | 'below'
+  showBackground: true,    // Показать фон
+  showBorder: true,        // Показать рамку
+  showDragHandle: true,    // Показать маркер перемещения
+  style: {},              // Кастомный стиль toolbar
+  toolbarPosition: 'inside' // Позиция toolbar: 'inside' | 'above' | 'below'
 }}
 ```
 
 ## Жизненный цикл рендеринга
 
-Полный цикл рендеринга вызывает следующие методы в указанном порядке:
+Весь цикл рендеринга вызывает следующие методы по порядку:
 
-1.  **model.dispatchEvent('beforeRender')** - Событие 'beforeRender'
-2.  **model.render()** - Выполняет метод рендеринга модели
-3.  **model.onMount()** - Хук монтирования компонента
-4.  **model.onUnmount()** - Хук размонтирования компонента
+1.  **model.dispatchEvent('beforeRender')** - событие `beforeRender`
+2.  **model.render()** - выполнение метода рендера модели
+3.  **model.onMount()** - хук монтирования компонента
+4.  **model.onUnmount()** - хук размонтирования компонента
 
 ## Примеры использования
 
-### Базовый рендеринг
+### Базовый рендер
 
 ```tsx pure
 import { FlowModelRenderer } from '@nocobase/flow-engine';
@@ -83,23 +79,23 @@ function MyComponent() {
   return (
     <FlowModelRenderer 
       model={model}
-      fallback={<div>Загрузка...</div>}
+      fallback={<div>Loading...</div>}
     />
   );
 }
 ```
 
-### Рендеринг с настройками рабочего процесса
+### Рендер с настройками Flow
 
 ```tsx pure
-// Показывать настройки, но скрывать кнопку удаления
+// Показать настройки, но скрыть кнопку удаления
 <FlowModelRenderer
   model={myModel}
   showFlowSettings={true}
   hideRemoveInSettings={true}
 />
 
-// Показывать настройки и заголовок
+// Показать настройки и заголовок
 <FlowModelRenderer
   model={myModel}
   showFlowSettings={true}
@@ -115,7 +111,7 @@ function MyComponent() {
 />
 ```
 
-### Пользовательская панель инструментов
+### Кастомный Toolbar
 
 ```tsx pure
 <FlowModelRenderer
@@ -134,7 +130,7 @@ function MyComponent() {
 />
 ```
 
-### Пропуск автоматических рабочих процессов
+### Пропуск Auto Flows
 
 ```tsx pure
 <FlowModelRenderer
@@ -144,7 +140,7 @@ function MyComponent() {
 />
 ```
 
-### Рендеринг модели поля
+### Рендер Field Model
 
 ```tsx pure
 import { FieldModelRenderer } from '@nocobase/flow-engine';
@@ -160,27 +156,27 @@ function FormField({ model, onChange, ...props }) {
 }
 ```
 
-## Обработка ошибок
+## Обработка ошибок (Error Handling)
 
-`FlowModelRenderer` имеет встроенный комплексный механизм обработки ошибок:
+Рендерер FlowModel (`FlowModelRenderer`) имеет встроенный комплексный механизм обработки ошибок:
 
--   **Автоматический обработчик ошибок**: `showErrorFallback={true}` включен по умолчанию
--   **Ошибки автоматических рабочих процессов**: Перехватывает и обрабатывает ошибки во время выполнения автоматических рабочих процессов
--   **Ошибки рендеринга**: Отображает резервное содержимое при сбое рендеринга модели
+-   **Автоматический Error Boundary**: `showErrorFallback={true}` включен по умолчанию
+-   **Ошибки Auto Flow**: перехватывает и обрабатывает ошибки во время выполнения auto flows
+-   **Ошибки рендеринга**: показывает fallback-контент, если рендер модели завершился ошибкой
 
 ```tsx pure
 <FlowModelRenderer
   model={myModel}
   showErrorFallback={true}
-  fallback={<div>Ошибка рендеринга, пожалуйста, попробуйте снова</div>}
+  fallback={<div>Сбой рендеринга, попробуйте снова</div>}
 />
 ```
 
 ## Оптимизация производительности
 
-### Пропуск автоматических рабочих процессов
+### Пропуск Auto Flows
 
-В сценариях, где автоматические рабочие процессы не требуются, вы можете пропустить их для повышения производительности:
+Для сценариев, где auto flows не нужны, их можно пропустить для повышения производительности:
 
 ```tsx pure
 <FlowModelRenderer
@@ -189,13 +185,13 @@ function FormField({ model, onChange, ...props }) {
 />
 ```
 
-### Реактивные обновления
+### Реактивные обновления (Reactive Updates)
 
-`FlowModelRenderer` использует `observer` из `@formily/reactive-react` для реактивных обновлений, гарантируя, что компонент автоматически перерендерится при изменении состояния модели.
+Рендерер FlowModel (`FlowModelRenderer`) использует `observer` из `@formily/reactive-react` для реактивных обновлений, чтобы компонент автоматически перерендеривался при изменении состояния модели.
 
 ## Примечания
 
-1.  **Валидация модели**: Убедитесь, что переданная `model` имеет действительный метод `render`.
-2.  **Управление жизненным циклом**: Хуки жизненного цикла модели будут вызываться в соответствующее время.
-3.  **Границы ошибок**: Рекомендуется включать границы ошибок в производственной среде для обеспечения лучшего пользовательского опыта.
-4.  **Соображения производительности**: Для сценариев, включающих рендеринг большого количества моделей, рассмотрите возможность использования опции `skipApplyAutoFlows`.
+1.  **Валидация модели**: убедитесь, что переданная `model` имеет корректный метод `render`.
+2.  **Управление жизненным циклом**: хуки жизненного цикла модели будут вызваны в соответствующие моменты.
+3.  **Предохранитель**: в рабочей среде рекомендуется использовать error boundary для повышения удобства работы.
+4.  **Производительность**: в сценариях с большим количеством рендеров моделей рассмотрите использование `skipApplyAutoFlows`.

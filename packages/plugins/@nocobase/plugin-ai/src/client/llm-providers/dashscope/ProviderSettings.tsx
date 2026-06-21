@@ -19,20 +19,11 @@ export const ProviderSettingsForm: React.FC = () => {
         type: 'void',
         properties: {
           apiKey: {
-            title: tExpr('API key', { ns: namespace }),
+            title: tExpr('API Key', { ns: namespace }),
             type: 'string',
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'TextAreaWithGlobalScope',
-          },
-          baseURL: {
-            title: tExpr('Base URL', { ns: namespace }),
-            type: 'string',
-            'x-decorator': 'FormItem',
-            'x-component': 'TextAreaWithGlobalScope',
-            'x-component-props': {
-              placeholder: tExpr('Base URL is optional, leave blank to use default (recommended)', { ns: namespace }),
-            },
           },
         },
       }}

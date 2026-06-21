@@ -1,17 +1,17 @@
 ---
-displayName: "Блок: Пошаговая форма"
+title: "Block: Multi-step form"
+keywords: "Blocks"
+displayName: "Блок: многошаговая форма"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  Разбивает форму с большим количеством полей на несколько шагов, чтобы снизить нагрузку на пользователя.
-isFree: false
-builtIn: false
+  Разбиение формы с большим числом полей на несколько шагов для удобства пользователей.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+deprecated: true
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Блок: Пошаговая форма
+# Блок: многошаговая форма

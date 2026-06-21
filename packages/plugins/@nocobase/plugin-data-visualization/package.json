@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "2.0.0-alpha.70",
+  "version": "2.2.0-alpha.1",
   "displayName": "Data visualization",
   "displayName.ru-RU": "Визуализация данных",
   "displayName.zh-CN": "数据可视化",
@@ -39,9 +39,12 @@
     "@nocobase/actions": "2.x",
     "@nocobase/cache": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/plugin-acl": "2.x",
     "@nocobase/plugin-ai": "2.x",
     "@nocobase/plugin-data-source-main": "2.x",
+    "@nocobase/plugin-flow-engine": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x"
@@ -49,5 +52,6 @@
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "Blocks"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

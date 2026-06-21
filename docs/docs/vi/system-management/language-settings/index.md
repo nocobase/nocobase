@@ -1,18 +1,19 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Cài đặt ngôn ngữ"
+description: "Cài đặt ngôn ngữ: cấu hình các ngôn ngữ được kích hoạt trong system settings, mục đầu tiên trong danh sách là ngôn ngữ mặc định, người dùng có thể đặt sở thích ngôn ngữ trong trung tâm cá nhân, kết hợp với quản lý bản địa hóa để bổ sung bản dịch."
+keywords: "cài đặt ngôn ngữ,ngôn ngữ kích hoạt,ngôn ngữ mặc định,sở thích ngôn ngữ cá nhân,đa ngôn ngữ,i18n,Quản lý hệ thống,NocoBase"
+---
 
+# Cài đặt ngôn ngữ
 
-# Cài đặt Ngôn ngữ
-
-Trong mục "Cài đặt Hệ thống", Quý vị có thể điều chỉnh môi trường ngôn ngữ chung của hệ thống bằng cách cấu hình "Ngôn ngữ được bật". Ngôn ngữ đầu tiên trong danh sách sẽ được sử dụng làm ngôn ngữ mặc định.
+Trong "System Settings", thông qua cấu hình "Ngôn ngữ được kích hoạt", bạn có thể điều chỉnh môi trường ngôn ngữ toàn cục của hệ thống. Ngôn ngữ đầu tiên trong danh sách sẽ là ngôn ngữ mặc định.
 
 ![20240324192005](https://static-docs.nocobase.com/20240324192005.png)
 
-Khi bật nhiều ngôn ngữ, người dùng có thể cài đặt tùy chọn ngôn ngữ cá nhân của mình trong Trung tâm Cá nhân (góc trên bên phải trang).
+Khi nhiều ngôn ngữ được kích hoạt, người dùng có thể đặt sở thích ngôn ngữ cá nhân của người dùng hiện tại trong trung tâm cá nhân (góc trên bên phải trang).
 
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
-Nếu môi trường ngôn ngữ Quý vị đang sử dụng thiếu bản dịch, Quý vị có thể sử dụng plugin "[Quản lý Bản địa hóa](/system-management/localization/)" để dịch và bổ sung.
+Nếu môi trường ngôn ngữ đang sử dụng thiếu bản dịch, có thể sử dụng plugin "[Quản lý bản địa hóa](/system-management/localization/index.md)" để dịch và bổ sung.
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)

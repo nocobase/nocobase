@@ -1,14 +1,14 @@
 ---
-displayName: "Alur Kerja: Node Pengirim Email"
+displayName: "Workflow: Node Pengiriman Email"
 packageName: '@nocobase/plugin-workflow-mailer'
+title: "Workflow: Node Pengiriman Email"
+keywords: "Workflow: Node Pengiriman Email,Plugin,NocoBase"
 description: |
-  Dapat digunakan untuk mengirim email dalam alur kerja.
+  Dapat digunakan untuk mengirim email dalam workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Node Pengirim Email
+# Workflow: Node Pengiriman Email

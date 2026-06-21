@@ -1,16 +1,14 @@
 ---
-displayName: "Motor de Fluxo"
+title: "Flow engine"
+keywords: "Flow engine,Plugin,NocoBase"
+displayName: "Flow engine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-
-
-# Motor de Fluxo
+# Flow engine

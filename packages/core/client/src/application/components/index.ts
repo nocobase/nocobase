@@ -7,7 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './AppComponent';
 export * from './BlankComponent';
-export * from './defaultComponents';
 export * from './RouterContextCleaner';

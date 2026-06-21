@@ -1,5 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Application (Server)"
+description: "API Application server NocoBase: instance aplikasi, plugin, middleware."
+keywords: "Application,aplikasi server,plugin,middleware,Server API,NocoBase"
+---
 
-# Aplikasi
+# Application
+

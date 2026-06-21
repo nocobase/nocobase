@@ -1,16 +1,19 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Phát triển mở rộng File Manager"
+description: "Mở rộng storage engine tùy chỉnh (kế thừa StorageType, triển khai make/delete), mở rộng loại preview file frontend (filePreviewTypes.add, match, Previewer), kèm ví dụ code đầy đủ."
+keywords: "phát triển mở rộng,StorageType,storage tùy chỉnh,filePreviewTypes,mở rộng preview file,File Manager,NocoBase"
+---
 
 # Phát triển mở rộng
 
-## Mở rộng công cụ lưu trữ
+## Mở rộng storage engine
 
-### Phía máy chủ
+### Server
 
 1. **Kế thừa `StorageType`**
    
-   Tạo lớp mới và triển khai các phương thức `make()` và `delete()`. Khi cần, ghi đè các hook như `getFileURL()`, `getFileStream()`, `getFileData()`.
+   Tạo class mới và triển khai các phương thức `make()` và `delete()`, khi cần thiết override các hook `getFileURL()`, `getFileStream()`, `getFileData()`, v.v.
 
 Ví dụ:
 
@@ -49,7 +52,7 @@ export class CustomStorageType extends StorageType {
 ```
 
 4. **Đăng ký loại mới**  
-   Tiêm triển khai lưu trữ mới vào vòng đời `beforeLoad` hoặc `load` của plugin:
+   Trong vòng đời `beforeLoad` hoặc `load` của plugin, inject triển khai storage mới:
 
 ```ts
 // packages/my-plugin/src/server/plugin.ts
@@ -65,20 +68,20 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Sau khi đăng ký, cấu hình lưu trữ sẽ xuất hiện trong tài nguyên `storages`, giống như các loại tích hợp sẵn. Cấu hình do `StorageType.defaults()` cung cấp có thể dùng để tự động điền biểu mẫu hoặc khởi tạo bản ghi mặc định.
+Sau khi đăng ký xong, cấu hình storage sẽ xuất hiện trong resource `storages` giống như các loại tích hợp sẵn. Cấu hình do `StorageType.defaults()` cung cấp có thể được dùng để tự động điền form hoặc khởi tạo bản ghi mặc định.
 
 <!--
-### Cấu hình phía client và giao diện quản trị
-Ở phía client, bạn cần cho trình quản lý tệp biết cách render biểu mẫu cấu hình và có hay không logic tải lên tùy chỉnh. Mỗi đối tượng loại lưu trữ chứa các thuộc tính sau:
+### Cấu hình client và giao diện quản lý
+Phía client cần thông báo cho File Manager biết cách render form cấu hình và liệu có logic upload tùy chỉnh hay không. Mỗi object loại storage chứa các thuộc tính sau:
 -->
 
-## Mở rộng loại tệp ở frontend
+## Mở rộng loại file frontend
 
-Đối với các tệp đã tải lên, bạn có thể hiển thị nội dung xem trước khác nhau trên giao diện frontend dựa trên loại tệp. Trường đính kèm của trình quản lý tệp có xem trước dựa trên trình duyệt (nhúng trong iframe), hỗ trợ xem trước hầu hết định dạng (như hình ảnh, video, âm thanh và PDF) trực tiếp trong trình duyệt. Khi định dạng tệp không được trình duyệt hỗ trợ hoặc cần tương tác xem trước đặc biệt, bạn có thể mở rộng thành phần xem trước theo loại tệp.
+Đối với các file đã upload xong, có thể hiển thị nội dung preview khác nhau trên giao diện frontend dựa trên loại file khác nhau. Field attachment của File Manager đã tích hợp sẵn preview file dựa trên trình duyệt (nhúng trong iframe), phương thức này hỗ trợ hầu hết các định dạng file (hình ảnh, video, audio, PDF, v.v.) preview trực tiếp trong trình duyệt. Khi định dạng file không hỗ trợ preview của trình duyệt, hoặc có nhu cầu tương tác preview đặc biệt, có thể mở rộng component preview dựa trên loại file để thực hiện.
 
 ### Ví dụ
 
-Ví dụ, nếu bạn muốn tích hợp xem trước trực tuyến tùy chỉnh cho tệp Office, bạn có thể dùng đoạn mã sau:
+Ví dụ muốn tích hợp preview trực tuyến tùy chỉnh cho file Office, có thể thực hiện qua đoạn code sau:
 
 ```tsx
 import React, { useMemo } from 'react';
@@ -108,11 +111,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Ở đây `filePreviewTypes` là đối tượng đầu vào do `@nocobase/plugin-file-manager/client` cung cấp để mở rộng xem trước tệp. Dùng phương thức `add` để thêm đối tượng mô tả loại tệp.
+Trong đó `filePreviewTypes` là object entry do `@nocobase/plugin-file-manager/client` cung cấp dùng để mở rộng preview file. Sử dụng phương thức `add` mà nó cung cấp để mở rộng một object mô tả loại file.
 
-Mỗi loại tệp phải triển khai phương thức `match()` để kiểm tra xem loại tệp có đáp ứng yêu cầu hay không. Trong ví dụ, `matchMimetype` được dùng để kiểm tra thuộc tính `mimetype` của tệp. Nếu khớp với loại `docx` thì được coi là loại cần xử lý. Nếu không khớp, sẽ dùng xử lý loại tích hợp sẵn.
+Mỗi loại file phải triển khai phương thức `match()`, dùng để kiểm tra loại file có thỏa mãn yêu cầu hay không. Trong ví dụ, sử dụng `matchMimetype` để kiểm tra thuộc tính `mimetype` của file, nếu khớp loại `docx` thì xem là loại file cần xử lý. Nếu không khớp thành công, sẽ giảm xuống xử lý loại tích hợp sẵn.
 
-Thuộc tính `Previewer` trong đối tượng mô tả loại là thành phần dùng để xem trước. Khi loại tệp khớp, thành phần này sẽ được render trong hộp thoại xem trước. Bạn có thể trả về bất kỳ React view nào (như iframe, trình phát hoặc biểu đồ).
+Thuộc tính `Previewer` trên object mô tả loại chính là component dùng để preview, khi loại file khớp, component này sẽ được render để preview. Component này sẽ được render trong popup preview file, bạn có thể trả về bất kỳ React view nào (ví dụ iframe, player, chart, v.v.).
 
 ### API
 
@@ -136,7 +139,7 @@ export class FilePreviewTypes {
 
 #### `filePreviewTypes`
 
-`filePreviewTypes` là một instance toàn cục, được import từ `@nocobase/plugin-file-manager/client`:
+`filePreviewTypes` là một global instance, import qua `@nocobase/plugin-file-manager/client`:
 
 ```ts
 import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
@@ -144,34 +147,33 @@ import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 #### `filePreviewTypes.add()`
 
-Đăng ký một đối tượng mô tả loại tệp mới vào registry loại tệp. Kiểu của đối tượng mô tả là `FilePreviewType`.
+Đăng ký object mô tả loại file mới vào trung tâm đăng ký loại file. Kiểu của object mô tả là `FilePreviewType`.
 
 #### `FilePreviewType`
 
 ##### `match()`
 
-Phương thức khớp định dạng tệp.
+Phương thức khớp định dạng file.
 
-Tham số đầu vào `file` là đối tượng dữ liệu của tệp đã tải lên, chứa các thuộc tính liên quan để kiểm tra loại:
+Tham số truyền vào `file` là object dữ liệu của file đã upload, chứa các thuộc tính liên quan có thể dùng để xác định loại:
 
 * `mimetype`: mô tả mimetype
-* `extname`: phần mở rộng tệp, bao gồm "."
-* `path`: đường dẫn lưu trữ tương đối của tệp
-* `url`: URL của tệp
+* `extname`: phần mở rộng file, bao gồm "."
+* `path`: đường dẫn tương đối lưu trữ file
+* `url`: URL file
 
-Trả về giá trị `boolean` cho biết có khớp hay không.
+Giá trị trả về kiểu `boolean`, biểu thị kết quả khớp hay không.
 
 ##### `getThumbnailURL`
 
-Trả về URL ảnh thu nhỏ dùng trong danh sách tệp. Nếu giá trị trả về trống, ảnh placeholder tích hợp sẽ được dùng.
+Dùng để trả về địa chỉ thumbnail trong danh sách file. Khi giá trị trả về rỗng, sẽ sử dụng ảnh placeholder tích hợp sẵn.
 
 ##### `Previewer`
 
-Thành phần React để xem trước tệp.
+Component React dùng để preview file.
 
-Các props đầu vào:
+Tham số Props truyền vào là:
 
-* `file`: đối tượng tệp hiện tại (có thể là URL dạng chuỗi hoặc đối tượng chứa `url`/`preview`)
-* `index`: chỉ số của tệp trong danh sách
-* `list`: danh sách tệp
-
+* `file`: object file hiện tại (có thể là URL chuỗi hoặc object chứa `url`/`preview`)
+* `index`: index của file trong danh sách
+* `list`: danh sách file

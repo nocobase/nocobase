@@ -1,26 +1,22 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
+# Менеджер источников данных (dataSourceManager)
 
-# DataSourceManager
-
-NocoBase предоставляет `DataSourceManager` для управления несколькими **источниками данных**. Каждый `DataSource` имеет собственные экземпляры `Database`, `ResourceManager` и `ACL`, что позволяет разработчикам гибко управлять и расширять множество **источников данных**.
+NocoBase предоставляет `Менеджер источников данных` для управления несколькими источниками данных. Каждый источник данных `DataSource` имеет собственные экземпляры `Database`, `ResourceManager` и `ACL`, что позволяет разработчикам гибко управлять несколькими источниками данных и расширять их.
 
 ## Основные понятия
 
-Каждый экземпляр `DataSource` включает следующее:
+Каждый экземпляр `DataSource` содержит следующее:
 
-- **`dataSource.collectionManager`**: Используется для управления **коллекциями** и полями.
-- **`dataSource.resourceManager`**: Обрабатывает операции, связанные с ресурсами (например, создание, чтение, обновление, удаление и т.д.).
-- **`dataSource.acl`**: Контроль доступа (ACL) для операций с ресурсами.
+- **`dataSource.collectionManager`**: используется для управления коллекциями и полями.
+- **`dataSource.resourceManager`**: обрабатывает операции, связанные с ресурсами (например, создание, чтение, обновление и удаление).
+- **`dataSource.acl`**: контроль доступа (ACL) для операций с ресурсами.
 
-Для удобного доступа предусмотрены быстрые псевдонимы для основных членов **источника данных**:
+Для удобного доступа к основным компонентам основного источника данных предусмотрены псевдонимы:
 
 - `app.db` эквивалентно `dataSourceManager.get('main').collectionManager.db`
 - `app.acl` эквивалентно `dataSourceManager.get('main').acl`
 - `app.resourceManager` эквивалентно `dataSourceManager.get('main').resourceManager`
 
-## Часто используемые методы
+## Общие методы
 
 ### dataSourceManager.get(dataSourceKey)
 
@@ -32,18 +28,18 @@ const dataSource = dataSourceManager.get('main');
 
 ### dataSourceManager.use()
 
-Регистрирует промежуточное ПО для всех **источников данных**. Это повлияет на операции со всеми **источниками данных**.
+Регистрирует промежуточный обработчик для всех источников данных. Это повлияет на операции во всех источниках данных.
 
 ```ts
 dataSourceManager.use((ctx, next) => {
-  console.log('This middleware applies to all data sources.');
+  console.log('Этот промежуточный обработчик применяется ко всем источникам данных.');
   await next();
 });
 ```
 
 ### dataSourceManager.beforeAddDataSource()
 
-Выполняется перед загрузкой **источника данных**. Часто используется для регистрации статических классов, таких как классы моделей и типов полей:
+Выполняется перед загрузкой источника данных. Обычно используется для регистрации статических классов, например классов моделей и типов полей:
 
 ```ts
 dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
@@ -58,16 +54,16 @@ dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
 
 ### dataSourceManager.afterAddDataSource()
 
-Выполняется после загрузки **источника данных**. Часто используется для регистрации операций, настройки контроля доступа и т.д.
+Выполняется после загрузки источника данных. Обычно используется для регистрации операций и настройки контроля доступа.
 
 ```ts
 dataSourceManager.afterAddDataSource((dataSource) => {
   dataSource.resourceManager.registerActionHandler('downloadXlsxTemplate', downloadXlsxTemplate);
   dataSource.resourceManager.registerActionHandler('importXlsx', importXlsx);
-  dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn'); // Установка прав доступа
+  dataSource.acl.allow('*', 'downloadXlsxTemplate', 'loggedIn'); // Настроить права доступа
 });
 ```
 
-## Расширение источников данных
+## Расширение источника данных
 
-Полное описание расширения **источников данных** вы найдете в соответствующем разделе.
+Полное описание расширения источника данных см. в главе «Расширение источника данных».

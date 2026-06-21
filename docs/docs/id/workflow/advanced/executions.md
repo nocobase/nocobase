@@ -1,58 +1,60 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Workflow - Rencana Eksekusi (Riwayat)"
+description: "Rencana eksekusi (riwayat): status dalam antrian, sedang berjalan, selesai, gagal, riwayat eksekusi dan detailnya."
+keywords: "Workflow,rencana eksekusi,riwayat eksekusi,status eksekusi,riwayat,NocoBase"
+---
 
 # Rencana Eksekusi (Riwayat)
 
-Setelah sebuah alur kerja terpicu, sebuah rencana eksekusi yang sesuai akan dibuat untuk melacak proses eksekusi tugas tersebut. Setiap rencana eksekusi memiliki nilai status untuk menunjukkan status eksekusi saat ini, yang dapat dilihat di daftar dan detail riwayat eksekusi:
+Setiap kali Workflow dipicu, sebuah rencana eksekusi akan dibuat untuk melacak proses eksekusi tugas tersebut. Setiap rencana eksekusi memiliki nilai status yang merepresentasikan status eksekusi saat ini, status ini dapat dilihat baik di daftar maupun detail riwayat eksekusi:
 
-![Status Rencana Eksekusi](https://static-docs.nocobase.com/d4440d92ccafac6fac85da4415bb2a26.png)
+![Status rencana eksekusi](https://static-docs.nocobase.com/d4440d92ccafac6fac85da4415bb2a26.png)
 
-Ketika semua node dalam cabang alur utama dieksekusi hingga akhir alur dengan status "Selesai", seluruh rencana eksekusi akan berakhir dengan status "Selesai". Ketika sebuah node dalam cabang alur utama memiliki status akhir seperti "Gagal", "Error", "Dibatalkan", atau "Ditolak", seluruh rencana eksekusi akan **dihentikan lebih awal** dengan status yang sesuai. Ketika sebuah node dalam cabang alur utama memiliki status "Menunggu", seluruh rencana eksekusi akan dijeda, tetapi akan tetap menampilkan status "Berjalan", hingga node yang menunggu dilanjutkan kembali. Berbagai jenis node menangani status menunggu dengan cara yang berbeda. Misalnya, node manual perlu menunggu pemrosesan manual, sedangkan node tunda perlu menunggu waktu yang ditentukan berlalu sebelum melanjutkan.
+Ketika semua Node di cabang utama berhasil dieksekusi sampai akhir alur dengan status "Selesai", seluruh rencana eksekusi akan berakhir dengan status "Selesai". Ketika Node di cabang utama mengalami status final seperti "Gagal", "Error", "Dibatalkan", "Ditolak", dll., seluruh rencana eksekusi akan **dihentikan lebih awal** dengan status yang sesuai. Ketika Node di cabang utama mengalami status "Menunggu", seluruh rencana eksekusi akan dijeda eksekusinya, namun tetap menampilkan status "Sedang berjalan", sampai Node yang menunggu dipulihkan untuk dilanjutkan. Tipe Node yang berbeda menangani status menunggu dengan cara yang berbeda, misalnya Node manual perlu menunggu pemrosesan manual, sedangkan Node tunda perlu menunggu sampai waktu tiba untuk melanjutkan eksekusi.
 
-Status rencana eksekusi adalah sebagai berikut:
+Status rencana eksekusi seperti pada tabel berikut:
 
-| Status        | Status node terakhir yang dieksekusi di alur utama | Arti                                                               |
-| ------------- | -------------------------------------------------- | ------------------------------------------------------------------ |
-| Dalam Antrean | -                                                  | Alur kerja telah terpicu dan rencana eksekusi telah dibuat, menunggu dalam antrean untuk dijadwalkan oleh penjadwal. |
-| Berjalan      | Menunggu                                           | Node memerlukan jeda, menunggu masukan lebih lanjut atau panggilan balik untuk melanjutkan. |
-| Selesai       | Selesai                                            | Tidak ada masalah yang ditemui, dan semua node dieksekusi satu per satu sesuai harapan. |
-| Gagal         | Gagal                                              | Gagal karena konfigurasi node tidak terpenuhi.                     |
-| Error         | Error                                              | Node mengalami kesalahan program yang tidak tertangani dan berakhir lebih awal. |
-| Dibatalkan    | Dibatalkan                                         | Node yang menunggu dibatalkan secara eksternal oleh administrator alur kerja, berakhir lebih awal. |
-| Ditolak       | Ditolak                                            | Pada node pemrosesan manual, ditolak secara manual, dan alur selanjutnya tidak akan dilanjutkan. |
+| Status         | Status Node Terakhir di Alur Utama | Arti                                                                  |
+| -------------- | ---------------------------------- | --------------------------------------------------------------------- |
+| Dalam antrian  | -                                  | Alur sudah dipicu dan rencana eksekusi dihasilkan, mengantri eksekusi |
+| Sedang berjalan | Menunggu                           | Node meminta jeda, menunggu input atau callback selanjutnya            |
+| Selesai        | Selesai                            | Tidak ada masalah, semua Node dieksekusi sesuai rencana satu per satu |
+| Gagal          | Gagal                              | Karena tidak memenuhi konfigurasi Node, menyebabkan kegagalan         |
+| Error          | Error                              | Node mengalami error program yang tidak ditangkap, berakhir lebih awal |
+| Dibatalkan     | Dibatalkan                         | Node yang menunggu dibatalkan dari luar oleh manajer alur, berakhir lebih awal |
+| Ditolak        | Ditolak                            | Pada Node penanganan manual, ditolak secara manual sehingga alur tidak dilanjutkan |
 
-Dalam contoh [Memulai Cepat](../getting-started.md), kita sudah tahu bahwa dengan melihat detail riwayat eksekusi alur kerja, kita dapat memeriksa apakah semua node dieksekusi secara normal, serta status eksekusi dan data hasil dari setiap node yang telah dieksekusi. Dalam beberapa alur kerja dan node tingkat lanjut, sebuah node mungkin memiliki beberapa hasil, seperti hasil dari node perulangan:
+Pada contoh [Memulai](../getting-started.md), kita sudah mengetahui bahwa melihat detail riwayat eksekusi Workflow dapat memeriksa apakah eksekusi semua Node berjalan normal selama proses eksekusi, serta status eksekusi dan data hasil setiap Node yang sudah dieksekusi. Pada beberapa alur dan Node lanjutan, hasil Node bisa juga ada beberapa, misalnya hasil Node Loop:
 
-![Hasil node dari beberapa eksekusi](https://static-docs.nocobase.com/bbda259fa2ddf62b0fc0f982efbedae9.png)
+![Hasil Node yang dieksekusi beberapa kali](https://static-docs.nocobase.com/bbda259fa2ddf62b0fc0f982efbedae9.png)
 
 :::info{title=Tips}
-Alur kerja dapat dipicu secara bersamaan, tetapi eksekusinya dilakukan secara berurutan dalam antrean. Meskipun beberapa alur kerja dipicu pada saat yang sama, mereka akan dieksekusi satu per satu, tidak secara paralel. Oleh karena itu, status "Dalam Antrean" berarti ada alur kerja lain yang sedang berjalan dan perlu menunggu.
+Workflow dapat dipicu secara konkuren, namun eksekusinya berurutan satu per satu. Bahkan jika beberapa Workflow dipicu bersamaan, eksekusinya akan dilakukan secara berurutan, tidak paralel. Jadi, ketika muncul status "Dalam antrian", artinya ada Workflow lain yang sedang dieksekusi dan perlu menunggu.
 
-Status "Berjalan" hanya menunjukkan bahwa rencana eksekusi telah dimulai dan biasanya dijeda karena status menunggu dari node internal. Ini tidak berarti bahwa rencana eksekusi ini telah mengambil alih sumber daya eksekusi di kepala antrean. Oleh karena itu, ketika ada rencana eksekusi "Berjalan", rencana eksekusi "Dalam Antrean" lainnya masih dapat dijadwalkan untuk dimulai.
+Status "Sedang berjalan" hanya menandakan bahwa rencana eksekusi tersebut sudah dimulai, dan biasanya dijeda karena status menunggu dari Node internal, tidak berarti rencana eksekusi tersebut menempati sumber daya eksekusi di kepala antrian. Sehingga ketika ada rencana eksekusi yang "Sedang berjalan", rencana eksekusi lain yang "Dalam antrian" tetap dapat dijadwalkan untuk mulai dieksekusi.
 :::
 
 ## Status Eksekusi Node
 
-Status rencana eksekusi ditentukan oleh eksekusi setiap nodenya. Dalam sebuah rencana eksekusi setelah terpicu, setiap node akan menghasilkan status eksekusi setelah berjalan, dan status ini akan menentukan apakah alur selanjutnya akan berlanjut. Umumnya, setelah node berhasil dieksekusi, node berikutnya akan dieksekusi, hingga semua node selesai dieksekusi secara berurutan, atau terinterupsi. Ketika menemukan node terkait kontrol alur, seperti cabang, perulangan, paralel, tunda, dll., arah eksekusi node berikutnya ditentukan berdasarkan kondisi yang dikonfigurasi dalam node dan data konteks saat runtime.
+Status rencana eksekusi ditentukan oleh eksekusi setiap Node di dalamnya. Pada satu rencana eksekusi setelah pemicuan, setiap Node setelah dieksekusi akan menghasilkan status eksekusi, dan status ini akan menentukan apakah alur selanjutnya dilanjutkan. Biasanya, setelah Node berhasil dieksekusi, eksekusi akan berlanjut ke Node berikutnya, sampai semua Node selesai dieksekusi secara berurutan, atau dihentikan. Ketika menghadapi Node terkait kontrol alur, seperti cabang, loop, paralel, tunda, dll., arah eksekusi Node berikutnya akan ditentukan berdasarkan kondisi konfigurasi Node dan data konteks runtime.
 
-Status yang mungkin dihasilkan oleh sebuah node setelah eksekusi adalah sebagai berikut:
+Status yang mungkin dihasilkan setelah setiap Node dieksekusi seperti pada tabel berikut:
 
-| Status    | Apakah Status Akhir | Menghentikan Lebih Awal | Arti                                                               |
-| --------- | :-----------------: | :-------------------: | ------------------------------------------------------------------ |
-| Menunggu  |         Tidak       |          Tidak        | Node memerlukan jeda, menunggu masukan lebih lanjut atau panggilan balik untuk melanjutkan. |
-| Selesai   |         Ya          |          Tidak        | Tidak ada masalah yang ditemui, eksekusi berhasil, dan berlanjut ke node berikutnya hingga selesai. |
-| Gagal     |         Ya          |          Ya           | Gagal karena konfigurasi node tidak terpenuhi.                     |
-| Error     |         Ya          |          Ya           | Node mengalami kesalahan program yang tidak tertangani dan berakhir lebih awal. |
-| Dibatalkan|         Ya          |          Ya           | Node yang menunggu dibatalkan secara eksternal oleh administrator alur kerja, berakhir lebih awal. |
-| Ditolak   |         Ya          |          Ya           | Pada node pemrosesan manual, ditolak secara manual, dan alur selanjutnya tidak akan dilanjutkan. |
+| Status     | Status Final | Penghentian Awal | Arti                                                              |
+| ---------- | :----------: | :--------------: | ----------------------------------------------------------------- |
+| Menunggu   |     Tidak    |       Tidak      | Node meminta jeda, menunggu input atau callback selanjutnya        |
+| Selesai    |      Ya      |       Tidak      | Tidak ada masalah, eksekusi berhasil, lanjut ke Node berikutnya sampai akhir |
+| Gagal      |      Ya      |        Ya        | Karena tidak memenuhi konfigurasi Node, menyebabkan kegagalan     |
+| Error      |      Ya      |        Ya        | Node mengalami error program yang tidak ditangkap, berakhir lebih awal |
+| Dibatalkan |      Ya      |        Ya        | Node yang menunggu dibatalkan dari luar oleh manajer alur, berakhir lebih awal |
+| Ditolak    |      Ya      |        Ya        | Pada Node penanganan manual, ditolak secara manual sehingga alur tidak dilanjutkan |
 
-Kecuali status "Menunggu", semua status lainnya adalah status akhir untuk eksekusi node. Hanya ketika status akhir adalah "Selesai" maka proses akan berlanjut; jika tidak, seluruh eksekusi alur kerja akan dihentikan lebih awal. Ketika sebuah node berada dalam alur cabang (cabang paralel, kondisi, perulangan, dll.), status akhir yang dihasilkan oleh eksekusi node akan ditangani oleh node yang memulai cabang tersebut, dan ini akan menentukan aliran seluruh alur kerja.
+Selain status menunggu, status lainnya merupakan status final dari eksekusi Node. Hanya status final "Selesai" yang akan melanjutkan eksekusi, selain itu akan menghentikan eksekusi seluruh alur lebih awal. Ketika Node berada dalam alur cabang (cabang paralel, kondisi, loop, dll.), status final yang dihasilkan dari eksekusi Node akan ditangani oleh Node yang membuka cabang tersebut, dan demikian seterusnya untuk menentukan alur seluruh alur.
 
-Sebagai contoh, ketika kita menggunakan node kondisi dalam mode "'Ya' untuk melanjutkan", jika hasilnya adalah "Tidak" selama eksekusi, seluruh alur kerja akan dihentikan lebih awal dengan status "Gagal", dan node selanjutnya tidak akan dieksekusi, seperti yang ditunjukkan pada gambar di bawah ini:
+Misalnya ketika kita menggunakan Node kondisi dengan mode "Lanjutkan jika 'Ya'", saat dieksekusi jika hasilnya "Tidak", eksekusi seluruh alur akan dihentikan lebih awal dan keluar dengan status gagal, tidak melanjutkan Node berikutnya, seperti pada gambar di bawah:
 
-![Eksekusi node gagal](https://static-docs.nocobase.com/993aecfa1465894bb574444f0a44313e.png)
+![Eksekusi Node gagal](https://static-docs.nocobase.com/993aecfa1465894bb574444f0a44313e.png)
 
 :::info{title=Tips}
-Semua status penghentian selain "Selesai" dapat dianggap sebagai kegagalan, tetapi alasan kegagalannya berbeda. Anda dapat melihat hasil eksekusi node untuk memahami lebih lanjut penyebab kegagalan tersebut.
+Semua status final selain "Selesai" dapat dianggap sebagai kegagalan, namun alasan kegagalannya berbeda-beda, Anda dapat mengetahui alasan kegagalan lebih lanjut dengan melihat hasil eksekusi Node.
 :::

@@ -1,33 +1,35 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Sub-Detail"
+description: "Field Sub-Detail: menampilkan detail data terkait one-to-many dalam bentuk read-only."
+keywords: "Sub-Detail, SubDetail, one-to-many, tampilan read-only, interface builder, NocoBase"
+---
 
-# Sub-detail
+# Sub-Detail
 
-## Pendahuluan
+## Pengantar
 
-Sub-detail adalah komponen yang sesuai dengan sub-formulir dalam mode baca. Dibandingkan dengan komponen Label dan Judul, Sub-detail tidak hanya dapat menampilkan lebih banyak data dari **koleksi** saat ini, tetapi juga dapat dikonfigurasi untuk menampilkan informasi data dari **koleksi** yang berelasi. Data relasi multi-level ditampilkan dengan jelas dalam bentuk detail bersarang.
+Sub-Detail adalah komponen yang sesuai dengan sub-form dalam mode baca. Dibandingkan dengan komponen tag dan judul, Sub-Detail tidak hanya dapat menampilkan lebih banyak data Table ini, tetapi juga dapat dikonfigurasi untuk menampilkan informasi data Table relasi. Data relasi multi-level ditampilkan dengan jelas dalam bentuk Detail bersarang.
 
-## Penggunaan
+## Petunjuk Penggunaan
 
-### Sub-detail untuk Bidang Relasi To-Many
+### Sub-Detail Field Relasi To-Many
 
 ![20251027221700](https://static-docs.nocobase.com/20251027221700.png)
 
-Mendukung tampilan bersarang untuk bidang relasi multi-level. Contoh: Pesanan/Item Pesanan/Produk.
+Mendukung tampilan bersarang Field relasi multi-level, contoh: Pesanan/Produk Pesanan/Produk.
 
 ![20251027221924](https://static-docs.nocobase.com/20251027221924.png)
 
-### Sub-detail untuk Bidang Relasi To-One
+### Sub-Detail Field Relasi To-One
 
 ![20251027222059](https://static-docs.nocobase.com/20251027222059.png)
 
-## Opsi Konfigurasi Bidang
+## Konfigurasi Field
 
-### Komponen Bidang
+### Komponen Field
 
 ![20251027222243](https://static-docs.nocobase.com/20251027222243.png)
 
 ![20251027222347](https://static-docs.nocobase.com/20251027222347.png)
 
-[Komponen Bidang](/interface-builder/fields/association-field): Beralih ke komponen bidang relasi mode baca lainnya, seperti komponen bidang Judul, Sub-tabel (hanya didukung untuk bidang relasi to-many), dll.
+[Komponen Field](/interface-builder/fields/association-field): switch ke komponen Field relasi mode baca lainnya, seperti komponen Field judul, Sub-Table (hanya didukung Field relasi to-many), dll.;

@@ -1,11 +1,13 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Judul Block"
+description: "Konfigurasi Block: mengkonfigurasi judul Block, mendukung tampilan/sembunyi judul, kustomisasi teks judul."
+keywords: "judul Block, konfigurasi Block, konfigurasi judul, interface builder, NocoBase"
+---
 
-# Judul Blok
+# Judul Block
 
-## Pendahuluan
+## Pengantar
 
-Sesuaikan judul blok.
+Kustomisasi judul Block.
 
 ![20251024174424](https://static-docs.nocobase.com/20251024174424.png)

@@ -1,14 +1,17 @@
 ---
-displayName: "Kontrol Akses"
+displayName: "Kontrol Hak Akses"
 packageName: '@nocobase/plugin-acl'
+title: "Kontrol Hak Akses"
+keywords: "Kontrol Hak Akses,Role,ACL,Resource,Action,NocoBase"
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Kontrol akses berdasarkan peran, sumber daya, dan tindakan, yang dapat secara tepat mengelola izin konfigurasi antarmuka, izin operasi data, izin akses menu, dan izin plugin.
+  Kontrol hak akses berbasis role, resource, dan action. Memungkinkan kontrol presisi atas hak konfigurasi UI, hak operasi data, hak akses menu, dan hak plugin.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Kontrol Akses
+# Kontrol Hak Akses

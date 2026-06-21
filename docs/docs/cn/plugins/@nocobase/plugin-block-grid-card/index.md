@@ -1,4 +1,6 @@
 ---
+title: "区块：网格卡片"
+keywords: "区块：网格卡片,插件,NocoBase"
 displayName: "区块：网格卡片"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 区块：网格卡片

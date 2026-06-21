@@ -1,44 +1,45 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Node Workflow - Tính toán"
+description: "Node tính toán: tính giá trị biểu thức, hỗ trợ nhiều engine tính toán như Formula.js, kết quả được dùng cho các Node tiếp theo."
+keywords: "workflow,tính toán,Calculation,Formula.js,tính giá trị biểu thức,NocoBase"
+---
 
 # Tính toán
 
-Nút Tính toán có thể đánh giá một biểu thức, và kết quả tính toán sẽ được lưu trữ trong kết quả của nút tương ứng để các nút tiếp theo sử dụng. Đây là một công cụ dùng để tính toán, xử lý và chuyển đổi dữ liệu, ở một mức độ nhất định, nó có thể thay thế chức năng gọi hàm trên một giá trị và gán kết quả cho biến trong các ngôn ngữ lập trình.
+Node tính toán có thể tính giá trị một biểu thức, kết quả tính toán sẽ được lưu trong kết quả của Node tương ứng để các Node khác sau này sử dụng. Đây là công cụ dùng để tính toán, xử lý và chuyển đổi dữ liệu, ở một mức độ nào đó, có thể thay thế chức năng gọi hàm tính toán cho một giá trị và gán vào biến trong ngôn ngữ lập trình.
 
-## Tạo nút
+## Tạo Node
 
-Trong giao diện cấu hình luồng công việc, hãy nhấp vào nút dấu cộng (“+”) trong luồng để thêm nút "Tính toán":
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Tính toán":
 
-![Nút Tính toán_Thêm](https://static-docs.nocobase.com/58a455540d26945251cd143eb4b16579.png)
+![Node tính toán_thêm](https://static-docs.nocobase.com/58a455540d26945251cd143eb4b16579.png)
 
-## Cấu hình nút
+## Cấu hình Node
 
-![Nút Tính toán_Cấu hình](https://static-docs.nocobase.com/6a155de3f883d8cd1881b2d9c33874.png)
+![Node tính toán_cấu hình Node](https://static-docs.nocobase.com/6a155de3f6a883d8cd1881b2d9c33874.png)
 
-### Công cụ tính toán
+### Engine tính toán
 
-Công cụ tính toán quy định cú pháp mà biểu thức hỗ trợ. Hiện tại, các công cụ tính toán được hỗ trợ bao gồm [Math.js](https://mathjs.org/) và [Formula.js](https://formulajs.info/). Mỗi công cụ đều tích hợp sẵn nhiều hàm thông dụng và phương thức thao tác dữ liệu. Để biết cách sử dụng cụ thể, quý vị có thể tham khảo tài liệu chính thức của chúng.
+Engine tính toán quy định cú pháp được hỗ trợ cho biểu thức, hiện hỗ trợ các engine tính toán [Math.js](https://mathjs.org/) và [Formula.js](https://formulajs.info/), mỗi engine đã tích hợp sẵn nhiều hàm thông dụng và phương thức thao tác dữ liệu, cách dùng cụ thể có thể tham khảo tài liệu chính thức của chúng.
 
-:::info{title=Lưu ý}
-Cần lưu ý rằng các công cụ khác nhau có sự khác biệt trong việc truy cập chỉ mục mảng. Chỉ mục của Math.js bắt đầu từ `1`, trong khi Formula.js bắt đầu từ `0`.
+:::info{title=Mẹo}
+Cần lưu ý rằng các engine khác nhau có sự khác biệt khi truy cập chỉ số mảng, chỉ số của Math.js bắt đầu từ `1`, còn Formula.js bắt đầu từ `0`.
 :::
 
-Ngoài ra, nếu quý vị cần nối chuỗi đơn giản, có thể trực tiếp sử dụng "Mẫu chuỗi" (String Template). Công cụ này sẽ thay thế các biến trong biểu thức bằng giá trị tương ứng, sau đó trả về chuỗi đã được nối.
+Ngoài ra nếu chỉ cần ghép chuỗi đơn giản, có thể trực tiếp sử dụng "Template chuỗi", engine này sẽ thay thế các biến trong biểu thức bằng giá trị tương ứng và trả về chuỗi sau khi ghép.
 
 ### Biểu thức
 
-Biểu thức là một chuỗi thể hiện công thức tính toán, có thể bao gồm các biến, hằng số, toán tử và các hàm được hỗ trợ. Quý vị có thể sử dụng các biến từ ngữ cảnh của luồng công việc, chẳng hạn như kết quả của nút đứng trước nút tính toán, hoặc các biến cục bộ của một vòng lặp.
+Biểu thức là dạng chuỗi của một công thức tính toán, có thể được tạo nên từ biến, hằng số, toán tử và các hàm được hỗ trợ... Có thể sử dụng các biến của ngữ cảnh quy trình, ví dụ kết quả của Node phía trước Node tính toán, hoặc biến cục bộ của vòng lặp...
 
-Nếu biểu thức nhập vào không tuân thủ cú pháp, lỗi sẽ được hiển thị trong cấu hình nút. Trong trường hợp thực thi, nếu biến không tồn tại hoặc kiểu dữ liệu không khớp, hoặc nếu sử dụng một hàm không tồn tại, nút tính toán sẽ dừng lại sớm với trạng thái lỗi.
+Khi đầu vào biểu thức không đúng cú pháp, sẽ nhắc lỗi trong cấu hình Node, nếu khi thực thi cụ thể biến không tồn tại hoặc kiểu không khớp, hoặc sử dụng hàm không tồn tại, Node tính toán sẽ dừng sớm với trạng thái lỗi.
 
 ## Ví dụ
 
-### Tính tổng giá trị đơn hàng
+### Tính tổng giá đơn hàng
 
-Thông thường, một đơn hàng có thể chứa nhiều mặt hàng, mỗi mặt hàng có giá và số lượng khác nhau. Tổng giá trị của đơn hàng cần được tính bằng tổng của tích giá và số lượng của tất cả các mặt hàng. Sau khi tải danh sách chi tiết đơn hàng (đối với tập dữ liệu quan hệ một-nhiều), quý vị có thể sử dụng nút tính toán để tính tổng giá trị đơn hàng:
+Thông thường một đơn hàng có thể có nhiều sản phẩm, giá và số lượng của mỗi sản phẩm đều khác nhau, tổng giá của đơn hàng cần tính tổng tích của giá và số lượng của tất cả sản phẩm. Có thể sử dụng Node tính toán để tính tổng giá đơn hàng sau khi load danh sách chi tiết đơn hàng (tập dữ liệu quan hệ một - nhiều):
 
-![Nút Tính toán_Ví dụ_Cấu hình](https://static-docs.nocobase.com/85966b0116afb49aa966eeaa85e78dae.png)
+![Node tính toán_ví dụ_cấu hình Node](https://static-docs.nocobase.com/85966b0116afb49aa966eeaa85e78dae.png)
 
-Trong đó, hàm `SUMPRODUCT` của Formula.js có thể tính tổng các tích của từng cặp phần tử trong hai mảng có cùng độ dài, từ đó cho ra tổng giá trị của đơn hàng.
+Trong đó hàm `SUMPRODUCT` của Formula.js có thể tính tổng tích của các dòng trong hai mảng có cùng độ dài, cộng tổng lại sẽ thu được tổng giá đơn hàng.

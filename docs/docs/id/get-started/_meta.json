@@ -5,8 +5,14 @@
     "link": "/get-started/how-nocobase-works"
   },
   {
+    "type": "custom-link",
+    "label": "Persyaratan Sistem",
+    "link": "/get-started/system-requirements"
+  },
+  {
     "type": "file",
-    "name": "quickstart"
+    "name": "quickstart",
+    "label": "Perbandingan Metode Instalasi dan Versi"
   },
   {
     "type": "custom-link",
@@ -24,7 +30,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Instalasi dari Kode Sumber Git",
+        "label": "Instalasi Source Code Git",
         "link": "/get-started/installation/git"
       },
       {
@@ -50,7 +56,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Upgrade Instalasi dari Kode Sumber Git",
+        "label": "Upgrade Instalasi Source Code Git",
         "link": "/get-started/upgrading/git"
       }
     ]
@@ -66,7 +72,23 @@
       },
       {
         "type": "custom-link",
-        "label": "Proksi Aset Statis",
+        "label": "Deployment Intranet",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker",
+            "link": "/get-started/deployment/intranet/docker"
+          },
+          {
+            "type": "custom-link",
+            "label": "create-nocobase-app",
+            "link": "/get-started/deployment/intranet/create-nocobase-app"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Proxy Sumber Daya Statis",
         "items": [
           {
             "type": "custom-link",
@@ -87,7 +109,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Perintah Operasional Umum",
+        "label": "Perintah Operasi yang Sering Digunakan",
         "items": [
           {
             "type": "custom-link",
@@ -104,13 +126,18 @@
       {
         "type": "custom-link",
         "label": "Cara Deployment Lebih Cepat",
-        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+        "link": "/get-started/deployment/how-to-deploy-nocobase-faster"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Instalasi & Upgrade Plugin",
+    "label": "Instalasi dan Upgrade Plugin",
     "link": "/get-started/install-upgrade-plugins"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kontribusi Terjemahan",
+    "link": "/get-started/translations"
   }
 ]

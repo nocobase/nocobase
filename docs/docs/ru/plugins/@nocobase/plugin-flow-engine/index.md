@@ -1,15 +1,14 @@
 ---
-displayName: "Движок рабочих процессов"
+title: "Flow engine"
+keywords: "Flow engine,Plugin,NocoBase"
+displayName: "Движок потоков"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
-  
+
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-
-# Движок рабочих процессов
+# Движок потоков

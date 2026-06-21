@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Edit Tooltip"
+description: "Konfigurasi Field: mengkonfigurasi informasi tooltip Field, ditampilkan saat hover mouse."
+keywords: "edit tooltip, tooltip, informasi prompt, konfigurasi Field, interface builder, NocoBase"
+---
 
 # Edit Tooltip
 
-## Pendahuluan
+## Pengantar
 
-Tooltip bidang adalah teks yang muncul saat Anda mengarahkan kursor ke atas bidang, dirancang untuk memberikan penjelasan atau panduan tambahan mengenai bidang tersebut. Tooltip ini biasanya mencakup informasi seperti tujuan bidang, format masukan, dan batasan, membantu pengguna untuk lebih memahami dan menggunakan bidang tersebut.
+Tooltip Field adalah teks yang ditampilkan saat mouse hover di Field, bertujuan untuk memberikan penjelasan tambahan atau panduan tentang Field tersebut. Informasi tooltip ini biasanya mencakup tujuan Field, format input, kondisi pembatasan, dll., membantu pengguna untuk lebih baik memahami dan menggunakan Field tersebut.
 
 ![20251028210852](https://static-docs.nocobase.com/20251028210852.png)
 

@@ -1,18 +1,17 @@
 ---
-displayName: "Komentar"
+displayName: "Comments"
 packageName: '@nocobase/plugin-comments'
+title: "Comments"
+keywords: "Comments,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Menyediakan templat koleksi komentar dan blok untuk menambahkan fungsionalitas komentar pada koleksi mana pun.
-isFree: false
-builtIn: false
+  Menyediakan template Collection dan Block Comment, menambahkan fungsi komentar untuk data dari Collection mana pun.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Komentar
+# Comments

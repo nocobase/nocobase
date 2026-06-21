@@ -37,6 +37,7 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 import mainDataSourceResource from './resourcers/main-data-source';
+import { registerDataSourceMainMcpPostProcessors } from './mcp-post-processors';
 import { ColumnsDescription } from 'sequelize';
 import { PRESET_FIELDS_INTERFACES } from './constants';
 import { Schema } from '@formily/json-schema';
@@ -106,7 +107,11 @@ export class PluginDataSourceMainServer extends Plugin {
     this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
 
     this.app.db.on('collections.beforeCreate', async (model: CollectionModel, options) => {
-      if (this.app.db.getCollection(model.get('name')) && model.get('from') !== 'db2cm' && !model.get('isThrough')) {
+      if (
+        this.app.db.getCollection(model.get('name')) &&
+        !['db2cm', 'dbsync'].includes(model.get('from')) &&
+        !model.get('isThrough')
+      ) {
         throw new Error(`Collection named ${model.get('name')} already exists`);
       }
     });
@@ -439,7 +444,7 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.data-source-manager.data-source-main`,
-      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*', 'mainDataSource:*'],
+      actions: ['collections:*', 'collections.fields:*', 'fields:*', 'collectionCategories:*', 'mainDataSource:*'],
     });
 
     this.app.acl.registerSnippet({
@@ -472,6 +477,8 @@ export class PluginDataSourceMainServer extends Plugin {
     this.db.getRepository<CollectionRepository>('collections').setApp(this.app);
 
     this.registerErrorHandler();
+    registerDataSourceMainMcpPostProcessors(this.ai.mcpToolsManager);
+    this.app.auditManager.registerActions(['collections:apply', 'fields:apply']);
 
     this.app.resourceManager.use(async function mergeReverseFieldWhenSaveCollectionField(ctx, next) {
       if (ctx.action.resourceName === 'collections.fields' && ['create', 'update'].includes(ctx.action.actionName)) {

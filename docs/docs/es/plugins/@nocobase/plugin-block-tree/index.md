@@ -1,17 +1,16 @@
 ---
-displayName: "Bloque: Árbol"
+title: "Block: Tree"
+keywords: "Blocks"
+displayName: "Block: Tree"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  Proporciona un bloque de filtro con estructura de árbol.
-isFree: false
-builtIn: false
+  Provides tree structure filter block
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Bloque: Árbol
+# Block: Tree

@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-acl'
+title: "权限在 UI 中的应用"
+description: "NocoBase 权限在 UI 中的体现：数据区块可见性、查看操作权限、全局与单独权限配置、界面元素显隐。"
+keywords: "权限 UI,数据区块可见性,操作权限,界面权限,ACL,NocoBase"
 ---
 
 # 在 UI 中的应用

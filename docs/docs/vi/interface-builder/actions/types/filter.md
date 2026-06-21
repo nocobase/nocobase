@@ -1,23 +1,26 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Action Bộ lọc"
+description: "Action Bộ lọc: mở panel lọc, áp dụng điều kiện lọc cho Block dữ liệu."
+keywords: "Action Bộ lọc,Filter,lọc dữ liệu,panel lọc,Interface Builder,NocoBase"
+---
 
-
-# Lọc
+# Bộ lọc
 
 ## Giới thiệu
-Thao tác lọc (Filter) thường xuất hiện trong các khối dữ liệu, cho phép bạn lọc dữ liệu bằng cách cấu hình nhiều điều kiện khác nhau. Cần lưu ý rằng nếu một khối đã được cấu hình phạm vi dữ liệu (data scope), thao tác lọc sẽ được kết hợp với các điều kiện của phạm vi dữ liệu đó để tạo thành điều kiện lọc cuối cùng.
+
+Action Bộ lọc thường xuất hiện trong Block dữ liệu, lọc dữ liệu thông qua cấu hình các điều kiện khác nhau, cần lưu ý nếu Block đã được cấu hình phạm vi dữ liệu, Action Bộ lọc sẽ kết hợp với điều kiện phạm vi dữ liệu làm điều kiện lọc cuối cùng.
 
 ![20251029173609](https://static-docs.nocobase.com/20251029173609.png)
 
-## Cài đặt thao tác
+## Tùy chọn cấu hình Action
 
 ![20251029173708](https://static-docs.nocobase.com/20251029173708.png)
 
-### Các trường có thể lọc
-Theo mặc định, tất cả các trường của **bộ sưu tập** này đều được bật. Chỉ những trường đã bật mới có thể được chọn trong danh sách trường điều kiện.
+### Field có thể lọc
 
-Các trường từ các **bộ sưu tập** liên quan cũng có thể được sử dụng làm trường lọc.
+Mặc định tất cả Field của Table này đều được bật, chỉ Field được bật mới có thể được chọn trong danh sách Field điều kiện.
+
+Field của Table quan hệ cũng có thể làm Field lọc.
 
 ![20251029173817](https://static-docs.nocobase.com/20251029173817.png)
 
@@ -25,5 +28,5 @@ Các trường từ các **bộ sưu tập** liên quan cũng có thể được
 
 ![20251029174106](https://static-docs.nocobase.com/20251029174106.png)
 
-- [Nút chỉnh sửa](/interface-builder/actions/action-settings/edit-button)
-- [Quy tắc liên kết](/interface-builder/actions/action-settings/linkage-rule): Hiển thị/ẩn nút một cách linh hoạt;
+- [Chỉnh sửa nút bấm](/interface-builder/actions/action-settings/edit-button)
+- [Quy tắc liên kết](/interface-builder/actions/action-settings/linkage-rule): hiển thị/ẩn nút bấm động;

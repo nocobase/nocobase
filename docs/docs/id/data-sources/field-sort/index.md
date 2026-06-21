@@ -1,152 +1,150 @@
 ---
 pkg: "@nocobase/plugin-field-sort"
+title: "Field Sort"
+description: "Field sort untuk mengurutkan record Collection, mendukung pengelompokan terlebih dahulu lalu sort (sort1), digunakan untuk mengkustomisasi urutan tampilan record."
+keywords: "field sort,Field Sort,sort grouping,sort1,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Field Sort
 
+## Pengantar
 
-# Kolom Urutan
-
-## Pendahuluan
-
-Kolom urutan digunakan untuk mengurutkan catatan dalam sebuah koleksi, dengan dukungan pengurutan dalam grup.
+Field Sort digunakan untuk mengurutkan record dalam Collection, mendukung pengelompokan terlebih dahulu lalu sort (sort1).
 
 :::warning
-Karena kolom urutan adalah bagian dari koleksi yang sama, sebuah catatan tidak dapat ditetapkan ke beberapa grup saat menggunakan pengurutan grup.
+Karena Field Sort adalah field di Collection yang sama, saat sort dengan grouping, satu record yang sama tidak dapat berada di beberapa grup.
 :::
 
 ## Instalasi
 
-Plugin bawaan, tidak memerlukan instalasi terpisah.
+Plugin bawaan, tidak perlu diinstal secara terpisah.
 
-## Panduan Pengguna
+## Panduan Penggunaan
 
-### Membuat Kolom Urutan
+### Membuat Field Sort
 
 ![20240409091123_rec_](https://static-docs.nocobase.com/20240409091123_rec_.gif)
 
-Saat membuat kolom urutan, nilai urutan akan diinisialisasi:
+Saat membuat Field Sort, nilai sort akan diinisialisasi:
 
-- Jika pengurutan grup tidak dipilih, inisialisasi akan berdasarkan kolom kunci utama dan kolom tanggal pembuatan.
-- Jika pengurutan grup dipilih, data akan dikelompokkan terlebih dahulu, kemudian inisialisasi akan berdasarkan kolom kunci utama dan kolom tanggal pembuatan.
+- Jika tidak memilih grouping sort, akan diinisialisasi berdasarkan field Primary Key dan field tanggal pembuatan.
+- Jika memilih grouping sort, data akan dikelompokkan terlebih dahulu, lalu diinisialisasi berdasarkan field Primary Key dan field tanggal pembuatan.
 
 :::warning{title="Penjelasan Konsistensi Transaksi"}
-- Saat membuat kolom, jika inisialisasi nilai urutan gagal, kolom urutan tidak akan dibuat.
-- Dalam rentang tertentu, jika sebuah catatan bergerak dari posisi A ke posisi B, nilai urutan semua catatan antara A dan B akan berubah. Jika ada bagian dari pembaruan ini yang gagal, seluruh operasi pemindahan akan dibatalkan, dan nilai urutan catatan terkait tidak akan berubah.
+- Saat membuat field, jika inisialisasi nilai sort gagal, Field Sort tidak akan dibuat;
+- Dalam suatu rentang, ketika suatu record dipindah dari posisi A ke posisi B, nilai sort semua record dalam rentang AB akan berubah. Jika ada satu yang gagal, perpindahan akan gagal, dan nilai sort record terkait tidak akan berubah.
 :::
 
-#### Contoh 1: Membuat kolom sort1
+#### Contoh 1: Membuat Field sort1
 
-Kolom sort1 tidak dikelompokkan.
+Field sort1 tanpa grouping
 
 ![20240409091510](https://static-docs.nocobase.com/20240409091510.png)
 
-Kolom urutan setiap catatan akan diinisialisasi berdasarkan kolom kunci utama dan kolom tanggal pembuatan.
+Field sort setiap record akan diinisialisasi berdasarkan field Primary Key dan field tanggal pembuatan:
 
 ![20240409092305](https://static-docs.nocobase.com/20240409092305.png)
 
-#### Contoh 2: Membuat kolom sort2 berdasarkan pengelompokan ID Kelas
+#### Contoh 2: Membuat Field sort2 dengan Grouping berdasarkan Class ID
 
 ![20240409092620](https://static-docs.nocobase.com/20240409092620.png)
 
-Pada saat ini, semua catatan dalam koleksi akan dikelompokkan terlebih dahulu (dikelompokkan berdasarkan ID Kelas), kemudian kolom urutan (sort2) akan diinisialisasi. Nilai awal setiap catatan adalah:
+Saat ini, semua record dalam Collection akan dikelompokkan terlebih dahulu (berdasarkan Class ID), lalu Field Sort (sort2) akan diinisialisasi. Nilai inisialisasi setiap record:
 
 ![20240409092847](https://static-docs.nocobase.com/20240409092847.png)
 
-### Pengurutan Tarik-dan-Lepas
+### Drag and Drop Sort
 
-Kolom urutan utamanya digunakan untuk pengurutan tarik-dan-lepas catatan di berbagai blok. Blok yang saat ini mendukung pengurutan tarik-dan-lepas meliputi tabel dan papan.
+Field Sort terutama digunakan untuk drag and drop sort record di berbagai block. Block yang saat ini mendukung drag and drop sort meliputi tabel dan kanban.
 
 :::warning
-- Ketika kolom urutan yang sama digunakan untuk pengurutan tarik-dan-lepas, penggunaannya di beberapa blok dapat mengganggu urutan yang sudah ada.
-- Kolom untuk pengurutan tarik-dan-lepas tabel tidak dapat menjadi kolom urutan dengan aturan pengelompokan.
-  - Pengecualian: Dalam blok tabel relasi satu-ke-banyak, kunci asing dapat berfungsi sebagai grup.
-- Saat ini, hanya blok papan yang mendukung pengurutan tarik-dan-lepas dalam grup.
+- Saat Field Sort yang sama digunakan sebagai drag and drop sort, penggunaan campuran multi block dapat merusak sort yang sudah ada;
+- Field drag and drop sort tabel tidak dapat memilih Field Sort dengan aturan grouping;
+  - Pengecualian: Pada block tabel relasi One to Many, foreign key dapat digunakan sebagai grouping;
+- Saat ini hanya block kanban yang mendukung drag and drop sort dengan grouping.
 :::
 
-#### Pengurutan Tarik-dan-Lepas Baris Tabel
+#### Drag and Drop Sort Baris Tabel
 
-Blok tabel
+Block tabel
 
 ![20240409104621_rec_](https://static-docs.nocobase.com/20240409104621_rec_.gif)
 
-Blok tabel relasi
+Block tabel relasi
 
 <video controls width="100%" src="https://static-docs.nocobase.com/20240409111903_rec_.mp4" title="Title"></video>
 
 :::warning
-Dalam blok relasi satu-ke-banyak:
+Pada block relasi One to Many
 
-- Jika kolom urutan yang tidak dikelompokkan dipilih, semua catatan dapat berpartisipasi dalam pengurutan.
-- Jika catatan dikelompokkan terlebih dahulu berdasarkan kunci asing dan kemudian diurutkan, aturan pengurutan hanya akan memengaruhi data dalam grup saat ini.
+- Jika yang dipilih adalah Field Sort tanpa grouping, maka semua record dapat berpartisipasi dalam sort;
+- Jika sort dengan grouping berdasarkan foreign key terlebih dahulu, maka aturan sort hanya akan memengaruhi data dalam grup saat ini.
 
-Efek akhirnya konsisten, tetapi jumlah catatan yang berpartisipasi dalam pengurutan berbeda. Untuk detail lebih lanjut, lihat [Penjelasan Aturan Pengurutan](#sorting-rule-explanation).
+Hasil akhirnya konsisten, tetapi jumlah record yang berpartisipasi dalam sort berbeda. Untuk penjelasan lebih detail, lihat [Penjelasan Aturan Sort](#penjelasan-aturan-sort)
 :::
 
-#### Pengurutan Tarik-dan-Lepas Kartu Papan
+#### Drag and Drop Sort Kartu Kanban
 
 ![20240409110423_rec_](https://static-docs.nocobase.com/20240409110423_rec_.gif)
 
-### Penjelasan Aturan Pengurutan
+### Penjelasan Aturan Sort
 
-#### Perpindahan antara elemen yang tidak dikelompokkan (atau dalam grup yang sama)
+#### Pergeseran antar Elemen Tanpa Grouping (atau Grup yang Sama)
 
-Misalkan ada sekumpulan data:
+Misalkan ada sekelompok data
 
 ```
 [1,2,3,4,5,6,7,8,9]
 ```
 
-Ketika sebuah elemen, misalnya 5, bergerak maju ke posisi 3, hanya posisi item 3, 4, dan 5 yang berubah. Item 5 menempati posisi 3, dan item 3 serta 4 masing-masing bergeser mundur satu posisi.
+Ketika suatu elemen, misalnya 5 dipindah ke depan ke posisi 3, saat ini, hanya nomor urut 3,4,5 yang berubah, 5 menempati posisi 3, 3,4 masing-masing bergeser satu posisi ke belakang.
 
 ```
 [1,2,5,3,4,6,7,8,9]
 ```
 
-Jika kemudian kita memindahkan item 6 mundur ke posisi 8, item 6 menempati posisi 8, dan item 7 serta 8 masing-masing bergeser maju satu posisi.
+Saat ini lanjutkan dengan memindah 6 ke belakang ke posisi 8, 6 menempati posisi 8, 7,8 masing-masing bergeser satu posisi ke depan.
 
 ```
 [1,2,5,3,4,7,8,6,9]
 ```
 
-#### Perpindahan elemen antar grup yang berbeda
+#### Perpindahan Elemen antar Grup yang Berbeda
 
-Saat mengurutkan berdasarkan grup, jika sebuah catatan dipindahkan ke grup lain, penugasan grupnya juga akan berubah. Contohnya:
+Saat sort dengan grouping, ketika suatu record dipindah ke grup lain, grup miliknya juga akan berubah. Contoh sebagai berikut:
 
 ```
 A: [1,2,3,4]
 B: [5,6,7,8]
 ```
 
-Ketika item 1 dipindahkan setelah item 6 (perilaku bawaan), grupnya juga akan berubah dari A menjadi B.
+Ketika 1 dipindah ke 6 (default di belakang), grup tempat 1 berada juga akan berubah dari A menjadi B
 
 ```
 A: [2,3,4]
 B: [5,6,1,7,8]
 ```
 
-#### Perubahan urutan tidak terkait dengan data yang ditampilkan di antarmuka
+#### Perubahan Sort Tidak Terkait dengan Data yang Ditampilkan UI
 
-Misalnya, pertimbangkan sekumpulan data:
+Contoh ada sekelompok data
 
 ```
 [1,2,3,4,5,6,7,8,9]
 ```
 
-Antarmuka hanya menampilkan tampilan yang difilter:
+UI hanya menampilkan
 
 ```
 [1,5,9]
 ```
 
-Ketika item 1 dipindahkan ke posisi item 9, posisi semua item perantara (2, 3, 4, 5, 6, 7, 8) juga akan berubah, meskipun tidak terlihat.
+Ketika 1 dipindah ke posisi 9, posisi data 2,3,4,5,6,7,8 di tengah semua akan berubah
 
 ```
 [2,3,4,5,6,7,8,9,1]
 ```
 
-Antarmuka kini menampilkan urutan baru berdasarkan item yang difilter:
+UI menampilkan
 
 ```
 [5,9,1]

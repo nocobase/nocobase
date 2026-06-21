@@ -1,18 +1,17 @@
 ---
-displayName: "Nhật ký kiểm toán (đã ngừng sử dụng)"
+displayName: "Nhật ký kiểm toán (Đã ngừng sử dụng)"
 packageName: '@nocobase/plugin-audit-logs'
+title: "Nhật ký kiểm toán (Đã ngừng sử dụng)"
+keywords: "Nhật ký kiểm toán (Đã ngừng sử dụng),Plugin,NocoBase"
 description: |
-  Plugin này đã ngừng sử dụng. Vui lòng không sử dụng. Trong tương lai sẽ có một plugin nhật ký kiểm toán mới.
+  Plugin này đã ngừng sử dụng, vui lòng không dùng, trong tương lai sẽ có plugin nhật ký kiểm toán mới.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-
-# Nhật ký kiểm toán (đã ngừng sử dụng)
+# Nhật ký kiểm toán (Đã ngừng sử dụng)
 
 > Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

@@ -1,21 +1,23 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Event"
+description: "Event server NocoBase: app.on, app.emit, listen dan trigger event, komunikasi event antar plugin."
+keywords: "Event,event,app.on,app.emit,event listening,event trigger,NocoBase"
+---
 
 # Event
 
-Server NocoBase akan memicu event (peristiwa) yang sesuai selama siklus hidup aplikasi, siklus hidup plugin, dan operasi basis data. Pengembang plugin dapat mendengarkan event ini untuk mengimplementasikan logika ekstensi, operasi otomatis, atau perilaku kustom.
+Server NocoBase memicu event yang sesuai pada siklus hidup aplikasi, siklus hidup plugin, serta operasi database. Anda dapat mengimplementasikan logika ekstensi, operasi otomatisasi, atau perilaku kustom dengan mendengarkan event-event ini.
 
-Sistem event NocoBase dibagi menjadi dua tingkatan utama:
+Sistem event NocoBase utamanya dibagi menjadi dua level:
 
-- **`app.on()` - Event Tingkat Aplikasi**: Mendengarkan event siklus hidup aplikasi, seperti saat memulai, menginstal, mengaktifkan plugin, dll.
-- **`db.on()` - Event Tingkat Basis Data**: Mendengarkan event operasi pada tingkat model data, seperti membuat, memperbarui, menghapus catatan, dll.
+- **`app.on()` — Event Level Aplikasi**: Mendengarkan event siklus hidup aplikasi, seperti startup, instalasi, aktivasi plugin, dll.
+- **`db.on()` — Event Level Database**: Mendengarkan event operasi pada level model data, seperti membuat, memperbarui, menghapus record, dll.
 
-Keduanya mewarisi dari `EventEmitter` Node.js, mendukung penggunaan antarmuka standar `.on()`, `.off()`, `.emit()`. NocoBase juga memperluas dukungan untuk `emitAsync`, yang digunakan untuk memicu event secara asinkron dan menunggu semua pendengar selesai dieksekusi.
+Keduanya diwarisi dari `EventEmitter` Node.js, mendukung penggunaan interface standar `.on()`, `.off()`, `.emit()`. NocoBase juga memperluas `emitAsync`, untuk memicu event secara asinkron dan menunggu semua listener selesai dieksekusi.
 
-## Tempat Mendaftarkan Pendengar Event
+## Lokasi Registrasi Event Listener
 
-Pendengar event umumnya harus didaftarkan dalam metode `beforeLoad()` plugin. Hal ini memastikan bahwa event sudah siap selama fase pemuatan plugin, dan logika selanjutnya dapat merespons dengan benar.
+Event listener biasanya didaftarkan di method `beforeLoad()` plugin, sehingga dapat dipastikan event sudah siap pada tahap loading plugin, dan logika berikutnya dapat merespons dengan benar.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -23,48 +25,48 @@ import { Plugin } from '@nocobase/server';
 export default class PluginHelloServer extends Plugin {
   async beforeLoad() {
 
-    // Mendengarkan event aplikasi
+    // Listen event aplikasi
     this.app.on('afterStart', () => {
       app.logger.info('NocoBase telah dimulai');
     });
 
-    // Mendengarkan event basis data
+    // Listen event database
     this.db.on('afterCreate', (model) => {
       if (model.collectionName === 'posts') {
-        app.logger.info(`Postingan baru: ${model.get('title')}`);
+        app.logger.info(`Post baru: ${model.get('title')}`);
       }
     });
   }
 }
 ```
 
-## Mendengarkan Event Aplikasi `app.on()`
+## Listen Event Aplikasi `app.on()`
 
-Event aplikasi digunakan untuk menangkap perubahan siklus hidup aplikasi NocoBase dan plugin, cocok untuk logika inisialisasi, pendaftaran sumber daya, atau deteksi dependensi plugin.
+Event aplikasi digunakan untuk menangkap perubahan siklus hidup aplikasi NocoBase dan plugin, cocok untuk logika inisialisasi, registrasi resource, atau deteksi dependensi, dll.
 
-### Jenis Event Umum
+### Tipe Event Umum
 
-| Nama Event | Waktu Pemicuan | Kegunaan Umum |
+| Nama Event | Waktu Trigger | Penggunaan Tipikal |
 |-----------|------------|-----------|
-| `beforeLoad` / `afterLoad` | Sebelum / setelah pemuatan aplikasi | Mendaftarkan sumber daya, menginisialisasi konfigurasi |
-| `beforeStart` / `afterStart` | Sebelum / setelah layanan dimulai | Memulai tugas, mencetak log startup |
-| `beforeInstall` / `afterInstall` | Sebelum / setelah instalasi aplikasi | Menginisialisasi data, mengimpor template |
-| `beforeStop` / `afterStop` | Sebelum / setelah layanan berhenti | Membersihkan sumber daya, menyimpan status |
-| `beforeDestroy` / `afterDestroy` | Sebelum / setelah penghancuran aplikasi | Menghapus cache, memutuskan koneksi |
-| `beforeLoadPlugin` / `afterLoadPlugin` | Sebelum / setelah pemuatan plugin | Mengubah konfigurasi plugin atau memperluas fungsionalitas |
-| `beforeEnablePlugin` / `afterEnablePlugin` | Sebelum / setelah pengaktifan plugin | Memeriksa dependensi, menginisialisasi logika plugin |
-| `beforeDisablePlugin` / `afterDisablePlugin` | Sebelum / setelah penonaktifan plugin | Membersihkan sumber daya plugin |
-| `afterUpgrade` | Setelah pembaruan aplikasi selesai | Melakukan migrasi data atau perbaikan kompatibilitas |
+| `beforeLoad` / `afterLoad` | Sebelum / setelah aplikasi dimuat | Mendaftarkan resource, menginisialisasi konfigurasi |
+| `beforeStart` / `afterStart` | Sebelum / setelah service dimulai | Memulai task, mencetak log startup |
+| `beforeInstall` / `afterInstall` | Sebelum / setelah aplikasi diinstal | Menginisialisasi data, mengimpor template |
+| `beforeStop` / `afterStop` | Sebelum / setelah service dihentikan | Membersihkan resource, menyimpan status |
+| `beforeDestroy` / `afterDestroy` | Sebelum / setelah aplikasi dihancurkan | Menghapus cache, memutuskan koneksi |
+| `beforeLoadPlugin` / `afterLoadPlugin` | Sebelum / setelah plugin dimuat | Memodifikasi konfigurasi plugin atau memperluas fungsi |
+| `beforeEnablePlugin` / `afterEnablePlugin` | Sebelum / setelah plugin diaktifkan | Memeriksa dependensi, menginisialisasi logika plugin |
+| `beforeDisablePlugin` / `afterDisablePlugin` | Sebelum / setelah plugin dinonaktifkan | Membersihkan resource plugin |
+| `afterUpgrade` | Setelah upgrade aplikasi selesai | Mengeksekusi migrasi data atau perbaikan kompatibilitas |
 
-Contoh: Mendengarkan event startup aplikasi
+Misalnya listen event startup aplikasi:
 
 ```ts
 app.on('afterStart', async () => {
-  app.logger.info('🚀 Layanan NocoBase telah dimulai!');
+  app.logger.info('Service NocoBase telah dimulai');
 });
 ```
 
-Contoh: Mendengarkan event pemuatan plugin
+Misalnya listen event loading plugin:
 
 ```ts
 app.on('afterLoadPlugin', ({ plugin }) => {
@@ -72,25 +74,25 @@ app.on('afterLoadPlugin', ({ plugin }) => {
 });
 ```
 
-## Mendengarkan Event Basis Data `db.on()`
+## Listen Event Database `db.on()`
 
-Event basis data dapat menangkap berbagai perubahan data pada tingkat model, cocok untuk audit, sinkronisasi, pengisian otomatis, dan operasi lainnya.
+Event database digunakan untuk menangkap berbagai perubahan data pada level model, cocok untuk audit, sinkronisasi, auto-fill, dan operasi lainnya.
 
-### Jenis Event Umum
+### Tipe Event Umum
 
-| Nama Event | Waktu Pemicuan |
+| Nama Event | Waktu Trigger |
 |-----------|------------|
-| `beforeSync` / `afterSync` | Sebelum / setelah sinkronisasi struktur basis data |
+| `beforeSync` / `afterSync` | Sebelum / setelah sinkronisasi struktur database |
 | `beforeValidate` / `afterValidate` | Sebelum / setelah validasi data |
-| `beforeCreate` / `afterCreate` | Sebelum / setelah membuat catatan |
-| `beforeUpdate` / `afterUpdate` | Sebelum / setelah memperbarui catatan |
-| `beforeSave` / `afterSave` | Sebelum / setelah menyimpan (termasuk membuat dan memperbarui) |
-| `beforeDestroy` / `afterDestroy` | Sebelum / setelah menghapus catatan |
-| `afterCreateWithAssociations` / `afterUpdateWithAssociations` / `afterSaveWithAssociations` | Setelah operasi yang mencakup data asosiasi |
-| `beforeDefineCollection` / `afterDefineCollection` | Sebelum / setelah mendefinisikan koleksi |
-| `beforeRemoveCollection` / `afterRemoveCollection` | Sebelum / setelah menghapus koleksi |
+| `beforeCreate` / `afterCreate` | Sebelum / setelah membuat record |
+| `beforeUpdate` / `afterUpdate` | Sebelum / setelah update record |
+| `beforeSave` / `afterSave` | Sebelum / setelah save (termasuk create dan update) |
+| `beforeDestroy` / `afterDestroy` | Sebelum / setelah delete record |
+| `afterCreateWithAssociations` / `afterUpdateWithAssociations` / `afterSaveWithAssociations` | Setelah operasi termasuk data asosiasi |
+| `beforeDefineCollection` / `afterDefineCollection` | Sebelum / setelah mendefinisikan collection |
+| `beforeRemoveCollection` / `afterRemoveCollection` | Sebelum / setelah menghapus collection |
 
-Contoh: Mendengarkan event setelah pembuatan data
+Misalnya listen event setelah data dibuat:
 
 ```ts
 db.on('afterCreate', async (model, options) => {
@@ -98,10 +100,18 @@ db.on('afterCreate', async (model, options) => {
 });
 ```
 
-Contoh: Mendengarkan event sebelum pembaruan data
+Misalnya listen event sebelum data diperbarui:
 
 ```ts
 db.on('beforeUpdate', async (model, options) => {
-  db.logger.info('Data akan diperbarui!');
+  db.logger.info('Data akan diperbarui');
 });
 ```
+
+## Tautan Terkait
+
+- [Plugin](./plugin.md) — Mendaftarkan event listener dalam method siklus hidup plugin
+- [Database Operasi Database](./database.md) — Source trigger event level database dan API operasi data
+- [Collections Tabel Data](./collections.md) — Definisi tabel data dan hubungan model dalam event database
+- [Middleware](./middleware.md) — Kolaborasi middleware dan event dalam pemrosesan request
+- [Ikhtisar Pengembangan Server](./index.md) — Peran sistem event dalam arsitektur server

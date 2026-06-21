@@ -1,35 +1,38 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Storage Engine: Amazon S3"
+description: "Konfigurasi storage engine Amazon S3 built-in NocoBase: region, AccessKey ID/Secret, nama bucket, cocok untuk AWS cloud storage."
+keywords: "Amazon S3,AWS,bucket,AccessKey,cloud storage,konfigurasi S3,NocoBase"
+---
 
-# Mesin Penyimpanan: Amazon S3
+# Storage Engine: Amazon S3
 
-Mesin penyimpanan berbasis Amazon S3. Sebelum menggunakannya, Anda perlu menyiapkan akun dan izin yang relevan.
+Storage engine berdasarkan Amazon S3, perlu menyiapkan akun dan permission terkait sebelum digunakan.
 
 ## Parameter Konfigurasi
 
-![Contoh Konfigurasi Mesin Penyimpanan Amazon S3](https://static-docs.nocobase.com/20251031092524.png)
+![Contoh konfigurasi storage engine Amazon S3](https://static-docs.nocobase.com/20251031092524.png)
 
-:::info{title=Catatan}
-Bagian ini hanya menjelaskan parameter khusus untuk mesin penyimpanan Amazon S3. Untuk parameter umum, silakan lihat [Parameter Mesin Umum](./index#引擎通用参数).
+:::info{title=Tips}
+Hanya memperkenalkan parameter spesifik untuk Amazon S3 storage engine. Untuk parameter umum lihat [Parameter Umum Engine](./index#parameter-umum-engine).
 :::
 
-### Wilayah
+### Region
 
-Masukkan wilayah penyimpanan S3, contoh: `us-west-1`.
+Isi region storage S3, contohnya: `us-west-1`.
 
-:::info{title=Catatan}
-Anda dapat melihat informasi wilayah untuk bucket Anda di [konsol Amazon S3](https://console.aws.amazon.com/s3/), dan Anda hanya perlu menggunakan prefiks wilayah (tidak perlu nama domain lengkap).
+:::info{title=Tips}
+Anda dapat melihat informasi region storage space di [Amazon S3 Console](https://console.aws.amazon.com/s3/), dan hanya perlu mengambil bagian prefix region saja (tidak perlu domain lengkap).
 :::
 
 ### AccessKey ID
 
-Masukkan ID AccessKey Amazon S3.
+Isi ID Amazon S3 access key.
 
 ### AccessKey Secret
 
-Masukkan Secret AccessKey Amazon S3.
+Isi Secret Amazon S3 access key.
 
 ### Bucket
 
-Masukkan nama bucket S3.
+Isi nama bucket S3 storage.

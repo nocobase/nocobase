@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "工作流 LLM 节点 - 结构化输出"
+description: "工作流 LLM 结构化输出：配置 JSON Schema 规定响应结构，支持 text/json_object/json_schema 模式，Ollama 本地模型 format 参数。"
+keywords: "工作流,LLM 节点,结构化输出,JSON Schema,NocoBase"
+---
+
 # 结构化输出
 
 <PluginInfo name="ai-ee" licenseBundled="true"></PluginInfo>

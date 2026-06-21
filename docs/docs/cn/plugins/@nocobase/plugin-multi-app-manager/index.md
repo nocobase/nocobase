@@ -1,4 +1,6 @@
 ---
+title: "多应用管理器（已废弃）"
+keywords: "多应用管理器（已废弃）,插件,NocoBase"
 displayName: "多应用管理器（已废弃）"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 多应用管理器（已废弃）

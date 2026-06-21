@@ -1,15 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Instalasi Source Code Git"
+description: "Mulai cepat NocoBase: Instalasi source code Git"
+keywords: "git,NocoBase"
+---
 
-
-# Instalasi dari Sumber Kode Git
+# Instalasi Source Code Git
 
 :::tip Prasyarat
 
-- Git, Node.js 20+, dan Yarn 1.22.x sudah terinstal.
-- Salah satu database yang diperlukan sudah dikonfigurasi dan berjalan: MySQL 8.0.17+, MariaDB 10.9+, atau PostgreSQL 10+.
-- Karena kondisi jaringan, Anda disarankan untuk mengganti ke mirror lokal (tidak wajib).
+- Sudah menginstal Git, Node.js >= 22, Yarn 1.22.x
+- Sudah mengonfigurasi dan menjalankan database yang dibutuhkan: MySQL 8.0.17+, MariaDB 10.9+, atau PostgreSQL 10+
+- Karena keterbatasan jaringan di beberapa wilayah, disarankan untuk mengganti dengan registry mirror (opsional)
 
 ```bash
 $ yarn config set disable-self-update-check true
@@ -18,43 +19,43 @@ $ yarn config set registry https://registry.npmmirror.com/
 
 :::
 
-## 1. Unduh NocoBase ke Mesin Lokal Anda
+## 1. Download NocoBase ke Lokal
 
-Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)) dan jalankan perintah yang sesuai.
+Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)), lalu jalankan perintah yang sesuai.
 
 <Tabs>
-<Tab label="versi Beta (2.0-beta)">
-
-```bash
-git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
-```
-
-</Tab>
-<Tab label="versi Alpha (2.0-alpha)">
-
-```bash
-git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
-```
-
-</Tab>
-<Tab label="versi terbaru (1.9)">
+<Tab label="Versi Latest">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
 ```
 
 </Tab>
+<Tab label="Versi Beta">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
+```
+
+</Tab>
+<Tab label="Versi Alpha">
+
+```bash
+git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
+```
+
+</Tab>
 </Tabs>
 
-## 2. Ganti Direktori
+## 2. Pindah Direktori
 
 ```bash
 cd my-nocobase
 ```
 
-## 3. Instal Dependensi
+## 3. Instal Dependencies
 
-📢 Langkah ini mungkin memerlukan waktu lebih dari sepuluh menit, tergantung pada kondisi jaringan, konfigurasi sistem, dan faktor lainnya.
+📢 Karena pengaruh kondisi jaringan, konfigurasi sistem, dan faktor lainnya, langkah ini mungkin membutuhkan waktu beberapa belas menit.
 
 ```bash
 yarn install --frozen-lockfile
@@ -62,7 +63,7 @@ yarn install --frozen-lockfile
 
 ## 4. Atur Variabel Lingkungan
 
-Variabel lingkungan yang diperlukan oleh NocoBase disimpan dalam berkas `.env` di direktori root. Ubah variabel lingkungan sesuai dengan situasi Anda.
+Variabel lingkungan yang dibutuhkan NocoBase disimpan di file `.env` di direktori root, sesuaikan variabel lingkungan berdasarkan situasi aktual.
 
 ```bash
 TZ=Asia/Shanghai
@@ -76,19 +77,20 @@ DB_PASSWORD=nocobase
 
 :::warning Penjelasan Variabel Lingkungan
 
-- `TZ` digunakan untuk mengatur zona waktu aplikasi, yang secara default mengikuti zona waktu sistem operasi.
-- `APP_KEY` adalah kunci rahasia aplikasi, digunakan untuk menghasilkan token pengguna, dll. (Jika `APP_KEY` diubah, token lama akan menjadi tidak valid). Ini bisa berupa string acak apa pun. Harap ubah ke kunci rahasia Anda sendiri dan pastikan tidak bocor ke publik.
-- `DB_*` berkaitan dengan database. Jika Anda tidak menggunakan layanan database default dari contoh, harap ubah sesuai dengan situasi Anda.
+- `TZ` digunakan untuk mengatur zona waktu aplikasi, default adalah zona waktu sistem operasi;
+- `APP_KEY` adalah kunci aplikasi, digunakan untuk menghasilkan Token pengguna dan lainnya (jika APP_KEY dimodifikasi, Token lama akan menjadi tidak valid). Bisa berupa string acak apa saja. Mohon ubah dengan kunci Anda sendiri dan pastikan tidak bocor ke pihak luar;
+- `DB_*` adalah konfigurasi terkait database, jika bukan layanan database default seperti contoh, sesuaikan berdasarkan situasi aktual.
 
 :::
 
 ## 5. Instal NocoBase
 
 ```bash
-yarn nocobase install --lang=id-ID
+yarn nocobase install --lang=zh-CN
 ```
 
-## 6. Mulai NocoBase
+## 6. Jalankan NocoBase
+
 
 **Lingkungan Pengembangan**
 
@@ -96,21 +98,21 @@ yarn nocobase install --lang=id-ID
 yarn dev
 ```
 
-**Lingkungan Produksi (tidak disarankan)**
+**Lingkungan Produksi (Tidak Direkomendasikan)**
 
-Tidak disarankan untuk melakukan deployment langsung dari sumber kode di lingkungan produksi. Untuk lingkungan produksi, silakan lihat [Deployment Produksi](../deployment/production.md).
+Tidak disarankan untuk langsung men-deploy source code di lingkungan produksi. Untuk lingkungan produksi, lihat [Deployment Lingkungan Produksi](../deployment/production.md).
 
 ```bash
 yarn build
 yarn start
 ```
 
-## 7. Masuk ke NocoBase
+## 7. Login ke NocoBase
 
-Buka [http://localhost:13000](http://localhost:13000) di browser Anda. Akun dan kata sandi awal adalah `admin@nocobase.com` dan `admin123`.
+Buka [http://localhost:13000](http://localhost:13000) di browser, akun dan password awal adalah `admin@nocobase.com` dan `admin123`.
 
-:::warning Peringatan Keamanan Akun
+:::warning Tips Keamanan Akun
 
-Setelah masuk untuk pertama kalinya, harap segera ubah kata sandi default untuk memastikan keamanan sistem.
+Setelah login pertama kali, segera ubah password default untuk memastikan keamanan sistem.
 
 :::

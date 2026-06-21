@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc: Nút nhánh song song"
+displayName: "Workflow: Node nhánh song song"
 packageName: '@nocobase/plugin-workflow-parallel'
+title: "Workflow: Node nhánh song song"
+keywords: "Workflow: Node nhánh song song,Plugin,NocoBase"
 description: |
-  Dùng cho các quy trình nhánh cần được thực thi song song trong luồng công việc.
+  Dùng cho các quy trình nhánh cần thực thi song song trong workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút nhánh song song
+# Workflow: Node nhánh song song

@@ -1,28 +1,31 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: "@nocobase/plugin-ai-knowledge-base"
+title: "Ikhtisar Basis Pengetahuan AI"
+description: "Basis Pengetahuan AI menyediakan kemampuan retrieval RAG untuk Karyawan AI, melalui Embedding dan vector retrieval meningkatkan akurasi dan keterlacakan jawaban, perlu mengaktifkan Plugin AI: Knowledge base."
+keywords: "Basis Pengetahuan AI,RAG,Retrieval Augmented Generation,Embedding,NocoBase"
+---
 
-# Gambaran Umum
+# Ikhtisar
 
-## Pendahuluan
+## Pengantar
 
-Plugin Basis Pengetahuan AI menyediakan kemampuan pengambilan RAG untuk agen AI.
+Plugin Basis Pengetahuan AI menyediakan kemampuan retrieval RAG untuk Karyawan AI.
 
-Kemampuan pengambilan RAG memungkinkan agen AI untuk memberikan jawaban yang lebih akurat, profesional, dan relevan dengan internal perusahaan saat menjawab pertanyaan pengguna.
+Kemampuan retrieval RAG memungkinkan Karyawan AI memberikan jawaban yang lebih akurat, lebih profesional, dan lebih relevan dengan internal perusahaan saat menjawab pertanyaan Pengguna.
 
-Dengan menggunakan dokumen domain profesional dan internal perusahaan yang disediakan dari basis pengetahuan yang dikelola administrator, akurasi dan ketertelusuran jawaban agen AI dapat ditingkatkan.
+Melalui Basis Pengetahuan yang dipelihara administrator yang menyediakan domain profesional dan dokumen internal perusahaan, meningkatkan akurasi dan keterlacakan jawaban Karyawan AI.
 
 ### Apa itu RAG
 
-RAG (Retrieval Augmented Generation) adalah singkatan dari "Retrieval-Augmented-Generation".
+RAG (Retrieval Augmented Generation) berarti "Retrieval-Augmentation-Generation"
 
-- Pengambilan (Retrieval): Pertanyaan pengguna diubah menjadi vektor oleh model Embedding (misalnya, BERT). Blok teks Top-K yang relevan diambil dari pustaka vektor melalui pengambilan padat (kesamaan semantik) atau pengambilan jarang (pencocokan kata kunci).
-- Augmentasi (Augmentation): Hasil pengambilan digabungkan dengan pertanyaan asli untuk membentuk prompt yang diperkaya (Augmented Prompt), yang kemudian disuntikkan ke jendela konteks LLM.
-- Generasi (Generation): LLM menggabungkan prompt yang diperkaya untuk menghasilkan jawaban akhir, memastikan faktualitas dan ketertelusuran.
+- Retrieval: Pertanyaan Pengguna diubah menjadi vektor melalui model Embedding (seperti BERT), di vector database melalui dense retrieval (semantic similarity) atau sparse retrieval (keyword matching) memanggil kembali Top-K blok teks terkait.
+- Augmentation: Hasil retrieval digabungkan dengan pertanyaan asli sebagai augmented Prompt, dimasukkan ke window konteks LLM.
+- Generation: LLM menggabungkan augmented Prompt untuk menghasilkan jawaban akhir, memastikan faktualitas dan keterlacakan.
 
 ## Instalasi
 
-1. Buka halaman Manajer Plugin.
-2. Cari plugin `AI: Knowledge base` dan aktifkan.
+1. Masuk ke halaman manajemen Plugin
+2. Temukan Plugin `AI: Knowledge base`, dan aktifkan
 
 ![20251022224818](https://static-docs.nocobase.com/20251022224818.png)

@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "HasOneRepository"
+description: "Repository quan hệ HasOne của NocoBase: xử lý CRUD cho quan hệ một-một, interface giống BelongsToRepository."
+keywords: "HasOneRepository,HasOne,một-một,Repository,NocoBase"
+---
 
 # HasOneRepository
 
 ## Tổng quan
 
-`HasOneRepository` là repository cho các liên kết kiểu `HasOne`.
+`HasOneRepository` là Repository quan hệ kiểu `HasOne`.
 
 ```typescript
 const User = db.collection({
@@ -27,20 +28,20 @@ const user = await User.repository.create({
   values: { name: 'u1' },
 });
 
-// Lấy repository liên kết
+// Lấy Repository quan hệ
 const userProfileRepository = User.repository
   .relation('profile')
   .of(user.get('id'));
 
-// Cũng có thể khởi tạo trực tiếp
+// Hoặc khởi tạo trực tiếp
 new HasOneRepository(User, 'profile', user.get('id'));
 ```
 
-## Phương thức lớp
+## Phương thức của lớp
 
 ### `find()`
 
-Tìm đối tượng liên kết
+Tìm đối tượng quan hệ.
 
 **Chữ ký**
 
@@ -57,20 +58,20 @@ interface SingleRelationFindOption extends Transactionable {
 }
 ```
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-Các tham số truy vấn tương tự như [`Repository.find()`](../repository.md#find).
+Tham số truy vấn giống [`Repository.find()`](../repository.md#find).
 
 **Ví dụ**
 
 ```typescript
 const profile = await UserProfileRepository.find();
-// Trả về null nếu đối tượng liên kết không tồn tại
+// Khi đối tượng quan hệ không tồn tại, trả về null
 ```
 
 ### `create()`
 
-Tạo đối tượng liên kết
+Tạo đối tượng quan hệ.
 
 **Chữ ký**
 
@@ -99,7 +100,7 @@ console.log(profile.toJSON());
 
 ### `update()`
 
-Cập nhật đối tượng liên kết
+Cập nhật đối tượng quan hệ.
 
 **Chữ ký**
 
@@ -119,15 +120,15 @@ profile.get('avatar'); // 'avatar2'
 
 ### `remove()`
 
-Xóa liên kết đối tượng. Thao tác này chỉ gỡ bỏ liên kết, không xóa đối tượng liên kết.
+Gỡ đối tượng quan hệ, chỉ ngắt quan hệ chứ không xóa đối tượng quan hệ.
 
 **Chữ ký**
 
 - `async remove(options?: Transactionable): Promise<void>`
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-- `transaction`: Đối tượng giao dịch. Nếu không truyền tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.
+- `transaction`: Đối tượng transaction. Nếu không truyền tham số transaction, phương thức sẽ tự động tạo một transaction nội bộ.
 
 **Ví dụ**
 
@@ -140,15 +141,15 @@ await UserProfileRepository.remove();
 
 ### `destroy()`
 
-Xóa đối tượng liên kết
+Xóa đối tượng quan hệ.
 
 **Chữ ký**
 
 - `async destroy(options?: Transactionable): Promise<Boolean>`
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-- `transaction`: Đối tượng giao dịch. Nếu không truyền tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.
+- `transaction`: Đối tượng transaction. Nếu không truyền tham số transaction, phương thức sẽ tự động tạo một transaction nội bộ.
 
 **Ví dụ**
 
@@ -160,7 +161,7 @@ await UserProfileRepository.destroy();
 
 ### `set()`
 
-Thiết lập đối tượng liên kết
+Đặt đối tượng quan hệ.
 
 **Chữ ký**
 
@@ -174,10 +175,10 @@ interface SetOption extends Transactionable {
 }
 ```
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-- `tk`: `targetKey` của đối tượng liên kết cần thiết lập.
-- `transaction`: Đối tượng giao dịch. Nếu không truyền tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.
+- tk: Đặt targetKey của đối tượng quan hệ.
+- transaction: Đối tượng transaction. Nếu không truyền tham số transaction, phương thức sẽ tự động tạo một transaction nội bộ.
 
 **Ví dụ**
 

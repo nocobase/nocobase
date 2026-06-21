@@ -1,4 +1,6 @@
 ---
+title: "数据源：外部 Oracle"
+keywords: "数据源：外部 Oracle,插件,NocoBase"
 displayName: "数据源：外部 Oracle"
 packageName: '@nocobase/plugin-data-source-external-oracle'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 3
 ---
 
 # 数据源：外部 Oracle

@@ -1,18 +1,17 @@
 ---
-displayName: "Luồng công việc: Nút tính toán ngày"
+displayName: "Workflow: Node tính toán ngày tháng"
 packageName: '@nocobase/plugin-workflow-date-calculation'
+title: "Workflow: Node tính toán ngày tháng"
+keywords: "Workflow: Node tính toán ngày tháng,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Có thể dùng để thực hiện các phép tính toán trên ngày tháng trong luồng công việc, như cộng trừ, so sánh, định dạng, v.v.
-isFree: false
-builtIn: false
+  Có thể được sử dụng để thực hiện các phép tính trên ngày tháng trong workflow, chẳng hạn như cộng trừ, so sánh, định dạng, v.v.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút tính toán ngày
+# Workflow: Node tính toán ngày tháng

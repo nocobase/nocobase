@@ -1,17 +1,19 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+---
+title: "Panduan Upgrade Instalasi Source Code Git"
+description: "Upgrade NocoBase untuk instalasi source code Git: git pull, yarn install, yarn nocobase upgrade, hapus cache dan reinstall dependencies."
+keywords: "Source Code Git,Upgrade,git pull,yarn nocobase upgrade,yarn install,NocoBase"
+---
+
+# Upgrade Instalasi Source Code Git
+
+:::warning Persiapan Sebelum Upgrade
+
+- Pastikan untuk membackup database terlebih dahulu
+- Hentikan NocoBase yang sedang berjalan (`Ctrl + C`)
+
 :::
 
-# Memperbarui Instalasi dari Kode Sumber Git
-
-:::warning Persiapan Sebelum Pembaruan
-
-- Pastikan untuk mencadangkan basis data Anda terlebih dahulu.
-- Hentikan instans NocoBase yang sedang berjalan (`Ctrl + C`).
-
-:::
-
-## 1. Beralih ke Direktori Proyek NocoBase
+## 1. Pindah ke Direktori Proyek NocoBase
 
 ```bash
 cd my-nocobase-app
@@ -23,32 +25,32 @@ cd my-nocobase-app
 git pull
 ```
 
-## 3. Hapus Cache dan Dependensi Lama (Opsional)
+## 3. Hapus Cache dan Dependencies Lama (Opsional)
 
-Jika proses pembaruan normal gagal, Anda dapat mencoba menghapus cache dan dependensi, lalu mengunduhnya kembali.
+Jika alur upgrade normal gagal, Anda dapat mencoba menghapus cache dan dependencies, kemudian mendownload ulang
 
 ```bash
 # Hapus cache nocobase
 yarn nocobase clean
-# Hapus dependensi
-yarn rimraf -rf node_modules # setara dengan rm -rf node_modules
+# Hapus dependencies
+yarn rimraf -rf node_modules # Setara dengan rm -rf node_modules
 ```
 
-## 4. Perbarui Dependensi
+## 4. Update Dependencies
 
-📢 Karena faktor-faktor seperti lingkungan jaringan dan konfigurasi sistem, langkah ini mungkin memerlukan waktu lebih dari sepuluh menit.
+📢 Karena pengaruh kondisi jaringan, konfigurasi sistem, dan faktor lainnya, langkah ini mungkin membutuhkan waktu beberapa belas menit.
 
 ```bash
 yarn install
 ```
 
-## 5. Jalankan Perintah Pembaruan
+## 5. Jalankan Perintah Upgrade
 
 ```bash
 yarn nocobase upgrade
 ```
 
-## 6. Mulai NocoBase
+## 6. Jalankan NocoBase
 
 ```bash
 yarn dev
@@ -56,10 +58,10 @@ yarn dev
 
 :::tip Tips Lingkungan Produksi
 
-Tidak disarankan untuk menerapkan instalasi NocoBase dari kode sumber secara langsung di lingkungan produksi (untuk lingkungan produksi, silakan lihat [Penerapan Produksi](../deployment/production.md)).
+NocoBase yang diinstal dari source code tidak disarankan untuk langsung di-deploy ke lingkungan produksi (untuk lingkungan produksi, lihat [Deployment Lingkungan Produksi](../deployment/production.md)).
 
 :::
 
-## 7. Memperbarui Plugin Pihak Ketiga
+## 7. Upgrade Plugin Pihak Ketiga
 
-Lihat [Instal dan Perbarui Plugin](../install-upgrade-plugins.mdx)
+Lihat [Instalasi dan Upgrade Plugin](../install-upgrade-plugins.mdx)

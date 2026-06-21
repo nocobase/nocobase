@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Repository"
+description: "API Repository Database NocoBase: melakukan CRUD pada Collection, find/findOne/create/update/destroy."
+keywords: "Repository,CRUD,find,findOne,create,update,destroy,NocoBase"
+---
 
-# Repositori
+# Repository
 
-## Gambaran Umum
+## Ikhtisar
 
-Pada objek `koleksi` tertentu, Anda dapat memperoleh objek `Repositori`-nya untuk melakukan operasi baca dan tulis pada koleksi tersebut.
+Pada objek `Collection` tertentu, Anda dapat mengambil objek `Repository`-nya untuk melakukan operasi baca dan tulis pada tabel data.
 
 ```javascript
 const { UserCollection } = require('./collections');
@@ -23,11 +25,11 @@ user.name = 'new name';
 await user.save();
 ```
 
-### Kueri
+### Query
 
-#### Kueri Dasar
+#### Query Dasar
 
-Pada objek `Repositori`, panggil metode terkait `find*` untuk melakukan operasi kueri. Semua metode kueri mendukung parameter `filter` untuk memfilter data.
+Pada objek `Repository`, panggil method-method `find*` untuk mengeksekusi operasi query, semua method query mendukung parameter `filter` untuk memfilter data.
 
 ```javascript
 // SELECT * FROM users WHERE id = 1
@@ -40,7 +42,7 @@ userRepository.find({
 
 #### Operator
 
-Parameter `filter` dalam `Repositori` juga menyediakan berbagai operator untuk melakukan operasi kueri yang lebih beragam.
+Parameter `filter` di `Repository` juga menyediakan berbagai operator, mengeksekusi operasi query yang lebih beragam.
 
 ```javascript
 // SELECT * FROM users WHERE age > 18
@@ -60,39 +62,39 @@ userRepository.find({
 });
 ```
 
-Untuk informasi lebih lanjut tentang operator, silakan lihat [Operator Filter](/api/database/operators).
+Untuk informasi detail operator lihat [Filter Operators](/api/database/operators).
 
-#### Kontrol Bidang
+#### Kontrol Field
 
-Saat melakukan operasi kueri, Anda dapat mengontrol bidang keluaran melalui parameter `fields`, `except`, dan `appends`.
+Saat operasi query, melalui parameter `fields`, `except`, `appends` dapat mengontrol field output.
 
-- `fields`: Tentukan bidang keluaran
-- `except`: Kecualikan bidang keluaran
-- `appends`: Tambahkan bidang terkait ke keluaran
+- `fields`: Menentukan field output
+- `except`: Mengecualikan field output
+- `appends`: Menambahkan output field asosiasi
 
 ```javascript
-// Hasilnya hanya akan menyertakan bidang id dan name
+// Hasil yang didapatkan hanya berisi field id dan name
 userRepository.find({
   fields: ['id', 'name'],
 });
 
-// Hasilnya tidak akan menyertakan bidang password
+// Hasil yang didapatkan tidak berisi field password
 userRepository.find({
   except: ['password'],
 });
 
-// Hasilnya akan menyertakan data dari objek terkait posts
+// Hasil yang didapatkan akan berisi data objek asosiasi posts
 userRepository.find({
   appends: ['posts'],
 });
 ```
 
-#### Mengueri Bidang Asosiasi
+#### Query Field Asosiasi
 
-Parameter `filter` mendukung pemfilteran berdasarkan bidang asosiasi, misalnya:
+Parameter `filter` mendukung filtering berdasarkan field asosiasi, contoh:
 
 ```javascript
-// Kueri untuk objek user yang posts terkaitnya memiliki objek dengan judul 'post title'
+// Query objek user, yang asosiasi posts-nya memiliki objek dengan title 'post title'
 userRepository.find({
   filter: {
     'posts.title': 'post title',
@@ -100,10 +102,10 @@ userRepository.find({
 });
 ```
 
-Bidang asosiasi juga dapat disarangkan.
+Field asosiasi juga dapat di-nested
 
 ```javascript
-// Kueri untuk objek user di mana komentar dari posts mereka mengandung kata kunci
+// Query objek user, hasil query memenuhi comments dari posts-nya berisi keywords
 await userRepository.find({
   filter: {
     'posts.comments.content': {
@@ -113,9 +115,9 @@ await userRepository.find({
 });
 ```
 
-#### Pengurutan
+#### Sorting
 
-Anda dapat mengurutkan hasil kueri menggunakan parameter `sort`.
+Melalui parameter `sort`, dapat mengurutkan hasil query.
 
 ```javascript
 // SELECT * FROM users ORDER BY age
@@ -134,7 +136,7 @@ await userRepository.find({
 });
 ```
 
-Anda juga dapat mengurutkan berdasarkan bidang objek terkait.
+Juga dapat sorting berdasarkan field objek asosiasi
 
 ```javascript
 await userRepository.find({
@@ -146,7 +148,7 @@ await userRepository.find({
 
 #### Pembuatan Dasar
 
-Buat objek data baru melalui `Repositori`.
+Membuat objek data baru melalui `Repository`.
 
 ```javascript
 await userRepository.create({
@@ -155,7 +157,7 @@ await userRepository.create({
 });
 // INSERT INTO users (name, age) VALUES ('张三', 18)
 
-// Mendukung pembuatan massal
+// Mendukung pembuatan batch
 await userRepository.create([
   {
     name: '张三',
@@ -170,7 +172,7 @@ await userRepository.create([
 
 #### Membuat Asosiasi
 
-Saat membuat, Anda juga dapat membuat objek terkait secara bersamaan. Serupa dengan kueri, penggunaan objek terkait yang bersarang juga didukung, misalnya:
+Saat membuat dapat sekaligus membuat objek asosiasi, mirip dengan query, juga mendukung penggunaan nested objek asosiasi, contoh:
 
 ```javascript
 await userRepository.create({
@@ -191,10 +193,10 @@ await userRepository.create({
     },
   ],
 });
-// Saat membuat user, sebuah post dibuat dan diasosiasikan dengan user, dan tag dibuat dan diasosiasikan dengan post.
+// Sambil membuat user, sekaligus membuat post yang terkait dengan user, dan membuat tags yang terkait dengan post.
 ```
 
-Jika objek terkait sudah ada di database, Anda dapat meneruskan ID-nya. Saat pembuatan, asosiasi akan dibuat dengan objek terkait tersebut.
+Jika objek asosiasi sudah ada di database, Anda dapat memasukkan ID-nya, saat membuat akan dibangun relasi asosiasi dengan objek asosiasi tersebut.
 
 ```javascript
 const tag1 = await tagRepository.findOne({
@@ -212,7 +214,7 @@ await userRepository.create({
       content: 'post content',
       tags: [
         {
-          id: tag1.id, // Buat asosiasi dengan objek terkait yang sudah ada
+          id: tag1.id, // Membangun relasi asosiasi dengan objek asosiasi yang sudah ada
         },
         {
           name: 'tag2',
@@ -223,11 +225,11 @@ await userRepository.create({
 });
 ```
 
-### Memperbarui
+### Update
 
-#### Pembaruan Dasar
+#### Update Dasar
 
-Setelah mendapatkan objek data, Anda dapat langsung memodifikasi propertinya pada objek data (`Model`), lalu panggil metode `save` untuk menyimpan perubahan.
+Setelah mendapatkan objek data, Anda dapat langsung memodifikasi properti pada objek data (`Model`), lalu memanggil method `save` untuk menyimpan perubahan.
 
 ```javascript
 const user = await userRepository.findOne({
@@ -240,12 +242,12 @@ user.age = 20;
 await user.save();
 ```
 
-Objek data `Model` mewarisi dari Sequelize Model. Untuk operasi pada `Model`, silakan lihat [Sequelize Model](https://sequelize.org/master/manual/model-basics.html).
+Objek data `Model` extends dari Sequelize Model, untuk operasi pada `Model` lihat [Sequelize Model](https://sequelize.org/master/manual/model-basics.html).
 
-Anda juga dapat memperbarui data melalui `Repositori`:
+Juga dapat mengupdate data melalui `Repository`:
 
 ```javascript
-// Perbarui catatan data yang memenuhi kriteria filter
+// Memodifikasi record data yang memenuhi kondisi filter
 await userRepository.update({
   filter: {
     name: '张三',
@@ -256,7 +258,7 @@ await userRepository.update({
 });
 ```
 
-Saat memperbarui, Anda dapat mengontrol bidang mana yang diperbarui menggunakan parameter `whitelist` dan `blacklist`, misalnya:
+Saat update, Anda dapat mengontrol field yang diupdate melalui parameter `whitelist`, `blacklist`, contoh:
 
 ```javascript
 await userRepository.update({
@@ -267,13 +269,13 @@ await userRepository.update({
     age: 20,
     name: '李四',
   },
-  whitelist: ['age'], // Hanya perbarui bidang age
+  whitelist: ['age'], // Hanya update field age
 });
 ```
 
-#### Memperbarui Bidang Asosiasi
+#### Update Field Asosiasi
 
-Saat memperbarui, Anda dapat mengatur objek terkait, misalnya:
+Saat update, dapat mengatur objek asosiasi, contoh:
 
 ```javascript
 const tag1 = tagRepository.findOne({
@@ -290,10 +292,10 @@ await postRepository.update({
     title: 'new post title',
     tags: [
       {
-        id: tag1.id, // Buat asosiasi dengan tag1
+        id: tag1.id, // Membangun asosiasi dengan tag1
       },
       {
-        name: 'tag2', // Buat tag baru dan buat asosiasi
+        name: 'tag2', // Membuat tag baru dan membangun asosiasi
       },
     ],
   },
@@ -304,14 +306,14 @@ await postRepository.update({
     id: 1,
   },
   values: {
-    tags: null, // Lepaskan asosiasi post dari tag
+    tags: null, // Melepaskan asosiasi post dengan tags
   },
 });
 ```
 
 ### Menghapus
 
-Anda dapat memanggil metode `destroy()` di `Repositori` untuk melakukan operasi penghapusan. Anda perlu menentukan kriteria filter saat menghapus:
+Dapat memanggil method `destroy()` di `Repository` untuk operasi hapus. Saat menghapus harus menentukan kondisi filter:
 
 ```javascript
 await userRepository.destroy({
@@ -321,11 +323,11 @@ await userRepository.destroy({
 });
 ```
 
-## Konstruktor
+## Constructor
 
-Biasanya tidak dipanggil langsung oleh pengembang. Ini terutama diinstansiasi setelah mendaftarkan tipe melalui `db.registerRepositories()` dan menentukan tipe repositori terdaftar yang sesuai dalam parameter `db.collection()`.
+Biasanya tidak dipanggil langsung oleh developer, terutama setelah mendaftarkan tipe melalui `db.registerRepositories()`, lalu menentukan tipe repository terdaftar yang sesuai di parameter `db.colletion()`, dan menyelesaikan instantiasi.
 
-**Tanda Tangan**
+**Signature**
 
 - `constructor(collection: Collection)`
 
@@ -346,7 +348,7 @@ db.registerRepositories({
 
 db.collection({
   name: 'books',
-  // di sini tautkan ke repositori yang terdaftar
+  // here link to the registered repository
   repository: 'books',
 });
 
@@ -356,27 +358,27 @@ const books = db.getRepository('books') as MyRepository;
 await books.myQuery('SELECT * FROM books;');
 ```
 
-## Anggota Instans
+## Anggota Instance
 
 ### `database`
 
-Instans manajemen database dari konteks.
+Instance manajemen database tempat konteks berada.
 
 ### `collection`
 
-Instans manajemen `koleksi` yang sesuai.
+Instance manajemen tabel data yang sesuai.
 
 ### `model`
 
-Kelas model yang sesuai.
+Class model data yang sesuai.
 
-## Metode Instans
+## Method Instance
 
 ### `find()`
 
-Mengueri kumpulan data dari database, memungkinkan penentuan kondisi filter, pengurutan, dll.
+Query data set dari database, dapat menentukan kondisi filter, sorting, dll.
 
-**Tanda Tangan**
+**Signature**
 
 - `async find(options?: FindOptions): Promise<Model[]>`
 
@@ -413,10 +415,11 @@ type FindOptions = SequelizeFindOptions & CommonFindOptions & FilterByTk;
 
 #### `filter: Filter`
 
-Kondisi kueri, digunakan untuk memfilter hasil data. Dalam parameter kueri yang diteruskan, `key` adalah nama bidang yang akan dikueri, dan `value` dapat berupa nilai yang akan dikueri atau digunakan dengan operator untuk pemfilteran data bersyarat lainnya.
+Kondisi query, digunakan untuk memfilter hasil data. Dalam parameter query yang dimasukkan, `key` adalah nama field yang akan di-query, `value` dapat dimasukkan nilai yang akan di-query,
+juga dapat dikombinasikan dengan operator untuk filter data dengan kondisi lainnya.
 
 ```typescript
-// Kueri untuk catatan di mana name adalah foo dan age lebih besar dari 18
+// Query record dengan name 'foo' dan age lebih besar dari 18
 repository.find({
   filter: {
     name: 'foo',
@@ -427,14 +430,15 @@ repository.find({
 });
 ```
 
-Untuk operator lebih lanjut, silakan lihat [Operator Kueri](./operators.md).
+Untuk operator lebih lanjut lihat [Operator Query](./operators.md).
 
 #### `filterByTk: TargetKey`
 
-Mengueri data berdasarkan `TargetKey`, yang merupakan metode praktis untuk parameter `filter`. Bidang spesifik untuk `TargetKey` dapat [dikonfigurasi](./collection.md#filtertargetkey) dalam `koleksi`, secara default adalah `primaryKey`.
+Query data berdasarkan `TargetKey`, adalah cara shortcut untuk parameter `filter`. Field spesifik untuk `TargetKey`,
+dapat [dikonfigurasi](./collection.md#filtertargetkey) di `Collection`, default adalah `primaryKey`.
 
 ```typescript
-// Secara default, menemukan catatan dengan id = 1
+// Pada keadaan default, mencari record dengan id 1
 repository.find({
   filterByTk: 1,
 });
@@ -442,27 +446,28 @@ repository.find({
 
 #### `fields: string[]`
 
-Kolom kueri, digunakan untuk mengontrol hasil bidang data. Setelah meneruskan parameter ini, hanya bidang yang ditentukan yang akan dikembalikan.
+Kolom query, digunakan untuk mengontrol hasil field data. Setelah memasukkan parameter ini, hanya akan mengembalikan field yang ditentukan.
 
 #### `except: string[]`
 
-Kolom yang dikecualikan, digunakan untuk mengontrol hasil bidang data. Setelah meneruskan parameter ini, bidang yang diteruskan tidak akan dikeluarkan.
+Kolom yang dikecualikan, digunakan untuk mengontrol hasil field data. Setelah memasukkan parameter ini, field yang dimasukkan tidak akan ditampilkan.
 
 #### `appends: string[]`
 
-Kolom tambahan, digunakan untuk memuat data terkait. Setelah meneruskan parameter ini, bidang asosiasi yang ditentukan juga akan dikeluarkan.
+Kolom yang ditambahkan, digunakan untuk memuat data asosiasi. Setelah memasukkan parameter ini, field asosiasi yang ditentukan akan ditampilkan bersamaan.
 
 #### `sort: string[] | string`
 
-Menentukan metode pengurutan untuk hasil kueri. Parameternya adalah nama bidang, yang secara default adalah urutan naik `asc`. Untuk urutan turun `desc`, tambahkan simbol `-` sebelum nama bidang, misalnya, `['-id', 'name']`, yang berarti urutkan berdasarkan `id desc, name asc`.
+Menentukan cara sorting hasil query, parameter yang dimasukkan adalah nama field, secara default sort ascending `asc`, jika perlu sort descending `desc`,
+dapat menambahkan tanda `-` di depan nama field, contoh: `['-id', 'name']`, artinya sort `id desc, name asc`.
 
 #### `limit: number`
 
-Membatasi jumlah hasil, sama dengan `limit` dalam `SQL`.
+Membatasi jumlah hasil, sama dengan `limit` di `SQL`
 
 #### `offset: number`
 
-Offset kueri, sama dengan `offset` dalam `SQL`.
+Offset query, sama dengan `offset` di `SQL`
 
 **Contoh**
 
@@ -482,9 +487,9 @@ const results = await posts.find({
 
 ### `findOne()`
 
-Mengueri satu data dari database yang memenuhi kriteria tertentu. Setara dengan Sequelize 中的 `Model.findOne()`.
+Query satu record dengan kondisi tertentu dari database. Setara dengan `Model.findOne()` di Sequelize.
 
-**Tanda Tangan**
+**Signature**
 
 - `async findOne(options?: FindOneOptions): Promise<Model | null>`
 
@@ -502,9 +507,9 @@ const result = await posts.findOne({
 
 ### `count()`
 
-Mengueri jumlah total entri data yang memenuhi kriteria tertentu dari database. Setara dengan Sequelize 中的 `Model.count()`.
+Query total jumlah data dengan kondisi tertentu dari database. Setara dengan `Model.count()` di Sequelize.
 
-**Tanda Tangan**
+**Signature**
 
 - `count(options?: CountOptions): Promise<number>`
 
@@ -532,9 +537,9 @@ const count = await books.count({
 
 ### `findAndCount()`
 
-Mengueri kumpulan data dan jumlah total hasil yang memenuhi kriteria tertentu dari database. Setara dengan Sequelize 中的 `Model.findAndCountAll()`.
+Query data set dan jumlah hasil dengan kondisi tertentu dari database. Setara dengan `Model.findAndCountAll()` di Sequelize.
 
-**Tanda Tangan**
+**Signature**
 
 - `async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]>`
 
@@ -550,13 +555,13 @@ type FindAndCountOptions = Omit<
 
 **Detail**
 
-Parameter kueri sama dengan `find()`. Nilai kembalian adalah sebuah array di mana elemen pertama adalah hasil kueri dan elemen kedua adalah jumlah total.
+Parameter query sama dengan `find()`. Nilai return adalah array, elemen pertama adalah hasil query, elemen kedua adalah total hasil.
 
 ### `create()`
 
-Memasukkan catatan baru ke dalam `koleksi`. Setara dengan Sequelize 中的 `Model.create()`. Ketika objek data yang akan dibuat membawa informasi tentang bidang relasi, catatan data relasi yang sesuai juga akan dibuat atau diperbarui.
+Insert satu record data baru ke tabel data. Setara dengan `Model.create()` di Sequelize. Saat objek data yang akan dibuat membawa informasi field relasi, akan sekaligus membuat atau update record data relasi yang sesuai.
 
-**Tanda Tangan**
+**Signature**
 
 - `async create<M extends Model>(options: CreateOptions): Promise<M>`
 
@@ -571,9 +576,9 @@ const result = await posts.create({
   values: {
     title: 'NocoBase 1.0 发布日志',
     tags: [
-      // Ketika nilai kunci utama tabel relasi ada, itu akan memperbarui data tersebut
+      // Saat ada nilai primary key tabel relasi, akan update data tersebut
       { id: 1 },
-      // Ketika tidak ada nilai kunci utama, itu akan membuat data baru
+      // Saat tidak ada nilai primary key, akan membuat data baru
       { name: 'NocoBase' },
     ],
   },
@@ -582,9 +587,9 @@ const result = await posts.create({
 
 ### `createMany()`
 
-Memasukkan beberapa catatan baru ke dalam `koleksi`. Setara dengan memanggil metode `create()` beberapa kali.
+Insert beberapa record data baru ke tabel data. Setara dengan memanggil method `create()` beberapa kali.
 
-**Tanda Tangan**
+**Signature**
 
 - `createMany(options: CreateManyOptions): Promise<Model[]>`
 
@@ -598,8 +603,8 @@ interface CreateManyOptions extends BulkCreateOptions {
 
 **Detail**
 
-- `records`: Sebuah array objek data untuk catatan yang akan dibuat.
-- `transaction`: Objek transaksi. Jika tidak ada parameter transaksi yang diteruskan, metode ini akan secara otomatis membuat transaksi internal.
+- `records`: Array objek data dari record yang akan dibuat.
+- `transaction`: Objek transaction. Jika tidak ada parameter transaction yang dimasukkan, method ini akan otomatis membuat transaction internal.
 
 **Contoh**
 
@@ -611,9 +616,9 @@ const results = await posts.createMany({
     {
       title: 'NocoBase 1.0 发布日志',
       tags: [
-        // Ketika nilai kunci utama tabel relasi ada, itu akan memperbarui data tersebut
+        // Saat ada nilai primary key tabel relasi, akan update data tersebut
         { id: 1 },
-        // Ketika tidak ada nilai kunci utama, itu akan membuat data baru
+        // Saat tidak ada nilai primary key, akan membuat data baru
         { name: 'NocoBase' },
       ],
     },
@@ -627,9 +632,9 @@ const results = await posts.createMany({
 
 ### `update()`
 
-Memperbarui data dalam `koleksi`. Setara dengan Sequelize 中的 `Model.update()`. Ketika objek data yang akan diperbarui membawa informasi tentang bidang relasi, catatan data relasi yang sesuai juga akan dibuat atau diperbarui.
+Update data di tabel data. Setara dengan `Model.update()` di Sequelize. Saat objek data yang akan diupdate membawa informasi field relasi, akan sekaligus membuat atau update record data relasi yang sesuai.
 
-**Tanda Tangan**
+**Signature**
 
 - `async update<M extends Model>(options: UpdateOptions): Promise<M>`
 
@@ -645,9 +650,9 @@ const result = await posts.update({
   values: {
     title: 'NocoBase 1.0 发布日志',
     tags: [
-      // Ketika nilai kunci utama tabel relasi ada, itu akan memperbarui data tersebut
+      // Saat ada nilai primary key tabel relasi, akan update data tersebut
       { id: 1 },
-      // Ketika tidak ada nilai kunci utama, itu akan membuat data baru
+      // Saat tidak ada nilai primary key, akan membuat data baru
       { name: 'NocoBase' },
     ],
   },
@@ -656,9 +661,9 @@ const result = await posts.update({
 
 ### `destroy()`
 
-Menghapus data dari `koleksi`. Setara dengan Sequelize 中的 `Model.destroy()`.
+Menghapus data di tabel data. Setara dengan `Model.destroy()` di Sequelize.
 
-**Tanda Tangan**
+**Signature**
 
 - `async destory(options?: TargetKey | TargetKey[] | DestoryOptions): Promise<number>`
 
@@ -675,7 +680,7 @@ interface DestroyOptions extends SequelizeDestroyOptions {
 
 **Detail**
 
-- `filter`: Menentukan kondisi filter untuk catatan yang akan dihapus. Untuk penggunaan Filter yang lebih detail, lihat metode [`find()`](#find).
-- `filterByTk`: Menentukan kondisi filter untuk catatan yang akan dihapus berdasarkan TargetKey.
-- `truncate`: Apakah akan mengosongkan data `koleksi`, efektif ketika tidak ada parameter `filter` atau `filterByTk` yang diteruskan.
-- `transaction`: Objek transaksi. Jika tidak ada parameter transaksi yang diteruskan, metode ini akan secara otomatis membuat transaksi internal.
+- `filter`: Menentukan kondisi filter untuk record yang akan dihapus. Untuk penggunaan detail Filter, lihat method [`find()`](#find).
+- `filterByTk`: Menentukan kondisi filter berdasarkan TargetKey untuk record yang akan dihapus.
+- `truncate`: Apakah mengosongkan data tabel, berlaku saat tidak ada parameter `filter` atau `filterByTk` yang dimasukkan.
+- `transaction`: Objek transaction. Jika tidak ada parameter transaction yang dimasukkan, method ini akan otomatis membuat transaction internal.

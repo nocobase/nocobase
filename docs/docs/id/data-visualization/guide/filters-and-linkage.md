@@ -1,25 +1,27 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Filter Halaman dan Linkage"
+description: "Blok Filter (Filter Block) memberikan input kondisi filter terpadu, secara otomatis digabung ke query Chart untuk mencapai filter konsisten dan refresh terhubung pada beberapa Chart, mendukung mode Builder/SQL."
+keywords: "filter halaman,Filter Block,linkage filter,linkage chart,filter beberapa chart,NocoBase"
+---
 
-# Filter Halaman dan Keterkaitan
+# Filter Halaman dan Linkage
 
-Filter halaman (Blok Filter) digunakan untuk menyediakan input kondisi filter yang terpadu di tingkat halaman, kemudian menggabungkannya ke dalam kueri bagan. Ini memungkinkan beberapa bagan difilter secara konsisten dan saling terkait.
+Filter halaman (Filter Block) digunakan untuk menyediakan input kondisi filter terpadu pada tingkat halaman, dan menggabungkannya ke query Chart, untuk mencapai filter konsisten dan linkage pada beberapa Chart.
 
 ## Ikhtisar Fitur
-- Tambahkan "Blok Filter" ke halaman untuk menyediakan titik masuk filter yang terpadu bagi semua bagan di halaman tersebut.
-- Gunakan tombol "Filter", "Reset", dan "Ciutkan" untuk menerapkan, menghapus, dan menyembunyikan filter.
-- Jika filter memilih bidang yang terkait dengan bagan, nilainya akan secara otomatis digabungkan ke dalam permintaan kueri bagan dan memicu pembaruan bagan.
-- Filter juga dapat membuat bidang kustom dan mendaftarkannya dalam variabel konteks, sehingga dapat direferensikan di bagan, tabel, formulir, dan blok data lainnya.
+- Tambahkan "Blok Filter" pada halaman untuk menyediakan entri filter terpadu untuk semua Chart pada halaman saat ini.
+- Lakukan operasi penerapan, pengosongan, dan penyembunyian melalui tombol "Filter", "Reset", "Lipat".
+- Jika field yang terkait dengan Chart dipilih pada filter, nilainya akan otomatis digabung ke permintaan query Chart, memicu refresh Chart.
+- Filter juga dapat membuat field kustom, mendaftarkan ke variabel konteks, dan dapat dirujuk pada blok data seperti Chart, tabel, formulir, dll.
 
 ![clipboard-image-1761487702](https://static-docs.nocobase.com/clipboard-image-1761487702.png)
 
-Untuk informasi lebih lanjut mengenai penggunaan filter halaman dan keterkaitannya dengan bagan atau blok data lainnya, silakan lihat dokumentasi Filter Halaman.
+Untuk informasi lebih lanjut tentang penggunaan filter halaman dan linkage dengan blok data seperti Chart, lihat dokumentasi Filter Halaman.
 
-## Menggunakan Nilai Filter Halaman dalam Kueri Bagan
+## Menggunakan Nilai Filter Halaman pada Query Chart
 - Mode Builder (direkomendasikan)
-  - Penggabungan Otomatis: Jika sumber data dan koleksi sama, Anda tidak perlu menulis variabel tambahan dalam kueri bagan; filter halaman akan digabungkan menggunakan `$and`.
-  - Pilihan Manual: Anda juga dapat secara manual memilih nilai dari "bidang kustom" Blok Filter halaman dalam kondisi filter bagan.
+  - Penggabungan otomatis: ketika sumber data dan koleksi sama, tidak perlu menulis variabel tambahan pada query Chart, filter halaman akan digabung dengan `$and`.
+  - Pemilihan manual: Anda juga dapat secara aktif memilih nilai "field kustom" dari filter halaman pada kondisi filter.
 
 - Mode SQL (melalui injeksi variabel)
-  - Dalam pernyataan SQL, gunakan "Pilih variabel" untuk menyisipkan nilai dari "bidang kustom" Blok Filter halaman.
+  - Pada statement SQL, "Pilih Variabel" untuk menyisipkan nilai "field kustom" dari filter halaman.

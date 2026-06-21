@@ -632,7 +632,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const category = await CategoryRepo.create({ values: { title: 'c1' } });
@@ -664,7 +667,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const category = await CategoryRepo.create({ values: { title: 'c1' } });
@@ -696,7 +702,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const post = await PostRepo.create({
@@ -725,7 +734,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const comments = await CommentRepo.create({ values: [{}] });
@@ -757,7 +769,10 @@ describe('workflow > triggers > collection', () => {
       });
 
       await workflow.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
 
       const tags = await TagRepo.create({ values: [{}] });
@@ -1096,7 +1111,7 @@ describe('workflow > triggers > collection', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(1000);
 
       const posts = await PostRepo.find();
       expect(posts.length).toBe(4);
@@ -1142,6 +1157,103 @@ describe('workflow > triggers > collection', () => {
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
       expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('does not rollback failed sync collection trigger by default', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'error',
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(1);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.ERROR);
+    });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'rolls back source operation when failed sync collection trigger is configured to rollback',
+      async () => {
+        const workflow = await WorkflowModel.create({
+          enabled: true,
+          type: 'collection',
+          sync: true,
+          config: {
+            mode: 1,
+            collection: 'posts',
+            rollbackOnFailure: true,
+          },
+        });
+
+        await workflow.createNode({
+          type: 'error',
+        });
+
+        await expect(
+          db.sequelize.transaction(async (transaction) => {
+            await PostRepo.create({ values: { title: 't1' }, transaction });
+          }),
+        ).rejects.toMatchObject({
+          message: 'System process failed, please contact administrator.',
+          status: 422,
+          code: 'WORKFLOW_ROLLBACK_ON_FAILURE',
+        });
+
+        const posts = await PostRepo.find();
+        expect(posts.length).toBe(0);
+
+        const executions = await workflow.getExecutions();
+        expect(executions.length).toBe(1);
+        expect(executions[0].status).toBe(EXECUTION_STATUS.ERROR);
+      },
+    );
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('translates rollback error by request locale', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+          rollbackOnFailure: true,
+        },
+      });
+
+      await workflow.createNode({
+        type: 'error',
+      });
+
+      const response = await agent
+        .set('X-Locale', 'zh-CN')
+        .resource('posts')
+        .create({
+          values: { title: 't1' },
+        });
+
+      expect(response.status).toBe(422);
+      expect(response.body.errors).toMatchObject([
+        {
+          message: '系统处理失败，请联系管理员。',
+          code: 'WORKFLOW_ROLLBACK_ON_FAILURE',
+        },
+      ]);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(0);
     });
   });
 
@@ -1284,6 +1396,180 @@ describe('workflow > triggers > collection', () => {
       if (anotherDataSource) {
         app.dataSourceManager.dataSources.set('another', anotherDataSource);
       }
+    });
+  });
+
+  describe('validation', () => {
+    it('create workflow without type should return 400', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('create workflow with unregistered type should return 400', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'not-exist',
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('create collection trigger workflow without config.mode should return 200', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'collection',
+          config: {
+            collection: 'posts',
+          },
+        },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('create collection trigger workflow with invalid mode should return 400', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'collection',
+          config: {
+            collection: 'posts',
+            mode: 0,
+          },
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('create collection trigger workflow with non-existent collection should return 400', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'collection',
+          config: {
+            collection: 'not_exist',
+          },
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('create collection trigger workflow with valid config should succeed', async () => {
+      const { status, body } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'collection',
+          config: {
+            collection: 'posts',
+          },
+        },
+      });
+      expect(status).toBe(200);
+      expect(body.data.type).toBe('collection');
+      expect(body.data.config.collection).toBe('posts');
+    });
+
+    it('update unexecuted workflow config with invalid collection should return 400', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const { status } = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 1,
+            collection: 'not_exist',
+          },
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('validate mode in update', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const res1 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 2,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res1.status).toBe(200);
+
+      const res2 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 3,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res2.status).toBe(200);
+
+      const res3 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 4,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res3.status).toBe(200);
+
+      const res4 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 0,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res4.status).toBe(400);
+
+      const res5 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: null,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res5.status).toBe(400);
+
+      const res6 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res6.status).toBe(200);
     });
   });
 });

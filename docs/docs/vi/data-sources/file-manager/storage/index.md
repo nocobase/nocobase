@@ -1,64 +1,65 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Storage Engine"
+description: "Storage engine cho field attachment: Local Storage, Aliyun OSS, Amazon S3, Tencent COS, S3 Pro, cấu hình title, đường dẫn, URL truy cập, v.v."
+keywords: "File Storage,Storage,OSS,S3,COS,Local Storage,Cloud storage,NocoBase"
+---
 
 # Tổng quan
 
-## Các công cụ tích hợp
+## Engine tích hợp sẵn
 
-Hiện tại, NocoBase hỗ trợ các loại công cụ tích hợp sau:
+Hiện tại các kiểu engine được NocoBase tích hợp sẵn như sau:
 
-- [Lưu trữ cục bộ](./local.md)
-- [Alibaba Cloud OSS](./aliyun-oss.md)
+- [Local Storage](./local.md)
+- [Aliyun OSS](./aliyun-oss.md)
 - [Amazon S3](./amazon-s3.md)
-- [Tencent Cloud COS](./tencent-cos.md)
+- [Tencent COS](./tencent-cos.md)
 
-Khi cài đặt hệ thống, một công cụ lưu trữ cục bộ sẽ được tự động thêm vào và có thể sử dụng ngay lập tức. Bạn cũng có thể thêm các công cụ mới hoặc chỉnh sửa các tham số của công cụ hiện có.
+Khi cài đặt hệ thống sẽ tự động thêm một Local Storage engine, có thể sử dụng trực tiếp. Cũng có thể thêm engine mới hoặc chỉnh sửa tham số của engine hiện có.
 
-## Các tham số chung của công cụ
+## Tham số chung của engine
 
-Ngoài các tham số đặc thù cho từng loại công cụ, các phần sau đây là các tham số chung (lấy ví dụ là lưu trữ cục bộ):
+Ngoài các tham số đặc thù của các loại engine khác nhau, các phần sau là tham số chung (lấy Local Storage làm ví dụ):
 
-![Ví dụ cấu hình công cụ lưu trữ tệp](https://static-docs.nocobase.com/20240529115151.png)
+![Ví dụ cấu hình Storage Engine](https://static-docs.nocobase.com/20240529115151.png)
 
-### Tiêu đề
+### Title
 
-Tên của công cụ lưu trữ, dùng để nhận diện.
+Tên của storage engine, dùng để nhận biết bằng mắt thường.
 
-### Tên hệ thống
+### System name
 
-Tên hệ thống của công cụ lưu trữ, dùng để hệ thống nhận diện. Tên này phải là duy nhất trong toàn hệ thống. Nếu để trống, hệ thống sẽ tự động tạo ngẫu nhiên.
+Tên hệ thống của storage engine, dùng để hệ thống nhận biết. Phải là duy nhất trong hệ thống, nếu không điền sẽ được hệ thống tự động sinh ngẫu nhiên.
 
-### URL cơ sở truy cập
+### Base URL truy cập
 
-Đây là phần tiền tố của địa chỉ URL để truy cập tệp từ bên ngoài. Nó có thể là URL cơ sở của CDN, ví dụ: “`https://cdn.nocobase.com/app`” (không cần dấu “`/`” ở cuối).
+Phần tiền tố URL có thể truy cập file ra bên ngoài, có thể là base URL truy cập của CDN, ví dụ: "`https://cdn.nocobase.com/app`" (không cần "`/`" ở cuối).
 
 ### Đường dẫn
 
-Đường dẫn tương đối được sử dụng khi lưu trữ tệp. Khi truy cập, phần này cũng sẽ được tự động nối vào URL cuối cùng. Ví dụ: “`user/avatar`” (không cần dấu “`/`” ở đầu hoặc cuối).
+Đường dẫn tương đối được dùng khi lưu trữ file, phần này cũng sẽ được tự động ghép vào URL cuối cùng khi truy cập. Ví dụ: "`user/avatar`" (không cần "`/`" ở đầu và cuối).
 
-### Giới hạn kích thước tệp
+### Giới hạn kích thước file
 
-Giới hạn kích thước cho các tệp được tải lên công cụ lưu trữ này. Các tệp vượt quá kích thước đã đặt sẽ không thể tải lên. Giới hạn mặc định của hệ thống là 20MB và có thể điều chỉnh tối đa lên đến 1GB.
+Giới hạn kích thước khi upload file vào storage engine này, file vượt quá kích thước cài đặt sẽ không thể upload. Giới hạn mặc định của hệ thống là 20MB, có thể điều chỉnh đến giới hạn tối đa là 1GB.
 
-### Loại tệp
+### Kiểu file
 
-Bạn có thể giới hạn các loại tệp được tải lên, sử dụng định dạng mô tả cú pháp [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types). Ví dụ: `image/*` đại diện cho các tệp hình ảnh. Nhiều loại có thể được phân tách bằng dấu phẩy, ví dụ: `image/*, application/pdf` để cho phép cả tệp hình ảnh và tệp PDF.
+Có thể giới hạn kiểu file được upload, sử dụng cú pháp [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types) để mô tả định dạng. Ví dụ: `image/*` đại diện cho file kiểu hình ảnh. Có thể sử dụng dấu phẩy để phân tách nhiều kiểu, ví dụ: `image/*, application/pdf` cho phép file kiểu hình ảnh và PDF.
 
-### Công cụ lưu trữ mặc định
+### Storage engine mặc định
 
-Khi được chọn, công cụ này sẽ được đặt làm công cụ lưu trữ mặc định của hệ thống. Khi một trường đính kèm hoặc **bộ sưu tập** tệp không chỉ định công cụ lưu trữ, tất cả các tệp được tải lên sẽ được lưu vào công cụ lưu trữ mặc định. Công cụ lưu trữ mặc định không thể xóa.
+Khi tích chọn sẽ đặt thành storage engine mặc định của hệ thống, khi field attachment hoặc file collection chưa chỉ định storage engine, file được upload sẽ được lưu vào storage engine mặc định. Storage engine mặc định không thể xóa.
 
-### Giữ lại tệp khi xóa bản ghi
+### Giữ lại file khi xóa bản ghi
 
-Khi được chọn, các tệp đã tải lên trong công cụ lưu trữ sẽ được giữ lại ngay cả khi các bản ghi dữ liệu trong bảng đính kèm hoặc **bộ sưu tập** tệp bị xóa. Theo mặc định, tùy chọn này không được chọn, nghĩa là các tệp trong công cụ lưu trữ sẽ bị xóa cùng với các bản ghi.
+Khi tích chọn, khi bản ghi của bảng attachments hoặc file collection bị xóa, vẫn giữ lại file đã upload trong storage engine. Mặc định không tích chọn, tức là file trong storage engine cũng sẽ bị xóa khi xóa bản ghi.
 
 :::info{title=Mẹo}
-Sau khi tệp được tải lên, đường dẫn truy cập cuối cùng sẽ được tạo thành từ việc nối ghép nhiều phần:
+Sau khi upload file, đường dẫn truy cập cuối cùng sẽ được ghép từ một số phần:
 
 ```
-<URL cơ sở truy cập>/<Đường dẫn>/<Tên tệp><Phần mở rộng>
+<Base URL truy cập>/<Đường dẫn>/<Tên file><Phần mở rộng>
 ```
 
 Ví dụ: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.

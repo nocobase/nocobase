@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Pengembangan Ekstensi Workflow"
+description: "Pengembangan ekstensi Workflow: memperluas tipe Trigger, memperluas tipe Node, referensi API, memperluas kemampuan Workflow dengan low-code."
+keywords: "Workflow,pengembangan ekstensi,Trigger kustom,Node kustom,low-code,NocoBase"
+---
 
 # Ikhtisar
 
-Fitur bawaan Alur Kerja tidak dapat mencakup semua skenario. Misalnya, jenis node bawaan tidak dapat mencakup setiap operasi yang mungkin dalam semua skenario bisnis. Oleh karena itu, kami juga menyediakan desain untuk memperluas Alur Kerja, termasuk memperluas jenis pemicu dan node. Dalam skenario bisnis di mana fitur bawaan tidak mencukupi, Anda dapat memperluasnya menggunakan metode low-code.
+Fitur bawaan Workflow tidak mungkin mencakup semua skenario, misalnya tipe Node bawaan tidak dapat menjabarkan setiap operasi dalam setiap skenario bisnis. Oleh karena itu, kami juga menyediakan desain untuk memperluas Workflow, termasuk memperluas tipe Trigger dan Node, dll. Dalam skenario bisnis di mana fitur bawaan tidak dapat memenuhi kebutuhan, Anda dapat menyelesaikannya melalui ekstensi low-code.
 
 Ekstensi terutama dibagi menjadi dua bagian:
 
-- [Memperluas Jenis Pemicu](./trigger.md)
-- [Memperluas Jenis Node](./node.md)
+- [Memperluas Tipe Trigger](./trigger.md)
+- [Memperluas Tipe Node](./node.md)
 
 ## Konten Lainnya
 

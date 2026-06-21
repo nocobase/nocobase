@@ -1,59 +1,52 @@
 ---
 pageType: home
 pageName: development
-
+title: "Panduan Pengembangan NocoBase"
+description: "Panduan pengembangan NocoBase: pengembangan plugin, FlowEngine, RunJS, ekstensi Block/Field/Action, ekstensi data source, ekstensi workflow, ekstensi autentikasi."
+keywords: "NocoBase,panduan pengembangan,pengembangan plugin,FlowEngine,RunJS,ekstensi NocoBase"
 features:
-  - title: Arsitektur Inti
-    details: Kuasai mekanisme ekstensi dasar dan prinsip kerja NocoBase, termasuk sistem plugin, FlowEngine, dan modul inti database, untuk membangun fondasi pengembangan yang kokoh.
+  - title: Pengembangan Inti
+    details: Kuasai mekanisme ekstensi mendasar dan kemampuan pengembangan tingkat lanjut NocoBase, termasuk sistem plugin, bantuan AI, FlowEngine, dan environment RunJS, untuk membangun fondasi pengembangan yang kokoh.
     items:
       - title: Pengembangan Plugin
         details: Pelajari cara membuat, menerbitkan, dan memelihara plugin kustom.
         link: /plugin-development
         showOnHome: true
-      - title: FlowEngine Frontend
-        details: Mesin pengembangan no-code/low-code frontend untuk NocoBase 2.0.
+      - title: Plugin Pengembangan AI
+        details: Gunakan AI untuk membantu pengembangan plugin NocoBase, mencakup seluruh proses dari scaffolding, kode komponen, hingga logika bisnis.
+        link: /ai-dev
+        showOnHome: true
+      - title: Frontend Flow Engine (FlowEngine)
+        details: Engine pengembangan no-code dan low-code frontend NocoBase 2.0.
         link: /flow-engine
         showOnHome: true
-      - title: Database
-        details: Modul database inti NocoBase, menyediakan API terpadu untuk akses data, pemodelan, dan operasi bagi plugin. Ini adalah fondasi inti untuk interaksi data antar plugin.
-        link: /database
-        showOnHome: true
-  - title: Antarmuka & Interaksi
-    details: Pelajari cara memperluas dan menyesuaikan antarmuka frontend, membangun komponen, bidang, dan logika tindakan yang sesuai dengan kebutuhan bisnis, serta meningkatkan visualisasi dan pengalaman interaktif sistem.
-    items:
-      - title: Blok
-        details: Buat, gunakan kembali, dan konfigurasikan komponen blok kustom untuk membangun tata letak antarmuka yang fleksibel.
-        link: /ui-development-block
-        showOnHome: true
-      - title: Bidang
-        details: Definisikan tipe komponen bidang baru untuk memperkaya metode input dan tampilan data.
-        link: /ui-development-field
-        showOnHome: true
-      - title: Tindakan
-        details: Perluas atau sesuaikan perilaku tindakan untuk mengimplementasikan beragam proses bisnis dan interaksi pengguna.
-        link: /ui-development-action
+      - title: Frontend RunJS
+        details: Environment eksekusi JavaScript untuk skenario JS Block, JS Field, JS Action, dan lainnya.
+        link: /runjs
         showOnHome: true
   - title: Ekosistem Plugin
-    details: Perluas kemampuan plugin yang ada melalui plugin lain, membangun ekosistem plugin yang hierarkis dan modular untuk meningkatkan ekstensibilitas dan kemampuan kolaborasi sistem.
+    details: Perluas kemampuan plugin yang ada melalui plugin, bangun sistem ekosistem plugin yang berlapis dan modular, serta tingkatkan skalabilitas dan kemampuan kolaborasi sistem.
     items:
-      - title: Ekstensi Sumber Data
-        details: Perluas atau integrasikan sumber data eksternal, sambungkan ke database atau layanan pihak ketiga, dan capai akses serta sinkronisasi data lintas sistem.
+      - title: Ekstensi Data Source
+        details: Perluas atau integrasikan data source eksternal, hubungkan ke database atau layanan pihak ketiga, untuk mewujudkan akses dan sinkronisasi data lintas sistem.
         link: /data-sources/development
-        showOnHome: true
-      - title: Ekstensi Alur Kerja
-        details: Perluas atau integrasikan fitur terkait alur kerja untuk mengimplementasikan skenario bisnis yang otomatis dan berorientasi proses.
+      - title: Ekstensi Workflow
+        details: Perluas atau integrasikan fitur terkait workflow, untuk mewujudkan skenario bisnis yang otomatis dan terprosesualisasi.
         link: /workflow/development
         showOnHome: true
-      - title: Ekstensi Saluran Notifikasi
-        details: Kembangkan metode notifikasi baru atau integrasikan layanan komunikasi eksternal untuk mendukung distribusi pesan multi-saluran.
+      - title: Ekstensi Channel Notifikasi
+        details: Kembangkan metode notifikasi baru atau integrasikan layanan komunikasi eksternal, mendukung distribusi pesan multi-channel.
         link: /notification-manager/development/extension
       - title: Ekstensi Autentikasi Pengguna
-        details: Implementasikan logika autentikasi kustom atau sambungkan dengan sistem login pihak ketiga untuk meningkatkan keamanan dan kemampuan akses.
+        details: Implementasikan logika autentikasi kustom atau hubungkan ke sistem login pihak ketiga, untuk meningkatkan keamanan dan kemampuan akses.
         link: /auth-verification/auth/dev
-      - title: Ekstensi Penyimpanan Berkas
-        details: Integrasikan layanan penyimpanan cloud atau solusi penyimpanan kustom untuk mencapai ekstensi fleksibel dalam unggah, unduh, dan manajemen berkas.
+      - title: Ekstensi Penyimpanan File
+        details: Integrasikan layanan cloud storage atau skema penyimpanan kustom, untuk mewujudkan ekstensi yang fleksibel pada upload, download, dan pengelolaan file.
         link: /file-manager/development
-      - title: Ekstensi Pratinjau Berkas
-        details: Perluas kemampuan pratinjau berkas untuk mendukung pratinjau dan rendering online untuk lebih banyak format berkas.
+      - title: Ekstensi Preview File
+        details: Perluas kemampuan preview file, mendukung preview dan rendering online untuk lebih banyak format file.
         link: /file-manager/development
+      - title: Ekstensi Knowledge Base
+        details: Hubungkan knowledge base eksternal atau layanan retrieval kustom untuk memperluas sumber retrieval RAG bagi AI employees.
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---

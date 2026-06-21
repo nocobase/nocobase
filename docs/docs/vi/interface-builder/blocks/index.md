@@ -1,60 +1,61 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tổng quan về Block"
+description: "Block trong xây dựng giao diện NocoBase: Data block, Filter block, Block khác, có thể đặt trong Trang, Modal, Drawer, hỗ trợ bố cục kéo thả, event flow, cấu hình tham số."
+keywords: "Block, Blocks, Data block, Filter block, bố cục kéo thả, event flow, xây dựng giao diện, NocoBase"
+---
 
+# Block
 
-# Khối
+Block là vật mang dữ liệu và nội dung, có thể được đặt trong Trang (Page), Modal hoặc Drawer, nhiều Block có thể được sắp xếp tự do bằng cách kéo thả.
 
-Khối là nơi chứa dữ liệu và nội dung. Chúng có thể được đặt trong trang (Page), hộp thoại (Modal) hoặc ngăn kéo (Drawer), và nhiều khối có thể được kéo thả, sắp xếp tự do.
+## Loại Block
 
-## Các Loại Khối
+![Loại Block](https://static-docs.nocobase.com/f71af45b5cd914ea0558f760ddbbba58.png)
 
-![Các Loại Khối](https://static-docs.nocobase.com/f71af45b5cd914ea0558f760ddbbba58.png)
+- Data block: Dùng để hiển thị dữ liệu từ nguồn dữ liệu trên giao diện.
+- Filter block: Dùng để lấy dữ liệu trong nguồn dữ liệu làm điều kiện lọc, kích hoạt lọc cho các Data block khác.
+- Block khác: Dùng để chứa các nội dung đặc thù hoặc độc lập như Workflow công việc cần làm, nhật ký kiểm tra, Markdown v.v.
 
-- Khối Dữ liệu: Dùng để hiển thị dữ liệu từ nguồn dữ liệu trên giao diện.
-- Khối Lọc: Dùng để lấy dữ liệu từ nguồn dữ liệu làm điều kiện lọc, sau đó lọc các khối dữ liệu khác.
-- Khối Khác: Dùng để chứa các nội dung đặc biệt hoặc độc lập như công việc cần làm của luồng công việc, nhật ký kiểm toán, Markdown, v.v.
+## Thêm Block
 
-## Thêm Khối
+Block có thể được đặt trong Trang (Page), Modal hoặc Drawer.
 
-Khối có thể được đặt trong trang (Page), hộp thoại (Modal) hoặc ngăn kéo (Drawer).
+### Block trong Trang
 
-### Khối trong Trang
-
-Hiện tại, các loại khối trong một trang bao gồm: Khối Dữ liệu, Khối Lọc và Khối Khác.
+Hiện tại các loại Block trong Trang bao gồm: Data block, Filter block, Block khác.
 
 ![20251023222441](https://static-docs.nocobase.com/20251023222441.png)
 
-### Khối trong Cửa sổ bật lên (Hộp thoại hoặc Ngăn kéo)
+### Block trong Popup (Modal hoặc Drawer)
 
-Cửa sổ bật lên có hai loại: hộp thoại và ngăn kéo. Giống như các trang, chúng cũng có thể được thêm khối vào. Sự khác biệt là các khối biểu mẫu trong cửa sổ bật lên thường dùng để thêm, chỉnh sửa hoặc xem một bản ghi duy nhất. Các loại khối bao gồm Khối Dữ liệu và Khối Khác.
+Popup có hai loại Modal và Drawer, giống như Trang cũng có thể thêm Block, sự khác biệt là Block Form trong Popup thường là để thêm, chỉnh sửa hoặc xem một bản ghi đơn lẻ, các loại Block bao gồm Data block, Block khác.
 
 ![20251023222613](https://static-docs.nocobase.com/20251023222613.png)
 
-## Trình thiết kế Khối
+## Trình thiết kế của Block
 
-Mỗi khối có ba biểu tượng nhỏ ở góc trên bên phải. Từ trái sang phải, chúng bao gồm:
+Mỗi Block ở góc trên bên phải đều có ba biểu tượng nhỏ, từ trái sang phải lần lượt là:
 
-1. Bố cục Kéo & Thả
-2. [Luồng Sự kiện](/interface-builder/event-flow)
-3. Cài đặt khối
+1. Bố cục kéo thả
+2. [Event flow](/interface-builder/event-flow)
+3. Cấu hình tham số Block
 
 ![20251023224032](https://static-docs.nocobase.com/20251023224032.png)
 
-Đối với các khối đơn giản, tất cả các tùy chọn cấu hình đều tập trung trong phần "Cài đặt khối", ví dụ như Khối JS.
+Tất cả các cấu hình của Block đơn giản đều tập trung trong "Cấu hình tham số Block", ví dụ JS Block
 
 ![20251023224903](https://static-docs.nocobase.com/20251023224903.png)
 
-Các khối dữ liệu phức tạp cũng cung cấp các tùy chọn nhúng độc lập như "Cấu hình trường" và "Cấu hình hành động".
+Block loại dữ liệu phức tạp còn cung cấp "Cấu hình Field" và "Cấu hình Action" được nhúng độc lập.
 
 ![20251023225141](https://static-docs.nocobase.com/20251023225141.png)
 
-Ngoài ra, bạn cũng có thể tùy chỉnh linh hoạt để tạo ra nhiều khả năng lồng ghép hơn, ví dụ như Khối Biểu đồ.
+Ngoài ra, bạn cũng có thể tự do phát huy, cung cấp nhiều khả năng lồng ghép hơn, ví dụ Block biểu đồ.
 
 ![](https://static-docs.nocobase.com/07588190b3f41ae3060e71d8b76b4447.png)
 
-## Bố cục Khối
+## Bố cục Block
 
-Bạn có thể điều chỉnh bố cục của nhiều khối bằng cách kéo thả.
+Nhiều Block có thể được điều chỉnh bố cục bằng cách kéo thả.
 
 ![20251029201501](https://static-docs.nocobase.com/20251029201501.gif)

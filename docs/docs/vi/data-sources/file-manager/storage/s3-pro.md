@@ -1,39 +1,45 @@
 ---
-pkg: "@nocobase/plugin-file-storage-s3-pro"
+title: "File Storage: S3 (Pro)"
+description: "S3 Pro storage engine, lưu trữ cấp doanh nghiệp tương thích với giao thức S3, hỗ trợ Endpoint tùy chỉnh và cấu hình nâng cao."
+keywords: "S3 Pro,Object Storage,Cloud storage,S3 compatible,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# File Storage: S3 (Pro)
 
-
-# Lưu trữ Tệp: S3 (Pro)
+<PluginInfo commercial="true" name="file-storage-s3-pro"></PluginInfo>
 
 ## Giới thiệu
 
-Dựa trên plugin quản lý tệp, phiên bản này bổ sung hỗ trợ các loại lưu trữ tệp tương thích với giao thức S3. Bất kỳ dịch vụ lưu trữ đối tượng nào hỗ trợ giao thức S3 đều có thể dễ dàng tích hợp, chẳng hạn như Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, MinIO, Cloudflare R2, v.v., giúp nâng cao khả năng tương thích và tính linh hoạt của các dịch vụ lưu trữ.
+Trên cơ sở plugin file management, hỗ trợ thêm kiểu file storage tương thích với giao thức S3. Bất kỳ dịch vụ object storage nào hỗ trợ giao thức S3 đều có thể dễ dàng tích hợp, ví dụ Amazon S3, Aliyun OSS, Tencent COS, MinIO, Cloudflare R2, v.v., nâng cao hơn nữa tính tương thích và linh hoạt của dịch vụ storage.
 
-## Tính năng nổi bật
+## Đặc điểm chức năng
 
-1.  **Tải lên từ máy khách:** Quá trình tải tệp không cần thông qua máy chủ NocoBase mà kết nối trực tiếp với dịch vụ lưu trữ tệp, mang lại trải nghiệm tải lên hiệu quả và nhanh chóng hơn.
-2.  **Truy cập riêng tư:** Khi truy cập tệp, tất cả các URL đều là địa chỉ ủy quyền tạm thời đã được ký, đảm bảo tính bảo mật và thời hạn của việc truy cập tệp.
+1. Upload phía client: Quá trình upload file không cần đi qua server NocoBase, kết nối trực tiếp với dịch vụ file storage, đem lại trải nghiệm upload hiệu quả và nhanh hơn.
+    
+2. Truy cập riêng tư: Khi truy cập file, tất cả URL đều là địa chỉ ủy quyền tạm thời được ký, đảm bảo tính bảo mật và thời hạn của việc truy cập file.
 
-## Trường hợp sử dụng
 
-1.  **Quản lý bảng tệp:** Tập trung quản lý và lưu trữ tất cả các tệp đã tải lên, hỗ trợ nhiều loại tệp và phương thức lưu trữ khác nhau, thuận tiện cho việc phân loại và tìm kiếm tệp.
-2.  **Lưu trữ trường đính kèm:** Dùng để lưu trữ dữ liệu đính kèm được tải lên thông qua biểu mẫu hoặc bản ghi, hỗ trợ liên kết với các bản ghi dữ liệu cụ thể.
+## Tình huống sử dụng
 
-## Cấu hình plugin
+1. **Quản lý File Collection**: Quản lý và lưu trữ tập trung tất cả file được upload, hỗ trợ nhiều kiểu file và cách lưu trữ, thuận tiện cho việc phân loại và tìm kiếm file.
+    
+2. **Lưu trữ Field Attachment**: Dùng để lưu trữ dữ liệu attachment được upload trong form hoặc bản ghi, hỗ trợ liên kết với bản ghi dữ liệu cụ thể.
+  
 
-1.  Bật plugin `plugin-file-storage-s3-pro`.
-2.  Truy cập "Cài đặt -> Quản lý Tệp" để vào phần cài đặt quản lý tệp.
-3.  Nhấp vào nút "Thêm mới" và chọn "S3 Pro".
+## Cấu hình Plugin
+
+1. Bật plugin plugin-file-storage-s3-pro
+    
+2. Nhấn "Setting -> FileManager" để vào cài đặt File Manager
+
+3. Nhấn nút "Add new", chọn "S3 Pro"
 
 ![](https://static-docs.nocobase.com/20250102160704938.png)
 
-4.  Trong cửa sổ bật lên, bạn sẽ thấy một biểu mẫu chi tiết cần điền. Vui lòng tham khảo tài liệu tiếp theo để lấy các thông số liên quan cho dịch vụ tệp của bạn và điền chính xác vào biểu mẫu.
+4. Sau khi popup hiện ra, bạn sẽ thấy nội dung form cần điền khá nhiều. Có thể tham khảo tài liệu sau, lấy thông tin tham số liên quan đến dịch vụ file tương ứng, và điền đúng vào form.
 
 ![](https://static-docs.nocobase.com/20250413190828536.png)
+
 
 ## Cấu hình nhà cung cấp dịch vụ
 
@@ -41,12 +47,13 @@ Dựa trên plugin quản lý tệp, phiên bản này bổ sung hỗ trợ các
 
 #### Tạo Bucket
 
-1.  Truy cập [Bảng điều khiển Amazon S3](https://ap-southeast-1.console.aws.amazon.com/s3/home).
-2.  Nhấp vào nút "Create bucket" ở phía bên phải.
+1. Mở https://ap-southeast-1.console.aws.amazon.com/s3/home để vào S3 Console
+    
+2. Nhấn nút "Create bucket" bên phải
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355969452.png)
 
-3.  Điền `Bucket Name` (Tên Bucket), các trường khác có thể giữ nguyên cài đặt mặc định, cuộn xuống cuối trang và nhấp vào nút **"Create"** để hoàn tất quá trình tạo.
+2. Điền Bucket Name (tên bucket), các field khác có thể giữ cài đặt mặc định, cuộn xuống cuối trang, nhấn nút **"Create"** để hoàn tất việc tạo.
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355969622.png)
 
@@ -54,18 +61,18 @@ Dựa trên plugin quản lý tệp, phiên bản này bổ sung hỗ trợ các
 
 #### Cấu hình CORS
 
-1.  Trong danh sách các bucket, tìm và nhấp vào bucket vừa tạo để truy cập trang chi tiết của nó.
+1. Vào danh sách buckets, tìm và nhấn vào Bucket vừa tạo để vào trang chi tiết của nó
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355969980.png)
 
-2.  Chuyển đến tab "Permission" và cuộn xuống phần cấu hình CORS.
+2. Nhấn tab "Permission", sau đó cuộn xuống tìm phần cấu hình CORS
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970155.png)
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970303.png)
 
-3.  Nhập cấu hình sau (có thể tùy chỉnh nếu cần) và lưu lại.
-
+3. Điền cấu hình sau (có thể tinh chỉnh chi tiết), và lưu
+    
 ```json
 [
     {
@@ -89,209 +96,220 @@ Dựa trên plugin quản lý tệp, phiên bản này bổ sung hỗ trợ các
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970494.png)
 
-#### Lấy AccessKey và SecretAccessKey
+#### Lấy AccessKey, SecretAccessKey
 
-1.  Nhấp vào nút "Security credentials" ở góc trên bên phải.
+1. Nhấn nút "Security credentials" ở góc trên bên phải trang
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970651.png)
 
-2.  Cuộn xuống phần "Access Keys" và nhấp vào "Create Access Key."
+2. Cuộn xuống, tìm phần "Access Keys", nhấn nút "Create Access Key".
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970832.png)
 
-3.  Đồng ý với các điều khoản (khuyến nghị sử dụng IAM cho môi trường sản xuất).
+3. Nhấn Đồng ý (đây là demo cho main account, khuyến nghị sử dụng IAM trong môi trường chính thức).
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970996.png)
 
-4.  Lưu lại Access Key và Secret Access Key được hiển thị.
+4. Lưu Access key và Secret access key được hiển thị trên trang
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971168.png)
 
 #### Lấy và cấu hình tham số
 
-1.  `AccessKey ID` và `AccessKey Secret` là các giá trị bạn đã lấy được ở bước trước, vui lòng điền chính xác.
-2.  Truy cập bảng thuộc tính của bucket để tìm `Bucket Name` và `Region` (Khu vực).
+1. AccessKey ID và AccessKey Secret là các giá trị tương ứng bạn đã lấy được trong bước trước, vui lòng điền chính xác
+    
+2. Vào panel properties của trang chi tiết bucket, bạn có thể lấy được thông tin Bucket name và Region.
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971345.png)
 
-#### Truy cập công khai (Tùy chọn)
+#### Truy cập công khai (tùy chọn)
 
-Đây là cấu hình không bắt buộc. Hãy cấu hình khi bạn cần làm cho các tệp đã tải lên hoàn toàn công khai.
+Đây là cấu hình không bắt buộc, hãy cấu hình khi bạn cần công khai hoàn toàn file đã upload
 
-1.  Trong bảng Permissions, cuộn xuống "Object Ownership", nhấp vào "Edit", và bật ACLs.
+1. Vào panel Permissions, cuộn xuống Object Ownership, nhấn edit, bật ACLs
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971508.png)
 
-2.  Cuộn xuống "Block public access", nhấp vào "Edit", và đặt thành cho phép kiểm soát ACL.
+2. Cuộn đến Block public access, nhấn edit, đặt thành cho phép ACLs control
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971668.png)
 
-3.  Chọn "Public access" trong NocoBase.
+3. Trong NocoBase tích chọn Public access
 
-#### Cấu hình hình thu nhỏ (Tùy chọn)
 
-Cấu hình này là tùy chọn và nên được sử dụng khi bạn cần tối ưu hóa kích thước hoặc hiệu ứng xem trước hình ảnh. **Xin lưu ý, việc triển khai này có thể phát sinh thêm chi phí. Để biết thêm chi tiết, vui lòng tham khảo các điều khoản và giá của AWS.**
+#### Cấu hình Thumbnail (tùy chọn)
 
-1.  Truy cập [Chuyển đổi hình ảnh động cho Amazon CloudFront](https://aws.amazon.com/solutions/implementations/dynamic-image-transformation-for-amazon-cloudfront/?nc1=h_ls).
+Cấu hình này là tùy chọn, dùng khi cần tối ưu kích thước hoặc hiệu ứng preview hình ảnh. **Lưu ý, phương án triển khai này có thể phát sinh chi phí phụ, chi phí cụ thể vui lòng tham khảo các điều khoản liên quan của AWS.**
 
-2.  Nhấp vào nút `Launch in the AWS Console` ở cuối trang để bắt đầu triển khai.
+1. Truy cập [Dynamic Image Transformation for Amazon CloudFront](https://aws.amazon.com/solutions/implementations/dynamic-image-transformation-for-amazon-cloudfront/?nc1=h_ls).
 
-![](https://static-docs.nocobase.com/20250221164214117.png)
+2. Nhấn nút `Launch in the AWS Console` ở cuối trang, bắt đầu triển khai phương án.
+   ![](https://static-docs.nocobase.com/20250221164214117.png)
 
-3.  Làm theo hướng dẫn để hoàn tất cấu hình. Các tùy chọn sau đây cần được đặc biệt chú ý:
-    1.  Khi tạo stack, bạn cần chỉ định tên bucket Amazon S3 chứa các hình ảnh nguồn. Vui lòng nhập tên bucket bạn đã tạo trước đó.
-    2.  Nếu bạn chọn triển khai giao diện người dùng demo, sau khi triển khai, bạn có thể sử dụng giao diện người dùng đó để kiểm tra chức năng xử lý hình ảnh. Trong bảng điều khiển AWS CloudFormation, chọn stack của bạn, chuyển đến tab "Outputs", tìm giá trị tương ứng với khóa `DemoUrl`, và nhấp vào liên kết để mở giao diện demo.
-    3.  Giải pháp này sử dụng thư viện Node.js `sharp` để xử lý hình ảnh hiệu quả. Bạn có thể tải mã nguồn từ kho GitHub và tùy chỉnh theo nhu cầu.
+3. Hoàn tất cấu hình theo hướng dẫn, các tùy chọn sau cần đặc biệt chú ý:
+   1. Khi tạo stack, bạn cần chỉ định một tên Amazon S3 bucket chứa hình ảnh nguồn. Vui lòng điền tên bucket bạn đã tạo trước đó.
+   2. Nếu bạn chọn triển khai demo UI, sau khi triển khai xong có thể test chức năng xử lý hình ảnh thông qua giao diện này. Trong AWS CloudFormation Console, chọn stack của bạn, vào tab "Outputs", tìm giá trị tương ứng với key DemoUrl, nhấn link đó để mở giao diện demo.
+   3. Phương án này sử dụng thư viện `sharp` Node.js để xử lý hình ảnh hiệu quả. Bạn có thể tải mã nguồn từ GitHub repo, tùy chỉnh theo nhu cầu.
+   
+   ![](https://static-docs.nocobase.com/20250221164315472.png)
+   ![](https://static-docs.nocobase.com/20250221164404755.png)
 
-![](https://static-docs.nocobase.com/20250221164315472.png)
+4. Sau khi cấu hình xong, đợi trạng thái triển khai chuyển thành `CREATE_COMPLETE` là được.
 
-![](https://static-docs.nocobase.com/20250221164404755.png)
-
-4.  Sau khi cấu hình hoàn tất, đợi trạng thái triển khai chuyển sang `CREATE_COMPLETE`.
-
-5.  Trong cấu hình NocoBase, vui lòng lưu ý những điều sau:
-    1.  `Thumbnail rule`: Điền các tham số xử lý hình ảnh, ví dụ: `?width=100`. Để biết chi tiết, tham khảo [tài liệu AWS](https://docs.aws.amazon.com/solutions/latest/serverless-image-handler/use-supported-query-param-edits.html).
-    2.  `Access endpoint`: Nhập giá trị từ Outputs -> ApiEndpoint sau khi triển khai.
-    3.  `Full access URL style`: Chọn **Ignore** (vì tên bucket đã được điền trong cấu hình, nên không cần thiết khi truy cập).
-
-![](https://static-docs.nocobase.com/20250414152135514.png)
+5. Trong cấu hình NocoBase, có một số lưu ý sau:
+   1. `Thumbnail rule`: Điền tham số liên quan đến xử lý hình ảnh, ví dụ `?width=100`. Cụ thể có thể tham khảo [Tài liệu AWS](https://docs.aws.amazon.com/solutions/latest/serverless-image-handler/use-supported-query-param-edits.html).
+   2. `Access endpoint`: Điền giá trị Outputs -> ApiEndpoint sau khi triển khai.
+   3. `Full access URL style`: Cần tích chọn **Ignore** (vì đã điền tên bucket khi cấu hình, không cần khi truy cập).
+   
+   ![](https://static-docs.nocobase.com/20250414152135514.png)
 
 #### Ví dụ cấu hình
 
 ![](https://static-docs.nocobase.com/20250414152344959.png)
 
-### Alibaba Cloud OSS
+
+### Aliyun OSS
 
 #### Tạo Bucket
 
-1.  Mở [Bảng điều khiển OSS](https://oss.console.aliyun.com/overview).
+1. Mở OSS Console https://oss.console.aliyun.com/overview
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355972149.png)
 
-2.  Chọn "Buckets" từ menu bên trái và nhấp vào "Create Bucket" để bắt đầu tạo bucket.
+2. Nhấn vào "Buckets" trong menu bên trái, sau đó nhấn nút "Create Bucket" để bắt đầu tạo bucket
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355972413.png)
 
-3.  Điền thông tin chi tiết về bucket và nhấp vào "Create".
-    1.  `Bucket Name`: Chọn tên phù hợp với nhu cầu kinh doanh của bạn.
-    2.  `Region`: Chọn khu vực gần nhất với người dùng của bạn.
-    3.  Các cài đặt khác có thể giữ nguyên mặc định hoặc tùy chỉnh theo nhu cầu.
+3. Điền thông tin liên quan đến bucket, cuối cùng nhấn nút Create
+    
+    1. Bucket Name phù hợp với business của bạn, tên tùy ý
+        
+    2. Region chọn region gần nhất với người dùng của bạn
+        
+    3. Nội dung khác có thể mặc định, hoặc tự cấu hình theo nhu cầu
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355972730.png)
 
+
 #### Cấu hình CORS
 
-1.  Truy cập trang chi tiết của bucket bạn vừa tạo.
+1. Vào trang chi tiết bucket vừa tạo
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355973018.png)
 
-2.  Nhấp vào "Content Security -> CORS" trong menu giữa.
+2. Nhấn vào "Content Security -> CORS" trong menu giữa
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355973319.png)
 
-3.  Nhấp vào nút "Create Rule", điền các trường liên quan, cuộn xuống và nhấp "OK". Bạn có thể tham khảo ảnh chụp màn hình bên dưới hoặc cấu hình chi tiết hơn.
+3. Nhấn nút "Create Rule", và điền nội dung liên quan, cuộn xuống dưới nhấn "OK". Có thể tham khảo screenshot bên dưới, hoặc thiết lập chi tiết hơn
 
 ![](https://static-docs.nocobase.com/20250219171042784.png)
 
-#### Lấy AccessKey và SecretAccessKey
+#### Lấy AccessKey, SecretAccessKey
 
-1.  Nhấp vào "AccessKey" dưới ảnh đại diện tài khoản của bạn ở góc trên bên phải.
+1. Nhấn "AccessKey" bên dưới avatar góc trên bên phải
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355973884.png)
 
-2.  Để tiện minh họa, chúng tôi sẽ tạo AccessKey bằng tài khoản chính. Trong môi trường sản xuất, khuyến nghị sử dụng RAM để tạo AccessKey. Để biết hướng dẫn, vui lòng tham khảo [tài liệu Alibaba Cloud](https://help.aliyun.com/zh/ram/user-guide/create-an-accesskey-pair-1?spm=5176.28366559.0.0.1b5c3c2fUI9Ql8#section-rjh-18m-7kp).
-3.  Nhấp vào nút "Create AccessKey".
+2. Để tiện demo, sử dụng main account để tạo AccessKey, trong tình huống sử dụng chính thức khuyến nghị dùng RAM để tạo, có thể tham khảo https://help.aliyun.com/zh/ram/user-guide/create-an-accesskey-pair-1?spm=5176.28366559.0.0.1b5c3c2fUI9Ql8#section-rjh-18m-7kp
+    
+3. Nhấn nút "Create AccessKey"
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355974171.png)
 
-4.  Hoàn tất xác minh tài khoản.
+4. Tiến hành xác minh tài khoản
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355974509.png)
 
-5.  Lưu lại Access Key và Secret Access Key được hiển thị.
+5. Lưu Access key và Secret access key được hiển thị trên trang
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355974781.png)
 
+
 #### Lấy và cấu hình tham số
 
-1.  `AccessKey ID` và `AccessKey Secret` là các giá trị lấy được ở bước trước.
-2.  Truy cập trang chi tiết bucket để lấy tên `Bucket`.
+1. AccessKey ID và AccessKey Secret là các giá trị đã lấy được trong bước trước
+    
+2. Vào trang chi tiết bucket, lấy được Bucket
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355975063.png)
 
-3.  Cuộn xuống để lấy `Region` (không cần phần ".aliyuncs.com" phía sau).
+3. Cuộn xuống, lấy được Region (phần ".aliyuncs.com" phía sau không cần)
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355975437.png)
 
-4.  Lấy địa chỉ endpoint và thêm tiền tố `https://` khi điền vào NocoBase.
+4. Lấy được địa chỉ endpoint, khi điền vào NocoBase cần thêm tiền tố https://
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355975715.png)
 
-#### Cấu hình hình thu nhỏ (Tùy chọn)
+#### Cấu hình Thumbnail (tùy chọn)
 
-Cấu hình này là tùy chọn và chỉ nên được sử dụng khi tối ưu hóa kích thước hoặc hiệu ứng xem trước hình ảnh.
+Cấu hình này là tùy chọn, chỉ dùng khi cần tối ưu kích thước hoặc hiệu ứng preview hình ảnh.
 
-1.  Điền các tham số liên quan cho `Thumbnail rule`. Để biết cài đặt tham số cụ thể, tham khảo tài liệu Alibaba Cloud về [Xử lý hình ảnh](https://help.aliyun.com/zh/oss/user-guide/img-parameters/?spm=a2c4g.11186623.help-menu-31815.d_4_14_1_1.170243033CdbSm&scm=20140722.H_144582._.OR_help-T_cn~zh-V_1).
+1. Điền tham số liên quan `Thumbnail rule`. Cài đặt tham số cụ thể có thể tham khảo [Tham số xử lý hình ảnh](https://help.aliyun.com/zh/oss/user-guide/img-parameters/?spm=a2c4g.11186623.help-menu-31815.d_4_14_1_1.170243033CdbSm&scm=20140722.H_144582._.OR_help-T_cn~zh-V_1).
 
-2.  Giữ cài đặt `Full upload URL style` và `Full access URL style` giống nhau.
+2. `Full upload URL style` và `Full access URL style` giữ giống nhau là được.
 
 #### Ví dụ cấu hình
 
 ![](https://static-docs.nocobase.com/20250414152525600.png)
 
+
 ### MinIO
 
 #### Tạo Bucket
 
-1.  Nhấp vào menu **Buckets** ở bên trái -> Nhấp vào **Create Bucket** để mở trang tạo.
-2.  Điền tên Bucket, sau đó nhấp vào nút **Save**.
+1. Nhấn menu Buckets bên trái -> Nhấn Create Bucket, vào trang tạo
+2. Sau khi điền tên Bucket, nhấn nút save
+#### Lấy AccessKey, SecretAccessKey
 
-#### Lấy AccessKey và SecretAccessKey
-
-1.  Truy cập **Access Keys** -> Nhấp vào nút **Create access key** để mở trang tạo.
+1. Vào Access Keys -> Nhấn nút Create access key, vào trang tạo
 
 ![](https://static-docs.nocobase.com/20250106111922957.png)
 
-2.  Nhấp vào nút **Save**.
+2. Nhấn nút save
 
 ![](https://static-docs.nocobase.com/20250106111850639.png)
 
-3.  Lưu lại **Access Key** và **Secret Key** từ cửa sổ bật lên để cấu hình sau này.
+1. Lưu Access Key và Secret Key trong popup, dùng cho cấu hình sau
 
 ![](https://static-docs.nocobase.com/20250106112831483.png)
 
 #### Cấu hình tham số
 
-1.  Truy cập trang **Quản lý tệp** trong NocoBase.
+1. Vào trang NocoBase -> File manager
 
-2.  Nhấp vào nút **Thêm mới** và chọn **S3 Pro**.
+2. Nhấn nút Add new, chọn S3 Pro
 
-3.  Điền vào biểu mẫu:
-    *   **AccessKey ID** và **AccessKey Secret**: Sử dụng các giá trị đã lưu từ bước trước.
-    *   **Region**: MinIO được triển khai riêng không có khái niệm khu vực; bạn có thể đặt là `"auto"`.
-    *   **Endpoint**: Nhập tên miền hoặc địa chỉ IP của dịch vụ đã triển khai của bạn.
-    *   Cần đặt `Full access URL style` thành `Path-Style`.
+3. Điền form
+   - **AccessKey ID** và **AccessKey Secret** là văn bản đã lưu ở bước trước
+   - **Region**: MinIO triển khai riêng tư không có khái niệm Region, có thể cấu hình thành "auto"
+   - **Endpoint**: Điền domain hoặc địa chỉ ip dịch vụ đã triển khai
+   - Cần đặt Full access URL style thành Path-Style
 
 #### Ví dụ cấu hình
 
 ![](https://static-docs.nocobase.com/20250414152700671.png)
 
+
 ### Tencent COS
 
-Bạn có thể tham khảo cấu hình cho các dịch vụ tệp ở trên. Logic tương tự.
+Có thể tham khảo cấu hình các dịch vụ file ở trên, logic tương tự
 
 #### Ví dụ cấu hình
 
 ![](https://static-docs.nocobase.com/20250414153252872.png)
 
+
 ### Cloudflare R2
 
-Bạn có thể tham khảo cấu hình cho các dịch vụ tệp ở trên. Logic tương tự.
+Có thể tham khảo cấu hình các dịch vụ file ở trên, logic tương tự
 
 #### Ví dụ cấu hình
 
 ![](https://static-docs.nocobase.com/20250414154500264.png)
 
-## Hướng dẫn sử dụng
 
-Tham khảo tài liệu [plugin quản lý tệp](/data-sources/file-manager/).
+## Sử dụng cho người dùng
+
+Tham khảo cách dùng plugin file-manager https://docs.nocobase.com/data-sources/file-manager/

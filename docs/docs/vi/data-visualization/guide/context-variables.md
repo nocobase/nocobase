@@ -1,25 +1,26 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Biến Context"
+description: "Tái sử dụng các biến context như ctx.user, ctx.page, giá trị filter trong truy vấn dữ liệu, cấu hình biểu đồ và sự kiện tương tác để render biểu đồ và liên kết theo context."
+keywords: "biến context,ctx.user,ctx.page,biến filter,{{biến}},trực quan hóa dữ liệu,NocoBase"
+---
 
+# Sử dụng biến môi trường Context
 
-# Sử dụng biến ngữ cảnh
-
-Với biến ngữ cảnh, bạn có thể sử dụng lại thông tin từ trang hiện tại, người dùng, thời gian, điều kiện lọc, v.v., để hiển thị biểu đồ và liên kết dữ liệu theo ngữ cảnh.
+Thông qua biến môi trường context, bạn có thể trực tiếp tái sử dụng các thông tin như trang/người dùng/thời gian/điều kiện lọc hiện tại để render biểu đồ và liên kết theo context.
 
 ## Phạm vi áp dụng
-- Truy vấn dữ liệu ở chế độ Builder: chọn biến để sử dụng cho các điều kiện lọc.
+- Điều kiện lọc của chế độ Builder trong truy vấn dữ liệu, chọn biến để sử dụng.
 ![clipboard-image-1761486073](https://static-docs.nocobase.com/clipboard-image-1761486073.png)
 
-- Truy vấn dữ liệu ở chế độ SQL: khi viết câu lệnh, chọn biến và chèn biểu thức (ví dụ: `{{ ctx.user.id }}`).
+- Viết câu lệnh trong chế độ SQL của truy vấn dữ liệu, chọn biến để chèn biểu thức (ví dụ `{{ ctx.user.id }}`).
 ![clipboard-image-1761486145](https://static-docs.nocobase.com/clipboard-image-1761486145.png)
 
-- Tùy chọn biểu đồ ở chế độ Custom: viết trực tiếp các biểu thức JS.
+- Chế độ Custom của tùy chọn biểu đồ trực tiếp viết biểu thức JS.
 ![clipboard-image-1761486604](https://static-docs.nocobase.com/clipboard-image-1761486604.png)
 
-- Sự kiện tương tác (ví dụ: nhấp để mở hộp thoại chi tiết và truyền dữ liệu): viết trực tiếp các biểu thức JS.
+- Sự kiện tương tác (ví dụ click drill-down mở popup truyền dữ liệu), trực tiếp viết biểu thức JS.
 ![clipboard-image-1761486683](https://static-docs.nocobase.com/clipboard-image-1761486683.png)
 
 **Lưu ý:**
-- Không đặt `{{ ... }}` trong dấu nháy đơn hoặc kép; khi liên kết, hệ thống sẽ xử lý an toàn dựa trên kiểu dữ liệu của biến (chuỗi, số, thời gian, NULL).
-- Khi biến là `NULL` hoặc chưa được định nghĩa, vui lòng xử lý rõ ràng logic giá trị null trong SQL bằng cách sử dụng `COALESCE(...)` hoặc `IS NULL`.
+- Không thêm dấu nháy đơn/đôi cho `{{ ... }}`; khi binding hệ thống sẽ xử lý an toàn dựa trên loại biến (chuỗi, số, thời gian, NULL).
+- Khi biến là `NULL` hoặc chưa định nghĩa, vui lòng sử dụng `COALESCE(...)` hoặc `IS NULL` trong SQL để xử lý logic giá trị rỗng một cách rõ ràng.

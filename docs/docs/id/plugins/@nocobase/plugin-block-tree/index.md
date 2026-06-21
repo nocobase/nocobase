@@ -1,17 +1,16 @@
 ---
-displayName: "Blok: Pohon"
+displayName: "Block: Tree"
 packageName: '@nocobase/plugin-block-tree'
+title: "Block: Tree"
+keywords: "Block: Tree,plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Menyediakan blok filter dengan struktur pohon.
-isFree: false
-builtIn: false
+  Menyediakan Block filter dengan struktur tree.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Pohon
+# Block: Tree

@@ -6,7 +6,7 @@
   {
     "type": "custom-link",
     "label": "Visión general",
-    "link": "/workflow/index"
+    "link": "/workflow/"
   },
   {
     "type": "custom-link",
@@ -21,36 +21,36 @@
       {
         "type": "custom-link",
         "label": "Visión general",
-        "link": "/workflow/triggers/index"
+        "link": "/workflow/triggers/"
       },
       {
         "type": "custom-link",
-        "label": "Eventos de tabla de datos",
+        "label": "Evento de colección",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "Tareas programadas",
+        "label": "Tarea programada",
         "link": "/workflow/triggers/schedule"
       },
       {
         "type": "custom-link",
-        "label": "Evento pre-acción",
+        "label": "Evento previo a la acción",
         "link": "/workflow/triggers/pre-action"
       },
       {
         "type": "custom-link",
-        "label": "Evento post-acción",
+        "label": "Evento posterior a la acción",
         "link": "/workflow/triggers/post-action"
       },
       {
         "type": "custom-link",
-        "label": "Evento de acción personalizado",
+        "label": "Evento de acción personalizada",
         "link": "/workflow/triggers/custom-action"
       },
       {
         "type": "custom-link",
-        "label": "Aprobaciones",
+        "label": "Aprobación",
         "link": "/workflow/triggers/approval"
       },
       {
@@ -68,16 +68,79 @@
       {
         "type": "custom-link",
         "label": "Visión general",
-        "link": "/workflow/nodes/index"
+        "link": "/workflow/nodes/"
       },
       {
         "type": "custom-link",
-        "label": "Inteligencia Artificial (AI)",
+        "label": "Inteligencia artificial",
         "items": [
           {
             "type": "custom-link",
-            "label": "Modelo Lingüístico Grande (LLM)",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
+            "label": "Nodos LLM",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Chat de texto",
+                "link": "/ai-employees/workflow/nodes/llm/chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Chat multimodal",
+                "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+              },
+              {
+                "type": "custom-link",
+                "label": "Salida estructurada",
+                "link": "/ai-employees/workflow/nodes/llm/structured-output"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Nodos de empleado de IA",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Configuración de nodos",
+                "link": "/ai-employees/workflow/nodes/employee/configuration"
+              },
+              {
+                "type": "custom-link",
+                "label": "Aprobación de nodos",
+                "link": "/ai-employees/workflow/nodes/employee/approval"
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "Base de conocimientos de IA",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Resumen",
+                "link": "/ai-employees/workflow/nodes/knowledge/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Crear documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Actualizar documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Eliminar documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+              },
+              {
+                "type": "custom-link",
+                "label": "Recuperar documento",
+                "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+              }
+            ]
           }
         ]
       },
@@ -107,7 +170,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Bifurcación en paralelo",
+            "label": "Bifurcación paralela",
             "link": "/workflow/nodes/parallel"
           },
           {
@@ -117,7 +180,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Salida de flujo",
+            "label": "Salida del flujo",
             "link": "/workflow/nodes/output"
           },
           {
@@ -132,7 +195,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Finalizar",
+            "label": "Fin",
             "link": "/workflow/nodes/end"
           }
         ]
@@ -164,7 +227,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Añadir datos",
+            "label": "Crear datos",
             "link": "/workflow/nodes/create"
           },
           {
@@ -186,6 +249,11 @@
             "type": "custom-link",
             "label": "Operación SQL",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Transacción de base de datos",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },
@@ -200,12 +268,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Aprobaciones",
+            "label": "Aprobación",
             "link": "/workflow/nodes/approval"
           },
           {
             "type": "custom-link",
-            "label": "Enviar copia (CC)",
+            "label": "CC",
             "link": "/workflow/nodes/cc"
           }
         ]
@@ -226,12 +294,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Notificaciones",
+            "label": "Notificación",
             "link": "/notification-manager/#工作流通知节点"
           },
           {
             "type": "custom-link",
-            "label": "Enviar correo",
+            "label": "Envío de correo electrónico",
             "link": "/workflow/nodes/mailer"
           },
           {
@@ -255,8 +323,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Registro de ejecución",
-    "link": "/workflow/advanced/execution"
+    "label": "Historial de ejecución",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -275,21 +343,21 @@
       {
         "type": "custom-link",
         "label": "Visión general",
-        "link": "/workflow/development/index"
+        "link": "/workflow/development/"
       },
       {
         "type": "custom-link",
-        "label": "Extender tipo de disparador",
+        "label": "Extender tipos de disparadores",
         "link": "/workflow/development/trigger"
       },
       {
         "type": "custom-link",
-        "label": "Extender tipo de nodo",
+        "label": "Extender tipos de nodos",
         "link": "/workflow/development/node"
       },
       {
         "type": "custom-link",
-        "label": "Referencia de API",
+        "label": "Referencia de la API",
         "link": "/workflow/development/api"
       }
     ]

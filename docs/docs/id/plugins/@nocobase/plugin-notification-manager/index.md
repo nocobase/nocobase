@@ -1,14 +1,14 @@
 ---
-displayName: "Pengelola Notifikasi"
+displayName: "Manajemen Notifikasi"
 packageName: '@nocobase/plugin-notification-manager'
+title: "Manajemen Notifikasi"
+keywords: "Manajemen Notifikasi,Plugin,NocoBase"
 description: |
-  Menyediakan layanan manajemen terpadu yang mencakup konfigurasi saluran, pencatatan log, dan fitur lainnya, mendukung konfigurasi berbagai saluran notifikasi, termasuk pesan dalam aplikasi dan email.
+  Menyediakan layanan manajemen terpadu yang mencakup konfigurasi kanal, pencatatan log, dan fitur lainnya, serta mendukung konfigurasi berbagai kanal notifikasi termasuk pesan in-app dan email.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Pengelola Notifikasi
+# Manajemen Notifikasi

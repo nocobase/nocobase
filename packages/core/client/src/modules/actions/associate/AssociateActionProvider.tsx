@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { RecordPickerProvider, RecordPickerContext } from '../../../schema-component/antd/record-picker';
 import {
   SchemaComponentOptions,
   useActionContext,
   useBlockRequestContext,
-  useCollection,
   ActionContextProvider,
   useOpenModeContext,
 } from '../../../';
@@ -21,6 +20,9 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
+import { useCollectionManager_deprecated } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
+import { buildToManyAssociationFilter } from './utils';
 
 const useTableSelectorProps = () => {
   const { setSelectedRows } = useContext(RecordPickerContext);
@@ -40,21 +42,12 @@ const useTableSelectorProps = () => {
 
 export const AssociateActionProvider = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
-  const collection = useCollection();
-  const { resource, block, __parent, service } = useBlockRequestContext();
+  const record = useRecord();
+  const { getCollectionJoinField } = useCollectionManager_deprecated();
+  const { resource, service, block, __parent, props: blockProps } = useBlockRequestContext();
   const actionCtx = useActionContext();
   const { isMobile } = useOpenModeContext() || {};
-  const [associationData, setAssociationData] = useState([]);
-  const { data } = service || {};
-  useEffect(() => {
-    resource
-      ?.list?.({
-        paginate: false,
-      })
-      .then((res) => {
-        setAssociationData(res.data?.data || []);
-      });
-  }, [resource, data?.meta.count]);
+  const collectionField = getCollectionJoinField(blockProps?.association);
 
   const pickerProps = {
     size: 'small',
@@ -84,13 +77,7 @@ export const AssociateActionProvider = (props) => {
     };
   };
   const getFilter = () => {
-    const targetKey = collection?.filterTargetKey || 'id';
-    if (associationData) {
-      const list = associationData.map((option) => option[targetKey]).filter(Boolean);
-      const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
-      return filter;
-    }
-    return {};
+    return buildToManyAssociationFilter(collectionField, record, service?.data?.data || []);
   };
 
   return (

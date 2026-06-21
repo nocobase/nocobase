@@ -1,3 +1,9 @@
+---
+title: "FlowEngine 上下文体系"
+description: "FlowEngine 上下文体系：FlowContext、DataSourceManager、资源管理，理解 FlowEngine 运行时上下文与数据源。"
+keywords: "FlowContext,上下文体系,DataSourceManager,资源管理,FlowEngine 运行时,NocoBase"
+---
+
 # 上下文体系概览
 
 NocoBase 流引擎的上下文体系分为三层，分别对应不同的作用域，合理使用可实现服务、配置、数据的灵活共享与隔离，提升业务可维护性和可扩展性。
@@ -52,3 +58,40 @@ FlowEngineContext（全局上下文）
   ```
 
 这种双模式设计，既保证了运行时的数据可用性，也方便了配置时的变量引用和表达式生成，提升了流引擎的灵活性和易用性。
+
+---
+
+## 🤖 面向工具/大模型的上下文信息
+
+在某些场景下（例如 JS*Model 的 RunJS 代码编辑、AI coding），需要让“调用方”在不执行代码的前提下了解：
+
+- 当前 `ctx` 下有哪些**静态能力**（API 文档、参数、示例、文档链接等）
+- 当前界面/运行态有哪些**可选变量**（例如“当前记录”、“当前弹窗记录”等动态结构）
+- 当前运行环境的**小体积快照**（用于 prompt）
+
+### 1) `await ctx.getApiInfos(options?)`（静态 API 信息）
+
+### 2) `await ctx.getVarInfos(options?)`（变量结构信息）
+
+- 基于 `defineProperty(...).meta`（含 meta factory）构建变量结构
+- 支持 `path` 裁剪与 `maxDepth` 深度控制
+- 仅在需要时向下展开
+
+常用参数：
+
+- `maxDepth`：最大展开层级（默认 3）
+- `path: string | string[]`：剪裁，只输出指定路径子树
+
+### 3) `await ctx.getEnvInfos()`（运行时环境快照）
+
+节点结构（简化）：
+
+```ts
+type EnvNode = {
+  description?: string;
+  getVar?: string; // 可直接用于 await ctx.getVar(getVar)，以 "ctx." 开头
+  value?: any; // 已解析/可序列化的静态值
+  properties?: Record<string, EnvNode>;
+};
+```
+

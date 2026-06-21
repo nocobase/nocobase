@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "BaseInterface"
+description: "Interface dasar Database NocoBase: definisi tipe BaseInterface."
+keywords: "BaseInterface,interface dasar Database,definisi tipe,NocoBase"
+---
 
 # BaseInterface
 
-## Gambaran Umum
+## Ikhtisar
 
-BaseInterface adalah kelas dasar untuk semua tipe Interface. Anda dapat mewarisi kelas ini untuk mengimplementasikan logika Interface kustom.
+BaseInterface adalah class dasar untuk semua tipe Interface, pengguna dapat meng-extend class ini sendiri untuk mengimplementasikan logika Interface kustom.
 
 ```typescript
 class CustomInterface extends BaseInterface {
@@ -18,16 +20,16 @@ class CustomInterface extends BaseInterface {
     // Logika toString kustom
   }
 }
-// Daftarkan Interface
+// Mendaftarkan Interface
 db.interfaceManager.registerInterfaceType('customInterface', CustomInterface)
 ```
 
-## API
+## Antarmuka
 
 ### toValue(value: string, ctx?: any): Promise<any>
 
-Mengonversi string eksternal menjadi nilai aktual dari interface. Nilai ini dapat langsung diteruskan ke Repository untuk operasi tulis.
+Mengkonversi string eksternal ke nilai aktual dari interface, nilai dapat langsung diteruskan ke Repository untuk operasi penulisan
 
 ### toString(value: any, ctx?: any)
 
-Mengonversi nilai aktual dari interface menjadi tipe string. Tipe string ini dapat digunakan untuk tujuan ekspor atau tampilan.
+Mengkonversi nilai aktual dari interface ke tipe string, tipe string dapat digunakan untuk export atau ditampilkan

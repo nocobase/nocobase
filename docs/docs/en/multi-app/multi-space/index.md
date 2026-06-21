@@ -66,6 +66,12 @@ When you click the **eye icon** on the right (in its highlighted state), you can
 
 ### Multi-space Data Management
 
+1. For data tables **without a space field**, no space-related logic will be applied.  
+2. For data tables **with a space field**, the system will automatically enforce the following rules:  
+   1. When creating data, it is automatically associated with the currently selected space;  
+   2. When querying or filtering data, only records within the currently selected space are returned.  
+
+
 After enabling the plugin, the system will automatically add a **Space field** when creating a collection.
 **Only collections that contain this field will be included in the space management logic.**
 
@@ -79,17 +85,9 @@ For existing collections, you can manually add a Space field to enable space man
 ![](https://static-docs.nocobase.com/multi-space/data-source-manager-main-NocoBase-10-15-2025_10_03_AM.png)
 
 
-#### Default Logic
-
-In collections that contain the Space field, the system will automatically apply the following logic:
-
-1. When creating data, it is automatically associated with the currently selected space;
-2. When filtering data, it is automatically limited to the data of the currently selected space.
-
-
 ### Classifying Old Data into Multi-space
 
-For data that existed before the Multi-space plugin was enabled, you can classify it into spaces through the following steps:
+For data that existed before the Multi-space plugin was enabled (and is not affected by space-related logic by default), you can classify it into spaces through the following steps:
 
 #### 1. Add the Space field
 

@@ -1,14 +1,19 @@
 ---
-displayName: "Mobile (déprécié)"
+title: "Mobile (deprecated)"
+keywords: "Mobile (deprecated),Plugin,NocoBase"
+displayName: "Mobile (deprecated)"
 packageName: '@nocobase/plugin-mobile'
+supportedVersions:
+  - 1.x
 description: |
-  Permet de configurer des pages mobiles.
+  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
 
-# Mobile (déprécié)
+# Mobile (deprecated)
+
+> Note: This plugin is deprecated.

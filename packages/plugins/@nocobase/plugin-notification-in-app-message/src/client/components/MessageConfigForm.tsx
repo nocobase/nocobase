@@ -10,8 +10,7 @@
 import React from 'react';
 import { SchemaComponent, css } from '@nocobase/client';
 import { useLocalTranslation, NAMESPACE } from '../../locale';
-import { UsersSelect } from './UsersSelect';
-import { UsersAddition } from './UsersAddition';
+import { UsersSelect, UsersAddition } from '@nocobase/plugin-workflow/client';
 import { tval } from '@nocobase/utils/client';
 import { getConfigFormCommonFieldset } from './configFormCommonFieldset';
 

@@ -1,32 +1,33 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Template Print - Format Angka"
+description: "Formatter Format Angka Template Print: formatN memformat angka berdasarkan pengaturan localization, mendukung jumlah desimal."
+keywords: "Template Print,Format Angka,formatN,NocoBase"
+---
 
-### Pemformatan Angka
+### Format Angka
 
 #### 1. :formatN(precision)
 
 ##### Penjelasan Sintaks
-Memformat angka sesuai dengan pengaturan lokalisasi.
+Memformat angka berdasarkan pengaturan localization.  
 Parameter:
-- precision: Jumlah angka di belakang koma (desimal).
-  Untuk format ODS/XLSX, jumlah angka desimal yang ditampilkan ditentukan oleh editor teks; sedangkan untuk format lain, parameter ini digunakan.
+- precision: Jumlah desimal  
+  Untuk format ODS/XLSX, jumlah desimal yang ditampilkan ditentukan oleh text editor; format lain bergantung pada parameter ini.
 
 ##### Contoh
 ```
-// Contoh lingkungan: API options { "lang": "en-us" }
 '10':formatN()         // Output "10.000"
 '1000.456':formatN()   // Output "1,000.456"
 ```
 
 ##### Hasil
-Angka akan ditampilkan sesuai dengan presisi yang ditentukan dan format lokalisasi.
+Angka di-output sesuai presisi dan format localization yang ditentukan.
 
 
 #### 2. :round(precision)
 
 ##### Penjelasan Sintaks
-Membulatkan angka ke jumlah angka desimal yang ditentukan oleh parameter.
+Membulatkan angka, parameter menentukan jumlah desimal.
 
 ##### Contoh
 ```
@@ -35,15 +36,15 @@ Membulatkan angka ke jumlah angka desimal yang ditentukan oleh parameter.
 ```
 
 ##### Hasil
-Hasilnya adalah angka yang telah dibulatkan.
+Output adalah nilai setelah pembulatan.
 
 
 #### 3. :add(value)
 
 ##### Penjelasan Sintaks
-Menambahkan nilai yang ditentukan ke angka saat ini.
+Menambahkan angka saat ini dengan nilai yang ditentukan.  
 Parameter:
-- value: Angka yang akan ditambahkan.
+- value: Angka penambah
 
 ##### Contoh
 ```
@@ -52,15 +53,15 @@ Parameter:
 ```
 
 ##### Hasil
-Hasilnya adalah jumlah dari angka saat ini dan nilai yang ditentukan.
+Output adalah nilai setelah penjumlahan.
 
 
 #### 4. :sub(value)
 
 ##### Penjelasan Sintaks
-Mengurangi angka saat ini dengan nilai yang ditentukan.
+Mengurangi angka saat ini dengan nilai yang ditentukan.  
 Parameter:
-- value: Angka pengurang.
+- value: Angka pengurang
 
 ##### Contoh
 ```
@@ -69,15 +70,15 @@ Parameter:
 ```
 
 ##### Hasil
-Hasilnya adalah angka saat ini dikurangi nilai yang ditentukan.
+Output adalah nilai setelah pengurangan.
 
 
 #### 5. :mul(value)
 
 ##### Penjelasan Sintaks
-Mengalikan angka saat ini dengan nilai yang ditentukan.
+Mengalikan angka saat ini dengan nilai yang ditentukan.  
 Parameter:
-- value: Angka pengali.
+- value: Angka pengali
 
 ##### Contoh
 ```
@@ -86,15 +87,15 @@ Parameter:
 ```
 
 ##### Hasil
-Hasilnya adalah perkalian angka saat ini dengan nilai yang ditentukan.
+Output adalah nilai setelah perkalian.
 
 
 #### 6. :div(value)
 
 ##### Penjelasan Sintaks
-Membagi angka saat ini dengan nilai yang ditentukan.
+Membagi angka saat ini dengan nilai yang ditentukan.  
 Parameter:
-- value: Angka pembagi.
+- value: Angka pembagi
 
 ##### Contoh
 ```
@@ -103,15 +104,15 @@ Parameter:
 ```
 
 ##### Hasil
-Hasilnya adalah pembagian angka saat ini dengan nilai yang ditentukan.
+Output adalah nilai setelah pembagian.
 
 
 #### 7. :mod(value)
 
 ##### Penjelasan Sintaks
-Menghitung modulus (sisa bagi) dari angka saat ini terhadap nilai yang ditentukan.
+Menghitung modulo (sisa bagi) dari angka saat ini terhadap nilai yang ditentukan.  
 Parameter:
-- value: Angka modulus (pembagi).
+- value: Angka modulo
 
 ##### Contoh
 ```
@@ -120,7 +121,7 @@ Parameter:
 ```
 
 ##### Hasil
-Hasilnya adalah sisa dari operasi modulus.
+Output adalah hasil operasi modulo.
 
 
 #### 8. :abs
@@ -137,13 +138,13 @@ Mengembalikan nilai absolut dari angka.
 ```
 
 ##### Hasil
-Hasilnya adalah nilai absolut.
+Output adalah nilai absolut.
 
 
 #### 9. :ceil
 
 ##### Penjelasan Sintaks
-Membulatkan angka ke atas, yaitu mengembalikan bilangan bulat terkecil yang lebih besar dari atau sama dengan angka saat ini.
+Pembulatan ke atas, yaitu mengembalikan integer terkecil yang lebih besar dari atau sama dengan angka saat ini.
 
 ##### Contoh
 ```
@@ -153,13 +154,13 @@ Membulatkan angka ke atas, yaitu mengembalikan bilangan bulat terkecil yang lebi
 ```
 
 ##### Hasil
-Hasilnya adalah bilangan bulat yang dibulatkan ke atas.
+Output adalah integer setelah pembulatan.
 
 
 #### 10. :floor
 
 ##### Penjelasan Sintaks
-Membulatkan angka ke bawah, yaitu mengembalikan bilangan bulat terbesar yang lebih kecil dari atau sama dengan angka saat ini.
+Pembulatan ke bawah, yaitu mengembalikan integer terbesar yang lebih kecil dari atau sama dengan angka saat ini.
 
 ##### Contoh
 ```
@@ -169,40 +170,42 @@ Membulatkan angka ke bawah, yaitu mengembalikan bilangan bulat terbesar yang leb
 ```
 
 ##### Hasil
-Hasilnya adalah bilangan bulat yang dibulatkan ke bawah.
+Output adalah integer setelah pembulatan.
 
 
 #### 11. :int
 
 ##### Penjelasan Sintaks
-Mengonversi angka menjadi bilangan bulat (tidak direkomendasikan untuk digunakan).
+Mengkonversi angka menjadi integer (tidak direkomendasikan).
 
 ##### Contoh dan Hasil
-Tergantung pada kasus konversi spesifik.
+Tergantung pada situasi konversi spesifik.
 
 
 #### 12. :toEN
 
 ##### Penjelasan Sintaks
-Mengonversi angka ke format bahasa Inggris (menggunakan `.` sebagai pemisah desimal). Tidak direkomendasikan untuk digunakan.
+Mengkonversi angka ke format Inggris (titik desimal '.'), tidak direkomendasikan.
 
 ##### Contoh dan Hasil
-Tergantung pada kasus konversi spesifik.
+Tergantung pada situasi konversi spesifik.
 
 
 #### 13. :toFixed
 
 ##### Penjelasan Sintaks
-Mengonversi angka menjadi string, hanya mempertahankan jumlah angka desimal yang ditentukan. Tidak direkomendasikan untuk digunakan.
+Mengkonversi angka menjadi string, hanya mempertahankan jumlah desimal yang ditentukan, tidak direkomendasikan.
 
 ##### Contoh dan Hasil
-Tergantung pada kasus konversi spesifik.
+Tergantung pada situasi konversi spesifik.
 
 
 #### 14. :toFR
 
 ##### Penjelasan Sintaks
-Mengonversi angka ke format bahasa Prancis (menggunakan `,` sebagai pemisah desimal). Tidak direkomendasikan untuk digunakan.
+Mengkonversi angka ke format Prancis (titik desimal ','), tidak direkomendasikan.
 
 ##### Contoh dan Hasil
-Tergantung pada kasus konversi spesifik.
+Tergantung pada situasi konversi spesifik.
+
+

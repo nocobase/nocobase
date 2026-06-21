@@ -1,15 +1,14 @@
 ---
-displayName: "Mesin Alur Kerja"
+displayName: "FlowEngine Frontend"
 packageName: '@nocobase/plugin-flow-engine'
+title: "FlowEngine Frontend"
+keywords: "FlowEngine Frontend,Plugin,NocoBase"
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-# Mesin Alur Kerja
+# FlowEngine Frontend

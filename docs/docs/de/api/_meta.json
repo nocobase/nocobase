@@ -18,6 +18,12 @@
   },
   {
     "type": "dir",
+    "name": "app",
+    "label": "@nocobase/app",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "cli",
     "label": "@nocobase/cli",
     "collapsed": true
@@ -62,6 +68,12 @@
     "type": "dir",
     "name": "sdk",
     "label": "@nocobase/sdk",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "telemetry",
+    "label": "@nocobase/telemetry",
     "collapsed": true
   }
 ]

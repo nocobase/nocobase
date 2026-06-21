@@ -100,6 +100,30 @@ describe('subModel/utils', () => {
       expect(groups[0].children).toBeTruthy();
     });
 
+    it('preserves searchable meta on generated groups', async () => {
+      const engine = new FlowEngine();
+
+      class Base extends FlowModel {}
+      Base.define({
+        label: 'Base Group',
+        searchable: true,
+        searchPlaceholder: 'Search fields',
+      });
+      const BaseDC = attachDefineChildren(Base, async () => [{ key: 'title', label: 'Title' }]);
+
+      engine.registerModels({ Base: BaseDC });
+
+      const model = engine.createModel({ use: 'FlowModel' });
+      const ctx = model.context;
+
+      const groupsFactory = buildSubModelGroups([BaseDC]);
+      const groups = await groupsFactory(ctx);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].searchable).toBe(true);
+      expect(groups[0].searchPlaceholder).toBe('Search fields');
+    });
+
     it('invokes buildSubModelItems when meta.children is false', async () => {
       const engine = new FlowEngine();
 

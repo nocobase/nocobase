@@ -1,18 +1,17 @@
 ---
-displayName: "Merek Kustom"
+displayName: "Custom Brand"
 packageName: '@nocobase/plugin-custom-brand'
+title: "Custom Brand"
+keywords: "Custom Brand,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Sesuaikan nama merek dan informasi terkait merek lainnya.
+  Memungkinkan kustomisasi nama brand dan informasi terkait brand lainnya.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Kustomisasi Merek
+# Custom Brand

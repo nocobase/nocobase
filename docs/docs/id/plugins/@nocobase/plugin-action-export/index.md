@@ -1,14 +1,17 @@
 ---
-displayName: "Aksi: Ekspor Catatan"
+displayName: "Action: Export Record"
 packageName: '@nocobase/plugin-action-export'
+title: "Action: Export Record"
+keywords: "Action: Export Record,plugin,NocoBase"
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Mengekspor catatan yang telah difilter ke Excel. Anda dapat mengonfigurasi bidang mana saja yang akan diekspor.
+  Ekspor record yang sudah difilter ke Excel, dapat dikonfigurasi field mana saja yang akan diekspor.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Aksi: Ekspor Catatan
+# Action: Export Record

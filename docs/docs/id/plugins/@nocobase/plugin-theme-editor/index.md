@@ -1,14 +1,14 @@
 ---
 displayName: "Editor Tema"
 packageName: '@nocobase/plugin-theme-editor'
+title: "Editor Tema"
+keywords: "Editor Tema,Plugin,NocoBase"
 description: |
-  Sesuaikan warna, ukuran, dan elemen UI lainnya, lalu simpan hasilnya sebagai tema. Anda dapat beralih di antara beberapa tema.
+  Sesuaikan warna, ukuran, dan lainnya pada UI, lalu simpan hasilnya sebagai tema, dan beralih di antara beberapa tema.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
 # Editor Tema

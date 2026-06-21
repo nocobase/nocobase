@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 ```yaml
 pkg: '@nocobase/plugin-backups'
@@ -13,18 +9,20 @@ pkg: '@nocobase/plugin-backups'
 
 El plugin de gestión de copias de seguridad de NocoBase ofrece funcionalidades completas para la copia de seguridad de la base de datos de NocoBase y los archivos subidos por los usuarios, incluyendo la programación, descarga, eliminación y restauración de las copias de seguridad.
 
-:::warning
-El plugin de Gestión de Copias de Seguridad está incluido en las ediciones Profesional y Empresarial. Los usuarios de las ediciones Comunitaria y Estándar pueden realizar copias de seguridad de la base de datos directamente; para más detalles, consulte: [`Cómo hacer copias de seguridad y restaurar NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
-:::
-
 ## Instalar Cliente de Base de Datos
 
-El gestor de copias de seguridad depende del cliente de la base de datos correspondiente. Antes de usarlo, por favor, visite el sitio web oficial para descargar el cliente que coincida con la versión de su base de datos:
+La gestión de copias de seguridad depende del cliente de base de datos de la base principal. Antes de usarla, confirme que el entorno de ejecución actual tenga un cliente compatible con la versión de su base de datos.
+
+:::tip
+Si instala NocoBase con Docker, use preferentemente la imagen `full` correspondiente, por ejemplo `latest-full`, `beta-full` o `alpha-full`. Estas imágenes ya incluyen clientes de base de datos habituales, por lo que normalmente no requieren instalación manual.
+:::
+
+Si el entorno actual no tiene el cliente de base de datos necesario, descargue desde el sitio oficial el cliente que coincida con su versión de base de datos:
 
 - MySQL: https://dev.mysql.com/downloads/
 - PostgreSQL: https://www.postgresql.org/download/
 
-Para las versiones de Docker, puede escribir un script directamente en el directorio `./storage/scripts`:
+Si necesita instalarlo manualmente en un entorno Docker, puede escribir un script en el directorio `./storage/scripts`:
 
 ```bash
 mkdir ./storage/scripts

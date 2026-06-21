@@ -140,6 +140,7 @@ describe('createGanttBlockSchema', () => {
           "action": "list",
           "collection": "TestCollection",
           "dataSource": "TestDataSource",
+          "enableDragToReschedule": true,
           "fieldNames": {
             "label": "field1",
             "value": "field2",

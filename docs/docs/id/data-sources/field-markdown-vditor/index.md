@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Markdown(Vditor)"
+description: "Field rich text Markdown berbasis Vditor, mendukung edit dan pratinjau sintaks Markdown."
+keywords: "Markdown,Vditor,field rich text,editor Markdown,NocoBase"
+---
 
-# Markdown (Vditor)
+# Markdown(Vditor)
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512180647](https://static-docs.nocobase.com/20240512180647.png)
 
 ## Contoh
 
-Segera hadir.
+Akan ditambahkan

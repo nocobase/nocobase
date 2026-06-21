@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as tencentcloud from 'tencentcloud-sdk-nodejs';
+import * as tencentcloud from 'tencentcloud-sdk-nodejs-sms';
 import { SMSProvider } from '.';
 
 // 导入对应产品模块的client models。

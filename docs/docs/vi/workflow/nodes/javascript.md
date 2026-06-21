@@ -1,113 +1,134 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
+title: "Node Workflow - Script JavaScript"
+description: "Node script JavaScript: thực thi script tùy chỉnh phía server, sử dụng biến phía trên, giá trị trả về cho phía dưới sử dụng."
+keywords: "workflow,JavaScript,script,logic tùy chỉnh,script server,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Tập lệnh JavaScript
+# Script JavaScript
 
 ## Giới thiệu
 
-Nút Tập lệnh JavaScript cho phép người dùng thực thi một đoạn tập lệnh JavaScript tùy chỉnh phía máy chủ trong một **luồng công việc**. Tập lệnh có thể sử dụng các biến từ các bước trước đó trong **luồng công việc** làm tham số, và giá trị trả về của nó có thể được cung cấp cho các nút tiếp theo.
+Node script JavaScript cho phép người dùng thực thi một đoạn JavaScript phía server tùy chỉnh trong Workflow. Trong script có thể sử dụng biến phía trên quy trình làm tham số và có thể cung cấp giá trị trả về của script cho các Node phía dưới sử dụng.
 
-Tập lệnh chạy trong một luồng worker trên máy chủ ứng dụng NocoBase và hỗ trợ hầu hết các tính năng của Node.js. Tuy nhiên, vẫn có một số khác biệt so với môi trường thực thi gốc. Để biết chi tiết, vui lòng xem [Danh sách tính năng](#danh-sach-tinh-nang).
+Script sẽ chạy trong một worker thread được mở ở phía server của ứng dụng NocoBase, mặc định sử dụng sandbox bảo mật (QuickJS dựa trên WebAssembly), không hỗ trợ `require` và API tích hợp sẵn của Node.js, xem chi tiết tại [Engine thực thi](#engine-thực-thi) và [Danh sách tính năng](#danh-sách-tính-năng).
 
-## Tạo nút
+## Tạo Node
 
-Trong giao diện cấu hình **luồng công việc**, nhấp vào nút dấu cộng (“+”) trong luồng để thêm nút "JavaScript":
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "JavaScript":
 
 ![20241202203457](https://static-docs.nocobase.com/20241202203457.png)
 
-## Cấu hình nút
+## Cấu hình Node
 
 ![20241202203655](https://static-docs.nocobase.com/20241202203655.png)
 
 ### Tham số
 
-Dùng để truyền các biến hoặc giá trị tĩnh từ ngữ cảnh của **luồng công việc** vào tập lệnh, phục vụ cho logic mã trong tập lệnh. Trong đó, `name` là tên tham số, sau khi được truyền vào tập lệnh sẽ trở thành tên biến. `value` là giá trị tham số, bạn có thể chọn một biến hoặc nhập một hằng số.
+Được dùng để truyền biến của ngữ cảnh quy trình hoặc giá trị tĩnh vào script để logic code trong script sử dụng. Trong đó `name` là tên tham số, sau khi truyền vào script sẽ trở thành tên biến. `value` là giá trị tham số, có thể chọn biến hoặc nhập hằng số.
 
-### Nội dung tập lệnh
+### Nội dung script
 
-Nội dung tập lệnh có thể được xem như một hàm. Bạn có thể viết bất kỳ mã JavaScript nào được hỗ trợ trong môi trường Node.js và sử dụng câu lệnh `return` để trả về một giá trị làm kết quả thực thi của nút, để các nút tiếp theo có thể sử dụng giá trị này như một biến.
+Nội dung script có thể coi là một hàm, có thể viết bất kỳ code JavaScript nào được hỗ trợ trong môi trường Node.js và có thể sử dụng câu lệnh `return` để trả về một giá trị làm kết quả chạy của Node để các Node tiếp theo sử dụng làm biến.
 
-Sau khi viết mã, bạn có thể nhấp vào nút kiểm tra bên dưới trình chỉnh sửa để mở hộp thoại thực thi kiểm tra. Tại đây, bạn điền các giá trị tĩnh vào tham số để mô phỏng quá trình thực thi. Sau khi thực thi, bạn có thể xem giá trị trả về và nội dung đầu ra (log) trong hộp thoại.
+Sau khi viết code có thể qua nút kiểm thử phía dưới ô soạn thảo để mở hộp thoại kiểm thử thực thi, điền giá trị tĩnh vào tham số để mô phỏng thực thi. Sau khi thực thi có thể thấy giá trị trả về và nội dung output (log) trong hộp thoại.
 
 ![20241202203833](https://static-docs.nocobase.com/20241202203833.png)
 
-### Cài đặt thời gian chờ
+### Thiết lập timeout
 
-Đơn vị tính bằng mili giây. Khi đặt là `0` có nghĩa là không cài đặt thời gian chờ.
+Đơn vị tính bằng mili giây, khi đặt là `0` nghĩa là không đặt timeout.
 
-### Tiếp tục luồng công việc khi có lỗi
+### Tiếp tục quy trình sau lỗi
 
-Nếu chọn tùy chọn này, các nút tiếp theo vẫn sẽ được thực thi ngay cả khi tập lệnh gặp lỗi hoặc hết thời gian chờ.
+Sau khi chọn, khi script bị lỗi hoặc lỗi timeout vẫn sẽ thực thi các Node tiếp theo.
 
-:::info{title="Lưu ý"}
-Nếu tập lệnh gặp lỗi, nó sẽ không có giá trị trả về, và kết quả của nút sẽ được điền bằng thông báo lỗi. Nếu các nút tiếp theo sử dụng biến kết quả từ nút tập lệnh, bạn cần xử lý cẩn thận.
+:::info{title="Mẹo"}
+Sau khi script bị lỗi sẽ không có giá trị trả về, kết quả của Node sẽ được lấp đầy bằng thông tin lỗi. Nếu các Node tiếp theo sử dụng biến kết quả của Node script, cần xử lý cẩn thận.
 :::
 
-## Danh sách tính năng
+## Engine thực thi
 
-### Phiên bản Node.js
+Node script JavaScript hỗ trợ hai engine thực thi, tự động chuyển đổi qua việc biến môi trường `WORKFLOW_SCRIPT_MODULES` có được cấu hình hay không:
 
-Giống với phiên bản Node.js mà ứng dụng chính đang chạy.
+### Chế độ an toàn (mặc định)
 
-### Hỗ trợ module
+Khi **không cấu hình** biến môi trường `WORKFLOW_SCRIPT_MODULES`, script sử dụng engine [QuickJS](https://bellard.org/quickjs/) dựa trên WebAssembly để thực thi. Engine này chạy code trong runtime JavaScript cô lập với các đặc điểm sau:
 
-Các module có thể được sử dụng trong tập lệnh với một số giới hạn, tương tự như CommonJS, bằng cách sử dụng chỉ thị `require()` để nhập module.
+- **Không hỗ trợ** `require`, không thể import bất kỳ module nào
+- **Không hỗ trợ** API tích hợp sẵn của Node.js (như `process`, `Buffer`, `global`...)
+- Chỉ có thể sử dụng các đối tượng tích hợp sẵn tiêu chuẩn của ECMAScript (như `JSON`, `Math`, `Promise`, `Date`...)
+- Hỗ trợ truyền dữ liệu qua tham số, hỗ trợ `console` xuất log, hỗ trợ `async`/`await`
 
-Hỗ trợ các module gốc của Node.js và các module đã cài đặt trong `node_modules` (bao gồm các gói phụ thuộc mà NocoBase đã sử dụng). Các module cần được cung cấp cho mã phải được khai báo trong biến môi trường `WORKFLOW_SCRIPT_MODULES` của ứng dụng, với nhiều tên gói được phân tách bằng dấu phẩy, ví dụ:
+Đây là chế độ mặc định được khuyến nghị, phù hợp với logic tính toán thuần và xử lý dữ liệu, cung cấp mức cách ly bảo mật cao nhất.
+
+### Chế độ không an toàn (cần hỗ trợ module)
+
+Khi **đã cấu hình** biến môi trường `WORKFLOW_SCRIPT_MODULES`, script chuyển sang engine `vm` tích hợp sẵn của Node.js để thực thi nhằm có khả năng `require`.
+
+:::warning{title="Cảnh báo bảo mật"}
+Ở chế độ không an toàn, mặc dù script chạy trong sandbox `vm` và đã giới hạn các module có thể sử dụng, nhưng module `vm` của Node.js không phải là cơ chế sandbox an toàn. Bật chế độ này có nghĩa là tin tưởng tất cả người dùng có quyền chỉnh sửa script Workflow. Admin cần tự đánh giá rủi ro bảo mật và quản lý nghiêm ngặt whitelist module và quyền chỉnh sửa Workflow.
+:::
+
+Sử dụng module trong script tương tự CommonJS, trong code sử dụng chỉ thị `require()` để import module.
+
+Hỗ trợ module gốc của Node.js và module đã cài đặt trong `node_modules` (bao gồm các package phụ thuộc đã được NocoBase sử dụng). Module muốn cung cấp cho code sử dụng cần được khai báo trong biến môi trường ứng dụng `WORKFLOW_SCRIPT_MODULES`, nhiều tên package phân tách bằng dấu phẩy nửa cấp, ví dụ:
 
 ```ini
 WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
-:::info{title="Lưu ý"}
-Các module không được khai báo trong biến môi trường `WORKFLOW_SCRIPT_MODULES`, ngay cả khi chúng là module gốc của Node.js hoặc đã được cài đặt trong `node_modules`, cũng **không thể** được sử dụng trong tập lệnh. Chính sách này có thể được dùng ở cấp độ vận hành để kiểm soát danh sách các module mà người dùng có thể sử dụng, tránh việc tập lệnh có quyền hạn quá cao trong một số trường hợp.
+:::info{title="Mẹo"}
+Module chưa được khai báo trong biến môi trường `WORKFLOW_SCRIPT_MODULES`, kể cả là module gốc của Node.js hay đã được cài đặt trong `node_modules`, đều **không thể** sử dụng trong script. Chiến lược này có thể được dùng để quản lý ở tầng vận hành danh sách module người dùng có thể sử dụng, tránh script có quyền quá cao trong một số tình huống.
 :::
 
-Trong môi trường không triển khai từ mã nguồn, nếu một module chưa được cài đặt trong `node_modules`, bạn có thể cài đặt thủ công gói cần thiết vào thư mục `storage`. Ví dụ, khi cần sử dụng gói `exceljs`, bạn có thể thực hiện các bước sau:
+Trong môi trường triển khai không phải mã nguồn, nếu một module nào đó chưa được cài đặt trong node_modules, có thể cài đặt thủ công package cần thiết vào thư mục storage. Ví dụ khi cần sử dụng package `exceljs`, có thể thực hiện thao tác sau:
 
 ```shell
 cd storage
 npm i --no-save --no-package-lock --prefix . exceljs
 ```
 
-Sau đó, thêm đường dẫn tương đối (hoặc tuyệt đối) của gói dựa trên CWD (thư mục làm việc hiện tại) của ứng dụng vào biến môi trường `WORKFLOW_SCRIPT_MODULES`:
+Sau đó thêm package đó dựa trên CWD (thư mục làm việc hiện tại) của ứng dụng theo đường dẫn tương đối (hoặc tuyệt đối) vào biến môi trường `WORKFLOW_SCRIPT_MODULES`:
 
 ```ini
 WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
 ```
 
-Sau đó, bạn có thể sử dụng gói `exceljs` trong tập lệnh của mình:
+Như vậy có thể sử dụng package `exceljs` trong script (tên `require` cần hoàn toàn nhất quán với định nghĩa trong biến môi trường):
 
 ```js
-const ExcelJS = require('exceljs');
+const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
 
+## Danh sách tính năng
+
+### Phiên bản Node.js
+
+Nhất quán với phiên bản Node.js mà ứng dụng chính đang chạy.
+
 ### Biến toàn cục
 
-**Không hỗ trợ** các biến toàn cục như `global`, `process`, `__dirname` và `__filename`.
+**Không hỗ trợ** các biến toàn cục như `global`, `process`, `__dirname` và `__filename`...
 
 ```js
 console.log(global); // will throw error: "global is not defined"
 ```
 
-### Tham số đầu vào
+### Tham số truyền vào
 
-Các tham số được cấu hình trong nút sẽ trở thành biến toàn cục trong tập lệnh và có thể được sử dụng trực tiếp. Các tham số truyền vào tập lệnh chỉ hỗ trợ các kiểu dữ liệu cơ bản, như `boolean`, `number`, `string`, `object` và mảng. Đối tượng `Date` khi được truyền vào sẽ được chuyển đổi thành chuỗi định dạng ISO. Các kiểu phức tạp khác, như các thể hiện của lớp tùy chỉnh, không thể truyền trực tiếp.
+Tham số được cấu hình trong Node sẽ được dùng làm biến toàn cục trong script, có thể trực tiếp sử dụng. Tham số truyền vào script chỉ hỗ trợ kiểu cơ bản như `boolean`, `number`, `string`, `number`, `object` và mảng. Đối tượng `Date` sau khi truyền vào sẽ được chuyển thành chuỗi định dạng ISO. Các kiểu phức tạp khác không thể truyền trực tiếp như instance class tùy chỉnh...
 
 ### Giá trị trả về
 
-Bạn có thể sử dụng câu lệnh `return` để trả về dữ liệu kiểu cơ bản (theo cùng quy tắc với tham số) về nút làm kết quả. Nếu không có câu lệnh `return` nào được gọi trong mã, quá trình thực thi nút sẽ không có giá trị trả về.
+Qua câu lệnh `return` có thể trả về dữ liệu kiểu cơ bản (cùng quy tắc với tham số) về Node làm kết quả. Nếu trong code không gọi câu lệnh `return` thì việc thực thi Node không có giá trị trả về.
 
 ```js
 return 123;
 ```
 
-### Đầu ra (Log)
+### Output (log)
 
 **Hỗ trợ** sử dụng `console` để xuất log.
 
@@ -115,11 +136,11 @@ return 123;
 console.log('hello world!');
 ```
 
-Khi **luồng công việc** được thực thi, đầu ra của nút tập lệnh cũng sẽ được ghi vào tệp log của **luồng công việc** tương ứng.
+Khi Workflow thực thi, output của Node script cũng sẽ được ghi vào file log của Workflow tương ứng.
 
 ### Bất đồng bộ
 
-**Hỗ trợ** sử dụng `async` để định nghĩa các hàm bất đồng bộ và `await` để gọi chúng. **Hỗ trợ** sử dụng đối tượng toàn cục `Promise`.
+**Hỗ trợ** sử dụng `async` để định nghĩa hàm bất đồng bộ và `await` để gọi hàm bất đồng bộ. **Hỗ trợ** sử dụng đối tượng toàn cục `Promise`.
 
 ```js
 async function test() {
@@ -130,9 +151,9 @@ const value = await test();
 return value;
 ```
 
-### Bộ hẹn giờ
+### Timer
 
-Để sử dụng các phương thức như `setTimeout`, `setInterval` hoặc `setImmediate`, bạn cần nhập chúng từ gói `timers` của Node.js.
+Nếu cần sử dụng các phương thức `setTimeout`, `setInterval` hoặc `setImmediate`..., cần import qua package `timers` của Node.js (chỉ có thể dùng ở chế độ không an toàn).
 
 ```js
 const { setTimeout, setInterval, setImmediate, clearTimeout, clearInterval, clearImmediate } = require('timers');

@@ -1,75 +1,76 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Tổng quan"
+description: "Loại Field datetime: có múi giờ/không có múi giờ, ngày, giờ, Unix timestamp, đối chiếu loại NocoBase/MySQL/PostgreSQL."
+keywords: "datetime,DateTime,Field thời gian,có múi giờ,không có múi giờ,Unix timestamp,NocoBase"
+---
 
+# Tổng quan
 
-# Các loại trường Ngày giờ
+## Các loại Field datetime
 
-## Các loại trường Ngày giờ
+Các loại Field datetime bao gồm:
 
-Các loại trường ngày giờ bao gồm:
+- **Datetime (có múi giờ)** - Datetime sẽ được chuyển đổi thống nhất sang giờ UTC (Giờ Phối hợp Quốc tế), và chuyển đổi múi giờ khi cần.
+- **Datetime (không có múi giờ)** - Lưu trữ ngày và giờ không có thông tin múi giờ.
+- **Ngày (không có giờ)** - Chỉ lưu trữ ngày, không bao gồm phần giờ.
+- **Giờ** - Chỉ lưu trữ giờ, không bao gồm phần ngày.
+- **Unix Timestamp** - Lưu trữ dưới dạng Unix timestamp, thường là số giây kể từ ngày 1 tháng 1 năm 1970.
 
--   **Ngày giờ (có múi giờ)** - Các giá trị ngày giờ sẽ được chuẩn hóa thành giờ UTC (Giờ Phối hợp Quốc tế) và được điều chỉnh múi giờ khi cần thiết.
--   **Ngày giờ (không múi giờ)** - Lưu trữ thông tin ngày và giờ mà không kèm theo múi giờ.
--   **Ngày (không giờ)** - Chỉ lưu trữ thông tin ngày, không bao gồm phần thời gian.
--   **Giờ** - Chỉ lưu trữ thông tin giờ, không bao gồm phần ngày.
--   **Dấu thời gian Unix** - Được lưu trữ dưới dạng dấu thời gian Unix, thường là số giây đã trôi qua kể từ ngày 1 tháng 1 năm 1970.
+Ví dụ về các loại Field liên quan đến ngày:
 
-Dưới đây là các ví dụ cho từng loại trường ngày giờ:
+| **Loại Field**         | **Giá trị ví dụ**                 | **Mô tả**                                   |
+|--------------------|---------------------------|--------------------------------------------|
+| Datetime (có múi giờ)    | 2024-08-24T07:30:00.000Z   | Datetime sẽ được chuyển đổi thống nhất sang giờ UTC (Giờ Phối hợp Quốc tế)      |
+| Datetime (không có múi giờ)  | 2024-08-24 15:30:00        | Datetime không có múi giờ, chỉ ghi ngày và giờ             |
+| Ngày (không có giờ)     | 2024-08-24                 | Chỉ lưu trữ thông tin ngày, không bao gồm giờ                     |
+| Giờ               | 15:30:00                   | Chỉ lưu trữ thông tin giờ, không bao gồm ngày                     |
+| Unix Timestamp        | 1724437800                 | Số giây đã trôi qua tính từ giờ UTC 00:00:00 ngày 1 tháng 1 năm 1970 |
 
-| **Loại trường**           | **Giá trị ví dụ**          | **Mô tả**                                      |
-|---------------------------|----------------------------|------------------------------------------------|
-| Ngày giờ (có múi giờ)     | 2024-08-24T07:30:00.000Z   | Được chuyển đổi sang UTC và có thể điều chỉnh theo múi giờ |
-| Ngày giờ (không múi giờ)  | 2024-08-24 15:30:00        | Lưu trữ ngày và giờ mà không kèm múi giờ       |
-| Ngày (không giờ)          | 2024-08-24                 | Chỉ lưu trữ ngày, không có thông tin giờ        |
-| Giờ                       | 15:30:00                   | Chỉ lưu trữ giờ, không bao gồm chi tiết ngày   |
-| Dấu thời gian Unix        | 1724437800                 | Biểu thị số giây kể từ 00:00:00 UTC ngày 1 tháng 1 năm 1970 |
+## Đối chiếu các Data Source
 
-## So sánh các nguồn dữ liệu
+Bảng đối chiếu giữa NocoBase, MySQL và PostgreSQL:
 
-Bảng so sánh giữa NocoBase, MySQL và PostgreSQL:
+| **Loại Field**       | **NocoBase**               | **MySQL**          | **PostgreSQL**                |
+|------------------|-----------------------------|--------------------|-------------------------------|
+| Datetime (có múi giờ)   | Datetime with timezone    | TIMESTAMP<br/> DATETIME | TIMESTAMP WITH TIME ZONE      |
+| Datetime (không có múi giờ)  | Datetime without timezone  | DATETIME           | TIMESTAMP WITHOUT TIME ZONE   |
+| Ngày (không có giờ)     | Date                      | DATE                 | DATE                          |
+| Giờ               | Time                     | TIME                 | TIME WITHOUT TIME ZONE        |
+| Unix Timestamp        | Unix timestamp            | INTEGER<br/>BIGINT   | INTEGER<br/>BIGINT              |
+| Giờ (có múi giờ)      | -                         | -                  | TIME WITH TIME ZONE           |
 
-| **Loại trường**           | **NocoBase**               | **MySQL**                  | **PostgreSQL**                         |
-|---------------------------|----------------------------|----------------------------|----------------------------------------|
-| Ngày giờ (có múi giờ)     | Datetime with timezone     | TIMESTAMP<br/> DATETIME    | TIMESTAMP WITH TIME ZONE               |
-| Ngày giờ (không múi giờ)  | Datetime without timezone  | DATETIME                   | TIMESTAMP WITHOUT TIME ZONE            |
-| Ngày (không giờ)          | Date                       | DATE                       | DATE                                   |
-| Giờ                       | Time                       | TIME                       | TIME WITHOUT TIME ZONE                 |
-| Dấu thời gian Unix        | Unix timestamp             | INTEGER<br/>BIGINT         | INTEGER<br/>BIGINT                     |
-| Giờ (có múi giờ)          | -                          | -                          | TIME WITH TIME ZONE                    |
+Ghi chú:
+- Phạm vi dữ liệu của MySQL TIMESTAMP nằm trong khoảng từ giờ UTC `1970-01-01 00:00:01 ~ 2038-01-19 03:14:07`. Khi vượt quá phạm vi này, nên sử dụng DATETIME hoặc BIGINT để lưu trữ Unix timestamp.
 
-**Lưu ý:**
--   Loại TIMESTAMP của MySQL có phạm vi dữ liệu từ `1970-01-01 00:00:01 UTC` đến `2038-01-19 03:14:07 UTC`. Đối với các ngày giờ nằm ngoài phạm vi này, bạn nên sử dụng DATETIME hoặc BIGINT để lưu trữ dấu thời gian Unix.
-
-## Quy trình xử lý lưu trữ Ngày giờ
+## Quy trình xử lý lưu trữ datetime
 
 ### Có múi giờ
 
-Bao gồm `Ngày giờ (có múi giờ)` và `Dấu thời gian Unix`.
+Bao gồm `Datetime (không có múi giờ)` và `Unix Timestamp`
 
 ![20240824191933](https://static-docs.nocobase.com/20240824191933.png)
 
-**Lưu ý:**
--   Để hỗ trợ phạm vi ngày rộng hơn, NocoBase sử dụng kiểu DATETIME trong MySQL cho các trường Ngày giờ (có múi giờ). Giá trị ngày được lưu trữ sẽ được chuyển đổi dựa trên biến môi trường TZ của máy chủ, điều này có nghĩa là nếu biến môi trường TZ thay đổi, giá trị Ngày giờ được lưu trữ cũng sẽ thay đổi.
--   Do có sự khác biệt múi giờ giữa UTC và giờ địa phương, việc hiển thị trực tiếp giá trị UTC thô có thể gây nhầm lẫn cho người dùng.
+Ghi chú:
+- Để hỗ trợ phạm vi dữ liệu rộng hơn, Field datetime (có múi giờ) của NocoBase sử dụng DATETIME trong database MySQL, giá trị ngày được lưu là giá trị đã chuyển đổi theo biến môi trường TZ của server. Nếu biến môi trường TZ thay đổi, giá trị lưu của datetime sẽ thay đổi.
+- Giờ UTC và giờ địa phương có chênh lệch múi giờ, hiển thị trực tiếp giá trị UTC gốc có thể gây hiểu lầm cho người dùng.
 
-### Không múi giờ
+### Không có múi giờ
 
 ![20240824185600](https://static-docs.nocobase.com/20240824185600.png)
 
 ## UTC
 
-UTC (Giờ Phối hợp Quốc tế, Coordinated Universal Time) là tiêu chuẩn thời gian toàn cầu được sử dụng để điều phối và đồng bộ hóa thời gian trên khắp thế giới. Đây là một tiêu chuẩn thời gian có độ chính xác cao, được duy trì bởi đồng hồ nguyên tử và đồng bộ với sự tự quay của Trái Đất.
+UTC (Giờ Phối hợp Quốc tế, Coordinated Universal Time) là chuẩn thời gian toàn cầu, được sử dụng để phối hợp và thống nhất thời gian ở các nơi trên thế giới. Đây là chuẩn thời gian có độ chính xác cao dựa trên đồng hồ nguyên tử và đồng bộ với thời gian quay của Trái Đất.
 
-Sự khác biệt giữa giờ UTC và giờ địa phương có thể gây nhầm lẫn khi hiển thị trực tiếp các giá trị UTC thô. Ví dụ:
+Giờ UTC và giờ địa phương có chênh lệch múi giờ, hiển thị trực tiếp giá trị UTC gốc có thể gây hiểu lầm cho người dùng, ví dụ:
 
-| **Múi giờ** | **Ngày giờ**             |
-|-------------|--------------------------|
-| UTC         | 2024-08-24T07:30:00.000Z |
-| UTC+8       | 2024-08-24 15:30:00      |
-| UTC+5       | 2024-08-24 12:30:00      |
-| UTC-5       | 2024-08-24 02:30:00      |
-| UTC+0       | 2024-08-24 07:30:00      |
-| UTC-6       | 2024-08-23 01:30:00      |
+| **Múi giờ**       | **Datetime**                      |
+|----------------|----------------------------------|
+| UTC            | 2024-08-24T07:30:00.000Z          |
+| UTC+8 (Đông 8) | 2024-08-24 15:30:00               |
+| UTC+5 (Đông 5) | 2024-08-24 12:30:00               |
+| UTC-5 (Tây 5) | 2024-08-24 02:30:00               |
+| Giờ Anh (UTC+0) | 2024-08-24 07:30:00              |
+| Giờ Trung tâm (UTC-6) | 2024-08-23 01:30:00              |
 
-Tất cả các thời gian trên đều biểu thị cùng một khoảnh khắc, chỉ khác nhau về múi giờ.
+Trên đây đều là cùng một thời điểm, chỉ khác nhau ở múi giờ.

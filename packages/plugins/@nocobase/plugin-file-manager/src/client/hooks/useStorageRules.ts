@@ -9,21 +9,30 @@
 
 import { useEffect } from 'react';
 import { useField } from '@formily/react';
-import { useAPIClient, useCollectionField, useCollectionManager, useRequest } from '@nocobase/client';
+import { useCollectionField, useCollectionManager, useDataSourceKey, useRequest } from '@nocobase/client';
 import { useStorageUploadProps } from './useStorageUploadProps';
+
+function appendUploadDataSourceKey(url: string, dataSourceKey?: string) {
+  if (!dataSourceKey || dataSourceKey === 'main') {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}uploadDataSourceKey=${encodeURIComponent(dataSourceKey)}`;
+}
 
 export function useStorageRules(storage) {
   const name = storage ?? '';
-  const apiClient = useAPIClient();
+  const dataSourceKey = useDataSourceKey();
   const field = useField<any>();
   const { loading, data, run } = useRequest<any>(
     {
-      url: `storages:getBasicInfo/${name}`,
+      url: appendUploadDataSourceKey(`storages:getBasicInfo/${name}`, dataSourceKey),
     },
     {
       manual: true,
-      refreshDeps: [name],
-      cacheKey: name,
+      refreshDeps: [name, dataSourceKey],
+      cacheKey: `${dataSourceKey || 'main'}:storages:getBasicInfo/${name}`,
     },
   );
   useEffect(() => {

@@ -44,7 +44,7 @@ const useDataSource = (options?: any) => {
       // filter: {
       //   parentId: null,
       // },
-      sort: ['createdAt'],
+      sort: ['sort'],
     },
   };
   const service = useRequest(defaultRequest, options);

@@ -1,10 +1,11 @@
+---
+title: "Database"
+description: "Tài liệu liên quan đến database của NocoBase: cấu hình, kết nối, mô hình dữ liệu."
+keywords: "database,cấu hình,kết nối,mô hình dữ liệu,NocoBase"
+---
+
+# Database
+
 :::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-
-# Cơ sở dữ liệu
-
-:::tip
-Nội dung sẽ được bổ sung.
+Nội dung sẽ được cập nhật sau.
 :::

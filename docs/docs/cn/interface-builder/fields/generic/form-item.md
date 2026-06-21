@@ -1,3 +1,9 @@
+---
+title: "表单字段"
+description: "表单字段：用于表单区块中的字段组件，支持输入、选择、日期等各类表单控件。"
+keywords: "表单字段,FormItem,表单控件,表单区块,界面搭建,NocoBase"
+---
+
 # 表单字段
 
 ## 介绍
@@ -30,14 +36,24 @@
 
 更多内容参考 [必填](/interface-builder/fields/field-settings/required)
 
+### 扫码录入
+
+部分文本类字段支持扫码录入。开启后，字段输入框右侧会显示扫码按钮，用户可以通过摄像头或相册识别二维码、条形码内容，并写入当前字段。
+
+更多内容参考 [扫码录入](/interface-builder/fields/field-settings/scan-input)
+
+### 字段组件
+
+部分字段支持切换为其他组件，如关系字段。
+
+![20251029122626](https://static-docs.nocobase.com/20251029122626.png)
+
+更多内容参考 [字段组件](/interface-builder/fields/field-settings/field-component)
+
+### 其他配置项
+
 - [编辑字段标题](/interface-builder/fields/field-settings/edit-title)
 - [显示标签](/interface-builder/fields/field-settings/show-label)
 - [编辑字段描述](/interface-builder/fields/field-settings/edit-description)
 - [编辑字段提示信息](/interface-builder/fields/field-settings/edit-tooltip)
 - [模式](/interface-builder/fields/field-settings/pattern)
-
-### 字段组件
-
-部分字段支持切换为其他组件，如关系字段。
-![20251029122626](https://static-docs.nocobase.com/20251029122626.png)
-更多内容参考 [字段组件](/interface-builder/fields/field-settings/field-component)

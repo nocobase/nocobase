@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import actions, { Context } from '@nocobase/actions';
+import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
-import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
+import PluginWorkflowServer from '../Plugin';
+import { EXECUTION_REASON, EXECUTION_STATUS } from '../constants';
+import { abortExecution, getExecutionLockKey, isLockAcquireError } from '../utils';
 
-export async function destroy(context: Context, next) {
+export async function destroy(context: Context, next: Next) {
   context.action.mergeParams({
     filter: {
       status: {
@@ -23,10 +25,10 @@ export async function destroy(context: Context, next) {
   await actions.destroy(context, next);
 }
 
-export async function cancel(context: Context, next) {
+export async function cancel(context: Context, next: Next) {
   const { filterByTk } = context.action.params;
+  const workflowPlugin = context.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
   const ExecutionRepo = context.db.getRepository('executions');
-  const JobRepo = context.db.getRepository('jobs');
   const execution = await ExecutionRepo.findOne({
     filterByTk,
     appends: ['jobs'],
@@ -38,27 +40,46 @@ export async function cancel(context: Context, next) {
     return context.throw(400);
   }
 
-  await context.db.sequelize.transaction(async (transaction) => {
-    await execution.update(
-      {
-        status: EXECUTION_STATUS.ABORTED,
-      },
-      { transaction },
-    );
+  try {
+    const lock = await context.app.lockManager.tryAcquire(getExecutionLockKey(execution.id));
+    await lock.runExclusive(async () => {
+      await abortExecution(workflowPlugin, execution, { reason: EXECUTION_REASON.MANUAL_CANCEL });
+    }, 60_000);
+  } catch (error) {
+    if (isLockAcquireError(error)) {
+      return context.throw(409, 'Execution is being processed');
+    }
+    throw error;
+  }
 
-    const pendingJobs = execution.jobs.filter((job) => job.status === JOB_STATUS.PENDING);
-    await JobRepo.update({
-      values: {
-        status: JOB_STATUS.ABORTED,
-      },
-      filter: {
-        id: pendingJobs.map((job) => job.id),
-      },
-      individualHooks: false,
-      transaction,
-    });
+  context.body = execution;
+  await next();
+}
+
+export async function rerun(context: Context, next: Next) {
+  const workflowPlugin = context.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
+  const { filterByTk, values = {} } = context.action.params;
+  const { nodeId, overwrite } = values;
+  const ExecutionRepo = context.db.getRepository('executions');
+  const execution = await ExecutionRepo.findOne({
+    filterByTk,
+  });
+  if (!execution) {
+    return context.throw(404);
+  }
+  if (execution.status !== EXECUTION_STATUS.STARTED) {
+    return context.throw(400, 'Only started executions can be rerun');
+  }
+
+  await workflowPlugin.run({
+    execution,
+    rerun: {
+      nodeId,
+      overwrite: overwrite === true,
+    },
   });
 
   context.body = execution;
+  context.status = 202;
   await next();
 }

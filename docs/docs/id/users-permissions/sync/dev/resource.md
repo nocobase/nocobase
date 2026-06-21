@@ -1,18 +1,21 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "Memperluas Resource Target Sinkronisasi"
+description: "Ekstensi plugin sinkronisasi data pengguna NocoBase: resource target sinkronisasi kustom, antarmuka SyncResource, pemetaan tabel pengguna dan departemen."
+keywords: "memperluas resource sinkronisasi,SyncResource,target sinkronisasi,pemetaan tabel pengguna,plugin-user-data-sync,NocoBase"
+---
 
-# Memperluas Sumber Daya Target Sinkronisasi
+# Memperluas Resource Target Sinkronisasi
 
-## Gambaran Umum
+## Ikhtisar
 
-NocoBase secara bawaan mendukung sinkronisasi data pengguna ke tabel **Pengguna** dan **Departemen**. NocoBase juga mendukung perluasan sumber daya target untuk sinkronisasi data sesuai kebutuhan, memungkinkan penulisan data ke tabel lain atau melakukan pemrosesan kustom.
+NocoBase secara default mendukung sinkronisasi data pengguna ke tabel **users** dan **departments**, dan juga mendukung perluasan resource target sinkronisasi data sesuai kebutuhan, untuk mengimplementasikan penulisan data ke tabel lain atau pemrosesan kustom lainnya.
 
 :::warning{title=Eksperimental}
-Dokumentasi lengkap masih dalam proses.
+Dokumentasi lengkap akan dilengkapi nanti
 :::
 
-## Antarmuka Penangan Sumber Daya Target
+## Antarmuka Pemrosesan Resource Target
 
 ```ts
 export abstract class UserDataResource {
@@ -46,7 +49,7 @@ export abstract class UserDataResource {
 }
 ```
 
-## Mendaftarkan Sumber Daya Target
+## Mendaftarkan Resource Target
 
 `registerResource(resource: UserDataResource, options?: ToposortOptions)`
 

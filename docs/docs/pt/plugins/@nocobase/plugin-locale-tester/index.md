@@ -1,15 +1,14 @@
 ---
-displayName: "Ferramenta de Teste de Localização"
+title: "Locale tester"
+keywords: "Locale tester,Plugin,NocoBase"
+displayName: "Locale tester"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
-
-# Ferramenta de Teste de Localização
+# Locale tester

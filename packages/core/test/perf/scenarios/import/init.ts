@@ -1,5 +1,6 @@
 import { createMockServer } from '@nocobase/test';
 import { CollectionRepository } from '@nocobase/plugin-data-source-main';
+import { storagePathJoin } from '@nocobase/utils';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -7,7 +8,7 @@ import ExcelJS from 'exceljs';
 import { faker } from '@faker-js/faker';
 import request from 'superagent';
 
-const storagePath = path.resolve(process.cwd(), 'storage', 'perf', 'importDataTest');
+const storagePath = storagePathJoin('perf', 'importDataTest');
 
 export default async function main() {
   const app = await createMockServer({

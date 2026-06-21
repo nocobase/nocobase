@@ -1,18 +1,17 @@
 ---
-displayName: "Thao tác: Xuất bản ghi Pro"
+displayName: "Action: Xuất bản ghi Pro"
 packageName: '@nocobase/plugin-action-export-pro'
+title: "Action: Xuất bản ghi Pro"
+keywords: "Action: Xuất bản ghi Pro,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Tăng cường khả năng xuất dữ liệu với tính năng xuất không đồng bộ, hỗ trợ xử lý lượng lớn dữ liệu. Hỗ trợ xuất tệp đính kèm.
+  Tăng cường chức năng xuất dữ liệu. Xuất bất đồng bộ, hỗ trợ khối lượng dữ liệu lớn. Hỗ trợ xuất tệp đính kèm.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: Xuất bản ghi Pro
+# Action: Xuất bản ghi Pro

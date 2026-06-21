@@ -1,113 +1,114 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Giá trị mặc định"
+description: "Cấu hình Field: cài đặt giá trị mặc định của Field, hỗ trợ giá trị cố định, biểu thức, tham chiếu biến."
+keywords: "giá trị mặc định,default value,Field mặc định,Interface Builder,NocoBase"
+---
 
 # Giá trị mặc định
 
 ## Giới thiệu
 
-Giá trị mặc định là giá trị ban đầu của một trường khi tạo bản ghi mới. Bạn có thể đặt giá trị mặc định cho một trường khi cấu hình nó trong một bộ sưu tập, hoặc chỉ định giá trị mặc định cho một trường trong khối biểu mẫu Thêm mới. Giá trị này có thể là một hằng số hoặc một biến.
+Giá trị mặc định là giá trị ban đầu của Field ở trạng thái thêm mới. Bạn có thể cài đặt giá trị mặc định cho Field khi cấu hình Field trong Table dữ liệu, cũng có thể chỉ định giá trị mặc định cho Field trong Block Form thêm mới, có thể cài đặt là hằng số hoặc biến.
 
-## Nơi có thể thiết lập giá trị mặc định
+## Có thể cài đặt giá trị mặc định ở đâu
 
-### Trường trong bộ sưu tập
+### Field Table dữ liệu
 
 ![20240411095933](https://static-docs.nocobase.com/20240411095933.png)
 
-### Trường trong biểu mẫu Thêm mới
+### Field của Form thêm mới
 
-Hầu hết các trường trong biểu mẫu Thêm mới đều hỗ trợ thiết lập giá trị mặc định.
+Hầu hết các Field trong Form thêm mới đều hỗ trợ cài đặt giá trị mặc định.
 
 ![20251028161801](https://static-docs.nocobase.com/20251028161801.png)
 
-### Thêm dữ liệu trong biểu mẫu con
+### Thêm trong Sub-Form
 
-Dữ liệu con được thêm thông qua trường biểu mẫu con, dù trong biểu mẫu Thêm mới hay Chỉnh sửa, đều sẽ có giá trị mặc định.
+Bất kể là dữ liệu con được thêm vào Field Sub-Form trong Form thêm mới hay Form chỉnh sửa đều có giá trị mặc định.
 
-Thêm mới trong biểu mẫu con
+Add new của Sub-Form
 ![20251028163455](https://static-docs.nocobase.com/20251028163455.png)
 
-Khi chỉnh sửa dữ liệu hiện có, các trường trống sẽ không được điền giá trị mặc định. Chỉ dữ liệu mới được thêm vào mới được điền giá trị mặc định.
+Khi chỉnh sửa dữ liệu hiện có, dữ liệu trống sẽ không được điền giá trị mặc định, chỉ dữ liệu mới được thêm mới được điền giá trị mặc định.
 
-### Giá trị mặc định cho các trường quan hệ
+### Giá trị mặc định của dữ liệu quan hệ
 
-Chỉ các quan hệ kiểu **Nhiều-tới-Một** và **Nhiều-tới-Nhiều** mới có giá trị mặc định khi sử dụng các thành phần chọn (Select, RecordPicker).
+Chỉ các quan hệ kiểu "**nhiều-một**" và "**nhiều-nhiều**", và sử dụng component Picker (Select, RecordPicker) mới có giá trị mặc định.
 
 ![20251028164128](https://static-docs.nocobase.com/20251028164128.png)
 
 ## Biến giá trị mặc định
 
-### Các biến có sẵn
+### Có những biến nào
 
 - Người dùng hiện tại;
-- Bản ghi hiện tại; khái niệm này chỉ áp dụng cho các bản ghi đã tồn tại;
-- Biểu mẫu hiện tại, lý tưởng là chỉ liệt kê các trường trong biểu mẫu;
-- Đối tượng hiện tại, một khái niệm trong biểu mẫu con (đối tượng dữ liệu cho mỗi hàng trong biểu mẫu con);
+- Bản ghi hiện tại, chỉ dữ liệu đã tồn tại mới có khái niệm bản ghi hiện tại;
+- Form hiện tại, lý tưởng chỉ liệt kê các Field trong Form;
+- Đối tượng hiện tại, khái niệm trong Sub-Form (đối tượng dữ liệu mỗi hàng trong Sub-Form);
 - Tham số URL
-Để biết thêm thông tin về biến, hãy tham khảo [Biến](/interface-builder/variables)
+  Xem thêm về biến tại [Biến](/interface-builder/variables)
 
-### Biến giá trị mặc định của trường
+### Biến giá trị mặc định Field
 
-Chia thành hai loại: trường không quan hệ và trường quan hệ.
+Chia thành hai loại Field không quan hệ và Field quan hệ.
 
-#### Biến giá trị mặc định của trường quan hệ
+#### Biến giá trị mặc định Field quan hệ
 
-- Đối tượng biến phải là một bản ghi của bộ sưu tập;
-- Phải là một bảng trong chuỗi kế thừa, có thể là bảng hiện tại hoặc bảng cha/con;
-- Biến "Các bản ghi được chọn trong bảng" chỉ khả dụng cho các trường quan hệ "Nhiều-tới-Nhiều" và "Một-tới-Nhiều/Nhiều-tới-Một";
-- **Đối với các kịch bản đa cấp, cần làm phẳng và loại bỏ trùng lặp**
+- Đối tượng biến phải là bản ghi collection;
+- Phải là Table trong chuỗi kế thừa, có thể là Table hiện tại, cũng có thể là Table cha-con;
+- Biến "Bản ghi được chọn trong Form" chỉ có thể sử dụng trong Field quan hệ "nhiều-nhiều" và "một-nhiều/nhiều-một";
+- **Khi nhiều cấp, cần làm phẳng và loại bỏ trùng lặp**
 
 ```typescript
-// Các bản ghi được chọn trong bảng:
+// Bản ghi được chọn trong Table:
 [{id:1},{id:2},{id:3},{id:4}]
 
-// Các bản ghi được chọn trong bảng/một-tới-một:
-[{toOne: {id:2}}, {toOne: {id:3}}, {toOne: {id:3}}]
+// Bản ghi được chọn trong Table/quan hệ một:
+[{quan_hệ_một: {id:2}}, {quan_hệ_một: {id:3}}, {quan_hệ_một: {id:3}}]
 // Làm phẳng và loại bỏ trùng lặp
 [{id: 2}, {id: 3}]
 
-// Các bản ghi được chọn trong bảng/một-tới-nhiều:
-[{toMany: [{id: 1}, {id:2}]}, {toMany: {[id:3}, {id:4}]}]
+// Bản ghi được chọn trong Table/quan hệ nhiều:
+[{quan_hệ_nhiều: [{id: 1}, {id:2}]}, {quan_hệ_nhiều: {[id:3}, {id:4}]}]
 // Làm phẳng
 [{id:1},{id:2},{id:3},{id:4}]
 ```
 
-#### Biến giá trị mặc định của trường không quan hệ
+#### Biến giá trị mặc định không quan hệ
 
-- Các kiểu dữ liệu phải nhất quán hoặc tương thích, ví dụ như chuỗi tương thích với số, và tất cả các đối tượng cung cấp phương thức toString;
-- Trường JSON là đặc biệt và có thể lưu trữ bất kỳ loại dữ liệu nào;
+- Loại nhất quán hoặc tương thích, ví dụ chuỗi tương thích với số, và tất cả các đối tượng có cung cấp phương thức toString;
+- Field JSON khá đặc biệt, có thể lưu trữ bất kỳ dữ liệu nào;
 
-### Cấp độ trường (Trường tùy chọn)
+### Cấp độ Field (Field tùy chọn)
 
 ![20240411101157](https://static-docs.nocobase.com/20240411101157.png)
 
-- Biến giá trị mặc định của trường không quan hệ
-  - Khi chọn trường đa cấp, chỉ giới hạn ở quan hệ một-tới-một và không hỗ trợ quan hệ một-tới-nhiều;
-  - Trường JSON là đặc biệt và có thể không bị giới hạn;
+- Biến giá trị mặc định không quan hệ
+  - Khi chọn Field nhiều cấp, chỉ giới hạn ở quan hệ đến một, không hỗ trợ quan hệ đến nhiều;
+  - Field JSON khá đặc biệt, có thể không giới hạn;
 
-- Biến giá trị mặc định của trường quan hệ
-  - hasOne, chỉ hỗ trợ quan hệ một-tới-một;
-  - hasMany, hỗ trợ cả quan hệ một-tới-một (chuyển đổi nội bộ) và một-tới-nhiều;
-  - belongsToMany, hỗ trợ cả quan hệ một-tới-một (chuyển đổi nội bộ) và một-tới-nhiều;
-  - belongsTo, thường là quan hệ một-tới-một, nhưng khi quan hệ cha là hasMany, nó cũng hỗ trợ một-tới-nhiều (vì hasMany/belongsTo về bản chất là quan hệ nhiều-tới-nhiều);
+- Biến giá trị mặc định quan hệ
+  - hasOne, chỉ hỗ trợ quan hệ đến một;
+  - hasMany, đến một (chuyển đổi nội bộ) và đến nhiều đều được;
+  - belongsToMany, đến một (chuyển đổi nội bộ) và đến nhiều đều được;
+  - belongsTo, thường là đến một, khi quan hệ cha là hasMany, cũng hỗ trợ đến nhiều (vì hasMany/belongsTo về bản chất là quan hệ nhiều-nhiều);
 
-## Các trường hợp đặc biệt
+## Giải thích các trường hợp đặc biệt
 
-### Quan hệ "Nhiều-tới-Nhiều" tương đương với sự kết hợp của "Một-tới-Nhiều/Nhiều-tới-Một"
+### "Nhiều-nhiều" tương đương với tổ hợp "một-nhiều/nhiều-một"
 
 Mô hình
 
 ![20240411101558](https://static-docs.nocobase.com/20240411101558.png)
 
-### Tại sao quan hệ Một-tới-Một và Một-tới-Nhiều không có giá trị mặc định?
+### Tại sao một-một và một-nhiều không có giá trị mặc định?
 
-Ví dụ, trong quan hệ A.B, nếu b1 đã được liên kết với a1, nó không thể liên kết với a2. Nếu b1 liên kết với a2, liên kết với a1 sẽ bị gỡ bỏ. Trong trường hợp này, dữ liệu không được chia sẻ, trong khi giá trị mặc định là một cơ chế chia sẻ (tất cả đều có thể liên kết). Do đó, quan hệ Một-tới-Một và Một-tới-Nhiều không thể thiết lập giá trị mặc định.
+Ví dụ quan hệ A.B, b1 đã được a1 liên kết, thì không thể được a2 liên kết, nếu b1 liên kết a2, thì sẽ giải tỏa liên kết với a1, trong trường hợp này dữ liệu không phải là chia sẻ, mà giá trị mặc định là cơ chế chia sẻ (đều có thể liên kết), do đó một-một và một-nhiều không thể cài đặt giá trị mặc định.
 
-### Tại sao biểu mẫu con hoặc bảng con của quan hệ Nhiều-tới-Một và Nhiều-tới-Nhiều không thể có giá trị mặc định?
+### Tại sao Sub-Form hoặc Sub-Table của nhiều-một và nhiều-nhiều cũng không thể có giá trị mặc định?
 
-Bởi vì trọng tâm của biểu mẫu con và bảng con là chỉnh sửa trực tiếp dữ liệu quan hệ (bao gồm thêm mới, xóa bỏ), trong khi giá trị mặc định của quan hệ là cơ chế chia sẻ, tất cả đều có thể liên kết nhưng không thể sửa đổi dữ liệu quan hệ. Do đó, không phù hợp để cung cấp giá trị mặc định trong trường hợp này.
+Bởi vì điểm nhấn của Sub-Form và Sub-Table là chỉnh sửa trực tiếp dữ liệu quan hệ (bao gồm thêm mới, xóa), trong khi giá trị mặc định quan hệ là cơ chế chia sẻ, đều có thể liên kết, nhưng không thể sửa đổi dữ liệu quan hệ. Do đó trong trường hợp này không phù hợp để cung cấp giá trị mặc định.
 
-Ngoài ra, biểu mẫu con hoặc bảng con có các trường con, và sẽ không rõ liệu giá trị mặc định của biểu mẫu con hoặc bảng con được thiết lập là giá trị mặc định cho hàng hay cho cột.
+Ngoài ra, Sub-Form hoặc Sub-Table có Field con, giá trị mặc định của Sub-Form hoặc Sub-Table cài đặt là giá trị mặc định hàng hay giá trị mặc định cột sẽ khó phân biệt.
 
-Xem xét tổng thể, việc không thể thiết lập trực tiếp giá trị mặc định cho biểu mẫu con hoặc bảng con, bất kể loại quan hệ nào, là phù hợp hơn.
+Xem xét tổng hợp, bất kể quan hệ gì Sub-Form hoặc Sub-Table đều không thể cài đặt trực tiếp giá trị mặc định là phù hợp hơn.

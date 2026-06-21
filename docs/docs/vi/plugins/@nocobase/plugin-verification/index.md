@@ -1,14 +1,14 @@
 ---
-displayName: "Xác thực"
+displayName: "Xác minh"
 packageName: '@nocobase/plugin-verification'
+title: "Xác minh"
+keywords: "Xác minh,Plugin,NocoBase"
 description: |
-  Quản lý xác thực danh tính người dùng, bao gồm SMS, trình xác thực TOTP, v.v., có khả năng mở rộng.
+  Quản lý xác thực danh tính người dùng, bao gồm SMS, TOTP authenticator, v.v., có thể mở rộng.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Xác thực
+# Xác minh

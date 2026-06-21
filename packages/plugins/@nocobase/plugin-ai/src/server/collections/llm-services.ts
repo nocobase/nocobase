@@ -11,7 +11,9 @@ import { defineCollection } from '@nocobase/database';
 import llmServices from '../../collections/llm-services';
 
 export default defineCollection({
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
   autoGenId: false,
   ...llmServices,
+  sortable: true,
 });

@@ -1,18 +1,17 @@
 ---
-displayName: "Adaptor Kunci Terdistribusi Redis"
+displayName: "Adapter Distributed Lock Redis"
 packageName: '@nocobase/plugin-lock-adapter-redis'
+title: "Adapter Distributed Lock Redis"
+keywords: "Adapter Distributed Lock Redis,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Implementasi kunci terdistribusi berbasis Redis.
+  Implementasi distributed lock berbasis Redis
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Adaptor Kunci Terdistribusi Redis
+# Adapter Distributed Lock Redis

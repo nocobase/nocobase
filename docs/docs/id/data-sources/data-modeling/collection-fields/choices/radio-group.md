@@ -1,13 +1,15 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Radio Button"
+description: "Field Radio Button group, memilih satu item dari beberapa opsi."
+keywords: "radio button,radio-group,pilihan tunggal,field opsi,NocoBase"
+---
 
-# Grup Radio
+# Radio Button
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

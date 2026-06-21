@@ -1,0 +1,84 @@
+{
+  "block.details1": {
+    "uid": "plmj6eypi4t8"
+  },
+  "block.details1.grid": {
+    "uid": "obyzusxgdv6w"
+  },
+  "field.name.wrapper": {
+    "uid": "ak1p7lei4dun"
+  },
+  "field.name.inner": {
+    "uid": "g5w5yampdf15"
+  },
+  "field.species.wrapper": {
+    "uid": "f34uio74shio"
+  },
+  "field.species.inner": {
+    "uid": "rd1njnddjka0"
+  },
+  "field.breed.wrapper": {
+    "uid": "al8zg87eu739"
+  },
+  "field.breed.inner": {
+    "uid": "bnlkyabme31d"
+  },
+  "field.ageYears.wrapper": {
+    "uid": "sq9b10osgiq6"
+  },
+  "field.ageYears.inner": {
+    "uid": "fifbv8dgx4og"
+  },
+  "field.gender.wrapper": {
+    "uid": "cul9x0hro5d0"
+  },
+  "field.gender.inner": {
+    "uid": "vbvstng0dpma"
+  },
+  "field.owner.wrapper": {
+    "uid": "ol3fjo39iqup"
+  },
+  "field.owner.inner": {
+    "uid": "lao3dohdgbw6"
+  },
+  "field.status.wrapper": {
+    "uid": "yf7kossp3y9i"
+  },
+  "field.status.inner": {
+    "uid": "nol0fyesnipr"
+  },
+  "field.vaccinated.wrapper": {
+    "uid": "uuzrdjzs334h"
+  },
+  "field.vaccinated.inner": {
+    "uid": "c9b07r886apj"
+  },
+  "field.lastVisitAt.wrapper": {
+    "uid": "grte2z1y6hk9"
+  },
+  "field.lastVisitAt.inner": {
+    "uid": "uinvgndog60q"
+  },
+  "field.notes.wrapper": {
+    "uid": "hk33ueoh3h7m"
+  },
+  "field.notes.inner": {
+    "uid": "pr1qe69t2d4e"
+  },
+  "field.createdAt.wrapper": {
+    "uid": "cf9p6r8gcwii"
+  },
+  "field.createdAt.inner": {
+    "uid": "j7e4yt5k4c56"
+  },
+  "field.updatedAt.wrapper": {
+    "uid": "iwuyyhrebfgt"
+  },
+  "field.updatedAt.inner": {
+    "uid": "e903qkbq4z8n"
+  },
+  "page.route": {
+    "routeId": 355788225118208,
+    "schemaUid": "pet-management"
+  }
+}

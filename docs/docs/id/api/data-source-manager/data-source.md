@@ -1,82 +1,86 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "DataSource (abstract)"
+description: "Abstract class DataSource NocoBase: merepresentasikan tipe data source (database, API, dll), container untuk Collection dan Repository."
+keywords: "DataSource,abstract class,tipe data source,Collection,container Repository,NocoBase"
+---
 
-# DataSource (abstrak)
+# DataSource (abstract)
 
-`DataSource` adalah kelas abstrak yang digunakan untuk merepresentasikan jenis sumber data, seperti database, API, dan lain-lain.
+Abstract class `DataSource`, digunakan untuk merepresentasikan satu tipe data source, dapat berupa database, API, dll.
 
 ## Anggota
 
 ### collectionManager
 
-Instans CollectionManager untuk sumber data, yang harus mengimplementasikan antarmuka [`ICollectionManager`](/api/data-source-manager/i-collection-manager).
+Instance CollectionManager dari data source, harus mengimplementasikan interface [`ICollectionManager`](/api/data-source-manager/i-collection-manager).
 
 ### resourceManager
 
-Instans resourceManager untuk sumber data.
+Instance resourceManager dari data source
 
 ### acl
 
-Instans ACL untuk sumber data.
+Instance ACL dari data source
 
 ## API
 
 ### constructor()
 
-Konstruktor, membuat instans `DataSource`.
+Constructor, membuat instance `DataSource`.
 
-#### Tanda Tangan
+#### Signature
 
 - `constructor(options: DataSourceOptions)`
 
-### init()
+### init() 
 
-Fungsi inisialisasi, dipanggil segera setelah `constructor`.
+Fungsi inisialisasi, dipanggil setelah `constructor`.
 
-#### Tanda Tangan
+#### Signature
 
 - `init(options: DataSourceOptions)`
 
+
 ### name
 
-#### Tanda Tangan
+#### Signature
 
 - `get name()`
 
-Mengembalikan nama instans sumber data.
+Mengembalikan nama instance dari data source
 
 ### middleware()
 
-Mendapatkan middleware untuk DataSource, yang digunakan untuk dipasang ke Server untuk menerima permintaan.
+Mendapatkan middleware DataSource, digunakan untuk mounting ke Server untuk menerima request.
 
 ### testConnection()
 
-Metode statis yang dipanggil selama operasi pengujian koneksi. Ini dapat digunakan untuk validasi parameter, dan subkelas mengimplementasikan logika spesifiknya.
+Static method, dipanggil saat operasi test koneksi, dapat digunakan untuk validasi parameter, logika spesifik diimplementasikan oleh subclass.
 
-#### Tanda Tangan
+#### Signature
 
 - `static testConnection(options?: any): Promise<boolean>`
 
 ### load()
 
-#### Tanda Tangan
+#### Signature
 
 - `async load(options: any = {})`
 
-Operasi pemuatan untuk sumber data. Subkelas mengimplementasikan logikanya.
+Operasi loading data source, logika diimplementasikan oleh subclass.
 
 ### createCollectionManager()
 
-#### Tanda Tangan
+#### Signature
 - `abstract createCollectionManager(options?: any): ICollectionManager`
 
-Membuat instans CollectionManager untuk sumber data. Subkelas mengimplementasikan logikanya.
+Membuat instance CollectionManager dari data source, logika diimplementasikan oleh subclass.
 
 ### createResourceManager()
 
-Membuat instans ResourceManager untuk sumber data. Subkelas dapat menimpa implementasinya. Secara default, ini membuat `ResourceManager` dari `@nocobase/resourcer`.
+Membuat instance ResourceManager dari data source, subclass dapat meng-override implementasi, secara default membuat `ResourceManager` dari `@nocobase/resourcer`.
 
 ### createACL()
 
-- Membuat instans ACL untuk DataSource. Subkelas dapat menimpa implementasinya. Secara default, ini membuat `ACL` dari `@nocobase/acl`.
+- Membuat instance ACL dari DataSource, subclass dapat meng-override implementasi, secara default membuat `ACL` dari `@nocobase/acl`.
+

@@ -1,59 +1,61 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ikhtisar Block"
+description: "Block Interface Builder NocoBase: Data Block, Filter Block, Block Lainnya, dapat ditempatkan di Page, dialog, drawer, mendukung drag layout, event flow, konfigurasi parameter."
+keywords: "Block, Blocks, Data Block, Filter Block, drag layout, event flow, interface builder, NocoBase"
+---
 
-# Blok
+# Block
 
-Blok adalah wadah untuk data dan konten. Blok dapat ditempatkan di Halaman (Page), Dialog (Modal), atau Laci (Drawer), dan beberapa blok dapat diatur dengan cara seret dan lepas (drag and drop) secara bebas.
+Block adalah container untuk data dan konten, dapat ditempatkan di Page, dialog (Modal), atau drawer (Drawer). Beberapa Block dapat di-drag dan diatur dengan bebas.
 
-## Jenis Blok
+## Tipe Block
 
-![Jenis Blok](https://static-docs.nocobase.com/f71af45b5cd914ea0558f760ddbbba58.png)
+![Tipe Block](https://static-docs.nocobase.com/f71af45b5cd914ea0558f760ddbbba58.png)
 
-- Blok Data: Digunakan untuk menampilkan data dari sumber data pada antarmuka.
-- Blok Filter: Digunakan untuk mengambil data dari sumber data sebagai kondisi filter untuk memfilter blok data lainnya.
-- Blok Lainnya: Digunakan untuk menampung konten spesifik atau independen seperti daftar tugas alur kerja, log audit, Markdown, dan lain-lain.
+- Data Block: digunakan untuk menampilkan data dari data source di antarmuka.
+- Filter Block: digunakan untuk menggunakan data dari data source sebagai kondisi filter, untuk memfilter Data Block lainnya.
+- Block Lainnya: digunakan untuk membawa konten tertentu atau independen seperti todo workflow, audit log, Markdown, dll.
 
-## Menambah Blok
+## Menambahkan Block
 
-Blok dapat ditempatkan di Halaman (Page), Dialog (Modal), atau Laci (Drawer).
+Block dapat ditempatkan di Page, dialog (Modal), atau drawer (Drawer).
 
-### Blok di Halaman
+### Block di Page
 
-Saat ini, jenis blok di halaman meliputi: Blok Data, Blok Filter, dan Blok Lainnya.
+Saat ini tipe Block di Page meliputi: Data Block, Filter Block, Block Lainnya.
 
 ![20251023222441](https://static-docs.nocobase.com/20251023222441.png)
 
-### Blok di Pop-up (Dialog atau Laci)
+### Block di Popup (Dialog atau Drawer)
 
-Pop-up hadir dalam dua jenis: dialog dan laci. Sama seperti halaman, pop-up juga dapat ditambahkan blok. Perbedaannya adalah blok formulir di pop-up biasanya digunakan untuk menambah, mengedit, atau melihat satu catatan. Jenis bloknya meliputi Blok Data dan Blok Lainnya.
+Popup memiliki dua tipe yaitu dialog dan drawer. Sama seperti Page, juga dapat menambahkan Block. Perbedaannya adalah Block Form di Popup biasanya untuk tambah, edit, atau lihat record tunggal. Tipe Block meliputi Data Block dan Block Lainnya.
 
 ![20251023222613](https://static-docs.nocobase.com/20251023222613.png)
 
-## Desainer Blok
+## Designer Block
 
-Setiap blok memiliki tiga ikon kecil di sudut kanan atas. Dari kiri ke kanan, ikon-ikon tersebut adalah:
+Setiap Block memiliki tiga ikon kecil di sudut kanan atas, dari kiri ke kanan masing-masing:
 
-1.  Tata Letak Seret & Lepas
-2.  [Alur Peristiwa](/interface-builder/event-flow)
-3.  Pengaturan Blok
+1. Drag layout
+2. [Event Flow](/interface-builder/event-flow)
+3. Konfigurasi parameter Block
 
 ![20251023224032](https://static-docs.nocobase.com/20251023224032.png)
 
-Untuk blok sederhana, semua opsi konfigurasi terpusat di 'Pengaturan Blok', seperti Blok JS.
+Block sederhana semua item konfigurasi terpusat di "Konfigurasi parameter Block", seperti JS Block
 
 ![20251023224903](https://static-docs.nocobase.com/20251023224903.png)
 
-Blok data yang kompleks juga menyediakan 'Konfigurasi Bidang' dan 'Konfigurasi Aksi' yang terpisah dan tertanam.
+Block tipe data yang kompleks juga akan menyediakan "Konfigurasi Field" dan "Konfigurasi Action" yang independen dan tertanam.
 
 ![20251023225141](https://static-docs.nocobase.com/20251023225141.png)
 
-Selain itu, ada fleksibilitas untuk lebih banyak kemungkinan penumpukan, seperti yang terlihat pada blok Bagan.
+Selain itu, Anda juga dapat mengeksplorasi secara bebas, menyediakan kemungkinan nesting yang lebih banyak, seperti Block Chart.
 
 ![](https://static-docs.nocobase.com/07588190b3f41ae3060e71d8b76b4447.png)
 
-## Tata Letak Blok
+## Layout Block
 
-Tata letak beberapa blok dapat disesuaikan dengan menyeret dan melepasnya.
+Beberapa Block dapat di-drag untuk menyesuaikan layout.
 
 ![20251029201501](https://static-docs.nocobase.com/20251029201501.gif)

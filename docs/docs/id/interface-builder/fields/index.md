@@ -1,35 +1,37 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ikhtisar Field"
+description: "Field Interface Builder NocoBase: komponen Field adalah container data unit, melekat pada Block, mendukung Field Form, Field Table, Field Filter, dapat dikonfigurasi layout dan aturan validasi."
+keywords: "Field, Fields, Field Form, Field Table, Field Filter, komponen Field, interface builder, NocoBase"
+---
 
-# Bidang
+# Field
 
-Di antarmuka pengguna (UI), bidang adalah komponen bidang yang berfungsi sebagai pembawa data unit. Berbagai jenis data ditampilkan menggunakan komponen bidang yang berbeda. Bidang hanya dapat melekat pada blok dan tidak dapat digunakan secara mandiri.
+Di UI, Field adalah komponen Field, yang merupakan container data unit. Tipe data yang berbeda ditampilkan dalam komponen Field yang berbeda. Field hanya dapat melekat pada Block, tidak dapat digunakan secara independen.
 
-## Bidang dalam Blok
+## Field di Block
 
-Bidang umumnya tidak digunakan sendiri, melainkan sebagai elemen anak dari blok bertipe data. Blok bertipe data biasanya memiliki opsi "Konfigurasi bidang", dan daftar bidang disediakan oleh **koleksi** saat ini.
+Field umumnya tidak digunakan sendirian, tetapi sebagai sub-elemen dari Block tipe data. Block tipe data biasanya memiliki "Konfigurasi Field". Daftar Field disediakan oleh Collection saat ini.
 
 ![20251029204240](https://static-docs.nocobase.com/20251029204240.png)
 
-## Desainer Bidang (Toolbar)
+## Designer Field (Toolbar)
 
-Sama seperti blok, sudut kanan atas komponen bidang juga memiliki tiga ikon, yaitu:
+Sama seperti Block, di sudut kanan atas komponen Field juga ada tiga ikon, masing-masing:
 
-- Seret untuk tata letak
-- [Alur peristiwa](/interface-builder/event-flow)
-- Konfigurasi
+- Drag layout
+- [Event Flow](/interface-builder/event-flow)
+- Konfigurasi parameter
 
 ![20251025165432](https://static-docs.nocobase.com/20251025165432.png)
 
-## Tata Letak Bidang
+## Layout Field
 
-Anda dapat menyesuaikan tata letak bidang dalam sebuah blok dengan menyeret dan melepaskan.
+Melalui drag-and-drop, Anda dapat menyesuaikan layout Field di Block.
 
 ![20251025165605](https://static-docs.nocobase.com/20251025165605.gif)
 
-## Opsi Konfigurasi Bidang
+## Konfigurasi Field
 
-Selain opsi konfigurasi bidang umum, berbagai jenis bidang mendukung opsi konfigurasi tertentu.
+Selain item konfigurasi Field umum, tipe Field yang berbeda mendukung item konfigurasi tertentu.
 
 ![20251025170120](https://static-docs.nocobase.com/20251025170120.png)

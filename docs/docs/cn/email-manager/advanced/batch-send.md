@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "批量发送"
+description: "向多个收件人批量发送邮件，每个收件人收到独立邮件；可在表格中配置批量选中发送、收件人字段、发送追踪。"
+keywords: "批量发送,批量邮件,表格批量发送,邮件发送追踪,NocoBase"
 ---
-
 # 批量发送
 
 ## 批量发送概览

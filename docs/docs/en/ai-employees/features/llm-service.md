@@ -1,29 +1,41 @@
+---
+pkg: '@nocobase/plugin-ai'
+title: 'Configure LLM Service'
+description: 'Configure LLM services available for AI Employees. Supports OpenAI, Gemini, Claude, DeepSeek, Qwen, Kimi, and Ollama. Includes creating services, enabling/sorting, and availability testing.'
+keywords: 'LLM Service,OpenAI,Claude,Gemini,DeepSeek,Ollama,NocoBase AI'
+---
+
 # Configure LLM Service
 
-Before using AI Employees, you need to connect to an online LLM Service.
+Before using AI Employees, configure available LLM services first.
 
-NocoBase currently supports mainstream online LLM Services such as OpenAI, Gemini, Claude, DeepSeek, Qwen (Aliyun), etc.
+Supported providers include OpenAI, Gemini, Claude, DeepSeek, Qwen, Kimi, and Ollama local models.
 
-In addition to online LLM Services, NocoBase also supports connecting to Ollama local models.
+## Create Service
 
+Go to `System Settings -> AI Employees -> LLM service`.
 
-## Select LLM Service
-Enter the AI Employee plugin configuration page, click the `LLM service` tab to enter the LLM Service management page.
+1. Click `Add New` to open the creation dialog.
+2. Select `Provider`.
+3. Fill `Title`, `API Key`, and `Base URL` (optional).
+4. Configure `Enabled Models`:
+   - `Select models`: select from the provider model list.
+   - `Manual input`: manually enter model ID and display name when the model list cannot be retrieved from the provider API.
+5. Click `Submit` to save.
 
-![20251021213122](https://static-docs.nocobase.com/20251021213122.png)
+![20260425172809](https://static-docs.nocobase.com/20260425172809.png)
 
-Hover over the `Add New` button in the upper right corner of the LLM Service list and select the LLM Service you want to use.
+## Enable and Sort Services
 
-![20251021213358](https://static-docs.nocobase.com/20251021213358.png)
+In the LLM service list, you can:
 
-Taking OpenAI as an example, enter an easy-to-remember `title` in the pop-up window, then enter the `API key` obtained from OpenAI, and click `Submit` to save. This completes the LLM Service configuration.
+- Toggle service status with the `Enabled` switch.
+- Drag to reorder services (affects model display order).
 
-The `Base URL` can usually be left blank. If you are using a third-party LLM Service that is compatible with the OpenAI API, please fill in the corresponding Base URL.
+![llm-service-list-enabled-and-sort.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/llm-service-list-enabled-and-sort.png)
 
-![20251021214549](https://static-docs.nocobase.com/20251021214549.png)
+## Availability Test
 
-## Availability Test (Test flight)
+Use `Test flight` at the bottom of the service dialog to verify service and model availability.
 
-On the LLM Service configuration page, click the `Test flight` button, enter the name of the model you want to use, and click the `Run` button to test whether the LLM Service and model are available.
-
-![20251021214903](https://static-docs.nocobase.com/20251021214903.png)
+It is recommended to run this test before production use.

@@ -1,14 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Event Flow dan Konfigurasi FlowModel"
+description: "Event flow dan konfigurasi FlowModel: registerFlow untuk mendaftarkan Flow, mengkonfigurasi Flow, event, dan properti dalam pembuatan UI, mewujudkan orkestrasi no-code."
+keywords: "Konfigurasi FlowModel,registerFlow,Konfigurasi event flow,Orkestrasi no-code,Pembuatan UI,FlowEngine,NocoBase"
+---
 
-# FlowModel: Alur dan Konfigurasi
+# Event Flow dan Konfigurasi FlowModel
 
-FlowModel menyediakan pendekatan berbasis "Alur" untuk mengimplementasikan logika konfigurasi komponen, membuat perilaku dan konfigurasi komponen lebih mudah diperluas dan divisualisasikan.
+FlowModel menyediakan cara untuk mengimplementasikan logika konfigurasi komponen berdasarkan "event flow (Flow)", sehingga perilaku dan konfigurasi komponen menjadi lebih dapat diperluas dan visual.
 
 ## Model Kustom
 
-Anda dapat membuat model komponen kustom dengan mewarisi `FlowModel`. Model ini perlu mengimplementasikan metode `render()` untuk mendefinisikan logika rendering komponen.
+Anda dapat membuat model komponen kustom dengan mewarisi `FlowModel`. Model perlu mengimplementasikan metode `render()` untuk mendefinisikan logika render komponen.
 
 ```ts
 class MyModel extends FlowModel {
@@ -18,9 +20,9 @@ class MyModel extends FlowModel {
 }
 ```
 
-## Mendaftarkan Alur
+## Mendaftarkan Flow (Event Flow)
 
-Setiap model dapat mendaftarkan satu atau lebih **Alur** untuk menjelaskan logika konfigurasi dan langkah-langkah interaksi komponen.
+Setiap model dapat mendaftarkan satu atau lebih **Flow** untuk mendeskripsikan logika konfigurasi dan langkah-langkah interaksi komponen.
 
 ```ts
 MyModel.registerFlow({
@@ -49,28 +51,27 @@ MyModel.registerFlow({
 });
 ```
 
-Deskripsi
+Penjelasan
 
--   `key`: Pengidentifikasi unik untuk Alur.
--   `title`: Nama Alur, digunakan untuk tampilan UI.
+-   `key`: Identifier unik dari Flow.
+-   `title`: Nama Flow, digunakan untuk tampilan UI.
 -   `steps`: Mendefinisikan langkah-langkah konfigurasi (Step). Setiap langkah meliputi:
     -   `title`: Judul langkah.
-    -   `uiSchema`: Struktur formulir konfigurasi (kompatibel dengan Formily Schema).
-    -   `defaultParams`: Parameter bawaan.
-    -   `handler(ctx, params)`: Dipicu saat disimpan, digunakan untuk memperbarui status model.
+    -   `uiSchema`: Struktur form konfigurasi (kompatibel dengan Formily Schema).
+    -   `defaultParams`: Parameter default.
+    -   `handler(ctx, params)`: Dipicu saat menyimpan, digunakan untuk memperbarui state model.
 
-## Merender Model
+## Render Model
 
-Saat merender model komponen, Anda dapat menggunakan parameter `showFlowSettings` untuk mengontrol apakah akan mengaktifkan fitur konfigurasi. Jika `showFlowSettings` diaktifkan, entri konfigurasi (seperti ikon pengaturan atau tombol) akan secara otomatis muncul di sudut kanan atas komponen.
+Saat merender model komponen, Anda dapat mengontrol apakah fitur konfigurasi diaktifkan melalui parameter `showFlowSettings`. Jika `showFlowSettings` diaktifkan, entry konfigurasi (seperti ikon pengaturan atau tombol) akan otomatis ditampilkan di pojok kanan atas komponen.
 
 ```ts
 <FlowModelRenderer model={model} showFlowSettings />
 ```
 
-## Membuka Formulir Konfigurasi Secara Manual dengan openFlowSettings
+## Menggunakan openFlowSettings untuk Membuka Form Konfigurasi Secara Manual
 
-Selain membuka formulir konfigurasi melalui entri interaksi bawaan, Anda juga dapat memanggil
-`openFlowSettings()` secara manual dalam kode.
+Selain membuka form konfigurasi melalui entry interaksi bawaan, Anda juga dapat memanggil `openFlowSettings()` secara manual dalam kode.
 
 ``` ts
 flowSettings.open(options: FlowSettingsOpenOptions): Promise<boolean>;
@@ -81,18 +82,18 @@ model.openFlowSettings(options?: Omit<FlowSettingsOpenOptions, 'model'>): Promis
 
 ``` ts
 interface FlowSettingsOpenOptions {
-  model: FlowModel;               // Wajib, instans model yang terkait
-  preset?: boolean;               // Hanya merender langkah-langkah yang ditandai preset=true (default false)
-  flowKey?: string;               // Menentukan satu Alur
-  flowKeys?: string[];            // Menentukan beberapa Alur (diabaikan jika flowKey juga disediakan)
-  stepKey?: string;               // Menentukan satu langkah (biasanya digunakan dengan flowKey)
-  uiMode?: 'dialog' | 'drawer';   // Kontainer untuk menampilkan formulir, default 'dialog'
+  model: FlowModel;               // Wajib, instance model yang dimiliki
+  preset?: boolean;               // Hanya merender step yang ditandai preset=true (default false)
+  flowKey?: string;               // Menentukan satu Flow
+  flowKeys?: string[];            // Menentukan beberapa Flow (diabaikan jika flowKey juga disediakan)
+  stepKey?: string;               // Menentukan satu step (biasanya digunakan dengan flowKey)
+  uiMode?: 'dialog' | 'drawer';   // Container tampilan form, default 'dialog'
   onCancel?: () => void;          // Callback saat tombol batal diklik
   onSaved?: () => void;           // Callback setelah konfigurasi berhasil disimpan
 }
 ```
 
-### Contoh: Membuka Formulir Konfigurasi Alur Tertentu dalam Mode Drawer
+### Contoh: Membuka Form Konfigurasi Flow Tertentu dengan Mode Drawer
 
 ``` ts
 await model.openFlowSettings({

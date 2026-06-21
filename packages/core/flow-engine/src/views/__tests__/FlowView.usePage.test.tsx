@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { render, act, waitFor, screen } from '@testing-library/react';
 import { FlowEngine } from '../../flowEngine';
 import { FlowEngineProvider } from '../../provider';
@@ -167,20 +167,260 @@ describe('FlowViewer zIndex with usePage', () => {
     );
 
     await waitFor(() => expect(api).toBeDefined());
+    const pageApi = api as NonNullable<typeof api>;
 
     await act(async () => {
-      api!.open({ target, content: <div data-testid="page1">Page 1</div> }, engine.context);
+      pageApi.open({ target, content: <div data-testid="page1">Page 1</div> }, engine.context);
     });
     await waitFor(() => expect(screen.getByTestId('page1')).toBeInTheDocument());
 
     // Opening page2 into the global embed container should destroy page1 (replace behavior).
     await act(async () => {
-      api!.open({ target, content: <div data-testid="page2">Page 2</div> }, engine.context);
+      pageApi.open({ target, content: <div data-testid="page2">Page 2</div> }, engine.context);
     });
     await waitFor(() => expect(screen.getByTestId('page2')).toBeInTheDocument());
     expect(screen.queryByTestId('page1')).not.toBeInTheDocument();
 
     unmount();
     document.body.removeChild(target);
+  });
+
+  it('keeps active global embed view when replacement beforeClose blocks closing', async () => {
+    let getViewer: () => FlowViewer;
+    const beforeClose = vi.fn().mockResolvedValue(false);
+
+    const target = document.createElement('div');
+    target.id = GLOBAL_EMBED_CONTAINER_ID;
+    document.body.appendChild(target);
+
+    const { unmount } = render(
+      <Wrapper
+        onReady={(fn) => {
+          getViewer = fn;
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(getViewer).toBeDefined());
+    const initialZIndex = getViewer().getNextZIndex();
+
+    let page1: any;
+    await act(async () => {
+      page1 = getViewer().embed({
+        target,
+        content: (currentPage) => {
+          currentPage.beforeClose = beforeClose;
+          return <div data-testid="page1">Page 1</div>;
+        },
+      });
+    });
+
+    await waitFor(() => expect(screen.getByTestId('page1')).toBeInTheDocument());
+    expect(getViewer().getNextZIndex()).toBe(initialZIndex + 1);
+
+    await act(async () => {
+      const page2 = getViewer().embed({ target, content: <div data-testid="page2">Page 2</div> });
+      await page2;
+    });
+
+    expect(beforeClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('page1')).toBeInTheDocument();
+    expect(screen.queryByTestId('page2')).not.toBeInTheDocument();
+    expect(getViewer().getNextZIndex()).toBe(initialZIndex + 1);
+
+    await act(async () => {
+      page1.destroy();
+    });
+
+    unmount();
+    document.body.removeChild(target);
+  });
+
+  it('opens the replacement view after async beforeClose allows global embed replacement', async () => {
+    let getViewer: () => FlowViewer;
+    const beforeClose = vi.fn().mockResolvedValue(true);
+
+    const target = document.createElement('div');
+    target.id = GLOBAL_EMBED_CONTAINER_ID;
+    document.body.appendChild(target);
+
+    const { unmount } = render(
+      <Wrapper
+        onReady={(fn) => {
+          getViewer = fn;
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(getViewer).toBeDefined());
+
+    await act(async () => {
+      getViewer().embed({
+        target,
+        content: (currentPage) => {
+          currentPage.beforeClose = beforeClose;
+          return <div data-testid="page1">Page 1</div>;
+        },
+      });
+    });
+
+    await waitFor(() => expect(screen.getByTestId('page1')).toBeInTheDocument());
+
+    await act(async () => {
+      getViewer().embed({ target, content: <div data-testid="page2">Page 2</div> });
+    });
+
+    await waitFor(() => expect(screen.getByTestId('page2')).toBeInTheDocument());
+    expect(beforeClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('page1')).not.toBeInTheDocument();
+
+    unmount();
+    document.body.removeChild(target);
+  });
+
+  it('runs a pending close only once and allows retry when beforeClose rejects', async () => {
+    let getViewer: () => FlowViewer;
+    let resolveFirstClose: (value: boolean) => void;
+    const beforeClose = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise<boolean>((resolve) => (resolveFirstClose = resolve)))
+      .mockResolvedValueOnce(true);
+
+    const { unmount } = render(
+      <Wrapper
+        onReady={(fn) => {
+          getViewer = fn;
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(getViewer).toBeDefined());
+
+    let page: any;
+    await act(async () => {
+      page = getViewer().embed({
+        content: (currentPage) => {
+          currentPage.beforeClose = beforeClose;
+          return <div data-testid="draft-editor">Draft editor</div>;
+        },
+      });
+    });
+
+    await waitFor(() => expect(screen.getByTestId('draft-editor')).toBeInTheDocument());
+
+    const firstClose = page.close();
+    const secondClose = page.close();
+    expect(firstClose).toBe(secondClose);
+    expect(beforeClose).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFirstClose(false);
+      await firstClose;
+    });
+
+    expect(screen.getByTestId('draft-editor')).toBeInTheDocument();
+
+    await act(async () => {
+      await page.close();
+    });
+
+    expect(beforeClose).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(screen.queryByTestId('draft-editor')).not.toBeInTheDocument());
+
+    unmount();
+  });
+
+  it('keeps only the latest pending global embed replacement', async () => {
+    let getViewer: () => FlowViewer;
+    let resolveBeforeClose: (value: boolean) => void;
+    const beforeClose = vi.fn(() => new Promise<boolean>((resolve) => (resolveBeforeClose = resolve)));
+
+    const target = document.createElement('div');
+    target.id = GLOBAL_EMBED_CONTAINER_ID;
+    document.body.appendChild(target);
+
+    const { unmount } = render(
+      <Wrapper
+        onReady={(fn) => {
+          getViewer = fn;
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(getViewer).toBeDefined());
+    const initialZIndex = getViewer().getNextZIndex();
+
+    await act(async () => {
+      getViewer().embed({
+        target,
+        content: (currentPage) => {
+          currentPage.beforeClose = beforeClose;
+          return <div data-testid="page1">Page 1</div>;
+        },
+      });
+    });
+
+    await waitFor(() => expect(screen.getByTestId('page1')).toBeInTheDocument());
+
+    const page2 = getViewer().embed({ target, content: <div data-testid="page2">Page 2</div> });
+    const page3 = getViewer().embed({ target, content: <div data-testid="page3">Page 3</div> });
+
+    await act(async () => {
+      resolveBeforeClose(true);
+      await page2;
+    });
+
+    expect(beforeClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('page1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('page2')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('page3')).toBeInTheDocument());
+    expect(getViewer().getNextZIndex()).toBe(initialZIndex + 1);
+
+    unmount();
+    document.body.removeChild(target);
+  });
+
+  it('keeps the embed close button usable after beforeClose blocks closing', async () => {
+    let getViewer: () => FlowViewer;
+    const beforeClose = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+
+    const { unmount } = render(
+      <Wrapper
+        onReady={(fn) => {
+          getViewer = fn;
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(getViewer).toBeDefined());
+
+    await act(async () => {
+      getViewer().embed({
+        title: 'Draft editor',
+        content: (currentPage) => {
+          currentPage.beforeClose = beforeClose;
+          return <div data-testid="draft-editor">Draft editor</div>;
+        },
+      });
+    });
+
+    await waitFor(() => expect(screen.getByTestId('draft-editor')).toBeInTheDocument());
+    const closeButton = screen.getByRole('button');
+
+    await act(async () => {
+      closeButton.click();
+    });
+
+    expect(beforeClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('draft-editor')).toBeInTheDocument();
+
+    await act(async () => {
+      closeButton.click();
+    });
+
+    expect(beforeClose).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(screen.queryByTestId('draft-editor')).not.toBeInTheDocument());
+
+    unmount();
   });
 });

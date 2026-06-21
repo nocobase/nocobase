@@ -1,31 +1,34 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Cluster Mode"
+description: "Cluster mode NocoBase: deployment multi-instance, load balancing, shared storage, Redis cache dan message queue, distributed lock, deployment Kubernetes, untuk meningkatkan kemampuan pemrosesan high-concurrency."
+keywords: "cluster mode,deployment multi-instance,load balancing,shared storage,Redis,Kubernetes,distributed lock,message queue,NocoBase"
+---
 
-# Mode Klaster
+# Cluster Mode
 
-## Pendahuluan
+## Pengantar
 
-NocoBase mendukung menjalankan aplikasi dalam mode klaster mulai dari versi v1.6.0. Ketika aplikasi berjalan dalam mode klaster, ia dapat meningkatkan kinerja dalam menangani akses konkuren dengan menggunakan beberapa instans dan mode multi-inti.
+NocoBase mendukung menjalankan aplikasi dalam cluster mode mulai dari versi v1.6.0. Saat aplikasi berjalan dalam cluster mode, aplikasi dapat menggunakan multiple instance dan multi-core mode untuk meningkatkan performa dalam menangani concurrent access.
 
 ## Arsitektur Sistem
 
 ![20251031221530](https://static-docs.nocobase.com/20251031221530.png)
 
-*   **Klaster Aplikasi**: Sebuah klaster yang terdiri dari beberapa instans aplikasi NocoBase. Klaster ini dapat di-deploy pada beberapa server atau dijalankan sebagai beberapa proses dalam mode multi-inti pada satu server.
-*   **Basis Data**: Menyimpan data aplikasi. Dapat berupa basis data *single-node* atau basis data terdistribusi.
-*   **Penyimpanan Bersama**: Digunakan untuk menyimpan berkas dan data aplikasi, mendukung akses baca/tulis dari beberapa instans.
-*   **Middleware**: Meliputi komponen seperti *cache*, sinyal sinkronisasi, antrean pesan, dan kunci terdistribusi untuk mendukung komunikasi dan koordinasi dalam klaster aplikasi.
-*   **Penyeimbang Beban**: Bertanggung jawab untuk mendistribusikan permintaan klien ke instans yang berbeda dalam klaster aplikasi, serta melakukan pemeriksaan kesehatan dan *failover*.
+* Application cluster: Cluster yang terdiri dari beberapa instance aplikasi NocoBase, dapat di-deploy di beberapa server, atau menjalankan beberapa proses dalam multi-core mode pada satu server.
+* Database: Menyimpan data aplikasi, dapat berupa database single-node atau distributed database.
+* Shared storage: Digunakan untuk menyimpan file dan data aplikasi, mendukung akses baca/tulis dari multiple instance.
+* Middleware: Termasuk komponen cache, sync signal, message queue, dan distributed lock, mendukung komunikasi dan koordinasi antar application cluster.
+* Load balancer: Bertanggung jawab mendistribusikan request client ke berbagai instance dalam application cluster, serta melakukan health check dan failover.
 
 ## Pelajari Lebih Lanjut
 
-Dokumen ini hanya memperkenalkan konsep dasar dan komponen mode klaster NocoBase. Untuk detail *deployment* spesifik dan opsi konfigurasi lebih lanjut, silakan lihat dokumen-dokumen berikut:
+Dokumen ini hanya memperkenalkan konsep dasar dan komponen penyusun cluster mode NocoBase. Untuk deployment spesifik dan opsi konfigurasi lebih lanjut, Anda dapat merujuk ke dokumentasi berikut:
 
 - Deployment
-    - [Persiapan](./preparations)
-    - [Deployment Kubernetes](./kubernetes)
-    - [Operasi](./operations)
+  - [Persiapan](./preparations)
+  - [Deployment Kubernetes](./kubernetes)
+  - [Alur Operasi](./operations)
 - Lanjutan
-    - [Pemecahan Layanan](./services-splitting)
+  - [Pemisahan Service](./services-splitting)
 - [Referensi Pengembangan](./development)

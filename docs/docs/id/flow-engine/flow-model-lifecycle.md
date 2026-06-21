@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Siklus Hidup FlowModel"
+description: "Siklus hidup FlowModel: mount, init, eksekusi Flow, unmount, memahami alur mounting dan destruksi Component FlowModel."
+keywords: "siklus hidup FlowModel,mount,init,unmount,eksekusi Flow,siklus hidup Component,FlowEngine,NocoBase"
+---
 
 # Siklus Hidup FlowModel
 
-## Metode `model`
+## Method model
 
 Panggilan internal
 
@@ -21,15 +23,15 @@ class MyModel extends FlowModel {
 }
 ```
 
-## `model.emitter`
+## model.emitter
 
-Untuk pemicu eksternal
+Untuk trigger eksternal
 
 - onSubModelAdded
 - onSubModelRemoved
 - onSubModelMoved
 
-## Proses
+## Alur
 
 1. Membangun model
     - onInit
@@ -39,12 +41,12 @@ Untuk pemicu eksternal
     - onDispatchEventEnd
     - render
     - onMount
-3. Melepas komponen
+3. Unmount Component
     - onUnMount
-4. Memicu alur
+4. Memicu flow
     - onDispatchEventStart
     - onDispatchEventEnd
-5. Merender ulang
+5. Re-render
   - onUnMount
   - onDispatchEventStart
   - dispatchEvent('beforeRender')

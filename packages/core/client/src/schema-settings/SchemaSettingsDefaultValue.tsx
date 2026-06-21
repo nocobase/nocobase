@@ -13,19 +13,16 @@ import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  FormProvider,
-  SchemaComponent,
-  useActionContext,
-  useCollectionManager_deprecated,
-  useCollection_deprecated,
-  useDesignable,
-  useRecord,
-} from '..';
 import { useFormBlockContext } from '../block-provider/FormBlockProvider';
-import { useTableBlockContext } from '../block-provider/TableBlockProvider';
+import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
+import { useCollection_deprecated } from '../collection-manager/hooks/useCollection_deprecated';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { FlagProvider, useFlag } from '../flag-provider';
+import { useRecord } from '../record-provider';
+import { useActionContext } from '../schema-component/antd/action/hooks';
+import { FormProvider } from '../schema-component/core/FormProvider';
+import { SchemaComponent } from '../schema-component/core/SchemaComponent';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 import { useLocalVariables, useVariables } from '../variables';
 import { isVariable } from '../variables/utils/isVariable';
 import {
@@ -41,6 +38,49 @@ import { SchemaComponentContext } from '../schema-component';
 const getActionContext = (context: { fieldSchema?: Schema }) => {
   const actionCtx = (context.fieldSchema?.['x-action-context'] || {}) as { collection?: string; dataSource?: string };
   return actionCtx;
+};
+
+/**
+ * 将 CollectionField 的 uiSchema 映射到默认值弹窗里真正渲染的字段 schema。
+ *
+ * 默认值弹窗不会直接渲染 CollectionField，而是会把它替换成实际的表单组件。
+ * 这里必须把选项字段依赖的 `enum` 也带过去，否则下拉 / 单选 / 多选在弹窗里会没有可选项。
+ *
+ * @param clonedSchema 当前字段 schema 的克隆副本
+ * @param collectionFieldUiSchema 数据表字段上的 uiSchema
+ * @example
+ * ```typescript
+ * const schema = { 'x-component': 'CollectionField' };
+ * applyCollectionFieldUiSchemaToDefaultValueSchema(schema, {
+ *   'x-component': 'Select',
+ *   enum: [{ label: 'Option 1', value: 'option1' }],
+ * });
+ * ```
+ */
+export const applyCollectionFieldUiSchemaToDefaultValueSchema = (
+  clonedSchema: Record<string, any>,
+  collectionFieldUiSchema: Record<string, any>,
+) => {
+  if (!collectionFieldUiSchema) {
+    return;
+  }
+
+  clonedSchema['x-component'] = collectionFieldUiSchema['x-component'] || 'Input';
+  clonedSchema['x-use-component-props'] =
+    clonedSchema['x-use-component-props'] || collectionFieldUiSchema['x-use-component-props'];
+  clonedSchema['x-component-props'] = {
+    ...(collectionFieldUiSchema['x-component-props'] || {}),
+    ...(clonedSchema['x-component-props'] || {}),
+  };
+
+  // 选项字段的选项源挂在 schema.enum 上，默认值弹窗如果不显式继承会导致下拉无内容。
+  if (collectionFieldUiSchema.enum) {
+    clonedSchema.enum = collectionFieldUiSchema.enum;
+  }
+
+  if (collectionFieldUiSchema.type) {
+    clonedSchema.type = collectionFieldUiSchema.type;
+  }
 };
 
 export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: {
@@ -82,7 +122,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
 
   const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
-  const tableCtx = useTableBlockContext();
   const isAllowContextVariable =
     collectionField?.interface === 'm2m' ||
     collectionField?.interface === 'mbm' ||
@@ -101,7 +140,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
 
       return scope;
     },
-    [getFields, name],
+    [getCollectionFields, getFields, name],
   );
 
   const DefaultValueComponent: any = useMemo(() => {
@@ -120,7 +159,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
         );
       },
     };
-  }, []);
+  }, [props?.hideVariableButton]);
 
   const schema = useMemo(() => {
     return {
@@ -157,12 +196,12 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
 
               const defaultValue = getFieldDefaultValue(clonedSchema, collectionField);
 
-              if (collectionField.target && clonedSchema['x-component-props']) {
-                clonedSchema['x-component-props'].mode = 'Select';
+              if (clonedSchema['x-component'] === 'CollectionField' && collectionField?.uiSchema) {
+                applyCollectionFieldUiSchemaToDefaultValueSchema(clonedSchema, collectionField.uiSchema);
               }
 
-              if (collectionField?.uiSchema.type) {
-                clonedSchema.type = collectionField.uiSchema.type;
+              if (collectionField.target && clonedSchema['x-component-props']) {
+                clonedSchema['x-component-props'].mode = 'Select';
               }
 
               if (collectionField?.uiSchema['x-component'] === 'Checkbox') {
@@ -196,7 +235,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
 
               // the props.onChange's value is dynamic, so we can't use useMemo to wrap it
               _.set(schema, 'x-component-props.onChange', props.onChange);
-
               return (
                 <FormProvider>
                   <SchemaComponent schema={schema} />
@@ -210,6 +248,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       },
     } as ISchema;
   }, [
+    actionCollection,
     collectionField,
     fieldSchema,
     fieldSchemaWithoutRequired,
@@ -220,7 +259,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
     record,
     returnScope,
     t,
-    tableCtx.collection,
     targetField,
     variables,
   ]);

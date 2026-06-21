@@ -1,14 +1,14 @@
 ---
-displayName: "Рабочий процесс: SQL-узел"
+title: "Workflow: SQL node"
+keywords: "Workflow"
+displayName: "Рабочий процесс: узел SQL"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  Позволяет выполнять произвольные SQL-запросы к базе данных в рамках рабочего процесса.
+  Выполнение SQL-выражений в рабочем процессе.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Рабочий процесс: SQL-узел
+# Рабочий процесс: узел SQL

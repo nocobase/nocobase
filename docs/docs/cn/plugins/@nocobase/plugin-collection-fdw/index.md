@@ -1,4 +1,6 @@
 ---
+title: "数据表：连接外部数据（FDW）"
+keywords: "数据表：连接外部数据（FDW）,插件,NocoBase"
 displayName: "数据表：连接外部数据（FDW）"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:
@@ -6,10 +8,10 @@ supportedVersions:
   - 2.x
 description: |
   基于数据库的 foreign data wrapper（FDW） 实现的连接远程数据表，目前支持 MySQL 和 PostgreSQL 数据库。
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
 
 # 数据表：连接外部数据（FDW）

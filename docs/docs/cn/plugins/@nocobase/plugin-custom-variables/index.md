@@ -1,14 +1,16 @@
 ---
+title: "自定义变量"
+keywords: "自定义变量,插件,NocoBase"
 displayName: "自定义变量"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
   支持新增和使用自定义变量
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
 
 # 自定义变量

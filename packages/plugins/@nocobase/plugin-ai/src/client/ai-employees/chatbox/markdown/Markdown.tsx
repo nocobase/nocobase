@@ -14,11 +14,13 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Message } from '../../types';
+import { lazy } from '@nocobase/client';
 import { Code } from './Code';
-import { Echarts } from './ECharts';
 import { Form } from './Form';
 
-export const Markdown: React.FC<{
+const { Echarts } = lazy(() => import('./ECharts'), 'Echarts');
+
+const MarkdownComponent: React.FC<{
   message: Message['content'];
 }> = ({ message }) => {
   const tagIndexes: Record<string, number> = {};
@@ -68,3 +70,10 @@ export const Markdown: React.FC<{
     </div>
   );
 };
+
+export const Markdown = React.memo(MarkdownComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.message?.messageId === nextProps.message?.messageId &&
+    prevProps.message?.content === nextProps.message?.content
+  );
+});

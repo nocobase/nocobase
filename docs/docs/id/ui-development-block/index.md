@@ -1,72 +1,74 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Ikhtisar Block Extension"
+description: "Pengembangan Block Extension: extend Block kustom berbasis FlowModel, mendukung BlockModel, rendering, dan event flow."
+keywords: "Block Extension,FlowModel,BlockModel,NocoBase"
+---
 
-# Ikhtisar Ekstensi Blok
+# Ikhtisar Block Extension
 
-Di NocoBase 2.0, mekanisme ekstensi blok telah sangat disederhanakan. Pengembang hanya perlu mewarisi kelas dasar (base class) **FlowModel** yang sesuai dan mengimplementasikan metode antarmuka terkait (terutama metode `renderComponent()`) untuk dapat menyesuaikan blok dengan cepat.
+Pada NocoBase 2.0, mekanisme Block extension telah disederhanakan secara signifikan. Developer hanya perlu meng-extend base class **FlowModel** yang sesuai dan mengimplementasikan method interface yang relevan (terutama method `renderComponent()`), untuk dengan cepat mengkustomisasi Block.
 
-## Kategori Blok
+## Klasifikasi Block
 
-NocoBase mengategorikan blok menjadi tiga jenis, yang ditampilkan dalam grup di antarmuka konfigurasi:
+NocoBase membagi Block menjadi tiga kategori, ditampilkan dalam grup pada antarmuka konfigurasi:
 
-- **Blok Data (Data blocks)**: Blok yang mewarisi dari `DataBlockModel` atau `CollectionBlockModel`
-- **Blok Filter (Filter blocks)**: Blok yang mewarisi dari `FilterBlockModel`
-- **Blok Lainnya (Other blocks)**: Blok yang secara langsung mewarisi dari `BlockModel`
+- **Data blocks**: Block yang meng-extend `DataBlockModel` atau `CollectionBlockModel`
+- **Filter blocks**: Block yang meng-extend `FilterBlockModel`
+- **Other blocks**: Block yang meng-extend `BlockModel` secara langsung
 
-> Pengelompokan blok ditentukan oleh kelas dasar yang sesuai. Logika klasifikasi didasarkan pada hubungan pewarisan dan tidak memerlukan konfigurasi tambahan.
+> Grup tempat Block berada ditentukan oleh base class yang sesuai. Logika penentuannya berbasis hubungan inheritance, tidak perlu konfigurasi tambahan.
 
-## Deskripsi Kelas Dasar
+## Penjelasan Base Class
 
-Sistem menyediakan empat kelas dasar untuk ekstensi:
+Sistem menyediakan empat base class untuk extension:
 
 ### BlockModel
 
-**Model Blok Dasar**, kelas dasar blok yang paling serbaguna.
+**Base block model**, base class Block yang paling umum.
 
-- Cocok untuk blok yang hanya menampilkan data dan tidak bergantung pada data
-- Dikategorikan ke dalam grup **Blok Lainnya**
-- Berlaku untuk skenario yang dipersonalisasi
+- Cocok untuk Block tampilan murni yang tidak bergantung pada data
+- Akan diklasifikasikan ke grup **Other blocks**
+- Cocok untuk skenario yang dipersonalisasi
 
 ### DataBlockModel
 
-**Model Blok Data (tidak terikat ke tabel data)**, untuk blok dengan sumber data kustom.
+**Data block model (tidak terikat ke tabel data)**, ditujukan untuk Block dengan data source kustom.
 
-- Tidak secara langsung terikat ke tabel data, dapat menyesuaikan logika pengambilan data
-- Dikategorikan ke dalam grup **Blok Data**
-- Berlaku untuk: memanggil API eksternal, pemrosesan data kustom, bagan statistik, dan skenario lainnya
+- Tidak terikat langsung ke tabel data, dapat mengkustomisasi logika pengambilan data
+- Akan diklasifikasikan ke grup **Data blocks**
+- Cocok untuk: memanggil API eksternal, pemrosesan data kustom, chart statistik, dll.
 
 ### CollectionBlockModel
 
-**Model Blok Koleksi**, untuk blok yang perlu diikat ke tabel data.
+**Collection block model**, Block yang perlu binding ke tabel data.
 
-- Membutuhkan pengikatan ke kelas dasar model tabel data
-- Dikategorikan ke dalam grup **Blok Data**
-- Berlaku untuk: daftar, formulir, papan kanban, dan blok lain yang secara jelas bergantung pada tabel data tertentu
+- Base class model yang perlu binding ke tabel data
+- Akan diklasifikasikan ke grup **Data blocks**
+- Cocok untuk: list, form, kanban, dan Block lainnya yang secara eksplisit bergantung pada tabel data tertentu
 
 ### FilterBlockModel
 
-**Model Blok Filter**, untuk membangun blok kondisi filter.
+**Filter block model**, digunakan untuk membangun kondisi filter.
 
-- Kelas dasar model untuk membangun kondisi filter
-- Dikategorikan ke dalam grup **Blok Filter**
-- Biasanya bekerja sama dengan blok data
+- Base class model yang digunakan untuk membangun kondisi filter
+- Akan diklasifikasikan ke grup **Filter blocks**
+- Biasanya berinteraksi dengan data block
 
-## Cara Memilih Kelas Dasar
+## Cara Memilih Base Class
 
-Saat memilih kelas dasar, Anda dapat mengikuti prinsip-prinsip berikut:
+Saat memilih base class, Anda dapat mengikuti prinsip berikut:
 
-- **Perlu diikat ke tabel data tertentu**: Prioritaskan `CollectionBlockModel`
-- **Sumber data kustom**: Pilih `DataBlockModel`
-- **Untuk mengatur kondisi filter dan bekerja sama dengan blok data**: Pilih `FilterBlockModel`
-- **Tidak yakin bagaimana mengategorikan**: Pilih `BlockModel`
+- **Perlu binding ke tabel data tertentu**: Prioritaskan `CollectionBlockModel`
+- **Data source kustom**: Pilih `DataBlockModel`
+- **Digunakan untuk mengatur kondisi filter dan berinteraksi dengan data block**: Pilih `FilterBlockModel`
+- **Tidak tahu cara mengklasifikasikan**: Pilih `BlockModel`
 
 ## Mulai Cepat
 
-Membuat blok kustom hanya memerlukan tiga langkah:
+Membuat Block kustom hanya membutuhkan tiga langkah:
 
-1. Mewarisi kelas dasar yang sesuai (misalnya, `BlockModel`)
-2. Mengimplementasikan metode `renderComponent()` untuk mengembalikan komponen React
-3. Mendaftarkan model blok di dalam plugin
+1. Extend base class yang sesuai (seperti `BlockModel`)
+2. Implementasikan method `renderComponent()` yang mengembalikan React component
+3. Daftarkan block model di plugin
 
-Untuk contoh yang lebih detail, silakan lihat [Menulis Plugin Blok](./write-a-block-plugin).
+Untuk contoh detail, lihat [Menulis Plugin Block](./write-a-block-plugin).

@@ -1,14 +1,14 @@
 ---
-displayName: "Koleksi: Pohon"
+displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
+title: "Collection: Tree"
+keywords: "Collection: Tree,plugin,NocoBase"
 description: |
-  Menyediakan template koleksi pohon
+  Menyediakan template Collection tree.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Koleksi: Pohon
+# Collection: Tree

@@ -1,4 +1,6 @@
 ---
+title: "Auth: OIDC"
+keywords: "Authentication"
 displayName: "Auth: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
 
 # Auth: OIDC

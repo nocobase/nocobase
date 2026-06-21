@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "IField"
+description: "Interface IField NocoBase: interface yang harus diimplementasikan oleh field, mendefinisikan properti dan method field."
+keywords: "IField,interface,field,Field,NocoBase"
+---
 
 # IField
 
-`IField` mendefinisikan antarmuka yang perlu diimplementasikan oleh sebuah *field*.
+`IField` mendefinisikan interface yang harus diimplementasikan oleh field.
 
 ```typescript
 export type FieldOptions = {
@@ -29,8 +31,10 @@ export interface IField {
 }
 ```
 
+
 ## Properti
 
 ### options
 
 - **Tipe**: `FieldOptions`
+

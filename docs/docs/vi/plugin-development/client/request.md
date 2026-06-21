@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Request - Yêu cầu"
+description: "Yêu cầu phía client của NocoBase: api.request, APIClient, HTTP request, gọi API backend."
+keywords: "Request,api.request,APIClient,HTTP request,Gọi API,NocoBase"
+---
 
+# Request - Yêu cầu
 
-# Yêu cầu
+NocoBase cung cấp một `APIClient` được đóng gói dựa trên [Axios](https://axios-http.com/), dùng để gửi HTTP request tại bất kỳ nơi nào có thể lấy được `Context`.
 
-NocoBase cung cấp một `APIClient` được đóng gói dựa trên [Axios](https://axios-http.com/), cho phép bạn gửi các yêu cầu HTTP từ bất kỳ đâu có thể truy cập `Context`.
-
-Các vị trí phổ biến mà bạn có thể truy cập `Context` bao gồm:
+Các vị trí phổ biến có thể lấy `Context` bao gồm:
 
 - `app.context`
 - `engine.context`
@@ -16,7 +17,7 @@ Các vị trí phổ biến mà bạn có thể truy cập `Context` bao gồm:
 
 ## ctx.api.request()
 
-`ctx.api.request()` là phương thức phổ biến nhất để gửi yêu cầu. Các tham số và giá trị trả về của nó hoàn toàn giống với [axios.request()](https://axios-http.com/docs/req_config).
+`ctx.api.request()` là phương thức gửi yêu cầu phổ biến nhất, các tham số và giá trị trả về hoàn toàn nhất quán với [axios.request()](https://axios-http.com/docs/req_config).
 
 ```ts
 request<T = any, R = AxiosResponse<T>, D = any>(
@@ -24,7 +25,7 @@ request<T = any, R = AxiosResponse<T>, D = any>(
 ): Promise<R>;
 ```
 
-### Cách sử dụng cơ bản
+Cách dùng cơ bản
 
 ```ts
 await ctx.api.request({
@@ -33,7 +34,7 @@ await ctx.api.request({
 });
 ```
 
-Bạn có thể sử dụng trực tiếp các cấu hình yêu cầu Axios tiêu chuẩn:
+Bạn có thể sử dụng trực tiếp cấu hình request chuẩn của Axios:
 
 ```ts
 await ctx.api.request({
@@ -47,25 +48,25 @@ await ctx.api.request({
 
 ## ctx.api.axios
 
-`ctx.api.axios` là một thể hiện của `AxiosInstance`, cho phép bạn sửa đổi cấu hình mặc định toàn cục hoặc thêm các bộ chặn yêu cầu.
+`ctx.api.axios` là một instance `AxiosInstance`, bạn có thể dùng nó để sửa cấu hình mặc định toàn cục hoặc thêm interceptor cho request.
 
-### Sửa đổi cấu hình mặc định
+Sửa cấu hình mặc định
 
 ```ts
 axios.defaults.headers.common['Authorization'] = AUTH_TOKEN;
 axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 ```
 
-Để biết thêm các cấu hình có sẵn, vui lòng xem [Cấu hình mặc định của Axios](https://axios-http.com/docs/config_defaults).
+Xem thêm các cấu hình khả dụng tại [Cấu hình mặc định Axios](https://axios-http.com/docs/config_defaults).
 
-## Bộ chặn yêu cầu và phản hồi
+## Interceptor request và response
 
-Thông qua các bộ chặn, bạn có thể xử lý yêu cầu trước khi chúng được gửi hoặc phản hồi sau khi chúng được trả về. Ví dụ, bạn có thể thống nhất thêm tiêu đề yêu cầu, tuần tự hóa tham số hoặc hiển thị thông báo lỗi chung.
+Thông qua interceptor, bạn có thể xử lý trước khi request được gửi đi hoặc sau khi response trả về. Ví dụ, thống nhất thêm header request, serialize tham số hoặc hiển thị thông báo lỗi thống nhất.
 
-### Ví dụ về bộ chặn yêu cầu
+### Ví dụ interceptor request
 
 ```ts
-// Sử dụng qs để tuần tự hóa tham số params
+// Sử dụng qs để serialize tham số params
 axios.interceptors.request.use((config) => {
   config.paramsSerializer = (params) =>
     qs.stringify(params, {
@@ -75,7 +76,7 @@ axios.interceptors.request.use((config) => {
   return config;
 });
 
-// Tiêu đề yêu cầu tùy chỉnh
+// Header request tùy chỉnh
 axios.interceptors.request.use((config) => {
   config.headers['Authorization'] = `Bearer token123`;
   config.headers['X-Hostname'] = 'localhost';
@@ -88,13 +89,13 @@ axios.interceptors.request.use((config) => {
 });
 ```
 
-### Ví dụ về bộ chặn phản hồi
+### Ví dụ interceptor response
 
 ```ts
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Khi yêu cầu gặp lỗi, hiển thị thông báo lỗi chung
+    // Khi request gặp lỗi, hiển thị thông báo thống nhất
     ctx.notification.error({
       message: 'Lỗi phản hồi yêu cầu',
     });
@@ -103,28 +104,28 @@ axios.interceptors.response.use(
 );
 ```
 
-## Tiêu đề yêu cầu tùy chỉnh của NocoBase Server
+## Header tùy chỉnh của NocoBase Server
 
-Dưới đây là các tiêu đề yêu cầu tùy chỉnh được NocoBase Server hỗ trợ, có thể được sử dụng trong các tình huống đa ứng dụng, quốc tế hóa, đa vai trò hoặc đa xác thực.
+Dưới đây là các header tùy chỉnh mà NocoBase Server hỗ trợ, có thể dùng cho các tình huống đa ứng dụng, đa ngôn ngữ, đa role hoặc đa phương thức xác thực.
 
-| Tiêu đề           | Mô tả                                                      |
-| ----------------- | ---------------------------------------------------------- |
-| `X-App`           | Chỉ định ứng dụng hiện tại được truy cập trong các tình huống đa ứng dụng |
-| `X-Locale`        | Ngôn ngữ hiện tại (ví dụ: `zh-CN`, `en-US`)               |
-| `X-Hostname`      | Tên máy chủ của client                                     |
-| `X-Timezone`      | Múi giờ của client (ví dụ: `+08:00`)                      |
-| `X-Role`          | Vai trò hiện tại                                           |
-| `X-Authenticator` | Phương thức xác thực người dùng hiện tại                  |
+| Header | Mô tả |
+|--------|------|
+| `X-App` | Chỉ định ứng dụng đang truy cập trong tình huống đa ứng dụng |
+| `X-Locale` | Ngôn ngữ hiện tại (ví dụ: `zh-CN`, `en-US`) |
+| `X-Hostname` | Tên host của client |
+| `X-Timezone` | Múi giờ của client (ví dụ: `+08:00`) |
+| `X-Role` | Role hiện tại |
+| `X-Authenticator` | Phương thức xác thực hiện tại |
 
 > 💡 **Mẹo**  
-> Các tiêu đề yêu cầu này thường được các bộ chặn tự động thêm vào và không cần thiết lập thủ công. Bạn chỉ cần thêm chúng thủ công trong các trường hợp đặc biệt (như môi trường kiểm thử hoặc tình huống đa thể hiện).
+> Các header này thường được tự động chèn vào bởi interceptor, không cần thiết lập thủ công. Chỉ cần thêm thủ công trong các tình huống đặc biệt (như môi trường kiểm thử hoặc đa instance).
 
-## Sử dụng trong các thành phần
+## Sử dụng trong Component
 
-Trong các thành phần React, bạn có thể lấy đối tượng ngữ cảnh thông qua `useFlowContext()` và sau đó gọi `ctx.api` để gửi yêu cầu.
+Trong Component React, bạn có thể lấy đối tượng context thông qua `useFlowContext()`, từ đó gọi `ctx.api` để gửi request.
 
 ```ts
-import { useFlowContext } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 
 const MyComponent = () => {
   const ctx = useFlowContext();
@@ -145,12 +146,12 @@ const MyComponent = () => {
 };
 ```
 
-### Sử dụng cùng với useRequest của ahooks
+### Kết hợp với useRequest của ahooks
 
-Trong quá trình phát triển thực tế, bạn có thể kết hợp với Hook `useRequest` do [ahooks](https://ahooks.js.org/hooks/use-request/index) cung cấp để xử lý vòng đời và trạng thái của yêu cầu một cách thuận tiện hơn.
+Trong phát triển thực tế, bạn có thể kết hợp với Hook `useRequest` do [ahooks](https://ahooks.js.org/hooks/use-request/index) cung cấp để xử lý vòng đời và trạng thái của request một cách tiện lợi hơn.
 
 ```ts
-import { useFlowContext } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 
 const MyComponent = () => {
@@ -164,7 +165,7 @@ const MyComponent = () => {
   );
 
   if (loading) return <div>Đang tải...</div>;
-  if (error) return <div>Lỗi yêu cầu: {error.message}</div>;
+  if (error) return <div>Yêu cầu lỗi: {error.message}</div>;
 
   return (
     <div>
@@ -175,4 +176,4 @@ const MyComponent = () => {
 };
 ```
 
-Cách tiếp cận này giúp logic yêu cầu trở nên khai báo hơn, tự động quản lý trạng thái tải, thông báo lỗi và logic làm mới, rất phù hợp để sử dụng trong các thành phần.
+Cách này giúp logic request trở nên khai báo hơn, tự động quản lý trạng thái loading, thông báo lỗi và logic làm mới, rất phù hợp khi sử dụng trong component.

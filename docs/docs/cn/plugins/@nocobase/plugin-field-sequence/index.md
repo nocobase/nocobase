@@ -1,4 +1,6 @@
 ---
+title: "数据表字段：自动编码"
+keywords: "数据表字段：自动编码,插件,NocoBase"
 displayName: "数据表字段：自动编码"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 数据表字段：自动编码

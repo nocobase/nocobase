@@ -1,36 +1,38 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Brand Kustom"
+description: "Brand kustom: konfigurasi teks brand di bagian bawah halaman login, menu \"Tentang\" di pojok kanan atas, favicon website, mendukung format HTML, Logo dikonfigurasi di pengaturan sistem."
+keywords: "brand kustom,konfigurasi brand,favicon,menu Tentang,brand halaman login,manajemen sistem,NocoBase"
+---
 
-# Kustomisasi Merek
+# Brand Kustom
 
-## Pendahuluan
+## Pengantar
 
-Nama merek default sistem adalah "NocoBase", yang terutama ditampilkan di tiga lokasi berikut:
+Nama brand default sistem adalah "NocoBase", yang ditampilkan terutama di tiga lokasi berikut:
 
 ![20240409111100](https://static-docs.nocobase.com/20240409111100.png)
 
-Di bagian bawah halaman login:
+Bagian bawah halaman login:
 
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
-Posisi 1 dapat dikonfigurasi melalui opsi Logo di [Pengaturan Sistem](/system-management/system-settings/). Posisi 2 dan 3 dapat dikonfigurasi menggunakan **plugin** ini.
+Lokasi 1 dapat dikonfigurasi melalui opsi Logo di [Pengaturan Sistem](/system-management/system-settings/index.md); Lokasi 2 dan 3 dapat dikonfigurasi melalui plugin ini.
 
 ## Petunjuk Penggunaan
 
-Setelah **plugin** diaktifkan, klik menu "Kustomisasi Merek" di pojok kanan atas halaman untuk mengakses halaman konfigurasi.
+Setelah plugin diaktifkan, klik menu "Brand Kustom" di pojok kanan atas halaman untuk masuk ke halaman konfigurasi.
 
 ![20240409113640](https://static-docs.nocobase.com/20240409113640.png)
 
-- **Merek**: Digunakan untuk mengatur teks di bagian bawah halaman login (posisi 3)
-- **Tentang**: Digunakan untuk mengonfigurasi konten menu di pojok kanan atas halaman (seperti yang ditunjukkan pada gambar di bawah)
+- **Brand**: Digunakan untuk mengatur teks di bagian bawah halaman login (Lokasi 3)
+- **Tentang**: Digunakan untuk mengatur konten menu di pojok kanan atas halaman (seperti gambar di bawah)
 
 ![20240409113915](https://static-docs.nocobase.com/20240409113915.png)
 
-Konfigurasi mendukung format HTML untuk kustomisasi konten yang fleksibel. Jika Anda hanya perlu melakukan perubahan teks sederhana, Anda dapat langsung memodifikasi konten yang sudah ada seperti yang ditunjukkan di bawah ini:
+Konfigurasi mendukung penggunaan format HTML untuk pengaturan konten yang fleksibel. Jika Anda hanya perlu memodifikasi teks secara sederhana, Anda dapat memodifikasi langsung berdasarkan konten yang ada, seperti gambar di bawah:
 
 ![20240409114740](https://static-docs.nocobase.com/20240409114740.png)
 
-Mengatur favicon situs web
+Atur favicon website
 
 ![20250601143958_rec_](https://static-docs.nocobase.com/20250601143958_rec_.gif)

@@ -1,100 +1,101 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Node Workflow - Nhánh đa điều kiện"
+description: "Node nhánh đa điều kiện: tương tự switch/case, phán đoán điều kiện theo thứ tự, thực thi nhánh tương ứng hoặc nhánh ngược lại."
+keywords: "workflow,nhánh đa điều kiện,switch,case,nhánh quy trình,NocoBase"
+---
 
-
-# Phân nhánh đa điều kiện <Badge>v2.0.0+</Badge>
+# Nhánh đa điều kiện <Badge>v2.0.0+</Badge>
 
 ## Giới thiệu
 
-Tương tự như các câu lệnh `switch / case` hoặc `if / else if` trong ngôn ngữ lập trình. Hệ thống sẽ đánh giá từng điều kiện đã cấu hình theo thứ tự. Ngay khi một điều kiện được đáp ứng, luồng công việc sẽ thực thi nhánh tương ứng và bỏ qua việc kiểm tra các điều kiện tiếp theo. Nếu không có điều kiện nào được đáp ứng, nhánh "Nếu không" sẽ được thực thi.
+Tương tự câu lệnh `switch / case` hoặc `if / else if` trong ngôn ngữ lập trình. Hệ thống sẽ phán đoán từng cái một theo thứ tự dựa trên các điều kiện được cấu hình, một khi thỏa mãn một điều kiện nào đó là sẽ thực thi quy trình dưới nhánh tương ứng và bỏ qua việc phán đoán các điều kiện sau. Nếu tất cả các điều kiện đều không thỏa mãn thì sẽ thực thi nhánh "Ngược lại".
 
-## Tạo nút
+## Tạo Node
 
-Trong giao diện cấu hình luồng công việc, nhấp vào nút dấu cộng ("+") trong luồng để thêm nút "Phân nhánh đa điều kiện":
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Nhánh đa điều kiện":
 
-![Tạo nút Phân nhánh đa điều kiện](https://static-docs.nocobase.com/20251123222134.png)
+![Tạo nhánh đa điều kiện](https://static-docs.nocobase.com/20251123222134.png)
 
 ## Quản lý nhánh
 
 ### Nhánh mặc định
 
-Sau khi tạo, nút sẽ bao gồm hai nhánh mặc định:
+Sau khi Node được tạo, mặc định sẽ chứa hai nhánh:
 
-1. **Nhánh điều kiện**: Dùng để cấu hình các điều kiện kiểm tra cụ thể.
-2. **Nhánh "Nếu không"**: Được thực thi khi không có nhánh điều kiện nào được đáp ứng; không cần cấu hình điều kiện.
+1. **Nhánh điều kiện**: có thể cấu hình điều kiện phán đoán cụ thể.
+2. **Nhánh ngược lại**: khi tất cả các nhánh điều kiện đều không thỏa mãn thì vào nhánh này, không cần cấu hình điều kiện.
 
-Nhấp vào nút "Thêm nhánh" bên dưới nút để thêm các nhánh điều kiện khác.
+Bấm nút "Thêm nhánh" phía dưới Node để thêm nhiều nhánh điều kiện hơn.
 
 ![20251123222540](https://static-docs.nocobase.com/20251123222540.png)
 
 ### Thêm nhánh
 
-Sau khi nhấp vào "Thêm nhánh", nhánh mới sẽ được thêm vào trước nhánh "Nếu không".
+Sau khi bấm "Thêm nhánh", nhánh mới sẽ được thêm trước nhánh "Ngược lại".
 
 ![20251123222805](https://static-docs.nocobase.com/20251123222805.png)
 
 ### Xóa nhánh
 
-Khi có nhiều nhánh điều kiện, nhấp vào biểu tượng thùng rác ở bên phải của nhánh để xóa nó. Nếu chỉ còn một nhánh điều kiện, bạn không thể xóa.
+Khi tồn tại nhiều nhánh điều kiện, bấm icon thùng rác bên phải nhánh là có thể xóa nhánh đó. Nếu chỉ còn một nhánh điều kiện thì không thể xóa.
 
 ![20251123223127](https://static-docs.nocobase.com/20251123223127.png)
 
-:::info{title=Lưu ý}
-Việc xóa một nhánh cũng sẽ xóa tất cả các nút bên trong nhánh đó; vui lòng thực hiện cẩn thận.
+:::info{title=Mẹo}
+Việc xóa nhánh sẽ đồng thời xóa tất cả các Node trong nhánh đó, vui lòng thận trọng.
 
-Nhánh "Nếu không" là nhánh tích hợp và không thể xóa.
+"Ngược lại" là nhánh tích hợp sẵn, không thể xóa.
 :::
 
-## Cấu hình nút
+## Cấu hình Node
 
 ### Cấu hình điều kiện
 
-Nhấp vào tên điều kiện ở đầu nhánh để chỉnh sửa chi tiết điều kiện cụ thể:
+Bấm tên điều kiện ở đầu nhánh để chỉnh sửa nội dung điều kiện cụ thể:
 
 ![20251123223352](https://static-docs.nocobase.com/20251123223352.png)
 
 #### Nhãn điều kiện
 
-Hỗ trợ nhãn tùy chỉnh. Sau khi điền, nhãn sẽ được hiển thị làm tên điều kiện trong sơ đồ luồng. Nếu không được cấu hình (hoặc để trống), mặc định sẽ hiển thị theo thứ tự là "Điều kiện 1", "Điều kiện 2", v.v.
+Hỗ trợ nhãn tùy chỉnh, sau khi điền sẽ được hiển thị làm tên của điều kiện trong sơ đồ quy trình. Nếu chưa cấu hình (hoặc để trống), mặc định sẽ hiển thị theo thứ tự là "Điều kiện 1", "Điều kiện 2"...
 
 ![20251123224209](https://static-docs.nocobase.com/20251123224209.png)
 
-#### Công cụ tính toán
+#### Engine tính toán
 
-Hiện tại hỗ trợ ba công cụ:
+Hiện hỗ trợ ba engine:
 
-- **Cơ bản**: Sử dụng các phép so sánh logic đơn giản (ví dụ: bằng, chứa, v.v.) và kết hợp "VÀ", "HOẶC" để xác định kết quả.
-- **Math.js**: Hỗ trợ tính toán biểu thức sử dụng cú pháp [Math.js](https://mathjs.org/).
-- **Formula.js**: Hỗ trợ tính toán biểu thức sử dụng cú pháp [Formula.js](https://formulajs.info/) (tương tự công thức Excel).
+- **Cơ bản**: thông qua so sánh logic đơn giản (như bằng, chứa...) và kết hợp "Và", "Hoặc" để rút ra kết quả phán đoán.
+- **Math.js**: hỗ trợ tính giá trị biểu thức cú pháp [Math.js](https://mathjs.org/).
+- **Formula.js**: hỗ trợ tính giá trị biểu thức cú pháp [Formula.js](https://formulajs.info/) (tương tự công thức Excel).
 
-Cả ba chế độ đều hỗ trợ sử dụng biến ngữ cảnh của luồng công việc làm tham số.
+Cả ba chế độ đều hỗ trợ sử dụng biến ngữ cảnh quy trình làm tham số.
 
-### Khi không có điều kiện nào được đáp ứng
+### Khi tất cả các điều kiện đều không thỏa mãn
 
-Trong bảng cấu hình nút, bạn có thể đặt hành động tiếp theo khi không có điều kiện nào được đáp ứng:
+Trong panel cấu hình Node, có thể đặt hành động tiếp theo khi tất cả các điều kiện đều không thỏa mãn:
 
 ![20251123224348](https://static-docs.nocobase.com/20251123224348.png)
 
-*   **Kết thúc luồng công việc với trạng thái thất bại (Mặc định)**: Đánh dấu trạng thái luồng công việc là thất bại và chấm dứt quá trình.
-*   **Tiếp tục thực thi các nút tiếp theo**: Sau khi nút hiện tại hoàn tất, tiếp tục thực thi các nút tiếp theo trong luồng công việc.
+* **Kết thúc Workflow với trạng thái thất bại (mặc định)**: đánh dấu trạng thái Workflow là thất bại và dừng quy trình.
+* **Tiếp tục thực thi các Node tiếp theo**: sau khi hoàn tất việc thực thi Node hiện tại, tiếp tục thực thi các Node tiếp theo của Workflow.
 
-:::info{title=Lưu ý}
-Bất kể phương pháp xử lý nào được chọn, khi không có điều kiện nào được đáp ứng, luồng công việc sẽ luôn đi vào nhánh "Nếu không" trước để thực thi các nút bên trong đó.
+:::info{title=Mẹo}
+Bất kể chọn cách xử lý nào, khi tất cả các điều kiện đều không thỏa mãn, quy trình đều sẽ vào nhánh "Ngược lại" trước để thực thi các Node trong đó.
 :::
 
-## Lịch sử thực thi
+## Bản ghi thực thi
 
-Trong lịch sử thực thi của luồng công việc, nút Phân nhánh đa điều kiện sẽ đánh dấu kết quả kiểm tra của mỗi điều kiện bằng các màu khác nhau:
+Trong bản ghi thực thi của Workflow, Node nhánh đa điều kiện qua các màu sắc khác nhau để xác định kết quả phán đoán của từng điều kiện:
 
--   **Màu xanh lá**: Điều kiện được đáp ứng, đi vào nhánh này để thực thi.
--   **Màu đỏ**: Điều kiện không được đáp ứng (hoặc lỗi tính toán), bỏ qua nhánh này.
--   **Màu xanh dương**: Không thực hiện kiểm tra (bỏ qua do điều kiện trước đó đã được đáp ứng).
+- **Xanh lá**: điều kiện thỏa mãn, vào nhánh đó để thực thi.
+- **Đỏ**: điều kiện không thỏa mãn (hoặc tính toán bị lỗi), bỏ qua nhánh đó.
+- **Xanh dương**: chưa thực thi phán đoán (do điều kiện trước đã thỏa mãn nên bỏ qua phán đoán sau).
 
 ![20251123225455](https://static-docs.nocobase.com/20251123225455.png)
 
-Nếu lỗi cấu hình dẫn đến ngoại lệ trong tính toán điều kiện, ngoài việc hiển thị màu đỏ, khi di chuột qua tên điều kiện, thông tin lỗi cụ thể sẽ được hiển thị:
+Nếu do cấu hình sai dẫn đến tính toán điều kiện bất thường, ngoài việc hiển thị màu đỏ, khi rê chuột qua tên điều kiện sẽ hiển thị thông tin lỗi cụ thể:
 
 ![20251123231014](https://static-docs.nocobase.com/20251123231014.png)
 
-Khi xảy ra ngoại lệ trong tính toán điều kiện, nút Phân nhánh đa điều kiện sẽ kết thúc với trạng thái "Lỗi" và không tiếp tục thực thi các nút tiếp theo.
+Khi tính toán điều kiện gặp bất thường, Node nhánh đa điều kiện sẽ kết thúc với trạng thái "Lỗi" và không tiếp tục thực thi các Node tiếp theo.

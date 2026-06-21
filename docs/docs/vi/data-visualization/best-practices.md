@@ -1,8 +1,9 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Best Practice Trực quan hóa Dữ liệu"
+description: "Hướng dẫn best practice cho cấu hình trực quan hóa dữ liệu và thiết kế biểu đồ."
+keywords: "Best practice trực quan hóa dữ liệu,thiết kế biểu đồ,quy chuẩn cấu hình,NocoBase"
+---
 
-
-# Thực tiễn tốt nhất
+# Best Practice
 
 Tài liệu đang được biên soạn...

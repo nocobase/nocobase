@@ -1,14 +1,14 @@
 ---
-displayName: "Настройки лицензии"
+title: "License settings"
+keywords: "License settings,Plugin,NocoBase"
+displayName: "License settings"
 packageName: '@nocobase/plugin-license'
 description: |
-  Настройки идентификатора экземпляра и лицензионного ключа
+  Идентификатор экземпляра и настройки лицензионного ключа.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Настройки лицензии
+# License settings

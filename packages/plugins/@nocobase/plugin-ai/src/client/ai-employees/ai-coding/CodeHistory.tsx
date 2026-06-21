@@ -12,10 +12,10 @@ import { Avatar, AvatarProps, Button, Flex, Layout, List } from 'antd';
 import { css, useToken } from '@nocobase/client';
 import { LeftOutlined, UserOutlined } from '@ant-design/icons';
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
-import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
+import { useChat } from '../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { ContextItem, Message } from '../types';
-import ReactMarkdown from 'react-markdown';
-import { Code } from '../chatbox/markdown/Code';
+import { CodeBasic } from '../chatbox/markdown/Code';
 import { avatars } from '../avatars';
 import { Typography } from 'antd';
 import { useT } from '../../locale';
@@ -80,7 +80,9 @@ const CodeHistoryList: React.FC = () => {
   const language = 'javascript';
   const workContextType = 'code-editor';
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const messages = useChatMessagesStore.use.messages();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const messages = chat.use.messages();
   const [dataSource, setDataSource] = useState<{ message: Message; workContext: ContextItem }[]>([]);
 
   useEffect(() => {
@@ -153,13 +155,7 @@ const CodeHistoryListItem: React.FC<{ message: Message; workContext: ContextItem
           margin-bottom: -1em;
         `}
       >
-        <ReactMarkdown
-          components={{
-            code: (props) => <Code {...props} />,
-          }}
-        >
-          {'```' + content.language + '\n' + content.code + '\n```'}
-        </ReactMarkdown>
+        <CodeBasic className={`language-${content.language}`}>{content.code}</CodeBasic>
       </div>
     </Flex>
   );

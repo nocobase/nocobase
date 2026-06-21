@@ -12,6 +12,44 @@ import { AIContextDatasource } from '../../collections/ai-context-datasource';
 import PluginAIServer from '../plugin';
 import { WorkContext, WorkContextResolveStrategy } from '../types';
 import { Context } from '@nocobase/actions';
+import { checkFilterParams, parseJsonTemplate } from '@nocobase/acl';
+
+function serializeQueryFieldValue(value: unknown): unknown {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => serializeQueryFieldValue(item));
+  }
+
+  if (typeof value === 'object') {
+    if (typeof (value as any).toISOString === 'function') {
+      try {
+        return (value as any).toISOString();
+      } catch (error) {
+        // Fall through to the next serializer strategy.
+      }
+    }
+
+    if (typeof (value as any).toJSON === 'function') {
+      try {
+        const jsonValue = (value as any).toJSON();
+        if (jsonValue !== value) {
+          return serializeQueryFieldValue(jsonValue);
+        }
+      } catch (error) {
+        // Fall through to the original value.
+      }
+    }
+  }
+
+  return value;
+}
 
 export class AIContextDatasourceManager {
   constructor(protected plugin: PluginAIServer) {}
@@ -76,8 +114,8 @@ export class AIContextDatasourceManager {
         };
       }
 
-      const filteredParams = ds.acl.filterParams(ctx, collectionName, can.params);
-      const parsedParams = filteredParams ? await ds.acl.parseJsonTemplate(filteredParams, ctx) : {};
+      checkFilterParams(collection, can.params?.filter);
+      const parsedParams = can.params ? await parseJsonTemplate(can.params, ctx) : {};
 
       if (parsedParams.appends && options.fields) {
         for (const queryField of options.fields) {
@@ -119,7 +157,7 @@ export class AIContextDatasourceManager {
     const records = result.map((x) =>
       fields.map((field) => {
         const { name, type } = collection.getField(field)?.options || {};
-        const value = x[field];
+        const value = serializeQueryFieldValue(x[field]);
         return {
           name,
           type,

@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model } from '@nocobase/database';
+import Database, { Model } from '@nocobase/database';
+import { SystemLogger } from '@nocobase/logger';
 import lodash from 'lodash';
 
 import {
@@ -22,6 +23,12 @@ import {
 export class UserDataSyncResource extends UserDataResource {
   name = 'users';
   accepts: SyncAccept[] = ['user'];
+  declare db: Database;
+  declare logger: SystemLogger;
+
+  constructor(db: Database, logger: SystemLogger) {
+    super(db, logger);
+  }
 
   get userRepo() {
     return this.db.getRepository('users');

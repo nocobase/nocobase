@@ -1,16 +1,14 @@
 ---
-displayName: "Kolom Koleksi: Urutkan"
+displayName: "Field Collection: Pengurutan"
 packageName: '@nocobase/plugin-field-sort'
+title: "Field Collection: Pengurutan"
+keywords: "Field Collection: Pengurutan,Plugin,NocoBase"
 description: |
-  Digunakan untuk mengurutkan data dalam sebuah koleksi.
+  Digunakan untuk mengurutkan data dalam collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-
-# Kolom Koleksi: Urutkan
+# Field Collection: Pengurutan

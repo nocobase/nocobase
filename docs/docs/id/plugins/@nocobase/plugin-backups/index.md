@@ -1,18 +1,17 @@
 ---
-displayName: "Pengelola Cadangan"
+displayName: "Backup Manager"
 packageName: '@nocobase/plugin-backups'
+title: "Backup Manager"
+keywords: "Backup Manager,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Menyediakan fitur pencadangan dan pemulihan, mendukung pencadangan terjadwal, serta memastikan keamanan data dan pemulihan yang cepat.
+  Menyediakan fungsi backup dan restore, mendukung backup terjadwal, memastikan keamanan data dan pemulihan cepat.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Pengelola Cadangan
+# Backup Manager

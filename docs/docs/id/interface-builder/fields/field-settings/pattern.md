@@ -1,45 +1,48 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Mode Tampilan"
+description: "Konfigurasi Field: mengkonfigurasi mode tampilan Field, mendukung peralihan mode editable, read-only, hidden, dll."
+keywords: "mode tampilan, pattern, read-only, editable, interface builder, NocoBase"
+---
 
 # Mode Tampilan
 
-## Pendahuluan
+## Pengantar
 
-Berbeda dengan blok, komponen bidang memiliki tiga mode tampilan (hanya didukung untuk bidang dalam formulir). Mengganti mode tampilan yang berbeda akan memunculkan opsi konfigurasi bidang yang berbeda pula.
+Berbeda dengan Block, komponen Field memiliki tiga mode tampilan (hanya mendukung Field di Form). Saat berpindah ke mode tampilan yang berbeda, item konfigurasi Field yang sesuai akan berbeda.
 
-- Dapat diedit;
-- Hanya-baca (tidak dapat diedit);
-- Hanya-baca (mode baca);
+- Editable;
+- Read-only (tidak editable);
+- Read-only (mode baca);
 
-### Mode Tampilan untuk Bidang Reguler
+### Mode Tampilan Field Biasa
 
 ![20251028220145](https://static-docs.nocobase.com/20251028220145.png)
 
-- Status dinonaktifkan
+- Status disabled
 
 ![20251028220211](https://static-docs.nocobase.com/20251028220211.png)
 
-- Status hanya-baca
+- Status mode baca
 
 ![20251028220250](https://static-docs.nocobase.com/20251028220250.png)
 
-### Mode Tampilan untuk Bidang Relasi
+### Mode Tampilan Field Relasi
 
-**Mode tampilan bidang relasi** menentukan bagaimana bidang tersebut ditampilkan di antarmuka dan jenis komponen bidang apa yang tersedia.
+**Mode tampilan Field relasi** menentukan cara Field tersebut ditampilkan di antarmuka, dan menentukan tipe komponen Field yang dapat dipilih.
 
-Dalam **status dapat diedit**, bidang relasi mendukung berbagai jenis komponen, memungkinkan pengguna untuk memilih komponen bidang relasi yang berbeda untuk menampilkan atau memilih data terkait berdasarkan kebutuhan bisnis.
+Dalam **status editable**, Field relasi mendukung berbagai bentuk komponen. Pengguna dapat memilih komponen Field relasi yang berbeda berdasarkan kebutuhan bisnis untuk menampilkan atau memilih data terkait.
 
-#### Komponen Bidang Relasi dalam Status Dapat Diedit
+#### Komponen Field Relasi dalam Status Editable
 
 ![20251028220447](https://static-docs.nocobase.com/20251028220447.png)
 
-Dalam status ini, pengguna dapat secara fleksibel memilih metode tampilan yang sesuai agar dapat memproses data dengan lebih efisien.
+Dalam status ini, pengguna dapat dengan fleksibel memilih cara tampilan yang sesuai untuk lebih efisien menangani data.
 
-#### Komponen Bidang Relasi dalam Status Hanya-baca
+#### Komponen Field Relasi dalam Status Mode Baca
 
-Saat beralih ke **status hanya-baca**, sistem secara otomatis akan menggunakan **komponen bidang judul** untuk menampilkan data terkait. Ini cocok untuk skenario di mana Anda hanya perlu melihat data tanpa melakukan perubahan.
+Saat berpindah ke **status mode baca**, sistem akan secara default menggunakan **komponen Field judul** untuk menampilkan data terkait. Cocok untuk skenario di mana hanya perlu melihat data tanpa modifikasi.
 
 ![20251028220854](https://static-docs.nocobase.com/20251028220854.gif)
+
 
 ![20251028221451](https://static-docs.nocobase.com/20251028221451.png)

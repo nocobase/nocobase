@@ -1,16 +1,18 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Memperluas Provider SMS"
+description: "Memperluas provider SMS verifikasi NocoBase melalui plugin: registrasi AdminSettingsForm di klien, implementasi SMSProvider.send di server, registrasi dengan registerProvider."
+keywords: "memperluas provider SMS,SMSProvider,registerProvider,plugin SMS,Alibaba Cloud,Tencent Cloud,NocoBase"
+---
 
-# Memperluas Penyedia Layanan SMS
+# Memperluas Provider SMS
 
-Artikel ini menjelaskan cara memperluas fungsionalitas penyedia layanan SMS dalam fitur [Verifikasi: SMS](../sms) melalui sebuah plugin.
+Artikel ini terutama menjelaskan cara memperluas provider SMS dalam fungsi [Verifikasi: SMS](../sms) melalui bentuk plugin.
 
 ## Klien
 
 ### Mendaftarkan Formulir Konfigurasi
 
-Saat mengonfigurasi verifikator SMS, setelah memilih jenis penyedia layanan SMS, akan muncul formulir konfigurasi yang terkait dengan jenis penyedia tersebut. Formulir konfigurasi ini perlu didaftarkan oleh pengembang di sisi klien.
+Saat pengguna mengkonfigurasi verifier SMS, setelah memilih tipe provider SMS, akan muncul formulir konfigurasi yang terkait dengan tipe provider tersebut. Formulir konfigurasi ini perlu didaftarkan sendiri oleh developer di klien.
 
 ![](https://static-docs.nocobase.com/202503011221912.png)
 
@@ -58,7 +60,7 @@ class PluginCustomSMSProviderClient extends Plugin {
 
 ### Mengimplementasikan Antarmuka Pengiriman
 
-Plugin verifikasi telah mengemas proses pembuatan kata sandi dinamis satu kali (OTP). Jadi, pengembang hanya perlu mengimplementasikan logika pengiriman pesan untuk berinteraksi dengan penyedia layanan SMS.
+Plugin verifikasi telah mengenkapsulasi alur pembuatan one-time password (OTP). Developer hanya perlu mengimplementasikan logika pengiriman yang berinteraksi dengan provider SMS.
 
 ```ts
 class CustomSMSProvider extends SMSProvider {
@@ -75,9 +77,9 @@ class CustomSMSProvider extends SMSProvider {
 }
 ```
 
-### Mendaftarkan Jenis Verifikasi
+### Mendaftarkan Tipe Verifikasi
 
-Setelah antarmuka pengiriman diimplementasikan, antarmuka tersebut perlu didaftarkan.
+Setelah antarmuka pengiriman diimplementasikan, perlu didaftarkan.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -87,7 +89,7 @@ import { tval } from '@nocobase/utils';
 class PluginCustomSMSProviderServer extends Plugin {
   async load() {
     const plugin = this.app.pm.get('verification') as PluginVerificationServer;
-    // nama harus sesuai dengan yang digunakan di klien
+    // name harus sesuai dengan klien
     plugin.smsOTPProviderManager.registerProvider('custom-sms-provider-name', {
       title: tval('Custom SMS provider', { ns: namespace }),
       provider: CustomSMSProvider,

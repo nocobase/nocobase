@@ -1,4 +1,6 @@
 ---
+title: "日历"
+keywords: "日历,插件,NocoBase"
 displayName: "日历"
 packageName: '@nocobase/plugin-calendar'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 日历

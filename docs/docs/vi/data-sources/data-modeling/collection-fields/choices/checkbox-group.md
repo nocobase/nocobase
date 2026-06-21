@@ -1,14 +1,15 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Nhóm Checkbox"
+description: "Field nhóm checkbox, chọn nhiều tùy chọn boolean."
+keywords: "nhóm checkbox,checkbox-group,chọn nhiều,Field tùy chọn,NocoBase"
+---
 
-
-# Nhóm hộp kiểm
+# Nhóm Checkbox
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ## Ví dụ
 
-Nội dung sẽ được bổ sung sau.
+Sẽ được bổ sung

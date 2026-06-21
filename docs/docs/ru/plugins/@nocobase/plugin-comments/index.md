@@ -1,18 +1,17 @@
 ---
-displayName: "Комментарии"
+title: "Comments"
+keywords: "Comments,Plugin,NocoBase"
+displayName: "Comments"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Предоставляет шаблон коллекции комментариев и блок для добавления функциональности комментирования к любой коллекции.
-isFree: false
-builtIn: false
+  Шаблон коллекции комментариев и блок для комментирования записей любой коллекции.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Комментарии
+# Comments

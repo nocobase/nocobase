@@ -6,11 +6,11 @@
       {
         "type": "custom-link",
         "label": "Giới thiệu",
-        "link": "/ui-development-field"
+        "link": "/ui-development-field/"
       },
       {
         "type": "custom-link",
-        "label": "Viết một plugin trường",
+        "label": "Viết một plugin Field",
         "link": "/ui-development-field/write-a-field-plugin"
       }
     ]

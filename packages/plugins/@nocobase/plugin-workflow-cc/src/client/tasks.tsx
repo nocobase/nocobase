@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAntdToken } from 'antd-style';
 import { Card, ConfigProvider, Descriptions, Spin } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +18,6 @@ import {
   useCollectionRecordData,
   SchemaComponent,
   css,
-  useCurrentUserContext,
   useAPIClient,
   usePlugin,
   useFormBlockContext,
@@ -37,10 +36,13 @@ import PluginWorkflowClient, {
   useTasksCountsContext,
   WorkflowTitle,
 } from '@nocobase/plugin-workflow/client';
+import { useTempAssociationSources } from './hooks/useTempAssociationSources';
 
 import { NAMESPACE, TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { useTranslation } from 'react-i18next';
 import { lang } from './locale';
+import { RemoteFlowModelRenderer } from './flow/RemoteFlowModelRenderer';
+import { CCTaskCardDetailsModel } from './models/CCTaskCardDetailsModel';
 
 function useDetailsBlockProps() {
   const { form } = useFormBlockContext();
@@ -70,7 +72,7 @@ function useReadAction() {
   };
 }
 
-function useReadActionProps(props) {
+function useReadActionProps() {
   const record = useCollectionRecordData();
   return record.status
     ? {
@@ -100,19 +102,23 @@ function useReadAllAction() {
 
 function useReadAllActionProps(props) {
   const { counts } = useTasksCountsContext();
+  const pending = counts[TASK_TYPE_CC]?.pending;
   return {
     ...props,
-    disabled: !counts[TASK_TYPE_CC]?.pending,
+    disabled: pending === 0,
   };
 }
 
-function FlowContextProvider(props) {
+function FlowContextProvider() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const api = useAPIClient();
   const { id } = useCollectionRecordData() || {};
   const [flowContext, setFlowContext] = useState<any>(null);
   const [record, setRecord] = useState<any>(useCollectionRecordData());
   const [node, setNode] = useState<any>(null);
+  const currentNode = flowContext?.nodes?.find((item) => item.id === node?.id) ?? node;
+  const availableUpstreams = useAvailableUpstreams(currentNode);
+  const tempAssociationSources = useTempAssociationSources(flowContext?.workflow, availableUpstreams);
 
   useEffect(() => {
     if (!id) {
@@ -138,7 +144,52 @@ function FlowContextProvider(props) {
       });
   }, [api, id]);
 
-  const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node.id));
+  // V2: 使用 FlowModel 渲染
+  const ccUid = node?.config?.ccUid;
+  if (ccUid && node && flowContext) {
+    const trigger = workflowPlugin.triggers.get(flowContext.workflow.type);
+    const upstreams = availableUpstreams;
+
+    return (
+      <CollectionRecordProvider record={record}>
+        <FlowContext.Provider value={flowContext}>
+          <NodeContext.Provider value={node}>
+            <RemoteFlowModelRenderer
+              uid={ccUid}
+              onModelLoaded={(model) => {
+                model.context.defineProperty('flowSettingsEnabled', { value: false });
+                model.context.defineProperty('disableBlockGridPadding', { value: true });
+                model.context.defineProperty('view', {
+                  value: {
+                    inputArgs: {
+                      flowContext,
+                      availableUpstreams: upstreams,
+                      trigger,
+                      node,
+                    },
+                  },
+                });
+                model.context.defineProperty('workflow', {
+                  value: flowContext.workflow,
+                });
+                model.context.defineProperty('nodes', {
+                  value: flowContext.nodes,
+                });
+                model.context.defineProperty('tempAssociationSources', {
+                  value: tempAssociationSources,
+                  cache: false,
+                });
+              }}
+            />
+          </NodeContext.Provider>
+        </FlowContext.Provider>
+      </CollectionRecordProvider>
+    );
+  }
+
+  // V1: 使用 RemoteSchemaComponent 渲染
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const upstreams = availableUpstreams;
   const nodeComponents = upstreams.reduce(
     (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type).components),
     {},
@@ -300,36 +351,27 @@ function ContentDetail(props) {
   );
 }
 
-function RecordTitle(props) {
-  const record = useCollectionRecordData();
-  if (Array.isArray(props.dataIndex)) {
-    for (const index of props.dataIndex) {
-      const title = get(record, index);
-      if (title) {
-        return title;
-      }
-    }
+const getUpstreams = (currentNode: any, nodes: any[]) => {
+  if (!currentNode || !nodes) {
+    return [];
   }
-  return get(record, props.dataIndex);
-}
-
-function ContentDetailWithTitle(props) {
-  return (
-    <ContentDetail
-      title={<RecordTitle dataIndex={['title', 'node.title']} />}
-      extra={<RecordTitle dataIndex={'workflow.title'} />}
-    />
-  );
-}
+  const result = [];
+  const upstreamNode = nodes.find((node) => node.id === currentNode.upstreamId);
+  if (upstreamNode) {
+    result.push(upstreamNode, ...getUpstreams(upstreamNode, nodes));
+  }
+  return result;
+};
 
 function TaskItem() {
   const token = useAntdToken();
   const record = useCollectionRecordData();
   const navigate = useNavigate();
   const { setRecord } = usePopupRecordContext();
+
   const onOpen = useCallback(
     (e: React.MouseEvent) => {
-      const targetElement = e.target as Element; // 将事件目标转换为Element类型
+      const targetElement = e.target as Element;
       const currentTargetElement = e.currentTarget as Element;
       if (currentTargetElement.contains(targetElement)) {
         setRecord(record);
@@ -340,6 +382,47 @@ function TaskItem() {
     [navigate, record, setRecord],
   );
 
+  // V2: 使用 FlowModel 任务卡片渲染
+  const taskCardUid = record.node?.config?.taskCardUid;
+
+  const availableUpstreams = getUpstreams(record.node, record.workflow?.nodes);
+  const tempAssociationSources = useTempAssociationSources(record.workflow, availableUpstreams);
+
+  const onModelLoaded = useCallback(
+    (model: CCTaskCardDetailsModel) => {
+      model.setDecoratorProps({ onClick: onOpen, hoverable: true });
+      model.getCurrentRecord = () => record;
+      model.context.defineProperty('workflow', {
+        get: () => record.workflow,
+        cache: false,
+      });
+      model.context.defineProperty('nodes', {
+        get: () => record.workflow?.nodes ?? [],
+        cache: false,
+      });
+      model.context.defineProperty('tempAssociationSources', {
+        get: () => tempAssociationSources,
+        cache: false,
+      });
+    },
+    [record, onOpen, tempAssociationSources],
+  );
+
+  const mapModel = useCallback((model) => model.clone(), []);
+  const taskCardReloadKey = record.node?.updatedAt?.valueOf?.() ?? record.node?.updatedAt;
+
+  if (taskCardUid) {
+    return (
+      <RemoteFlowModelRenderer
+        uid={taskCardUid}
+        onModelLoaded={onModelLoaded}
+        mapModel={mapModel}
+        reloadKey={taskCardReloadKey}
+      />
+    );
+  }
+
+  // V1: 使用默认 Card 渲染
   return (
     <Card
       onClick={onOpen}
@@ -368,20 +451,26 @@ const StatusFilterMap = {
 };
 
 function useTodoActionParams(status) {
-  const { data: user } = useCurrentUserContext();
   const filter = StatusFilterMap[status] ?? {};
   return {
     filter,
     appends: [
       'node.id',
       'node.title',
+      'node.updatedAt',
+      'node.config',
       'workflow.id',
       'workflow.title',
       'workflow.enabled',
+      'workflow.config',
+      'workflow.nodes',
+      'workflow.nodes.title',
+      'workflow.nodes.key',
+      'workflow.nodes.config',
       'execution.id',
       'execution.status',
     ],
-    except: ['node.config', 'workflow.config', 'workflow.options', 'execution.context', 'execution.output'],
+    except: ['workflow.options', 'execution.context', 'execution.output'],
   };
 }
 
@@ -399,7 +488,7 @@ function TodoExtraActions(props) {
         properties: {
           refresh: {
             type: 'void',
-            title: '{{ t("Refresh") }}',
+            title: `{{t("Refresh", { ns: "${NAMESPACE}" })}}`,
             'x-component': 'Action',
             'x-use-component-props': 'useRefreshActionProps',
             'x-component-props': {
@@ -409,7 +498,7 @@ function TodoExtraActions(props) {
           },
           filter: {
             type: 'void',
-            title: '{{t("Filter")}}',
+            title: `{{t("Filter", { ns: "${NAMESPACE}" })}}`,
             'x-component': 'Filter.Action',
             'x-use-component-props': 'useFilterActionProps',
             'x-component-props': {
@@ -446,4 +535,9 @@ export const ccTodo = {
   Actions: TodoExtraActions,
   Item: TaskItem,
   Detail: Drawer,
+  getPopupRecord: (apiClient, { params }) =>
+    apiClient.resource('workflowCcTasks').get({
+      ...params,
+      appends: ['node', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
+    }),
 };

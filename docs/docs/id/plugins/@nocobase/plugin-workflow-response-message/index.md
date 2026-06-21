@@ -1,14 +1,14 @@
 ---
-displayName: "Alur Kerja: Pesan Respons"
+displayName: "Workflow: Pesan Respons"
 packageName: '@nocobase/plugin-workflow-response-message'
+title: "Workflow: Pesan Respons"
+keywords: "Workflow: Pesan Respons,Plugin,NocoBase"
 description: |
-  Digunakan untuk menyusun dan menampilkan pesan respons kepada klien dalam alur kerja kejadian formulir dan intersep permintaan.
+  Digunakan untuk merangkai dan menampilkan pesan respons ke client dalam event formulir dan workflow intersepsi request.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Pesan Respons
+# Workflow: Pesan Respons

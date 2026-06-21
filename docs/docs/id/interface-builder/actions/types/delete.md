@@ -1,19 +1,22 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Action Hapus"
+description: "Action Hapus: menghapus record saat ini, mendukung konfirmasi ganda, hapus batch."
+keywords: "Action Hapus, Delete, hapus record, hapus batch, interface builder, NocoBase"
+---
 
 # Hapus
 
-## Pendahuluan
+## Pengantar
 
-Operasi hapus digunakan untuk menghapus catatan data, dengan mengonfigurasi tombol hapus baris atau tombol operasi massal.
+Action Hapus digunakan untuk menghapus record data, dengan mengkonfigurasi tombol hapus baris atau tombol Action batch untuk menghapus record data.
 
 ![20251029165257](https://static-docs.nocobase.com/20251029165257.png)
 
-## Konfigurasi Operasi
+
+## Konfigurasi Action
 
 ![20251029165323](https://static-docs.nocobase.com/20251029165323.png)
 
-- [Tombol Edit](/interface-builder/actions/action-settings/edit-button)
-- [Aturan Keterkaitan](/interface-builder/actions/action-settings/linkage-rule)
-- [Konfirmasi Ulang](/interface-builder/actions/action-settings/double-check)
+- [Edit Tombol](/interface-builder/actions/action-settings/edit-button)
+- [Aturan Linkage](/interface-builder/actions/action-settings/linkage-rule)
+- [Konfirmasi Ganda](/interface-builder/actions/action-settings/double-check)

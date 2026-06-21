@@ -1,42 +1,40 @@
 ---
 pkg: "@nocobase/plugin-field-m2m-array"
+title: "Many-to-Many (Array)"
+description: "Sử dụng field array để lưu nhiều khóa duy nhất của bảng đích, thiết lập quan hệ ManyToMany, ví dụ Article-Tag ManyToMany, không cần bảng trung gian."
+keywords: "Many-to-Many array,M2M Array,Array association,BelongsToMany,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Đa-đa (Mảng)
+# Many-to-Many (Array)
 
 ## Giới thiệu
 
-Tính năng này cho phép bạn sử dụng các trường mảng trong một bộ sưu tập dữ liệu để lưu trữ nhiều khóa duy nhất từ bảng đích, qua đó thiết lập mối quan hệ đa-đa giữa hai bảng. Ví dụ, hãy xem xét hai thực thể Bài viết và Thẻ. Một bài viết có thể liên kết với nhiều thẻ, với bảng bài viết lưu trữ ID của các bản ghi tương ứng từ bảng thẻ trong một trường mảng.
+Hỗ trợ trong Collection, sử dụng field array để lưu nhiều khóa duy nhất của bảng đích, từ đó thiết lập quan hệ ManyToMany với bảng đích. Ví dụ: có hai thực thể Article và Tag, một bài viết có thể liên kết với nhiều tag, trong bảng Article dùng một field array để lưu ID của các bản ghi tương ứng trong bảng Tag.
 
 :::warning{title=Lưu ý}
 
-- Bất cứ khi nào có thể, bạn nên sử dụng một bộ sưu tập trung gian để thiết lập mối quan hệ [đa-đa](../data-modeling/collection-fields/associations/m2m/index.md) tiêu chuẩn, thay vì dựa vào loại quan hệ này.
-- Hiện tại, chỉ PostgreSQL hỗ trợ lọc dữ liệu bộ sưu tập nguồn bằng cách sử dụng các trường từ bảng đích cho các mối quan hệ đa-đa được thiết lập bằng trường mảng. Ví dụ, trong kịch bản trên, bạn có thể lọc bài viết dựa trên các trường khác trong bảng thẻ, chẳng hạn như tiêu đề.
-
+- Vui lòng cố gắng sử dụng bảng trung gian để thiết lập quan hệ [ManyToMany](../data-modeling/collection-fields/associations/m2m/index.md) chuẩn, tránh sử dụng kiểu quan hệ này.
+- Đối với quan hệ ManyToMany được thiết lập bằng field array, hiện chỉ khi sử dụng PostgreSQL, mới hỗ trợ lọc dữ liệu bảng nguồn dựa trên field của bảng đích. Ví dụ: trong ví dụ trên, sử dụng field khác của bảng Tag, như title, để lọc bài viết.
   :::
 
-### Cấu hình trường
+### Cấu hình Field
 
-![Cấu hình trường đa-đa (mảng)](https://static-docs.nocobase.com/202407051108180.png)
+![many-to-many(array) field configuration](https://static-docs.nocobase.com/202407051108180.png)
 
 ## Mô tả tham số
 
 ### Source collection
 
-Bộ sưu tập nguồn, nơi trường hiện tại được đặt.
+Bảng nguồn, tức là bảng chứa field hiện tại.
 
 ### Target collection
 
-Bộ sưu tập đích, bộ sưu tập mà mối quan hệ được thiết lập.
+Bảng đích, liên kết với bảng nào.
 
 ### Foreign key
 
-Trường mảng trong bộ sưu tập nguồn dùng để lưu trữ Target key từ bảng đích.
+Field array, là field lưu Target key của bảng đích trong bảng nguồn.
 
-Mối quan hệ tương ứng cho các loại trường mảng như sau:
+Tương ứng kiểu field array:
 
 | NocoBase | PostgreSQL | MySQL  | SQLite |
 | -------- | ---------- | ------ | ------ |
@@ -44,4 +42,4 @@ Mối quan hệ tương ứng cho các loại trường mảng như sau:
 
 ### Target key
 
-Trường trong bộ sưu tập đích tương ứng với các giá trị được lưu trữ trong trường mảng của bảng nguồn. Trường này phải là duy nhất.
+Field tương ứng với giá trị lưu trong field array của bảng nguồn, phải có tính duy nhất.

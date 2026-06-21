@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "StepDefinition - Định nghĩa Step"
+description: "StepDefinition định nghĩa một bước trong Flow, mỗi bước có thể là Action, xử lý sự kiện hoặc thao tác khác, là đơn vị thực thi cơ bản của Flow."
+keywords: "StepDefinition,Định nghĩa Step,Bước Flow,Đơn vị thực thi Flow,FlowEngine,NocoBase"
+---
 
 # StepDefinition
 
-StepDefinition định nghĩa một bước riêng lẻ trong một luồng. Mỗi bước có thể là một hành động, xử lý sự kiện hoặc một thao tác khác. Một bước là đơn vị thực thi cơ bản của một luồng.
+StepDefinition định nghĩa một bước trong Flow, mỗi bước có thể là một Action, xử lý sự kiện hoặc thao tác khác. Bước là đơn vị thực thi cơ bản của Flow.
 
 ## Định nghĩa kiểu
 
@@ -23,7 +24,7 @@ interface StepDefinition<TModel extends FlowModel = FlowModel>
 }
 ```
 
-## Cách sử dụng
+## Cách dùng
 
 ```ts
 class MyModel extends FlowModel {}
@@ -55,9 +56,9 @@ MyModel.registerFlow({
 
 **Kiểu**: `string`  
 **Bắt buộc**: Không  
-**Mô tả**: Mã định danh duy nhất cho bước trong luồng.
+**Mô tả**: Định danh duy nhất của bước trong Flow
 
-Nếu không được cung cấp, tên khóa của bước trong đối tượng `steps` sẽ được sử dụng.
+Nếu không cung cấp, sẽ dùng tên key của bước trong đối tượng `steps`.
 
 **Ví dụ**:
 ```ts
@@ -72,13 +73,13 @@ steps: {
 
 **Kiểu**: `string`  
 **Bắt buộc**: Không  
-**Mô tả**: Tên của một ActionDefinition đã đăng ký để sử dụng.
+**Mô tả**: Tên ActionDefinition đã đăng ký cần dùng
 
-Thuộc tính `use` cho phép bạn tham chiếu một hành động đã đăng ký, tránh định nghĩa trùng lặp.
+Thông qua thuộc tính `use` có thể tham chiếu Action đã đăng ký, tránh định nghĩa lặp lại.
 
 **Ví dụ**:
 ```ts
-// Đăng ký hành động trước
+// Đăng ký Action trước
 MyModel.registerAction({
   name: 'loadDataAction',
   handler: async (ctx, params) => {
@@ -86,10 +87,10 @@ MyModel.registerAction({
   }
 });
 
-// Sử dụng trong một bước
+// Dùng trong bước
 steps: {
   step1: {
-    use: 'loadDataAction',  // Tham chiếu hành động đã đăng ký
+    use: 'loadDataAction',  // Tham chiếu Action đã đăng ký
     title: 'Load Data'
   }
 }
@@ -99,9 +100,9 @@ steps: {
 
 **Kiểu**: `string`  
 **Bắt buộc**: Không  
-**Mô tả**: Tiêu đề hiển thị của bước.
+**Mô tả**: Tiêu đề hiển thị của bước
 
-Dùng để hiển thị trên giao diện người dùng và gỡ lỗi.
+Dùng cho hiển thị giao diện và debug.
 
 **Ví dụ**:
 ```ts
@@ -114,9 +115,9 @@ title: 'Save Results'
 
 **Kiểu**: `number`  
 **Bắt buộc**: Không  
-**Mô tả**: Thứ tự thực thi của bước. Giá trị càng nhỏ, bước đó càng được thực thi trước.
+**Mô tả**: Thứ tự thực thi bước, số càng nhỏ càng được thực thi trước
 
-Dùng để kiểm soát thứ tự thực thi của nhiều bước trong cùng một luồng.
+Dùng để kiểm soát thứ tự thực thi của nhiều bước trong cùng một Flow.
 
 **Ví dụ**:
 ```ts
@@ -131,14 +132,14 @@ steps: {
 
 **Kiểu**: `(ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any`  
 **Bắt buộc**: Không  
-**Mô tả**: Hàm xử lý cho bước.
+**Mô tả**: Hàm xử lý của bước
 
-Khi không sử dụng thuộc tính `use`, bạn có thể định nghĩa trực tiếp hàm xử lý.
+Khi không dùng thuộc tính `use`, có thể định nghĩa hàm xử lý trực tiếp.
 
 **Ví dụ**:
 ```ts
 handler: async (ctx, params) => {
-  // Lấy thông tin ngữ cảnh
+  // Lấy thông tin context
   const { model, flowEngine } = ctx;
   
   // Logic xử lý
@@ -153,9 +154,9 @@ handler: async (ctx, params) => {
 
 **Kiểu**: `Record<string, any> | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>)`  
 **Bắt buộc**: Không  
-**Mô tả**: Các tham số mặc định cho bước.
+**Mô tả**: Tham số mặc định của bước
 
-Điền các tham số với giá trị mặc định trước khi bước được thực thi.
+Trước khi bước thực thi, điền giá trị mặc định cho tham số.
 
 **Ví dụ**:
 ```ts
@@ -188,9 +189,9 @@ defaultParams: async (ctx) => {
 
 **Kiểu**: `Record<string, ISchema> | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>)`  
 **Bắt buộc**: Không  
-**Mô tả**: Lược đồ cấu hình giao diện người dùng (UI) cho bước.
+**Mô tả**: Schema cấu hình UI của bước
 
-Định nghĩa cách bước được hiển thị trên giao diện và cấu hình biểu mẫu của nó.
+Định nghĩa cách hiển thị của bước trong giao diện và cấu hình form.
 
 **Ví dụ**:
 ```ts
@@ -218,14 +219,14 @@ uiSchema: {
 
 **Kiểu**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Bắt buộc**: Không  
-**Mô tả**: Hàm hook chạy trước khi các tham số được lưu.
+**Mô tả**: Hook function trước khi lưu tham số
 
-Thực thi trước khi các tham số bước được lưu, và có thể được sử dụng để xác thực hoặc chuyển đổi tham số.
+Thực thi trước khi tham số bước được lưu, có thể dùng để validate hoặc chuyển đổi tham số.
 
 **Ví dụ**:
 ```ts
 beforeParamsSave: (ctx, params, previousParams) => {
-  // Xác thực tham số
+  // Validate tham số
   if (!params.name) {
     throw new Error('Name is required');
   }
@@ -239,14 +240,14 @@ beforeParamsSave: (ctx, params, previousParams) => {
 
 **Kiểu**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Bắt buộc**: Không  
-**Mô tả**: Hàm hook chạy sau khi các tham số được lưu.
+**Mô tả**: Hook function sau khi lưu tham số
 
-Thực thi sau khi các tham số bước được lưu, và có thể được sử dụng để kích hoạt các thao tác khác.
+Thực thi sau khi tham số bước được lưu, có thể dùng để kích hoạt các thao tác khác.
 
 **Ví dụ**:
 ```ts
 afterParamsSave: (ctx, params, previousParams) => {
-  // Ghi nhật ký
+  // Ghi log
   console.log('Step params saved:', params);
   
   // Kích hoạt các thao tác khác
@@ -258,15 +259,15 @@ afterParamsSave: (ctx, params, previousParams) => {
 
 **Kiểu**: `StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>)`  
 **Bắt buộc**: Không  
-**Mô tả**: Chế độ hiển thị giao diện người dùng (UI) cho bước.
+**Mô tả**: Chế độ hiển thị UI của bước
 
-Kiểm soát cách bước được hiển thị trên giao diện.
+Kiểm soát cách hiển thị của bước trong giao diện.
 
 **Các chế độ được hỗ trợ**:
-- `'dialog'` - Chế độ hộp thoại
-- `'drawer'` - Chế độ ngăn kéo
+- `'dialog'` - Chế độ dialog
+- `'drawer'` - Chế độ drawer
 - `'embed'` - Chế độ nhúng
-- Hoặc một đối tượng cấu hình tùy chỉnh
+- Hoặc đối tượng cấu hình tùy chỉnh
 
 **Ví dụ**:
 ```ts
@@ -292,19 +293,19 @@ uiMode: (ctx) => {
 
 **Kiểu**: `boolean`  
 **Bắt buộc**: Không  
-**Mô tả**: Cho biết đây có phải là bước cài đặt sẵn hay không.
+**Mô tả**: Có phải bước preset hay không
 
-Các tham số cho các bước có `preset: true` cần được điền vào khi tạo. Những bước không có cờ này có thể được điền vào sau khi mô hình được tạo.
+Tham số của bước có `preset: true` cần được điền khi tạo, các bước không được đánh dấu có thể điền sau khi tạo model.
 
 **Ví dụ**:
 ```ts
 steps: {
   step1: {
-    preset: true,  // Tham số phải được điền vào khi tạo
+    preset: true,  // Bắt buộc điền tham số khi tạo
     use: 'requiredAction'
   },
   step2: {
-    preset: false, // Tham số có thể được điền vào sau
+    preset: false, // Có thể điền tham số sau
     use: 'optionalAction'
   }
 }
@@ -314,21 +315,21 @@ steps: {
 
 **Kiểu**: `boolean`  
 **Bắt buộc**: Không  
-**Mô tả**: Cho biết các tham số bước có bắt buộc hay không.
+**Mô tả**: Tham số bước có bắt buộc hay không
 
-Nếu là `true`, một hộp thoại cấu hình sẽ mở ra trước khi thêm mô hình.
+Nếu là `true`, sẽ mở dialog cấu hình trước khi thêm model.
 
 **Ví dụ**:
 ```ts
-paramsRequired: true  // Tham số phải được cấu hình trước khi thêm mô hình
-paramsRequired: false // Tham số có thể được cấu hình sau
+paramsRequired: true  // Bắt buộc cấu hình tham số trước khi thêm model
+paramsRequired: false // Có thể cấu hình tham số sau
 ```
 
 ### hideInSettings
 
 **Kiểu**: `boolean`  
 **Bắt buộc**: Không  
-**Mô tả**: Cho biết có ẩn bước trong menu cài đặt hay không.
+**Mô tả**: Có ẩn bước trong menu cài đặt hay không
 
 **Ví dụ**:
 ```ts
@@ -341,7 +342,7 @@ hideInSettings: false // Hiển thị trong cài đặt (mặc định)
 **Kiểu**: `boolean`  
 **Bắt buộc**: Không  
 **Mặc định**: `true`  
-**Mô tả**: Cho biết có chờ hàm xử lý hoàn thành hay không.
+**Mô tả**: Có chờ hàm xử lý hoàn thành hay không
 
 **Ví dụ**:
 ```ts

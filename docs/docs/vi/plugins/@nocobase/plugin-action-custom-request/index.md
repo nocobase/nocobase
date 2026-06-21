@@ -1,16 +1,16 @@
 ---
-displayName: "Thao tác: Yêu cầu tùy chỉnh"
+displayName: "Action: Yêu cầu tùy chỉnh"
 packageName: '@nocobase/plugin-action-custom-request'
+title: "Action: Yêu cầu tùy chỉnh"
+keywords: "Action: Yêu cầu tùy chỉnh,Plugin,NocoBase"
+supportedVersions:
+  - 1.x
 description: |
-  Gửi yêu cầu đến bất kỳ dịch vụ HTTP nào, hỗ trợ gửi dữ liệu ngữ cảnh đến dịch vụ đích.
+  Gửi yêu cầu đến dịch vụ HTTP bất kỳ, hỗ trợ gửi dữ liệu ngữ cảnh đến dịch vụ đích.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-
-
-# Thao tác: Yêu cầu tùy chỉnh
+# Action: Yêu cầu tùy chỉnh

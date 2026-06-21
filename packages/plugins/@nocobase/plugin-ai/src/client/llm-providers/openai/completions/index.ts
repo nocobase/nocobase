@@ -8,12 +8,24 @@
  */
 
 import { LLMProviderOptions } from '../../../manager/ai-manager';
+import {
+  stripModelIdPrefix,
+  mergeVersionSegments,
+  capitalize,
+} from '../../../llm-services/component/EnabledModelsSelect';
 import { ProviderSettingsForm } from '../components/ProviderSettings';
 import { ModelSettingsForm } from './ModelSettings';
+
+const formatModelLabel = (id: string): string => {
+  const name = stripModelIdPrefix(id);
+  const segments = mergeVersionSegments(name.split(/[-_]/));
+  return segments.map((s) => (s.toLowerCase() === 'gpt' ? 'GPT' : capitalize(s))).join('-');
+};
 
 export const openaiCompletionsProviderOptions: LLMProviderOptions = {
   components: {
     ProviderSettingsForm,
     ModelSettingsForm,
   },
+  formatModelLabel,
 };

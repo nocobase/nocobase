@@ -1,14 +1,14 @@
 ---
-displayName: "Blok: Kartu Kisi"
+displayName: "Block: Grid Card"
 packageName: '@nocobase/plugin-block-grid-card'
+title: "Block: Grid Card"
+keywords: "Block: Grid Card,plugin,NocoBase"
 description: |
-  Menampilkan data dalam bentuk daftar kisi dengan dukungan paginasi.
+  Menampilkan data dalam bentuk grid list, mendukung pengaturan paginasi.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Kartu Kisi
+# Block: Grid Card

@@ -1,10 +1,12 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Filter Operators"
+description: "Operator filter Repository NocoBase: $eq, $ne, $in, $and, $or, dll, digunakan untuk parameter filter find/findOne."
+keywords: "Operator Filter,$eq,$in,$and,$or,Repository query,parameter filter,NocoBase"
+---
 
-# Operator Filter
+# Filter Operators
 
-Digunakan dalam parameter `filter` pada API seperti `find`, `findOne`, `findAndCount`, `count` dari sebuah Repository:
+Digunakan dalam parameter filter dari API Repository seperti `find`, `findOne`, `findAndCount`, `count`:
 
 ```ts
 const repository = db.getRepository('books');
@@ -18,15 +20,15 @@ repository.find({
 });
 ```
 
-Untuk mendukung serialisasi JSON, NocoBase mengidentifikasi operator kueri dengan string yang diawali dengan `$`.
+Untuk mendukung JSON-ifikasi, di NocoBase operator query diidentifikasi sebagai string dengan prefix $.
 
-Selain itu, NocoBase juga menyediakan API untuk memperluas operator. Lihat [`db.registerOperators()`](../database#registeroperators) untuk detailnya.
+Selain itu, NocoBase juga menyediakan API untuk memperluas operator, lihat [`db.registerOperators()`](../database#registeroperators).
 
 ## Operator Umum
 
 ### `$eq`
 
-Memeriksa apakah nilai kolom sama dengan nilai yang ditentukan. Setara dengan `=` pada SQL.
+Memeriksa apakah nilai field sama dengan nilai yang ditentukan. Setara dengan `=` di SQL.
 
 **Contoh**
 
@@ -44,7 +46,7 @@ Setara dengan `title: '春秋'`.
 
 ### `$ne`
 
-Memeriksa apakah nilai kolom tidak sama dengan nilai yang ditentukan. Setara dengan `!=` pada SQL.
+Memeriksa apakah nilai field tidak sama dengan nilai yang ditentukan. Setara dengan `!=` di SQL.
 
 **Contoh**
 
@@ -60,7 +62,7 @@ repository.find({
 
 ### `$is`
 
-Memeriksa apakah nilai kolom adalah nilai yang ditentukan. Setara dengan `IS` pada SQL.
+Memeriksa apakah nilai field adalah nilai yang ditentukan. Setara dengan `IS` di SQL.
 
 **Contoh**
 
@@ -76,7 +78,7 @@ repository.find({
 
 ### `$not`
 
-Memeriksa apakah nilai kolom bukan nilai yang ditentukan. Setara dengan `IS NOT` pada SQL.
+Memeriksa apakah nilai field bukan nilai yang ditentukan. Setara dengan `IS NOT` di SQL.
 
 **Contoh**
 
@@ -92,7 +94,7 @@ repository.find({
 
 ### `$col`
 
-Memeriksa apakah nilai kolom sama dengan nilai kolom lain. Setara dengan `=` pada SQL.
+Memeriksa apakah nilai field sama dengan nilai field lain. Setara dengan `=` di SQL.
 
 **Contoh**
 
@@ -108,7 +110,7 @@ repository.find({
 
 ### `$in`
 
-Memeriksa apakah nilai kolom ada dalam array yang ditentukan. Setara dengan `IN` pada SQL.
+Memeriksa apakah nilai field ada dalam array yang ditentukan. Setara dengan `IN` di SQL.
 
 **Contoh**
 
@@ -124,7 +126,7 @@ repository.find({
 
 ### `$notIn`
 
-Memeriksa apakah nilai kolom tidak ada dalam array yang ditentukan. Setara dengan `NOT IN` pada SQL.
+Memeriksa apakah nilai field tidak ada dalam array yang ditentukan. Setara dengan `NOT IN` di SQL.
 
 **Contoh**
 
@@ -140,7 +142,7 @@ repository.find({
 
 ### `$empty`
 
-Memeriksa apakah suatu kolom umum kosong. Untuk kolom string, operator ini memeriksa string kosong. Untuk kolom array, operator ini memeriksa array kosong.
+Memeriksa apakah field umum kosong, jika field string, memeriksa apakah string kosong, jika field array, memeriksa apakah array kosong.
 
 **Contoh**
 
@@ -156,7 +158,7 @@ repository.find({
 
 ### `$notEmpty`
 
-Memeriksa apakah suatu kolom umum tidak kosong. Untuk kolom string, operator ini memeriksa string yang tidak kosong. Untuk kolom array, operator ini memeriksa array yang tidak kosong.
+Memeriksa apakah field umum tidak kosong, jika field string, memeriksa apakah string tidak kosong, jika field array, memeriksa apakah array tidak kosong.
 
 **Contoh**
 
@@ -174,7 +176,7 @@ repository.find({
 
 ### `$and`
 
-Logika AND. Setara dengan `AND` pada SQL.
+Logika AND. Setara dengan `AND` di SQL.
 
 **Contoh**
 
@@ -188,7 +190,7 @@ repository.find({
 
 ### `$or`
 
-Logika OR. Setara dengan `OR` pada SQL.
+Logika OR. Setara dengan `OR` di SQL.
 
 **Contoh**
 
@@ -200,13 +202,13 @@ repository.find({
 });
 ```
 
-## Operator untuk Kolom Tipe Boolean
+## Operator Field Tipe Boolean
 
-Untuk kolom boolean `type: 'boolean'`
+Digunakan untuk field tipe boolean `type: 'boolean'`
 
 ### `$isFalsy`
 
-Memeriksa apakah nilai kolom boolean adalah falsy. Nilai kolom boolean `false`, `0`, dan `NULL` semuanya akan dianggap `$isFalsy: true`.
+Memeriksa apakah nilai field tipe boolean adalah falsy. Field boolean dengan nilai `false`, `0` dan `NULL` semua akan dinilai sebagai `$isFalsy: true`.
 
 **Contoh**
 
@@ -222,7 +224,7 @@ repository.find({
 
 ### `$isTruly`
 
-Memeriksa apakah nilai kolom boolean adalah truly. Nilai kolom boolean `true` dan `1` semuanya akan dianggap `$isTruly: true`.
+Memeriksa apakah nilai field tipe boolean adalah truly. Field boolean dengan nilai `true` dan `1` semua akan dinilai sebagai `$isTruly: true`.
 
 **Contoh**
 
@@ -236,9 +238,9 @@ repository.find({
 });
 ```
 
-## Operator untuk Kolom Tipe Angka
+## Operator Field Tipe Numerik
 
-Untuk kolom tipe angka, termasuk:
+Digunakan untuk field tipe numerik, termasuk:
 
 - `type: 'integer'`
 - `type: 'float'`
@@ -248,7 +250,7 @@ Untuk kolom tipe angka, termasuk:
 
 ### `$gt`
 
-Memeriksa apakah nilai kolom lebih besar dari nilai yang ditentukan. Setara dengan `>` pada SQL.
+Memeriksa apakah nilai field lebih besar dari nilai yang ditentukan. Setara dengan `>` di SQL.
 
 **Contoh**
 
@@ -264,7 +266,7 @@ repository.find({
 
 ### `$gte`
 
-Memeriksa apakah nilai kolom lebih besar dari atau sama dengan nilai yang ditentukan. Setara dengan `>=` pada SQL.
+Memeriksa apakah nilai field lebih besar atau sama dengan nilai yang ditentukan. Setara dengan `>=` di SQL.
 
 **Contoh**
 
@@ -280,7 +282,7 @@ repository.find({
 
 ### `$lt`
 
-Memeriksa apakah nilai kolom lebih kecil dari nilai yang ditentukan. Setara dengan `<` pada SQL.
+Memeriksa apakah nilai field lebih kecil dari nilai yang ditentukan. Setara dengan `<` di SQL.
 
 **Contoh**
 
@@ -296,7 +298,7 @@ repository.find({
 
 ### `$lte`
 
-Memeriksa apakah nilai kolom lebih kecil dari atau sama dengan nilai yang ditentukan. Setara dengan `<=` pada SQL.
+Memeriksa apakah nilai field lebih kecil atau sama dengan nilai yang ditentukan. Setara dengan `<=` di SQL.
 
 **Contoh**
 
@@ -312,7 +314,7 @@ repository.find({
 
 ### `$between`
 
-Memeriksa apakah nilai kolom berada di antara dua nilai yang ditentukan. Setara dengan `BETWEEN` pada SQL.
+Memeriksa apakah nilai field di antara dua nilai yang ditentukan. Setara dengan `BETWEEN` di SQL.
 
 **Contoh**
 
@@ -328,7 +330,7 @@ repository.find({
 
 ### `$notBetween`
 
-Memeriksa apakah nilai kolom tidak berada di antara dua nilai yang ditentukan. Setara dengan `NOT BETWEEN` pada SQL.
+Memeriksa apakah nilai field tidak di antara dua nilai yang ditentukan. Setara dengan `NOT BETWEEN` di SQL.
 
 **Contoh**
 
@@ -342,13 +344,13 @@ repository.find({
 });
 ```
 
-## Operator untuk Kolom Tipe String
+## Operator Field Tipe String
 
-Untuk kolom tipe string, termasuk `string`
+Digunakan untuk field tipe string, termasuk `string`
 
 ### `$includes`
 
-Memeriksa apakah kolom string mengandung substring yang ditentukan.
+Memeriksa apakah field string berisi substring yang ditentukan.
 
 **Contoh**
 
@@ -364,7 +366,7 @@ repository.find({
 
 ### `$notIncludes`
 
-Memeriksa apakah kolom string tidak mengandung substring yang ditentukan.
+Memeriksa apakah field string tidak berisi substring yang ditentukan.
 
 **Contoh**
 
@@ -380,7 +382,7 @@ repository.find({
 
 ### `$startsWith`
 
-Memeriksa apakah kolom string diawali dengan substring yang ditentukan.
+Memeriksa apakah field string dimulai dengan substring yang ditentukan.
 
 **Contoh**
 
@@ -396,7 +398,7 @@ repository.find({
 
 ### `$notStatsWith`
 
-Memeriksa apakah kolom string tidak diawali dengan substring yang ditentukan.
+Memeriksa apakah field string tidak dimulai dengan substring yang ditentukan.
 
 **Contoh**
 
@@ -412,7 +414,7 @@ repository.find({
 
 ### `$endsWith`
 
-Memeriksa apakah kolom string diakhiri dengan substring yang ditentukan.
+Memeriksa apakah field string diakhiri dengan substring yang ditentukan.
 
 **Contoh**
 
@@ -428,7 +430,7 @@ repository.find({
 
 ### `$notEndsWith`
 
-Memeriksa apakah kolom string tidak diakhiri dengan substring yang ditentukan.
+Memeriksa apakah field string tidak diakhiri dengan substring yang ditentukan.
 
 **Contoh**
 
@@ -444,7 +446,7 @@ repository.find({
 
 ### `$like`
 
-Memeriksa apakah nilai kolom mengandung string yang ditentukan. Setara dengan `LIKE` pada SQL.
+Memeriksa apakah nilai field berisi string yang ditentukan. Setara dengan `LIKE` di SQL.
 
 **Contoh**
 
@@ -460,7 +462,7 @@ repository.find({
 
 ### `$notLike`
 
-Memeriksa apakah nilai kolom tidak mengandung string yang ditentukan. Setara dengan `NOT LIKE` pada SQL.
+Memeriksa apakah nilai field tidak berisi string yang ditentukan. Setara dengan `NOT LIKE` di SQL.
 
 **Contoh**
 
@@ -476,7 +478,7 @@ repository.find({
 
 ### `$iLike`
 
-Memeriksa apakah nilai kolom mengandung string yang ditentukan, tidak peka huruf besar/kecil. Setara dengan `ILIKE` pada SQL (hanya berlaku untuk PostgreSQL).
+Memeriksa apakah nilai field berisi string yang ditentukan, mengabaikan huruf besar/kecil. Setara dengan `ILIKE` di SQL (hanya berlaku untuk PG).
 
 **Contoh**
 
@@ -492,7 +494,7 @@ repository.find({
 
 ### `$notILike`
 
-Memeriksa apakah nilai kolom tidak mengandung string yang ditentukan, tidak peka huruf besar/kecil. Setara dengan `NOT ILIKE` pada SQL (hanya berlaku untuk PostgreSQL).
+Memeriksa apakah nilai field tidak berisi string yang ditentukan, mengabaikan huruf besar/kecil. Setara dengan `NOT ILIKE` di SQL (hanya berlaku untuk PG).
 
 **Contoh**
 
@@ -508,7 +510,7 @@ repository.find({
 
 ### `$regexp`
 
-Memeriksa apakah nilai kolom cocok dengan ekspresi reguler yang ditentukan. Setara dengan `REGEXP` pada SQL (hanya berlaku untuk PostgreSQL).
+Memeriksa apakah nilai field cocok dengan regular expression yang ditentukan. Setara dengan `REGEXP` di SQL (hanya berlaku untuk PG).
 
 **Contoh**
 
@@ -524,7 +526,7 @@ repository.find({
 
 ### `$notRegexp`
 
-Memeriksa apakah nilai kolom tidak cocok dengan ekspresi reguler yang ditentukan. Setara dengan `NOT REGEXP` pada SQL (hanya berlaku untuk PostgreSQL).
+Memeriksa apakah nilai field tidak cocok dengan regular expression yang ditentukan. Setara dengan `NOT REGEXP` di SQL (hanya berlaku untuk PG).
 
 **Contoh**
 
@@ -540,7 +542,7 @@ repository.find({
 
 ### `$iRegexp`
 
-Memeriksa apakah nilai kolom cocok dengan ekspresi reguler yang ditentukan, tidak peka huruf besar/kecil. Setara dengan `~*` pada SQL (hanya berlaku untuk PostgreSQL).
+Memeriksa apakah nilai field cocok dengan regular expression yang ditentukan, mengabaikan huruf besar/kecil. Setara dengan `~*` di SQL (hanya berlaku untuk PG).
 
 **Contoh**
 
@@ -556,7 +558,7 @@ repository.find({
 
 ### `$notIRegexp`
 
-Memeriksa apakah nilai kolom tidak cocok dengan ekspresi reguler yang ditentukan, tidak peka huruf besar/kecil. Setara dengan `!~*` pada SQL (hanya berlaku untuk PostgreSQL).
+Memeriksa apakah nilai field tidak cocok dengan regular expression yang ditentukan, mengabaikan huruf besar/kecil. Setara dengan `!~*` di SQL (hanya berlaku untuk PG).
 
 **Contoh**
 
@@ -570,13 +572,13 @@ repository.find({
 });
 ```
 
-## Operator untuk Kolom Tipe Tanggal
+## Operator Field Tipe Tanggal
 
-Untuk kolom tipe tanggal `type: 'date'`
+Digunakan untuk field tipe tanggal `type: 'date'`
 
 ### `$dateOn`
 
-Memeriksa apakah kolom tanggal berada pada hari tertentu.
+Memeriksa apakah field tanggal berada pada hari tertentu.
 
 **Contoh**
 
@@ -592,7 +594,7 @@ repository.find({
 
 ### `$dateNotOn`
 
-Memeriksa apakah kolom tanggal tidak berada pada hari tertentu.
+Memeriksa apakah field tanggal tidak berada pada hari tertentu.
 
 **Contoh**
 
@@ -608,7 +610,7 @@ repository.find({
 
 ### `$dateBefore`
 
-Memeriksa apakah kolom tanggal sebelum nilai tertentu. Setara dengan lebih kecil dari nilai tanggal yang diberikan.
+Memeriksa apakah field tanggal berada sebelum nilai tertentu. Setara dengan lebih kecil dari nilai tanggal yang dimasukkan.
 
 **Contoh**
 
@@ -624,7 +626,7 @@ repository.find({
 
 ### `$dateNotBefore`
 
-Memeriksa apakah kolom tanggal tidak sebelum nilai tertentu. Setara dengan lebih besar dari atau sama dengan nilai tanggal yang diberikan.
+Memeriksa apakah field tanggal tidak berada sebelum nilai tertentu. Setara dengan lebih besar atau sama dengan nilai tanggal yang dimasukkan.
 
 **Contoh**
 
@@ -640,7 +642,7 @@ repository.find({
 
 ### `$dateAfter`
 
-Memeriksa apakah kolom tanggal setelah nilai tertentu. Setara dengan lebih besar dari nilai tanggal yang diberikan.
+Memeriksa apakah field tanggal berada setelah nilai tertentu. Setara dengan lebih besar dari nilai tanggal yang dimasukkan.
 
 **Contoh**
 
@@ -656,7 +658,7 @@ repository.find({
 
 ### `$dateNotAfter`
 
-Memeriksa apakah kolom tanggal tidak setelah nilai tertentu. Setara dengan lebih kecil dari atau sama dengan nilai tanggal yang diberikan.
+Memeriksa apakah field tanggal tidak berada setelah nilai tertentu. Setara dengan lebih kecil atau sama dengan nilai tanggal yang dimasukkan.
 
 **Contoh**
 
@@ -670,13 +672,13 @@ repository.find({
 });
 ```
 
-## Operator untuk Kolom Tipe Array
+## Operator Field Tipe Array
 
-Untuk kolom tipe array `type: 'array'`
+Digunakan untuk field tipe array `type: 'array'`
 
 ### `$match`
 
-Memeriksa apakah nilai kolom array cocok dengan nilai-nilai dalam array yang ditentukan.
+Memeriksa apakah nilai field array cocok dengan nilai dalam array yang ditentukan.
 
 **Contoh**
 
@@ -692,7 +694,7 @@ repository.find({
 
 ### `$notMatch`
 
-Memeriksa apakah nilai kolom array tidak cocok dengan nilai-nilai dalam array yang ditentukan.
+Memeriksa apakah nilai field array tidak cocok dengan nilai dalam array yang ditentukan.
 
 **Contoh**
 
@@ -708,7 +710,7 @@ repository.find({
 
 ### `$anyOf`
 
-Memeriksa apakah nilai kolom array mengandung salah satu nilai dalam array yang ditentukan.
+Memeriksa apakah nilai field array berisi salah satu nilai dalam array yang ditentukan.
 
 **Contoh**
 
@@ -724,7 +726,7 @@ repository.find({
 
 ### `$noneOf`
 
-Memeriksa apakah nilai kolom array tidak mengandung nilai apa pun dalam array yang ditentukan.
+Memeriksa apakah nilai field array tidak berisi nilai apapun dalam array yang ditentukan.
 
 **Contoh**
 
@@ -740,7 +742,7 @@ repository.find({
 
 ### `$arrayEmpty`
 
-Memeriksa apakah kolom array kosong.
+Memeriksa apakah field array kosong.
 
 **Contoh**
 
@@ -756,7 +758,7 @@ repository.find({
 
 ### `$arrayNotEmpty`
 
-Memeriksa apakah kolom array tidak kosong.
+Memeriksa apakah field array tidak kosong.
 
 **Contoh**
 
@@ -770,9 +772,9 @@ repository.find({
 });
 ```
 
-## Operator untuk Kolom Tipe Relasi
+## Operator Tipe Field Relasi
 
-Digunakan untuk memeriksa apakah suatu relasi ada. Tipe kolom termasuk:
+Digunakan untuk memeriksa apakah relasi ada, tipe field meliputi:
 
 - `type: 'hasOne'`
 - `type: 'hasMany'`
@@ -781,7 +783,7 @@ Digunakan untuk memeriksa apakah suatu relasi ada. Tipe kolom termasuk:
 
 ### `$exists`
 
-Data relasi ada
+Memiliki data relasi
 
 **Contoh**
 
@@ -797,7 +799,7 @@ repository.find({
 
 ### `$notExists`
 
-Data relasi tidak ada
+Tidak memiliki data relasi
 
 **Contoh**
 

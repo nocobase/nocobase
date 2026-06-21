@@ -1,17 +1,17 @@
 ---
-displayName: "Ứng dụng di động (Đã ngừng phát triển)"
+displayName: "Di động (Đã ngừng sử dụng)"
 packageName: '@nocobase/plugin-mobile-client'
+title: "Di động (Đã ngừng sử dụng)"
+keywords: "Di động (Đã ngừng sử dụng),Plugin,NocoBase"
 description: |
-  Cung cấp khả năng cấu hình các trang dành cho thiết bị di động.
+  Cung cấp khả năng cấu hình trang di động.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Ứng dụng di động (Đã ngừng phát triển)
+# Di động (Đã ngừng sử dụng)
 
-> Lưu ý: Plugin này đã ngừng phát triển.
+> Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

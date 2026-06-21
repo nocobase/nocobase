@@ -1,4 +1,6 @@
 ---
+title: "Data source: External SQL Server"
+keywords: "Data sources"
 displayName: "Data source: External SQL Server"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
 
 # Data source: External SQL Server

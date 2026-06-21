@@ -1,4 +1,6 @@
 ---
+title: "Collection: Tree"
+keywords: "Collections"
 displayName: "Collection: Tree"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Collection: Tree

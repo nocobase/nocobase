@@ -1,29 +1,31 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "AuthManager"
+description: "Manajer autentikasi NocoBase: AuthManager mengelola berbagai metode autentikasi, mendaftarkan authenticator."
+keywords: "AuthManager,manajer autentikasi,registrasi authenticator,beberapa metode autentikasi,NocoBase"
+---
 
 # AuthManager
 
 ## Ikhtisar
 
-`AuthManager` adalah modul manajemen autentikasi pengguna di NocoBase, yang digunakan untuk mendaftarkan berbagai jenis autentikasi pengguna.
+`AuthManager` adalah modul manajemen autentikasi user di NocoBase, digunakan untuk mendaftarkan tipe autentikasi user yang berbeda.
 
 ### Penggunaan Dasar
 
 ```ts
 const authManager = new AuthManager({
-  // Digunakan untuk mendapatkan pengenal autentikator saat ini dari header permintaan
+  // Digunakan untuk mendapatkan identifier authenticator saat ini dari header request
   authKey: 'X-Authenticator',
 });
 
-// Mengatur metode untuk AuthManager dalam menyimpan dan mengambil autentikator
+// Mengatur method penyimpanan dan pengambilan authenticator dari AuthManager
 authManager.setStorer({
   get: async (name: string) => {
     return db.getRepository('authenticators').find({ filter: { name } });
   },
 });
 
-// Mendaftarkan jenis autentikasi
+// Mendaftarkan satu tipe autentikasi
 authManager.registerTypes('basic', {
   auth: BasicAuth,
   title: 'Password',
@@ -33,19 +35,19 @@ authManager.registerTypes('basic', {
 app.resourceManager.use(authManager.middleware());
 ```
 
-### Konsep
+### Penjelasan Konsep
 
-- **Jenis Autentikasi (`AuthType`)**: Berbagai metode autentikasi pengguna, seperti kata sandi, SMS, OIDC, SAML, dll.
-- **Autentikator (`Authenticator`)**: Entitas untuk metode autentikasi, yang sebenarnya disimpan dalam sebuah koleksi, sesuai dengan catatan konfigurasi dari `AuthType` tertentu. Satu metode autentikasi dapat memiliki beberapa autentikator, yang sesuai dengan beberapa konfigurasi, menyediakan berbagai metode autentikasi pengguna.
-- **Pengenal Autentikator (`Authenticator name`)**: Pengenal unik untuk autentikator, yang digunakan untuk menentukan metode autentikasi yang digunakan oleh permintaan saat ini.
+- **Tipe Autentikasi (`AuthType`)**: Berbagai metode autentikasi user, contoh: password, SMS, OIDC, SAML, dll.
+- **Authenticator (`Authenticator`)**: Entity metode autentikasi, sebenarnya disimpan di tabel data, sesuai dengan record konfigurasi tipe autentikasi (`AuthType`) tertentu. Satu metode autentikasi dapat memiliki beberapa authenticator, sesuai dengan beberapa konfigurasi, menyediakan metode autentikasi user yang berbeda.
+- **Identifier Authenticator (`Authenticator name`)**: Identifier unik dari authenticator, digunakan untuk menentukan metode autentikasi yang digunakan oleh request saat ini.
 
-## Metode Kelas
+## Method Class
 
 ### `constructor()`
 
-Konstruktor, membuat sebuah instans `AuthManager`.
+Constructor, membuat instance `AuthManager`.
 
-#### Tanda Tangan
+#### Signature
 
 - `constructor(options: AuthManagerOptions)`
 
@@ -68,24 +70,24 @@ export type AuthManagerOptions = {
 
 ##### AuthManagerOptions
 
-| Properti  | Tipe                        | Deskripsi                                             | Nilai Default     |
-| --------- | --------------------------- | ----------------------------------------------------- | ----------------- |
-| `authKey` | `string`                    | Opsional, kunci di header permintaan yang menyimpan pengenal autentikator saat ini. | `X-Authenticator` |
-| `default` | `string`                    | Opsional, pengenal autentikator default.              | `basic`           |
-| `jwt`     | [`JwtOptions`](#jwtoptions) | Opsional, dapat dikonfigurasi jika menggunakan JWT untuk autentikasi. | -                 |
+| Properti | Tipe | Deskripsi | Default |
+| --------- | --------------------------- | ------------------------------------- | ----------------- |
+| `authKey` | `string` | Opsional, key di header request yang menyimpan identifier authenticator saat ini | `X-Authenticator` |
+| `default` | `string` | Opsional, identifier authenticator default | `basic` |
+| `jwt` | [`JwtOptions`](#jwtoptions) | Opsional, jika menggunakan JWT untuk autentikasi, dapat dikonfigurasi | - |
 
 ##### JwtOptions
 
-| Properti    | Tipe     | Deskripsi               | Nilai Default     |
-| ----------- | -------- | ----------------------- | ----------------- |
-| `secret`    | `string` | Kunci rahasia token     | `X-Authenticator` |
-| `expiresIn` | `string` | Opsional, waktu kedaluwarsa token. | `7d`              |
+| Properti | Tipe | Deskripsi | Default |
+| ----------- | -------- | ------------------ | ----------------- |
+| `secret` | `string` | Secret token | `X-Authenticator` |
+| `expiresIn` | `string` | Opsional, masa berlaku token | `7d` |
 
 ### `setStorer()`
 
-Mengatur metode untuk menyimpan dan mengambil data autentikator.
+Mengatur method penyimpanan dan pengambilan data authenticator.
 
-#### Tanda Tangan
+#### Signature
 
 - `setStorer(storer: Storer)`
 
@@ -107,22 +109,22 @@ export interface Storer {
 
 ##### Authenticator
 
-| Properti   | Tipe                  | Deskripsi                    |
-| ---------- | --------------------- | ---------------------------- |
-| `authType` | `string`              | Jenis autentikasi            |
-| `options`  | `Record<string, any>` | Konfigurasi terkait autentikator |
+| Properti | Tipe | Deskripsi |
+| ---------- | --------------------- | -------------- |
+| `authType` | `string` | Tipe autentikasi |
+| `options` | `Record<string, any>` | Konfigurasi terkait authenticator |
 
 ##### Storer
 
-`Storer` adalah antarmuka untuk penyimpanan autentikator, yang berisi satu metode.
+`Storer` adalah interface penyimpanan authenticator, berisi satu method.
 
-- `get(name: string): Promise<Authenticator>` - Mendapatkan autentikator berdasarkan pengenalnya. Di NocoBase, tipe yang sebenarnya dikembalikan adalah [AuthModel](/auth-verification/auth/dev/api#authmodel).
+- `get(name: string): Promise<Authenticator>` - Mendapatkan authenticator melalui identifier authenticator. Di NocoBase, tipe yang sebenarnya dikembalikan adalah [AuthModel](/auth-verification/auth/dev/api#authmodel).
 
 ### `registerTypes()`
 
-Mendaftarkan jenis autentikasi.
+Mendaftarkan tipe autentikasi.
 
-#### Tanda Tangan
+#### Signature
 
 - `registerTypes(authType: string, authConfig: AuthConfig)`
 
@@ -132,48 +134,48 @@ Mendaftarkan jenis autentikasi.
 export type AuthExtend<T extends Auth> = new (config: Config) => T;
 
 type AuthConfig = {
-  auth: AuthExtend<Auth>; // Kelas autentikasi.
-  title?: string; // Nama tampilan dari jenis autentikasi.
+  auth: AuthExtend<Auth>; // The authentication class.
+  title?: string; // The display name of the authentication type.
 };
 ```
 
 #### Detail
 
-| Properti | Tipe               | Deskripsi                                         |
-| ------- | ------------------ | ------------------------------------------------- |
-| `auth`  | `AuthExtend<Auth>` | Implementasi jenis autentikasi, lihat [Auth](./auth) |
-| `title` | `string`           | Opsional. Judul jenis autentikasi ini yang ditampilkan di frontend. |
+| Properti | Tipe | Deskripsi |
+| ------- | ------------------ | --------------------------------- |
+| `auth` | `AuthExtend<Auth>` | Implementasi tipe autentikasi, lihat [Auth](./auth) |
+| `title` | `string` | Opsional. Judul tipe autentikasi yang ditampilkan di frontend |
 
 ### `listTypes()`
 
-Mendapatkan daftar jenis autentikasi yang terdaftar.
+Mendapatkan daftar tipe autentikasi yang sudah didaftarkan.
 
-#### Tanda Tangan
+#### Signature
 
 - `listTypes(): { name: string; title: string }[]`
 
 #### Detail
 
-| Properti | Tipe     | Deskripsi                   |
-| ------- | -------- | --------------------------- |
-| `name`  | `string` | Pengenal jenis autentikasi  |
-| `title` | `string` | Judul jenis autentikasi     |
+| Properti | Tipe | Deskripsi |
+| ------- | -------- | ------------ |
+| `name` | `string` | Identifier tipe autentikasi |
+| `title` | `string` | Judul tipe autentikasi |
 
 ### `get()`
 
-Mendapatkan autentikator.
+Mendapatkan authenticator.
 
-#### Tanda Tangan
+#### Signature
 
 - `get(name: string, ctx: Context)`
 
 #### Detail
 
-| Properti | Tipe      | Deskripsi             |
-| ------ | --------- | --------------------- |
-| `name` | `string`  | Pengenal autentikator |
-| `ctx`  | `Context` | Konteks permintaan    |
+| Properti | Tipe | Deskripsi |
+| ------ | --------- | ---------- |
+| `name` | `string` | Identifier authenticator |
+| `ctx` | `Context` | Konteks request |
 
 ### `middleware()`
 
-Middleware autentikasi. Mendapatkan autentikator saat ini dan melakukan autentikasi pengguna.
+Middleware autentikasi. Mendapatkan authenticator saat ini, melakukan autentikasi user.

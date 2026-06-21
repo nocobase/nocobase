@@ -1,4 +1,6 @@
 ---
+title: "Variables and secrets"
+keywords: "System management"
 displayName: "Variables and secrets"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Variables and secrets

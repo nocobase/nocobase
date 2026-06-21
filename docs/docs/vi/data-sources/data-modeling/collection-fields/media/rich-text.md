@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Rich Text"
+description: "Field rich text, hỗ trợ chỉnh sửa rich text và nội dung được định dạng."
+keywords: "Rich text,rich-text,Field rich text,nội dung định dạng,NocoBase"
+---
 
-
-# Văn bản đa dạng
+# Rich Text
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512181002](https://static-docs.nocobase.com/20240512181002.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung sau

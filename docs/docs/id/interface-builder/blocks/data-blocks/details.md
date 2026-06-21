@@ -1,78 +1,89 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Block Detail"
+description: "Block Detail: menampilkan detail data tunggal dalam bentuk read-only, mendukung layout Field, tampilan data terkait, konfigurasi tombol Action."
+keywords: "Block Detail, DetailsBlock, detail data, tampilan read-only, interface builder, NocoBase"
+---
 
-# Blok Detail
+# Block Detail
 
-## Pendahuluan
+## Pengantar
 
-Blok Detail digunakan untuk menampilkan nilai-nilai bidang dari setiap catatan data. Blok ini mendukung tata letak bidang yang fleksibel dan memiliki fungsi tindakan data bawaan, sehingga memudahkan pengguna untuk melihat dan mengelola informasi.
+Block Detail digunakan untuk menampilkan nilai setiap Field dari setiap data. Mendukung layout Field yang fleksibel, dan dilengkapi dengan berbagai fitur operasi data, memudahkan pengguna untuk melihat dan mengelola informasi.
 
-## Pengaturan Blok
+## Konfigurasi Block
 
 ![20251029202614](https://static-docs.nocobase.com/20251029202614.png)
 
-### Aturan Keterkaitan Blok
+### Aturan Linkage Block
 
-Kontrol perilaku blok (misalnya, apakah akan ditampilkan atau menjalankan JavaScript) melalui aturan keterkaitan.
+Mengontrol perilaku Block melalui aturan linkage (seperti apakah ditampilkan atau menjalankan JavaScript).
 
 ![20251023195004](https://static-docs.nocobase.com/20251023195004.png)
-Untuk detail lebih lanjut, lihat [Aturan Keterkaitan](/interface-builder/linkage-rule)
+Untuk informasi lebih lanjut, lihat [Aturan Linkage](/interface-builder/linkage-rule)
 
-### Mengatur Cakupan Data
+### Atur Cakupan Data
 
 Contoh: Hanya menampilkan pesanan yang sudah dibayar
 
 ![20251023195051](https://static-docs.nocobase.com/20251023195051.png)
 
-Untuk detail lebih lanjut, lihat [Mengatur Cakupan Data](/interface-builder/blocks/block-settings/data-scope)
+Untuk informasi lebih lanjut, lihat [Atur Cakupan Data](/interface-builder/blocks/block-settings/data-scope)
 
-### Aturan Keterkaitan Bidang
+### Aturan Linkage Field
 
-Aturan keterkaitan di Blok Detail mendukung pengaturan bidang untuk ditampilkan/disembunyikan secara dinamis.
+Aturan linkage di Block Detail mendukung pengaturan tampilan/sembunyi Field secara dinamis.
 
-Contoh: Jangan tampilkan jumlah saat status pesanan adalah "Dibatalkan".
+Contoh: Saat status pesanan adalah "Cancel", tidak menampilkan jumlah.
 
 ![20251023200739](https://static-docs.nocobase.com/20251023200739.png)
 
-Untuk detail lebih lanjut, lihat [Aturan Keterkaitan](/interface-builder/linkage-rule)
+Untuk informasi lebih lanjut, lihat [Aturan Linkage](/interface-builder/linkage-rule)
 
-## Mengonfigurasi Bidang
+## Konfigurasi Field
 
-### Bidang dari koleksi ini
+### Field Table Ini
 
-> **Catatan**: Bidang dari koleksi yang diwariskan (yaitu, bidang koleksi induk) secara otomatis digabungkan dan ditampilkan dalam daftar bidang saat ini.
+> **Perhatian**: Field di Table inheritance (yaitu Field Table parent) akan otomatis digabungkan dan ditampilkan di daftar Field saat ini.
 
 ![20251023201012](https://static-docs.nocobase.com/20251023201012.png)
 
-### Bidang dari Koleksi Terkait
+### Field Table Relasi
 
-> **Catatan**: Menampilkan bidang dari koleksi terkait didukung (saat ini hanya untuk hubungan satu-ke-satu).
+> **Perhatian**: Mendukung menampilkan Field Table relasi (saat ini hanya mendukung relasi to-one).
 
 ![20251023201258](https://static-docs.nocobase.com/20251023201258.png)
 
-### Bidang Lainnya
+
+### Field Lainnya
 - JS Field
 - JS Item
-- Pembatas
+- Divider
 - Markdown
 
 ![20251023201514](https://static-docs.nocobase.com/20251023201514.png)
 
-> **Tips**: Anda dapat menulis JavaScript untuk mengimplementasikan konten tampilan kustom, memungkinkan Anda menampilkan informasi yang lebih kompleks.  
-> Misalnya, Anda dapat merender efek tampilan yang berbeda berdasarkan tipe data, kondisi, atau logika yang berbeda.
+> **Tips**: Anda dapat menulis JavaScript untuk mengimplementasikan konten tampilan kustom, sehingga dapat menampilkan konten yang lebih kompleks.
+> Misalnya, dapat merender efek tampilan yang berbeda berdasarkan tipe data, kondisi, atau logika yang berbeda.
 
 ![20251023202017](https://static-docs.nocobase.com/20251023202017.png)
 
-## Mengonfigurasi Tindakan
+
+### Template Field
+
+Template Field digunakan untuk menggunakan kembali konfigurasi area Field di Block Detail. Detail di [Template Field](../../ui-templates.md).
+
+![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
+
+
+## Konfigurasi Action
 
 ![20251023200529](https://static-docs.nocobase.com/20251023200529.png)
 
 - [Edit](/interface-builder/actions/types/edit)
 - [Hapus](/interface-builder/actions/types/delete)
-- [Tautan](/interface-builder/actions/types/link)
-- [Pop-up](/interface-builder/actions/types/pop-up)
-- [Perbarui Catatan](/interface-builder/actions/types/update-record)
-- [Memicu alur kerja](/interface-builder/actions/types/trigger-workflow)
-- [Tindakan JS](/interface-builder/actions/types/js-action)
-- [Karyawan AI](/interface-builder/actions/types/ai-employee)
+- [Link](/interface-builder/actions/types/link)
+- [Popup](/interface-builder/actions/types/pop-up)
+- [Update Record](/interface-builder/actions/types/update-record)
+- [Trigger Workflow](/interface-builder/actions/types/trigger-workflow)
+- [JS Action](/interface-builder/actions/types/js-action)
+- [AI Employee](/interface-builder/actions/types/ai-employee)

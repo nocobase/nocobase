@@ -10,7 +10,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Quản lý trình xác thực",
+        "label": "Quản lý Authenticator",
         "link": "/auth-verification/auth/authenticators"
       },
       {
@@ -24,7 +24,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Tin nhắn SMS",
+            "label": "SMS",
             "link": "/auth-verification/auth-sms/"
           },
           {
@@ -90,7 +90,7 @@
           },
           {
             "type": "custom-link",
-            "label": "WeChat Work",
+            "label": "WeCom",
             "link": "/auth-verification/auth-wecom/"
           },
           {
@@ -100,20 +100,20 @@
           },
           {
             "type": "custom-link",
-            "label": "Khóa API",
+            "label": "API Key",
             "link": "/auth-verification/api-keys/"
           }
         ]
       },
       {
         "type": "dir",
-        "label": "Hướng dẫn cho nhà phát triển",
+        "label": "Hướng dẫn phát triển",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
             "label": "Mở rộng loại xác thực",
-            "link": "/auth-verification/auth/dev"
+            "link": "/auth-verification/auth/dev/"
           },
           {
             "type": "custom-link",
@@ -126,7 +126,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Xác minh",
+    "label": "Kiểm tra",
     "items": [
       {
         "type": "custom-link",
@@ -135,16 +135,16 @@
       },
       {
         "type": "custom-link",
-        "label": "Loại xác minh",
+        "label": "Loại kiểm tra",
         "items": [
           {
             "type": "custom-link",
-            "label": "Tin nhắn SMS",
+            "label": "SMS",
             "link": "/auth-verification/verification/sms"
           },
           {
             "type": "custom-link",
-            "label": "Trình xác thực TOTP",
+            "label": "TOTP Authenticator",
             "link": "/auth-verification/verification-totp/"
           }
         ]
@@ -152,16 +152,16 @@
       {
         "type": "dir",
         "collapsed": true,
-        "label": "Hướng dẫn cho nhà phát triển",
+        "label": "Hướng dẫn phát triển",
         "items": [
           {
             "type": "custom-link",
-            "label": "Mở rộng loại xác minh",
+            "label": "Mở rộng loại kiểm tra",
             "link": "/auth-verification/verification/dev/type"
           },
           {
             "type": "custom-link",
-            "label": "Mở rộng kịch bản xác minh",
+            "label": "Mở rộng kịch bản kiểm tra",
             "link": "/auth-verification/verification/dev/scene"
           },
           {

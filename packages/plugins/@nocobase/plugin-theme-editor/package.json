@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-theme-editor",
-  "version": "2.0.0-alpha.70",
+  "version": "2.2.0-alpha.1",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/theme-editor",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/theme-editor",
@@ -18,7 +18,7 @@
     "@emotion/css": "^11.11.2",
     "antd": "5.x",
     "classnames": "^2.3.1",
-    "lodash": "4.17.21",
+    "lodash": "4.x",
     "rc-util": "^5.32.0",
     "react": "^18.2.0",
     "react-colorful": "^5.5.1",
@@ -29,6 +29,7 @@
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
@@ -37,5 +38,6 @@
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [
     "System management"
-  ]
+  ],
+  "license": "Apache-2.0"
 }

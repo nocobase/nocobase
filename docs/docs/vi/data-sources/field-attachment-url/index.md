@@ -1,27 +1,26 @@
 ---
 pkg: "@nocobase/plugin-field-attachment-url"
+title: "Field Attachment (URL)"
+description: "Field attachment hỗ trợ format URL, lưu trữ link bên ngoài, không cần upload file, phù hợp cho việc tham chiếu hình ảnh, tài liệu bên ngoài."
+keywords: "Attachment URL,Attachment URL,External link,URL attachment,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Trường dữ liệu: Đính kèm (URL)
+# Field: Attachment (URL)
 
 ## Giới thiệu
 
-Hỗ trợ các tệp đính kèm ở định dạng URL.
+Hỗ trợ attachment ở format URL.
 
 ## Cài đặt
 
-Plugin này là một plugin thương mại.
+Plugin này là plugin thương mại.
 
 ## Hướng dẫn sử dụng
 
-### Cấu hình trường
+### Cấu hình Field
 
 ![20241017092323](https://static-docs.nocobase.com/20241017092323.png)
 
-### Nguồn dữ liệu bên ngoài
+### External Data Source
 
 ![20241017092456](https://static-docs.nocobase.com/20241017092456.png)
 

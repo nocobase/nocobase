@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-action-export"
+title: "导出操作"
+description: "导出操作：导出数据为 Excel 等格式，支持当前页/全部数据导出。"
+keywords: "导出操作,Export,Excel 导出,数据导出,界面搭建,NocoBase"
 ---
 # 导出#
 

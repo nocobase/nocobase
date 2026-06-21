@@ -27,14 +27,35 @@ export type AIEmployee = {
     prompt?: string;
   };
   skillSettings?: {
-    skills?: { name: string }[];
+    tools?: { name: string; autoCall?: boolean }[];
+    skills?: string[];
+  };
+  chatSettings?: {
+    systemPromptMode?: 'default' | 'raw' | 'none';
+    enableSkills?: boolean;
+    enableTools?: boolean;
+    [key: string]: unknown;
   };
   builtIn?: boolean;
   webSearch?: boolean;
   toolsConflict?: boolean;
+  category?: string;
+  deprecated?: boolean;
+  modelSettings?: {
+    enabled?: boolean;
+    llmService?: string;
+    model?: string;
+    models?: {
+      llmService?: string;
+      model?: string;
+    }[];
+  };
 };
 
 export type SkillSettings = {
+  toolsVersion?: number;
+  skillsVersion?: number;
+  tools?: string[];
   skills?: string[];
 };
 
@@ -43,16 +64,14 @@ export type Conversation = {
   title: string;
   updatedAt: string;
   aiEmployee: AIEmployee;
-};
-
-export type ConversationOptions = {
-  sessionId: string;
-  options: {
-    conversationSetting?: ConversationSetting;
+  read: boolean;
+  options?: {
+    modelSettings?: {
+      llmService?: string;
+      model?: string;
+    };
+    [key: string]: any;
   };
-};
-export type ConversationSetting = {
-  webSearch?: boolean;
 };
 
 export type ContextItem = {
@@ -62,12 +81,12 @@ export type ContextItem = {
   content?: unknown;
 };
 
-export type ToolCall<T> = {
+export type ToolCall<T = unknown> = {
   id: string;
   type: string;
   name: string;
   status?: 'success' | 'error';
-  invokeStatus: 'init' | 'pending' | 'done' | 'confirmed';
+  invokeStatus: 'init' | 'interrupted' | 'waiting' | 'pending' | 'done' | 'confirmed';
   auto: boolean;
   args: T;
   [key: string]: any;
@@ -77,6 +96,7 @@ export type MessageType = 'text' | 'greeting';
 export type Message = Omit<BubbleProps, 'content'> & {
   key?: string | number;
   role?: string;
+  createdAt?: string | Date;
   content: {
     content: any;
     ref?: React.MutableRefObject<any>;
@@ -88,6 +108,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
     metadata?: {
       model: string;
       provider: string;
+      llmService?: string;
       usage_metadata?: {
         input_tokens: number;
         output_tokens: number;
@@ -99,12 +120,32 @@ export type Message = Omit<BubbleProps, 'content'> & {
       title: string;
       url: string;
     }[];
+    reasoning?: { status: string; content: string };
+    subAgentConversations?: {
+      sessionId: string;
+      toolCallId?: string;
+      status?: 'pending' | 'completed';
+      messages: Message[];
+    }[];
+    from?: 'main-agent' | 'sub-agent';
   };
 };
 export type Action = {
   icon?: React.ReactNode;
   content: string;
   onClick: (content: string) => void;
+};
+
+export type ClearOptions = {
+  sender?: boolean;
+  systemMessage?: boolean;
+  attachments?: boolean;
+  contextItems?: boolean;
+  taskVariables?: boolean;
+  toolModal?: boolean;
+  activeTool?: boolean;
+  activeMessageId?: boolean;
+  skillSettings?: boolean;
 };
 
 export type SendOptions = {
@@ -120,12 +161,17 @@ export type SendOptions = {
   editingMessageId?: string;
   skillSettings?: SkillSettings;
   webSearch?: boolean;
+  model?: {
+    llmService: string;
+    model: string;
+  } | null;
 };
 
 export type ResendOptions = {
   sessionId: string;
   messageId?: string;
   aiEmployee: AIEmployee;
+  important?: string;
 };
 
 export type TaskMessage = {
@@ -133,15 +179,18 @@ export type TaskMessage = {
   system?: string;
   attachments?: any[];
   workContext?: ContextItem[];
-  skillSettings?: {
-    skills?: string[];
-  };
 };
 
 export type Task = {
   title?: string;
   message: TaskMessage;
   autoSend?: boolean;
+  skillSettings?: SkillSettings;
+  webSearch?: boolean;
+  model?: {
+    llmService: string;
+    model: string;
+  } | null;
 };
 
 export type TriggerTaskOptions = {
@@ -211,4 +260,13 @@ export type WorkContextOptions = {
 export type WebSearching = {
   type: string;
   query: string;
+};
+
+export type UserDecision = {
+  type: 'approve' | 'edit' | 'reject';
+  message?: string;
+  editedAction?: {
+    name: string;
+    args: any;
+  };
 };

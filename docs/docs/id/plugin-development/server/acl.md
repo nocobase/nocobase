@@ -1,72 +1,74 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+---
+title: "ACL Kontrol Hak Akses (Server)"
+description: "ACL server NocoBase: registerSnippet, allow/deny, snippet hak akses, hak akses role, middleware, penilaian kondisi."
+keywords: "ACL,kontrol hak akses,registerSnippet,allow,deny,snippet hak akses,hak akses role,NocoBase"
+---
+
+# ACL Kontrol Hak Akses
+
+ACL (Access Control List) digunakan untuk mengontrol hak akses operasi resource. Anda dapat memberikan hak akses ke role, atau melewati batasan role untuk membatasi hak akses secara langsung. Sistem ACL menyediakan mekanisme manajemen hak akses yang fleksibel, mendukung berbagai cara seperti snippet hak akses, middleware, penilaian kondisi, dll.
+
+:::tip Tips
+
+Objek ACL milik data source (`dataSource.acl`), ACL data source utama dapat diakses cepat melalui `app.acl`. Cara penggunaan ACL data source lain lihat [DataSourceManager Manajemen Data Source](./data-source-manager.md).
+
 :::
 
-# Kontrol Izin ACL
+## Mendaftarkan Snippet Hak Akses (Snippet)
 
-ACL (Access Control List) digunakan untuk mengontrol izin operasi sumber daya. Anda dapat memberikan izin kepada peran, atau melewati batasan peran untuk langsung mengatur izin. Sistem ACL menyediakan mekanisme manajemen izin yang fleksibel, mendukung snippet izin, middleware, penilaian kondisi, dan berbagai metode lainnya.
-
-:::tip Catatan
-
-Objek ACL termasuk dalam sumber data (`dataSource.acl`). ACL sumber data utama dapat diakses dengan cepat melalui `app.acl`. Untuk penggunaan ACL sumber data lainnya, lihat bab [Manajemen Sumber Data](./data-source-manager.md).
-
-:::
-
-## Mendaftarkan Snippet Izin
-
-Snippet izin dapat mendaftarkan kombinasi izin yang umum digunakan sebagai unit izin yang dapat digunakan kembali. Setelah peran terikat dengan snippet, peran tersebut akan mendapatkan serangkaian izin yang sesuai, sehingga mengurangi konfigurasi yang berulang dan meningkatkan efisiensi manajemen izin.
+Snippet hak akses (Snippet) dapat mendaftarkan kombinasi hak akses umum sebagai unit hak akses yang dapat digunakan kembali. Setelah role diikat dengan Snippet, akan mendapatkan satu set hak akses yang sesuai, mengurangi konfigurasi yang berulang.
 
 ```ts
 acl.registerSnippet({
-  name: 'ui.customRequests', // Awalan ui.* menunjukkan izin yang dapat dikonfigurasi di antarmuka
-  actions: ['customRequests:*'], // Operasi sumber daya yang sesuai, mendukung wildcard
+  name: 'ui.customRequests', // Prefix ui.* berarti hak akses yang diizinkan untuk dikonfigurasi di antarmuka
+  actions: ['customRequests:*'], // Operasi resource yang sesuai, mendukung wildcard
 });
 ```
 
-## Izin yang Melewati Batasan Peran (allow)
+## Hak Akses yang Melewati Batasan Role (allow)
 
-`acl.allow()` digunakan untuk mengizinkan operasi tertentu melewati batasan peran. Ini cocok untuk API publik, skenario izin yang memerlukan penilaian dinamis, atau kasus di mana penilaian izin perlu didasarkan pada konteks permintaan.
+`acl.allow()` digunakan untuk membuat operasi tertentu melewati batasan role, cocok untuk API publik, skenario yang memerlukan penilaian hak akses dinamis, atau situasi yang memerlukan penilaian hak akses berdasarkan konteks request.
 
 ```ts
-// Akses publik, tidak memerlukan login
+// Akses publik, tanpa perlu login
 acl.allow('app', 'getLang', 'public');
 
-// Hanya pengguna yang sudah masuk yang dapat mengakses
+// Pengguna yang sudah login dapat mengakses
 acl.allow('app', 'getInfo', 'loggedIn');
 
-// Berdasarkan penilaian kondisi kustom
+// Penilaian berdasarkan kondisi kustom
 acl.allow('orders', ['create', 'update'], (ctx) => {
   return ctx.auth.user?.isAdmin ?? false;
 });
 ```
 
-**Deskripsi parameter `condition`:**
+**Penjelasan parameter condition:**
 
-- `'public'` : Pengguna mana pun (termasuk pengguna yang belum terautentikasi) dapat mengakses, tanpa memerlukan autentikasi apa pun.
-- `'loggedIn'` : Hanya pengguna yang sudah masuk yang dapat mengakses, memerlukan identitas pengguna yang valid.
-- `(ctx) => Promise<boolean>` atau `(ctx) => boolean` : Fungsi kustom yang secara dinamis menentukan apakah akses diizinkan berdasarkan konteks permintaan, dapat mengimplementasikan logika izin yang kompleks.
+- `'public'`: Pengguna mana pun (termasuk yang belum login) dapat mengakses, tanpa verifikasi identitas apa pun
+- `'loggedIn'`: Hanya pengguna yang sudah login dapat mengakses, memerlukan identitas pengguna yang valid
+- `(ctx) => Promise<boolean>` atau `(ctx) => boolean`: Function kustom, secara dinamis menentukan apakah mengizinkan akses berdasarkan konteks request, dapat mengimplementasikan logika hak akses yang kompleks
 
-## Mendaftarkan Middleware Izin (use)
+## Mendaftarkan Middleware Hak Akses (use)
 
-`acl.use()` digunakan untuk mendaftarkan middleware izin kustom, memungkinkan penyisipan logika kustom ke dalam alur pemeriksaan izin. Biasanya digunakan bersama dengan `ctx.permission` untuk aturan izin kustom. Ini cocok untuk skenario yang memerlukan implementasi kontrol izin yang tidak konvensional, seperti formulir publik yang memerlukan verifikasi kata sandi kustom, pemeriksaan izin dinamis berdasarkan parameter permintaan, dll.
+`acl.use()` digunakan untuk mendaftarkan middleware hak akses kustom, dapat menyisipkan logika kustom ke dalam alur pemeriksaan hak akses. Biasanya digunakan bersama dengan `ctx.permission`, untuk aturan hak akses kustom. Cocok untuk skenario yang memerlukan kontrol hak akses non-konvensional, seperti form publik yang memerlukan verifikasi password kustom, penilaian hak akses dinamis berdasarkan parameter request, dll.
 
-**Skenario aplikasi umum:**
+**Skenario penggunaan tipikal:**
 
-- Skenario formulir publik: Tidak ada pengguna, tidak ada peran, tetapi izin perlu dibatasi melalui kata sandi kustom.
-- Kontrol izin berdasarkan parameter permintaan, alamat IP, dan kondisi lainnya.
-- Aturan izin kustom, melewati atau memodifikasi alur pemeriksaan izin default.
+- Skenario form publik: Tanpa pengguna tanpa role, tetapi perlu membatasi hak akses melalui password kustom
+- Kontrol hak akses berdasarkan parameter request, alamat IP, dan kondisi lainnya
+- Aturan hak akses kustom, melewati atau memodifikasi alur pemeriksaan hak akses default
 
-**Mengontrol izin melalui `ctx.permission`:**
+**Mengontrol hak akses melalui `ctx.permission`:**
 
 ```ts
 acl.use(async (ctx, next) => {
   const { resourceName, actionName } = ctx.action;
   
-  // Contoh: Formulir publik memerlukan verifikasi kata sandi untuk melewati pemeriksaan izin
+  // Contoh: Form publik perlu memverifikasi password lalu melewati pemeriksaan hak akses
   if (resourceName === 'publicForms' && actionName === 'submit') {
     const password = ctx.request.body?.password;
     if (password === 'your-secret-password') {
-      // Verifikasi berhasil, lewati pemeriksaan izin
+      // Verifikasi berhasil, lewati pemeriksaan hak akses
       ctx.permission = {
         skip: true,
       };
@@ -75,19 +77,19 @@ acl.use(async (ctx, next) => {
     }
   }
   
-  // Melakukan pemeriksaan izin (melanjutkan alur ACL)
+  // Eksekusi pemeriksaan hak akses (lanjutkan alur ACL)
   await next();
 });
 ```
 
-**Deskripsi properti `ctx.permission`:**
+**Penjelasan property `ctx.permission`:**
 
-- `skip: true` : Melewati pemeriksaan izin ACL berikutnya, dan langsung mengizinkan akses.
-- Dapat diatur secara dinamis dalam middleware berdasarkan logika kustom, untuk mencapai kontrol izin yang fleksibel.
+- `skip: true`: Lewati pemeriksaan hak akses ACL berikutnya, langsung izinkan akses
+- Dapat diatur secara dinamis dalam middleware berdasarkan logika kustom, untuk implementasi kontrol hak akses yang fleksibel
 
-## Menambahkan Batasan Data Tetap untuk Operasi Tertentu (addFixedParams)
+## Menambahkan Pembatasan Data Tetap untuk Operasi Tertentu (addFixedParams)
 
-`addFixedParams` dapat menambahkan batasan cakupan data (filter) tetap pada operasi sumber daya tertentu. Batasan ini akan melewati batasan peran dan diterapkan secara langsung, biasanya digunakan untuk melindungi data sistem yang krusial.
+`addFixedParams` dapat menambahkan pembatasan rentang data tetap (filter) untuk operasi resource tertentu, pembatasan ini akan langsung berlaku melewati batasan role, biasanya digunakan untuk melindungi data kunci sistem.
 
 ```ts
 acl.addFixedParams('roles', 'destroy', () => {
@@ -102,46 +104,54 @@ acl.addFixedParams('roles', 'destroy', () => {
   };
 });
 
-// Meskipun pengguna memiliki izin untuk menghapus peran, mereka tidak dapat menghapus peran sistem seperti root, admin, member.
+// Bahkan jika pengguna memiliki hak akses untuk menghapus role, juga tidak dapat menghapus role sistem root, admin, member ini
 ```
 
-> **Tip:** `addFixedParams` dapat digunakan untuk mencegah data sensitif terhapus atau termodifikasi secara tidak sengaja, seperti peran bawaan sistem, akun administrator, dll. Batasan ini akan berlaku secara kumulatif dengan izin peran, memastikan bahwa meskipun memiliki izin, data yang dilindungi tidak dapat dimanipulasi.
+:::tip Tips
 
-## Memeriksa Izin (can)
+`addFixedParams` dapat digunakan untuk mencegah data sensitif dihapus atau dimodifikasi secara tidak sengaja, seperti role bawaan sistem, akun administrator, dll. Pembatasan ini akan berlaku berlapis dengan hak akses role, memastikan bahkan dengan hak akses pun tidak dapat mengoperasikan data yang dilindungi.
 
-`acl.can()` digunakan untuk memeriksa apakah suatu peran memiliki izin untuk melakukan operasi tertentu, mengembalikan objek hasil izin atau `null`. Ini umumnya digunakan untuk menilai izin secara dinamis dalam logika bisnis, misalnya dalam middleware atau handler operasi untuk memutuskan apakah operasi tertentu diizinkan berdasarkan peran.
+:::
+
+## Menilai Hak Akses (can)
+
+`acl.can()` digunakan untuk menilai apakah suatu role memiliki hak akses untuk mengeksekusi operasi yang ditentukan, mengembalikan objek hasil hak akses atau `null`. Biasanya digunakan dalam middleware atau Handler operasi, secara dinamis menentukan apakah mengizinkan eksekusi operasi tertentu berdasarkan role.
 
 ```ts
 const result = acl.can({
-  roles: ['admin', 'manager'], // Dapat menerima peran tunggal atau array peran
+  roles: ['admin', 'manager'], // Dapat memasukkan single role atau array role
   resource: 'orders',
   action: 'delete',
 });
 
 if (result) {
-  console.log(`Peran ${result.role} dapat melakukan operasi ${result.action}`);
-  // result.params berisi parameter tetap yang diatur melalui addFixedParams
+  console.log(`Role ${result.role} dapat mengeksekusi operasi ${result.action}`);
+  // result.params berisi parameter tetap yang ditetapkan melalui addFixedParams
   console.log('Parameter tetap:', result.params);
 } else {
-  console.log('Tidak ada izin untuk melakukan operasi ini');
+  console.log('Tidak ada hak akses untuk mengeksekusi operasi tersebut');
 }
 ```
 
-> **Tip:** Jika beberapa peran diberikan, setiap peran akan diperiksa secara berurutan, dan akan mengembalikan hasil untuk peran pertama yang memiliki izin.
+:::tip Tips
 
-**Definisi Tipe:**
+Jika memasukkan beberapa role, akan memeriksa setiap role secara berurutan, mengembalikan hasil gabungan role.
+
+:::
+
+**Definisi tipe:**
 
 ```ts
 interface CanArgs {
-  role?: string;      // Peran tunggal
-  roles?: string[];   // Beberapa peran (diperiksa secara berurutan, mengembalikan peran pertama yang memiliki izin)
-  resource: string;   // Nama sumber daya
+  role?: string;      // Single role
+  roles?: string[];   // Multiple role (akan diperiksa secara berurutan, mengembalikan role pertama yang memiliki hak akses)
+  resource: string;   // Nama resource
   action: string;    // Nama operasi
 }
 
 interface CanResult {
-  role: string;       // Peran yang memiliki izin
-  resource: string;   // Nama sumber daya
+  role: string;       // Role yang memiliki hak akses
+  resource: string;   // Nama resource
   action: string;    // Nama operasi
   params?: any;       // Informasi parameter tetap (jika diatur melalui addFixedParams)
 }
@@ -149,22 +159,30 @@ interface CanResult {
 
 ## Mendaftarkan Operasi yang Dapat Dikonfigurasi (setAvailableAction)
 
-Jika Anda ingin operasi kustom dapat dikonfigurasi izinnya di antarmuka (misalnya, ditampilkan di halaman manajemen peran), Anda perlu mendaftarkannya menggunakan `setAvailableAction`. Operasi yang sudah terdaftar akan muncul di antarmuka konfigurasi izin, di mana administrator dapat mengonfigurasi izin operasi untuk peran yang berbeda.
+Jika Anda ingin operasi kustom dapat dikonfigurasi hak aksesnya di antarmuka (misalnya ditampilkan di halaman "Manajemen Role"), perlu menggunakan `setAvailableAction` untuk mendaftarkan. Operasi yang sudah didaftarkan akan muncul di antarmuka konfigurasi hak akses, administrator dapat mengkonfigurasi hak akses operasi untuk role yang berbeda di antarmuka.
 
 ```ts
 acl.setAvailableAction('importXlsx', {
   displayName: '{{t("Import")}}', // Nama tampilan antarmuka, mendukung internasionalisasi
   type: 'new-data',               // Tipe operasi
-  onNewRecord: true,              // Apakah berlaku saat membuat catatan baru
+  onNewRecord: true,              // Apakah berlaku saat record baru dibuat
 });
 ```
 
-**Deskripsi parameter:**
+**Penjelasan parameter:**
 
-- **displayName**: Nama yang ditampilkan di antarmuka konfigurasi izin, mendukung internasionalisasi (menggunakan format `{{t("key")}}`).
-- **type**: Tipe operasi, menentukan klasifikasi operasi ini dalam konfigurasi izin.
-  - `'new-data'` : Operasi yang membuat data baru (seperti impor, tambah, dll.).
-  - `'existing-data'` : Operasi yang memodifikasi data yang sudah ada (seperti perbarui, hapus, dll.).
-- **onNewRecord**: Apakah berlaku saat membuat catatan baru, hanya valid untuk tipe `'new-data'`.
+- **displayName**: Nama yang ditampilkan di antarmuka konfigurasi hak akses, mendukung internasionalisasi (menggunakan format `{{t("key")}}`)
+- **type**: Tipe operasi, menentukan kategori operasi tersebut dalam konfigurasi hak akses
+  - `'new-data'`: Operasi membuat data baru (seperti import, tambah, dll.)
+  - `'existing-data'`: Operasi memodifikasi data yang ada (seperti update, delete, dll.)
+- **onNewRecord**: Apakah berlaku saat record baru dibuat, hanya valid untuk tipe `'new-data'`
 
-Setelah pendaftaran, operasi ini akan muncul di antarmuka konfigurasi izin, di mana administrator dapat mengonfigurasi izin operasi tersebut di halaman manajemen peran.
+Setelah didaftarkan, operasi tersebut akan muncul di antarmuka konfigurasi hak akses, administrator dapat mengkonfigurasi hak akses operasi tersebut di halaman "Manajemen Role".
+
+## Tautan Terkait
+
+- [ResourceManager Manajemen Resource](./resource-manager.md) — Mendaftarkan API kustom dan operasi resource
+- [Plugin](./plugin.md) — Mendaftarkan hak akses dalam siklus hidup plugin
+- [Context Konteks Request](./context.md) — Mendapatkan role saat ini dan informasi hak akses dalam request
+- [Middleware](./middleware.md) — Registrasi dan penggunaan middleware ACL
+- [DataSourceManager Manajemen Data Source](./data-source-manager.md) — Setiap data source memiliki instance ACL independen

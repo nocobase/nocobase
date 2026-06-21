@@ -1,4 +1,6 @@
 ---
+title: "Collection field: Formula"
+keywords: "Collection fields"
 displayName: "Collection field: Formula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Collection field: Formula

@@ -1,14 +1,14 @@
 ---
-displayName: "Alur Kerja: Node Notifikasi"
+displayName: "Workflow: Node Notifikasi"
 packageName: '@nocobase/plugin-workflow-notification'
+title: "Workflow: Node Notifikasi"
+keywords: "Workflow: Node Notifikasi,Plugin,NocoBase"
 description: |
-  Dapat digunakan untuk mengirim berbagai jenis notifikasi dalam alur kerja.
+  Dapat digunakan untuk mengirim berbagai jenis notifikasi dalam workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Node Notifikasi
+# Workflow: Node Notifikasi

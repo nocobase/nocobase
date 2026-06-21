@@ -1,18 +1,17 @@
 ---
-displayName: "Autentikasi: LDAP"
+displayName: "Authentication: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
+title: "Authentication: LDAP"
+keywords: "Authentication: LDAP,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Mengautentikasi identitas melalui protokol LDAP.
+  Autentikasi identitas melalui protokol LDAP.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Autentikasi: LDAP
+# Authentication: LDAP

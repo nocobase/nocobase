@@ -1,117 +1,174 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
+title: "Phê duyệt"
+description: "Trigger phê duyệt: phối hợp với quy trình phê duyệt, người dùng phát động phê duyệt thủ công, kích hoạt Workflow tiếp theo khi phê duyệt thông qua/từ chối, triển khai tự động hóa được điều khiển bởi phê duyệt."
+keywords: "workflow,trigger phê duyệt,Approval,quy trình phê duyệt,phê duyệt thủ công,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
 # Phê duyệt
 
 ## Giới thiệu
 
-Phê duyệt là một dạng quy trình được thiết kế đặc biệt để khởi tạo và xử lý thủ công nhằm quyết định trạng thái của dữ liệu liên quan. Nó thường được sử dụng để quản lý quy trình trong tự động hóa văn phòng hoặc các công việc ra quyết định thủ công khác, ví dụ như có thể tạo và quản lý các luồng công việc thủ công cho các tình huống như "đơn xin nghỉ phép", "phê duyệt chi phí" và "phê duyệt mua nguyên liệu".
+Phê duyệt là một dạng quy trình chuyên dùng để được phát động và xử lý thủ công nhằm quyết định trạng thái dữ liệu liên quan. Thường được dùng trong tự động hóa văn phòng hoặc quản lý quy trình các sự việc cần ra quyết định thủ công khác, ví dụ có thể tạo và quản lý các quy trình thủ công cho các tình huống như "Đề nghị nghỉ phép", "Phê duyệt hoàn ứng chi phí" và "Phê duyệt mua nguyên liệu"...
 
-Plugin Phê duyệt cung cấp một loại luồng công việc (trigger) chuyên dụng là "Phê duyệt (sự kiện)" và một nút "Phê duyệt" dành riêng cho quy trình này. Kết hợp với các bộ sưu tập tùy chỉnh và khối tùy chỉnh độc đáo của NocoBase, bạn có thể nhanh chóng và linh hoạt tạo cũng như quản lý các kịch bản phê duyệt đa dạng.
+Plugin phê duyệt cung cấp loại Workflow chuyên dụng (Trigger) "Phê duyệt (sự kiện)" và Node "Phê duyệt" chuyên dùng cho quy trình này, kết hợp với bảng dữ liệu tùy chỉnh và Block tùy chỉnh đặc trưng của NocoBase, có thể nhanh chóng và linh hoạt tạo và quản lý các tình huống phê duyệt khác nhau.
 
-## Tạo luồng công việc
+## Tạo quy trình
 
-Khi tạo một luồng công việc, hãy chọn loại "Phê duyệt" để tạo luồng công việc phê duyệt:
+Khi tạo Workflow, chọn loại "Phê duyệt" để tạo quy trình phê duyệt:
 
-![Approval Trigger_Create Approval Workflow](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
+![Trigger phê duyệt_tạo quy trình phê duyệt](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
 
-Sau đó, trong giao diện cấu hình luồng công việc, hãy nhấp vào trigger để mở hộp thoại và thực hiện các cấu hình bổ sung.
+Sau đó trong giao diện cấu hình Workflow, bấm vào Trigger để mở popup và cấu hình thêm.
 
 ## Cấu hình Trigger
 
-### Liên kết bộ sưu tập
+![20251226102619](https://static-docs.nocobase.com/20251226102619.png)
 
-Plugin Phê duyệt của NocoBase được thiết kế linh hoạt và có thể sử dụng với bất kỳ bộ sưu tập tùy chỉnh nào. Điều này có nghĩa là cấu hình phê duyệt không cần phải cấu hình lại mô hình dữ liệu mà có thể trực tiếp tái sử dụng bộ sưu tập đã tạo. Do đó, sau khi vào cấu hình trigger, trước tiên bạn cần chọn một bộ sưu tập để quyết định luồng công việc này sẽ được kích hoạt khi dữ liệu của bộ sưu tập đó được tạo hoặc cập nhật.
+### Liên kết bảng dữ liệu
 
-![Approval Trigger_Trigger Configuration_Select Collection](https://static-docs.nocobase.com/8732a4419b1e28d2752b8f601132c82d.png)
+Plugin phê duyệt của NocoBase được thiết kế dựa trên tính linh hoạt, có thể được sử dụng phối hợp với bất kỳ bảng dữ liệu tùy chỉnh nào, tức cấu hình phê duyệt không cần cấu hình lại mô hình dữ liệu mà trực tiếp sử dụng lại bảng dữ liệu đã được tạo. Vì vậy sau khi vào cấu hình Trigger, đầu tiên cần chọn bảng dữ liệu để quyết định quy trình này nhằm vào dữ liệu của bảng dữ liệu nào để phê duyệt:
 
-Sau đó, trong biểu mẫu tạo (hoặc chỉnh sửa) dữ liệu của bộ sưu tập tương ứng, hãy liên kết luồng công việc này với nút gửi:
+![Trigger phê duyệt_cấu hình Trigger_chọn bảng dữ liệu](https://static-docs.nocobase.com/20251226103223.png)
 
-![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+### Cách kích hoạt
 
-Sau đó, khi người dùng gửi biểu mẫu này, luồng công việc phê duyệt tương ứng sẽ được kích hoạt. Dữ liệu đã gửi không chỉ được lưu trong bộ sưu tập tương ứng mà còn được chụp nhanh vào luồng phê duyệt để những người phê duyệt sau này xem xét và sử dụng.
+Khi phát động phê duyệt nhằm vào dữ liệu nghiệp vụ, có thể chọn một trong hai cách kích hoạt sau:
 
-### Rút lại
+*   **Trước khi lưu dữ liệu**
 
-Nếu một luồng công việc phê duyệt cho phép người khởi tạo rút lại, bạn cần bật nút "Rút lại" trong cấu hình giao diện của người khởi tạo:
+    Phát động phê duyệt trước khi dữ liệu được gửi được lưu, phù hợp với tình huống cần phê duyệt thông qua mới lưu dữ liệu. Ở chế độ này, dữ liệu khi phát động phê duyệt chỉ là dữ liệu tạm thời, chỉ sau khi phê duyệt thông qua mới được lưu chính thức vào bảng dữ liệu tương ứng.
 
-![Approval Trigger_Trigger Configuration_Allow Withdraw](https://static-docs.nocobase.com/20251029232544.png)
+*   **Sau khi lưu dữ liệu**
 
-Sau khi được bật, một phê duyệt được khởi tạo bởi luồng công việc này có thể được người khởi tạo rút lại trước khi bất kỳ người phê duyệt nào xử lý. Tuy nhiên, sau khi bất kỳ người phê duyệt nào trong một nút phê duyệt tiếp theo đã xử lý, nó sẽ không thể bị rút lại nữa.
+    Phát động phê duyệt sau khi dữ liệu được gửi được lưu, phù hợp với tình huống dữ liệu có thể được lưu trước rồi mới phê duyệt. Ở chế độ này, dữ liệu khi phát động phê duyệt đã được lưu vào bảng dữ liệu tương ứng, các sửa đổi đối với nó trong quá trình phê duyệt cũng sẽ được lưu.
 
-:::info{title=Lưu ý}
-Sau khi bật hoặc xóa nút rút lại, bạn cần nhấp vào lưu và gửi trong hộp thoại cấu hình trigger để các thay đổi có hiệu lực.
+### Vị trí phát động phê duyệt
+
+Có thể chọn vị trí phát động phê duyệt trong hệ thống:
+
+*   **Chỉ phát động trong Block dữ liệu**
+
+    Có thể liên kết Action của bất kỳ Block form nào của bảng đó với Workflow này để phát động phê duyệt và xử lý, theo dõi quá trình phê duyệt trong Block phê duyệt của một dữ liệu đơn lẻ, thường phù hợp với dữ liệu nghiệp vụ.
+
+*   **Có thể phát động cả trong Block dữ liệu và trung tâm Task**
+
+    Ngoài Block dữ liệu, còn có thể phát động và xử lý phê duyệt trong trung tâm Task toàn cục, thường phù hợp với dữ liệu hành chính.
+
+### Ai có thể phát động phê duyệt
+
+Có thể cấu hình quyền dựa trên phạm vi người dùng để quyết định người dùng nào có thể phát động phê duyệt này:
+
+*   **Tất cả người dùng**
+
+    Tất cả người dùng trong hệ thống đều có thể phát động phê duyệt này.
+
+*   **Chỉ người dùng đã chọn**
+
+    Chỉ cho phép phạm vi người dùng được chỉ định phát động phê duyệt này, có thể chọn nhiều.
+
+    ![20251226114623](https://static-docs.nocobase.com/20251226114623.png)
+
+### Cấu hình giao diện form phát động phê duyệt
+
+Cuối cùng cần cấu hình giao diện form của người phát động, giao diện này sẽ được dùng cho thao tác gửi khi phát động từ Block trung tâm phê duyệt và khi người dùng phát động lại sau khi rút lại. Bấm nút cấu hình để mở popup:
+
+![Trigger phê duyệt_cấu hình Trigger_form người phát động](https://static-docs.nocobase.com/20251226130239.png)
+
+Có thể thêm form điền dựa trên bảng dữ liệu được liên kết hoặc văn bản giải thích để nhắc và hướng dẫn (Markdown) cho giao diện của người phát động. Trong đó form là bắt buộc phải thêm, nếu không người phát động sau khi vào giao diện đó sẽ không thể thao tác.
+
+Sau khi thêm Block form, giống như giao diện cấu hình form thông thường, có thể thêm các Component trường của bảng dữ liệu tương ứng và sắp xếp tùy ý để tổ chức nội dung cần điền của form:
+
+![Trigger phê duyệt_cấu hình Trigger_form người phát động_cấu hình trường](https://static-docs.nocobase.com/20251226130339.png)
+
+Khác với nút gửi trực tiếp, còn có thể thêm nút Action "Lưu nháp" để hỗ trợ quy trình xử lý lưu tạm:
+
+![Trigger phê duyệt_cấu hình Trigger_form người phát động_cấu hình Action_lưu](https://static-docs.nocobase.com/20251226130512.png)
+
+Nếu một quy trình phê duyệt cho phép người phát động rút lại, cần bật nút "Rút lại" trong cấu hình giao diện người phát động:
+
+![Trigger phê duyệt_cấu hình Trigger_cho phép rút lại](https://static-docs.nocobase.com/20251226130637.png)
+
+Sau khi bật, phê duyệt được phát động bởi quy trình này có thể được người phát động rút lại trước khi bất kỳ người phê duyệt nào xử lý, nhưng sau khi người phê duyệt được cấu hình tại Node phê duyệt tiếp theo bất kỳ đã xử lý thì sẽ không còn rút lại được nữa.
+
+:::info{title=Mẹo}
+Sau khi bật hoặc xóa nút rút lại, trong popup cấu hình Trigger cần bấm Lưu để gửi mới có hiệu lực.
 :::
 
-### Cấu hình giao diện biểu mẫu của người khởi tạo phê duyệt
+### Thẻ "Đề nghị của tôi" <Badge>2.0+</Badge>
 
-Cuối cùng, bạn cần cấu hình giao diện biểu mẫu của người khởi tạo. Giao diện này sẽ được sử dụng cho các thao tác gửi khi khởi tạo từ khối trung tâm phê duyệt và khi khởi tạo lại sau khi rút lại. Nhấp vào nút cấu hình để mở hộp thoại:
+Có thể được dùng để cấu hình thẻ Task trong danh sách "Đề nghị của tôi" ở trung tâm Task.
 
-![Approval Trigger_Trigger Configuration_Initiator Form](https://static-docs.nocobase.com/ca8b7e362d912138cf7d73bb60b37ac1.png)
+![20260213005957](https://static-docs.nocobase.com/20260213005957.png)
 
-Bạn có thể thêm một biểu mẫu cho giao diện của người khởi tạo dựa trên bộ sưu tập đã liên kết, hoặc thêm văn bản mô tả (Markdown) để nhắc nhở và hướng dẫn. Biểu mẫu là bắt buộc; nếu không, người khởi tạo sẽ không thể thực hiện bất kỳ thao tác nào khi vào giao diện này.
+Trong thẻ có thể tự do cấu hình các trường nghiệp vụ muốn hiển thị (trừ trường quan hệ) hoặc thông tin liên quan đến phê duyệt.
 
-Sau khi thêm một khối biểu mẫu, giống như trong giao diện cấu hình biểu mẫu thông thường, bạn có thể thêm các thành phần trường từ bộ sưu tập tương ứng và sắp xếp chúng theo ý muốn để tổ chức nội dung cần điền vào biểu mẫu:
+Sau khi đề nghị phê duyệt được tạo, trong danh sách trung tâm Task có thể thấy thẻ Task tùy chỉnh:
 
-![Approval Trigger_Trigger Configuration_Initiator Form_Field Configuration](https://static-docs.nocobase.com/5a1e7f9c9d8de092c7b55585dad7d633.png)
+![20260213010228](https://static-docs.nocobase.com/20260213010228.png)
 
-Ngoài nút gửi trực tiếp, bạn cũng có thể thêm nút thao tác "Lưu bản nháp" để hỗ trợ quy trình lưu tạm thời:
+### Chế độ hiển thị bản ghi trong quy trình
 
-![Approval Trigger_Trigger Configuration_Initiator Form_Action Configuration](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
+*   **Snapshot**
 
-## Nút Phê duyệt
+    Trong quy trình phê duyệt, người đề nghị và người phê duyệt khi vào sẽ thấy trạng thái của bản ghi và sau khi gửi chỉ thấy bản ghi do mình sửa - sẽ không thấy các cập nhật mà người khác làm sau đó.
 
-Trong một luồng công việc phê duyệt, bạn cần sử dụng nút "Phê duyệt" chuyên dụng để cấu hình logic thao tác cho người phê duyệt xử lý (duyệt, từ chối hoặc trả lại) phê duyệt đã khởi tạo. Nút "Phê duyệt" chỉ có thể được sử dụng trong các luồng công việc phê duyệt. Tham khảo [Nút Phê duyệt](../nodes/approval.md) để biết thêm chi tiết.
+*   **Mới nhất**
 
-## Cấu hình khởi tạo phê duyệt
+    Trong quy trình phê duyệt, người đề nghị và người phê duyệt trong toàn bộ quy trình luôn thấy phiên bản mới nhất của bản ghi, bất kể trạng thái của bản ghi trước khi họ thao tác là gì. Sau khi quy trình kết thúc, họ sẽ thấy phiên bản cuối cùng của bản ghi.
 
-Sau khi cấu hình và bật một luồng công việc phê duyệt, bạn có thể liên kết luồng công việc đó với nút gửi biểu mẫu của bộ sưu tập tương ứng, cho phép người dùng khởi tạo phê duyệt khi gửi:
+## Node phê duyệt
 
-![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+Trong Workflow phê duyệt, cần sử dụng Node "Phê duyệt" chuyên dụng để cấu hình logic Action xử lý (thông qua, từ chối hoặc trả lại) phê duyệt được phát động cho người phê duyệt, Node "Phê duyệt" chỉ có thể được dùng trong quy trình phê duyệt. Tham khảo [Node phê duyệt](../nodes/approval.md) để hiểu chi tiết.
 
-Sau khi liên kết luồng công việc, khi người dùng gửi biểu mẫu hiện tại, một phê duyệt sẽ được khởi tạo.
-
-:::info{title=Lưu ý}
-Hiện tại, nút khởi tạo phê duyệt chỉ hỗ trợ nút 'Gửi' (hoặc 'Lưu') trong biểu mẫu tạo hoặc cập nhật. Nó không hỗ trợ nút 'Gửi đến luồng công việc' (nút này chỉ có thể được liên kết với 'Sự kiện sau thao tác').
+:::info{title=Mẹo}
+Nếu trong một quy trình phê duyệt không có Node "Phê duyệt" nào, quy trình đó sẽ tự động được thông qua.
 :::
 
-## Trung tâm việc cần làm
+## Cấu hình phát động phê duyệt
 
-Trung tâm việc cần làm cung cấp một điểm truy cập thống nhất, giúp người dùng dễ dàng xem và xử lý các nhiệm vụ cần làm của họ. Các phê duyệt do người dùng hiện tại khởi tạo và các nhiệm vụ đang chờ xử lý của họ đều có thể được truy cập thông qua Trung tâm việc cần làm trên thanh công cụ phía trên, và các loại nhiệm vụ cần làm khác nhau có thể được xem thông qua điều hướng bên trái.
+Sau khi cấu hình xong một Workflow phê duyệt và bật, có thể liên kết Workflow đó với nút gửi form của bảng dữ liệu tương ứng để người dùng phát động phê duyệt khi gửi:
+
+![Phát động phê duyệt_liên kết Workflow](https://static-docs.nocobase.com/20251226110710.png)
+
+Sau đó việc người dùng gửi form đó sẽ kích hoạt Workflow phê duyệt tương ứng, dữ liệu được gửi ngoài việc lưu vào bảng dữ liệu tương ứng cũng sẽ được snapshot vào luồng phê duyệt để người phê duyệt sau xem và sử dụng.
+
+:::info{title=Mẹo}
+Nút phát động phê duyệt hiện chỉ hỗ trợ sử dụng nút "Gửi" (hoặc "Lưu") trong form thêm hoặc cập nhật, không hỗ trợ sử dụng nút "Kích hoạt Workflow" (nút này chỉ có thể liên kết "Sự kiện Action tùy chỉnh").
+:::
+
+## Trung tâm Task
+
+Trung tâm Task cung cấp một cổng vào thống nhất để thuận tiện cho người dùng xem và xử lý các Task. Phê duyệt được người dùng hiện tại phát động và Task chờ làm đều có thể được vào qua trung tâm Task ở thanh công cụ phía trên và xem các loại Task chờ làm khác nhau qua điều hướng phân loại bên trái.
 
 ![20250310161203](https://static-docs.nocobase.com/20250310161203.png)
 
-### Các phê duyệt tôi đã khởi tạo
+### Tôi đã phát động
 
-#### Xem các phê duyệt đã khởi tạo
+#### Xem các phê duyệt đã phát động
 
 ![20250310161609](https://static-docs.nocobase.com/20250310161609.png)
 
-#### Trực tiếp khởi tạo một phê duyệt mới
+#### Trực tiếp phát động phê duyệt mới
 
 ![20250310161658](https://static-docs.nocobase.com/20250310161658.png)
 
-### Việc cần làm của tôi
+### Task chờ làm của tôi
 
-#### Danh sách việc cần làm
+#### Danh sách Task chờ làm
 
 ![20250310161934](https://static-docs.nocobase.com/20250310161934.png)
 
-#### Chi tiết việc cần làm
+#### Chi tiết Task chờ làm
 
 ![20250310162111](https://static-docs.nocobase.com/20250310162111.png)
 
-## API HTTP
+## HTTP API
 
-### Người khởi tạo
+### Người phát động
 
-#### Khởi tạo từ bộ sưu tập
+#### Phát động từ bảng dữ liệu
 
-Để khởi tạo từ một khối dữ liệu, bạn có thể thực hiện cuộc gọi như sau (sử dụng nút tạo của bộ sưu tập `posts` làm ví dụ):
+Phát động từ Block dữ liệu, có thể gọi như sau (lấy ví dụ nút tạo trên bảng `posts`):
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -122,17 +179,17 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey"
 ```
 
-Trong đó, tham số URL `triggerWorkflows` là key của luồng công việc; nhiều luồng công việc được phân tách bằng dấu phẩy. Key này có thể được lấy bằng cách di chuột qua tên luồng công việc ở phía trên cùng của canvas luồng công việc:
+Trong đó tham số URL `triggerWorkflows` là key của Workflow, nhiều Workflow phân tách bằng dấu phẩy. Key này có thể nhận được khi rê chuột qua tên Workflow trên đầu canvas Workflow:
 
-![Workflow_Key_View_Method](https://static-docs.nocobase.com/20240426135108.png)
+![Cách xem key Workflow](https://static-docs.nocobase.com/20240426135108.png)
 
-Sau khi gọi thành công, luồng công việc phê duyệt cho bộ sưu tập `posts` tương ứng sẽ được kích hoạt.
+Sau khi gọi thành công, sẽ kích hoạt Workflow phê duyệt của bảng `posts` tương ứng.
 
-:::info{title="Lưu ý"}
-Vì các cuộc gọi bên ngoài cũng cần dựa trên danh tính người dùng, nên khi gọi qua API HTTP, giống như các yêu cầu được gửi từ giao diện thông thường, cần phải cung cấp thông tin xác thực, bao gồm tiêu đề yêu cầu `Authorization` hoặc tham số `token` (token nhận được khi đăng nhập), và tiêu đề yêu cầu `X-Role` (tên vai trò hiện tại của người dùng).
+:::info{title="Mẹo"}
+Vì việc gọi từ bên ngoài cũng cần dựa trên danh tính người dùng, nên khi gọi qua HTTP API, giống như request thông thường được gửi từ giao diện, đều cần cung cấp thông tin xác thực, bao gồm header `Authorization` hoặc tham số `token` (token nhận được khi đăng nhập), và header `X-Role` (tên vai trò hiện tại của người dùng).
 :::
 
-Nếu bạn cần kích hoạt một sự kiện cho dữ liệu liên quan một-đối-một trong thao tác này (một-đối-nhiều hiện chưa được hỗ trợ), bạn có thể sử dụng `!` trong tham số để chỉ định dữ liệu kích hoạt cho trường liên kết:
+Nếu cần kích hoạt sự kiện cho dữ liệu quan hệ một - một (chưa hỗ trợ một - nhiều) trong Action đó, có thể sử dụng `!` trong tham số để chỉ định dữ liệu kích hoạt của trường quan hệ:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -146,13 +203,13 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey!category"
 ```
 
-Sau khi gọi thành công, sự kiện phê duyệt cho bộ sưu tập `categories` tương ứng sẽ được kích hoạt.
+Sau khi gọi như trên thành công, sẽ kích hoạt sự kiện phê duyệt của bảng `categories` tương ứng.
 
-:::info{title="Lưu ý"}
-Khi kích hoạt sự kiện sau thao tác thông qua API HTTP, bạn cũng cần chú ý đến trạng thái bật của luồng công việc và liệu cấu hình bộ sưu tập có khớp hay không; nếu không, cuộc gọi có thể không thành công hoặc có thể xảy ra lỗi.
+:::info{title="Mẹo"}
+Khi kích hoạt sự kiện sau Action thông qua HTTP API, cũng cần lưu ý trạng thái bật của Workflow và việc cấu hình bảng dữ liệu có khớp không, nếu không có thể không gọi thành công hoặc xuất hiện lỗi.
 :::
 
-#### Khởi tạo từ Trung tâm phê duyệt
+#### Phát động từ trung tâm phê duyệt
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -167,16 +224,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Tham số**
 
-*   `collectionName`: Tên của bộ sưu tập mục tiêu để khởi tạo phê duyệt, bắt buộc.
-*   `workflowId`: ID của luồng công việc được sử dụng để khởi tạo phê duyệt, bắt buộc.
-*   `data`: Các trường của bản ghi bộ sưu tập được tạo khi khởi tạo phê duyệt, bắt buộc.
-*   `status`: Trạng thái của bản ghi được tạo khi khởi tạo phê duyệt, bắt buộc. Các giá trị có thể bao gồm:
-    *   `0`: Bản nháp, cho biết lưu nhưng không gửi để phê duyệt.
-    *   `1`: Gửi để phê duyệt, cho biết người khởi tạo gửi yêu cầu phê duyệt, bắt đầu quy trình phê duyệt.
+* `collectionName`: tên bảng dữ liệu đích phát động phê duyệt, bắt buộc.
+* `workflowId`: ID Workflow được dùng để phát động phê duyệt, bắt buộc.
+* `data`: các trường bản ghi bảng dữ liệu được tạo khi phát động phê duyệt, bắt buộc.
+* `status`: trạng thái bản ghi được tạo khi phát động phê duyệt, bắt buộc. Các giá trị có thể chọn:
+  * `0`: nháp, biểu thị lưu nhưng không gửi phê duyệt.
+  * `2`: gửi phê duyệt, biểu thị người phát động gửi đề nghị phê duyệt và vào quy trình phê duyệt.
 
 #### Lưu và gửi
 
-Khi một phê duyệt đã khởi tạo (hoặc rút lại) đang ở trạng thái bản nháp, bạn có thể lưu hoặc gửi lại thông qua API sau:
+Khi phê duyệt được phát động (hoặc rút lại) đang ở trạng thái nháp, có thể qua interface dưới đây để lưu hoặc gửi lại:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -187,7 +244,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/approvals:update/<approval id>"
 ```
 
-#### Lấy danh sách các phê duyệt đã khởi tạo
+#### Lấy danh sách phê duyệt đã phát động
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
@@ -196,7 +253,7 @@ curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
 
 #### Rút lại
 
-Người khởi tạo có thể rút lại một bản ghi hiện đang trong quá trình phê duyệt thông qua API sau:
+Người phát động có thể rút lại bản ghi đang trong quá trình phê duyệt qua interface dưới đây:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -205,31 +262,31 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Tham số**
 
-*   `<approval id>`: ID của bản ghi phê duyệt cần rút lại, bắt buộc.
+* `<approval id>`: ID của bản ghi phê duyệt cần rút lại, bắt buộc.
 
 ### Người phê duyệt
 
-Sau khi luồng công việc phê duyệt đi vào nút phê duyệt, một nhiệm vụ cần làm sẽ được tạo cho người phê duyệt hiện tại. Người phê duyệt có thể hoàn thành nhiệm vụ phê duyệt thông qua giao diện hoặc bằng cách gọi API HTTP.
+Sau khi quy trình phê duyệt vào Node phê duyệt, sẽ tạo Task chờ làm cho người phê duyệt hiện tại. Người phê duyệt có thể hoàn tất Task phê duyệt qua thao tác giao diện, cũng có thể hoàn tất qua việc gọi HTTP API.
 
-#### Lấy các bản ghi xử lý phê duyệt
+#### Lấy bản ghi xử lý phê duyệt
 
-Các nhiệm vụ cần làm là các bản ghi xử lý phê duyệt. Bạn có thể lấy tất cả các bản ghi xử lý phê duyệt của người dùng hiện tại thông qua API sau:
+Task chờ làm tức bản ghi xử lý phê duyệt, có thể lấy tất cả bản ghi xử lý phê duyệt của người dùng hiện tại qua interface dưới đây:
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
   "http://localhost:3000/api/approvalRecords:listMine"
 ```
 
-Trong đó, `approvalRecords` là một tài nguyên bộ sưu tập, vì vậy bạn có thể sử dụng các điều kiện truy vấn chung như `filter`, `sort`, `pageSize` và `page`.
+Trong đó `approvalRecords` là tài nguyên bảng dữ liệu, cũng có thể sử dụng các điều kiện truy vấn chung như `filter`, `sort`, `pageSize` và `page`...
 
-#### Lấy một bản ghi xử lý phê duyệt duy nhất
+#### Lấy một bản ghi xử lý phê duyệt
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
-  "http://localhost:3000/api/approvalRecords:get/<record id>"`
+  "http://localhost:3000/api/approvalRecords:get/<record id>"
 ```
 
-#### Duyệt và từ chối
+#### Thông qua và từ chối
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -243,16 +300,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Tham số**
 
-*   `<record id>`: ID của bản ghi cần xử lý phê duyệt, bắt buộc.
-*   `status`: Trạng thái của quá trình xử lý phê duyệt. `2` là "Duyệt", `-1` là "Từ chối", bắt buộc.
-*   `comment`: Thông tin ghi chú cho quá trình xử lý phê duyệt, tùy chọn.
-*   `data`: Các sửa đổi đối với bản ghi bộ sưu tập tại nút phê duyệt hiện tại sau khi phê duyệt. Tùy chọn (chỉ có hiệu lực khi được duyệt).
+* `<record id>`: ID bản ghi cần xử lý phê duyệt, bắt buộc.
+* `status`: trường là trạng thái xử lý phê duyệt, `2` biểu thị "Thông qua", `-1` biểu thị "Từ chối", bắt buộc.
+* `comment`: thông tin ghi chú khi xử lý phê duyệt, tùy chọn.
+* `data`: biểu thị các sửa đổi đối với bản ghi bảng dữ liệu của Node phê duyệt hiện tại sau khi phê duyệt được thông qua, tùy chọn (chỉ có hiệu lực khi thông qua).
 
 #### Trả lại <Badge>v1.9.0+</Badge>
 
-Trước phiên bản v1.9.0, việc trả lại sử dụng cùng API với "Duyệt" và "Từ chối", với `"status": 1` đại diện cho việc trả lại.
+Trước phiên bản v1.9.0, "Trả lại" sử dụng cùng interface với "Thông qua", "Từ chối", sử dụng `"status": 1` để biểu thị trả lại.
 
-Bắt đầu từ phiên bản v1.9.0, việc trả lại có một API riêng:
+Từ phiên bản v1.9.0 trở đi, trả lại có interface riêng:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -264,10 +321,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Tham số**
 
-*   `<record id>`: ID của bản ghi cần xử lý phê duyệt, bắt buộc.
-*   `returnToNodeKey`: Key của nút mục tiêu để trả lại, tùy chọn. Khi một phạm vi các nút có thể trả lại được cấu hình trong nút, tham số này có thể được sử dụng để chỉ định trả lại nút nào. Nếu không được cấu hình, tham số này không cần truyền giá trị, mặc định sẽ trả lại điểm bắt đầu để người khởi tạo gửi lại.
+* `<record id>`: ID bản ghi cần xử lý phê duyệt, bắt buộc.
+* `returnToNodeKey`: key của Node đích trả lại, tùy chọn. Khi trong Node được cấu hình phạm vi Node có thể trả lại, có thể sử dụng tham số này để chỉ định trả lại đến Node nào. Trong trường hợp không cấu hình, tham số này không cần truyền giá trị, mặc định sẽ trả lại điểm bắt đầu để người phát động gửi lại.
 
-#### Chuyển giao
+#### Chuyển tiếp ký
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -279,10 +336,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Tham số**
 
-*   `<record id>`: ID của bản ghi cần xử lý phê duyệt, bắt buộc.
-*   `assignee`: ID của người dùng được chuyển giao, bắt buộc.
+* `<record id>`: ID bản ghi cần xử lý phê duyệt, bắt buộc.
+* `assignee`: ID của người dùng được chuyển tiếp ký, bắt buộc.
 
-#### Thêm người ký
+#### Thêm ký
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -295,6 +352,6 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Tham số**
 
-*   `<record id>`: ID của bản ghi cần xử lý phê duyệt, bắt buộc.
-*   `assignees`: Danh sách ID người dùng cần thêm làm người ký, bắt buộc.
-*   `order`: Thứ tự của người ký được thêm. `-1` có nghĩa là trước "tôi", `1` có nghĩa là sau "tôi".
+* `<record id>`: ID bản ghi cần xử lý phê duyệt, bắt buộc.
+* `assignees`: danh sách ID người dùng được thêm ký, bắt buộc.
+* `order`: thứ tự thêm ký, `-1` đánh dấu trước "Tôi", `1` đánh dấu sau "Tôi".

@@ -1,6 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Referensi API Verifikasi"
+description: "API modul verifikasi NocoBase: IVerification, Verification, OTPVerification, VerificationManager, dengan antarmuka verify, bind, registerVerificationType, dan lainnya."
+keywords: "API verifikasi,IVerification,VerificationManager,OTP,verify,bind,NocoBase"
+---
 
 # Referensi API
 

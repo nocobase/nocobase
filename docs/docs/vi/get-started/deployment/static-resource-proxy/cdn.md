@@ -1,6 +1,7 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Tăng tốc tài nguyên tĩnh CDN"
+description: "Sử dụng CDN để tăng tốc truy cập tài nguyên tĩnh NocoBase, nâng cao tốc độ tải cho người dùng toàn cầu."
+keywords: "CDN, tăng tốc tài nguyên tĩnh, content delivery, môi trường sản xuất, NocoBase"
+---
 
 # CDN

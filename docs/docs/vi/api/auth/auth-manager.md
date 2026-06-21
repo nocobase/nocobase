@@ -1,30 +1,31 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "AuthManager"
+description: "Trình quản lý xác thực của NocoBase: AuthManager quản lý nhiều phương thức xác thực, đăng ký authenticator."
+keywords: "AuthManager,trình quản lý xác thực,đăng ký authenticator,nhiều phương thức xác thực,NocoBase"
+---
 
 # AuthManager
 
 ## Tổng quan
 
-`AuthManager` là một module quản lý xác thực người dùng trong NocoBase, dùng để đăng ký các loại xác thực người dùng khác nhau.
+`AuthManager` là module quản lý xác thực người dùng trong NocoBase, dùng để đăng ký các kiểu xác thực người dùng khác nhau.
 
-### Cách sử dụng cơ bản
+### Cách dùng cơ bản
 
 ```ts
 const authManager = new AuthManager({
-  // Dùng để lấy định danh bộ xác thực hiện tại từ tiêu đề yêu cầu
+  // Dùng để lấy định danh authenticator hiện tại từ request header
   authKey: 'X-Authenticator',
 });
 
-// Thiết lập các phương thức để AuthManager lưu trữ và truy xuất bộ xác thực
+// Đặt phương thức lưu trữ và lấy authenticator của AuthManager
 authManager.setStorer({
   get: async (name: string) => {
     return db.getRepository('authenticators').find({ filter: { name } });
   },
 });
 
-// Đăng ký một loại xác thực
+// Đăng ký một kiểu xác thực
 authManager.registerTypes('basic', {
   auth: BasicAuth,
   title: 'Password',
@@ -36,21 +37,21 @@ app.resourceManager.use(authManager.middleware());
 
 ### Giải thích khái niệm
 
-- **Loại xác thực (`AuthType`)**: Các phương thức xác thực người dùng khác nhau, ví dụ: mật khẩu, SMS, OIDC, SAML, v.v.
-- **Bộ xác thực (`Authenticator`)**: Một thực thể của phương thức xác thực, được lưu trữ thực tế trong một `bộ sưu tập`, tương ứng với một bản ghi cấu hình của một `AuthType` nhất định. Một phương thức xác thực có thể có nhiều bộ xác thực, tương ứng với nhiều cấu hình, cung cấp các phương pháp xác thực người dùng khác nhau.
-- **Định danh bộ xác thực (`Authenticator name`)**: Định danh duy nhất cho một bộ xác thực, được dùng để xác định phương thức xác thực mà yêu cầu hiện tại đang sử dụng.
+- **Kiểu xác thực (`AuthType`)**: Các phương thức xác thực người dùng khác nhau, ví dụ: mật khẩu, SMS, OIDC, SAML, v.v.
+- **Authenticator (`Authenticator`)**: Thực thể của phương thức xác thực, được lưu trong bảng dữ liệu, tương ứng với một bản ghi cấu hình của một kiểu xác thực (`AuthType`). Một phương thức xác thực có thể có nhiều authenticator, tương ứng với nhiều cấu hình, cung cấp các phương thức xác thực người dùng khác nhau.
+- **Định danh authenticator (`Authenticator name`)**: Định danh duy nhất của authenticator, dùng để xác định phương thức xác thực được sử dụng cho request hiện tại.
 
-## Phương thức lớp
+## Phương thức của lớp
 
 ### `constructor()`
 
-Hàm khởi tạo, tạo một thể hiện (`instance`) của `AuthManager`.
+Constructor, tạo một instance `AuthManager`.
 
 #### Chữ ký
 
 - `constructor(options: AuthManagerOptions)`
 
-#### Kiểu dữ liệu
+#### Kiểu
 
 ```ts
 export interface JwtOptions {
@@ -65,32 +66,32 @@ export type AuthManagerOptions = {
 };
 ```
 
-#### Chi tiết
+#### Thông tin chi tiết
 
 ##### AuthManagerOptions
 
-| Thuộc tính | Kiểu | Mô tả | Giá trị mặc định |
-| --------- | --------------------------- | ------------------------------------- | ----------------- |
-| `authKey` | `string` | Tùy chọn, khóa trong tiêu đề yêu cầu chứa định danh bộ xác thực hiện tại. | `X-Authenticator` |
-| `default` | `string` | Tùy chọn, định danh bộ xác thực mặc định. | `basic` |
-| `jwt` | [`JwtOptions`](#jwtoptions) | Tùy chọn, có thể cấu hình nếu sử dụng JWT để xác thực. | - |
+| Thuộc tính | Kiểu                        | Mô tả                                                       | Giá trị mặc định  |
+| ---------- | --------------------------- | ----------------------------------------------------------- | ----------------- |
+| `authKey`  | `string`                    | Tùy chọn, key trong request header lưu định danh authenticator hiện tại | `X-Authenticator` |
+| `default`  | `string`                    | Tùy chọn, định danh authenticator mặc định                   | `basic`           |
+| `jwt`      | [`JwtOptions`](#jwtoptions) | Tùy chọn, có thể cấu hình nếu dùng JWT để xác thực           | -                 |
 
 ##### JwtOptions
 
-| Thuộc tính | Kiểu | Mô tả | Giá trị mặc định |
-| ----------- | -------- | ------------------ | ----------------- |
-| `secret` | `string` | Khóa bí mật của token | `X-Authenticator` |
-| `expiresIn` | `string` | Tùy chọn, thời gian hết hạn của token. | `7d` |
+| Thuộc tính  | Kiểu     | Mô tả                       | Giá trị mặc định  |
+| ----------- | -------- | --------------------------- | ----------------- |
+| `secret`    | `string` | Khóa bí mật của token       | `X-Authenticator` |
+| `expiresIn` | `string` | Tùy chọn, thời hạn của token | `7d`              |
 
 ### `setStorer()`
 
-Thiết lập các phương thức để lưu trữ và truy xuất dữ liệu bộ xác thực.
+Đặt phương thức lưu trữ và lấy dữ liệu authenticator.
 
 #### Chữ ký
 
 - `setStorer(storer: Storer)`
 
-#### Kiểu dữ liệu
+#### Kiểu
 
 ```ts
 export interface Authenticator = {
@@ -104,77 +105,77 @@ export interface Storer {
 }
 ```
 
-#### Chi tiết
+#### Thông tin chi tiết
 
 ##### Authenticator
 
-| Thuộc tính | Kiểu | Mô tả |
-| ---------- | --------------------- | -------------- |
-| `authType` | `string` | Loại xác thực |
-| `options` | `Record<string, any>` | Cấu hình liên quan đến bộ xác thực |
+| Thuộc tính | Kiểu                  | Mô tả                              |
+| ---------- | --------------------- | ---------------------------------- |
+| `authType` | `string`              | Kiểu xác thực                      |
+| `options`  | `Record<string, any>` | Cấu hình liên quan đến authenticator |
 
 ##### Storer
 
-`Storer` là một giao diện để lưu trữ bộ xác thực, bao gồm một phương thức.
+`Storer` là interface lưu trữ authenticator, gồm một phương thức.
 
-- `get(name: string): Promise<Authenticator>` - Lấy một bộ xác thực bằng định danh của nó. Trong NocoBase, kiểu dữ liệu thực tế được trả về là [AuthModel](/auth-verification/auth/dev/api#authmodel).
+- `get(name: string): Promise<Authenticator>` - Lấy authenticator theo định danh. Trong NocoBase kiểu thực tế trả về là [AuthModel](/auth-verification/auth/dev/api#authmodel).
 
 ### `registerTypes()`
 
-Đăng ký một loại xác thực.
+Đăng ký kiểu xác thực.
 
 #### Chữ ký
 
 - `registerTypes(authType: string, authConfig: AuthConfig)`
 
-#### Kiểu dữ liệu
+#### Kiểu
 
 ```ts
 export type AuthExtend<T extends Auth> = new (config: Config) => T;
 
 type AuthConfig = {
-  auth: AuthExtend<Auth>; // Lớp xác thực.
-  title?: string; // Tên hiển thị của loại xác thực.
+  auth: AuthExtend<Auth>; // The authentication class.
+  title?: string; // The display name of the authentication type.
 };
 ```
 
-#### Chi tiết
+#### Thông tin chi tiết
 
-| Thuộc tính | Kiểu | Mô tả |
-| ------- | ------------------ | --------------------------------- |
-| `auth` | `AuthExtend<Auth>` | Triển khai loại xác thực, xem [Auth](./auth) |
-| `title` | `string` | Tùy chọn. Tiêu đề của loại xác thực này được hiển thị ở giao diện người dùng. |
+| Thuộc tính | Kiểu               | Mô tả                                  |
+| ---------- | ------------------ | -------------------------------------- |
+| `auth`     | `AuthExtend<Auth>` | Triển khai kiểu xác thực, tham khảo [Auth](./auth) |
+| `title`    | `string`           | Tùy chọn. Tiêu đề kiểu xác thực hiển thị ở frontend |
 
 ### `listTypes()`
 
-Lấy danh sách các loại xác thực đã đăng ký.
+Lấy danh sách các kiểu xác thực đã đăng ký.
 
 #### Chữ ký
 
 - `listTypes(): { name: string; title: string }[]`
 
-#### Chi tiết
+#### Thông tin chi tiết
 
-| Thuộc tính | Kiểu | Mô tả |
-| ------- | -------- | ------------ |
-| `name` | `string` | Định danh loại xác thực |
-| `title` | `string` | Tiêu đề loại xác thực |
+| Thuộc tính | Kiểu     | Mô tả              |
+| ---------- | -------- | ------------------ |
+| `name`     | `string` | Định danh kiểu xác thực |
+| `title`    | `string` | Tiêu đề kiểu xác thực |
 
 ### `get()`
 
-Lấy một bộ xác thực.
+Lấy authenticator.
 
 #### Chữ ký
 
 - `get(name: string, ctx: Context)`
 
-#### Chi tiết
+#### Thông tin chi tiết
 
-| Thuộc tính | Kiểu | Mô tả |
-| ------ | --------- | ---------- |
-| `name` | `string` | Định danh bộ xác thực |
-| `ctx` | `Context` | Ngữ cảnh yêu cầu |
+| Thuộc tính | Kiểu      | Mô tả               |
+| ---------- | --------- | ------------------- |
+| `name`     | `string`  | Định danh authenticator |
+| `ctx`      | `Context` | Ngữ cảnh request    |
 
 ### `middleware()`
 
-Middleware xác thực. Lấy bộ xác thực hiện tại và thực hiện xác thực người dùng.
+Middleware xác thực. Lấy authenticator hiện tại và thực hiện xác thực người dùng.

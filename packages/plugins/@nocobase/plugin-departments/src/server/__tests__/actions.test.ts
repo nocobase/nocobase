@@ -84,44 +84,6 @@ describe('actions', () => {
     expect(res.body.data.length).toBe(0);
   });
 
-  it('should set main department', async () => {
-    const user = await db.getRepository('users').findOne();
-    const depts = await repo.create({
-      values: [
-        {
-          title: 'Dept1',
-          members: [user.id],
-        },
-        {
-          title: 'Dept2',
-          members: [user.id],
-        },
-      ],
-    });
-
-    const userRepo = db.getRepository('users');
-    await userRepo.update({
-      filterByTk: 1,
-      values: {
-        mainDepartmentId: depts[0].id,
-      },
-    });
-
-    const res = await agent.resource('users').setMainDepartment({
-      values: {
-        userId: user.id,
-        departmentId: depts[1].id,
-      },
-    });
-    expect(res.status).toBe(200);
-
-    const user2 = await userRepo.findOne({
-      filterByTk: 1,
-      fields: ['id', 'mainDepartmentId'],
-    });
-    expect(user2.mainDepartmentId).toBe(depts[1].id);
-  });
-
   it('should allow setting mainDepartmentId when submitting departments together (user had none before)', async () => {
     const userRepo = db.getRepository('users');
     const user = await userRepo.findOne();
@@ -140,6 +102,32 @@ describe('actions', () => {
       values: {
         departments: [dept.id],
         mainDepartmentId: dept.id,
+      },
+    });
+
+    const userReload = await userRepo.findOne({
+      filterByTk: user.id,
+      fields: ['id', 'mainDepartmentId'],
+    });
+    expect(userReload.mainDepartmentId).toBe(dept.id);
+
+    const membershipCount = await db.getRepository('departmentsUsers').count({
+      filter: { userId: user.id, departmentId: dept.id },
+    });
+    expect(membershipCount).toBe(1);
+  });
+
+  it('should auto fill mainDepartmentId when creating a user with departments only', async () => {
+    const userRepo = db.getRepository('users');
+    const dept = await repo.create({
+      values: { title: 'Dept auto main' },
+    });
+
+    const user = await userRepo.create({
+      values: {
+        username: 'user-with-department',
+        password: '123456',
+        departments: [dept.id],
       },
     });
 

@@ -1,14 +1,19 @@
 ---
-displayName: "モバイル (非推奨)"
+title: "Mobile (deprecated)"
+keywords: "Mobile (deprecated),Plugin,NocoBase"
+displayName: "Mobile (deprecated)"
 packageName: '@nocobase/plugin-mobile'
+supportedVersions:
+  - 1.x
 description: |
-  モバイルページの設定機能を提供します
+  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# モバイル (非推奨)
+# Mobile (deprecated)
+
+> Note: This plugin is deprecated.

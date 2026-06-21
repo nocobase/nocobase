@@ -1,8 +1,10 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Konsep Inti FlowModel"
+description: "FlowModel adalah inti dari FlowEngine, mengelola properti komponen, state, Flow, dan render. Memahami FlowModel adalah langkah pertama untuk menguasai FlowEngine."
+keywords: "FlowModel,FlowEngine inti,Model komponen,Manajemen properti,Pembawa Flow,Dapat diorkestrasi,NocoBase"
+---
 
-# Memulai dengan FlowModel
+# Memulai dari FlowModel
 
 ## FlowModel Kustom
 
@@ -21,18 +23,23 @@ class HelloModel extends FlowModel {
 
 ## Kelas Dasar FlowModel yang Tersedia
 
-| Nama Kelas Dasar        | Deskripsi                                 |
-| ----------------------- | ----------------------------------------- |
-| `BlockModel`            | Kelas dasar untuk semua blok              |
-| `CollectionBlockModel`  | Blok koleksi, mewarisi dari BlockModel    |
-| `ActionModel`           | Kelas dasar untuk semua aksi              |
+| Nama Kelas Dasar        | Deskripsi                                |
+| ----------------------- | ---------------------------------------- |
+| `BlockModel`            | Kelas dasar untuk semua Block            |
+| `CollectionBlockModel`  | Block tabel data, mewarisi BlockModel    |
+| `ActionModel`           | Kelas dasar untuk semua Action           |
 
 ## Mendaftarkan FlowModel
 
 ```ts
 export class PluginHelloClient extends Plugin {
   async load() {
-    this.engine.registerModels({ HelloModel });
+    this.engine.registerModelLoaders({
+      HelloModel: {
+        // Dynamic import, modul akan dimuat hanya saat model ini benar-benar digunakan untuk pertama kalinya
+        loader: () => import('./HelloModel'),
+      },
+    });
   }
 }
 ```

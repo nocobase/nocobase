@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-block-grid-card"
+title: "网格卡片区块"
+description: "网格卡片区块：以网格卡片形式展示数据，支持自定义卡片布局、分页、筛选。"
+keywords: "网格卡片,GridCard,卡片布局,数据展示,界面搭建,NocoBase"
 ---
 # 网格卡片
 

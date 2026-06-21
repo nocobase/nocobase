@@ -1,4 +1,6 @@
 ---
+title: "Logger"
+keywords: "Logging and monitoring"
 displayName: "Logger"
 packageName: '@nocobase/plugin-logger'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Logger

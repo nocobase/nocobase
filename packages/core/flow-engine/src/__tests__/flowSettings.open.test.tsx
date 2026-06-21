@@ -1772,8 +1772,8 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(capturedDialog.close).toHaveBeenCalled();
   });
 
-  it('submit method handles FlowExitException by closing dialog without error message', async () => {
-    const { FlowExitException } = await import('../utils/exceptions');
+  it('submit method handles FlowExitAllException by closing dialog without error message', async () => {
+    const { FlowExitAllException } = await import('../utils/exceptions');
 
     const engine = new FlowEngine();
     const flowSettings = new FlowSettings(engine);
@@ -1786,7 +1786,7 @@ describe('FlowSettings.open rendering behavior', () => {
         step: {
           title: 'Step',
           beforeParamsSave: () => {
-            throw new FlowExitException('exitFlow', 'm-submit-exit', 'Exit requested');
+            throw new FlowExitAllException('exitFlow', 'm-submit-exit', 'Exit requested');
           },
           uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
         },
@@ -1818,10 +1818,60 @@ describe('FlowSettings.open rendering behavior', () => {
     // Call submit method
     await capturedDialog.submit();
 
-    // Verify FlowExitException handling
+    // Verify FlowExitAllException handling
     expect(error).not.toHaveBeenCalled(); // Should not show error message
     expect(success).not.toHaveBeenCalled(); // Should not show success message
     expect(capturedDialog.close).toHaveBeenCalled(); // Should close dialog
+  });
+
+  it('submit method keeps dialog open on FlowCancelSaveException', async () => {
+    const { FlowCancelSaveException } = await import('../utils/exceptions');
+
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-cancel-save');
+    const model = new TestFlowModel({ uid: 'm-submit-cancel-save', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'cancelSaveFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          beforeParamsSave: () => {
+            throw new FlowCancelSaveException();
+          },
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const info = vi.fn();
+    const error = vi.fn();
+    const success = vi.fn();
+    model.context.defineProperty('message', { value: { info, error, success } });
+
+    const saveStepParams = vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog, { defineMethod: vi.fn() });
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'cancelSaveFlow', stepKey: 'step' } as any);
+    await capturedDialog.submit();
+
+    expect(capturedDialog.close).not.toHaveBeenCalled();
+    expect(saveStepParams).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
   });
 
   it('submit method handles general errors by showing error message and keeping dialog open', async () => {

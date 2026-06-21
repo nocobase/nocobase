@@ -1,74 +1,73 @@
 ---
 pkg: '@nocobase/plugin-workflow-json-query'
+title: "Node Workflow - Komputasi JSON"
+description: "Node Komputasi JSON: melakukan komputasi atau transformasi struktur pada data JSON, mendukung berbagai engine komputasi."
+keywords: "Workflow,Komputasi JSON,JSON Query,Transformasi JSON,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Komputasi JSON
 
-# Perhitungan JSON
+## Pengantar
 
-## Pendahuluan
-
-Berdasarkan berbagai mesin perhitungan JSON, node ini menghitung atau mengubah struktur data JSON kompleks yang dihasilkan oleh node sebelumnya agar dapat digunakan oleh node selanjutnya. Misalnya, hasil dari operasi SQL dan node permintaan HTTP dapat diubah menjadi nilai dan format variabel yang diperlukan melalui node ini untuk digunakan oleh node selanjutnya.
+Berdasarkan engine komputasi JSON yang berbeda, melakukan komputasi atau transformasi struktur pada data JSON kompleks yang dihasilkan oleh Node upstream, untuk digunakan oleh Node berikutnya. Misalnya hasil dari Node Operasi SQL dan Node HTTP Request, dapat ditransformasi menjadi format nilai dan variable yang dibutuhkan melalui Node ini, untuk digunakan oleh Node berikutnya.
 
 ## Membuat Node
 
-Di antarmuka konfigurasi alur kerja, klik tombol plus ("+") di dalam alur untuk menambahkan node "Perhitungan JSON":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Komputasi JSON":
 
 ![Membuat Node](https://static-docs.nocobase.com/7de796517539ad9dfc88b7160f1d0dd7.png)
 
-:::info{title=Catatan}
-Biasanya, node Perhitungan JSON dibuat di bawah node data lainnya untuk memparsingnya.
+:::info{title=Tips}
+Biasanya Node Komputasi JSON dibuat di bawah Node data lainnya, untuk memparse data tersebut.
 :::
 
 ## Konfigurasi Node
 
-### Mesin Parsing
+### Engine Parsing
 
-Node Perhitungan JSON mendukung berbagai sintaks melalui mesin parsing yang berbeda. Anda dapat memilih berdasarkan preferensi dan fitur masing-masing mesin. Saat ini, tiga mesin parsing didukung:
+Node Komputasi JSON mendukung sintaks yang berbeda melalui engine parsing yang berbeda, Anda dapat memilih sesuai preferensi Anda dan karakteristik setiap engine. Saat ini mendukung tiga engine parsing:
 
 - [JMESPath](https://jmespath.org/)
 - [JSONPath Plus](https://jsonpath-plus.github.io/JSONPath/docs/ts/)
 - [JSONata](https://jsonata.org/)
 
-![Pilihan Mesin](https://static-docs.nocobase.com/29be3b92a62b7d20312d1673e749f2ec.png)
+![Pilih Engine](https://static-docs.nocobase.com/29be3b92a62b7d20312d1673e749f2ec.png)
 
 ### Sumber Data
 
-Sumber data bisa berupa hasil dari node sebelumnya atau objek data dalam konteks alur kerja. Biasanya, ini adalah objek data tanpa struktur bawaan, seperti hasil dari node SQL atau node permintaan HTTP.
+Sumber data dapat berupa hasil Node upstream, atau objek data dari konteks alur, biasanya berupa objek data yang tidak terstruktur secara built-in, seperti hasil Node SQL, atau hasil Node HTTP Request.
 
 ![Sumber Data](https://static-docs.nocobase.com/f5a97e20693b3d30b3a994a576aa282d.png)
 
-:::info{title=Catatan}
-Biasanya, objek data dari node terkait koleksi sudah terstruktur melalui informasi konfigurasi koleksi dan umumnya tidak perlu diparsing oleh node Perhitungan JSON.
+:::info{title=Tips}
+Biasanya objek data Node terkait tabel data sudah terstruktur melalui informasi konfigurasi tabel data, umumnya tidak perlu diparse melalui Node Komputasi JSON.
 :::
 
-### Ekspresi Parsing
+### Expression Parsing
 
-Ekspresi parsing kustom berdasarkan kebutuhan parsing dan mesin parsing yang dipilih.
+Berdasarkan kebutuhan parsing dan engine parsing yang berbeda, expression parsing yang dibuat juga berbeda.
 
-![Ekspresi Parsing](https://static-docs.nocobase.com/181abd162fd32c09b62f6aa1d1cb3ed4.png)
+![Expression Parsing](https://static-docs.nocobase.com/181abd162fd32c09b62f6aa1d1cb3ed4.png)
 
-:::info{title=Catatan}
-Mesin yang berbeda menyediakan sintaks parsing yang berbeda. Untuk detailnya, silakan merujuk ke dokumentasi di tautan.
+:::info{title=Tips}
+Engine yang berbeda menyediakan sintaks parsing yang berbeda, untuk detailnya silakan merujuk ke dokumentasi pada tautan.
 :::
 
-Mulai versi `v1.0.0-alpha.15`, ekspresi mendukung penggunaan variabel. Variabel akan dipra-parsing sebelum mesin tertentu dieksekusi, mengganti variabel dengan nilai string spesifik sesuai aturan template string, dan menggabungkannya dengan string statis lainnya dalam ekspresi untuk membentuk ekspresi akhir. Fitur ini sangat berguna ketika Anda perlu membangun ekspresi secara dinamis, misalnya, ketika beberapa konten JSON memerlukan kunci dinamis untuk parsing.
+Sejak versi `v1.0.0-alpha.15`, expression mendukung penggunaan variable. Variable akan di-pre-parse sebelum engine spesifik dieksekusi. Sesuai dengan aturan template string, variable diganti dengan nilai string yang spesifik, dan digabungkan dengan string statis lain dari expression menjadi expression final. Fitur ini sangat berguna saat perlu membuat expression secara dinamis, misalnya saat beberapa konten JSON perlu diparse dengan key dinamis.
 
 ### Pemetaan Properti
 
-Ketika hasil perhitungan adalah sebuah objek (atau array objek), Anda dapat lebih lanjut memetakan properti yang diperlukan ke variabel anak melalui pemetaan properti untuk digunakan oleh node selanjutnya.
+Saat hasil komputasi adalah sebuah objek (atau array objek), Anda dapat memetakan properti yang dibutuhkan menjadi variable sub-level melalui pemetaan properti, untuk digunakan oleh Node berikutnya.
 
 ![Pemetaan Properti](https://static-docs.nocobase.com/b876abe4ccf6b4709eb8748f21ef3527.png)
 
-:::info{title=Catatan}
-Untuk hasil objek (atau array objek), jika pemetaan properti tidak dilakukan, seluruh objek (atau array objek) akan disimpan sebagai variabel tunggal dalam hasil node, dan nilai properti objek tidak dapat digunakan langsung sebagai variabel.
+:::info{title=Tips}
+Untuk hasil objek (atau array objek), jika tidak melakukan pemetaan properti, maka keseluruhan objek (atau array objek) akan disimpan sebagai satu variable dalam hasil Node, tidak dapat menggunakan nilai properti objek tersebut sebagai variable secara langsung.
 :::
 
 ## Contoh
 
-Misalkan data yang perlu diparsing berasal dari node SQL sebelumnya yang digunakan untuk mengkueri data, dan hasilnya adalah kumpulan data pesanan:
+Misalkan data yang perlu diparse adalah Node SQL sebelumnya yang digunakan untuk query data, hasilnya berupa sekelompok data pesanan:
 
 ```json
 [
@@ -109,16 +108,16 @@ Misalkan data yang perlu diparsing berasal dari node SQL sebelumnya yang digunak
 ]
 ```
 
-Jika kita perlu memparsing dan menghitung total harga masing-masing dari dua pesanan dalam data, dan menggabungkannya dengan ID pesanan yang sesuai ke dalam sebuah objek untuk memperbarui total harga pesanan, kita dapat mengkonfigurasinya sebagai berikut:
+Jika kita perlu memparse dan menghitung total harga dari masing-masing dua pesanan dalam data, dan menggabungkannya menjadi objek dengan ID pesanan yang sesuai, untuk meng-update total harga pesanan, dapat dikonfigurasi seperti berikut:
 
-![Contoh - Konfigurasi Parsing SQL](https://static-docs.nocobase.com/e62322a868b26ff98120bfcd6dcdb3bd.png)
+![Contoh-Konfigurasi Parsing SQL](https://static-docs.nocobase.com/e62322a868b26ff98120bfcd6dcdb3bd.png)
 
-1.  Pilih mesin parsing JSONata;
-2.  Pilih hasil dari node SQL sebagai sumber data;
-3.  Gunakan ekspresi JSONata `$[0].{"id": id, "total": products.(price * quantity)}` untuk parsing;
-4.  Pilih pemetaan properti untuk memetakan `id` dan `total` ke variabel anak;
+1. Pilih engine parsing JSONata;
+2. Pilih hasil Node SQL sebagai sumber data;
+3. Gunakan expression JSONata `$[0].{"id": id, "total": products.(price * quantity)}` untuk parsing;
+4. Pilih pemetaan properti, mapping `id` dan `total` menjadi variable sub-level;
 
-Hasil parsing akhirnya adalah sebagai berikut:
+Hasil parsing final adalah sebagai berikut:
 
 ```json
 [
@@ -133,6 +132,6 @@ Hasil parsing akhirnya adalah sebagai berikut:
 ]
 ```
 
-Setelah itu, lakukan perulangan pada array pesanan yang dihasilkan untuk memperbarui total harga pesanan.
+Setelah itu lakukan loop pada array pesanan yang sudah lengkap, untuk meng-update total harga pesanan.
 
-![Perbarui total harga pesanan yang sesuai](https://static-docs.nocobase.com/b3329b0efe4471f5eed1f0673bef740e.png)
+![Update Total Harga Pesanan yang Sesuai](https://static-docs.nocobase.com/b3329b0efe4471f5eed1f0673bef740e.png)

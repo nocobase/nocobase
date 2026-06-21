@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "ICollection"
+description: "Interface ICollection của NocoBase: interface model dữ liệu, gồm repository, getFields, setField, v.v."
+keywords: "ICollection,interface,model dữ liệu,Collection,NocoBase"
+---
 
 # ICollection
 
-`ICollection` là một giao diện (interface) cho mô hình dữ liệu, chứa các thông tin như tên, trường (field) và các liên kết (association) của mô hình.
+`ICollection` là interface của model dữ liệu, bao gồm thông tin về tên, field, quan hệ của model.
 
 ```typescript
 export interface ICollection {
@@ -25,17 +26,17 @@ export interface ICollection {
 }
 ```
 
-## Thành phần
+## Thành viên
 
 ### repository
 
-Đây là thể hiện (instance) của `Repository` mà `ICollection` thuộc về.
+Instance `Repository` của `ICollection`.
 
 ## API
 
 ### updateOptions()
 
-Cập nhật các thuộc tính của `Collection`.
+Cập nhật thuộc tính của `Collection`.
 
 #### Chữ ký
 
@@ -43,7 +44,7 @@ Cập nhật các thuộc tính của `Collection`.
 
 ### setField()
 
-Đặt một trường cho `Collection`.
+Đặt field cho `Collection`.
 
 #### Chữ ký
 
@@ -51,7 +52,7 @@ Cập nhật các thuộc tính của `Collection`.
 
 ### removeField()
 
-Xóa một trường khỏi `Collection`.
+Xóa field của `Collection`.
 
 #### Chữ ký
 
@@ -59,7 +60,7 @@ Xóa một trường khỏi `Collection`.
 
 ### getFields()
 
-Lấy tất cả các trường của `Collection`.
+Lấy tất cả field của `Collection`.
 
 #### Chữ ký
 
@@ -67,7 +68,7 @@ Lấy tất cả các trường của `Collection`.
 
 ### getField()
 
-Lấy một trường của `Collection` theo tên của nó.
+Lấy field của `Collection` theo tên.
 
 #### Chữ ký
 

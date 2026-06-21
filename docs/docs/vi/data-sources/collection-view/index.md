@@ -1,13 +1,12 @@
 ---
-pkg: "@nocobase/plugin-collection-view"
+title: "Database View"
+description: "Kết nối Database View hiện có làm Data Source, cấu hình Field và hiển thị trong NocoBase, phù hợp với việc quản lý trực quan kết quả truy vấn phức tạp."
+keywords: "Database View,Collection View,kết nối view,Data Source,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Database View
 
-
-# Chế độ xem cơ sở dữ liệu
+<PluginInfo name="collection-view"></PluginInfo>
 
 ## Giới thiệu
 

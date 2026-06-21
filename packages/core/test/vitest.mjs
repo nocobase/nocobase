@@ -10,6 +10,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const CORE_CLIENT_PACKAGES = ['sdk', 'client', 'client-v2', 'flow-engine'];
+const PLUGIN_CLIENT_PACKAGES = ['client', 'client-v2'];
+// 按路径填写要跳过服务端测试的插件目录（相对仓库根目录）
+const skipPluginPaths = [
+  'packages/plugins/@nocobase/plugin-audit-logs',
+  'packages/plugins/@nocobase/plugin-backup-restore',
+  'packages/plugins/@nocobase/plugin-multi-app-share-collections',
+];
 
 const relativePathToAbsolute = (relativePath) => {
   return path.resolve(process.cwd(), relativePath);
@@ -108,19 +115,27 @@ const defineCommonConfig = () => {
 function getExclude(isServer) {
   return [
     `packages/core/${isServer ? '' : '!'}(${CORE_CLIENT_PACKAGES.join('|')})/**/*`,
-    `packages/**/src/${isServer ? 'client' : 'server'}/**/*`,
+    ...(isServer ? PLUGIN_CLIENT_PACKAGES : ['server']).map((dir) => `packages/**/src/${dir}/**/*`),
   ];
+}
+
+function getSkipPluginExcludes(isServer) {
+  if (!isServer) return [];
+  return skipPluginPaths
+    .map((p) => p.replace(/\\/g, '/').replace(/\/$/, ''))
+    .filter(Boolean)
+    .map((p) => `${p}/src/server/**`);
 }
 
 const defineServerConfig = () => {
   return vitestConfig({
     test: {
       setupFiles: resolve(__dirname, './setup/server.ts'),
-      exclude: getExclude(true),
+      exclude: [...getExclude(true), ...getSkipPluginExcludes(true)],
       retry: process.env.CI ? 2 : 0,
     },
     coverage: {
-      exclude: getExclude(true),
+      exclude: [...getExclude(true), ...getSkipPluginExcludes(true)],
     },
   });
 };
@@ -167,6 +182,10 @@ export const getFilterInclude = (isServer, isCoverage) => {
     return false;
   });
 
+  if (argv[0] === 'run' || argv[0] === 'watch') {
+    argv = argv.slice(1);
+  }
+
   let filterFileOrDir = argv[0];
 
   if (!filterFileOrDir) return {};
@@ -202,7 +221,9 @@ export const getFilterInclude = (isServer, isCoverage) => {
 
   // 插件目录，区分 client 和 server
   return {
-    include: [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`],
+    include: isServer
+      ? [`${filterFileOrDir}/src/server/${suffix}`]
+      : PLUGIN_CLIENT_PACKAGES.map((dir) => `${filterFileOrDir}/src/${dir}/${suffix}`),
   };
 };
 

@@ -1,15 +1,24 @@
 {
   "name": "@nocobase/plugin-mock-collections",
-  "version": "2.0.0-alpha.70",
+  "version": "2.2.0-alpha.1",
   "main": "./dist/server/index.js",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",
+    "@nocobase/plugin-data-source-main": "2.x",
     "@nocobase/plugin-error-handler": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x"
+  },
+  "nocobase": {
+    "deprecated": true,
+    "internal": true,
+    "supportedVersions": [
+      "1.x"
+    ],
+    "editionLevel": 0
   },
   "devDependencies": {
     "pg": "^8.11.3"

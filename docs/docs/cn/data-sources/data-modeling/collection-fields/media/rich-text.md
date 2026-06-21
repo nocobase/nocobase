@@ -1,3 +1,9 @@
+---
+title: "富文本"
+description: "富文本字段，支持富文本编辑与格式化内容。"
+keywords: "富文本,rich-text,富文本字段,格式化内容,NocoBase"
+---
+
 # 富文本
 
 ## 介绍

@@ -1,15 +1,16 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Luồng sự kiện và cấu hình hóa FlowModel"
+description: "Luồng sự kiện và cấu hình hóa FlowModel: registerFlow đăng ký Flow, cấu hình Flow, sự kiện, thuộc tính trong xây dựng giao diện, triển khai điều phối no-code."
+keywords: "Cấu hình FlowModel,registerFlow,Cấu hình luồng sự kiện,Điều phối no-code,Xây dựng giao diện,FlowEngine,NocoBase"
+---
 
+# Luồng sự kiện và cấu hình hóa FlowModel
 
-# FlowModel: Luồng Sự Kiện và Cấu Hình
+FlowModel cung cấp một cách dựa trên "luồng sự kiện (Flow)" để triển khai logic cấu hình hóa của component, làm cho hành vi và cấu hình của component có khả năng mở rộng và trực quan hơn.
 
-FlowModel cung cấp một cách tiếp cận dựa trên "luồng sự kiện (Flow)" để triển khai logic cấu hình cho các thành phần, giúp hành vi và cấu hình của chúng dễ mở rộng và trực quan hơn.
+## Tùy chỉnh Model
 
-## Model Tùy Chỉnh
-
-Bạn có thể tạo một model thành phần tùy chỉnh bằng cách kế thừa `FlowModel`. Model cần triển khai phương thức `render()` để định nghĩa logic render của thành phần.
+Bạn có thể tạo model component tùy chỉnh bằng cách kế thừa `FlowModel`. Model cần triển khai phương thức `render()` để định nghĩa logic render của component.
 
 ```ts
 class MyModel extends FlowModel {
@@ -19,21 +20,21 @@ class MyModel extends FlowModel {
 }
 ```
 
-## Đăng Ký Flow (Luồng Sự Kiện)
+## Đăng ký Flow (luồng sự kiện)
 
-Mỗi model có thể đăng ký một hoặc nhiều **Flow** để mô tả logic cấu hình và các bước tương tác của thành phần.
+Mỗi model có thể đăng ký một hoặc nhiều **Flow**, dùng để mô tả logic cấu hình và các bước tương tác của component.
 
 ```ts
 MyModel.registerFlow({
   key: 'buttonSettings',
-  title: 'Cài đặt Nút',
+  title: 'Cài đặt nút',
   steps: {
     general: {
-      title: 'Cấu hình Chung',
+      title: 'Cấu hình chung',
       uiSchema: {
         title: {
           type: 'string',
-          title: 'Tiêu đề Nút',
+          title: 'Tiêu đề nút',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
@@ -52,47 +53,48 @@ MyModel.registerFlow({
 
 Mô tả
 
--   `key`: Định danh duy nhất cho Flow.
--   `title`: Tên của Flow, dùng để hiển thị trên giao diện người dùng (UI).
+-   `key`: Định danh duy nhất của Flow.
+-   `title`: Tên của Flow, dùng để hiển thị UI.
 -   `steps`: Định nghĩa các bước cấu hình (Step). Mỗi bước bao gồm:
     -   `title`: Tiêu đề của bước.
-    -   `uiSchema`: Cấu trúc biểu mẫu cấu hình (tương thích với Formily Schema).
-    -   `defaultParams`: Các tham số mặc định.
-    -   `handler(ctx, params)`: Được kích hoạt khi lưu, dùng để cập nhật trạng thái của model.
+    -   `uiSchema`: Cấu trúc form cấu hình (tương thích với Formily Schema).
+    -   `defaultParams`: Tham số mặc định.
+    -   `handler(ctx, params)`: Kích hoạt khi lưu, dùng để cập nhật trạng thái model.
 
 ## Render Model
 
-Khi render một model thành phần, bạn có thể sử dụng tham số `showFlowSettings` để kiểm soát liệu có bật tính năng cấu hình hay không. Nếu `showFlowSettings` được bật, một điểm truy cập cấu hình (ví dụ: biểu tượng cài đặt hoặc nút) sẽ tự động hiển thị ở góc trên bên phải của thành phần.
+Khi render component model, có thể kiểm soát có bật chức năng cấu hình hóa hay không thông qua tham số `showFlowSettings`. Nếu bật `showFlowSettings`, góc trên bên phải của component sẽ tự động hiển thị lối vào cấu hình (như biểu tượng cài đặt hoặc nút).
 
 ```ts
 <FlowModelRenderer model={model} showFlowSettings />
 ```
 
-## Mở Biểu Mẫu Cấu Hình Thủ Công Bằng openFlowSettings
+## Sử dụng openFlowSettings để mở form cấu hình thủ công
 
-Ngoài việc mở biểu mẫu cấu hình thông qua điểm truy cập tương tác tích hợp sẵn, bạn cũng có thể gọi thủ công `openFlowSettings()` trong mã nguồn.
+Ngoài việc mở form cấu hình thông qua lối vào tương tác tích hợp, cũng có thể gọi
+`openFlowSettings()` thủ công trong code.
 
 ``` ts
 flowSettings.open(options: FlowSettingsOpenOptions): Promise<boolean>;
 model.openFlowSettings(options?: Omit<FlowSettingsOpenOptions, 'model'>): Promise<boolean>;
 ```
 
-### Định Nghĩa Tham Số
+### Định nghĩa tham số
 
 ``` ts
 interface FlowSettingsOpenOptions {
-  model: FlowModel;               // Bắt buộc, thể hiện model mà nó thuộc về
-  preset?: boolean;               // Chỉ render các bước được đánh dấu preset=true (mặc định là false)
-  flowKey?: string;               // Chỉ định một Flow duy nhất
-  flowKeys?: string[];            // Chỉ định nhiều Flow (bị bỏ qua nếu flowKey cũng được cung cấp)
-  stepKey?: string;               // Chỉ định một bước duy nhất (thường dùng kèm với flowKey)
-  uiMode?: 'dialog' | 'drawer';   // Container hiển thị biểu mẫu, mặc định là 'dialog'
-  onCancel?: () => void;          // Callback khi nhấp Hủy
-  onSaved?: () => void;           // Callback sau khi cấu hình được lưu thành công
+  model: FlowModel;               // Bắt buộc, instance model thuộc về
+  preset?: boolean;               // Chỉ render các bước được đánh dấu preset=true (mặc định false)
+  flowKey?: string;               // Chỉ định một Flow
+  flowKeys?: string[];            // Chỉ định nhiều Flow (sẽ bị bỏ qua khi đồng thời cung cấp flowKey)
+  stepKey?: string;               // Chỉ định một bước (thường kết hợp với flowKey)
+  uiMode?: 'dialog' | 'drawer';   // Container hiển thị form, mặc định 'dialog'
+  onCancel?: () => void;          // Callback khi click hủy
+  onSaved?: () => void;           // Callback sau khi lưu cấu hình thành công
 }
 ```
 
-### Ví Dụ: Mở Biểu Mẫu Cấu Hình Của Một Flow Cụ Thể Ở Chế Độ Drawer
+### Ví dụ: Mở form cấu hình của Flow cụ thể ở chế độ Drawer
 
 ``` ts
 await model.openFlowSettings({

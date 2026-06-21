@@ -313,6 +313,19 @@ describe('FlowModel', () => {
 
         model.emitter.off('onStepParamsChanged', listener);
       });
+
+      test('should not emit onStepParamsChanged when params are unchanged', () => {
+        const listener = vi.fn();
+        model.emitter.on('onStepParamsChanged', listener);
+
+        model.setStepParams('testFlow', 'step1', { param1: 'value1' });
+        model.setStepParams('testFlow', { step1: { param1: 'value1' } });
+        model.setStepParams({ testFlow: { step1: { param1: 'value1' } } });
+
+        expect(listener).not.toHaveBeenCalled();
+
+        model.emitter.off('onStepParamsChanged', listener);
+      });
     });
   });
 
@@ -353,7 +366,7 @@ describe('FlowModel', () => {
         }).toThrow('FlowModel must be initialized with a FlowEngine instance.');
       });
 
-      test('should handle FlowExitException correctly', async () => {
+      test('should handle ctx.exit() as FlowExitAllException in applyFlow', async () => {
         const exitFlow: FlowDefinitionOptions = {
           key: 'exitFlow',
           steps: {
@@ -370,18 +383,20 @@ describe('FlowModel', () => {
         };
 
         TestFlowModel.registerFlow(exitFlow);
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.flowEngine.logger, 'debug').mockImplementation(() => {});
 
-        const result = await model.applyFlow('exitFlow');
+        try {
+          const result = await model.applyFlow('exitFlow');
 
-        expect(result).toEqual({});
-        expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
-
-        consoleSpy.mockRestore();
+          expect(result).toBeInstanceOf(FlowExitAllException);
+          expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
+          expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
+        } finally {
+          loggerSpy.mockRestore();
+        }
       });
 
-      test('should handle FlowExitException correctly', async () => {
+      test('should handle ctx.exit() as FlowExitAllException in beforeRender dispatch', async () => {
         const exitFlow: FlowDefinitionOptions = {
           key: 'exitFlow',
           steps: {
@@ -413,7 +428,7 @@ describe('FlowModel', () => {
         await model.dispatchEvent('beforeRender');
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(exitFlow2.steps.step2.handler).toHaveBeenCalled();
+        expect(exitFlow2.steps.step2.handler).not.toHaveBeenCalled();
         expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
 
         loggerSpy.mockRestore();
@@ -474,15 +489,17 @@ describe('FlowModel', () => {
         };
 
         TestFlowModel.registerFlow(exitFlow);
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.flowEngine.logger, 'debug').mockImplementation(() => {});
 
-        const result = await model.applyFlow('exitFlow');
+        try {
+          const result = await model.applyFlow('exitFlow');
 
-        expect(result).toBeInstanceOf(FlowExitAllException);
-        expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
-
-        consoleSpy.mockRestore();
+          expect(result).toBeInstanceOf(FlowExitAllException);
+          expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
+          expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
+        } finally {
+          loggerSpy.mockRestore();
+        }
       });
 
       test('should propagate step execution errors', async () => {
@@ -768,7 +785,7 @@ describe('FlowModel', () => {
         const eventFlow = createEventFlowDefinition('testEvent');
         TestFlowModel.registerFlow(eventFlow);
 
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.flowEngine.logger, 'debug').mockImplementation(() => {});
 
         try {
           model.dispatchEvent('testEvent', { data: 'payload' });
@@ -776,7 +793,7 @@ describe('FlowModel', () => {
           // Use a more reliable approach than arbitrary timeout
           await new Promise((resolve) => setTimeout(resolve, 0));
 
-          expect(consoleSpy).toHaveBeenCalledWith(
+          expect(loggerSpy).toHaveBeenCalledWith(
             expect.stringContaining('[FlowModel] dispatchEvent: uid=test-model-uid, event=testEvent'),
           );
           expect(eventFlow.steps.eventStep.handler).toHaveBeenCalledWith(
@@ -786,7 +803,7 @@ describe('FlowModel', () => {
             expect.any(Object),
           );
         } finally {
-          consoleSpy.mockRestore();
+          loggerSpy.mockRestore();
         }
       });
 
@@ -1597,7 +1614,7 @@ describe('FlowModel', () => {
         fork1.dispose = vi.fn();
         fork2.dispose = vi.fn();
 
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.flowEngine.logger, 'debug').mockImplementation(() => {});
 
         try {
           model.clearForks();
@@ -1606,19 +1623,19 @@ describe('FlowModel', () => {
           expect(fork2.dispose).toHaveBeenCalled();
           expect(model.forks.size).toBe(0);
         } finally {
-          consoleSpy.mockRestore();
+          loggerSpy.mockRestore();
         }
       });
 
       test('should handle empty forks collection when clearing', () => {
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.flowEngine.logger, 'debug').mockImplementation(() => {});
 
         try {
           model.clearForks();
 
           expect(model.forks.size).toBe(0);
         } finally {
-          consoleSpy.mockRestore();
+          loggerSpy.mockRestore();
         }
       });
     });
@@ -1746,7 +1763,7 @@ describe('FlowModel', () => {
       test('should clean up resources on remove', () => {
         model.createFork();
         model.createFork();
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.flowEngine.logger, 'debug').mockImplementation(() => {});
 
         // Mock removeModel to simulate proper fork cleanup
         flowEngine.removeModel = vi.fn().mockImplementation(() => {
@@ -1763,7 +1780,7 @@ describe('FlowModel', () => {
           expect(model.forks.size).toBe(0);
           expect(flowEngine.removeModel).toHaveBeenCalledWith(model.uid);
         } finally {
-          consoleSpy.mockRestore();
+          loggerSpy.mockRestore();
         }
       });
     });
@@ -1840,22 +1857,17 @@ describe('FlowModel', () => {
       });
 
       test('should rerender triggers beforeRender without cache', async () => {
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
         model.dispatchEvent = vi.fn().mockResolvedValue(undefined) as any;
 
-        try {
-          await expect(model.rerender()).resolves.not.toThrow();
-          expect(model.dispatchEvent).toHaveBeenCalledWith('beforeRender', undefined, {
-            useCache: false,
-          });
-        } finally {
-          consoleSpy.mockRestore();
-        }
+        await expect(model.rerender()).resolves.not.toThrow();
+        expect(model.dispatchEvent).toHaveBeenCalledWith('beforeRender', undefined, {
+          useCache: false,
+        });
       });
     });
 
     describe('serialization', () => {
-      test('should serialize basic model data, excluding props and flowEngine', () => {
+      test('should serialize basic model data with the latest props, excluding flowEngine', () => {
         model.sortIndex = 5;
         model.setProps({ name: 'Test Model', value: 42 });
         model.setStepParams({
@@ -1867,13 +1879,12 @@ describe('FlowModel', () => {
         expect(serialized).toEqual(
           expect.objectContaining({
             uid: model.uid,
+            props: expect.objectContaining({ name: 'Test Model', value: 42 }),
             stepParams: expect.objectContaining({ flow1: { step1: { param1: 'value1' } } }),
             sortIndex: 5,
             subModels: expect.any(Object),
           }),
         );
-        // props should be excluded from serialization
-        expect(serialized.props).toBeUndefined();
         expect(serialized.flowEngine).toBeUndefined();
       });
 
@@ -1892,12 +1903,29 @@ describe('FlowModel', () => {
         expect(serialized).toEqual(
           expect.objectContaining({
             uid: 'empty-model',
+            props: expect.objectContaining({ foo: 'bar' }),
             stepParams: expect.any(Object),
             sortIndex: expect.any(Number),
             subModels: expect.any(Object),
           }),
         );
         expect(serialized.flowEngine).toBeUndefined();
+      });
+
+      test('should serialize the latest props after multiple updates', () => {
+        model.setProps({ fieldNames: { title: 'name' }, searchable: true });
+        model.setProps({ fieldNames: { title: 'age' } });
+        model.setProps('defaultExpandAll', false);
+
+        const serialized = model.serialize();
+
+        expect(serialized.props).toEqual(
+          expect.objectContaining({
+            fieldNames: { title: 'age' },
+            searchable: true,
+            defaultExpandAll: false,
+          }),
+        );
       });
     });
   });
@@ -2874,7 +2902,7 @@ describe('FlowModel', () => {
   describe('Edge Cases & Error Handling', () => {
     test('should handle model destruction gracefully', () => {
       const model = new FlowModel(modelOptions);
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const loggerSpy = vi.spyOn(model.flowEngine.logger, 'debug').mockImplementation(() => {});
 
       model.createFork();
       model.setProps({ testProp: 'value' });
@@ -2882,7 +2910,7 @@ describe('FlowModel', () => {
       try {
         expect(() => model.remove()).not.toThrow();
       } finally {
-        consoleSpy.mockRestore();
+        loggerSpy.mockRestore();
       }
     });
 

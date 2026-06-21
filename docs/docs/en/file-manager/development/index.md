@@ -6,7 +6,7 @@
 
 1. **Inherit `StorageType`**
    
-   Create a new class and implement the `make()` and `delete()` methods, and override hooks like `getFileURL()`, `getFileStream()`, `getFileData()` if necessary.
+   Create a new class and implement the `make()` and `delete()` methods, and override hooks like `getFileURL()`, `getFileStream()`, and `getFileData()` if necessary.
 
 Example:
 
@@ -61,16 +61,16 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-After registration, the storage configuration will appear in the `storages` resource, just like the built-in types. The configuration provided by `StorageType.defaults()` can be used to auto-fill forms or initialize default records.
+After registration, the storage configuration will appear in the `storages` resource just like built-in types. The configuration provided by `StorageType.defaults()` can be used to auto-fill forms or initialize default records.
 
 <!--
 ### Client-side Configuration and Management Interface
-On the client-side, you need to inform the file manager how to render the configuration form and whether there is custom upload logic. Each storage type object contains the following properties:
+On the client side, you need to inform the file manager how to render the configuration form and whether it has custom upload logic. Each storage type object contains the following properties:
 -->
 
 ## Extending Frontend File Types
 
-For uploaded files, you can display different preview content on the frontend interface based on different file types. The file manager's attachment field has a built-in browser-based file preview (embedded in an iframe), which supports previewing most file formats (such as images, videos, audio, and PDFs) directly in the browser. When a file format is not supported by the browser for preview, or when special preview interactions are required, you can extend the file type-based preview component.
+For uploaded files, different preview content can be displayed on the frontend interface based on different file types. The file manager's attachment field has a built-in browser-based file preview (embedded in an iframe), which supports previewing most file formats (such as images, videos, audio, and PDFs) directly in the browser. When a file format is not supported by the browser for preview, or when special preview interactions are required, you can extend the file type-based preview component.
 
 ### Example
 
@@ -106,9 +106,9 @@ class MyPlugin extends Plugin {
 
 Here, `filePreviewTypes` is the entry object provided by `@nocobase/plugin-file-manager/client` for extending file previews. Use its `add` method to extend a file type descriptor object.
 
-Each file type must implement a `match()` method to check whether the file type meets the requirements. In the example, `matchMimetype` is used to check the file's `mimetype` attribute. If it matches the `docx` type, it is considered the file type to be handled. If it does not match, the built-in type handling will be used.
+Each file type must implement a `match()` method to check whether the file type meets the requirements. In the example, `matchMimetype` is used to check the file's `mimetype` attribute. If it matches the `docx` type, it is considered the file type to be handled. If it does not match, it will fall back to built-in type handling.
 
-The `Previewer` property on the type descriptor object is the component used for previewing. When the file type matches, this component will be rendered in the preview dialog. You can return any React view (such as an iframe, player, or chart).
+The `Previewer` property on the type descriptor object is the component used for previewing. When the file type matches, this component will be rendered in the file preview modal. You can return any React view (such as an iframe, player, or chart).
 
 ### API
 
@@ -140,7 +140,7 @@ import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 
 #### `filePreviewTypes.add()`
 
-Register a new file type descriptor object with the file type registry. The type of the descriptor object is `FilePreviewType`.
+Registers a new file type descriptor object with the file type registry. The type of the descriptor object is `FilePreviewType`.
 
 #### `FilePreviewType`
 
@@ -148,18 +148,18 @@ Register a new file type descriptor object with the file type registry. The type
 
 File format matching method.
 
-The input parameter `file` is the data object of an uploaded file, containing relevant properties that can be used for type checking:
+The input parameter `file` is the data object of the uploaded file, containing relevant properties that can be used for type checking:
 
 * `mimetype`: mimetype description
 * `extname`: file extension, including "."
 * `path`: relative storage path of the file
 * `url`: file URL
 
-Returns a `boolean` value indicating whether it matches.
+Returns a `boolean` value indicating the matching result.
 
 ##### `getThumbnailURL`
 
-Returns the thumbnail URL used in the file list. If the return value is empty, the built-in placeholder image will be used.
+Used to return the thumbnail URL in the file list. If the return value is empty, the built-in placeholder image will be used.
 
 ##### `Previewer`
 
@@ -167,7 +167,6 @@ A React component for previewing files.
 
 The incoming Props are:
 
-* `file`: the current file object (may be a string URL or an object containing `url`/`preview`)
-* `index`: index of the file in the list
-* `list`: file list
-
+* `file`: The current file object (may be a string URL or an object containing `url`/`preview`)
+* `index`: Index of the file in the list
+* `list`: File list

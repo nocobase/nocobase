@@ -36,7 +36,7 @@ const statusColors = {
 const status = String(ctx.value || 'unknown');
 const color = statusColors[status] || 'default';
 
-ctx.element.innerHTML = \`
+ctx.render(\`
   <span style="
     display: inline-block;
     padding: 2px 8px;
@@ -48,7 +48,7 @@ ctx.element.innerHTML = \`
   ">
     \${ctx.t(status)}
   </span>
-\`;
+\`);
 `,
 };
 

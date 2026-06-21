@@ -9,15 +9,14 @@
 
 import React from 'react';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { ToolOptions, ToolCall } from '@nocobase/plugin-ai/client';
+import { ToolsOptions, ToolsUIProperties } from '@nocobase/client';
 
-const ChartBlock: React.FC<{
-  messageId: string;
-  tool: ToolCall<{
+const ChartBlock: React.FC<
+  ToolsUIProperties<{
     sql: string;
     echartsOption: Record<string, any>;
-  }>;
-}> = ({ tool }) => {
+  }>
+> = ({ toolCall }) => {
   const flowEngine = useFlowEngine();
   const model = flowEngine.createModel({
     uid: 'test',
@@ -26,11 +25,11 @@ const ChartBlock: React.FC<{
       chartSettings: {
         configure: {
           query: {
-            sql: tool.args.sql,
+            sql: toolCall.args.sql,
           },
           chart: {
             option: {
-              raw: JSON.stringify(tool.args.echartsOption, null, 2),
+              raw: JSON.stringify(toolCall.args.echartsOption, null, 2),
             },
           },
         },
@@ -40,8 +39,7 @@ const ChartBlock: React.FC<{
 
   return <FlowModelRenderer model={model} showFlowSettings />;
 };
-export const buildChartBlockTool: [string, string, ToolOptions] = [
-  'frontend',
+export const buildChartBlockTool: [string, ToolsOptions] = [
   'buildChartBlock',
   {
     ui: {

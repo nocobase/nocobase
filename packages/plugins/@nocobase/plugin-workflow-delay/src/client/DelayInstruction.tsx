@@ -27,6 +27,7 @@ export default class extends Instruction {
   title = `{{t("Delay", { ns: "${NAMESPACE}" })}}`;
   type = 'delay';
   group = 'control';
+  async = true;
   description = `{{t("Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.", { ns: "${NAMESPACE}" })}}`;
   icon = (<HourglassOutlined style={{}} />);
   fieldset = {
@@ -83,7 +84,4 @@ export default class extends Instruction {
     WorkflowVariableInput,
     Space,
   };
-  isAvailable({ engine, workflow, upstream, branchIndex }) {
-    return !engine.isWorkflowSync(workflow);
-  }
 }

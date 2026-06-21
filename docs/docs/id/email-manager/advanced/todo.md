@@ -1,17 +1,15 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Email Todo"
+description: "Tandai email sebagai todo di sebelah kanan detail email. Lihat email dengan tanda todo di list email."
+keywords: "email todo,tanda todo,manajemen email,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Email Todo
 
-
-# Tugas Email
-
-Di sisi kanan detail email, Anda dapat **menandai email sebagai tugas**:
+Di sebelah kanan detail email Anda dapat **menandai email sebagai todo**.
 
 ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_03_PM.png)
 
-Di daftar email, Anda dapat melihat email yang ditandai sebagai tugas:
+Anda dapat melihat email dengan tanda todo di list email.
 
 ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_04_PM.png)

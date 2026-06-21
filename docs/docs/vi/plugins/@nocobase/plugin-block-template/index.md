@@ -1,18 +1,17 @@
 ---
-displayName: "Khối: Mẫu (đã ngừng hỗ trợ)"
+displayName: "Block: Mẫu (Đã ngừng sử dụng)"
 packageName: '@nocobase/plugin-block-template'
+title: "Block: Mẫu (Đã ngừng sử dụng)"
+keywords: "Block: Mẫu (Đã ngừng sử dụng),Plugin,NocoBase"
 description: |
-  Tạo và quản lý các mẫu khối để tái sử dụng trên các trang.
+  Tạo và quản lý mẫu Block, dùng để tái sử dụng trong các trang.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+# Block: Mẫu (Đã ngừng sử dụng)
 
-# Khối: Mẫu (đã ngừng hỗ trợ)
-
-> Lưu ý: Plugin này đã ngừng hỗ trợ.
+> Lưu ý: Plugin này đã ngừng sử dụng (deprecated).

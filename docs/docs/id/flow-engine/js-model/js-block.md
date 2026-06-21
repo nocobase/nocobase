@@ -1,5 +1,7 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "JSBlock JS Block"
+description: "JSBlock JS Block: mengeksekusi JavaScript kustom dalam Block independen, mendukung React, ctx, rendering dinamis, JS Model FlowEngine."
+keywords: "JSBlock,JS Block,Block kustom,eksekusi JavaScript,JS Model FlowEngine,NocoBase"
+---
 
-# Blok JS
+# JS Block

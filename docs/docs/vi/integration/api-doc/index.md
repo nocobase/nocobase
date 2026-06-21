@@ -1,21 +1,20 @@
 ---
-pkg: "@nocobase/plugin-api-doc"
+title: "Plugin tài liệu API"
+description: "Tài liệu API NocoBase dựa trên Swagger: địa chỉ truy cập, tài liệu tổng/kernel/plugin/collections, quy tắc viết swagger, đặc tả OpenAPI."
+keywords: "Tài liệu API,Swagger,OpenAPI,Tài liệu interface,swagger:get,Phát triển plugin,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-
 
 # Tài liệu API
 
+<PluginInfo name="api-doc"></PluginInfo>
+
 ## Giới thiệu
 
-Plugin này tạo tài liệu API HTTP của NocoBase dựa trên Swagger.
+Tạo tài liệu HTTP API của NocoBase dựa trên Swagger.
 
 ## Cài đặt
 
-Đây là một plugin tích hợp sẵn, không cần cài đặt. Bạn chỉ cần kích hoạt để sử dụng.
+Plugin tích hợp sẵn, không cần cài đặt. Chỉ cần kích hoạt là có thể sử dụng.
 
 ## Hướng dẫn sử dụng
 
@@ -29,18 +28,18 @@ http://localhost:13000/admin/settings/api-doc/documentation
 
 ![](https://static-docs.nocobase.com/5bb4d3e5bba6c6fdfcd830592e72385b.png)
 
-- Tổng tài liệu API: `/api/swagger:get`
-- Tài liệu API lõi: `/api/swagger:get?ns=core`
-- Tài liệu API của tất cả các plugin: `/api/swagger:get?ns=plugins`
+- Tài liệu API tổng: `/api/swagger:get`
+- Tài liệu API kernel: `/api/swagger:get?ns=core`
+- Tài liệu API của tất cả plugin: `/api/swagger:get?ns=plugins`
 - Tài liệu của từng plugin: `/api/swagger:get?ns=plugins/{name}`
-- Tài liệu API cho các **bộ sưu tập** tùy chỉnh: `/api/swagger:get?ns=collections`
-- Các tài nguyên `${collection}` và tài nguyên liên quan `${collection}.${association}` được chỉ định: `/api/swagger:get?ns=collections/{name}`
+- Tài liệu API của các collection do người dùng tự định nghĩa: `/api/swagger:get?ns=collections`
+- Tài nguyên `${collection}` chỉ định và `${collection}.${association}` liên quan: `/api/swagger:get?ns=collections/{name}`
 
-## Hướng dẫn dành cho nhà phát triển
+## Hướng dẫn phát triển
 
-### Cách viết tài liệu Swagger cho plugin
+### Cách viết tài liệu swagger cho plugin
 
-Thêm tệp `swagger/index.ts` vào thư mục `src` của plugin với nội dung như sau:
+Trong thư mục `src` của plugin, thêm tệp `swagger/index.ts` với nội dung sau:
 
 ```typescript
 export default {
@@ -55,4 +54,4 @@ export default {
 };
 ```
 
-Để biết các quy tắc viết chi tiết, vui lòng tham khảo [Tài liệu chính thức của Swagger](https://swagger.io/docs/specification/about/).
+Để biết chi tiết quy tắc viết, vui lòng tham khảo [Tài liệu chính thức của Swagger](https://swagger.io/docs/specification/about/)

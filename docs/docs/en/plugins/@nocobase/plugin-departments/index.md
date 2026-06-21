@@ -1,4 +1,6 @@
 ---
+title: "Departments"
+keywords: "Users & permissions"
 displayName: "Departments"
 packageName: '@nocobase/plugin-departments'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Departments

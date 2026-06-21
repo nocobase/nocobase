@@ -1,26 +1,28 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Format Angka"
+description: "Konfigurasi Field: mengkonfigurasi format tampilan angka, mendukung pemisah ribuan, desimal, simbol mata uang, dll."
+keywords: "format angka, number format, pemisah ribuan, desimal, interface builder, NocoBase"
+---
 
-# Pemformatan Angka
+# Format Angka
 
-## Pendahuluan
+## Pengantar
 
-Pemformatan angka adalah proses mempercantik dan menstandardisasi tampilan visual bidang bertipe angka (termasuk bidang formula) saat dalam mode baca. Ini mencakup pengaturan seperti pemisah ribuan, presisi desimal, konversi unit, dan notasi ilmiah. Dengan mengonfigurasi pemformatan angka, Anda dapat memenuhi kebiasaan ekspresi numerik dari berbagai wilayah dan industri.
+Format angka merujuk pada penghiasan dan standardisasi visual Field tipe angka (termasuk Field formula) dalam status baca, termasuk pengaturan pemisah ribuan, presisi desimal, konversi unit, notasi ilmiah, dll. Dengan mengkonfigurasi format angka, Anda dapat memenuhi kebiasaan ekspresi numerik di berbagai wilayah dan industri.
 
 ![20251028215021](https://static-docs.nocobase.com/20251028215021.png)
 
 ![20251028215059](https://static-docs.nocobase.com/20251028215059.png)
 
-## Cara Penggunaan
+## Petunjuk Penggunaan
 
-- Mendukung konversi unit sederhana (perkalian/pembagian)
+- Mendukung konversi unit sederhana (multiply, divide)
 - Pemisah ribuan
-- Awalan dan akhiran
+- Prefix dan suffix
 - Presisi
 - Notasi ilmiah.
 
-Contoh: Memformat jumlah pesanan dengan menambahkan simbol mata uang (misalnya, simbol Yuan ￥), pemisah ribuan (seperti koma atau titik), dan presisi desimal agar jumlahnya jelas dan mudah dibaca.
+Contoh: Memformat jumlah pesanan, termasuk menambahkan simbol mata uang (simbol RMB ￥), pemisah ribuan (seperti koma atau titik), presisi desimal, dll., agar jumlah jelas dan mudah dibaca.
 
 ![20251028215249](https://static-docs.nocobase.com/20251028215249.gif)
 

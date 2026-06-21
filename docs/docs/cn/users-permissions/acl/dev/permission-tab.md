@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-acl'
+title: "扩展权限配置栏"
+description: "NocoBase ACL 插件扩展权限配置栏：addPermissionsTab、TabLayout、自定义权限 Tab，以移动端菜单为例。"
+keywords: "扩展权限配置,addPermissionsTab,权限 Tab,ACL 开发,权限管理,NocoBase"
+---
+
 # 扩展权限配置栏
 
 下面以“移动端菜单”配置项为例，演示如何扩展一个新的权限配置栏。效果如下图所示：

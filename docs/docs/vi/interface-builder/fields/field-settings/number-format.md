@@ -1,27 +1,28 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Định dạng số"
+description: "Cấu hình Field: cài đặt định dạng hiển thị số, hỗ trợ dấu phân cách hàng nghìn, vị trí thập phân, ký hiệu tiền tệ."
+keywords: "định dạng số,number format,phân cách hàng nghìn,vị trí thập phân,Interface Builder,NocoBase"
+---
 
-
-# Định dạng Số
+# Định dạng số
 
 ## Giới thiệu
 
-Định dạng số là quá trình làm đẹp và chuẩn hóa trực quan các trường dữ liệu kiểu số (bao gồm cả trường công thức) khi ở chế độ xem. Việc này bao gồm các thiết lập như dấu phân cách hàng nghìn, độ chính xác số thập phân, chuyển đổi đơn vị và ký hiệu khoa học. Bằng cách cấu hình định dạng số, bạn có thể đáp ứng các thói quen biểu diễn số liệu khác nhau của từng khu vực và ngành nghề.
+Định dạng số có nghĩa là làm đẹp và chuẩn hóa trực quan các Field kiểu số (bao gồm Field công thức) ở trạng thái đọc, bao gồm các cài đặt như dấu phân cách hàng nghìn, độ chính xác chữ số thập phân, chuyển đổi đơn vị, ký hiệu khoa học. Bằng cách cấu hình định dạng số, có thể đáp ứng thói quen biểu diễn số của các khu vực và ngành công nghiệp khác nhau.
 
 ![20251028215021](https://static-docs.nocobase.com/20251028215021.png)
 
 ![20251028215059](https://static-docs.nocobase.com/20251028215059.png)
 
-## Cách sử dụng
+## Hướng dẫn sử dụng
 
-- Hỗ trợ chuyển đổi đơn vị đơn giản (nhân/chia)
+- Hỗ trợ chuyển đổi đơn vị đơn giản (nhân chia)
 - Dấu phân cách hàng nghìn
 - Tiền tố và hậu tố
 - Độ chính xác
-- Ký hiệu khoa học.
+- Ký hiệu khoa học
 
-Ví dụ: Định dạng số tiền đơn hàng bằng cách thêm ký hiệu tiền tệ (ví dụ: ký hiệu Nhân dân tệ ￥), dấu phân cách hàng nghìn (như dấu phẩy hoặc dấu chấm) và độ chính xác số thập phân, giúp số tiền dễ đọc và rõ ràng hơn.
+Ví dụ: Định dạng số tiền đơn hàng, bao gồm thêm ký hiệu tiền tệ (ký hiệu Nhân dân tệ ￥), dấu phân cách hàng nghìn (như dấu phẩy hoặc dấu chấm), độ chính xác thập phân, làm cho số tiền rõ ràng và dễ đọc.
 
 ![20251028215249](https://static-docs.nocobase.com/20251028215249.gif)
 

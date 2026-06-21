@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Markdown(Vditor)"
+description: "Field Markdown rich text dựa trên Vditor, hỗ trợ chỉnh sửa và xem trước cú pháp Markdown."
+keywords: "Markdown,Vditor,Field rich text,Markdown editor,NocoBase"
+---
 
-
-# Markdown (Vditor)
+# Markdown(Vditor)
 
 ## Giới thiệu
 
-## Cấu hình Trường
+## Cấu hình Field
 
 ![20240512180647](https://static-docs.nocobase.com/20240512180647.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung sau.
+Sẽ được bổ sung sau

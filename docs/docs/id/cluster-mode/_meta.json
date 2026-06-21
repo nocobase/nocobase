@@ -1,12 +1,12 @@
 [
   {
     "type": "section-header",
-    "label": "Mode Klaster"
+    "label": "Mode Cluster"
   },
   {
     "type": "custom-link",
     "label": "Ikhtisar",
-    "link": "/cluster-mode/index"
+    "link": "/cluster-mode/"
   },
   {
     "type": "custom-link",
@@ -20,7 +20,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Prosedur Operasional",
+    "label": "Alur Operasi",
     "link": "/cluster-mode/operations"
   },
   {
@@ -30,7 +30,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Referensi Pengembang",
+    "label": "Referensi Pengembangan",
     "link": "/cluster-mode/development"
   }
 ]

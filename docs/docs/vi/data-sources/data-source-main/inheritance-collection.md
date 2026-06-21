@@ -1,28 +1,27 @@
 ---
 pkg: "@nocobase/plugin-data-source-main"
+title: "Inheritance Collection"
+description: "Inheritance Collection mở rộng field dựa trên bảng có sẵn, bảng con kế thừa field và dữ liệu từ bảng cha, phù hợp cho các tình huống tái sử dụng và mở rộng cấu trúc bảng, chỉ PostgreSQL hỗ trợ."
+keywords: "Inheritance Collection,Inheritance Collection,Table inheritance,Mở rộng Collection,PostgreSQL,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Bộ sưu tập kế thừa
+# Inheritance Collection
 
 ## Giới thiệu
 
 :::warning
-Chỉ được hỗ trợ khi cơ sở dữ liệu chính là PostgreSQL.
+Chỉ hỗ trợ khi Database chính là PostgreSQL.
 :::
 
-Bạn có thể tạo một bộ sưu tập cha và phái sinh các bộ sưu tập con từ bộ sưu tập cha đó. Bộ sưu tập con sẽ kế thừa cấu trúc của bộ sưu tập cha, đồng thời có thể định nghĩa các cột riêng của mình. Mô hình thiết kế này giúp tổ chức và quản lý dữ liệu có cấu trúc tương tự nhưng có thể có một số khác biệt.
+Bạn có thể tạo một bảng cha, sau đó dẫn xuất bảng con từ bảng cha đó. Bảng con sẽ kế thừa cấu trúc của bảng cha, đồng thời còn có thể định nghĩa các cột riêng. Mô hình thiết kế này giúp tổ chức và quản lý dữ liệu có cấu trúc tương tự nhưng có thể có một số khác biệt.
 
-Dưới đây là một số đặc điểm chung của bộ sưu tập kế thừa:
+Sau đây là một số đặc điểm phổ biến về Inheritance Collection:
 
-- Bộ sưu tập cha: Bộ sưu tập cha chứa các cột và dữ liệu chung, định nghĩa cấu trúc cơ bản của toàn bộ hệ thống phân cấp kế thừa.
-- Bộ sưu tập con: Bộ sưu tập con kế thừa cấu trúc của bộ sưu tập cha, nhưng cũng có thể định nghĩa các cột riêng của nó. Điều này cho phép mỗi bộ sưu tập con có các thuộc tính chung của bộ sưu tập cha, đồng thời chứa các thuộc tính dành riêng cho bộ sưu tập con.
-- Truy vấn: Khi truy vấn, bạn có thể chọn truy vấn toàn bộ hệ thống phân cấp kế thừa, hoặc chỉ truy vấn bộ sưu tập cha hoặc một bộ sưu tập con cụ thể. Điều này cho phép truy xuất và xử lý các cấp độ dữ liệu khác nhau tùy theo nhu cầu.
-- Quan hệ kế thừa: Một quan hệ kế thừa được thiết lập giữa bộ sưu tập cha và bộ sưu tập con, có nghĩa là cấu trúc của bộ sưu tập cha có thể được sử dụng để định nghĩa các thuộc tính nhất quán, đồng thời cho phép bộ sưu tập con mở rộng hoặc ghi đè các thuộc tính này.
+Bảng cha: Bảng cha chứa các cột và dữ liệu chung, định nghĩa cấu trúc cơ bản của toàn bộ hệ thống cấu trúc kế thừa.
+Bảng con: Bảng con kế thừa cấu trúc của bảng cha, nhưng còn có thể định nghĩa thêm các cột riêng. Điều này cho phép mỗi bảng con có các thuộc tính chung của bảng cha, đồng thời có thể chứa các thuộc tính đặc thù của subclass.
+Truy vấn: Khi truy vấn, có thể chọn truy vấn toàn bộ hệ thống cấu trúc kế thừa, hoặc chỉ truy vấn bảng cha hoặc bảng con cụ thể. Điều này giúp có thể truy xuất và xử lý dữ liệu ở các cấp độ khác nhau theo nhu cầu.
+Quan hệ kế thừa: Quan hệ kế thừa được thiết lập giữa bảng cha và bảng con, điều này có nghĩa là có thể sử dụng cấu trúc của bảng cha để định nghĩa các thuộc tính nhất quán, đồng thời cho phép bảng con mở rộng hoặc ghi đè những thuộc tính này.
+Mô hình thiết kế này giúp giảm dư thừa dữ liệu, đơn giản hóa data model, đồng thời làm cho dữ liệu dễ bảo trì hơn. Tuy nhiên, cần sử dụng cẩn thận, vì Inheritance Collection có thể tăng độ phức tạp của truy vấn, đặc biệt là khi xử lý toàn bộ hệ thống cấu trúc kế thừa. Các database system hỗ trợ Inheritance Collection thường cung cấp cú pháp và công cụ cụ thể để quản lý và truy vấn cấu trúc bảng này.
 
-Mô hình thiết kế này giúp giảm sự dư thừa dữ liệu, đơn giản hóa mô hình cơ sở dữ liệu và giúp dữ liệu dễ bảo trì hơn. Tuy nhiên, cần sử dụng cẩn thận vì các bộ sưu tập kế thừa có thể làm tăng độ phức tạp của các truy vấn, đặc biệt khi xử lý toàn bộ hệ thống phân cấp kế thừa. Các hệ thống cơ sở dữ liệu hỗ trợ bộ sưu tập kế thừa thường cung cấp cú pháp và công cụ cụ thể để quản lý và truy vấn các cấu trúc bộ sưu tập này.
 
 ## Hướng dẫn sử dụng
 

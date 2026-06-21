@@ -1,18 +1,19 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Mở rộng kịch bản xác minh"
+description: "Mở rộng kịch bản xác minh trong NocoBase: đăng ký action xác minh, đăng ký kịch bản xác minh, gắn kết kịch bản và loại xác minh, xác minh tự động và xác minh thủ công."
+keywords: "Mở rộng kịch bản xác minh,action xác minh,kịch bản xác minh,xác minh tự động,xác minh thủ công,NocoBase"
+---
 
-
-# Mở rộng các kịch bản xác thực
+# Mở rộng kịch bản xác minh
 
 ## Khái niệm cơ bản
 
-## Đăng ký hành động xác thực
+## Đăng ký action xác minh
 
-## Đăng ký kịch bản xác thực
+## Đăng ký kịch bản xác minh
 
-## Liên kết kịch bản và loại xác thực
+## Gắn kết kịch bản và loại xác minh
 
-## Xác thực tự động
+## Xác minh tự động
 
-## Xác thực thủ công
+## Xác minh thủ công

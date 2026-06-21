@@ -1,5 +1,7 @@
 ---
-displayName: "Compartir colecciones entre varias aplicaciones"
+title: "Multi-app share collection"
+keywords: "System management"
+displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -7,12 +9,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
+# Multi-app share collection
 
-# Compartir colecciones entre varias aplicaciones
-
-> Nota: Este plugin ha sido descontinuado (deprecated).
+> Note: This plugin is deprecated.

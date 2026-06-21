@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Table OID"
+description: "Field sistem Table OID, identifier objek tabel PostgreSQL."
+keywords: "Table OID,PostgreSQL,field sistem,identifier objek tabel,NocoBase"
+---
 
-# OID Tabel
+# Table OID
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512174746](https://static-docs.nocobase.com/20240512174746.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

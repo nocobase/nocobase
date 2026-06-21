@@ -1,14 +1,14 @@
 ---
 displayName: "Lịch"
 packageName: '@nocobase/plugin-calendar'
+title: "Lịch"
+keywords: "Lịch,Plugin,NocoBase"
 description: |
-  Cung cấp mẫu bộ sưu tập và khối Lịch để quản lý dữ liệu ngày tháng, thường dùng cho các thông tin liên quan đến ngày/giờ như sự kiện, cuộc hẹn, nhiệm vụ, v.v.
+  Cung cấp mẫu Collection và Block lịch để quản lý dữ liệu ngày tháng, thường dùng cho các thông tin liên quan đến ngày/giờ như sự kiện, lịch hẹn, công việc.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Lịch

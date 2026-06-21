@@ -1,3 +1,9 @@
+---
+title: "Logger"
+description: "NocoBase 日志 API：Logger 创建日志、日志级别、输出配置。"
+keywords: "Logger,日志 API,日志级别,日志输出,NocoBase"
+---
+
 # Logger
 
 ## 创建日志
@@ -162,4 +168,4 @@ const transport = Transports.console({
 ## 相关文档
 
 - [开发指南 - 日志](/plugin-development/server/logger)
-- [日志](/log-and-monitor/logger/)
+- [日志](/log-and-monitor/logger/index.md)

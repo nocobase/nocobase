@@ -1,17 +1,17 @@
 ---
-displayName: "Visualisasi Data: ECharts"
+displayName: "Data Visualization: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
+title: "Data Visualization: ECharts"
+keywords: "Data Visualization: ECharts,plugin,NocoBase"
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  Memanfaatkan ECharts untuk visualisasi data, mendukung diagram corong, radar, dan jenis diagram lainnya, serta menawarkan konfigurasi visualisasi yang mudah digunakan.
-isFree: false
-builtIn: false
+  Mengimplementasikan visualisasi data menggunakan ECharts. Mendukung lebih banyak tipe chart seperti funnel chart, radar chart, dan lainnya, serta menyediakan konfigurasi visualisasi yang lebih ramah pengguna.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 8
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Visualisasi Data: ECharts
+# Data Visualization: ECharts

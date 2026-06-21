@@ -1,73 +1,89 @@
+---
+pkg: '@nocobase/plugin-ai'
+title: 'AI Employees Quick Start'
+description: 'Complete the minimal AI Employee setup in 5 minutes: install the plugin, configure LLM models, enable built-in employees, and start collaborating. Includes an overview of built-in employees such as Atlas, Ellis, Dex, Viz, and more.'
+keywords: 'AI Employees quick start,NocoBase AI setup,LLM service,built-in employees,Atlas,Dex,Viz'
+---
+
 # Quick Start
 
-Let's start from scratch and take 5 minutes to quickly understand and use NocoBase AI Employees.
+Let's complete a minimal usable AI Employee setup in 5 minutes.
 
-![clipboard-image-1766653060](https://static-docs.nocobase.com/clipboard-image-1766653060.png)
+## Install Plugin
 
-## 1. Install Plugin
+AI Employees are built into NocoBase (`@nocobase/plugin-ai`), so no separate installation is required.
 
-AI Employees are built into NocoBase (`@nocobase/plugin-ai`), ready to use out of the box without separate installation.
+## Configure Models
 
-## 2. Configure LLM Service
+You can configure LLM services from either entry:
 
-Before using AI Employees, you need to connect to an online LLM Service.
+1. Admin entry: `System Settings -> AI Employees -> LLM Service`.
+2. Frontend shortcut: In the AI chat panel, click the "Add LLM Service" shortcut when selecting a model to jump directly to configuration.
 
-NocoBase currently supports mainstream online LLM Services such as OpenAI, Gemini, Claude, DeepSeek, Qwen (Aliyun), etc. Recommended models (tested): **gemini-3**, **deepseek-chat**, **qwen3-max**.
+![20260425172540](https://static-docs.nocobase.com/20260425172540.png)
 
-In addition to online LLM Services, NocoBase also supports connecting to Ollama local models.
+Usually you need to:
 
-1.  Go to **System Settings** -> **AI Employees** -> **LLM Service**.
-2.  Click **Add New** and select your model provider.
-3.  Enter the API Key and Base URL (optional).
-4.  Click **Test Connection** to ensure the configuration is correct.
+1. Select a Provider.
+2. Fill in the API Key.
+3. Configure Enabled Models; simply use Recommended models by default.
 
-![20251021213122](https://static-docs.nocobase.com/20251021213122.png)
+## Enable Built-in Employees
 
-![20251021214903](https://static-docs.nocobase.com/20251021214903.png)
+Built-in AI Employees are all enabled by default, and usually do not need to be enabled one by one.
 
-## 3. Enable Built-in Employees
-NocoBase comes with several built-in AI Employees out of the box, covering common scenarios.
-1.  Go to **System Settings** -> **AI Employees** list page.
-2.  Find the **AI Employee** you need, for example **Viz (Insight Analyst)**.
-3.  Click **Edit**, in **Model Settings**, select the LLM Service and Model configured earlier. Recommended: **gemini-3**, **deepseek-chat**, **qwen3-max**.
-4.  In the **Profile** tab, click the **Enabled** switch.
-5.  Click **Submit** at the bottom to save and take effect.
+If you need to adjust availability (enable/disable a specific employee), update the `Enabled` switch in `System Settings -> AI Employees` list.
 
-![clipboard-image-1766660703](https://static-docs.nocobase.com/clipboard-image-1766660703.png)
+![](https://static-docs.nocobase.com/202604230813855.png)
 
-![clipboard-image-1766660863](https://static-docs.nocobase.com/clipboard-image-1766660863.png)
+## Start Collaborating
 
-## 4. Start Collaborating
-1.  Return to the application interface, click the **AI Floating Ball** in the bottom right corner, select the employee you want, and start collaborating.
-2.  Try sending a command: ```"Please analyze the quantity and quality (high intent ratio) of leads by source, and provide 2–3 channel optimization suggestions."```
+Click the AI Employee entry at the bottom right to open the chat dialog.
 
-You can also **Add Work Context**, **Upload Files**, etc., to let the AI better understand the current environment and needs.
+![](https://static-docs.nocobase.com/202604230814677.png)
 
-![clipboard-image-1766661858](https://static-docs.nocobase.com/clipboard-image-1766661858.png)
+The default AI Employee is the team leader Atlas. You can type your question to start a conversation directly. When needed, Atlas will call the appropriate employees based on your question to collaborate and complete the task. You can also manually switch to a suitable employee and model for your specific scenario.
 
-![clipboard-image-1766666328](https://static-docs.nocobase.com/clipboard-image-1766666328.png)
+![](https://static-docs.nocobase.com/202604230816190.png)
 
-Congratulations! You have successfully completed this AI workflow experience. You can continue to explore AI Employees in other roles to further improve business efficiency.
+You can also:
+
+- Add blocks
+- Add attachments
+- Enable Web Search
+
+## Shortcut Tasks
+
+You can preset common tasks for each AI Employee at the current location, with pre-configured task background, user messages, block context, and more. This way you can start working with just one click, making it fast and convenient.
+
+<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.19.33-2025-11-02-12-19-49.mp4" type="video/mp4"></video>
 
 ## Built-in Employees Overview
-NocoBase provides several built-in AI Employees for specific scenarios.
 
-You just need to configure the Model for them to start working.
+NocoBase provides multiple built-in AI Employees for different scenarios.
+
+You only need to:
+
+1. Configure LLM services.
+2. Adjust employee enable status when needed (enabled by default).
+3. Select a model in chat and start collaborating.
 
 | Employee Name | Role Positioning | Core Capabilities |
 | :--- | :--- | :--- |
-| **Cole** | NocoBase Assistant | Product usage Q&A, document retrieval |
-| **Ellis** | Email Expert | Email writing, summary generation, reply suggestions |
+| **Atlas** | Team Leader | Default general-purpose AI Employee that identifies user intent and automatically dispatches the appropriate AI Employee to handle the task |
 | **Dex** | Data Organizer | Field translation, formatting, information extraction |
 | **Viz** | Insight Analyst | Data insight, trend analysis, key indicator interpretation |
 | **Lexi** | Translation Assistant | Multilingual translation, communication assistance |
 | **Vera** | Research Analyst | Web search, information aggregation, in-depth research |
-| **Dara** | Data Visualization Expert | Chart configuration, visual report generation |
-| **Orin** | Data Modeling Expert | Assist in designing data table structures, field suggestions |
+| **Ellis** | Email Expert | Email writing, summary generation, reply suggestions |
+| **Orin** | Data Modeling Expert | Assist in designing collection structures, field suggestions |
 | **Nathan** | Frontend Engineer | Assist in writing frontend code snippets, style adjustments |
+| **Dara** | Data Visualization Expert | Chart configuration |
 
-## Remarks
-Some built-in AI Employees will not appear in the AI Employee list in the bottom right corner. They have exclusive work scenarios, for example:
-* Orin will only appear on the data configuration page;
-* Dara will only appear on the chart configuration page;
-* Nathan will only appear on the JS Editor.
+**Notes**
+
+Some built-in AI Employees have dedicated work scenarios:
+
+- Orin: data modeling pages.
+- Dara: chart configuration blocks.
+- Nathan: JS Block and similar code editors.

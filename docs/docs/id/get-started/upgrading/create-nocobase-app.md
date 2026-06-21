@@ -1,40 +1,42 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+---
+title: "Panduan Upgrade create-nocobase-app"
+description: "Upgrade NocoBase untuk instalasi create-nocobase-app: yarn nocobase upgrade, upgrade ke versi tertentu, backup, dan catatan."
+keywords: "create-nocobase-app,Upgrade,yarn nocobase upgrade,Upgrade Versi,NocoBase"
+---
+
+# Upgrade Instalasi create-nocobase-app
+
+:::warning Persiapan Sebelum Upgrade
+
+- Pastikan untuk membackup database terlebih dahulu
+- Hentikan NocoBase yang sedang berjalan
+
 :::
 
-# Peningkatan Instalasi `create-nocobase-app`
+## 1. Hentikan NocoBase yang Sedang Berjalan
 
-:::warning Persiapan Sebelum Peningkatan
-
-- Pastikan untuk mencadangkan basis data terlebih dahulu.
-- Hentikan instansi NocoBase yang sedang berjalan.
-
-:::
-
-## 1. Hentikan Instansi NocoBase yang Sedang Berjalan
-
-Jika bukan proses yang berjalan di latar belakang, hentikan dengan `Ctrl + C`. Di lingkungan produksi, jalankan perintah `pm2-stop` untuk menghentikannya.
+Jika proses tidak berjalan di background, hentikan dengan `Ctrl + C`. Untuk lingkungan produksi, jalankan perintah `pm2-stop` untuk menghentikan.
 
 ```bash
 yarn nocobase pm2-stop
 ```
 
-## 2. Jalankan Perintah Peningkatan
+## 2. Jalankan Perintah Upgrade
 
-Cukup jalankan perintah peningkatan `yarn nocobase upgrade`.
+Cukup jalankan perintah upgrade `yarn nocobase upgrade`
 
 ```bash
 # Pindah ke direktori yang sesuai
 cd my-nocobase-app
-# Jalankan perintah peningkatan
+# Jalankan perintah update
 yarn nocobase upgrade
-# Mulai
+# Jalankan
 yarn dev
 ```
 
-### Peningkatan ke Versi Tertentu
+### Upgrade ke Versi Tertentu
 
-Ubah berkas `package.json` di direktori akar proyek, dan ubah nomor versi untuk `@nocobase/cli` dan `@nocobase/devtools` (Anda hanya bisa meningkatkan, tidak bisa menurunkan versi). Contoh:
+Modifikasi file `package.json` di direktori root proyek, ubah nomor versi `@nocobase/cli` dan `@nocobase/devtools` (hanya bisa upgrade, tidak bisa downgrade). Contoh:
 
 ```diff
 {
@@ -49,7 +51,7 @@ Ubah berkas `package.json` di direktori akar proyek, dan ubah nomor versi untuk 
 }
 ```
 
-Kemudian jalankan perintah peningkatan
+Kemudian jalankan perintah upgrade
 
 ```bash
 yarn install

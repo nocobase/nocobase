@@ -1,17 +1,16 @@
 ---
-displayName: "Blok: Formulir Multi-Langkah"
+displayName: "Block: Multi-Step Form"
 packageName: '@nocobase/plugin-block-multi-step-form'
+title: "Block: Multi-Step Form"
+keywords: "Block: Multi-Step Form,plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Membagi formulir yang memiliki banyak bidang menjadi beberapa langkah pengisian untuk mengurangi beban pengguna.
-isFree: false
-builtIn: false
+  Membagi form yang berisi banyak field menjadi beberapa langkah pengisian, untuk mengurangi beban pengguna.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Formulir Multi-Langkah
+# Block: Multi-Step Form

@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "Ikhtisar",
-    "link": "/data-visualization/index"
+    "link": "/data-visualization/"
   },
   {
     "type": "custom-link",
@@ -15,27 +15,27 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Kueri Data",
+        "label": "Query Data",
         "link": "/data-visualization/guide/data-query"
       },
       {
         "type": "custom-link",
-        "label": "Opsi Grafik",
+        "label": "Opsi Chart",
         "link": "/data-visualization/guide/chart-options"
       },
       {
         "type": "custom-link",
-        "label": "Pratinjau & Simpan",
+        "label": "Preview dan Simpan",
         "link": "/data-visualization/guide/preview-and-save"
       },
       {
         "type": "custom-link",
-        "label": "Menggunakan Variabel Lingkungan Konteks",
+        "label": "Menggunakan Variabel Konteks",
         "link": "/data-visualization/guide/context-variables"
       },
       {
         "type": "custom-link",
-        "label": "Filter Halaman & Interaksi",
+        "label": "Filter Halaman dan Linkage",
         "link": "/data-visualization/guide/filters-and-linkage"
       }
     ]
@@ -46,24 +46,24 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Kueri Data Mode SQL",
+        "label": "Query Data Mode SQL",
         "link": "/data-visualization/guide/sql-data-query"
       },
       {
         "type": "custom-link",
-        "label": "Konfigurasi Grafik Kustom",
+        "label": "Kustomisasi Konfigurasi Chart",
         "link": "/data-visualization/guide/custom-chart-options"
       },
       {
         "type": "custom-link",
-        "label": "Event Interaktif Kustom",
+        "label": "Kustomisasi Event Interaksi",
         "link": "/data-visualization/guide/chart-events"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Pertanyaan Umum (FAQ)",
+    "label": "Pertanyaan Umum",
     "link": "/data-visualization/faq"
   },
   {

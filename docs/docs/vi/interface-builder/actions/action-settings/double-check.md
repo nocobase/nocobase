@@ -1,17 +1,19 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Xác nhận lần hai"
+description: "Cấu hình Action: cài đặt Popup xác nhận lần hai trước khi thực hiện Action, ngăn ngừa thao tác nhầm."
+keywords: "xác nhận lần hai,double check,Popup xác nhận,cấu hình Action,Interface Builder,NocoBase"
+---
 
-
-# Xác nhận thao tác
+# Xác nhận lần hai
 
 ## Giới thiệu
 
-Cấu hình xác nhận được dùng để xác nhận liệu một hành động có được thực hiện hay không. Khi nhấp vào một thao tác, một hộp thoại xác nhận sẽ bật lên. Nút xóa mặc định được bật xác nhận nhằm ngăn chặn việc mất dữ liệu hoặc các kết quả không thể đảo ngược do thao tác nhầm lẫn.
+Cấu hình xác nhận lần hai dùng để xác nhận Action có được thực thi hay không, hộp xác nhận xuất hiện khi nhấp Action, nút xóa mặc định bật xác nhận lần hai để ngăn ngừa thao tác nhầm dẫn đến mất dữ liệu hoặc kết quả không thể đảo ngược.
 
 ![20251029125021](https://static-docs.nocobase.com/20251029125021.png)
 
-Bạn có thể tùy chỉnh nội dung và tiêu đề của hộp thoại xác nhận, cũng như truy cập các biến.
+Hỗ trợ tùy chỉnh nội dung và tiêu đề xác nhận lần hai, hỗ trợ lấy biến.
+
 
 ![20251029125058](https://static-docs.nocobase.com/20251029125058.png)
 

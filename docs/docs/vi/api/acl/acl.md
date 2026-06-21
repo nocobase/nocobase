@@ -1,7 +1,8 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "ACL"
+description: "API ACL phía server NocoBase: allow/deny để cấu hình quyền tài nguyên, kiểm soát truy cập theo vai trò."
+keywords: "ACL,allow,deny,cấu hình quyền,kiểm soát truy cập theo vai trò,quyền tài nguyên,NocoBase"
+---
 
 # ACL
 

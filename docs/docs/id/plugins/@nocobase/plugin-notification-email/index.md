@@ -1,14 +1,14 @@
 ---
 displayName: "Notifikasi: Email"
 packageName: '@nocobase/plugin-notification-email'
+title: "Notifikasi: Email"
+keywords: "Notifikasi: Email,Plugin,NocoBase"
 description: |
-  Digunakan untuk mengirim notifikasi melalui email, saat ini hanya mendukung metode transmisi SMTP.
+  Mengirim notifikasi melalui kanal email, saat ini hanya mendukung metode transmisi SMTP.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
 # Notifikasi: Email

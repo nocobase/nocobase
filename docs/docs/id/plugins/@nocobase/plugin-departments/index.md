@@ -1,14 +1,14 @@
 ---
-displayName: "Departemen"
+displayName: "Departments"
 packageName: '@nocobase/plugin-departments'
+title: "Departments"
+keywords: "Departments,plugin,NocoBase"
 description: |
-  Mengatur pengguna berdasarkan departemen, menetapkan hubungan hierarkis, mengikat peran untuk mengontrol izin, serta mendukung penggunaan sebagai variabel dalam alur kerja dan ekspresi.
+  Mengorganisasikan pengguna berdasarkan departemen, mengatur hierarki atasan dan bawahan, mengikat role untuk kontrol hak akses, serta mendukung penggunaan sebagai variable dalam workflow dan ekspresi.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Departemen
+# Departments

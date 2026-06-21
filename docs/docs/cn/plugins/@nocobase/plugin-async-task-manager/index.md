@@ -1,4 +1,6 @@
 ---
+title: "异步任务管理器"
+keywords: "异步任务管理器,插件,NocoBase"
 displayName: "异步任务管理器"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 异步任务管理器

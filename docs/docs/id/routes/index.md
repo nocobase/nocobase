@@ -1,66 +1,65 @@
 ---
-pkg: "@nocobase/plugin-client"
+title: "Routes Manager"
+description: "Routes Manager mengelola route halaman utama dan menu, mendukung desktop/mobile, empat tipe route: group/page/tab/link, menu dan route disinkronkan."
+keywords: "route,Routes,menu route,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Routes Manager
 
+<PluginInfo name="client"></PluginInfo>
 
-# Manajer Rute
+## Pengantar
 
-## Pendahuluan
-
-Manajer rute adalah alat untuk mengelola rute halaman utama sistem, mendukung perangkat `desktop` dan `mobile`. Rute yang dibuat menggunakan manajer rute akan secara otomatis ditampilkan di menu (dapat dikonfigurasi untuk tidak ditampilkan). Sebaliknya, menu yang ditambahkan melalui menu halaman juga akan otomatis muncul di daftar manajer rute.
+Routes Manager adalah tool untuk mengelola route halaman utama sistem, mendukung `desktop` dan `mobile`. Route yang dibuat menggunakan Routes Manager akan ditampilkan secara sinkron di menu (dapat dikonfigurasi untuk tidak ditampilkan di menu). Sebaliknya, menu yang ditambahkan di lokasi menu halaman juga akan ditampilkan secara sinkron di daftar Routes Manager.
 
 ![20250107115449](https://static-docs.nocobase.com/20250107115449.png)
 
-## Panduan Penggunaan
+## Manual Penggunaan
 
-### Jenis Rute
+### Tipe Route
 
-Sistem mendukung empat jenis rute:
+Sistem mendukung empat tipe route:
 
-- Grup (`group`): Digunakan untuk mengelola rute dengan mengelompokkannya, dan dapat berisi sub-rute.
-- Halaman (`page`): Halaman internal sistem.
-- Tab (`tab`): Digunakan untuk beralih antar tab di dalam halaman.
-- Tautan (`link`): Tautan internal atau eksternal, dapat langsung mengarahkan ke alamat tautan yang telah dikonfigurasi.
+- Group: digunakan untuk pengelolaan route secara berkelompok, dapat berisi sub-route
+- Page: halaman internal sistem
+- Tab: tipe route untuk berpindah tab di dalam halaman
+- Link: link internal atau eksternal, dapat langsung menuju ke alamat link yang dikonfigurasi
 
-### Menambahkan Rute
+### Menambahkan Route
 
-Klik tombol "Add new" di pojok kanan atas untuk membuat rute baru:
+Klik tombol "Add new" di kanan atas untuk membuat route baru:
 
-1. Pilih jenis rute (`Type`)
-2. Isi judul rute (`Title`)
-3. Pilih ikon rute (`Icon`)
-4. Atur apakah akan ditampilkan di menu (`Show in menu`)
-5. Atur apakah akan mengaktifkan tab halaman (`Enable page tabs`)
-6. Untuk jenis halaman, sistem akan secara otomatis membuat jalur rute (`Path`) yang unik.
+1. Pilih tipe route (Type)
+2. Isi judul route (Title)
+3. Pilih ikon route (Icon)
+4. Atur apakah ditampilkan di menu (Show in menu)
+5. Atur apakah Tab page diaktifkan (Enable page tabs)
+6. Untuk tipe page, sistem akan secara otomatis menghasilkan path route unik (Path)
 
 ![20250124131803](https://static-docs.nocobase.com/20250124131803.png)
 
-### Aksi Rute
+### Operasi Route
 
-Setiap entri rute mendukung aksi-aksi berikut:
+Setiap entri route mendukung operasi berikut:
 
-- Add child: Menambahkan sub-rute
-- Edit: Mengedit konfigurasi rute
-- View: Melihat halaman rute
-- Delete: Menghapus rute
+- Add child: menambahkan sub-route
+- Edit: mengedit konfigurasi route
+- View: melihat halaman route
+- Delete: menghapus route
 
-### Aksi Massal
+### Operasi Batch
 
-Bilah alat di bagian atas menyediakan fungsi aksi massal berikut:
+Toolbar atas menyediakan fitur operasi batch berikut:
 
-- Refresh: Menyegarkan daftar rute
-- Delete: Menghapus rute yang dipilih
-- Hide in menu: Menyembunyikan rute yang dipilih dari menu
-- Show in menu: Menampilkan rute yang dipilih di menu
+- Refresh: me-refresh daftar route
+- Delete: menghapus route yang dipilih
+- Hide in menu: menyembunyikan route yang dipilih dari menu
+- Show in menu: menampilkan route yang dipilih di menu
 
-### Filter Rute
+### Filter Route
 
-Gunakan fungsi "Filter" di bagian atas untuk menyaring daftar rute sesuai kebutuhan.
+Gunakan fitur "Filter" di bagian atas untuk memfilter daftar route sesuai kebutuhan.
 
-:::info{title=Catatan}
-Perubahan pada konfigurasi rute akan secara langsung memengaruhi struktur menu navigasi sistem. Harap berhati-hati saat melakukan operasi ini dan pastikan konfigurasi rute sudah benar.
+:::info{title=Tips}
+Modifikasi konfigurasi route akan langsung memengaruhi struktur menu navigasi sistem. Mohon lakukan dengan hati-hati untuk memastikan kebenaran konfigurasi route.
 :::

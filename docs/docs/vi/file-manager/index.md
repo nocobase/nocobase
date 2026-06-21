@@ -1,20 +1,21 @@
 ---
 pkg: '@nocobase/plugin-file-manager'
+title: "Tổng quan File Manager"
+description: "Plugin File Manager NocoBase: bảng file, field attachment, nhiều loại storage engine (Local/S3/OSS/COS), preview file, upload qua HTTP API, hướng dẫn phát triển mở rộng."
+keywords: "File Manager,bảng file,field attachment,storage engine,preview file,HTTP API,phát triển mở rộng,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trình quản lý tệp
+# File Manager
 
 ## Giới thiệu
 
-Plugin Trình quản lý tệp cung cấp các bộ sưu tập tệp, trường đính kèm và công cụ lưu trữ tệp để dễ dàng quản lý các tệp do người dùng tải lên.
+Plugin File Manager cung cấp bảng file, field attachment cùng với storage engine để quản lý các tệp do người dùng tải lên một cách thuận tiện.
 
 ## Tìm hiểu thêm
 
-- [Công cụ lưu trữ](./storage/index)
-- [Bộ sưu tập tệp](./file-collection)
-- [Trường đính kèm](./field-attachment)
-- [API HTTP](./http-api)
+- [Storage engine](./storage/index)
+- [Bảng file](./file-collection)
+- [Field attachment](./field-attachment)
+- [Preview file](./file-preview)
+- [HTTP API](./http-api)
 - [Phát triển mở rộng](./development/index)

@@ -1,3 +1,9 @@
+---
+title: "数据表概述"
+description: "Collection 数据表概念：定义数据模型、字段、索引、关联，通过数据源管理创建或同步已有表。"
+keywords: "数据表,Collection,数据模型,字段定义,关联,NocoBase"
+---
+
 # 数据表概述
 
 NocoBase 提供了一种特有的 DSL 来描述数据的结构，称之为 Collection，将各种来源的数据结构统一起来，为后续数据管理、分析和应用提供了可靠的基础。

@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Storage (SDK)"
+description: "Storage SDK frontend NocoBase: penyimpanan lokal, wrapper sessionStorage."
+keywords: "Storage SDK,penyimpanan lokal,sessionStorage,storage frontend,NocoBase"
+---
 
-# Penyimpanan
+# Storage
 
-## Gambaran Umum
+## Ikhtisar
 
-Kelas `Storage` digunakan untuk penyimpanan informasi sisi klien, secara default menggunakan `localStorage`.
+Class `Storage` digunakan untuk penyimpanan informasi di sisi client, secara default menggunakan `localStorage`.
 
 ### Penggunaan Dasar
 
@@ -23,13 +25,13 @@ export class CustomStorage extends Storage {
 }
 ```
 
-## Metode Kelas
+## Method Class
 
 ### `setItem()`
 
 Menyimpan konten.
 
-#### Tanda Tangan
+#### Signature
 
 - `setItem(key: string, value: string): void`
 
@@ -37,7 +39,7 @@ Menyimpan konten.
 
 Mengambil konten.
 
-#### Tanda Tangan
+#### Signature
 
 - `getItem(key: string): string | null`
 
@@ -45,7 +47,7 @@ Mengambil konten.
 
 Menghapus konten.
 
-#### Tanda Tangan
+#### Signature
 
 - `removeItem(key: string): void`
 
@@ -53,6 +55,6 @@ Menghapus konten.
 
 Menghapus semua konten.
 
-#### Tanda Tangan
+#### Signature
 
 - `clear(): void`

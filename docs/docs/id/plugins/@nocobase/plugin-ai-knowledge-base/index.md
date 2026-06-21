@@ -1,18 +1,16 @@
 ---
-displayName: "AI: Basis Pengetahuan"
+displayName: "AI: Knowledge Base"
 packageName: '@nocobase/plugin-ai-knowledge-base'
+title: "AI: Knowledge Base"
+keywords: "AI: Knowledge Base,plugin,NocoBase"
 supportedVersions:
   - 2.x
 description: |
----
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-  Mendukung integrasi dengan basis data vektor untuk memvektorisasi dokumen, menyediakan pencarian cerdas dan dukungan pengetahuan bagi karyawan AI.
+  Mendukung integrasi dengan vector database, melakukan vektorisasi dokumen, dan menyediakan dukungan pencarian cerdas serta basis pengetahuan untuk AI Employees.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
+---
 
-# AI: Basis Pengetahuan
+# AI: Knowledge Base

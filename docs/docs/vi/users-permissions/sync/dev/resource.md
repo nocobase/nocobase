@@ -1,19 +1,21 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "Mở rộng tài nguyên đích đồng bộ"
+description: "Mở rộng plugin đồng bộ dữ liệu người dùng NocoBase: tùy chỉnh tài nguyên đích đồng bộ, interface SyncResource, ánh xạ bảng người dùng và phòng ban."
+keywords: "Mở rộng tài nguyên đồng bộ,SyncResource,đích đồng bộ,ánh xạ bảng người dùng,plugin-user-data-sync,NocoBase"
+---
 
 # Mở rộng tài nguyên đích đồng bộ
 
 ## Tổng quan
 
-NocoBase mặc định hỗ trợ đồng bộ dữ liệu người dùng vào các bảng **Người dùng** và **Phòng ban**. Nền tảng này cũng cho phép mở rộng các tài nguyên đích để đồng bộ dữ liệu, giúp bạn ghi dữ liệu vào các bảng khác hoặc thực hiện xử lý tùy chỉnh theo nhu cầu.
+NocoBase mặc định hỗ trợ đồng bộ dữ liệu người dùng vào bảng **người dùng** và **phòng ban**, đồng thời cũng hỗ trợ mở rộng tài nguyên đích đồng bộ dữ liệu theo nhu cầu, để ghi dữ liệu vào các bảng khác hoặc xử lý tùy chỉnh khác.
 
 :::warning{title=Thử nghiệm}
-Tài liệu đầy đủ đang được bổ sung.
+Tài liệu đầy đủ sẽ được bổ sung sau
 :::
 
-## Giao diện xử lý tài nguyên đích
+## Interface xử lý tài nguyên đích
 
 ```ts
 export abstract class UserDataResource {

@@ -1,3 +1,9 @@
+---
+title: "JSItem JS 项"
+description: "JSItem JS 项：在子表格项中嵌入自定义逻辑，支持 React、ctx、行数据访问。"
+keywords: "JSItem,JS 项,子表格,自定义逻辑,界面搭建,NocoBase"
+---
+
 # JS Item
 
 ## 介绍
@@ -28,7 +34,7 @@ JS Item 用于表单中的“自定义项”（非字段绑定）。你可以用
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- 可结合 AI 员工生成/修改脚本：[AI 员工 · Nathan：前端工程师](/ai-employees/built-in-employee)
+- 可结合 AI 员工生成/修改脚本：[AI 员工 · Nathan：前端工程师](/ai-employees/built-in/nathan)
 
 ## 常见用法（精简示例）
 

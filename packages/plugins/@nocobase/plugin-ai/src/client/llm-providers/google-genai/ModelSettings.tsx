@@ -13,7 +13,6 @@ import { tval } from '@nocobase/utils/client';
 import { namespace, useT } from '../../locale';
 import { Collapse } from 'antd';
 import { ModelSelect } from '../components/ModelSelect';
-import { Switch } from 'antd';
 
 const Options: React.FC = () => {
   const t = useT();
@@ -146,7 +145,7 @@ const Options: React.FC = () => {
 export const ModelSettingsForm: React.FC = () => {
   return (
     <SchemaComponent
-      components={{ Options, ModelSelect, Switch }}
+      components={{ Options, ModelSelect }}
       schema={{
         type: 'void',
         properties: {
@@ -156,21 +155,6 @@ export const ModelSettingsForm: React.FC = () => {
             required: true,
             'x-decorator': 'FormItem',
             'x-component': 'ModelSelect',
-          },
-          builtIn: {
-            title: tval('Built in tools', { ns: namespace }),
-            type: 'object',
-            properties: {
-              webSearch: {
-                type: 'boolean',
-                title: tval('Web search', { ns: namespace }),
-                'x-decorator': 'FormItem',
-                'x-decorator-props': {
-                  layout: 'horizontal',
-                },
-                'x-component': 'Switch',
-              },
-            },
           },
           options: {
             type: 'void',

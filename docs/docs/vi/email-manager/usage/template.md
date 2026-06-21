@@ -1,24 +1,27 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Template Email"
+description: "Cấu hình và quản lý template Email: tạo template, chỉnh sửa template, chọn template để chèn nhanh trong khung soạn thảo nội dung Email."
+keywords: "template Email,quản lý template,template gửi,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+# Template Email
 
-# Mẫu Email
+## Cấu hình template
 
-## Cấu hình Mẫu
+Vào Email Center, click nút Cài đặt.
 
-Truy cập Trung tâm Quản lý Email và nhấp vào nút cài đặt:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_34_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
 
-Chuyển sang bảng điều khiển mẫu:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_53_PM.png)
+Chuyển sang panel template.
 
-Tại đây, bạn có thể quản lý các mẫu:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_54_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_12_PM.png)
 
-## Sử dụng Mẫu
+Tại đây có thể quản lý template.
 
-Trong khung soạn thảo email, nhấp vào biểu tượng mẫu để chọn mẫu mong muốn:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_54_PM%20(1).png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM.png)
+
+## Sử dụng template
+
+Trong khung soạn thảo nội dung Email, click icon template để chọn template cần dùng.
+
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM%20(1).png)

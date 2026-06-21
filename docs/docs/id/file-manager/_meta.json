@@ -1,25 +1,25 @@
 [
   {
     "type": "section-header",
-    "label": "Manajer File"
+    "label": "File Manager"
   },
   {
     "type": "custom-link",
     "label": "Ikhtisar",
-    "link": "/file-manager/index"
+    "link": "/file-manager/"
   },
   {
     "type": "custom-link",
-    "label": "Mesin Penyimpanan",
+    "label": "Storage Engine",
     "items": [
       {
         "type": "custom-link",
         "label": "Ikhtisar",
-        "link": "/file-manager/storage/index"
+        "link": "/file-manager/storage/"
       },
       {
         "type": "custom-link",
-        "label": "Penyimpanan Lokal",
+        "label": "Local Storage",
         "link": "/file-manager/storage/local"
       },
       {
@@ -29,12 +29,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Alibaba Cloud OSS",
+        "label": "Aliyun OSS",
         "link": "/file-manager/storage/aliyun-oss"
       },
       {
         "type": "custom-link",
-        "label": "Tencent Cloud COS",
+        "label": "Tencent COS",
         "link": "/file-manager/storage/tencent-cos"
       },
       {
@@ -46,17 +46,38 @@
   },
   {
     "type": "custom-link",
-    "label": "Tabel File",
+    "label": "File Collection",
     "link": "/file-manager/file-collection"
   },
   {
     "type": "custom-link",
-    "label": "Kolom Lampiran",
+    "label": "Field Attachment",
     "link": "/file-manager/field-attachment"
   },
   {
     "type": "custom-link",
+    "label": "File Preview",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/file-manager/file-preview/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Office File Preview",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
     "label": "Pengembangan Ekstensi",
-    "link": "/file-manager/development/index"
+    "link": "/file-manager/development/"
   }
 ]

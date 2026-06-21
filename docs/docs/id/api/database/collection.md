@@ -1,32 +1,34 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Collection"
+description: "API Collection Database NocoBase: mendefinisikan model data, field, index, asosiasi, dikonfigurasi melalui db.collection()."
+keywords: "Collection,model data,db.collection,definisi field,Database API,NocoBase"
+---
 
-# Koleksi
+# Collection
 
-## Gambaran Umum
+## Ikhtisar
 
-`Koleksi` digunakan untuk mendefinisikan model data dalam sistem, seperti nama model, bidang (field), indeks, relasi, dan informasi lainnya.
-Umumnya, ini dipanggil melalui metode `collection` dari sebuah instans `Database` sebagai titik masuk perantara.
+`Collection` digunakan untuk mendefinisikan model data dalam sistem, seperti nama model, field, index, asosiasi, dll.
+Umumnya dipanggil melalui method `collection` dari instance `Database` sebagai entry point proxy.
 
 ```javascript
 const { Database } = require('@nocobase/database')
 
-// Membuat instans database
+// Membuat instance database
 const db = new Database({...});
 
 // Mendefinisikan model data
 db.collection({
   name: 'users',
-  // Mendefinisikan bidang (field) model
+  // Mendefinisikan field model
   fields: [
-    // Bidang (field) skalar
+    // Field skalar
     {
       name: 'name',
       type: 'string',
     },
 
-    // Bidang (field) relasi
+    // Field asosiasi
     {
       name: 'profile',
       type: 'hasOne' // 'hasMany', 'belongsTo', 'belongsToMany'
@@ -35,30 +37,30 @@ db.collection({
 });
 ```
 
-Untuk jenis bidang (field) lainnya, silakan lihat [Bidang](/api/database/field).
+Untuk tipe field lainnya lihat [Fields](/api/database/field).
 
-## Konstruktor
+## Constructor
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `constructor(options: CollectionOptions, context: CollectionContext)`
 
 **Parameter**
 
-| Parameter             | Tipe                                                        | Nilai Default | Deskripsi                                                                              |
-| :-------------------- | :---------------------------------------------------------- | :------------ | :------------------------------------------------------------------------------------- |
-| `options.name`        | `string`                                                    | -             | Pengidentifikasi koleksi                                                               |
-| `options.tableName?`  | `string`                                                    | -             | Nama tabel database. Jika tidak disediakan, nilai dari `options.name` akan digunakan.  |
-| `options.fields?`     | `FieldOptions[]`                                            | -             | Definisi bidang (field). Lihat [Bidang](./field) untuk detailnya.                      |
-| `options.model?`      | `string \| ModelStatic<Model>`                              | -             | Tipe Model Sequelize. Jika menggunakan `string`, nama model harus sudah didaftarkan sebelumnya pada `db`. |
-| `options.repository?` | `string \| RepositoryType`                                  | -             | Tipe repositori data. Jika menggunakan `string`, tipe repositori harus sudah didaftarkan sebelumnya pada `db`. |
-| `options.sortable?`   | `string \| boolean \| { name?: string; scopeKey?: string }` | -             | Konfigurasi bidang (field) yang dapat diurutkan. Secara default, tidak diurutkan.      |
-| `options.autoGenId?`  | `boolean`                                                   | `true`        | Apakah akan secara otomatis menghasilkan kunci primer unik. Defaultnya adalah `true`.  |
-| `context.database`    | `Database`                                                  | -             | Database dalam konteks saat ini.                                                       |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| --------------------- | ----------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------- |
+| `options.name` | `string` | - | Identifier collection |
+| `options.tableName?` | `string` | - | Nama tabel database, jika tidak dimasukkan akan menggunakan nilai `options.name` |
+| `options.fields?` | `FieldOptions[]` | - | Definisi field, lihat [Field](./field) |
+| `options.model?` | `string \| ModelStatic<Model>` | - | Tipe Model Sequelize, jika menggunakan `string`, perlu mendaftarkan nama model tersebut di db sebelumnya |
+| `options.repository?` | `string \| RepositoryType` | - | Tipe data repository, jika menggunakan `string`, perlu mendaftarkan tipe repository tersebut di db sebelumnya |
+| `options.sortable?` | `string \| boolean \| { name?: string; scopeKey?: string }` | - | Konfigurasi field sortable data, default tidak sortable |
+| `options.autoGenId?` | `boolean` | `true` | Apakah otomatis menghasilkan primary key unik, default `true` |
+| `context.database` | `Database` | - | Database lingkungan konteks tempat berada |
 
 **Contoh**
 
-Membuat sebuah koleksi postingan:
+Membuat tabel artikel:
 
 ```ts
 const posts = new Collection(
@@ -76,61 +78,61 @@ const posts = new Collection(
     ],
   },
   {
-    // Instans database yang sudah ada
+    // Instance database yang sudah ada
     database: db,
   },
 );
 ```
 
-## Anggota Instans
+## Anggota Instance
 
 ### `options`
 
-Parameter konfigurasi awal untuk koleksi. Sama dengan parameter `options` pada konstruktor.
+Parameter awal konfigurasi tabel data. Konsisten dengan parameter `options` dari constructor.
 
 ### `context`
 
-Konteks tempat koleksi saat ini berada, saat ini terutama adalah instans database.
+Lingkungan konteks tempat tabel data saat ini berada, saat ini terutama instance database.
 
 ### `name`
 
-Nama koleksi.
+Nama tabel data.
 
 ### `db`
 
-Instans database tempatnya berada.
+Instance database yang dimiliki.
 
 ### `filterTargetKey`
 
-Nama bidang (field) yang digunakan sebagai kunci primer.
+Nama field yang berfungsi sebagai primary key.
 
 ### `isThrough`
 
-Apakah ini adalah koleksi perantara (through collection).
+Apakah merupakan tabel perantara.
 
 ### `model`
 
-Mencocokkan tipe Model Sequelize.
+Tipe Model yang sesuai dengan Sequelize.
 
 ### `repository`
 
-Instans repositori data.
+Instance data repository.
 
-## Metode Konfigurasi Bidang (Field)
+## Method Konfigurasi Field
 
 ### `getField()`
 
-Mendapatkan objek bidang (field) dengan nama yang sesuai yang telah didefinisikan dalam koleksi.
+Mendapatkan objek field dengan nama yang sesuai yang sudah didefinisikan di tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `getField(name: string): Field`
 
 **Parameter**
 
-| Parameter | Tipe     | Nilai Default | Deskripsi            |
-| :-------- | :------- | :------------ | :------------------- |
-| `name`    | `string` | -             | Nama bidang (field) |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| ------ | -------- | ------ | -------- |
+| `name` | `string` | - | Nama field |
 
 **Contoh**
 
@@ -150,18 +152,18 @@ const field = posts.getField('title');
 
 ### `setField()`
 
-Mengatur sebuah bidang (field) untuk koleksi.
+Mengatur field pada tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `setField(name: string, options: FieldOptions): Field`
 
 **Parameter**
 
-| Parameter | Tipe           | Nilai Default | Deskripsi                                       |
-| :-------- | :------------- | :------------ | :---------------------------------------------- |
-| `name`    | `string`       | -             | Nama bidang (field)                            |
-| `options` | `FieldOptions` | -             | Konfigurasi bidang (field). Lihat [Bidang](./field) untuk detailnya. |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| --------- | -------------- | ------ | ------------------------------- |
+| `name` | `string` | - | Nama field |
+| `options` | `FieldOptions` | - | Konfigurasi field, lihat [Field](./field) |
 
 **Contoh**
 
@@ -173,18 +175,18 @@ posts.setField('title', { type: 'string' });
 
 ### `setFields()`
 
-Mengatur beberapa bidang (field) secara massal untuk koleksi.
+Mengatur beberapa field sekaligus pada tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `setFields(fields: FieldOptions[], resetFields = true): Field[]`
 
 **Parameter**
 
-| Parameter     | Tipe             | Nilai Default | Deskripsi                                       |
-| :------------ | :--------------- | :------------ | :---------------------------------------------- |
-| `fields`      | `FieldOptions[]` | -             | Konfigurasi bidang (field). Lihat [Bidang](./field) untuk detailnya. |
-| `resetFields` | `boolean`        | `true`        | Apakah akan mereset bidang (field) yang sudah ada. |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| ------------- | ---------------- | ------ | ------------------------------- |
+| `fields` | `FieldOptions[]` | - | Konfigurasi field, lihat [Field](./field) |
+| `resetFields` | `boolean` | `true` | Apakah mereset field yang sudah ada |
 
 **Contoh**
 
@@ -199,17 +201,17 @@ posts.setFields([
 
 ### `removeField()`
 
-Menghapus objek bidang (field) dengan nama yang sesuai yang telah didefinisikan dalam koleksi.
+Menghapus objek field dengan nama yang sesuai yang sudah didefinisikan di tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `removeField(name: string): void | Field`
 
 **Parameter**
 
-| Parameter | Tipe     | Nilai Default | Deskripsi            |
-| :-------- | :------- | :------------ | :------------------- |
-| `name`    | `string` | -             | Nama bidang (field) |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| ------ | -------- | ------ | -------- |
+| `name` | `string` | - | Nama field |
 
 **Contoh**
 
@@ -229,9 +231,9 @@ posts.removeField('title');
 
 ### `resetFields()`
 
-Mereset (mengosongkan) bidang (field) dari koleksi.
+Mereset (mengosongkan) field tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `resetFields(): void`
 
@@ -253,17 +255,17 @@ posts.resetFields();
 
 ### `hasField()`
 
-Memeriksa apakah objek bidang (field) dengan nama yang sesuai telah didefinisikan dalam koleksi.
+Memeriksa apakah objek field dengan nama yang sesuai sudah didefinisikan di tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `hasField(name: string): boolean`
 
 **Parameter**
 
-| Parameter | Tipe     | Nilai Default | Deskripsi            |
-| :-------- | :------- | :------------ | :------------------- |
-| `name`    | `string` | -             | Nama bidang (field) |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| ------ | -------- | ------ | -------- |
+| `name` | `string` | - | Nama field |
 
 **Contoh**
 
@@ -283,17 +285,17 @@ posts.hasField('title'); // true
 
 ### `findField()`
 
-Mencari objek bidang (field) dalam koleksi yang memenuhi kriteria.
+Mencari objek field di tabel data yang memenuhi kondisi.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `findField(predicate: (field: Field) => boolean): Field | undefined`
 
 **Parameter**
 
-| Parameter   | Tipe                        | Nilai Default | Deskripsi         |
-| :---------- | :-------------------------- | :------------ | :---------------- |
-| `predicate` | `(field: Field) => boolean` | -             | Kriteria pencarian |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| ----------- | --------------------------- | ------ | -------- |
+| `predicate` | `(field: Field) => boolean` | - | Kondisi pencarian |
 
 **Contoh**
 
@@ -313,17 +315,17 @@ posts.findField((field) => field.name === 'title');
 
 ### `forEachField()`
 
-Mengulang objek bidang (field) dalam koleksi.
+Iterasi objek field di tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `forEachField(callback: (field: Field) => void): void`
 
 **Parameter**
 
-| Parameter  | Tipe                     | Nilai Default | Deskripsi       |
-| :--------- | :----------------------- | :------------ | :-------------- |
-| `callback` | `(field: Field) => void` | -             | Fungsi callback |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| ---------- | ------------------------ | ------ | -------- |
+| `callback` | `(field: Field) => void` | - | Fungsi callback |
 
 **Contoh**
 
@@ -341,22 +343,22 @@ const posts = db.collection({
 posts.forEachField((field) => console.log(field.name));
 ```
 
-## Metode Konfigurasi Indeks
+## Method Konfigurasi Index
 
 ### `addIndex()`
 
-Menambahkan indeks ke koleksi.
+Menambahkan index tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `addIndex(index: string | string[] | { fields: string[], unique?: boolean,[key: string]: any })`
 
 **Parameter**
 
-| Parameter | Tipe                                                         | Nilai Default | Deskripsi                                    |
-| :-------- | :----------------------------------------------------------- | :------------ | :------------------------------------------- |
-| `index`   | `string \| string[]`                                         | -             | Nama bidang (field) yang akan dikonfigurasi indeksnya. |
-| `index`   | `{ fields: string[], unique?: boolean, [key: string]: any }` | -             | Konfigurasi lengkap.                         |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| ------- | ------------------------------------------------------------ | ------ | -------------------- |
+| `index` | `string \| string[]` | - | Nama field yang perlu dikonfigurasi index |
+| `index` | `{ fields: string[], unique?: boolean, [key: string]: any }` | - | Konfigurasi lengkap |
 
 **Contoh**
 
@@ -379,17 +381,17 @@ posts.addIndex({
 
 ### `removeIndex()`
 
-Menghapus indeks dari koleksi.
+Menghapus index tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `removeIndex(fields: string[])`
 
 **Parameter**
 
-| Parameter | Tipe       | Nilai Default | Deskripsi                                            |
-| :-------- | :--------- | :------------ | :--------------------------------------------------- |
-| `fields`  | `string[]` | -             | Kombinasi nama bidang (field) untuk indeks yang akan dihapus. |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| -------- | ---------- | ------ | ------------------------ |
+| `fields` | `string[]` | - | Kombinasi nama field yang perlu dihapus index-nya |
 
 **Contoh**
 
@@ -413,13 +415,13 @@ const posts = db.collection({
 posts.removeIndex(['title']);
 ```
 
-## Metode Konfigurasi Koleksi
+## Method Konfigurasi Tabel
 
 ### `remove()`
 
-Menghapus koleksi.
+Menghapus tabel data.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `remove(): void`
 
@@ -439,13 +441,13 @@ const posts = db.collection({
 posts.remove();
 ```
 
-## Metode Operasi Database
+## Method Operasi Database
 
 ### `sync()`
 
-Menyinkronkan definisi koleksi ke database. Selain logika default `Model.sync` di Sequelize, ini juga memproses koleksi yang sesuai dengan bidang (field) relasi.
+Menyinkronkan definisi tabel data ke database. Selain logika `Model.sync` default di Sequelize, juga akan menangani tabel data yang sesuai dengan field relasi.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `sync(): Promise<void>`
 
@@ -467,17 +469,17 @@ await posts.sync();
 
 ### `existsInDb()`
 
-Memeriksa apakah koleksi ada dalam database.
+Memeriksa apakah tabel data ada di database.
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `existsInDb(options?: Transactionable): Promise<boolean>`
 
 **Parameter**
 
-| Parameter              | Tipe          | Nilai Default | Deskripsi          |
-| :--------------------- | :------------ | :------------ | :----------------- |
-| `options?.transaction` | `Transaction` | -             | Instans transaksi |
+| Nama Parameter | Tipe | Default | Deskripsi |
+| ---------------------- | ------------- | ------ | -------- |
+| `options?.transaction` | `Transaction` | - | Instance transaction |
 
 **Contoh**
 
@@ -499,7 +501,7 @@ console.log(existed); // false
 
 ### `removeFromDb()`
 
-**Tanda Tangan (Signature)**
+**Signature**
 
 - `removeFromDb(): Promise<void>`
 
@@ -510,9 +512,9 @@ const books = db.collection({
   name: 'books',
 });
 
-// Sinkronkan koleksi buku ke database
+// Sinkronkan tabel buku ke database
 await db.sync();
 
-// Hapus koleksi buku dari database
+// Hapus tabel buku di database
 await books.removeFromDb();
 ```

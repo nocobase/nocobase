@@ -1,4 +1,6 @@
 ---
+title: "Auth: LDAP"
+keywords: "Authentication"
 displayName: "Auth: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:
@@ -9,7 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
 
 # Auth: LDAP

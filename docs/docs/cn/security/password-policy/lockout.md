@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-password-policy'
+title: "用户锁定"
+description: "用户锁定：管理已锁定用户、主动锁定、解锁用户，无效密码登录限制、API keys 禁用，专业版功能。"
+keywords: "用户锁定,主动锁定,解锁用户,无效密码登录,密码策略,专业版,NocoBase"
 ---
 
 # 用户锁定

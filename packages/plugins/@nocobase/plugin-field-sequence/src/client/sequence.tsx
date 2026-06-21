@@ -361,7 +361,7 @@ export class SequenceFieldInterface extends CollectionFieldInterface {
       'x-component-props': {},
     },
   };
-  availableTypes = ['string'];
+  availableTypes = ['sequence'];
   hasDefaultValue = false;
   filterable = {
     operators: interfacesProperties.operators.string,

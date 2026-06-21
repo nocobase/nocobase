@@ -1,76 +1,83 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Opsi Chart"
+description: "Konfigurasi tampilan Chart: mode grafis Basic dan mode JS Custom, pemetaan field xField/yField/seriesField, pemilihan jenis seperti line chart, bar chart, pie chart."
+keywords: "opsi chart,mode Basic,mode Custom,ECharts,pemetaan field,xField,yField,NocoBase"
+---
 
-# Opsi Bagan
+# Opsi Chart
 
-Konfigurasi cara bagan ditampilkan. Dua mode didukung: Basic (visual) dan Custom (JS). Mode Basic ideal untuk pemetaan cepat dan properti umum; mode Custom cocok untuk skenario kompleks dan kustomisasi tingkat lanjut.
+Konfigurasikan cara tampilan Chart, mendukung dua mode: Basic (grafis) dan Custom (JS kustom). Basic cocok untuk pemetaan cepat dan properti umum; Custom cocok untuk skenario kompleks dan kustomisasi lanjutan.
+
 
 ## Struktur Panel
 
 ![clipboard-image-1761473695](https://static-docs.nocobase.com/clipboard-image-1761473695.png)
 
-> Tips: Untuk konfigurasi yang lebih mudah, lipat panel lain terlebih dahulu.
+> Tips: Untuk lebih mudah mengkonfigurasi konten saat ini, Anda dapat melipat panel lainnya terlebih dahulu.
 
-Bilah tindakan teratas
-Pilihan Mode:
-- Basic: Konfigurasi visual. Pilih jenis dan selesaikan pemetaan bidang; sesuaikan properti umum dengan tombol.
-- Custom: Tulis JS di editor dan kembalikan `option` ECharts.
+Bagian paling atas adalah toolbar
+Pemilihan Mode
+- Basic: konfigurasi grafis, pilih jenis dan selesaikan pemetaan field, atur sakelar properti umum secara langsung.
+- Custom: tulis JS pada editor, kembalikan `option` ECharts.
 
 ## Mode Basic
 
 ![20251026190615](https://static-docs.nocobase.com/20251026190615.png)
 
-### Pilih Jenis Bagan
-- Didukung: bagan garis, area, kolom, batang, pai, donat, corong, sebar, dll.
-- Bidang yang diperlukan bervariasi berdasarkan jenis bagan. Pertama, konfirmasikan nama dan jenis kolom di “Kueri data → Lihat data”.
+### Pilih Jenis Chart
+- Mendukung: line chart, area chart, bar chart, column chart, pie chart, donut chart, funnel chart, scatter chart, dll.
+- Field yang dibutuhkan oleh berbagai jenis Chart mungkin berbeda; konfirmasikan terlebih dahulu nama dan tipe kolom pada "Query Data → Lihat Data".
 
-### Pemetaan Bidang
-- Garis/area/kolom/batang:
-  - `xField`: dimensi (tanggal, kategori, wilayah)
-  - `yField`: ukuran (nilai numerik teragregasi)
-  - `seriesField` (opsional): pengelompokan seri (untuk beberapa garis/kelompok)
-- Pai/donat:
-  - `Category`: dimensi kategorikal
+### Pemetaan Field
+- Line/Area/Bar/Column:
+  - `xField`: dimensi (seperti tanggal, kategori, wilayah)
+  - `yField`: ukuran (nilai numerik setelah agregasi)
+  - `seriesField` (opsional): pengelompokan seri (untuk beberapa garis/beberapa kelompok bar)
+- Pie/Donut:
+  - `Category`: dimensi kategori
   - `Value`: ukuran
-- Corong:
+- Funnel:
   - `Category`: tahap/kategori
-  - `Value`: nilai (biasanya jumlah atau persentase)
-- Sebar:
-  - `xField`, `yField`: dua ukuran atau dimensi untuk sumbu
+  - `Value`: nilai (biasanya jumlah atau proporsi)
+- Scatter:
+  - `xField`, `yField`: dua ukuran atau dimensi, untuk sumbu koordinat
 
-> Untuk opsi bagan lainnya, lihat dokumentasi ECharts: [Sumbu](https://echarts.apache.org/handbook/en/concepts/axis) dan [Contoh](https://echarts.apache.org/examples/en/index.html)
 
-**Catatan:**
-- Setelah mengubah dimensi atau ukuran, periksa kembali pemetaan untuk menghindari bagan kosong atau tidak sejajar.
-- Bagan pai/donat dan corong harus menyediakan kombinasi “kategori + nilai”.
+> Untuk lebih banyak konfigurasi opsi Chart, lihat dokumentasi ECharts [Axis](https://echarts.apache.org/handbook/en/concepts/axis) dan [Examples](https://echarts.apache.org/examples/en/index.html)
+
+
+**Perhatian:**
+- Konfirmasikan ulang pemetaan setelah dimensi atau ukuran berubah, untuk menghindari Chart kosong atau salah posisi.
+- Pie/Donut, Funnel harus menyediakan kombinasi "kategori + nilai".
 
 ### Properti Umum
 
-![20251026191332](https://static-docs.nocobase.com/clipboard-image-1761473695.png)
+![20251026191332](https://static-docs.nocobase.com/20251026191332.png)
 
-- Tumpuk, haluskan (garis/area)
-- Tampilan label, tooltip, legenda
+- Stack, smooth (line/area)
+- Tampilan label, tooltip, legend
 - Rotasi label sumbu, garis pemisah
-- Radius dan radius dalam pai/donat, urutan pengurutan corong
+- Radius dan inner radius pie/donut, cara sortir funnel
 
-**Rekomendasi:**
-- Gunakan garis/area untuk deret waktu dengan penghalusan sedang; gunakan kolom/batang untuk perbandingan kategori.
-- Dengan data padat, hindari menampilkan semua label untuk mencegah tumpang tindih.
+
+**Saran:**
+- Gunakan line/area dengan smooth yang dihidupkan secara wajar untuk time series; gunakan bar/column untuk perbandingan kategori besar.
+- Saat data padat, tidak perlu menghidupkan semua label untuk menghindari obstruksi.
 
 ## Mode Custom
 
-Digunakan untuk mengembalikan `option` ECharts lengkap. Cocok untuk kustomisasi tingkat lanjut seperti penggabungan beberapa seri, tooltip kompleks, dan gaya dinamis.
-Pendekatan yang direkomendasikan: konsolidasikan data dalam `dataset.source`. Untuk detailnya, lihat dokumentasi ECharts: [Dataset](https://echarts.apache.org/handbook/en/concepts/dataset/#map-row-or-column-of-dataset-to-series)
+Digunakan untuk mengembalikan `option` ECharts lengkap, cocok untuk penggabungan multi-seri, tooltip kompleks, gaya dinamis, dan kustomisasi lanjutan lainnya.
+Penggunaan yang direkomendasikan: kumpulkan data secara seragam pada `dataset.resource`. Untuk penggunaan rinci, lihat dokumentasi ECharts [Dataset](https://echarts.apache.org/handbook/en/concepts/dataset/#map-row-or-column-of-dataset-to-series)
 
 ![20251026191728](https://static-docs.nocobase.com/20251026191728.png)
 
 ### Konteks Data
-- `ctx.data.objects`: array objek (setiap baris sebagai objek, direkomendasikan)
-- `ctx.data.rows`: array 2D (dengan header)
-- `ctx.data.columns`: array 2D yang dikelompokkan berdasarkan kolom
+- `ctx.data.objects`: array objek (setiap baris record, direkomendasikan)
+- `ctx.data.rows`: array dua dimensi (termasuk header)
+- `ctx.data.columns`: array dua dimensi yang dikelompokkan per kolom
 
-### Contoh: Bagan Garis Pesanan Bulanan
+
+### Contoh: Line Chart Pesanan per Bulan
 ```js
 return {
   dataset: { source: ctx.data.objects || [] },
@@ -86,11 +93,11 @@ return {
 }
 ```
 
-### Pratinjau dan Simpan
-- Dalam mode Custom, setelah selesai mengedit, Anda dapat mengeklik tombol Pratinjau di sebelah kanan untuk memperbarui pratinjau bagan.
-- Di bagian bawah, klik “Simpan” untuk menerapkan dan menyimpan konfigurasi; klik “Batal” untuk mengembalikan semua perubahan yang dibuat kali ini.
+### Preview dan Simpan
+- Setelah perubahan pada mode Custom, Anda dapat klik tombol Preview di sebelah kanan untuk memperbarui preview Chart.
+- Klik "Simpan" di bagian bawah untuk membuat konfigurasi berlaku dan menyimpannya; klik "Batal" untuk membatalkan semua perubahan konfigurasi.
 
 ![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
 
 > [!TIP]
-> Untuk informasi lebih lanjut tentang opsi bagan, lihat Lanjutan — Konfigurasi bagan kustom.
+> Untuk informasi lebih lanjut tentang opsi Chart, lihat Penggunaan Lanjutan — Kustomisasi Konfigurasi Chart.

@@ -1,32 +1,33 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "BelongsToManyRepository"
+description: "Repository quan hệ BelongsToMany của NocoBase: xử lý CRUD cho quan hệ nhiều-nhiều."
+keywords: "BelongsToManyRepository,BelongsToMany,nhiều-nhiều,Repository,NocoBase"
+---
 
 # BelongsToManyRepository
 
-`BelongsToManyRepository` là một `Relation Repository` dùng để xử lý các quan hệ `BelongsToMany`.
+`BelongsToManyRepository` là `Relation Repository` dùng để xử lý quan hệ `BelongsToMany`.
 
-Không giống như các loại quan hệ khác, quan hệ kiểu `BelongsToMany` cần được ghi lại thông qua một bảng trung gian.
-Khi định nghĩa quan hệ liên kết trong NocoBase, bạn có thể tự động tạo bảng trung gian hoặc chỉ định rõ ràng bảng trung gian đó.
+Khác với các loại quan hệ khác, quan hệ kiểu `BelongsToMany` cần thông qua bảng trung gian để lưu trữ.
+Khi định nghĩa quan hệ trong NocoBase, có thể tự động tạo bảng trung gian, hoặc chỉ định rõ bảng trung gian.
 
-## Các phương thức của lớp
+## Phương thức của lớp
 
 ### `find()`
 
-Tìm các đối tượng liên kết
+Tìm các đối tượng quan hệ.
 
 **Chữ ký**
 
 - `async find(options?: FindOptions): Promise<M[]>`
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-Các tham số truy vấn nhất quán với [`Repository.find()`](../repository.md#find).
+Tham số truy vấn giống [`Repository.find()`](../repository.md#find).
 
 ### `findOne()`
 
-Tìm một đối tượng liên kết, chỉ trả về một bản ghi
+Tìm đối tượng quan hệ, chỉ trả về một bản ghi.
 
 **Chữ ký**
 
@@ -36,13 +37,13 @@ Tìm một đối tượng liên kết, chỉ trả về một bản ghi
 
 ### `count()`
 
-Trả về số lượng bản ghi phù hợp với điều kiện truy vấn
+Trả về số lượng bản ghi thỏa mãn điều kiện truy vấn.
 
 **Chữ ký**
 
 - `async count(options?: CountOptions)`
 
-**Kiểu dữ liệu**
+**Kiểu**
 
 ```typescript
 interface CountOptions
@@ -54,13 +55,13 @@ interface CountOptions
 
 ### `findAndCount()`
 
-Truy vấn cơ sở dữ liệu để lấy tập dữ liệu và tổng số kết quả theo các điều kiện cụ thể.
+Truy vấn từ cơ sở dữ liệu tập dữ liệu thỏa mãn điều kiện cụ thể và số lượng kết quả.
 
 **Chữ ký**
 
 - `async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]>`
 
-**Kiểu dữ liệu**
+**Kiểu**
 
 ```typescript
 type FindAndCountOptions = CommonFindOptions;
@@ -68,7 +69,7 @@ type FindAndCountOptions = CommonFindOptions;
 
 ### `create()`
 
-Tạo đối tượng liên kết
+Tạo đối tượng quan hệ.
 
 **Chữ ký**
 
@@ -78,7 +79,7 @@ Tạo đối tượng liên kết
 
 ### `update()`
 
-Cập nhật các đối tượng liên kết phù hợp với điều kiện
+Cập nhật các đối tượng quan hệ thỏa mãn điều kiện.
 
 **Chữ ký**
 
@@ -88,7 +89,7 @@ Cập nhật các đối tượng liên kết phù hợp với điều kiện
 
 ### `destroy()`
 
-Xóa các đối tượng liên kết phù hợp với điều kiện
+Xóa các đối tượng quan hệ thỏa mãn điều kiện.
 
 **Chữ ký**
 
@@ -98,7 +99,7 @@ Xóa các đối tượng liên kết phù hợp với điều kiện
 
 ### `add()`
 
-Thêm các đối tượng liên kết mới
+Thêm đối tượng quan hệ mới.
 
 **Chữ ký**
 
@@ -106,7 +107,7 @@ Thêm các đối tượng liên kết mới
 options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions
 ): Promise<void>`
 
-**Kiểu dữ liệu**
+**Kiểu**
 
 ```typescript
 type PrimaryKeyWithThroughValues = [TargetKey, Values];
@@ -120,9 +121,9 @@ interface AssociatedOptions extends Transactionable {
 }
 ```
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-Bạn có thể truyền trực tiếp `targetKey` của đối tượng liên kết, hoặc truyền `targetKey` cùng với các giá trị trường của bảng trung gian.
+Có thể truyền trực tiếp `targetKey` của đối tượng quan hệ, hoặc truyền `targetKey` cùng với giá trị field của bảng trung gian.
 
 **Ví dụ**
 
@@ -144,7 +145,7 @@ const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 // Truyền targetKey
 PostTagRepository.add([t1.id, t2.id]);
 
-// Truyền các trường của bảng trung gian
+// Truyền field bảng trung gian
 PostTagRepository.add([
   [t1.id, { tagged_at: '123' }],
   [t2.id, { tagged_at: '456' }],
@@ -153,7 +154,7 @@ PostTagRepository.add([
 
 ### `set()`
 
-Thiết lập các đối tượng liên kết
+Đặt đối tượng quan hệ.
 
 **Chữ ký**
 
@@ -161,19 +162,19 @@ Thiết lập các đối tượng liên kết
   options: TargetKey | TargetKey[] | PrimaryKeyWithThroughValues | PrimaryKeyWithThroughValues[] | AssociatedOptions,
   ): Promise<void>
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-Các tham số tương tự như [add()](#add)
+Tham số giống [add()](#add).
 
 ### `remove()`
 
-Xóa bỏ quan hệ liên kết với các đối tượng đã cho
+Gỡ bỏ quan hệ với đối tượng cho trước.
 
 **Chữ ký**
 
 - `async remove(options: TargetKey | TargetKey[] | AssociatedOptions)`
 
-**Kiểu dữ liệu**
+**Kiểu**
 
 ```typescript
 interface AssociatedOptions extends Transactionable {
@@ -183,14 +184,14 @@ interface AssociatedOptions extends Transactionable {
 
 ### `toggle()`
 
-Chuyển đổi đối tượng liên kết.
+Bật/tắt đối tượng quan hệ.
 
-Trong một số tình huống nghiệp vụ, việc chuyển đổi các đối tượng liên kết thường xuyên cần thiết. Ví dụ, người dùng có thể thêm sản phẩm vào mục yêu thích, hủy yêu thích, hoặc thêm lại. Phương thức `toggle` giúp bạn nhanh chóng triển khai các chức năng tương tự.
+Trong một số tình huống nghiệp vụ, thường cần bật/tắt đối tượng quan hệ, ví dụ user yêu thích sản phẩm, user có thể bỏ yêu thích, cũng có thể thêm yêu thích lại. Dùng phương thức `toggle` có thể nhanh chóng triển khai chức năng này.
 
 **Chữ ký**
 
 - `async toggle(options: TargetKey | { tk?: TargetKey; transaction?: Transaction }): Promise<void>`
 
-**Chi tiết**
+**Thông tin chi tiết**
 
-Phương thức `toggle` sẽ tự động kiểm tra xem đối tượng liên kết đã tồn tại hay chưa. Nếu đã tồn tại, nó sẽ xóa bỏ; nếu chưa tồn tại, nó sẽ thêm vào.
+Phương thức `toggle` sẽ tự động kiểm tra đối tượng quan hệ có tồn tại hay không, nếu tồn tại thì gỡ, nếu không tồn tại thì thêm.

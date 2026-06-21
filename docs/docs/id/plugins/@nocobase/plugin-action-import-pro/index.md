@@ -1,20 +1,17 @@
 ---
-displayName: "Aksi: Impor catatan Pro"
+displayName: "Action: Import Record Pro"
 packageName: '@nocobase/plugin-action-import-pro'
+title: "Action: Import Record Pro"
+keywords: "Action: Import Record Pro,plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Meningkatkan kemampuan impor data dengan impor asinkron untuk menangani volume data besar. Mendukung fitur pengenalan pemrosesan data, pembaruan data, dan pemicuan alur kerja.
+  Fungsi import data yang ditingkatkan. Import asynchronous, mendukung volume data besar. Mendukung pengenalan dan pemrosesan data, update data, trigger workflow, dan fitur lainnya.
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 1
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-
-
-# Aksi: Impor catatan Pro
+# Action: Import Record Pro

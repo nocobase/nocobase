@@ -1,14 +1,14 @@
 ---
-displayName: "Trường bộ sưu tập: Phân cấp hành chính Trung Quốc"
+displayName: "Field: Khu vực hành chính Trung Quốc"
 packageName: '@nocobase/plugin-field-china-region'
+title: "Field: Khu vực hành chính Trung Quốc"
+keywords: "Field: Khu vực hành chính Trung Quốc,Plugin,NocoBase"
 description: |
-  Cung cấp dữ liệu và kiểu trường cho phân cấp hành chính Trung Quốc.
+  Cung cấp dữ liệu khu vực hành chính Trung Quốc và loại Field tương ứng.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trường bộ sưu tập: Phân cấp hành chính Trung Quốc
+# Field: Khu vực hành chính Trung Quốc

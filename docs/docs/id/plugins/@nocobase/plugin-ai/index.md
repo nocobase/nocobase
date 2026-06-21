@@ -1,14 +1,14 @@
 ---
-displayName: "Karyawan AI"
+displayName: "AI Employees"
 packageName: '@nocobase/plugin-ai'
+title: "AI Employees"
+keywords: "AI Employees,plugin,NocoBase"
 description: |
-  Buat karyawan AI dengan beragam keterampilan untuk berkolaborasi dengan manusia, membangun sistem, dan menangani operasi bisnis.
+  Buat AI Employees dengan berbagai keterampilan, berkolaborasi dengan manusia untuk membangun sistem dan menangani proses bisnis.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Karyawan AI
+# AI Employees

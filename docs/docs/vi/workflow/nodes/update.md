@@ -1,51 +1,52 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Node Workflow - Cập nhật dữ liệu"
+description: "Node cập nhật dữ liệu: cập nhật bản ghi bảng dữ liệu theo điều kiện, hỗ trợ điều kiện lọc, chế độ cập nhật, gán biến."
+keywords: "workflow,cập nhật dữ liệu,Update,thao tác bảng dữ liệu,điều kiện lọc,NocoBase"
+---
 
 # Cập nhật dữ liệu
 
-Dùng để cập nhật dữ liệu trong một bộ sưu tập thỏa mãn các điều kiện đã chỉ định.
+Được dùng để cập nhật dữ liệu thỏa mãn điều kiện của một bảng dữ liệu nào đó.
 
-Phần cấu hình bộ sưu tập và gán giá trị trường của nút này tương tự như nút "Tạo bản ghi". Điểm khác biệt chính của nút "Cập nhật dữ liệu" là có thêm điều kiện lọc và bạn cần chọn chế độ cập nhật. Ngoài ra, kết quả của nút "Cập nhật dữ liệu" sẽ trả về số lượng hàng dữ liệu đã được cập nhật thành công. Kết quả này chỉ có thể xem trong lịch sử thực thi và không thể dùng làm biến trong các nút tiếp theo.
+Phần bảng dữ liệu và gán giá trị trường giống như Node thêm, sự khác biệt của Node cập nhật chủ yếu là thêm điều kiện lọc và cần chọn chế độ cập nhật. Ngoài ra, kết quả của Node cập nhật sẽ trả về số dòng dữ liệu cập nhật thành công, chỉ có thể xem trong lịch sử thực thi, không thể được dùng làm biến trong các Node tiếp theo.
 
-## Tạo nút
+## Tạo Node
 
-Trong giao diện cấu hình luồng công việc, hãy nhấp vào nút dấu cộng (“+”) trong luồng để thêm nút "Cập nhật dữ liệu":
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Cập nhật dữ liệu":
 
-![Thêm nút Cập nhật dữ liệu](https://static-docs.nocobase.com/9ff24d7bc173b3a71decc1f70ca9fb66.png)
+![Cập nhật dữ liệu_thêm](https://static-docs.nocobase.com/9ff24d7bc173b3a71decc1f70ca9fb66.png)
 
-## Cấu hình nút
+## Cấu hình Node
 
-![Cấu hình nút Cập nhật dữ liệu](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
+![Node cập nhật_cấu hình Node](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
-### Bộ sưu tập
+### Bảng dữ liệu
 
-Chọn bộ sưu tập mà bạn muốn cập nhật dữ liệu.
+Chọn bảng dữ liệu cần cập nhật.
 
 ### Chế độ cập nhật
 
-Có hai chế độ cập nhật:
+Chế độ cập nhật có hai chế độ:
 
-*   **Cập nhật hàng loạt**: Không kích hoạt các sự kiện của bộ sưu tập cho từng bản ghi được cập nhật. Chế độ này mang lại hiệu suất tốt hơn và phù hợp cho các thao tác cập nhật dữ liệu lớn.
-*   **Cập nhật từng bản ghi**: Kích hoạt các sự kiện của bộ sưu tập cho từng bản ghi được cập nhật. Tuy nhiên, chế độ này có thể gây ra vấn đề về hiệu suất khi xử lý lượng dữ liệu lớn và cần được sử dụng cẩn thận.
+* Cập nhật hàng loạt: sẽ không kích hoạt sự kiện bảng dữ liệu của từng dữ liệu được cập nhật nữa, hiệu suất tốt hơn, phù hợp với việc cập nhật lượng dữ liệu lớn.
+* Cập nhật từng cái một: sẽ kích hoạt sự kiện bảng dữ liệu của từng dữ liệu được cập nhật, nhưng dưới lượng dữ liệu lớn sẽ có vấn đề về hiệu suất, cần sử dụng cẩn thận.
 
-Việc lựa chọn thường phụ thuộc vào dữ liệu mục tiêu cần cập nhật và liệu có cần kích hoạt các sự kiện luồng công việc khác hay không. Nếu bạn cập nhật một bản ghi duy nhất dựa trên khóa chính, nên sử dụng chế độ "Cập nhật từng bản ghi". Nếu bạn cập nhật nhiều bản ghi dựa trên các điều kiện, nên sử dụng chế độ "Cập nhật hàng loạt".
+Thông thường tùy theo dữ liệu đích cần cập nhật và việc có cần kích hoạt các sự kiện Workflow khác hay không để chọn, nếu là cập nhật một dữ liệu theo khóa chính thì khuyến nghị sử dụng cập nhật từng cái một, nếu là cập nhật nhiều dữ liệu theo điều kiện thì khuyến nghị sử dụng cập nhật hàng loạt.
 
 ### Điều kiện lọc
 
-Tương tự như các điều kiện lọc trong truy vấn bộ sưu tập thông thường, bạn có thể sử dụng các biến ngữ cảnh từ luồng công việc.
+Tương tự điều kiện lọc khi truy vấn bảng dữ liệu thông thường, có thể sử dụng biến ngữ cảnh của quy trình.
 
 ### Giá trị trường
 
-Tương tự như việc gán giá trị trường trong nút "Tạo bản ghi", bạn có thể sử dụng các biến ngữ cảnh từ luồng công việc hoặc nhập thủ công các giá trị tĩnh.
+Tương tự gán giá trị trường của Node thêm, có thể sử dụng biến của ngữ cảnh quy trình hoặc điền thủ công giá trị tĩnh.
 
-Lưu ý: Dữ liệu được cập nhật bởi nút "Cập nhật dữ liệu" trong một luồng công việc sẽ không tự động xử lý dữ liệu "Người sửa đổi cuối cùng". Bạn cần tự cấu hình giá trị của trường này tùy theo nhu cầu.
+Lưu ý: dữ liệu được Node cập nhật trong Workflow cập nhật sẽ không tự động xử lý dữ liệu "Người sửa cuối cùng", cần tự cấu hình giá trị của trường này theo tình huống.
 
 ## Ví dụ
 
-Ví dụ, khi một "Bài viết" mới được tạo, bạn cần tự động cập nhật trường "Số lượng bài viết" trong bộ sưu tập "Danh mục bài viết". Bạn có thể thực hiện điều này bằng cách sử dụng nút "Cập nhật dữ liệu":
+Ví dụ khi thêm "Bài viết", cần tự động cập nhật trường "Số lượng bài viết" của bảng "Danh mục bài viết", có thể sử dụng Node cập nhật để triển khai:
 
-![Cấu hình ví dụ nút Cập nhật dữ liệu](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
+![Node cập nhật_ví dụ_cấu hình Node](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
-Sau khi luồng công việc được kích hoạt, trường "Số lượng bài viết" của bộ sưu tập "Danh mục bài viết" sẽ tự động được cập nhật thành số lượng bài viết hiện tại + 1.
+Khi Workflow được kích hoạt, sẽ tự động cập nhật trường "Số lượng bài viết" của bảng "Danh mục bài viết" thành số lượng bài viết hiện tại + 1.

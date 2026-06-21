@@ -1,34 +1,33 @@
 ---
 pkg: "@nocobase/plugin-block-iframe"
+title: "Block Iframe"
+description: "Block Iframe: menyematkan halaman web atau aplikasi eksternal, memuat konten pihak ketiga melalui URL, mendukung tampilan cross-domain."
+keywords: "Block Iframe, Iframe, embed halaman web, link eksternal, interface builder, NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-# Blok Iframe
+# Block Iframe
 
 ## Pengantar
 
-Blok Iframe memungkinkan Anda menyematkan halaman web atau konten eksternal ke dalam halaman saat ini. Anda dapat dengan mudah mengintegrasikan aplikasi eksternal ke dalam halaman dengan mengonfigurasi URL atau langsung menyisipkan kode HTML. Saat menggunakan halaman HTML, Anda dapat secara fleksibel menyesuaikan konten untuk memenuhi kebutuhan tampilan tertentu. Metode ini sangat cocok untuk skenario yang memerlukan tampilan yang disesuaikan, karena dapat memuat sumber daya eksternal tanpa pengalihan, sehingga meningkatkan pengalaman pengguna dan interaktivitas halaman.
+Block IFrame memungkinkan menyematkan halaman web eksternal atau konten ke dalam halaman saat ini. Pengguna dapat dengan mudah mengintegrasikan aplikasi eksternal ke dalam halaman dengan mengkonfigurasi URL atau langsung memasukkan kode HTML. Dengan menggunakan halaman HTML, pengguna dapat mengkustomisasi konten secara fleksibel untuk memenuhi kebutuhan tampilan tertentu. Cara ini sangat cocok untuk skenario yang memerlukan tampilan terkustomisasi, dapat memuat resource eksternal tanpa jump, meningkatkan pengalaman pengguna dan efek interaksi halaman.
 
 ![20251026205102](https://static-docs.nocobase.com/20251026205102.png)
 
 ## Sintaks Template
 
-Dalam mode HTML, konten blok mendukung penggunaan sintaks **[Liquid template engine](https://shopify.github.io/liquid/basics/introduction/)**.
+Dalam mode HTML, konten Block mendukung sintaks **[Liquid Template Engine](https://shopify.github.io/liquid/basics/introduction/)**.
 
 ![20251026205331](https://static-docs.nocobase.com/20251026205331.png)
 
-## Dukungan Variabel
+## Mendukung Variabel
 
-### Dukungan Variabel HTML
+### HTML Mendukung Parsing Variabel
 
-- Mendukung pemilihan variabel dari konteks blok saat ini menggunakan pemilih variabel.
+- Mendukung pemilihan variabel konteks Block saat ini dari selector variabel
   ![20251026205441](https://static-docs.nocobase.com/20251026205441.png)
 
-- Mendukung injeksi dan penggunaan variabel dalam aplikasi melalui kode.
+- Mendukung injeksi variabel ke aplikasi melalui kode dan menggunakannya
 
-Anda juga dapat menyuntikkan variabel kustom ke dalam aplikasi melalui kode dan menggunakannya dalam HTML. Contohnya, membuat aplikasi kalender dinamis menggunakan Vue 3 dan Element Plus:
+Anda juga dapat menginjeksikan variabel kustom ke aplikasi melalui kode dan menggunakannya di HTML. Misalnya, menggunakan Vue 3 dan Element Plus untuk membuat aplikasi kalender dinamis:
 
 ```html
 <!doctype html>
@@ -99,7 +98,7 @@ Anda juga dapat menyuntikkan variabel kustom ke dalam aplikasi melalui kode dan 
 
 ![20250320163250](https://static-docs.nocobase.com/20250320163250.png)
 
-Contoh: Komponen kalender sederhana yang dibuat dengan React dan Ant Design (antd), menggunakan dayjs untuk menangani tanggal.
+Contoh: Komponen kalender sederhana yang dibuat menggunakan React dan Ant Design (antd), dikombinasikan dengan dayjs untuk menangani tanggal
 
 ```html
 <!doctype html>
@@ -179,8 +178,8 @@ Contoh: Komponen kalender sederhana yang dibuat dengan React dan Ant Design (ant
 
 ![20250320164537](https://static-docs.nocobase.com/20250320164537.png)
 
-### Dukungan Variabel URL
+### URL Mendukung Variabel
 
 ![20251026212608](https://static-docs.nocobase.com/20251026212608.png)
 
-Untuk informasi lebih lanjut tentang variabel, lihat [Variabel](/interface-builder/variables).
+Untuk informasi lebih lanjut tentang variabel, silakan lihat [Variabel](/interface-builder/variables)

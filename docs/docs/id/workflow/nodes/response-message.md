@@ -1,62 +1,60 @@
 ---
 pkg: '@nocobase/plugin-workflow-response-message'
+title: "Node Workflow - Pesan Response"
+description: "Node Pesan Response: memberikan umpan balik pesan kustom kepada client, mendukung event pra-aksi dan event aksi kustom."
+keywords: "Workflow,pesan response,Response Message,umpan balik client,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Pesan Response
 
+## Pengantar
 
-# Pesan Respons
+Node Pesan Response digunakan untuk memberikan umpan balik berupa pesan kustom dari alur kepada client yang mengirim aksi pada tipe alur tertentu.
 
-## Pendahuluan
-
-Node pesan respons berfungsi untuk memberikan umpan balik berupa pesan kustom dari alur kerja kepada klien yang melakukan suatu aksi, khususnya pada jenis alur kerja tertentu.
-
-:::info{title=Catatan}
-Saat ini, fitur ini didukung untuk digunakan dalam alur kerja jenis "Peristiwa Pra-Aksi" dan "Peristiwa Aksi Kustom" yang berjalan dalam mode sinkron.
+:::info{title=Tips}
+Saat ini didukung dalam workflow tipe "Event Pra-Aksi" dan "Event Aksi Kustom" mode sinkron.
 :::
 
 ## Membuat Node
 
-Pada jenis alur kerja yang didukung, Anda dapat menambahkan node "Pesan respons" di mana saja dalam alur kerja. Cukup klik tombol plus ("+") pada alur kerja untuk menambahkannya:
+Pada tipe workflow yang didukung, Anda dapat menambahkan Node "Pesan Response" di posisi mana pun pada alur. Klik tombol plus ("+") pada alur untuk menambahkan Node "Pesan Response":
 
-![Menambahkan node](https://static-docs.nocobase.com/eac2b3566e95e4ce59f340624062ed3d.png)
+![Menambahkan Node](https://static-docs.nocobase.com/eac2b3565e95e4ce59f340624062ed3d.png)
 
-Pesan respons akan ada sebagai array sepanjang proses permintaan. Setiap kali node pesan respons dieksekusi dalam alur kerja, konten pesan baru akan ditambahkan ke array tersebut. Ketika server mengirimkan respons, semua pesan akan dikirimkan ke klien secara bersamaan.
+Pesan response akan ada dalam bentuk array selama keseluruhan proses request. Saat alur mencapai Node Pesan Response mana pun, isi pesan baru akan ditambahkan ke dalam array. Saat server mengirim isi response, semua pesan akan dikirim sekaligus ke client.
 
 ## Konfigurasi Node
 
-Konten pesan adalah string template tempat variabel dapat disisipkan. Anda dapat mengatur konten template ini secara bebas dalam konfigurasi node:
+Isi pesan secara keseluruhan adalah string template, di mana Anda dapat menyisipkan variable. Pada konfigurasi Node Anda dapat mengorganisir isi template tersebut secara bebas:
 
-![Konfigurasi node](https://static-docs.nocobase.com/d5fa5f4002d50baf3ba16048818fddfc.png)
+![Konfigurasi Node](https://static-docs.nocobase.com/d5fa5f4002d50baf3ba16048818fddfc.png)
 
-Ketika alur kerja mengeksekusi node ini, template akan diurai untuk menghasilkan konten pesan. Dalam konfigurasi di atas, variabel "Variabel lokal / Ulangi semua produk / Objek perulangan / Produk / Judul" akan diganti dengan nilai tertentu dalam alur kerja sebenarnya, misalnya:
+Saat alur mencapai Node ini, template akan diparse dan menghasilkan isi pesan. Pada konfigurasi di atas, variable "Variable Lokal / Loop Semua Produk / Objek Loop / Produk / Judul" akan digantikan dengan nilai aktual saat alur dijalankan, misalnya:
 
 ```
 Stok produk "iPhone 14 pro" tidak mencukupi
 ```
 
-![Konten pesan](https://static-docs.nocobase.com/06bd4a6b6ec499c83f0c39987f63a6a.png)
+![Isi Pesan](https://static-docs.nocobase.com/06bd4a6b6ec499c853f0c39987f63a6a.png)
 
-## Konfigurasi Alur Kerja
+## Konfigurasi Alur
 
-Status pesan respons bergantung pada keberhasilan atau kegagalan eksekusi alur kerja. Kegagalan eksekusi node mana pun akan menyebabkan seluruh alur kerja gagal. Dalam kasus ini, konten pesan akan dikembalikan ke klien dengan status gagal dan ditampilkan sebagai notifikasi.
+Status pesan response ditentukan oleh status sukses atau gagal eksekusi alur tersebut. Kegagalan eksekusi Node mana pun akan menyebabkan kegagalan keseluruhan alur, dan saat itu isi pesan akan dikembalikan ke client dengan status gagal dan ditampilkan.
 
-Jika Anda perlu secara aktif mendefinisikan status gagal dalam alur kerja, Anda dapat menggunakan "node Akhir" dan mengonfigurasinya ke status gagal. Ketika node ini dieksekusi, alur kerja akan keluar dengan status gagal, dan pesan akan dikembalikan ke klien dengan status gagal.
+Jika perlu mendefinisikan status gagal secara aktif dalam alur, Anda dapat menggunakan "Node Akhir" di alur dan mengkonfigurasinya sebagai status gagal. Saat eksekusi mencapai Node ini, alur akan keluar dengan status gagal dan pesan akan dikembalikan ke client dengan status gagal.
 
-Jika seluruh alur kerja tidak menghasilkan status gagal dan berhasil dieksekusi hingga selesai, konten pesan akan dikembalikan ke klien dengan status berhasil.
+Jika keseluruhan alur tidak menghasilkan status gagal dan berhasil dieksekusi sampai selesai, isi pesan akan dikembalikan ke client dengan status sukses.
 
-:::info{title=Catatan}
-Jika beberapa node pesan respons didefinisikan dalam alur kerja, node yang telah dieksekusi akan menambahkan konten pesan ke dalam array. Ketika akhirnya dikembalikan ke klien, semua konten pesan akan dikembalikan dan ditampilkan secara bersamaan sebagai notifikasi.
+:::info{title=Tips}
+Jika beberapa Node Pesan Response didefinisikan dalam alur, setiap Node yang dieksekusi akan menambahkan isi pesan ke dalam array. Saat dikembalikan ke client di akhir, semua isi pesan akan dikembalikan dan ditampilkan sekaligus.
 :::
 
 ## Skenario Penggunaan
 
-### Alur Kerja "Peristiwa Pra-Aksi"
+### Alur "Event Pra-Aksi"
 
-Menggunakan pesan respons dalam alur kerja "Peristiwa Pra-Aksi" memungkinkan pengiriman umpan balik pesan yang sesuai kepada klien setelah alur kerja selesai. Untuk detail lebih lanjut, lihat [Peristiwa Pra-Aksi](../triggers/pre-action.md).
+Menggunakan Pesan Response dalam alur "Event Pra-Aksi" dapat mengirim umpan balik pesan terkait kepada client setelah alur selesai. Untuk detailnya silakan merujuk ke [Event Pra-Aksi](../triggers/pre-action.md).
 
-### Alur Kerja "Peristiwa Aksi Kustom"
+### Alur "Event Aksi Kustom"
 
-Menggunakan pesan respons dalam "Peristiwa Aksi Kustom" yang berjalan dalam mode sinkron memungkinkan pengiriman umpan balik pesan yang sesuai kepada klien setelah alur kerja selesai. Untuk detail lebih lanjut, lihat [Peristiwa Aksi Kustom](../triggers/custom-action.md).
+Menggunakan Pesan Response dalam alur "Event Aksi Kustom" mode sinkron dapat mengirim umpan balik pesan terkait kepada client setelah alur selesai. Untuk detailnya silakan merujuk ke [Event Aksi Kustom](../triggers/custom-action.md).

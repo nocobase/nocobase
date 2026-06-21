@@ -1,5 +1,18 @@
 {
   "Bulk edit": "Bulk edit",
   "Data will be updated": "Data will be updated",
-  "Entire collection": "Entire collection"
+  "Entire collection": "Entire collection",
+  "Bulk edit action settings": "Bulk edit action settings",
+  "Secondary confirmation": "Secondary confirmation",
+  "Are you sure you want to perform the bulk edit action?": "Are you sure you want to perform the bulk edit action?",
+  "Data scope to edit": "Data scope to edit",
+  "Selected": "Selected",
+  "Assign field values": "Assign field values",
+  "No assigned fields configured": "No assigned fields configured",
+  "Collection is required to perform this action": "Collection is required to perform this action",
+  "Please select the records to be edited": "Please select the records to be edited",
+  "Saved successfully": "Saved successfully",
+  "Remains the same": "Remains the same",
+  "Changed to": "Changed to",
+  "Clear": "Clear"
 }

@@ -1,16 +1,18 @@
+---
+title: "ACL Kontrol Hak Akses (Client)"
+description: "ACL client NocoBase: app.acl, can, penilaian hak akses, tampil/sembunyi elemen UI, kontrol hak akses front-end."
+keywords: "ACL,kontrol hak akses,app.acl,can,hak akses front-end,client,NocoBase"
+---
+
+# ACL Kontrol Hak Akses
+
 :::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Kontrol Akses ACL
+Bab ini akan memperkenalkan cara menggunakan ACL (Access Control List) dalam plugin front-end untuk manajemen hak akses. Konten akan mencakup:
 
-:::tip
+- Deteksi hak akses;
+- Cara merender konten secara dinamis berdasarkan hak akses;
 
-Bab ini akan menjelaskan cara menggunakan ACL (Access Control List) untuk manajemen izin pada plugin frontend. Materi yang akan dibahas meliputi:
-
-- Pendeteksian izin;
-- Cara merender konten secara dinamis berdasarkan izin;
-
-Kami akan menambahkan contoh detail dan praktik terbaik pada versi mendatang.
+Kami akan melengkapi contoh detail dan best practice di versi berikutnya.
 
 :::

@@ -1,4 +1,6 @@
 ---
+title: "多空间"
+keywords: "多空间,插件,NocoBase"
 displayName: "多空间"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
@@ -8,7 +10,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 3
 ---
 
 # 多空间

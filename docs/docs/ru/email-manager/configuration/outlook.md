@@ -1,29 +1,25 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 
 # Настройка Microsoft
 
 ### Предварительные условия
-Чтобы пользователи могли подключить свои почтовые ящики Outlook к NocoBase, вам необходимо развернуть NocoBase на сервере, который имеет доступ к службам Microsoft. Бэкенд будет использовать API Microsoft.
+Чтобы пользователи могли подключать почту Outlook к NocoBase, система должна быть развёрнута на сервере, который поддерживает доступ к сервисам Microsoft. Бэкенд будет вызывать Microsoft API.
 
 ### Регистрация аккаунта
 
 1. Откройте https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account
-    
-2. Войдите в свою учетную запись Microsoft.
-    
+
+2. Войдите в свой Microsoft-аккаунт.
+
 ![](https://static-docs.nocobase.com/mail-1733818625779.png)
 
-### Создание клиента (Tenant)
+### Создание tenant
 
-1. Перейдите по ссылке https://azure.microsoft.com/zh-cn/pricing/purchase-options/azure-account?icid=azurefreeaccount и войдите в свою учетную запись.
-    
-2. Заполните основную информацию и получите код подтверждения.
+
+1. Откройте https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account?icid=azurefreeaccount и войдите в аккаунт.
+2. Заполните базовую информацию и получите код подтверждения.
 
 ![](https://static-docs.nocobase.com/mail-1733818625984.png)
 
@@ -31,27 +27,27 @@ pkg: "@nocobase/plugin-email-manager"
 
 ![](https://static-docs.nocobase.com/mail-1733818626352.png)
 
-4. Введите данные своей кредитной карты (этот шаг можно пропустить).
+4. Заполните данные банковской карты (можно сделать позже).
 
 ![](https://static-docs.nocobase.com/mail-1733818626622.png)
 
-### Получение Client ID
+### Получить Client ID
 
-1. В верхнем меню выберите "Microsoft Entra ID".
+1. Нажмите верхнее меню и выберите **Microsoft Entra ID**.
 
 ![](https://static-docs.nocobase.com/mail-1733818626871.png)
 
-2. Слева выберите "App registrations".
+2. Слева выберите **App registrations**.
 
 ![](https://static-docs.nocobase.com/mail-1733818627097.png)
 
-3. Вверху нажмите "New registration".
+3. Сверху нажмите **New registration**.
 
 ![](https://static-docs.nocobase.com/mail-1733818627309.png)
 
 4. Заполните информацию и отправьте.
 
-Имя может быть любым. Для типов учетных записей выберите вариант, показанный на изображении ниже. Поле Redirect URI пока можно оставить пустым.
+Имя может быть любым. Выберите типы аккаунтов как на изображении, а Redirect URI пока можно оставить пустым.
 
 ![](https://static-docs.nocobase.com/mail-1733818627555.png)
 
@@ -59,51 +55,51 @@ pkg: "@nocobase/plugin-email-manager"
 
 ![](https://static-docs.nocobase.com/mail-1733818627797.png)
 
-### Авторизация API
+### Разрешения API
 
-1. Откройте меню "API permissions" слева.
+1. Откройте меню **API permissions** справа.
 
 ![](https://static-docs.nocobase.com/mail-1733818628178.png)
 
-2. Нажмите кнопку "Add a permission".
+2. Нажмите кнопку **Add a permission**.
 
 ![](https://static-docs.nocobase.com/mail-1733818628448.png)
 
-3. Нажмите "Microsoft Graph".
+3. Нажмите **Microsoft Graph**.
 
 ![](https://static-docs.nocobase.com/mail-1733818628725.png)
 
 ![](https://static-docs.nocobase.com/mail-1733818628927.png)
 
-4. Найдите и добавьте следующие разрешения. Конечный результат должен выглядеть как на изображении ниже.
-    
-    1. `"email"`
-    2. `"offline_access"`
-    3. `"IMAP.AccessAsUser.All"`
-    4. `"SMTP.Send"`
-    5. `"offline_access"`
-    6. `"User.Read"` (By default)
+4. Найдите и добавьте следующие разрешения; итоговый результат показан на изображении ниже.
+
+   1. `"email"`
+   2. `"offline_access"`
+   3. `"IMAP.AccessAsUser.All"`
+   4. `"SMTP.Send"`
+   5. `"offline_access"`
+   6. `"User.Read"` (By default)
 
 ![](https://static-docs.nocobase.com/mail-1733818629130.png)
 
-### Получение секрета (Secret)
+### Получить Client Secret
 
-1. Слева нажмите "Certificates & secrets".
+1. Слева нажмите **Certificates & secrets**.
 
 ![](https://static-docs.nocobase.com/mail-1733818629369.png)
 
-2. Нажмите кнопку "New client secret".
+2. Нажмите кнопку **New client secret**.
 
 ![](https://static-docs.nocobase.com/mail-1733818629554.png)
 
-3. Введите описание и срок действия, затем нажмите "Add".
+3. Заполните описание и срок действия, затем добавьте.
 
 ![](https://static-docs.nocobase.com/mail-1733818630292.png)
 
-4. Получите Secret ID.
+4. Получите Client Secret.
 
 ![](https://static-docs.nocobase.com/mail-1733818630535.png)
 
-5. Скопируйте Client ID и Client secret и вставьте их на страницу настройки электронной почты.
+5. Скопируйте значения Client ID и Client Secret и вставьте их на страницу настройки почты.
 
 ![](https://static-docs.nocobase.com/mail-1733818630710.png)

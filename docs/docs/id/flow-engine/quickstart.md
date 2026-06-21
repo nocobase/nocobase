@@ -1,8 +1,8 @@
-
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
+---
+title: "FlowEngine Mulai Cepat"
+description: "FlowEngine mulai cepat: membangun komponen tombol yang dapat diorkestrasi, contoh lengkap dari define, registerFlow, hingga createModel, kuasai FlowModel dalam 5 langkah."
+keywords: "FlowEngine mulai cepat,FlowModel,define,registerFlow,createModel,komponen yang dapat diorkestrasi,komponen tombol,NocoBase"
+---
 
 # Mulai Cepat: Membangun Komponen Tombol yang Dapat Diorkestrasi
 
@@ -16,24 +16,24 @@ export default function App() {
 }
 ```
 
-Meskipun kode di atas sederhana, ini adalah **komponen statis** dan tidak dapat memenuhi kebutuhan platform tanpa kode (no-code) akan kemampuan konfigurasi dan orkestrasi.
+Meskipun kode di atas sederhana, ini adalah **komponen statis** yang tidak dapat memenuhi kebutuhan platform no-code akan kemampuan konfigurasi dan orkestrasi.
 
-Di FlowEngine NocoBase, kita dapat dengan cepat membangun komponen yang mendukung konfigurasi dan berbasis peristiwa (event-driven) menggunakan **FlowModel + FlowDefinition**, sehingga mencapai kemampuan tanpa kode yang lebih kuat.
+Pada FlowEngine NocoBase, kita dapat dengan cepat membangun komponen yang mendukung konfigurasi dan event-driven melalui **FlowModel + FlowDefinition**, sehingga mewujudkan kemampuan no-code yang lebih kuat.
 
 ---
 
-## Langkah 1: Merender Komponen Menggunakan FlowModel
+## Langkah Pertama: Render Komponen Menggunakan FlowModel
 
 <code src="./demos/quickstart-1-basic.tsx"></code>
 
-### 🧠 Konsep Utama
+### 🧠 Konsep Kunci
 
-- `FlowModel` adalah model komponen inti di FlowEngine, yang merangkum logika komponen, kemampuan rendering, dan konfigurasi.
-- Setiap komponen UI dapat diinstansiasi dan dikelola secara terpadu melalui `FlowModel`.
+- `FlowModel` adalah model komponen inti dalam FlowEngine, yang merangkum logika komponen, render, dan kemampuan konfigurasi.
+- Setiap komponen UI dapat di-instansiasi dan dikelola secara terpadu melalui `FlowModel`.
 
-### 📌 Langkah-langkah Implementasi
+### 📌 Langkah Implementasi
 
-#### 1. Membuat kelas model kustom
+#### 1. Membuat Kelas Model Kustom
 
 ```tsx pure
 class MyModel extends FlowModel {
@@ -43,10 +43,10 @@ class MyModel extends FlowModel {
 }
 ```
 
-#### 2. Membuat instans model
+#### 2. Membuat Instance Model
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -56,13 +56,15 @@ const model = this.flowEngine.createModel({
 });
 ```
 
-#### 3. Merender menggunakan `<FlowModelRenderer />`
+#### 3. Menggunakan `<FlowModelRenderer />` untuk Render
 
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
 
-## Langkah 2: Menambahkan PropsFlow untuk Membuat Properti Tombol Dapat Dikonfigurasi
+---
+
+## Langkah Kedua: Menambahkan PropsFlow agar Properti Tombol Dapat Dikonfigurasi
 
 <code src="./demos/quickstart-2-register-propsflow.tsx"></code>
 
@@ -71,11 +73,11 @@ const model = this.flowEngine.createModel({
 Menggunakan Flow alih-alih props statis memungkinkan properti untuk:
 - Konfigurasi dinamis
 - Pengeditan visual
-- Pemutaran ulang dan persistensi status
+- Replay state dan persistensi
 
-### 🛠 Modifikasi Utama
+### 🛠 Poin Modifikasi Kunci
 
-#### 1. Mendefinisikan Flow untuk properti tombol
+#### 1. Mendefinisikan Flow untuk Properti Tombol
 
 ```tsx pure
 
@@ -99,12 +101,12 @@ const buttonSettings = defineFlow({
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           enum: [
-            { label: 'Utama', value: 'primary' },
-            { label: 'Bawaan', value: 'default' },
-            { label: 'Bahaya', value: 'danger' },
-            { label: 'Garis Putus-putus', value: 'dashed' },
-            { label: 'Tautan', value: 'link' },
-            { label: 'Teks', value: 'text' },
+            { label: 'Primary', value: 'primary' },
+            { label: 'Default', value: 'default' },
+            { label: 'Danger', value: 'danger' },
+            { label: 'Dashed', value: 'dashed' },
+            { label: 'Link', value: 'link' },
+            { label: 'Text', value: 'text' },
           ],
         },
         icon: {
@@ -113,18 +115,18 @@ const buttonSettings = defineFlow({
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           enum: [
-            { label: 'Cari', value: 'SearchOutlined' },
-            { label: 'Tambah', value: 'PlusOutlined' },
-            { label: 'Hapus', value: 'DeleteOutlined' },
+            { label: 'Search', value: 'SearchOutlined' },
+            { label: 'Plus', value: 'PlusOutlined' },
+            { label: 'Delete', value: 'DeleteOutlined' },
             { label: 'Edit', value: 'EditOutlined' },
-            { label: 'Pengaturan', value: 'SettingOutlined' },
+            { label: 'Setting', value: 'SettingOutlined' },
           ],
         },
       },
       defaultParams: {
         type: 'primary',
       },
-      // Fungsi penanganan langkah, mengatur properti model
+      // Step handler function, set model props
       handler(ctx, params) {
         ctx.model.setProps('children', params.title);
         ctx.model.setProps('type', params.type);
@@ -137,10 +139,10 @@ const buttonSettings = defineFlow({
 MyModel.registerFlow(buttonSettings);
 ```
 
-#### 2. Menggunakan `stepParams` sebagai pengganti `props` statis
+#### 2. Menggunakan `stepParams` Sebagai Pengganti `props` Statis
 
 ```diff
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
 - props: {
@@ -158,9 +160,9 @@ const model = this.flowEngine.createModel({
 });
 ```
 
-> ✅ Menggunakan `stepParams` adalah pendekatan yang direkomendasikan di FlowEngine, karena menghindari masalah dengan data yang tidak dapat diserialisasi (seperti komponen React).
+> ✅ Menggunakan `stepParams` adalah cara yang direkomendasikan FlowEngine, untuk menghindari masalah data yang tidak dapat di-serialize (seperti komponen React).
 
-#### 3. Mengaktifkan antarmuka konfigurasi properti
+#### 3. Mengaktifkan Antarmuka Konfigurasi Properti
 
 ```diff
 - <FlowModelRenderer model={model} />
@@ -169,24 +171,24 @@ const model = this.flowEngine.createModel({
 
 ---
 
-## Langkah 3: Mendukung Alur Peristiwa Tombol (EventFlow)
+## Langkah Ketiga: Mendukung Event Flow Tombol (EventFlow)
 
 <code src="./demos/quickstart-3-register-eventflow.tsx"></code>
 
-### 🎯 Skenario: Menampilkan dialog konfirmasi setelah mengeklik tombol
+### 🎯 Skenario: Menampilkan Kotak Konfirmasi Setelah Tombol Diklik
 
-#### 1. Mendengarkan peristiwa onClick
+#### 1. Mendengarkan Event onClick
 
-Tambahkan onClick dengan cara non-intrusif
+Menggunakan cara non-intrusif untuk menambahkan onClick
 
 ```diff
 const myPropsFlow = defineFlow({
   key: 'buttonSettings',
   steps: {
     general: {
-      // ... dihilangkan
+      // ... omitted
       handler(ctx, params) {
-        // ... dihilangkan
+        // ... omitted
 +       ctx.model.setProps('onClick', (event) => {
 +         ctx.model.dispatchEvent('click', { event });
 +       });
@@ -196,42 +198,42 @@ const myPropsFlow = defineFlow({
 });
 ```
 
-#### 2. Mendefinisikan alur peristiwa
+#### 2. Mendefinisikan Event Flow
 
 ```ts
 const myEventFlow = defineFlow({
   key: 'clickSettings',
   on: 'click',
-  title: 'Peristiwa Tombol',
+  title: 'Event Tombol',
   steps: {
     confirm: {
-      title: 'Konfigurasi Tindakan Konfirmasi',
+      title: 'Konfigurasi Konfirmasi Action',
       uiSchema: {
         title: {
           type: 'string',
-          title: 'Judul Prompt Dialog',
+          title: 'Judul Popup Konfirmasi',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
         content: {
           type: 'string',
-          title: 'Konten Prompt Dialog',
+          title: 'Konten Popup Konfirmasi',
           'x-decorator': 'FormItem',
           'x-component': 'Input.TextArea',
         },
       },
       defaultParams: {
-        title: 'Tindakan Konfirmasi',
-        content: 'Anda mengeklik tombol, apakah Anda yakin?',
+        title: 'Konfirmasi Action',
+        content: 'Anda mengklik tombol, apakah dikonfirmasi?',
       },
       async handler(ctx, params) {
-        // Dialog
+        // Popup
         const confirmed = await ctx.modal.confirm({
           title: params.title,
           content: params.content,
         });
         // Pesan
-        await ctx.message.info(`Anda mengeklik tombol, hasil konfirmasi: ${confirmed ? 'Dikonfirmasi' : 'Dibatalkan'}`);
+        await ctx.message.info(`Anda mengklik tombol, hasil konfirmasi: ${confirmed ? 'dikonfirmasi' : 'dibatalkan'}`);
       },
     },
   },
@@ -239,16 +241,16 @@ const myEventFlow = defineFlow({
 MyModel.registerFlow(myEventFlow);
 ```
 
-**Catatan Tambahan:**
-- Alur peristiwa (EventFlow) memungkinkan perilaku tombol dikonfigurasi secara fleksibel melalui alur kerja, seperti menampilkan dialog, pesan, melakukan panggilan API, dll.
-- Anda dapat mendaftarkan alur peristiwa yang berbeda untuk peristiwa yang berbeda (seperti `onClick`, `onMouseEnter`, dll.) untuk memenuhi kebutuhan bisnis yang kompleks.
+**Catatan tambahan:**
+- Event Flow (EventFlow) memungkinkan perilaku tombol dikonfigurasi secara fleksibel melalui flow, seperti popup, pesan, panggilan API, dan sebagainya.
+- Anda dapat mendaftarkan event flow yang berbeda untuk event yang berbeda (seperti `onClick`, `onMouseEnter`, dan lain-lain) untuk memenuhi kebutuhan bisnis yang kompleks.
 
-#### 3. Mengonfigurasi parameter alur peristiwa
+#### 3. Mengkonfigurasi Parameter Event Flow
 
-Saat membuat model, Anda dapat mengonfigurasi parameter default untuk alur peristiwa melalui `stepParams`:
+Saat membuat model, Anda dapat mengkonfigurasi parameter default event flow melalui `stepParams`:
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   stepParams: {
@@ -260,8 +262,8 @@ const model = this.flowEngine.createModel({
     },
     clickSettings: {
       confirm: {
-        title: 'Tindakan Konfirmasi',
-        content: 'Anda mengeklik tombol, apakah Anda yakin?',
+        title: 'Konfirmasi Action',
+        content: 'Anda mengklik tombol, apakah dikonfirmasi?',
       },
     },
   },
@@ -270,9 +272,9 @@ const model = this.flowEngine.createModel({
 
 ---
 
-## Perbandingan Model: ReactComponent vs FlowModel
+## Diagram Perbandingan Model: ReactComponent vs FlowModel
 
-Flow tidak mengubah cara komponen diimplementasikan. Flow hanya menambahkan dukungan untuk PropsFlow dan EventFlow ke ReactComponent, sehingga properti dan peristiwa komponen dapat dikonfigurasi dan diorkestrasi secara visual.
+Flow tidak mengubah cara implementasi komponen. Ini hanya menambahkan dukungan untuk PropsFlow dan EventFlow ke ReactComponent, sehingga properti dan event komponen dapat dikonfigurasi dan diorkestrasi secara visual.
 
 ![](https://static-docs.nocobase.com/20250603132845.png)
 
@@ -304,10 +306,10 @@ graph TD
 
 ## Ringkasan
 
-Melalui tiga langkah di atas, kita telah menyelesaikan komponen tombol yang mendukung konfigurasi dan orkestrasi peristiwa, dengan keunggulan sebagai berikut:
+Melalui tiga langkah di atas, kita telah membangun komponen tombol yang mendukung konfigurasi dan orkestrasi event, dengan keunggulan berikut:
 
-- 🚀 Mengonfigurasi properti secara visual (seperti judul, tipe, ikon)
-- 🔄 Respons peristiwa dapat dikelola oleh alur kerja (misalnya, mengeklik untuk menampilkan dialog)
-- 🔧 Mendukung ekstensi di masa mendatang (seperti logika kondisional, pengikatan variabel, dll.)
+- 🚀 Konfigurasi properti secara visual (seperti judul, tipe, ikon)
+- 🔄 Respons event dapat diambil alih oleh flow (seperti popup saat diklik)
+- 🔧 Mendukung ekspansi lanjutan (seperti logika kondisional, binding variabel, dan sebagainya)
 
-Pola ini juga berlaku untuk komponen UI apa pun, seperti formulir, daftar, dan bagan. Di FlowEngine NocoBase, **semuanya dapat diorkestrasi**.
+Pola ini juga berlaku untuk komponen UI apa pun seperti form, list, chart, dan sebagainya. Pada FlowEngine NocoBase, **segalanya dapat diorkestrasi**.

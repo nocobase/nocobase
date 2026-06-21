@@ -1,92 +1,92 @@
 ---
 pkg: "@nocobase/plugin-field-encryption"
+title: "Field Encryption"
+description: "Mã hóa lưu trữ dữ liệu nghiệp vụ riêng tư (số điện thoại, email, số thẻ, v.v.), lưu vào database dưới dạng ciphertext, bảo vệ thông tin nhạy cảm."
+keywords: "Field encryption,Encryption,Sensitive data,Ciphertext storage,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Mã hóa
+# Encryption
 
 ## Giới thiệu
 
-Một số dữ liệu kinh doanh nhạy cảm, như số điện thoại khách hàng, địa chỉ email, số thẻ, v.v., có thể được mã hóa. Sau khi mã hóa, dữ liệu sẽ được lưu trữ dưới dạng văn bản mã hóa (ciphertext) vào cơ sở dữ liệu.
+Một số dữ liệu nghiệp vụ riêng tư, như số điện thoại khách hàng, địa chỉ email, số thẻ, v.v., có thể được mã hóa, sau khi mã hóa, sẽ được lưu vào database dưới dạng ciphertext.
 
 ![20251104192513](https://static-docs.nocobase.com/20251104192513.png)
 
-## Phương thức mã hóa
+## Cách thức mã hóa
 
 :::warning
-Plugin sẽ tự động tạo một `khóa ứng dụng`, khóa này được lưu trữ trong thư mục `/storage/apps/main/encryption-field-keys`.
+Plugin sẽ tự động sinh ra một `application key`, key này được lưu trong thư mục `/storage/apps/main/encryption-field-keys`.
 
-Tên tệp `khóa ứng dụng` là ID khóa, với phần mở rộng là `.key`. Vui lòng không tự ý thay đổi tên tệp.
+Tên file của `application key` là Key ID, phần mở rộng là `.key`, vui lòng không tùy ý sửa tên file.
 
-Vui lòng bảo quản cẩn thận tệp `khóa ứng dụng`. Nếu bạn làm mất tệp `khóa ứng dụng`, dữ liệu đã mã hóa sẽ không thể được giải mã.
+Vui lòng giữ gìn file `application key` cẩn thận, nếu mất file `application key`, dữ liệu được mã hóa sẽ không thể giải mã.
 
-Nếu plugin được kích hoạt bởi một ứng dụng con, thư mục lưu trữ khóa mặc định là `/storage/apps/${tên_ứng_dụng_con}/encryption-field-keys`.
+Nếu là sub-app kích hoạt plugin, thư mục lưu trữ key mặc định là `/storage/apps/${tên sub-app}/encryption-field-keys`
 :::
 
-### Cách thức hoạt động
+### Nguyên lý hoạt động
 
-Sử dụng phương pháp mã hóa phong bì (Envelope Encryption).
+Sử dụng phương pháp mã hóa envelope
 
 ![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
 
-### Quy trình tạo khóa
-1. Khi tạo trường mã hóa lần đầu tiên, hệ thống sẽ tự động tạo một `khóa ứng dụng` 32 bit và lưu trữ nó dưới dạng mã hóa Base64 vào thư mục lưu trữ mặc định.
-2. Mỗi khi tạo một trường mã hóa mới, một `khóa trường` 32 bit ngẫu nhiên sẽ được tạo cho trường đó. Sau đó, nó được mã hóa bằng `khóa ứng dụng` và một `vector mã hóa trường` 16 bit được tạo ngẫu nhiên (thuật toán mã hóa `AES`), rồi lưu vào trường `options` của bảng `fields`.
+### Quy trình tạo key
+1. Lần đầu tiên tạo field encryption, hệ thống sẽ tự động sinh ra một `application key` 32 bit, lưu vào thư mục storage mặc định ở format base64 encoding.
+2. Mỗi lần tạo field encryption mới, sẽ sinh ngẫu nhiên `field key` 32 bit cho field này, sau đó sử dụng `application key` và `field encryption vector` 16 bit được sinh ngẫu nhiên để mã hóa nó (thuật toán mã hóa `AES`), sau đó lưu vào field `options` của bảng `fields`.
 
-### Quy trình mã hóa trường
-1. Mỗi khi ghi dữ liệu vào một trường mã hóa, hệ thống sẽ lấy `khóa trường` và `vector mã hóa trường` đã mã hóa từ trường `options` của bảng `fields`.
-2. Giải mã `khóa trường` đã mã hóa bằng cách sử dụng `khóa ứng dụng` và `vector mã hóa trường`. Sau đó, dữ liệu được mã hóa bằng `khóa trường` và một `vector mã hóa dữ liệu` 16 bit được tạo ngẫu nhiên (thuật toán mã hóa `AES`).
-3. Sử dụng `khóa trường` đã giải mã để ký dữ liệu (thuật toán tóm tắt `HMAC-SHA256`) và chuyển đổi thành chuỗi mã hóa Base64 (`chữ ký dữ liệu` được tạo ra sau đó sẽ được sử dụng để truy xuất dữ liệu).
-4. Nối nhị phân `vector mã hóa dữ liệu` 16 bit và `văn bản mã hóa dữ liệu` đã mã hóa, rồi chuyển đổi thành chuỗi mã hóa Base64.
-5. Nối chuỗi mã hóa Base64 của `chữ ký dữ liệu` và chuỗi mã hóa Base64 của `văn bản mã hóa dữ liệu` đã ghép nối, phân tách bằng dấu chấm `.`.
-6. Lưu chuỗi cuối cùng đã ghép nối vào cơ sở dữ liệu.
+### Quy trình mã hóa field
+1. Mỗi lần ghi dữ liệu vào field encryption, sẽ lấy `field key` đã mã hóa và `field encryption vector` từ field `options` của bảng `fields` trước.
+2. Sử dụng `application key` và `field encryption vector` để giải mã `field key` đã mã hóa, sau đó sử dụng `field key` và `data encryption vector` 16 bit được sinh ngẫu nhiên để mã hóa dữ liệu (thuật toán mã hóa `AES`).
+3. Sử dụng `field key` đã giải mã để ký dữ liệu (thuật toán digest `HMAC-SHA256`), chuyển đổi thành chuỗi ở format base64 encoding (`data signature` được sinh ra dùng cho việc tìm kiếm dữ liệu sau này).
+4. Ghép nối binary `data encryption vector` 16 bit và `data ciphertext` đã mã hóa, chuyển đổi thành chuỗi ở format base64 encoding.
+5. Ghép nối chuỗi `data signature` ở format base64 encoding và chuỗi `data ciphertext` đã ghép nối ở format base64 encoding với dấu phân cách '.'.
+6. Lưu chuỗi đã ghép nối cuối cùng vào database.
+
 
 ## Biến môi trường
 
-Nếu bạn muốn chỉ định một `khóa ứng dụng` tùy chỉnh, bạn có thể sử dụng biến môi trường `ENCRYPTION_FIELD_KEY_PATH`. Plugin sẽ tải tệp tại đường dẫn đó làm `khóa ứng dụng`.
+Nếu muốn chỉ định `application key`, có thể sử dụng biến môi trường `ENCRYPTION_FIELD_KEY_PATH`, plugin sẽ load file ở đường dẫn đó làm `application key`.
 
-Yêu cầu định dạng tệp `khóa ứng dụng`:
-1. Phần mở rộng của tệp phải là `.key`.
-2. Tên tệp sẽ được sử dụng làm ID khóa; nên sử dụng UUID để đảm bảo tính duy nhất.
-3. Nội dung tệp phải là dữ liệu nhị phân 32 bit được mã hóa Base64.
+Yêu cầu format file `application key`:
+1. Phần mở rộng file phải là `.key`.
+2. Tên file sẽ được dùng làm Key ID, tốt nhất là sử dụng uuid để đảm bảo tính duy nhất.
+3. Nội dung file là dữ liệu binary 32 bit ở format base64 encoding.
 
 ```bash
 ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
 ```
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240802173721](https://static-docs.nocobase.com/20240802173721.png)
 
-## Ảnh hưởng đến việc lọc sau khi mã hóa
+## Ảnh hưởng đến lọc sau khi mã hóa
 
-Các trường đã mã hóa chỉ hỗ trợ các điều kiện lọc: bằng, không bằng, tồn tại, không tồn tại.
+Field đã mã hóa chỉ hỗ trợ: bằng, không bằng, tồn tại, không tồn tại.
 
 ![20240802174042](https://static-docs.nocobase.com/20240802174042.png)
 
-Quy trình lọc dữ liệu:
-1. Lấy `khóa trường` của trường mã hóa và giải mã nó bằng `khóa ứng dụng`.
-2. Sử dụng `khóa trường` để ký văn bản tìm kiếm do người dùng nhập (thuật toán tóm tắt `HMAC-SHA256`).
-3. Nối chữ ký với dấu phân cách `.` và thực hiện truy vấn khớp tiền tố trên trường mã hóa trong cơ sở dữ liệu.
+Cách thức lọc dữ liệu:
+1. Lấy `field key` của field encryption, sử dụng `application key` để giải mã `field key`.
+2. Sử dụng `field key` để ký văn bản tìm kiếm do người dùng nhập (thuật toán digest `HMAC-SHA256`).
+3. Sử dụng văn bản tìm kiếm đã ký ghép với dấu phân cách `.`, thực hiện tìm kiếm prefix matching đối với field encryption trong database.
 
-## Xoay vòng khóa
+## Key rotation
 
 :::warning
-Trước khi sử dụng lệnh xoay vòng khóa `nocobase key-rotation`, hãy đảm bảo rằng ứng dụng đã tải plugin này.
+Trước khi sử dụng lệnh key rotation `nocobase key-rotation`, hãy xác nhận ứng dụng đã load plugin này.
 :::
 
-Khi di chuyển ứng dụng sang môi trường mới, nếu bạn không muốn tiếp tục sử dụng cùng một khóa với môi trường cũ, bạn có thể sử dụng lệnh `nocobase key-rotation` để thay thế `khóa ứng dụng`.
+Sau khi ứng dụng được di chuyển sang môi trường mới, nếu không muốn tiếp tục sử dụng key giống với môi trường cũ, có thể sử dụng lệnh `nocobase key-rotation` để thay thế `application key`.
 
-Để chạy lệnh xoay vòng khóa, bạn cần chỉ định `khóa ứng dụng` của môi trường cũ. Sau khi lệnh được thực thi, một `khóa ứng dụng` mới sẽ được tạo và thay thế khóa cũ. Khóa ứng dụng mới sẽ được lưu trữ (dưới dạng mã hóa Base64) vào thư mục mặc định.
+Khi chạy lệnh key rotation cần chỉ định application key của môi trường cũ, sau khi chạy lệnh sẽ sinh ra application key mới và thay thế key cũ. Application key mới sẽ được lưu vào thư mục storage mặc định ở format base64 encoding.
 
 ```bash
-# --key-path chỉ định tệp khóa ứng dụng của môi trường cũ tương ứng với dữ liệu đã mã hóa trong cơ sở dữ liệu
+# --key-path chỉ định file application key của môi trường cũ tương ứng với dữ liệu mã hóa trong database
  yarn nocobase key-rotation --key-path /path/to/old-app-keys/270263524860909922913.key
 ```
 
-Nếu bạn muốn thay thế `khóa ứng dụng` của một ứng dụng con, bạn cần thêm tham số `--app-name` để chỉ định `tên` của ứng dụng con.
+Nếu là thay thế `application key` của sub-app, cần thêm tham số `--app-name`, chỉ định `name` của sub-app
 
 ```bash
  yarn nocobase key-rotation --app-name a_w0r211vv0az --key-path /path/to/old-app-keys/270263524860909922913.key

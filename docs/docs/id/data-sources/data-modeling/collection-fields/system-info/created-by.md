@@ -1,14 +1,16 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Pembuat"
+description: "Field sistem pembuat, otomatis mencatat pembuat."
+keywords: "pembuat,createdBy,field sistem,field audit,NocoBase"
+---
 
 # Pembuat
 
-## Pendahuluan
+## Pengantar
 
 Akan ditambahkan
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![index-2025-11-01-00-50-59](https://static-docs.nocobase.com/index-2025-11-01-00-50-59.png)
 

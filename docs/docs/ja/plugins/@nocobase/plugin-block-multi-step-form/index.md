@@ -1,17 +1,19 @@
 ---
-displayName: "ブロック：多段階フォーム"
+title: "Block: Multi-step form"
+keywords: "Blocks"
+displayName: "Block: Multi-step form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  多くのフィールドを含むフォームを複数のステップに分けて入力することで、ユーザーの負担を軽減します
-isFree: false
-builtIn: false
+  Break the form with many fields into multiple steps to ease the burden on users.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+deprecated: true
+editionLevel: 0
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-# ブロック：多段階フォーム
+# Block: Multi-step form
+
+> Note: This plugin is deprecated.

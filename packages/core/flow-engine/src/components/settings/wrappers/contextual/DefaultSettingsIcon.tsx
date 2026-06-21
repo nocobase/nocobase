@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
+import { ExclamationCircleOutlined, MenuOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import type { DropdownProps, MenuProps } from 'antd';
-import { App, Dropdown, Modal } from 'antd';
+import { App, Dropdown, Modal, Tooltip, theme } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
 import type { FlowModelExtraMenuItem } from '../../../../models';
@@ -17,6 +18,7 @@ import type { StepDefinition, StepUIMode } from '../../../../types';
 import {
   getT,
   resolveStepUiSchema,
+  resolveStepDisabledInSettings,
   shouldHideStepInSettings,
   resolveDefaultParams,
   resolveUiMode,
@@ -25,6 +27,26 @@ import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
 import type { FlowSettingsContext } from '../../../../flowContext';
+
+const findExtraMenuItemByKey = (
+  items: FlowModelExtraMenuItem[],
+  targetKey: string,
+): FlowModelExtraMenuItem | undefined => {
+  for (const item of items) {
+    const itemKey = String(item?.key ?? '');
+    if (itemKey === targetKey) {
+      return item;
+    }
+    if (item.children?.length) {
+      const matched = findExtraMenuItemByKey(item.children, targetKey);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+  return undefined;
+};
+
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;
@@ -33,6 +55,8 @@ interface StepInfo {
   title: string;
   modelKey?: string;
   uiMode?: StepUIMode;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 interface FlowInfo {
@@ -150,12 +174,29 @@ const componentMap = {
 const MenuLabelItem = ({ title, uiMode, itemProps }) => {
   const type = uiMode?.type || uiMode;
   const Component = type ? componentMap[type] : null;
+  const disabled = !!itemProps?.disabled;
+  const disabledReason = itemProps?.disabledReason;
+  const disabledIconColor = itemProps?.disabledIconColor;
 
-  if (!Component) {
-    return <>{title}</>;
+  const content = (() => {
+    if (!Component) {
+      return <>{title}</>;
+    }
+    return <Component title={title} {...itemProps} />;
+  })();
+
+  if (!disabled) {
+    return content;
   }
 
-  return <Component title={title} {...itemProps} />;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      {content}
+      <Tooltip title={disabledReason} placement="right" destroyTooltipOnHide>
+        <QuestionCircleOutlined style={{ color: disabledIconColor }} />
+      </Tooltip>
+    </span>
+  );
 };
 
 /**
@@ -168,8 +209,42 @@ interface DefaultSettingsIconProps {
   showCopyUidButton?: boolean;
   menuLevels?: number; // Menu levels: 1=current model only (default), 2=include sub-models
   flattenSubMenus?: boolean; // Whether to flatten sub-menus: false=group by model (default), true=flatten all
+  onDropdownVisibleChange?: (open: boolean) => void;
+  getPopupContainer?: DropdownProps['getPopupContainer'];
   [key: string]: any; // Allow additional props
 }
+
+const TOOLBAR_ICONS_SELECTOR = '.nb-toolbar-container-icons';
+const TOOLBAR_CONTAINER_SELECTOR = '.nb-toolbar-container';
+const TOOLBAR_DROPDOWN_OVERLAY_CLASS = css`
+  width: max-content;
+  min-width: max-content;
+
+  .ant-dropdown-menu {
+    width: max-content;
+    min-width: max-content;
+  }
+`;
+
+const getToolbarPopupContainer = (triggerNode?: HTMLElement | null) => {
+  if (!triggerNode) {
+    return null;
+  }
+
+  return (
+    (triggerNode.closest(TOOLBAR_ICONS_SELECTOR) as HTMLElement | null) ||
+    (triggerNode.closest(TOOLBAR_CONTAINER_SELECTOR) as HTMLElement | null)
+  );
+};
+
+const removeExtraMenuItemClickHandlers = (item: FlowModelExtraMenuItem): FlowModelExtraMenuItem => {
+  const { onClick: _onClick, children, ...rest } = item;
+
+  return {
+    ...rest,
+    children: children?.length ? children.map(removeExtraMenuItemClickHandlers) : undefined,
+  };
+};
 
 export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   model,
@@ -177,48 +252,91 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   showCopyUidButton = true,
   menuLevels = 1, // 默认一级菜单
   flattenSubMenus = true,
+  onDropdownVisibleChange,
+  getPopupContainer,
 }) => {
   const { message } = App.useApp();
   const t = useMemo(() => getT(model), [model]);
+  const { token } = theme.useToken();
+  const disabledIconColor = token?.colorTextTertiary || token?.colorTextDescription || token?.colorTextSecondary;
   const [visible, setVisible] = useState(false);
   // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
   const [refreshTick, setRefreshTick] = useState(0);
   const [extraMenuItems, setExtraMenuItems] = useState<FlowModelExtraMenuItem[]>([]);
+  const [extraMenuItemsLoaded, setExtraMenuItemsLoaded] = useState(false);
+  const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<FlowInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const commonExtras = useMemo(
+    () => extraMenuItems.filter((it) => it.group === 'common-actions').sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)),
+    [extraMenuItems],
+  );
+  const hasCommonActions = showCopyUidButton || showDeleteButton || commonExtras.length > 0;
+  const shouldDeferConfigLoading = flattenSubMenus && menuLevels > 1 && hasCommonActions;
+  const shouldWaitForCommonActionProbe =
+    flattenSubMenus && menuLevels > 1 && !showCopyUidButton && !showDeleteButton && !extraMenuItemsLoaded;
+  const canRenderIcon = hasCommonActions || (!isLoading && configurableFlowsAndSteps.length > 0);
   const closeDropdown = useCallback(() => {
     setVisible(false);
-  }, []);
-  const handleOpenChange: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
-    if (info.source === 'trigger' || nextOpen) {
-      // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
-      startTransition(() => {
-        setVisible(nextOpen);
-      });
-    }
-  }, []);
+    onDropdownVisibleChange?.(false);
+  }, [onDropdownVisibleChange]);
+  const resolvePopupContainer = useCallback<NonNullable<DropdownProps['getPopupContainer']>>(
+    (triggerNode) => {
+      // 工具栏自身容器必须优先，保证鼠标从 icon 移到菜单时仍处于同一 hover 树。
+      // 弹窗场景的裁剪问题由 useFloatToolbarPortal 负责把 toolbar 挂到正确的 popup host。
+      return (
+        getToolbarPopupContainer(triggerNode) ||
+        getPopupContainer?.(triggerNode) ||
+        triggerNode?.parentElement ||
+        document.body
+      );
+    },
+    [getPopupContainer],
+  );
+  const handleOpenChange: DropdownProps['onOpenChange'] = useCallback(
+    (nextOpen: boolean, info) => {
+      if (info.source === 'trigger' || nextOpen) {
+        // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
+        startTransition(() => {
+          setVisible(nextOpen);
+        });
+        onDropdownVisibleChange?.(nextOpen);
+      }
+    },
+    [onDropdownVisibleChange],
+  );
+  useEffect(() => {
+    return () => {
+      onDropdownVisibleChange?.(false);
+    };
+  }, [onDropdownVisibleChange]);
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
   useEffect(() => {
     let mounted = true;
     const loadExtras = async () => {
-      const allExtras: FlowModelExtraMenuItem[] = [];
-      const modelsToProcess: Array<{ model: FlowModel; modelKey?: string }> = [];
-      walkSubModels(model, { maxDepth: menuLevels, arrayLimit: 50, mode: 'stack' }, (targetModel, { modelKey }) => {
-        modelsToProcess.push({ model: targetModel, modelKey });
-      });
+      setExtraMenuItemsLoaded(false);
+      try {
+        const allExtras: FlowModelExtraMenuItem[] = [];
+        const modelsToProcess: Array<{ model: FlowModel; modelKey?: string }> = [];
+        walkSubModels(model, { maxDepth: menuLevels, arrayLimit: 50, mode: 'stack' }, (targetModel, { modelKey }) => {
+          modelsToProcess.push({ model: targetModel, modelKey });
+        });
 
-      for (const { model: targetModel, modelKey } of modelsToProcess) {
-        const Cls = targetModel.constructor as typeof FlowModel;
-        const extras = await Cls.getExtraMenuItems?.(targetModel, t);
-        if (extras?.length) {
-          allExtras.push(
-            ...extras.map((item) => ({
-              ...item,
-              key: modelKey ? `${modelKey}:${item.key}` : item.key,
-            })),
-          );
+        for (const { model: targetModel, modelKey } of modelsToProcess) {
+          const Cls = targetModel.constructor as typeof FlowModel;
+          const extras = await Cls.getExtraMenuItems?.(targetModel, t);
+          if (extras?.length) {
+            allExtras.push(
+              ...extras.map((item) => ({
+                ...item,
+                key: modelKey ? `${modelKey}:${item.key}` : item.key,
+              })),
+            );
+          }
         }
-      }
 
-      if (mounted) {
+        if (!mounted) {
+          return;
+        }
         const seen = new Set<string>();
         const dedupedExtras = allExtras.filter((item) => {
           if (seen.has(`${item.key}`)) {
@@ -228,16 +346,22 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           return true;
         });
         setExtraMenuItems(dedupedExtras);
+      } catch (error) {
+        console.error('Failed to load extra menu items:', error);
+        if (mounted) {
+          setExtraMenuItems([]);
+        }
+      } finally {
+        if (mounted) {
+          setExtraMenuItemsLoaded(true);
+        }
       }
     };
-    // 避免 effect 触发 setState 导致循环：仅在 visible 打开时加载一次，关闭后仍保留结果
-    if (visible) {
-      loadExtras();
-    }
+    loadExtras();
     return () => {
       mounted = false;
     };
-  }, [model, menuLevels, t, refreshTick, visible, message]);
+  }, [model, menuLevels, t, refreshTick]);
 
   // 统一的复制 UID 方法
   const copyUidToClipboard = useCallback(
@@ -361,6 +485,31 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     [closeDropdown, model, t],
   );
 
+  const isStepMenuItemDisabled = useCallback(
+    (key: string) => {
+      const cleanKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
+      const keys = cleanKey.split(':');
+      let modelKey: string | undefined;
+      let flowKey: string | undefined;
+      let stepKey: string | undefined;
+
+      if (keys.length === 3) {
+        [modelKey, flowKey, stepKey] = keys;
+      } else if (keys.length === 2) {
+        [flowKey, stepKey] = keys;
+      } else {
+        return false;
+      }
+
+      return configurableFlowsAndSteps.some(({ flow, steps, modelKey: flowModelKey }: FlowInfo) => {
+        const sameModel = (flowModelKey || undefined) === modelKey;
+        if (!sameModel || flow.key !== flowKey) return false;
+        return steps.some((stepInfo: StepInfo) => stepInfo.stepKey === stepKey && !!stepInfo.disabled);
+      });
+    },
+    [configurableFlowsAndSteps],
+  );
+
   const handleMenuClick = useCallback(
     ({ key }: { key: string }) => {
       const originalKey = key;
@@ -373,10 +522,18 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         return;
       }
 
-      const extra = extraMenuItems.find((it) => it?.key === originalKey || it?.key === cleanKey);
+      const extra =
+        findExtraMenuItemByKey(extraMenuItems, originalKey) || findExtraMenuItemByKey(extraMenuItems, cleanKey);
+      if (extra?.disabled) {
+        return;
+      }
       if (extra?.onClick) {
         closeDropdown();
         extra.onClick();
+        return;
+      }
+
+      if (isStepMenuItemDisabled(cleanKey)) {
         return;
       }
 
@@ -393,7 +550,15 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           break;
       }
     },
-    [closeDropdown, handleCopyUid, handleDelete, handleStepConfiguration, handleCopyPopupUid, extraMenuItems],
+    [
+      closeDropdown,
+      handleCopyUid,
+      handleDelete,
+      handleStepConfiguration,
+      handleCopyPopupUid,
+      extraMenuItems,
+      isStepMenuItemDisabled,
+    ],
   );
 
   // 获取单个模型的可配置flows和steps
@@ -417,6 +582,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 if (await shouldHideStepInSettings(targetModel, flow, actionStep)) {
                   return null;
                 }
+                const disabledState = await resolveStepDisabledInSettings(targetModel, flow, actionStep as any);
                 let uiMode: any = await resolveUiMode(actionStep.uiMode, (targetModel as any).context);
                 // 检查是否有uiSchema（静态或动态）
                 const hasStepUiSchema = actionStep.uiSchema != null;
@@ -466,6 +632,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   title: t(stepTitle) || stepKey,
                   modelKey, // 添加模型标识
                   uiMode,
+                  disabled: disabledState.disabled,
+                  disabledReason: disabledState.reason,
                 };
               }),
             ).then((steps) => steps.filter(Boolean));
@@ -484,7 +652,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         return [];
       }
     },
-    [],
+    [t],
   );
 
   // 获取可配置的flows和steps
@@ -501,9 +669,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
     return result;
   }, [model, menuLevels, getModelConfigurableFlowsAndSteps]);
-
-  const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<FlowInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const triggerRebuild = () => {
@@ -530,21 +695,50 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   }, [model, menuLevels, refreshTick]);
 
   useEffect(() => {
+    let mounted = true;
     const loadConfigurableFlowsAndSteps = async () => {
       setIsLoading(true);
+      if (shouldDeferConfigLoading) {
+        setConfigurableFlowsAndSteps([]);
+      }
       try {
         const flows = await getConfigurableFlowsAndSteps();
-        setConfigurableFlowsAndSteps(flows);
+        if (mounted) {
+          setConfigurableFlowsAndSteps(flows);
+        }
       } catch (error) {
         console.error('Failed to load configurable flows and steps:', error);
-        setConfigurableFlowsAndSteps([]);
+        if (mounted) {
+          setConfigurableFlowsAndSteps([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
+    if (shouldWaitForCommonActionProbe) {
+      setConfigurableFlowsAndSteps([]);
+      setIsLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    if (!visible && shouldDeferConfigLoading) {
+      setConfigurableFlowsAndSteps([]);
+      setIsLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
     loadConfigurableFlowsAndSteps();
-  }, [getConfigurableFlowsAndSteps, refreshTick]);
+    return () => {
+      mounted = false;
+    };
+  }, [getConfigurableFlowsAndSteps, refreshTick, shouldDeferConfigLoading, shouldWaitForCommonActionProbe, visible]);
 
   // 构建菜单项，包含错误处理和记忆化
   const menuItems = useMemo((): NonNullable<MenuProps['items']> => {
@@ -611,10 +805,14 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               },
               ...((uiMode as any)?.props || {}),
               itemKey: (uiMode as any)?.key,
+              disabled: !!stepInfo.disabled,
+              disabledReason: stepInfo.disabledReason,
+              disabledIconColor,
             };
             items.push({
               key: uniqueKey,
-              label: <MenuLabelItem title={t(stepInfo.title)} uiMode={uiMode} itemProps={itemProps} />,
+              label: <MenuLabelItem title={stepInfo.title} uiMode={uiMode} itemProps={itemProps} />,
+              disabled: !!stepInfo.disabled,
             });
           });
           if (flow.options.divider === 'bottom') {
@@ -656,7 +854,17 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 items.push({
                   key: uniqueKey,
-                  label: t(stepInfo.title),
+                  label: stepInfo.disabled ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {stepInfo.title}
+                      <Tooltip title={stepInfo.disabledReason} placement="right" destroyTooltipOnHide>
+                        <QuestionCircleOutlined style={{ color: disabledIconColor }} />
+                      </Tooltip>
+                    </span>
+                  ) : (
+                    stepInfo.title
+                  ),
+                  disabled: !!stepInfo.disabled,
                 });
               });
             });
@@ -671,7 +879,17 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 subMenuChildren.push({
                   key: uniqueKey,
-                  label: t(stepInfo.title),
+                  label: stepInfo.disabled ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {stepInfo.title}
+                      <Tooltip title={stepInfo.disabledReason} placement="right" destroyTooltipOnHide>
+                        <QuestionCircleOutlined style={{ color: disabledIconColor }} />
+                      </Tooltip>
+                    </span>
+                  ) : (
+                    stepInfo.title
+                  ),
+                  disabled: !!stepInfo.disabled,
                 });
               });
             });
@@ -687,15 +905,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [configurableFlowsAndSteps, flattenSubMenus, t]);
+  }, [configurableFlowsAndSteps, disabledIconColor, flattenSubMenus, message, model, t]);
 
   // 向菜单项添加额外按钮
   const finalMenuItems = useMemo((): NonNullable<MenuProps['items']> => {
     const items = [...menuItems];
-
-    const commonExtras = extraMenuItems
-      .filter((it) => it.group === 'common-actions')
-      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
 
     if (showCopyUidButton || showDeleteButton || commonExtras.length > 0) {
       items.push({
@@ -710,7 +924,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       // });
 
       if (commonExtras.length > 0) {
-        items.push(...(commonExtras as MenuProps['items']));
+        // Antd Menu 会同时触发 item.onClick 和 menu.onClick，这里统一交给 handleMenuClick 执行。
+        items.push(...(commonExtras.map(removeExtraMenuItemClickHandlers) as MenuProps['items']));
       }
 
       // 添加复制uid按钮
@@ -731,12 +946,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy, t, extraMenuItems]);
+  }, [menuItems, showCopyUidButton, showDeleteButton, commonExtras, model.uid, model.destroy, t]);
 
-  // 如果正在加载或没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
-  const hasExtras = extraMenuItems.some((it) => it.group === 'common-actions');
-
-  if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton && !hasExtras)) {
+  if (!canRenderIcon) {
     return null;
   }
 
@@ -748,6 +960,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   return (
     <Dropdown
+      getPopupContainer={resolvePopupContainer}
+      overlayClassName={TOOLBAR_DROPDOWN_OVERLAY_CLASS}
+      overlayStyle={{ width: 'max-content', minWidth: 'max-content' }}
       onOpenChange={handleOpenChange}
       open={visible}
       menu={{

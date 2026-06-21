@@ -10,7 +10,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Kunci API",
+        "label": "API Key",
         "link": "/integration/api-keys/"
       },
       {
@@ -32,7 +32,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Alur Kerja",
+    "label": "Workflow",
     "items": [
       {
         "type": "custom-link",
@@ -41,7 +41,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Permintaan HTTP",
+        "label": "HTTP Request",
         "link": "/integration/workflow-http-request/"
       }
     ]
@@ -53,7 +53,23 @@
   },
   {
     "type": "custom-link",
-    "label": "Konten Tersemat",
+    "label": "Tabel Data Eksternal (FDW)",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/integration/fdw/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aktifkan MySQL Federated",
+        "link": "/integration/fdw/enable-federated"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Konten Tertanam",
     "items": [
       {
         "type": "custom-link",
@@ -62,7 +78,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Sematkan",
+        "label": "Embed",
         "link": "/integration/embed/"
       }
     ]

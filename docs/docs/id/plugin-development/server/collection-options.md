@@ -1,8 +1,11 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Parameter Konfigurasi Collection"
+description: "Konfigurasi NocoBase defineCollection: name, title, migrationRules, inherits, fields, timestamps, autoGenId, dan lainnya."
+keywords: "CollectionOptions,defineCollection,name,fields,migrationRules,inherits,NocoBase"
+---
 
-## Parameter Konfigurasi Koleksi
+
+## Penjelasan Parameter Konfigurasi Collection
 
 ```ts
 export type MigrationRule =
@@ -32,21 +35,21 @@ export interface CollectionOptions {
 }
 ```
 
-### `name` - Nama Koleksi
+### `name` - Nama Tabel Data
 - **Tipe**: `string`
-- **Wajib**: ✅
-- **Deskripsi**: Pengidentifikasi unik untuk koleksi, yang harus unik di seluruh aplikasi.
+- **Wajib**: Ya
+- **Penjelasan**: Identifier unik tabel data, harus unik di seluruh aplikasi
 - **Contoh**:
 ```typescript
 {
-  name: 'users'  // Koleksi pengguna
+  name: 'users'  // Tabel data pengguna
 }
 ```
 
-### `title` - Judul Koleksi
+### `title` - Judul Tabel Data
 - **Tipe**: `string`
-- **Wajib**: ❌
-- **Deskripsi**: Judul tampilan koleksi, digunakan untuk ditampilkan di antarmuka tampilan depan.
+- **Wajib**: Tidak
+- **Penjelasan**: Judul tampilan tabel data, digunakan untuk tampilan antarmuka front-end
 - **Contoh**:
 ```typescript
 {
@@ -57,28 +60,28 @@ export interface CollectionOptions {
 
 ### `migrationRules` - Aturan Migrasi
 - **Tipe**: `MigrationRule[]`
-- **Wajib**: ❌
-- **Deskripsi**: Aturan pemrosesan untuk migrasi data.
+- **Wajib**: Tidak
+- **Penjelasan**: Aturan penanganan saat migrasi data
 - **Contoh**:
 ```typescript
 {
   name: 'users',
-  migrationRules: ['overwrite'],  // Menimpa data yang ada
+  migrationRules: ['overwrite'],  // Overwrite data yang ada
   fields: [...]
 }
 ```
 
-### `inherits` - Mewarisi Koleksi
+### `inherits` - Tabel Data Inheritance
 - **Tipe**: `string[] | string`
-- **Wajib**: ❌
-- **Deskripsi**: Mewarisi definisi bidang dari koleksi lain. Mendukung pewarisan dari satu atau beberapa koleksi.
+- **Wajib**: Tidak
+- **Penjelasan**: Mewarisi definisi field dari tabel data lain, mendukung inheritance dari satu atau beberapa tabel data
 - **Contoh**:
 
 ```typescript
-// Pewarisan tunggal
+// Inheritance tunggal
 {
   name: 'admin_users',
-  inherits: 'users',  // Mewarisi semua bidang dari koleksi pengguna
+  inherits: 'users',  // Mewarisi semua field tabel data users
   fields: [
     {
       type: 'string',
@@ -87,18 +90,18 @@ export interface CollectionOptions {
   ]
 }
 
-// Pewarisan ganda
+// Inheritance multiple
 {
   name: 'super_admin_users',
-  inherits: ['users', 'admin_users'],  // Mewarisi dari beberapa koleksi
+  inherits: ['users', 'admin_users'],  // Mewarisi beberapa tabel data
   fields: [...]
 }
 ```
 
-### `filterTargetKey` - Kunci Target Filter
+### `filterTargetKey` - Filter Target Key
 - **Tipe**: `string | string[]`
-- **Wajib**: ❌
-- **Deskripsi**: Kunci target yang digunakan untuk memfilter kueri. Mendukung satu atau beberapa kunci.
+- **Wajib**: Tidak
+- **Penjelasan**: Target key untuk filter query, mendukung satu atau beberapa key
 - **Contoh**:
 ```typescript
 {
@@ -107,7 +110,7 @@ export interface CollectionOptions {
   fields: [...]
 }
 
-// Beberapa kunci filter
+// Multiple filter key
 {
   name: 'user_category_posts',
   filterTargetKey: ['userId', 'categoryId'],  // Filter berdasarkan ID pengguna dan ID kategori
@@ -115,11 +118,11 @@ export interface CollectionOptions {
 }
 ```
 
-### `fields` - Definisi Bidang
+### `fields` - Definisi Field
 - **Tipe**: `FieldOptions[]`
-- **Wajib**: ❌
-- **Nilai Default**: `[]`
-- **Deskripsi**: Array definisi bidang untuk koleksi. Setiap bidang mencakup informasi seperti tipe, nama, dan konfigurasi.
+- **Wajib**: Tidak
+- **Default**: `[]`
+- **Penjelasan**: Array definisi field tabel data, setiap field berisi tipe, nama, konfigurasi, dan informasi lainnya
 - **Contoh**:
 ```typescript
 {
@@ -129,7 +132,7 @@ export interface CollectionOptions {
       type: 'string',
       name: 'username',
       unique: true,
-      title: 'Nama Pengguna'
+      title: 'Username'
     },
     {
       type: 'string',
@@ -140,7 +143,7 @@ export interface CollectionOptions {
     {
       type: 'password',
       name: 'password',
-      title: 'Kata Sandi'
+      title: 'Password'
     },
     {
       type: 'date',
@@ -153,18 +156,18 @@ export interface CollectionOptions {
 
 ### `model` - Model Kustom
 - **Tipe**: `string | ModelStatic<Model>`
-- **Wajib**: ❌
-- **Deskripsi**: Tentukan kelas model Sequelize kustom, yang bisa berupa nama kelas atau kelas model itu sendiri.
+- **Wajib**: Tidak
+- **Penjelasan**: Menentukan class model Sequelize kustom, dapat berupa nama class atau class model itu sendiri
 - **Contoh**:
 ```typescript
-// Tentukan nama kelas model sebagai string
+// Menggunakan string untuk menentukan nama class model
 {
   name: 'users',
   model: 'UserModel',
   fields: [...]
 }
 
-// Gunakan kelas model
+// Menggunakan class model
 import { UserModel } from './models/UserModel';
 {
   name: 'users',
@@ -175,18 +178,18 @@ import { UserModel } from './models/UserModel';
 
 ### `repository` - Repository Kustom
 - **Tipe**: `string | RepositoryType`
-- **Wajib**: ❌
-- **Deskripsi**: Tentukan kelas repository kustom untuk menangani logika akses data.
+- **Wajib**: Tidak
+- **Penjelasan**: Menentukan class repository kustom, untuk menangani logika akses data
 - **Contoh**:
 ```typescript
-// Tentukan nama kelas repository sebagai string
+// Menggunakan string untuk menentukan nama class repository
 {
   name: 'users',
   repository: 'UserRepository',
   fields: [...]
 }
 
-// Gunakan kelas repository
+// Menggunakan class repository
 import { UserRepository } from './repositories/UserRepository';
 {
   name: 'users',
@@ -195,20 +198,20 @@ import { UserRepository } from './repositories/UserRepository';
 }
 ```
 
-### `autoGenId` - ID Otomatis
+### `autoGenId` - Otomatis Generate ID
 - **Tipe**: `boolean`
-- **Wajib**: ❌
-- **Nilai Default**: `true`
-- **Deskripsi**: Apakah akan secara otomatis menghasilkan ID kunci utama.
+- **Wajib**: Tidak
+- **Default**: `true`
+- **Penjelasan**: Apakah otomatis menghasilkan primary key ID
 - **Contoh**:
 ```typescript
 {
   name: 'users',
-  autoGenId: true,  // Otomatis menghasilkan ID kunci utama
+  autoGenId: true,  // Otomatis menghasilkan primary key ID
   fields: [...]
 }
 
-// Nonaktifkan pembuatan ID otomatis (memerlukan spesifikasi kunci utama secara manual)
+// Menonaktifkan auto generate ID (perlu menentukan primary key secara manual)
 {
   name: 'external_data',
   autoGenId: false,
@@ -222,73 +225,73 @@ fields: [
 }
 ```
 
-### `timestamps` - Aktifkan Stempel Waktu
+### `timestamps` - Mengaktifkan Timestamp
 - **Tipe**: `boolean`
-- **Wajib**: ❌
-- **Nilai Default**: `true`
-- **Deskripsi**: Apakah akan mengaktifkan bidang `createdAt` dan `updatedAt`.
+- **Wajib**: Tidak
+- **Default**: `true`
+- **Penjelasan**: Apakah mengaktifkan field waktu pembuatan dan waktu update
 - **Contoh**:
 ```typescript
 {
   name: 'users',
-  timestamps: true,  // Aktifkan stempel waktu
+  timestamps: true,  // Mengaktifkan timestamp
   fields: [...]
 }
 ```
 
-### `createdAt` - Bidang Waktu Pembuatan
+### `createdAt` - Field Waktu Pembuatan
 - **Tipe**: `boolean | string`
-- **Wajib**: ❌
-- **Nilai Default**: `true`
-- **Deskripsi**: Konfigurasi untuk bidang `createdAt`.
+- **Wajib**: Tidak
+- **Default**: `true`
+- **Penjelasan**: Konfigurasi field waktu pembuatan
 - **Contoh**:
 ```typescript
 {
   name: 'users',
-  createdAt: 'created_at',  // Nama kustom untuk bidang waktu pembuatan
+  createdAt: 'created_at',  // Custom nama field waktu pembuatan
   fields: [...]
 }
 ```
 
-### `updatedAt` - Bidang Waktu Pembaruan
+### `updatedAt` - Field Waktu Update
 - **Tipe**: `boolean | string`
-- **Wajib**: ❌
-- **Nilai Default**: `true`
-- **Deskripsi**: Konfigurasi untuk bidang `updatedAt`.
+- **Wajib**: Tidak
+- **Default**: `true`
+- **Penjelasan**: Konfigurasi field waktu update
 - **Contoh**:
 ```typescript
 {
   name: 'users',
-  updatedAt: 'updated_at',  // Nama kustom untuk bidang waktu pembaruan
+  updatedAt: 'updated_at',  // Custom nama field waktu update
   fields: [...]
 }
 ```
 
-### `deletedAt` - Bidang Penghapusan Lunak
+### `deletedAt` - Field Soft Delete
 - **Tipe**: `boolean | string`
-- **Wajib**: ❌
-- **Nilai Default**: `false`
-- **Deskripsi**: Konfigurasi untuk bidang penghapusan lunak.
+- **Wajib**: Tidak
+- **Default**: `false`
+- **Penjelasan**: Konfigurasi field soft delete
 - **Contoh**:
 ```typescript
 {
   name: 'users',
-  deletedAt: 'deleted_at',  // Aktifkan penghapusan lunak
+  deletedAt: 'deleted_at',  // Mengaktifkan soft delete
   paranoid: true,
   fields: [...]
 }
 ```
 
-### `paranoid` - Mode Penghapusan Lunak
+### `paranoid` - Mode Soft Delete
 - **Tipe**: `boolean`
-- **Wajib**: ❌
-- **Nilai Default**: `false`
-- **Deskripsi**: Apakah akan mengaktifkan mode penghapusan lunak.
+- **Wajib**: Tidak
+- **Default**: `false`
+- **Penjelasan**: Apakah mengaktifkan mode soft delete
 - **Contoh**:
 ```typescript
 {
   name: 'users',
-  paranoid: true,  // Aktifkan penghapusan lunak
+  paranoid: true,  // Mengaktifkan soft delete
   deletedAt: 'deleted_at',
   fields: [...]
 }
@@ -296,22 +299,22 @@ fields: [
 
 ### `underscored` - Penamaan Underscore
 - **Tipe**: `boolean`
-- **Wajib**: ❌
-- **Nilai Default**: `false`
-- **Deskripsi**: Apakah akan menggunakan gaya penamaan underscore.
+- **Wajib**: Tidak
+- **Default**: `false`
+- **Penjelasan**: Apakah menggunakan gaya penamaan underscore
 - **Contoh**:
 ```typescript
 {
   name: 'users',
-  underscored: true,  // Gunakan gaya penamaan underscore
+  underscored: true,  // Menggunakan gaya penamaan underscore
   fields: [...]
 }
 ```
 
-### `indexes` - Konfigurasi Indeks
+### `indexes` - Konfigurasi Index
 - **Tipe**: `ModelIndexesOptions[]`
-- **Wajib**: ❌
-- **Deskripsi**: Konfigurasi indeks database.
+- **Wajib**: Tidak
+- **Penjelasan**: Konfigurasi index database
 - **Contoh**:
 ```typescript
 {
@@ -329,22 +332,22 @@ fields: [
 }
 ```
 
-## Konfigurasi Parameter Bidang
+## Penjelasan Konfigurasi Parameter Field
 
-NocoBase mendukung berbagai tipe bidang, yang semuanya didefinisikan berdasarkan tipe gabungan `FieldOptions`. Konfigurasi bidang mencakup properti dasar, properti spesifik tipe data, properti relasi, dan properti rendering tampilan depan.
+NocoBase mendukung berbagai tipe field, semua field didefinisikan berdasarkan tipe union `FieldOptions`. Konfigurasi field mencakup property dasar, property spesifik tipe data, property relasi, dan property rendering front-end.
 
-### Opsi Bidang Dasar
+### Opsi Field Dasar
 
-Semua tipe bidang mewarisi dari `BaseFieldOptions`, menyediakan kemampuan konfigurasi bidang umum:
+Semua tipe field diwarisi dari `BaseFieldOptions`, menyediakan kemampuan konfigurasi field umum:
 
 ```typescript
 interface BaseFieldOptions<T extends BasicType = BasicType> {
-  // Parameter Umum
-  name?: string;                    // Nama bidang
+  // Parameter umum
+  name?: string;                    // Nama field
   hidden?: boolean;                 // Apakah disembunyikan
   validation?: ValidationOptions<T>; // Aturan validasi
 
-  // Properti bidang kolom umum
+  // Property field kolom umum
   allowNull?: boolean;
   defaultValue?: any;
   unique?: boolean;
@@ -353,7 +356,7 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
   field?: string;
   comment?: string;
 
-  // Terkait tampilan depan
+  // Terkait front-end
   title?: string;
   description?: string;
   interface?: string;
@@ -367,39 +370,39 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
 {
   type: 'string',
   name: 'username',
-  allowNull: false,        // Tidak mengizinkan nilai null
-  unique: true,           // Batasan unik
+  allowNull: false,        // Tidak mengizinkan nilai kosong
+  unique: true,           // Constraint unik
   defaultValue: '',       // Default string kosong
-  index: true,            // Buat indeks
+  index: true,            // Membuat index
   comment: 'Nama login pengguna'    // Komentar database
 }
 ```
 
-### `name` - Nama Bidang
+### `name` - Nama Field
 
 - **Tipe**: `string`
-- **Wajib**: ❌
-- **Deskripsi**: Nama kolom bidang dalam database, yang harus unik dalam satu koleksi.
+- **Wajib**: Tidak
+- **Penjelasan**: Nama kolom field di database, harus unik dalam collection
 - **Contoh**:
 ```typescript
 {
   type: 'string',
-  name: 'username',  // Nama bidang
-  title: 'Nama Pengguna'
+  name: 'username',  // Nama field
+  title: 'Username'
 }
 ```
 
-### `hidden` - Sembunyikan Bidang
+### `hidden` - Field Tersembunyi
 
 - **Tipe**: `boolean`
-- **Nilai Default**: `false`
-- **Deskripsi**: Apakah bidang ini disembunyikan secara default dalam daftar/formulir.
+- **Default**: `false`
+- **Penjelasan**: Apakah secara default menyembunyikan field ini di list/form
 - **Contoh**:
 ```typescript
 {
   type: 'string',
   name: 'internalId',
-  hidden: true,  // Sembunyikan bidang ID internal
+  hidden: true,  // Menyembunyikan field internal ID
   title: 'ID Internal'
 }
 ```
@@ -414,9 +417,9 @@ interface ValidationOptions<T extends BasicType = BasicType> {
 }
 
 interface FieldValidationRule<T extends BasicType> {
-  key: string;                      // Kunci aturan
+  key: string;                      // Nama key aturan
   name: FieldValidationRuleName<T>; // Nama aturan
-  args?: {                         // Argumen aturan
+  args?: {                         // Parameter aturan
     [key: string]: any;
   };
   paramsType?: 'object';           // Tipe parameter
@@ -424,7 +427,7 @@ interface FieldValidationRule<T extends BasicType> {
 ```
 
 - **Tipe**: `ValidationOptions<T>`
-- **Deskripsi**: Gunakan Joi untuk mendefinisikan aturan validasi sisi server.
+- **Penjelasan**: Mendefinisikan aturan validasi sisi server menggunakan Joi
 - **Contoh**:
 ```typescript
 {
@@ -440,40 +443,40 @@ interface FieldValidationRule<T extends BasicType> {
 }
 ```
 
-### `allowNull` - Mengizinkan Nilai Null
+### `allowNull` - Mengizinkan Nilai Kosong
 
 - **Tipe**: `boolean`
-- **Nilai Default**: `true`
-- **Deskripsi**: Mengontrol apakah database mengizinkan penulisan nilai `NULL`.
+- **Default**: `true`
+- **Penjelasan**: Mengontrol apakah database mengizinkan penulisan nilai `NULL`
 - **Contoh**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  allowNull: false,  // Tidak mengizinkan nilai null
-  title: 'Nama Pengguna'
+  allowNull: false,  // Tidak mengizinkan nilai kosong
+  title: 'Username'
 }
 ```
 
 ### `defaultValue` - Nilai Default
 
 - **Tipe**: `any`
-- **Deskripsi**: Nilai default untuk bidang, digunakan saat catatan dibuat tanpa memberikan nilai untuk bidang ini.
+- **Penjelasan**: Nilai default field, akan digunakan saat membuat record tanpa menyediakan nilai field tersebut
 - **Contoh**:
 ```typescript
 {
   type: 'string',
   name: 'status',
-  defaultValue: 'draft',  // Default ke status draf
+  defaultValue: 'draft',  // Default status draft
   title: 'Status'
 }
 ```
 
-### `unique` - Batasan Unik
+### `unique` - Constraint Unik
 
 - **Tipe**: `boolean | string`
-- **Nilai Default**: `false`
-- **Deskripsi**: Apakah nilainya harus unik; string dapat digunakan untuk menentukan nama batasan.
+- **Default**: `false`
+- **Penjelasan**: Apakah unik; string dapat menentukan nama constraint
 - **Contoh**:
 ```typescript
 {
@@ -484,32 +487,32 @@ interface FieldValidationRule<T extends BasicType> {
 }
 ```
 
-### `primaryKey` - Kunci Utama
+### `primaryKey` - Primary Key
 
 - **Tipe**: `boolean`
-- **Nilai Default**: `false`
-- **Deskripsi**: Mendeklarasikan bidang ini sebagai kunci utama.
+- **Default**: `false`
+- **Penjelasan**: Mendeklarasikan field ini sebagai primary key
 - **Contoh**:
 ```typescript
 {
   type: 'integer',
   name: 'id',
-  primaryKey: true,  // Ditetapkan sebagai kunci utama
+  primaryKey: true,  // Diset sebagai primary key
   autoIncrement: true
 }
 ```
 
-### `autoIncrement` - Otomatis Bertambah
+### `autoIncrement` - Auto Increment
 
 - **Tipe**: `boolean`
-- **Nilai Default**: `false`
-- **Deskripsi**: Mengaktifkan penambahan otomatis (hanya berlaku untuk bidang numerik).
+- **Default**: `false`
+- **Penjelasan**: Mengaktifkan auto increment (hanya berlaku untuk field tipe numerik)
 - **Contoh**:
 ```typescript
 {
   type: 'integer',
   name: 'id',
-  autoIncrement: true,  // Otomatis bertambah
+  autoIncrement: true,  // Auto increment
   primaryKey: true
 }
 ```
@@ -517,7 +520,7 @@ interface FieldValidationRule<T extends BasicType> {
 ### `field` - Nama Kolom Database
 
 - **Tipe**: `string`
-- **Deskripsi**: Menentukan nama kolom database aktual (konsisten dengan `field` Sequelize).
+- **Penjelasan**: Menentukan nama kolom database aktual (sama dengan `field` Sequelize)
 - **Contoh**:
 ```typescript
 {
@@ -531,42 +534,42 @@ interface FieldValidationRule<T extends BasicType> {
 ### `comment` - Komentar Database
 
 - **Tipe**: `string`
-- **Deskripsi**: Komentar untuk bidang database, digunakan untuk tujuan dokumentasi.
+- **Penjelasan**: Catatan field database, untuk dokumentasi
 - **Contoh**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  comment: 'Nama login pengguna, digunakan untuk login sistem',  // Komentar database
-  title: 'Nama Pengguna'
+  comment: 'Nama login pengguna, untuk login sistem',  // Komentar database
+  title: 'Username'
 }
 ```
 
 ### `title` - Judul Tampilan
 
 - **Tipe**: `string`
-- **Deskripsi**: Judul tampilan untuk bidang, sering digunakan dalam antarmuka tampilan depan.
+- **Penjelasan**: Judul tampilan field, sering digunakan untuk tampilan antarmuka front-end
 - **Contoh**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  title: 'Nama Pengguna',  // Judul yang ditampilkan di tampilan depan
+  title: 'Username',  // Judul yang ditampilkan di front-end
   allowNull: false
 }
 ```
 
-### `description` - Deskripsi Bidang
+### `description` - Deskripsi Field
 
 - **Tipe**: `string`
-- **Deskripsi**: Informasi deskriptif tentang bidang untuk membantu pengguna memahami tujuannya.
+- **Penjelasan**: Informasi deskripsi field, untuk membantu pengguna memahami tujuan field
 - **Contoh**:
 ```typescript
 {
   type: 'string',
   name: 'email',
   title: 'Email',
-  description: 'Silakan masukkan alamat email yang valid',  // Deskripsi bidang
+  description: 'Silakan masukkan alamat email yang valid',  // Deskripsi field
   validation: {
     type: 'string',
     rules: [{ key: 'email', name: 'email' }]
@@ -574,38 +577,38 @@ interface FieldValidationRule<T extends BasicType> {
 }
 ```
 
-### `interface` - Komponen Antarmuka
+### `interface` - Component Antarmuka
 
 - **Tipe**: `string`
-- **Deskripsi**: Komponen antarmuka tampilan depan yang direkomendasikan untuk bidang.
+- **Penjelasan**: Component antarmuka field front-end yang direkomendasikan
 - **Contoh**:
 ```typescript
 {
   type: 'string',
   name: 'content',
   title: 'Konten',
-  interface: 'textarea',  // Rekomendasikan penggunaan komponen textarea
+  interface: 'textarea',  // Direkomendasikan menggunakan component text area
   uiSchema: {
     'x-component': 'Input.TextArea'
   }
 }
 ```
 
-### Antarmuka Tipe Bidang
+### Interface Tipe Field
 
-### `type: 'string'` - Bidang String
+### `type: 'string'` - Field String
 
-- **Deskripsi**: Digunakan untuk menyimpan data teks pendek. Mendukung batasan panjang dan pemangkasan otomatis.
+- **Penjelasan**: Digunakan untuk menyimpan data teks pendek, mendukung pembatasan panjang dan auto trim
 - **Tipe Database**: `VARCHAR`
-- **Properti Spesifik**:
-  - `length`: Batasan panjang string
-  - `trim`: Apakah akan secara otomatis menghapus spasi di awal dan akhir
+- **Property Khusus**:
+  - `length`: Pembatasan panjang string
+  - `trim`: Apakah otomatis menghapus spasi di awal dan akhir
 
 ```ts
 interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
   type: 'string';
-  length?: number;    // Batasan panjang string
-  trim?: boolean;     // Apakah akan secara otomatis menghapus spasi di awal dan akhir
+  length?: number;    // Pembatasan panjang string
+  trim?: boolean;     // Apakah otomatis menghapus spasi di awal dan akhir
 }
 ```
 
@@ -614,8 +617,8 @@ interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
 {
   type: 'string',
   name: 'username',
-  title: 'Nama Pengguna',
-  length: 50,           // Maksimal 50 karakter
+  title: 'Username',
+  length: 50,           // Maksimum 50 karakter
   trim: true,           // Otomatis menghapus spasi
     allowNull: false,
     unique: true,
@@ -629,11 +632,11 @@ interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
 }
 ```
 
-### `type: 'text'` - Bidang Teks
+### `type: 'text'` - Field Teks
 
-- **Deskripsi**: Digunakan untuk menyimpan data teks panjang. Mendukung berbagai tipe teks di MySQL.
+- **Penjelasan**: Digunakan untuk menyimpan data teks panjang, mendukung tipe teks dengan panjang berbeda di MySQL
 - **Tipe Database**: `TEXT`, `MEDIUMTEXT`, `LONGTEXT`
-- **Properti Spesifik**:
+- **Property Khusus**:
   - `length`: Tipe panjang teks MySQL (tiny/medium/long)
 
 ```ts
@@ -649,22 +652,22 @@ interface TextFieldOptions extends BaseColumnFieldOptions {
   type: 'text',
   name: 'content',
   title: 'Konten',
-  length: 'medium',     // Gunakan MEDIUMTEXT
+  length: 'medium',     // Menggunakan MEDIUMTEXT
   allowNull: true
 }
 ```
 
 ### Tipe Numerik
 
-### `type: 'integer'` - Bidang Integer
+### `type: 'integer'` - Field Integer
 
-- **Deskripsi**: Digunakan untuk menyimpan data integer. Mendukung penambahan otomatis dan kunci utama.
+- **Penjelasan**: Digunakan untuk menyimpan data integer, mendukung auto increment dan primary key
 - **Tipe Database**: `INTEGER`
 
 ```ts
 interface IntegerFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'integer';
-  // Mewarisi semua opsi dari tipe INTEGER Sequelize
+  // Mewarisi semua opsi tipe Sequelize INTEGER
 }
 ```
 
@@ -680,9 +683,9 @@ interface IntegerFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'bigInt'` - Bidang Big Integer
+### `type: 'bigInt'` - Field Big Integer
 
-- **Deskripsi**: Digunakan untuk menyimpan data integer besar, dengan rentang yang lebih besar dari `integer`.
+- **Penjelasan**: Digunakan untuk menyimpan data integer besar, dengan rentang lebih besar dari integer
 - **Tipe Database**: `BIGINT`
 
 ```ts
@@ -702,12 +705,12 @@ interface BigIntFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'float'` - Bidang Float
+### `type: 'float'` - Field Floating Point
 
-- **Deskripsi**: Digunakan untuk menyimpan angka floating-point presisi tunggal.
+- **Penjelasan**: Digunakan untuk menyimpan floating point presisi tunggal
 - **Tipe Database**: `FLOAT`
-- **Properti Spesifik**:
-  - `precision`: Presisi (jumlah total digit)
+- **Property Khusus**:
+  - `precision`: Presisi (jumlah digit total)
   - `scale`: Jumlah digit desimal
 
 ```ts
@@ -731,12 +734,12 @@ interface FloatFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'double'` - Bidang Float Presisi Ganda
+### `type: 'double'` - Field Double Floating Point
 
-- **Deskripsi**: Digunakan untuk menyimpan angka floating-point presisi ganda, yang memiliki presisi lebih tinggi dari `float`.
+- **Penjelasan**: Digunakan untuk menyimpan floating point presisi ganda, presisi lebih tinggi dari float
 - **Tipe Database**: `DOUBLE`
-- **Properti Spesifik**:
-  - `precision`: Presisi (jumlah total digit)
+- **Property Khusus**:
+  - `precision`: Presisi (jumlah digit total)
   - `scale`: Jumlah digit desimal
 
 ```ts
@@ -760,12 +763,12 @@ interface DoubleFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'real'` - Bidang Real
+### `type: 'real'` - Field Real
 
-- **Deskripsi**: Digunakan untuk menyimpan angka real; bergantung pada database.
+- **Penjelasan**: Digunakan untuk menyimpan bilangan real, terkait database
 - **Tipe Database**: `REAL`
-- **Properti Spesifik**:
-  - `precision`: Presisi (jumlah total digit)
+- **Property Khusus**:
+  - `precision`: Presisi (jumlah digit total)
   - `scale`: Jumlah digit desimal
 
 ```ts
@@ -788,18 +791,18 @@ interface RealFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'decimal'` - Bidang Desimal
+### `type: 'decimal'` - Field Decimal Akurat
 
-- **Deskripsi**: Digunakan untuk menyimpan angka desimal yang tepat, cocok untuk perhitungan keuangan.
+- **Penjelasan**: Digunakan untuk menyimpan decimal yang akurat, cocok untuk perhitungan keuangan
 - **Tipe Database**: `DECIMAL`
-- **Properti Spesifik**:
-  - `precision`: Presisi (jumlah total digit)
+- **Property Khusus**:
+  - `precision`: Presisi (jumlah digit total)
   - `scale`: Jumlah digit desimal
 
 ```ts
 interface DecimalFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'decimal';
-  precision?: number;  // Presisi (jumlah total digit)
+  precision?: number;  // Presisi (jumlah digit total)
   scale?: number;      // Jumlah digit desimal
 }
 ```
@@ -825,9 +828,9 @@ interface DecimalFieldOptions extends BaseColumnFieldOptions<'number'> {
 
 ### Tipe Boolean
 
-### `type: 'boolean'` - Bidang Boolean
+### `type: 'boolean'` - Field Boolean
 
-- **Deskripsi**: Digunakan untuk menyimpan nilai benar/salah, biasanya untuk status on/off.
+- **Penjelasan**: Digunakan untuk menyimpan nilai true/false, biasanya digunakan untuk status switch
 - **Tipe Database**: `BOOLEAN` atau `TINYINT(1)`
 
 ```typescript
@@ -847,9 +850,9 @@ interface BooleanFieldOptions extends BaseColumnFieldOptions<'boolean'> {
 }
 ```
 
-### `type: 'radio'` - Bidang Radio
+### `type: 'radio'` - Field Radio
 
-- **Deskripsi**: Digunakan untuk menyimpan nilai tunggal yang dipilih, biasanya untuk pilihan biner.
+- **Penjelasan**: Digunakan untuk menyimpan nilai radio, biasanya digunakan untuk situasi pilihan dua
 - **Tipe Database**: `BOOLEAN` atau `TINYINT(1)`
 
 ```typescript
@@ -869,19 +872,19 @@ interface RadioFieldOptions extends BaseColumnFieldOptions<'boolean'> {
 }
 ```
 
-### Tipe Tanggal dan Waktu
+### Tipe Tanggal Waktu
 
-### `type: 'date'` - Bidang Tanggal
+### `type: 'date'` - Field Tanggal
 
-- **Deskripsi**: Digunakan untuk menyimpan data tanggal tanpa informasi waktu.
+- **Penjelasan**: Digunakan untuk menyimpan data tanggal, tidak menyertakan informasi waktu
 - **Tipe Database**: `DATE`
-- **Properti Spesifik**:
-  - `timezone`: Apakah akan menyertakan informasi zona waktu
+- **Property Khusus**:
+  - `timezone`: Apakah menyertakan informasi zona waktu
 
 ```typescript
 interface DateFieldOptions extends BaseColumnFieldOptions<'date'> {
   type: 'date';
-  timezone?: boolean;  // Apakah akan menyertakan informasi zona waktu
+  timezone?: boolean;  // Apakah menyertakan informasi zona waktu
 }
 ```
 
@@ -896,12 +899,12 @@ interface DateFieldOptions extends BaseColumnFieldOptions<'date'> {
 }
 ```
 
-### `type: 'time'` - Bidang Waktu
+### `type: 'time'` - Field Waktu
 
-- **Deskripsi**: Digunakan untuk menyimpan data waktu tanpa informasi tanggal.
+- **Penjelasan**: Digunakan untuk menyimpan data waktu, tidak menyertakan informasi tanggal
 - **Tipe Database**: `TIME`
-- **Properti Spesifik**:
-  - `timezone`: Apakah akan menyertakan informasi zona waktu
+- **Property Khusus**:
+  - `timezone`: Apakah menyertakan informasi zona waktu
 
 ```ts
 interface TimeFieldOptions extends BaseColumnFieldOptions<'time'> {
@@ -921,12 +924,12 @@ interface TimeFieldOptions extends BaseColumnFieldOptions<'time'> {
 }
 ```
 
-### `type: 'datetimeTz'` - Bidang Datetime dengan Zona Waktu
+### `type: 'datetimeTz'` - Field Tanggal Waktu Dengan Zona Waktu
 
-- **Deskripsi**: Digunakan untuk menyimpan data tanggal dan waktu dengan informasi zona waktu.
+- **Penjelasan**: Digunakan untuk menyimpan data tanggal waktu dengan zona waktu
 - **Tipe Database**: `TIMESTAMP WITH TIME ZONE`
-- **Properti Spesifik**:
-  - `timezone`: Apakah akan menyertakan informasi zona waktu
+- **Property Khusus**:
+  - `timezone`: Apakah menyertakan informasi zona waktu
 
 ```ts
 interface DatetimeTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
@@ -948,12 +951,12 @@ interface DatetimeTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 }
 ```
 
-### `type: 'datetimeNoTz'` - Bidang Datetime tanpa Zona Waktu
+### `type: 'datetimeNoTz'` - Field Tanggal Waktu Tanpa Zona Waktu
 
-- **Deskripsi**: Digunakan untuk menyimpan data tanggal dan waktu tanpa informasi zona waktu.
+- **Penjelasan**: Digunakan untuk menyimpan data tanggal waktu tanpa zona waktu
 - **Tipe Database**: `TIMESTAMP` atau `DATETIME`
-- **Properti Spesifik**:
-  - `timezone`: Apakah akan menyertakan informasi zona waktu
+- **Property Khusus**:
+  - `timezone`: Apakah menyertakan informasi zona waktu
 
 ```ts
 interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
@@ -967,7 +970,7 @@ interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 {
   type: 'datetimeNoTz',
   name: 'updatedAt',
-  title: 'Waktu Pembaruan',
+  title: 'Waktu Update',
   allowNull: false,
   timezone: false,
   defaultToCurrentTime: true,
@@ -975,9 +978,9 @@ interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 }
 ```
 
-### `type: 'dateOnly'` - Bidang Hanya Tanggal
+### `type: 'dateOnly'` - Field Hanya Tanggal
 
-- **Deskripsi**: Digunakan untuk menyimpan data yang hanya berisi tanggal, tanpa waktu.
+- **Penjelasan**: Digunakan untuk menyimpan data yang hanya berisi tanggal, tidak menyertakan waktu
 - **Tipe Database**: `DATE`
 - **Contoh**:
 ```typescript
@@ -989,11 +992,11 @@ interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 }
 ```
 
-### `type: 'unixTimestamp'` - Bidang Stempel Waktu Unix
+### `type: 'unixTimestamp'` - Field Unix Timestamp
 
-- **Deskripsi**: Digunakan untuk menyimpan data stempel waktu Unix.
+- **Penjelasan**: Digunakan untuk menyimpan data Unix timestamp
 - **Tipe Database**: `BIGINT`
-- **Properti Spesifik**:
+- **Property Khusus**:
   - `epoch`: Waktu epoch
 
 ```typescript
@@ -1016,9 +1019,9 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 
 ### Tipe JSON
 
-### `type: 'json'` - Bidang JSON
+### `type: 'json'` - Field JSON
 
-- **Deskripsi**: Digunakan untuk menyimpan data dalam format JSON, mendukung struktur data yang kompleks.
+- **Penjelasan**: Digunakan untuk menyimpan data format JSON, mendukung struktur data kompleks
 - **Tipe Database**: `JSON` atau `TEXT`
 - **Contoh**:
 ```typescript
@@ -1031,9 +1034,9 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 }
 ```
 
-### `type: 'jsonb'` - Bidang JSONB
+### `type: 'jsonb'` - Field JSONB
 
-- **Deskripsi**: Digunakan untuk menyimpan data dalam format JSONB (spesifik PostgreSQL), yang mendukung pengindeksan dan kueri.
+- **Penjelasan**: Digunakan untuk menyimpan data format JSONB (khusus PostgreSQL), mendukung index dan query
 - **Tipe Database**: `JSONB` (PostgreSQL)
 - **Contoh**:
 ```typescript
@@ -1048,19 +1051,19 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 
 ### Tipe Array
 
-### `type: 'array'` - Bidang Array
+### `type: 'array'` - Field Array
 
-- **Deskripsi**: Digunakan untuk menyimpan data array, mendukung berbagai tipe elemen.
+- **Penjelasan**: Digunakan untuk menyimpan data array, mendukung berbagai tipe element
 - **Tipe Database**: `JSON` atau `ARRAY`
-- **Properti Spesifik**:
+- **Property Khusus**:
   - `dataType`: Tipe penyimpanan (json/array)
-  - `elementType`: Tipe elemen (STRING/INTEGER/BOOLEAN/JSON)
+  - `elementType`: Tipe element (STRING/INTEGER/BOOLEAN/JSON)
 
 ```ts
 interface ArrayFieldOptions extends BaseColumnFieldOptions<'array'> {
   type: 'array';
   dataType?: 'json' | 'array';  // Tipe penyimpanan
-  elementType?: 'STRING' | 'INTEGER' | 'BOOLEAN' | 'JSON'; // Tipe elemen
+  elementType?: 'STRING' | 'INTEGER' | 'BOOLEAN' | 'JSON'; // Tipe element
 }
 ```
 
@@ -1077,13 +1080,13 @@ interface ArrayFieldOptions extends BaseColumnFieldOptions<'array'> {
 }
 ```
 
-### `type: 'set'` - Bidang Set
+### `type: 'set'` - Field Set
 
-- **Deskripsi**: Digunakan untuk menyimpan data set, yang mirip dengan array tetapi dengan batasan keunikan.
+- **Penjelasan**: Digunakan untuk menyimpan data set, mirip array tetapi memiliki constraint keunikan
 - **Tipe Database**: `JSON` atau `ARRAY`
-- **Properti Spesifik**:
+- **Property Khusus**:
   - `dataType`: Tipe penyimpanan (json/array)
-  - `elementType`: Tipe elemen (STRING/INTEGER/BOOLEAN/JSON)
+  - `elementType`: Tipe element (STRING/INTEGER/BOOLEAN/JSON)
 
 ```ts
 interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
@@ -1106,19 +1109,19 @@ interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
 }
 ```
 
-### Tipe Pengenal
+### Tipe Identifier
 
-### `type: 'uuid'` - Bidang UUID
+### `type: 'uuid'` - Field UUID
 
-- **Deskripsi**: Digunakan untuk menyimpan pengidentifikasi unik dalam format UUID.
+- **Penjelasan**: Digunakan untuk menyimpan identifier unik format UUID
 - **Tipe Database**: `UUID` atau `VARCHAR(36)`
-- **Properti Spesifik**:
-  - `autoFill`: Otomatis mengisi
+- **Property Khusus**:
+  - `autoFill`: Otomatis terisi
 
 ```ts
 interface UUIDFieldOptions extends BaseColumnFieldOptions<'uuid'> {
   type: 'uuid';
-  autoFill?: boolean;  // Otomatis mengisi
+  autoFill?: boolean;  // Otomatis terisi
 }
 ```
 
@@ -1134,14 +1137,14 @@ interface UUIDFieldOptions extends BaseColumnFieldOptions<'uuid'> {
 }
 ```
 
-### `type: 'nanoid'` - Bidang Nanoid
+### `type: 'nanoid'` - Field Nanoid
 
-- **Deskripsi**: Digunakan untuk menyimpan pengidentifikasi unik pendek dalam format Nanoid.
+- **Penjelasan**: Digunakan untuk menyimpan identifier unik pendek format Nanoid
 - **Tipe Database**: `VARCHAR`
-- **Properti Spesifik**:
+- **Property Khusus**:
   - `size`: Panjang ID
   - `customAlphabet`: Set karakter kustom
-  - `autoFill`: Otomatis mengisi
+  - `autoFill`: Otomatis terisi
 
 ```ts
 interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
@@ -1166,19 +1169,19 @@ interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
 }
 ```
 
-### `type: 'uid'` - Bidang UID Kustom
+### `type: 'uid'` - Field UID Kustom
 
-- **Deskripsi**: Digunakan untuk menyimpan pengidentifikasi unik dalam format kustom.
+- **Penjelasan**: Digunakan untuk menyimpan identifier unik format kustom
 - **Tipe Database**: `VARCHAR`
-- **Properti Spesifik**:
-  - `prefix`: Awalan
-  - `pattern`: Pola validasi
+- **Property Khusus**:
+  - `prefix`: Prefix
+  - `pattern`: Pattern validasi
 
 ```ts
 interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
   type: 'uid';
-  prefix?: string;  // Awalan
-  pattern?: string; // Pola validasi
+  prefix?: string;  // Prefix
+  pattern?: string; // Pattern validasi
 }
 ```
 
@@ -1195,36 +1198,36 @@ interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
 }
 ```
 
-### `type: 'snowflakeId'` - Bidang ID Snowflake
+### `type: 'snowflakeId'` - Field Snowflake ID
 
-- **Deskripsi**: Digunakan untuk menyimpan pengidentifikasi unik yang dihasilkan oleh algoritma Snowflake.
+- **Penjelasan**: Digunakan untuk menyimpan identifier unik yang dihasilkan oleh algoritma snowflake
 - **Tipe Database**: `BIGINT`
 - **Contoh**:
 ```typescript
 {
   type: 'snowflakeId',
   name: 'snowflakeId',
-  title: 'ID Snowflake',
+  title: 'Snowflake ID',
   allowNull: false,
   unique: true
 }
 ```
 
-### Bidang Fungsional
+### Field Fungsional
 
-### `type: 'password'` - Bidang Kata Sandi
+### `type: 'password'` - Field Password
 
-- **Deskripsi**: Digunakan untuk menyimpan data kata sandi yang terenkripsi.
+- **Penjelasan**: Digunakan untuk menyimpan data password yang sudah dienkripsi
 - **Tipe Database**: `VARCHAR`
-- **Properti Spesifik**:
+- **Property Khusus**:
   - `length`: Panjang hash
-  - `randomBytesSize`: Ukuran byte acak
+  - `randomBytesSize`: Ukuran random bytes
 
 ```ts
 interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
   type: 'password';
   length?: number;  // Panjang hash
-  randomBytesSize?: number;  // Ukuran byte acak
+  randomBytesSize?: number;  // Ukuran random bytes
 }
 ```
 
@@ -1233,7 +1236,7 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 {
   type: 'password',
   name: 'password',
-  title: 'Kata Sandi',
+  title: 'Password',
   length: 64,
   randomBytesSize: 8,
   allowNull: false,
@@ -1241,25 +1244,25 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 }
 ```
 
-### `type: 'encryption'` - Bidang Enkripsi
+### `type: 'encryption'` - Field Enkripsi
 
-- **Deskripsi**: Digunakan untuk menyimpan data sensitif yang terenkripsi.
+- **Penjelasan**: Digunakan untuk menyimpan data sensitif yang sudah dienkripsi
 - **Tipe Database**: `VARCHAR`
 - **Contoh**:
 ```typescript
 {
   type: 'encryption',
   name: 'secret',
-  title: 'Kunci Rahasia',
+  title: 'Secret Key',
   allowNull: true,
   hidden: true
 }
 ```
 
-### `type: 'virtual'` - Bidang Virtual
+### `type: 'virtual'` - Field Virtual
 
-- **Deskripsi**: Digunakan untuk menyimpan data virtual hasil perhitungan yang tidak disimpan dalam database.
-- **Tipe Database**: Tidak ada (bidang virtual)
+- **Penjelasan**: Digunakan untuk menyimpan data virtual yang dihitung, tidak disimpan di database
+- **Tipe Database**: Tidak ada (field virtual)
 - **Contoh**:
 ```typescript
 {
@@ -1269,21 +1272,21 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 }
 ```
 
-### `type: 'context'` - Bidang Konteks
+### `type: 'context'` - Field Context
 
-- **Deskripsi**: Digunakan untuk membaca data dari konteks runtime (misalnya, informasi pengguna saat ini).
-- **Tipe Database**: Ditentukan oleh `dataType`
-- **Properti Spesifik**:
-  - `dataIndex`: Jalur indeks data
+- **Penjelasan**: Digunakan untuk membaca data dari konteks runtime (seperti informasi pengguna saat ini)
+- **Tipe Database**: Ditentukan berdasarkan dataType
+- **Property Khusus**:
+  - `dataIndex`: Path index data
   - `dataType`: Tipe data
-  - `createOnly`: Hanya diatur saat pembuatan
+  - `createOnly`: Hanya diset saat pembuatan
 
 ```ts
 interface ContextFieldOptions extends BaseFieldOptions {
   type: 'context';
-  dataIndex?: string;  // Jalur indeks data
+  dataIndex?: string;  // Path index data
   dataType?: string;   // Tipe data
-  createOnly?: boolean; // Hanya diatur saat pembuatan
+  createOnly?: boolean; // Hanya diset saat pembuatan
 }
 ```
 
@@ -1300,29 +1303,29 @@ interface ContextFieldOptions extends BaseFieldOptions {
 }
 ```
 
-### Bidang Relasi
+### Field Relasi
 
 ### `type: 'belongsTo'` - Relasi Belongs To
 
-- **Deskripsi**: Merepresentasikan relasi banyak-ke-satu, di mana catatan saat ini termasuk dalam catatan lain.
-- **Tipe Database**: Bidang kunci asing
-- **Properti Spesifik**:
-  - `target`: Nama koleksi target
-  - `foreignKey`: Nama bidang kunci asing
-  - `targetKey`: Nama bidang kunci target dalam koleksi target
-  - `onDelete`: Aksi kaskade saat penghapusan
-  - `onUpdate`: Aksi kaskade saat pembaruan
-  - `constraints`: Apakah akan mengaktifkan batasan kunci asing
+- **Penjelasan**: Merepresentasikan relasi many-to-one, record saat ini milik record lain
+- **Tipe Database**: Field foreign key
+- **Property Khusus**:
+  - `target`: Nama tabel data target
+  - `foreignKey`: Nama field foreign key
+  - `targetKey`: Nama field key tabel target
+  - `onDelete`: Operasi cascade saat delete
+  - `onUpdate`: Operasi cascade saat update
+  - `constraints`: Apakah mengaktifkan constraint foreign key
 
 ```ts
 interface BelongsToFieldOptions extends BaseRelationFieldOptions {
   type: 'belongsTo';
-  target: string;  // Nama koleksi target
-  foreignKey?: string;  // Nama bidang kunci asing
-  targetKey?: string;   // Nama bidang kunci target dalam koleksi target
+  target: string;  // Nama tabel data target
+  foreignKey?: string;  // Nama field foreign key
+  targetKey?: string;   // Nama field key tabel target
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
-  constraints?: boolean;  // Apakah akan mengaktifkan batasan kunci asing
+  constraints?: boolean;  // Apakah mengaktifkan constraint foreign key
 }
 ```
 
@@ -1343,22 +1346,22 @@ interface BelongsToFieldOptions extends BaseRelationFieldOptions {
 
 ### `type: 'hasOne'` - Relasi Has One
 
-- **Deskripsi**: Merepresentasikan relasi satu-ke-satu, di mana catatan saat ini memiliki satu catatan terkait.
-- **Tipe Database**: Bidang kunci asing
-- **Properti Spesifik**:
-  - `target`: Nama koleksi target
-  - `foreignKey`: Nama bidang kunci asing
-  - `sourceKey`: Nama bidang kunci sumber dalam koleksi sumber
-  - `onDelete`: Aksi kaskade saat penghapusan
-  - `onUpdate`: Aksi kaskade saat pembaruan
-  - `constraints`: Apakah akan mengaktifkan batasan kunci asing
+- **Penjelasan**: Merepresentasikan relasi one-to-one, record saat ini memiliki satu record terkait
+- **Tipe Database**: Field foreign key
+- **Property Khusus**:
+  - `target`: Nama tabel data target
+  - `foreignKey`: Nama field foreign key
+  - `sourceKey`: Nama field key tabel sumber
+  - `onDelete`: Operasi cascade saat delete
+  - `onUpdate`: Operasi cascade saat update
+  - `constraints`: Apakah mengaktifkan constraint foreign key
 
 ```ts
 interface HasOneFieldOptions extends BaseRelationFieldOptions {
   type: 'hasOne';
   target: string;
   foreignKey?: string;
-  sourceKey?: string;  // Nama bidang kunci sumber
+  sourceKey?: string;  // Nama field key tabel sumber
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   constraints?: boolean;
@@ -1382,17 +1385,17 @@ interface HasOneFieldOptions extends BaseRelationFieldOptions {
 
 ### `type: 'hasMany'` - Relasi Has Many
 
-- **Deskripsi**: Merepresentasikan relasi satu-ke-banyak, di mana catatan saat ini memiliki beberapa catatan terkait.
-- **Tipe Database**: Bidang kunci asing
-- **Properti Spesifik**:
-  - `target`: Nama koleksi target
-  - `foreignKey`: Nama bidang kunci asing
-  - `sourceKey`: Nama bidang kunci sumber dalam koleksi sumber
-  - `sortBy`: Bidang pengurutan
+- **Penjelasan**: Merepresentasikan relasi one-to-many, record saat ini memiliki banyak record terkait
+- **Tipe Database**: Field foreign key
+- **Property Khusus**:
+  - `target`: Nama tabel data target
+  - `foreignKey`: Nama field foreign key
+  - `sourceKey`: Nama field key tabel sumber
+  - `sortBy`: Field sorting
   - `sortable`: Apakah dapat diurutkan
-  - `onDelete`: Aksi kaskade saat penghapusan
-  - `onUpdate`: Aksi kaskade saat pembaruan
-  - `constraints`: Apakah akan mengaktifkan batasan kunci asing
+  - `onDelete`: Operasi cascade saat delete
+  - `onUpdate`: Operasi cascade saat update
+  - `constraints`: Apakah mengaktifkan constraint foreign key
 
 ```ts
 interface HasManyFieldOptions extends BaseRelationFieldOptions {
@@ -1400,7 +1403,7 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
   target: string;
   foreignKey?: string;
   sourceKey?: string;
-  sortBy?: string[];  // Bidang pengurutan
+  sortBy?: string[];  // Field sorting
   sortable?: boolean; // Apakah dapat diurutkan
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
@@ -1425,28 +1428,28 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'belongsToMany'` - Relasi Belongs To Many
+### `type: 'belongsToMany'` - Relasi Many-to-Many
 
-- **Deskripsi**: Merepresentasikan relasi banyak-ke-banyak, menghubungkan dua koleksi melalui tabel penghubung.
-- **Tipe Database**: Tabel penghubung
-- **Properti Spesifik**:
-  - `target`: Nama koleksi target
-  - `through`: Nama tabel penghubung
-  - `foreignKey`: Nama bidang kunci asing
-  - `otherKey`: Kunci asing lain di tabel penghubung
-  - `sourceKey`: Nama bidang kunci sumber dalam koleksi sumber
-  - `targetKey`: Nama bidang kunci target dalam koleksi target
-  - `onDelete`: Aksi kaskade saat penghapusan
-  - `onUpdate`: Aksi kaskade saat pembaruan
-  - `constraints`: Apakah akan mengaktifkan batasan kunci asing
+- **Penjelasan**: Merepresentasikan relasi many-to-many, menghubungkan dua tabel data melalui tabel perantara
+- **Tipe Database**: Tabel perantara
+- **Property Khusus**:
+  - `target`: Nama tabel data target
+  - `through`: Nama tabel perantara
+  - `foreignKey`: Nama field foreign key
+  - `otherKey`: Foreign key sisi lain tabel perantara
+  - `sourceKey`: Nama field key tabel sumber
+  - `targetKey`: Nama field key tabel target
+  - `onDelete`: Operasi cascade saat delete
+  - `onUpdate`: Operasi cascade saat update
+  - `constraints`: Apakah mengaktifkan constraint foreign key
 
 ```ts
 interface BelongsToManyFieldOptions extends BaseRelationFieldOptions {
   type: 'belongsToMany';
   target: string;
-  through: string;  // Nama tabel penghubung
+  through: string;  // Nama tabel perantara
   foreignKey?: string;
-  otherKey?: string;  // Kunci asing lain di tabel penghubung
+  otherKey?: string;  // Foreign key sisi lain tabel perantara
   sourceKey?: string;
   targetKey?: string;
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';

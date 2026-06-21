@@ -1,14 +1,14 @@
 ---
-displayName: "Luồng công việc: Nút truy vấn tổng hợp"
+displayName: "Workflow: Node truy vấn tổng hợp"
 packageName: '@nocobase/plugin-workflow-aggregate'
+title: "Workflow: Node truy vấn tổng hợp"
+keywords: "Workflow: Node truy vấn tổng hợp,Plugin,NocoBase"
 description: |
-  Dùng để thực hiện các truy vấn tổng hợp trên cơ sở dữ liệu trong luồng công việc, ví dụ: thống kê số lượng, tính tổng, tính trung bình, v.v.
+  Có thể được sử dụng để thực hiện truy vấn tổng hợp trên cơ sở dữ liệu trong workflow, chẳng hạn như: đếm số lượng, tính tổng, tính trung bình, v.v.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Nút truy vấn tổng hợp
+# Workflow: Node truy vấn tổng hợp

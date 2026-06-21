@@ -1,14 +1,14 @@
 ---
-displayName: "Blok: Gantt"
+displayName: "Block: Gantt"
 packageName: '@nocobase/plugin-gantt'
+title: "Block: Gantt"
+keywords: "Block: Gantt,Plugin,NocoBase"
 description: |
-  Menyediakan blok Gantt.
+  Menyediakan Block Gantt.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Gantt
+# Block: Gantt

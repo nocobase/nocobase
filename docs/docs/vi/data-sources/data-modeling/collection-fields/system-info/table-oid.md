@@ -1,16 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Table OID"
+description: "Field hệ thống Table OID, định danh đối tượng bảng PostgreSQL."
+keywords: "Table OID,PostgreSQL,Field hệ thống,Định danh đối tượng bảng,NocoBase"
+---
 
 # Table OID
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512174746](https://static-docs.nocobase.com/20240512174746.png)
 
 ## Ví dụ
 
-Sẽ được bổ sung.
+Sẽ được bổ sung sau

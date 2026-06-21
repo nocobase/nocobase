@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-audit-logger'
+title: "审计日志"
+description: "审计日志：记录用户活动与资源操作历史，Resource、Action、User、Target、IP、UA、Metadata 等参数，操作追踪与合规审计。"
+keywords: "审计日志,操作审计,Resource Action,操作追踪,合规审计,用户活动记录,NocoBase"
 ---
 
 # 审计日志

@@ -1,4 +1,6 @@
 ---
+title: "Async task manager"
+keywords: "Async task manager,Plugin,NocoBase"
 displayName: "Async task manager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # Async task manager

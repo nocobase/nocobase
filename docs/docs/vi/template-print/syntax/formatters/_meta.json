@@ -21,7 +21,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Định dạng ngày",
+    "label": "Định dạng ngày tháng",
     "link": "/template-print/syntax/formatters/date-formatting"
   },
   {
@@ -33,5 +33,10 @@
     "type": "custom-link",
     "label": "Định dạng mảng",
     "link": "/template-print/syntax/formatters/array-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Định dạng trường media",
+    "link": "/template-print/syntax/formatters/media-field-formatting"
   }
 ]

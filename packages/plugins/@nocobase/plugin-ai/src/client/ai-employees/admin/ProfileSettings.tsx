@@ -11,7 +11,6 @@ import { SchemaComponent, useCollectionRecordData, useAPIClient } from '@nocobas
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
 import { useT } from '../../locale';
-import { Switch } from '@formily/antd-v5';
 
 export const ProfileSettings: React.FC<{
   edit?: boolean;
@@ -22,7 +21,7 @@ export const ProfileSettings: React.FC<{
   return (
     <SchemaComponent
       scope={{ t }}
-      components={{ AvatarSelect, Switch }}
+      components={{ AvatarSelect }}
       schema={{
         type: 'void',
         properties: {
@@ -40,14 +39,6 @@ export const ProfileSettings: React.FC<{
             'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
-            required: true,
-          },
-          enabled: {
-            type: 'boolean',
-            title: '{{t("Enabled")}}',
-            'x-decorator': 'FormItem',
-            'x-component': 'Switch',
-            default: true,
             required: true,
           },
           position: {

@@ -1,15 +1,17 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Tanggal"
+description: "Field Tanggal, hanya menyimpan bagian tanggal."
+keywords: "tanggal,date,field tanggal,pemilihan tanggal,NocoBase"
+---
 
 # Tanggal
 
-## Pendahuluan
+## Pengantar
 
-## Konfigurasi Bidang
+## Konfigurasi Field
 
 ![20240512181142](https://static-docs.nocobase.com/20240512181142.png)
 
 ## Contoh
 
-Akan ditambahkan.
+Akan ditambahkan

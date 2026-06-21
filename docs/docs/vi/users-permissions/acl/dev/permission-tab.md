@@ -1,15 +1,17 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+pkg: '@nocobase/plugin-acl'
+title: "Mở rộng tab cấu hình quyền"
+description: "Plugin ACL NocoBase mở rộng tab cấu hình quyền: addPermissionsTab, TabLayout, tab quyền tùy chỉnh, lấy ví dụ với menu mobile."
+keywords: "Mở rộng cấu hình quyền,addPermissionsTab,Tab quyền,phát triển ACL,quản lý quyền,NocoBase"
+---
 
+# Mở rộng tab cấu hình quyền
 
-# Mở rộng các thẻ cấu hình quyền
-
-Dưới đây, chúng ta sẽ lấy mục cấu hình "Mobile Menu" làm ví dụ để minh họa cách mở rộng một thẻ cấu hình quyền mới. Kết quả được hiển thị trong hình dưới đây:
+Dưới đây lấy mục cấu hình "Menu mobile" làm ví dụ để minh họa cách mở rộng một tab cấu hình quyền mới. Hiệu quả như hình bên dưới:
 
 ![20240903210248](https://static-docs.nocobase.com/20240903210248.png)
 
-Mã code như sau:
+Code như sau:
 
 ```typescript
 import { Plugin } from '@nocobase/client';
@@ -34,9 +36,9 @@ class PluginMobileClient extends Plugin {
 }
 ```
 
-Đầu tiên, chúng ta cần lấy một instance của plugin `PluginACLClient` ([các phương pháp khác để lấy instance của plugin](https://docs-cn.nocobase.com/development/client/life-cycle#%E8%8E%B7%E5%8F%96%E6%8F%92%E4%BB%B6)), và thêm một thẻ cấu hình quyền mới bằng phương thức `settingsUI.addPermissionsTab`. Trong ví dụ này, chúng ta đã thêm một thẻ cấu hình quyền có tên là "Mobile Menu".
+Đầu tiên, chúng ta cần lấy instance của plugin `PluginACLClient` ([các phương thức khác để lấy plugin instance](https://docs-cn.nocobase.com/development/client/life-cycle#%E8%8E%B7%E5%8F%96%E6%8F%92%E4%BB%B6)), thông qua phương thức `settingsUI.addPermissionsTab` để thêm một tab cấu hình quyền mới. Trong ví dụ này, chúng ta đã thêm một tab cấu hình quyền có tên là "Menu mobile".
 
-Giá trị của thuộc tính `settingsUI` là một instance của lớp có tên `ACLSettingsUI`, và thông tin kiểu của nó như sau:
+Giá trị của thuộc tính `settingsUI` là một instance của lớp có tên `ACLSettingsUI`, thông tin kiểu của nó như sau:
 
 ```typescript
 import { TabsProps } from 'antd/es/tabs/index';

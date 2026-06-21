@@ -1,4 +1,6 @@
 ---
+title: "数据可视化"
+keywords: "数据可视化,插件,NocoBase"
 displayName: "数据可视化"
 packageName: '@nocobase/plugin-data-visualization'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 数据可视化

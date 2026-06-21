@@ -1,61 +1,63 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Editor Tema"
+description: "Editor Tema: kustomisasi SeedToken/MapToken/AliasToken berbasis Ant Design 5.x, mendukung mode dark/compact, tambah/edit/hapus tema, mengatur tema default dan tema yang dapat dipilih user."
+keywords: "editor tema,Tema Ant Design,mode dark,mode compact,SeedToken,MapToken,AliasToken,tema kustom,manajemen sistem,NocoBase"
+---
 
 # Editor Tema
 
-> Fitur tema saat ini diimplementasikan berdasarkan Ant Design 5.x. Disarankan untuk memahami konsep terkait [Kustomisasi Tema](https://ant.design/docs/react/customize-theme) sebelum membaca dokumen ini.
+> Fitur tema saat ini diimplementasikan berdasarkan Ant Design versi 5.x. Disarankan untuk memahami konsep terkait [Customize Theme](https://ant.design/docs/react/customize-theme#customize-theme) sebelum membaca artikel ini.
 
-## Pendahuluan
+## Pengantar
 
-Plugin Editor Tema digunakan untuk memodifikasi gaya seluruh halaman front-end. Saat ini, plugin ini mendukung pengeditan [SeedToken](https://ant.design/docs/react/customize-theme#seedtoken), [MapToken](https://ant.design/docs/react/customize-theme#maptoken), dan [AliasToken](https://ant.design/docs/react/customize-theme#aliastoken) secara global, serta mendukung [pengalihan](https://ant.design/docs/react/customize-theme#use-preset-algorithms) ke `Mode Gelap` dan `Mode Kompak`. Ke depannya, mungkin akan ada dukungan untuk kustomisasi tema [tingkat komponen](https://ant.design/docs/react/customize-theme#component-level-customization).
+Plugin Editor Tema digunakan untuk memodifikasi style seluruh halaman frontend. Saat ini mendukung pengeditan [SeedToken](https://ant.design/docs/react/customize-theme#seedtoken), [MapToken](https://ant.design/docs/react/customize-theme#maptoken), [AliasToken](https://ant.design/docs/react/customize-theme#aliastoken) pada cakupan global, dan mendukung [switching](https://ant.design/docs/react/customize-theme#use-preset-algorithms) ke `dark mode` dan `compact mode`. Di masa depan mungkin akan mendukung kustomisasi tema [tingkat komponen](https://ant.design/docs/react/customize-theme#modify-component-token).
 
 ## Petunjuk Penggunaan
 
-### Mengaktifkan Plugin Editor Tema
+### Aktifkan Plugin Tema
 
-Pertama, perbarui NocoBase ke versi terbaru (v0.11.1 atau lebih tinggi). Kemudian, cari kartu `Editor Tema` di halaman Pengelola Plugin. Klik tombol `Aktifkan` di kanan bawah kartu dan tunggu hingga halaman dimuat ulang.
+Pertama, update NocoBase ke versi terbaru (v0.11.1 ke atas), kemudian cari card `Editor Tema` di halaman Plugin Manager, klik tombol `Aktifkan` di pojok kanan bawah card, tunggu hingga halaman refresh.
 
 ![20240409132838](https://static-docs.nocobase.com/20240409132838.png)
 
-### Mengakses Halaman Konfigurasi Tema
+### Masuk ke Halaman Konfigurasi Tema
 
-Setelah plugin diaktifkan, klik tombol pengaturan di kiri bawah kartu untuk menuju halaman pengeditan tema. Secara default, tersedia empat opsi tema: `Tema Default`, `Tema Gelap`, `Tema Kompak`, dan `Tema Gelap Kompak`.
+Setelah plugin diaktifkan, klik tombol settings di pojok kiri bawah card untuk pindah ke halaman editor tema. Default menyediakan empat opsi tema: `Default Theme`, `Dark Theme`, `Compact Theme`, dan `Compact Dark Theme`.
 
 ![20240409133020](https://static-docs.nocobase.com/20240409133020.png)
 
-### Menambah Tema Baru
+### Tambah Tema
 
-Klik tombol `Tambah Tema Baru` dan pilih `Buat Tema Baru Sepenuhnya`. Editor Tema akan muncul di sisi kanan halaman, memungkinkan Anda mengedit opsi seperti `Warna`, `Ukuran`, `Gaya`, dan lainnya. Setelah selesai mengedit, masukkan nama tema dan klik simpan untuk menyelesaikan penambahan tema.
+Klik tombol `Add New Theme`, pilih `Add a brand new theme`. Editor tema akan muncul di sisi kanan halaman, mendukung pengeditan opsi seperti `Color`, `Size`, `Style`, dll. Setelah selesai mengedit, masukkan nama tema dan klik save untuk menyelesaikan penambahan tema.
 
 ![20240409133147](https://static-docs.nocobase.com/20240409133147.png)
 
-### Menerapkan Tema Baru
+### Terapkan Tema Baru
 
-Arahkan kursor ke pojok kanan atas halaman untuk melihat opsi pengalih tema. Klik untuk beralih ke tema lain, seperti tema yang baru saja Anda tambahkan.
+Arahkan mouse ke pojok kanan atas halaman, Anda akan melihat item theme switching. Klik untuk beralih ke tema lain, misalnya tema yang baru saja ditambahkan.
 
 ![20240409133247](https://static-docs.nocobase.com/20240409133247.png)
 
-### Mengedit Tema yang Sudah Ada
+### Edit Tema yang Ada
 
-Klik tombol `Edit` di kiri bawah kartu. Editor Tema akan muncul di sisi kanan halaman (sama seperti saat menambah tema baru). Setelah selesai mengedit, klik simpan untuk menyelesaikan modifikasi tema.
+Klik tombol `Edit` di pojok kiri bawah card. Editor tema akan muncul di sisi kanan halaman (sama seperti tambah tema). Setelah selesai mengedit, klik save untuk menyelesaikan modifikasi tema.
 
 ![20240409134413](https://static-docs.nocobase.com/20240409134413.png)
 
-### Mengatur Tema yang Dapat Dipilih Pengguna
+### Atur Tema yang Dapat Dipilih User
 
-Tema yang baru ditambahkan secara default dapat dipilih oleh pengguna. Jika Anda tidak ingin pengguna beralih ke tema tertentu, Anda dapat mematikan sakelar `Dapat dipilih pengguna` di kanan bawah kartu tema. Dengan demikian, pengguna tidak akan dapat beralih ke tema tersebut.
+Tema yang baru ditambahkan secara default mengizinkan user untuk beralih. Jika tidak ingin user beralih ke tema tertentu, Anda dapat menonaktifkan switch `Selectable by User` di pojok kanan bawah card tema, sehingga user tidak dapat beralih ke tema tersebut.
 
 ![20240409133331](https://static-docs.nocobase.com/20240409133331.png)
 
-### Mengatur sebagai Tema Default
+### Atur sebagai Tema Default
 
-Pada kondisi awal, tema default adalah `Tema Default`. Jika Anda ingin mengatur tema tertentu sebagai tema default, Anda dapat mengaktifkan sakelar `Tema Default` di kanan bawah kartu tema tersebut. Ini akan memastikan bahwa saat pengguna pertama kali membuka halaman, mereka akan melihat tema ini. Catatan: Tema default tidak dapat dihapus.
+Pada status awal, tema default adalah `Default Theme`. Jika Anda perlu menetapkan tema tertentu sebagai tema default, Anda dapat mengaktifkan switch `Default Theme` di pojok kanan bawah card tema tersebut, sehingga user akan melihat tema ini saat pertama kali membuka halaman. Perhatian: tema default tidak dapat dihapus.
 
 ![20240409133409](https://static-docs.nocobase.com/20240409133409.png)
 
-### Menghapus Tema
+### Hapus Tema
 
-Klik tombol `Hapus` di bawah kartu, lalu konfirmasi di dialog pop-up untuk menghapus tema.
+Klik tombol `Delete` di bawah card. Pada dialog konfirmasi yang muncul, klik konfirmasi untuk menghapus tema.
 
 ![20240409133435](https://static-docs.nocobase.com/20240409133435.png)

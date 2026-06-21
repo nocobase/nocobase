@@ -1,4 +1,7 @@
 ---
+title: "NocoBase 安装方式与版本对比"
+description: "NocoBase 三种安装方式：Docker（推荐）、create-nocobase-app、Git 源码；Latest/Beta/Alpha 版本区别，适用场景与升级方式。"
+keywords: "NocoBase 安装,Docker 安装,create-nocobase-app,Git 源码,Latest,Beta,Alpha,版本对比,NocoBase"
 versions:
   - label: Latest（稳定版）
     features: 功能稳定、测试完善，仅进行缺陷修复。
@@ -55,4 +58,9 @@ install_methods:
 | **适用场景** | 无代码用户、希望快速部署到服务器的用户。 | 前端/全栈开发者、团队项目、低代码开发。 | 技术开发者、希望体验未发布版本的用户。 |
 | **技术要求** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **升级方式** | 拉取最新镜像并重启容器 | 使用 yarn 更新依赖 | 通过 Git 流程同步更新 |
-| **教程** | [<code>安装</code>](#) [<code>升级</code>](#) [<code>部署</code>](#) | [<code>安装</code>](#) [<code>升级</code>](#) [<code>部署</code>](#) | [<code>安装</code>](#) [<code>升级</code>](#) [<code>部署</code>](#) |
+
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
+## 接下来做什么
+
+如果你已经选好了安装方式，下一步直接看 [安装 NocoBase 应用](/ai/install-nocobase-app) 就行。它会带你安装 NocoBase CLI，并完成 NocoBase 应用的安装和初始化。

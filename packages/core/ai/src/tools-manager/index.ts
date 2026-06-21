@@ -1,0 +1,116 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Registry } from '@nocobase/utils';
+import { DynamicToolsProvider, ToolsEntry, ToolsFilter, ToolsManager, ToolsOptions } from './types';
+import _ from 'lodash';
+
+export class DefaultToolsManager implements ToolsManager {
+  constructor(
+    private readonly tools = new Registry<ToolsEntry>(),
+    private readonly dynamicTools: DynamicToolsProvider[] = [],
+  ) {}
+
+  async getTools(toolName: string, filter?: ToolsFilter): Promise<ToolsEntry> {
+    const target = this.tools.get(toolName);
+    if (target) {
+      return target;
+    }
+    const dynamicTools = await this.syncDynamicTools(filter);
+    return dynamicTools.find((x) => x.definition.name === toolName);
+  }
+
+  async listTools(filter?: ToolsFilter): Promise<ToolsEntry[]> {
+    const toolsList = await this.getToolsList(filter);
+    return toolsList.filter((x) => {
+      if (!filter) {
+        return true;
+      }
+
+      let result = true;
+      if (filter.scope) {
+        result &&= filter.scope === x.scope;
+      }
+
+      if (filter.defaultPermission) {
+        result &&= filter.defaultPermission === x.defaultPermission;
+      }
+
+      if (filter.silence != null && filter.silence !== undefined) {
+        result &&= filter.silence === x.silence;
+      }
+
+      return result;
+    });
+  }
+
+  isToolsExisted(toolName: string): boolean {
+    const target = this.tools.get(toolName);
+    if (target) {
+      return true;
+    }
+    return false;
+  }
+
+  registerTools(options: ToolsOptions | ToolsOptions[]): void {
+    const list = _.isArray(options) ? options : [options];
+    for (const item of list) {
+      const toolsEntry = { ...item } as ToolsEntry;
+      if (!toolsEntry.from) {
+        toolsEntry.from = 'loader';
+      }
+      if (!toolsEntry.execution) {
+        toolsEntry.execution = 'backend';
+      }
+      if (!toolsEntry.defaultPermission) {
+        toolsEntry.defaultPermission = 'ASK';
+      }
+      toolsEntry.silence = toolsEntry.silence === true;
+      if (!toolsEntry.introduction) {
+        toolsEntry.introduction = {
+          title: toolsEntry.definition.name,
+        };
+      }
+      this.tools.register(item.definition.name, toolsEntry);
+    }
+  }
+
+  registerDynamicTools(provider: DynamicToolsProvider): void {
+    this.dynamicTools.push(provider);
+  }
+
+  private async getToolsList(filter?: ToolsFilter): Promise<ToolsEntry[]> {
+    const dynamicTools = await this.syncDynamicTools(filter);
+    return [...this.tools.getValues(), ...dynamicTools];
+  }
+
+  private async syncDynamicTools(filter?: ToolsFilter): Promise<ToolsEntry[]> {
+    if (this.dynamicTools.length === 0) {
+      return [];
+    }
+    const registry = new Registry<ToolsEntry>();
+    const ephemeral = new DefaultToolsManager(registry);
+    await Promise.all(this.dynamicTools.map((register) => register(ephemeral, filter)));
+    return [...registry.getValues()];
+  }
+}
+
+export function defineTools(options: ToolsOptions) {
+  return options;
+}
+
+export const SYSTEM_TOOLS = {
+  WEB_SEARCH: 'subAgentWebSearch',
+  KNOWLEDGE_BASE: 'knowledge-base-retrieve',
+  WORK_FLOW_TASK_OUTPUT: 'aiEmployeeWorkflowTaskOutput',
+};
+
+export const listSystemTools = () => Object.values(SYSTEM_TOOLS);
+
+export * from './types';

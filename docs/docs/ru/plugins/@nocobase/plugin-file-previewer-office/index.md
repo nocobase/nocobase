@@ -1,14 +1,14 @@
 ---
-displayName: "Предварительный просмотр файлов Office"
+title: "Office File Previewer"
+keywords: "File manager,Collection fields"
+displayName: "Предпросмотр файлов Office"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  Плагин для предварительного просмотра файлов Office с использованием онлайн-сервисов Microsoft.
+  Плагин для предпросмотра офисных файлов через сервис Microsoft Live Preview.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Предварительный просмотр файлов Office
+# Предпросмотр файлов Office

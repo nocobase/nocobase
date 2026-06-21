@@ -1,25 +1,27 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Database"
+description: "API Database NocoBase: instance database, definisi Collection, operasi Repository, konfigurasi koneksi."
+keywords: "Database API,instance database,Collection,Repository,konfigurasi koneksi,NocoBase"
+---
 
 # Database
 
-## Gambaran Umum
+## Ikhtisar
 
-Database adalah alat interaksi basis data yang disediakan oleh NocoBase, menawarkan kemampuan interaksi basis data yang sangat nyaman untuk aplikasi tanpa kode (no-code) dan kode rendah (low-code). Basis data yang saat ini didukung adalah:
+Database adalah tools interaksi database yang disediakan NocoBase, menyediakan fungsi interaksi database yang sangat memudahkan untuk aplikasi no-code, low-code. Database yang didukung saat ini:
 
 - SQLite 3.8.8+
 - MySQL 8.0.17+
 - PostgreSQL 10.0+
 
-### Menghubungkan ke Basis Data
+### Menghubungkan Database
 
-Dalam konstruktor `Database`, Anda dapat mengonfigurasi koneksi basis data dengan meneruskan parameter `options`.
+Pada constructor `Database`, dapat dikonfigurasi koneksi database melalui parameter `options`.
 
 ```javascript
 const { Database } = require('@nocobase/database');
 
-// Parameter konfigurasi basis data SQLite
+// Parameter konfigurasi database SQLite
 const database = new Database({
   dialect: 'mysql',
   host: 'localhost',
@@ -29,7 +31,7 @@ const database = new Database({
   password: 'password'
 })
 
-// Parameter konfigurasi basis data MySQL \ PostgreSQL
+// Parameter konfigurasi database MySQL \ PostgreSQL
 const database = new Database({
   dialect: /* 'postgres' atau 'mysql' */,
   database: 'database',
@@ -41,14 +43,14 @@ const database = new Database({
 
 ```
 
-Untuk parameter konfigurasi yang lebih detail, silakan merujuk ke [Konstruktor](#constructor).
+Untuk parameter konfigurasi detail lihat [Constructor](#constructor).
 
 ### Definisi Model Data
 
-`Database` mendefinisikan struktur basis data melalui `koleksi`. Sebuah objek `koleksi` merepresentasikan sebuah tabel dalam basis data.
+`Database` mendefinisikan struktur database melalui `Collection`, satu objek `Collection` mewakili satu tabel di database.
 
 ```javascript
-// Mendefinisikan koleksi
+// Mendefinisikan Collection
 const UserCollection = database.collection({
   name: 'users',
   fields: [
@@ -64,15 +66,15 @@ const UserCollection = database.collection({
 });
 ```
 
-Setelah definisi struktur basis data selesai, Anda dapat menggunakan metode `sync()` untuk menyinkronkan struktur basis data.
+Setelah definisi struktur database selesai, dapat menggunakan method `sync()` untuk sinkronisasi struktur database.
 
 ```javascript
 await database.sync();
 ```
 
-Untuk penggunaan `koleksi` yang lebih detail, silakan merujuk ke [koleksi](/api/database/collection).
+Untuk method penggunaan `Collection` yang lebih detail lihat [Collection](/api/database/collection).
 
-### Membaca/Menulis Data
+### Baca dan Tulis Data
 
 `Database` mengoperasikan data melalui `Repository`.
 
@@ -85,69 +87,69 @@ await UserRepository.create({
   age: 18,
 });
 
-// Mengkueri
+// Query
 const user = await UserRepository.findOne({
   filter: {
     name: '张三',
   },
 });
 
-// Memperbarui
+// Update
 await UserRepository.update({
   values: {
     age: 20,
   },
 });
 
-// Menghapus
+// Hapus
 await UserRepository.destroy(user.id);
 ```
 
-Untuk penggunaan CRUD data yang lebih detail, silakan merujuk ke [Repository](/api/database/repository).
+Untuk method penggunaan CRUD data yang lebih detail lihat [Repository](/api/database/repository).
 
-## Konstruktor
+## Constructor
 
-**Tanda Tangan**
+**Signature**
 
 - `constructor(options: DatabaseOptions)`
 
-Membuat sebuah instans basis data.
+Membuat instance database.
 
 **Parameter**
 
-| Nama Parameter         | Tipe           | Nilai Default | Deskripsi                                                                                                                |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ---------------------- | -------------- | ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `options.host`         | `string`       | `'localhost'` | Host basis data                                                                                                          |
-| `options.port`         | `number`       | -             | Port layanan basis data, dengan port default yang sesuai dengan basis data yang digunakan                                       |
-| `options.username`     | `string`       | -             | Nama pengguna basis data                                                                                                        |
-| `options.password`     | `string`       | -             | Kata sandi basis data                                                                                                          |
-| `options.database`     | `string`       | -             | Nama basis data                                                                                                          |
-| `options.dialect`      | `string`       | `'mysql'`     | Tipe basis data                                                                                                          |
-| `options.storage?`     | `string`       | `':memory:'`  | Mode penyimpanan untuk SQLite                                                                                                   |
-| `options.logging?`     | `boolean`      | `false`       | Apakah mengaktifkan pencatatan log                                                                                                        |
-| `options.define?`      | `Object`       | `{}`          | Parameter definisi tabel default                                                                                                    |
-| `options.tablePrefix?` | `string`       | `''`          | Ekstensi NocoBase, awalan nama tabel                                                                                             |
-| `options.migrator?`    | `UmzugOptions` | `{}`          | Ekstensi NocoBase, parameter terkait manajer migrasi, merujuk pada implementasi [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) |
+| `options.host` | `string` | `'localhost'` | Host database |
+| `options.port` | `number` | - | Port server database, ada port default sesuai database yang digunakan |
+| `options.username` | `string` | - | Username database |
+| `options.password` | `string` | - | Password database |
+| `options.database` | `string` | - | Nama database |
+| `options.dialect` | `string` | `'mysql'` | Tipe database |
+| `options.storage?` | `string` | `':memory:'` | Mode penyimpanan SQLite |
+| `options.logging?` | `boolean` | `false` | Apakah mengaktifkan logging |
+| `options.define?` | `Object` | `{}` | Parameter definisi tabel default |
+| `options.tablePrefix?` | `string` | `''` | Ekstensi NocoBase, prefix nama tabel |
+| `options.migrator?` | `UmzugOptions` | `{}` | Ekstensi NocoBase, parameter terkait migration manager, lihat implementasi [Umzug](https://github.com/sequelize/umzug/blob/main/src/types.ts#L15) |
 
-## Metode Terkait Migrasi
+## Method Terkait Migration
 
 ### `addMigration()`
 
-Menambahkan satu berkas migrasi.
+Menambahkan satu file migration.
 
-**Tanda Tangan**
+**Signature**
 
 - `addMigration(options: MigrationItem)`
 
 **Parameter**
 
-| Nama Parameter       | Tipe               | Nilai Default | Deskripsi                   |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | -------------------- | ------------------ | ------ | ---------------------- |
-| `options.name`       | `string`           | -      | Nama berkas migrasi           |
-| `options.context?`   | `string`           | -      | Konteks berkas migrasi       |
-| `options.migration?` | `typeof Migration` | -      | Kelas kustom untuk berkas migrasi     |
-| `options.up`         | `Function`         | -      | Metode `up` dari berkas migrasi   |
-| `options.down`       | `Function`         | -      | Metode `down` dari berkas migrasi |
+| `options.name` | `string` | - | Nama file migration |
+| `options.context?` | `string` | - | Konteks file migration |
+| `options.migration?` | `typeof Migration` | - | Class kustom file migration |
+| `options.up` | `Function` | - | Method `up` file migration |
+| `options.down` | `Function` | - | Method `down` file migration |
 
 **Contoh**
 
@@ -163,20 +165,20 @@ db.addMigration({
 
 ### `addMigrations()`
 
-Menambahkan berkas migrasi dari direktori yang ditentukan.
+Menambahkan file migration di direktori yang ditentukan.
 
-**Tanda Tangan**
+**Signature**
 
 - `addMigrations(options: AddMigrationsOptions): void`
 
 **Parameter**
 
-| Nama Parameter       | Tipe       | Nilai Default | Deskripsi             |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | -------------------- | ---------- | -------------- | ---------------- |
-| `options.directory`  | `string`   | `''`           | Direktori tempat berkas migrasi berada |
-| `options.extensions` | `string[]` | `['js', 'ts']` | Ekstensi berkas       |
-| `options.namespace?` | `string`   | `''`           | Namespace         |
-| `options.context?`   | `Object`   | `{ db }`       | Konteks berkas migrasi |
+| `options.directory` | `string` | `''` | Direktori tempat file migration |
+| `options.extensions` | `string[]` | `['js', 'ts']` | Ekstensi file |
+| `options.namespace?` | `string` | `''` | Namespace |
+| `options.context?` | `Object` | `{ db }` | Konteks file migration |
 
 **Contoh**
 
@@ -187,48 +189,48 @@ db.addMigrations({
 });
 ```
 
-## Metode Utilitas
+## Tools Method
 
 ### `inDialect()`
 
-Memeriksa apakah tipe basis data saat ini adalah salah satu dari tipe yang ditentukan.
+Memeriksa apakah tipe database saat ini adalah tipe yang ditentukan.
 
-**Tanda Tangan**
+**Signature**
 
 - `inDialect(dialect: string[]): boolean`
 
 **Parameter**
 
-| Nama Parameter | Tipe       | Nilai Default | Deskripsi                                             |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | --------- | ---------- | ------ | ------------------------------------------------ |
-| `dialect` | `string[]` | -      | Tipe basis data, nilai yang mungkin adalah `mysql`/`postgres`/`mariadb` |
+| `dialect` | `string[]` | - | Tipe database, opsi: `mysql`/`postgres`/`mariadb` |
 
 ### `getTablePrefix()`
 
-Mendapatkan awalan nama tabel dari konfigurasi.
+Mendapatkan prefix nama tabel di konfigurasi.
 
-**Tanda Tangan**
+**Signature**
 
 - `getTablePrefix(): string`
 
-## Konfigurasi koleksi
+## Konfigurasi Tabel Data
 
 ### `collection()`
 
-Mendefinisikan sebuah koleksi. Panggilan ini mirip dengan metode `define` Sequelize, yang hanya membuat struktur tabel di memori. Untuk menyimpannya secara permanen ke basis data, Anda perlu memanggil metode `sync`.
+Mendefinisikan satu tabel data. Pemanggilan ini mirip dengan method `define` Sequelize, hanya membuat struktur tabel di memori, jika perlu persistensi ke database, perlu memanggil method `sync`.
 
-**Tanda Tangan**
+**Signature**
 
 - `collection(options: CollectionOptions): Collection`
 
 **Parameter**
 
-Semua parameter konfigurasi `options` konsisten dengan konstruktor kelas `koleksi`, silakan merujuk ke [koleksi](/api/database/collection#constructor).
+Semua parameter konfigurasi `options` sama dengan constructor class `Collection`, lihat [Collection](/api/database/collection#constructor).
 
-**Peristiwa**
+**Event**
 
-- `'beforeDefineCollection'`: Dipicu sebelum mendefinisikan koleksi.
-- `'afterDefineCollection'`: Dipicu setelah mendefinisikan koleksi.
+- `'beforeDefineCollection'`: Dipicu sebelum mendefinisikan tabel.
+- `'afterDefineCollection'`: Dipicu setelah mendefinisikan tabel.
 
 **Contoh**
 
@@ -253,17 +255,17 @@ await db.sync();
 
 ### `getCollection()`
 
-Mendapatkan koleksi yang telah didefinisikan.
+Mendapatkan tabel data yang sudah didefinisikan.
 
-**Tanda Tangan**
+**Signature**
 
 - `getCollection(name: string): Collection`
 
 **Parameter**
 
-| Nama Parameter | Tipe     | Nilai Default | Deskripsi |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ------ | -------- | ------ | ---- |
-| `name` | `string` | -      | Nama koleksi |
+| `name` | `string` | - | Nama tabel |
 
 **Contoh**
 
@@ -273,17 +275,17 @@ const collection = db.getCollection('books');
 
 ### `hasCollection()`
 
-Memeriksa apakah koleksi yang ditentukan telah didefinisikan.
+Memeriksa apakah tabel data yang ditentukan sudah didefinisikan.
 
-**Tanda Tangan**
+**Signature**
 
 - `hasCollection(name: string): boolean`
 
 **Parameter**
 
-| Nama Parameter | Tipe     | Nilai Default | Deskripsi |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ------ | -------- | ------ | ---- |
-| `name` | `string` | -      | Nama koleksi |
+| `name` | `string` | - | Nama tabel |
 
 **Contoh**
 
@@ -297,22 +299,22 @@ db.hasCollection('authors'); // false
 
 ### `removeCollection()`
 
-Menghapus koleksi yang telah didefinisikan. Ini hanya dihapus dari memori; untuk menyimpan perubahan secara permanen, Anda perlu memanggil metode `sync`.
+Menghapus tabel data yang sudah didefinisikan. Hanya menghapus dari memori, jika perlu persistensi, perlu memanggil method `sync`.
 
-**Tanda Tangan**
+**Signature**
 
 - `removeCollection(name: string): void`
 
 **Parameter**
 
-| Nama Parameter | Tipe     | Nilai Default | Deskripsi |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ------ | -------- | ------ | ---- |
-| `name` | `string` | -      | Nama koleksi |
+| `name` | `string` | - | Nama tabel |
 
-**Peristiwa**
+**Event**
 
-- `'beforeRemoveCollection'`: Dipicu sebelum menghapus koleksi.
-- `'afterRemoveCollection'`: Dipicu setelah menghapus koleksi.
+- `'beforeRemoveCollection'`: Dipicu sebelum menghapus tabel.
+- `'afterRemoveCollection'`: Dipicu setelah menghapus tabel.
 
 **Contoh**
 
@@ -324,22 +326,22 @@ db.removeCollection('books');
 
 ### `import()`
 
-Mengimpor semua berkas dalam sebuah direktori sebagai konfigurasi koleksi ke dalam memori.
+Mengimpor semua file di direktori file sebagai konfigurasi collection yang dimuat ke memori.
 
-**Tanda Tangan**
+**Signature**
 
 - `async import(options: { directory: string; extensions?: ImportFileExtension[] }): Promise<Map<string, Collection>>`
 
 **Parameter**
 
-| Nama Parameter       | Tipe       | Nilai Default | Deskripsi             |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | -------------------- | ---------- | -------------- | ---------------- |
-| `options.directory`  | `string`   | -              | Jalur direktori yang akan diimpor |
-| `options.extensions` | `string[]` | `['ts', 'js']` | Memindai akhiran tertentu     |
+| `options.directory` | `string` | - | Path direktori yang akan diimpor |
+| `options.extensions` | `string[]` | `['ts', 'js']` | Scan ekstensi tertentu |
 
 **Contoh**
 
-koleksi yang didefinisikan dalam berkas `./collections/books.ts` adalah sebagai berikut:
+Collection yang didefinisikan di file `./collections/books.ts`:
 
 ```ts
 export default {
@@ -353,7 +355,7 @@ export default {
 };
 ```
 
-Impor konfigurasi yang relevan saat plugin dimuat:
+Mengimpor konfigurasi terkait saat plugin di-load:
 
 ```ts
 class Plugin {
@@ -369,15 +371,15 @@ class Plugin {
 
 ### `registerFieldTypes()`
 
-Mendaftarkan tipe bidang kustom.
+Mendaftarkan tipe field kustom.
 
-**Tanda Tangan**
+**Signature**
 
 - `registerFieldTypes(fieldTypes: MapOf<typeof Field>): void`
 
 **Parameter**
 
-`fieldTypes` adalah pasangan kunci-nilai di mana kuncinya adalah nama tipe bidang dan nilainya adalah kelas tipe bidang.
+`fieldTypes` adalah pasangan key-value, key adalah nama tipe field, value adalah class tipe field.
 
 **Contoh**
 
@@ -395,15 +397,15 @@ db.registerFieldTypes({
 
 ### `registerModels()`
 
-Mendaftarkan kelas model data kustom.
+Mendaftarkan class model data kustom.
 
-**Tanda Tangan**
+**Signature**
 
 - `registerModels(models: MapOf<ModelStatic<any>>): void`
 
 **Parameter**
 
-`models` adalah pasangan kunci-nilai di mana kuncinya adalah nama model data dan nilainya adalah kelas model data.
+`models` adalah pasangan key-value, key adalah nama model data, value adalah class model data.
 
 **Contoh**
 
@@ -426,15 +428,15 @@ db.collection({
 
 ### `registerRepositories()`
 
-Mendaftarkan kelas repositori data kustom.
+Mendaftarkan class data repository kustom.
 
-**Tanda Tangan**
+**Signature**
 
 - `registerRepositories(repositories: MapOf<RepositoryType>): void`
 
 **Parameter**
 
-`repositories` adalah pasangan kunci-nilai di mana kuncinya adalah nama repositori data dan nilainya adalah kelas repositori data.
+`repositories` adalah pasangan key-value, key adalah nama data repository, value adalah class data repository.
 
 **Contoh**
 
@@ -457,15 +459,15 @@ db.collection({
 
 ### `registerOperators()`
 
-Mendaftarkan operator kueri data kustom.
+Mendaftarkan operator query data kustom.
 
-**Tanda Tangan**
+**Signature**
 
 - `registerOperators(operators: MapOf<OperatorFunc>)`
 
 **Parameter**
 
-`operators` adalah pasangan kunci-nilai di mana kuncinya adalah nama operator dan nilainya adalah fungsi yang menghasilkan pernyataan perbandingan.
+`operators` adalah pasangan key-value, key adalah nama operator, value adalah fungsi yang menghasilkan statement perbandingan operator.
 
 **Contoh**
 
@@ -493,17 +495,17 @@ db.getRepository('books').count({
 
 ### `getModel()`
 
-Mendapatkan kelas model data yang telah didefinisikan. Jika tidak ada kelas model kustom yang terdaftar sebelumnya, ini akan mengembalikan kelas model default Sequelize. Nama defaultnya sama dengan nama koleksi yang didefinisikan.
+Mendapatkan class model data yang sudah didefinisikan. Jika sebelumnya tidak mendaftarkan class model kustom, akan mengembalikan class model default Sequelize. Nama default sama dengan nama yang didefinisikan di collection.
 
-**Tanda Tangan**
+**Signature**
 
 - `getModel(name: string): Model`
 
 **Parameter**
 
-| Nama Parameter | Tipe     | Nilai Default | Deskripsi           |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ------ | -------- | ------ | -------------- |
-| `name` | `string` | -      | Nama model yang terdaftar |
+| `name` | `string` | - | Nama model yang sudah terdaftar |
 
 **Contoh**
 
@@ -517,31 +519,31 @@ const ModelClass = db.getModel('books');
 console.log(ModelClass.prototype instanceof MyModel); // true
 ```
 
-Catatan: Kelas model yang diperoleh dari koleksi tidak sama persis dengan kelas model yang terdaftar, melainkan mewarisi dari kelas model yang terdaftar. Karena properti kelas model Sequelize dimodifikasi selama proses inisialisasi, NocoBase secara otomatis menangani hubungan pewarisan ini. Kecuali untuk ketidaksamaan kelas, semua definisi lainnya dapat digunakan secara normal.
+Catatan: Class model yang didapatkan dari collection tidak persis sama dengan class model saat didaftarkan, melainkan inherits dari class model saat didaftarkan. Karena class model Sequelize akan dimodifikasi propertinya selama proses inisialisasi, NocoBase secara otomatis menangani relasi inheritance ini. Selain class tidak sama, semua definisi lainnya dapat digunakan secara normal.
 
 ### `getRepository()`
 
-Mendapatkan kelas repositori data kustom. Jika tidak ada kelas repositori data kustom yang terdaftar sebelumnya, ini akan mengembalikan kelas repositori data default NocoBase. Nama defaultnya sama dengan nama koleksi yang didefinisikan.
+Mendapatkan class data repository kustom. Jika sebelumnya tidak mendaftarkan class data repository kustom, akan mengembalikan class data repository default NocoBase. Nama default sama dengan nama yang didefinisikan di collection.
 
-Kelas repositori data terutama digunakan untuk operasi CRUD (Buat, Baca, Perbarui, Hapus) berdasarkan model data, silakan merujuk ke [Repository](/api/database/repository).
+Class data repository terutama digunakan untuk operasi CRUD berbasis model data, lihat [Data Repository](/api/database/repository).
 
-**Tanda Tangan**
+**Signature**
 
 - `getRepository(name: string): Repository`
 - `getRepository(name: string, relationId?: string | number): Repository`
 
 **Parameter**
 
-| Nama Parameter | Tipe                 | Nilai Default | Deskripsi               |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ------------ | -------------------- | ------ | ------------------ |
-| `name`       | `string`             | -      | Nama repositori data yang terdaftar |
-| `relationId` | `string` \| `number` | -      | Nilai kunci asing untuk data relasional   |
+| `name` | `string` | - | Nama data repository yang sudah terdaftar |
+| `relationId` | `string` \| `number` | - | Nilai foreign key data relasi |
 
-Ketika nama adalah nama asosiasi seperti `'tables.relations'`, ini akan mengembalikan kelas repositori data terkait. Jika parameter kedua disediakan, repositori akan didasarkan pada nilai kunci asing dari data relasional saat digunakan (kueri, pembaruan, dll.).
+Saat nama berbentuk seperti `'tables.relactions'` dengan asosiasi, akan mengembalikan class data repository asosiasi. Jika menyediakan parameter kedua, data repository saat digunakan (query, modifikasi, dll) akan berbasis nilai foreign key data relasi.
 
 **Contoh**
 
-Misalkan ada dua koleksi, *artikel* dan *penulis*, dan koleksi artikel memiliki kunci asing yang menunjuk ke koleksi penulis:
+Misalkan ada dua tabel data *artikel* dan *author*, dan tabel artikel memiliki foreign key yang menunjuk ke tabel author:
 
 ```ts
 const AuthorsRepo = db.getRepository('authors');
@@ -552,41 +554,41 @@ const post1 = AuthorsRepo.create({ title: 'post1' });
 asset(post1.authorId === author1.id); // true
 ```
 
-## Peristiwa Basis Data
+## Event Database
 
 ### `on()`
 
-Mendengarkan peristiwa basis data.
+Mendengarkan event database.
 
-**Tanda Tangan**
+**Signature**
 
 - `on(event: string, listener: (...args: any[]) => void | Promise<void>): void`
 
 **Parameter**
 
-| Nama Parameter | Tipe     | Nilai Default | Deskripsi       |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | -------- | -------- | ------ | ---------- |
-| event    | string   | -      | Nama peristiwa   |
-| listener | Function | -      | Pendengar peristiwa |
+| event | string | - | Nama event |
+| listener | Function | - | Event listener |
 
-Nama peristiwa secara default mendukung peristiwa Model Sequelize. Untuk peristiwa global, dengarkan menggunakan format `<sequelize_model_global_event>`, dan untuk peristiwa Model tunggal, gunakan format `<nama_model>.<sequelize_model_event>`.
+Nama event secara default mendukung event Model dari Sequelize. Untuk event global, mendengarkan dengan format nama `<sequelize_model_global_event>`, untuk event satu Model, mendengarkan dengan format nama `<model_name>.<sequelize_model_event>`.
 
-Untuk deskripsi parameter dan contoh detail dari semua tipe peristiwa bawaan, silakan merujuk ke bagian [Peristiwa Bawaan](#peristiwa-bawaan).
+Untuk penjelasan parameter dan contoh detail dari semua tipe event bawaan, lihat bagian [Event Bawaan](#event-bawaan).
 
 ### `off()`
 
-Menghapus fungsi pendengar peristiwa.
+Menghapus fungsi event listener.
 
-**Tanda Tangan**
+**Signature**
 
 - `off(name: string, listener: Function)`
 
 **Parameter**
 
-| Nama Parameter | Tipe     | Nilai Default | Deskripsi       |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | -------- | -------- | ------ | ---------- |
-| name     | string   | -      | Nama peristiwa   |
-| listener | Function | -      | Pendengar peristiwa |
+| name | string | - | Nama event |
+| listener | Function | - | Event listener |
 
 **Contoh**
 
@@ -600,24 +602,24 @@ db.on('afterCreate', listener);
 db.off('afterCreate', listener);
 ```
 
-## Operasi Basis Data
+## Operasi Database
 
 ### `auth()`
 
-Autentikasi koneksi basis data. Dapat digunakan untuk memastikan bahwa aplikasi telah membangun koneksi dengan data.
+Verifikasi koneksi database. Dapat digunakan untuk memastikan aplikasi sudah membangun koneksi dengan data.
 
-**Tanda Tangan**
+**Signature**
 
 - `auth(options: QueryOptions & { retry?: number } = {}): Promise<boolean>`
 
 **Parameter**
 
-| Nama Parameter         | Tipe                  | Nilai Default | Deskripsi               |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ---------------------- | --------------------- | ------- | ------------------ |
-| `options?`             | `Object`              | -       | Opsi autentikasi           |
-| `options.retry?`       | `number`              | `10`    | Jumlah percobaan ulang saat autentikasi gagal |
-| `options.transaction?` | `Transaction`         | -       | Objek transaksi           |
-| `options.logging?`     | `boolean \| Function` | `false` | Apakah mencetak log       |
+| `options?` | `Object` | - | Opsi verifikasi |
+| `options.retry?` | `number` | `10` | Jumlah retry saat verifikasi gagal |
+| `options.transaction?` | `Transaction` | - | Objek transaction |
+| `options.logging?` | `boolean \| Function` | `false` | Apakah mencetak log |
 
 **Contoh**
 
@@ -627,7 +629,7 @@ await db.auth();
 
 ### `reconnect()`
 
-Menghubungkan kembali ke basis data.
+Menghubungkan ulang database.
 
 **Contoh**
 
@@ -637,39 +639,39 @@ await db.reconnect();
 
 ### `closed()`
 
-Memeriksa apakah koneksi basis data telah ditutup.
+Memeriksa apakah koneksi database sudah ditutup.
 
-**Tanda Tangan**
+**Signature**
 
 - `closed(): boolean`
 
 ### `close()`
 
-Menutup koneksi basis data. Setara dengan `sequelize.close()`.
+Menutup koneksi database. Setara dengan `sequelize.close()`.
 
 ### `sync()`
 
-Menyinkronkan struktur koleksi basis data. Setara dengan `sequelize.sync()`, untuk parameter silakan merujuk ke [dokumentasi Sequelize](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-sync).
+Sinkronisasi struktur tabel database. Setara dengan `sequelize.sync()`, untuk parameter lihat [dokumentasi Sequelize](https://sequelize.org/api/v6/class/src/sequelize.js~sequelize#instance-method-sync).
 
 ### `clean()`
 
-Membersihkan basis data, akan menghapus semua koleksi.
+Mengosongkan database, akan menghapus semua tabel data.
 
-**Tanda Tangan**
+**Signature**
 
 - `clean(options: CleanOptions): Promise<void>`
 
 **Parameter**
 
-| Nama Parameter        | Tipe          | Nilai Default | Deskripsi               |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | --------------------- | ------------- | ------- | ------------------ |
-| `options.drop`        | `boolean`     | `false` | Apakah menghapus semua koleksi |
-| `options.skip`        | `string[]`    | -       | Konfigurasi nama koleksi yang akan dilewati     |
-| `options.transaction` | `Transaction` | -       | Objek transaksi           |
+| `options.drop` | `boolean` | `false` | Apakah menghapus semua tabel data |
+| `options.skip` | `string[]` | - | Konfigurasi nama tabel yang dilewati |
+| `options.transaction` | `Transaction` | - | Objek transaction |
 
 **Contoh**
 
-Menghapus semua koleksi kecuali koleksi `users`.
+Menghapus semua tabel kecuali tabel `users`.
 
 ```ts
 await db.clean({
@@ -678,25 +680,25 @@ await db.clean({
 });
 ```
 
-## Ekspor Tingkat Paket
+## Export Level Paket
 
 ### `defineCollection()`
 
-Membuat konten konfigurasi untuk sebuah koleksi.
+Membuat konten konfigurasi tabel data.
 
-**Tanda Tangan**
+**Signature**
 
 - `defineCollection(name: string, config: CollectionOptions): CollectionOptions`
 
 **Parameter**
 
-| Nama Parameter      | Tipe                | Nilai Default | Deskripsi                                |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ------------------- | ------------------- | ------ | ----------------------------------- |
-| `collectionOptions` | `CollectionOptions` | -      | Sama dengan semua parameter `db.collection()` |
+| `collectionOptions` | `CollectionOptions` | - | Sama dengan parameter `db.collection()` |
 
 **Contoh**
 
-Untuk berkas konfigurasi koleksi yang akan diimpor oleh `db.import()`:
+Untuk file konfigurasi tabel data yang akan diimpor oleh `db.import()`:
 
 ```ts
 import { defineCollection } from '@nocobase/database';
@@ -714,22 +716,22 @@ export default defineCollection({
 
 ### `extendCollection()`
 
-Memperluas konten konfigurasi struktur koleksi yang sudah ada di memori, terutama digunakan untuk konten berkas yang diimpor oleh metode `import()`. Metode ini adalah metode tingkat atas yang diekspor oleh paket `@nocobase/database` dan tidak dipanggil melalui instans db. Alias `extend` juga dapat digunakan.
+Memperluas konten konfigurasi struktur tabel yang sudah ada di memori, terutama digunakan untuk konten file yang diimpor oleh method `import()`. Method ini adalah method top-level yang diekspor oleh paket `@nocobase/database`, tidak dipanggil melalui instance db. Juga dapat menggunakan alias `extend`.
 
-**Tanda Tangan**
+**Signature**
 
 - `extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ExtendedCollectionOptions`
 
 **Parameter**
 
-| Nama Parameter      | Tipe                | Nilai Default | Deskripsi                                                           |
+| Nama Parameter | Tipe | Default | Deskripsi |
 | ------------------- | ------------------- | ------ | -------------------------------------------------------------- |
-| `collectionOptions` | `CollectionOptions` | -      | Sama dengan semua parameter `db.collection()`                            |
-| `mergeOptions?`     | `MergeOptions`      | -      | Parameter untuk paket npm [deepmerge](https://npmjs.com/package/deepmerge) |
+| `collectionOptions` | `CollectionOptions` | - | Sama dengan parameter `db.collection()` |
+| `mergeOptions?` | `MergeOptions` | - | Parameter paket npm [deepmerge](https://npmjs.com/package/deepmerge) |
 
 **Contoh**
 
-Definisi koleksi buku asli (books.ts):
+Definisi tabel books asli (books.ts):
 
 ```ts
 export default {
@@ -738,31 +740,31 @@ export default {
 };
 ```
 
-Definisi koleksi buku yang diperluas (books.extend.ts):
+Memperluas definisi tabel books (books.extend.ts):
 
 ```ts
 import { extend } from '@nocobase/database';
 
-// memperluas lagi
+// Memperluas lagi
 export default extend({
   name: 'books',
   fields: [{ name: 'price', type: 'number' }],
 });
 ```
 
-Jika kedua berkas di atas diimpor saat memanggil `import()`, setelah diperluas lagi dengan `extend()`, koleksi buku akan memiliki dua bidang yaitu `title` dan `price`.
+Kedua file di atas jika diimpor saat memanggil `import()`, setelah diperluas lagi melalui `extend()`, tabel books akan memiliki dua field `title` dan `price`.
 
-Metode ini sangat berguna untuk memperluas struktur koleksi yang sudah didefinisikan oleh plugin yang ada.
+Method ini sangat berguna saat memperluas struktur tabel yang sudah didefinisikan oleh plugin yang ada.
 
-## Peristiwa Bawaan
+## Event Bawaan
 
-Basis data akan memicu peristiwa-peristiwa berikut pada siklus hidup yang sesuai. Dengan berlangganan melalui metode `on()`, penanganan khusus dapat dilakukan untuk memenuhi beberapa kebutuhan bisnis.
+Database akan memicu event yang sesuai pada siklus hidup yang sesuai, setelah subscribe melalui method `on()` dan melakukan pemrosesan tertentu dapat memenuhi beberapa kebutuhan bisnis.
 
 ### `'beforeSync'` / `'afterSync'`
 
-Dipicu sebelum dan sesudah konfigurasi struktur koleksi baru (bidang, indeks, dll.) disinkronkan ke basis data. Ini biasanya dipicu saat `collection.sync()` (panggilan internal) dieksekusi dan umumnya digunakan untuk menangani logika ekstensi bidang khusus.
+Dipicu sebelum dan setelah konfigurasi struktur tabel baru (field, index, dll) disinkronkan ke database, biasanya saat mengeksekusi `collection.sync()` (panggilan internal) akan dipicu, umumnya digunakan untuk pemrosesan logika ekstensi field tertentu.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeSync` | 'beforeSync' | `${string}.afterSync` | 'afterSync', listener: SyncListener): this
@@ -797,9 +799,9 @@ await users.sync();
 
 ### `'beforeValidate'` / `'afterValidate'`
 
-Sebelum membuat atau memperbarui data, ada proses validasi data berdasarkan aturan yang didefinisikan dalam koleksi. Peristiwa yang sesuai akan dipicu sebelum dan sesudah validasi. Ini dipicu saat `repository.create()` atau `repository.update()` dipanggil.
+Sebelum membuat atau mengupdate data ada proses validasi data berdasarkan aturan yang didefinisikan collection, sebelum dan setelah validasi akan memicu event yang sesuai. Saat memanggil `repository.create()` atau `repository.update()` akan dipicu.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeValidate` | 'beforeValidate' | `${string}.afterValidate` | 'afterValidate', listener: ValidateListener): this
@@ -869,9 +871,9 @@ await repository.update({
 
 ### `'beforeCreate'` / `'afterCreate'`
 
-Peristiwa yang sesuai akan dipicu sebelum dan sesudah membuat satu data. Ini dipicu saat `repository.create()` dipanggil.
+Sebelum dan setelah membuat satu data akan memicu event yang sesuai, saat memanggil `repository.create()` akan dipicu.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeCreate` | 'beforeCreate' | `${string}.afterCreate` | 'afterCreate', listener: CreateListener): this
@@ -907,9 +909,9 @@ db.on('books.afterCreate', async (model, options) => {
 
 ### `'beforeUpdate'` / `'afterUpdate'`
 
-Peristiwa yang sesuai akan dipicu sebelum dan sesudah memperbarui satu data. Ini dipicu saat `repository.update()` dipanggil.
+Sebelum dan setelah mengupdate satu data akan memicu event yang sesuai, saat memanggil `repository.update()` akan dipicu.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeUpdate` | 'beforeUpdate' | `${string}.afterUpdate` | 'afterUpdate', listener: UpdateListener): this
@@ -941,9 +943,9 @@ db.on('books.afterUpdate', async (model, options) => {
 
 ### `'beforeSave'` / `'afterSave'`
 
-Peristiwa yang sesuai akan dipicu sebelum dan sesudah membuat atau memperbarui satu data. Ini dipicu saat `repository.create()` atau `repository.update()` dipanggil.
+Sebelum dan setelah membuat atau mengupdate satu data akan memicu event yang sesuai, saat memanggil `repository.create()` atau `repository.update()` akan dipicu.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeSave` | 'beforeSave' | `${string}.afterSave` | 'afterSave', listener: SaveListener): this
@@ -972,9 +974,9 @@ db.on('books.afterSave', async (model, options) => {
 
 ### `'beforeDestroy'` / `'afterDestroy'`
 
-Peristiwa yang sesuai akan dipicu sebelum dan sesudah menghapus satu data. Ini dipicu saat `repository.destroy()` dipanggil.
+Sebelum dan setelah menghapus satu data akan memicu event yang sesuai, saat memanggil `repository.destroy()` akan dipicu.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: `${string}.beforeDestroy` | 'beforeDestroy' | `${string}.afterDestroy` | 'afterDestroy', listener: DestroyListener): this
@@ -1006,9 +1008,9 @@ db.on('books.afterDestroy', async (model, options) => {
 
 ### `'afterCreateWithAssociations'`
 
-Peristiwa ini dipicu setelah membuat satu data yang membawa data relasi hierarkis. Ini dipicu saat `repository.create()` dipanggil.
+Setelah membuat satu data dengan data hierarki relasi akan memicu event yang sesuai, saat memanggil `repository.create()` akan dipicu.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: `${string}.afterCreateWithAssociations` | 'afterCreateWithAssociations', listener: CreateWithAssociationsListener): this
@@ -1040,9 +1042,9 @@ db.on('books.afterCreateWithAssociations', async (model, options) => {
 
 ### `'afterUpdateWithAssociations'`
 
-Peristiwa ini dipicu setelah memperbarui satu data yang membawa data relasi hierarkis. Ini dipicu saat `repository.update()` dipanggil.
+Setelah mengupdate satu data dengan data hierarki relasi akan memicu event yang sesuai, saat memanggil `repository.update()` akan dipicu.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: `${string}.afterUpdateWithAssociations` | 'afterUpdateWithAssociations', listener: CreateWithAssociationsListener): this
@@ -1074,9 +1076,9 @@ db.on('books.afterUpdateWithAssociations', async (model, options) => {
 
 ### `'afterSaveWithAssociations'`
 
-Peristiwa ini dipicu setelah membuat atau memperbarui satu data yang membawa data relasi hierarkis. Ini dipicu saat `repository.create()` atau `repository.update()` dipanggil.
+Setelah membuat atau mengupdate satu data dengan data hierarki relasi akan memicu event yang sesuai, saat memanggil `repository.create()` atau `repository.update()` akan dipicu.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: `${string}.afterSaveWithAssociations` | 'afterSaveWithAssociations', listener: SaveWithAssociationsListener): this
@@ -1108,11 +1110,11 @@ db.on('books.afterSaveWithAssociations', async (model, options) => {
 
 ### `'beforeDefineCollection'`
 
-Dipicu sebelum sebuah koleksi didefinisikan, misalnya saat `db.collection()` dipanggil.
+Dipicu sebelum mendefinisikan satu tabel data, seperti saat memanggil `db.collection()`.
 
-Catatan: Peristiwa ini adalah peristiwa sinkron.
+Catatan: Event ini adalah event sinkron.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: 'beforeDefineCollection', listener: BeforeDefineCollectionListener): this
@@ -1138,11 +1140,11 @@ db.on('beforeDefineCollection', (options) => {
 
 ### `'afterDefineCollection'`
 
-Dipicu setelah sebuah koleksi didefinisikan, misalnya saat `db.collection()` dipanggil.
+Dipicu setelah mendefinisikan satu tabel data, seperti saat memanggil `db.collection()`.
 
-Catatan: Peristiwa ini adalah peristiwa sinkron.
+Catatan: Event ini adalah event sinkron.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: 'afterDefineCollection', listener: AfterDefineCollectionListener): this
@@ -1166,11 +1168,11 @@ db.on('afterDefineCollection', (collection) => {
 
 ### `'beforeRemoveCollection'` / `'afterRemoveCollection'`
 
-Dipicu sebelum dan sesudah sebuah koleksi dihapus dari memori, misalnya saat `db.removeCollection()` dipanggil.
+Dipicu sebelum dan setelah menghapus satu tabel data dari memori, seperti saat memanggil `db.removeCollection()`.
 
-Catatan: Peristiwa ini adalah peristiwa sinkron.
+Catatan: Event ini adalah event sinkron.
 
-**Tanda Tangan**
+**Signature**
 
 ```ts
 on(eventName: 'beforeRemoveCollection' | 'afterRemoveCollection', listener: RemoveCollectionListener): this

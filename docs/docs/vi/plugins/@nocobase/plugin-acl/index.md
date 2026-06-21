@@ -1,14 +1,17 @@
 ---
-displayName: "Kiểm soát quyền truy cập"
+displayName: "Kiểm soát quyền hạn"
 packageName: '@nocobase/plugin-acl'
+title: "Kiểm soát quyền hạn"
+keywords: "Kiểm soát quyền hạn,Vai trò,ACL,Tài nguyên,Hành động,NocoBase"
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Kiểm soát quyền truy cập dựa trên vai trò, tài nguyên và hành động, có thể kiểm soát chính xác quyền cấu hình giao diện, quyền thao tác dữ liệu, quyền truy cập menu và quyền plugin.
+  Kiểm soát quyền hạn dựa trên vai trò, tài nguyên và hành động, cho phép kiểm soát chính xác quyền cấu hình giao diện, quyền thao tác dữ liệu, quyền truy cập menu và quyền plugin.
 isFree: true
 builtIn: true
 defaultEnabled: true
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Kiểm soát quyền truy cập
+# Kiểm soát quyền hạn

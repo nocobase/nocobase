@@ -1,18 +1,17 @@
 ---
-displayName: "Luồng công việc: Sự kiện hành động tùy chỉnh"
+displayName: "Workflow: Sự kiện Action tùy chỉnh"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
+title: "Workflow: Sự kiện Action tùy chỉnh"
+keywords: "Workflow: Sự kiện Action tùy chỉnh,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Kích hoạt sau khi nhấp vào nút hành động tùy chỉnh. Phù hợp để sắp xếp các thao tác tùy chỉnh trên các hàng dữ liệu.
-isFree: false
-builtIn: false
+  Kích hoạt khi nhấp vào nút được liên kết với sự kiện tùy chỉnh. Phù hợp cho việc điều phối Action tùy chỉnh trên các hàng dữ liệu.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Sự kiện hành động tùy chỉnh
+# Workflow: Sự kiện Action tùy chỉnh

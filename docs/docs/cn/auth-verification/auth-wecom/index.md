@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth-wecom'
+title: "认证：企业微信"
+description: "NocoBase 企业微信登录：支持企业微信自建应用 OAuth 授权，配置 Company ID、AgentId、Secret、授权回调域、自动登录。"
+keywords: "企业微信,WeCom,企业微信登录,OAuth,自建应用,AgentId,NocoBase"
 ---
 
 # 认证：企业微信

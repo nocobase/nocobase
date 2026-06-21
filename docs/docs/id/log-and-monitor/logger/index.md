@@ -1,32 +1,26 @@
 ---
-pkg: "@nocobase/plugin-logger"
----
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
-
-
-
 pkg: '@nocobase/plugin-logger'
+title: "Log Sisi Server NocoBase"
+description: "Log sisi server NocoBase: log request, log sistem, log SQL, format console/json/logfmt/delimiter, struktur direktori storage/logs, packaging dan download log."
+keywords: "log sisi server,log request,log sistem,log SQL,format log,logfmt,packaging log,NocoBase"
 ---
-
 # Log
 
-## Pendahuluan
+## Pengenalan
 
-Log merupakan sarana penting untuk membantu kita mengidentifikasi masalah sistem. Log server NocoBase terutama mencakup log permintaan antarmuka dan log operasi sistem, yang mendukung konfigurasi tingkat log, strategi rolling, ukuran, format pencetakan, dan lainnya. Dokumen ini terutama memperkenalkan konten terkait log server NocoBase, serta cara menggunakan fitur pengemasan dan pengunduhan log server yang disediakan oleh plugin log.
+Log adalah cara penting yang membantu kita untuk menemukan masalah sistem. Log sisi server NocoBase terutama mencakup log request API dan log running sistem, mendukung konfigurasi level log, rolling strategy, ukuran, format printing, dan lainnya. Dokumen ini terutama memperkenalkan konten terkait log sisi server NocoBase, serta cara menggunakan fitur packaging dan download log sisi server yang disediakan Plugin logger.
 
 ## Konfigurasi Log
 
-Parameter terkait log seperti tingkat log, metode output, dan format pencetakan dapat dikonfigurasi melalui [variabel lingkungan](/get-started/installation/env.md#logger_transport).
+Anda dapat mengkonfigurasi parameter terkait log seperti level log, output method, format printing, dan lainnya melalui [variabel lingkungan](/get-started/installation/env.md#logger_transport).
 
 ## Format Log
 
-NocoBase mendukung konfigurasi empat format log yang berbeda.
+NocoBase mendukung konfigurasi 4 format log yang berbeda.
 
 ### `console`
 
-Format default di lingkungan pengembangan, pesan ditampilkan dengan warna sorotan.
+Format default untuk lingkungan development; pesan ditampilkan dengan warna highlight.
 
 ```
 2023-12-30 22:40:06 [info]  response                                     method=GET path=/api/uiSchemas:getJsonSchema/nocobase-admin-menu res={"status":200} action={"actionName":"getJsonSchema","resourceName":"uiSchemas","params":{"filterByTk":"nocobase-admin-menu","resourceName":"uiSchemas","resourceIndex":"nocobase-admin-menu","actionName":"getJsonSchema"}} userId=1 status=200 cost=5 app=main reqId=ccf4e3bd-beb0-4350-af6e-b1fc1d9b6c3f
@@ -36,7 +30,7 @@ Format default di lingkungan pengembangan, pesan ditampilkan dengan warna sorota
 
 ### `json`
 
-Format default di lingkungan produksi.
+Format default untuk lingkungan production.
 
 ```json
 {
@@ -70,7 +64,7 @@ userId=undefined status=200 cost=14
 
 ### `delimiter`
 
-Dipisahkan oleh pembatas `|`.
+Dipisahkan dengan delimiter `|`.
 
 ```
 info|2023-12-26 22:07:09|13cd16f0-1568-418d-ac37-6771ee650e14|response|POST|/api/authenticators:publicList|{"status":200}|{"actionName":"publicList","resourceName":"authenticators","params":{"resourceName":"authenticators","actionName":"publicList"}}||200|25
@@ -81,78 +75,80 @@ info|2023-12-26 22:07:09|13cd16f0-1568-418d-ac37-6771ee650e14|response|POST|/api
 Struktur direktori utama file log NocoBase adalah:
 
 - `storage/logs` - Direktori output log
-  - `main` - Nama aplikasi utama
-    - `request_YYYY-MM-DD.log` - Log permintaan
+  - `main` - Nama main app
+    - `request_YYYY-MM-DD.log` - Log request
     - `system_YYYY-MM-DD.log` - Log sistem
-    - `system_error_YYYY-MM-DD.log` - Log kesalahan sistem
+    - `system_error_YYYY-MM-DD.log` - Log error sistem
     - `sql_YYYY-MM-DD.log` - Log eksekusi SQL
     - ...
-  - `sub-app` - Nama sub-aplikasi
+  - `sub-app` - Nama sub-app
     - `request_YYYY-MM-DD.log`
     - ...
 
 ## File Log
 
-### Log Permintaan
+### Log Request
 
-`request_YYYY-MM-DD.log`, log permintaan dan respons antarmuka.
+`request_YYYY-MM-DD.log`, log request dan respons API.
 
-| Kolom         | Deskripsi                                  |
-| ------------- | ------------------------------------------ |
-| `level`       | Tingkat log                                |
-| `timestamp`   | Waktu pencetakan log `YYYY-MM-DD hh:mm:ss` |
-| `message`     | `request` atau `response`                  |
-| `userId`      | Hanya ada di `response`                    |
-| `method`      | Metode permintaan                          |
-| `path`        | Jalur permintaan                           |
-| `req` / `res` | Konten permintaan/respons                  |
-| `action`      | Sumber daya dan parameter yang diminta     |
-| `status`      | Kode status respons                        |
-| `cost`        | Durasi permintaan                          |
-| `app`         | Nama aplikasi saat ini                     |
-| `reqId`       | ID Permintaan                              |
+| Field         | Penjelasan                         |
+| ------------- | ---------------------------------- |
+| `level`       | Level log                          |
+| `timestamp`   | Waktu printing log `YYYY-MM-DD hh:mm:ss` |
+| `message`     | `request` atau `response`          |
+| `userId`      | Hanya ada di `response`            |
+| `method`      | Metode HTTP request                |
+| `path`        | Path request                       |
+| `req` / `res` | Konten request/respons             |
+| `action`      | Resource dan parameter request     |
+| `status`      | Status code respons                |
+| `cost`        | Durasi request                     |
+| `app`         | Nama aplikasi saat ini             |
+| `reqId`       | ID request                         |
 
-:::info{title=Catatan}
-`reqId` akan dibawa ke frontend melalui header respons `X-Request-Id`.
+:::info{title=Tips}
+`reqId` akan dibawa ke frontend melalui response header `X-Request-Id`.
 :::
 
 ### Log Sistem
 
-`system_YYYY-MM-DD.log`, log operasi sistem aplikasi, middleware, plugin, dan lainnya. Log tingkat `error` akan dicetak secara terpisah ke `system_error_YYYY-MM-DD.log`.
+`system_YYYY-MM-DD.log`, log running sistem aplikasi, middleware, Plugin, dan lainnya. Log dengan level `error` akan dicetak terpisah ke `system_error_YYYY-MM-DD.log`
 
-| Kolom       | Deskripsi                                  |
-| ----------- | ------------------------------------------ |
-| `level`     | Tingkat log                                |
-| `timestamp` | Waktu pencetakan log `YYYY-MM-DD hh:mm:ss` |
-| `message`   | Pesan log                                  |
-| `module`    | Modul                                      |
-| `submodule` | Submodul                                   |
-| `method`    | Metode yang dipanggil                      |
-| `meta`      | Informasi terkait lainnya, format JSON     |
-| `app`       | Nama aplikasi saat ini                     |
-| `reqId`     | ID Permintaan                              |
+| Field       | Penjelasan                         |
+| ----------- | ---------------------------------- |
+| `level`     | Level log                          |
+| `timestamp` | Waktu printing log `YYYY-MM-DD hh:mm:ss` |
+| `message`   | Pesan log                          |
+| `module`    | Modul                              |
+| `submodule` | Sub-modul                          |
+| `method`    | Metode yang dipanggil              |
+| `meta`      | Informasi terkait lainnya, format JSON |
+| `app`       | Nama aplikasi saat ini             |
+| `reqId`     | ID request                         |
 
 ### Log Eksekusi SQL
 
-`sql_YYYY-MM-DD.log`, log eksekusi SQL database. Pernyataan `INSERT INTO` hanya mempertahankan 2000 karakter pertama.
+`sql_YYYY-MM-DD.log`, log eksekusi SQL database. Statement `INSERT INTO` hanya menyimpan 2000 karakter pertama.
 
-| Kolom       | Deskripsi                                  |
-| ----------- | ------------------------------------------ |
-| `level`     | Tingkat log                                |
-| `timestamp` | Waktu pencetakan log `YYYY-MM-DD hh:mm:ss` |
-| `sql`       | Pernyataan SQL                             |
-| `app`       | Nama aplikasi saat ini                     |
-| `reqId`     | ID Permintaan                              |
+| Field       | Penjelasan                         |
+| ----------- | ---------------------------------- |
+| `level`     | Level log                          |
+| `timestamp` | Waktu printing log `YYYY-MM-DD hh:mm:ss` |
+| `sql`       | Statement SQL                      |
+| `app`       | Nama aplikasi saat ini             |
+| `reqId`     | ID request                         |
 
-## Pengemasan dan Pengunduhan Log
+## Packaging dan Download Log
+
+<PluginInfo name="logger"></PluginInfo>
 
 1. Masuk ke halaman manajemen log.
-2. Pilih file log yang ingin Anda unduh.
-3. Klik tombol Unduh (Download).
+2. Pilih file log yang ingin di-download.
+3. Klik tombol Download.
 
 ![2024-04-10_10-50-50](https://static-docs.nocobase.com/2024-04-10_10-50-50.png)
 
 ## Dokumen Terkait
 
-- [Pengembangan Plugin - Server - Log](/plugin-development/server/logger)
+- [Pengembangan Plugin - Sisi Server - Logger](/plugin-development/server/logger)
 - [Referensi API - @nocobase/logger](/api/logger/logger)

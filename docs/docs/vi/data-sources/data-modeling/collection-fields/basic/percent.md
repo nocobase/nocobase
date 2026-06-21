@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Phần trăm"
+description: "Field phần trăm, lưu trữ giá trị tỷ lệ, hỗ trợ hiển thị phần trăm."
+keywords: "phần trăm,percent,Field tỷ lệ,Field số,NocoBase"
+---
 
 # Phần trăm
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512175847](https://static-docs.nocobase.com/20240512175847.png)
 

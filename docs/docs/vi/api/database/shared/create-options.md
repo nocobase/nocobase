@@ -1,9 +1,10 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "CreateOptions"
+description: "Tham số phương thức create của Repository NocoBase: values, whitelist, blacklist, updateAssociationValues, transaction."
+keywords: "CreateOptions,Repository,create,values,NocoBase"
+---
 
-
-## Kiểu
+**Kiểu**
 
 ```typescript
 type WhiteList = string[];
@@ -19,9 +20,9 @@ interface CreateOptions extends SequelizeCreateOptions {
 }
 ```
 
-## Chi tiết
+**Thông tin chi tiết**
 
-- `values`: Đối tượng dữ liệu cho bản ghi cần tạo.
-- `whitelist`: Chỉ định các trường **có thể được ghi** trong đối tượng dữ liệu của bản ghi cần tạo. Nếu không truyền tham số này, mặc định tất cả các trường đều được phép ghi.
-- `blacklist`: Chỉ định các trường **không được phép ghi** trong đối tượng dữ liệu của bản ghi cần tạo. Nếu không truyền tham số này, mặc định tất cả các trường đều được phép ghi.
-- `transaction`: Đối tượng giao dịch. Nếu không truyền tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.
+- `values`: Đối tượng dữ liệu của bản ghi cần tạo.
+- `whitelist`: Chỉ định những field nào trong đối tượng dữ liệu **được phép ghi**. Nếu không truyền tham số này, mặc định cho phép tất cả field được ghi.
+- `blacklist`: Chỉ định những field nào trong đối tượng dữ liệu **không được phép ghi**. Nếu không truyền tham số này, mặc định cho phép tất cả field được ghi.
+- `transaction`: Đối tượng transaction. Nếu không truyền tham số transaction, phương thức sẽ tự động tạo một transaction nội bộ.

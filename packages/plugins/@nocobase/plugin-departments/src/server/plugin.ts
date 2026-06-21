@@ -19,7 +19,7 @@
 import { Cache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { aggregateSearch, removeOwner, setOwner } from './actions/departments';
-import { listExcludeDept, setMainDepartment } from './actions/users';
+import { listExcludeDept } from './actions/users';
 import { departmentsField, mainDepartmentField } from './collections/users';
 import {
   destroyDepartmentCheck,
@@ -34,6 +34,7 @@ import { DepartmentDataSyncResource } from './department-data-sync-resource';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
 import { DataSource } from '@nocobase/data-source-manager';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
+import { syncUserMainDepartment } from './sync-user-main-department';
 
 export class PluginDepartmentsServer extends Plugin {
   afterAdd() {}
@@ -55,13 +56,12 @@ export class PluginDepartmentsServer extends Plugin {
 
     this.app.resourceManager.registerActionHandlers({
       'users:listExcludeDept': listExcludeDept,
-      'users:setMainDepartment': setMainDepartment,
       'departments:aggregateSearch': aggregateSearch,
       'departments:setOwner': setOwner,
       'departments:removeOwner': removeOwner,
     });
 
-    this.app.acl.allow('users', ['setMainDepartment', 'listExcludeDept'], 'loggedIn');
+    this.app.acl.allow('users', ['listExcludeDept'], 'loggedIn');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
       actions: [
@@ -69,7 +69,6 @@ export class PluginDepartmentsServer extends Plugin {
         'roles:list',
         'users:list',
         'users:listExcludeDept',
-        'users:setMainDepartment',
         'users.departments:*',
         'roles.departments:*',
         'departments.members:*',
@@ -96,16 +95,23 @@ export class PluginDepartmentsServer extends Plugin {
     this.app.resourceManager.use(setMainDepartmentMiddleware);
 
     // Delete cache when the departments of a user changed
-    this.app.db.on('departmentsUsers.afterSave', async (model) => {
+    this.app.db.on('departmentsUsers.afterSave', async (model, options) => {
       const cache = this.app.cache as Cache;
+      await syncUserMainDepartment(this.app.db, model.get('userId'), options?.transaction);
       await cache.del(`departments:${model.get('userId')}`);
     });
-    this.app.db.on('departmentsUsers.afterDestroy', async (model) => {
+    this.app.db.on('departmentsUsers.afterDestroy', async (model, options) => {
       const cache = this.app.cache as Cache;
+      await syncUserMainDepartment(this.app.db, model.get('userId'), options?.transaction);
       await cache.del(`departments:${model.get('userId')}`);
     });
 
+    this.app.db.on('users.afterSaveWithAssociations', async (model, options) => {
+      await syncUserMainDepartment(this.app.db, model.get('id'), options?.transaction);
+    });
+
     this.app.db.on('users.beforeSave', async (model, options) => {
+      const submittedDepartments = options?.values?.departments;
       const mainDepartmentId = model.get('mainDepartmentId');
       if (!mainDepartmentId) {
         return;
@@ -124,7 +130,6 @@ export class PluginDepartmentsServer extends Plugin {
           return;
         }
       }
-      const submittedDepartments = options?.values?.departments;
       if (Array.isArray(submittedDepartments)) {
         const included = submittedDepartments.some((d) => {
           const id = typeof d === 'object' ? d && (d.id ?? d) : d;

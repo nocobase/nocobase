@@ -1,49 +1,50 @@
-
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+pkg: "@nocobase/preset-cluster"
+title: "Triển khai Kubernetes"
+description: "Triển khai NocoBase Cluster trong K8S/K3S: ConfigMap biến môi trường, Deployment, shared storage PVC, middleware Redis/PostgreSQL, load balancing và health check."
+keywords: "Triển khai Kubernetes,K8S,K3S,ConfigMap,Deployment,PVC shared storage,Triển khai Cluster,NocoBase"
+---
 
 # Triển khai Kubernetes
 
-Bài viết này hướng dẫn người dùng triển khai NocoBase ở chế độ cụm (cluster mode) trong môi trường Kubernetes (K8S) một cách nhanh chóng. Chúng tôi giả định rằng bạn đã quen thuộc với môi trường K8S và đã hoàn thành các bước trong phần [Chuẩn bị](./preparations.md).
+Tài liệu này nhằm hướng dẫn người dùng triển khai nhanh NocoBase chế độ Cluster trong môi trường K8S, giả định độc giả đã quen với môi trường K8S và đã hoàn thành nội dung trong [Chuẩn bị](./preparations.md).
 
 :::info{title="Mẹo"}
-Để nhanh chóng xác minh quy trình triển khai K8S, môi trường vận hành trong bài viết này là một cụm K3S đơn nút (hệ điều hành: Ubuntu). Hướng dẫn này cũng áp dụng cho các cụm K8S tiêu chuẩn. Nếu bạn gặp phải bất kỳ điểm khác biệt nào khi triển khai trên cụm K8S tiêu chuẩn, vui lòng thông báo cho chúng tôi.
+Để xác minh nhanh quy trình triển khai K8S, môi trường thao tác trong tài liệu này là cluster K3S single node (hệ điều hành Ubuntu). Hướng dẫn này cũng áp dụng cho cluster K8S chuẩn. Nếu khi triển khai trong cluster K8S chuẩn xảy ra tình huống khác với tài liệu này, vui lòng cho chúng tôi biết.
 :::
 
-## Môi trường cụm
+## Môi trường cluster
 
-Nếu bạn đã có môi trường cụm Kubernetes, bạn có thể bỏ qua bước này.
+Có thể bỏ qua bước này nếu đã có môi trường cluster K8S.
 
-Chuẩn bị một máy chủ đã cài đặt Debian / Ubuntu và chạy cụm K3S ở chế độ đơn nút trên đó. Để tìm hiểu thêm về K3S, bạn có thể truy cập [trang web chính thức của K3S](https://docs.k3s.io/zh/).
+Chuẩn bị một máy chủ đã cài đặt Debian / Ubuntu, và chạy cluster K3S ở chế độ single node trên đó. Về K3S là gì, có thể truy cập [Trang chính K3S](https://docs.k3s.io/zh/).
 
 Các bước như sau:
 
-1. Đăng nhập vào máy chủ qua SSH.
-2. Sử dụng script chính thức để cài đặt nút chính (master node) của cụm K3S trên máy chủ.
+1. Đăng nhập SSH vào máy chủ.
+2. Cài đặt master node của cluster K3S trên máy chủ bằng script chính thức.
 
 ```bash
-# Sau khi cài đặt, tệp kubeconfig mặc định là /etc/rancher/k3s/k3s.yaml
+# Sau khi cài đặt, file kubeconfig mặc định là /etc/rancher/k3s/k3s.yaml
 curl -sfL https://get.k3s.io | sh -
 ```
 
 ```bash
-# Xác minh cấu hình đã chính xác chưa
+# Xác minh cấu hình có chính xác không
 kubectl get node
 ```
 
-## Triển khai ứng dụng cụm
+## Triển khai application cluster
 
-Triển khai ứng dụng NocoBase ở chế độ cụm trên một cụm Kubernetes.
+Triển khai ứng dụng NocoBase trong cluster K8S ở chế độ Cluster.
 
 ### Biến môi trường
 
-Thông thường, các biến môi trường nên được tách riêng khỏi tệp cấu hình triển khai ứng dụng. Bài viết này sử dụng ConfigMap làm ví dụ minh họa. Trong môi trường sản xuất thực tế, bạn có thể sử dụng Secrets để tách biệt thêm các thông tin nhạy cảm.
+Thông thường nên tách biến môi trường ra khỏi file cấu hình triển khai ứng dụng. Tài liệu này lấy ConfigMap làm ví dụ orchestration. Trong production thực tế có thể thêm Secrets để tách thêm thông tin nhạy cảm.
 
 Các bước như sau:
 
-1. Tạo tệp `nocobase-cm.yaml`.
+1. Tạo file `nocobase-cm.yaml`.
 
 ```yaml
 apiVersion: v1
@@ -51,15 +52,15 @@ kind: ConfigMap
 metadata:
   name: nocobase-config
 data:
-  TZ: Asia/Shanghai # Múi giờ của bạn, ví dụ: UTC, Asia/Ho_Chi_Minh
-  # Cấu hình cơ sở dữ liệu và Redis dưới đây sử dụng các dịch vụ PostgreSQL và Redis trong cụm từ tài liệu "Triển khai Middleware Kubernetes".
-  # Nếu môi trường của bạn đã có sẵn các dịch vụ cơ sở dữ liệu và Redis khác, chỉ cần sửa đổi các cấu hình tương ứng bên dưới.
+  TZ: Asia/Shanghai
+  # Cấu hình database và Redis bên dưới sử dụng các dịch vụ PostgreSQL và Redis trong cluster theo tài liệu "Triển khai middleware K8S"
+  # Nếu môi trường mục tiêu đã có sẵn dịch vụ database và Redis khác, chỉ cần sửa cấu hình tương ứng của database và Redis bên dưới
   CACHE_DEFAULT_STORE: redis
-  # Sử dụng dịch vụ Redis đã có sẵn trong môi trường hoặc tự triển khai.
+  # Sử dụng dịch vụ Redis có sẵn trong môi trường hoặc tự triển khai
   CACHE_REDIS_URL: "redis://redis-0.redis-service:6379/0"
   PUBSUB_ADAPTER_REDIS_URL: "redis://redis-0.redis-service:6379/1"
   LOCK_ADAPTER_REDIS_URL: "redis:/redis-0.redis-service:6379/2"
-  # Sử dụng dịch vụ PostgreSQL đã có sẵn trong môi trường hoặc tự triển khai.
+  # Sử dụng dịch vụ PostgreSQL có sẵn trong môi trường hoặc tự triển khai
   DB_DATABASE: nocobase
   DB_DIALECT: postgres
   DB_HOST: "postgres-0.postgres-service"
@@ -67,12 +68,12 @@ data:
   DB_PORT: "5432"
   DB_UNDERSCORED: "true"
   DB_USER: nocobase
-  # tên người dùng nền tảng dịch vụ
+  # service platform username
   NOCOBASE_PKG_USERNAME: "<your user>"
-  # mật khẩu nền tảng dịch vụ
+  # service platform password
   NOCOBASE_PKG_PASSWORD: "<your password>"
 
-  # ... các biến môi trường khác
+  # ... biến môi trường khác
 ```
 
 2. Chạy lệnh `kubectl` để triển khai ConfigMap.
@@ -81,18 +82,18 @@ data:
 kubectl apply -f nocobase-cm.yaml
 ```
 
-### Lưu trữ chia sẻ
+### Shared storage
 
-Các nút khác nhau của ứng dụng NocoBase được triển khai ở chế độ cụm cần gắn cùng một thư mục lưu trữ (`storage`). Để làm được điều này, bạn cần tạo một Persistent Volume (PV) hỗ trợ đọc ghi từ nhiều nút (ReadWriteMany). Thông thường, bạn sẽ tạo một đĩa đám mây trên nền tảng của nhà cung cấp dịch vụ đám mây và liên kết nó làm PV, hoặc bạn có thể gắn thư mục lưu trữ chia sẻ bằng các phương pháp khác như NFS.
+Các node khác nhau của ứng dụng NocoBase triển khai theo chế độ Cluster cần mount cùng một thư mục storage, để làm điều này cần tạo một Persistent Volume hỗ trợ đọc/ghi multi-node. Thông thường cần tạo cloud disk trên nền tảng cloud provider và bind làm PV, cũng có thể mount thư mục shared storage qua các cách khác như NFS.
 
 ### Triển khai ứng dụng
 
-Đối với lần triển khai ban đầu, hãy bắt đầu với một nút đơn. Sau khi hoàn tất, bạn có thể mở rộng (scale) để khởi động nhiều nút hơn.
+Lần triển khai đầu tiên cần bắt đầu từ một node, sau khi hoàn thành mới scale khởi động nhiều node.
 
-1. Tạo tệp `nocobase-apps.yaml`.
+1. Tạo file `nocobase-apps.yaml`.
 
 ```yaml
-# Tạo một PVC. Nhiều Pod được triển khai bởi Deployment bên dưới sẽ gắn cùng một thư mục lưu trữ bền vững thông qua PVC này.
+# Tạo một PVC, các Pod được triển khai bởi Deployment bên dưới đều mount cùng thư mục persistent storage thông qua PVC này
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -103,9 +104,9 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: "" # Ví dụ này sử dụng dịch vụ NFS của nút chính nên được chỉ định rõ ràng là trống, tránh sử dụng StorageClass mặc định.
+  storageClassName: "" # Ví dụ sử dụng dịch vụ NFS của master node nên chỉ định rõ ràng là rỗng, tránh sử dụng StorageClass mặc định
 ---
-# Service của ứng dụng, cung cấp dịch vụ ra bên ngoài cụm sau khi được liên kết với một Ingress.
+# Service của ứng dụng, cung cấp dịch vụ ra ngoài cluster sau khi bind Ingress
 apiVersion: v1
 kind: Service
 metadata:
@@ -118,13 +119,14 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
-# Deployment của ứng dụng, có thể triển khai nhiều container ứng dụng.
+---
+# Deployment của ứng dụng, có thể triển khai nhiều container ứng dụng
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nocobase
 spec:
-  replicas: 1 # Triển khai ban đầu chỉ với một nút.
+  replicas: 1 # Lần triển khai đầu chỉ một node
   selector:
     matchLabels:
       app: nocobase
@@ -138,14 +140,14 @@ spec:
           image: nocobase/nocobase:1.6
           ports:
             - containerPort: 13000
-          # Tải các biến môi trường từ ConfigMap đã triển khai trước đó.
+          # Biến môi trường được load từ ConfigMap đã triển khai trước đó
           envFrom:
             - configMapRef:
                 name: nocobase-config
           volumeMounts:
             - name: nocobase-data
               mountPath: /app/nocobase/storage
-          # Khai báo yêu cầu và giới hạn tài nguyên cho dịch vụ.
+          # Khai báo nhu cầu và giới hạn tài nguyên chạy dịch vụ
           resources:
             requests:
               memory: "512Mi"
@@ -153,19 +155,19 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
-          # Lệnh kiểm tra sự sống (liveness probe). Cụm sử dụng lệnh này để xác định xem Pod có cần được khởi động lại hay không.
+          # Lệnh kiểm tra liveness, cluster dùng lệnh này để xác định có cần restart Pod không
           livenessProbe:
             httpGet:
               path: /api/__health_check
               port: 13000
             initialDelaySeconds: 60
-          # Lệnh kiểm tra sẵn sàng (readiness probe). Cụm sử dụng lệnh này để xác định xem có nên chuyển lưu lượng truy cập Service đến Pod hay không.
+          # Lệnh kiểm tra readiness, cluster dùng lệnh này để xác định có chuyển traffic Service vào Pod không
           readinessProbe:
             httpGet:
               path: /api/__health_check
               port: 13000
             initialDelaySeconds: 30
-      # Gắn lưu trữ bền vững thông qua PVC.
+      # Mount persistent storage qua PVC
       volumes:
         - name: nocobase-data
           persistentVolumeClaim:
@@ -178,68 +180,68 @@ spec:
 kubectl apply -f nocobase-apps.yaml
 ```
 
-3. Xác minh trạng thái của dịch vụ ứng dụng NocoBase.
+3. Xác minh trạng thái dịch vụ ứng dụng NocoBase.
 
 ```bash
-# Kiểm tra trạng thái Pod của dịch vụ NocoBase
+# Xem trạng thái Pod của dịch vụ NocoBase
 kubectl get pods -l app=nocobase
 ```
 
-Ví dụ đầu ra như sau. `STATUS` là `Running` cho biết dịch vụ đã khởi động thành công:
+Output ví dụ như sau, khi `STATUS` là `Running` nghĩa là dịch vụ khởi động thành công:
 
 ```text
 NAME                        READY   STATUS    RESTARTS   AGE
 nocobase-5558b774d7-w6swf   1/1     Running   0          7h6m
 ```
 
-4. Khi ứng dụng khởi động lần đầu, bạn cần bật thủ công các **plugin** sau trong giao diện quản trị:
+4. Khi ứng dụng khởi động lần đầu, cần kích hoạt thủ công các plugin sau trong giao diện quản lý:
 
 - @nocobase/plugin-sync-adapter-redis
 - @nocobase/plugin-lock-adapter-redis
 
-Sau đó, bạn có thể thực hiện mở rộng. Ví dụ, mở rộng lên 4 nút:
+Sau đó mới scale up. Ví dụ scale lên 4 node:
 
 ```bash
-kubectl scale deployment nocobase --replicas=4
+kubectl scale deployment nocobase-deployment --replicas=4
 ```
 
 ## Thay đổi ứng dụng
 
-Thay đổi ứng dụng đề cập đến các trường hợp sau:
+Thay đổi ứng dụng là chỉ các tình huống sau:
 
 - Nâng cấp phiên bản ứng dụng
-- Cài đặt **plugin** mới
-- Kích hoạt **plugin**
+- Cài đặt plugin mới
+- Kích hoạt plugin
 
-NocoBase hiện chưa hỗ trợ tự động đồng bộ hóa các thay đổi trên nhiều phiên bản trong cụm cho các trường hợp trên. Do đó, bạn cần xử lý thủ công theo các bước dưới đây. Các bước này chỉ liên quan đến thay đổi dịch vụ ứng dụng. Trước khi thực hiện bất kỳ thay đổi nào, vui lòng tự sao lưu cơ sở dữ liệu và lưu trữ bền vững của bạn.
+NocoBase tạm thời chưa triển khai tự động đồng bộ thay đổi cho multi-instance trong các kịch bản trên trong Cluster, nên cần xử lý thủ công theo các bước sau. Các bước dưới đây chỉ liên quan đến thay đổi dịch vụ ứng dụng, trước khi thay đổi vui lòng tự backup database và persistent storage.
 
-### Nâng cấp phiên bản ứng dụng theo kiểu cuốn chiếu
+### Rolling upgrade phiên bản ứng dụng
 
-1. Chạy lệnh `kubectl set image` để thay đổi phiên bản ảnh container của Deployment.
+1. Chạy lệnh `kubectl set image` để chỉnh sửa phiên bản image container của Deployment.
 
     ```bash
     kubectl set image deployment/nocobase nocobase=nocobase/nocobase:1.7
     ```
 
-2. Kiểm tra trạng thái cập nhật cuốn chiếu.
+2. Xem trạng thái rolling update.
 
     ```bash
-    # Kiểm tra tiến độ cập nhật cuốn chiếu tổng thể của Deployment
+    # Xem tiến độ rolling update tổng thể của Deployment
     kubectl rollout status deployment/nocobase
 
-    # Kiểm tra trạng thái của từng Pod
+    # Xem trạng thái từng Pod
     kubectl get pods -l app=nocobase
     ```
 
-Nếu bạn gặp bất kỳ sự cố nào trong hoặc sau quá trình nâng cấp phiên bản ứng dụng và cần quay lại phiên bản trước, hãy thực hiện lệnh sau để quay lại phiên bản ảnh container:
+Nếu phát hiện bất thường trong quá trình hoặc sau khi nâng cấp phiên bản ứng dụng, cần rollback phiên bản, thực hiện lệnh sau để rollback phiên bản image container:
 
 ```bash
 kubectl rollout undo deployment/nocobase
 ```
 
-### Khởi động lại ứng dụng một cách nhẹ nhàng
+### Restart smooth ứng dụng
 
-Sau khi cài đặt hoặc kích hoạt **plugin** mới, bạn cần làm mới cấu hình hoặc trạng thái ứng dụng. Bạn có thể sử dụng lệnh sau để khởi động lại từng Pod một cách nhẹ nhàng.
+Sau khi cài đặt plugin mới hoặc kích hoạt plugin cần làm mới cấu hình hoặc trạng thái ứng dụng, có thể dùng lệnh sau để restart smooth từng Pod.
 
 1. Chạy lệnh `kubectl rollout restart`.
 
@@ -247,25 +249,25 @@ Sau khi cài đặt hoặc kích hoạt **plugin** mới, bạn cần làm mới
     kubectl rollout restart deployment/nocobase
     ```
 
-2. Kiểm tra trạng thái khởi động lại cuốn chiếu.
+2. Xem trạng thái rolling restart.
 
     ```bash
-    # Kiểm tra tiến độ khởi động lại tổng thể của Deployment
+    # Xem tiến độ restart tổng thể của Deployment
     kubectl rollout status deployment/nocobase
 
-    # Kiểm tra trạng thái của từng Pod
+    # Xem trạng thái từng Pod
     kubectl get pods -l app=nocobase
     ```
 
-## Cổng ứng dụng
+## Application gateway
 
-Để một ứng dụng được triển khai trong cụm K8S có thể truy cập được từ bên ngoài, bạn cần liên kết một Ingress với Service của ứng dụng đó. Môi trường cụm được sử dụng trong bài viết này là K3S, và thành phần Ingress Controller mặc định của K3S là Traefik.
+Khi ứng dụng triển khai trong cluster K8S cần được truy cập từ bên ngoài, cần bind một Ingress cho Service ứng dụng. Môi trường cluster sử dụng trong tài liệu này là K3S, component Ingress Controller được cài đặt mặc định trong K3S là Traefik.
 
 ### Traefik IngressRoute
 
 Các bước như sau:
 
-1. Tạo tệp `nocobase-ingress.yaml`.
+1. Tạo file `nocobase-ingress.yaml`.
 
     ```yaml
     apiVersion: traefik.containo.us/v1alpha1
@@ -276,18 +278,18 @@ Các bước như sau:
       entryPoints:
         - web
       routes:
-        # Tại đây, 'nocobase.local' nên được thay thế bằng một tên miền thực tế trỏ đến IP của cụm.
-        # Nếu không có tên miền để xác minh, bạn có thể sửa đổi tệp hosts cục bộ của mình để thêm bản ghi nocobase.local trỏ đến IP của cụm.
-        # Sau đó, bạn có thể truy cập ứng dụng NocoBase trong cụm bằng cách mở http://nocobase.local trong trình duyệt của mình.
+        # Tại đây 'nocobase.local' nên thay bằng domain thật trỏ đến IP cluster
+        # Khi không có domain để xác minh, sửa file host cục bộ, thêm bản ghi nocobase.local trỏ đến IP cluster
+        # Mở http://nocobase.local trên trình duyệt là có thể truy cập ứng dụng NocoBase trong cluster
         - match: Host(`nocobase.local`)
           kind: Rule
           services:
-            # Đây là Service được tạo khi triển khai ứng dụng nocobase trong phần "Triển khai ứng dụng" ở trên.
+            # Service này là Service được tạo khi triển khai ứng dụng nocobase trong mục "Triển khai ứng dụng" ở phần trước
             - name: nocobase
               port: 13000
     ```
 
-2. Chạy lệnh `kubectl` để triển khai Ingress cho ứng dụng NocoBase.
+2. Chạy lệnh `kubectl` để triển khai Ingress của ứng dụng NocoBase.
 
     ```bash
     kubectl apply -f nocobase-ingress.yaml
@@ -295,7 +297,7 @@ Các bước như sau:
 
 ### Ingress-Nginx
 
-Hầu hết các cụm K8S đều sử dụng Ingress-Nginx làm thành phần Ingress Controller. Dưới đây là tệp `nocobase-ingress.yaml` dựa trên Ingress-Nginx:
+Phần lớn các cluster K8S cài đặt component Ingress Controller là Ingress-Nginx, dưới đây là một file `nocobase-ingress.yaml` dựa trên Ingress-Nginx:
 
 ```yaml
 apiVersion: extensions/v1beta1
@@ -306,9 +308,9 @@ metadata:
   name: nocobase-ingress
 spec:
   rules:
-    # Tại đây, 'nocobase.local' nên được thay thế bằng một tên miền thực tế trỏ đến IP của cụm.
-    # Nếu không có tên miền để xác minh, bạn có thể sửa đổi tệp hosts cục bộ của mình để thêm bản ghi nocobase.local trỏ đến IP của cụm.
-    # Sau đó, bạn có thể truy cập ứng dụng NocoBase trong cụm bằng cách mở http://nocobase.local trong trình duyệt của mình.
+    # Tại đây 'nocobase.local' nên thay bằng domain thật trỏ đến IP cluster
+    # Khi không có domain để xác minh, sửa file host cục bộ, thêm bản ghi nocobase.local trỏ đến IP cluster
+    # Mở http://nocobase.local trên trình duyệt là có thể truy cập ứng dụng Nocobase trong cluster
     - host: nocobase.local
       http:
         paths:
@@ -319,47 +321,47 @@ spec:
 
 ## Sử dụng Helm Charts
 
-Chúng tôi đã viết Helm Charts cho ứng dụng NocoBase, cho phép bạn triển khai dịch vụ ứng dụng NocoBase trong K8S bằng cách sử dụng Helm CLI.
+Chúng tôi đã viết Helm Charts cho ứng dụng Nocobase, có thể sử dụng Helm CLI để triển khai dịch vụ ứng dụng NocoBase trong K8S.
 
 ### Chuẩn bị
 
-Đảm bảo rằng các client như `kubectl` và `helm` đã được cài đặt trong môi trường vận hành của bạn và `kubectl` có thể kết nối chính xác đến cụm mục tiêu.
+Đảm bảo môi trường thao tác đã cài đặt các client như `kubectl`, `helm`, và xác nhận `kubectl` có thể kết nối chính xác đến cluster mục tiêu.
 
-### Thêm kho lưu trữ
+### Thêm repository
 
-Thêm kho lưu trữ Helm Charts của NocoBase:
+Thêm repository của NocoBase Helm Charts:
 
 ```bash
-# Thêm kho lưu trữ Helm Charts của NocoBase
+# Thêm repository Helm Charts của NocoBase
 helm repo add nocobase https://nocobase.github.io/helm-charts
 
 # Cập nhật chỉ mục Helm
 helm repo update
 ```
 
-### Triển khai bằng Helm
+### Triển khai Helm
 
-1.  Tạo tệp `values.yaml`.
+1.  Tạo file `values.yaml`.
 
     ```yaml
     persistent:
-      # Kích thước cần thiết cho lưu trữ chia sẻ của cụm NocoBase
+      # Kích thước shared storage cần thiết cho NocoBase Cluster
       size: 10Gi
-      # Lớp lưu trữ được cung cấp bởi Kubernetes của dịch vụ đám mây
-      # Tương tự như trong phần "Triển khai ứng dụng", giá trị này được đặt rõ ràng là trống vì nó sử dụng dịch vụ NFS của nút chính.
+      # Storage class do dịch vụ K8S cloud cung cấp
+      # Tại đây giống mục "Triển khai ứng dụng", sử dụng dịch vụ NFS của master node nên chỉ định rõ ràng là rỗng
       storageClassName: ""
 
     configMap:
       data:
-        TZ: Asia/Shanghai # Múi giờ của bạn, ví dụ: UTC, Asia/Ho_Chi_Minh
-        # Cấu hình cơ sở dữ liệu và Redis dưới đây sử dụng các dịch vụ PostgreSQL và Redis trong cụm từ tài liệu "Triển khai Middleware Kubernetes".
-        # Nếu môi trường của bạn đã có sẵn các dịch vụ cơ sở dữ liệu và Redis khác, chỉ cần sửa đổi các cấu hình tương ứng bên dưới.
+        TZ: Asia/Shanghai
+        # Cấu hình database và Redis bên dưới sử dụng các dịch vụ PostgreSQL và Redis trong cluster theo tài liệu "Triển khai middleware K8S"
+        # Nếu môi trường mục tiêu đã có sẵn dịch vụ database và Redis khác, chỉ cần sửa cấu hình tương ứng của database và Redis bên dưới
         CACHE_DEFAULT_STORE: redis
-        # Sử dụng dịch vụ Redis đã có sẵn trong môi trường hoặc tự triển khai.
+        # Sử dụng dịch vụ Redis có sẵn trong môi trường hoặc tự triển khai
         CACHE_REDIS_URL: "redis://redis-0.redis-service:6379/0"
         PUBSUB_ADAPTER_REDIS_URL: "redis://redis-0.redis-service:6379/1"
         LOCK_ADAPTER_REDIS_URL: "redis:/redis-0.redis-service:6379/2"
-        # Sử dụng dịch vụ PostgreSQL đã có sẵn trong môi trường hoặc tự triển khai.
+        # Sử dụng dịch vụ PostgreSQL có sẵn trong môi trường hoặc tự triển khai
         DB_DATABASE: nocobase
         DB_DIALECT: postgres
         DB_HOST: "postgres-0.postgres-service"
@@ -367,12 +369,12 @@ helm repo update
         DB_PORT: "5432"
         DB_UNDERSCORED: "true"
         DB_USER: nocobase
-        # tên người dùng nền tảng dịch vụ
+        # service platform username
         NOCOBASE_PKG_USERNAME: "<your user>"
-        # mật khẩu nền tảng dịch vụ
+        # service platform password
         NOCOBASE_PKG_PASSWORD: "<your password>"
 
-        # ... các biến môi trường khác
+        # ... biến môi trường khác
     ```
 
 2.  Chạy lệnh `helm install` để bắt đầu cài đặt.

@@ -1,5 +1,7 @@
 ---
-displayName: "История записей"
+title: "Record history"
+keywords: "Logging and monitoring"
+displayName: "Record history"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
@@ -10,8 +12,5 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# История записей
+# Record history

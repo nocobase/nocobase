@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-acl'
+title: "角色并集"
+description: "NocoBase 角色并集：独立角色、允许角色并集、仅角色并集三种权限模式，多角色权限合并策略。"
+keywords: "角色并集,独立角色,权限合并,多角色,ACL,NocoBase"
 ---
 
 # 角色并集

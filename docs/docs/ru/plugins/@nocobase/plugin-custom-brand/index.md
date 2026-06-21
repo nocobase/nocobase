@@ -1,18 +1,17 @@
 ---
-displayName: "Настраиваемый бренд"
+title: "Custom brand"
+keywords: "Custom brand"
+displayName: "Свой бренд"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Позволяет настроить название бренда и другую информацию, связанную с брендом.
+  Настройка названия бренда и сопутствующих данных брендинга.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Настраиваемый бренд
+# Свой бренд

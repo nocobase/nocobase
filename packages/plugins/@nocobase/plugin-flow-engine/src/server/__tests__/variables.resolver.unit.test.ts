@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, MockServer } from '@nocobase/test';
+import { vi } from 'vitest';
+import { MockServer } from '@nocobase/test';
 import { GlobalContext, HttpRequestContext, ServerBaseContext } from '../template/contexts';
 import { resolveJsonTemplate } from '../template/resolver';
 import { variables } from '../variables/registry';
-import { resetVariablesRegistryForTest } from './test-utils';
+import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 describe('variables resolver (no HTTP)', () => {
   let app: MockServer;
@@ -22,7 +23,7 @@ describe('variables resolver (no HTTP)', () => {
     process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       plugins: ['auth', 'users', 'acl', 'data-source-manager', 'field-sort'],
       skipStart: false,
     });
@@ -78,6 +79,17 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.x).toBe(0);
   });
 
+  it('blocks intrinsic constructor traversal to host process', async () => {
+    const { req } = makeCtx(1);
+    const tpl = {
+      v: "{{ (() => { try { return ({}).constructor.constructor('return process')() ? 'escaped' : 'safe'; } catch (_) { return 'blocked'; } })() }}",
+    } as any;
+
+    const out = await resolveJsonTemplate(tpl, req);
+
+    expect(out.v).toBe('blocked');
+  });
+
   it('preserves unknown placeholders', async () => {
     const { req } = makeCtx(1);
     const tpl = { x: '{{ ctx.unknown }}', y: 'Hello {{ foo.bar }}' } as any;
@@ -100,14 +112,52 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.t).toBe('undefined');
   });
 
-  it('resolves date variables (shape existence)', async () => {
+  it('does not expose koa context internals to SES expressions', async () => {
+    const { koa, req } = makeCtx(1);
+    const query = vi.fn();
+    koa.db = { sequelize: { query } };
+    const exploit =
+      "{{ (async () => { const seq = ctx.koaCtx.db.sequelize; await seq.query('SELECT 1'); return 'ran'; })() }}";
+
+    const out = await resolveJsonTemplate({ v: exploit }, req);
+
+    expect(query).not.toHaveBeenCalled();
+    expect(out.v).toBe(exploit);
+  });
+
+  it('only exposes explicitly registered context keys in the sandbox', async () => {
     const { req } = makeCtx(1);
-    const tpl = { today: '{{ ctx.date.today }}', thisMonth: '{{ ctx.date.thisMonth }}' } as any;
+    const tpl = {
+      app: '{{ ctx.app }}',
+      db: '{{ ctx.db }}',
+      koaCtx: '{{ ctx.koaCtx }}',
+      request: '{{ ctx.request }}',
+      user: '{{ ctx.user.id }}',
+    } as any;
+
     const out = await resolveJsonTemplate(tpl, req);
-    expect(typeof out.today).toBe('string');
-    expect(out.today.length).toBeGreaterThan(0);
-    expect(typeof out.thisMonth).toBe('string');
-    expect(out.thisMonth.length).toBeGreaterThan(0);
+
+    expect(out.app).toBe('{{ ctx.app }}');
+    expect(out.db).toBe('{{ ctx.db }}');
+    expect(out.koaCtx).toBe('{{ ctx.koaCtx }}');
+    expect(out.request).toBe('{{ ctx.request }}');
+    expect(out.user).toBe(1);
+  });
+
+  it('does not expose plain root object properties as sandbox variables', async () => {
+    const query = vi.fn();
+    const rawCtx = {
+      db: { sequelize: { query } },
+      user: { id: 1 },
+    };
+    const exploit =
+      "{{ (async () => { const seq = ctx.db.sequelize; await seq.query('SELECT 1'); return 'ran'; })() }}";
+
+    const out = await resolveJsonTemplate({ exploit, user: '{{ ctx.user.id }}' }, rawCtx as any);
+
+    expect(query).not.toHaveBeenCalled();
+    expect(out.exploit).toBe(exploit);
+    expect(out.user).toBe('{{ ctx.user.id }}');
   });
 
   it('supports custom ctx methods attached via registry', async () => {
@@ -123,6 +173,194 @@ describe('variables resolver (no HTTP)', () => {
     await variables.attachUsedVariables(req, koa, tpl, {});
     const out = await resolveJsonTemplate(tpl, req);
     expect(out.v).toBe(42);
+  });
+
+  it('blocks constructor traversal on context values and methods', async () => {
+    if (!variables.get('twice')) {
+      variables.register({
+        name: 'twice',
+        scope: 'request',
+        attach: (flowCtx) => flowCtx.defineMethod('twice', (n: any) => Number(n) * 2),
+      });
+    }
+    const { koa, req } = makeCtx(1);
+    const tpl = {
+      userCtor: '{{ ctx.user.constructor }}',
+      getCtor: "{{ (await __get('user')).constructor }}",
+      helperCtor: '{{ __get.constructor }}',
+      methodCtor: '{{ ctx.twice.constructor }}',
+      methodStillWorks: '{{ ctx.twice(21) }}',
+    } as any;
+
+    await variables.attachUsedVariables(req, koa, tpl, {});
+    const out = await resolveJsonTemplate(tpl, req);
+
+    expect(out.userCtor).toBe('{{ ctx.user.constructor }}');
+    expect(out.getCtor).toBe("{{ (await __get('user')).constructor }}");
+    expect(out.helperCtor).toBe('{{ __get.constructor }}');
+    expect(out.methodCtor).toBe('{{ ctx.twice.constructor }}');
+    expect(out.methodStillWorks).toBe(42);
+  });
+
+  it('does not read then accessors on exposed data values', async () => {
+    const ctx = new ServerBaseContext();
+    const thenGetter = vi.fn(() => () => undefined);
+    const payload = { name: 'safe' };
+    Object.defineProperty(payload, 'then', {
+      enumerable: true,
+      configurable: true,
+      get: thenGetter,
+    });
+    ctx.defineProperty('payload', { value: payload });
+
+    const out = await resolveJsonTemplate(
+      {
+        name: '{{ ctx.payload.name }}',
+        thenValue: '{{ ctx.payload.then }}',
+        whole: '{{ ctx.payload }}',
+      } as any,
+      ctx,
+    );
+
+    expect(thenGetter).not.toHaveBeenCalled();
+    expect(out.name).toBe('safe');
+    expect(out.thenValue).toBe('{{ ctx.payload.then }}');
+    expect(out.whole).toEqual({ name: 'safe' });
+  });
+
+  it('resolves plain then data fields on exposed data values', async () => {
+    const ctx = new ServerBaseContext();
+    ctx.defineProperty('payload', { value: { name: 'safe', then: 'visible' } });
+
+    const out = await resolveJsonTemplate(
+      {
+        name: '{{ ctx.payload.name }}',
+        thenValue: '{{ ctx.payload.then }}',
+        whole: '{{ ctx.payload }}',
+      } as any,
+      ctx,
+    );
+
+    expect(out.name).toBe('safe');
+    expect(out.thenValue).toBe('visible');
+    expect(out.whole).toEqual({ name: 'safe', then: 'visible' });
+  });
+
+  it('does not expose function-valued then fields on exposed data values', async () => {
+    const ctx = new ServerBaseContext();
+    const then = vi.fn(() => undefined);
+    ctx.defineProperty('payload', { value: { name: 'safe', then } });
+
+    const out = await resolveJsonTemplate(
+      {
+        name: '{{ ctx.payload.name }}',
+        thenValue: '{{ ctx.payload.then }}',
+        whole: '{{ ctx.payload }}',
+      } as any,
+      ctx,
+    );
+
+    expect(then).not.toHaveBeenCalled();
+    expect(out.name).toBe('safe');
+    expect(out.thenValue).toBe('{{ ctx.payload.then }}');
+    expect(out.whole).toEqual({ name: 'safe' });
+  });
+
+  it('does not expose or invoke accessor properties from data values', async () => {
+    const ctx = new ServerBaseContext();
+    const secretGetter = vi.fn(() => 'secret');
+    const payload = { name: 'safe' };
+    Object.defineProperty(payload, 'secret', {
+      enumerable: true,
+      configurable: true,
+      get: secretGetter,
+    });
+    ctx.defineProperty('payload', { value: payload });
+
+    const out = await resolveJsonTemplate(
+      {
+        direct: '{{ ctx.payload.secret }}',
+        descriptor: "{{ Object.getOwnPropertyDescriptor(ctx.payload, 'secret') ? 'present' : 'missing' }}",
+        keys: "{{ Object.keys(ctx.payload).join(',') }}",
+        whole: '{{ ctx.payload }}',
+      } as any,
+      ctx,
+    );
+
+    expect(secretGetter).not.toHaveBeenCalled();
+    expect(out.direct).toBe('{{ ctx.payload.secret }}');
+    expect(out.descriptor).toBe('missing');
+    expect(out.keys).toBe('name');
+    expect(out.whole).toEqual({ name: 'safe' });
+  });
+
+  it('does not invoke array index accessors when unwrapping whole arrays', async () => {
+    const ctx = new ServerBaseContext();
+    const itemGetter = vi.fn(() => 'secret');
+    const items = [];
+    Object.defineProperty(items, '0', {
+      enumerable: true,
+      configurable: true,
+      get: itemGetter,
+    });
+    ctx.defineProperty('items', { value: items });
+
+    const out = await resolveJsonTemplate('{{ ctx.items }}', ctx);
+
+    expect(itemGetter).not.toHaveBeenCalled();
+    expect(out).toEqual([]);
+  });
+
+  it('keeps array enumeration and length descriptors usable in the sandbox', async () => {
+    const ctx = new ServerBaseContext();
+    ctx.defineProperty('items', { value: ['a', 'b'] });
+
+    const out = await resolveJsonTemplate(
+      {
+        keys: "{{ Object.keys(ctx.items).join(',') }}",
+        length: "{{ Object.getOwnPropertyDescriptor(ctx.items, 'length').value }}",
+      } as any,
+      ctx,
+    );
+
+    expect(out.keys).toBe('0,1');
+    expect(out.length).toBe(2);
+  });
+
+  it('supports own data properties on primitive tail values without exposing prototype members', async () => {
+    const ctx = new ServerBaseContext();
+    ctx.defineProperty('user', { value: { name: 'Alice' } });
+
+    const out = await resolveJsonTemplate(
+      {
+        length: '{{ ctx.user.name.length }}',
+        computedLength: '{{ ctx.user.name.length + 1 }}',
+        index: '{{ ctx.user.name[0] }}',
+        prototypeMethod: '{{ ctx.user.name.toString() }}',
+        constructorValue: '{{ ctx.user.name.constructor }}',
+      } as any,
+      ctx,
+    );
+
+    expect(out.length).toBe(5);
+    expect(out.computedLength).toBe(6);
+    expect(out.index).toBe('A');
+    expect(out.prototypeMethod).toBe('{{ ctx.user.name.toString() }}');
+    expect(out.constructorValue).toBe('{{ ctx.user.name.constructor }}');
+  });
+
+  it('passes the top-level sandbox proxy to delegated getters', async () => {
+    const parent = new ServerBaseContext();
+    parent.defineProperty('x', {
+      get: (flowCtx) => flowCtx.hello(),
+    });
+    const child = new ServerBaseContext();
+    child.defineMethod('hello', () => 'ok');
+    child.delegate(parent);
+
+    const out = await resolveJsonTemplate('{{ ctx.x }}', child);
+
+    expect(out).toBe('ok');
   });
 
   describe('server resolver: dot-only path aggregation', () => {

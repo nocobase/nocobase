@@ -1,11 +1,12 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "ModelDefinition - Định nghĩa kiểu"
+description: "ModelDefinition định nghĩa các tùy chọn tạo FlowModel CreateModelOptions: uid, use, props, flowRegistry, subModels, v.v., cách dùng createModel."
+keywords: "ModelDefinition,CreateModelOptions,createModel,flowRegistry,subModels,Tạo FlowModel,FlowEngine,NocoBase"
+---
 
 # ModelDefinition
 
-ModelDefinition định nghĩa các tùy chọn tạo mô hình luồng, dùng để tạo một thể hiện mô hình thông qua phương thức `FlowEngine.createModel()`. Nó bao gồm cấu hình cơ bản, thuộc tính, các mô hình con và các thông tin khác của mô hình.
+ModelDefinition định nghĩa các tùy chọn tạo flow model, dùng để tạo instance model thông qua phương thức `FlowEngine.createModelAsync()`. Nó bao gồm cấu hình cơ bản, thuộc tính, subModel, v.v. của model.
 
 ## Định nghĩa kiểu
 
@@ -25,13 +26,13 @@ interface CreateModelOptions {
 }
 ```
 
-## Cách sử dụng
+## Cách dùng
 
 ```ts
 const engine = new FlowEngine();
 
-// Tạo một thể hiện mô hình
-const model = engine.createModel({
+// Tạo instance model
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -58,9 +59,9 @@ const model = engine.createModel({
 
 **Kiểu**: `string`  
 **Bắt buộc**: Không  
-**Mô tả**: Mã định danh duy nhất cho thể hiện mô hình.
+**Mô tả**: Định danh duy nhất của instance model
 
-Nếu không cung cấp, hệ thống sẽ tự động tạo một UID duy nhất.
+Nếu không cung cấp, hệ thống sẽ tự động sinh một UID duy nhất.
 
 **Ví dụ**:
 ```ts
@@ -73,20 +74,20 @@ uid: 'data-processing-instance'
 
 **Kiểu**: `RegisteredModelClassName | ModelConstructor`  
 **Bắt buộc**: Có  
-**Mô tả**: Lớp mô hình sẽ sử dụng.
+**Mô tả**: Class model cần dùng
 
-Có thể là một chuỗi tên lớp mô hình đã được đăng ký, hoặc hàm khởi tạo của lớp mô hình.
+Có thể là chuỗi tên class model đã đăng ký, hoặc constructor của class model.
 
 **Ví dụ**:
 ```ts
-// Sử dụng tham chiếu chuỗi
+// Dùng tham chiếu chuỗi
 use: 'MyModel'
 
-// Sử dụng hàm khởi tạo
+// Dùng constructor
 use: MyModel
 
-// Sử dụng tham chiếu động
-const ModelClass = engine.getModelClass('MyModel');
+// Dùng tham chiếu động
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -94,9 +95,9 @@ use: ModelClass
 
 **Kiểu**: `IModelComponentProps`  
 **Bắt buộc**: Không  
-**Mô tả**: Cấu hình thuộc tính cho mô hình.
+**Mô tả**: Cấu hình thuộc tính của model
 
-Đối tượng thuộc tính được truyền vào hàm khởi tạo của mô hình.
+Đối tượng thuộc tính được truyền cho constructor của model.
 
 **Ví dụ**:
 ```ts
@@ -118,9 +119,9 @@ props: {
 
 **Kiểu**: `StepParams`  
 **Bắt buộc**: Không  
-**Mô tả**: Cấu hình tham số bước.
+**Mô tả**: Cấu hình tham số bước
 
-Đặt các tham số cho từng bước trong luồng.
+Đặt tham số cho các bước trong Flow.
 
 **Ví dụ**:
 ```ts
@@ -148,14 +149,14 @@ stepParams: {
 
 **Kiểu**: `Record<string, CreateSubModelOptions[]>`  
 **Bắt buộc**: Không  
-**Mô tả**: Cấu hình mô hình con.
+**Mô tả**: Cấu hình subModel
 
-Định nghĩa các mô hình con của mô hình, hỗ trợ cả mô hình con dạng mảng và mô hình con đơn lẻ.
+Định nghĩa subModel của model, hỗ trợ array và subModel đơn.
 
 **Ví dụ**:
 ```ts
 subModels: {
-  // Mô hình con dạng mảng
+  // SubModel kiểu array
   childModels: [
     {
       use: 'ChildModel1',
@@ -166,7 +167,7 @@ subModels: {
       props: { name: 'Child 2', type: 'secondary' }
     }
   ],
-  // Mô hình con đơn lẻ
+  // SubModel đơn
   singleChild: {
     use: 'SingleChildModel',
     props: { name: 'Single Child' }
@@ -178,9 +179,9 @@ subModels: {
 
 **Kiểu**: `string`  
 **Bắt buộc**: Không  
-**Mô tả**: UID của mô hình cha.
+**Mô tả**: UID của model cha
 
-Dùng để thiết lập mối quan hệ cha-con giữa các mô hình.
+Dùng để thiết lập quan hệ cha-con giữa các model.
 
 **Ví dụ**:
 ```ts
@@ -192,9 +193,9 @@ parentId: 'master-instance'
 
 **Kiểu**: `string`  
 **Bắt buộc**: Không  
-**Mô tả**: Tên khóa của mô hình con trong mô hình cha.
+**Mô tả**: Tên key của subModel trong model cha
 
-Dùng để xác định vị trí của mô hình con trong mô hình cha.
+Dùng để định danh vị trí của subModel trong model cha.
 
 **Ví dụ**:
 ```ts
@@ -207,39 +208,39 @@ subKey: 'nestedItems'
 
 **Kiểu**: `'array' | 'single'`  
 **Bắt buộc**: Không  
-**Mô tả**: Kiểu của mô hình con.
+**Mô tả**: Kiểu của subModel
 
--   `'array'`: Mô hình con dạng mảng, có thể chứa nhiều thể hiện.
--   `'single'`: Mô hình con đơn lẻ, chỉ có thể chứa một thể hiện.
+- `'array'`: SubModel kiểu array, có thể chứa nhiều instance
+- `'single'`: SubModel đơn, chỉ chứa một instance
 
 **Ví dụ**:
 ```ts
-subType: 'array'  // Kiểu mảng
-subType: 'single' // Kiểu đơn lẻ
+subType: 'array'  // Kiểu array
+subType: 'single' // Kiểu đơn
 ```
 
 ### sortIndex
 
 **Kiểu**: `number`  
 **Bắt buộc**: Không  
-**Mô tả**: Chỉ mục sắp xếp.
+**Mô tả**: Index sắp xếp
 
-Dùng để kiểm soát thứ tự hiển thị của mô hình trong danh sách.
+Dùng để kiểm soát thứ tự hiển thị của model trong danh sách.
 
 **Ví dụ**:
 ```ts
-sortIndex: 0  // Ở vị trí đầu tiên
+sortIndex: 0  // Trên cùng
 sortIndex: 10 // Vị trí giữa
-sortIndex: 100 // Vị trí cuối
+sortIndex: 100 // Phía sau
 ```
 
 ### flowRegistry
 
 **Kiểu**: `Record<string, Omit<FlowDefinitionOptions, 'key'>>`  
 **Bắt buộc**: Không  
-**Mô tả**: Danh sách đăng ký luồng.
+**Mô tả**: Bảng đăng ký Flow
 
-Đăng ký các định nghĩa luồng cụ thể cho thể hiện mô hình.
+Đăng ký các định nghĩa Flow cụ thể cho instance model.
 
 **Ví dụ**:
 ```ts
@@ -273,11 +274,16 @@ flowRegistry: {
 ```ts
 class DataProcessingModel extends FlowModel {}
 
-// Đăng ký lớp mô hình
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+// Đăng ký class model
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Dynamic import, chỉ tải module tương ứng khi model này được dùng đến lần đầu
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
-// Tạo một thể hiện mô hình
-const model = engine.createModel({
+// Tạo instance model
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {
@@ -392,6 +398,6 @@ const model = engine.createModel({
   }
 });
 
-// Sử dụng mô hình
+// Sử dụng model
 model.applyFlow('dataProcessingFlow');
 ```

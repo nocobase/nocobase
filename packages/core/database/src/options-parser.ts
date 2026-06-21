@@ -15,6 +15,7 @@ import FilterParser from './filter-parser';
 import { Appends, Except, FindOptions } from './repository';
 import qs from 'qs';
 import { BelongsToArrayAssociation } from './belongs-to-array/belongs-to-array-repository';
+import { AssociationNotFoundError } from './errors/association-not-found-error';
 
 const debug = require('debug')('noco-database');
 
@@ -30,6 +31,7 @@ export class OptionsParser {
   model: ModelStatic<any>;
   filterParser: FilterParser;
   context: OptionsParserContext;
+  associationNotFoundWarnings: string[] = [];
 
   constructor(options: FindOptions, context: OptionsParserContext) {
     const { collection } = context;
@@ -381,7 +383,7 @@ export class OptionsParser {
       if (appendFields.length == 2) {
         const association = associations[appendFields[0]];
         if (!association) {
-          throw new Error(`association ${appendFields[0]} in ${model.name} not found`);
+          throw new AssociationNotFoundError(`association ${appendFields[0]} in ${model.name} not found`);
         }
 
         const associationModel = associations[appendFields[0]].target;
@@ -428,7 +430,13 @@ export class OptionsParser {
         // association not exists
         const association = associations[appendAssociation];
         if (!association) {
-          throw new Error(`association ${appendAssociation} in ${model.name} not found`);
+          throw new AssociationNotFoundError(`association ${appendAssociation} in ${model.name} not found`);
+        }
+        const targetCollectionName = this.database.getCollectionByModelName(association.target.name)?.name;
+        if (!targetCollectionName) {
+          throw new AssociationNotFoundError(
+            `target collection for association ${appendAssociation} in ${model.name} not found`,
+          );
         }
         let includeOptions = {
           association: appendAssociation,
@@ -497,7 +505,15 @@ export class OptionsParser {
 
     // handle every appends
     for (const append of sortedAppends) {
-      setInclude(this.model, filterParams, append);
+      try {
+        setInclude(this.model, filterParams, append);
+      } catch (error) {
+        if (error instanceof AssociationNotFoundError) {
+          this.associationNotFoundWarnings.push(error.message);
+          continue;
+        }
+        throw error;
+      }
     }
 
     debug('filter params: %o', filterParams);

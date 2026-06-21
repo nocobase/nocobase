@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-multi-space"
+title: "NocoBase 多空间"
+description: "多空间插件：单实例逻辑隔离，多门店/多组织数据隔离，空间字段、用户分配、空间切换、老数据归类，专业版插件。"
+keywords: "多空间,Multi Space,空间隔离,多门店,多组织,空间字段,数据隔离,NocoBase"
 ---
-
 # 多空间
 
 <PluginInfo name="multi-space" licenseBundled="professional"></PluginInfo>
@@ -56,6 +58,11 @@ pkg: "@nocobase/plugin-multi-space"
 
 ### 多空间数据管理
 
+1. 对于**未包含空间字段**的数据表，系统不会应用任何空间相关逻辑。  
+2. 对于**包含空间字段**的数据表，系统将自动启用以下规则：  
+   1. 创建数据时，自动关联当前选中的空间；  
+   2. 查询或筛选数据时，仅返回当前选中空间内的数据。  
+
 开启插件后，在创建数据表（Collection）时系统会自动预置一个 **空间字段**。  
 **只有包含该字段的表，才会被纳入空间管理逻辑中**
 
@@ -65,17 +72,10 @@ pkg: "@nocobase/plugin-multi-space"
 
 ![](https://static-docs.nocobase.com/multi-space/data-source-manager-main-NocoBase-10-15-2025_10_03_AM.png)
 
-#### 默认逻辑
-
-在包含空间字段的数据表中，系统会自动应用以下逻辑：
-
-1. 创建数据时，自动关联当前选中空间；
-2. 筛选数据时，自动限定为当前选中空间的数据。
-
 
 ### 老数据的多空间分类
 
-对于在启用多空间插件之前已存在的数据，可通过以下步骤实现空间归类：
+对于在启用多空间插件之前已存在的数据（默认不受空间逻辑影响），可通过以下步骤实现空间归类：
 
 #### 1. 添加空间字段
 

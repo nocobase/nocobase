@@ -1,19 +1,19 @@
 ---
 pkg: '@nocobase/plugin-notification-email'
+title: "Thông báo Email"
+description: "Kênh thông báo Email: gửi thông báo Email qua SMTP, cấu hình SMTP server, node thông báo workflow, plugin tích hợp sẵn cần kích hoạt."
+keywords: "Thông báo Email,SMTP,kênh Email,thông báo workflow,quản lý thông báo,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Thông báo: Email
 
 ## Giới thiệu
 
-Gửi thông báo qua kênh email, hiện tại chỉ hỗ trợ phương thức truyền tải SMTP.
+Gửi thông báo qua kênh Email, hiện tại chỉ hỗ trợ phương thức truyền tải SMTP.
 
 ## Cài đặt
 
-Đây là một plugin được tích hợp sẵn, cần được kích hoạt trước khi sử dụng.
+Plugin tích hợp sẵn, cần kích hoạt trước mới có thể sử dụng.
 
 ![20240928192940](https://static-docs.nocobase.com/20240928192940.png)
 
@@ -21,10 +21,10 @@ Gửi thông báo qua kênh email, hiện tại chỉ hỗ trợ phương thức
 
 ### Cấu hình kênh Email
 
-Hiện tại, chỉ hỗ trợ phương thức truyền tải SMTP.
+Hiện tại chỉ hỗ trợ phương thức truyền tải SMTP.
 
 ![20240928191819](https://static-docs.nocobase.com/20240928191819.png)
 
-### Cấu hình thông báo luồng công việc
+### Cấu hình thông báo workflow
 
 ![20240928191935](https://static-docs.nocobase.com/20240928191935.png)

@@ -1,111 +1,107 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Cấu hình Outlook"
+description: "Tích hợp Email Outlook: đăng ký Azure, Microsoft Entra ID, App registrations, Client ID/Secret, cấu hình callback URL OAuth."
+keywords: "Cấu hình Outlook,Email Microsoft,Azure,Microsoft Entra ID,OAuth,NocoBase"
 ---
-
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-
-
 # Cấu hình Microsoft
 
 ### Điều kiện tiên quyết
-Để người dùng có thể kết nối hộp thư Outlook của họ với NocoBase, bạn cần triển khai NocoBase trên một máy chủ có khả năng truy cập các dịch vụ của Microsoft. Hệ thống backend sẽ gọi các API của Microsoft.
+Để người dùng có thể tích hợp Email Outlook vào NocoBase, phải triển khai trên server hỗ trợ truy cập dịch vụ Microsoft, backend sẽ gọi Microsoft API
 
 ### Đăng ký tài khoản
 
-1. Truy cập https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account
+1. Mở https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account
     
-2. Đăng nhập vào tài khoản Microsoft của bạn.
+2. Đăng nhập tài khoản Microsoft
     
 ![](https://static-docs.nocobase.com/mail-1733818625779.png)
 
 ### Tạo Tenant
 
-1. Truy cập https://azure.microsoft.com/zh-cn/pricing/purchase-options/azure-account?icid=azurefreeaccount và đăng nhập vào tài khoản của bạn.
+1. Mở https://azure.microsoft.com/zh-cn/pricing/purchase-options/azure-account?icid=azurefreeaccount, đăng nhập tài khoản
     
-2. Điền thông tin cơ bản và lấy mã xác minh.
+2. Điền thông tin cơ bản, lấy mã xác minh
 
 ![](https://static-docs.nocobase.com/mail-1733818625984.png)
 
-3. Điền các thông tin khác và tiếp tục.
+3. Điền các thông tin khác và tiếp tục
 
 ![](https://static-docs.nocobase.com/mail-1733818626352.png)
 
-4. Điền thông tin thẻ tín dụng (bạn có thể bỏ qua bước này).
+4. Điền thông tin thẻ tín dụng (có thể tạm thời chưa tạo)
 
 ![](https://static-docs.nocobase.com/mail-1733818626622.png)
 
 ### Lấy Client ID
 
-1. Nhấp vào menu trên cùng và chọn "Microsoft Entra ID".
+1. Click menu phía trên, chọn **Microsoft Entra ID**
 
 ![](https://static-docs.nocobase.com/mail-1733818626871.png)
 
-2. Chọn "App registrations" ở bên trái.
+2. Chọn **App registrations** bên trái
 
 ![](https://static-docs.nocobase.com/mail-1733818627097.png)
 
-3. Nhấp vào "New registration" ở trên cùng.
+3. Click **New registration** ở phía trên
 
 ![](https://static-docs.nocobase.com/mail-1733818627309.png)
 
-4. Điền thông tin và gửi.
+4. Điền thông tin và submit
 
-Tên có thể đặt tùy ý. Đối với loại tài khoản (account types), hãy chọn tùy chọn như trong hình bên dưới. Bạn có thể để trống Redirect URI ở bước này.
+Tên có thể tùy ý, account types tham khảo trong hình bên dưới để chọn, Redirect URI có thể tạm thời chưa điền
 
 ![](https://static-docs.nocobase.com/mail-1733818627555.png)
 
-5. Lấy Client ID.
+5. Lấy được Client ID
 
 ![](https://static-docs.nocobase.com/mail-1733818627797.png)
 
 ### Ủy quyền API
 
-1. Mở menu "API permissions" ở bên trái.
+1. Mở menu **API permissions** bên phải
 
 ![](https://static-docs.nocobase.com/mail-1733818628178.png)
 
-2. Nhấp vào nút "Add a permission".
+2. Click nút **Add a permission**
 
 ![](https://static-docs.nocobase.com/mail-1733818628448.png)
 
-3. Nhấp vào "Microsoft Graph".
+3. Click **Microsoft Graph**
 
 ![](https://static-docs.nocobase.com/mail-1733818628725.png)
 
 ![](https://static-docs.nocobase.com/mail-1733818628927.png)
 
-4. Tìm kiếm và thêm các quyền sau. Kết quả cuối cùng sẽ hiển thị như hình bên dưới.
+4. Tìm kiếm và thêm các quyền sau, kết quả cuối cùng như hình bên dưới
     
     1. `"email"`
     2. `"offline_access"`
     3. `"IMAP.AccessAsUser.All"`
     4. `"SMTP.Send"`
     5. `"offline_access"`
-    6. `"User.Read"` (Mặc định)
+    6. `"User.Read"` (By default)
 
 ![](https://static-docs.nocobase.com/mail-1733818629130.png)
 
 ### Lấy Secret
 
-1. Nhấp vào "Certificates & secrets" ở bên trái.
+1. Click **Certificates & secrets** bên trái
 
 ![](https://static-docs.nocobase.com/mail-1733818629369.png)
 
-2. Nhấp vào nút "New client secret".
+2. Click nút **New client secret**
 
 ![](https://static-docs.nocobase.com/mail-1733818629554.png)
 
-3. Điền mô tả và thời gian hết hạn, sau đó nhấp vào Thêm.
+3. Điền mô tả và thời gian hết hạn, sau đó thêm
 
 ![](https://static-docs.nocobase.com/mail-1733818630292.png)
 
-4. Lấy Secret ID.
+4. Lấy được Secret ID
 
 ![](https://static-docs.nocobase.com/mail-1733818630535.png)
 
-5. Sao chép Client ID và Client secret rồi dán vào trang cấu hình email.
+5. Lần lượt sao chép thông tin Client ID và Client Secret điền vào trang cấu hình Email
 
 ![](https://static-docs.nocobase.com/mail-1733818630710.png)

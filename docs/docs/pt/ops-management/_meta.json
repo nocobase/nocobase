@@ -6,22 +6,32 @@
       {
         "type": "custom-link",
         "label": "Visão Geral",
-        "link": "/ops-management/release-management"
+        "link": "/ops-management/release-management/"
       },
       {
         "type": "custom-link",
         "label": "Variáveis e segredos",
-        "link": "/ops-management/variables-and-secrets"
+        "link": "/ops-management/variables-and-secrets/"
       },
       {
         "type": "custom-link",
         "label": "Gerenciamento de backups",
-        "link": "/ops-management/backup-manager"
+        "link": "/ops-management/backup-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Controle de versão",
+        "link": "/ops-management/version-control/"
       },
       {
         "type": "custom-link",
         "label": "Gerenciamento de migrações",
-        "link": "/ops-management/migration-manager"
+        "link": "/ops-management/migration-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabelas integradas de aplicações e plugins principais",
+        "link": "/ops-management/migration-manager/built-in-tables/"
       }
     ]
   }

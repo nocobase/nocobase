@@ -8,10 +8,15 @@
  */
 
 import _ from 'lodash';
-import { getDateVars, toUnit } from '@nocobase/utils';
 import { ResourcerContext } from '@nocobase/resourcer';
 
 type Getter<T = any> = (ctx: ServerBaseContext) => T | Promise<T>;
+
+const BLOCKED_SANDBOX_KEYS = new Set(['__proto__', 'prototype', 'constructor', 'then']);
+
+function isBlockedSandboxKey(key: string) {
+  return BLOCKED_SANDBOX_KEYS.has(key);
+}
 
 export interface PropertyOptions {
   /** 固定值，优先级高于 get */
@@ -101,6 +106,38 @@ export class ServerBaseContext {
     this._delegates = [];
   }
 
+  getSandboxKeys(): string[] {
+    const keys = new Set<string>();
+    for (const key of Object.keys(this._props)) {
+      if (!isBlockedSandboxKey(key)) keys.add(key);
+    }
+    for (const key of Object.keys(this._methods)) {
+      if (!isBlockedSandboxKey(key)) keys.add(key);
+    }
+    for (const d of this._delegates) {
+      for (const key of d.getSandboxKeys()) {
+        if (!isBlockedSandboxKey(key)) keys.add(key);
+      }
+    }
+    return Array.from(keys);
+  }
+
+  getSandboxValue(key: string, current: ServerBaseContext = this.createProxy()): any {
+    if (isBlockedSandboxKey(key)) return undefined;
+    if (Object.prototype.hasOwnProperty.call(this._props, key)) {
+      return this._getOwn(key, current);
+    }
+    if (Object.prototype.hasOwnProperty.call(this._methods, key)) {
+      const fn = this._methods[key];
+      return typeof fn === 'function' ? fn.bind(this) : fn;
+    }
+    for (const d of this._delegates) {
+      if (!d.getSandboxKeys().includes(key)) continue;
+      return d.getSandboxValue(key, current);
+    }
+    return undefined;
+  }
+
   /** 创建并返回代理对象（同一实例下保持稳定引用） */
   createProxy() {
     if (this._proxy) return this._proxy as any;
@@ -148,7 +185,6 @@ export class ServerBaseContext {
  * 全局上下文：
  * - now/timestamp：时间值（不缓存）
  * - env：环境变量（仅暴露白名单前缀）
- * - date：日期快捷变量集合（包含前天等）
  */
 export class GlobalContext extends ServerBaseContext {
   constructor(env?: Record<string, any>) {
@@ -157,12 +193,6 @@ export class GlobalContext extends ServerBaseContext {
     this.defineProperty('timestamp', { get: () => Date.now(), cache: false });
     // 仅暴露经过白名单过滤的环境变量，避免泄露敏感信息
     if (env) this.defineProperty('env', { value: filterEnv(env) });
-
-    // 日期变量集合：与历史 $nDate/$date 变量保持一致（并补充 dayBeforeYesterday）
-    this.defineProperty('date', {
-      get: (_ctx) => buildDateVariables(),
-      cache: false,
-    });
   }
 }
 
@@ -205,54 +235,4 @@ function filterEnv(env: Record<string, any>, allowedPrefixes: string[] = DEFAULT
   } catch (_) {
     return {};
   }
-}
-
-/**
- * 构建日期快捷变量集合（依据服务端时区）。
- */
-function buildDateVariables() {
-  // 使用服务端时区
-  const timezone = getServerTimezone();
-  const now = new Date().toISOString();
-
-  // 基于现有工具获取日期变量集合
-  const base = getDateVars() as Record<string, any>;
-  // 补充 "前天"
-  base.dayBeforeYesterday = toUnit('day', -2);
-
-  const out: Record<string, any> = {};
-  for (const [key, val] of Object.entries(base)) {
-    try {
-      out[key] = typeof val === 'function' ? val({ timezone, now }) : val;
-    } catch (_) {
-      // 出错时跳过该变量，避免影响整体解析
-    }
-  }
-  return out;
-}
-
-/**
- * 获取服务端时区：优先读取 DB_TIMEZONE/TZ，回退到本地时区偏移。
- */
-function getServerTimezone(): string {
-  // 优先使用环境变量 DB_TIMEZONE 或 TZ
-  const tzEnv = process?.env?.DB_TIMEZONE || process?.env?.TZ;
-  if (tzEnv) {
-    // 支持 +08:00/-05:00 或 IANA 时区名（如 Asia/Shanghai）
-    const m = tzEnv.match(/^([+-])(\d{1,2}):(\d{2})$/);
-    if (m) {
-      const sign = m[1];
-      const hh = m[2].padStart(2, '0');
-      const mm = m[3];
-      return `${sign}${hh}:${mm}`;
-    }
-    return tzEnv; // 作为 IANA 时区名传递
-  }
-  // 回退：根据服务器本地偏移生成 +HH:MM
-  const offsetMinutes = -new Date().getTimezoneOffset(); // 东八区为 +480
-  const sign = offsetMinutes >= 0 ? '+' : '-';
-  const abs = Math.abs(offsetMinutes);
-  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
-  const mm = String(abs % 60).padStart(2, '0');
-  return `${sign}${hh}:${mm}`;
 }

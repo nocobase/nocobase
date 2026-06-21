@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "扩展同步数据源"
+description: "NocoBase 用户数据同步插件扩展：自定义同步数据源、SyncSource 接口、注册同步来源。"
+keywords: "扩展同步数据源,SyncSource,同步来源,plugin-user-data-sync,数据同步开发,NocoBase"
+---
+
 # 扩展同步数据源
 
 ## 概述

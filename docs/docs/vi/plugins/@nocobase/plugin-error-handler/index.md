@@ -1,14 +1,14 @@
 ---
-displayName: "Bộ xử lý lỗi"
+displayName: "Trình xử lý lỗi"
 packageName: '@nocobase/plugin-error-handler'
+title: "Trình xử lý lỗi"
+keywords: "Trình xử lý lỗi,Plugin,NocoBase"
 description: |
-  Xử lý các lỗi và ngoại lệ trong ứng dụng.
+  Xử lý lỗi và ngoại lệ trong ứng dụng.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Bộ xử lý lỗi
+# Trình xử lý lỗi

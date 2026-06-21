@@ -1,14 +1,17 @@
 ---
-displayName: "Thao tác: Chỉnh sửa hàng loạt"
+displayName: "Action: Chỉnh sửa hàng loạt"
 packageName: '@nocobase/plugin-action-bulk-edit'
+title: "Action: Chỉnh sửa hàng loạt"
+keywords: "Action: Chỉnh sửa hàng loạt,Plugin,NocoBase"
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Thực hiện chỉnh sửa hàng loạt tất cả các bản ghi hoặc các bản ghi đã chọn.
+  Chỉnh sửa hàng loạt toàn bộ dữ liệu hoặc dữ liệu đã chọn.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Thao tác: Chỉnh sửa hàng loạt
+# Action: Chỉnh sửa hàng loạt

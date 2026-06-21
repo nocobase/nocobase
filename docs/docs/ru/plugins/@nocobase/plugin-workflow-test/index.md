@@ -1,15 +1,14 @@
 ---
-displayName: "Рабочий процесс: набор для тестирования"
+title: "Workflow: test kit"
+keywords: "Workflow: test kit,Plugin,NocoBase"
+displayName: "Рабочий процесс: набор для тестов"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
-  
+
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-
-# Рабочий процесс: набор для тестирования
+# Рабочий процесс: набор для тестов

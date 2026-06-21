@@ -23,6 +23,7 @@ import os from 'os';
 import { Logger } from '@nocobase/logger';
 import _ from 'lodash';
 import { Field, RelationField } from '@nocobase/database';
+import { storagePathJoin } from '@nocobase/utils';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
@@ -229,7 +230,10 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       return this.renderRawValue;
     }
     const fieldInterface = new InterfaceClass(field?.options);
-    return (value) => fieldInterface.toString(value, ctx);
+    return (value) => {
+      const renderedValue = fieldInterface.toString(value, ctx);
+      return this.normalizeRenderedValue(renderedValue, field);
+    };
   }
 
   protected formatValue(rowData: IModel, dataIndex: Array<string>, ctx?) {
@@ -250,11 +254,31 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     return render(value);
   }
 
-  public generateOutputPath(
-    prefix = 'export',
-    ext = '',
-    destination = path.join(process.cwd(), 'storage', 'tmp'),
-  ): string {
+  protected normalizeRenderedValue(value: any, field?: IField) {
+    if (!this.options.collectionManager.isNumericField(field)) {
+      return value;
+    }
+
+    if (value == null || value === '') {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.replace(/,/g, '');
+      const parsed = Number(normalized);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+
+    return value;
+  }
+
+  public generateOutputPath(prefix = 'export', ext = '', destination = storagePathJoin('tmp')): string {
     const fileName = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
     return path.join(destination, fileName);
   }

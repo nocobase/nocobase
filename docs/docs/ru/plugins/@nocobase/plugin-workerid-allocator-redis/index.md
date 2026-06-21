@@ -1,15 +1,17 @@
 ---
-displayName: "Распределитель worker ID на Redis"
+title: "Redis worker ID allocator"
+keywords: "Architecture"
+displayName: "Выделение Worker ID в Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Распределитель worker ID на базе Redis.
+  Выделение идентификаторов worker на основе Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Распределитель worker ID на Redis
+# Выделение Worker ID в Redis

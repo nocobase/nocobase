@@ -1,17 +1,17 @@
 ---
-displayName: "NocoBase einbetten"
+title: "Embed NocoBase"
+keywords: "Embed NocoBase,Plugin,NocoBase"
+displayName: "Embed NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  Betten Sie NocoBase in ein externes System oder eine Webseite ein, sodass es ein Teil dieses Systems oder dieser Webseite wird.
-isFree: false
-builtIn: false
+  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
 
-# NocoBase einbetten
+# Embed NocoBase

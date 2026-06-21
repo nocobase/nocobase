@@ -1,25 +1,24 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-oracle"
+title: "External Data Source - Oracle"
+description: "Tích hợp database Oracle (>=11g) bên ngoài làm Data Source, kết nối read-only đến database có sẵn, đồng bộ Collection và cấu hình Field."
+keywords: "External Oracle,Oracle Data Source,External database,Đồng bộ Collection,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Nguồn Dữ liệu Ngoài - Oracle
+# External Data Source - Oracle
 
 ## Giới thiệu
 
-Plugin này cho phép bạn sử dụng cơ sở dữ liệu Oracle bên ngoài làm nguồn dữ liệu. Hiện tại, plugin hỗ trợ các phiên bản Oracle từ 11g trở lên.
+Sử dụng database Oracle bên ngoài làm Data Source. Phiên bản hiện được hỗ trợ Oracle >= 11g
 
 ## Cài đặt
 
 ### Cài đặt Oracle Client
 
-Đối với các phiên bản máy chủ Oracle dưới 12.1, bạn cần cài đặt Oracle client.
+Phiên bản Oracle server nhỏ hơn 12.1, cần cài đặt Oracle Client
 
-![Cài đặt Oracle Client](https://static-docs.nocobase.com/20241204164359.png)
+![20241204164359](https://static-docs.nocobase.com/20241204164359.png)
 
-Ví dụ trên Linux:
+Ví dụ Linux:
 
 ```bash
 apt-get update
@@ -30,14 +29,14 @@ echo /opt/instantclient_19_25 > /etc/ld.so.conf.d/oracle-instantclient.conf
 ldconfig
 ```
 
-Nếu client không được cài đặt theo cách trên, bạn cần cung cấp đường dẫn đến client (để biết thêm chi tiết, hãy tham khảo tài liệu [node-oracledb](https://node-oracledb.readthedocs.io/en/latest/user_guide/initialization.html)).
+Nếu Client không được cài đặt theo cách trên, cần cung cấp đường dẫn của Client (xem thêm tại tài liệu [node-oracledb](https://node-oracledb.readthedocs.io/en/latest/user_guide/initialization.html))
 
-![Cấu hình đường dẫn Oracle Client](https://static-docs.nocobase.com/20241204165940.png)
+![20241204165940](https://static-docs.nocobase.com/20241204165940.png)
 
-### Cài đặt plugin
+### Cài đặt Plugin
 
-Tham khảo
+Tham khảo 
 
 ## Hướng dẫn sử dụng
 
-Để biết hướng dẫn chi tiết, hãy tham khảo mục [Nguồn dữ liệu / Cơ sở dữ liệu ngoài](/data-sources/data-source-manager/external-database).
+Xem chương [Data Source / External Database](/data-sources/data-source-manager/external-database)

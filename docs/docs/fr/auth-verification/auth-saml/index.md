@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-auth-saml'
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 # Authentification : SAML 2.0
 
@@ -28,7 +24,7 @@ Ajouter - SAML
 
 ## Configuration
 
-![](https://static-docs.nocobase.com/976b66e588973c322d81dcddd22c6146.png)
+![](https://static-docs.nocobase.com/976b66e589973c322d81dcddd22c6146.png)
 
 - SSO URL - Fournie par l'IdP, utilisée pour l'authentification unique (SSO).
 - Certificat public - Fourni par l'IdP.

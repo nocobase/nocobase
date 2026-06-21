@@ -1,7 +1,8 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+title: "Plugin (Server)"
+description: "API Plugin phía server của NocoBase: app, name, load của Plugin, v.v."
+keywords: "Plugin,Plugin server,app,name,load,API Plugin,NocoBase"
+---
 
 # Plugin
 

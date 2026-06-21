@@ -133,7 +133,7 @@ DatasourceSelectorModel.registerFlow({
         resource.setResourceName('aiContextDatasources');
         resource.setRequestParameters({
           filter: {
-            enabled: true,
+            enabled: 1,
           },
           sort: ['-createdAt'],
         });

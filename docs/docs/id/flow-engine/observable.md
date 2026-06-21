@@ -1,27 +1,29 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Mekanisme Reaktif FlowEngine Observable"
+description: "Mekanisme reaktif Observable: perubahan properti FlowEngine dan update view, memahami prinsip reaktif dan data binding FlowModel."
+keywords: "Observable,Reaktif,Perubahan properti,Update view,FlowModel reaktif,FlowEngine,NocoBase"
+---
 
-# Mekanisme Reaktivitas: Observable
+# Mekanisme Reaktif: Observable
 
 :::info
-Mekanisme reaktivitas Observable di NocoBase pada dasarnya mirip dengan [MobX](https://mobx.js.org/README.html). Implementasi dasarnya saat ini menggunakan [@formily/reactive](https://github.com/alibaba/formily/tree/next/packages/reactive), dengan sintaks dan konsep yang sangat kompatibel dengan [MobX](https://mobx.js.org/README.html). Penggunaan [@formily/reactive] ini hanya karena alasan historis, bukan karena tidak langsung menggunakan [MobX].
+Mekanisme reaktif Observable pada NocoBase secara prinsip mirip dengan [MobX](https://mobx.js.org/README.html). Implementasi underlying saat ini menggunakan [@formily/reactive](https://github.com/alibaba/formily/tree/next/packages/reactive), yang memiliki sintaks dan ide yang sangat kompatibel dengan [MobX](https://mobx.js.org/README.html), hanya saja karena alasan historis tidak menggunakan [MobX](https://mobx.js.org/README.html) secara langsung.
 :::
 
-Di NocoBase 2.0, objek reaktif `Observable` ada di mana-mana. Ini adalah inti dari aliran data dasar dan responsivitas UI, serta banyak digunakan dalam komponen seperti FlowContext, FlowModel, dan FlowStep.
+Pada NocoBase 2.0, objek reaktif `Observable` ada di mana-mana. Ini adalah inti dari aliran data underlying dan respons UI, yang banyak digunakan di FlowContext, FlowModel, FlowStep, dan komponen lainnya.
 
-## Mengapa Memilih Observable?
+## Mengapa memilih Observable?
 
-NocoBase memilih Observable dibandingkan solusi manajemen status lain seperti Redux, Recoil, Zustand, dan Jotai, dengan alasan utama sebagai berikut:
+Alasan NocoBase memilih Observable, bukan solusi state management seperti Redux, Recoil, Zustand, Jotai, dan sebagainya, antara lain:
 
-- **Sangat Fleksibel**: Observable dapat membuat objek, array, Map, Set, dan lainnya menjadi reaktif. Ini secara alami mendukung penumpukan mendalam (deep nesting) dan struktur dinamis, sehingga sangat cocok untuk model bisnis yang kompleks.
-- **Tidak Invasif**: Anda dapat langsung memanipulasi objek asli tanpa perlu mendefinisikan *action*, *reducer*, atau *store* tambahan, memberikan pengalaman pengembangan yang sangat baik.
-- **Pelacakan Dependensi Otomatis**: Cukup bungkus komponen dengan `observer`, dan komponen akan secara otomatis melacak properti Observable yang digunakannya. Ketika data berubah, UI akan otomatis diperbarui tanpa perlu mengelola dependensi secara manual.
-- **Cocok untuk Skenario Non-React**: Mekanisme reaktivitas Observable tidak hanya berlaku untuk React, tetapi juga dapat digabungkan dengan *framework* lain untuk memenuhi kebutuhan data reaktif yang lebih luas.
+- **Sangat fleksibel**: Observable dapat membuat objek apa pun, array, Map, Set, dan sebagainya menjadi reaktif, secara alami mendukung deep nesting dan struktur dinamis, sangat cocok untuk model bisnis yang kompleks.
+- **Zero intrusion**: Anda dapat langsung memanipulasi objek aslinya, tanpa perlu mendefinisikan action, reducer, atau store tambahan, pengalaman pengembangan sangat baik.
+- **Pengumpulan dependency otomatis**: Cukup bungkus komponen dengan `observer`, komponen akan secara otomatis melacak properti Observable yang digunakan, dan secara otomatis me-refresh UI saat data berubah, tanpa perlu mengelola dependency secara manual.
+- **Cocok untuk skenario non-React**: Mekanisme reaktif Observable tidak hanya berlaku untuk React, tetapi juga dapat dikombinasikan dengan framework lain, memenuhi kebutuhan data reaktif yang lebih luas.
 
-## Mengapa Menggunakan observer?
+## Mengapa harus menggunakan observer?
 
-`observer` akan mendengarkan perubahan pada objek Observable dan secara otomatis memicu pembaruan komponen React ketika data berubah. Ini menjaga UI Anda tetap sinkron dengan data tanpa perlu memanggil `setState` atau metode pembaruan lainnya secara manual.
+`observer` akan mendengarkan perubahan objek Observable, dan secara otomatis memicu update komponen React saat data berubah. Dengan demikian, UI Anda dapat tetap sinkron dengan data, tanpa perlu memanggil `setState` atau metode update lainnya secara manual.
 
 ## Penggunaan Dasar
 
@@ -51,4 +53,4 @@ const MyComponent = observer(() => {
 export default MyComponent;
 ```
 
-Untuk informasi lebih lanjut tentang penggunaan reaktif, silakan merujuk pada dokumentasi [@formily/reactive](https://reactive.formilyjs.org/).
+Untuk mengetahui lebih banyak penggunaan reaktif, Anda dapat merujuk ke dokumentasi [@formily/reactive](https://reactive.formilyjs.org/).

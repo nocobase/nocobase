@@ -1,4 +1,6 @@
 ---
+title: "区块：操作面板"
+keywords: "区块：操作面板,插件,NocoBase"
 displayName: "区块：操作面板"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
@@ -6,6 +8,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
 
 # 区块：操作面板

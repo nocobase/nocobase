@@ -1,17 +1,16 @@
 ---
-displayName: "Khối: Cây"
+displayName: "Block: Cây"
 packageName: '@nocobase/plugin-block-tree'
+title: "Block: Cây"
+keywords: "Block: Cây,Plugin,NocoBase"
 supportedVersions:
   - 1.x
 description: |
-  Cung cấp khối lọc có cấu trúc dạng cây
-isFree: false
-builtIn: false
+  Cung cấp Block lọc dạng cấu trúc cây.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 2
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Khối: Cây
+# Block: Cây

@@ -1,14 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+pkg: "@nocobase/plugin-ai"
+title: "Hướng dẫn cấu hình Quản trị viên cho Nhân viên AI"
+description: "Cấu hình Nhân viên AI trong 5 bước: dịch vụ mô hình, tạo nhân viên, cấu hình Skills, Knowledge Base, xác minh hiệu quả; cấu hình tác vụ cấp trang và cấp Block; thực hành tốt nhất và câu hỏi thường gặp."
+keywords: "Cấu hình Nhân viên AI,Hướng dẫn Quản trị viên,Dịch vụ LLM,Cấu hình tác vụ,Cấu hình Skills,NocoBase"
+---
 
-# Nhân viên AI · Hướng dẫn cấu hình quản trị
+# Nhân viên AI · Hướng dẫn cấu hình Quản trị viên
 
+> Tài liệu này giúp bạn nhanh chóng hiểu cách cấu hình và quản lý Nhân viên AI, từ dịch vụ mô hình đến triển khai tác vụ, từng bước hướng dẫn bạn đi qua toàn bộ quy trình.
 
-
-# Nhân viên AI · Hướng dẫn cấu hình quản trị
-
-> Tài liệu này sẽ giúp bạn nhanh chóng nắm bắt cách cấu hình và quản lý Nhân viên AI, hướng dẫn từng bước toàn bộ quy trình từ dịch vụ mô hình đến phân công nhiệm vụ.
 
 ## I. Trước khi bắt đầu
 
@@ -16,319 +16,331 @@ Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin kh
 
 Trước khi cấu hình, vui lòng đảm bảo môi trường của bạn đáp ứng các điều kiện sau:
 
-* Đã cài đặt **NocoBase 2.0 trở lên**
-* Đã bật **plugin Nhân viên AI**
-* Có ít nhất một **dịch vụ mô hình ngôn ngữ lớn** khả dụng (ví dụ: OpenAI, Claude, DeepSeek, GLM, v.v.)
+* Đã cài đặt **NocoBase 2.0 hoặc phiên bản cao hơn**
+* Đã kích hoạt **Plugin Nhân viên AI**
+* Có ít nhất một **dịch vụ LLM** khả dụng (như OpenAI, Claude, DeepSeek, GLM, v.v.)
 
-### 2. Tìm hiểu thiết kế hai lớp của Nhân viên AI
 
-Nhân viên AI được chia thành hai lớp: **"Định nghĩa vai trò"** và **"Tùy chỉnh nhiệm vụ"**.
+### 2. Hiểu thiết kế hai lớp của Nhân viên AI
 
-| Lớp       | Mô tả           | Đặc điểm         | Chức năng      |
+Nhân viên AI được chia thành hai lớp: **"Định nghĩa vai trò"** và **"Tùy chỉnh tác vụ"**.
+
+| Lớp | Mô tả | Đặc điểm | Tác dụng |
 | -------- | ------------ | ---------- | ------- |
-| **Định nghĩa vai trò** | Tính cách cơ bản và năng lực cốt lõi của nhân viên | Ổn định và không thay đổi, giống như "sơ yếu lý lịch" | Đảm bảo tính nhất quán của vai trò |
-| **Tùy chỉnh nhiệm vụ** | Cấu hình cho các kịch bản nghiệp vụ khác nhau  | Linh hoạt và có thể điều chỉnh       | Thích ứng với các nhiệm vụ cụ thể  |
+| **Định nghĩa vai trò** | Persona cơ bản và năng lực cốt lõi của nhân viên | Ổn định không đổi, giống như "sơ yếu lý lịch" | Đảm bảo tính nhất quán của vai trò |
+| **Tùy chỉnh tác vụ** | Cấu hình cho các kịch bản nghiệp vụ khác nhau | Linh hoạt điều chỉnh | Thích ứng tác vụ cụ thể |
 
-**Để dễ hiểu hơn:**
+**Hiểu đơn giản:**
 
 > "Định nghĩa vai trò" quyết định nhân viên này là ai,
-> "Tùy chỉnh nhiệm vụ" quyết định họ sẽ làm gì vào lúc này.
+> "Tùy chỉnh tác vụ" quyết định anh ta cần làm gì hiện tại.
 
 Lợi ích của thiết kế này là:
 
 * Vai trò không thay đổi, nhưng có thể đảm nhiệm các kịch bản khác nhau
-* Nâng cấp hoặc thay thế nhiệm vụ không ảnh hưởng đến bản thân nhân viên
-* Bối cảnh và nhiệm vụ độc lập với nhau, giúp việc bảo trì dễ dàng hơn
+* Nâng cấp hoặc thay thế tác vụ không ảnh hưởng đến chính nhân viên
+* Bối cảnh và tác vụ độc lập với nhau, bảo trì dễ dàng hơn
 
-## II. Quy trình cấu hình (hoàn thành trong 5 bước)
+
+## II. Quy trình cấu hình (Hoàn thành trong 5 bước)
 
 ### Bước 1: Cấu hình dịch vụ mô hình
 
-Dịch vụ mô hình giống như bộ não của Nhân viên AI và cần được thiết lập trước tiên.
+Dịch vụ mô hình tương đương với bộ não của Nhân viên AI, phải được thiết lập trước.
 
-> 💡 Để biết hướng dẫn cấu hình chi tiết, vui lòng tham khảo: [Cấu hình dịch vụ LLM](/ai-employees/quick-start/llm-service)
+> Mẹo: Hướng dẫn cấu hình chi tiết xem tại: [Cấu hình dịch vụ LLM](/ai-employees/features/llm-service)
 
 **Đường dẫn:**
-`Cài đặt hệ thống → Nhân viên AI → Dịch vụ mô hình`
+`Cài đặt hệ thống → Nhân viên AI → LLM service`
 
 ![Vào trang cấu hình](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
 
-Nhấp vào **Thêm**, và điền các thông tin sau:
+Nhấp **Thêm**, điền các thông tin sau:
 
-| Mục     | Mô tả                         | Lưu ý      |
+| Mục | Mô tả | Lưu ý |
 | ------ | -------------------------- | --------- |
-| Loại giao diện   | Ví dụ: OpenAI, Claude, v.v.          | Tương thích với các dịch vụ cùng tiêu chuẩn |
-| Khóa API | Khóa được nhà cung cấp dịch vụ cung cấp                   | Giữ bí mật và thay đổi định kỳ   |
-| Địa chỉ dịch vụ   | API Endpoint               | Cần sửa đổi khi sử dụng proxy  |
-| Tên mô hình   | Tên mô hình cụ thể (ví dụ: gpt-4, claude-opus) | Ảnh hưởng đến khả năng và chi phí   |
+| Provider | Như OpenAI, Claude, Gemini, Kimi, v.v. | Dịch vụ tương thích với cùng đặc tả |
+| API Key | Khóa do nhà cung cấp dịch vụ cung cấp | Giữ bí mật và thay đổi định kỳ |
+| Base URL | API Endpoint (tùy chọn) | Cần sửa đổi khi sử dụng proxy |
+| Enabled Models | Mô hình khuyến nghị / Chọn mô hình / Nhập mô hình thủ công | Quyết định phạm vi mô hình có thể chuyển đổi trong phiên hội thoại |
 
 ![Tạo dịch vụ mô hình lớn](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
 
-Sau khi cấu hình, vui lòng **kiểm tra kết nối**.
-Nếu thất bại, vui lòng kiểm tra mạng, khóa API hoặc tên mô hình của bạn.
+Sau khi cấu hình, vui lòng sử dụng `Test flight` để **kiểm tra kết nối**.
+Nếu thất bại, vui lòng kiểm tra mạng, khóa hoặc tên mô hình.
 
 ![Kiểm tra kết nối](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
 
+
 ### Bước 2: Tạo Nhân viên AI
 
-> 💡 Để biết hướng dẫn chi tiết, vui lòng tham khảo: [Tạo Nhân viên AI](/ai-employees/quick-start/ai-employees)
+> Mẹo: Hướng dẫn chi tiết xem tại: [Tạo Nhân viên AI](/ai-employees/features/new-ai-employees)
 
 Đường dẫn: `Quản lý Nhân viên AI → Tạo nhân viên`
 
 Điền thông tin cơ bản:
 
-| Trường    | Bắt buộc | Ví dụ             |
+| Field | Bắt buộc | Ví dụ |
 | ----- | -- | -------------- |
-| Tên    | ✓  | viz, dex, cole |
-| Biệt danh    | ✓  | Viz, Dex, Cole |
-| Trạng thái kích hoạt  | ✓  | Bật             |
-| Giới thiệu    | -  | "Chuyên gia phân tích dữ liệu"       |
-| Lời nhắc chính | ✓  | Xem Hướng dẫn kỹ thuật nhắc nhở       |
-| Lời chào   | -  | "Xin chào, tôi là Viz…"   |
+| Tên | ✓ | viz, dex, cole |
+| Biệt danh | ✓ | Viz, Dex, Cole |
+| Trạng thái kích hoạt | ✓ | Bật |
+| Giới thiệu | - | "Chuyên gia phân tích dữ liệu" |
+| Prompt chính | ✓ | Xem hướng dẫn Prompt engineering |
+| Lời chào | - | "Xin chào, tôi là Viz…" |
 
 ![Cấu hình thông tin cơ bản](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
 
-Sau đó, liên kết **dịch vụ mô hình** mà bạn vừa cấu hình.
+Giai đoạn tạo nhân viên chủ yếu hoàn thành cấu hình vai trò và Skills. Mô hình sử dụng thực tế có thể chọn trong phiên hội thoại thông qua `Model Switcher`.
 
-![Liên kết dịch vụ mô hình lớn](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-22-27.png)
+**Khuyến nghị viết Prompt:**
 
-**Gợi ý viết lời nhắc:**
+* Nói rõ vai trò, ngữ điệu và trách nhiệm của nhân viên
+* Sử dụng các từ như "phải", "tuyệt đối không" để nhấn mạnh quy tắc
+* Cố gắng bao gồm ví dụ, tránh giải thích trừu tượng
+* Kiểm soát trong khoảng 500–1000 ký tự
 
-* Nêu rõ vai trò, giọng điệu và trách nhiệm của nhân viên
-* Sử dụng các từ như "phải", "tuyệt đối không" để nhấn mạnh các quy tắc
-* Cố gắng bao gồm ví dụ, tránh mô tả trừu tượng
-* Giới hạn trong khoảng 500–1000 ký tự
+> Prompt càng rõ ràng, AI càng hoạt động ổn định.
+> Có thể tham khảo [Hướng dẫn Prompt engineering](./prompt-engineering-guide.md).
 
-> Lời nhắc càng rõ ràng, hiệu suất của AI càng ổn định.
-> Bạn có thể tham khảo [Hướng dẫn kỹ thuật nhắc nhở](./prompt-engineering-guide.md).
 
-### Bước 3: Cấu hình kỹ năng
+### Bước 3: Cấu hình Skills
 
-Kỹ năng quyết định nhân viên có thể "làm gì".
+Skills quyết định nhân viên có thể "làm gì".
 
-> 💡 Để biết hướng dẫn chi tiết, vui lòng tham khảo: [Kỹ năng](/ai-employees/advanced/skill)
+> Mẹo: Hướng dẫn chi tiết xem tại: [Skills](/ai-employees/features/tools)
 
-| Loại   | Phạm vi khả năng    | Ví dụ        | Mức độ rủi ro   |
+| Loại | Phạm vi năng lực | Ví dụ | Cấp độ rủi ro |
 | ---- | ------- | --------- | ------ |
-| Giao diện người dùng   | Tương tác trang    | Đọc dữ liệu khối, điền biểu mẫu | Thấp      |
-| Mô hình dữ liệu | Truy vấn và phân tích dữ liệu | Thống kê tổng hợp      | Trung bình      |
-| Luồng công việc  | Thực hiện quy trình nghiệp vụ  | Công cụ tùy chỉnh     | Tùy thuộc vào luồng công việc |
-| Khác   | Mở rộng bên ngoài    | Tìm kiếm trên web, thao tác tệp | Tùy tình huống  |
+| Front-end | Tương tác trang | Đọc dữ liệu Block, điền form | Thấp |
+| Mô hình dữ liệu | Truy vấn và phân tích dữ liệu | Thống kê tổng hợp | Trung bình |
+| Workflow | Thực thi quy trình nghiệp vụ | Công cụ tùy chỉnh | Phụ thuộc vào Workflow |
+| Khác | Mở rộng bên ngoài | Tìm kiếm trên web, thao tác tệp | Tùy tình huống |
 
-**Gợi ý cấu hình:**
+**Khuyến nghị cấu hình:**
 
-* 3–5 kỹ năng cho mỗi nhân viên là phù hợp nhất
-* Không nên chọn tất cả, dễ gây nhầm lẫn
-* Tắt tự động sử dụng (Auto usage) trước các thao tác quan trọng
+* 3–5 Skills cho mỗi nhân viên là phù hợp nhất
+* Không khuyến nghị chọn tất cả, dễ gây nhầm lẫn
+* Các thao tác quan trọng khuyến nghị sử dụng quyền `Ask`, không phải `Allow`
 
-![Cấu hình kỹ năng](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
+![Cấu hình Skills](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
 
-### Bước 4: Cấu hình cơ sở tri thức (Tùy chọn)
 
-Nếu Nhân viên AI của bạn cần ghi nhớ hoặc tham chiếu một lượng lớn tài liệu, ví dụ như hướng dẫn sản phẩm, FAQ, v.v., bạn có thể cấu hình cơ sở tri thức.
+### Bước 4: Cấu hình Knowledge Base (Tùy chọn)
 
-> 💡 Để biết hướng dẫn chi tiết, vui lòng tham khảo:
-> - [Tổng quan về cơ sở tri thức AI](/ai-employees/knowledge-base/index)
+Nếu Nhân viên AI của bạn cần ghi nhớ hoặc tham chiếu lượng lớn tài liệu, như sách hướng dẫn sản phẩm, FAQ, v.v., bạn có thể cấu hình Knowledge Base.
+
+> Mẹo: Hướng dẫn chi tiết xem tại:
+> - [Tổng quan Knowledge Base AI](/ai-employees/knowledge-base/index)
 > - [Cơ sở dữ liệu vector](/ai-employees/knowledge-base/vector-database)
-> - [Cấu hình cơ sở tri thức](/ai-employees/knowledge-base/knowledge-base)
-> - [RAG (Tạo sinh tăng cường truy xuất)](/ai-employees/knowledge-base/rag)
+> - [Cấu hình Knowledge Base](/ai-employees/knowledge-base/knowledge-base)
+> - [RAG - Tăng cường truy xuất tạo sinh](/ai-employees/knowledge-base/rag)
 
-Điều này yêu cầu cài đặt thêm plugin cơ sở dữ liệu vector.
+Điều này cần cài đặt thêm Plugin cơ sở dữ liệu vector.
 
-![Cấu hình cơ sở tri thức](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
+![Cấu hình Knowledge Base](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
 
-**Các trường hợp áp dụng:**
+**Kịch bản phù hợp:**
 
-* Giúp AI hiểu kiến thức doanh nghiệp
-* Hỗ trợ hỏi đáp và truy xuất tài liệu
-* Đào tạo trợ lý chuyên biệt theo lĩnh vực
+* Để AI hiểu kiến thức doanh nghiệp
+* Hỗ trợ hỏi đáp tài liệu và truy xuất
+* Đào tạo trợ lý chuyên ngành
+
 
 ### Bước 5: Xác minh hiệu quả
 
-Sau khi hoàn tất, bạn sẽ thấy ảnh đại diện của nhân viên mới ở góc dưới bên phải trang.
+Sau khi hoàn thành, bạn sẽ thấy avatar của nhân viên mới ở góc dưới bên phải trang.
 
 ![Xác minh cấu hình](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-36-54.png)
 
 Vui lòng kiểm tra từng mục:
 
-* ✅ Biểu tượng có hiển thị bình thường không?
-* ✅ Có thể thực hiện cuộc trò chuyện cơ bản không?
-* ✅ Các kỹ năng có được gọi đúng cách không?
+* Biểu tượng có hiển thị bình thường không
+* Có thể trò chuyện cơ bản không
+* Skills có thể được gọi đúng không
 
-Nếu tất cả đều đạt, cấu hình đã thành công 🎉
+Nếu tất cả đều thông qua, có nghĩa là cấu hình đã thành công.
 
-## III. Cấu hình nhiệm vụ: Để AI thực sự bắt đầu làm việc
 
-Những gì chúng ta đã hoàn thành trước đó là "tạo nhân viên",
-Tiếp theo là để họ "đi làm việc".
+## III. Cấu hình tác vụ: Để AI thực sự đi làm
 
-Nhiệm vụ AI định nghĩa hành vi của nhân viên trên một trang hoặc khối cụ thể.
+Phía trước đã hoàn thành "tạo nhân viên",
+tiếp theo cần để họ "đi làm việc".
 
-> 💡 Để biết hướng dẫn chi tiết, vui lòng tham khảo: [Nhiệm vụ](/ai-employees/advanced/task)
+Tác vụ AI định nghĩa hành vi của nhân viên trong các trang hoặc Block cụ thể.
 
-### 1. Nhiệm vụ cấp trang
+> Mẹo: Hướng dẫn chi tiết xem tại: [Tác vụ](/ai-employees/features/task)
 
-Áp dụng cho toàn bộ phạm vi trang, ví dụ như "Phân tích dữ liệu trên trang này".
 
-**Điểm vào cấu hình:**
-`Cài đặt trang → Nhân viên AI → Thêm nhiệm vụ`
+### 1. Tác vụ cấp trang
 
-| Trường   | Mô tả       | Ví dụ        |
+Phù hợp với phạm vi toàn bộ trang, ví dụ "phân tích dữ liệu trang này".
+
+**Lối vào cấu hình:**
+`Cài đặt trang → Nhân viên AI → Thêm tác vụ`
+
+| Field | Mô tả | Ví dụ |
 | ---- | -------- | --------- |
-| Tiêu đề   | Tên nhiệm vụ     | Phân tích chuyển đổi giai đoạn    |
-| Bối cảnh   | Ngữ cảnh của trang hiện tại | Trang danh sách Leads |
-| Tin nhắn mặc định | Cuộc hội thoại cài đặt sẵn     | "Vui lòng phân tích xu hướng tháng này" |
-| Khối mặc định | Tự động liên kết với bộ sưu tập  | bảng leads  |
-| Kỹ năng   | Công cụ khả dụng     | Truy vấn dữ liệu, tạo biểu đồ |
+| Tiêu đề | Tên tác vụ | Phân tích chuyển đổi giai đoạn |
+| Bối cảnh | Ngữ cảnh trang hiện tại | Trang danh sách Leads |
+| Tin nhắn mặc định | Hội thoại đặt sẵn | "Vui lòng phân tích xu hướng tháng này" |
+| Block mặc định | Tự động liên kết bảng dữ liệu | Bảng leads |
+| Skills | Công cụ khả dụng | Truy vấn dữ liệu, tạo biểu đồ |
 
-![Cấu hình nhiệm vụ cấp trang](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
+![Cấu hình tác vụ cấp trang](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
 
-**Hỗ trợ đa nhiệm vụ:**
-Một Nhân viên AI có thể được cấu hình với nhiều nhiệm vụ, được hiển thị dưới dạng tùy chọn để người dùng lựa chọn:
+**Hỗ trợ đa tác vụ:**
+Cùng một Nhân viên AI có thể cấu hình nhiều tác vụ, hiển thị dưới dạng tùy chọn cho người dùng chọn:
 
-![Hỗ trợ đa nhiệm vụ](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
+![Hỗ trợ đa tác vụ](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
 
-Gợi ý:
+Khuyến nghị:
 
-* Một nhiệm vụ nên tập trung vào một mục tiêu
-* Tên phải rõ ràng và dễ hiểu
-* Giới hạn số lượng nhiệm vụ trong khoảng 5–7
+* Một tác vụ tập trung vào một mục tiêu
+* Tên rõ ràng dễ hiểu
+* Số lượng tác vụ kiểm soát trong 5–7
 
-### 2. Nhiệm vụ cấp khối
+### 2. Tác vụ cấp Block
 
-Phù hợp để thao tác trên một khối cụ thể, ví dụ như "Dịch biểu mẫu hiện tại".
+Phù hợp để thao tác một Block cụ thể, như "dịch form hiện tại".
 
-**Phương pháp cấu hình:**
+**Cách cấu hình:**
 
-1. Mở cấu hình thao tác khối
+1. Mở cấu hình thao tác Block
 2. Thêm "Nhân viên AI"
 
 ![Nút thêm Nhân viên AI](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-51-06.png)
 
-3. Chỉ cần liên kết nhân viên mục tiêu
+3. Liên kết với nhân viên mục tiêu là được
 
 ![Chọn Nhân viên AI](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-52-26.png)
 
-![Cấu hình nhiệm vụ cấp khối](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
+![Cấu hình tác vụ cấp Block](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
 
-| So sánh  | Cấp trang  | Cấp khối       |
+| Mục so sánh | Cấp trang | Cấp Block |
 | ---- | ---- | --------- |
-| Phạm vi dữ liệu | Toàn bộ trang | Khối hiện tại      |
-| Mức độ chi tiết   | Phân tích tổng thể | Xử lý chi tiết      |
-| Công dụng điển hình | Phân tích xu hướng | Dịch biểu mẫu, trích xuất trường |
+| Phạm vi dữ liệu | Toàn bộ trang | Block hiện tại |
+| Độ chi tiết | Phân tích toàn cục | Xử lý chi tiết |
+| Mục đích điển hình | Phân tích xu hướng | Dịch form, trích xuất Field |
 
-## IV. Các phương pháp hay nhất
 
-### 1. Gợi ý cấu hình
+## IV. Thực hành tốt nhất
 
-| Mục         | Gợi ý          | Lý do       |
+### 1. Khuyến nghị cấu hình
+
+| Mục | Khuyến nghị | Lý do |
 | ---------- | ----------- | -------- |
-| Số lượng kỹ năng       | 3–5       | Độ chính xác cao, phản hồi nhanh  |
-| Tự động sử dụng (Auto usage) | Cẩn trọng khi bật        | Ngăn ngừa thao tác sai    |
-| Độ dài lời nhắc      | 500–1000 ký tự | Cân bằng giữa tốc độ và chất lượng  |
-| Mục tiêu nhiệm vụ       | Đơn lẻ và rõ ràng        | Tránh làm AI bối rối |
-| Luồng công việc        | Sử dụng sau khi đóng gói các nhiệm vụ phức tạp   | Tỷ lệ thành công cao hơn    |
+| Số lượng Skills | 3–5 | Độ chính xác cao, phản hồi nhanh |
+| Chế độ quyền (Ask / Allow) | Sửa đổi dữ liệu khuyến nghị Ask | Ngăn thao tác sai |
+| Độ dài Prompt | 500–1000 ký tự | Cân bằng tốc độ và chất lượng |
+| Mục tiêu tác vụ | Đơn nhất rõ ràng | Tránh AI bối rối |
+| Workflow | Đóng gói tác vụ phức tạp trước khi sử dụng | Tỷ lệ thành công cao hơn |
 
-### 2. Gợi ý thực hành
 
-**Bắt đầu từ nhỏ, tối ưu hóa dần dần:**
+### 2. Khuyến nghị thực chiến
 
-1. Đầu tiên, tạo các nhân viên cơ bản (ví dụ: Viz, Dex)
-2. Bật 1–2 kỹ năng cốt lõi để kiểm tra
-3. Xác nhận rằng nhiệm vụ có thể được thực hiện bình thường
-4. Sau đó, dần dần mở rộng thêm kỹ năng và nhiệm vụ
+**Từ nhỏ đến lớn, tối ưu dần dần:**
 
-**Quy trình tối ưu hóa liên tục:**
+1. Tạo nhân viên cơ bản trước (như Viz, Dex)
+2. Bật 1–2 Skills cốt lõi để kiểm tra
+3. Xác nhận có thể thực thi tác vụ bình thường
+4. Sau đó dần dần mở rộng nhiều Skills và tác vụ hơn
 
-1. Phiên bản ban đầu hoạt động
-2. Thu thập phản hồi từ người dùng
-3. Tối ưu hóa lời nhắc và cấu hình nhiệm vụ
-4. Kiểm tra và lặp lại để cải thiện
+**Quy trình tối ưu liên tục:**
+
+1. Phiên bản đầu chạy được
+2. Thu thập phản hồi sử dụng
+3. Tối ưu Prompt và cấu hình tác vụ
+4. Kiểm tra và lặp cải tiến
+
 
 ## V. Câu hỏi thường gặp
 
 ### 1. Giai đoạn cấu hình
 
-**Hỏi: Nếu lưu thất bại thì sao?**
-Đ: Kiểm tra xem tất cả các trường bắt buộc đã được điền đầy đủ chưa, đặc biệt là dịch vụ mô hình và lời nhắc.
+**Q: Lưu thất bại thì làm sao?**
+A: Kiểm tra xem đã điền tất cả các mục bắt buộc chưa, đặc biệt là dịch vụ mô hình và Prompt.
 
-**Hỏi: Nên chọn mô hình nào?**
+**Q: Nên chọn mô hình nào?**
 
-* Liên quan đến mã → Claude, GPT-4
-* Liên quan đến phân tích → Claude, DeepSeek
+* Loại mã nguồn → Claude, GPT-4
+* Loại phân tích → Claude, DeepSeek
 * Nhạy cảm về chi phí → Qwen, GLM
 * Văn bản dài → Gemini, Claude
 
+
 ### 2. Giai đoạn sử dụng
 
-**Hỏi: AI phản hồi quá chậm?**
+**Q: AI phản hồi quá chậm?**
 
-* Giảm số lượng kỹ năng
-* Tối ưu hóa lời nhắc
-* Kiểm tra độ trễ của dịch vụ mô hình
+* Giảm số lượng Skills
+* Tối ưu Prompt
+* Kiểm tra độ trễ dịch vụ mô hình
 * Có thể cân nhắc đổi mô hình
 
-**Hỏi: Nhiệm vụ thực hiện không chính xác?**
+**Q: Tác vụ thực thi không chính xác?**
 
-* Lời nhắc chưa đủ rõ ràng
-* Quá nhiều kỹ năng gây nhầm lẫn
-* Chia nhỏ nhiệm vụ, thêm ví dụ
+* Prompt không đủ rõ ràng
+* Quá nhiều Skills gây nhầm lẫn
+* Chia nhỏ tác vụ, thêm ví dụ
 
-**Hỏi: Khi nào nên bật Tự động sử dụng (Auto usage)?**
+**Q: Khi nào chọn Ask / Allow?**
 
-* Có thể bật cho các nhiệm vụ loại truy vấn
-* Nên tắt cho các nhiệm vụ loại sửa đổi dữ liệu
+* Tác vụ loại truy vấn có thể sử dụng `Allow`
+* Tác vụ loại sửa đổi dữ liệu khuyến nghị sử dụng `Ask`
 
-**Hỏi: Làm thế nào để AI xử lý một biểu mẫu cụ thể?**
+**Q: Làm thế nào để AI xử lý form cụ thể?**
 
-Đ: Nếu là cấu hình cấp trang, bạn cần chọn khối thủ công.
+A: Nếu là cấu hình cấp trang, cần chọn Block thủ công.
 
-![Chọn khối thủ công](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
+![Chọn Block thủ công](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
 
-Nếu là cấu hình nhiệm vụ cấp khối, ngữ cảnh dữ liệu sẽ được tự động liên kết.
+Nếu là cấu hình tác vụ cấp Block, sẽ tự động liên kết ngữ cảnh dữ liệu.
 
-## VI. Đọc thêm
 
-Để Nhân viên AI của bạn mạnh mẽ hơn, bạn có thể tiếp tục đọc các tài liệu sau:
+## VI. Đọc tiếp theo
+
+Để Nhân viên AI mạnh hơn, có thể đọc tiếp các tài liệu sau:
 
 **Liên quan đến cấu hình:**
 
-* [Hướng dẫn kỹ thuật nhắc nhở](./prompt-engineering-guide.md) - Các kỹ thuật và phương pháp hay nhất để viết lời nhắc chất lượng cao
-* [Cấu hình dịch vụ LLM](/ai-employees/quick-start/llm-service) - Hướng dẫn cấu hình chi tiết cho các dịch vụ mô hình lớn
-* [Tạo Nhân viên AI](/ai-employees/quick-start/ai-employees) - Tạo và cấu hình cơ bản cho Nhân viên AI
-* [Cộng tác với Nhân viên AI](/ai-employees/quick-start/collaborate) - Cách trò chuyện hiệu quả với Nhân viên AI
+* [Hướng dẫn Prompt engineering](./prompt-engineering-guide.md) - Kỹ thuật và thực hành tốt nhất để viết Prompt chất lượng cao
+* [Cấu hình dịch vụ LLM](/ai-employees/features/llm-service) - Hướng dẫn cấu hình chi tiết dịch vụ mô hình lớn
+* [Tạo Nhân viên AI](/ai-employees/features/new-ai-employees) - Tạo và cấu hình cơ bản Nhân viên AI
+* [Cộng tác với Nhân viên AI](/ai-employees/features/collaborate) - Cách trò chuyện hiệu quả với Nhân viên AI
 
 **Tính năng nâng cao:**
 
-* [Kỹ năng](/ai-employees/advanced/skill) - Hiểu sâu về cấu hình và cách sử dụng các loại kỹ năng
-* [Nhiệm vụ](/ai-employees/advanced/task) - Các kỹ thuật nâng cao để cấu hình nhiệm vụ
-* [Chọn khối](/ai-employees/advanced/pick-block) - Cách chỉ định các khối dữ liệu cho Nhân viên AI
-* [Nguồn dữ liệu](/ai-employees/advanced/datasource) - Cấu hình và quản lý nguồn dữ liệu
-* [Tìm kiếm trên web](/ai-employees/advanced/web-search) - Cấu hình khả năng tìm kiếm trên web cho Nhân viên AI
+* [Skills](/ai-employees/features/tools) - Tìm hiểu sâu về cấu hình và sử dụng các loại Skills
+* [Tác vụ](/ai-employees/features/task) - Kỹ thuật nâng cao trong cấu hình tác vụ
+* [Chọn Block](/ai-employees/features/pick-block) - Cách chỉ định Block dữ liệu cho Nhân viên AI
+* Nguồn dữ liệu - Vui lòng tham khảo tài liệu cấu hình nguồn dữ liệu của Plugin tương ứng
+* [Tìm kiếm trên web](/ai-employees/features/web-search) - Cấu hình năng lực tìm kiếm trên web cho Nhân viên AI
 
-**Cơ sở tri thức và RAG:**
+**Knowledge Base và RAG:**
 
-* [Tổng quan về cơ sở tri thức AI](/ai-employees/knowledge-base/index) - Giới thiệu tính năng cơ sở tri thức
+* [Tổng quan Knowledge Base AI](/ai-employees/knowledge-base/index) - Giới thiệu tính năng Knowledge Base
 * [Cơ sở dữ liệu vector](/ai-employees/knowledge-base/vector-database) - Cấu hình cơ sở dữ liệu vector
-* [Cơ sở tri thức](/ai-employees/knowledge-base/knowledge-base) - Cách tạo và quản lý cơ sở tri thức
-* [RAG (Tạo sinh tăng cường truy xuất)](/ai-employees/knowledge-base/rag) - Ứng dụng công nghệ RAG
+* [Knowledge Base](/ai-employees/knowledge-base/knowledge-base) - Cách tạo và quản lý Knowledge Base
+* [RAG - Tăng cường truy xuất tạo sinh](/ai-employees/knowledge-base/rag) - Ứng dụng công nghệ RAG
 
-**Tích hợp luồng công việc:**
+**Tích hợp Workflow:**
 
-* [Nút LLM - Trò chuyện văn bản](/ai-employees/workflow/nodes/llm/chat) - Sử dụng trò chuyện văn bản trong luồng công việc
-* [Nút LLM - Trò chuyện đa phương thức](/ai-employees/workflow/nodes/llm/multimodal-chat) - Xử lý đầu vào đa phương thức như hình ảnh, tệp
-* [Nút LLM - Đầu ra có cấu trúc](/ai-employees/workflow/nodes/llm/structured-output) - Nhận phản hồi AI có cấu trúc
+* [Node LLM - Hội thoại văn bản](/ai-employees/workflow/nodes/llm/chat) - Sử dụng hội thoại văn bản trong Workflow
+* [Node LLM - Hội thoại đa phương thức](/ai-employees/workflow/nodes/llm/multimodal-chat) - Xử lý đầu vào đa phương thức như hình ảnh, tệp
+* [Node LLM - Đầu ra có cấu trúc](/ai-employees/workflow/nodes/llm/structured-output) - Lấy phản hồi AI có cấu trúc
+
 
 ## Lời kết
 
-Điều quan trọng nhất khi cấu hình Nhân viên AI là: **trước tiên hãy làm cho nó hoạt động, sau đó tối ưu hóa**.
-Trước tiên, hãy để nhân viên đầu tiên của bạn bắt đầu công việc thành công, sau đó dần dần mở rộng và tinh chỉnh.
+Điều quan trọng nhất khi cấu hình Nhân viên AI là: **chạy thông trước, tối ưu sau**.
+Hãy để nhân viên đầu tiên triển khai thành công trước, sau đó dần dần mở rộng và tinh chỉnh.
 
-Bạn có thể khắc phục sự cố theo thứ tự sau:
+Hướng khắc phục có thể theo thứ tự:
 
-1. Dịch vụ mô hình có được kết nối không?
-2. Số lượng kỹ năng có quá nhiều không?
-3. Lời nhắc có rõ ràng không?
-4. Mục tiêu nhiệm vụ có được xác định rõ ràng không?
+1. Dịch vụ mô hình có kết nối được không
+2. Số lượng Skills có quá nhiều không
+3. Prompt có rõ ràng không
+4. Mục tiêu tác vụ có rõ ràng không
 
-Chỉ cần bạn tiến hành từng bước, bạn có thể xây dựng một đội ngũ AI thực sự hiệu quả.
+Chỉ cần tiến hành từng bước, bạn có thể xây dựng một đội ngũ AI thực sự hiệu quả.

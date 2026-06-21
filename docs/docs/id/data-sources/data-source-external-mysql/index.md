@@ -1,23 +1,19 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-mysql"
+title: "Data Source Eksternal - MySQL"
+description: "Mengintegrasikan database MySQL eksternal (>=5.7) sebagai data source, koneksi read-only ke database yang sudah ada, sinkronisasi Collection dan konfigurasi field."
+keywords: "MySQL Eksternal,Data Source MySQL,database eksternal,sinkronisasi Collection,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Data Source Eksternal - MySQL
 
+## Pengantar
 
-# Sumber Data Eksternal - MySQL
-
-## Pendahuluan
-
-Gunakan database MySQL eksternal sebagai sumber data. Versi yang saat ini didukung: MySQL >= 5.7
+Menggunakan database MySQL eksternal sebagai data source. Versi yang saat ini didukung: MySQL >= 5.7
 
 ## Instalasi
 
-Plugin ini adalah plugin komersial, yang perlu diunggah dan diaktifkan melalui pengelola plugin.
-
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+Plugin ini adalah plugin komersial. Untuk cara aktivasi detail, harap lihat: [Panduan Aktivasi Plugin Komersial](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
 ## Petunjuk Penggunaan
 
-Lihat bagian [Sumber Data / Database Eksternal](/data-sources/data-source-manager/external-database).
+Lihat bagian [Data Source / Database Eksternal](/data-sources/data-source-manager/external-database)

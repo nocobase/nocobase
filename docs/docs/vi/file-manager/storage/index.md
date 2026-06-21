@@ -1,71 +1,73 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "Tổng quan Storage Engine"
+description: "Storage engine lưu file vào local hoặc cloud storage, hỗ trợ Local, Amazon S3, Aliyun OSS, Tencent COS, S3 Pro, cấu hình đường dẫn, URL truy cập, giới hạn kích thước, loại MIME, v.v."
+keywords: "Storage engine,Storage,Local Storage,S3,OSS,COS,giới hạn kích thước file,loại MIME,NocoBase"
+---
 
 # Tổng quan
 
 ## Giới thiệu
 
-Công cụ lưu trữ được dùng để lưu trữ tệp tin vào các dịch vụ cụ thể, bao gồm lưu trữ cục bộ (lưu vào ổ cứng máy chủ), lưu trữ đám mây, v.v.
+Storage engine dùng để lưu file vào dịch vụ cụ thể, bao gồm Local Storage (lưu vào ổ cứng server), cloud storage, v.v.
 
-Trước khi tải lên bất kỳ tệp tin nào, bạn cần cấu hình công cụ lưu trữ. Hệ thống sẽ tự động thêm một công cụ lưu trữ cục bộ trong quá trình cài đặt, bạn có thể sử dụng ngay. Bạn cũng có thể thêm công cụ mới hoặc chỉnh sửa các tham số của công cụ hiện có.
+Trước khi sử dụng bất kỳ tính năng upload file nào, cần phải cấu hình storage engine trước. Khi cài đặt hệ thống, một Local Storage engine sẽ được tự động thêm và có thể sử dụng ngay. Bạn cũng có thể thêm engine mới hoặc chỉnh sửa các tham số của engine đã có.
 
-## Các loại công cụ lưu trữ
+## Loại Storage Engine
 
-Hiện tại, NocoBase hỗ trợ sẵn các loại công cụ sau:
+Hiện tại NocoBase tích hợp sẵn các loại engine sau:
 
-- [Lưu trữ cục bộ](./local)
+- [Local Storage](./local)
 - [Amazon S3](./amazon-s3)
 - [Aliyun OSS](./aliyun-oss)
 - [Tencent COS](./tencent-cos)
 - [S3 Pro](./s3-pro)
 
-Hệ thống sẽ tự động thêm một công cụ lưu trữ cục bộ trong quá trình cài đặt, bạn có thể sử dụng ngay. Bạn cũng có thể thêm công cụ mới hoặc chỉnh sửa các tham số của công cụ hiện có.
+Khi cài đặt hệ thống, một Local Storage engine sẽ được tự động thêm và có thể sử dụng ngay. Bạn cũng có thể thêm engine mới hoặc chỉnh sửa các tham số của engine đã có.
 
-## Các tham số chung
+## Tham số chung
 
-Ngoài các tham số đặc trưng của từng loại công cụ, dưới đây là các tham số chung (lấy ví dụ về lưu trữ cục bộ):
+Ngoài các tham số riêng của từng loại engine, các phần dưới đây là tham số chung (lấy Local Storage làm ví dụ):
 
-![Ví dụ cấu hình công cụ lưu trữ tệp](https://static-docs.nocobase.com/20240529115151.png)
+![Ví dụ cấu hình storage engine file](https://static-docs.nocobase.com/20240529115151.png)
 
 ### Tiêu đề
 
-Tên của công cụ lưu trữ, dùng để nhận diện thủ công.
+Tên của storage engine, dùng để nhận biết bằng mắt thường.
 
 ### Tên hệ thống
 
-Tên hệ thống của công cụ lưu trữ, dùng để hệ thống nhận diện. Tên này phải là duy nhất trong hệ thống. Nếu để trống, hệ thống sẽ tự động tạo ngẫu nhiên.
+Tên hệ thống của storage engine, dùng để hệ thống nhận biết. Phải là duy nhất trong hệ thống. Nếu không điền, hệ thống sẽ tự động sinh ngẫu nhiên.
 
-### Tiền tố URL công khai
+### Tiền tố URL truy cập
 
-Phần tiền tố của địa chỉ URL công khai mà tệp tin có thể truy cập được. Đây có thể là URL cơ sở của CDN, ví dụ: “`https://cdn.nocobase.com/app`” (không cần dấu “`/`” ở cuối).
+Phần tiền tố địa chỉ URL có thể truy cập đến file đó, có thể là URL truy cập cơ sở của CDN, ví dụ: "`https://cdn.nocobase.com/app`" (không cần "`/`" ở cuối).
 
 ### Đường dẫn
 
-Đường dẫn tương đối được sử dụng khi lưu trữ tệp tin. Phần này cũng sẽ tự động được nối vào URL cuối cùng khi truy cập. Ví dụ: “`user/avatar`” (không cần dấu “`/`” ở đầu hoặc cuối).
+Đường dẫn tương đối được sử dụng khi lưu file, phần này cũng sẽ được tự động nối vào URL cuối cùng khi truy cập. Ví dụ: "`user/avatar`" (không cần "`/`" ở đầu và cuối).
 
-### Giới hạn kích thước tệp
+### Giới hạn kích thước file
 
-Giới hạn kích thước cho các tệp được tải lên công cụ lưu trữ này. Các tệp vượt quá kích thước đã cài đặt sẽ không thể tải lên. Giới hạn mặc định của hệ thống là 20MB và có thể điều chỉnh tối đa lên đến 1GB.
+Giới hạn kích thước khi upload file vào storage engine này, các file vượt quá kích thước cài đặt sẽ không thể upload được. Hệ thống mặc định giới hạn 20MB, có thể điều chỉnh tối đa lên 1GB.
 
-### Loại tệp
+### Loại file
 
-Bạn có thể giới hạn loại tệp được tải lên, sử dụng định dạng mô tả cú pháp [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types). Ví dụ: `image/*` đại diện cho các tệp hình ảnh. Nhiều loại có thể được phân tách bằng dấu phẩy, ví dụ: `image/*, application/pdf` có nghĩa là cho phép các tệp hình ảnh và tệp PDF.
+Có thể giới hạn loại file được upload, sử dụng cú pháp [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types) để mô tả định dạng. Ví dụ: `image/*` đại diện cho file hình ảnh. Nhiều loại có thể được phân tách bằng dấu phẩy, ví dụ: `image/*, application/pdf` cho phép cả file hình ảnh và file PDF.
 
-### Công cụ lưu trữ mặc định
+### Storage engine mặc định
 
-Khi được chọn, đây sẽ là công cụ lưu trữ mặc định của hệ thống. Khi trường đính kèm hoặc bộ sưu tập tệp không chỉ định công cụ lưu trữ, các tệp được tải lên sẽ được lưu vào công cụ lưu trữ mặc định. Công cụ lưu trữ mặc định không thể xóa.
+Sau khi tích chọn sẽ được đặt làm storage engine mặc định của hệ thống. Khi field attachment hoặc bảng file không chỉ định storage engine, file được upload sẽ đều được lưu vào storage engine mặc định. Storage engine mặc định không thể xóa.
 
-### Giữ lại tệp khi xóa bản ghi
+### Giữ file khi xóa bản ghi
 
-Khi được chọn, tệp đã tải lên trong công cụ lưu trữ sẽ được giữ lại ngay cả khi bản ghi dữ liệu trong bảng đính kèm hoặc bộ sưu tập tệp bị xóa. Mặc định không chọn, tức là khi xóa bản ghi, tệp trong công cụ lưu trữ cũng sẽ bị xóa.
+Sau khi tích chọn, khi bản ghi dữ liệu của bảng attachment hoặc bảng file bị xóa, file đã upload trong storage engine vẫn được giữ lại. Mặc định không tích chọn, tức là khi xóa bản ghi sẽ xóa file trong storage engine cùng lúc.
 
 :::info{title=Mẹo}
-Sau khi tệp được tải lên, đường dẫn truy cập cuối cùng sẽ được ghép từ một số phần:
+Sau khi upload file, đường dẫn truy cập cuối cùng sẽ được nối từ một số phần:
 
 ```
-<Tiền tố URL công khai>/<Đường dẫn>/<Tên tệp><Phần mở rộng>
+<URL truy cập cơ sở>/<đường dẫn>/<tên file><phần mở rộng>
 ```
 
 Ví dụ: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.

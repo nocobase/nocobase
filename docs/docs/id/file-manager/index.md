@@ -1,21 +1,21 @@
 ---
 pkg: '@nocobase/plugin-file-manager'
+title: "Ikhtisar File Manager"
+description: "Plugin File Manager NocoBase: file collection, field attachment, multi storage engine (local/S3/OSS/COS), file preview, upload melalui HTTP API, panduan pengembangan ekstensi."
+keywords: "file manager,file collection,field attachment,storage engine,file preview,HTTP API,pengembangan ekstensi,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# File Manager
 
-# Manajer File
+## Pengantar
 
-## Pendahuluan
-
-Plugin Manajer File menyediakan koleksi file, field lampiran, dan mesin penyimpanan file untuk memudahkan pengelolaan file yang diunggah oleh pengguna.
+Plugin File Manager menyediakan file collection, field attachment, dan file storage engine, untuk mengelola file yang di-upload user dengan mudah.
 
 ## Pelajari Lebih Lanjut
 
-- [Mesin Penyimpanan](./storage/index)
-- [Koleksi File](./file-collection)
-- [Field Lampiran](./field-attachment)
-- [API HTTP](./http-api)
-- [Pengembangan](./development/index)
+- [Storage Engine](./storage/index)
+- [File Collection](./file-collection)
+- [Field Attachment](./field-attachment)
+- [File Preview](./file-preview)
+- [HTTP API](./http-api)
+- [Pengembangan Ekstensi](./development/index)

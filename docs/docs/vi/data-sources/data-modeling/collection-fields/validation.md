@@ -1,18 +1,19 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Xác thực Field"
+description: "Quy tắc xác thực Field: quy tắc cấu hình và quy tắc xác thực dựa trên Joi, hỗ trợ các kiểu chuỗi, số, ngày với độ dài tối thiểu/tối đa, bắt buộc, v.v."
+keywords: "xác thực Field,validation Field,Joi,quy tắc xác thực,quy tắc cấu hình,NocoBase"
+---
 
+# Xác thực Field
+Để đảm bảo tính chính xác, an toàn và nhất quán của Collection, NocoBase cung cấp chức năng xác thực Field. Chức năng này chủ yếu được chia thành hai phần: quy tắc cấu hình và quy tắc xác thực.
 
-# Xác thực trường
-Để đảm bảo tính chính xác, bảo mật và nhất quán của dữ liệu trong các bộ sưu tập, NocoBase cung cấp chức năng xác thực trường. Chức năng này bao gồm hai phần chính: cấu hình quy tắc và áp dụng quy tắc.
-
-## Cấu hình quy tắc
+## Quy tắc cấu hình
 ![20250819181342](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819181342.png)
 
-Các trường hệ thống của NocoBase tích hợp các quy tắc từ [Joi](https://joi.dev/api/), với sự hỗ trợ như sau:
+Field hệ thống của NocoBase tích hợp quy tắc của [Joi](https://joi.dev/api/), hỗ trợ như sau:
 
 ### Kiểu chuỗi
-Các kiểu chuỗi của Joi tương ứng với các kiểu trường NocoBase sau: Văn bản một dòng, Văn bản nhiều dòng, Số điện thoại, Email, URL, Mật khẩu và UUID.
+Kiểu chuỗi của Joi tương ứng với các loại Field NocoBase bao gồm: Văn bản một dòng, Văn bản nhiều dòng, Số điện thoại, Email, URL, Mật khẩu, UUID.
 #### Quy tắc chung
 - Độ dài tối thiểu
 - Độ dài tối đa
@@ -33,61 +34,62 @@ Các kiểu chuỗi của Joi tương ứng với các kiểu trường NocoBase
 [Xem thêm tùy chọn](https://joi.dev/api/?v=17.13.3#stringguid---aliases-uuid)
 
 ### Kiểu số
-Các kiểu số của Joi tương ứng với các kiểu trường NocoBase sau: Số nguyên, Số và Phần trăm.
+Kiểu số của Joi tương ứng với các loại Field NocoBase bao gồm: Số nguyên, Số, Phần trăm.
 #### Quy tắc chung
 - Lớn hơn
 - Nhỏ hơn
 - Giá trị tối đa
 - Giá trị tối thiểu
-- Bội số
+- Bội số nguyên
 
 #### Số nguyên
-Ngoài các quy tắc chung, các trường số nguyên còn hỗ trợ thêm [xác thực số nguyên](https://joi.dev/api/?v=17.13.3#numberinteger) và [xác thực số nguyên không an toàn](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
+Ngoài quy tắc chung, Field số nguyên còn hỗ trợ thêm [xác thực số nguyên](https://joi.dev/api/?v=17.13.3#numberinteger) và [xác thực số nguyên không an toàn](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
 ![20250819193758](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193758.png)
 
 #### Số và Phần trăm
-Ngoài các quy tắc chung, các trường số và phần trăm còn hỗ trợ thêm [xác thực độ chính xác](https://joi.dev/api/?v=17.13.3#numberinteger).
+Ngoài quy tắc chung, Field số và phần trăm còn hỗ trợ thêm [xác thực độ chính xác](https://joi.dev/api/?v=17.13.3#numberinteger).
 ![20250819193954](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193954.png)
 
-### Kiểu ngày tháng
-Các kiểu ngày tháng của Joi tương ứng với các kiểu trường NocoBase sau: Ngày tháng (có múi giờ), Ngày tháng (không có múi giờ), Chỉ ngày và Dấu thời gian Unix.
+### Kiểu ngày
+Kiểu ngày của Joi tương ứng với các loại Field NocoBase bao gồm: Ngày (có múi giờ), Ngày (không có múi giờ), Chỉ ngày, Unix Timestamp.
 
 Các quy tắc xác thực được hỗ trợ:
 - Lớn hơn
 - Nhỏ hơn
 - Giá trị tối đa
 - Giá trị tối thiểu
-- Định dạng dấu thời gian
+- Xác thực định dạng timestamp
 - Bắt buộc
 
-### Trường quan hệ
-Các trường quan hệ chỉ hỗ trợ xác thực bắt buộc. Lưu ý rằng xác thực bắt buộc cho các trường quan hệ hiện chưa được hỗ trợ trong các tình huống biểu mẫu con hoặc bảng con.
+### Field quan hệ
+Field quan hệ chỉ hỗ trợ xác thực bắt buộc. Cần lưu ý rằng xác thực bắt buộc của Field quan hệ tạm thời không được áp dụng trong các tình huống sub-form hoặc sub-table.
 ![20250819184344](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819184344.png)
 
 ## Áp dụng quy tắc xác thực
-Sau khi cấu hình các quy tắc cho trường, các quy tắc xác thực tương ứng sẽ được kích hoạt khi thêm hoặc sửa đổi dữ liệu.
+Sau khi cấu hình quy tắc Field, các quy tắc xác thực tương ứng sẽ được kích hoạt khi thêm hoặc sửa dữ liệu.
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
-Các quy tắc xác thực cũng áp dụng cho các thành phần bảng con và biểu mẫu con:
+Quy tắc xác thực cũng áp dụng cho component sub-table và sub-form:
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
 
 ![20250819202357](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202357.png)
 
-Lưu ý rằng trong các tình huống biểu mẫu con hoặc bảng con, xác thực bắt buộc cho các trường quan hệ hiện không có hiệu lực.
+Cần lưu ý rằng trong các tình huống sub-form hoặc sub-table, xác thực bắt buộc của Field quan hệ tạm thời không có hiệu lực.
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Sự khác biệt so với xác thực trường phía máy khách
-Xác thực trường phía máy khách và phía máy chủ được áp dụng trong các tình huống khác nhau, với sự khác biệt đáng kể về cách triển khai và thời điểm kích hoạt quy tắc, do đó cần được quản lý riêng biệt.
+## Sự khác biệt với xác thực Field phía client
+Xác thực Field phía server và phía client phù hợp với các tình huống ứng dụng khác nhau, hai loại có sự khác biệt rõ rệt về cách triển khai và thời điểm kích hoạt quy tắc, do đó cần được quản lý riêng biệt.
 
-### Khác biệt về phương thức cấu hình
-- **Xác thực phía máy khách**: Cấu hình quy tắc trong các biểu mẫu chỉnh sửa (như hình dưới đây)
-- **Xác thực trường phía máy chủ**: Đặt quy tắc trường trong cấu hình Nguồn dữ liệu → Bộ sưu tập
+### Sự khác biệt về cách cấu hình
+- **Xác thực phía client**: Cấu hình quy tắc trong form chỉnh sửa (như hình bên dưới)
+- **Xác thực Field phía server**: Thiết lập quy tắc Field trong cấu hình Data Source → Collection
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
 ![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
-### Khác biệt về thời điểm kích hoạt xác thực
-- **Xác thực phía máy khách**: Kích hoạt xác thực theo thời gian thực khi người dùng điền vào các trường và hiển thị thông báo lỗi ngay lập tức.
-- **Xác thực trường phía máy chủ**: Sau khi dữ liệu được gửi, máy chủ sẽ thực hiện xác thực trước khi dữ liệu được lưu vào cơ sở dữ liệu, thông báo lỗi được trả về thông qua phản hồi API.
-- **Phạm vi áp dụng**: Xác thực trường phía máy chủ không chỉ có hiệu lực khi gửi biểu mẫu mà còn được kích hoạt trong tất cả các tình huống liên quan đến việc thêm hoặc sửa đổi dữ liệu, chẳng hạn như luồng công việc và nhập dữ liệu.
-- **Thông báo lỗi**: Xác thực phía máy khách hỗ trợ thông báo lỗi tùy chỉnh, trong khi xác thực phía máy chủ hiện chưa hỗ trợ thông báo lỗi tùy chỉnh.
+
+### Sự khác biệt về thời điểm kích hoạt xác thực
+- **Xác thực phía client**: Kích hoạt xác thực theo thời gian thực khi bạn nhập Field, hiển thị thông báo lỗi ngay lập tức
+- **Xác thực Field phía server**: Sau khi gửi dữ liệu, server sẽ xác thực trước khi lưu vào database, thông báo lỗi được trả về qua phản hồi API
+- **Phạm vi áp dụng**: Xác thực Field phía server ngoài việc có hiệu lực khi gửi form, còn được kích hoạt trong workflow, nhập dữ liệu và tất cả các tình huống liên quan đến thêm hoặc sửa dữ liệu
+- **Thông báo lỗi**: Xác thực phía client hỗ trợ thông báo lỗi tùy chỉnh, xác thực phía server tạm thời không hỗ trợ thông báo lỗi tùy chỉnh

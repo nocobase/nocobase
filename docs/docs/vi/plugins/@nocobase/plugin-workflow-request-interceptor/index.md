@@ -1,18 +1,17 @@
 ---
-displayName: 'Luồng công việc: Sự kiện trước thao tác'
+displayName: "Workflow: Sự kiện trước Action"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
+title: "Workflow: Sự kiện trước Action"
+keywords: "Workflow: Sự kiện trước Action,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Được kích hoạt trước khi thực thi một yêu cầu được gửi từ nút thao tác hoặc API, ví dụ như trước khi thêm, cập nhật hoặc xóa dữ liệu. Plugin này phù hợp để xác thực dữ liệu và kiểm tra logic trước khi thực hiện thao tác, đồng thời có thể chặn yêu cầu bằng cách sử dụng nút 'Kết thúc luồng".
-isFree: false
-builtIn: false
+  Kích hoạt qua nút Action hoặc API và trước khi thực thi, ví dụ trước khi thêm, cập nhật, xóa dữ liệu. Phù hợp để xác thực dữ liệu, kiểm tra logic trước khi thao tác và có thể chặn request thông qua "Node kết thúc".
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 4
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Luồng công việc: Sự kiện trước thao tác
+# Workflow: Sự kiện trước Action

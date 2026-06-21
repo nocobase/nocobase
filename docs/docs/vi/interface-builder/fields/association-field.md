@@ -1,66 +1,67 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Component Field quan hệ"
+description: "Component Field quan hệ: cấu hình và cách sử dụng chung của các Field liên kết như BelongsTo, HasMany, BelongsToMany."
+keywords: "Field quan hệ,Association,BelongsTo,HasMany,BelongsToMany,Interface Builder,NocoBase"
+---
 
-
-# Thành phần Trường Liên kết
+# Component Field quan hệ
 
 ## Giới thiệu
 
-Các thành phần trường liên kết của NocoBase được thiết kế để giúp người dùng hiển thị và xử lý dữ liệu liên kết một cách hiệu quả hơn. Bất kể loại liên kết là gì, các thành phần này đều linh hoạt và đa năng, cho phép người dùng lựa chọn và cấu hình chúng theo nhu cầu cụ thể của mình.
+Component Field quan hệ của NocoBase được thiết kế để giúp bạn hiển thị và xử lý dữ liệu liên kết tốt hơn. Bất kể loại quan hệ nào, các component này đều linh hoạt và đa năng, bạn có thể chọn và cấu hình các component này theo nhu cầu cụ thể.
 
-### Bộ chọn thả xuống
+### Select dropdown
 
-Đối với tất cả các trường liên kết, trừ khi **bộ sưu tập** đích là **bộ sưu tập** tệp, thành phần mặc định ở chế độ chỉnh sửa là bộ chọn thả xuống. Các tùy chọn thả xuống hiển thị giá trị của trường tiêu đề, phù hợp cho các trường hợp cần chọn nhanh dữ liệu liên kết bằng cách hiển thị thông tin trường chính.
+Ngoại trừ tất cả các Field quan hệ có Table mục tiêu là Table tập tin, component mặc định ở trạng thái chỉnh sửa đều là Select dropdown, các tùy chọn dropdown hiển thị giá trị của Field tiêu đề, phù hợp với các trường hợp chọn nhanh dữ liệu liên kết bằng cách hiển thị thông tin một Field quan trọng.
 
 ![20240429205659](https://static-docs.nocobase.com/20240429205659.png)
 
-Để biết thêm chi tiết, xem [Bộ chọn thả xuống](/interface-builder/fields/specific/select)
+Xem thêm tại [Select dropdown](/interface-builder/fields/specific/select)
 
-### Bộ chọn dữ liệu
+### Data Picker
 
-Bộ chọn dữ liệu hiển thị dữ liệu dưới dạng cửa sổ bật lên (popup). Người dùng có thể cấu hình các trường cần hiển thị trong bộ chọn dữ liệu (bao gồm cả các trường từ các liên kết lồng nhau), cho phép chọn dữ liệu liên kết một cách chính xác hơn.
+Data Picker hiển thị dữ liệu dưới dạng Popup, bạn có thể cấu hình các Field cần hiển thị (bao gồm cả Field quan hệ của quan hệ) trong Data Picker, từ đó chọn dữ liệu liên kết một cách chính xác hơn.
 
 ![20240429210824](https://static-docs.nocobase.com/20240429210824.png)
 
-Để biết thêm chi tiết, xem [Bộ chọn dữ liệu](/interface-builder/fields/specific/picker)
+Xem thêm tại [Data Picker](/interface-builder/fields/specific/picker)
 
-### Biểu mẫu con
+### Sub-Form
 
-Khi xử lý dữ liệu liên kết phức tạp hơn, việc sử dụng bộ chọn thả xuống hoặc bộ chọn dữ liệu có thể trở nên bất tiện. Trong những trường hợp như vậy, người dùng cần thường xuyên mở các cửa sổ bật lên. Đối với các tình huống này, bạn có thể sử dụng biểu mẫu con. Nó cho phép người dùng trực tiếp quản lý các trường của **bộ sưu tập** liên kết trên trang hiện tại hoặc trong khối cửa sổ bật lên hiện tại mà không cần liên tục mở các cửa sổ bật lên mới, giúp quy trình làm việc mượt mà hơn. Các liên kết đa cấp được hiển thị dưới dạng biểu mẫu lồng nhau.
+Khi xử lý dữ liệu quan hệ phức tạp hơn, việc sử dụng Select dropdown hoặc Data Picker sẽ không tiện lợi. Trong trường hợp này, bạn cần thường xuyên mở Popup. Đối với trường hợp này, bạn có thể sử dụng Sub-Form, cho phép bạn duy trì các Field của Table quan hệ trực tiếp trên Trang hoặc Popup hiện tại mà không cần phải mở Popup mới nhiều lần, quy trình thao tác mượt mà hơn. Quan hệ nhiều cấp được hiển thị dưới dạng Form lồng nhau.
 
 ![20251029122948](https://static-docs.nocobase.com/20251029122948.png)
 
-Để biết thêm chi tiết, xem [Biểu mẫu con](/interface-builder/fields/specific/sub-form)
+Xem thêm tại [Sub-Form](/interface-builder/fields/specific/sub-form)
 
-### Bảng con
+### Sub-Table
 
-Bảng con hiển thị các bản ghi liên kết một-nhiều hoặc nhiều-nhiều dưới dạng bảng. Nó cung cấp một cách rõ ràng, có cấu trúc để hiển thị và quản lý dữ liệu liên kết, đồng thời hỗ trợ tạo mới dữ liệu hàng loạt hoặc chọn dữ liệu hiện có để liên kết.
+Sub-Table hiển thị các bản ghi quan hệ một-nhiều hoặc nhiều-nhiều dưới dạng Table. Nó cung cấp một cách rõ ràng, có cấu trúc để hiển thị và quản lý dữ liệu liên kết, hỗ trợ tạo dữ liệu hàng loạt hoặc chọn dữ liệu hiện có để liên kết.
 
 ![20251029123042](https://static-docs.nocobase.com/20251029123042.png)
 
-Để biết thêm chi tiết, xem [Bảng con](/interface-builder/fields/specific/sub-table)
+Xem thêm tại [Sub-Table](/interface-builder/fields/specific/sub-table)
 
-### Chi tiết con
+### Sub-Detail
 
-Chi tiết con là thành phần tương ứng với biểu mẫu con ở chế độ chỉ đọc. Nó hỗ trợ hiển thị dữ liệu với các liên kết đa cấp lồng nhau.
+Sub-Detail là component tương ứng của Sub-Form ở chế độ đọc, hỗ trợ hiển thị dữ liệu lồng nhau ở nhiều cấp quan hệ.
 
 ![20251030213050](https://static-docs.nocobase.com/20251030213050.png)
 
-Để biết thêm chi tiết, xem [Chi tiết con](/interface-builder/fields/specific/sub-detail)
+Xem thêm tại [Sub-Detail](/interface-builder/fields/specific/sub-detail)
 
-### Trình quản lý tệp
+### File Manager
 
-Trình quản lý tệp là một thành phần trường liên kết được sử dụng đặc biệt khi **bộ sưu tập** đích của liên kết là một **bộ sưu tập** tệp.
+File Manager là component Field quan hệ chuyên dùng để xử lý các Field quan hệ có Table mục tiêu là Table tập tin.
 
 ![20240429222753](https://static-docs.nocobase.com/20240429222753.png)
 
-Để biết thêm chi tiết, xem [Trình quản lý tệp](/interface-builder/fields/specific/file-manager)
+Xem thêm tại [File Manager](/interface-builder/fields/specific/file-manager)
 
 ### Tiêu đề
 
-Thành phần trường tiêu đề là một thành phần trường liên kết được sử dụng ở chế độ chỉ đọc. Bằng cách cấu hình trường tiêu đề, bạn có thể cấu hình thành phần trường tương ứng.
+Component Field tiêu đề là component Field quan hệ được sử dụng ở chế độ đọc, bằng cách cấu hình Field tiêu đề có thể cấu hình component Field tương ứng.
 
 ![20251030213327](https://static-docs.nocobase.com/20251030213327.png)
 
-Để biết thêm chi tiết, xem [Tiêu đề](/interface-builder/fields/specific/title)
+Xem thêm tại [Tiêu đề](/interface-builder/fields/specific/title)

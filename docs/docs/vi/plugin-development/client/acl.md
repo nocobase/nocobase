@@ -1,17 +1,18 @@
+---
+title: "Kiểm soát quyền ACL (Client)"
+description: "ACL phía client của NocoBase: app.acl, can, kiểm tra quyền, ẩn/hiện phần tử giao diện, kiểm soát quyền frontend."
+keywords: "ACL,Kiểm soát quyền,app.acl,can,Quyền frontend,Client,NocoBase"
+---
+
+# Kiểm soát quyền ACL
+
 :::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
+Chương này sẽ giới thiệu cách dùng ACL (Access Control List) để quản lý quyền trong Plugin frontend. Nội dung sẽ bao gồm:
 
-# Kiểm soát quyền truy cập ACL
+- Phát hiện quyền;
+- Cách render nội dung động dựa trên quyền;
 
-:::tip
-
-Chương này sẽ giới thiệu cách sử dụng ACL (Access Control List) để quản lý quyền truy cập trong các plugin giao diện người dùng. Nội dung sẽ bao gồm:
-
-- Kiểm tra quyền truy cập;
-- Cách hiển thị nội dung động dựa trên quyền truy cập;
-
-Chúng tôi sẽ bổ sung các ví dụ chi tiết và phương pháp hay nhất trong các phiên bản tiếp theo.
+Chúng tôi sẽ bổ sung các ví dụ chi tiết và best practices trong các phiên bản tiếp theo.
 
 :::

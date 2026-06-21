@@ -1,14 +1,14 @@
 ---
-displayName: "Trường bộ sưu tập: Sắp xếp"
+displayName: "Trường dữ liệu: Sắp xếp"
 packageName: '@nocobase/plugin-field-sort'
+title: "Trường dữ liệu: Sắp xếp"
+keywords: "Trường dữ liệu: Sắp xếp,Plugin,NocoBase"
 description: |
-  Dùng để sắp xếp dữ liệu trong một bộ sưu tập.
+  Dùng để sắp xếp dữ liệu trong bảng dữ liệu.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
-# Trường bộ sưu tập: Sắp xếp
+# Trường dữ liệu: Sắp xếp

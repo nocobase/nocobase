@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
+title: "工作流节点 - JavaScript 脚本"
+description: "JavaScript 脚本节点：执行服务端自定义脚本，使用上游变量、返回值供下游使用。"
+keywords: "工作流,JavaScript,脚本,自定义逻辑,服务端脚本,NocoBase"
 ---
 
 # JavaScript 脚本
@@ -8,7 +11,7 @@ pkg: '@nocobase/plugin-workflow-javascript'
 
 JavaScript 脚本节点允许用户在工作流中执行一段自定义的服务端 JavaScript 脚本。脚本中可以使用流程上游的变量作为参数，并且可以将脚本的返回值提供给下游节点使用。
 
-脚本会在 NocoBase 应用的服务端开启一个工作线程执行，并支持 Node.js 的大部分特性，但与原生的执行环境仍有部分差异，详见 [特性列表](#特性列表)。
+脚本会在 NocoBase 应用的服务端开启一个工作线程执行，默认使用安全沙箱（基于 WebAssembly 的 QuickJS）运行，不支持 `require` 和 Node.js 内置 API，详见 [执行引擎](#执行引擎)和[特性列表](#特性列表)。
 
 ## 创建节点
 
@@ -44,24 +47,41 @@ JavaScript 脚本节点允许用户在工作流中执行一段自定义的服务
 脚本出错后将没有返回值，节点的结果会以错误信息填充。如后续节点中使用了脚本节点的结果变量，需要谨慎处理。
 :::
 
-## 特性列表
+## 执行引擎
 
-### Node.js 版本
+JavaScript 脚本节点支持两种执行引擎，通过环境变量 `WORKFLOW_SCRIPT_MODULES` 是否配置来自动切换：
 
-与主应用运行的 Node.js 版本一致。
+### 安全模式（默认）
 
-### 模块支持
+当**未配置** `WORKFLOW_SCRIPT_MODULES` 环境变量时，脚本使用 [QuickJS](https://bellard.org/quickjs/)（基于 WebAssembly）引擎执行。该引擎在隔离的 JavaScript 运行时中运行代码，具备以下特点：
 
-在脚本中可以有限制的使用模块，与 CommonJS 一致，代码中使用 `require()` 指令引入模块。
+- **不支持** `require`，无法引入任何模块
+- **不支持** Node.js 内置 API（如 `process`、`Buffer`、`global` 等）
+- 仅可使用 ECMAScript 标准内置对象（如 `JSON`、`Math`、`Promise`、`Date` 等）
+- 支持通过参数传入数据，支持 `console` 输出日志，支持 `async`/`await`
 
-支持 Node.js 原生模块，和 `node_modules` 中已安装的模块（含 NocoBase 已使用的依赖包）。要提供给代码使用的模块需在应用环境变量 `WORKFLOW_SCRIPT_MODULES` 中声明，多个包名以半角逗号分隔，例如：
+这是推荐的默认模式，适用于纯计算和数据处理逻辑，提供最高级别的安全隔离。
+
+### 非安全模式（需要模块支持）
+
+当**配置了** `WORKFLOW_SCRIPT_MODULES` 环境变量时，脚本切换为 Node.js 内置的 `vm` 引擎执行，以获得 `require` 能力。
+
+:::warning{title="安全警告"}
+非安全模式仅使用 Node.js 的 `vm` 来提供 CommonJS `require` 能力。Node.js 的 `vm` 模块并非安全的沙箱机制。启用此模式意味着信任所有有权编辑、测试或运行工作流脚本的用户，等同于允许这些用户以 NocoBase 服务端进程权限执行代码。
+
+`WORKFLOW_SCRIPT_MODULES` 不是安全边界，也不是权限模型。它只用于控制脚本执行前 `require()` 可接受的模块名称。
+:::
+
+在脚本中使用模块与 CommonJS 一致，代码中使用 `require()` 指令引入模块。
+
+支持 Node.js 原生模块和 `node_modules` 中已安装的模块（含 NocoBase 已使用的依赖包）。要提供给代码使用的模块需在应用环境变量 `WORKFLOW_SCRIPT_MODULES` 中声明，多个包名以半角逗号分隔，例如：
 
 ```ini
 WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
 :::info{title="提示"}
-在环境变量 `WORKFLOW_SCRIPT_MODULES` 中未声明的模块，即使是 Node.js 原生的或 `node_modules` 中已安装的，也**不能**在脚本中使用。该策略可以用于在运维层管控用户可使用的模块列表，在一些场景下避免脚本权限过高。
+在环境变量 `WORKFLOW_SCRIPT_MODULES` 中未声明的模块，即使是 Node.js 原生的或 `node_modules` 中已安装的，也**不能**通过 `require()` 直接引入。该列表仅用于配置支持的模块导入，不应依赖它来降低脚本权限，也不应以此将脚本编辑能力安全地委派给较低信任级别的用户。
 :::
 
 在非源码部署的环境下，如果某个模块未在 node_modules 中安装，可以将需要的包手动安装到 storage 目录中。例如需要使用 `exceljs` 包时，可以执行如下操作：
@@ -83,6 +103,12 @@ WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
 const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
+
+## 特性列表
+
+### Node.js 版本
+
+与主应用运行的 Node.js 版本一致。
 
 ### 全局变量
 
@@ -129,7 +155,7 @@ return value;
 
 ### 计时器
 
-如需使用 `setTimeout`、`setInterval` 或 `setImmediate` 等方法，需要通过 Node.js 的 `timers` 包引入。
+如需使用 `setTimeout`、`setInterval` 或 `setImmediate` 等方法，需要通过 Node.js 的 `timers` 包引入（仅在非安全模式下可用）。
 
 ```js
 const { setTimeout, setInterval, setImmediate, clearTimeout, clearInterval, clearImmediate } = require('timers');

@@ -1,29 +1,28 @@
 ---
 pkg: "@nocobase/plugin-action-import"
+title: "Action nhập"
+description: "Action nhập: nhập dữ liệu từ tập tin Excel và các tập tin khác vào Table dữ liệu, hỗ trợ tải mẫu, ánh xạ Field."
+keywords: "Action nhập,Import,nhập Excel,nhập dữ liệu,Interface Builder,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
-
-# Nhập dữ liệu
+# Nhập
 
 ## Giới thiệu
 
-Bạn có thể nhập dữ liệu bằng mẫu Excel. Hệ thống cho phép bạn cấu hình các trường cần nhập và tự động tạo mẫu.
+Sử dụng mẫu Excel để nhập dữ liệu, có thể cấu hình nhập những Field nào, tự động tạo mẫu.
 
 ![20251029165818](https://static-docs.nocobase.com/20251029165818.png)
 
-## Hướng dẫn nhập dữ liệu
+## Hướng dẫn nhập
 
-### Trường kiểu Số
+### Field kiểu số
 
-Hỗ trợ các giá trị số và phần trăm. Các văn bản như `N/A` hoặc `-` sẽ được lọc bỏ.
+Hỗ trợ số và phần trăm, văn bản `N/A` hoặc `-` sẽ bị lọc bỏ
 
 | Số 1 | Phần trăm | Số 2 | Số 3 |
 | ----- | ------ | ----- | ----- |
 | 123   | 25%    | N/A   | -     |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
 {
@@ -34,36 +33,36 @@ Sau khi chuyển đổi sang JSON:
 }
 ```
 
-### Trường kiểu Boolean
+### Field kiểu boolean
 
-Văn bản đầu vào được hỗ trợ (tiếng Anh không phân biệt chữ hoa/thường):
+Văn bản nhập hỗ trợ (tiếng Anh không phân biệt chữ hoa chữ thường):
 
-- `Yes`, `Y`, `True`, `1`, `是`
-- `No`, `N`, `False`, `0`, `否`
+- `Yes`, `Y`, `True`, `1`, `Có`
+- `No`, `N`, `False`, `0`, `Không`
 
-| Trường 1 | Trường 2 | Trường 3 | Trường 4 | Trường 5 |
+| Field 1 | Field 2 | Field 3 | Field 4 | Field 5 |
 | ----- | ----- | ----- | ----- | ----- |
-| 否    | 是    | Y     | true  | 0     |
+| Không    | Có    | Y     | true  | 0     |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
 {
-  "Trường 1": false,
-  "Trường 2": true,
-  "Trường 3": true,
-  "Trường 4": true,
-  "Trường 5": false,
+  "Field 1": false,
+  "Field 2": true,
+  "Field 3": true,
+  "Field 4": true,
+  "Field 5": false,
 }
 ```
 
-### Trường kiểu Ngày
+### Field kiểu ngày tháng
 
 | DateOnly            | Local(+08:00)       | GMT                 |
 | ------------------- | ------------------- | ------------------- |
 | 2023-01-18 22:22:22 | 2023-01-18 22:22:22 | 2023-01-18 22:22:22 |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
 {
@@ -73,38 +72,38 @@ Sau khi chuyển đổi sang JSON:
 }
 ```
 
-### Trường kiểu Chọn
+### Field kiểu chọn
 
-Bạn có thể sử dụng cả giá trị tùy chọn và nhãn tùy chọn làm văn bản nhập. Khi có nhiều tùy chọn, chúng được phân tách bằng dấu phẩy (`,` `，`) hoặc dấu chấm phẩy (`、`).
+Cả giá trị tùy chọn và nhãn tùy chọn đều có thể là văn bản nhập, nhiều tùy chọn được phân tách bằng dấu phẩy (`,` `，`) hoặc dấu phẩy ngược (`、`)
 
-Ví dụ, các tùy chọn cho trường `Ưu tiên` bao gồm:
+Ví dụ các tùy chọn của Field `Mức độ ưu tiên` bao gồm:
 
 | Giá trị tùy chọn | Nhãn tùy chọn |
 | ------ | -------- |
-| low    | Thấp       |
+| low    | Thấp     |
 | medium | Trung bình |
-| high   | Cao        |
+| high   | Cao      |
 
-Cả giá trị tùy chọn và nhãn tùy chọn đều có thể dùng làm văn bản nhập.
+Cả giá trị tùy chọn và nhãn tùy chọn đều có thể là văn bản nhập
 
-| Ưu tiên |
+| Mức độ ưu tiên |
 | ------ |
 | Cao     |
 | low    |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
-[{ Ưu tiên: 'high' }, { Ưu tiên: 'low' }];
+[{ 'Mức độ ưu tiên': 'high' }, { 'Mức độ ưu tiên': 'low' }];
 ```
 
-### Trường Khu vực hành chính Trung Quốc
+### Field khu vực hành chính Trung Quốc
 
 | Khu vực 1         | Khu vực 2         |
 | ------------- | ------------- |
-| 北京市/市辖区 | 天津市/市辖区 |
+| Bắc Kinh/Quận trung tâm | Thiên Tân/Quận trung tâm |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
 {
@@ -113,17 +112,17 @@ Sau khi chuyển đổi sang JSON:
 }
 ```
 
-### Trường Tệp đính kèm
+### Field tập tin đính kèm
 
-| Tệp đính kèm                                     |
+| Tập tin đính kèm                                     |
 | ---------------------------------------- |
 | https://www.nocobase.com/images/logo.png |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
 {
-  "Tệp đính kèm": [
+  "Tập tin đính kèm": [
     {
       "filename": "logo.png",
       "title": "logo.png",
@@ -134,30 +133,30 @@ Sau khi chuyển đổi sang JSON:
 }
 ```
 
-### Trường kiểu Quan hệ
+### Field kiểu quan hệ
 
-Nhiều mục dữ liệu được phân tách bằng dấu phẩy (`,` `，`) hoặc dấu chấm phẩy (`、`).
+Nhiều bản ghi được phân tách bằng dấu phẩy (`,` `，`) hoặc dấu phẩy ngược (`、`)
 
-| Phòng ban/Tên | Danh mục/Tiêu đề    |
+| Phòng ban/Tên | Phân loại/Tiêu đề    |
 | --------- | ------------ |
-| Nhóm Phát triển    | Danh mục 1、Danh mục 2 |
+| Nhóm phát triển    | Phân loại 1、Phân loại 2 |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
 {
-  "Phòng ban": [1], // 1 là ID bản ghi của phòng ban có tên "Nhóm Phát triển"
-  "Danh mục": [1,2], // 1,2 là ID bản ghi của các danh mục có tiêu đề "Danh mục 1" và "Danh mục 2"
+  "Phòng ban": [1], // 1 là ID bản ghi của phòng ban có tên "Nhóm phát triển"
+  "Phân loại": [1,2], // 1,2 là ID bản ghi của phân loại có tiêu đề "Phân loại 1" và "Phân loại 2"
 }
 ```
 
-### Trường kiểu JSON
+### Field kiểu JSON
 
 | JSON1           |
 | --------------- |
 | {"key":"value"} |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
 {
@@ -165,13 +164,13 @@ Sau khi chuyển đổi sang JSON:
 }
 ```
 
-### Trường kiểu Hình học bản đồ
+### Kiểu hình học bản đồ
 
 | Point | Line        | Polygon           | Circle |
 | ----- | ----------- | ----------------- | ------ |
 | 1,2   | (1,2),(3,4) | (1,2),(3,4),(1,2) | 1,2,3  |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
 {
@@ -182,9 +181,9 @@ Sau khi chuyển đổi sang JSON:
 }
 ```
 
-## Định dạng nhập dữ liệu tùy chỉnh
+## Định dạng nhập tùy chỉnh
 
-Đăng ký một `ValueParser` tùy chỉnh thông qua phương thức `db.registerFieldValueParsers()`, ví dụ:
+Đăng ký `ValueParser` tùy chỉnh thông qua phương thức `db.registerFieldValueParsers()`, ví dụ:
 
 ```ts
 import { BaseValueParser } from '@nocobase/database';
@@ -203,19 +202,19 @@ class PointValueParser extends BaseValueParser {
 
 const db = new Database();
 
-// Khi nhập trường có type=point, dữ liệu sẽ được phân tích bởi PointValueParser
+// Khi nhập Field type=point, sẽ phân tích dữ liệu thông qua PointValueParser
 db.registerFieldValueParsers({
   point: PointValueParser,
 });
 ```
 
-Ví dụ nhập dữ liệu
+Ví dụ nhập
 
 | Point |
 | ----- |
 | 1,2   |
 
-Sau khi chuyển đổi sang JSON:
+Sau khi chuyển sang JSON là
 
 ```ts
 {
@@ -223,13 +222,14 @@ Sau khi chuyển đổi sang JSON:
 }
 ```
 
-## Cấu hình thao tác
+
+## Tùy chọn cấu hình Action
 
 ![20251029170959](https://static-docs.nocobase.com/20251029170959.png)
 
-- Cấu hình các trường có thể nhập
+- Cấu hình Field có thể nhập
 
 ![20251029171036](https://static-docs.nocobase.com/20251029171036.png)
 
-- [Quy tắc liên kết](/interface-builder/actions/action-settings/linkage-rule): Hiển thị/ẩn nút động;
-- [Chỉnh sửa nút](/interface-builder/actions/action-settings/edit-button): Chỉnh sửa tiêu đề, kiểu và biểu tượng của nút;
+- [Quy tắc liên kết](/interface-builder/actions/action-settings/linkage-rule): hiển thị/ẩn nút bấm động;
+- [Chỉnh sửa nút bấm](/interface-builder/actions/action-settings/edit-button): chỉnh sửa tiêu đề, loại, biểu tượng của nút bấm;

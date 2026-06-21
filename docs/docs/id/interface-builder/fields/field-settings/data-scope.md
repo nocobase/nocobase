@@ -1,12 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Cakupan Data Field"
+description: "Konfigurasi Field: mengkonfigurasi cakupan data Field relasi, filter data yang tersedia, mendukung filter izin."
+keywords: "cakupan data, data scope, filter relasi, konfigurasi Field, interface builder, NocoBase"
+---
 
-# Mengatur Lingkup Data
+# Atur Cakupan Data
 
-## Pendahuluan
+## Pengantar
 
-Pengaturan lingkup data untuk *field* relasi mirip dengan pengaturan lingkup data untuk *block*. Ini berfungsi untuk menetapkan kondisi filter bawaan untuk data yang berelasi.
+Pengaturan cakupan data Field relasi mirip dengan pengaturan cakupan data Block, menetapkan kondisi filter default untuk data relasi.
 
 ## Petunjuk Penggunaan
 
@@ -14,25 +16,25 @@ Pengaturan lingkup data untuk *field* relasi mirip dengan pengaturan lingkup dat
 
 ### Nilai Statis
 
-Contoh: Hanya produk yang belum dihapus yang dapat dipilih untuk dihubungkan.
+Contoh: Hanya produk yang belum dihapus yang dapat dipilih untuk diasosiasikan.
 
-> Daftar *field* berisi *field* dari **koleksi** target *field* relasi.
+> Daftar Field adalah Field Table target Field relasi
 
 ![20251028211434](https://static-docs.nocobase.com/20251028211434.png)
 
 ### Nilai Variabel
 
-Contoh: Hanya produk dengan tanggal layanan setelah tanggal pesanan yang dapat dipilih untuk dihubungkan.
+Contoh: Hanya produk dengan tanggal layanan lebih dari tanggal pesanan yang dapat dipilih untuk diasosiasikan.
 
 ![20251028211727](https://static-docs.nocobase.com/20251028211727.png)
 
-Untuk informasi lebih lanjut tentang variabel, lihat [Variabel](/interface-builder/variables)
+Untuk informasi lebih lanjut tentang variabel, silakan lihat [Variabel](/interface-builder/variables)
 
-### Keterkaitan *Field* Relasi
+### Linkage Field Relasi
 
-Keterkaitan antar *field* relasi dicapai dengan mengatur lingkup data.
+Field relasi melakukan linkage melalui pengaturan cakupan data.
 
-Contoh: **Koleksi** Pesanan memiliki *field* relasi Satu-ke-Banyak "Produk Peluang" dan *field* relasi Banyak-ke-Satu "Peluang". **Koleksi** Produk Peluang memiliki *field* relasi Banyak-ke-Satu "Peluang". Dalam *block* formulir pesanan, data yang dapat dipilih untuk "Produk Peluang" difilter untuk menampilkan hanya produk peluang yang terkait dengan "Peluang" yang saat ini dipilih dalam formulir.
+Contoh: Di Table pesanan terdapat Field relasi one-to-many "Produk Peluang" dan Field relasi many-to-one "Peluang". Produk Peluang memiliki Field relasi many-to-one "Peluang". Di Block Form pesanan, data yang tersedia untuk Produk Peluang adalah produk peluang yang terkait dengan peluang yang dipilih di Form saat ini.
 
 ![20251028212943](https://static-docs.nocobase.com/20251028212943.png)
 

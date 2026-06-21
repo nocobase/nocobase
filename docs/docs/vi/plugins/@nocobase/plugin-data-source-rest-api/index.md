@@ -1,6 +1,8 @@
 ---
 displayName: "Nguồn dữ liệu: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
+title: "Nguồn dữ liệu: REST API"
+keywords: "Nguồn dữ liệu: REST API,Plugin,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
@@ -9,10 +11,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 4
+editionLevel: 1
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Nguồn dữ liệu: REST API

@@ -1,17 +1,19 @@
 ---
-displayName: "Visualización de datos: ECharts"
+title: "Data visualization: ECharts"
+keywords: "Blocks"
+displayName: "Data visualization: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:
   - 1.x
 description: |
-  Utilice ECharts para la visualización de datos, con soporte para gráficos de embudo, radar y muchos otros tipos, además de ofrecer configuraciones de visualización más amigables.
-isFree: false
-builtIn: false
+  Utilize ECharts for data visualization, supporting for funnel, radar and more chart types and offering user-friendly configurations.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 8
+deprecated: true
+editionLevel: 0
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
-# Visualización de datos: ECharts
+# Data visualization: ECharts
+
+> Note: This plugin is deprecated.

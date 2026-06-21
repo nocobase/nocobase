@@ -1,14 +1,14 @@
 ---
-displayName: "Alur Kerja: Node Penanganan Manual"
+displayName: "Workflow: Node Pemrosesan Manual"
 packageName: '@nocobase/plugin-workflow-manual'
+title: "Workflow: Node Pemrosesan Manual"
+keywords: "Workflow: Node Pemrosesan Manual,Plugin,NocoBase"
 description: |
-  Digunakan untuk alur kerja yang sebagian keputusannya memerlukan penanganan manual.
+  Digunakan untuk proses dengan keputusan yang sebagian dikontrol secara manual.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Alur Kerja: Node Penanganan Manual
+# Workflow: Node Pemrosesan Manual

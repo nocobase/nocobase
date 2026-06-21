@@ -1,23 +1,19 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-postgres"
+title: "Data Source Eksternal - PostgreSQL"
+description: "Mengintegrasikan database PostgreSQL eksternal (>=9.5) sebagai data source, koneksi read-only ke database yang sudah ada, sinkronisasi Collection dan konfigurasi field."
+keywords: "PostgreSQL Eksternal,Data Source PostgreSQL,database eksternal,sinkronisasi Collection,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+# Data Source Eksternal - PostgreSQL
 
+## Pengantar
 
-# Sumber Data Eksternal - PostgreSQL
-
-## Pendahuluan
-
-Gunakan database PostgreSQL eksternal sebagai sumber data. Versi yang saat ini didukung: PostgreSQL >= 9.5
+Menggunakan database PostgreSQL eksternal sebagai data source. Versi yang saat ini didukung: PostgreSQL >= 9.5
 
 ## Instalasi
 
-Plugin ini adalah plugin komersial, yang perlu diunggah dan diaktifkan melalui pengelola plugin.
-
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+Plugin ini adalah plugin komersial. Untuk cara aktivasi detail, harap lihat: [Panduan Aktivasi Plugin Komersial](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
 ## Petunjuk Penggunaan
 
-Lihat bagian [Sumber Data / Database Eksternal](/data-sources/data-source-manager/external-database).
+Lihat bagian [Data Source / Database Eksternal](/data-sources/data-source-manager/external-database)

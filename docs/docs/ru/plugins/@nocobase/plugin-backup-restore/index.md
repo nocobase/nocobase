@@ -1,17 +1,17 @@
 ---
-displayName: "Резервное копирование и восстановление приложения (устарело)"
+title: "App backup & restore (deprecated)"
+keywords: "System management"
+displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Позволяет выполнять резервное копирование и восстановление приложений для таких сценариев, как репликация, миграция и обновление приложений.
+  Резервное копирование и восстановление приложений для сценариев клонирования, миграции и обновлений.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
+editionLevel: 0
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
-# Резервное копирование и восстановление приложения (устарело)
+# App backup & restore (deprecated)
 
-> Примечание: Этот плагин устарел.
+> Примечание: этот плагин устарел.

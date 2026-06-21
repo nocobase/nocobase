@@ -1,8 +1,10 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "BelongsToRepository"
+description: "API Repository NocoBase: BelongsToRepository digunakan untuk menangani relasi BelongsTo, antarmukanya konsisten dengan HasOneRepository."
+keywords: "BelongsToRepository,Repository,BelongsTo,relasi,NocoBase"
+---
 
 ## BelongsToRepository
 
-Antarmukanya sama dengan [HasOneRepository](./has-one-repository.md).
-`BelongsToRepository` adalah `Repository` yang digunakan untuk menangani relasi `BelongsTo`. Ini menyediakan beberapa metode praktis untuk menangani relasi `BelongsTo`.
+Antarmukanya konsisten dengan [HasOneRepository](./has-one-repository.md).
+`BelongsToRepository` adalah `Repository` yang digunakan untuk menangani relasi `BelongsTo`, menyediakan beberapa method yang memudahkan untuk menangani relasi `BelongsTo`.

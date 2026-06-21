@@ -1,44 +1,41 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Node Workflow - Trì hoãn"
+description: "Node trì hoãn: thêm trì hoãn trong quy trình, có thể kết hợp với nhánh song song để xử lý timeout, sau khi trì hoãn thì tiếp tục hoặc kết thúc."
+keywords: "workflow,trì hoãn,Delay,xử lý timeout,nhánh song song,NocoBase"
+---
 
-
-# Độ trễ
+# Trì hoãn
 
 ## Giới thiệu
 
-Nút Độ trễ cho phép thêm một khoảng thời gian trễ vào luồng công việc. Sau khi khoảng thời gian trễ này kết thúc, luồng công việc có thể tiếp tục thực thi các nút tiếp theo hoặc kết thúc sớm, tùy thuộc vào cấu hình.
+Node trì hoãn có thể thêm một trì hoãn trong quy trình, sau khi trì hoãn kết thúc, có thể tiếp tục thực thi các Node sau khi trì hoãn kết thúc hoặc dừng quy trình sớm tùy theo cấu hình.
 
-Nút Độ trễ thường được sử dụng kết hợp với Nút Nhánh song song. Bằng cách thêm Nút Độ trễ vào một trong các nhánh, chúng ta có thể xử lý các tình huống sau khi hết thời gian. Ví dụ, trong một nhánh song song, một nhánh bao gồm xử lý thủ công và nhánh còn lại chứa Nút Độ trễ. Khi xử lý thủ công hết thời gian:
-- Nếu cấu hình là "thất bại khi hết thời gian", điều này có nghĩa là xử lý thủ công phải được hoàn thành trong thời gian giới hạn.
-- Nếu cấu hình là "tiếp tục khi hết thời gian", điều này có nghĩa là xử lý thủ công có thể bị bỏ qua sau khi hết thời gian.
+Thường được sử dụng kết hợp với Node nhánh song song, có thể thêm Node trì hoãn vào một trong các nhánh để đạt được mục đích xử lý liên quan sau khi timeout. Ví dụ một trong các nhánh song song chứa xử lý thủ công, nhánh khác chứa Node trì hoãn, khi xử lý thủ công bị timeout, nếu được đặt là timeout thất bại thì có nghĩa là xử lý thủ công phải hoàn thành trong thời gian giới hạn, nếu được đặt là timeout tiếp tục thì có nghĩa là sau khi đến thời gian có thể bỏ qua xử lý thủ công đó.
 
 ## Cài đặt
 
-Đây là một plugin tích hợp sẵn, không cần cài đặt.
+Plugin tích hợp sẵn, không cần cài đặt.
 
-## Tạo nút
+## Tạo Node
 
-Trong giao diện cấu hình luồng công việc, nhấp vào nút dấu cộng (“+”) trong luồng để thêm nút "Độ trễ":
+Trong giao diện cấu hình Workflow, bấm nút dấu cộng ("+") trong quy trình để thêm Node "Trì hoãn":
 
-![Tạo nút Độ trễ](https://static-docs.nocobase.com/d0816999c9f7acaec1c409bd8fb6cc36.png)
+![Tạo Node trì hoãn](https://static-docs.nocobase.com/d0816999c9f7acaec1c409bd8fb6cc36.png)
 
-## Cấu hình nút
+## Cấu hình Node
 
-![Nút Độ trễ_Cấu hình nút](https://static-docs.nocobase.com/5fe8a36535f20a087a0148ffa1cd2aea.png)
+![Node trì hoãn_cấu hình Node](https://static-docs.nocobase.com/5fe8a36535f20a087a0148ffa1cd2aea.png)
 
-### Thời gian độ trễ
+### Thời gian trì hoãn
 
-Bạn có thể nhập một số và chọn đơn vị thời gian cho khoảng thời gian độ trễ. Các đơn vị thời gian được hỗ trợ bao gồm: giây, phút, giờ, ngày và tuần.
+Thời gian trì hoãn có thể điền một số và chọn đơn vị thời gian, các đơn vị thời gian được hỗ trợ là: giây, phút, giờ, ngày và tuần.
 
-### Trạng thái khi hết thời gian
+### Trạng thái khi đến giờ
 
-Đối với trạng thái khi hết thời gian, bạn có thể chọn "Vượt qua và tiếp tục" hoặc "Thất bại và thoát".
-- "Vượt qua và tiếp tục" có nghĩa là sau khi khoảng thời gian độ trễ kết thúc, luồng công việc sẽ tiếp tục thực thi các nút tiếp theo.
-- "Thất bại và thoát" có nghĩa là sau khi khoảng thời gian độ trễ kết thúc, luồng công việc sẽ kết thúc sớm với trạng thái thất bại.
+Trạng thái khi đến giờ có thể chọn "Thông qua và tiếp tục" và "Thất bại và thoát", trạng thái đầu có nghĩa là sau khi trì hoãn kết thúc, quy trình sẽ tiếp tục thực thi các Node sau khi trì hoãn kết thúc, trạng thái sau có nghĩa là sau khi trì hoãn kết thúc, quy trình sẽ dừng sớm với trạng thái thất bại.
 
 ## Ví dụ
 
-Hãy xem xét kịch bản một yêu cầu công việc cần được phản hồi trong một thời gian giới hạn sau khi được khởi tạo. Chúng ta cần thêm một nút xử lý thủ công vào một trong hai nhánh song song và một Nút Độ trễ vào nhánh còn lại. Nếu xử lý thủ công không được phản hồi trong vòng 10 phút, trạng thái yêu cầu công việc sẽ được cập nhật thành "hết thời gian và chưa xử lý".
+Lấy ví dụ tình huống cần phản hồi trong thời gian giới hạn sau khi phiếu công việc được phát động, chúng ta cần thêm một Node thủ công vào một trong hai nhánh song song và thêm Node trì hoãn vào nhánh còn lại, nếu xử lý thủ công không phản hồi trong vòng 10 phút thì cập nhật trạng thái phiếu công việc thành quá hạn chưa xử lý.
 
-![Nút Độ trễ_Ví dụ_Tổ chức luồng](https://static-docs.nocobase.com/898c84adc376dc211b003a62e16e8e5b.png)
+![Node trì hoãn_ví dụ_tổ chức quy trình](https://static-docs.nocobase.com/898c84adc376dc211b003a62e16e8e5b.png)

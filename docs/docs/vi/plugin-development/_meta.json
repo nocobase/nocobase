@@ -5,13 +5,18 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Tổng quan phát triển plugin",
-        "link": "/plugin-development"
+        "label": "Tổng quan phát triển Plugin",
+        "link": "/plugin-development/"
       },
       {
         "type": "custom-link",
-        "label": "Viết plugin đầu tiên",
+        "label": "Viết Plugin đầu tiên",
         "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Phát triển Plugin với AI",
+        "link": "/plugin-development/ai-development"
       },
       {
         "type": "custom-link",
@@ -22,12 +27,12 @@
   },
   {
     "type": "custom-link",
-    "label": "Phát triển phía server",
+    "label": "Phát triển Server",
     "items": [
       {
         "type": "custom-link",
         "label": "Tổng quan",
-        "link": "/plugin-development/server"
+        "link": "/plugin-development/server/"
       },
       {
         "type": "custom-link",
@@ -41,22 +46,22 @@
       },
       {
         "type": "custom-link",
-        "label": "Thao tác Database",
+        "label": "Database (Thao tác cơ sở dữ liệu)",
         "link": "/plugin-development/server/database"
       },
       {
         "type": "custom-link",
-        "label": "Quản lý DataSourceManager",
+        "label": "DataSourceManager (Quản lý nguồn dữ liệu)",
         "link": "/plugin-development/server/data-source-manager"
       },
       {
         "type": "custom-link",
-        "label": "Quản lý ResourceManager",
+        "label": "ResourceManager (Quản lý tài nguyên)",
         "link": "/plugin-development/server/resource-manager"
       },
       {
         "type": "custom-link",
-        "label": "Kiểm soát quyền ACL",
+        "label": "ACL (Kiểm soát quyền)",
         "link": "/plugin-development/server/acl"
       },
       {
@@ -66,22 +71,22 @@
       },
       {
         "type": "custom-link",
-        "label": "Cache",
+        "label": "Cache (Bộ nhớ đệm)",
         "link": "/plugin-development/server/cache"
       },
       {
         "type": "custom-link",
-        "label": "Event",
+        "label": "Event (Sự kiện)",
         "link": "/plugin-development/server/event"
       },
       {
         "type": "custom-link",
-        "label": "Ngữ cảnh yêu cầu (Context)",
+        "label": "Context (Ngữ cảnh request)",
         "link": "/plugin-development/server/context"
       },
       {
         "type": "custom-link",
-        "label": "Script nâng cấp (Migration)",
+        "label": "Migration (Script nâng cấp)",
         "link": "/plugin-development/server/migration"
       },
       {
@@ -91,7 +96,12 @@
       },
       {
         "type": "custom-link",
-        "label": "I18n (Quốc tế hóa)",
+        "label": "Telemetry",
+        "link": "/plugin-development/server/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "i18n (Quốc tế hóa)",
         "link": "/plugin-development/server/i18n"
       },
       {
@@ -101,24 +111,24 @@
       },
       {
         "type": "custom-link",
-        "label": "Quản lý tác vụ định kỳ (CronJobManager)",
+        "label": "CronJobManager (Quản lý tác vụ định kỳ)",
         "link": "/plugin-development/server/cron-job-manager"
       },
       {
         "type": "custom-link",
-        "label": "Test",
+        "label": "Test (Kiểm thử)",
         "link": "/plugin-development/server/test"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Phát triển phía client",
+    "label": "Phát triển Client",
     "items": [
       {
         "type": "custom-link",
         "label": "Tổng quan",
-        "link": "/plugin-development/client"
+        "link": "/plugin-development/client/"
       },
       {
         "type": "custom-link",
@@ -127,53 +137,128 @@
       },
       {
         "type": "custom-link",
-        "label": "Ngữ cảnh (Context)",
-        "link": "/plugin-development/client/context"
-      },
-      {
-        "type": "custom-link",
-        "label": "Router",
+        "label": "Router (Định tuyến)",
         "link": "/plugin-development/client/router"
       },
       {
         "type": "custom-link",
-        "label": "Kiểm soát quyền ACL",
-        "link": "/plugin-development/client/acl"
+        "label": "Phát triển Component",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tổng quan",
+            "link": "/plugin-development/client/component/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Styles & Themes (Kiểu và Theme)",
+            "link": "/plugin-development/client/component/styles-themes"
+          },
+          {
+            "type": "custom-link",
+            "label": "i18n (Quốc tế hóa)",
+            "link": "/plugin-development/client/component/i18n"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Quản lý DataSourceManager",
-        "link": "/plugin-development/client/data-source-manager"
+        "label": "Context",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tổng quan",
+            "link": "/plugin-development/client/ctx/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Năng lực thường dùng",
+            "link": "/plugin-development/client/ctx/common-capabilities"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Resource",
-        "link": "/plugin-development/client/resource"
+        "label": "FlowEngine",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tổng quan",
+            "link": "/plugin-development/client/flow-engine/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mở rộng Block",
+            "link": "/plugin-development/client/flow-engine/block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mở rộng Field",
+            "link": "/plugin-development/client/flow-engine/field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mở rộng Action",
+            "link": "/plugin-development/client/flow-engine/action"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Request",
-        "link": "/plugin-development/client/request"
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "Styles & Themes",
-        "link": "/plugin-development/client/styles-themes"
+        "label": "Ví dụ thực tế Plugin",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tổng quan",
+            "link": "/plugin-development/client/examples/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tạo trang cấu hình Plugin",
+            "link": "/plugin-development/client/examples/settings-page"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tạo Block hiển thị tùy chỉnh",
+            "link": "/plugin-development/client/examples/custom-block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tạo Field component tùy chỉnh",
+            "link": "/plugin-development/client/examples/custom-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tạo nút Action tùy chỉnh",
+            "link": "/plugin-development/client/examples/custom-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tạo Plugin quản lý dữ liệu kết hợp front-end và back-end",
+            "link": "/plugin-development/client/examples/fullstack-plugin"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Logger (Nhật ký)",
-        "link": "/plugin-development/client/logger"
-      },
-      {
-        "type": "custom-link",
-        "label": "I18n (Quốc tế hóa)",
-        "link": "/plugin-development/client/i18n"
-      },
-      {
-        "type": "custom-link",
-        "label": "Test",
-        "link": "/plugin-development/client/test"
+        "label": "Phụ lục",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Câu hỏi thường gặp & Hướng dẫn xử lý lỗi",
+            "link": "/plugin-development/client/appendix/faq"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bảng tra cứu phát triển Plugin",
+            "link": "/plugin-development/client/appendix/cheatsheet"
+          }
+        ]
       }
     ]
   },
@@ -183,22 +268,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Hướng dẫn nâng cấp plugin",
-        "link": "/plugin-development/plugin-upgrade-guide"
-      },
-      {
-        "type": "custom-link",
         "label": "Danh sách ngôn ngữ",
         "link": "/plugin-development/languages"
       },
       {
         "type": "custom-link",
-        "label": "Quản lý phụ thuộc",
+        "label": "Quản lý dependency",
         "link": "/plugin-development/dependency-management"
       },
       {
         "type": "custom-link",
-        "label": "Build",
+        "label": "Build và đóng gói",
         "link": "/plugin-development/build"
       }
     ]

@@ -1,37 +1,28 @@
 ---
 pageType: home
 pageName: development
-
+title: "NocoBase 开发指南"
+description: "NocoBase 开发指南：插件开发、FlowEngine、RunJS、区块/字段/操作扩展、数据源扩展、工作流扩展、认证扩展。"
+keywords: "NocoBase,开发指南,插件开发,FlowEngine,RunJS,NocoBase 扩展"
 features:
-  - title: 核心架构
-    details: 掌握 NocoBase 的底层扩展机制与运行原理，包括插件系统、FlowEngine 与数据库内核模块，构建坚实的开发基础。
+  - title: 核心开发
+    details: 掌握 NocoBase 的底层扩展机制与高级开发能力，包括插件系统、AI 辅助、FlowEngine 与 RunJS 环境，构建坚实的开发基础。
     items:
       - title: 插件开发
         details: 学习如何创建、发布与维护自定义插件。
         link: /plugin-development
         showOnHome: true
+      - title: AI 开发插件
+        details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
+        link: /ai-dev
+        showOnHome: true
       - title: 前端流引擎（FlowEngine）
         details: NocoBase 2.0 的前端无代码、低代码开发引擎。
         link: /flow-engine
         showOnHome: true
-      - title: 数据库（Database）
-        details: NocoBase 内核的数据库模块，为插件提供统一的数据访问、建模与操作 API，是插件间数据交互的核心基础。
-        link: /database
-        showOnHome: true
-  - title: 界面与交互
-    details: 学习如何扩展与定制前端界面，构建符合业务需求的组件、字段与操作逻辑，提升系统的可视化与交互体验。
-    items:
-      - title: 区块（Blocks）
-        details: 创建、复用与配置自定义区块组件，构建灵活的界面布局。
-        link: /ui-development-block
-        showOnHome: true
-      - title: 字段（Fields）
-        details: 定义新的字段组件类型，丰富数据输入与展示方式。
-        link: /ui-development-field
-        showOnHome: true
-      - title: 操作（Actions）
-        details: 扩展或定制操作行为，实现多样化的业务流程与用户交互。
-        link: /ui-development-action
+      - title: 前端 RunJS
+        details: 用于 JS 区块、JS 字段、JS 操作等场景的 JavaScript 执行环境。
+        link: /runjs
         showOnHome: true
   - title: 插件生态
     details: 通过插件扩展现有插件的能力，构建层次化、模块化的插件生态体系，提升系统的可扩展性与协作能力。
@@ -39,7 +30,6 @@ features:
       - title: 数据源扩展
         details: 扩展或集成外部数据源，连接第三方数据库或服务，实现跨系统的数据访问与同步。
         link: /data-sources/development
-        showOnHome: true
       - title: 工作流扩展
         details: 扩展或集成工作流相关功能，实现自动化与流程化的业务场景。
         link: /workflow/development
@@ -56,4 +46,7 @@ features:
       - title: 文件预览扩展
         details: 扩展文件预览能力，支持更多文件格式的在线预览与渲染。
         link: /file-manager/development
+      - title: 知识库扩展
+        details: 接入外部知识库或自定义检索服务，为 AI 员工扩展 RAG 检索来源。
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---

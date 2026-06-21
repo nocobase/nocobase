@@ -1,4 +1,6 @@
 ---
+title: "Field component: mask"
+keywords: "Security"
 displayName: "Field component: mask"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:
@@ -8,7 +10,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 2
+editionLevel: 2
 ---
 
 # Field component: mask

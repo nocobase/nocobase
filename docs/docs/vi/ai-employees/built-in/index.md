@@ -1,53 +1,25 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: 'AI Employee tích hợp sẵn'
+description: 'Tổng quan AI Employee tích hợp sẵn.'
+keywords: 'Built-in AI Employees,Atlas,Viz,Dara,Dex,Ellis,Lexi,Vera,Lina,Nathan,NocoBase'
+---
 
+# AI Employee tích hợp sẵn
 
-# Nhân viên AI tích hợp
+NocoBase cung cấp AI Employee tích hợp sẵn cho nhiều kịch bản. Chúng hỗ trợ phân tích dữ liệu, sắp xếp dữ liệu, email, dịch thuật, bản địa hóa, phát triển frontend và nhiều việc khác.
 
-## Giới thiệu
+![](https://static-docs.nocobase.com/202605121048555.png)
 
-NocoBase tích hợp các nhân viên AI sau đây. Họ đã được trang bị đầy đủ kỹ năng, công cụ và cơ sở tri thức. Bạn chỉ cần cấu hình một LLM cho họ là có thể bắt đầu làm việc.
+## Danh sách employee
 
-- `Orin`: chuyên gia mô hình hóa dữ liệu
-- `Avery`: người điền biểu mẫu
-- `Viz`: nhà phân tích thông tin chi tiết
-- `Lexi`: người dịch
-- `Nathan`: kỹ sư mã frontend
-- `Cole`: trợ lý NocoBase
-- `Vera`: nhà phân tích nghiên cứu
-- `Dex`: người tổ chức dữ liệu
-- `Ellis`: chuyên gia email
-
-## Cách kích hoạt
-
-Truy cập trang cấu hình plugin nhân viên AI, nhấp vào tab `AI employees` để vào trang quản lý nhân viên AI.
-
-Bạn có thể thấy hệ thống đã tích hợp nhiều nhân viên AI, nhưng tất cả đều chưa được kích hoạt. Bạn chưa thể cộng tác với các nhân viên AI này trên trang ứng dụng.
-
-![20251022121248](https://static-docs.nocobase.com/20251022121248.png)
-
-Chọn nhân viên AI tích hợp mà bạn muốn kích hoạt, nhấp vào nút `Edit` để vào trang chỉnh sửa nhân viên AI.
-
-Đầu tiên, trong tab `Profile`, bật công tắc `Enable`.
-
-![20251022121546](https://static-docs.nocobase.com/20251022121546.png)
-
-Sau đó, trong tab `Model settings`, hãy thiết lập mô hình cho nhân viên AI tích hợp:
-
-- Chọn dịch vụ LLM mà chúng ta đã tạo trong phần quản lý dịch vụ LLM;
-- Nhập tên của mô hình lớn mà bạn muốn sử dụng.
-
-![20251022121729](https://static-docs.nocobase.com/20251022121729.png)
-
-### Hoàn tất kích hoạt
-
-Sau khi thiết lập mô hình cho nhân viên AI tích hợp, nhấp vào nút `Submit` để lưu các thay đổi.
-
-Sau đó, bạn có thể thấy nhân viên AI tích hợp này trong nút gọi nhanh nhân viên AI ở góc dưới bên phải trang.
-
-![20251022121951](https://static-docs.nocobase.com/20251022121951.png)
-
-### Lưu ý
-
-Một số nhân viên AI tích hợp sẽ không xuất hiện trong danh sách nhân viên AI ở góc dưới bên phải sau khi được kích hoạt. Ví dụ, Orin chỉ xuất hiện trên trang cấu hình dữ liệu chính; Nathan chỉ xuất hiện trong trình chỉnh sửa JS.
+| Employee | Vai trò | Kịch bản điển hình | Loại |
+| --- | --- | --- | --- |
+| [Atlas](./atlas.md) | Trưởng nhóm | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Agent chính |
+| [Viz](./viz.md) | Nhà phân tích insight | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Dex](./dex.md) | Chuyên gia sắp xếp dữ liệu | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Ellis](./ellis.md) | Chuyên gia email | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Lexi](./lexi.md) | Trợ lý dịch thuật | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Vera](./vera.md) | Nhà phân tích nghiên cứu | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Business employee |
+| [Nathan](./nathan.md) | Kỹ sư Frontend | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Developer employee |
+| [Lina](./lina.md) | Kỹ sư bản địa hóa | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Developer employee |
+| [Dara](./dara.md) | Chuyên gia trực quan hóa dữ liệu | Xử lý nội dung hoặc dữ liệu trong kịch bản tương ứng. | Developer employee |

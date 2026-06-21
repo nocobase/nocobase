@@ -1,99 +1,101 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Node Workflow - Cabang Multi-Kondisi"
+description: "Node Cabang Multi-Kondisi: mirip switch/case, mengevaluasi kondisi secara berurutan, mengeksekusi cabang yang sesuai atau cabang else."
+keywords: "Workflow,Cabang Multi-Kondisi,switch,case,cabang alur,NocoBase"
+---
 
-# Percabangan Multi-kondisi <Badge>v2.0.0+</Badge>
+# Cabang Multi-Kondisi <Badge>v2.0.0+</Badge>
 
-## Pendahuluan
+## Pengantar
 
-Mirip dengan pernyataan `switch / case` atau `if / else if` dalam bahasa pemrograman. Sistem akan mengevaluasi beberapa kondisi yang telah dikonfigurasi secara berurutan. Setelah satu kondisi terpenuhi, alur kerja akan menjalankan cabang yang sesuai dan melewati pemeriksaan kondisi berikutnya. Jika tidak ada kondisi yang terpenuhi, cabang "Lainnya" akan dieksekusi.
+Mirip dengan statement `switch / case` atau `if / else if` pada bahasa pemrograman. Sistem akan mengevaluasi beberapa kondisi yang dikonfigurasi secara berurutan satu per satu. Begitu salah satu kondisi terpenuhi, akan mengeksekusi alur pada cabang yang sesuai dan melewatkan evaluasi kondisi berikutnya. Jika semua kondisi tidak terpenuhi, akan mengeksekusi cabang "else".
 
 ## Membuat Node
 
-Di antarmuka konfigurasi alur kerja, klik tombol plus ("+") pada alur untuk menambahkan node "Percabangan Multi-kondisi":
+Pada antarmuka konfigurasi workflow, klik tombol plus ("+") pada alur untuk menambahkan Node "Cabang Multi-Kondisi":
 
-![Membuat Node Percabangan Multi-kondisi](https://static-docs.nocobase.com/20251123222134.png)
+![Membuat Cabang Multi-Kondisi](https://static-docs.nocobase.com/20251123222134.png)
 
 ## Manajemen Cabang
 
 ### Cabang Default
 
-Setelah dibuat, node ini secara default menyertakan dua cabang:
+Setelah Node dibuat, secara default berisi dua cabang:
 
-1.  **Cabang Kondisi**: Untuk mengonfigurasi kondisi penilaian spesifik.
-2.  **Cabang Lainnya**: Dimasuki ketika tidak ada cabang kondisi yang terpenuhi; tidak memerlukan konfigurasi kondisi.
+1. **Cabang Kondisi**: dapat dikonfigurasi kondisi evaluasi yang spesifik.
+2. **Cabang Else**: dimasuki saat semua cabang kondisi tidak terpenuhi, tidak perlu mengkonfigurasi kondisi.
 
-Klik tombol "Tambah cabang" di bawah node untuk menambahkan lebih banyak cabang kondisi.
+Klik tombol "Tambah Cabang" di bawah Node, untuk menambah lebih banyak cabang kondisi.
 
 ![20251123222540](https://static-docs.nocobase.com/20251123222540.png)
 
 ### Menambah Cabang
 
-Setelah mengklik "Tambah cabang", cabang baru akan ditambahkan sebelum cabang "Lainnya".
+Setelah klik "Tambah Cabang", cabang baru akan ditambahkan sebelum cabang "else".
 
 ![20251123222805](https://static-docs.nocobase.com/20251123222805.png)
 
 ### Menghapus Cabang
 
-Ketika ada beberapa cabang kondisi, klik ikon tempat sampah di sebelah kanan cabang untuk menghapusnya. Jika hanya tersisa satu cabang kondisi, cabang tersebut tidak dapat dihapus.
+Saat ada beberapa cabang kondisi, klik ikon tempat sampah di sisi kanan cabang untuk menghapus cabang tersebut. Jika hanya tersisa satu cabang kondisi, tidak dapat dihapus.
 
 ![20251123223127](https://static-docs.nocobase.com/20251123223127.png)
 
-:::info{title=Catatan}
-Menghapus cabang juga akan menghapus semua node di dalamnya; harap berhati-hati saat melakukan tindakan ini.
+:::info{title=Tips}
+Menghapus cabang akan secara bersamaan menghapus semua Node di dalam cabang tersebut, harap dilakukan dengan hati-hati.
 
-Cabang "Lainnya" adalah cabang bawaan dan tidak dapat dihapus.
+"Else" adalah cabang bawaan, tidak dapat dihapus.
 :::
 
 ## Konfigurasi Node
 
 ### Konfigurasi Kondisi
 
-Klik nama kondisi di bagian atas cabang untuk mengedit detail kondisi spesifik:
+Klik nama kondisi di bagian atas cabang, untuk mengedit isi kondisi yang spesifik:
 
 ![20251123223352](https://static-docs.nocobase.com/20251123223352.png)
 
 #### Label Kondisi
 
-Mendukung label kustom. Setelah diisi, label ini akan ditampilkan sebagai nama kondisi dalam diagram alur. Jika tidak dikonfigurasi (atau dibiarkan kosong), secara default akan ditampilkan sebagai "Kondisi 1", "Kondisi 2", dan seterusnya, secara berurutan.
+Mendukung label kustom. Jika diisi, akan ditampilkan sebagai nama kondisi pada diagram alur. Jika tidak dikonfigurasi (atau dibiarkan kosong), secara default akan ditampilkan secara berurutan sebagai "Kondisi 1", "Kondisi 2", dll.
 
 ![20251123224209](https://static-docs.nocobase.com/20251123224209.png)
 
-#### Mesin Perhitungan
+#### Engine Komputasi
 
-Saat ini mendukung tiga mesin:
+Saat ini mendukung tiga engine:
 
--   **Dasar**: Menggunakan perbandingan logis sederhana (misalnya, sama dengan, berisi) dan kombinasi "DAN"/"ATAU" untuk menentukan hasil.
--   **Math.js**: Mendukung perhitungan ekspresi menggunakan sintaks [Math.js](https://mathjs.org/).
--   **Formula.js**: Mendukung perhitungan ekspresi menggunakan sintaks [Formula.js](https://formulajs.info/) (mirip dengan rumus Excel).
+- **Basic**: melalui perbandingan logika sederhana (seperti sama dengan, mengandung, dll.) dan kombinasi "dan", "atau", untuk menghasilkan hasil evaluasi.
+- **Math.js**: mendukung evaluasi expression dengan sintaks [Math.js](https://mathjs.org/).
+- **Formula.js**: mendukung evaluasi expression dengan sintaks [Formula.js](https://formulajs.info/) (mirip dengan formula Excel).
 
-Ketiga mode ini mendukung penggunaan variabel konteks alur kerja sebagai parameter.
+Ketiga mode mendukung penggunaan variable konteks alur sebagai parameter.
 
-### Ketika Tidak Ada Kondisi yang Terpenuhi
+### Saat Semua Kondisi Tidak Terpenuhi
 
-Di panel konfigurasi node, Anda dapat mengatur tindakan selanjutnya ketika tidak ada kondisi yang terpenuhi:
+Pada panel konfigurasi Node, dapat diatur aksi selanjutnya saat semua kondisi tidak terpenuhi:
 
 ![20251123224348](https://static-docs.nocobase.com/20251123224348.png)
 
-*   **Akhiri alur kerja dengan kegagalan (Default)**: Menandai status alur kerja sebagai gagal dan menghentikan proses.
-*   **Lanjutkan eksekusi node berikutnya**: Setelah node saat ini selesai dieksekusi, alur kerja akan melanjutkan eksekusi node berikutnya.
+* **Akhiri workflow dengan gagal (default)**: menandai status workflow sebagai gagal, dan menghentikan alur.
+* **Lanjutkan eksekusi Node berikutnya**: setelah eksekusi Node saat ini selesai, melanjutkan eksekusi Node berikutnya pada workflow.
 
-:::info{title=Catatan}
-Terlepas dari metode penanganan yang dipilih, ketika tidak ada kondisi yang terpenuhi, alur akan terlebih dahulu masuk ke cabang "Lainnya" untuk mengeksekusi node di dalamnya.
+:::info{title=Tips}
+Apa pun cara penanganan yang dipilih, saat semua kondisi tidak terpenuhi, alur akan terlebih dahulu masuk ke cabang "else" untuk mengeksekusi Node di dalamnya.
 :::
 
-## Riwayat Eksekusi
+## Catatan Eksekusi
 
-Dalam riwayat eksekusi alur kerja, node Percabangan Multi-kondisi mengidentifikasi hasil penilaian setiap kondisi menggunakan warna yang berbeda:
+Pada catatan eksekusi workflow, Node Cabang Multi-Kondisi mengidentifikasi hasil evaluasi setiap kondisi melalui warna yang berbeda:
 
--   **Hijau**: Kondisi terpenuhi; masuk ke cabang ini untuk dieksekusi.
--   **Merah**: Kondisi tidak terpenuhi (atau terjadi kesalahan perhitungan); cabang ini dilewati.
--   **Biru**: Penilaian tidak dieksekusi (dilewati karena kondisi sebelumnya sudah terpenuhi).
+- **Hijau**: kondisi terpenuhi, masuk ke cabang tersebut untuk dieksekusi.
+- **Merah**: kondisi tidak terpenuhi (atau komputasi error), melewatkan cabang tersebut.
+- **Biru**: belum dieksekusi evaluasi (karena kondisi sebelumnya sudah terpenuhi, sehingga melewatkan evaluasi berikutnya).
 
 ![20251123225455](https://static-docs.nocobase.com/20251123225455.png)
 
-Jika kesalahan konfigurasi menyebabkan pengecualian perhitungan kondisi, selain ditampilkan berwarna merah, mengarahkan kursor mouse ke nama kondisi akan menampilkan informasi kesalahan spesifik:
+Jika karena kesalahan konfigurasi terjadi anomali komputasi kondisi, selain ditampilkan dalam warna merah, saat mouse hover pada nama kondisi akan ditampilkan informasi error yang spesifik:
 
 ![20251123231014](https://static-docs.nocobase.com/20251123231014.png)
 
-Ketika terjadi pengecualian perhitungan kondisi, node Percabangan Multi-kondisi akan berakhir dengan status "Error" dan tidak akan melanjutkan eksekusi node berikutnya.
+Saat terjadi anomali komputasi kondisi, Node Cabang Multi-Kondisi akan berakhir dengan status "error", dan tidak akan melanjutkan eksekusi Node berikutnya.

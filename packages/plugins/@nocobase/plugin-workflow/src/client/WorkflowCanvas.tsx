@@ -10,7 +10,21 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { Alert, App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tag, Tooltip } from 'antd';
+import {
+  Alert,
+  App,
+  Breadcrumb,
+  Button,
+  Descriptions,
+  Dropdown,
+  Input,
+  Modal,
+  Result,
+  Spin,
+  Switch,
+  Tag,
+  Tooltip,
+} from 'antd';
 import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import { NoticeType } from 'antd/es/message/interface';
 import { useField, useForm } from '@formily/react';
@@ -50,6 +64,10 @@ import { AddNodeContextProvider } from './AddNodeContext';
 import { RemoveNodeContextProvider } from './RemoveNodeContext';
 import { NodeDragContextProvider } from './NodeDragContext';
 import { NodeClipboardContextProvider } from './NodeClipboardContext';
+import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
+import { useFlowEngine } from '@nocobase/flow-engine';
+import { resolveLegacyTriggerExecuteRenderMode } from '../client-v2/triggers';
+import { openExecuteWorkflowDialog } from '../client-v2/triggers/ExecuteWorkflowButton';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -101,25 +119,32 @@ function useExecuteConfirmAction() {
   const navigate = useNavigateNoUpdate();
   const { message: messageApi } = App.useApp();
   const executed = useWorkflowExecuted();
+  const [loading, setLoading] = useState(false);
   return {
+    loading,
     async run() {
-      const { autoRevision, ...values } = form.values;
-      // Not executed, could choose to create new version (by default)
-      // Executed, stay in current version, and refresh
-      await form.submit();
-      const {
-        data: { data },
-      } = await resource.execute({
-        filterByTk: workflow.id,
-        values,
-        ...(!executed && autoRevision ? { autoRevision: 1 } : {}),
-      });
-      form.reset();
-      ctx.setFormValueChanged(false);
-      ctx.setVisible(false);
-      messageApi?.open(getExecutedStatusMessage(data.execution));
-      if (data.newVersionId) {
-        navigate(getWorkflowDetailPath(data.newVersionId));
+      setLoading(true);
+      try {
+        const { autoRevision, ...values } = form.values;
+        // Not executed, could choose to create new version (by default)
+        // Executed, stay in current version, and refresh
+        await form.submit();
+        const {
+          data: { data },
+        } = await resource.execute({
+          filterByTk: workflow.id,
+          values,
+          ...(!executed && autoRevision ? { autoRevision: 1 } : {}),
+        });
+        form.reset();
+        ctx.setFormValueChanged(false);
+        ctx.setVisible(false);
+        messageApi?.open(getExecutedStatusMessage(data.execution));
+        if (data.newVersionId) {
+          navigate(getWorkflowDetailPath(data.newVersionId));
+        }
+      } finally {
+        setLoading(false);
       }
     },
   };
@@ -129,13 +154,17 @@ function ActionDisabledProvider({ children }) {
   const field = useField<any>();
   const { workflow } = useFlowContext();
   const trigger = useTrigger();
-  const valid = trigger.validate(workflow.config);
+  const valid = trigger?.validate?.(workflow.config) ?? false;
+  const renderMode = trigger ? resolveLegacyTriggerExecuteRenderMode(trigger) : 'none';
   let message = '';
   switch (true) {
+    case !trigger:
+      message = lang('This trigger type is not available in the new canvas yet.');
+      break;
     case !valid:
       message = lang('The trigger is not configured correctly, please check the trigger configuration.');
       break;
-    case !trigger.triggerFieldset:
+    case renderMode === 'none':
       message = lang('This type of trigger has not been supported to be executed manually.');
       break;
     default:
@@ -147,8 +176,45 @@ function ActionDisabledProvider({ children }) {
 
 function ExecuteActionButton() {
   const { workflow } = useFlowContext();
+  const flowEngine = useFlowEngine();
   const executed = useWorkflowExecuted();
   const trigger = useTrigger();
+  const { refresh } = useResourceActionContext();
+  const renderMode = trigger ? resolveLegacyTriggerExecuteRenderMode(trigger) : 'none';
+
+  if (!trigger) {
+    return (
+      <Tooltip title={lang('This trigger type is not available in the new canvas yet.')}>
+        <span>
+          <Button disabled>{lang('Execute manually')}</Button>
+        </span>
+      </Tooltip>
+    );
+  }
+
+  if (renderMode === 'modern-loader' && trigger?.TriggerFieldsetLoader) {
+    const valid = trigger.validate(workflow.config);
+    return (
+      <Tooltip title={undefined}>
+        <span>
+          <Button
+            onClick={() =>
+              openExecuteWorkflowDialog({
+                ctx: flowEngine.context,
+                workflow,
+                trigger,
+                TriggerFieldsetLoader: trigger.TriggerFieldsetLoader,
+                valid,
+                refresh,
+              })
+            }
+          >
+            {lang('Execute manually')}
+          </Button>
+        </span>
+      </Tooltip>
+    );
+  }
 
   return (
     <CurrentWorkflowContext.Provider value={workflow}>
@@ -255,6 +321,8 @@ function ExecuteActionButton() {
 function WorkflowMenu() {
   const { workflow, revisions = [] } = useFlowContext();
   const [historyVisible, setHistoryVisible] = useState(false);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [editingDescription, setEditingDescription] = useState('');
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { modal } = App.useApp();
@@ -262,6 +330,7 @@ function WorkflowMenu() {
   const { resource } = useResourceContext();
   const { refresh } = useResourceActionContext();
   const { message } = App.useApp();
+  const { styles } = useStyles();
   const allExecuted = useWorkflowAnyExecuted();
 
   const onRevision = useCallback(async () => {
@@ -324,6 +393,9 @@ function WorkflowMenu() {
   const onMenuCommand = useCallback(
     ({ key }) => {
       switch (key) {
+        case 'details':
+          setDetailsVisible(true);
+          return;
         case 'refresh':
           refresh();
           return;
@@ -341,15 +413,46 @@ function WorkflowMenu() {
     [onDelete, onRevision, refresh],
   );
 
+  const formatUser = useCallback((user) => user?.nickname || user?.username || user?.email || user?.id || '-', []);
+  const formatTime = useCallback((value) => (value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-'), []);
+
+  useEffect(() => {
+    if (detailsVisible) {
+      setEditingDescription(workflow.description ?? '');
+    }
+  }, [detailsVisible, workflow.description]);
+
+  const onChangeDescription = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditingDescription(event.target.value);
+  }, []);
+
+  const onBlurDescription = useCallback(
+    async (event: React.FocusEvent<HTMLTextAreaElement>) => {
+      const description = event.target.value;
+      if (description === (workflow.description ?? '')) {
+        return;
+      }
+      await resource.update({
+        filterByTk: workflow.id,
+        values: {
+          description,
+        },
+      });
+      refresh();
+    },
+    [refresh, resource, workflow.description, workflow.id],
+  );
+
   return (
     <>
       <Dropdown
         menu={{
           items: [
             {
-              key: 'key',
-              label: `Key: ${workflow.key}`,
-              disabled: true,
+              role: 'button',
+              'aria-label': 'details',
+              key: 'details',
+              label: t('Details'),
             },
             {
               type: 'divider',
@@ -383,6 +486,34 @@ function WorkflowMenu() {
       >
         <Button aria-label="more" type="text" icon={<EllipsisOutlined />} />
       </Dropdown>
+      <Modal
+        open={detailsVisible}
+        title={t('Details')}
+        width={640}
+        footer={null}
+        onCancel={() => setDetailsVisible(false)}
+      >
+        <Descriptions bordered column={2} size="small">
+          <Descriptions.Item label="Key" span={2}>
+            {workflow.key || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('Created by')}>{formatUser(workflow.createdBy)}</Descriptions.Item>
+          <Descriptions.Item label={t('Created at')}>{formatTime(workflow.createdAt)}</Descriptions.Item>
+          <Descriptions.Item label={t('Last updated by')}>{formatUser(workflow.updatedBy)}</Descriptions.Item>
+          <Descriptions.Item label={t('Last updated at')}>{formatTime(workflow.updatedAt)}</Descriptions.Item>
+          <Descriptions.Item label={t('Description')} span={2}>
+            <Input.TextArea
+              aria-label={t('Description')}
+              value={editingDescription}
+              onChange={onChangeDescription}
+              onBlur={onBlurDescription}
+              placeholder="-"
+              className={styles.workflowDetailsDescriptionClass}
+              autoSize={{ minRows: 3, maxRows: 8 }}
+            />
+          </Descriptions.Item>
+        </Descriptions>
+      </Modal>
       <ActionContextProvider value={{ visible: historyVisible, setVisible: setHistoryVisible }}>
         <SchemaComponent
           schema={executionSchema}
@@ -393,6 +524,7 @@ function WorkflowMenu() {
           }}
           scope={{
             useRefreshActionProps,
+            useResourceFilterActionProps,
             ExecutionStatusOptions,
           }}
         />

@@ -12,6 +12,7 @@ import { LLMProvider } from '../provider';
 import { Model } from '@nocobase/database';
 import { stripToolCallTags } from '../../utils';
 import { AIMessageChunk } from '@langchain/core/messages';
+import { LLMResult } from '@langchain/core/outputs';
 
 export class OpenAIResponsesProvider extends LLMProvider {
   declare chatModel: ChatOpenAI;
@@ -21,15 +22,19 @@ export class OpenAIResponsesProvider extends LLMProvider {
   }
 
   createModel() {
-    const { baseURL, apiKey } = this.serviceOptions || {};
+    const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
-      type: responseFormat,
+    const { name, schema, strict } = structuredOutput || {};
+    let responseFormatOptions: Record<string, any> = {
+      type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['name'] = 'default';
-      responseFormatOptions['schema'] = schema;
+      responseFormatOptions = {
+        ...responseFormatOptions,
+        schema,
+        name: name ?? 'default',
+        strict: strict ?? false,
+      };
     }
     return new ChatOpenAI({
       apiKey,
@@ -40,7 +45,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
         },
       },
       configuration: {
-        baseURL: baseURL || this.baseURL,
+        baseURL: this.getResolvedBaseURL(),
       },
       verbose: false,
       useResponsesApi: true,
@@ -57,7 +62,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -85,9 +90,23 @@ export class OpenAIResponsesProvider extends LLMProvider {
         }
       }
     }
+    if (metadata?.response_metadata?.output?.length) {
+      content.reference = content.reference ?? [];
+      const output = metadata.response_metadata.output.find((it) => it.type === 'message');
+      if (output?.content?.length) {
+        const outputContent = output.content.find((it) => it.type === 'output_text');
+        for (const annotation of outputContent?.annotations ?? []) {
+          content.reference.push({
+            title: annotation.title,
+            url: annotation.url,
+          });
+        }
+      }
+    }
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };
@@ -103,7 +122,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
     return [];
   }
 
-  protected isToolConflict(): boolean {
+  isToolConflict(): boolean {
     return false;
   }
 

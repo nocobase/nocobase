@@ -1,36 +1,37 @@
 ---
-pkg: "@nocobase/plugin-action-template-print"
+title: "Template Print"
+description: "NocoBase Template Print: Template Word/Excel/PPT, placeholder, pengisian data dinamis, output PDF, generate Penawaran, kontrak, faktur."
+keywords: "Template Print,Word,Excel,PDF,Placeholder,NocoBase"
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+# Template Print
 
+<PluginInfo commercial="true" name="action-template-print"></PluginInfo>
 
-# Pencetakan Template
+## Pengantar
 
-## Pendahuluan
-
-Plugin Pencetakan Template mendukung Anda untuk mendesain file template menggunakan Word, Excel, dan PowerPoint (mendukung format `.docx`, `.xlsx`, `.pptx`). Anda dapat mengatur placeholder dan struktur logis dalam template untuk menghasilkan file dengan format yang sudah ditentukan secara dinamis, seperti `.docx`, `.xlsx`, `.pptx`, dan juga file PDF. Plugin ini banyak digunakan untuk membuat berbagai dokumen bisnis, misalnya penawaran harga, faktur, dan kontrak.
+Plugin Template Print mendukung penggunaan Word, Excel, dan PowerPoint untuk mengedit file Template (mendukung format `.docx`, `.xlsx`, `.pptx`), mengatur placeholder dan struktur logika pada Template, sehingga dapat secara dinamis menghasilkan file dengan format yang ditentukan, seperti file `.docx`, `.xlsx`, `.pptx`, dan PDF. Dapat digunakan secara luas untuk menghasilkan berbagai dokumen bisnis, seperti Penawaran, faktur, kontrak, dll.
 
 ### Fitur Utama
 
-- **Dukungan Multi-format**: Kompatibel dengan template Word, Excel, dan PowerPoint untuk memenuhi berbagai kebutuhan pembuatan dokumen.
-- **Pengisian Data Dinamis**: Secara otomatis mengisi dan menghasilkan konten dokumen melalui placeholder dan struktur logis.
-- **Manajemen Template Fleksibel**: Mendukung penambahan, pengeditan, penghapusan, dan pengelolaan template berdasarkan kategori untuk memudahkan pemeliharaan dan penggunaan.
-- **Sintaks Template yang Kaya**: Mendukung penggantian dasar, akses array, perulangan, dan pernyataan kondisional untuk menangani logika dokumen yang kompleks.
-- **Dukungan Formatter**: Menyediakan output kondisional, pemformatan tanggal, pemformatan angka, dan fitur lainnya untuk meningkatkan keterbacaan dan profesionalisme dokumen.
-- **Output Efisien**: Mendukung pembuatan file PDF secara langsung untuk kemudahan berbagi dan pencetakan.
+- **Dukungan Multi-format**: Kompatibel dengan Template Word, Excel, dan PowerPoint, memenuhi berbagai kebutuhan generate dokumen.
+- **Pengisian Data Dinamis**: Otomatis mengisi dan menghasilkan konten dokumen melalui placeholder dan struktur logika.
+- **Manajemen Template Fleksibel**: Mendukung penambahan, pengeditan, penghapusan, dan manajemen kategori Template, memudahkan pemeliharaan dan penggunaan.
+- **Sintaks Template Kaya**: Mendukung berbagai sintaks Template seperti penggantian dasar, akses array, loop, output kondisional, memenuhi kebutuhan generate dokumen kompleks.
+- **Dukungan Formatter**: Menyediakan output kondisional, Format tanggal, Format angka, dll., meningkatkan keterbacaan dan profesionalisme dokumen.
+- **Dukungan Field Gambar**: Mendukung output gambar lampiran dan gambar tanda tangan tulisan tangan dalam Template.
+- **Format Output Efisien**: Mendukung pembuatan langsung file PDF, memudahkan untuk berbagi dan mencetak.
 
 ## Instalasi
 
-### Menginstal Plugin
+### Instalasi Plugin
 
-Lihat [Menginstal dan Memperbarui Plugin Komersial](https://www.nocobase.com/c/blog/nocobase-commercial-license-activation-guide)
+Untuk metode instalasi dan upgrade yang detail, silakan merujuk ke: [Panduan Aktivasi Plugin Komersial](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
-### Menginstal LibreOffice (Opsional)
+### Instal LibreOffice (Opsional)
 
-Untuk menghasilkan PDF, Anda harus menginstal LibreOffice. [Silakan unduh dari situs web resmi](https://www.libreoffice.org/download/download-libreoffice). Untuk versi Docker, Anda dapat membuat skrip langsung di direktori `./storage/scripts`.
+Untuk menghasilkan PDF, harus menginstal LibreOffice, [silakan unduh dari situs resmi](
+https://www.libreoffice.org/download/download-libreoffice). Versi Docker, Anda dapat langsung menulis script di direktori `./storage/scripts`.
 
 ```bash
 mkdir ./storage/scripts
@@ -38,7 +39,7 @@ cd ./storage/scripts
 vim install-libreoffice.sh
 ```
 
-Isi dari `install-libreoffice.sh` adalah sebagai berikut:
+Konten `install-libreoffice.sh` adalah sebagai berikut:
 
 ```sh
 #!/bin/bash
@@ -118,7 +119,7 @@ fi
 echo "LibreOffice installation completed successfully."
 ```
 
-Mulai ulang kontainer `app`:
+Restart container app
 
 ```bash
 docker compose restart app
@@ -126,7 +127,7 @@ docker compose restart app
 docker compose logs app
 ```
 
-Verifikasi instalasi berhasil:
+Periksa apakah instalasi berhasil
 
 ```bash
 $ docker compose exec app bash -c "libreoffice --version"

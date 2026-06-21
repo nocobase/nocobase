@@ -1,33 +1,35 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
+---
+title: "Field Collection"
+description: "Tipe field Collection: Interface dan tipe data, field skalar, field relasi, konfigurasi terkait, aturan validasi field."
+keywords: "field collection,tipe field,Field Interface,field Collection,NocoBase"
+---
 
-# Kolom Koleksi
+# Field Collection
 
-## Tipe Antarmuka Kolom
+## Tipe Interface Field
 
-NocoBase mengklasifikasikan kolom ke dalam beberapa kategori berikut dari perspektif Antarmuka:
+NocoBase membagi field dari perspektif Interface menjadi beberapa kategori berikut:
 
 ![20240512110352](https://static-docs.nocobase.com/20240512110352.png)
 
-## Tipe Data Kolom
+## Tipe Data Field
 
-Setiap Antarmuka Kolom memiliki tipe data bawaan. Misalnya, untuk kolom dengan Antarmuka sebagai Angka (Number), tipe data bawaannya adalah `double`, tetapi juga bisa `float`, `decimal`, dan lain-lain. Tipe data yang saat ini didukung adalah:
+Setiap Field Interface memiliki tipe data default. Misalnya, field dengan Interface Number (Number), tipe datanya secara default adalah double, tetapi juga bisa float, decimal, dan lainnya. Tipe data yang saat ini didukung meliputi:
 
 ![20240512103733](https://static-docs.nocobase.com/20240512103733.png)
 
-## Pemetaan Tipe Kolom
+## Pemetaan Tipe Field
 
-Proses penambahan kolom baru ke basis data utama adalah sebagai berikut:
+Alur penambahan field di database utama:
 
-1. Pilih tipe Antarmuka
-2. Konfigurasi tipe data opsional untuk Antarmuka saat ini
+1. Pilih tipe Interface
+2. Konfigurasi tipe data yang dapat dipilih untuk Interface saat ini
 
 ![20240512172416](https://static-docs.nocobase.com/20240512172416.png)
 
-Proses pemetaan kolom dari sumber data eksternal adalah:
+Alur pemetaan field data source eksternal:
 
-1. Otomatis memetakan tipe data yang sesuai (tipe Kolom) dan tipe UI (Antarmuka Kolom) berdasarkan tipe kolom dari basis data eksternal.
-2. Ubah ke tipe data dan tipe Antarmuka yang lebih sesuai sesuai kebutuhan.
+1. Otomatis memetakan tipe data (Field type) dan tipe UI (Field Interface) yang sesuai berdasarkan tipe field database eksternal.
+2. Memodifikasi sesuai kebutuhan menjadi tipe data dan tipe Interface yang lebih cocok.
 
 ![20240512172759](https://static-docs.nocobase.com/20240512172759.png)

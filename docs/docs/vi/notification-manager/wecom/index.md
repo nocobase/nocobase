@@ -1,19 +1,19 @@
 ---
 pkg: '@nocobase/plugin-auth-wecom'
+title: "Thông báo WeCom"
+description: "Kênh thông báo WeCom: gửi thông báo cho người dùng WeCom, hỗ trợ text card, Markdown, template card, cần cấu hình WeCom authenticator."
+keywords: "Thông báo WeCom,WeCom,WeCom,text card,Markdown,template card,quản lý thông báo,NocoBase"
 ---
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
 
 # Thông báo: WeCom
 
 ## Giới thiệu
 
-Plugin **WeCom** cho phép ứng dụng gửi tin nhắn thông báo đến người dùng WeCom.
+Plugin **WeCom** hỗ trợ ứng dụng gửi thông báo đến người dùng WeCom.
 
-## Thêm và cấu hình trình xác thực WeCom
+## Thêm và cấu hình WeCom authenticator
 
-Trước tiên, bạn cần thêm và cấu hình một trình xác thực WeCom trên NocoBase. Vui lòng tham khảo [Xác thực người dùng - WeCom](/auth-verification/auth-wecom). Chỉ những người dùng hệ thống đã đăng nhập qua WeCom mới có thể nhận thông báo hệ thống thông qua WeCom.
+Trước tiên cần thêm và cấu hình một WeCom authenticator trong NocoBase, tham khảo [Xác thực người dùng - WeCom](/auth-verification/auth-wecom). Chỉ những người dùng hệ thống đã đăng nhập qua WeCom mới có thể nhận thông báo hệ thống qua WeCom.
 
 ## Thêm kênh thông báo WeCom
 
@@ -21,12 +21,12 @@ Trước tiên, bạn cần thêm và cấu hình một trình xác thực WeCom
 
 ## Cấu hình kênh thông báo WeCom
 
-Chọn trình xác thực bạn vừa cấu hình.
+Chọn authenticator vừa được cấu hình.
 
 ![](https://static-docs.nocobase.com/202412041525284.png)
 
-## Cấu hình nút thông báo luồng công việc
+## Cấu hình node thông báo workflow
 
-Chọn kênh thông báo WeCom đã được cấu hình. Kênh này hỗ trợ ba loại tin nhắn: Thẻ văn bản, Markdown và Thẻ mẫu.
+Chọn kênh thông báo WeCom đã cấu hình, hỗ trợ ba loại tin nhắn: text card, Markdown, template card.
 
 ![](https://static-docs.nocobase.com/202412041529319.png)

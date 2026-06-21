@@ -1,13 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
-:::
+---
+title: "Đường thẳng"
+description: "Field hình học đường thẳng, lưu trữ đoạn thẳng (kiểu line của PostgreSQL)."
+keywords: "đường thẳng,line,Field hình học,PostgreSQL,NocoBase"
+---
 
-
-# Đường
+# Đường thẳng
 
 ## Giới thiệu
 
-## Cấu hình trường
+## Cấu hình Field
 
 ![20240512181454](https://static-docs.nocobase.com/20240512181454.png)
 

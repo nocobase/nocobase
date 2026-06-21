@@ -1,3 +1,9 @@
+---
+title: "DestroyOptions"
+description: "NocoBase Repository destroy 方法参数：filter、filterByTk、truncate、transaction。"
+keywords: "DestroyOptions,Repository,destroy,filter,NocoBase"
+---
+
 **类型**
 
 ```typescript

@@ -1,14 +1,14 @@
 ---
-displayName: "Blok: Kanban"
+displayName: "Block: Kanban"
 packageName: '@nocobase/plugin-kanban'
+title: "Block: Kanban"
+keywords: "Block: Kanban,Plugin,NocoBase"
 description: |
-  Menyediakan blok kanban.
+  Menyediakan Block Kanban.
 isFree: true
 builtIn: true
 defaultEnabled: false
+editionLevel: 0
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
-# Blok: Kanban
+# Block: Kanban
