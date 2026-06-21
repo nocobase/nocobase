@@ -94,7 +94,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
           return target.master.constructor;
         }
         if (prop === 'subModels') {
-          return target.getForkedSubModels();
+          return target.getForkedSubModels(receiver);
         }
         if (prop === 'parent') {
           if (Object.prototype.hasOwnProperty.call(target.localProperties, 'parent')) {
@@ -341,7 +341,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   /**
    * Build a forked view of master.subModels with stable child fork instances.
    */
-  private getForkedSubModels(): Record<string, any> {
+  private getForkedSubModels(parentFork: ForkFlowModel): Record<string, any> {
     const masterSubModels = this.master.subModels as Record<string, FlowModel | FlowModel[]> | undefined;
     const result: Record<string, any> = {};
     if (!masterSubModels || typeof masterSubModels !== 'object') {
@@ -360,7 +360,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 
       const fork = child.createFork({}, undefined, { register: false });
       fork.localProperties = fork.localProperties || {};
-      fork.localProperties.parent = this;
+      fork.localProperties.parent = parentFork;
       this.childForkCache.set(key, fork);
       return fork;
     };
