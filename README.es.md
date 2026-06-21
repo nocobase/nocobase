@@ -10,10 +10,9 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 ## Índice
 
 - [Qué es NocoBase](#qué-es-nocobase)
+- [Inicio rápido](#inicio-rápido)
 - [Notas de versión](#notas-de-versión)
 - [Características diferenciales](#características-diferenciales)
-- [Conexión de AI Agent](#conexión-de-ai-agent)
-- [Instalación](#instalación)
 
 ## Qué es NocoBase
 
@@ -33,6 +32,25 @@ https://forum.nocobase.com/
 
 Historias de clientes:  
 https://www.nocobase.com/es/blog/tags/customer-stories
+
+## Inicio rápido
+
+```bash
+# Instalar NocoBase CLI
+npm install -g @nocobase/cli
+nb --version
+
+# Instalar una aplicación NocoBase
+nb init --ui
+
+# Opcional: colaborar en la creación con AI Agent
+codex # claude, opencode
+```
+
+Pasos detallados:
+
+- <a target="_blank" href="https://docs.nocobase.com/es/ai/install-nocobase-app">Instalar una aplicación NocoBase</a>
+- <a target="_blank" href="https://docs.nocobase.com/es/ai/quick-start">Guía de conexión de AI Agent</a>
 
 ## Notas de versión
 
@@ -141,37 +159,3 @@ Con un diseño de microkernel, todo es un plugin y el sistema puede crecer sin p
 - La misma arquitectura sirve tanto para plugins creados por IA como para los desarrollados a mano
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
-
-## Conexión de AI Agent
-
-La forma más simple es instalar NocoBase CLI, completar la inicialización y luego iniciar o reiniciar la sesión del AI Agent dentro de ese directorio.
-
-- NocoBase CLI se encarga de instalar, conectar y gestionar aplicaciones NocoBase
-- Durante la inicialización, la CLI instala automáticamente NocoBase Skills para que el agente entienda modelos de datos, páginas, workflows, permisos y plugins
-- Una vez completada la inicialización, el AI Agent puede empezar a trabajar siempre que su espacio de trabajo apunte a ese directorio
-
-```bash
-npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
-nb init --ui
-cd my-nocobase && codex
-```
-
-Más información:  
-https://docs.nocobase.com/es/ai/quick-start
-
-## Instalación
-
-NocoBase ofrece tres métodos de instalación:
-
-- <a target="_blank" href="https://docs.nocobase.com/es/welcome/getting-started/installation/docker-compose">Instalar con Docker (recomendado)</a>
-
-  Es la mejor opción para escenarios no-code y no requiere escribir código. Para actualizar, solo necesitas descargar la imagen más reciente y reiniciar.
-
-- <a target="_blank" href="https://docs.nocobase.com/es/welcome/getting-started/installation/create-nocobase-app">Instalar con create-nocobase-app</a>
-
-  El código de negocio del proyecto permanece completamente independiente y es adecuado para desarrollo low-code.
-
-- <a target="_blank" href="https://docs.nocobase.com/es/welcome/getting-started/installation/git-clone">Instalar desde el código fuente Git</a>
-
-  Si quieres probar la última versión aún no publicada o contribuir modificando y depurando el código fuente directamente, este método es el más recomendable. Requiere una mayor base de desarrollo, y cuando el código se actualice podrás obtener la versión más reciente con Git.
