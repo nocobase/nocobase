@@ -1,8 +1,10 @@
 ---
-displayName: "Sammlungsfeld: Beziehungsschnappschuss"
+title: "Collection field: Snapshot"
+keywords: "Collection fields"
+displayName: "Collection field: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  Beim Hinzufügen von Daten erstellen Sie einen Schnappschuss für deren Beziehungsdaten und speichern diesen in den aktuellen Daten. Wenn die Beziehungsdaten aktualisiert werden, wird der Schnappschuss nicht aktualisiert.
+  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +12,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Sammlungsfeld: Beziehungsschnappschuss
+# Collection field: Snapshot
 
-> Hinweis: Dieses Plugin ist veraltet (deprecated).
+> Note: This plugin is deprecated.

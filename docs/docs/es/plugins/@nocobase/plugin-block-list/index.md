@@ -1,12 +1,14 @@
 ---
-displayName: "Bloque: Lista"
+title: "Block: List"
+keywords: "Blocks"
+displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  Muestra datos en formato de lista y admite la configuración de paginación
+  Display data in a list with pagination support.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Bloque: Lista
+# Block: List

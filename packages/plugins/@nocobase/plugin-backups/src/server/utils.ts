@@ -202,6 +202,7 @@ const dbVersionCommands = {
   mysql: 'select version() as version',
   mariadb: 'select version() as version',
   postgres: 'select version() as version',
+  kingbase: 'select version() as version',
 };
 
 export async function getDBVersion(db: Database): Promise<string> {

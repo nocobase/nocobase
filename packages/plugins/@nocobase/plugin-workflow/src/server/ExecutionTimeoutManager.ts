@@ -64,11 +64,11 @@ export default class ExecutionTimeoutManager {
     await this.scanning?.catch(() => {});
   }
 
-  isExpired(execution: ExecutionModel, now = new Date()) {
+  isExpired(execution: ExecutionModel, now = new Date(Date.now())) {
     return !!execution.expiresAt && execution.expiresAt.getTime() <= now.getTime();
   }
 
-  getRemainingMs(execution: ExecutionModel, now = new Date()) {
+  getRemainingMs(execution: ExecutionModel, now = new Date(Date.now())) {
     if (!execution.expiresAt) {
       return null;
     }

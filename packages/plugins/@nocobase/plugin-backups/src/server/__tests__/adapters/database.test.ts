@@ -218,6 +218,50 @@ describe('DatabaseAdapter', () => {
       );
     });
 
+    it('restore function should reject unsafe source schema names before running commands', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter({
+        ...dbOpts,
+        schema: 'target_schema',
+      });
+
+      await expect(
+        adapter.restore({
+          filePath: os.tmpdir(),
+          schema: 'safe; touch /tmp/nocobase-cve-marker #',
+          skipDropAllTables: true,
+        }),
+      ).rejects.toThrow(/invalid PostgreSQL schema/i);
+
+      expect(mockedExec).not.toHaveBeenCalled();
+    });
+
+    it('restore function should reject unsafe target schema names before running commands', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter({
+        ...dbOpts,
+        schema: 'target; touch /tmp/nocobase-cve-marker #',
+      });
+
+      await expect(
+        adapter.restore({
+          filePath: os.tmpdir(),
+          schema: 'source_schema',
+          skipDropAllTables: true,
+        }),
+      ).rejects.toThrow(/invalid PostgreSQL schema/i);
+
+      expect(mockedExec).not.toHaveBeenCalled();
+    });
+
     it('restore function should not sync collection schema metadata when schema is unchanged', async () => {
       const mockedExec = cp.exec as unknown as Mock;
       mockedExec.mockClear();
@@ -233,6 +277,88 @@ describe('DatabaseAdapter', () => {
 
       const commands = mockedExec.mock.calls.map(([command]) => command);
       expect(commands.some((command) => command.includes('jsonb_set'))).toBe(false);
+    });
+  });
+
+  describe('KingbaseAdapter', () => {
+    const dbOpts: DatabaseOptions = {
+      dialect: 'kingbase',
+      username: 'test',
+      password: 'secret',
+      database: 'test',
+      host: 'localhost',
+      port: 54321,
+    } as DatabaseOptions;
+
+    it('uses Kingbase client tools by default', async () => {
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+      const dir = os.tmpdir();
+
+      await adapter.backup({ dir });
+      await adapter.restore({ filePath: os.tmpdir(), skipDropAllTables: true });
+
+      expect(adapter.backupToolchain).toBe('kingbase');
+      expect(mockedExec.mock.calls[0][0]).toContain('sys_dump');
+      expect(mockedExec.mock.calls[0][0]).toContain('--schema=public');
+      expect(mockedExec.mock.calls[0][1].env).toEqual(expect.objectContaining({ KINGBASE_PASSWORD: 'secret' }));
+      expect(mockedExec.mock.calls[1][0]).toContain('sys_restore');
+      expect(mockedExec.mock.calls[1][1].env).toEqual(expect.objectContaining({ KINGBASE_PASSWORD: 'secret' }));
+    });
+
+    it('falls back to PostgreSQL client tools when Kingbase tools are missing', async () => {
+      (cp.execSync as Mock).mockImplementation((command) => {
+        if (
+          String(command).includes('sys_dump') ||
+          String(command).includes('sys_restore') ||
+          String(command).includes('ksql')
+        ) {
+          throw new Error('Command not found');
+        }
+        return 'PostgreSQL 16.1';
+      });
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter(dbOpts);
+
+      await adapter.backup({ dir: os.tmpdir() });
+      await adapter.restore({ filePath: os.tmpdir(), skipDropAllTables: true });
+
+      expect(adapter.backupToolchain).toBe('postgres');
+      expect(mockedExec.mock.calls[0][0]).toContain('pg_dump');
+      expect(mockedExec.mock.calls[1][0]).toContain('pg_restore');
+    });
+
+    it('uses sys_restore schema remapping for Kingbase backup toolchain', async () => {
+      (cp.execSync as Mock).mockImplementation(() => 'KingbaseES V009R001C010');
+      const mockedExec = cp.exec as unknown as Mock;
+      mockedExec.mockClear();
+      mockedExec.mockImplementation((_command, _options, callback) => {
+        callback(null, { stdout: 'done' });
+      });
+      const adapter = getDBAdapter({
+        ...dbOpts,
+        schema: 'target_schema',
+      } as DatabaseOptions);
+
+      await adapter.restore({ filePath: os.tmpdir(), schema: 'source_schema', skipDropAllTables: true });
+
+      const commands = mockedExec.mock.calls.map(([command]) => command);
+      expect(commands.some((command) => command.includes('CREATE SCHEMA IF NOT EXISTS \\"target_schema\\"'))).toBe(
+        true,
+      );
+      expect(commands.some((command) => command.includes('sys_restore') && command.includes('-g source_schema'))).toBe(
+        true,
+      );
+      expect(commands.some((command) => command.includes('-G target_schema'))).toBe(true);
+      expect(commands.some((command) => command.includes('jsonb_set'))).toBe(true);
     });
   });
 

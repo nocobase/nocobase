@@ -3163,6 +3163,37 @@ class BaseFlowModelContext extends BaseFlowEngineContext {
   declare makeResource: <T extends FlowResource = FlowResource>(resourceType: ResourceType<T>) => T;
 }
 
+const OPEN_VIEW_INHERITED_INPUT_ARG_KEYS = [
+  'dataSourceKey',
+  'collectionName',
+  'associationName',
+  'filterByTk',
+  'sourceId',
+  'tabUid',
+];
+
+function pickDefinedKeys(source: Record<string, unknown> | null | undefined, keys: string[]) {
+  const res: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (typeof source?.[key] !== 'undefined') {
+      res[key] = source[key];
+    }
+  }
+  return res;
+}
+
+function pickDefinedOpenViewInputArgs(source?: Record<string, unknown> | null) {
+  return pickDefinedKeys(source, OPEN_VIEW_INHERITED_INPUT_ARG_KEYS);
+}
+
+function applyDefinedDefaults(target: Record<string, unknown>, defaults: Record<string, unknown>) {
+  for (const [key, value] of Object.entries(defaults)) {
+    if (typeof target[key] === 'undefined') {
+      target[key] = value;
+    }
+  }
+}
+
 export class FlowEngineContext extends BaseFlowEngineContext {
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
@@ -3745,7 +3776,14 @@ export class FlowModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('openView', async function (uid: string, options) {
-      const opts = { ...options };
+      const inheritedInputArgs = {
+        ...(typeof this.model?.['getInputArgs'] === 'function'
+          ? pickDefinedOpenViewInputArgs(this.model['getInputArgs']())
+          : {}),
+        ...pickDefinedOpenViewInputArgs(this.inputArgs),
+      };
+      const opts = { ...(options || {}) };
+      applyDefinedDefaults(opts, inheritedInputArgs);
       // NOTE: when custom context is passed, route navigation must be disabled to avoid losing it after refresh.
       if (opts.defineProperties || opts.defineMethods) {
         opts.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
@@ -3753,15 +3791,6 @@ export class FlowModelContext extends BaseFlowModelContext {
       let model: FlowModel | null = null;
       model = await this.engine.loadModel({ uid });
       if (!model) {
-        const pickDefined = (src: Record<string, any>, keys: string[]) => {
-          const res: Record<string, any> = {};
-          for (const k of keys) {
-            if (typeof src?.[k] !== 'undefined') {
-              res[k] = src[k];
-            }
-          }
-          return res;
-        };
         model = this.engine.createModel({
           uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
           use: 'PopupActionModel',
@@ -3772,7 +3801,7 @@ export class FlowModelContext extends BaseFlowModelContext {
             popupSettings: {
               openView: {
                 // 仅在创建时持久化一份默认配置；运行时以本次 opts 为准，避免多个 opener 互相覆盖。
-                ...pickDefined(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
+                ...pickDefinedKeys(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
               },
             },
           },
@@ -3792,8 +3821,6 @@ export class FlowModelContext extends BaseFlowModelContext {
       // 统一语义：为即将打开的外部视图定义一个 PendingView（占位视图）
       const pendingType = (opts?.isMobileLayout ? 'embed' : opts?.mode || 'drawer') as any;
       const pendingInputArgs = { ...opts, viewUid, navigation: opts.navigation };
-      pendingInputArgs.filterByTk = pendingInputArgs.filterByTk || this.inputArgs?.filterByTk;
-      pendingInputArgs.sourceId = pendingInputArgs.sourceId || this.inputArgs?.sourceId;
 
       const pendingView = {
         type: pendingType,
@@ -3812,17 +3839,10 @@ export class FlowModelContext extends BaseFlowModelContext {
       } else if (on && typeof on === 'object' && typeof (on as any).eventName === 'string' && (on as any).eventName) {
         openEventName = (on as any).eventName;
       }
-      await model.dispatchEvent(
-        openEventName,
-        {
-          // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
-          // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
-          ...opts,
-        },
-        {
-          debounce: true,
-        },
-      );
+      await model.dispatchEvent(openEventName, {
+        // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+        ...opts,
+      });
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();

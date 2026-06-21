@@ -15,7 +15,8 @@ import { AIEmployeeProfileCard } from '../../client-v2';
 export const ProfileCard: React.FC<{
   aiEmployee: AIEmployee;
   tasks?: Task[];
-}> = ({ aiEmployee, tasks }) => {
+  onTaskTriggered?: () => void;
+}> = ({ aiEmployee, tasks, onTaskTriggered }) => {
   tasks = tasks?.filter((task) => task.title) || [];
 
   const { triggerTask } = useChatBoxActions();
@@ -28,12 +29,13 @@ export const ProfileCard: React.FC<{
     <AIEmployeeProfileCard
       aiEmployee={aiEmployee}
       tasks={tasks}
-      onTaskClick={(task) =>
+      onTaskClick={(task) => {
+        onTaskTriggered?.();
         triggerTask({
           aiEmployee,
           tasks: [task as Task],
-        })
-      }
+        });
+      }}
     />
   );
 };

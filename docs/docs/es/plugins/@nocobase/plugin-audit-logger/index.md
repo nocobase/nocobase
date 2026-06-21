@@ -1,15 +1,17 @@
 ---
-displayName: "Registros de auditoría"
+title: "Audit logs"
+keywords: "Logging and monitoring"
+displayName: "Audit logs"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Rastree y documente las actividades de los usuarios y las acciones sobre los recursos en todo el sistema
+  Track and document user activities and resource actions across the system
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Registros de auditoría
+# Audit logs

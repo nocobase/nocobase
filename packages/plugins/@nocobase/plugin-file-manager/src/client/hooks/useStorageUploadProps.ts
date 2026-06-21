@@ -8,7 +8,6 @@
  */
 
 import {
-  getDataSourceHeaders,
   useCollection,
   useCollectionField,
   useCollectionManager,
@@ -19,15 +18,22 @@ import {
 import { useEffect } from 'react';
 import FileManagerPlugin from '../';
 
+function appendUploadDataSourceKey(url: string, dataSourceKey?: string) {
+  if (!dataSourceKey || dataSourceKey === 'main') {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}uploadDataSourceKey=${encodeURIComponent(dataSourceKey)}`;
+}
+
 export function useStorage(storage) {
   const name = storage ?? '';
-  const url = `storages:getBasicInfo/${name}`;
   const dataSourceKey = useDataSourceKey();
-  const headers = getDataSourceHeaders(dataSourceKey);
+  const url = appendUploadDataSourceKey(`storages:getBasicInfo/${name}`, dataSourceKey);
   const { loading, data, run } = useRequest<any>(
     {
       url,
-      headers,
     },
     {
       manual: true,
@@ -62,11 +68,11 @@ export function useStorageUploadProps(props) {
   const useStorageTypeUploadProps = storageType?.useUploadProps;
   const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
   const headers = {
-    ...getDataSourceHeaders(dataSourceKey),
     ...storageTypeUploadProps.headers,
   };
 
   return {
+    action: appendUploadDataSourceKey(props.action, dataSourceKey),
     rules: storage?.rules,
     ...storageTypeUploadProps,
     headers,

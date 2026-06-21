@@ -108,10 +108,14 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
 
     const registerModelLoaders = vi.fn();
     const registerActions = vi.fn();
+    const registerDynamicFlowSourceProvider = vi.fn();
     const add = vi.fn();
     const app = {
       flowEngine: {
         registerModelLoaders,
+        flowSettings: {
+          registerDynamicFlowSourceProvider,
+        },
         getAction: vi.fn(() => ({
           handler: vi.fn(),
           beforeParamsSave: vi.fn(),
@@ -139,6 +143,13 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
         }),
       );
       expect(registerActions).toHaveBeenCalledWith(expect.objectContaining({ openView: expect.any(Object) }));
+      expect(registerDynamicFlowSourceProvider).toHaveBeenCalledWith(
+        expect.objectContaining({
+          key: 'ui-templates-reference-block',
+          visible: expect.any(Function),
+          getSources: expect.any(Function),
+        }),
+      );
 
       const registeredModelLoaders = registerModelLoaders.mock.calls[0][0];
       const engine = new FlowEngine();

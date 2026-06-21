@@ -1,12 +1,14 @@
 ---
-displayName: "Utilisateurs"
+title: "Users"
+keywords: "Users & permissions"
+displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
-  Fournit un modèle d'utilisateur de base, ainsi que les champs 'Créé par' et 'Mis à jour par'.
+  Provides basic user model, as well as created by and updated by fields.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Utilisateurs
+# Users

@@ -1,5 +1,7 @@
 ---
-displayName: "Theme Editor"
+title: "Theme editor"
+keywords: "System management"
+displayName: "Theme editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
   Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
@@ -9,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Theme Editor
+# Theme editor

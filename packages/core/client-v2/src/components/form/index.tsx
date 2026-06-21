@@ -19,3 +19,4 @@ export * from './RemoteSelect';
 export * from './ScanInput';
 export * from './TypedVariableInput';
 export * from './VariableInput';
+export * from './VariableJsonTextArea';

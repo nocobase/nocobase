@@ -96,6 +96,15 @@ export async function abortExecution(
   const JobRepo = plugin.db.getRepository('jobs');
 
   try {
+    if (!transaction) {
+      return plugin.db.sequelize.transaction((transaction) =>
+        abortExecution(plugin, execution, {
+          ...options,
+          transaction,
+        }),
+      );
+    }
+
     const abortValues = {
       status: EXECUTION_STATUS.ABORTED,
       ...(options.reason
@@ -105,30 +114,24 @@ export async function abortExecution(
         : {}),
     };
 
-    if (transaction) {
-      const lockedExecution = await ExecutionRepo.findOne({
-        filterByTk: execution.id,
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
+    const expectedStatus =
+      typeof execution.status === 'undefined' ? EXECUTION_STATUS.STARTED : (execution.status as number | null);
 
-      if (!lockedExecution || lockedExecution.status !== EXECUTION_STATUS.STARTED) {
-        return false;
-      }
+    if (![EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED].includes(expectedStatus)) {
+      return false;
+    }
 
-      await lockedExecution.update(abortValues, { transaction });
-    } else {
-      const [affected] = await ExecutionRepo.model.update(abortValues, {
-        where: {
-          id: execution.id,
-          status: EXECUTION_STATUS.STARTED,
-        },
-        individualHooks: true,
-      });
+    const [affected] = await ExecutionRepo.model.update(abortValues, {
+      where: {
+        id: execution.id,
+        status: expectedStatus,
+      },
+      individualHooks: true,
+      transaction,
+    });
 
-      if (!affected) {
-        return false;
-      }
+    if (!affected) {
+      return false;
     }
 
     const updated = await JobRepo.update({
@@ -146,12 +149,15 @@ export async function abortExecution(
     const childExecutions = await plugin.db.getRepository('executions').find({
       filter: {
         parentExecutionId: execution.id,
-        status: EXECUTION_STATUS.STARTED,
+        status: [EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED],
       },
       transaction,
     });
 
     for (const child of childExecutions) {
+      if (![EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED].includes(child.status)) {
+        continue;
+      }
       await abortExecution(plugin, child, { transaction, reason: EXECUTION_REASON.PARENT_ABORTED });
     }
 
@@ -161,11 +167,7 @@ export async function abortExecution(
       plugin.timeoutManager.clear(execution.id);
       plugin.abortRunningExecution(execution.id, options.reason);
     };
-    if (transaction) {
-      afterTransactionCommit(transaction, updateLocalState);
-    } else {
-      updateLocalState();
-    }
+    afterTransactionCommit(transaction, updateLocalState);
 
     logger.info(`execution (${execution.id}) aborted`, {
       workflowId: execution.workflowId,

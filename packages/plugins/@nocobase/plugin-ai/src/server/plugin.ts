@@ -106,6 +106,46 @@ export class PluginAIServer extends Plugin {
       await this.ai.employeeManager.init();
       await this.ai.mcpManager.init();
     });
+    this.app.on('afterUpgrade', async () => {
+      await this.resetConversationThreadsWhenCheckpointsEmpty();
+    });
+  }
+
+  private async resetConversationThreadsWhenCheckpointsEmpty() {
+    const [checkpointCount, checkpointWriteCount, checkpointBlobCount, conversationsWithThreadCount] =
+      await Promise.all([
+        this.db.getRepository('lcCheckpoints').count(),
+        this.db.getRepository('lcCheckpointWrites').count(),
+        this.db.getRepository('lcCheckpointBlobs').count(),
+        this.db.getRepository('aiConversations').count({
+          filter: {
+            thread: {
+              $gt: 0,
+            },
+          },
+        }),
+      ]);
+
+    if (
+      checkpointCount > 0 ||
+      checkpointWriteCount > 0 ||
+      checkpointBlobCount > 0 ||
+      conversationsWithThreadCount <= 1
+    ) {
+      return;
+    }
+
+    await this.db.getRepository('aiConversations').update({
+      filter: {
+        thread: {
+          $gt: 0,
+        },
+      },
+      values: {
+        thread: 0,
+      },
+    });
+    this.app.logger.info(`Reset ${conversationsWithThreadCount} AI conversation threads after empty checkpoints`);
   }
 
   async load() {

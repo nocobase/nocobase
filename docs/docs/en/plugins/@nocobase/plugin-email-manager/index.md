@@ -1,5 +1,7 @@
 ---
-displayName: "Email Manager"
+title: "Email manager"
+keywords: "Blocks"
+displayName: "Email manager"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:
   - 1.x
@@ -12,4 +14,4 @@ defaultEnabled: false
 editionLevel: 3
 ---
 
-# Email Manager
+# Email manager

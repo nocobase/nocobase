@@ -1,58 +1,87 @@
 ---
 title: "Manajemen Release"
-description: "Alur release ops management: deployment multi-environment development, pre-release, production, kombinasi plugin variable dan secret, manajemen backup, manajemen migrasi, alur release single/multi development environment, konfigurasi rule migrasi."
-keywords: "manajemen release,Release,deployment multi-environment,development pre-release production,rule migrasi,ops management,NocoBase"
+description: "Praktik terbaik release: kontrol versi, multi-aplikasi, Backup Manager, dan Migration Manager untuk development, staging, dan production."
+keywords: "Manajemen Release,Release,kontrol versi,multi-aplikasi,Backup Manager,Migration Manager,NocoBase"
 ---
 
 # Manajemen Release
 
-## Pengantar
+## Pendahuluan
 
-Dalam aplikasi nyata, untuk memastikan keamanan data dan running aplikasi yang stabil, biasanya kita perlu men-deploy beberapa environment, contohnya environment development, pre-release, dan production. Dokumen ini akan menjelaskan secara detail cara mengimplementasikan manajemen release di NocoBase melalui dua alur pengembangan no-code yang umum.
+Manajemen release mengatur proses aplikasi dari development ke production. Proses ini harus dapat diulang, diverifikasi, dan dipulihkan. Selesaikan perubahan di development, validasi di staging, lalu publish ke production. Simpan file migrasi, backup, log eksekusi, dan hasil validasi.
 
-## Instalasi
+~~~text
+Development -> Staging -> Production
+~~~
 
-Tiga plugin yang diperlukan untuk manajemen release, pastikan plugin berikut sudah diaktifkan.
+## Model release
 
-### Variable dan Secret
+| Kapabilitas | Tujuan | Tahap |
+| --- | --- | --- |
+| Kontrol versi | Menyimpan checkpoint development | Development |
+| Variable dan secret | Memisahkan konfigurasi dan data sensitif | Semua environment |
+| Multi-aplikasi | Memisahkan modul bisnis | Arsitektur dan kolaborasi |
+| Backup Manager | Menyimpan kondisi production yang bisa dipulihkan | Sebelum release dan operasi |
+| Migration Manager | Mempublish konfigurasi dan struktur | Staging dan production |
 
-- Plugin built-in, default terinstal dan aktif.
-- Mengkonfigurasi dan mengelola environment variable dan secret secara terpusat, untuk penyimpanan data sensitif, reuse data konfigurasi, isolasi konfigurasi environment, dll ([lihat dokumen](../variables-and-secrets/index.md)).
+## Konfigurasi environment
 
-### Manajemen Backup
+Koneksi database, alamat layanan pihak ketiga, akun uji, token, API Key, dan Webhook sebaiknya memakai variable dan secret, bukan nilai hardcode di halaman, workflow, atau plugin.
 
-- Plugin ini hanya tersedia di versi professional dan di atasnya ([pelajari lebih lanjut](https://www.nocobase.com/en/commercial)).
-- Menyediakan fitur backup dan restore, mendukung scheduled backup, memastikan keamanan data dan recovery cepat ([lihat dokumen](../backup-manager/index.mdx)).
+Dokumentasi terkait: [Variable dan Secret](../variables-and-secrets/index.md).
 
-### Manajemen Migrasi
+## Tahap development
 
-- Plugin ini hanya tersedia di versi professional dan di atasnya ([pelajari lebih lanjut](https://www.nocobase.com/en/commercial)).
-- Digunakan untuk migrasi konfigurasi aplikasi dari satu environment aplikasi ke environment aplikasi lainnya ([lihat dokumen](../migration-manager/index.md)).
+Gunakan kontrol versi sebelum dan sesudah perubahan besar pada model data, halaman, permission, workflow, atau plugin. Untuk publish antar-environment gunakan Migration Manager. Untuk pemulihan production gunakan Backup Manager.
 
-## Alur Pengembangan No-Code Umum
+Dokumentasi terkait: [Kontrol versi](../version-control/index.md).
 
-### Single Development Environment, Release Satu Arah
+## Pemisahan modul
 
-Cocok untuk alur pengembangan sederhana. Environment development, pre-release, dan production masing-masing hanya satu, perubahan di-release dari environment development secara berurutan ke environment pre-release, dan akhirnya di-deploy ke environment production. Dalam alur ini, hanya environment development yang dapat memodifikasi konfigurasi, environment pre-release dan production tidak diizinkan untuk dimodifikasi.
+Sistem kecil dapat mulai dari satu aplikasi. Jika kompleksitas meningkat, pisahkan CRM, tiket, aset, HR, laporan, atau backend operasional menjadi aplikasi mandiri. Rencanakan user, organisasi, autentikasi, permission, dan data bersama lebih dulu.
+
+~~~text
+CRM: Development -> Staging -> Production
+Tiket: Development -> Staging -> Production
+Aset: Development -> Staging -> Production
+~~~
+
+Dokumentasi terkait: [Manajemen multi-aplikasi](../../multi-app/multi-app/index.md).
+
+## Persiapan
+
+Buat backup sebelum release production. Untuk release penting, uji restore di environment terpisah. Backup harus mencakup database, file upload, dan storage yang dibutuhkan aplikasi.
+
+Dokumentasi terkait: [Manajemen Backup](../backup-manager/index.mdx).
+
+## Eksekusi release
+
+Publish ke staging terlebih dahulu. Jika validasi berhasil, gunakan file migrasi yang sama untuk production.
 
 ![20250106234710](https://static-docs.nocobase.com/20250106234710.png)
 
-Saat mengkonfigurasi rule migrasi, tabel built-in core dan plugin pilih rule "Overwrite priority", lainnya dapat dibiarkan default jika tidak ada kebutuhan khusus
-
 ![20250105194845](https://static-docs.nocobase.com/20250105194845.png)
 
-### Multiple Development Environment, Merge Release
-
-Cocok untuk skenario kolaborasi multi-orang atau proyek kompleks. Beberapa environment development paralel dapat dikembangkan secara independen, semua perubahan digabungkan secara terpadu ke environment pre-release untuk testing dan validasi, akhirnya di-release ke environment production. Dalam alur ini, juga hanya environment development yang dapat memodifikasi konfigurasi, environment pre-release dan production tidak diizinkan untuk dimodifikasi.
-
-![20250107103829](https://static-docs.nocobase.com/20250107103829.png)
-
-Saat mengkonfigurasi rule migrasi, tabel built-in core dan plugin pilih rule "Insert or update priority", lainnya dapat dibiarkan default jika tidak ada kebutuhan khusus
-
-![20250105194942](https://static-docs.nocobase.com/20250105194942.png)
-
-## Rollback
-
-Sebelum eksekusi migrasi, akan dilakukan backup otomatis untuk aplikasi saat ini. Jika migrasi gagal atau hasilnya tidak sesuai harapan, Anda dapat melakukan rollback recovery melalui [Backup Manager](../backup-manager/index.mdx).
-
 ![20250105195029](https://static-docs.nocobase.com/20250105195029.png)
+
+Saat production release, gunakan maintenance window, beri tahu pengguna, dan cegah penulisan data baru. Pada multi-node, scale down ke satu node sebelum migrasi. Setelah selesai, validasi alur utama lalu pulihkan akses.
+
+### Aturan migrasi
+
+Strategi umum: overwrite, schema-only, dan skip. Tabel bawaan biasanya mengikuti strategi default. Tabel data bisnis buatan pengguna biasanya memakai schema-only. Tabel metadata dapat memakai overwrite sesuai skenario.
+
+Lihat: [Tabel bawaan aplikasi dan plugin utama](../migration-manager/built-in-tables.md).
+
+Dokumentasi terkait: [Manajemen Migrasi](../migration-manager/index.md).
+
+## Rollback dan pemulihan
+
+Jika release gagal, gunakan backup sebelum release. Restore di environment saat ini jika masih stabil; jika tidak, restore di environment terpisah, validasi, lalu alihkan traffic.
+
+## Dokumentasi terkait
+
+- [Variable dan Secret](../variables-and-secrets/index.md)
+- [Kontrol versi](../version-control/index.md)
+- [Manajemen multi-aplikasi](../../multi-app/multi-app/index.md)
+- [Manajemen Backup](../backup-manager/index.mdx)
+- [Manajemen Migrasi](../migration-manager/index.md)

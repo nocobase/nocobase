@@ -45,13 +45,13 @@ export default class SelfUpdate extends Command {
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --yes',
     '<%= config.bin %> <%= command.id %> --skills',
-    '<%= config.bin %> <%= command.id %> --channel alpha --json',
+    '<%= config.bin %> <%= command.id %> --channel test --json',
   ];
 
   static override flags = {
     channel: Flags.string({
       description: 'Release channel to update to. Defaults to the current CLI channel.',
-      options: ['auto', 'latest', 'beta', 'alpha'],
+      options: ['auto', 'latest', 'test', 'beta', 'alpha'],
       default: 'auto',
     }),
     yes: Flags.boolean({

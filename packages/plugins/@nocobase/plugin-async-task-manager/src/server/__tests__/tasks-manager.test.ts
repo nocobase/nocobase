@@ -11,6 +11,11 @@ import { AsyncTasksManager, CancelError } from '../interfaces/async-task-manager
 import { createMockServer, sleep } from '@nocobase/test';
 import { TaskType } from '../task-type';
 import { TASK_STATUS } from '../../common/constants';
+import type { ReadStream } from 'fs';
+import { randomUUID } from 'crypto';
+import fs from 'fs/promises';
+import asyncTasksResource from '../resourcers/async-tasks';
+import { Logger } from '@nocobase/logger';
 
 describe('task manager', () => {
   let taskManager: AsyncTasksManager;
@@ -162,6 +167,176 @@ describe('task manager', () => {
     });
 
     expect(finalTask.body.data.status).toBe(TASK_STATUS.SUCCEEDED);
+  });
+
+  it('should fetch task file by route resource index', async () => {
+    const filePath = `/tmp/async-task-manager-${randomUUID()}.txt`;
+    await fs.writeFile(filePath, 'task file content');
+
+    try {
+      const taskId = randomUUID();
+      await TaskRepo.create({
+        values: {
+          id: taskId,
+          type: 'test',
+          params: {},
+          status: TASK_STATUS.SUCCEEDED,
+          result: {
+            filePath,
+          },
+          createdById: root.id,
+        },
+      });
+
+      const response = await rootAgent.get(`/asyncTasks:fetchFile/${taskId}`);
+
+      expect(response.status).toBe(200);
+      expect(response.text ?? response.body.toString()).toBe('task file content');
+      expect(response.headers['content-disposition']).toContain('attachment; filename=async-task-manager-');
+    } finally {
+      await fs.unlink(filePath).catch(() => {});
+    }
+  });
+
+  it('should use resourceIndex when fetchFile has no filterByTk', async () => {
+    const filePath = `/tmp/async-task-manager-${randomUUID()}.txt`;
+    await fs.writeFile(filePath, 'task file content');
+
+    try {
+      const taskId = randomUUID();
+      const findOne = vi.fn().mockResolvedValue({
+        status: TASK_STATUS.SUCCEEDED,
+        result: {
+          filePath,
+        },
+      });
+      const set = vi.fn();
+      const next = vi.fn();
+      let body: ReadStream | undefined;
+      const ctx = {
+        action: {
+          params: {
+            resourceIndex: taskId,
+          },
+        },
+        auth: {
+          user: {
+            id: root.id,
+          },
+        },
+        app: {
+          db: {
+            getRepository: vi.fn().mockReturnValue({ findOne }),
+          },
+        },
+        get body() {
+          return body;
+        },
+        set body(value: ReadStream) {
+          body = value;
+        },
+        set,
+        throw(status: number, message: string) {
+          throw Object.assign(new Error(message), { status });
+        },
+      };
+
+      await asyncTasksResource.actions.fetchFile(ctx, next);
+
+      expect(findOne).toHaveBeenCalledWith({
+        where: {
+          id: taskId,
+          createdById: root.id,
+        },
+      });
+      expect(set).toHaveBeenCalledWith({
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': expect.stringContaining('attachment; filename=async-task-manager-'),
+      });
+      expect(next).toHaveBeenCalled();
+
+      if (!body) {
+        throw new Error('Expected fetchFile to set response body');
+      }
+      await new Promise<void>((resolve, reject) => {
+        body.once('error', reject);
+        body.once('open', () => {
+          body.destroy();
+        });
+        body.once('close', resolve);
+      });
+    } finally {
+      await fs.unlink(filePath).catch(() => {});
+    }
+  });
+
+  it('should run queued task with request id from the task creator context', async () => {
+    class LoggedTaskType extends TaskType {
+      static type = 'logged-test';
+
+      async execute() {
+        this.logger.info(`Logged task ${this.record.id} is running`);
+        this.reportProgress({
+          total: 1,
+          current: 1,
+        });
+        return {
+          completed: true,
+        };
+      }
+    }
+
+    const taskLogger = {
+      debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      trace: vi.fn(),
+    } as unknown as Logger;
+    const managerLogger = {
+      child: vi.fn(() => taskLogger),
+      debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      trace: vi.fn(),
+      warn: vi.fn(),
+    } as unknown as Logger;
+
+    taskManager.setLogger(managerLogger);
+    taskManager.registerTaskType(LoggedTaskType);
+
+    const task = await taskManager.createTask(
+      {
+        type: 'logged-test',
+        params: {},
+        createdById: root.id,
+      },
+      {
+        useQueue: true,
+        context: {
+          ...userContext,
+          reqId: 'creator-request-id',
+        },
+      },
+    );
+
+    const managerWithReqIds = taskManager as unknown as { taskReqIds: Map<string, string> };
+    expect(managerWithReqIds.taskReqIds.has(task.record.id)).toBe(false);
+
+    for (let i = 0; i < 20; i++) {
+      await task.record.reload();
+      if (task.record.status === TASK_STATUS.SUCCEEDED) {
+        break;
+      }
+      await sleep(50);
+    }
+
+    expect(task.record.status).toBe(TASK_STATUS.SUCCEEDED);
+    expect(managerLogger.child).toHaveBeenCalledWith({ reqId: 'creator-request-id' });
+    expect(managerLogger.child).toHaveBeenCalledTimes(2);
+    expect(taskLogger.debug).toHaveBeenCalledWith('Creating task of type: logged-test');
+    expect(taskLogger.info).toHaveBeenCalledWith(`New task of type: logged-test created as ${task.record.id}`);
+    expect(taskLogger.info).toHaveBeenCalledWith(`Logged task ${task.record.id} is running`);
+    expect(taskLogger.trace).toHaveBeenCalledWith(`Task ${task.record.id} of user(${root.id}) progress: 1 / 1`);
   });
 
   it('should cancel task correctly', async () => {

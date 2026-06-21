@@ -184,6 +184,8 @@ export default class AppDestroy extends Command {
     announceTargetEnv(runtime.envName);
 
     try {
+      const retryCommand = `nb env remove ${runtime.envName} --purge --force`;
+
       if (runtime.kind === 'docker') {
         startTask(`Removing Docker app container for "${runtime.envName}"...`);
         const state = await removeDockerContainerIfExists(runtime.containerName, {
@@ -236,7 +238,7 @@ export default class AppDestroy extends Command {
           const localAppPath = resolveManagedLocalAppPath(runtime);
           if (localAppPath && removesManagedLocalAppFiles) {
             startTask(`Removing managed local app files for "${runtime.envName}"...`);
-            await removePathIfExists(localAppPath, `managed app files for "${runtime.envName}"`);
+            await removePathIfExists(localAppPath, `managed app files for "${runtime.envName}"`, { retryCommand });
             succeedTask(`Managed local app files removed for "${runtime.envName}".`);
           } else {
             printInfo(`No saved local app path found for "${runtime.envName}".`);
@@ -250,14 +252,14 @@ export default class AppDestroy extends Command {
         ];
         startTask(`Removing proxy entry files for "${runtime.envName}"...`);
         for (const proxyEntryDir of proxyEntryDirs) {
-          await removePathIfExists(proxyEntryDir, `proxy entry files for "${runtime.envName}"`);
+          await removePathIfExists(proxyEntryDir, `proxy entry files for "${runtime.envName}"`, { retryCommand });
         }
         succeedTask(`Proxy entry files removed for "${runtime.envName}".`);
 
         const configuredStoragePath = resolveConfiguredStoragePath(runtime.env.config);
         if (configuredStoragePath) {
           startTask(`Removing storage data for "${runtime.envName}"...`);
-          await removePathIfExists(configuredStoragePath, `storage data for "${runtime.envName}"`);
+          await removePathIfExists(configuredStoragePath, `storage data for "${runtime.envName}"`, { retryCommand });
           succeedTask(`Storage data removed for "${runtime.envName}".`);
         } else {
           printInfo(`No saved storage path found for "${runtime.envName}".`);

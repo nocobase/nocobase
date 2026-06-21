@@ -1,4 +1,10 @@
 {
+  "entry": {
+    "windowsAdministratorRequired": {
+      "message": "Windows 上运行 NocoBase CLI 必须使用管理员模式。",
+      "hint": "请以管理员身份打开终端，然后重新执行命令。"
+    }
+  },
   "promptCatalog": {
     "common": {
       "cancelled": "已取消。",
@@ -399,7 +405,7 @@
         "envExists": "Env \"{{envName}}\" 已存在，请换一个 env name。"
       },
       "messages": {
-        "title": "配置供 Coding Agents 使用的 NocoBase",
+        "title": "配置 NocoBase",
         "appNameRequiredWhenSkipped": "跳过 prompts 时必须提供 Env name。",
         "appNameEnvHelp": "请使用 `nb init --yes --env <envName>` 继续。",
         "resumeEnvRequired": "恢复安装时必须提供 Env name。",
@@ -437,9 +443,9 @@
         }
       },
       "webUi": {
-        "pageTitle": "配置供 Coding Agents 使用的 NocoBase",
-        "documentHeading": "配置供 Coding Agents 使用的 NocoBase",
-        "documentHint": "安装一个新的应用、接管本机已有应用，或连接远程应用，让 Coding Agents 可以在当前工作区中访问和操作 NocoBase。",
+        "pageTitle": "配置 NocoBase",
+        "documentHeading": "配置 NocoBase",
+        "documentHint": "安装一个新的应用、管理已有应用，或连接远程应用。你可以直接使用它，也可以稍后让 coding agent 访问它。",
         "gettingStarted": {
           "title": "开始设置",
           "description": "选择新安装、本机接管，或远程连接。"

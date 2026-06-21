@@ -1,12 +1,14 @@
 ---
-displayName: "Flujo de trabajo: Nodo de retraso"
+title: "Workflow: Delay node"
+keywords: "Workflow"
+displayName: "Workflow: Delay node"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Puede utilizarse en ramas paralelas de un flujo de trabajo para esperar a que otras ramas completen su ejecución.
+  Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Flujo de trabajo: Nodo de retraso
+# Workflow: Delay node
