@@ -932,6 +932,37 @@ describe('GanttBlockModel settings', () => {
     expect(model.clearStoredPopupSettings).toHaveBeenCalled();
   });
 
+  test('keeps popup template copy mode when saving gantt popup settings', async () => {
+    const step = (GanttBlockModel as any).globalFlowRegistry.getFlow('ganttSettings')?.steps?.eventPopupSettings;
+    const previousParams = {
+      mode: 'drawer',
+      size: 'medium',
+      uid: 'u_template_copy_popup',
+      dataSourceKey: 'main',
+      collectionName: 'templateTasks',
+      popupTemplateContext: true,
+      filterByTk: '{{ ctx.record.id }}',
+    };
+    const openViewBeforeParamsSave = vi.fn();
+    const action = { uid: 'u_event_popup' };
+    const model = {
+      getAction: vi.fn(() => ({
+        beforeParamsSave: openViewBeforeParamsSave,
+      })),
+      getPopupActionSettings: vi.fn(() => previousParams),
+      setPopupActionSettings: vi.fn(),
+      clearStoredPopupSettings: vi.fn(),
+      ensurePopupAction: vi.fn().mockResolvedValue(action),
+    };
+    const params = { ...previousParams };
+
+    await step?.beforeParamsSave?.({ model } as any, params);
+
+    expect(openViewBeforeParamsSave).toHaveBeenCalledWith({ model }, params, previousParams);
+    expect(model.setPopupActionSettings).toHaveBeenCalledWith(action, previousParams, { persist: true });
+    expect(model.clearStoredPopupSettings).toHaveBeenCalled();
+  });
+
   test('dispatches the hidden popup action so openView template handling can run', async () => {
     const flowEngine = new FlowEngine();
     flowEngine.registerModels({ GanttBlockModel, GanttEventViewActionModel });

@@ -27,6 +27,10 @@ const getPopupTemplateUid = (params?: Record<string, any>) => {
   return typeof params?.popupTemplateUid === 'string' ? params.popupTemplateUid.trim() : '';
 };
 
+const isPopupTemplateCopyMode = (params?: Record<string, any>) => {
+  return params?.popupTemplateContext === true;
+};
+
 const shouldHideGanttTreeSetting = (ctx: { model: any; view?: any }) => {
   const model = getGanttModel(ctx);
   return !model.isTreeCollection() || ctx.view?.inputArgs?.scene === 'select';
@@ -494,7 +498,7 @@ export function registerGanttBlockModelSettings(GanttBlockModel: any) {
           const model = getGanttModel(ctx);
           const action = await model.ensurePopupAction('eventViewAction');
           const storedParams = model.getPopupActionSettings(action);
-          if (!getPopupTemplateUid(params)) {
+          if (!getPopupTemplateUid(params) && !isPopupTemplateCopyMode(params)) {
             const defaults = model.getPopupSettingsDefaults(action?.uid);
             Object.assign(params, {
               uid: defaults.uid,
