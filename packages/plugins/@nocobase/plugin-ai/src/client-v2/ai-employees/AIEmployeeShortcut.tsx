@@ -134,9 +134,10 @@ export const AIEmployeeShortcut: React.FC<{
       if (!resolvedAIEmployee) {
         return;
       }
-      openGlobalChatBox([task]).catch(console.error);
+      syncShortcutContext();
+      triggerTask({ aiEmployee: resolvedAIEmployee, tasks: [task] }).catch(console.error);
     },
-    [onTaskClick, openGlobalChatBox, resolvedAIEmployee],
+    [onTaskClick, resolvedAIEmployee, syncShortcutContext, triggerTask],
   );
 
   const handleClick = useCallback(() => {
@@ -162,7 +163,6 @@ export const AIEmployeeShortcut: React.FC<{
           loadingTaskTitle={loadingTaskTitle}
         />
       }
-      placement="bottomRight"
     >
       <span
         style={{ cursor: 'pointer', display: 'inline-block' }}

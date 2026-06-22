@@ -27,31 +27,27 @@ export const AIEmployeeProfileCard: React.FC<{
   }
 
   return (
-    <div style={{ width: token.screenXS, paddingBlock: token.paddingXXS, paddingInline: token.paddingSM }}>
-      <Flex align="center" gap="small">
-        <Avatar
-          src={aiEmployee.avatar ? avatars(aiEmployee.avatar) : undefined}
-          size={token.controlHeightLG}
-          style={{ flexShrink: 0 }}
-        />
+    <div style={{ width: 260, padding: '4px 8px' }}>
+      <Flex align="center" gap={10}>
+        <Avatar src={aiEmployee.avatar ? avatars(aiEmployee.avatar) : undefined} size={40} style={{ flexShrink: 0 }} />
         <Flex vertical>
-          <span style={{ fontSize: token.fontSize, color: token.colorText, lineHeight: token.lineHeight }}>
+          <span style={{ fontSize: token.fontSize, color: token.colorText, lineHeight: 1.4 }}>
             {aiEmployee.nickname}
           </span>
-          <span style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary, lineHeight: token.lineHeight }}>
+          <span style={{ fontSize: token.fontSizeSM, color: token.colorTextTertiary, lineHeight: 1.4 }}>
             {aiEmployee.position}
           </span>
         </Flex>
       </Flex>
       {aiEmployee.bio ? (
         <>
-          <Divider style={{ marginBlock: token.marginXS }} />
+          <Divider style={{ margin: '8px 0' }} />
           <Typography.Paragraph
             style={{
               marginBottom: 0,
               fontSize: token.fontSizeSM,
               color: token.colorTextSecondary,
-              lineHeight: token.lineHeight,
+              lineHeight: 1.6,
             }}
           >
             {aiEmployee.bio}
@@ -59,7 +55,7 @@ export const AIEmployeeProfileCard: React.FC<{
         </>
       ) : null}
       {visibleTasks.length ? (
-        <Flex gap="small" wrap={true} style={{ marginTop: token.marginXS }}>
+        <Flex gap="4px 4px" wrap={true} style={{ marginTop: 8 }}>
           {visibleTasks.map((task, index) => (
             <Tag
               key={index}

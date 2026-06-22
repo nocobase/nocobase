@@ -17,7 +17,7 @@ import {
   RecordActionGroupModel,
 } from '@nocobase/client-v2';
 import { type FlowModelContext } from '@nocobase/flow-engine';
-import { Avatar, Flex, Popover, Typography, theme } from 'antd';
+import { Avatar, Flex, Popover, theme } from 'antd';
 import { AIEmployeeProfileCard } from '../../ai-employees/ProfileCard';
 import { avatars } from '../../ai-employees/avatars';
 import type { AIEmployee } from '../../ai-employees/types';
@@ -33,15 +33,27 @@ const AIEmployeeListItem: React.FC<{
 
   return (
     <Popover content={<AIEmployeeProfileCard aiEmployee={aiEmployee} />} placement="leftTop">
-      <Flex align="center" gap="small">
-        <Avatar shape="circle" size={token.controlHeightLG} src={avatars(aiEmployee.avatar)} />
-        <Flex vertical>
-          <Typography.Text style={{ fontSize: token.fontSizeSM, lineHeight: token.lineHeight }}>
+      <Flex align="center" style={{ padding: '4px 2px' }} gap={8}>
+        <Avatar shape="circle" size={36} src={avatars(aiEmployee.avatar)} />
+        <Flex vertical={true}>
+          <div
+            style={{
+              fontSize: token.fontSizeSM,
+              color: token.colorText,
+              lineHeight: 1.4,
+            }}
+          >
             {aiEmployee.nickname}
-          </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, lineHeight: token.lineHeight }}>
+          </div>
+          <div
+            style={{
+              fontSize: token.fontSizeSM,
+              color: token.colorTextSecondary,
+              lineHeight: 1.4,
+            }}
+          >
             {aiEmployee.position}
-          </Typography.Text>
+          </div>
         </Flex>
       </Flex>
     </Popover>
