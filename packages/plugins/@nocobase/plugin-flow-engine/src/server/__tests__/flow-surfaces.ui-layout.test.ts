@@ -29,6 +29,7 @@ function findRouteBySchemaUid(routes: any[], schemaUid: string): any {
 describe('flowSurfaces UI layout integration', () => {
   let app: MockServer;
   let rootAgent: any;
+  let memberAgent: any;
 
   beforeAll(async () => {
     app = await createFlowSurfacesMockServer({
@@ -36,6 +37,12 @@ describe('flowSurfaces UI layout integration', () => {
       enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'ui-layout'],
     });
     rootAgent = await loginFlowSurfacesRootAgent(app);
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['member'],
+      },
+    });
+    memberAgent = await app.agent().login(memberUser);
   }, 120000);
 
   afterAll(async () => {
@@ -103,7 +110,9 @@ describe('flowSurfaces UI layout integration', () => {
     expect(tabLayoutUids).toContain(DEFAULT_ADMIN_UI_LAYOUT_UID);
 
     const accessibleRoutes = getData(
-      await rootAgent.get('/desktopRoutes:listAccessible').query({
+      await memberAgent.get('/desktopRoutes:listAccessible').query({
+        tree: true,
+        sort: 'sort',
         layout: DEFAULT_ADMIN_UI_LAYOUT_UID,
       }),
     );
