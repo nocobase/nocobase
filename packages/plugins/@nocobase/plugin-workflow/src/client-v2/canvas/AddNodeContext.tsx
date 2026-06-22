@@ -19,7 +19,7 @@
 
 import React, { lazy, Suspense, useMemo, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
-import { App, Button, Form, Menu, Skeleton, Space } from 'antd';
+import { App, Button, Form, Menu, Skeleton, Space, Tooltip } from 'antd';
 import { css } from '@emotion/css';
 import { DialogFormLayout } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext, useFlowView } from '@nocobase/flow-engine';
@@ -30,10 +30,11 @@ import { useT } from '../locale';
 import { PluginWorkflowClientV2 } from '../plugin';
 import type { Instruction } from './Instruction';
 import DownstreamBranchIndex, { getDownstreamBranchOptions } from './DownstreamBranchIndex';
-import { AddNodeContext, useAddNodeContext } from './AddNodeContext.shared';
+import { AddNodeContext, useAddNodeContext, type SharedAddNodeAnchor } from './AddNodeContext.shared';
 import { createNodeAndMaybeReparent, resolveAddNodeDecision } from './addNodeController';
+import { getInstructionAvailable } from './instructionAvailability';
 
-type Anchor = { upstream?: any; branchIndex?: number | null };
+type Anchor = SharedAddNodeAnchor;
 
 // Two-column grouped menu — mirrors v1's `.ant-menu-item-group-list` grid.
 const menuGridClass = css`
@@ -140,7 +141,7 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
 
   const [creating, setCreating] = useState<{ upstreamId: any; branchIndex: number | null } | null>(null);
 
-  const buildItems = useMemoizedFn((): MenuProps['items'] => {
+  const buildItems = useMemoizedFn((anchor: Anchor): MenuProps['items'] => {
     const instructionList = Array.from(plugin?.instructions?.getValues?.() ?? []) as Instruction[];
     const groupList = Array.from(plugin?.instructionGroups?.getValues?.() ?? []) as Array<{
       key: string;
@@ -150,7 +151,16 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
       .map((group) => {
         const children = instructionList
           .filter((item) => item.group === group.key)
-          .map((item) => ({ key: item.type, label: t(item.title as string), icon: item.icon }));
+          .map((item) => {
+            const unavailableMessage = getInstructionAvailable(item, { engine: plugin, workflow, ...anchor, t });
+            const title = t(item.title as string);
+            return {
+              key: item.type,
+              label: unavailableMessage ? <Tooltip title={unavailableMessage}>{title}</Tooltip> : title,
+              icon: item.icon,
+              disabled: Boolean(unavailableMessage),
+            };
+          });
         return children.length ? { type: 'group' as const, key: group.key, label: t(group.label), children } : null;
       })
       .filter(Boolean) as MenuProps['items'];
@@ -198,6 +208,8 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
         workflow,
         nodes: nodes ?? [],
         getInstruction: (instructionType) => plugin?.getInstruction(instructionType),
+        getInstructionAvailable: (instruction, context) =>
+          getInstructionAvailable(instruction, { ...context, engine: plugin, t }),
         translateTitle: (title) => t(title),
       },
     });
@@ -240,7 +252,7 @@ export function AddNodeContextProvider(props: { children: React.ReactNode }) {
   });
 
   const onMenuOpen = useMemoizedFn((anchor: Anchor) => {
-    const items = buildItems();
+    const items = buildItems(anchor);
     ctx.viewer.drawer({
       width: '50%',
       closable: true,
