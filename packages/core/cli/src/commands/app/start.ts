@@ -36,6 +36,14 @@ import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 import { readManagedRuntimeEnvValues } from '../../lib/managed-env-file.js';
 import { run } from '../../lib/run-npm.js';
 import { announceTargetEnv, failTask, printInfo, printWarning, startTask, succeedTask } from '../../lib/ui.js';
+import {
+  buildHookContext,
+  resolveHookScriptPath,
+  runHookScriptHook,
+  type HookCommand,
+  type HookName,
+  type HookPhase,
+} from '../../lib/hook-script.js';
 
 function shouldPrintStartSuccess(): boolean {
   return process.env.NB_SKIP_APP_START_SUCCESS_LOG !== '1';
@@ -61,6 +69,69 @@ function buildLicenseSyncArgv(
     argv.push('--verbose');
   }
   return argv;
+}
+
+function resolveHookCommand(value: unknown): HookCommand {
+  const text = String(value ?? '').trim();
+  if (text === 'app:restart' || text === 'app:upgrade') {
+    return text;
+  }
+  return 'app:start';
+}
+
+function resolveAppStartHookPhase(options: { isPreparedEnv: boolean; command: HookCommand }): HookPhase {
+  if (options.isPreparedEnv) {
+    return 'init';
+  }
+  if (options.command === 'app:upgrade') {
+    return 'upgrade';
+  }
+  return 'app-start';
+}
+
+async function runRuntimeHookIfNeeded(params: {
+  hookName: HookName;
+  runtime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>;
+  phase: HookPhase;
+  command: HookCommand;
+}): Promise<void> {
+  const hookScript = params.runtime.env.config?.hookScript;
+  if (!hookScript) {
+    return;
+  }
+
+  const hookScriptPath = resolveHookScriptPath({
+    appPath: params.runtime.env.appPath,
+    hookScript,
+  });
+  if (!hookScriptPath) {
+    return;
+  }
+
+  const context = buildHookContext({
+    phase: params.phase,
+    command: params.command,
+    envName: params.runtime.envName,
+    source: params.runtime.source,
+    version: params.runtime.env.config?.downloadVersion,
+    appPath: params.runtime.env.appPath,
+    sourcePath: params.runtime.env.sourcePath,
+    storagePath: params.runtime.env.storagePath,
+    hookScript: String(hookScript).trim(),
+    envConfig:
+      params.hookName === 'afterAppStart' && params.phase === 'init'
+        ? { ...params.runtime.env.config, setupState: 'installed' }
+        : params.runtime.env.config,
+  });
+  if (!context) {
+    return;
+  }
+
+  await runHookScriptHook({
+    hookScriptPath,
+    hookName: params.hookName,
+    context,
+  });
 }
 
 async function runWithSuppressedTargetEnvLog<T>(task: () => Promise<T>): Promise<T> {
@@ -229,6 +300,10 @@ export default class AppStart extends Command {
       description: 'Show raw startup output from the underlying local or Docker command',
       default: false,
     }),
+    'hook-command': Flags.string({
+      hidden: true,
+      options: ['app:start', 'app:restart', 'app:upgrade'],
+    }),
   };
 
   public async run(): Promise<void> {
@@ -252,6 +327,12 @@ export default class AppStart extends Command {
     const runtime = await resolveManagedAppRuntime(requestedEnv);
     const preparedInitEnvVars = buildInitAppEnvVarsFromConfig(runtime?.env.config);
     const isPreparedEnv = isPreparedSetupState(runtime?.env.config?.setupState);
+    const hookCommand = resolveHookCommand(flags['hook-command']);
+    const hookPhase = resolveAppStartHookPhase({
+      isPreparedEnv,
+      command: hookCommand,
+    });
+    const shouldRunBeforeAppInstall = isPreparedEnv || hookCommand === 'app:upgrade';
     const runCommand = this.config.runCommand.bind(this.config) as (id: string, argv?: string[]) => Promise<unknown>;
     const commandStdio = flags.verbose ? 'inherit' : 'ignore';
     if (!runtime) {
@@ -331,6 +412,14 @@ export default class AppStart extends Command {
           errorName: 'docker rm',
           stdio: commandStdio,
         }).catch(() => undefined);
+        if (shouldRunBeforeAppInstall) {
+          await runRuntimeHookIfNeeded({
+            hookName: 'beforeAppInstall',
+            runtime,
+            phase: hookPhase,
+            command: hookCommand,
+          });
+        }
         await recreateSavedDockerApp(runtime, {
           initEnvVars: isPreparedEnv ? preparedInitEnvVars : undefined,
           verbose: flags.verbose,
@@ -351,6 +440,12 @@ export default class AppStart extends Command {
       if (isPreparedEnv) {
         await finalizePreparedEnv(runtime.envName);
       }
+      await runRuntimeHookIfNeeded({
+        hookName: 'afterAppStart',
+        runtime,
+        phase: hookPhase,
+        command: hookCommand,
+      });
       if (shouldPrintStartSuccess()) {
         succeedTask(`NocoBase is running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`);
       }
@@ -368,6 +463,8 @@ export default class AppStart extends Command {
       const downloadableRuntime = runtime as typeof runtime & { source: 'npm' | 'git' };
       await ensureSavedLocalSource(downloadableRuntime, runCommand, {
         verbose: flags.verbose,
+        hookPhase: isPreparedEnv ? 'init' : 'restore',
+        hookCommand,
         onStartTask: startTask,
         onSucceedTask: succeedTask,
         onFailTask: failTask,
@@ -485,6 +582,14 @@ export default class AppStart extends Command {
             ...managedAppLifecycleEnvVars(),
             ...(isPreparedEnv ? preparedInitEnvVars : {}),
           };
+      if (shouldRunBeforeAppInstall) {
+        await runRuntimeHookIfNeeded({
+          hookName: 'beforeAppInstall',
+          runtime,
+          phase: hookPhase,
+          command: hookCommand,
+        });
+      }
       await runLocalNocoBaseCommand(runtime, npmArgs, {
         env: startEnv,
         stdio: commandStdio,
@@ -498,6 +603,12 @@ export default class AppStart extends Command {
         if (isPreparedEnv) {
           await finalizePreparedEnv(runtime.envName);
         }
+        await runRuntimeHookIfNeeded({
+          hookName: 'afterAppStart',
+          runtime,
+          phase: hookPhase,
+          command: hookCommand,
+        });
         if (shouldPrintStartSuccess()) {
           succeedTask(`NocoBase is running for "${runtime.envName}"${appUrl ? ` at ${appUrl}` : ''}.`);
         }

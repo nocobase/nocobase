@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'crypto';
-import type { HasManyRepository } from '@nocobase/database';
+import type { BelongsToManyRepository, HasManyRepository, TargetKey } from '@nocobase/database';
 import type { Plugin } from '@nocobase/server';
 import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
@@ -1291,6 +1291,8 @@ type FlowSurfaceApplyBlueprintResponse = {
   surface: any;
 };
 
+const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
+
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
 
@@ -1677,6 +1679,121 @@ export class FlowSurfacesService {
     };
   }
 
+  private hasDesktopRouteUiLayoutsRelation() {
+    try {
+      return !!this.db.getCollection('uiLayouts') && !!this.db.getCollection('desktopRoutes')?.getField?.('uiLayouts');
+    } catch (error) {
+      return false;
+    }
+  }
+
+  private normalizeDesktopRouteRelationId(routeId: unknown): TargetKey | undefined {
+    return _.isNil(routeId) ? undefined : (routeId as TargetKey);
+  }
+
+  private async readDesktopRouteUiLayoutUids(routeId: unknown, transaction?: any): Promise<string[]> {
+    const relationRouteId = this.normalizeDesktopRouteRelationId(routeId);
+    if (_.isUndefined(relationRouteId) || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return [];
+    }
+
+    const uiLayouts = await this.db
+      .getRepository<BelongsToManyRepository>('desktopRoutes.uiLayouts', relationRouteId)
+      .find({
+        fields: ['uid'],
+        transaction,
+      });
+
+    return _.uniq(
+      uiLayouts.map((uiLayout: any) => String(uiLayout?.get?.('uid') || uiLayout?.uid || '').trim()).filter(Boolean),
+    );
+  }
+
+  private async resolveDefaultDesktopRouteUiLayoutUids(transaction?: any): Promise<string[]> {
+    if (!this.hasDesktopRouteUiLayoutsRelation()) {
+      return [];
+    }
+
+    const defaultLayout = await this.db.getRepository('uiLayouts').findOne({
+      filter: {
+        uid: DEFAULT_ADMIN_UI_LAYOUT_UID,
+        enabled: true,
+      },
+      transaction,
+    });
+
+    return defaultLayout ? [DEFAULT_ADMIN_UI_LAYOUT_UID] : [];
+  }
+
+  private async resolveInheritedDesktopRouteUiLayoutUids(parentRoute: any, transaction?: any): Promise<string[]> {
+    const parentRouteId = this.readRouteField(parentRoute, 'id');
+    if (!_.isNil(parentRouteId)) {
+      const parentLayoutUids = await this.readDesktopRouteUiLayoutUids(parentRouteId, transaction);
+      if (parentLayoutUids.length) {
+        return parentLayoutUids;
+      }
+    }
+
+    return this.resolveDefaultDesktopRouteUiLayoutUids(transaction);
+  }
+
+  private async setDesktopRouteUiLayouts(routeId: unknown, uiLayoutUids: string[], transaction?: any) {
+    const relationRouteId = this.normalizeDesktopRouteRelationId(routeId);
+    if (_.isUndefined(relationRouteId) || !uiLayoutUids.length || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return;
+    }
+
+    await this.db.getRepository<BelongsToManyRepository>('desktopRoutes.uiLayouts', relationRouteId).set({
+      tk: uiLayoutUids,
+      transaction,
+    });
+  }
+
+  private async attachDesktopRouteUiLayoutsToRouteAndChildren(
+    routeId: unknown,
+    uiLayoutUids: string[],
+    transaction?: any,
+  ) {
+    if (_.isNil(routeId) || !uiLayoutUids.length || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return;
+    }
+
+    await this.setDesktopRouteUiLayouts(routeId, uiLayoutUids, transaction);
+    const children = await this.db.getRepository('desktopRoutes').find({
+      fields: ['id'],
+      filter: {
+        parentId: routeId,
+      },
+      transaction,
+    });
+
+    for (const child of children) {
+      await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
+        this.readRouteField(child, 'id'),
+        uiLayoutUids,
+        transaction,
+      );
+    }
+  }
+
+  private async ensureDesktopRouteUiLayouts(route: any, transaction?: any): Promise<string[]> {
+    const routeId = this.readRouteField(route, 'id');
+    if (_.isNil(routeId) || !this.hasDesktopRouteUiLayoutsRelation()) {
+      return [];
+    }
+
+    const existingLayoutUids = await this.readDesktopRouteUiLayoutUids(routeId, transaction);
+    if (existingLayoutUids.length) {
+      return existingLayoutUids;
+    }
+
+    const parentRouteId = this.readRouteField(route, 'parentId');
+    const parentRoute = _.isNil(parentRouteId) ? null : await this.findMenuRouteById(parentRouteId, transaction);
+    const inheritedLayoutUids = await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, transaction);
+    await this.setDesktopRouteUiLayouts(routeId, inheritedLayoutUids, transaction);
+    return inheritedLayoutUids;
+  }
+
   private isValidMenuIconName(value: any) {
     const normalized = String(value || '').trim();
     return !!normalized && ANT_DESIGN_ICON_NAMES.has(normalized);
@@ -1770,7 +1887,7 @@ export class FlowSurfacesService {
     this.assertVisibleNavigationIcon('createMenu', 'values', values);
     const schemaUid = values.schemaUid || uid();
     const desktopRoutes = this.db.getRepository('desktopRoutes');
-    await desktopRoutes.create({
+    const route = await desktopRoutes.create({
       values: {
         type: 'group',
         sort: this.allocateRouteSortValue(),
@@ -1783,10 +1900,11 @@ export class FlowSurfacesService {
       },
       transaction,
     });
-    const route = await desktopRoutes.findOne({
-      filter: { schemaUid },
+    await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
+      this.readRouteField(route, 'id'),
+      await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, transaction),
       transaction,
-    });
+    );
     return this.buildMenuResult(route);
   }
 
@@ -1802,7 +1920,7 @@ export class FlowSurfacesService {
     const tabTitle = values.tabTitle || 'Untitled';
     const desktopRoutes = this.db.getRepository('desktopRoutes');
 
-    await desktopRoutes.create({
+    const createdRoute = await desktopRoutes.create({
       values: {
         type: 'flowPage',
         sort: this.allocateRouteSortValue(),
@@ -1837,6 +1955,11 @@ export class FlowSurfacesService {
       },
       transaction,
     });
+    await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
+      this.readRouteField(createdRoute, 'id'),
+      await this.resolveInheritedDesktopRouteUiLayoutUids(parentRoute, transaction),
+      transaction,
+    );
 
     const route = await desktopRoutes.findOne({
       filter: { schemaUid: pageSchemaUid },
@@ -7893,7 +8016,7 @@ export class FlowSurfacesService {
       throwBadRequest('flowSurfaces updateMenu requires menuRouteId');
     }
     const route = await this.assertMenuRouteUpdatable(menuRouteId, options.transaction);
-    await this.assertMenuParentIsGroup(values.parentMenuRouteId, options.transaction);
+    const nextParentRoute = await this.assertMenuParentIsGroup(values.parentMenuRouteId, options.transaction);
     await this.assertMenuParentNotSelfOrDescendant(route, values.parentMenuRouteId, options.transaction);
 
     const nextOptions = { ...this.readRouteOptions(route) };
@@ -7926,6 +8049,13 @@ export class FlowSurfacesService {
       });
     }
     const updated = await this.findMenuRouteById(menuRouteId, options.transaction);
+    if (updated && Object.prototype.hasOwnProperty.call(values, 'parentMenuRouteId')) {
+      await this.attachDesktopRouteUiLayoutsToRouteAndChildren(
+        this.readRouteField(updated, 'id'),
+        await this.resolveInheritedDesktopRouteUiLayoutUids(nextParentRoute, options.transaction),
+        options.transaction,
+      );
+    }
     return this.buildMenuResult(updated);
   }
 
@@ -7934,6 +8064,7 @@ export class FlowSurfacesService {
     const pageSchemaUid = this.readRouteField(route, 'schemaUid');
     const structure = await this.loadRouteBackedPageStructure(route, transaction);
     let tabRoute = structure.tabRoutes[0];
+    const routeUiLayoutUids = await this.ensureDesktopRouteUiLayouts(route, transaction);
     const routeOptions = this.readRouteOptions(route);
     if (!routeOptions[FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY]) {
       throwBadRequest(`flowSurfaces createPage only accepts a bindable menu route created by createMenu(type="item")`);
@@ -7956,7 +8087,7 @@ export class FlowSurfacesService {
       const tabSchemaUid = values.tabSchemaUid || uid();
       const tabSchemaName = values.tabSchemaName || uid();
       const tabTitle = values.tabTitle || 'Untitled';
-      await this.db.getRepository('desktopRoutes').create({
+      tabRoute = await this.db.getRepository('desktopRoutes').create({
         values: {
           type: 'tabs',
           sort: this.allocateRouteSortValue(1),
@@ -7973,10 +8104,7 @@ export class FlowSurfacesService {
         },
         transaction,
       });
-      tabRoute = await this.db.getRepository('desktopRoutes').findOne({
-        filter: { schemaUid: tabSchemaUid },
-        transaction,
-      });
+      await this.setDesktopRouteUiLayouts(this.readRouteField(tabRoute, 'id'), routeUiLayoutUids, transaction);
     } else {
       await this.db.getRepository('desktopRoutes').update({
         filterByTk: String(this.readRouteField(tabRoute, 'id')),
@@ -8001,6 +8129,9 @@ export class FlowSurfacesService {
         filterByTk: String(this.readRouteField(tabRoute, 'id')),
         transaction,
       });
+    }
+    if (tabRoute) {
+      await this.setDesktopRouteUiLayouts(this.readRouteField(tabRoute, 'id'), routeUiLayoutUids, transaction);
     }
 
     await this.ensureFlowRoutePageSchemaShell(pageSchemaUid, transaction);
@@ -8146,6 +8277,11 @@ export class FlowSurfacesService {
       },
       transaction: options.transaction,
     });
+    await this.setDesktopRouteUiLayouts(
+      route.get('id'),
+      await this.ensureDesktopRouteUiLayouts(pageRoute, options.transaction),
+      options.transaction,
+    );
 
     // Modern page tabs are route-backed synthetic anchors.
     // Keep the persisted subtree aligned with frontend semantics by storing only the async grid child under the tab schema uid.
@@ -14806,6 +14942,7 @@ export class FlowSurfacesService {
     }
     if (this.isAIEmployeeActionUse(current?.use) && this.hasAIEmployeePublicSettings(normalizedValues)) {
       const enabledPackages = await this.resolveEnabledPluginPackages(options);
+      const hasRawAIEmployeeStepTasks = _.has(normalizedValues, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
       const aiEmployeeSettingsPayload = await this.normalizeAIEmployeeActionPublicSettings(
         'updateSettings',
         _.pick(normalizedValues, AI_EMPLOYEE_PUBLIC_SETTING_KEYS),
@@ -14819,6 +14956,7 @@ export class FlowSurfacesService {
             kind: 'target',
             targetUid: current?.uid || writeTarget.uid,
           },
+          skipExistingTaskWorkContextRebase: hasRawAIEmployeeStepTasks,
         },
       );
       AI_EMPLOYEE_PUBLIC_SETTING_KEYS.forEach((key) => {
@@ -14965,6 +15103,13 @@ export class FlowSurfacesService {
     if (Object.keys(nextPayload).length === 1) {
       return { uid: current.uid };
     }
+
+    await this.assertNoDuplicateAIEmployeeActionForUpdateSettings(
+      options.openViewActionName || 'updateSettings',
+      current,
+      effectiveNode,
+      options.transaction,
+    );
 
     if (target.kind === 'tab' && target.tabRoute) {
       await this.routeSync.persistTabSettings(target, current, nextPayload, options.transaction);
@@ -22582,18 +22727,20 @@ export class FlowSurfacesService {
     return JSON.stringify(value);
   }
 
-  private buildAIEmployeeActionDedupIdentity(values: Record<string, any>) {
+  private buildAIEmployeeActionDedupIdentity(values: Record<string, any>, defaultActionWorkContext?: any[]) {
     const username = String(values?.props?.aiEmployee?.username || '').trim();
     if (!username) {
       return '';
     }
+    const workContext = this.normalizeAIEmployeeActionWorkContextForDedupIdentity(
+      values?.props?.context?.workContext,
+      defaultActionWorkContext,
+    );
     return this.stableSerializeAIEmployeeValue({
       username,
       auto: typeof values?.props?.auto === 'boolean' ? values.props.auto : false,
-      workContext: this.normalizeAIEmployeeWorkContextForDedupIdentity(values?.props?.context?.workContext),
-      tasks: this.normalizeAIEmployeeTasksForDedupIdentity(
-        _.get(values, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]),
-      ),
+      workContext,
+      tasks: this.normalizeAIEmployeeTasksForDedupIdentity(this.readAIEmployeePersistedTasks(values), workContext),
       style: {
         ...AI_EMPLOYEE_DEFAULT_STYLE,
         ...(_.isPlainObject(values?.props?.style) ? _.pick(values.props.style, AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {}),
@@ -22602,12 +22749,39 @@ export class FlowSurfacesService {
   }
 
   private normalizeAIEmployeeWorkContextForDedupIdentity(value: any) {
-    return _.castArray(value || []).map((item: any) =>
-      _.isPlainObject(item) ? _.pick(item, AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS) : item,
-    );
+    return _.castArray(value || []).map((item: any) => {
+      if (!_.isPlainObject(item)) {
+        return item;
+      }
+      const output = _.pick(item, AI_EMPLOYEE_WORK_CONTEXT_PUBLIC_KEYS);
+      if (!Object.prototype.hasOwnProperty.call(output, 'type') || _.isUndefined(output.type) || output.type === null) {
+        output.type = 'flow-model';
+      }
+      return output;
+    });
   }
 
-  private normalizeAIEmployeeTasksForDedupIdentity(value: any) {
+  private normalizeAIEmployeeActionWorkContextForDedupIdentity(value: any, defaultWorkContext?: any[]) {
+    if (!Array.isArray(value)) {
+      return _.cloneDeep(defaultWorkContext || []);
+    }
+    return this.normalizeAIEmployeeWorkContextForDedupIdentity(value);
+  }
+
+  private normalizeAIEmployeeDefaultActionWorkContextForSelfUid(selfUid?: string) {
+    const uid = String(selfUid || '').trim();
+    return uid ? [{ type: 'flow-model', uid }] : [];
+  }
+
+  private normalizeAIEmployeeTaskWorkContextForDedupIdentity(value: any, defaultWorkContext?: any[]) {
+    const normalized = this.normalizeAIEmployeeWorkContextForDedupIdentity(value);
+    if (Array.isArray(defaultWorkContext) && !normalized.length) {
+      return _.cloneDeep(defaultWorkContext);
+    }
+    return normalized;
+  }
+
+  private normalizeAIEmployeeTasksForDedupIdentity(value: any, defaultWorkContext?: any[]) {
     return _.castArray(value || []).map((task: any) => {
       if (!_.isPlainObject(task)) {
         return task;
@@ -22616,8 +22790,21 @@ export class FlowSurfacesService {
       if (_.isPlainObject(output.message)) {
         output.message = _.pick(output.message, AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS);
         if (Object.prototype.hasOwnProperty.call(output.message, 'workContext')) {
-          output.message.workContext = this.normalizeAIEmployeeWorkContextForDedupIdentity(output.message.workContext);
+          output.message.workContext = this.normalizeAIEmployeeTaskWorkContextForDedupIdentity(
+            output.message.workContext,
+            defaultWorkContext,
+          );
         }
+      }
+      if (!_.isPlainObject(output.message) && Array.isArray(defaultWorkContext)) {
+        output.message = {
+          workContext: _.cloneDeep(defaultWorkContext),
+        };
+      } else if (
+        _.isPlainObject(output.message) &&
+        !Object.prototype.hasOwnProperty.call(output.message, 'workContext')
+      ) {
+        output.message.workContext = _.cloneDeep(defaultWorkContext || []);
       }
       if (_.isPlainObject(output.model)) {
         output.model = _.pick(output.model, AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS);
@@ -22634,26 +22821,40 @@ export class FlowSurfacesService {
     parentUid: string,
     values: Record<string, any>,
     transaction?: any,
+    excludeUid?: string,
   ) {
-    const identity = this.buildAIEmployeeActionDedupIdentity(values);
-    if (!identity) {
-      return;
-    }
     const parentNode = await this.repository.findModelById(parentUid, {
       transaction,
       includeAsyncNode: true,
     });
-    const duplicate = _.castArray(parentNode?.subModels?.actions || []).find((action: any) => {
+    const defaultActionWorkContext = this.normalizeAIEmployeeDefaultActionWorkContextForSelfUid(
+      await this.resolveAIEmployeeActionSelfUidFromParentNode(parentNode, transaction),
+    );
+    const identity = this.buildAIEmployeeActionDedupIdentity(values, defaultActionWorkContext);
+    if (!identity) {
+      return;
+    }
+    let duplicate: any;
+    for (const action of _.castArray(parentNode?.subModels?.actions || [])) {
       if (!this.isAIEmployeeActionUse(action?.use)) {
-        return false;
+        continue;
       }
-      return (
-        this.buildAIEmployeeActionDedupIdentity({
-          props: action.props,
-          stepParams: action.stepParams,
-        }) === identity
-      );
-    });
+      if (excludeUid && String(action?.uid || '') === excludeUid) {
+        continue;
+      }
+      if (
+        this.buildAIEmployeeActionDedupIdentity(
+          {
+            props: action.props,
+            stepParams: action.stepParams,
+          },
+          defaultActionWorkContext,
+        ) === identity
+      ) {
+        duplicate = action;
+        break;
+      }
+    }
     if (!duplicate?.uid) {
       return;
     }
@@ -22667,6 +22868,33 @@ export class FlowSurfacesService {
             'Remove the duplicate aiEmployee action, or change username, task title/key, or workContext if this is a genuinely different AI employee action.',
         },
       },
+    );
+  }
+
+  private async assertNoDuplicateAIEmployeeActionForUpdateSettings(
+    actionName: string,
+    current: any,
+    effectiveNode: any,
+    transaction?: any,
+  ) {
+    if (!this.isAIEmployeeActionUse(current?.use)) {
+      return;
+    }
+    const parentUid =
+      String(current?.parentId || '').trim() ||
+      (current?.uid ? await this.locator.findParentUid(current.uid, transaction).catch(() => '') : '');
+    if (!parentUid) {
+      return;
+    }
+    await this.assertNoDuplicateAIEmployeeAction(
+      actionName,
+      parentUid,
+      {
+        props: effectiveNode?.props,
+        stepParams: effectiveNode?.stepParams,
+      },
+      transaction,
+      String(current?.uid || ''),
     );
   }
 
@@ -22738,10 +22966,24 @@ export class FlowSurfacesService {
   private readAIEmployeePersistedTasks(current: any) {
     const stepTasks = _.get(current, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
     if (Array.isArray(stepTasks)) {
-      return stepTasks;
+      return this.normalizeAIEmployeeLegacyInheritedTaskWorkContext(stepTasks);
     }
-    const legacyPropsTasks = current?.props?.tasks;
+    const legacyPropsTasks = this.normalizeAIEmployeeLegacyInheritedTaskWorkContext(current?.props?.tasks);
     return Array.isArray(legacyPropsTasks) ? legacyPropsTasks : [];
+  }
+
+  private normalizeAIEmployeeLegacyInheritedTaskWorkContext(tasks: any) {
+    if (!Array.isArray(tasks)) {
+      return tasks;
+    }
+    return tasks.map((task) => {
+      if (!_.isPlainObject(task) || !_.isPlainObject(task.message) || task.message.workContext !== null) {
+        return task;
+      }
+      const nextTask = _.cloneDeep(task);
+      delete nextTask.message.workContext;
+      return nextTask;
+    });
   }
 
   private buildAIEmployeeTaskStepParams(tasks: any[]) {
@@ -22777,7 +23019,7 @@ export class FlowSurfacesService {
     if (!this.isAIEmployeeActionUse(current?.use)) {
       return;
     }
-    const legacyPropsTasks = current?.props?.tasks;
+    const legacyPropsTasks = this.normalizeAIEmployeeLegacyInheritedTaskWorkContext(current?.props?.tasks);
     const hasLegacyPropsTasks = Array.isArray(legacyPropsTasks);
     const hasNextStepTasks = _.has(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
     const currentStepTasks = _.get(current, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH]);
@@ -22981,6 +23223,33 @@ export class FlowSurfacesService {
         type: 'flow-model',
         uid: uidValueFromTarget,
       };
+    });
+  }
+
+  private normalizeAIEmployeeEffectiveActionWorkContext(
+    actionName: string,
+    settings: Record<string, any>,
+    currentProps: Record<string, any>,
+    options: {
+      selfUid?: string;
+      keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+      requireUsername?: boolean;
+    },
+  ) {
+    const hasSettingsWorkContext = Object.prototype.hasOwnProperty.call(settings, 'workContext');
+    const currentWorkContext = currentProps?.context?.workContext;
+    if (!hasSettingsWorkContext && !Array.isArray(currentWorkContext) && !options.requireUsername && !options.selfUid) {
+      return undefined;
+    }
+    const rawWorkContext = hasSettingsWorkContext
+      ? settings.workContext
+      : Array.isArray(currentWorkContext)
+        ? currentWorkContext
+        : [{ type: 'flow-model', target: 'self' }];
+    return this.normalizeAIEmployeeWorkContext(actionName, rawWorkContext, {
+      selfUid: options.selfUid,
+      keyMap: options.keyMap,
+      path: 'settings.workContext',
     });
   }
 
@@ -23399,15 +23668,66 @@ export class FlowSurfacesService {
       return;
     }
     const actionName = options.openViewActionName || 'updateSettings';
-    const normalizedTasks = this.normalizeAIEmployeeTasks(
-      actionName,
-      tasks,
-      this.readAIEmployeePersistedTasks(current),
-      {
-        selfUid: await this.resolveAIEmployeeActionSelfUid(current || { uid: writeTarget.uid }, options.transaction),
-        path: 'stepParams.shortcutSettings.editTasks.tasks',
+    const selfUid = await this.resolveAIEmployeeActionSelfUid(current || { uid: writeTarget.uid }, options.transaction);
+    const currentPropsForDefault = _.mergeWith(
+      {},
+      _.isPlainObject(current?.props) ? current.props : {},
+      _.isPlainObject(nextPayload.props) ? nextPayload.props : {},
+      (_currentValue, nextValue) => {
+        if (Array.isArray(nextValue)) {
+          return _.cloneDeep(nextValue);
+        }
+        return undefined;
       },
     );
+    const defaultWorkContext = this.normalizeAIEmployeeEffectiveActionWorkContext(
+      actionName,
+      {},
+      currentPropsForDefault,
+      {
+        selfUid,
+        requireUsername: true,
+      },
+    );
+    const currentTasks = this.readAIEmployeePersistedTasks(current);
+    const previousActionWorkContext = this.normalizeAIEmployeeActionWorkContextForDedupIdentity(
+      current?.props?.context?.workContext,
+      this.normalizeAIEmployeeDefaultActionWorkContextForSelfUid(selfUid),
+    );
+    const nextActionWorkContext = this.normalizeAIEmployeeActionWorkContextForDedupIdentity(
+      currentPropsForDefault?.context?.workContext,
+      defaultWorkContext,
+    );
+    if (
+      Array.isArray(defaultWorkContext) &&
+      !_.isEqual(currentPropsForDefault?.context?.workContext, defaultWorkContext)
+    ) {
+      nextPayload.props = _.mergeWith(
+        {},
+        currentPropsForDefault,
+        {
+          context: {
+            workContext: _.cloneDeep(defaultWorkContext),
+          },
+        },
+        (_currentValue, nextValue) => {
+          if (Array.isArray(nextValue)) {
+            return _.cloneDeep(nextValue);
+          }
+          return undefined;
+        },
+      );
+    }
+    const currentTasksForNormalization = this.rebaseAIEmployeeInheritedTaskWorkContext(
+      currentTasks,
+      previousActionWorkContext,
+      nextActionWorkContext,
+    );
+    const normalizedTasks = this.normalizeAIEmployeeTasks(actionName, tasks, currentTasksForNormalization, {
+      selfUid,
+      defaultWorkContext,
+      path: 'stepParams.shortcutSettings.editTasks.tasks',
+    });
     _.set(nextPayload, ['stepParams', ...AI_EMPLOYEE_TASK_STEP_PARAMS_PATH], normalizedTasks);
   }
 
@@ -23419,6 +23739,7 @@ export class FlowSurfacesService {
     options: {
       selfUid?: string;
       keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
+      defaultWorkContext?: any[];
     },
   ) {
     if (!_.isPlainObject(value)) {
@@ -23446,12 +23767,20 @@ export class FlowSurfacesService {
     if (Object.prototype.hasOwnProperty.call(nextMessage, 'user') && typeof nextMessage.user !== 'string') {
       throwBadRequest(`flowSurfaces ${actionName} ${path}.user must be a string`);
     }
-    if (Object.prototype.hasOwnProperty.call(value, 'workContext')) {
+    if (value.workContext === null) {
+      delete nextMessage.workContext;
+    } else if (Object.prototype.hasOwnProperty.call(value, 'workContext')) {
       nextMessage.workContext = this.normalizeAIEmployeeWorkContext(actionName, value.workContext, {
         selfUid: options.selfUid,
         keyMap: options.keyMap,
         path: `${path}.workContext`,
       });
+    }
+    if (
+      !Object.prototype.hasOwnProperty.call(nextMessage, 'workContext') &&
+      this.shouldMaterializeAIEmployeeTaskDefaultWorkContext(options.defaultWorkContext)
+    ) {
+      nextMessage.workContext = _.cloneDeep(options.defaultWorkContext);
     }
     return nextMessage;
   }
@@ -23464,6 +23793,7 @@ export class FlowSurfacesService {
       selfUid?: string;
       keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
       path: string;
+      defaultWorkContext?: any[];
     },
   ) {
     if (!_.isPlainObject(patch)) {
@@ -23493,6 +23823,7 @@ export class FlowSurfacesService {
         next.message = this.normalizeAIEmployeeTaskMessage(actionName, `${options.path}.message`, value, next.message, {
           selfUid: options.selfUid,
           keyMap: options.keyMap,
+          defaultWorkContext: options.defaultWorkContext,
         });
         return;
       }
@@ -23545,6 +23876,12 @@ export class FlowSurfacesService {
     if (!_.isPlainObject(next.message)) {
       next.message = {};
     }
+    if (
+      !Object.prototype.hasOwnProperty.call(next.message, 'workContext') &&
+      this.shouldMaterializeAIEmployeeTaskDefaultWorkContext(options.defaultWorkContext)
+    ) {
+      next.message.workContext = _.cloneDeep(options.defaultWorkContext);
+    }
     if (_.isPlainObject(next.skillSettings)) {
       if (
         Array.isArray(next.skillSettings.skills) &&
@@ -23570,6 +23907,7 @@ export class FlowSurfacesService {
       selfUid?: string;
       keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
       path: string;
+      defaultWorkContext?: any[];
     },
   ) {
     if (_.isUndefined(value) || value === null) {
@@ -23588,9 +23926,58 @@ export class FlowSurfacesService {
         selfUid: options.selfUid,
         keyMap: options.keyMap,
         path: `${options.path}[${index}]`,
+        defaultWorkContext: options.defaultWorkContext,
       });
     });
-    return nextTasks;
+    return this.withAIEmployeeTaskDefaultWorkContext(nextTasks, options.defaultWorkContext);
+  }
+
+  private withAIEmployeeTaskDefaultWorkContext(tasks: any, defaultWorkContext?: any[]) {
+    const nextTasks = Array.isArray(tasks) ? _.cloneDeep(tasks) : [];
+    if (!this.shouldMaterializeAIEmployeeTaskDefaultWorkContext(defaultWorkContext)) {
+      return nextTasks;
+    }
+    return nextTasks.map((task) => {
+      if (!_.isPlainObject(task)) {
+        return task;
+      }
+      const nextTask = _.cloneDeep(task);
+      if (!_.isPlainObject(nextTask.message)) {
+        nextTask.message = {
+          workContext: _.cloneDeep(defaultWorkContext),
+        };
+      } else if (!Object.prototype.hasOwnProperty.call(nextTask.message, 'workContext')) {
+        nextTask.message.workContext = _.cloneDeep(defaultWorkContext);
+      }
+      return nextTask;
+    });
+  }
+
+  private shouldMaterializeAIEmployeeTaskDefaultWorkContext(defaultWorkContext?: any[]) {
+    return Array.isArray(defaultWorkContext) && defaultWorkContext.length > 0;
+  }
+
+  private rebaseAIEmployeeInheritedTaskWorkContext(
+    currentTasks: any,
+    previousActionWorkContext: any[],
+    nextActionWorkContext: any[],
+  ) {
+    const tasks = this.normalizeAIEmployeeLegacyInheritedTaskWorkContext(currentTasks) || [];
+    if (!previousActionWorkContext.length || _.isEqual(previousActionWorkContext, nextActionWorkContext)) {
+      return tasks;
+    }
+    return tasks.map((task) => {
+      const nextTask = _.cloneDeep(task);
+      if (_.isPlainObject(nextTask?.message)) {
+        const currentTaskWorkContext = this.normalizeAIEmployeeWorkContextForDedupIdentity(
+          nextTask.message.workContext,
+        );
+        if (_.isEqual(currentTaskWorkContext, previousActionWorkContext)) {
+          delete nextTask.message.workContext;
+        }
+      }
+      return nextTask;
+    });
   }
 
   private normalizeAIEmployeeActionSettingsReferences(
@@ -23613,9 +24000,16 @@ export class FlowSurfacesService {
       });
     }
     if (Object.prototype.hasOwnProperty.call(nextSettings, 'tasks')) {
+      const defaultWorkContext = this.normalizeAIEmployeeEffectiveActionWorkContext(
+        actionName,
+        nextSettings,
+        {},
+        options,
+      );
       nextSettings.tasks = this.normalizeAIEmployeeTasks(actionName, nextSettings.tasks, [], {
         ...options,
         path: 'settings.tasks',
+        defaultWorkContext,
       });
     }
     return nextSettings;
@@ -23633,6 +24027,7 @@ export class FlowSurfacesService {
       promptContext?: AIEmployeePromptContextOptions;
       keyMap?: Record<string, FlowSurfaceComposeTargetKey | undefined>;
       currentRoles?: FlowSurfaceRequestRoles;
+      skipExistingTaskWorkContextRebase?: boolean;
     },
   ) {
     this.assertAIEmployeePluginEnabled(actionName, options.enabledPackages);
@@ -23657,6 +24052,17 @@ export class FlowSurfacesService {
 
     const props: Record<string, any> = {};
     const stepParams: Record<string, any> = {};
+    const effectiveActionWorkContext = this.normalizeAIEmployeeEffectiveActionWorkContext(
+      actionName,
+      settings,
+      currentProps,
+      options,
+    );
+    const previousActionWorkContext = this.normalizeAIEmployeeActionWorkContextForDedupIdentity(
+      currentProps?.context?.workContext,
+      this.normalizeAIEmployeeDefaultActionWorkContextForSelfUid(options.selfUid),
+    );
+    const nextActionWorkContext = this.normalizeAIEmployeeWorkContextForDedupIdentity(effectiveActionWorkContext);
     if (effectiveUsername && (hasUsername || options.requireUsername)) {
       props.aiEmployee = {
         ...(_.isPlainObject(currentProps.aiEmployee) ? _.cloneDeep(currentProps.aiEmployee) : {}),
@@ -23674,30 +24080,30 @@ export class FlowSurfacesService {
       }
       props.auto = auto;
     }
-    if (Object.prototype.hasOwnProperty.call(settings, 'workContext') || options.requireUsername) {
-      const rawWorkContext = Object.prototype.hasOwnProperty.call(settings, 'workContext')
-        ? settings.workContext
-        : [{ type: 'flow-model', target: 'self' }];
+    if (
+      Array.isArray(effectiveActionWorkContext) &&
+      (Object.prototype.hasOwnProperty.call(settings, 'workContext') ||
+        options.requireUsername ||
+        !_.isEqual(currentProps?.context?.workContext, effectiveActionWorkContext))
+    ) {
       props.context = {
         ...(_.isPlainObject(currentProps.context) ? _.cloneDeep(currentProps.context) : {}),
-        workContext: this.normalizeAIEmployeeWorkContext(actionName, rawWorkContext, {
-          selfUid: options.selfUid,
-          keyMap: options.keyMap,
-          path: 'settings.workContext',
-        }),
+        workContext: _.cloneDeep(effectiveActionWorkContext),
       };
     }
     if (Object.prototype.hasOwnProperty.call(settings, 'tasks')) {
-      const normalizedTasks = this.normalizeAIEmployeeTasks(
-        actionName,
-        settings.tasks,
-        this.readAIEmployeePersistedTasks(options.current),
-        {
-          selfUid: options.selfUid,
-          keyMap: options.keyMap,
-          path: 'settings.tasks',
-        },
+      const currentTasks = this.readAIEmployeePersistedTasks(options.current);
+      const currentTasksForNormalization = this.rebaseAIEmployeeInheritedTaskWorkContext(
+        currentTasks,
+        previousActionWorkContext,
+        nextActionWorkContext,
       );
+      const normalizedTasks = this.normalizeAIEmployeeTasks(actionName, settings.tasks, currentTasksForNormalization, {
+        selfUid: options.selfUid,
+        keyMap: options.keyMap,
+        path: 'settings.tasks',
+        defaultWorkContext: effectiveActionWorkContext,
+      });
       const validation =
         options.promptContext && normalizedTasks.length
           ? await this.buildAIEmployeePromptValidationContext(
@@ -23721,6 +24127,21 @@ export class FlowSurfacesService {
       const tasks = this.appendAIEmployeeCurrentRecordPromptVariableToTasks(normalizedTasks, validation);
       this.assertAIEmployeeTaskPromptVariablesAllowed(actionName, tasks, validation);
       _.merge(stepParams, this.buildAIEmployeeTaskStepParams(tasks));
+    } else if (
+      !options.skipExistingTaskWorkContextRebase &&
+      Object.prototype.hasOwnProperty.call(settings, 'workContext') &&
+      !_.isEqual(previousActionWorkContext, nextActionWorkContext)
+    ) {
+      const currentTasks = this.readAIEmployeePersistedTasks(options.current);
+      const rebasedTasks = this.rebaseAIEmployeeInheritedTaskWorkContext(
+        currentTasks,
+        previousActionWorkContext,
+        nextActionWorkContext,
+      );
+      const tasks = this.withAIEmployeeTaskDefaultWorkContext(rebasedTasks, effectiveActionWorkContext);
+      if (tasks.length) {
+        _.merge(stepParams, this.buildAIEmployeeTaskStepParams(tasks));
+      }
     }
     if (Object.prototype.hasOwnProperty.call(settings, 'style') || options.requireUsername) {
       const style = Object.prototype.hasOwnProperty.call(settings, 'style') ? settings.style : {};
@@ -23767,7 +24188,19 @@ export class FlowSurfacesService {
       transaction,
       includeAsyncNode: true,
     });
-    if (['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel'].includes(String(parentNode?.use || ''))) {
+    return (await this.resolveAIEmployeeActionSelfUidFromParentNode(parentNode, transaction)) || parentUid;
+  }
+
+  private async resolveAIEmployeeActionSelfUidFromParentNode(parentNode: any, transaction?: any) {
+    const parentUid = String(parentNode?.uid || '').trim();
+    if (!parentUid) {
+      return '';
+    }
+    if (
+      ['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel', 'CommentItemModel'].includes(
+        String(parentNode?.use || ''),
+      )
+    ) {
       const ownerUid =
         String(parentNode?.parentId || '').trim() ||
         (parentNode?.uid ? await this.locator.findParentUid(parentNode.uid, transaction).catch(() => '') : '');

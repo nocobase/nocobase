@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { PluginWorkflowScriptClient } from '../';
 import V1ScriptInstruction from '../ScriptInstruction';
 import { lang } from '../../locale';
 import V2ScriptInstruction from '../../client-v2/nodes/script';
@@ -33,5 +34,30 @@ describe('ScriptInstruction compatibility', () => {
       title: 'Script node',
       resultTitle: lang('Script result'),
     });
+  });
+
+  it('registers the v1 instruction as a class to avoid cross-entry instanceof checks', async () => {
+    const calls: unknown[][] = [];
+    const plugin = Object.create(PluginWorkflowScriptClient.prototype) as PluginWorkflowScriptClient & {
+      app: {
+        pm: {
+          get: () => {
+            registerInstruction: (...args: unknown[]) => number;
+          };
+        };
+      };
+    };
+
+    plugin.app = {
+      pm: {
+        get: () => ({
+          registerInstruction: (...args: unknown[]) => calls.push(args),
+        }),
+      },
+    };
+
+    await plugin.load();
+
+    expect(calls).toEqual([['script', V1ScriptInstruction]]);
   });
 });
