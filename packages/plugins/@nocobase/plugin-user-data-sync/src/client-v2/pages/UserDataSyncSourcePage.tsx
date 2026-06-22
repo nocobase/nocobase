@@ -21,11 +21,13 @@ import {
   Flex,
   Form,
   Input,
+  Popover,
   Popconfirm,
   Select,
   Space,
   Spin,
   Tag,
+  theme,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { lazy, Suspense, useMemo, useState } from 'react';
@@ -64,6 +66,76 @@ const TASK_STATUS_OPTIONS = [
   { label: '{{t("Success")}}', value: 'success', color: 'success' },
   { label: '{{t("Failed")}}', value: 'failed', color: 'error' },
 ];
+
+const containedTableComponents = {
+  table: (props: React.HTMLAttributes<HTMLTableElement>) =>
+    React.createElement('table', {
+      ...props,
+      style: {
+        ...props.style,
+        width: '100%',
+      },
+    }),
+};
+
+function getContentWidth(element: HTMLElement | null) {
+  if (!element) {
+    return 0;
+  }
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  return range.getBoundingClientRect().width;
+}
+
+function EllipsisMessage(props: { value: string }) {
+  const { token } = theme.useToken();
+  const [overflow, setOverflow] = useState(false);
+  const [open, setOpen] = useState(false);
+  const elementRef = React.useRef<HTMLDivElement>(null);
+  const ellipsisStyle = useMemo<React.CSSProperties>(
+    () => ({
+      overflow: 'hidden',
+      overflowWrap: 'break-word',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      wordBreak: 'break-all',
+    }),
+    [],
+  );
+  const popoverStyle = useMemo<React.CSSProperties>(
+    () => ({
+      width: token.sizeXXL * 6,
+      overflow: 'auto',
+      maxHeight: token.sizeXXL * 8,
+    }),
+    [token.sizeXXL],
+  );
+
+  const handleMouseEnter = () => {
+    const element = elementRef.current;
+    setOverflow(Boolean(element && getContentWidth(element) > element.offsetWidth));
+  };
+
+  const content = (
+    <div ref={elementRef} style={ellipsisStyle} onMouseEnter={handleMouseEnter}>
+      {props.value}
+    </div>
+  );
+
+  if (!overflow) {
+    return content;
+  }
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => setOpen(overflow && nextOpen)}
+      content={<div style={popoverStyle}>{props.value}</div>}
+    >
+      {content}
+    </Popover>
+  );
+}
 
 function normalizeListResponse(response: unknown): ListResult {
   const body = (response as { data?: { data?: unknown; meta?: { count?: number; total?: number } } })?.data;
@@ -190,6 +262,7 @@ function TasksDrawer(props: { source: SourceRecord }) {
   const { t } = useUserDataSyncSourceTranslation();
   const compileT = useT();
   const ctx = useFlowContext();
+  const { token } = theme.useToken();
   const { message } = App.useApp();
   const { data, loading, refresh } = useRequest(async () => {
     const response = await ctx.api.resource('userDataSyncTasks').list({
@@ -211,10 +284,11 @@ function TasksDrawer(props: { source: SourceRecord }) {
   };
 
   const columns: ColumnsType<TaskRecord> = [
-    { dataIndex: 'batch', title: t('Batch') },
+    { dataIndex: 'batch', title: t('Batch'), width: token.sizeXXL * 4 },
     {
       dataIndex: 'status',
       title: t('Status'),
+      width: token.sizeXXL * 3,
       render: (value: string) => {
         const option = TASK_STATUS_OPTIONS.find((item) => item.value === value);
         return <Tag color={option?.color}>{option ? compileT(option.label) : t(value || '')}</Tag>;
@@ -223,12 +297,16 @@ function TasksDrawer(props: { source: SourceRecord }) {
     {
       dataIndex: 'message',
       title: t('Message'),
-      render: (value: string) => t(value || ''),
+      ellipsis: true,
+      render: (value: string) => {
+        const text = t(value || '');
+        return <EllipsisMessage value={text} />;
+      },
     },
     {
       key: 'actions',
       title: t('Actions'),
-      width: 80,
+      width: token.sizeXXL * 2,
       render: (_, record) => (record.status === 'failed' ? <a onClick={() => retry(record)}>{t('Retry')}</a> : null),
     },
   ];
@@ -241,6 +319,8 @@ function TasksDrawer(props: { source: SourceRecord }) {
       dataSource={data?.records || []}
       pagination={false}
       showIndex
+      tableLayout="fixed"
+      components={containedTableComponents}
     />
   );
 }
@@ -249,6 +329,7 @@ export default function UserDataSyncSourcePage() {
   const { t } = useUserDataSyncSourceTranslation();
   const compileT = useT();
   const ctx = useFlowContext();
+  const { token } = theme.useToken();
   const { message } = App.useApp();
   const resource = useSourceResource();
   const [page, setPage] = useState(1);
@@ -357,7 +438,7 @@ export default function UserDataSyncSourcePage() {
       title: t('Actions'),
       width: 240,
       render: (_, record) => (
-        <Space split="|">
+        <Space size={token.marginSM}>
           {record.enabled ? <a onClick={() => handleSync(record)}>{t('Sync')}</a> : null}
           {record.enabled ? <a onClick={() => openTasks(record)}>{t('Tasks')}</a> : null}
           <a onClick={() => openForm('edit', record.sourceType || '', record)}>{t('Configure')}</a>
