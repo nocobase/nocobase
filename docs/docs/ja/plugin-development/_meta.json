@@ -250,12 +250,6 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "共通コンポーネント",
-            "link": "/shared-components/",
-            "proxy": false
-          },
-          {
-            "type": "custom-link",
             "label": "FAQ・トラブルシューティング",
             "link": "/plugin-development/client/appendix/faq"
           },

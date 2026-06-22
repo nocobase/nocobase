@@ -250,12 +250,6 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Gemeinsame Komponenten",
-            "link": "/shared-components/",
-            "proxy": false
-          },
-          {
-            "type": "custom-link",
             "label": "FAQ & Fehlerbehebungs-Leitfaden",
             "link": "/plugin-development/client/appendix/faq"
           },

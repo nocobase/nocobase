@@ -250,12 +250,6 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Thành phần dùng chung",
-            "link": "/shared-components/",
-            "proxy": false
-          },
-          {
-            "type": "custom-link",
             "label": "Câu hỏi thường gặp & Hướng dẫn xử lý lỗi",
             "link": "/plugin-development/client/appendix/faq"
           },

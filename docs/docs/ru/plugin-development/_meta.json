@@ -250,12 +250,6 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Общие компоненты",
-            "link": "/shared-components/",
-            "proxy": false
-          },
-          {
-            "type": "custom-link",
             "label": "FAQ и руководство по устранению неполадок",
             "link": "/plugin-development/client/appendix/faq"
           },
