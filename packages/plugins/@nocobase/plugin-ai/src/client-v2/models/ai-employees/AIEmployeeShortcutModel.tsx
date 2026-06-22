@@ -10,7 +10,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { Avatar, Card, Radio, Select, Space, Spin, Switch, Tag, Tooltip, Typography, theme } from 'antd';
 import type { RadioGroupProps } from 'antd';
-import { RemoteSelect, useApp } from '@nocobase/client-v2';
 import { FlowModel, observer, useFlowSettingsContext } from '@nocobase/flow-engine';
 import type { FlowModelContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
@@ -23,6 +22,7 @@ import type { AIEmployee, ContextItem, SkillSettings, Task } from '../../ai-empl
 import { useT, tExpr } from '../../locale';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import type { LLMServiceItem } from '../../repositories/AIConfigRepository';
+import { RemoteSelect } from '../../components/RemoteSelect';
 
 const { Meta } = Card;
 
@@ -80,28 +80,8 @@ type BindingOption = {
   description?: string;
 };
 
-type ListBindingResource = {
-  listBinding?: (params?: Record<string, unknown>) => Promise<unknown>;
-};
-
-type ListResponse = {
-  data?: {
-    data?: unknown;
-  };
-};
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
-
-const isListResponse = (value: unknown): value is ListResponse =>
-  isRecord(value) && (value.data === undefined || isRecord(value.data));
-
-const readListData = (response: unknown): unknown[] => {
-  if (!isListResponse(response)) {
-    return [];
-  }
-  return Array.isArray(response.data?.data) ? response.data.data : [];
-};
 
 const isBindingOption = (value: unknown): value is BindingOption => isRecord(value) && typeof value.name === 'string';
 
@@ -154,6 +134,18 @@ export const normalizeShortcutTasksSkillSettings = (
   }
 };
 
+const cleanupEmptyShortcutTaskSkillSettings = (tasks: ShortcutTask[] | undefined) => {
+  for (const task of tasks ?? []) {
+    const settings = task.skillSettings;
+    if (!settings) {
+      continue;
+    }
+    if (settings.skills == null && settings.tools == null) {
+      task.skillSettings = undefined;
+    }
+  }
+};
+
 const useLLMServices = () => {
   const repo = useAIConfigRepository();
   const { loading } = useRequest(() => repo.getLLMServices(), {
@@ -176,20 +168,26 @@ const useCurrentAIEmployee = () => {
 const Information: React.FC = observer(() => {
   const aiEmployee = useCurrentAIEmployee();
   const { token } = theme.useToken();
+  const avatarSize = token.controlHeight + token.margin + token.marginSM + token.marginXXS;
 
   if (!aiEmployee) {
     return null;
   }
 
   return (
-    <Card variant="borderless">
+    <Card
+      variant="borderless"
+      style={{
+        maxWidth: token.screenSMMin,
+      }}
+    >
       <Meta
-        avatar={aiEmployee.avatar ? <Avatar src={avatars(aiEmployee.avatar)} size={token.controlHeightLG} /> : null}
+        avatar={aiEmployee.avatar ? <Avatar src={avatars(aiEmployee.avatar)} size={avatarSize} /> : null}
         title={
-          <Space>
-            <span>{aiEmployee.nickname}</span>
-            {aiEmployee.position ? <Tag>{aiEmployee.position}</Tag> : null}
-          </Space>
+          <>
+            {aiEmployee.nickname}
+            {aiEmployee.position ? <Tag style={{ marginLeft: token.margin }}>{aiEmployee.position}</Tag> : null}
+          </>
         }
         description={<>{aiEmployee.bio}</>}
       />
@@ -395,7 +393,7 @@ const TaskCapabilitySelect: React.FC<{
   onChange?: (value?: string[]) => void;
 }> = observer(({ type, value, onChange }) => {
   const t = useT();
-  const app = useApp();
+  const { token } = theme.useToken();
   const aiEmployee = useCurrentAIEmployee();
   const defaultValues = useMemo(() => {
     if (type === 'skills') {
@@ -419,37 +417,35 @@ const TaskCapabilitySelect: React.FC<{
     onChange?.(defaultValues);
   };
 
-  const request = async () => {
-    const resource = app.apiClient.resource(resourceName) as unknown as ListBindingResource;
-    if (typeof resource.listBinding !== 'function' || !aiEmployee?.username) {
-      return [];
-    }
-    const response = await resource.listBinding({
-      username: aiEmployee.username,
-    });
-    return readListData(response).filter(isBindingOption);
-  };
-
   return (
-    <Space direction="vertical">
+    <Space style={{ width: '100%' }} direction="vertical" size={token.marginXXS}>
       <Radio.Group value={radioValue} onChange={handleRadioChange} options={radioOptions} />
       {radioValue === RadioOptions.custom.value ? (
-        <RemoteSelect<BindingOption, BindingOption[], string[]>
-          mode="multiple"
+        <RemoteSelect<string[]>
+          key={aiEmployee?.username}
+          multiple
           value={value}
           onChange={handleSelectChange}
-          request={request}
-          refreshDeps={[aiEmployee?.username, resourceName]}
-          cacheKey={`ai-task-${resourceName}-${aiEmployee?.username ?? ''}`}
+          manual={false}
+          popupMatchSelectWidth
           placeholder={t(type === 'skills' ? 'Leave empty to disable skills.' : 'Leave empty to disable tools.')}
-          mapOptions={(item) => ({
-            label: item.title,
-            value: item.name,
-            title: item.title,
-            description: item.description,
-          })}
+          fieldNames={{
+            label: 'title',
+            value: 'name',
+          }}
+          service={{
+            resource: resourceName,
+            action: 'listBinding',
+            params: {
+              username: aiEmployee?.username,
+            },
+          }}
+          optionFilter={isBindingOption}
           optionRender={(option) => {
-            const data = option.data as BindingOption;
+            const data = option.data;
+            if (!isBindingOption(data)) {
+              return null;
+            }
             return <OptionContent title={data.title} description={data.description} />;
           }}
         />
@@ -457,46 +453,6 @@ const TaskCapabilitySelect: React.FC<{
     </Space>
   );
 });
-
-const SkillSettingsField: React.FC<{
-  value?: SkillSettings;
-  onChange?: (value?: SkillSettings) => void;
-}> = ({ value, onChange }) => {
-  const t = useT();
-  const handleChange = (type: 'skills' | 'tools', nextValue?: string[]) => {
-    const next: SkillSettings = {
-      ...value,
-      [`${type}Version`]: 2,
-      [type]: nextValue,
-    };
-    if (next.skills == null && next.tools == null) {
-      onChange?.(undefined);
-      return;
-    }
-    onChange?.(next);
-  };
-
-  return (
-    <Space direction="vertical">
-      <Space direction="vertical">
-        <Typography.Text>{t('Skills')}</Typography.Text>
-        <TaskCapabilitySelect
-          type="skills"
-          value={value?.skills}
-          onChange={(nextValue) => handleChange('skills', nextValue)}
-        />
-      </Space>
-      <Space direction="vertical">
-        <Typography.Text>{t('Tools')}</Typography.Text>
-        <TaskCapabilitySelect
-          type="tools"
-          value={value?.tools}
-          onChange={(nextValue) => handleChange('tools', nextValue)}
-        />
-      </Space>
-    </Space>
-  );
-};
 
 AIEmployeeShortcutModel.registerFlow({
   key: 'shortcutSettings',
@@ -517,6 +473,10 @@ AIEmployeeShortcutModel.registerFlow({
       },
       uiSchema: async (ctx: AIShortcutFlowContext) => {
         await ctx.aiConfigRepository?.getAIEmployees();
+        const token = ctx.model?.context?.themeToken;
+        const labelStyle = {
+          fontWeight: token?.fontWeightStrong,
+        };
         return {
           profile: {
             type: 'void',
@@ -539,6 +499,7 @@ AIEmployeeShortcutModel.registerFlow({
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-decorator-props': {
+                    labelStyle,
                     tooltip: tExpr('Label for task selection buttons when multiple tasks exist'),
                   },
                 },
@@ -550,6 +511,7 @@ AIEmployeeShortcutModel.registerFlow({
                       type: 'string',
                       'x-decorator': 'FormItem',
                       'x-decorator-props': {
+                        labelStyle,
                         tooltip: tExpr(
                           'Additional system prompt appended to the AI employee’s definition, used to refine instructions',
                         ),
@@ -560,12 +522,18 @@ AIEmployeeShortcutModel.registerFlow({
                       title: tExpr('Default user message'),
                       type: 'string',
                       'x-decorator': 'FormItem',
+                      'x-decorator-props': {
+                        labelStyle,
+                      },
                       'x-component': 'FlowSettingsVariableTextArea',
                     },
                     workContext: {
                       title: tExpr('Work context'),
                       type: 'array',
                       'x-decorator': 'FormItem',
+                      'x-decorator-props': {
+                        labelStyle,
+                      },
                       'x-component': WorkContext,
                     },
                   },
@@ -578,19 +546,46 @@ AIEmployeeShortcutModel.registerFlow({
                 },
                 skillSettings: {
                   type: 'object',
-                  title: tExpr('Skills and tools'),
-                  'x-decorator': 'FormItem',
-                  'x-component': SkillSettingsField,
-                  'x-decorator-props': {
-                    tooltip: tExpr('Configure the skills and tools available to this task'),
-                  },
                   nullable: true,
+                  properties: {
+                    skills: {
+                      title: tExpr('Skills'),
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-decorator-props': {
+                        labelStyle,
+                        layout: 'horizontal',
+                        tooltip: tExpr('Configure the skills available to this task'),
+                      },
+                      'x-component': TaskCapabilitySelect,
+                      'x-component-props': {
+                        type: 'skills',
+                      },
+                    },
+                    tools: {
+                      title: tExpr('Tools'),
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-decorator-props': {
+                        labelStyle,
+                        layout: 'horizontal',
+                        tooltip: tExpr('Configure the tools available to this task'),
+                      },
+                      'x-component': TaskCapabilitySelect,
+                      'x-component-props': {
+                        type: 'tools',
+                      },
+                    },
+                  },
                 },
                 model: {
                   title: tExpr('Model'),
                   type: 'object',
                   nullable: true,
                   'x-decorator': 'FormItem',
+                  'x-decorator-props': {
+                    labelStyle,
+                  },
                   'x-component': TaskModelSelect,
                 },
                 webSearch: {
@@ -598,6 +593,9 @@ AIEmployeeShortcutModel.registerFlow({
                   type: 'boolean',
                   default: false,
                   'x-decorator': 'FormItem',
+                  'x-decorator-props': {
+                    labelStyle,
+                  },
                   'x-component': TaskWebSearchSwitch,
                 },
               },
@@ -606,6 +604,7 @@ AIEmployeeShortcutModel.registerFlow({
         };
       },
       beforeParamsSave(_ctx: AIShortcutFlowContext, params: ShortcutSettingsParams) {
+        cleanupEmptyShortcutTaskSkillSettings(params.tasks);
         normalizeShortcutTasksSkillSettings(params.tasks, { onlyExistingSettings: true });
       },
       handler(ctx: AIShortcutFlowContext, params: ShortcutSettingsParams) {
