@@ -9,7 +9,6 @@
 
 import type { Message, ToolCall } from '../../types';
 import { createObservableStore, createSelectors } from './create-selectors';
-import { getOrCreateGlobalStore } from './global-store';
 
 interface ChatToolsState {
   toolsByName: Record<
@@ -42,54 +41,52 @@ interface ChatToolsActions {
   setAdjustArgs: (args: Record<string, unknown>) => void;
 }
 
-const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-tools-store', () =>
-  createObservableStore<ChatToolsState & ChatToolsActions>((set) => ({
-    toolsByName: {},
-    toolsByMessageId: {},
-    openToolModal: false,
-    activeTool: null,
-    activeMessageId: '',
-    adjustArgs: {},
+const store = createObservableStore<ChatToolsState & ChatToolsActions>((set) => ({
+  toolsByName: {},
+  toolsByMessageId: {},
+  openToolModal: false,
+  activeTool: null,
+  activeMessageId: '',
+  adjustArgs: {},
 
-    updateTools: (messages) => {
-      const toolsByName: ChatToolsState['toolsByName'] = {};
-      const toolsByMessageId: ChatToolsState['toolsByMessageId'] = {};
+  updateTools: (messages) => {
+    const toolsByName: ChatToolsState['toolsByName'] = {};
+    const toolsByMessageId: ChatToolsState['toolsByMessageId'] = {};
 
-      for (const msg of messages) {
-        const toolCalls = msg.content?.tool_calls || [];
-        const messageId = msg.content?.messageId;
+    for (const msg of messages) {
+      const toolCalls = msg.content?.tool_calls || [];
+      const messageId = msg.content?.messageId;
 
-        for (const tool of toolCalls) {
-          if (!toolsByName[tool.name]) {
-            toolsByName[tool.name] = [];
-          }
-          toolsByName[tool.name].push({
-            ...tool,
-            messageId,
-          });
-          const version = toolsByName[tool.name].length;
-
-          if (!messageId) {
-            continue;
-          }
-          if (!toolsByMessageId[messageId]) {
-            toolsByMessageId[messageId] = {};
-          }
-          toolsByMessageId[messageId][tool.id] = {
-            ...tool,
-            version,
-          };
+      for (const tool of toolCalls) {
+        if (!toolsByName[tool.name]) {
+          toolsByName[tool.name] = [];
         }
+        toolsByName[tool.name].push({
+          ...tool,
+          messageId,
+        });
+        const version = toolsByName[tool.name].length;
+
+        if (!messageId) {
+          continue;
+        }
+        if (!toolsByMessageId[messageId]) {
+          toolsByMessageId[messageId] = {};
+        }
+        toolsByMessageId[messageId][tool.id] = {
+          ...tool,
+          version,
+        };
       }
+    }
 
-      set({ toolsByName, toolsByMessageId });
-    },
+    set({ toolsByName, toolsByMessageId });
+  },
 
-    setOpenToolModal: (open) => set({ openToolModal: open }),
-    setActiveTool: (tool) => set({ activeTool: tool }),
-    setActiveMessageId: (messageId) => set({ activeMessageId: messageId }),
-    setAdjustArgs: (args) => set({ adjustArgs: args }),
-  })),
-);
+  setOpenToolModal: (open) => set({ openToolModal: open }),
+  setActiveTool: (tool) => set({ activeTool: tool }),
+  setActiveMessageId: (messageId) => set({ activeMessageId: messageId }),
+  setAdjustArgs: (args) => set({ adjustArgs: args }),
+}));
 
 export const useChatToolsStore = createSelectors(store);

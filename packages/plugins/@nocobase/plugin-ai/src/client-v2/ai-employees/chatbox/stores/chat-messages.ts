@@ -10,7 +10,6 @@
 import { randomId } from '@nocobase/flow-engine';
 import type { Attachment, ChatEditorRef, ContextItem, Message, SkillSettings, WebSearching } from '../../types';
 import { createObservableStore, createSelectors } from './create-selectors';
-import { getOrCreateGlobalStore } from './global-store';
 
 export const CHAT_DEFAULT_SESSION_KEY = '__draft__';
 
@@ -140,333 +139,331 @@ export interface ChatMessagesActions {
   ) => void;
 }
 
-const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-messages-store', () =>
-  createObservableStore<ChatMessagesState & ChatMessagesActions>((set, get) => {
-    const defaultSession = createInitialSessionState();
+const store = createObservableStore<ChatMessagesState & ChatMessagesActions>((set, get) => {
+  const defaultSession = createInitialSessionState();
 
-    return {
-      sessions: {
-        [CHAT_DEFAULT_SESSION_KEY]: defaultSession,
-      },
-      editorRef: {},
-      currentEditorRefUid: null,
-      flowContext: null,
+  return {
+    sessions: {
+      [CHAT_DEFAULT_SESSION_KEY]: defaultSession,
+    },
+    editorRef: {},
+    currentEditorRefUid: null,
+    flowContext: null,
 
-      getSessionState: (sessionId) => cloneSessionState(resolveSessionState(get(), sessionId)),
+    getSessionState: (sessionId) => cloneSessionState(resolveSessionState(get(), sessionId)),
 
-      resetSessionState: (sessionId, patch) =>
-        set((state) =>
-          updateSessionState(state, sessionId, () => ({
-            ...createInitialSessionState(),
-            ...(patch ?? {}),
-          })),
-        ),
+    resetSessionState: (sessionId, patch) =>
+      set((state) =>
+        updateSessionState(state, sessionId, () => ({
+          ...createInitialSessionState(),
+          ...(patch ?? {}),
+        })),
+      ),
 
-      migrateSessionState: (fromSessionId, toSessionId) => {
-        const fromKey = getChatSessionKey(fromSessionId);
-        const toKey = getChatSessionKey(toSessionId);
-        if (fromKey === toKey) {
-          return;
+    migrateSessionState: (fromSessionId, toSessionId) => {
+      const fromKey = getChatSessionKey(fromSessionId);
+      const toKey = getChatSessionKey(toSessionId);
+      if (fromKey === toKey) {
+        return;
+      }
+      set((state) => {
+        const sourceSession = resolveSessionState(state, fromKey);
+        const nextSessions = { ...state.sessions, [toKey]: cloneSessionState(sourceSession) };
+
+        if (fromKey === CHAT_DEFAULT_SESSION_KEY) {
+          nextSessions[CHAT_DEFAULT_SESSION_KEY] = createInitialSessionState();
+          return { sessions: nextSessions };
         }
-        set((state) => {
-          const sourceSession = resolveSessionState(state, fromKey);
-          const nextSessions = { ...state.sessions, [toKey]: cloneSessionState(sourceSession) };
 
-          if (fromKey === CHAT_DEFAULT_SESSION_KEY) {
-            nextSessions[CHAT_DEFAULT_SESSION_KEY] = createInitialSessionState();
-            return { sessions: nextSessions };
+        delete nextSessions[fromKey];
+        return {
+          sessions: nextSessions,
+        };
+      });
+    },
+
+    setSessionMessages: (sessionId, messages) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messages: typeof messages === 'function' ? messages(session.messages) : messages,
+        })),
+      ),
+
+    setSessionMessagesLoading: (sessionId, loading) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messagesLoading: loading,
+        })),
+      ),
+
+    setSessionMessagesError: (sessionId, error) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messagesError: error,
+        })),
+      ),
+
+    setSessionMessagesMeta: (sessionId, meta) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messagesMeta: typeof meta === 'function' ? meta(session.messagesMeta) : meta,
+        })),
+      ),
+
+    setSessionAttachments: (sessionId, attachments) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          attachments: typeof attachments === 'function' ? attachments(session.attachments) : attachments,
+        })),
+      ),
+
+    setSessionContextItems: (sessionId, items) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          contextItems: typeof items === 'function' ? items(session.contextItems) : items,
+        })),
+      ),
+
+    setSessionSystemMessage: (sessionId, msg) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          systemMessage: typeof msg === 'function' ? msg(session.systemMessage) : msg,
+        })),
+      ),
+
+    setSessionResponseLoading: (sessionId, loading) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          responseLoading: loading,
+        })),
+      ),
+
+    setSessionBackgroundWorking: (sessionId, backgroundWorking) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          backgroundWorking,
+        })),
+      ),
+
+    setSessionResumeStreamFailed: (sessionId, resumeStreamFailed) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          resumeStreamFailed,
+        })),
+      ),
+
+    addSessionMessage: (sessionId, message) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messages: [...session.messages, message],
+        })),
+      ),
+
+    addSessionMessages: (sessionId, msgs) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messages: [...session.messages, ...msgs],
+        })),
+      ),
+
+    updateSessionLastMessage: (sessionId, updater) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => {
+          const messages = [...session.messages];
+          const index = messages.length - 1;
+          if (index >= 0) {
+            messages[index] = updater(messages[index]);
           }
-
-          delete nextSessions[fromKey];
           return {
-            sessions: nextSessions,
+            ...session,
+            messages,
           };
-        });
-      },
+        }),
+      ),
 
-      setSessionMessages: (sessionId, messages) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
+    removeSessionMessage: (sessionId, key) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          messages: session.messages.filter((msg) => msg.key !== key),
+        })),
+      ),
+
+    addSessionAttachments: (sessionId, attachments) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          attachments: Array.isArray(attachments)
+            ? [...session.attachments, ...attachments]
+            : [...session.attachments, attachments],
+        })),
+      ),
+
+    removeSessionAttachment: (sessionId, filename) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          attachments: session.attachments.filter((attachment) => attachment.filename !== filename),
+        })),
+      ),
+
+    addSessionContextItems: (sessionId, items) => {
+      const nextItems = Array.isArray(items) ? items : [items];
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => {
+          const map = new Map<string, ContextItem>();
+          for (const item of session.contextItems) {
+            map.set(`${item.type}:${item.uid}`, item);
+          }
+          for (const item of nextItems) {
+            map.set(`${item.type}:${item.uid}`, item);
+          }
+          return {
             ...session,
-            messages: typeof messages === 'function' ? messages(session.messages) : messages,
-          })),
-        ),
+            contextItems: Array.from(map.values()),
+          };
+        }),
+      );
+    },
 
-      setSessionMessagesLoading: (sessionId, loading) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            messagesLoading: loading,
-          })),
-        ),
+    addContextItems: (items) => {
+      get().addSessionContextItems(undefined, items);
+    },
 
-      setSessionMessagesError: (sessionId, error) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            messagesError: error,
-          })),
-        ),
+    removeSessionContextItem: (sessionId, type, uid) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          contextItems: session.contextItems.filter((item) => !(item.type === type && item.uid === uid)),
+        })),
+      ),
 
-      setSessionMessagesMeta: (sessionId, meta) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            messagesMeta: typeof meta === 'function' ? meta(session.messagesMeta) : meta,
-          })),
-        ),
+    setSessionAbortController: (sessionId, controller) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          abortController: controller,
+        })),
+      ),
 
-      setSessionAttachments: (sessionId, attachments) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            attachments: typeof attachments === 'function' ? attachments(session.attachments) : attachments,
-          })),
-        ),
+    setSessionSkillSettings: (sessionId, settings) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          skillSettings: settings,
+        })),
+      ),
 
-      setSessionContextItems: (sessionId, items) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            contextItems: typeof items === 'function' ? items(session.contextItems) : items,
-          })),
-        ),
+    setEditorRef: (uid, editorRef) => set((state) => ({ editorRef: { ...state.editorRef, [uid]: editorRef } })),
 
-      setSessionSystemMessage: (sessionId, msg) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            systemMessage: typeof msg === 'function' ? msg(session.systemMessage) : msg,
-          })),
-        ),
+    setCurrentEditorRefUid: (uid) => set({ currentEditorRefUid: uid }),
 
-      setSessionResponseLoading: (sessionId, loading) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            responseLoading: loading,
-          })),
-        ),
+    setSessionWebSearching: (sessionId, webSearching) =>
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => ({
+          ...session,
+          webSearching,
+        })),
+      ),
 
-      setSessionBackgroundWorking: (sessionId, backgroundWorking) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            backgroundWorking,
-          })),
-        ),
+    setFlowContext: (flowContext) => set({ flowContext }),
 
-      setSessionResumeStreamFailed: (sessionId, resumeStreamFailed) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            resumeStreamFailed,
-          })),
-        ),
+    addSessionSubAgentMessage: (sessionId, subSessionId, msg) => {
+      get().addSessionSubAgentMessages(sessionId, subSessionId, [msg]);
+    },
 
-      addSessionMessage: (sessionId, message) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            messages: [...session.messages, message],
-          })),
-        ),
+    addSessionSubAgentMessages: (sessionId, subSessionId, msgs) => {
+      get().updateSessionLastMessage(sessionId, (last) => ({
+        ...last,
+        content: {
+          ...last.content,
+          subAgentConversations: last.content.subAgentConversations?.map((conversation) => {
+            if (conversation.sessionId !== subSessionId) {
+              return conversation;
+            }
+            return {
+              ...conversation,
+              messages: [...conversation.messages, ...msgs],
+            };
+          }) ?? [
+            {
+              sessionId: subSessionId,
+              messages: msgs,
+            },
+          ],
+        },
+        loading: false,
+      }));
+    },
 
-      addSessionMessages: (sessionId, msgs) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            messages: [...session.messages, ...msgs],
-          })),
-        ),
-
-      updateSessionLastMessage: (sessionId, updater) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => {
-            const messages = [...session.messages];
+    updateSessionLastSubAgentMessage: (sessionId, subSessionId, username, updater) => {
+      get().updateSessionLastMessage(sessionId, (last) => ({
+        ...last,
+        content: {
+          ...last.content,
+          subAgentConversations: last.content.subAgentConversations?.map((conversation) => {
+            if (conversation.sessionId !== subSessionId) {
+              return conversation;
+            }
+            const messages = [...conversation.messages];
             const index = messages.length - 1;
             if (index >= 0) {
               messages[index] = updater(messages[index]);
             }
             return {
-              ...session,
+              ...conversation,
               messages,
             };
-          }),
-        ),
+          }) ?? [
+            {
+              sessionId: subSessionId,
+              messages: [
+                updater({
+                  key: randomId(),
+                  role: username,
+                  createdAt: new Date().toISOString(),
+                  content: { type: 'text', content: '' },
+                  loading: true,
+                }),
+              ],
+            },
+          ],
+        },
+        loading: false,
+      }));
+    },
 
-      removeSessionMessage: (sessionId, key) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            messages: session.messages.filter((msg) => msg.key !== key),
-          })),
-        ),
-
-      addSessionAttachments: (sessionId, attachments) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            attachments: Array.isArray(attachments)
-              ? [...session.attachments, ...attachments]
-              : [...session.attachments, attachments],
-          })),
-        ),
-
-      removeSessionAttachment: (sessionId, filename) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            attachments: session.attachments.filter((attachment) => attachment.filename !== filename),
-          })),
-        ),
-
-      addSessionContextItems: (sessionId, items) => {
-        const nextItems = Array.isArray(items) ? items : [items];
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => {
-            const map = new Map<string, ContextItem>();
-            for (const item of session.contextItems) {
-              map.set(`${item.type}:${item.uid}`, item);
-            }
-            for (const item of nextItems) {
-              map.set(`${item.type}:${item.uid}`, item);
+    updateSessionSubAgentConversationStatus: (sessionId, subSessionId, status) => {
+      get().updateSessionLastMessage(sessionId, (last) => ({
+        ...last,
+        content: {
+          ...last.content,
+          subAgentConversations: last.content.subAgentConversations?.map((conversation) => {
+            if (conversation.sessionId !== subSessionId) {
+              return conversation;
             }
             return {
-              ...session,
-              contextItems: Array.from(map.values()),
+              ...conversation,
+              status,
             };
           }),
-        );
-      },
-
-      addContextItems: (items) => {
-        get().addSessionContextItems(undefined, items);
-      },
-
-      removeSessionContextItem: (sessionId, type, uid) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            contextItems: session.contextItems.filter((item) => !(item.type === type && item.uid === uid)),
-          })),
-        ),
-
-      setSessionAbortController: (sessionId, controller) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            abortController: controller,
-          })),
-        ),
-
-      setSessionSkillSettings: (sessionId, settings) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            skillSettings: settings,
-          })),
-        ),
-
-      setEditorRef: (uid, editorRef) => set((state) => ({ editorRef: { ...state.editorRef, [uid]: editorRef } })),
-
-      setCurrentEditorRefUid: (uid) => set({ currentEditorRefUid: uid }),
-
-      setSessionWebSearching: (sessionId, webSearching) =>
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => ({
-            ...session,
-            webSearching,
-          })),
-        ),
-
-      setFlowContext: (flowContext) => set({ flowContext }),
-
-      addSessionSubAgentMessage: (sessionId, subSessionId, msg) => {
-        get().addSessionSubAgentMessages(sessionId, subSessionId, [msg]);
-      },
-
-      addSessionSubAgentMessages: (sessionId, subSessionId, msgs) => {
-        get().updateSessionLastMessage(sessionId, (last) => ({
-          ...last,
-          content: {
-            ...last.content,
-            subAgentConversations: last.content.subAgentConversations?.map((conversation) => {
-              if (conversation.sessionId !== subSessionId) {
-                return conversation;
-              }
-              return {
-                ...conversation,
-                messages: [...conversation.messages, ...msgs],
-              };
-            }) ?? [
-              {
-                sessionId: subSessionId,
-                messages: msgs,
-              },
-            ],
-          },
-          loading: false,
-        }));
-      },
-
-      updateSessionLastSubAgentMessage: (sessionId, subSessionId, username, updater) => {
-        get().updateSessionLastMessage(sessionId, (last) => ({
-          ...last,
-          content: {
-            ...last.content,
-            subAgentConversations: last.content.subAgentConversations?.map((conversation) => {
-              if (conversation.sessionId !== subSessionId) {
-                return conversation;
-              }
-              const messages = [...conversation.messages];
-              const index = messages.length - 1;
-              if (index >= 0) {
-                messages[index] = updater(messages[index]);
-              }
-              return {
-                ...conversation,
-                messages,
-              };
-            }) ?? [
-              {
-                sessionId: subSessionId,
-                messages: [
-                  updater({
-                    key: randomId(),
-                    role: username,
-                    createdAt: new Date().toISOString(),
-                    content: { type: 'text', content: '' },
-                    loading: true,
-                  }),
-                ],
-              },
-            ],
-          },
-          loading: false,
-        }));
-      },
-
-      updateSessionSubAgentConversationStatus: (sessionId, subSessionId, status) => {
-        get().updateSessionLastMessage(sessionId, (last) => ({
-          ...last,
-          content: {
-            ...last.content,
-            subAgentConversations: last.content.subAgentConversations?.map((conversation) => {
-              if (conversation.sessionId !== subSessionId) {
-                return conversation;
-              }
-              return {
-                ...conversation,
-                status,
-              };
-            }),
-          },
-          loading: false,
-        }));
-      },
-    };
-  }),
-);
+        },
+        loading: false,
+      }));
+    },
+  };
+});
 
 export const useChatMessagesStore = createSelectors(store);

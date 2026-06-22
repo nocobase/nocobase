@@ -9,7 +9,6 @@
 
 import { createObservableStore, createSelectors } from './create-selectors';
 import { getChatSessionKey } from './chat-messages';
-import { getOrCreateGlobalStore } from './global-store';
 
 type ToolCallInvokeState = { id: string; invokeStatus: string };
 
@@ -65,71 +64,69 @@ export interface ChatToolCallActions {
   getInvokeStatus: (sessionId: string, messageId: string, toolCallId: string) => string | undefined;
 }
 
-const store = getOrCreateGlobalStore('@nocobase/plugin-ai/chat-tool-call-store', () =>
-  createObservableStore<ChatToolCallState & ChatToolCallActions>((set, get) => {
-    return {
-      sessions: {},
+const store = createObservableStore<ChatToolCallState & ChatToolCallActions>((set, get) => {
+  return {
+    sessions: {},
 
-      getSessionState: (sessionId) => cloneSessionState(resolveSessionState(get(), sessionId)),
+    getSessionState: (sessionId) => cloneSessionState(resolveSessionState(get(), sessionId)),
 
-      resetSessionState: (sessionId) =>
-        set((state) => updateSessionState(state, sessionId, () => createInitialSessionState())),
+    resetSessionState: (sessionId) =>
+      set((state) => updateSessionState(state, sessionId, () => createInitialSessionState())),
 
-      migrateSessionState: (fromSessionId, toSessionId) => {
-        const fromKey = getChatSessionKey(fromSessionId);
-        const toKey = getChatSessionKey(toSessionId);
-        if (fromKey === toKey) {
-          return;
-        }
-        set((state) => {
-          const sourceSession = resolveSessionState(state, fromKey);
-          const nextSessions = { ...state.sessions, [toKey]: cloneSessionState(sourceSession) };
+    migrateSessionState: (fromSessionId, toSessionId) => {
+      const fromKey = getChatSessionKey(fromSessionId);
+      const toKey = getChatSessionKey(toSessionId);
+      if (fromKey === toKey) {
+        return;
+      }
+      set((state) => {
+        const sourceSession = resolveSessionState(state, fromKey);
+        const nextSessions = { ...state.sessions, [toKey]: cloneSessionState(sourceSession) };
 
-          delete nextSessions[fromKey];
+        delete nextSessions[fromKey];
+        return {
+          sessions: nextSessions,
+        };
+      });
+    },
+
+    updateToolCallInvokeStatus: (sessionId, messageId, toolCallId, invokeStatus) => {
+      set((state) =>
+        updateSessionState(state, sessionId, (session) => {
+          const list = session.toolCalls[messageId] ?? [];
+
+          const exists = list.some((tc) => tc.id === toolCallId);
+
+          const nextList = exists
+            ? list.map((tc) => (tc.id === toolCallId ? { ...tc, invokeStatus } : tc))
+            : [...list, { id: toolCallId, invokeStatus }];
+
           return {
-            sessions: nextSessions,
+            toolCalls: {
+              ...session.toolCalls,
+              [messageId]: nextList,
+            },
           };
-        });
-      },
+        }),
+      );
+    },
+    isAllWaiting: (sessionId, messageId) => {
+      const list = resolveSessionState(get(), sessionId).toolCalls[messageId];
+      if (!list || list.length === 0) return false;
 
-      updateToolCallInvokeStatus: (sessionId, messageId, toolCallId, invokeStatus) => {
-        set((state) =>
-          updateSessionState(state, sessionId, (session) => {
-            const list = session.toolCalls[messageId] ?? [];
-
-            const exists = list.some((tc) => tc.id === toolCallId);
-
-            const nextList = exists
-              ? list.map((tc) => (tc.id === toolCallId ? { ...tc, invokeStatus } : tc))
-              : [...list, { id: toolCallId, invokeStatus }];
-
-            return {
-              toolCalls: {
-                ...session.toolCalls,
-                [messageId]: nextList,
-              },
-            };
-          }),
-        );
-      },
-      isAllWaiting: (sessionId, messageId) => {
-        const list = resolveSessionState(get(), sessionId).toolCalls[messageId];
-        if (!list || list.length === 0) return false;
-
-        return list.every((x) => x.invokeStatus === 'waiting');
-      },
-      isInterrupted: (sessionId, messageId, toolCallId) => {
-        const list = resolveSessionState(get(), sessionId).toolCalls[messageId] ?? [];
-        const toolCall = list.find((x) => x.id === toolCallId);
-        return toolCall?.invokeStatus === 'interrupted';
-      },
-      getInvokeStatus: (sessionId, messageId, toolCallId) => {
-        const list = resolveSessionState(get(), sessionId).toolCalls[messageId] ?? [];
-        const toolCall = list.find((x) => x.id === toolCallId);
-        return toolCall?.invokeStatus;
-      },
-    };
-  }),
-);
+      return list.every((x) => x.invokeStatus === 'waiting');
+    },
+    isInterrupted: (sessionId, messageId, toolCallId) => {
+      const list = resolveSessionState(get(), sessionId).toolCalls[messageId] ?? [];
+      const toolCall = list.find((x) => x.id === toolCallId);
+      return toolCall?.invokeStatus === 'interrupted';
+    },
+    getInvokeStatus: (sessionId, messageId, toolCallId) => {
+      const list = resolveSessionState(get(), sessionId).toolCalls[messageId] ?? [];
+      const toolCall = list.find((x) => x.id === toolCallId);
+      return toolCall?.invokeStatus;
+    },
+  };
+});
 
 export const useChatToolCallStore = createSelectors(store);

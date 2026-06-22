@@ -8,7 +8,6 @@
  */
 
 import { createObservableStore, createSelectors } from './create-selectors';
-import { getOrCreateGlobalStore } from './global-store';
 
 export type WorkflowTask = {
   id: string;
@@ -102,65 +101,63 @@ const normalizeWorkflowTask = (workflowTask: WorkflowTask): WorkflowTask => {
   };
 };
 
-const store = getOrCreateGlobalStore('@nocobase/plugin-ai/workflow-tasks-store', () =>
-  createObservableStore<WorkflowTasksState & WorkflowTasksActions>((set) => ({
-    workflowTasks: [],
-    currentWorkflowTask: undefined,
-    unreadCount: 0,
-    loading: false,
-    keyword: '',
-    selectedJobStatus: undefined,
+const store = createObservableStore<WorkflowTasksState & WorkflowTasksActions>((set) => ({
+  workflowTasks: [],
+  currentWorkflowTask: undefined,
+  unreadCount: 0,
+  loading: false,
+  keyword: '',
+  selectedJobStatus: undefined,
 
-    setWorkflowTasks: (workflowTasks) =>
-      set((state) => {
-        const nextWorkflowTasks =
-          typeof workflowTasks === 'function' ? workflowTasks(state.workflowTasks) : workflowTasks;
+  setWorkflowTasks: (workflowTasks) =>
+    set((state) => {
+      const nextWorkflowTasks =
+        typeof workflowTasks === 'function' ? workflowTasks(state.workflowTasks) : workflowTasks;
+      return {
+        workflowTasks: nextWorkflowTasks.map(normalizeWorkflowTask),
+      };
+    }),
+
+  setCurrentWorkflowTask: (currentWorkflowTask) =>
+    set((state) => ({
+      currentWorkflowTask:
+        typeof currentWorkflowTask === 'function'
+          ? currentWorkflowTask(state.currentWorkflowTask)
+          : currentWorkflowTask,
+    })),
+
+  setUnreadCount: (unreadCount) =>
+    set((state) => ({
+      unreadCount: typeof unreadCount === 'function' ? unreadCount(state.unreadCount) : unreadCount,
+    })),
+
+  markWorkflowTaskRead: (sessionId) =>
+    set((state) => {
+      const target = state.workflowTasks.find((item) => item.sessionId === sessionId);
+      if (!target || target.read) {
         return {
-          workflowTasks: nextWorkflowTasks.map(normalizeWorkflowTask),
+          workflowTasks: state.workflowTasks,
+          unreadCount: state.unreadCount,
         };
-      }),
+      }
+      return {
+        workflowTasks: state.workflowTasks.map((item) =>
+          item.sessionId === sessionId
+            ? {
+                ...item,
+                read: true,
+              }
+            : item,
+        ),
+        unreadCount: Math.max(0, state.unreadCount - 1),
+      };
+    }),
 
-    setCurrentWorkflowTask: (currentWorkflowTask) =>
-      set((state) => ({
-        currentWorkflowTask:
-          typeof currentWorkflowTask === 'function'
-            ? currentWorkflowTask(state.currentWorkflowTask)
-            : currentWorkflowTask,
-      })),
+  setLoading: (loading) => set({ loading }),
 
-    setUnreadCount: (unreadCount) =>
-      set((state) => ({
-        unreadCount: typeof unreadCount === 'function' ? unreadCount(state.unreadCount) : unreadCount,
-      })),
+  setKeyword: (keyword) => set({ keyword }),
 
-    markWorkflowTaskRead: (sessionId) =>
-      set((state) => {
-        const target = state.workflowTasks.find((item) => item.sessionId === sessionId);
-        if (!target || target.read) {
-          return {
-            workflowTasks: state.workflowTasks,
-            unreadCount: state.unreadCount,
-          };
-        }
-        return {
-          workflowTasks: state.workflowTasks.map((item) =>
-            item.sessionId === sessionId
-              ? {
-                  ...item,
-                  read: true,
-                }
-              : item,
-          ),
-          unreadCount: Math.max(0, state.unreadCount - 1),
-        };
-      }),
-
-    setLoading: (loading) => set({ loading }),
-
-    setKeyword: (keyword) => set({ keyword }),
-
-    setSelectedJobStatus: (selectedJobStatus) => set({ selectedJobStatus }),
-  })),
-);
+  setSelectedJobStatus: (selectedJobStatus) => set({ selectedJobStatus }),
+}));
 
 export const useWorkflowTasksStore = createSelectors(store);
