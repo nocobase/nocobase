@@ -326,11 +326,16 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');
   const content = { compilerOptions: { paths } };
-  writeFileSync(tsConfigJsonPath, JSON.stringify(content, null, 2), 'utf-8');
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER !== 'true') {
+    writeFileSync(tsConfigJsonPath, JSON.stringify(content, null, 2), 'utf-8');
+  }
   return content;
 };
 
 function generatePlaywrightPath(clean = false) {
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return;
+  }
   try {
     const playwright = storagePathJoin('playwright', 'tests');
     if (clean && fs.existsSync(playwright)) {
@@ -434,6 +439,9 @@ function isAppDevHtml() {
 }
 
 function buildIndexHtml(force = false) {
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
+    return;
+  }
   const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
   if (!fs.existsSync(file)) {
     return;
@@ -708,6 +716,9 @@ exports.checkDBDialect = function () {
 };
 
 exports.generatePlugins = function () {
+  if (process.env.NOCOBASE_DEV_LOCAL_PLUGINS_ONLY === 'true') {
+    return;
+  }
   try {
     require.resolve('@nocobase/devtools/common');
     const { generateAllPlugins, generatePlugins, generateV2Plugins } = require('@nocobase/devtools/common');

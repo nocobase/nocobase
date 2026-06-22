@@ -1,29 +1,53 @@
-version: "3"
 networks:
   nocobase:
     driver: bridge
+
 services:
   app:
-    image: nocobase/nocobase:latest
+    image: nocobase/nocobase:latest-full
+    read_only: true
+    restart: always
     networks:
       - nocobase
-    environment:
-      - APP_KEY=your-secret-key # Replace it with your own app key
-      - ENCRYPTION_FIELD_KEY=your-secret-key # Replace it with your own app key
-      - DB_DIALECT=postgres
-      - DB_HOST=postgres
-      - DB_DATABASE=nocobase
-      - DB_USER=nocobase
-      - DB_PASSWORD=nocobase
-    volumes:
-      - ./storage:/app/nocobase/storage
-    ports:
-      - "13000:80"
     depends_on:
       - postgres
-    init: true
+    environment:
+      # Application key, used to generate user tokens, etc.
+      # If APP_KEY is changed, old tokens will become invalid
+      # Can be any random string, and ensure it is not leaked
+      - APP_KEY=your-secret-key
+      # Database type, supports postgres, mysql, mariadb
+      - DB_DIALECT=postgres
+      # Database host, can be replaced with an existing database server IP
+      - DB_HOST=postgres
+      # Database port
+      - DB_PORT=5432
+      # Database name
+      - DB_DATABASE=nocobase
+      # Database user
+      - DB_USER=nocobase
+      # Database password
+      - DB_PASSWORD=nocobase
+      # Timezone, please change it to your local timezone, e.g., America/New_York
+      - TZ=Etc/UTC
+
+    volumes:
+      - ./storage:/app/nocobase/storage
+    tmpfs:
+      - /tmp
+      - /run
+      - /root/.nocobase
+      - /var/cache/nginx
+      - /var/log/nginx
+      - /etc/nginx/conf.d
+      - /usr/local/share/.cache/yarn
+    ports:
+      - '13000:80'
+    # init: true
+
+  # If you use an existing database service, you can skip starting postgres
   postgres:
-    image: postgres:10
+    image: postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
