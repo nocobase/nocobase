@@ -95,6 +95,10 @@ export class PluginWorkflowClientV2 extends Plugin {
     return type ? this.instructions.get(type) : undefined;
   }
 
+  isWorkflowSync(workflow) {
+    return this.triggers.get(workflow.type)?.sync ?? workflow.sync;
+  }
+
   registerInstructionGroup(key: string, group: InstructionGroup) {
     this.instructionGroups.register(key, group);
   }
