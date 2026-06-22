@@ -547,7 +547,7 @@ const associationFieldToMenu = (
   processedCollections: string[],
 ) => {
   if (field.target && field.uiSchema) {
-    if (processedCollections.includes(field.target) || processedCollections.length >= 1) return;
+    if (processedCollections.includes(field.target) || processedCollections.length >= 2) return;
 
     const subFields = getCollectionFields(field.target);
 
@@ -587,6 +587,7 @@ const associationFieldToMenu = (
   };
 
   return {
+    key: schemaName,
     name: field.uiSchema?.title || field.name,
     type: 'item',
     title: field.uiSchema?.title || field.name,
