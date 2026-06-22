@@ -439,9 +439,6 @@ function isAppDevHtml() {
 }
 
 function buildIndexHtml(force = false) {
-  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
-    return;
-  }
   const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
   if (!fs.existsSync(file)) {
     return;
