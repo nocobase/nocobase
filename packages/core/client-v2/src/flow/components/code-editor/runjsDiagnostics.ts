@@ -20,10 +20,8 @@ import * as acornWalk from 'acorn-walk';
 import {
   JSRunner,
   FlowContext,
-  createSafeDocument,
-  createSafeNavigator,
-  createSafeWindow,
   prepareRunJsCode,
+  RUNJS_ALLOWED_BARE_GLOBAL_NAMES,
   shouldPreprocessRunJSTemplates,
 } from '@nocobase/flow-engine';
 
@@ -604,41 +602,7 @@ function collectHeuristicIssues(code: string): RunJSIssue[] {
     return issues;
   }
 
-  const declared = new Set<string>([
-    // Common globals / allowed runtime context roots
-    'ctx',
-    'console',
-    'window',
-    'document',
-    'navigator',
-    'Math',
-    'Date',
-    'Array',
-    'Object',
-    'Number',
-    'String',
-    'Boolean',
-    'Promise',
-    'RegExp',
-    'Set',
-    'Map',
-    'WeakSet',
-    'WeakMap',
-    'JSON',
-    'Intl',
-    'URL',
-    'Error',
-    'TypeError',
-    'encodeURIComponent',
-    'decodeURIComponent',
-    'parseInt',
-    'parseFloat',
-    'isNaN',
-    'isFinite',
-    'undefined',
-    'NaN',
-    'Infinity',
-  ]);
+  const declared = new Set<string>(RUNJS_ALLOWED_BARE_GLOBAL_NAMES);
 
   const addId = (id: any) => {
     if (id && typeof id.name === 'string') declared.add(id.name);
@@ -1036,15 +1000,14 @@ export async function diagnoseRunJS(
     const { consoleCapture, loggerCapture } = createLogCollectors(logs);
 
     const baseGlobals: Record<string, any> = { console: consoleCapture };
-    try {
-      if (typeof window !== 'undefined') {
-        const navigator = createSafeNavigator();
+    if (typeof window !== 'undefined') {
+      baseGlobals.window = window;
+      if (typeof navigator !== 'undefined') {
         baseGlobals.navigator = navigator;
-        baseGlobals.window = createSafeWindow({ navigator });
-        baseGlobals.document = createSafeDocument();
       }
-    } catch (_) {
-      // ignore safe globals failures
+    }
+    if (typeof document !== 'undefined') {
+      baseGlobals.document = document;
     }
 
     let prepared = src;

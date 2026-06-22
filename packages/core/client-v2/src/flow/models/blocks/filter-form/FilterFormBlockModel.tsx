@@ -17,7 +17,6 @@ import {
   Droppable,
   isRunJSValue,
   normalizeRunJSValue,
-  runjsWithSafeGlobals,
   tExpr,
   FlowModelRenderer,
   FlowSettingsButton,
@@ -493,7 +492,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
       // RunJS support
       if (isRunJSValue(raw)) {
         const { code, version } = normalizeRunJSValue(raw);
-        const ret = await runjsWithSafeGlobals(this.context, code, { version });
+        const ret = await this.context.runjs(code, undefined, { version });
         return ret?.success ? ret.value : undefined;
       }
 
