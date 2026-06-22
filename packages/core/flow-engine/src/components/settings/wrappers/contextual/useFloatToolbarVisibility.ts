@@ -47,6 +47,18 @@ const getToolbarModelUidFromTarget = (target: EventTarget | null): string | null
   return target.closest('.nb-toolbar-container[data-model-uid]')?.getAttribute('data-model-uid') || null;
 };
 
+const getRenderedToolbarModelUids = (ownerDocument: Document | null): Set<string> => {
+  if (!ownerDocument) {
+    return new Set();
+  }
+
+  return new Set(
+    Array.from(ownerDocument.querySelectorAll<HTMLElement>('.nb-toolbar-container[data-model-uid]'))
+      .map((element) => element.getAttribute('data-model-uid'))
+      .filter((uid): uid is string => !!uid),
+  );
+};
+
 const isNodeWithinDescendantFloatToolbar = (
   target: EventTarget | null,
   container: HTMLElement | null,
@@ -264,6 +276,15 @@ export const useFloatToolbarVisibility = ({
 
       if (isCurrentHostTarget) {
         clearHideToolbarTimer();
+        setActiveChildToolbarIds((prevIds) => {
+          if (!prevIds.length) {
+            return prevIds;
+          }
+
+          const renderedToolbarModelUids = getRenderedToolbarModelUids(containerRef.current?.ownerDocument ?? null);
+          const nextIds = prevIds.filter((id) => renderedToolbarModelUids.has(id));
+          return nextIds.length === prevIds.length ? prevIds : nextIds;
+        });
         setHostHovered(true);
       }
 
