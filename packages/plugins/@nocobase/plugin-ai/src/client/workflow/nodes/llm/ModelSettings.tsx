@@ -8,14 +8,12 @@
  */
 
 import { observer, useForm } from '@formily/react';
-import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
+import { useAPIClient, useRequest } from '@nocobase/client';
 import React from 'react';
-import PluginAIClient from '../../../';
+import { getLegacyWorkflowModelSettingsForm } from './legacy-provider-options';
 
 export const useModelSettingsForm = (provider: string) => {
-  const plugin = usePlugin(PluginAIClient);
-  const p = plugin.aiManager.llmProviders.get(provider);
-  return p?.components?.ModelSettingsForm;
+  return getLegacyWorkflowModelSettingsForm(provider);
 };
 
 export const Settings = observer(

@@ -10,39 +10,32 @@
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import { Plugin, lazy } from '@nocobase/client';
-import { AIManager } from './manager/ai-manager';
+import { AIManager } from '../client-v2/manager/ai-manager';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
-import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
+import { AIPluginFeatureManagerImpl } from '../client-v2/manager/ai-feature-manager';
 import { LLMInstruction } from './workflow/nodes/llm';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { anthropicProviderOptions } from './llm-providers/anthropic';
-import { dashscopeProviderOptions } from './llm-providers/dashscope';
-import { deepseekProviderOptions } from './llm-providers/deepseek';
-import { googleGenAIProviderOptions } from './llm-providers/google-genai';
-import { ollamaProviderOptions } from './llm-providers/ollama';
-import { kimiProviderOptions } from './llm-providers/kimi';
-import { xaiProviderOptions } from './llm-providers/xai';
-import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
-import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import {
   AIEmployeeShortcutListModel,
   AIEmployeeShortcutModel,
   AIEmployeeButtonModel,
 } from '../client-v2/models/ai-employees';
-import './ai-employees/flow/events';
-import { AIConfigRepository } from './repositories/AIConfigRepository';
-import { FlowModelsContext } from './ai-employees/context/flow-models';
-import { DatasourceContext } from './ai-employees/context/datasource';
-import { CodeEditorContext } from './ai-employees/context/code-editor';
-import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
-import { setupAICoding } from './ai-employees/ai-coding/setup';
-import { setupDataModeling } from './ai-employees/data-modeling/setup';
+import { AIConfigRepository } from '../client-v2/repositories/AIConfigRepository';
+import { FlowModelsContext } from '../client-v2/ai-employees/context/flow-models';
+import { DatasourceContext } from '../client-v2/ai-employees/context/datasource';
+import { CodeEditorContext } from '../client-v2/ai-employees/context/code-editor';
+import { chartConfigWorkContext } from '../client-v2/ai-employees/context/chart-config';
+import { setupAICoding } from '../client-v2/ai-employees/ai-coding/setup';
+import { setupDataModeling } from '../client-v2/ai-employees/data-modeling/setup';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
-import { mimoProviderOptions } from './llm-providers/mimo';
 import { registerPluginAIClientV2BuiltinTools } from '../client-v2/ai-employees/tools';
-const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
+import { builtinLLMProviderOptions } from '../client-v2/llm-providers';
+const { ChatBoxLayout } = lazy(
+  () => import('../client-v2/ai-employees/chatbox/components/ChatBoxLayout'),
+  'ChatBoxLayout',
+);
 const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
 const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
 const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
@@ -69,7 +62,7 @@ export class PluginAIClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    this.app.use(AIEmployeesProvider);
+    this.app.use(ChatBoxLayout);
 
     this.app.addComponents({
       AIResourceContextCollector,
@@ -141,16 +134,9 @@ export class PluginAIClient extends Plugin {
     });
     this.app.flowEngine.context.defineProperty('aiConfigRepository', { value: aiConfigRepository });
 
-    this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
-    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
-    this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
-    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
-    this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
-    this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
-    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
-    this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
-    this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
-    this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
+    builtinLLMProviderOptions.forEach(([name, options]) => {
+      this.aiManager.registerLLMProvider(name, options);
+    });
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
       Component: MessagesSettings,

@@ -39,6 +39,8 @@ export * from './collection-manager/interfaces';
 export * from './collection-manager/template-fields';
 export * from './data-source';
 export * from './flow';
+export { CodeEditorExtension } from './flow/components/code-editor/extension';
+export type { CodeEditorExtra, CodeEditorExtraRegistry, EditorRef } from './flow/components/code-editor/types';
 export {
   DEFAULT_DATA_SOURCE_KEY,
   IconPicker,

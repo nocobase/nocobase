@@ -70,7 +70,7 @@ const createChatFacade = (sessionId?: string) => {
       useChatMessagesStore.getState().updateSessionLastSubAgentMessage(sessionKey, subSessionId, username, updater),
     updateSubAgentConversationStatus: (subSessionId: string, status: 'pending' | 'completed') =>
       useChatMessagesStore.getState().updateSessionSubAgentConversationStatus(sessionKey, subSessionId, status),
-    setEditorRef: (uid: string, editorRef: ChatEditorRef) =>
+    setEditorRef: (uid: string, editorRef: ChatEditorRef | null) =>
       useChatMessagesStore.getState().setEditorRef(uid, editorRef),
     setCurrentEditorRefUid: (uid: string) => useChatMessagesStore.getState().setCurrentEditorRefUid(uid),
     setFlowContext: (flowContext: unknown) => useChatMessagesStore.getState().setFlowContext(flowContext),

@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { ensureModel } from '../../ai-employees/chatbox/model';
+import { ensureModel } from '../../../client-v2/ai-employees/chatbox/model';
 
 describe('chatbox model recovery', () => {
   it('resolves model when current selection is missing (historical conversation case)', async () => {

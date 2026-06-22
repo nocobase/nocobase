@@ -8,16 +8,51 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Avatar, Dropdown } from 'antd';
+import { Avatar, Dropdown, Flex, Popover } from 'antd';
 import { CheckOutlined, DownOutlined } from '@ant-design/icons';
 import { useField, useForm } from '@formily/react';
 import { Field } from '@formily/core';
 import { useToken } from '@nocobase/client';
 import { observer, useFlowContext } from '@nocobase/flow-engine';
-import { useAIConfigRepository } from '../../../../repositories/hooks/useAIConfigRepository';
+import { useAIConfigRepository } from '../../../../../client-v2/repositories/hooks/useAIConfigRepository';
 import { useT } from '../../../../locale';
-import { AIEmployeeListItem } from '../../../../ai-employees/AIEmployeeListItem';
-import { avatars } from '../../../../ai-employees/avatars';
+import { avatars } from '../../../../../client-v2/ai-employees/avatars';
+import { AIEmployeeProfileCard } from '../../../../../client-v2/ai-employees/ProfileCard';
+import type { AIEmployee } from '../../../../../client-v2/ai-employees/types';
+
+const AIEmployeeListItem: React.FC<{
+  aiEmployee: AIEmployee;
+}> = ({ aiEmployee }) => {
+  const { token } = useToken();
+
+  return (
+    <Popover content={<AIEmployeeProfileCard aiEmployee={aiEmployee} />} placement="leftTop">
+      <Flex align="center" style={{ padding: '4px 2px' }} gap={8}>
+        <Avatar shape="circle" size={36} src={avatars(aiEmployee.avatar)} />
+        <Flex vertical={true}>
+          <div
+            style={{
+              fontSize: token.fontSizeSM,
+              color: token.colorText,
+              lineHeight: 1.4,
+            }}
+          >
+            {aiEmployee.nickname}
+          </div>
+          <div
+            style={{
+              fontSize: token.fontSizeSM,
+              color: token.colorTextSecondary,
+              lineHeight: 1.4,
+            }}
+          >
+            {aiEmployee.position}
+          </div>
+        </Flex>
+      </Flex>
+    </Popover>
+  );
+};
 
 export const AIEmployeeSelect: React.FC = observer(() => {
   const t = useT();
@@ -37,7 +72,7 @@ export const AIEmployeeSelect: React.FC = observer(() => {
 
   useEffect(() => {
     ctx.model.props.aiEmployee.username = field.value;
-  }, []);
+  }, [ctx.model.props.aiEmployee, field.value]);
 
   useEffect(() => {
     if (disabled && isOpen) {

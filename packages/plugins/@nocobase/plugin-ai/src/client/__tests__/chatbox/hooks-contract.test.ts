@@ -10,24 +10,24 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
-import type { AIEmployee, Conversation, Message } from '../../ai-employees/types';
+import type { AIEmployee, Conversation, Message } from '../../../client-v2/ai-employees/types';
 import type { WorkflowTask, WorkflowTaskDetail } from '../../../client-v2/ai-employees/chatbox/stores/workflow-tasks';
-import { useChat } from '../../ai-employees/chatbox/hooks/useChat';
-import { useChatBoxActions } from '../../ai-employees/chatbox/hooks/useChatBoxActions';
-import { useChatConversationActions } from '../../ai-employees/chatbox/hooks/useChatConversationActions';
-import { useChatMessageActions } from '../../ai-employees/chatbox/hooks/useChatMessageActions';
-import { useToolCallActions } from '../../ai-employees/chatbox/hooks/useToolCallActions';
-import { useWorkflowTasks } from '../../ai-employees/chatbox/hooks/useWorkflowTasks';
-import { useChatBoxStore } from '../../ai-employees/chatbox/stores/chat-box';
-import { useChatConversationsStore } from '../../ai-employees/chatbox/stores/chat-conversations';
+import { useChat } from '../../../client-v2/ai-employees/chatbox/hooks/useChat';
+import { useChatBoxActions } from '../../../client-v2/ai-employees/chatbox/hooks/useChatBoxActions';
+import { useChatConversationActions } from '../../../client-v2/ai-employees/chatbox/hooks/useChatConversationActions';
+import { useChatMessageActions } from '../../../client-v2/ai-employees/chatbox/hooks/useChatMessageActions';
+import { useToolCallActions } from '../../../client-v2/ai-employees/chatbox/hooks/useToolCallActions';
+import { useWorkflowTasks } from '../../../client-v2/ai-employees/chatbox/hooks/useWorkflowTasks';
+import { useChatBoxStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-box';
+import { useChatConversationsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-conversations';
 import {
   CHAT_DEFAULT_SESSION_KEY,
   CHAT_EMPTY_SESSION_STATE,
   useChatMessagesStore,
-} from '../../ai-employees/chatbox/stores/chat-messages';
-import { useChatToolCallStore } from '../../ai-employees/chatbox/stores/chat-tool-call';
-import { useChatToolsStore } from '../../ai-employees/chatbox/stores/chat-tools';
-import { useWorkflowTasksStore } from '../../ai-employees/chatbox/stores/workflow-tasks';
+} from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
+import { useChatToolCallStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-tool-call';
+import { useChatToolsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-tools';
+import { useWorkflowTasksStore } from '../../../client-v2/ai-employees/chatbox/stores/workflow-tasks';
 
 type MockResourceMethods = Record<string, ReturnType<typeof vi.fn>>;
 
@@ -220,13 +220,13 @@ vi.mock('@formily/shared', async (importOriginal) => {
   };
 });
 
-vi.mock('../../repositories/hooks/useAIConfigRepository', () => ({
+vi.mock('../../../client-v2/repositories/hooks/useAIConfigRepository', () => ({
   useAIConfigRepository: () => ({
     getLLMServices: vi.fn(() => Promise.resolve(mockRuntime.services)),
   }),
 }));
 
-vi.mock('../../debug-logger', () => ({
+vi.mock('../../../client-v2/debug-logger', () => ({
   aiDebugLogger: {
     log: vi.fn(),
   },

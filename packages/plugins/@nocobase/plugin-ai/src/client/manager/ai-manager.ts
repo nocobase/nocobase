@@ -7,56 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Registry } from '@nocobase/utils/client';
-import type { ComponentType } from 'react';
-import type { LLMProviderOptions, ToolModalProps, ToolOptions } from '../../client-v2/manager/ai-manager';
-import type { WorkContextOptions } from '../ai-employees/types';
-
-export type { LLMProviderOptions, ToolModalProps, ToolOptions };
-
-export class AIManager {
-  llmProviders = new Registry<LLMProviderOptions>();
-  chatSettings = new Map<
-    string,
-    {
-      title: string;
-      Component: ComponentType;
-    }
-  >();
-  workContext = new Registry<WorkContextOptions>();
-
-  registerLLMProvider(name: string, options: LLMProviderOptions) {
-    this.llmProviders.register(name, options);
-  }
-
-  registerWorkContext(name: string, options: WorkContextOptions) {
-    const [rootKey, childKey] = name.split('.');
-    if (childKey) {
-      const root = this.workContext.get(rootKey);
-      if (!root?.children) {
-        return;
-      }
-      root.children[childKey] = {
-        name: childKey,
-        ...options,
-      };
-      return;
-    }
-    this.workContext.register(name, {
-      name,
-      ...options,
-    });
-  }
-
-  getWorkContext(name: string): WorkContextOptions | null {
-    const [rootKey, childKey] = name.split('.');
-    if (childKey) {
-      const root = this.workContext.get(rootKey);
-      if (!root?.children) {
-        return null;
-      }
-      return root.children[childKey];
-    }
-    return this.workContext.get(name);
-  }
-}
+export { AIManager } from '../../client-v2/manager/ai-manager';
+export type { LLMProviderOptions, ToolModalProps, ToolOptions } from '../../client-v2/manager/ai-manager';

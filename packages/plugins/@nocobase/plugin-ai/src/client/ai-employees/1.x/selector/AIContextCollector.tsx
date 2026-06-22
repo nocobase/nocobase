@@ -7,40 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useEffect } from 'react';
-import { useAISelectionContext } from './AISelectorProvider';
-import { useForm } from '@formily/react';
+import React, { useEffect } from 'react';
 import { useResourceActionContext } from '@nocobase/client';
 import { registerDataModelingRefreshHandler } from '../../../../client-v2/ai-employees/tools';
-
-export const AIFormContextCollector: React.FC<{
-  uid: string;
-}> = (props) => {
-  const { uid } = props;
-  const { collect } = useAISelectionContext();
-  const form = useForm();
-
-  useEffect(() => {
-    collect(uid, 'form', form);
-  }, [form, uid, collect]);
-
-  return null;
-};
 
 export const AIResourceContextCollector: React.FC<{
   uid: string;
 }> = (props) => {
   const { uid } = props;
-  const { collect } = useAISelectionContext();
   const service = useResourceActionContext();
 
   useEffect(() => {
-    collect(uid, 'service', service);
     if (uid !== 'collections:list' || typeof service?.refresh !== 'function') {
       return;
     }
     return registerDataModelingRefreshHandler(() => service.refresh());
-  }, [uid, service, collect]);
+  }, [uid, service]);
 
   return null;
 };

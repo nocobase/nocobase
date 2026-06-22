@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useMemo } from 'react';
-import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { useAIConfigRepository } from '../../../client-v2/repositories/hooks/useAIConfigRepository';
 import { getAllModelsWithLabel } from '../utils';
 
 export const useLLMServiceCatalog = () => {

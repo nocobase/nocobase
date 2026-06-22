@@ -42,19 +42,19 @@ import c31 from './fixtures/chatbox-state/stable/C31-error-response-recovery-sou
 import c32 from './fixtures/chatbox-state/stable/C32-context-items-dedupe-remove.fixture.json';
 import c33 from './fixtures/chatbox-state/stable/C33-draft-session-migration.fixture.json';
 import c34 from './fixtures/chatbox-state/stable/C34-dialog-hide-resume.fixture.json';
-import type { Message } from '../../ai-employees/types';
-import { useChatBoxStore } from '../../ai-employees/chatbox/stores/chat-box';
-import { useChatConversationsStore } from '../../ai-employees/chatbox/stores/chat-conversations';
+import type { Message } from '../../../client-v2/ai-employees/types';
+import { useChatBoxStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-box';
+import { useChatConversationsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-conversations';
 import {
   CHAT_DEFAULT_SESSION_KEY,
   CHAT_EMPTY_SESSION_STATE,
   useChatMessagesStore,
-} from '../../ai-employees/chatbox/stores/chat-messages';
-import { useChatToolCallStore } from '../../ai-employees/chatbox/stores/chat-tool-call';
-import { useChatToolsStore } from '../../ai-employees/chatbox/stores/chat-tools';
-import { useWorkflowTasksStore } from '../../ai-employees/chatbox/stores/workflow-tasks';
-import { aiSelection } from '../../ai-employees/stores/ai-selection';
-import { dialogController } from '../../ai-employees/stores/dialog-controller';
+} from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
+import { useChatToolCallStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-tool-call';
+import { useChatToolsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-tools';
+import { useWorkflowTasksStore } from '../../../client-v2/ai-employees/chatbox/stores/workflow-tasks';
+import { aiSelection } from '../../../client-v2/ai-employees/stores/ai-selection';
+import { dialogController } from '../../../client-v2/ai-employees/stores/dialog-controller';
 
 type MessageSummary = {
   role: string | null;

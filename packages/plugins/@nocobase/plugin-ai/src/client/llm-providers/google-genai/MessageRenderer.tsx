@@ -8,9 +8,9 @@
  */
 
 import React from 'react';
-import { Markdown } from '../../ai-employees/chatbox/markdown/Markdown';
-import { ToolCard } from '../../ai-employees/chatbox/generative-ui/ToolCard';
-import { Message } from '../../ai-employees/types';
+import { Markdown } from '../../../client-v2/ai-employees/chatbox/components/Markdown';
+import { ToolCard } from '../../../client-v2/ai-employees/chatbox/components/ToolCard';
+import type { Message } from '../../../client-v2/ai-employees/types';
 
 export const MessageRenderer: React.FC<{
   msg: Message['content'];
@@ -27,15 +27,7 @@ export const MessageRenderer: React.FC<{
         gap: 16,
       }}
     >
-      {typeof content === 'string' && (
-        <Markdown
-          message={{
-            ...msg,
-            // @ts-ignore
-            content,
-          }}
-        />
-      )}
+      {typeof content === 'string' && <Markdown message={{ ...msg, content }}>{content}</Markdown>}
       {msg.tool_calls?.length ? <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} /> : null}
     </div>
   );

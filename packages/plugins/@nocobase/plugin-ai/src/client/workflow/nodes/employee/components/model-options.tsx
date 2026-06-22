@@ -15,7 +15,7 @@ import { Field, ObjectField } from '@formily/core';
 import { SchemaComponent } from '@nocobase/client';
 import { useLLMServiceCatalog } from '../../../../llm-services/hooks/useLLMServiceCatalog';
 import { namespace, useT } from '../../../../locale';
-import { getAIEmployeeModels, getAllModels } from '../../../../ai-employees/chatbox/model';
+import { getAIEmployeeModels, getAllModels } from '../../../../../client-v2/ai-employees/chatbox/model';
 
 const ModelSelect: React.FC = observer(() => {
   const t = useT();
