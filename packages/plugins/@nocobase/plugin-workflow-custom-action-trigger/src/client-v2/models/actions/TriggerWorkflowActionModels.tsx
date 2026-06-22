@@ -85,6 +85,14 @@ function parseContextData(contextData: unknown) {
   return JSON.parse(contextData);
 }
 
+async function resolveContextData(ctx: FlowRuntimeContext, contextData: unknown) {
+  const parsedContextData = parseContextData(contextData);
+  if (typeof ctx.resolveJsonTemplate !== 'function') {
+    return parsedContextData;
+  }
+  return await ctx.resolveJsonTemplate(parsedContextData);
+}
+
 function ensureTriggerWorkflowsConfigured(ctx: FlowRuntimeContext, group?: TriggerWorkflowBinding[]) {
   if (group?.length) {
     return true;
@@ -511,7 +519,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           let values;
           if (contextData) {
             try {
-              values = parseContextData(contextData);
+              values = await resolveContextData(ctx, contextData);
             } catch (e) {
               // resolution error, ignore
             }
@@ -573,7 +581,7 @@ async function globalTriggerWorkflowHandler(ctx, params) {
   let values;
   if (params.contextData) {
     try {
-      values = parseContextData(params.contextData);
+      values = await resolveContextData(ctx, params.contextData);
     } catch (e) {
       // resolution error, ignore
     }
