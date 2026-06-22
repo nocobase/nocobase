@@ -58,6 +58,13 @@ type TaskRecord = {
   sourceId?: number | string;
 };
 
+const TASK_STATUS_OPTIONS = [
+  { label: '{{t("Init")}}', value: 'init', color: 'default' },
+  { label: '{{t("Processing")}}', value: 'processing', color: 'processing' },
+  { label: '{{t("Success")}}', value: 'success', color: 'success' },
+  { label: '{{t("Failed")}}', value: 'failed', color: 'error' },
+];
+
 function normalizeListResponse(response: unknown): ListResult {
   const body = (response as { data?: { data?: unknown; meta?: { count?: number; total?: number } } })?.data;
   const payload = body?.data;
@@ -181,6 +188,7 @@ function SourceForm(props: {
 
 function TasksDrawer(props: { source: SourceRecord }) {
   const { t } = useUserDataSyncSourceTranslation();
+  const compileT = useT();
   const ctx = useFlowContext();
   const { message } = App.useApp();
   const { data, loading, refresh } = useRequest(async () => {
@@ -207,7 +215,10 @@ function TasksDrawer(props: { source: SourceRecord }) {
     {
       dataIndex: 'status',
       title: t('Status'),
-      render: (value: string) => <Tag>{t(value || '')}</Tag>,
+      render: (value: string) => {
+        const option = TASK_STATUS_OPTIONS.find((item) => item.value === value);
+        return <Tag color={option?.color}>{option ? compileT(option.label) : t(value || '')}</Tag>;
+      },
     },
     {
       dataIndex: 'message',
@@ -217,12 +228,8 @@ function TasksDrawer(props: { source: SourceRecord }) {
     {
       key: 'actions',
       title: t('Actions'),
-      render: (_, record) =>
-        record.status === 'failed' ? (
-          <Button type="link" onClick={() => retry(record)}>
-            {t('Retry')}
-          </Button>
-        ) : null,
+      width: 80,
+      render: (_, record) => (record.status === 'failed' ? <a onClick={() => retry(record)}>{t('Retry')}</a> : null),
     },
   ];
 
@@ -291,6 +298,7 @@ export default function UserDataSyncSourcePage() {
     ctx.viewer.drawer({
       title: t('Tasks'),
       closable: true,
+      size: 'large',
       content: () => <TasksDrawer source={record} />,
     });
   };
@@ -347,29 +355,18 @@ export default function UserDataSyncSourcePage() {
     {
       key: 'actions',
       title: t('Actions'),
+      width: 240,
       render: (_, record) => (
         <Space split="|">
-          {record.enabled ? (
-            <Button type="link" onClick={() => handleSync(record)}>
-              {t('Sync')}
-            </Button>
-          ) : null}
-          {record.enabled ? (
-            <Button type="link" onClick={() => openTasks(record)}>
-              {t('Tasks')}
-            </Button>
-          ) : null}
-          <Button type="link" onClick={() => openForm('edit', record.sourceType || '', record)}>
-            {t('Configure')}
-          </Button>
+          {record.enabled ? <a onClick={() => handleSync(record)}>{t('Sync')}</a> : null}
+          {record.enabled ? <a onClick={() => openTasks(record)}>{t('Tasks')}</a> : null}
+          <a onClick={() => openForm('edit', record.sourceType || '', record)}>{t('Configure')}</a>
           <Popconfirm
             title={t('Delete')}
             description={t('Are you sure you want to delete it?')}
             onConfirm={() => handleDelete(record)}
           >
-            <Button type="link" danger>
-              {t('Delete')}
-            </Button>
+            <a>{t('Delete')}</a>
           </Popconfirm>
         </Space>
       ),
