@@ -716,7 +716,7 @@ exports.checkDBDialect = function () {
 };
 
 exports.generatePlugins = function () {
-  if (process.env.NOCOBASE_DEV_LOCAL_PLUGINS_ONLY === 'true') {
+  if (process.env.NOCOBASE_RUNNING_IN_DOCKER === 'true') {
     return;
   }
   try {
