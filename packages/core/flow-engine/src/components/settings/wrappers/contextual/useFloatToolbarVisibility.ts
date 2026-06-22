@@ -47,15 +47,22 @@ const getToolbarModelUidFromTarget = (target: EventTarget | null): string | null
   return target.closest('.nb-toolbar-container[data-model-uid]')?.getAttribute('data-model-uid') || null;
 };
 
-const getRenderedToolbarModelUids = (ownerDocument: Document | null): Set<string> => {
+const escapeCssAttributeValue = (value: string): string => {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\a ')
+    .replace(/\r/g, '\\d ')
+    .replace(/\f/g, '\\c ');
+};
+
+const isToolbarModelUidRendered = (ownerDocument: Document | null, modelUid: string): boolean => {
   if (!ownerDocument) {
-    return new Set();
+    return false;
   }
 
-  return new Set(
-    Array.from(ownerDocument.querySelectorAll<HTMLElement>('.nb-toolbar-container[data-model-uid]'))
-      .map((element) => element.getAttribute('data-model-uid'))
-      .filter((uid): uid is string => !!uid),
+  return !!ownerDocument.querySelector<HTMLElement>(
+    `.nb-toolbar-container[data-model-uid="${escapeCssAttributeValue(modelUid)}"]`,
   );
 };
 
@@ -281,8 +288,8 @@ export const useFloatToolbarVisibility = ({
             return prevIds;
           }
 
-          const renderedToolbarModelUids = getRenderedToolbarModelUids(containerRef.current?.ownerDocument ?? null);
-          const nextIds = prevIds.filter((id) => renderedToolbarModelUids.has(id));
+          const ownerDocument = containerRef.current?.ownerDocument ?? null;
+          const nextIds = prevIds.filter((id) => isToolbarModelUidRendered(ownerDocument, id));
           return nextIds.length === prevIds.length ? prevIds : nextIds;
         });
         setHostHovered(true);

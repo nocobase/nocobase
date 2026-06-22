@@ -987,14 +987,24 @@ describe('FlowsFloatContextMenu', () => {
     );
     dragButton.ownerDocument.removeEventListener(TOOLBAR_DRAG_ACTIVITY_EVENT, dragActivityListener);
 
-    fireEvent.mouseLeave(childIcons, { relatedTarget: parentGap });
-    fireEvent.mouseEnter(parentHost, { relatedTarget: childIcons });
-    fireEvent.mouseEnter(parentGap, { relatedTarget: childIcons });
-    fireEvent.mouseMove(parentGap);
+    vi.useFakeTimers();
+    const querySelectorAllSpy = vi.spyOn(parentGap.ownerDocument, 'querySelectorAll');
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 250));
-    });
+    try {
+      fireEvent.mouseLeave(childIcons, { relatedTarget: parentGap });
+      fireEvent.mouseEnter(parentHost, { relatedTarget: childIcons });
+      fireEvent.mouseEnter(parentGap, { relatedTarget: childIcons });
+      fireEvent.mouseMove(parentGap);
+
+      expect(querySelectorAllSpy).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
+    } finally {
+      querySelectorAllSpy.mockRestore();
+      vi.useRealTimers();
+    }
 
     await waitFor(() => {
       const childOverlayAfterDrag = queryOverlay(appContainer, childInstanceId);
