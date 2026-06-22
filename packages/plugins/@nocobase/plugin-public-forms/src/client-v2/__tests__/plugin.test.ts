@@ -15,14 +15,11 @@ import {
   PUBLIC_FORM_ROUTE_NAME,
   PUBLIC_FORM_SUBMIT_ACTION_MODEL,
   PUBLIC_FORMS_NAMESPACE,
-  PUBLIC_FORMS_SETTINGS_CONFIGURE_ROUTE_PATH,
   PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL,
-  PUBLIC_FORMS_SETTINGS_LAYOUT_UID,
-  PUBLIC_FORMS_SETTINGS_ROUTE_NAME,
 } from '../constants';
 
 describe('PluginPublicFormsClientV2', () => {
-  it('registers settings parent route, nested layout and public route', async () => {
+  it('registers settings list/detail routes and public route', async () => {
     const { default: PluginPublicFormsClientV2 } = await import('../plugin');
     const app = {
       i18n: {
@@ -74,12 +71,17 @@ describe('PluginPublicFormsClientV2', () => {
       title: 'Public forms',
       componentLoader: expect.any(Function),
     });
-    expect(app.layoutManager.registerLayout).toHaveBeenCalledWith({
-      routeName: PUBLIC_FORMS_SETTINGS_ROUTE_NAME,
-      routePath: PUBLIC_FORMS_SETTINGS_CONFIGURE_ROUTE_PATH,
-      uid: PUBLIC_FORMS_SETTINGS_LAYOUT_UID,
-      layoutModelClass: PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL,
+    expect(app.pluginSettingsManager.addPageTabItem).toHaveBeenCalledWith({
+      menuKey: PUBLIC_FORMS_NAMESPACE,
+      key: ':name',
+      title: false,
+      hidden: true,
+      componentLoader: expect.any(Function),
     });
+    const detailPageOptions = app.pluginSettingsManager.addPageTabItem.mock.calls.find(
+      ([options]) => options.key === ':name',
+    )?.[0];
+    await expect(detailPageOptions.componentLoader()).resolves.toHaveProperty('default');
     expect(app.layoutManager.registerLayout).toHaveBeenCalledWith({
       routeName: PUBLIC_FORM_ROUTE_NAME,
       routePath: '/public-forms',

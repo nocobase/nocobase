@@ -16,10 +16,7 @@ import {
   PUBLIC_FORM_ROUTE_NAME,
   PUBLIC_FORM_SUBMIT_ACTION_MODEL,
   PUBLIC_FORMS_NAMESPACE,
-  PUBLIC_FORMS_SETTINGS_CONFIGURE_ROUTE_PATH,
   PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL,
-  PUBLIC_FORMS_SETTINGS_LAYOUT_UID,
-  PUBLIC_FORMS_SETTINGS_ROUTE_NAME,
 } from './constants';
 
 export class PluginPublicFormsClientV2 extends Plugin<Record<string, never>, Application> {
@@ -55,11 +52,12 @@ export class PluginPublicFormsClientV2 extends Plugin<Record<string, never>, App
       componentLoader: () => import('./pages/PublicFormsSettingsPage'),
     });
 
-    this.app.layoutManager.registerLayout({
-      routeName: PUBLIC_FORMS_SETTINGS_ROUTE_NAME,
-      routePath: PUBLIC_FORMS_SETTINGS_CONFIGURE_ROUTE_PATH,
-      uid: PUBLIC_FORMS_SETTINGS_LAYOUT_UID,
-      layoutModelClass: PUBLIC_FORMS_SETTINGS_LAYOUT_MODEL,
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: PUBLIC_FORMS_NAMESPACE,
+      key: ':name',
+      title: false,
+      hidden: true,
+      componentLoader: () => import('./pages/PublicFormsSettingsDetailPage'),
     });
 
     this.app.layoutManager.registerLayout({
