@@ -21,6 +21,7 @@ describe('PluginUiLayoutClientV2', () => {
       pluginSettingsManager: {
         addMenuItem: vi.fn(),
         addPageTabItem: vi.fn(),
+        setPluginSettingsLink: vi.fn(),
       },
       apiClient: {
         request: vi.fn().mockResolvedValue({
@@ -113,6 +114,7 @@ describe('PluginUiLayoutClientV2', () => {
         key: 'index',
       }),
     );
+    expect(app.pluginSettingsManager.setPluginSettingsLink).toHaveBeenCalledWith('ui-layout', 'routes');
     const settingsApp = createMockClient();
     for (const [menuItem] of app.pluginSettingsManager.addMenuItem.mock.calls) {
       settingsApp.pluginSettingsManager.addMenuItem(menuItem);
