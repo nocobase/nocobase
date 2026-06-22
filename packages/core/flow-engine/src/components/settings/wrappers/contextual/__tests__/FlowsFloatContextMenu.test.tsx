@@ -567,6 +567,137 @@ describe('FlowsFloatContextMenu', () => {
     });
   });
 
+  it('does not let resize handle drag release close the surrounding modal wrap', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'resize-parent-model');
+    const model = createModel(engine, 'resize-child-model');
+    model.setParent(parentModel);
+    const appContainer = createAppContainer();
+    const modalWrap = createPopupRoot('ant-modal-wrap');
+    const onModalWrapClick = vi.fn();
+    modalWrap.addEventListener('click', onModalWrapClick);
+    appContainer.appendChild(modalWrap);
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+    mockRect(modalWrap, { top: 100, left: 200, width: 640, height: 520 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={model} showDragHandle>
+        <div data-testid="resize-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: modalWrap },
+    );
+
+    const host = getHost(getByTestId('resize-content'));
+    mockRect(host, { top: 140, left: 280, width: 220, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = modalWrap.querySelector('[data-model-uid="resize-child-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    const resizeHandle = overlay.querySelector('.resize-handle-right') as HTMLDivElement;
+    expect(resizeHandle).toBeTruthy();
+
+    fireEvent.mouseDown(resizeHandle, { clientX: 500, clientY: 164 });
+    fireEvent.mouseMove(document, { clientX: 460, clientY: 164 });
+    fireEvent.mouseUp(modalWrap, { clientX: 460, clientY: 164 });
+    fireEvent.click(modalWrap, { clientX: 460, clientY: 164 });
+
+    expect(onModalWrapClick).not.toHaveBeenCalled();
+  });
+
+  it('emits resize end when resize handles unmount during a drag', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'resize-unmount-parent-model');
+    const model = createModel(engine, 'resize-unmount-child-model');
+    model.setParent(parentModel);
+    const appContainer = createAppContainer();
+    const onResizeEnd = vi.fn();
+    parentModel.emitter.on('onResizeEnd', onResizeEnd);
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+
+    const { getByTestId, unmount } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={model} showDragHandle>
+        <div data-testid="resize-unmount-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: appContainer },
+    );
+
+    const host = getHost(getByTestId('resize-unmount-content'));
+    mockRect(host, { top: 140, left: 280, width: 220, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector(
+        '[data-model-uid="resize-unmount-child-model"]',
+      ) as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    const resizeHandle = overlay.querySelector('.resize-handle-right') as HTMLDivElement;
+    expect(resizeHandle).toBeTruthy();
+
+    fireEvent.mouseDown(resizeHandle, { clientX: 500, clientY: 164 });
+    unmount();
+
+    expect(onResizeEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the resize release click suppressed after handles unmount', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'resize-release-unmount-parent-model');
+    const model = createModel(engine, 'resize-release-unmount-child-model');
+    model.setParent(parentModel);
+    const appContainer = createAppContainer();
+    const modalWrap = createPopupRoot('ant-modal-wrap');
+    const onModalWrapClick = vi.fn();
+    modalWrap.addEventListener('click', onModalWrapClick);
+    appContainer.appendChild(modalWrap);
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+    mockRect(modalWrap, { top: 100, left: 200, width: 640, height: 520 });
+
+    const { getByTestId, unmount } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={model} showDragHandle>
+        <div data-testid="resize-release-unmount-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: modalWrap },
+    );
+
+    const host = getHost(getByTestId('resize-release-unmount-content'));
+    mockRect(host, { top: 140, left: 280, width: 220, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = modalWrap.querySelector(
+        '[data-model-uid="resize-release-unmount-child-model"]',
+      ) as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    const resizeHandle = overlay.querySelector('.resize-handle-right') as HTMLDivElement;
+    expect(resizeHandle).toBeTruthy();
+
+    fireEvent.mouseDown(resizeHandle, { clientX: 500, clientY: 164 });
+    fireEvent.mouseUp(modalWrap, { clientX: 460, clientY: 164 });
+    unmount();
+    fireEvent.click(modalWrap, { clientX: 460, clientY: 164 });
+
+    expect(onModalWrapClick).not.toHaveBeenCalled();
+  });
+
   it('hides parent toolbar when hovering a nested child host', async () => {
     const engine = new FlowEngine();
     await engine.flowSettings.forceEnable();
