@@ -9,16 +9,10 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { Avatar, Popover } from 'antd';
-import {
-  EMBED_REPLACING_DATA_KEY,
-  GLOBAL_EMBED_CONTAINER_ID,
-  type FlowModelContext,
-  useFlowContext,
-} from '@nocobase/flow-engine';
+import { type FlowModelContext, useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { avatars } from './avatars';
 import { AIEmployeeProfileCard } from './ProfileCard';
-import { ChatBox } from './chatbox/components/ChatBox';
 import { useChat } from './chatbox/hooks/useChat';
 import { useChatBoxActions } from './chatbox/hooks/useChatBoxActions';
 import { useChatMessageActions } from './chatbox/hooks/useChatMessageActions';
@@ -119,52 +113,16 @@ export const AIEmployeeShortcut: React.FC<{
     syncContextAttachments(shortcutContext);
   }, [chat, getShortcutContext, syncContextAttachments]);
 
-  const openEmbeddedChatBox = useCallback(
+  const openGlobalChatBox = useCallback(
     async (taskOptions?: Task[]) => {
       if (!resolvedAIEmployee) {
         return;
       }
-      const target = document.querySelector<HTMLDivElement>(`#${GLOBAL_EMBED_CONTAINER_ID}`);
       const resolvedTasks = taskOptions ?? tasks;
-      if (!target) {
-        await triggerTask({ aiEmployee: resolvedAIEmployee, tasks: resolvedTasks, auto });
-        syncShortcutContext();
-        return;
-      }
-      await triggerTask({ aiEmployee: resolvedAIEmployee, tasks: resolvedTasks, auto, open: false });
+      await triggerTask({ aiEmployee: resolvedAIEmployee, tasks: resolvedTasks, auto });
       syncShortcutContext();
-      ctx.viewer.embed({
-        type: 'embed',
-        target,
-        title: resolvedAIEmployee.nickname,
-        styles: {
-          body: {
-            padding: 0,
-            overflow: 'hidden',
-          },
-        },
-        onOpen() {
-          target.style.width = '33.3%';
-          target.style.maxWidth = '800px';
-          target.style.minWidth = '0px';
-        },
-        onClose() {
-          if (target.dataset[EMBED_REPLACING_DATA_KEY] !== '1') {
-            target.style.width = 'auto';
-            target.style.maxWidth = 'none';
-            target.style.minWidth = 'auto';
-          }
-        },
-        content: (view) => (
-          <ChatBox
-            onClose={() => {
-              Promise.resolve(view.close()).catch(console.error);
-            }}
-          />
-        ),
-      });
     },
-    [auto, ctx.viewer, resolvedAIEmployee, syncShortcutContext, tasks, triggerTask],
+    [auto, resolvedAIEmployee, syncShortcutContext, tasks, triggerTask],
   );
 
   const handleTaskClick = useCallback(
@@ -176,9 +134,9 @@ export const AIEmployeeShortcut: React.FC<{
       if (!resolvedAIEmployee) {
         return;
       }
-      openEmbeddedChatBox([task]).catch(console.error);
+      openGlobalChatBox([task]).catch(console.error);
     },
-    [onTaskClick, openEmbeddedChatBox, resolvedAIEmployee],
+    [onTaskClick, openGlobalChatBox, resolvedAIEmployee],
   );
 
   const handleClick = useCallback(() => {
@@ -186,8 +144,8 @@ export const AIEmployeeShortcut: React.FC<{
       onClick();
       return;
     }
-    openEmbeddedChatBox().catch(console.error);
-  }, [onClick, openEmbeddedChatBox]);
+    openGlobalChatBox().catch(console.error);
+  }, [onClick, openGlobalChatBox]);
 
   if (loading || !resolvedAIEmployee) {
     return null;
