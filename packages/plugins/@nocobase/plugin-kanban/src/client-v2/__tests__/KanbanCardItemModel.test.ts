@@ -196,6 +196,58 @@ describe('KanbanCardItemModel.cardSettings', () => {
     expect(ensureCardViewAction).toHaveBeenCalledWith({ persist: true });
   });
 
+  test('popup beforeParamsSave keeps copied card popup template state', async () => {
+    const flow: any = (KanbanCardItemModel as any).globalFlowRegistry.getFlow('cardSettings');
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'card-view-action' });
+    const masterBlock = {
+      subModels: {
+        cardViewAction: { uid: 'card-view-action' },
+      },
+      ensureCardViewAction,
+      setProps: vi.fn(),
+    };
+    const masterItem: any = {
+      props: {
+        popupTemplateUid: 'tpl-card',
+        popupTargetUid: 'copied-card-popup',
+      },
+      stepParams: {},
+      emitter: { emit: vi.fn() },
+      parent: masterBlock,
+      setProps: vi.fn(function (this: any, nextProps) {
+        Object.assign(this.props, nextProps);
+      }),
+      getAction: () => ({ beforeParamsSave: vi.fn().mockResolvedValue(undefined) }),
+    };
+
+    await flow.steps.popup.beforeParamsSave(
+      {
+        model: masterItem,
+      } as any,
+      {
+        mode: 'dialog',
+        size: 'large',
+        popupTemplateUid: undefined,
+        popupTemplateContext: true,
+        uid: 'copied-card-popup',
+        dataSourceKey: 'main',
+        collectionName: 'template_tasks',
+      },
+      {
+        popupTemplateUid: 'tpl-card',
+        uid: 'copied-card-popup',
+      },
+    );
+
+    expect(masterItem.props.popupTargetUid).toBe('copied-card-popup');
+    expect(masterItem.stepParams.cardSettings.popup).toMatchObject({
+      popupTemplateContext: true,
+      uid: 'copied-card-popup',
+      collectionName: 'template_tasks',
+    });
+    expect(ensureCardViewAction).toHaveBeenCalledWith({ persist: true });
+  });
+
   test('layout changes persist from card forks and propagate to details items', () => {
     const flow: any = (KanbanCardItemModel as any).globalFlowRegistry.getFlow('cardSettings');
     const detailsItem = {

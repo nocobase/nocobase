@@ -135,6 +135,31 @@ const replaceModelStepParams = (model: any, flowKey: string, stepKey: string, pa
   model.emitter?.emit?.('onStepParamsChanged');
 };
 
+const getModelStepParams = (model: any, flowKey: string, stepKey: string) => {
+  const stepParams = model?.stepParams?.[flowKey]?.[stepKey];
+  if (stepParams) {
+    return stepParams;
+  }
+
+  try {
+    return model?.getStepParams?.(flowKey, stepKey) || {};
+  } catch {
+    return {};
+  }
+};
+
+const hasKanbanPopupTemplateState = (params?: Record<string, any>) => {
+  if (!params || typeof params !== 'object') {
+    return false;
+  }
+
+  return !!normalizeKanbanPopupTemplateUid(params.popupTemplateUid) || params.popupTemplateContext === true;
+};
+
+const isKanbanPopupTemplateCopyMode = (params?: Record<string, any>) => {
+  return params?.popupTemplateContext === true;
+};
+
 const setKanbanModelProps = (model: any, props: Record<string, any>) => {
   model.setProps(props);
   model._options = model._options || {};
@@ -211,13 +236,18 @@ const resolveKanbanPopupTargetUid = ({
   nextPopupTargetUid,
   currentPopupTemplateUid,
   currentPopupTargetUid,
+  popupTemplateCopyMode,
 }: {
   nextPopupTemplateUid?: string;
   nextPopupTargetUid?: string;
   currentPopupTemplateUid?: string;
   currentPopupTargetUid?: string;
+  popupTemplateCopyMode?: boolean;
 }) => {
-  return !nextPopupTemplateUid && currentPopupTemplateUid && nextPopupTargetUid === currentPopupTargetUid
+  return !nextPopupTemplateUid &&
+    !popupTemplateCopyMode &&
+    currentPopupTemplateUid &&
+    nextPopupTargetUid === currentPopupTargetUid
     ? undefined
     : nextPopupTargetUid;
 };
@@ -242,6 +272,7 @@ const applyKanbanBlockPopupSettings = async (
     nextPopupTargetUid,
     currentPopupTemplateUid,
     currentPopupTargetUid,
+    popupTemplateCopyMode: isKanbanPopupTemplateCopyMode(params),
   });
   const normalizedParams = {
     ...params,
@@ -867,6 +898,7 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       pageModelClass?: string;
       dataSourceKey?: string;
       collectionName?: string;
+      popupTemplateParams?: Record<string, any>;
     },
     syncOptions: KanbanPopupActionOptions = {},
   ) {
@@ -882,41 +914,48 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     const currentParams = action.getStepParams?.('popupSettings', 'openView') || {};
     const currentPopupTemplateUid = normalizeKanbanPopupTemplateUid(currentParams.popupTemplateUid);
     const currentUid = normalizeKanbanPopupTargetUid(currentParams.uid);
+    const nextTemplateParams = hasKanbanPopupTemplateState(options.popupTemplateParams)
+      ? options.popupTemplateParams
+      : undefined;
+    const currentTemplateParams =
+      !syncOptions.persist && hasKanbanPopupTemplateState(currentParams) ? currentParams : undefined;
+    const templateParams = nextTemplateParams || currentTemplateParams;
+    const templateUid = normalizeKanbanPopupTargetUid(templateParams?.uid);
     let sanitizedUid = nextUid && nextUid !== this.uid && nextUid !== selfUid ? nextUid : undefined;
 
     if (!nextPopupTemplateUid && currentPopupTemplateUid && sanitizedUid === currentUid) {
       sanitizedUid = undefined;
     }
 
-    const resolvedUid = sanitizedUid || (nextPopupTemplateUid ? currentUid || selfUid : selfUid);
+    const resolvedUid = sanitizedUid || templateUid || (nextPopupTemplateUid ? currentUid || selfUid : selfUid);
     const nextPageModelClass = options.pageModelClass || undefined;
     const nextDataSourceKey = options.dataSourceKey || undefined;
     const nextCollectionName = options.collectionName || undefined;
 
-    if (
-      currentParams.mode === nextMode &&
-      currentParams.size === nextSize &&
-      currentParams.popupTemplateUid === nextPopupTemplateUid &&
-      normalizeKanbanPopupTargetUid(currentParams.uid) === resolvedUid &&
-      currentParams.pageModelClass === nextPageModelClass &&
-      currentParams.dataSourceKey === nextDataSourceKey &&
-      currentParams.collectionName === nextCollectionName
-    ) {
+    const nextParams = {
+      ...(templateParams || {}),
+      mode: nextMode,
+      size: nextSize,
+      uid: resolvedUid,
+      pageModelClass: nextPageModelClass,
+      ...(nextPopupTemplateUid ? { popupTemplateUid: nextPopupTemplateUid } : {}),
+      ...(templateParams?.dataSourceKey || nextDataSourceKey
+        ? { dataSourceKey: templateParams?.dataSourceKey || nextDataSourceKey }
+        : {}),
+      ...(templateParams?.collectionName || nextCollectionName
+        ? { collectionName: templateParams?.collectionName || nextCollectionName }
+        : {}),
+    };
+
+    if (!nextPopupTemplateUid && templateParams?.popupTemplateContext === true) {
+      delete nextParams.popupTemplateUid;
+    }
+
+    if (JSON.stringify(currentParams) === JSON.stringify(nextParams)) {
       return;
     }
 
-    const nextParams = {
-      ...(nextPopupTemplateUid ? currentParams : {}),
-      mode: nextMode,
-      size: nextSize,
-      popupTemplateUid: nextPopupTemplateUid,
-      uid: resolvedUid,
-      pageModelClass: nextPageModelClass,
-      ...(nextDataSourceKey ? { dataSourceKey: nextDataSourceKey } : {}),
-      ...(nextCollectionName ? { collectionName: nextCollectionName } : {}),
-    };
-
-    action.setStepParams('popupSettings', 'openView', nextParams);
+    replaceModelStepParams(action, 'popupSettings', 'openView', nextParams);
 
     if (syncOptions.persist && this.context.flowSettingsEnabled && action?.saveStepParams) {
       await action.saveStepParams();
@@ -934,6 +973,7 @@ export class KanbanBlockModel extends CollectionBlockModel<{
         pageModelClass: this.getCardPopupPageModelClass(),
         dataSourceKey: this.collection?.dataSourceKey,
         collectionName: this.collection?.name,
+        popupTemplateParams: getModelStepParams(this.subModels?.item, 'cardSettings', 'popup'),
       },
       options,
     );
@@ -996,6 +1036,7 @@ export class KanbanBlockModel extends CollectionBlockModel<{
         pageModelClass: this.getPopupPageModelClass(),
         dataSourceKey: this.collection?.dataSourceKey,
         collectionName: this.collection?.name,
+        popupTemplateParams: getModelStepParams(this, 'kanbanSettings', 'popup'),
       },
       options,
     );
@@ -1059,16 +1100,6 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     }
 
     try {
-      if (typeof this.context?.openView === 'function') {
-        await this.context.openView(action.uid, {
-          formData: this.buildQuickCreateFormData(column),
-          ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
-          ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
-          target: this.context.layoutContentElement,
-        });
-        return;
-      }
-
       await action.dispatchEvent(
         'click',
         {
@@ -1109,17 +1140,6 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     }
 
     try {
-      if (typeof this.context?.openView === 'function' && action.uid) {
-        await this.context.openView(action.uid, {
-          mode: this.getCardOpenMode(),
-          ...(this.collection?.dataSourceKey ? { dataSourceKey: this.collection.dataSourceKey } : {}),
-          ...(this.collection?.name ? { collectionName: this.collection.name } : {}),
-          filterByTk,
-          target: this.context.layoutContentElement,
-        });
-        return;
-      }
-
       await action.dispatchEvent(
         'click',
         {

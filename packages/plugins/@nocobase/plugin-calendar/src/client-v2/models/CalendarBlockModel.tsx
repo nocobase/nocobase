@@ -98,6 +98,25 @@ type CalendarPopupActionOptions = {
   persist?: boolean;
 };
 
+type CalendarPopupSettingsOptions = {
+  preferActionSettings?: boolean;
+};
+
+const replaceCalendarActionOpenViewParams = (action: any, params: Record<string, any>) => {
+  if (!action) {
+    return;
+  }
+
+  action.stepParams = action.stepParams || {};
+  action.stepParams.popupSettings = action.stepParams.popupSettings || {};
+  action.stepParams.popupSettings.openView = { ...params };
+  action.emitter?.emit?.('onStepParamsChanged');
+};
+
+const isCalendarPopupTemplateCopyMode = (params?: Record<string, any>) => {
+  return params?.popupTemplateContext === true;
+};
+
 const DRAG_HANDLER_TOOLBAR_ITEMS = [
   {
     key: 'drag-handler',
@@ -316,7 +335,16 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return actionKey === 'quickCreateAction' ? 'quickCreatePopupSettings' : 'eventPopupSettings';
   }
 
-  getStoredPopupSettings(actionKey: 'quickCreateAction' | 'eventViewAction') {
+  getStoredPopupSettings(
+    actionKey: 'quickCreateAction' | 'eventViewAction',
+    action?: any,
+    options: CalendarPopupSettingsOptions = {},
+  ) {
+    const actionParams = action?.getStepParams?.('popupSettings', 'openView');
+    if (options.preferActionSettings !== false && actionParams && Object.keys(actionParams).length > 0) {
+      return actionParams;
+    }
+
     const propKey = this.getPopupSettingsPropKey(actionKey);
     return this.props?.[propKey] || {};
   }
@@ -331,13 +359,21 @@ export class CalendarBlockModel extends CollectionBlockModel {
 
     if (
       popupTemplateUidProvided &&
-      (popupTemplateUid === undefined || popupTemplateUid === null || popupTemplateUid === '')
+      (popupTemplateUid === undefined || popupTemplateUid === null || popupTemplateUid === '') &&
+      !isCalendarPopupTemplateCopyMode(nextParams)
     ) {
       delete nextParams.popupTemplateUid;
       delete nextParams.popupTemplateContext;
       delete nextParams.popupTemplateHasFilterByTk;
       delete nextParams.popupTemplateHasSourceId;
       delete nextParams.uid;
+    }
+    if (
+      popupTemplateUidProvided &&
+      (popupTemplateUid === undefined || popupTemplateUid === null || popupTemplateUid === '') &&
+      isCalendarPopupTemplateCopyMode(nextParams)
+    ) {
+      delete nextParams.popupTemplateUid;
     }
 
     // Quick create is collection-scene; keep it isolated from record-scoped template state.
@@ -361,9 +397,14 @@ export class CalendarBlockModel extends CollectionBlockModel {
     return normalized;
   }
 
-  getPopupSettings(action: any, actionKey: 'quickCreateAction' | 'eventViewAction', actionUid?: string) {
+  getPopupSettings(
+    action: any,
+    actionKey: 'quickCreateAction' | 'eventViewAction',
+    actionUid?: string,
+    options: CalendarPopupSettingsOptions = {},
+  ) {
     const defaults = this.getPopupSettingsDefaults(action?.uid || actionUid);
-    const currentParams = this.getStoredPopupSettings(actionKey);
+    const currentParams = this.getStoredPopupSettings(actionKey, action, options);
 
     return {
       ...defaults,
@@ -383,13 +424,15 @@ export class CalendarBlockModel extends CollectionBlockModel {
       return;
     }
 
-    const nextSettings = this.getPopupSettings(action, actionKey, action?.uid);
+    const nextSettings = this.getPopupSettings(action, actionKey, action?.uid, {
+      preferActionSettings: !options.persist,
+    });
     const currentParams = action.getStepParams?.('popupSettings', 'openView') || {};
     if (JSON.stringify(currentParams) === JSON.stringify(nextSettings)) {
       return;
     }
 
-    action.setStepParams('popupSettings', 'openView', nextSettings);
+    replaceCalendarActionOpenViewParams(action, nextSettings);
 
     if (options.persist && this.context.flowSettingsEnabled && action?.saveStepParams) {
       await action.saveStepParams();
@@ -458,11 +501,6 @@ export class CalendarBlockModel extends CollectionBlockModel {
       target: this.context?.layoutContentElement,
     };
 
-    if (typeof this.context?.openView === 'function' && action.uid) {
-      await this.context.openView(action.uid, inputArgs);
-      return;
-    }
-
     await action.dispatchEvent('click', inputArgs, { debounce: true });
   }
 
@@ -482,11 +520,6 @@ export class CalendarBlockModel extends CollectionBlockModel {
       filterByTk,
       target: this.context?.layoutContentElement,
     };
-
-    if (typeof this.context?.openView === 'function' && action.uid) {
-      await this.context.openView(action.uid, inputArgs);
-      return;
-    }
 
     await action.dispatchEvent('click', inputArgs, { debounce: true });
   }
@@ -834,8 +867,9 @@ CalendarBlockModel.registerFlow({
         const model = ctx.model as CalendarBlockModel;
         model.setPopupSettings('quickCreateAction', params);
       },
-      async beforeParamsSave(ctx, params) {
+      async beforeParamsSave(ctx, params, previousParams) {
         const model = ctx.model as CalendarBlockModel;
+        await model.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
         model.setPopupSettings('quickCreateAction', params);
         await model.ensurePopupAction('quickCreateAction', { persist: true });
       },
@@ -852,8 +886,9 @@ CalendarBlockModel.registerFlow({
         const model = ctx.model as CalendarBlockModel;
         model.setPopupSettings('eventViewAction', params);
       },
-      async beforeParamsSave(ctx, params) {
+      async beforeParamsSave(ctx, params, previousParams) {
         const model = ctx.model as CalendarBlockModel;
+        await model.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
         model.setPopupSettings('eventViewAction', params);
         await model.ensurePopupAction('eventViewAction', { persist: true });
       },

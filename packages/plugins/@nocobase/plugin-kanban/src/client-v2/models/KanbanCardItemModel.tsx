@@ -67,6 +67,10 @@ const replaceModelStepParams = (model: any, flowKey: string, stepKey: string, pa
   model.emitter?.emit?.('onStepParamsChanged');
 };
 
+const isKanbanPopupTemplateCopyMode = (params?: Record<string, any>) => {
+  return params?.popupTemplateContext === true;
+};
+
 const applyKanbanCardPopupSettings = async (
   model: any,
   params: Record<string, any>,
@@ -82,7 +86,10 @@ const applyKanbanCardPopupSettings = async (
     getKanbanCardPopupProp(model, 'popupTargetUid', 'cardPopupTargetUid'),
   );
   const resolvedPopupTargetUid =
-    !nextPopupTemplateUid && currentPopupTemplateUid && nextPopupTargetUid === currentPopupTargetUid
+    !nextPopupTemplateUid &&
+    !isKanbanPopupTemplateCopyMode(params) &&
+    currentPopupTemplateUid &&
+    nextPopupTargetUid === currentPopupTargetUid
       ? undefined
       : nextPopupTargetUid;
   const normalizedParams = {

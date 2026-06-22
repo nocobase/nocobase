@@ -314,6 +314,37 @@ describe('calendarPopupModels', () => {
     expect(ensurePopupAction).toHaveBeenCalledWith('eventViewAction', { persist: true });
   });
 
+  it('should delegate calendar popup settings save to openView beforeParamsSave', async () => {
+    const flow: any = (CalendarBlockModel as any).globalFlowRegistry.getFlow('calendarSettings');
+    const eventStep = flow?.steps?.eventPopupSettings;
+    const beforeParamsSave = vi.fn(async (_ctx, params) => {
+      delete params.popupTemplateUid;
+      delete params.popupTemplateContext;
+      delete params.popupTemplateHasFilterByTk;
+      delete params.uid;
+    });
+    const setPopupSettings = vi.fn();
+    const ensurePopupAction = vi.fn().mockResolvedValue({ uid: 'calendar-action-uid' });
+    const params = {
+      mode: 'dialog',
+      popupTemplateUid: undefined,
+      popupTemplateContext: true,
+      popupTemplateHasFilterByTk: true,
+      uid: 'stale-template-target',
+    };
+    const model = {
+      getAction: vi.fn(() => ({ beforeParamsSave })),
+      setPopupSettings,
+      ensurePopupAction,
+    };
+
+    await eventStep.beforeParamsSave({ model } as any, params, { popupTemplateUid: 'template-1' });
+
+    expect(beforeParamsSave).toHaveBeenCalledWith({ model }, params, { popupTemplateUid: 'template-1' });
+    expect(setPopupSettings).toHaveBeenCalledWith('eventViewAction', { mode: 'dialog' });
+    expect(ensurePopupAction).toHaveBeenCalledWith('eventViewAction', { persist: true });
+  });
+
   it('should build quick-create formData from the selected slot', () => {
     const slotInfo = {
       start: new Date(2026, 3, 20, 9, 30, 0),
@@ -513,22 +544,65 @@ describe('calendarPopupModels', () => {
       configurable: true,
     });
 
-    const setStepParams = vi.fn();
     const action = {
       uid: 'calendar-action-uid',
       getStepParams: vi.fn(() => ({})),
-      setStepParams,
+      stepParams: {},
     };
 
     await model.syncPopupActionSettings(action, 'eventViewAction');
 
-    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+    expect(action.stepParams).toEqual({
+      popupSettings: {
+        openView: {
+          mode: 'dialog',
+          size: 'large',
+          pageModelClass: 'ChildPageModel',
+          uid: 'popup-template-target-uid',
+          popupTemplateUid: 'popup-template-uid',
+          popupTemplateHasFilterByTk: true,
+          collectionName: 'events',
+          dataSourceKey: 'main',
+        },
+      },
+    });
+  });
+
+  it('should prefer hidden popup action settings over legacy calendar popup props', async () => {
+    const model = Object.create(CalendarBlockModel.prototype) as CalendarBlockModel;
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'events',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {
+        eventPopupSettings: {
+          mode: 'drawer',
+          size: 'medium',
+          uid: 'legacy-template-target',
+          popupTemplateUid: 'legacy-template',
+        },
+      },
+      configurable: true,
+    });
+
+    const action = {
+      uid: 'calendar-action-uid',
+      getStepParams: vi.fn(() => ({
+        mode: 'dialog',
+        size: 'large',
+        uid: 'calendar-action-uid',
+      })),
+    };
+
+    expect(model.getPopupSettings(action, 'eventViewAction')).toEqual({
       mode: 'dialog',
       size: 'large',
       pageModelClass: 'ChildPageModel',
-      uid: 'popup-template-target-uid',
-      popupTemplateUid: 'popup-template-uid',
-      popupTemplateHasFilterByTk: true,
+      uid: 'calendar-action-uid',
       collectionName: 'events',
       dataSourceKey: 'main',
     });
@@ -567,22 +641,84 @@ describe('calendarPopupModels', () => {
       configurable: true,
     });
 
-    const setStepParams = vi.fn();
     const action = {
       uid: 'calendar-quick-create-action-uid',
       getStepParams: vi.fn(() => ({})),
-      setStepParams,
+      stepParams: {},
     };
 
     await model.syncPopupActionSettings(action, 'quickCreateAction');
 
-    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
+    expect(action.stepParams).toEqual({
+      popupSettings: {
+        openView: {
+          mode: 'dialog',
+          size: 'large',
+          pageModelClass: 'ChildPageModel',
+          uid: 'calendar-quick-create-action-uid',
+          collectionName: 'events',
+          dataSourceKey: 'main',
+        },
+      },
+    });
+  });
+
+  it('should keep calendar popup template copy mode when the template uid is empty', async () => {
+    const model = Object.create(CalendarBlockModel.prototype) as CalendarBlockModel;
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'events',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: false,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+    (model as any).setProps = function setProps(next: Record<string, any>) {
+      this.props = {
+        ...(this.props || {}),
+        ...next,
+      };
+    };
+
+    const action = {
+      uid: 'calendar-action-uid',
+      getStepParams: vi.fn(() => ({})),
+      stepParams: {},
+    };
+
+    model.setPopupSettings('eventViewAction', {
       mode: 'dialog',
       size: 'large',
-      pageModelClass: 'ChildPageModel',
-      uid: 'calendar-quick-create-action-uid',
-      collectionName: 'events',
+      popupTemplateUid: undefined,
+      popupTemplateContext: true,
+      uid: 'copied-popup-uid',
       dataSourceKey: 'main',
+      collectionName: 'template_events',
+    });
+    await model.syncPopupActionSettings(action, 'eventViewAction', { persist: true });
+
+    expect(action.stepParams).toEqual({
+      popupSettings: {
+        openView: {
+          mode: 'dialog',
+          size: 'large',
+          pageModelClass: 'ChildPageModel',
+          popupTemplateContext: true,
+          uid: 'copied-popup-uid',
+          collectionName: 'template_events',
+          dataSourceKey: 'main',
+        },
+      },
     });
   });
 
@@ -623,7 +759,6 @@ describe('calendarPopupModels', () => {
       };
     };
 
-    const setStepParams = vi.fn();
     const action = {
       uid: 'calendar-action-uid',
       getStepParams: vi.fn(() => ({
@@ -635,7 +770,19 @@ describe('calendarPopupModels', () => {
         popupTemplateHasFilterByTk: true,
         popupTemplateHasSourceId: true,
       })),
-      setStepParams,
+      stepParams: {
+        popupSettings: {
+          openView: {
+            mode: 'drawer',
+            size: 'medium',
+            uid: 'popup-template-target-uid',
+            popupTemplateUid: 'popup-template-uid',
+            popupTemplateContext: true,
+            popupTemplateHasFilterByTk: true,
+            popupTemplateHasSourceId: true,
+          },
+        },
+      },
     };
 
     model.setPopupSettings('eventViewAction', {
@@ -643,15 +790,19 @@ describe('calendarPopupModels', () => {
       size: 'large',
       popupTemplateUid: undefined,
     });
-    await model.syncPopupActionSettings(action, 'eventViewAction');
+    await model.syncPopupActionSettings(action, 'eventViewAction', { persist: true });
 
-    expect(setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
-      mode: 'dialog',
-      size: 'large',
-      pageModelClass: 'ChildPageModel',
-      uid: 'calendar-action-uid',
-      collectionName: 'events',
-      dataSourceKey: 'main',
+    expect(action.stepParams).toEqual({
+      popupSettings: {
+        openView: {
+          mode: 'dialog',
+          size: 'large',
+          pageModelClass: 'ChildPageModel',
+          uid: 'calendar-action-uid',
+          collectionName: 'events',
+          dataSourceKey: 'main',
+        },
+      },
     });
   });
 
@@ -687,7 +838,7 @@ describe('calendarPopupModels', () => {
     const action = {
       uid: 'u_event_popup',
       getStepParams: vi.fn(() => ({})),
-      setStepParams: vi.fn(),
+      stepParams: {},
       save,
       saveStepParams,
     };
@@ -720,13 +871,17 @@ describe('calendarPopupModels', () => {
 
     expect(save).not.toHaveBeenCalled();
     expect(saveStepParams).not.toHaveBeenCalled();
-    expect(action.setStepParams).toHaveBeenCalledWith('popupSettings', 'openView', {
-      mode: 'drawer',
-      size: 'medium',
-      pageModelClass: 'ChildPageModel',
-      uid: 'u_event_popup',
-      collectionName: 'events',
-      dataSourceKey: 'main',
+    expect(action.stepParams).toEqual({
+      popupSettings: {
+        openView: {
+          mode: 'drawer',
+          size: 'medium',
+          pageModelClass: 'ChildPageModel',
+          uid: 'u_event_popup',
+          collectionName: 'events',
+          dataSourceKey: 'main',
+        },
+      },
     });
   });
 
@@ -828,9 +983,9 @@ describe('calendarPopupModels', () => {
     expect(destroy).not.toHaveBeenCalled();
   });
 
-  it('should open quick-create drawer through flow context openView with selected slot data', async () => {
-    const openView = vi.fn().mockResolvedValue(undefined);
-    const ensurePopupAction = vi.fn().mockResolvedValue({ uid: 'u_quick_create_popup' });
+  it('should open quick-create drawer through the hidden action with selected slot data', async () => {
+    const dispatchEvent = vi.fn().mockResolvedValue(undefined);
+    const ensurePopupAction = vi.fn().mockResolvedValue({ uid: 'u_quick_create_popup', dispatchEvent });
     const slotInfo = {
       start: new Date(2026, 3, 20, 9, 30, 0),
       end: new Date(2026, 3, 20, 10, 30, 0),
@@ -840,7 +995,6 @@ describe('calendarPopupModels', () => {
       {
         props: {},
         context: {
-          openView,
           layoutContentElement: { id: 'layout-root' },
         },
         collection: {
@@ -857,26 +1011,28 @@ describe('calendarPopupModels', () => {
     );
 
     expect(ensurePopupAction).toHaveBeenCalledWith('quickCreateAction');
-    expect(openView).toHaveBeenCalledWith('u_quick_create_popup', {
-      formData: {
-        startsAt: '2026-04-20 09:30:00',
-        endsAt: '2026-04-20 10:30:00',
+    expect(dispatchEvent).toHaveBeenCalledWith(
+      'click',
+      {
+        formData: {
+          startsAt: '2026-04-20 09:30:00',
+          endsAt: '2026-04-20 10:30:00',
+        },
+        dataSourceKey: 'main',
+        collectionName: 'events',
+        target: { id: 'layout-root' },
       },
-      dataSourceKey: 'main',
-      collectionName: 'events',
-      target: { id: 'layout-root' },
-    });
-    expect(openView.mock.calls[0][0]).not.toContain('quickCreateAction');
+      { debounce: true },
+    );
   });
 
-  it('should open event drawer through flow context openView with record filter key', async () => {
-    const openView = vi.fn().mockResolvedValue(undefined);
-    const ensurePopupAction = vi.fn().mockResolvedValue({ uid: 'u_event_view_popup' });
+  it('should open event drawer through the hidden action with record filter key', async () => {
+    const dispatchEvent = vi.fn().mockResolvedValue(undefined);
+    const ensurePopupAction = vi.fn().mockResolvedValue({ uid: 'u_event_view_popup', dispatchEvent });
 
     await CalendarBlockModel.prototype.openEvent.call(
       {
         context: {
-          openView,
           layoutContentElement: { id: 'layout-root' },
         },
         collection: {
@@ -891,12 +1047,15 @@ describe('calendarPopupModels', () => {
     );
 
     expect(ensurePopupAction).toHaveBeenCalledWith('eventViewAction');
-    expect(openView).toHaveBeenCalledWith('u_event_view_popup', {
-      dataSourceKey: 'main',
-      collectionName: 'events',
-      filterByTk: 7,
-      target: { id: 'layout-root' },
-    });
-    expect(openView.mock.calls[0][0]).not.toContain('eventViewAction');
+    expect(dispatchEvent).toHaveBeenCalledWith(
+      'click',
+      {
+        dataSourceKey: 'main',
+        collectionName: 'events',
+        filterByTk: 7,
+        target: { id: 'layout-root' },
+      },
+      { debounce: true },
+    );
   });
 });
