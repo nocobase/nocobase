@@ -32,6 +32,7 @@ import { useChat } from '../hooks/useChat';
 import { useToolCallActions } from '../hooks/useToolCallActions';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { isCurrentLiveMessage } from '../utils';
 
 type ToolCardProps = {
   messageId?: string;
@@ -307,7 +308,10 @@ const DefaultToolCard: React.FC<{
   const chat = useChat(currentConversation);
   const messages = chat.use.messages();
   const responseLoading = chat.use.responseLoading();
-  const generating = responseLoading && messages[messages.length - 1]?.content?.messageId === messageId;
+  const latestMessageId = messages[messages.length - 1]?.content?.messageId;
+  const generating =
+    responseLoading &&
+    toolCalls.some((toolCall) => isCurrentLiveMessage(latestMessageId, messageId, toolCall.messageId));
   const hasAutoExpanded = useRef(false);
 
   const showCallButton =

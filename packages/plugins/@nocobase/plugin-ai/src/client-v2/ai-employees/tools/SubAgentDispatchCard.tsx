@@ -17,6 +17,7 @@ import type { AIEmployee } from '../types';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
+import { isCurrentLiveMessage } from '../chatbox/utils';
 
 type SubAgentDispatchArgs = {
   username?: string;
@@ -44,8 +45,8 @@ export const SubAgentDispatchCard: React.FC<ToolsUIProperties<SubAgentDispatchAr
       aiConfigRepository.getAIEmployees().catch(console.error);
     }, [aiConfigRepository]);
 
-    const latestMessage = messages[messages.length - 1];
-    const generating = responseLoading && latestMessage?.content?.messageId === messageId;
+    const latestMessageId = messages[messages.length - 1]?.content?.messageId;
+    const generating = responseLoading && isCurrentLiveMessage(latestMessageId, messageId, toolCall.messageId);
     const username = typeof toolCall.args?.username === 'string' ? toolCall.args.username : '';
     const question = typeof toolCall.args?.question === 'string' ? toolCall.args.question : '';
     const employee = resolveSubAgentDisplayInfo(aiConfigRepository.aiEmployees, username);

@@ -15,6 +15,7 @@ import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { useChatToolsStore } from '../chatbox/stores/chat-tools';
+import { isCurrentLiveMessage } from '../chatbox/utils';
 import type { CollectionDataType, DataModelingArgs } from './data-modeling/types';
 
 function normalizeCollections(collections: DataModelingArgs['collections']): CollectionDataType[] | null {
@@ -45,7 +46,8 @@ export const DataModelingCard: React.FC<ToolsUIProperties<DataModelingArgs>> = (
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
   const version = toolsByMessageId[messageId]?.[toolCall.id]?.version;
-  const generating = responseLoading && messages[messages.length - 1]?.content?.messageId === messageId;
+  const latestMessageId = messages[messages.length - 1]?.content?.messageId;
+  const generating = responseLoading && isCurrentLiveMessage(latestMessageId, messageId, toolCall.messageId);
   const collections = normalizeCollections(toolCall.args?.collections);
 
   let description = <>{t('Please review and finish the process')}</>;

@@ -15,6 +15,7 @@ import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
+import { isCurrentLiveMessage } from '../chatbox/utils';
 
 type SuggestionsArgs = {
   options?: string[] | string;
@@ -70,8 +71,10 @@ export const SuggestionsOptionsCard: React.FC<ToolsUIProperties<SuggestionsArgs>
   const [disabled, setDisabled] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const suggestionsToolCall = toolCall as SuggestionsToolCall;
-  const generating = responseLoading && messages[messages.length - 1]?.content.messageId === messageId;
+  const latestMessageId = messages[messages.length - 1]?.content?.messageId;
+  const generating = responseLoading && isCurrentLiveMessage(latestMessageId, messageId, toolCall.messageId);
   const options = useMemo(() => parseOptions(toolCall.args?.options), [toolCall.args?.options]);
+  const hasSelectedSuggestion = selected != null || typeof suggestionsToolCall.selectedSuggestion === 'string';
 
   const defaultButtonProps: ButtonProps = {
     style: buttonBaseStyle,
@@ -89,7 +92,7 @@ export const SuggestionsOptionsCard: React.FC<ToolsUIProperties<SuggestionsArgs>
   const getButtonProps = (option: string): ButtonProps =>
     suggestionsToolCall.selectedSuggestion === option || selected === option ? selectedButtonProps : defaultButtonProps;
 
-  if (generating) {
+  if (generating && !disabled && !hasSelectedSuggestion) {
     return (
       <Space>
         <Spin indicator={<LoadingOutlined spin />} size="small" /> {t('Generating...')}

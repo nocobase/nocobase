@@ -16,6 +16,7 @@ import { useT } from '../../locale';
 import { useChat } from '../chatbox/hooks/useChat';
 import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
 import { useChatToolsStore } from '../chatbox/stores/chat-tools';
+import { isCurrentLiveMessage } from '../chatbox/utils';
 import { BusinessReport, BusinessReportRenderState, normalizeBusinessReport } from './business-report-utils';
 
 class BoundedSet<T> {
@@ -103,8 +104,7 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   }, [messageId, setActiveMessageId, setActiveTool, setOpen, toolCall]);
 
   useEffect(() => {
-    const isCurrentLiveMessage = latestMessageId === messageId || (!latestMessageId && !messageId);
-    if (!responseLoading || !isCurrentLiveMessage) {
+    if (!responseLoading || !isCurrentLiveMessage(latestMessageId, messageId, toolCall.messageId)) {
       return;
     }
     if (!(toolCall.status === 'success' && toolCall.invokeStatus === 'done')) {
@@ -123,6 +123,7 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
     openModal,
     responseLoading,
     toolCall.id,
+    toolCall.messageId,
     toolCall.status,
     toolCall.invokeStatus,
   ]);

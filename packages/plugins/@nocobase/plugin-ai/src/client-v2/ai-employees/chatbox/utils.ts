@@ -13,6 +13,16 @@ import { ContextItem, SkillSettings, TaskMessage, Message } from '../types';
 
 dayjs.extend(duration);
 
+export function isCurrentLiveMessage(
+  latestMessageId: string | undefined,
+  messageId?: string,
+  toolCallMessageId?: unknown,
+) {
+  const normalizedToolCallMessageId = typeof toolCallMessageId === 'string' ? toolCallMessageId : '';
+  const currentMessageId = messageId || normalizedToolCallMessageId;
+  return latestMessageId === currentMessageId || (!latestMessageId && !currentMessageId);
+}
+
 type VariableParser = {
   parseVariable?: (template: string, localVariables?: Record<string, unknown>) => Promise<{ value?: unknown }>;
 };
