@@ -24,6 +24,7 @@ export type FlowSurfaceCatalogExpandFlags = {
   includeItemConfigureOptions: boolean;
   includeItemContracts: boolean;
   includeItemAllowedContainerUses: boolean;
+  includeItemIdentity: boolean;
   includeNodeContracts: boolean;
 };
 

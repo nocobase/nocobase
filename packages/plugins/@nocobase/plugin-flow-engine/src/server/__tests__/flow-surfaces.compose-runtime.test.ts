@@ -200,6 +200,68 @@ describe('flowSurfaces compose runtime helpers', () => {
     ).rejects.toThrow(`flowSurfaces compose block settings runtime deps missing 'applyNodeSettings'`);
   });
 
+  it('should pass dynamic block settings during create without post-create configure', async () => {
+    const plan = compileComposeExecutionPlan({
+      gridUid: 'grid-1',
+      mode: 'append',
+      normalizedBlocks: [
+        {
+          key: 'timeline',
+          type: 'gantt',
+          isDynamic: true,
+          settings: {
+            titleField: 'title',
+            startField: 'startAt',
+            endField: 'endAt',
+          },
+          fields: [],
+          actions: [],
+          recordActions: [],
+        },
+      ],
+    });
+    const blockPayloads: Array<Record<string, unknown>> = [];
+
+    await executeComposeRuntime(plan, {
+      createBlock: async (payload) => {
+        blockPayloads.push(payload);
+        return {
+          uid: 'gantt-1',
+        };
+      },
+      createField: async () => ({
+        uid: 'field-1',
+      }),
+      createAction: async () => ({
+        uid: 'action-1',
+      }),
+      createRecordAction: async () => ({
+        uid: 'record-action-1',
+      }),
+      buildAppendLayoutPayload: async () => ({
+        rows: {},
+        sizes: {},
+        rowOrder: [],
+      }),
+      setLayout: async (payload) => payload,
+    });
+
+    expect(blockPayloads).toEqual([
+      expect.objectContaining({
+        target: {
+          uid: 'grid-1',
+        },
+        key: 'timeline',
+        type: 'gantt',
+        settings: {
+          titleField: 'title',
+          startField: 'startAt',
+          endField: 'endAt',
+        },
+      }),
+    ]);
+  });
+
   it('should reject missing popup runtime deps instead of silently dropping action popup', async () => {
     const plan = compileComposeExecutionPlan({
       gridUid: 'grid-1',

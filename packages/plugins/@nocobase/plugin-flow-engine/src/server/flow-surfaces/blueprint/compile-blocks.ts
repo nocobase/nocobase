@@ -111,6 +111,7 @@ type FlowSurfaceCompilePopupOptions = {
   dataSourceKey?: string;
   surfaceCollectionName?: string;
   associationName?: string;
+  dynamicBlockTypes?: ReadonlySet<string>;
 };
 
 const APPLY_BLUEPRINT_BLOCK_TYPE_ENUM = [
@@ -146,6 +147,7 @@ const APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS = [
   'binding',
   'associationField',
   'resource',
+  'initParams',
   'template',
   'settings',
   'fields',
@@ -349,14 +351,18 @@ function assertApplyBlueprintTreeMainContent(block: Record<string, any>, context
   }
 }
 
-function assertApplyBlueprintBlockType(type: string | undefined, context: string) {
+function assertApplyBlueprintBlockType(
+  type: string | undefined,
+  context: string,
+  dynamicBlockTypes?: ReadonlySet<string>,
+) {
   if (!type) {
     return;
   }
   if (type === 'form') {
     throwBadRequest(`${context}.type 'form' is unsupported in applyBlueprint; use 'editForm' or 'createForm'`);
   }
-  if (!APPLY_BLUEPRINT_BLOCK_TYPES.has(type)) {
+  if (!APPLY_BLUEPRINT_BLOCK_TYPES.has(type) && !dynamicBlockTypes?.has(type)) {
     throwBadRequest(
       `${context}.type '${type}' is unsupported in applyBlueprint; supported types: ${APPLY_BLUEPRINT_BLOCK_TYPE_ENUM.join(
         ', ',
@@ -1190,6 +1196,12 @@ function buildBlockResource(
   });
 }
 
+function hasBlockResourceInput(block: FlowSurfaceApplyBlueprintBlockSpec) {
+  return ['resource', ...APPLY_BLUEPRINT_BLOCK_RESOURCE_SHORTHAND_KEYS].some((key) =>
+    Object.prototype.hasOwnProperty.call(block, key),
+  );
+}
+
 type FlowSurfaceCompileResourceContext = {
   dataSourceKey?: string;
   surfaceCollectionName?: string;
@@ -1859,6 +1871,7 @@ function compilePopup(
           dataSourceKey: options.dataSourceKey,
           surfaceCollectionName: options.surfaceCollectionName,
           associationName: options.associationName,
+          dynamicBlockTypes: options.dynamicBlockTypes,
         },
       )
     : { blocks: [], blockKeysByLocalKey: new Map<string, string>() };
@@ -2193,6 +2206,7 @@ function compileField(
     dataSourceKey: fieldAssociationContext?.dataSourceKey || popupOptions.dataSourceKey,
     surfaceCollectionName: fieldAssociationContext?.surfaceCollectionName || popupOptions.surfaceCollectionName,
     associationName: popupOptions.associationName || fieldAssociationContext?.associationName,
+    dynamicBlockTypes: popupOptions.dynamicBlockTypes,
   });
   settings = resolvePopupTitleSettings(settings, popupResult.popupTitle);
   const popup = shouldAttachDefaultPopupMetadata(popupInput, undefined)
@@ -2452,6 +2466,7 @@ function compileBlocks(
     dataSourceKey?: string;
     surfaceCollectionName?: string;
     associationName?: string;
+    dynamicBlockTypes?: ReadonlySet<string>;
   } = {},
 ): FlowSurfaceCompiledBlocks {
   const blockKeysByLocalKey = new Map<string, string>();
@@ -2500,7 +2515,7 @@ function compileBlocks(
     assertNoBlockLevelLayout(block, `${context}[${index}]`);
     assertApplyBlueprintFieldsLayoutHost(block, `${context}[${index}]`);
     assertOnlyAllowedKeys(block, `${context}[${index}]`, APPLY_BLUEPRINT_BLOCK_ALLOWED_KEYS);
-    assertApplyBlueprintBlockType(readOptionalString(block.type), `${context}[${index}]`);
+    assertApplyBlueprintBlockType(readOptionalString(block.type), `${context}[${index}]`, options.dynamicBlockTypes);
     assertApplyBlueprintCalendarMainContent(block, `${context}[${index}]`);
     assertApplyBlueprintKanbanMainContent(block, `${context}[${index}]`);
     assertApplyBlueprintTreeMainContent(block, `${context}[${index}]`);
@@ -2531,6 +2546,7 @@ function compileBlocks(
       throwBadRequest(`${blockContext} key '${localKey}' is missing after block key compilation`);
     }
     const blockType = readOptionalString(block.type);
+    const isDynamicBlock = !!blockType && options.dynamicBlockTypes?.has(blockType);
     const parentResourceContext: FlowSurfaceCompileResourceContext = {
       dataSourceKey: options.dataSourceKey,
       surfaceCollectionName: options.surfaceCollectionName,
@@ -2544,35 +2560,61 @@ function compileBlocks(
     );
     const stripSingleScopeTitle = shouldStripSingleScopeApplyBlueprintDataBlockTitle(block, rawBlocks);
     let settings = resolveAssetSettings(block.settings, block, assets, blockContext);
-    settings = normalizeApplyBlueprintCalendarCompatSettings(block, settings);
-    if (!stripSingleScopeTitle && readOptionalString(block.title) && _.isUndefined(settings.title)) {
-      settings.title = readOptionalString(block.title);
-    }
-    if (stripSingleScopeTitle && Object.prototype.hasOwnProperty.call(settings, 'title')) {
-      delete settings.title;
-    }
-    if (readOptionalString(block.description) && _.isUndefined(settings.description)) {
-      settings.description = readOptionalString(block.description);
-    }
-    if (!_.isUndefined(block.height) && _.isUndefined(settings.height)) {
-      settings.height = block.height;
-    }
-    if (!_.isUndefined(block.heightMode) && _.isUndefined(settings.heightMode)) {
-      settings.heightMode = block.heightMode;
-    }
-    settings = normalizeFlowSurfacePublicSortingAlias({
-      context: `${blockContext}.settings`,
-      type: blockType,
-      settings,
-    });
-    settings = normalizeApplyBlueprintTreeTableDragSortBy(block, settings, getCollection);
-    if (blockType === 'calendar') {
-      settings = normalizeApplyBlueprintCalendarPopupSettings(settings, blockContext, popupDefaultsMetadata);
-    } else if (blockType === 'kanban') {
-      settings = normalizeApplyBlueprintKanbanPopupSettings(settings, blockContext, popupDefaultsMetadata);
+    if (!isDynamicBlock) {
+      settings = normalizeApplyBlueprintCalendarCompatSettings(block, settings);
+      if (!stripSingleScopeTitle && readOptionalString(block.title) && _.isUndefined(settings.title)) {
+        settings.title = readOptionalString(block.title);
+      }
+      if (stripSingleScopeTitle && Object.prototype.hasOwnProperty.call(settings, 'title')) {
+        delete settings.title;
+      }
+      if (readOptionalString(block.description) && _.isUndefined(settings.description)) {
+        settings.description = readOptionalString(block.description);
+      }
+      if (!_.isUndefined(block.height) && _.isUndefined(settings.height)) {
+        settings.height = block.height;
+      }
+      if (!_.isUndefined(block.heightMode) && _.isUndefined(settings.heightMode)) {
+        settings.heightMode = block.heightMode;
+      }
+      settings = normalizeFlowSurfacePublicSortingAlias({
+        context: `${blockContext}.settings`,
+        type: blockType,
+        settings,
+      });
+      settings = normalizeApplyBlueprintTreeTableDragSortBy(block, settings, getCollection);
+      if (blockType === 'calendar') {
+        settings = normalizeApplyBlueprintCalendarPopupSettings(settings, blockContext, popupDefaultsMetadata);
+      } else if (blockType === 'kanban') {
+        settings = normalizeApplyBlueprintKanbanPopupSettings(settings, blockContext, popupDefaultsMetadata);
+      }
     }
     const template = ensureOptionalTemplate(block.template, `${blockContext}.template`);
     const isTemplateBackedBlock = hasFlowSurfaceTemplateReference(template);
+    if (isDynamicBlock) {
+      if (isTemplateBackedBlock) {
+        throwBadRequest(`${blockContext}.template is not supported for dynamic block '${blockType}'`);
+      }
+      const initParams = cloneOptionalPlainObject<Record<string, unknown>>(
+        block.initParams,
+        `${blockContext}.initParams`,
+      );
+      if (initParams && hasBlockResourceInput(block)) {
+        throwBadRequest(`${blockContext} dynamic block '${blockType}' does not allow initParams with resource`);
+      }
+      const resource = initParams
+        ? undefined
+        : buildBlockResource(block, blockContext, blockResourceContext, blockType);
+      return buildDefinedPayload({
+        key,
+        type: blockType,
+        initParams,
+        resource,
+        settings: Object.keys(settings).length
+          ? compileTreeConnectSettingsTargets(settings, blockKeysByLocalKey, blockContext)
+          : undefined,
+      });
+    }
     const explicitBlockDefaultFilter = normalizeFlowSurfacePublicBlockDefaultFilter(
       'applyBlueprint',
       block.defaultFilter,
@@ -2661,6 +2703,7 @@ function compileBlocks(
             dataSourceKey: blockResourceContext.dataSourceKey,
             surfaceCollectionName: blockResourceContext.surfaceCollectionName,
             associationName: blockResourceContext.associationName,
+            dynamicBlockTypes: options.dynamicBlockTypes,
           },
           triggerKind: 'action',
         },
@@ -2688,6 +2731,7 @@ function compileBlocks(
             dataSourceKey: blockResourceContext.dataSourceKey,
             surfaceCollectionName: blockResourceContext.surfaceCollectionName,
             associationName: blockResourceContext.associationName,
+            dynamicBlockTypes: options.dynamicBlockTypes,
           },
           triggerKind: 'recordAction',
         },
@@ -2800,6 +2844,7 @@ export function compileTabComposeValues(
   options: {
     mode: 'append' | 'replace';
     getCollection?: FlowSurfaceApplyBlueprintCollectionResolver;
+    dynamicBlockTypes?: ReadonlySet<string>;
   },
 ) {
   const tabPublicPath = buildApplyBlueprintTabPublicPath(tabIndex);
@@ -2815,6 +2860,7 @@ export function compileTabComposeValues(
     options.getCollection,
     {
       mode: document.mode,
+      dynamicBlockTypes: options.dynamicBlockTypes,
     },
   );
   const layout = compileLayout(
