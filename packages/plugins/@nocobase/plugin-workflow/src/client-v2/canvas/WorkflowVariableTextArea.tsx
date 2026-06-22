@@ -122,5 +122,3 @@ export function WorkflowVariableTextArea(props: WorkflowVariableTextAreaProps) {
     </div>
   );
 }
-
-export default WorkflowVariableTextArea;
