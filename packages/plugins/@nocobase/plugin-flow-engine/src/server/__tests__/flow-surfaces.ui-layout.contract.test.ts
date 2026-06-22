@@ -20,8 +20,12 @@ import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from '
 
 const ADMIN_LAYOUT_UID = 'admin-layout-model';
 const CUSTOM_LAYOUT_UID = 'flow-surfaces-custom-layout';
+const UI_LAYOUT_PLUGIN_INSTALL = [
+  '@nocobase/plugin-ui-layout',
+  { name: 'ui-layout', packageName: '@nocobase/plugin-ui-layout' },
+] as const;
 const UI_LAYOUT_TEST_PLUGINS = [...FLOW_SURFACES_TEST_PLUGINS, 'ui-layout'] as const;
-const UI_LAYOUT_TEST_PLUGIN_INSTALLS = [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, 'ui-layout'] as const;
+const UI_LAYOUT_TEST_PLUGIN_INSTALLS = [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, UI_LAYOUT_PLUGIN_INSTALL] as const;
 
 type RouteLike = {
   id?: unknown;

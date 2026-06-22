@@ -625,7 +625,25 @@ export async function getPluginBasePath(packageName: string) {
   } catch (error) {
     // skip
   }
+  const sourceBasePath = await getPluginSourceBasePath(file);
+  if (sourceBasePath) {
+    return sourceBasePath;
+  }
   return path.dirname(path.dirname(file));
+}
+
+async function getPluginSourceBasePath(file: string) {
+  const segments = path.resolve(file).split(path.sep);
+  const srcIndex = segments.lastIndexOf('src');
+  if (srcIndex < 0) {
+    return;
+  }
+
+  const sourceBasePath = segments.slice(0, srcIndex + 1).join(path.sep) || path.sep;
+  const packageJsonPath = path.resolve(sourceBasePath, '..', 'package.json');
+  if ((await fs.pathExists(packageJsonPath)) && (await fs.pathExists(path.resolve(sourceBasePath, 'server')))) {
+    return sourceBasePath;
+  }
 }
 
 export async function pmListSummary(app: Application) {
