@@ -22,6 +22,7 @@ import {
   registerTriggerWorkflowActionGroups,
   WorkbenchTriggerWorkflowActionModel,
 } from '../TriggerWorkflowActionModels';
+import { CONTEXT_TYPE } from '../../../../common/constants';
 
 class ActionPanelGroupActionModel extends ActionGroupModel {}
 
@@ -94,6 +95,14 @@ async function getTriggerWorkflowItemNames(ModelClass: any, ctx: any) {
 function getWorkbenchTriggerWorkflowHandler(model: WorkbenchTriggerWorkflowActionModel) {
   const step = model.getFlow('workbenchTriggerWorkflowsActionSettings')?.getStep('triggerWorkflows')?.serialize() as
     | { handler?: (ctx: any, params: { group?: unknown[]; contextData?: unknown }) => Promise<void> }
+    | undefined;
+  expect(step?.handler).toBeTypeOf('function');
+  return step.handler;
+}
+
+function getCollectionTriggerHandler(model: CollectionTriggerWorkflowActionModel) {
+  const step = model.getFlow('customCollectionTriggerWorkflowsActionEventSettings')?.getStep('trigger')?.serialize() as
+    | { handler?: (ctx: any) => Promise<void> }
     | undefined;
   expect(step?.handler).toBeTypeOf('function');
   return step.handler;
@@ -260,6 +269,69 @@ describe('WorkbenchTriggerWorkflowActionModel', () => {
     expect(ctx.exit).not.toHaveBeenCalled();
   });
 
+  it('resolves custom context data before sending trigger request body', async () => {
+    const flowEngine = createEngine();
+    const model = flowEngine.createModel<WorkbenchTriggerWorkflowActionModel>({
+      use: 'WorkbenchTriggerWorkflowActionModel',
+      uid: 'workbench-trigger-workflow-action-context-data-resolved',
+    });
+    const request = vi.fn().mockResolvedValue({});
+    const resolveJsonTemplate = vi.fn(async () => ({
+      a: '1',
+      userId: 100,
+      nested: {
+        b: '2',
+      },
+    }));
+    const ctx = {
+      api: {
+        request,
+      },
+      message: {
+        error: vi.fn(),
+        success: vi.fn(),
+      },
+      resolveJsonTemplate,
+      t: (value: string) => value,
+      exit: vi.fn(),
+    };
+
+    const handler = getWorkbenchTriggerWorkflowHandler(model);
+
+    await handler(ctx, {
+      group: [{ workflowKey: 'workflow-1' }],
+      contextData: {
+        a: '1',
+        userId: '{{$user.id}}',
+        nested: {
+          b: '2',
+        },
+      },
+    });
+
+    expect(resolveJsonTemplate).toHaveBeenCalledWith({
+      a: '1',
+      userId: '{{$user.id}}',
+      nested: {
+        b: '2',
+      },
+    });
+    expect(request).toHaveBeenCalledWith({
+      url: 'workflows:trigger',
+      method: 'post',
+      params: {
+        triggerWorkflows: 'workflow-1',
+      },
+      data: {
+        a: '1',
+        userId: 100,
+        nested: {
+          b: '2',
+        },
+      },
+    });
+  });
+
   it('exits flow when trigger request fails', async () => {
     const flowEngine = createEngine();
     const model = flowEngine.createModel<WorkbenchTriggerWorkflowActionModel>({
@@ -288,5 +360,66 @@ describe('WorkbenchTriggerWorkflowActionModel', () => {
     expect(ctx.message.success).not.toHaveBeenCalled();
     expect(ctx.exit).toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+});
+
+describe('CollectionTriggerWorkflowActionModel', () => {
+  it('resolves custom context data before sending trigger request body', async () => {
+    const flowEngine = createEngine();
+    const model = flowEngine.createModel<CollectionTriggerWorkflowActionModel>({
+      use: 'CollectionTriggerWorkflowActionModel',
+      uid: 'collection-trigger-workflow-action-context-data-resolved',
+    });
+    model.setStepParams('customCollectionTriggerWorkflowsActionSettings', 'setContextType', {
+      type: CONTEXT_TYPE.GLOBAL,
+    });
+    model.setStepParams('customCollectionTriggerWorkflowsActionSettings', 'triggerWorkflows', {
+      group: [{ workflowKey: 'workflow-1' }],
+      contextData: {
+        title: 'hello',
+        currentUserId: '{{$user.id}}',
+      },
+    });
+
+    const request = vi.fn().mockResolvedValue({});
+    const resolveJsonTemplate = vi.fn(async () => ({
+      title: 'hello',
+      currentUserId: 200,
+    }));
+    const ctx = {
+      api: {
+        request,
+      },
+      message: {
+        error: vi.fn(),
+        warning: vi.fn(),
+        success: vi.fn(),
+      },
+      model,
+      resolveJsonTemplate,
+      t: (value: string) => value,
+      exit: vi.fn(),
+    };
+
+    const handler = getCollectionTriggerHandler(model);
+
+    await handler(ctx);
+
+    expect(resolveJsonTemplate).toHaveBeenCalledWith({
+      title: 'hello',
+      currentUserId: '{{$user.id}}',
+    });
+    expect(request).toHaveBeenCalledWith({
+      url: 'workflows:trigger',
+      method: 'post',
+      params: {
+        triggerWorkflows: 'workflow-1',
+      },
+      data: {
+        title: 'hello',
+        currentUserId: 200,
+      },
+    });
+    expect(ctx.exit).not.toHaveBeenCalled();
   });
 });
