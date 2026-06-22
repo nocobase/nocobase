@@ -31,8 +31,8 @@ const PublicFormSettingsContent = observer((props: { model: PublicFormPageModel 
   const { token } = theme.useToken();
   const className = useMemo(
     () => css`
-      max-width: 800px;
-      margin: 20px auto 0;
+      max-width: ${token.screenMD}px;
+      margin: ${token.marginLG}px auto 0;
 
       .nb-block-grid {
         padding: 0 !important;
@@ -55,7 +55,7 @@ const PublicFormSettingsContent = observer((props: { model: PublicFormPageModel 
       }
 
       @media (max-width: ${token.screenMD}px) {
-        margin-top: 20px;
+        margin-top: ${token.marginLG}px;
       }
     `,
     [

@@ -7,6 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import V2MailerInstruction from '../client-v2/MailerInstruction';
-
-export default class extends V2MailerInstruction {}
+export const RESPONSE_MESSAGE_INSTRUCTION_TYPE = 'response-message';
+export const RESPONSE_MESSAGE_INSTRUCTION_GROUP = 'extended';

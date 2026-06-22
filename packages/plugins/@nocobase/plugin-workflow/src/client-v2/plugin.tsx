@@ -77,6 +77,10 @@ export class PluginWorkflowClientV2 extends Plugin {
     this.systemVariables.register(option.key, option);
   }
 
+  isWorkflowSync(workflow) {
+    return this.triggers.get(workflow?.type)?.sync ?? workflow?.sync;
+  }
+
   /**
    * Register a node type's v2 instruction. Mirrors v1's `registerInstruction`
    * signature (accepts a class or an instance) but writes to *this* (v2)
