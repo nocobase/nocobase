@@ -103,7 +103,8 @@ export const BusinessReportCard: React.FC<ToolsUIProperties<BusinessReport>> = (
   }, [messageId, setActiveMessageId, setActiveTool, setOpen, toolCall]);
 
   useEffect(() => {
-    if (!responseLoading || latestMessageId !== messageId) {
+    const isCurrentLiveMessage = latestMessageId === messageId || (!latestMessageId && !messageId);
+    if (!responseLoading || !isCurrentLiveMessage) {
       return;
     }
     if (!(toolCall.status === 'success' && toolCall.invokeStatus === 'done')) {
