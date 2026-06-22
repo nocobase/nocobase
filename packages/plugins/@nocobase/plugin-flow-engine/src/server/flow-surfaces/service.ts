@@ -8,7 +8,7 @@
  */
 
 import { createHash } from 'crypto';
-import type { HasManyRepository } from '@nocobase/database';
+import type { BelongsToManyRepository, HasManyRepository, TargetKey } from '@nocobase/database';
 import type { Plugin } from '@nocobase/server';
 import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';
@@ -1687,22 +1687,29 @@ export class FlowSurfacesService {
     }
   }
 
-  private async readDesktopRouteUiLayoutUids(routeId: unknown, transaction?: any) {
-    if (_.isNil(routeId) || !this.hasDesktopRouteUiLayoutsRelation()) {
+  private normalizeDesktopRouteRelationId(routeId: unknown): TargetKey | undefined {
+    return _.isNil(routeId) ? undefined : (routeId as TargetKey);
+  }
+
+  private async readDesktopRouteUiLayoutUids(routeId: unknown, transaction?: any): Promise<string[]> {
+    const relationRouteId = this.normalizeDesktopRouteRelationId(routeId);
+    if (_.isUndefined(relationRouteId) || !this.hasDesktopRouteUiLayoutsRelation()) {
       return [];
     }
 
-    const uiLayouts = await this.db.getRepository('desktopRoutes.uiLayouts', routeId).find({
-      fields: ['uid'],
-      transaction,
-    });
+    const uiLayouts = await this.db
+      .getRepository<BelongsToManyRepository>('desktopRoutes.uiLayouts', relationRouteId)
+      .find({
+        fields: ['uid'],
+        transaction,
+      });
 
     return _.uniq(
       uiLayouts.map((uiLayout: any) => String(uiLayout?.get?.('uid') || uiLayout?.uid || '').trim()).filter(Boolean),
     );
   }
 
-  private async resolveDefaultDesktopRouteUiLayoutUids(transaction?: any) {
+  private async resolveDefaultDesktopRouteUiLayoutUids(transaction?: any): Promise<string[]> {
     if (!this.hasDesktopRouteUiLayoutsRelation()) {
       return [];
     }
@@ -1718,7 +1725,7 @@ export class FlowSurfacesService {
     return defaultLayout ? [DEFAULT_ADMIN_UI_LAYOUT_UID] : [];
   }
 
-  private async resolveInheritedDesktopRouteUiLayoutUids(parentRoute: any, transaction?: any) {
+  private async resolveInheritedDesktopRouteUiLayoutUids(parentRoute: any, transaction?: any): Promise<string[]> {
     const parentRouteId = this.readRouteField(parentRoute, 'id');
     if (!_.isNil(parentRouteId)) {
       const parentLayoutUids = await this.readDesktopRouteUiLayoutUids(parentRouteId, transaction);
@@ -1731,11 +1738,12 @@ export class FlowSurfacesService {
   }
 
   private async setDesktopRouteUiLayouts(routeId: unknown, uiLayoutUids: string[], transaction?: any) {
-    if (_.isNil(routeId) || !uiLayoutUids.length || !this.hasDesktopRouteUiLayoutsRelation()) {
+    const relationRouteId = this.normalizeDesktopRouteRelationId(routeId);
+    if (_.isUndefined(relationRouteId) || !uiLayoutUids.length || !this.hasDesktopRouteUiLayoutsRelation()) {
       return;
     }
 
-    await this.db.getRepository('desktopRoutes.uiLayouts', routeId).set({
+    await this.db.getRepository<BelongsToManyRepository>('desktopRoutes.uiLayouts', relationRouteId).set({
       tk: uiLayoutUids,
       transaction,
     });
@@ -1768,7 +1776,7 @@ export class FlowSurfacesService {
     }
   }
 
-  private async ensureDesktopRouteUiLayouts(route: any, transaction?: any) {
+  private async ensureDesktopRouteUiLayouts(route: any, transaction?: any): Promise<string[]> {
     const routeId = this.readRouteField(route, 'id');
     if (_.isNil(routeId) || !this.hasDesktopRouteUiLayoutsRelation()) {
       return [];
