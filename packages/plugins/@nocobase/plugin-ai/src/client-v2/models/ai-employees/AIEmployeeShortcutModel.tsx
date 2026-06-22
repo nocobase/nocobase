@@ -356,15 +356,28 @@ const OptionContent: React.FC<{
   description?: string;
 }> = ({ title, description }) => {
   const t = useT();
+  const { token } = theme.useToken();
   const compiledTitle = title ? t(title) : '';
   const compiledDescription = description ? t(description) : '';
 
   return (
-    <Space direction="vertical">
-      <span>{compiledTitle}</span>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: token.marginXXS,
+        width: '100%',
+        minWidth: 0,
+        padding: `${token.paddingXXS}px 0`,
+      }}
+    >
+      <div>{compiledTitle}</div>
       {compiledDescription ? (
         <Typography.Text
           type="secondary"
+          style={{
+            fontSize: token.fontSizeSM,
+          }}
           ellipsis={{
             tooltip: compiledDescription,
           }}
@@ -372,7 +385,7 @@ const OptionContent: React.FC<{
           {compiledDescription}
         </Typography.Text>
       ) : null}
-    </Space>
+    </div>
   );
 };
 
@@ -430,9 +443,15 @@ const TaskCapabilitySelect: React.FC<{
           cacheKey={`ai-task-${resourceName}-${aiEmployee?.username ?? ''}`}
           placeholder={t(type === 'skills' ? 'Leave empty to disable skills.' : 'Leave empty to disable tools.')}
           mapOptions={(item) => ({
-            label: <OptionContent title={item.title} description={item.description} />,
+            label: item.title,
             value: item.name,
+            title: item.title,
+            description: item.description,
           })}
+          optionRender={(option) => {
+            const data = option.data as BindingOption;
+            return <OptionContent title={data.title} description={data.description} />;
+          }}
         />
       ) : null}
     </Space>
