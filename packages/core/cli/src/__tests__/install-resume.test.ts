@@ -425,7 +425,7 @@ test('install run validates external db config before saving env config', async 
   );
 });
 
-test('install --prepare-only prepares local app files without starting the app or clearing root setup data', async () => {
+test('install --prepare-only defers local app download without starting the app or clearing root setup data', async () => {
   const { default: Install } = await import('../commands/install.js');
 
   const saveInstalledEnv = vi.fn(async () => undefined);
@@ -485,7 +485,7 @@ test('install --prepare-only prepares local app files without starting the app o
 
   await Install.prototype.run.call(command);
 
-  expect(downloadLocalApp).toHaveBeenCalledTimes(1);
+  expect(downloadLocalApp).not.toHaveBeenCalled();
   expect(startLocalApp).not.toHaveBeenCalled();
   expect(waitForAppHealthCheck).not.toHaveBeenCalled();
   expect(mocks.clearEnvRootSetup).not.toHaveBeenCalled();
