@@ -148,6 +148,40 @@ test('buildInstallArgv forwards app public path for new installs', () => {
   expect(argv).toContain('/console/');
 });
 
+test('buildInstallArgv forwards hook script for new installs', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean; 'hook-script'?: string },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      hasNocobase: 'no',
+      appName: 'app7593',
+      authType: 'oauth',
+      lang: 'en-US',
+      appPath: './app7593/',
+      appPort: '13000',
+      source: 'git',
+      version: 'beta',
+      builtinDb: true,
+      dbDialect: 'postgres',
+    },
+    {
+      yes: true,
+      'hook-script': './new-hook.mjs',
+    },
+  );
+
+  expect(argv).toContain('--hook-script');
+  expect(argv).toContain('./new-hook.mjs');
+});
+
 test('buildInstallArgv prefers --app-path and omits derived legacy path flags', () => {
   const buildInstallArgv = (
     Init.prototype as unknown as {
