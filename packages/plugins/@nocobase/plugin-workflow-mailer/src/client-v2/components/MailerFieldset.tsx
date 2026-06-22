@@ -89,7 +89,16 @@ function SortableRow({ children, disabled, id }: { children: React.ReactNode; di
 
 function AddressListField({ name, label, required }: { name: NamePath; label: React.ReactNode; required?: boolean }) {
   const t = useT();
+  const form = Form.useFormInstance();
   const sensors = useSensors(useSensor(PointerSensor));
+  const skipNextEmptyValidationRef = React.useRef(false);
+
+  const skipNextEmptyValidation = () => {
+    skipNextEmptyValidationRef.current = true;
+    setTimeout(() => {
+      skipNextEmptyValidationRef.current = false;
+    });
+  };
 
   return (
     <Form.Item label={label} required={required}>
@@ -99,6 +108,10 @@ function AddressListField({ name, label, required }: { name: NamePath; label: Re
           {
             validator: async (_, value: unknown[]) => {
               if (!required || value?.filter(Boolean).length) {
+                return;
+              }
+              if (skipNextEmptyValidationRef.current) {
+                skipNextEmptyValidationRef.current = false;
                 return;
               }
               throw new Error(t('Please enter at least one email address'));
@@ -148,7 +161,15 @@ function AddressListField({ name, label, required }: { name: NamePath; label: Re
                   </Space>
                 </SortableContext>
               </DndContext>
-              <Button block icon={<PlusOutlined />} onClick={() => add('')}>
+              <Button
+                block
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  skipNextEmptyValidation();
+                  add('');
+                  form.setFields([{ name, errors: [] }]);
+                }}
+              >
                 {t('Add email address')}
               </Button>
               <Form.ErrorList errors={errors} />
