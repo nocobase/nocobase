@@ -33,6 +33,7 @@ nb source download [flags]
 | `--npm-registry` | string | Registry npm cho việc tải xuống và cài đặt dependency của npm/Git |
 | `--build` / `--no-build` | boolean | Có build sau khi cài đặt dependency npm/Git hay không |
 | `--build-dts` | boolean | Có sinh file khai báo TypeScript khi build npm/Git hay không |
+| `--hook-script` | string | Hook module chạy sau npm scaffold hoặc Git clone và trước khi cài dependency; chỉ áp dụng cho source npm/Git |
 
 ## Ví dụ
 
@@ -47,7 +48,25 @@ nb source download --source git --version alpha --git-url=git@github.com:nocobas
 nb source download --source git --version fix/cli-v2
 nb source download -y --source npm --version alpha --build-dts
 nb source download -y --source npm --version alpha --npm-registry=https://registry.npmmirror.com
+nb source download -y --source git --version beta --hook-script ./hooks.mjs
 ```
+
+## Hook trước khi cài đặt
+
+`--hook-script` chỉ ảnh hưởng đến lần chạy `nb source download` hiện tại. Nếu bạn muốn hook được lưu cùng env và được `nb app upgrade` hoặc restore source cục bộ dùng lại, hãy truyền qua [`nb init --hook-script`](../init.md).
+
+Tệp hook cần default export một object và implement `beforeDependencyInstall(context)`:
+
+```js
+export default {
+  beforeDependencyInstall: async ({ sourcePath, version, envConfig }) => {
+    // Chạy sau git clone / npm scaffold và trước yarn install.
+  },
+};
+```
+
+Khi bạn chạy trực tiếp `nb source download --hook-script`, `beforeDependencyInstall` nhận `context.phase` là `source-download` và `context.command` là `source:download`. Lệnh này không chạy `beforeAppInstall` hoặc `afterAppStart`; hai hook đó thuộc các luồng install, start, restart và upgrade của app.
+
 
 ## Alias version
 

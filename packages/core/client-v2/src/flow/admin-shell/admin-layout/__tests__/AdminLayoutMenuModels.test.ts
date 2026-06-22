@@ -318,6 +318,50 @@ describe('AdminLayoutModel menu items', () => {
     expect(route.children[1]._model).toBe(adminLayoutModel.subModels.menuItems?.[1]);
   });
 
+  it('should generate ProLayout route tree under a custom admin layout route path', () => {
+    const adminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: 'admin2-layout-model',
+      use: AdminLayoutModel,
+      props: {
+        layout: {
+          routeName: 'admin2',
+          routePath: '/admin2',
+          uid: 'admin2-layout-model',
+          layoutModelClass: 'AdminLayoutModel',
+        },
+      },
+    });
+
+    adminLayoutModel.syncMenuRoutes([
+      {
+        id: 1,
+        title: 'Group',
+        type: NocoBaseDesktopRouteType.group,
+        children: [
+          {
+            id: 11,
+            title: 'Page 1',
+            schemaUid: 'page-1',
+            type: NocoBaseDesktopRouteType.flowPage,
+          },
+        ],
+      },
+    ]);
+
+    const route = adminLayoutModel.toProLayoutRoute({
+      designable: false,
+      isMobile: false,
+      t: (title) => title,
+    });
+
+    expect(route.children[0].path).toBe('/admin2/1');
+    expect(route.children[0].redirect).toBe('/admin2/page-1');
+    expect(route.children[0]._runtimePath).toBe('/apps/demo/v2/admin2/page-1');
+    expect(route.children[0].routes?.[0].path).toBe('/admin2/page-1');
+    expect(route.children[0].routes?.[0].redirect).toBe('/admin2/page-1');
+    expect(route.children[0].routes?.[0]._runtimePath).toBe('/apps/demo/v2/admin2/page-1');
+  });
+
   it('should filter legacy page menu routes but keep empty groups in v2 admin layout', () => {
     const adminLayoutModel = engine.createModel<AdminLayoutModel>({
       uid: 'admin-layout-model',
@@ -1126,6 +1170,46 @@ describe('AdminLayoutModel menu items', () => {
     expect(runtimeRoute).toBeNull();
     expect(designableRoute?.hideInMenu).toBeFalsy();
     expect(adminLayoutModel.menuRouteRefreshVersion).toBe(refreshBefore + 1);
+  });
+
+  it('should refresh the owning admin layout when hiding custom layout menu routes dynamically', () => {
+    const defaultAdminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: ADMIN_LAYOUT_MODEL_UID,
+      use: AdminLayoutModel,
+    });
+    const customAdminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: 'custom-admin-layout-model',
+      use: AdminLayoutModel,
+      props: {
+        layout: {
+          routeName: 'admin2',
+          routePath: '/admin2',
+          rootRouteName: 'admin2',
+          uid: 'custom-admin-layout-model',
+          layoutModelClass: 'AdminLayoutModel',
+          rootPageModelClass: 'RootPageModel',
+          childPageModelClass: 'ChildPageModel',
+          authCheck: true,
+        },
+      },
+    });
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-custom-layout-dynamic-hidden',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: createRoute(),
+      },
+    });
+
+    model.setParent(customAdminLayoutModel);
+
+    const defaultRefreshBefore = defaultAdminLayoutModel.menuRouteRefreshVersion;
+    const customRefreshBefore = customAdminLayoutModel.menuRouteRefreshVersion;
+
+    model.setHidden(true);
+
+    expect(customAdminLayoutModel.menuRouteRefreshVersion).toBe(customRefreshBefore + 1);
+    expect(defaultAdminLayoutModel.menuRouteRefreshVersion).toBe(defaultRefreshBefore);
   });
 
   it('should render hidden menu item with opacity and keep original title in config mode', () => {
@@ -2220,6 +2304,21 @@ describe('AdminLayoutModel menu items', () => {
       '_blank',
       'noopener,noreferrer',
     );
+  });
+
+  it('should include router basename when opening same-origin links in a new window', async () => {
+    await openAdminLayoutMenuLink({
+      context: engine.context as any,
+      href: '/admin2/page',
+      params: [{ name: 'from', value: 'admin' }],
+      openInNewWindow: true,
+      isMobile: false,
+      closeMobileMenu: vi.fn(),
+      navigate: navigateMock,
+      basenameOfCurrentRouter: '/v',
+    });
+
+    expect(window.open).toHaveBeenCalledWith('/v/admin2/page?from=admin', '_blank', 'noopener,noreferrer');
   });
 
   it('should resolve sibling move options for non-group drag target', () => {

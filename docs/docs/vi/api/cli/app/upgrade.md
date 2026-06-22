@@ -58,6 +58,12 @@ Nếu truyền `--skip-download`, CLI sẽ bỏ qua bước 2 và 3 rồi trực
 
 Nếu bước cuối `nb env update` thất bại, lần upgrade này vẫn được tính là thành công. CLI sẽ in warning và hướng dẫn bạn tự chạy `nb env update <envName>` sau đó.
 
+## Hook script
+
+Nếu env hiện tại đã lưu hook bằng `nb init --hook-script`, `nb app upgrade` truyền lifecycle upgrade cho hook. Với source npm/Git, bước refresh source chạy `beforeDependencyInstall(context)` trước khi cài dependency với `context.phase = 'upgrade'` và `context.command = 'app:upgrade'`.
+
+Sau đó bước startup của upgrade app chạy `beforeAppInstall(context)`, và sau khi app start cũng như vượt qua `__health_check`, chạy `afterAppStart(context)`. Hai hook này cũng dùng `context.phase = 'upgrade'` và `context.command = 'app:upgrade'`. Docker source không chạy `beforeDependencyInstall`, nhưng vẫn chạy hook cấp app.
+
 ## Lệnh liên quan
 
 - [`nb source download`](../source/download.md)
