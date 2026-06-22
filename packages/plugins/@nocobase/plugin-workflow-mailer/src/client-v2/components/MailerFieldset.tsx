@@ -95,7 +95,6 @@ function AddressListField({ name, label, required }: { name: NamePath; label: Re
     <Form.Item label={label} required={required}>
       <Form.List
         name={name}
-        validateTrigger={false}
         rules={[
           {
             validator: async (_, value: unknown[]) => {
